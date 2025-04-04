@@ -1,0 +1,14 @@
+{
+  "name": "askdnd",
+  "description": "D&D Assistant powered by AI",
+  "env": {
+    "PYTHONUNBUFFERED": {
+      "value": "true"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ]
+} 
