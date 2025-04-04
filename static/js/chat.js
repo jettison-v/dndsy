@@ -2,9 +2,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatMessages = document.getElementById('chat-messages');
     const userInput = document.getElementById('user-input');
     const sendButton = document.getElementById('send-button');
+    let isFirstMessage = true;
 
     // Function to add a message to the chat
     function addMessage(content, type) {
+        if (isFirstMessage && type === 'user') {
+            // Clear welcome message when first user message is sent
+            chatMessages.innerHTML = '';
+            isFirstMessage = false;
+        }
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${type}`;
         messageDiv.innerHTML = `<p>${content}</p>`;

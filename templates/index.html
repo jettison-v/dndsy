@@ -6,28 +6,50 @@
     <meta name="description" content="AskDND - Your AI-powered Dungeons & Dragons assistant for 2024 (5.5e) rules">
     <meta name="keywords" content="D&D, Dungeons and Dragons, D&D assistant, 5.5e, 2024 rules">
     <meta name="author" content="AskDND">
-    <title>AskDND - D&D Assistant</title>
+    <title>AskDND - D&D Rules Assistant</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon.png') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .logout-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background-color: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .logout-button:hover {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: white;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
+        <a href="{{ url_for('logout') }}" class="logout-button">Logout</a>
         <header>
             <h1>AskDND</h1>
-            <p>Your AI-powered Dungeons & Dragons companion</p>
+            <p>Your AI-powered D&D Rules Companion</p>
         </header>
         
         <div class="chat-container">
             <div id="chat-messages" class="chat-messages">
                 <div class="message system">
-                    <p>Welcome! I'm your D&D assistant. Ask me anything about the 2024 (5.5e) rules!</p>
+                    <p>Welcome to AskDND! I'm your D&D assistant, ready to help with the 2024 (5.5e) rules. Ask me anything about character creation, combat, spells, or any other rules!</p>
                 </div>
             </div>
             
             <div class="input-container">
-                <textarea id="user-input" placeholder="Type your question here..." rows="3"></textarea>
-                <button id="send-button">Send</button>
+                <textarea id="user-input" placeholder="Ask about D&D rules..." rows="3"></textarea>
+                <button id="send-button">Ask</button>
             </div>
         </div>
     </div>
