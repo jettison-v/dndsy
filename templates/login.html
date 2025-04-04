@@ -61,6 +61,24 @@
             margin-top: 1rem;
             text-align: center;
         }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-color);
+            font-size: 0.9rem;
+        }
+
+        .remember-me input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .remember-me label {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -73,6 +91,10 @@
             
             <form class="login-form" method="POST">
                 <input type="password" name="password" placeholder="Enter password" required>
+                <div class="remember-me">
+                    <input type="checkbox" id="remember" name="remember">
+                    <label for="remember">Remember me for 30 days</label>
+                </div>
                 <button type="submit">Login</button>
                 {% if error %}
                 <div class="error-message">{{ error }}</div>

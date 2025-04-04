@@ -2,9 +2,13 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 from flask_cors import CORS
 from llm import ask_dndsy
 import os
+from datetime import timedelta
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # For session management
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)  # Session lasts for 30 days
+app.config['SESSION_COOKIE_SECURE'] = True  # Only send cookies over HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent JavaScript access to cookies
 CORS(app)
 
 PASSWORD = "dndsy"  # Your specified password
@@ -17,6 +21,8 @@ def login():
     if request.method == 'POST':
         if request.form.get('password') == PASSWORD:
             session['authenticated'] = True
+            if request.form.get('remember'):
+                session.permanent = True  # Enable persistent session
             return redirect(url_for('home'))
         return render_template('login.html', error="Incorrect password")
     return render_template('login.html', error=None)
