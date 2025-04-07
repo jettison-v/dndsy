@@ -31,9 +31,18 @@ env/
 *.swp
 *.swo
 
+# Logs
+*.log
+
 # Environment variables
 .env
 
-# OS
+# Data files
+data/*.pdf
+data/processed/
+
+# macOS
 .DS_Store
-Thumbs.db 
+
+# Docker
+.docker/ 
