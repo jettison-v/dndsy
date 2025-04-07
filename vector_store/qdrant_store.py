@@ -65,9 +65,9 @@ class QdrantStore:
             # Generate embedding
             embedding = self.model.encode(doc["text"]).tolist()
             
-            # Create point
+            # Create point with sequential ID for this run
             point = models.PointStruct(
-                id=i + self._get_next_id(),  # Ensure unique IDs
+                id=i,  # Use loop index as ID (starts from 0)
                 vector=embedding,
                 payload={
                     "text": doc["text"],
@@ -85,30 +85,6 @@ class QdrantStore:
                 points=batch
             )
             logging.info(f"Added batch of {len(batch)} documents to vector store")
-    
-    def _get_next_id(self) -> int:
-        """Get the next available ID for a point."""
-        try:
-            # Get the maximum ID from the collection
-            max_id = self.client.scroll(
-                collection_name=self.collection_name,
-                limit=1,
-                with_payload=False,
-                with_vectors=False,
-                scroll_filter=models.Filter(
-                    must=[
-                        models.FieldCondition(
-                            key="id",
-                            range=models.Range(
-                                gt=0
-                            )
-                        )
-                    ]
-                )
-            )[0][-1].id
-            return max_id + 1
-        except:
-            return 0
     
     def search(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
         """Search for similar documents."""
@@ -132,21 +108,6 @@ class QdrantStore:
             })
         
         return documents
-    
-    def save(self, index_path: str, documents_path: str) -> None:
-        """Save the vector store state."""
-        # Note: Qdrant persists data automatically
-        # We'll just save the documents for reference
-        with open(documents_path, 'w') as f:
-            json.dump(self.get_all_documents(), f)
-        logging.info(f"Saved documents to {documents_path}")
-    
-    def load(self, index_path: str, documents_path: str) -> None:
-        """Load the vector store state."""
-        # Note: Qdrant loads data automatically
-        # We'll just verify the collection exists
-        self._create_collection_if_not_exists()
-        logging.info(f"Loaded vector store from {index_path}")
     
     def get_all_documents(self) -> List[Dict[str, Any]]:
         """Get all documents from the vector store."""

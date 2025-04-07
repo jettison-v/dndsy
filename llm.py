@@ -16,21 +16,29 @@ client = OpenAI()
 # Initialize vector store
 vector_store = QdrantStore()
 
-def num_tokens_from_string(string: str, model: str = "gpt-3.5-turbo") -> int:
+def num_tokens_from_string(string: str, model: str) -> int:
     """Returns the number of tokens in a text string."""
-    encoding = tiktoken.encoding_for_model(model)
+    try:
+        encoding = tiktoken.encoding_for_model(model)
+    except KeyError:
+        logger.warning(f"Model {model} not found. Using cl100k_base encoding.")
+        encoding = tiktoken.get_encoding("cl100k_base")
     num_tokens = len(encoding.encode(string))
     return num_tokens
 
-def truncate_text(text: str, max_tokens: int = 1000, model: str = "gpt-3.5-turbo") -> str:
+def truncate_text(text: str, max_tokens: int, model: str) -> str:
     """Truncate text to fit within token limit."""
-    encoding = tiktoken.encoding_for_model(model)
+    try:
+        encoding = tiktoken.encoding_for_model(model)
+    except KeyError:
+        logger.warning(f"Model {model} not found. Using cl100k_base encoding.")
+        encoding = tiktoken.get_encoding("cl100k_base")
     tokens = encoding.encode(text)
     if len(tokens) <= max_tokens:
         return text
     return encoding.decode(tokens[:max_tokens]) + "..."
 
-def get_relevant_context(query: str, limit: int = 5) -> list[dict]:
+def get_relevant_context(query: str, model: str, limit: int = 5) -> list[dict]:
     """Search the vector store for relevant context."""
     try:
         # Log the search query
@@ -72,11 +80,11 @@ def get_relevant_context(query: str, limit: int = 5) -> list[dict]:
                 'score': score
             }
             
-            # Check token count
-            tokens = num_tokens_from_string(text)
+            # Check token count - pass model name
+            tokens = num_tokens_from_string(text, model=model)
             if tokens > max_tokens_per_result:
-                context_piece['text'] = truncate_text(text, max_tokens_per_result)
-                tokens = num_tokens_from_string(context_piece['text'])
+                context_piece['text'] = truncate_text(text, max_tokens=max_tokens_per_result, model=model)
+                tokens = num_tokens_from_string(context_piece['text'], model=model)
             
             # Add if we're still under the total limit
             if total_tokens + tokens <= 3000:  # Increased total token limit
@@ -100,8 +108,11 @@ def ask_dndsy(prompt: str) -> dict:
     Returns a dictionary containing the response and source information.
     """
     try:
-        # Get relevant context from vector store
-        context_parts = get_relevant_context(prompt)
+        # Define the model to use for this request
+        model_name = "gpt-3.5-turbo" # Or potentially load from config/env var
+
+        # Get relevant context from vector store, passing the model name
+        context_parts = get_relevant_context(prompt, model=model_name)
         logger.info(f"Context found: {bool(context_parts)}")
         
         # Track sources
@@ -143,7 +154,7 @@ def ask_dndsy(prompt: str) -> dict:
         
         # Make the API call
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",  # Using 3.5 for testing, can switch to 4 later
+            model=model_name,
             messages=[
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": prompt}
