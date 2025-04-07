@@ -61,12 +61,15 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
         # FLASK_DEBUG=1
         ```
 
-5.  **Prepare Data:**
-    *   Place your D&D 2024 rule PDFs inside the `data/pdfs/` directory (you may need to create this directory).
-    *   Run the processing script. This requires Docker to be running as it expects the local Qdrant instance defined in `docker-compose.yml`.
+5.  **Prepare Data (S3):**
+    *   Obtain your source PDF files.
+    *   Upload these PDFs to your configured AWS S3 bucket under the specified prefix (default is `source-pdfs/`). You can use the AWS Console or AWS CLI.
+    *   Example using AWS CLI:
         ```bash
-        docker compose up -d qdrant # Start Qdrant service in background
-        python reset_and_process.py # Process PDFs and load into local Qdrant
+        # Make sure AWS CLI is configured (aws configure)
+        aws s3 cp local/path/to/MyRulebook.pdf s3://YOUR_BUCKET_NAME/source-pdfs/MyRulebook.pdf
+        # Upload a whole directory recursively
+        aws s3 cp local/path/to/pdf_folder/ s3://YOUR_BUCKET_NAME/source-pdfs/ --recursive
         ```
 
 6.  **Run the Application:**
@@ -99,16 +102,14 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
         *   `APP_PASSWORD`: The password you want for the deployed application login.
         *   *(Optional)* `PYTHON_VERSION`: e.g., `3.11` (Consider using `.python-version` file instead of `runtime.txt`)
 
-3.  **Data Processing for Cloud:**
-    *   Before deploying the *first time*, or when PDFs change, you need to populate the *Qdrant Cloud* instance. Run the processing script locally, but point it to the cloud instance by setting environment variables **before running the script**:
+3.  **Populate Cloud Data:**
+    *   Ensure your source PDFs have been uploaded to the correct prefix in your S3 bucket (see Local Setup Step 5).
+    *   Ensure your Heroku app has the necessary Config Vars set (Qdrant Cloud details, OpenAI Key, AWS Credentials, `AWS_S3_BUCKET_NAME`, `AWS_S3_PDF_PREFIX` if not using default).
+    *   Run the processing script using a one-off Heroku dyno. This will download PDFs from S3, generate images, upload images to S3, and populate Qdrant Cloud.
         ```bash
-        # Set these in your terminal session
-        export QDRANT_HOST="YOUR_QDRANT_CLOUD_URL"
-        export QDRANT_API_KEY="YOUR_QDRANT_CLOUD_API_KEY"
-        # Ensure local Qdrant container is stopped: docker compose down qdrant
-        python reset_and_process.py
+        heroku run python reset_and_process.py -a YOUR_APP_NAME
         ```
-    *   **Alternatively:** Set up a separate process or job (e.g., using Heroku Scheduler or a one-off dyno) to run `reset_and_process.py` within the Heroku environment, configured with the cloud Qdrant credentials.
+    *   This step needs to be repeated whenever the source PDFs in S3 change.
 
 4.  **Deploy:**
     *   Push your code to the branch connected to Heroku (e.g., `main`).

@@ -37,9 +37,11 @@ env/
 # Environment variables
 .env
 
-# Data files
-# Ignore the entire data directory (contains PDFs, processed data etc.)
-data/
+# Source data (now stored in S3)
+data/pdfs/
+
+# Make sure specific generated data subdirs are ignored if needed,
+# but allow the source data/pdfs dir itself to be tracked.
 
 # Generated data
 data_processing.log

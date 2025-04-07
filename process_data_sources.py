@@ -35,6 +35,12 @@ AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_S3_BUCKET_NAME = os.getenv("AWS_S3_BUCKET_NAME")
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1") # Default region if not set
 
+# New variable for PDF source location in S3
+AWS_S3_PDF_PREFIX = os.getenv("AWS_S3_PDF_PREFIX", "source-pdfs/") 
+# Ensure prefix ends with a slash if it's not empty
+if AWS_S3_PDF_PREFIX and not AWS_S3_PDF_PREFIX.endswith('/'):
+    AWS_S3_PDF_PREFIX += '/'
+
 s3_client = None
 if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY and AWS_S3_BUCKET_NAME:
     try:
@@ -65,26 +71,60 @@ class DataProcessor:
         cleaned = re.sub(r'[^a-zA-Z0-9_\-\.]+', '_', cleaned) # Replace others
         return cleaned
 
-    def process_pdfs(self, pdf_dir: str) -> List[Dict[str, Any]]:
-        """Process PDF files, generate page images, and return documents."""
-        pdf_dir_path = Path(pdf_dir)
+    def process_pdfs_from_s3(self) -> List[Dict[str, Any]]:
+        """Process PDF files from S3, generate page images, and return documents."""
+        if not s3_client:
+            logging.error("S3 client not configured. Cannot process PDFs from S3.")
+            return []
+
         documents = []
         
-        # S3 base path
+        # S3 base path for generated images
         s3_base_key_prefix = PDF_IMAGE_DIR
 
-        # Find all PDF files
-        pdf_files = list(pdf_dir_path.rglob('*.pdf'))
-        logging.info(f"Found {len(pdf_files)} PDF files to process")
+        # List PDF files from S3
+        pdf_files_s3_keys = []
+        try:
+            paginator = s3_client.get_paginator('list_objects_v2')
+            pages = paginator.paginate(Bucket=AWS_S3_BUCKET_NAME, Prefix=AWS_S3_PDF_PREFIX)
+            for page in pages:
+                if "Contents" in page:
+                    for obj in page["Contents"]:
+                        key = obj["Key"]
+                        # Ensure it's a PDF and not just the prefix itself
+                        if key.lower().endswith('.pdf') and key != AWS_S3_PDF_PREFIX:
+                            pdf_files_s3_keys.append(key)
+        except ClientError as e:
+            logging.error(f"Failed to list PDFs from S3 prefix '{AWS_S3_PDF_PREFIX}': {e}")
+            return []
+        except Exception as e:
+            logging.error(f"Unexpected error listing PDFs from S3: {e}")
+            return []
+
+        logging.info(f"Found {len(pdf_files_s3_keys)} PDF files in S3 prefix '{AWS_S3_PDF_PREFIX}'")
         
-        for pdf_path in tqdm(pdf_files, desc="Processing PDFs"):
+        for s3_pdf_key in tqdm(pdf_files_s3_keys, desc="Processing PDFs from S3"):
             try:
-                rel_path = str(pdf_path.relative_to(pdf_dir_path))
+                # Extract relative path for use in naming etc.
+                rel_path = s3_pdf_key[len(AWS_S3_PDF_PREFIX):] if s3_pdf_key.startswith(AWS_S3_PDF_PREFIX) else s3_pdf_key
+                pdf_filename = rel_path.split('/')[-1]
+
                 # Clean the relative path to use as a directory name
                 pdf_image_sub_dir_name = self._clean_filename(rel_path.replace('.pdf', ''))
+                
+                # Download PDF content from S3
+                try:
+                    pdf_object = s3_client.get_object(Bucket=AWS_S3_BUCKET_NAME, Key=s3_pdf_key)
+                    pdf_bytes = pdf_object['Body'].read()
+                except ClientError as e:
+                    logging.error(f"Failed to download PDF '{s3_pdf_key}' from S3: {e}")
+                    continue # Skip this PDF
+                except Exception as e:
+                    logging.error(f"Unexpected error downloading PDF '{s3_pdf_key}' from S3: {e}")
+                    continue
 
-                # Extract text and generate images page by page
-                doc = fitz.open(pdf_path)
+                # Extract text and generate images page by page using content from memory
+                doc = fitz.open(stream=pdf_bytes, filetype="pdf")
                 total_pages = len(doc) # Get total page count
 
                 for page_num, page in enumerate(doc): 
@@ -140,14 +180,14 @@ class DataProcessor:
                     document = {
                         "text": page_text, 
                         "metadata": {
-                            "source": rel_path, 
+                            "source": s3_pdf_key, # Store the S3 key as the source identifier
                             "page": page_label, 
                             "image_url": s3_image_url, # Store the S3 URL (or None)
                             "total_pages": total_pages, # Add total pages
                             "source_dir": pdf_image_sub_dir_name, # Add cleaned source dir name
                             "type": "pdf",
-                            "folder": str(pdf_path.parent.relative_to(pdf_dir_path)), # Store relative folder
-                            "filename": pdf_path.name,
+                            "folder": str(Path(rel_path).parent), # Store relative folder correctly
+                            "filename": pdf_filename,
                             "processed_at": datetime.now().isoformat()
                         }
                     }
@@ -157,14 +197,14 @@ class DataProcessor:
                 doc.close()
 
             except Exception as e:
-                logging.error(f"Error processing {pdf_path}: {str(e)}")
+                logging.error(f"Error processing S3 PDF {s3_pdf_key}: {str(e)}")
         
         return documents
     
     def process_all_sources(self):
         """Process all data sources and add to vector store."""
         # Process PDFs
-        pdf_documents = self.process_pdfs("data/pdfs")
+        pdf_documents = self.process_pdfs_from_s3()
         if pdf_documents:
             logging.info(f"Adding {len(pdf_documents)} PDF documents to vector store")
             self.vector_store.add_documents(pdf_documents)

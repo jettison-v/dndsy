@@ -35,9 +35,9 @@ def reset_and_process():
     except Exception as e:
         print(f"No existing collection to delete: {str(e)}")
     
-    # Process PDFs (this will create a new collection)
+    # Process PDFs from S3 (path is handled internally via env vars)
     processor = DataProcessor()
-    documents = processor.process_pdfs("data/pdfs")
+    documents = processor.process_pdfs_from_s3()
     
     if documents:
         print(f"\nProcessed {len(documents)} documents")
