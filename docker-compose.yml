@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "5001:5001"
+    volumes:
+      - .:/app
+      - ./data:/app/data
+    environment:
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - TOKENIZERS_PARALLELISM=false
+      - PORT=5001
+      - FLASK_APP=app.py
+    depends_on:
+      - qdrant
+    networks:
+      - app-network
+    restart: unless-stopped
+    command: >
+      /bin/sh -c "
+      echo 'Waiting for Qdrant...' &&
+      while ! curl -s http://qdrant:6333/healthz > /dev/null; do
+        sleep 1;
+      done &&
+      echo 'Qdrant is up - starting Gunicorn' &&
+      gunicorn --bind 0.0.0.0:$PORT --workers 4 --log-level info app:app"
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:6333/healthz || exit 1"]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 60s
+    networks:
+      - app-network
+
+volumes:
+  qdrant_data:
+
+networks:
+  app-network:
+    driver: bridge 

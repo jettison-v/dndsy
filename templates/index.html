@@ -40,16 +40,28 @@
             <p>Your AI-powered D&D Rules Companion</p>
         </header>
         
-        <div class="chat-container">
-            <div id="chat-messages" class="chat-messages">
-                <div class="message system">
-                    <p>Welcome to AskDND! I'm your D&D assistant, ready to help with the 2024 (5.5e) rules. Ask me anything about character creation, combat, spells, or any other rules!</p>
+        <div class="main-content">
+            <div class="chat-container">
+                <div id="chat-messages" class="chat-messages">
+                    <div class="message system">
+                        <p>Welcome to AskDND! I'm your D&D assistant, ready to help with the 2024 (5.5e) rules. Ask me anything about character creation, combat, spells, or any other rules!</p>
+                    </div>
+                </div>
+                
+                <div class="input-container">
+                    <textarea id="user-input" placeholder="Ask about D&D rules..." rows="3"></textarea>
+                    <button id="send-button">Ask</button>
                 </div>
             </div>
             
-            <div class="input-container">
-                <textarea id="user-input" placeholder="Ask about D&D rules..." rows="3"></textarea>
-                <button id="send-button">Ask</button>
+            <div id="source-panel" class="source-panel">
+                <div class="source-panel-header">
+                    <h3>Source Content</h3>
+                    <button id="close-panel" class="close-button">&times;</button>
+                </div>
+                <div id="source-content" class="source-content">
+                    <p class="no-source">Select a source to view its content</p>
+                </div>
             </div>
         </div>
     </div>
