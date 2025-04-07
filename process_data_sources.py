@@ -158,7 +158,6 @@ class DataProcessor:
                                     AWS_S3_BUCKET_NAME, 
                                     s3_object_key,
                                     ExtraArgs={
-                                        'ACL': 'public-read', 
                                         'ContentType': 'image/png'
                                     }
                                 )
