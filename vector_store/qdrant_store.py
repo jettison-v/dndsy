@@ -10,12 +10,29 @@ class QdrantStore:
     def __init__(self, collection_name: str = "dnd_knowledge"):
         """Initialize Qdrant vector store."""
         self.collection_name = collection_name
+        # Load model only once if possible or ensure it's handled efficiently
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
         
-        # Initialize Qdrant client
-        host = os.getenv("QDRANT_HOST", "localhost")
-        port = int(os.getenv("QDRANT_PORT", "6333"))
-        self.client = QdrantClient(host=host, port=port)
+        # Initialize Qdrant client for local or cloud
+        qdrant_host = os.getenv("QDRANT_HOST", "localhost")
+        qdrant_api_key = os.getenv("QDRANT_API_KEY")
+        
+        # Determine if it's a cloud URL
+        is_cloud = qdrant_host.startswith("http") or qdrant_host.startswith("https")
+
+        if is_cloud:
+            logging.info(f"Connecting to Qdrant Cloud at: {qdrant_host}")
+            # For cloud, use url and api_key. Port is usually inferred (443 for https).
+            self.client = QdrantClient(
+                url=qdrant_host, 
+                api_key=qdrant_api_key, 
+                timeout=60
+            )
+        else:
+            logging.info(f"Connecting to local Qdrant at: {qdrant_host}")
+            # For local, use host and explicit port.
+            port = int(os.getenv("QDRANT_PORT", "6333"))
+            self.client = QdrantClient(host=qdrant_host, port=port, timeout=60)
         
         # Create collection if it doesn't exist
         self._create_collection_if_not_exists()

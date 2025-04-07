@@ -38,11 +38,26 @@ env/
 .env
 
 # Data files
-data/*.pdf
-data/processed/
+# Ignore the entire data directory (contains PDFs, processed data etc.)
+data/
+
+# Generated data
+data_processing.log
+pdf_processing.log
+data/qdrant_index
+data/documents.json
+static/pdf_page_images/
 
 # macOS
 .DS_Store
 
 # Docker
-.docker/ 
+.docker/
+
+# Test scripts and temporary files
+test_*.py
+*.dockerfile
+Dockerfile.*
+
+# macOS
+.DS_Store 
