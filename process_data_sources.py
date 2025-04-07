@@ -11,6 +11,9 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 import re # Import re for path cleaning
+import boto3
+from botocore.exceptions import NoCredentialsError, PartialCredentialsError, ClientError
+import io # For handling image data in memory
 
 # Set up logging
 logging.basicConfig(
@@ -25,6 +28,29 @@ logging.basicConfig(
 # Define base directory for images relative to static folder
 PDF_IMAGE_DIR = "pdf_page_images"
 STATIC_DIR = "static" # Define static directory name
+
+# --- AWS S3 Configuration ---
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_S3_BUCKET_NAME = os.getenv("AWS_S3_BUCKET_NAME")
+AWS_REGION = os.getenv("AWS_REGION", "us-east-1") # Default region if not set
+
+s3_client = None
+if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY and AWS_S3_BUCKET_NAME:
+    try:
+        s3_client = boto3.client(
+            's3',
+            aws_access_key_id=AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+            region_name=AWS_REGION
+        )
+        logging.info(f"Initialized S3 client for bucket: {AWS_S3_BUCKET_NAME} in region: {AWS_REGION}")
+    except (NoCredentialsError, PartialCredentialsError) as e:
+        logging.error(f"AWS Credentials not found or incomplete: {e}")
+    except Exception as e:
+        logging.error(f"Failed to initialize S3 client: {e}")
+else:
+    logging.warning("AWS S3 credentials/bucket name not fully configured. Image uploads will be skipped.")
 
 class DataProcessor:
     def __init__(self):
@@ -44,9 +70,8 @@ class DataProcessor:
         pdf_dir_path = Path(pdf_dir)
         documents = []
         
-        # Create base image directory if it doesn't exist
-        base_image_output_dir = Path(STATIC_DIR) / PDF_IMAGE_DIR
-        base_image_output_dir.mkdir(parents=True, exist_ok=True)
+        # S3 base path
+        s3_base_key_prefix = PDF_IMAGE_DIR
 
         # Find all PDF files
         pdf_files = list(pdf_dir_path.rglob('*.pdf'))
@@ -57,8 +82,6 @@ class DataProcessor:
                 rel_path = str(pdf_path.relative_to(pdf_dir_path))
                 # Clean the relative path to use as a directory name
                 pdf_image_sub_dir_name = self._clean_filename(rel_path.replace('.pdf', ''))
-                pdf_image_output_dir = base_image_output_dir / pdf_image_sub_dir_name
-                pdf_image_output_dir.mkdir(parents=True, exist_ok=True)
 
                 # Extract text and generate images page by page
                 doc = fitz.open(pdf_path)
@@ -78,15 +101,40 @@ class DataProcessor:
                     
                     # Generate image
                     image_filename = f"page_{page_label}.png"
-                    image_save_path = pdf_image_output_dir / image_filename
-                    image_url_path = f'/{STATIC_DIR}/{PDF_IMAGE_DIR}/{pdf_image_sub_dir_name}/{image_filename}'
+                    s3_object_key = f"{s3_base_key_prefix}/{pdf_image_sub_dir_name}/{image_filename}"
+                    s3_image_url = None # Default to None
                     
                     try:
                         pix = page.get_pixmap(dpi=150) # Render at 150 DPI
-                        pix.save(str(image_save_path))
+                        # Convert pixmap to PNG bytes in memory
+                        img_bytes = pix.tobytes("png")
+                        img_file_obj = io.BytesIO(img_bytes)
+
+                        # Upload to S3 if client is configured
+                        if s3_client:
+                            try:
+                                s3_client.upload_fileobj(
+                                    img_file_obj, 
+                                    AWS_S3_BUCKET_NAME, 
+                                    s3_object_key,
+                                    ExtraArgs={
+                                        'ACL': 'public-read', 
+                                        'ContentType': 'image/png'
+                                    }
+                                )
+                                # Construct the public S3 URL
+                                s3_image_url = f"https://{AWS_S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{s3_object_key}"
+                                logging.debug(f"Successfully uploaded {s3_object_key} to S3.")
+                            except ClientError as s3_e:
+                                logging.error(f"Error uploading {s3_object_key} to S3: {s3_e}")
+                            except Exception as s3_e:
+                                logging.error(f"Unexpected error during S3 upload for {s3_object_key}: {s3_e}")
+                        else:
+                            logging.warning(f"S3 client not configured. Skipping upload for {s3_object_key}")
+
                     except Exception as img_e:
                         logging.error(f"Error generating image for {rel_path} page {page_label}: {img_e}")
-                        image_url_path = None # Set path to None if image fails
+                        s3_image_url = None # Ensure URL is None if image gen fails
 
                     # Create document per page
                     document = {
@@ -94,7 +142,7 @@ class DataProcessor:
                         "metadata": {
                             "source": rel_path, 
                             "page": page_label, 
-                            "image_url": image_url_path,
+                            "image_url": s3_image_url, # Store the S3 URL (or None)
                             "total_pages": total_pages, # Add total pages
                             "source_dir": pdf_image_sub_dir_name, # Add cleaned source dir name
                             "type": "pdf",
