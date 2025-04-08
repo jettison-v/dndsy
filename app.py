@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, Response
 from flask_cors import CORS
-from llm import ask_dndsy
+from llm import ask_dndsy, vector_store
 import os
 from datetime import timedelta
 import logging
@@ -68,6 +68,45 @@ def chat():
     # Return a streaming response
     # The ask_dndsy function is now a generator yielding SSE events
     return Response(ask_dndsy(user_message), mimetype='text/event-stream')
+
+@app.route('/api/get_context_details')
+def get_context_details():
+    if not check_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    source_name = request.args.get('source')
+    page_number_str = request.args.get('page')
+
+    if not source_name or not page_number_str:
+        return jsonify({'error': 'Missing source or page parameter'}), 400
+
+    try:
+        page_number = int(page_number_str)
+    except ValueError:
+        return jsonify({'error': 'Invalid page number'}), 400
+
+    logger.info(f"Fetching details for source: '{source_name}', page: {page_number}")
+    
+    try:
+        # Attempt to get details from the vector store
+        # NOTE: We need to ensure vector_store has a method like get_details_by_source_page
+        # This might involve searching Qdrant with a specific filter
+        details = vector_store.get_details_by_source_page(source_name, page_number)
+        
+        if details:
+            # Assuming details is a dict like {'text': '...', 'image_url': '...'}
+            logger.info(f"Found details: image_url exists = {details.get('image_url') is not None}")
+            return jsonify(details)
+        else:
+            logger.warning(f"No details found for source: '{source_name}', page: {page_number}")
+            return jsonify({'error': 'Context details not found'}), 404
+            
+    except AttributeError:
+         logger.error(f"Vector store does not have method 'get_details_by_source_page'. Needs implementation.")
+         return jsonify({'error': 'Server configuration error: Cannot fetch context details.'}), 500
+    except Exception as e:
+        logger.error(f"Error fetching context details for '{source_name}' page {page_number}: {e}", exc_info=True)
+        return jsonify({'error': 'Internal server error fetching context details'}), 500
 
 @app.route('/logout')
 def logout():

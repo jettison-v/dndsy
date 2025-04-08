@@ -114,6 +114,50 @@ class QdrantStore:
         
         return documents
     
+    def get_details_by_source_page(self, source_name: str, page_number: int) -> Optional[Dict[str, Any]]:
+        """Fetch details (text, image_url) for a specific source document and page."""
+        try:
+            # Define the filter for the specific source and page
+            # Note: Assumes 'source' and 'page' are top-level keys within the 'metadata' payload
+            search_filter = models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="metadata.source", # Adjust if path to source name is different
+                        match=models.MatchValue(value=source_name)
+                    ),
+                    models.FieldCondition(
+                        key="metadata.page", # Adjust if path to page number is different
+                        match=models.MatchValue(value=page_number)
+                    )
+                ]
+            )
+            
+            # Use scroll API to get the first matching document
+            # We don't need vector similarity here, just filtering
+            scroll_response = self.client.scroll(
+                collection_name=self.collection_name,
+                scroll_filter=search_filter,
+                limit=1, # We only need one result
+                with_payload=True, # Ensure we get the payload
+                with_vectors=False # No need for the vector
+            )
+            
+            if scroll_response and scroll_response[0]:
+                point = scroll_response[0][0] # Get the first point from the response tuple
+                payload = point.payload
+                metadata = payload.get("metadata", {})
+                return {
+                    "text": payload.get("text", ""),
+                    "image_url": metadata.get("image_url", None) # Extract image_url from metadata
+                    # Add any other details needed by the frontend here
+                }
+            else:
+                logging.warning(f"Qdrant scroll found no match for source: '{source_name}', page: {page_number}")
+                return None
+        except Exception as e:
+            logging.error(f"Error fetching details from Qdrant for '{source_name}' page {page_number}: {e}", exc_info=True)
+            return None
+
     def get_all_documents(self) -> List[Dict[str, Any]]:
         """Get all documents from the vector store."""
         documents = []

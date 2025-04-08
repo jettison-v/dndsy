@@ -63,14 +63,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Function to add source pills (appends to existing container)
-    function addSourcePills(messageId, sources, contextParts) {
+    function addSourcePills(messageId, sources /* contextParts removed */) {
         const messageElement = chatMessages.querySelector(`[data-message-id="${messageId}"]`);
         const sourceContainer = messageElement?.querySelector('.source-pills'); // Find the container
          if (!sourceContainer || !sources || sources.length === 0) return;
 
-         messageContextParts[messageId] = contextParts;
+         // Removed: messageContextParts[messageId] = contextParts;
          sourceContainer.innerHTML = ''; // Clear previous pills if any (e.g., on error)
          
+         // --- Logic to parse source name and page from source string --- 
+         const parseSourceString = (sourceStr) => {
+             // Example format: "My Document Name (page 123)"
+             const match = sourceStr.match(/^(.*?)\s*\(page\s*(\d+)\)$/i);
+             if (match && match[1] && match[2]) {
+                 return { name: match[1].trim(), page: parseInt(match[2], 10) };
+             }
+             console.warn("Could not parse source string:", sourceStr); 
+             return null; // Or return a default/placeholder
+         };
+         // --- End parsing logic --- 
+
          const MAX_VISIBLE_PILLS = 3;
          let sourcesToShow = sources;
          let hiddenCount = 0;
@@ -80,9 +92,12 @@ document.addEventListener('DOMContentLoaded', () => {
              hiddenCount = sources.length - MAX_VISIBLE_PILLS;
          }
 
-         sourcesToShow.forEach((source, index) => {
-             const sourcePill = createSourcePill(source, messageId, index);
-             sourceContainer.appendChild(sourcePill);
+         sourcesToShow.forEach((sourceString, index) => {
+             const parsedSource = parseSourceString(sourceString);
+             if (parsedSource) {
+                 const sourcePill = createSourcePill(sourceString, messageId, parsedSource.name, parsedSource.page);
+                 sourceContainer.appendChild(sourcePill);
+             }
          });
 
          if (hiddenCount > 0) {
@@ -93,15 +108,17 @@ document.addEventListener('DOMContentLoaded', () => {
              showMore.onclick = (e) => {
                  e.preventDefault();
                  sourceContainer.innerHTML = ''; 
-                 sources.forEach((source, index) => {
-                     const sourcePill = createSourcePill(source, messageId, index);
-                     sourceContainer.appendChild(sourcePill);
+                 sources.forEach((sourceString, index) => {
+                     const parsedSource = parseSourceString(sourceString);
+                     if (parsedSource) {
+                         const sourcePill = createSourcePill(sourceString, messageId, parsedSource.name, parsedSource.page);
+                         sourceContainer.appendChild(sourcePill);
+                     }
                  });
              };
              sourceContainer.appendChild(showMore);
          }
          sourceContainer.style.display = 'flex'; // Show the container
-         // messageElement.appendChild(sourceContainer); // No longer need to append here
     }
     
     // Function to update message text (used for status)
@@ -119,61 +136,84 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Helper function to create a source pill element
-    function createSourcePill(sourceText, messageId, index) {
+    // Now takes sourceName and pageNumber
+    function createSourcePill(displayText, messageId, sourceName, pageNumber) {
         const pill = document.createElement('span');
         pill.className = 'source-pill';
-        pill.textContent = sourceText;
+        pill.textContent = displayText; // Keep original display text
         pill.dataset.messageId = messageId;
-        pill.dataset.index = index;
-        pill.addEventListener('click', () => {
-            const contextParts = messageContextParts[messageId];
-            if (contextParts && contextParts[index]) {
-                showSourcePanel(contextParts, index);
-            } else {
-                console.error('Could not find context data for source pill', messageId, index);
+        // Store source name and page directly
+        pill.dataset.sourceName = sourceName;
+        pill.dataset.pageNumber = pageNumber;
+        
+        pill.addEventListener('click', async () => { // Make listener async
+            // Clear previous active states
+            document.querySelectorAll('.source-pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+            
+            // Show loading state in panel
+            sourceContent.innerHTML = '<p class="loading-source">Loading source details...</p>';
+            sourcePanel.classList.add('open');
+            
+            try {
+                const response = await fetch(`/api/get_context_details?source=${encodeURIComponent(sourceName)}&page=${pageNumber}`);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                }
+                const details = await response.json();
+                // Pass fetched details to showSourcePanel (which needs modification)
+                showSourcePanel(details, sourceName, pageNumber);
+                
+            } catch (error) {
+                console.error('Error fetching source details:', error);
+                sourceContent.innerHTML = `<p class="error-source">Error loading source: ${error.message}</p>`;
             }
         });
         return pill;
     }
 
     // Function to show source content in the side panel
-    function showSourcePanel(messageContextParts, index) {
-        if (!messageContextParts || !messageContextParts[index]) {
-            console.error(`No context part found for index: ${index}`);
+    // Modified to accept fetched details directly
+    function showSourcePanel(details, sourceName, pageNumber) {
+        // Details object expected: {"text": "...", "image_url": "...", "total_pages": ...} (Need total_pages from backend)
+        if (!details) {
+            sourceContent.innerHTML = '<p class="error-source">Error: Received no details for source.</p>';
             return;
         }
         
-        const part = messageContextParts[index];
-        
+        const imageUrl = details.image_url;
+        const totalPages = details.total_pages || 'N/A'; // Get total pages from details if available
+
         // Clear previous content
         sourceContent.innerHTML = ''; 
-        sourceContent.dataset.currentPage = part.page; // Store current state
-        sourceContent.dataset.totalPages = part.total_pages;
-        sourceContent.dataset.sourceDir = part.source_dir;
-        sourceContent.dataset.sourceName = part.source; // Original source name
-        // Store base S3 URL pattern if available, removing the filename part
-        if (part.image_url) {
-            const urlParts = part.image_url.split('/');
-            urlParts.pop(); // Remove the filename (e.g., page_84.png)
+        sourceContent.dataset.currentPage = pageNumber; 
+        sourceContent.dataset.totalPages = totalPages;
+        sourceContent.dataset.sourceName = sourceName; 
+        // Extract S3 base URL from the fetched image URL
+        if (imageUrl) {
+            const urlParts = imageUrl.split('/');
+            urlParts.pop(); // Remove the filename 
             sourceContent.dataset.s3BaseUrl = urlParts.join('/'); 
         } else {
-             sourceContent.dataset.s3BaseUrl = ''; // Handle case where image URL might be missing
+             sourceContent.dataset.s3BaseUrl = '';
         }
-        // sourceContent.dataset.imagePattern = `/static/pdf_page_images/${part.source_dir}/page_{page}.png`; // REMOVED old static pattern
 
         // --- Header --- 
         const header = document.createElement('h4');
-        header.id = 'source-panel-header-text'; // ID for easy updates
-        header.textContent = `${part.source} (Page ${part.page} of ${part.total_pages || 'N/A'})`;
+        header.id = 'source-panel-header-text';
+        header.textContent = `${sourceName} (Page ${pageNumber} of ${totalPages})`;
         sourceContent.appendChild(header);
         
-        // --- Relevance Score --- 
-        const scoreP = document.createElement('p');
-        scoreP.className = 'source-score';
-        scoreP.textContent = `Relevance: ${(part.score * 100).toFixed(1)}%`;
-        sourceContent.appendChild(scoreP);
+        // --- Score (if available in details, otherwise omit) --- 
+        if (details.score !== undefined) { 
+            const scoreP = document.createElement('p');
+            scoreP.className = 'source-score';
+            scoreP.textContent = `Relevance: ${(details.score * 100).toFixed(1)}%`;
+            sourceContent.appendChild(scoreP);
+        }
 
-        // --- Image Container (for potential loading states) ---
+        // --- Image Container ---
         const imageContainer = document.createElement('div');
         imageContainer.id = 'source-image-container';
         sourceContent.appendChild(imageContainer);
@@ -185,17 +225,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const prevButton = document.createElement('button');
         prevButton.id = 'source-prev-button';
         prevButton.textContent = 'Previous';
-        prevButton.disabled = part.page <= 1;
+        prevButton.disabled = pageNumber <= 1;
         prevButton.addEventListener('click', () => navigateSourcePage(-1));
 
         const pageIndicator = document.createElement('span');
         pageIndicator.id = 'source-page-indicator';
-        pageIndicator.textContent = `Page ${part.page} / ${part.total_pages || 'N/A'}`;
+        pageIndicator.textContent = `Page ${pageNumber} / ${totalPages}`;
 
         const nextButton = document.createElement('button');
         nextButton.id = 'source-next-button';
         nextButton.textContent = 'Next';
-        nextButton.disabled = !part.total_pages || part.page >= part.total_pages;
+        nextButton.disabled = totalPages === 'N/A' || pageNumber >= totalPages;
         nextButton.addEventListener('click', () => navigateSourcePage(1));
 
         navContainer.appendChild(prevButton);
@@ -204,87 +244,80 @@ document.addEventListener('DOMContentLoaded', () => {
         sourceContent.appendChild(navContainer);
         
         // --- Initial Image Load --- 
-        updateSourceImage(part.page);
+        updateSourceImage(pageNumber); // updateSourceImage needs to handle missing S3 URL
 
-        // --- Active Pill Update --- 
-        document.querySelectorAll('.source-pill').forEach(pill => {
-            pill.classList.remove('active');
-            if (pill.dataset.index === index.toString()) {
-                pill.classList.add('active');
-            }
-        });
-        
-        // Show the panel
+        // --- Panel Display --- 
         sourcePanel.classList.add('open');
     }
 
-    // Add the new navigateSourcePage function
-    function navigateSourcePage(direction) {
+    // Navigate source page - fetches details for the new page
+    async function navigateSourcePage(direction) {
         const currentPage = parseInt(sourceContent.dataset.currentPage, 10);
         const totalPages = parseInt(sourceContent.dataset.totalPages, 10);
+        const sourceName = sourceContent.dataset.sourceName;
         const newPage = currentPage + direction;
 
-        if (isNaN(totalPages) || newPage < 1 || newPage > totalPages) {
-            console.error('Invalid page navigation attempt');
+        if (isNaN(newPage) || !sourceName || newPage < 1 || (!isNaN(totalPages) && newPage > totalPages)) {
+            console.error('Invalid page navigation attempt', { newPage, totalPages, sourceName });
             return;
         }
-
-        updateSourceImage(newPage);
-    }
-
-    // Add the new updateSourceImage function
-    function updateSourceImage(pageNumber) {
-        const imageContainer = document.getElementById('source-image-container');
-        const headerText = document.getElementById('source-panel-header-text');
+        
+        // Update UI immediately to show loading
         const pageIndicator = document.getElementById('source-page-indicator');
+        const headerText = document.getElementById('source-panel-header-text');
+        const imageContainer = document.getElementById('source-image-container');
         const prevButton = document.getElementById('source-prev-button');
         const nextButton = document.getElementById('source-next-button');
-        const totalPages = parseInt(sourceContent.dataset.totalPages, 10);
-        const sourceName = sourceContent.dataset.sourceName;
-        const s3BaseUrl = sourceContent.dataset.s3BaseUrl; // Get the base S3 URL
 
-        if (!imageContainer || !s3BaseUrl || !headerText || !pageIndicator || !prevButton || !nextButton) {
-            if (!s3BaseUrl) {
-                 imageContainer.innerHTML = '<p style="color: orange; font-style: italic;">Source image not available (S3 URL missing).</p>';
-                 return; // Don't proceed if no base URL
+        if(pageIndicator) pageIndicator.textContent = `Loading page ${newPage}...`;
+        if(headerText) headerText.textContent = `${sourceName} (Loading page ${newPage}...)`;
+        if(imageContainer) imageContainer.innerHTML = '<p class="loading-source">Loading image...</p>';
+        if(prevButton) prevButton.disabled = true;
+        if(nextButton) nextButton.disabled = true;
+        
+        try {
+            const response = await fetch(`/api/get_context_details?source=${encodeURIComponent(sourceName)}&page=${newPage}`);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
             }
-            console.error('Required elements or base URL for image update not found');
-            return;
+            const details = await response.json();
+            // Update panel content with new details
+            showSourcePanel(details, sourceName, newPage); 
+        } catch (error) {
+            console.error('Error fetching details for navigated page:', error);
+            if(imageContainer) imageContainer.innerHTML = `<p class="error-source">Error loading page ${newPage}: ${error.message}</p>`;
+            // Re-enable buttons based on original page maybe?
+            if(prevButton) prevButton.disabled = currentPage <= 1;
+            if(nextButton) nextButton.disabled = isNaN(totalPages) || currentPage >= totalPages;
         }
+    }
 
-        // Construct the full S3 URL for the target page
+    // Update source image - simplified as showSourcePanel now handles most state
+    function updateSourceImage(pageNumber) {
+        const imageContainer = document.getElementById('source-image-container');
+        const s3BaseUrl = sourceContent.dataset.s3BaseUrl;
+        
+        if (!imageContainer) return;
+        
+        imageContainer.innerHTML = '<p class="loading-source">Loading image...</p>'; // Show loading indicator
+        
+        if (!s3BaseUrl) {
+            imageContainer.innerHTML = '<p class="error-source">Source image not available (URL missing).</p>';
+            return; 
+        }
+        
         const imageUrl = `${s3BaseUrl}/page_${pageNumber}.png`;
-
-        // Update stored state
-        sourceContent.dataset.currentPage = pageNumber;
-
-        // Clear previous image/loading state
-        imageContainer.innerHTML = '<p>Loading page...</p>'; // Simple loading indicator
-
-        const img = new Image(); // Use new Image() for better loading checks
-        img.alt = `Source image: ${sourceName} - Page ${pageNumber}`;
-        img.style.width = '100%';
-        img.style.height = 'auto';
-        img.style.display = 'block';
-        img.style.marginTop = '1rem';
-
+        const img = document.createElement('img');
+        img.src = imageUrl;
+        img.alt = `Source page ${pageNumber}`;
         img.onload = () => {
             imageContainer.innerHTML = ''; // Clear loading indicator
             imageContainer.appendChild(img);
         };
         img.onerror = () => {
-            imageContainer.innerHTML = '<p style="color: red; font-style: italic;">Error loading page image.</p>';
+            imageContainer.innerHTML = `<p class="error-source">Error loading image for page ${pageNumber}.</p>`;
         };
-        img.src = imageUrl; // Start loading
-
-        // Update header and indicator
-        const totalPagesDisplay = isNaN(totalPages) ? 'N/A' : totalPages;
-        headerText.textContent = `${sourceName} (Page ${pageNumber} of ${totalPagesDisplay})`;
-        pageIndicator.textContent = `Page ${pageNumber} / ${totalPagesDisplay}`;
-
-        // Update button states
-        prevButton.disabled = pageNumber <= 1;
-        nextButton.disabled = isNaN(totalPages) || pageNumber >= totalPages;
     }
 
     // Function to send message and handle SSE stream
@@ -356,7 +389,7 @@ document.addEventListener('DOMContentLoaded', () => {
                      llmInfoSpan.textContent = `LLM: ${metadata.llm_provider} (${metadata.llm_model})`;
                  }
                  // Add source pills (will append to the dedicated container)
-                 addSourcePills(assistantMessageId, metadata.sources, metadata.context_parts);
+                 addSourcePills(assistantMessageId, metadata.sources);
 
             } catch (e) {
                 console.error("Failed to parse SSE metadata:", event.data, e);
