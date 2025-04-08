@@ -1,6 +1,6 @@
 from qdrant_client import QdrantClient
 import os
-from process_data_sources import DataProcessor
+from .process_data_sources import DataProcessor
 import logging
 from dotenv import load_dotenv
 from pathlib import Path
