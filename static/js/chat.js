@@ -22,17 +22,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const textSpan = document.createElement('span');
         textSpan.className = 'message-text'; 
         
-        // Render markdown for assistant, otherwise use textContent
-        if (sender === 'assistant') {
-            if (typeof window.marked === 'function') { 
-                textSpan.innerHTML = window.marked.parse(text || ""); 
-            } else {
-                console.error("window.marked function not found. Displaying raw text.");
-                textSpan.textContent = text; 
-            }
-        } else {
-            textSpan.textContent = text; // User/System messages as plain text
-        }
+        // Set initial text (parsing happens in appendToMessage)
+        textSpan.textContent = text; 
+        
         messageElement.appendChild(textSpan);
         
         // Placeholder for source pills container (added later if needed)
@@ -48,22 +40,26 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Function to append text to the message text span
     function appendToMessage(messageId, textChunk) {
-        const textSpan = chatMessages.querySelector(`[data-message-id="${messageId}"] .message-text`);
-        if (textSpan) {
-            textSpan.textContent += textChunk;
-            if (typeof window.marked === 'function') {
-                 // Store current scroll position
-                 const isScrolledToBottom = chatMessages.scrollHeight - chatMessages.clientHeight <= chatMessages.scrollTop + 1;
-                 
-                 textSpan.innerHTML = window.marked.parse(textSpan.textContent || "");
-                 
-                 // Restore scroll position if it was at the bottom
-                 if (isScrolledToBottom) {
-                     chatMessages.scrollTop = chatMessages.scrollHeight;
-                 }
-            } 
-            chatMessages.scrollTop = chatMessages.scrollHeight; 
+        const messageElement = chatMessages.querySelector(`[data-message-id="${messageId}"]`);
+        if (!messageElement) {
+            console.error("Failed to find message element for ID:", messageId);
+            return;
         }
+        
+        const textSpan = messageElement.querySelector('.message-text');
+        if (!textSpan) {
+            console.error("Failed to find text span within message element:", messageId);
+            return;
+        }
+        
+        // Remove the thinking indicator if it exists and we are appending real text
+        const indicator = textSpan.querySelector('.thinking-indicator');
+        if (indicator) {
+            indicator.remove();
+        }
+
+        // Directly append text chunk
+        textSpan.textContent += textChunk;
     }
 
     // Function to add source pills (appends to existing container)
@@ -392,12 +388,35 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("SSE stream ended.");
             currentEventSource.close();
             currentEventSource = null;
-            // Optional: Check if the text span is still empty/showing indicator
+            
             const textSpan = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"] .message-text`);
-            // Check if empty OR if it still contains only the indicator span
-            if (textSpan && (textSpan.textContent.trim() === "" || textSpan.querySelector('.thinking-indicator'))) { 
-                // Update text span, explicitly no indicator
-                updateMessageText(assistantMessageId, "(No text received)", false);
+            
+            if (textSpan) {
+                console.log("Attempting final parse. typeof window.marked:", typeof window.marked);
+                const fullText = textSpan.textContent || "";
+                let generatedHtml = null;
+
+                // Check if marked is loaded, could be function or object with .parse
+                if (typeof window.marked === 'function') {
+                    generatedHtml = window.marked(fullText); // Use marked directly if it's the function
+                } else if (typeof window.marked === 'object' && typeof window.marked.parse === 'function') {
+                    generatedHtml = window.marked.parse(fullText); // Use marked.parse if it's a method
+                }
+                
+                if (generatedHtml !== null) {
+                    textSpan.innerHTML = generatedHtml;
+                    // Ensure code blocks are highlighted after rendering
+                    // highlightCodeBlocks(textSpan); // Temporarily comment out
+                } else {
+                    console.error("Marked function or marked.parse not found after stream end. Cannot parse markdown.");
+                    // Keep the textContent as is
+                }
+                
+                // Remove indicator if somehow still present
+                const indicator = textSpan.querySelector('.thinking-indicator');
+                if (indicator) indicator.remove();
+            } else {
+                 console.error("Failed to find text span after stream end for ID:", assistantMessageId);
             }
         });
 
