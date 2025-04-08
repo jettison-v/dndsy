@@ -15,38 +15,43 @@ document.addEventListener('DOMContentLoaded', () => {
         const messageElement = document.createElement('div');
         messageElement.classList.add('message', sender);
         
-        // Assign or generate ID
         const id = messageId || `msg-${Date.now()}-${Math.random().toString(16).substring(2)}`;
         messageElement.dataset.messageId = id;
         
-        // Basic text display for now
-        messageElement.textContent = text;
+        // Create a span for the main text content
+        const textSpan = document.createElement('span');
+        textSpan.className = 'message-text'; // Add class for targeting
+        textSpan.textContent = text; // Initial text (or empty for placeholder)
+        messageElement.appendChild(textSpan);
+        
+        // Placeholder for source pills container (added later if needed)
+        const sourceContainer = document.createElement('div');
+        sourceContainer.className = 'source-pills';
+        sourceContainer.style.display = 'none'; // Hide initially
+        messageElement.appendChild(sourceContainer);
         
         chatMessages.appendChild(messageElement);
         chatMessages.scrollTop = chatMessages.scrollHeight;
-        return id; // Return the ID for potential updates
+        return id;
     }
     
-    // Function to append text to an existing message bubble
+    // Function to append text to the message text span
     function appendToMessage(messageId, textChunk) {
-        const messageElement = chatMessages.querySelector(`[data-message-id="${messageId}"]`);
+        const messageElement = chatMessages.querySelector(`[data-message-id="${messageId}"] .message-text`); // Target the inner span
         if (messageElement) {
-            // Append text - use textContent for safety if not parsing markdown
             messageElement.textContent += textChunk;
             chatMessages.scrollTop = chatMessages.scrollHeight; 
         }
     }
 
-    // Function to add source pills (modified to take messageId)
+    // Function to add source pills (appends to existing container)
     function addSourcePills(messageId, sources, contextParts) {
         const messageElement = chatMessages.querySelector(`[data-message-id="${messageId}"]`);
-         if (!messageElement || !sources || sources.length === 0) return;
+        const sourceContainer = messageElement?.querySelector('.source-pills'); // Find the container
+         if (!sourceContainer || !sources || sources.length === 0) return;
 
-         // Store context for later use by pills
-         messageContextParts[messageId] = contextParts; 
-
-         const sourceContainer = document.createElement('div');
-         sourceContainer.className = 'source-pills';
+         messageContextParts[messageId] = contextParts;
+         sourceContainer.innerHTML = ''; // Clear previous pills if any (e.g., on error)
          
          const MAX_VISIBLE_PILLS = 3;
          let sourcesToShow = sources;
@@ -69,7 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
              showMore.className = 'show-more-sources';
              showMore.onclick = (e) => {
                  e.preventDefault();
-                 // Clear current pills and show all
                  sourceContainer.innerHTML = ''; 
                  sources.forEach((source, index) => {
                      const sourcePill = createSourcePill(source, messageId, index);
@@ -78,7 +82,17 @@ document.addEventListener('DOMContentLoaded', () => {
              };
              sourceContainer.appendChild(showMore);
          }
-         messageElement.appendChild(sourceContainer);
+         sourceContainer.style.display = 'flex'; // Show the container
+         // messageElement.appendChild(sourceContainer); // No longer need to append here
+    }
+    
+    // Function to update message text (used for status)
+    function updateMessageText(messageId, newText) {
+        const textSpan = chatMessages.querySelector(`[data-message-id="${messageId}"] .message-text`);
+        if (textSpan) {
+            textSpan.innerHTML = newText; // Use innerHTML for status which might include indicator
+            chatMessages.scrollTop = chatMessages.scrollHeight; 
+        }
     }
 
     // Function to update a message in the chat (for status updates)
@@ -89,29 +103,6 @@ document.addEventListener('DOMContentLoaded', () => {
             messageElement.textContent = newText;
             chatMessages.scrollTop = chatMessages.scrollHeight; // Re-scroll
         }
-    }
-
-    // Function to add the final assistant message (replaces addMessage for assistant)
-    function addAssistantResponse(messageId, text, sources = [], contextParts = []) {
-        const messageElement = chatMessages.querySelector(`[data-message-id="${messageId}"]`);
-        if (!messageElement) {
-            console.error("Could not find placeholder message element to update:", messageId);
-            addMessage(text, 'assistant', messageId); // Fallback to adding new
-            return;
-        }
-        
-        messageElement.classList.remove('thinking'); // Remove thinking style if any
-        messageElement.textContent = text; // Set final text
-        
-        // Add source pills
-        if (sources && sources.length > 0) {
-            addSourcePills(messageId, sources, contextParts);
-        }
-
-        // Update context parts map
-        messageContextParts[messageId] = contextParts;
-
-        chatMessages.scrollTop = chatMessages.scrollHeight; // Re-scroll
     }
 
     // Helper function to create a source pill element
@@ -297,13 +288,9 @@ document.addEventListener('DOMContentLoaded', () => {
         addMessage(message, 'user');
         userInput.value = '';
 
-        // Add placeholder for assistant message
-        const assistantMessageId = addMessage("", 'assistant'); // Start with empty message
-        const assistantElement = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"]`);
-        if (assistantElement) {
-             // Add the thinking indicator structure
-             assistantElement.innerHTML = '<span class="thinking-indicator"><span></span><span></span><span></span></span>';
-        }
+        // Add placeholder for assistant message with initial status
+        const assistantMessageId = addMessage("", 'assistant'); 
+        updateMessageText(assistantMessageId, '<span class="thinking-indicator"><span></span><span></span><span></span></span> Searching knowledge base...'); // Initial status
 
         // --- Use EventSource for streaming --- 
         // Pass message via query parameter (simple approach, consider security/length limits)
@@ -312,7 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentEventSource = new EventSource(`/api/chat?${queryParams.toString()}`);
         console.log("EventSource connected.");
 
-        let fullResponseText = ""; // Accumulate text chunks
+        let isFirstTextChunk = true; // Track first text chunk
 
         currentEventSource.onmessage = function(event) {
             console.log("SSE message received:", event.data);
@@ -320,14 +307,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = JSON.parse(event.data);
                 
                 if (data.type === 'text') {
-                    // Append text chunk
-                    if (fullResponseText === "") { // First text chunk
-                         const assistantMsgElement = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"]`);
-                         // Clear thinking indicator *before* adding text
-                         if (assistantMsgElement) assistantMsgElement.innerHTML = ""; 
+                    if (isFirstTextChunk) {
+                        // Clear status text ONLY from the text span on first actual text chunk
+                        const textSpan = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"] .message-text`);
+                        if (textSpan) textSpan.innerHTML = ""; 
+                        isFirstTextChunk = false;
                     }
                     appendToMessage(assistantMessageId, data.content);
-                    fullResponseText += data.content;
                 }
                 // Note: Metadata event is handled by onopen or a specific event type
             } catch (e) {
@@ -337,6 +323,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
+        currentEventSource.addEventListener('status', function(event) {
+            console.log("SSE status received:", event.data);
+             try {
+                const statusData = JSON.parse(event.data);
+                 // Update the text span with the new status
+                 updateMessageText(assistantMessageId, `<span class="thinking-indicator"><span></span><span></span><span></span></span> ${statusData.status || 'Processing...'}`);
+            } catch (e) {
+                console.error("Failed to parse SSE status:", event.data, e);
+            }
+        });
+
         currentEventSource.addEventListener('metadata', function(event) {
             console.log("SSE metadata received:", event.data);
              try {
@@ -345,7 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
                  if (metadata.llm_provider && metadata.llm_model && llmInfoSpan) {
                      llmInfoSpan.textContent = `LLM: ${metadata.llm_provider} (${metadata.llm_model})`;
                  }
-                 // Add source pills using the received metadata
+                 // Add source pills (will append to the dedicated container)
                  addSourcePills(assistantMessageId, metadata.sources, metadata.context_parts);
 
             } catch (e) {
@@ -364,9 +361,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const assistantMsgElement = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"]`);
             if (assistantMsgElement) {
-                 assistantMsgElement.textContent = `Error: ${errorMsg}`;
+                 const textSpan = assistantMsgElement.querySelector('.message-text');
+                 if(textSpan) textSpan.textContent = `Error: ${errorMsg}`;
                  assistantMsgElement.classList.remove('assistant');
-                 assistantMsgElement.classList.add('system'); // Style as error
+                 assistantMsgElement.classList.add('system');
             }
             currentEventSource.close(); // Close connection on error
             currentEventSource = null;
@@ -376,12 +374,11 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("SSE stream ended.");
             currentEventSource.close();
             currentEventSource = null;
-            // Optional: Remove thinking indicator if it wasn't replaced by text
-             const assistantMsgElement = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"]`);
-             // Check if innerHTML still contains the indicator span
-             if (assistantMsgElement && assistantMsgElement.querySelector('.thinking-indicator')) { 
-                 assistantMsgElement.textContent = "(No text received)"; 
-             }
+            // Optional: Check if the text span is still empty/showing indicator
+            const textSpan = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"] .message-text`);
+            if (textSpan && (textSpan.innerHTML === "" || textSpan.querySelector('.thinking-indicator'))) { 
+                textSpan.textContent = "(No text received)"; 
+            }
         });
 
         // Note: The old try/catch around fetch is removed as errors are handled by EventSource listeners
