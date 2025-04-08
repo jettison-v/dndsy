@@ -199,12 +199,12 @@ def ask_dndsy(prompt: str) -> Generator[str, None, None]:
             "type": "metadata",
             "sources": sources_for_display,
             "using_context": bool(context_parts),
-            "context_parts": context_parts,
+            # "context_parts": context_parts, # Removed: Avoid sending large text back
             "llm_provider": llm_client.get_provider_name(),
             "llm_model": current_model_name
         }
         yield f"event: metadata\ndata: {json.dumps(initial_metadata)}\n\n"
-        logger.info("Yielded initial metadata to client.")
+        logger.info("Yielded initial metadata to client (excluding full context text).") # Updated log
 
         # --- LLM API Stream --- 
         start_time_llm = time.perf_counter()
