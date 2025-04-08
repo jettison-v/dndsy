@@ -214,7 +214,7 @@ def ask_dndsy(prompt: str) -> Generator[str, None, None]:
             prompt=prompt,
             system_message=system_message,
             temperature=0.3, 
-            max_tokens=500, # Still applies as a suggestion to the model
+            max_tokens=1500, # Increased max_tokens
             stream=True
         )
         
