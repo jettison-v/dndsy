@@ -286,7 +286,8 @@ header p {
 
 .source-pill.active {
     background-color: var(--accent-color);
-    font-weight: 500;
+    color: white;
+    border-color: var(--accent-color);
 }
 
 /* Show More Sources Button */
@@ -400,4 +401,19 @@ footer {
     margin-top: auto; /* Pushes footer to the bottom */
     color: var(--secondary-text-color);
     font-size: 0.9rem;
+}
+
+/* Styling for the new "Show more sources" link */
+a.show-more-sources {
+    display: inline-block; /* Or block depending on desired layout */
+    margin-left: 0.5rem; 
+    font-size: 0.85em;
+    color: var(--text-color); /* Or a slightly different color like accent */
+    text-decoration: underline;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+a.show-more-sources:hover {
+    color: var(--accent-color);
 } 
