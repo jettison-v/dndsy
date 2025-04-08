@@ -301,7 +301,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const assistantMessageId = addMessage("", 'assistant'); // Start with empty message
         const assistantElement = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"]`);
         if (assistantElement) {
-             assistantElement.innerHTML = '<span class="thinking-indicator"></span>'; // Add a blinking cursor or spinner? Requires CSS
+             // Add the thinking indicator structure
+             assistantElement.innerHTML = '<span class="thinking-indicator"><span></span><span></span><span></span></span>';
         }
 
         // --- Use EventSource for streaming --- 
@@ -322,7 +323,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Append text chunk
                     if (fullResponseText === "") { // First text chunk
                          const assistantMsgElement = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"]`);
-                         if (assistantMsgElement) assistantMsgElement.textContent = ""; // Clear thinking indicator
+                         // Clear thinking indicator *before* adding text
+                         if (assistantMsgElement) assistantMsgElement.innerHTML = ""; 
                     }
                     appendToMessage(assistantMessageId, data.content);
                     fullResponseText += data.content;
@@ -376,8 +378,9 @@ document.addEventListener('DOMContentLoaded', () => {
             currentEventSource = null;
             // Optional: Remove thinking indicator if it wasn't replaced by text
              const assistantMsgElement = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"]`);
-             if (assistantMsgElement && assistantMsgElement.innerHTML.includes('thinking-indicator')) {
-                 assistantMsgElement.textContent = "(No text received)"; // Or handle differently
+             // Check if innerHTML still contains the indicator span
+             if (assistantMsgElement && assistantMsgElement.querySelector('.thinking-indicator')) { 
+                 assistantMsgElement.textContent = "(No text received)"; 
              }
         });
 
