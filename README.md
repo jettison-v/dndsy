@@ -46,14 +46,27 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
 4.  **Environment Variables:**
     *   Create a `.env` file in the project root. You can use the helper script:
         ```bash
-        python setup_env.py
+        python scripts/setup_env.py
         ```
-        This will prompt for your OpenAI key and create a basic `.env` file.
     *   Manually add the following to your `.env` file:
         ```dotenv
         OPENAI_API_KEY=<Your OpenAI API Key>
-        QDRANT_HOST=localhost # For local Qdrant via Docker
-        QDRANT_PORT=6333      # For local Qdrant via Docker
+        # --- Qdrant Configuration (Choose ONE section) ---
+        # Option A: Local Docker Qdrant (for use with `docker compose up`)
+        QDRANT_HOST=qdrant
+        QDRANT_PORT=6333
+        # Option B: Qdrant Cloud (requires setting QDRANT_API_KEY too)
+        # QDRANT_HOST=<Your Qdrant Cloud URL>
+        # QDRANT_API_KEY=<Your Qdrant Cloud API Key>
+
+        # --- AWS S3 Configuration (Needed for S3 PDF processing & image storage) ---
+        AWS_ACCESS_KEY_ID=<Your AWS Access Key ID>
+        AWS_SECRET_ACCESS_KEY=<Your AWS Secret Key>
+        AWS_S3_BUCKET_NAME=<Your S3 Bucket Name>
+        AWS_S3_PDF_PREFIX=source-pdfs/ # Optional: Change if your PDFs are in a different S3 prefix
+        AWS_REGION=<Your S3 Bucket Region, e.g., us-east-1>
+
+        # --- Flask Configuration ---
         SECRET_KEY=<Generate a strong secret key, e.g., using python -c 'import secrets; print(secrets.token_hex(24))'>
         APP_PASSWORD=<Choose a password for the login page>
         # Optional: Set for development mode features if needed
@@ -75,13 +88,16 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
 6.  **Run the Application:**
     *   **Using Docker (Recommended for consistency):**
         ```bash
-        docker compose up --build app # Build and start the app service (and Qdrant if not running)
+        # Ensure Docker Desktop (or equivalent) is running
+        # Use the .env file with Option A (Local Docker Qdrant) above
+        docker compose -f docker/docker-compose.yml up --build app
         ```
-        The app will be available at `http://localhost:5001`.
-    *   **Using Flask Development Server (Requires local Qdrant running):**
+    *   **Using Flask Development Server (Requires Qdrant running separately):**
         ```bash
-        # Ensure Qdrant is running via 'docker compose up -d qdrant'
-        # Ensure environment variables are set (either via .env and loaded, or exported)
+        # Start Qdrant using Docker
+        docker compose -f docker/docker-compose.yml up -d qdrant
+        # Ensure environment variables are set (either via .env loaded by the script, or exported)
+        # Use the .env file with Option A (Local Docker Qdrant)
         python app.py
         ```
 
@@ -107,7 +123,7 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
     *   Ensure your Heroku app has the necessary Config Vars set (Qdrant Cloud details, OpenAI Key, AWS Credentials, `AWS_S3_BUCKET_NAME`, `AWS_S3_PDF_PREFIX` if not using default).
     *   Run the processing script using a one-off Heroku dyno. This will download PDFs from S3, generate images, upload images to S3, and populate Qdrant Cloud.
         ```bash
-        heroku run python reset_and_process.py -a YOUR_APP_NAME
+        heroku run python scripts/reset_and_process.py -a YOUR_APP_NAME
         ```
     *   This step needs to be repeated whenever the source PDFs in S3 change.
 
