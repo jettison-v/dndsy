@@ -24,11 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Render markdown for assistant, otherwise use textContent
         if (sender === 'assistant') {
-            // Ensure marked is loaded
             if (typeof marked === 'function') { 
-                textSpan.innerHTML = marked.parse(text || ""); // Use marked to parse markdown
+                textSpan.innerHTML = marked.parse(text || ""); 
             } else {
-                console.error("marked.js not loaded. Displaying raw text.");
+                console.error("marked.js function not found when trying to render.");
                 textSpan.textContent = text; // Fallback
             }
         } else {
@@ -51,9 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function appendToMessage(messageId, textChunk) {
         const textSpan = chatMessages.querySelector(`[data-message-id="${messageId}"] .message-text`);
         if (textSpan) {
-            // Append raw text chunk
             textSpan.textContent += textChunk;
-            // Re-parse the whole content with marked (might be slightly inefficient but ensures correct rendering)
             if (typeof marked === 'function') {
                  // Store current scroll position
                  const isScrolledToBottom = chatMessages.scrollHeight - chatMessages.clientHeight <= chatMessages.scrollTop + 1;
@@ -64,10 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
                  if (isScrolledToBottom) {
                      chatMessages.scrollTop = chatMessages.scrollHeight;
                  }
-            } else {
-                 // Fallback if marked not loaded (shouldn't happen)
-                 chatMessages.scrollTop = chatMessages.scrollHeight; 
-            }
+            } 
+            chatMessages.scrollTop = chatMessages.scrollHeight; 
         }
     }
 

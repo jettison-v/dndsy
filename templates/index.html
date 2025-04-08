@@ -6,11 +6,11 @@
     <meta name="description" content="AskDND - Your AI-powered Dungeons & Dragons assistant for 2024 (5.5e) rules">
     <meta name="keywords" content="D&D, Dungeons and Dragons, D&D assistant, 5.5e, 2024 rules">
     <meta name="author" content="AskDND">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <title>AskDND - D&D Rules Assistant</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon.png') }}">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         .logout-button {
             position: absolute;
@@ -67,7 +67,7 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chat.js') }}" defer></script>
     <footer>
         <p>Powered by AskDnD | <span id="llm-info">LLM: Loading...</span></p>
     </footer>
