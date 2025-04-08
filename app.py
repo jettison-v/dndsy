@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, Response
 from flask_cors import CORS
 from llm import ask_dndsy
 import os
 from datetime import timedelta
 import logging
+import json
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -53,29 +54,20 @@ def home():
         return redirect(url_for('login'))
     return render_template('index.html')
 
-@app.route('/api/chat', methods=['POST'])
+@app.route('/api/chat')
 def chat():
     if not check_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
+        return Response(f"event: error\ndata: {json.dumps({'error': 'Unauthorized'})}\n\n", status=401, mimetype='text/event-stream')
         
-    data = request.json
-    user_message = data.get('message', '')
+    # Read message from query parameters for SSE
+    user_message = request.args.get('message', '') 
     
     if not user_message:
-        return jsonify({'error': 'No message provided'}), 400
-    
-    try:
-        result = ask_dndsy(user_message)
-        return jsonify({
-            'response': result['response'],
-            'sources': result['sources'],
-            'using_context': result['using_context'],
-            'context_parts': result['context_parts'],
-            'llm_provider': result.get('llm_provider', 'unknown'),
-            'llm_model': result.get('llm_model', 'unknown')
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+         return Response(f"event: error\ndata: {json.dumps({'error': 'No message provided'})}\n\n", status=400, mimetype='text/event-stream')
+
+    # Return a streaming response
+    # The ask_dndsy function is now a generator yielding SSE events
+    return Response(ask_dndsy(user_message), mimetype='text/event-stream')
 
 @app.route('/logout')
 def logout():

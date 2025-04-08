@@ -8,61 +8,77 @@ document.addEventListener('DOMContentLoaded', () => {
     const llmInfoSpan = document.getElementById('llm-info');
     let isFirstMessage = true;
     let messageContextParts = {};
+    let currentEventSource = null;
 
     // Function to add a message to the chat
-    function addMessage(text, sender, sources = [], contextParts = []) {
+    function addMessage(text, sender, messageId = null) {
         const messageElement = document.createElement('div');
         messageElement.classList.add('message', sender);
         
-        // Store context parts with a unique ID linked to the message
-        const messageId = `msg-${Date.now()}-${Math.random().toString(16).substring(2)}`;
-        messageElement.dataset.messageId = messageId;
-        messageContextParts[messageId] = contextParts;
-
-        // Sanitize text before setting innerHTML if needed, or use textContent
-        // Using markdown rendering later would be safer
-        messageElement.textContent = text; // Display text simply for now
-
-        // Add source pills if available (for assistant messages)
-        if (sender === 'assistant' && sources && sources.length > 0) {
-            const sourceContainer = document.createElement('div');
-            sourceContainer.className = 'source-pills';
-            
-            const MAX_VISIBLE_PILLS = 3;
-            let sourcesToShow = sources;
-            let hiddenCount = 0;
-
-            if (sources.length > MAX_VISIBLE_PILLS) {
-                sourcesToShow = sources.slice(0, MAX_VISIBLE_PILLS);
-                hiddenCount = sources.length - MAX_VISIBLE_PILLS;
-            }
-
-            sourcesToShow.forEach((source, index) => {
-                const sourcePill = createSourcePill(source, messageId, index);
-                sourceContainer.appendChild(sourcePill);
-            });
-
-            if (hiddenCount > 0) {
-                const showMore = document.createElement('a');
-                showMore.href = '#';
-                showMore.textContent = `Show ${hiddenCount} more source${hiddenCount > 1 ? 's' : ''}`;
-                showMore.className = 'show-more-sources';
-                showMore.onclick = (e) => {
-                    e.preventDefault();
-                    // Clear current pills and show all
-                    sourceContainer.innerHTML = ''; 
-                    sources.forEach((source, index) => {
-                        const sourcePill = createSourcePill(source, messageId, index);
-                        sourceContainer.appendChild(sourcePill);
-                    });
-                };
-                sourceContainer.appendChild(showMore);
-            }
-            messageElement.appendChild(sourceContainer);
-        }
+        // Assign or generate ID
+        const id = messageId || `msg-${Date.now()}-${Math.random().toString(16).substring(2)}`;
+        messageElement.dataset.messageId = id;
+        
+        // Basic text display for now
+        messageElement.textContent = text;
         
         chatMessages.appendChild(messageElement);
         chatMessages.scrollTop = chatMessages.scrollHeight;
+        return id; // Return the ID for potential updates
+    }
+    
+    // Function to append text to an existing message bubble
+    function appendToMessage(messageId, textChunk) {
+        const messageElement = chatMessages.querySelector(`[data-message-id="${messageId}"]`);
+        if (messageElement) {
+            // Append text - use textContent for safety if not parsing markdown
+            messageElement.textContent += textChunk;
+            chatMessages.scrollTop = chatMessages.scrollHeight; 
+        }
+    }
+
+    // Function to add source pills (modified to take messageId)
+    function addSourcePills(messageId, sources, contextParts) {
+        const messageElement = chatMessages.querySelector(`[data-message-id="${messageId}"]`);
+         if (!messageElement || !sources || sources.length === 0) return;
+
+         // Store context for later use by pills
+         messageContextParts[messageId] = contextParts; 
+
+         const sourceContainer = document.createElement('div');
+         sourceContainer.className = 'source-pills';
+         
+         const MAX_VISIBLE_PILLS = 3;
+         let sourcesToShow = sources;
+         let hiddenCount = 0;
+
+         if (sources.length > MAX_VISIBLE_PILLS) {
+             sourcesToShow = sources.slice(0, MAX_VISIBLE_PILLS);
+             hiddenCount = sources.length - MAX_VISIBLE_PILLS;
+         }
+
+         sourcesToShow.forEach((source, index) => {
+             const sourcePill = createSourcePill(source, messageId, index);
+             sourceContainer.appendChild(sourcePill);
+         });
+
+         if (hiddenCount > 0) {
+             const showMore = document.createElement('a');
+             showMore.href = '#';
+             showMore.textContent = `Show ${hiddenCount} more source${hiddenCount > 1 ? 's' : ''}`;
+             showMore.className = 'show-more-sources';
+             showMore.onclick = (e) => {
+                 e.preventDefault();
+                 // Clear current pills and show all
+                 sourceContainer.innerHTML = ''; 
+                 sources.forEach((source, index) => {
+                     const sourcePill = createSourcePill(source, messageId, index);
+                     sourceContainer.appendChild(sourcePill);
+                 });
+             };
+             sourceContainer.appendChild(showMore);
+         }
+         messageElement.appendChild(sourceContainer);
     }
 
     // Function to update a message in the chat (for status updates)
@@ -80,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const messageElement = chatMessages.querySelector(`[data-message-id="${messageId}"]`);
         if (!messageElement) {
             console.error("Could not find placeholder message element to update:", messageId);
-            addMessage(text, 'assistant', sources, contextParts); // Fallback to adding new
+            addMessage(text, 'assistant', messageId); // Fallback to adding new
             return;
         }
         
@@ -89,40 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Add source pills
         if (sources && sources.length > 0) {
-            const sourceContainer = document.createElement('div');
-            sourceContainer.className = 'source-pills';
-            
-            const MAX_VISIBLE_PILLS = 3;
-            let sourcesToShow = sources;
-            let hiddenCount = 0;
-
-            if (sources.length > MAX_VISIBLE_PILLS) {
-                sourcesToShow = sources.slice(0, MAX_VISIBLE_PILLS);
-                hiddenCount = sources.length - MAX_VISIBLE_PILLS;
-            }
-
-            sourcesToShow.forEach((source, index) => {
-                const sourcePill = createSourcePill(source, messageId, index);
-                sourceContainer.appendChild(sourcePill);
-            });
-
-            if (hiddenCount > 0) {
-                const showMore = document.createElement('a');
-                showMore.href = '#';
-                showMore.textContent = `Show ${hiddenCount} more source${hiddenCount > 1 ? 's' : ''}`;
-                showMore.className = 'show-more-sources';
-                showMore.onclick = (e) => {
-                    e.preventDefault();
-                    // Clear current pills and show all
-                    sourceContainer.innerHTML = ''; 
-                    sources.forEach((source, index) => {
-                        const sourcePill = createSourcePill(source, messageId, index);
-                        sourceContainer.appendChild(sourcePill);
-                    });
-                };
-                sourceContainer.appendChild(showMore);
-            }
-            messageElement.appendChild(sourceContainer);
+            addSourcePills(messageId, sources, contextParts);
         }
 
         // Update context parts map
@@ -300,74 +283,105 @@ document.addEventListener('DOMContentLoaded', () => {
         nextButton.disabled = isNaN(totalPages) || pageNumber >= totalPages;
     }
 
-    // Function to send message to the server
-    async function sendMessage() {
+    // Function to send message and handle SSE stream
+    function sendMessage() {
         const message = userInput.value.trim();
         if (!message) return;
 
-        // Add user message to chat
+        // Stop any previous stream if it's still running
+        if (currentEventSource) {
+            currentEventSource.close();
+            console.log("Closed previous EventSource connection.");
+        }
+
         addMessage(message, 'user');
         userInput.value = '';
 
-        // Add initial "Thinking..." placeholder for the assistant
-        const thinkingMessageId = `msg-${Date.now()}-${Math.random().toString(16).substring(2)}`;
-        const thinkingElement = document.createElement('div');
-        thinkingElement.classList.add('message', 'assistant', 'thinking'); // Add a 'thinking' class for potential styling
-        thinkingElement.dataset.messageId = thinkingMessageId;
-        thinkingElement.textContent = "Thinking...";
-        chatMessages.appendChild(thinkingElement);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-
-        // Start simulated progress updates
-        const timer1 = setTimeout(() => updateMessage(thinkingMessageId, "Searching knowledge base..."), 1000); // Update after 1 sec
-        const timer2 = setTimeout(() => updateMessage(thinkingMessageId, "Consulting LLM..."), 3000); // Update after 3 secs total
-
-        try {
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ message }),
-            });
-            
-            // Clear timers once response is received
-            clearTimeout(timer1);
-            clearTimeout(timer2);
-
-            const data = await response.json();
-            console.log("Received data from /api/chat:", data);
-
-            if (response.ok) {
-                console.log("Passing to addAssistantResponse:", {
-                    messageId: thinkingMessageId, 
-                    response: data.response,
-                    sources: data.sources,
-                    context_parts: data.context_parts
-                });
-                // Update the placeholder with the final response
-                addAssistantResponse(thinkingMessageId, data.response, data.sources, data.context_parts);
-
-                // Update LLM Info display
-                if (data.llm_provider && data.llm_model && llmInfoSpan) {
-                    llmInfoSpan.textContent = `LLM: ${data.llm_provider} (${data.llm_model})`;
-                }
-            } else {
-                // Update placeholder with error
-                updateMessage(thinkingMessageId, `Error: ${data.error}`);
-                chatMessages.querySelector(`[data-message-id="${thinkingMessageId}"]`)?.classList.remove('thinking');
-                chatMessages.querySelector(`[data-message-id="${thinkingMessageId}"]`)?.classList.add('system'); // Style as system error
-            }
-        } catch (error) {
-             // Clear timers on error
-            clearTimeout(timer1);
-            clearTimeout(timer2);
-            // Update placeholder with connection error
-            updateMessage(thinkingMessageId, 'Error: Could not connect to the server');
-            chatMessages.querySelector(`[data-message-id="${thinkingMessageId}"]`)?.classList.remove('thinking');
-            chatMessages.querySelector(`[data-message-id="${thinkingMessageId}"]`)?.classList.add('system'); // Style as system error
-            console.error('Error:', error);
+        // Add placeholder for assistant message
+        const assistantMessageId = addMessage("", 'assistant'); // Start with empty message
+        const assistantElement = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"]`);
+        if (assistantElement) {
+             assistantElement.innerHTML = '<span class="thinking-indicator"></span>'; // Add a blinking cursor or spinner? Requires CSS
         }
+
+        // --- Use EventSource for streaming --- 
+        // Pass message via query parameter (simple approach, consider security/length limits)
+        // Alternatively, initiate SSE connection first, then send message via separate POST
+        const queryParams = new URLSearchParams({ message: message });
+        currentEventSource = new EventSource(`/api/chat?${queryParams.toString()}`);
+        console.log("EventSource connected.");
+
+        let fullResponseText = ""; // Accumulate text chunks
+
+        currentEventSource.onmessage = function(event) {
+            console.log("SSE message received:", event.data);
+            try {
+                const data = JSON.parse(event.data);
+                
+                if (data.type === 'text') {
+                    // Append text chunk
+                    if (fullResponseText === "") { // First text chunk
+                         const assistantMsgElement = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"]`);
+                         if (assistantMsgElement) assistantMsgElement.textContent = ""; // Clear thinking indicator
+                    }
+                    appendToMessage(assistantMessageId, data.content);
+                    fullResponseText += data.content;
+                }
+                // Note: Metadata event is handled by onopen or a specific event type
+            } catch (e) {
+                console.error("Failed to parse SSE data:", event.data, e);
+                // Maybe display raw data or an error?
+                appendToMessage(assistantMessageId, ` [Error parsing data: ${event.data}] `);
+            }
+        };
+
+        currentEventSource.addEventListener('metadata', function(event) {
+            console.log("SSE metadata received:", event.data);
+             try {
+                const metadata = JSON.parse(event.data);
+                 // Update LLM Info display
+                 if (metadata.llm_provider && metadata.llm_model && llmInfoSpan) {
+                     llmInfoSpan.textContent = `LLM: ${metadata.llm_provider} (${metadata.llm_model})`;
+                 }
+                 // Add source pills using the received metadata
+                 addSourcePills(assistantMessageId, metadata.sources, metadata.context_parts);
+
+            } catch (e) {
+                console.error("Failed to parse SSE metadata:", event.data, e);
+            }
+        });
+
+        currentEventSource.addEventListener('error', function(event) {
+            console.error("SSE Error event:", event);
+            let errorMsg = "Error communicating with server.";
+             try {
+                // Attempt to parse error data if backend sends JSON in error event
+                 const errorData = JSON.parse(event.data); 
+                 if(errorData.error) errorMsg = errorData.error;
+             } catch(e) { /* Ignore if not JSON */ }
+
+            const assistantMsgElement = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"]`);
+            if (assistantMsgElement) {
+                 assistantMsgElement.textContent = `Error: ${errorMsg}`;
+                 assistantMsgElement.classList.remove('assistant');
+                 assistantMsgElement.classList.add('system'); // Style as error
+            }
+            currentEventSource.close(); // Close connection on error
+            currentEventSource = null;
+        });
+
+         currentEventSource.addEventListener('end', function(event) {
+            console.log("SSE stream ended.");
+            currentEventSource.close();
+            currentEventSource = null;
+            // Optional: Remove thinking indicator if it wasn't replaced by text
+             const assistantMsgElement = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"]`);
+             if (assistantMsgElement && assistantMsgElement.innerHTML.includes('thinking-indicator')) {
+                 assistantMsgElement.textContent = "(No text received)"; // Or handle differently
+             }
+        });
+
+        // Note: The old try/catch around fetch is removed as errors are handled by EventSource listeners
     }
 
     // Event listeners
