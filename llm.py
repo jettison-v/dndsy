@@ -85,6 +85,7 @@ def get_relevant_context(query: str, model: str, limit: int = 5) -> list[dict]:
             image_url = metadata.get('image_url', None)
             total_pages = metadata.get('total_pages', None)
             source_dir = metadata.get('source_dir', None) # Cleaned path for image dir
+            original_s3_key = metadata.get('source') # The original S3 key
             
             logger.info(f"Result {idx + 1} from {source_filename} (page {page}) with score {score:.4f}")
             
@@ -95,7 +96,8 @@ def get_relevant_context(query: str, model: str, limit: int = 5) -> list[dict]:
                 'image_url': image_url,
                 'total_pages': total_pages,
                 'source_dir': source_dir, 
-                'score': score
+                'score': score,
+                'original_s3_key': original_s3_key # Add the S3 key here
             }
             
             # Use tiktoken for OpenAI-specific token counting
@@ -135,7 +137,7 @@ def ask_dndsy(prompt: str) -> Generator[str, None, None]:
     current_model_name = llm_client.get_model_name()
     logger.info(f"Using LLM model: {current_model_name}")
     context_parts = []
-    sources_for_display = []
+    sources_for_metadata = [] # Changed from sources_for_display
     error_occurred = False
 
     try:
@@ -156,14 +158,25 @@ def ask_dndsy(prompt: str) -> Generator[str, None, None]:
         if context_parts:
             for part in context_parts:
                 # Use the cleaned source name and page for display
-                source_id = f"{part['source']} (page {part['page']})"
-                if source_id not in sources_for_display:
-                    sources_for_display.append(source_id)
+                display_text = f"{part['source']} (page {part['page']})"
+                # Get the original S3 key stored in the context part's metadata
+                # We need to ensure get_relevant_context populates this correctly
+                original_s3_key = part.get('original_s3_key') 
+                if original_s3_key:
+                    sources_for_metadata.append({
+                        'display': display_text,
+                        's3_key': original_s3_key,
+                        'page': part['page'], # Include page for easier access on frontend
+                        'score': part.get('score') # Add the score here
+                    })
+                else:
+                    logger.warning(f"Missing 'original_s3_key' for context part: {part['source']} page {part['page']}")
+                    
                 # Add source info to the context text for the LLM    
                 context_text_for_prompt += f"Source: {part['source']} - Page {part['page']}\n"
                 context_text_for_prompt += f"Content:\n{part['text']}\n\n"
                 
-            logger.info(f"Formatted context with sources: {sources_for_display}")
+            logger.info(f"Prepared sources for metadata: {len(sources_for_metadata)} items")
         
         # Prepare the system message (could be customized based on provider later)
         system_message = (
@@ -197,7 +210,7 @@ def ask_dndsy(prompt: str) -> Generator[str, None, None]:
         # --- Yield Initial Metadata --- 
         initial_metadata = {
             "type": "metadata",
-            "sources": sources_for_display,
+            "sources": sources_for_metadata, # Use the list of objects
             "using_context": bool(context_parts),
             # "context_parts": context_parts, # Removed: Avoid sending large text back
             "llm_provider": llm_client.get_provider_name(),

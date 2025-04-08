@@ -117,16 +117,32 @@ class QdrantStore:
     def get_details_by_source_page(self, source_name: str, page_number: int) -> Optional[Dict[str, Any]]:
         """Fetch details (text, image_url) for a specific source document and page."""
         try:
-            # Define the filter for the specific source and page
-            # Note: Assumes 'source' and 'page' are top-level keys within the 'metadata' payload
+            # Define the filter for the specific source filename and page
+            
+            # Try matching with extension (e.g., "MyBook.pdf") or without (e.g., "MyBook")
+            # Assumes source_name might or might not contain .pdf
+            filename_filter_options = [
+                models.FieldCondition(
+                    key="metadata.filename",
+                    match=models.MatchValue(value=source_name)
+                )
+            ]
+            # If the name doesn't look like it has an extension, also try matching without .pdf
+            if '.' not in source_name: 
+                 # Basic check, might need refinement if filenames can contain dots
+                 pass # Qdrant doesn't easily support regex/contains on metadata values directly in filters
+                      # We rely on the frontend sending the name as stored in metadata.filename
+
             search_filter = models.Filter(
                 must=[
-                    models.FieldCondition(
-                        key="metadata.source", # Adjust if path to source name is different
-                        match=models.MatchValue(value=source_name)
+                     # Use OR condition if we had multiple filename checks
+                     # models.Condition(should=filename_filter_options), 
+                     models.FieldCondition( 
+                        key="metadata.source", # Changed back from metadata.filename
+                        match=models.MatchValue(value=source_name) # Value is now the S3 Key
                     ),
                     models.FieldCondition(
-                        key="metadata.page", # Adjust if path to page number is different
+                        key="metadata.page", 
                         match=models.MatchValue(value=page_number)
                     )
                 ]
@@ -148,7 +164,8 @@ class QdrantStore:
                 metadata = payload.get("metadata", {})
                 return {
                     "text": payload.get("text", ""),
-                    "image_url": metadata.get("image_url", None) # Extract image_url from metadata
+                    "image_url": metadata.get("image_url", None), # Extract image_url from metadata
+                    "total_pages": metadata.get("total_pages", None), # Add total_pages
                     # Add any other details needed by the frontend here
                 }
             else:

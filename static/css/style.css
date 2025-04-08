@@ -250,13 +250,61 @@ header p {
 
 .source-content {
     padding: 1rem;
-    height: calc(100% - 60px);
     overflow-y: auto;
+    height: calc(100% - 60px); /* Adjust based on header height */
+}
+
+/* Style for the image container itself */
+#source-image-container {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    /* Remove old centering/min-height */
+    /* text-align: center; */
+    /* min-height: 300px; */
+    /* display: flex; */
+    /* justify-content: center; */
+    /* align-items: center; */
+
+    /* Aspect Ratio Box */
+    position: relative; /* For absolute positioning children */
+    width: 100%; /* Take full width */
+    height: 0; /* Height determined by padding */
+    padding-top: 141.4%; /* Approximate A4/Letter aspect ratio (sqrt(2)*100) */
+    background-color: var(--primary-color); /* Optional: background during load */
+}
+
+/* Limit the image size and position it within the aspect ratio box */
+#source-image-container img {
+    /* Remove old block/margin styling */
+    /* display: block; */
+    /* margin: 0 auto; */
+    
+    /* Positioning within container */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Fit image within container, maintaining aspect ratio */
+}
+
+/* Center loading/error text within the container */
+#source-image-container p.loading-source,
+#source-image-container p.error-source {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #aaa; /* Match no-source color */
+    font-style: italic;
+    margin: 0; /* Remove default paragraph margin */
+    padding: 0 1rem; /* Add some padding */
+    width: 100%; /* Ensure text wraps */
+    text-align: center; /* Center text */
 }
 
 .no-source {
-    color: var(--text-muted);
-    text-align: center;
+    color: #aaa;
     font-style: italic;
 }
 

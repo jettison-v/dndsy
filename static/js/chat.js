@@ -72,19 +72,14 @@ document.addEventListener('DOMContentLoaded', () => {
          sourceContainer.innerHTML = ''; // Clear previous pills if any (e.g., on error)
          
          // --- Logic to parse source name and page from source string --- 
-         const parseSourceString = (sourceStr) => {
-             // Example format: "My Document Name (page 123)"
-             const match = sourceStr.match(/^(.*?)\s*\(page\s*(\d+)\)$/i);
-             if (match && match[1] && match[2]) {
-                 return { name: match[1].trim(), page: parseInt(match[2], 10) };
-             }
-             console.warn("Could not parse source string:", sourceStr); 
-             return null; // Or return a default/placeholder
-         };
+         // REMOVED: No longer needed as backend sends structured data
+         /* 
+         const parseSourceString = (sourceStr) => { ... };
+         */
          // --- End parsing logic --- 
 
          const MAX_VISIBLE_PILLS = 3;
-         let sourcesToShow = sources;
+         let sourcesToShow = sources; // sources is now a list of objects
          let hiddenCount = 0;
 
          if (sources.length > MAX_VISIBLE_PILLS) {
@@ -92,11 +87,13 @@ document.addEventListener('DOMContentLoaded', () => {
              hiddenCount = sources.length - MAX_VISIBLE_PILLS;
          }
 
-         sourcesToShow.forEach((sourceString, index) => {
-             const parsedSource = parseSourceString(sourceString);
-             if (parsedSource) {
-                 const sourcePill = createSourcePill(sourceString, messageId, parsedSource.name, parsedSource.page);
+         sourcesToShow.forEach((sourceObj, index) => {
+             // sourceObj = { display: "... (page X)", s3_key: "...", page: X, score: Y }
+             if (sourceObj && sourceObj.display && sourceObj.s3_key && sourceObj.page) {
+                 const sourcePill = createSourcePill(sourceObj.display, messageId, sourceObj.s3_key, sourceObj.page, sourceObj.score);
                  sourceContainer.appendChild(sourcePill);
+             } else {
+                 console.warn("Invalid source object received:", sourceObj);
              }
          });
 
@@ -108,11 +105,12 @@ document.addEventListener('DOMContentLoaded', () => {
              showMore.onclick = (e) => {
                  e.preventDefault();
                  sourceContainer.innerHTML = ''; 
-                 sources.forEach((sourceString, index) => {
-                     const parsedSource = parseSourceString(sourceString);
-                     if (parsedSource) {
-                         const sourcePill = createSourcePill(sourceString, messageId, parsedSource.name, parsedSource.page);
+                 sources.forEach((sourceObj, index) => { // Iterate full list
+                     if (sourceObj && sourceObj.display && sourceObj.s3_key && sourceObj.page) {
+                         const sourcePill = createSourcePill(sourceObj.display, messageId, sourceObj.s3_key, sourceObj.page, sourceObj.score);
                          sourceContainer.appendChild(sourcePill);
+                     } else {
+                         console.warn("Invalid source object received when showing more:", sourceObj);
                      }
                  });
              };
@@ -136,15 +134,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Helper function to create a source pill element
-    // Now takes sourceName and pageNumber
-    function createSourcePill(displayText, messageId, sourceName, pageNumber) {
+    // Now takes score
+    function createSourcePill(displayText, messageId, s3Key, pageNumber, score) {
         const pill = document.createElement('span');
         pill.className = 'source-pill';
         pill.textContent = displayText; // Keep original display text
         pill.dataset.messageId = messageId;
-        // Store source name and page directly
-        pill.dataset.sourceName = sourceName;
+        pill.dataset.s3Key = s3Key;
         pill.dataset.pageNumber = pageNumber;
+        pill.dataset.score = score !== undefined ? score : ''; // Store score
         
         pill.addEventListener('click', async () => { // Make listener async
             // Clear previous active states
@@ -155,15 +153,20 @@ document.addEventListener('DOMContentLoaded', () => {
             sourceContent.innerHTML = '<p class="loading-source">Loading source details...</p>';
             sourcePanel.classList.add('open');
             
+            const currentScore = pill.dataset.score;
+            // Log the values being sent
+            console.log(`Fetching details for: s3Key='${s3Key}', pageNumber='${pageNumber}', score='${currentScore}'`);
+            
             try {
-                const response = await fetch(`/api/get_context_details?source=${encodeURIComponent(sourceName)}&page=${pageNumber}`);
+                // Send s3Key as the 'source' parameter
+                const response = await fetch(`/api/get_context_details?source=${encodeURIComponent(s3Key)}&page=${pageNumber}`);
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
                 }
                 const details = await response.json();
-                // Pass fetched details to showSourcePanel (which needs modification)
-                showSourcePanel(details, sourceName, pageNumber);
+                // Pass fetched details, original displayText, s3Key, AND score to showSourcePanel
+                showSourcePanel(details, displayText, pageNumber, s3Key, currentScore);
                 
             } catch (error) {
                 console.error('Error fetching source details:', error);
@@ -174,22 +177,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Function to show source content in the side panel
-    // Modified to accept fetched details directly
-    function showSourcePanel(details, sourceName, pageNumber) {
-        // Details object expected: {"text": "...", "image_url": "...", "total_pages": ...} (Need total_pages from backend)
+    // Modified to accept score
+    function showSourcePanel(details, displayText, pageNumber, s3Key, score) { 
+        // Details object expected: {"text": "...", "image_url": "...", "total_pages": ...} 
         if (!details) {
             sourceContent.innerHTML = '<p class="error-source">Error: Received no details for source.</p>';
             return;
         }
         
         const imageUrl = details.image_url;
-        const totalPages = details.total_pages || 'N/A'; // Get total pages from details if available
+        const totalPages = details.total_pages || 'N/A'; 
 
         // Clear previous content
         sourceContent.innerHTML = ''; 
         sourceContent.dataset.currentPage = pageNumber; 
         sourceContent.dataset.totalPages = totalPages;
-        sourceContent.dataset.sourceName = sourceName; 
+        // Store the displayText (which contains the readable name) for navigation header
+        // We might need to re-parse the readable name if needed for nav, or adjust how header is set
+        const headerTextMatch = displayText.match(/^(.*?)\s*\(page\s*\d+\)$/i); 
+        const readableSourceName = headerTextMatch ? headerTextMatch[1].trim() : displayText;
+        sourceContent.dataset.readableSourceName = readableSourceName; 
+        // Store the s3Key needed for navigation 
+        sourceContent.dataset.s3Key = s3Key;
+
         // Extract S3 base URL from the fetched image URL
         if (imageUrl) {
             const urlParts = imageUrl.split('/');
@@ -202,15 +212,19 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- Header --- 
         const header = document.createElement('h4');
         header.id = 'source-panel-header-text';
-        header.textContent = `${sourceName} (Page ${pageNumber} of ${totalPages})`;
+        // Use the readable name parsed from the display text for the header
+        header.textContent = `${readableSourceName} (Page ${pageNumber} of ${totalPages})`;
         sourceContent.appendChild(header);
         
-        // --- Score (if available in details, otherwise omit) --- 
-        if (details.score !== undefined) { 
-            const scoreP = document.createElement('p');
-            scoreP.className = 'source-score';
-            scoreP.textContent = `Relevance: ${(details.score * 100).toFixed(1)}%`;
-            sourceContent.appendChild(scoreP);
+        // --- Score --- 
+        if (score !== undefined && score !== '') { 
+            const scoreValue = parseFloat(score);
+            if (!isNaN(scoreValue)) {
+                const scoreP = document.createElement('p');
+                scoreP.className = 'source-score';
+                scoreP.textContent = `Relevance: ${(scoreValue * 100).toFixed(1)}%`;
+                sourceContent.appendChild(scoreP);
+            }
         }
 
         // --- Image Container ---
@@ -250,15 +264,20 @@ document.addEventListener('DOMContentLoaded', () => {
         sourcePanel.classList.add('open');
     }
 
-    // Navigate source page - fetches details for the new page
+    // Navigate source page
     async function navigateSourcePage(direction) {
         const currentPage = parseInt(sourceContent.dataset.currentPage, 10);
         const totalPages = parseInt(sourceContent.dataset.totalPages, 10);
-        const sourceName = sourceContent.dataset.sourceName;
+        // Need the S3 Key for the API call - how do we get it here?
+        // We could store it on sourceContent.dataset when showSourcePanel is first called.
+        // Let's assume we stored it: sourceContent.dataset.s3Key 
+        // !!! This requires adding sourceContent.dataset.s3Key = s3Key in showSourcePanel !!!
+        const s3Key = sourceContent.dataset.s3Key; // NEED TO ADD THIS TO showSourcePanel
+        const readableSourceName = sourceContent.dataset.readableSourceName;
         const newPage = currentPage + direction;
 
-        if (isNaN(newPage) || !sourceName || newPage < 1 || (!isNaN(totalPages) && newPage > totalPages)) {
-            console.error('Invalid page navigation attempt', { newPage, totalPages, sourceName });
+        if (isNaN(newPage) || !s3Key || newPage < 1 || (!isNaN(totalPages) && newPage > totalPages)) {
+            console.error('Invalid page navigation attempt', { newPage, totalPages, s3Key });
             return;
         }
         
@@ -270,20 +289,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const nextButton = document.getElementById('source-next-button');
 
         if(pageIndicator) pageIndicator.textContent = `Loading page ${newPage}...`;
-        if(headerText) headerText.textContent = `${sourceName} (Loading page ${newPage}...)`;
+        if(headerText) headerText.textContent = `${readableSourceName} (Loading page ${newPage}...)`;
         if(imageContainer) imageContainer.innerHTML = '<p class="loading-source">Loading image...</p>';
         if(prevButton) prevButton.disabled = true;
         if(nextButton) nextButton.disabled = true;
         
         try {
-            const response = await fetch(`/api/get_context_details?source=${encodeURIComponent(sourceName)}&page=${newPage}`);
+            const response = await fetch(`/api/get_context_details?source=${encodeURIComponent(s3Key)}&page=${newPage}`);
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
             }
             const details = await response.json();
-            // Update panel content with new details
-            showSourcePanel(details, sourceName, newPage); 
+            const newDisplayText = `${readableSourceName} (page ${newPage})`;
+            // Call showSourcePanel without score for navigated pages
+            showSourcePanel(details, newDisplayText, newPage, s3Key, undefined); 
         } catch (error) {
             console.error('Error fetching details for navigated page:', error);
             if(imageContainer) imageContainer.innerHTML = `<p class="error-source">Error loading page ${newPage}: ${error.message}</p>`;
