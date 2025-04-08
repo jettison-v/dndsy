@@ -88,6 +88,9 @@ def get_context_details():
     logger.info(f"Fetching details for source: '{source_name}', page: {page_number}")
     
     try:
+        # Log the exact values before calling the store
+        logger.info(f"Calling vector_store.get_details_by_source_page with source_name='{source_name}', page_number={page_number}")
+        
         # Attempt to get details from the vector store
         # NOTE: We need to ensure vector_store has a method like get_details_by_source_page
         # This might involve searching Qdrant with a specific filter
