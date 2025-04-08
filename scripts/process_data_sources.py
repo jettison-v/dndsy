@@ -77,6 +77,44 @@ class DataProcessor:
             logging.error("S3 client not configured. Cannot process PDFs from S3.")
             return []
 
+        # --- Add S3 Image Cleanup Logic ---
+        image_prefix_to_delete = PDF_IMAGE_DIR + '/'
+        logging.info(f"Attempting to delete existing images from S3 prefix: {image_prefix_to_delete}")
+        objects_to_delete = []
+        try:
+            paginator = s3_client.get_paginator('list_objects_v2')
+            pages = paginator.paginate(Bucket=AWS_S3_BUCKET_NAME, Prefix=image_prefix_to_delete)
+            for page in pages:
+                if "Contents" in page:
+                    for obj in page["Contents"]:
+                        objects_to_delete.append({'Key': obj['Key']})
+            
+            if objects_to_delete:
+                logging.info(f"Found {len(objects_to_delete)} existing image objects to delete.")
+                # Delete objects in batches of 1000 (S3 API limit)
+                for i in range(0, len(objects_to_delete), 1000):
+                    batch = objects_to_delete[i:i + 1000]
+                    delete_payload = {'Objects': batch, 'Quiet': True}
+                    response = s3_client.delete_objects(
+                        Bucket=AWS_S3_BUCKET_NAME,
+                        Delete=delete_payload
+                    )
+                    if 'Errors' in response and response['Errors']:
+                         logging.error(f"Errors encountered during S3 object deletion batch starting at index {i}: {response['Errors']}")
+                    else:
+                         logging.info(f"Deleted batch of {len(batch)} objects starting at index {i}.")
+                logging.info(f"Finished deleting objects under prefix: {image_prefix_to_delete}")
+            else:
+                logging.info(f"No existing image objects found under prefix: {image_prefix_to_delete}")
+
+        except ClientError as e:
+            logging.error(f"Failed to list or delete objects from S3 prefix '{image_prefix_to_delete}': {e}")
+            # Optionally decide if you want to proceed without cleanup or return []
+        except Exception as e:
+            logging.error(f"Unexpected error during S3 image cleanup: {e}")
+            # Optionally decide if you want to proceed without cleanup or return []
+        # --- End S3 Image Cleanup Logic ---
+
         documents = []
         
         # S3 base path for generated images
