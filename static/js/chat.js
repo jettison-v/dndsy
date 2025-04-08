@@ -10,87 +10,147 @@ document.addEventListener('DOMContentLoaded', () => {
     let messageContextParts = {};
 
     // Function to add a message to the chat
-    function addMessage(content, type, sources = null, contextParts = []) {
-        if (isFirstMessage && type === 'user') {
-            // Clear welcome message when first user message is sent
-            chatMessages.innerHTML = '';
-            isFirstMessage = false;
-        }
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${type}`;
+    function addMessage(text, sender, sources = [], contextParts = []) {
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message', sender);
         
-        // Add the main message content
-        const messageParagraph = document.createElement('p');
-        messageParagraph.innerHTML = content; // Use innerHTML in case of markdown/links later
-        messageDiv.appendChild(messageParagraph);
-        
-        // Add sources if they exist
-        if (sources && sources.length > 0 && contextParts && contextParts.length > 0) {
-            const sourcePillsContainer = document.createElement('div');
-            sourcePillsContainer.className = 'source-pills';
+        // Store context parts with a unique ID linked to the message
+        const messageId = `msg-${Date.now()}-${Math.random().toString(16).substring(2)}`;
+        messageElement.dataset.messageId = messageId;
+        messageContextParts[messageId] = contextParts;
+
+        // Sanitize text before setting innerHTML if needed, or use textContent
+        // Using markdown rendering later would be safer
+        messageElement.textContent = text; // Display text simply for now
+
+        // Add source pills if available (for assistant messages)
+        if (sender === 'assistant' && sources && sources.length > 0) {
+            const sourceContainer = document.createElement('div');
+            sourceContainer.className = 'source-pills';
             
-            // --- Display Top Source Pill --- 
-            const topSource = sources[0];
-            const topPill = document.createElement('span');
-            topPill.className = 'source-pill';
-            topPill.textContent = topSource;
-            topPill.dataset.index = 0;
-            topPill.addEventListener('click', () => {
-                showSourceContent(0, contextParts);
-            });
-            sourcePillsContainer.appendChild(topPill);
+            const MAX_VISIBLE_PILLS = 3;
+            let sourcesToShow = sources;
+            let hiddenCount = 0;
 
-            // --- "Show More" Button and Pills (if applicable) --- 
-            if (sources.length > 1) {
-                const remainingCount = sources.length - 1;
-
-                // Create Show More Button
-                const showMoreButton = document.createElement('button');
-                showMoreButton.className = 'show-more-sources-button';
-                showMoreButton.textContent = `Show ${remainingCount} more source${remainingCount > 1 ? 's' : ''}`;
-
-                // Create Hide Button (initially hidden by CSS)
-                const hideSourcesButton = document.createElement('button');
-                hideSourcesButton.className = 'hide-sources-button'; // New class
-                hideSourcesButton.textContent = 'Hide extra sources';
-
-                // Add remaining pills (with extra class, initially hidden by CSS)
-                for (let i = 1; i < sources.length; i++) {
-                    const source = sources[i];
-                    const pill = document.createElement('span');
-                    pill.className = 'source-pill extra-source-pill'; // Add extra class
-                    pill.textContent = source;
-                    pill.dataset.index = i;
-                    pill.addEventListener('click', () => { 
-                        showSourceContent(i, contextParts);
-                    });
-                    sourcePillsContainer.appendChild(pill);
-                }
-
-                // Show More Button Logic
-                showMoreButton.addEventListener('click', () => {
-                    sourcePillsContainer.classList.add('extra-sources-visible');
-                });
-
-                // Hide Button Logic
-                hideSourcesButton.addEventListener('click', () => {
-                    sourcePillsContainer.classList.remove('extra-sources-visible');
-                });
-                
-                // Append buttons
-                sourcePillsContainer.appendChild(showMoreButton);
-                sourcePillsContainer.appendChild(hideSourcesButton);
+            if (sources.length > MAX_VISIBLE_PILLS) {
+                sourcesToShow = sources.slice(0, MAX_VISIBLE_PILLS);
+                hiddenCount = sources.length - MAX_VISIBLE_PILLS;
             }
-            
-            messageDiv.appendChild(sourcePillsContainer); // Append the container with pill(s) and button
-        } 
+
+            sourcesToShow.forEach((source, index) => {
+                const sourcePill = createSourcePill(source, messageId, index);
+                sourceContainer.appendChild(sourcePill);
+            });
+
+            if (hiddenCount > 0) {
+                const showMore = document.createElement('a');
+                showMore.href = '#';
+                showMore.textContent = `Show ${hiddenCount} more source${hiddenCount > 1 ? 's' : ''}`;
+                showMore.className = 'show-more-sources';
+                showMore.onclick = (e) => {
+                    e.preventDefault();
+                    // Clear current pills and show all
+                    sourceContainer.innerHTML = ''; 
+                    sources.forEach((source, index) => {
+                        const sourcePill = createSourcePill(source, messageId, index);
+                        sourceContainer.appendChild(sourcePill);
+                    });
+                };
+                sourceContainer.appendChild(showMore);
+            }
+            messageElement.appendChild(sourceContainer);
+        }
         
-        chatMessages.appendChild(messageDiv);
+        chatMessages.appendChild(messageElement);
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
+    // Function to update a message in the chat (for status updates)
+    function updateMessage(messageId, newText) {
+        const messageElement = chatMessages.querySelector(`[data-message-id="${messageId}"]`);
+        if (messageElement) {
+            // Potentially use a markdown parser here in the future
+            messageElement.textContent = newText;
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Re-scroll
+        }
+    }
+
+    // Function to add the final assistant message (replaces addMessage for assistant)
+    function addAssistantResponse(messageId, text, sources = [], contextParts = []) {
+        const messageElement = chatMessages.querySelector(`[data-message-id="${messageId}"]`);
+        if (!messageElement) {
+            console.error("Could not find placeholder message element to update:", messageId);
+            addMessage(text, 'assistant', sources, contextParts); // Fallback to adding new
+            return;
+        }
+        
+        messageElement.classList.remove('thinking'); // Remove thinking style if any
+        messageElement.textContent = text; // Set final text
+        
+        // Add source pills
+        if (sources && sources.length > 0) {
+            const sourceContainer = document.createElement('div');
+            sourceContainer.className = 'source-pills';
+            
+            const MAX_VISIBLE_PILLS = 3;
+            let sourcesToShow = sources;
+            let hiddenCount = 0;
+
+            if (sources.length > MAX_VISIBLE_PILLS) {
+                sourcesToShow = sources.slice(0, MAX_VISIBLE_PILLS);
+                hiddenCount = sources.length - MAX_VISIBLE_PILLS;
+            }
+
+            sourcesToShow.forEach((source, index) => {
+                const sourcePill = createSourcePill(source, messageId, index);
+                sourceContainer.appendChild(sourcePill);
+            });
+
+            if (hiddenCount > 0) {
+                const showMore = document.createElement('a');
+                showMore.href = '#';
+                showMore.textContent = `Show ${hiddenCount} more source${hiddenCount > 1 ? 's' : ''}`;
+                showMore.className = 'show-more-sources';
+                showMore.onclick = (e) => {
+                    e.preventDefault();
+                    // Clear current pills and show all
+                    sourceContainer.innerHTML = ''; 
+                    sources.forEach((source, index) => {
+                        const sourcePill = createSourcePill(source, messageId, index);
+                        sourceContainer.appendChild(sourcePill);
+                    });
+                };
+                sourceContainer.appendChild(showMore);
+            }
+            messageElement.appendChild(sourceContainer);
+        }
+
+        // Update context parts map
+        messageContextParts[messageId] = contextParts;
+
+        chatMessages.scrollTop = chatMessages.scrollHeight; // Re-scroll
+    }
+
+    // Helper function to create a source pill element
+    function createSourcePill(sourceText, messageId, index) {
+        const pill = document.createElement('span');
+        pill.className = 'source-pill';
+        pill.textContent = sourceText;
+        pill.dataset.messageId = messageId;
+        pill.dataset.index = index;
+        pill.addEventListener('click', () => {
+            const contextParts = messageContextParts[messageId];
+            if (contextParts && contextParts[index]) {
+                showSourcePanel(contextParts, index);
+            } else {
+                console.error('Could not find context data for source pill', messageId, index);
+            }
+        });
+        return pill;
+    }
+
     // Function to show source content in the side panel
-    function showSourceContent(index, messageContextParts) {
+    function showSourcePanel(messageContextParts, index) {
         if (!messageContextParts || !messageContextParts[index]) {
             console.error(`No context part found for index: ${index}`);
             return;
@@ -249,6 +309,19 @@ document.addEventListener('DOMContentLoaded', () => {
         addMessage(message, 'user');
         userInput.value = '';
 
+        // Add initial "Thinking..." placeholder for the assistant
+        const thinkingMessageId = `msg-${Date.now()}-${Math.random().toString(16).substring(2)}`;
+        const thinkingElement = document.createElement('div');
+        thinkingElement.classList.add('message', 'assistant', 'thinking'); // Add a 'thinking' class for potential styling
+        thinkingElement.dataset.messageId = thinkingMessageId;
+        thinkingElement.textContent = "Thinking...";
+        chatMessages.appendChild(thinkingElement);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // Start simulated progress updates
+        const timer1 = setTimeout(() => updateMessage(thinkingMessageId, "Searching knowledge base..."), 1000); // Update after 1 sec
+        const timer2 = setTimeout(() => updateMessage(thinkingMessageId, "Consulting LLM..."), 3000); // Update after 3 secs total
+
         try {
             const response = await fetch('/api/chat', {
                 method: 'POST',
@@ -257,30 +330,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 body: JSON.stringify({ message }),
             });
+            
+            // Clear timers once response is received
+            clearTimeout(timer1);
+            clearTimeout(timer2);
 
             const data = await response.json();
-            
-            // Log the raw data received from the API
-            console.log("Received data from /api/chat:", data); 
+            console.log("Received data from /api/chat:", data);
 
             if (response.ok) {
-                // Log what is being passed to addMessage
-                console.log("Passing to addMessage:", {
+                console.log("Passing to addAssistantResponse:", {
+                    messageId: thinkingMessageId, 
                     response: data.response,
                     sources: data.sources,
-                    context_parts: data.context_parts 
+                    context_parts: data.context_parts
                 });
-                addMessage(data.response, 'assistant', data.sources, data.context_parts);
+                // Update the placeholder with the final response
+                addAssistantResponse(thinkingMessageId, data.response, data.sources, data.context_parts);
 
                 // Update LLM Info display
                 if (data.llm_provider && data.llm_model && llmInfoSpan) {
                     llmInfoSpan.textContent = `LLM: ${data.llm_provider} (${data.llm_model})`;
                 }
             } else {
-                addMessage(`Error: ${data.error}`, 'system');
+                // Update placeholder with error
+                updateMessage(thinkingMessageId, `Error: ${data.error}`);
+                chatMessages.querySelector(`[data-message-id="${thinkingMessageId}"]`)?.classList.remove('thinking');
+                chatMessages.querySelector(`[data-message-id="${thinkingMessageId}"]`)?.classList.add('system'); // Style as system error
             }
         } catch (error) {
-            addMessage('Error: Could not connect to the server', 'system');
+             // Clear timers on error
+            clearTimeout(timer1);
+            clearTimeout(timer2);
+            // Update placeholder with connection error
+            updateMessage(thinkingMessageId, 'Error: Could not connect to the server');
+            chatMessages.querySelector(`[data-message-id="${thinkingMessageId}"]`)?.classList.remove('thinking');
+            chatMessages.querySelector(`[data-message-id="${thinkingMessageId}"]`)?.classList.add('system'); // Style as system error
             console.error('Error:', error);
         }
     }

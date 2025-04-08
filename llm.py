@@ -5,6 +5,7 @@ from vector_store.qdrant_store import QdrantStore
 import logging
 import tiktoken # Keep for token counting (OpenAI specific for now)
 from dotenv import load_dotenv
+import time # Import time module
 
 from llm_providers import get_llm_client # Import the factory function
 
@@ -126,15 +127,21 @@ def ask_dndsy(prompt: str) -> dict:
          # Return error structure consistent with normal failures
          return {"response": error_msg, "sources": [], "using_context": False, "context_parts": []}
 
+    start_time_total = time.perf_counter()
+    
     try:
         current_model_name = llm_client.get_model_name()
         logger.info(f"Using LLM model: {current_model_name}")
 
-        # Get relevant context from vector store, passing model name for token calculations
+        # --- Vector Store Search --- 
+        start_time_rag = time.perf_counter()
         context_parts = get_relevant_context(prompt, model=current_model_name)
+        end_time_rag = time.perf_counter()
+        logger.info(f"Context search took {end_time_rag - start_time_rag:.4f} seconds.")
         logger.info(f"Context found: {bool(context_parts)}")
         
-        # Prepare context text and sources for the prompt and response
+        # --- Prepare Prompt --- 
+        start_time_prompt = time.perf_counter()
         sources_for_display = []
         context_text_for_prompt = ""
         if context_parts:
@@ -175,22 +182,26 @@ def ask_dndsy(prompt: str) -> dict:
                 "but explicitly state that the information is not from the provided source materials.\n"
             )
         
-        # Make the API call using the provider interface
+        end_time_prompt = time.perf_counter()
+        logger.info(f"Prompt preparation took {end_time_prompt - start_time_prompt:.4f} seconds.")
+        
+        # --- LLM API Call --- 
+        start_time_llm = time.perf_counter()
         logger.info("Generating response using LLM client...")
         llm_response = llm_client.generate_response(
             prompt=prompt,
             system_message=system_message,
             temperature=0.3, 
-            max_tokens=500 # Consider making this configurable
+            max_tokens=500
         )
+        end_time_llm = time.perf_counter()
+        logger.info(f"LLM API call took {end_time_llm - start_time_llm:.4f} seconds.")
         
         response_text = llm_response.get("response_text", "Error: No response text received from LLM.")
         logger.info(f"LLM response received. Length: {len(response_text)}")
 
-        # Determine sources for display
+        # --- Prepare Result --- 
         final_sources = sources_for_display if sources_for_display else [current_model_name]
-        
-        # Prepare the result dictionary
         result = {
             "response": response_text,
             "sources": final_sources,
@@ -200,10 +211,13 @@ def ask_dndsy(prompt: str) -> dict:
             "llm_model": current_model_name # Add model name
         }
         
+        end_time_total = time.perf_counter()
+        logger.info(f"Total ask_dndsy execution took {end_time_total - start_time_total:.4f} seconds.")
         return result
         
     except Exception as e:
+        end_time_total = time.perf_counter()
         error_msg = f"Error processing query: {e}"
         logger.error(error_msg, exc_info=True)
-        # Return error structure consistent with normal failures
-        return {"response": error_msg, "sources": [], "using_context": False, "context_parts": []}
+        logger.info(f"Total ask_dndsy execution (error) took {end_time_total - start_time_total:.4f} seconds.")
+        return {"response": error_msg, "sources": [], "using_context": False, "context_parts": [], "llm_provider": "error", "llm_model": "error"}
