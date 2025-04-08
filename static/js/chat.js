@@ -8,127 +8,95 @@ document.addEventListener('DOMContentLoaded', () => {
     const llmInfoSpan = document.getElementById('llm-info');
     let isFirstMessage = true;
     let messageContextParts = {};
+    let currentEventSource = null;
 
     // Function to add a message to the chat
-    function addMessage(text, sender, sources = [], contextParts = []) {
+    function addMessage(text, sender, messageId = null) {
         const messageElement = document.createElement('div');
         messageElement.classList.add('message', sender);
         
-        // Store context parts with a unique ID linked to the message
-        const messageId = `msg-${Date.now()}-${Math.random().toString(16).substring(2)}`;
-        messageElement.dataset.messageId = messageId;
-        messageContextParts[messageId] = contextParts;
-
-        // Sanitize text before setting innerHTML if needed, or use textContent
-        // Using markdown rendering later would be safer
-        messageElement.textContent = text; // Display text simply for now
-
-        // Add source pills if available (for assistant messages)
-        if (sender === 'assistant' && sources && sources.length > 0) {
-            const sourceContainer = document.createElement('div');
-            sourceContainer.className = 'source-pills';
-            
-            const MAX_VISIBLE_PILLS = 3;
-            let sourcesToShow = sources;
-            let hiddenCount = 0;
-
-            if (sources.length > MAX_VISIBLE_PILLS) {
-                sourcesToShow = sources.slice(0, MAX_VISIBLE_PILLS);
-                hiddenCount = sources.length - MAX_VISIBLE_PILLS;
-            }
-
-            sourcesToShow.forEach((source, index) => {
-                const sourcePill = createSourcePill(source, messageId, index);
-                sourceContainer.appendChild(sourcePill);
-            });
-
-            if (hiddenCount > 0) {
-                const showMore = document.createElement('a');
-                showMore.href = '#';
-                showMore.textContent = `Show ${hiddenCount} more source${hiddenCount > 1 ? 's' : ''}`;
-                showMore.className = 'show-more-sources';
-                showMore.onclick = (e) => {
-                    e.preventDefault();
-                    // Clear current pills and show all
-                    sourceContainer.innerHTML = ''; 
-                    sources.forEach((source, index) => {
-                        const sourcePill = createSourcePill(source, messageId, index);
-                        sourceContainer.appendChild(sourcePill);
-                    });
-                };
-                sourceContainer.appendChild(showMore);
-            }
-            messageElement.appendChild(sourceContainer);
-        }
+        const id = messageId || `msg-${Date.now()}-${Math.random().toString(16).substring(2)}`;
+        messageElement.dataset.messageId = id;
+        
+        // Create a span for the main text content
+        const textSpan = document.createElement('span');
+        textSpan.className = 'message-text'; // Add class for targeting
+        textSpan.textContent = text; // Initial text (or empty for placeholder)
+        messageElement.appendChild(textSpan);
+        
+        // Placeholder for source pills container (added later if needed)
+        const sourceContainer = document.createElement('div');
+        sourceContainer.className = 'source-pills';
+        sourceContainer.style.display = 'none'; // Hide initially
+        messageElement.appendChild(sourceContainer);
         
         chatMessages.appendChild(messageElement);
         chatMessages.scrollTop = chatMessages.scrollHeight;
+        return id;
     }
-
-    // Function to update a message in the chat (for status updates)
-    function updateMessage(messageId, newText) {
-        const messageElement = chatMessages.querySelector(`[data-message-id="${messageId}"]`);
+    
+    // Function to append text to the message text span
+    function appendToMessage(messageId, textChunk) {
+        const messageElement = chatMessages.querySelector(`[data-message-id="${messageId}"] .message-text`); // Target the inner span
         if (messageElement) {
-            // Potentially use a markdown parser here in the future
-            messageElement.textContent = newText;
-            chatMessages.scrollTop = chatMessages.scrollHeight; // Re-scroll
+            messageElement.textContent += textChunk;
+            chatMessages.scrollTop = chatMessages.scrollHeight; 
         }
     }
 
-    // Function to add the final assistant message (replaces addMessage for assistant)
-    function addAssistantResponse(messageId, text, sources = [], contextParts = []) {
+    // Function to add source pills (appends to existing container)
+    function addSourcePills(messageId, sources, contextParts) {
         const messageElement = chatMessages.querySelector(`[data-message-id="${messageId}"]`);
-        if (!messageElement) {
-            console.error("Could not find placeholder message element to update:", messageId);
-            addMessage(text, 'assistant', sources, contextParts); // Fallback to adding new
-            return;
-        }
-        
-        messageElement.classList.remove('thinking'); // Remove thinking style if any
-        messageElement.textContent = text; // Set final text
-        
-        // Add source pills
-        if (sources && sources.length > 0) {
-            const sourceContainer = document.createElement('div');
-            sourceContainer.className = 'source-pills';
-            
-            const MAX_VISIBLE_PILLS = 3;
-            let sourcesToShow = sources;
-            let hiddenCount = 0;
+        const sourceContainer = messageElement?.querySelector('.source-pills'); // Find the container
+         if (!sourceContainer || !sources || sources.length === 0) return;
 
-            if (sources.length > MAX_VISIBLE_PILLS) {
-                sourcesToShow = sources.slice(0, MAX_VISIBLE_PILLS);
-                hiddenCount = sources.length - MAX_VISIBLE_PILLS;
+         messageContextParts[messageId] = contextParts;
+         sourceContainer.innerHTML = ''; // Clear previous pills if any (e.g., on error)
+         
+         const MAX_VISIBLE_PILLS = 3;
+         let sourcesToShow = sources;
+         let hiddenCount = 0;
+
+         if (sources.length > MAX_VISIBLE_PILLS) {
+             sourcesToShow = sources.slice(0, MAX_VISIBLE_PILLS);
+             hiddenCount = sources.length - MAX_VISIBLE_PILLS;
+         }
+
+         sourcesToShow.forEach((source, index) => {
+             const sourcePill = createSourcePill(source, messageId, index);
+             sourceContainer.appendChild(sourcePill);
+         });
+
+         if (hiddenCount > 0) {
+             const showMore = document.createElement('a');
+             showMore.href = '#';
+             showMore.textContent = `Show ${hiddenCount} more source${hiddenCount > 1 ? 's' : ''}`;
+             showMore.className = 'show-more-sources';
+             showMore.onclick = (e) => {
+                 e.preventDefault();
+                 sourceContainer.innerHTML = ''; 
+                 sources.forEach((source, index) => {
+                     const sourcePill = createSourcePill(source, messageId, index);
+                     sourceContainer.appendChild(sourcePill);
+                 });
+             };
+             sourceContainer.appendChild(showMore);
+         }
+         sourceContainer.style.display = 'flex'; // Show the container
+         // messageElement.appendChild(sourceContainer); // No longer need to append here
+    }
+    
+    // Function to update message text (used for status)
+    function updateMessageText(messageId, newText, showIndicator = true) {
+        const textSpan = chatMessages.querySelector(`[data-message-id="${messageId}"] .message-text`);
+        if (textSpan) {
+            let content = newText;
+            if (showIndicator) {
+                content += ' <span class="thinking-indicator"><span></span><span></span><span></span></span>'; // Append indicator
             }
-
-            sourcesToShow.forEach((source, index) => {
-                const sourcePill = createSourcePill(source, messageId, index);
-                sourceContainer.appendChild(sourcePill);
-            });
-
-            if (hiddenCount > 0) {
-                const showMore = document.createElement('a');
-                showMore.href = '#';
-                showMore.textContent = `Show ${hiddenCount} more source${hiddenCount > 1 ? 's' : ''}`;
-                showMore.className = 'show-more-sources';
-                showMore.onclick = (e) => {
-                    e.preventDefault();
-                    // Clear current pills and show all
-                    sourceContainer.innerHTML = ''; 
-                    sources.forEach((source, index) => {
-                        const sourcePill = createSourcePill(source, messageId, index);
-                        sourceContainer.appendChild(sourcePill);
-                    });
-                };
-                sourceContainer.appendChild(showMore);
-            }
-            messageElement.appendChild(sourceContainer);
+            textSpan.innerHTML = content; 
+            chatMessages.scrollTop = chatMessages.scrollHeight; 
         }
-
-        // Update context parts map
-        messageContextParts[messageId] = contextParts;
-
-        chatMessages.scrollTop = chatMessages.scrollHeight; // Re-scroll
     }
 
     // Helper function to create a source pill element
@@ -300,74 +268,117 @@ document.addEventListener('DOMContentLoaded', () => {
         nextButton.disabled = isNaN(totalPages) || pageNumber >= totalPages;
     }
 
-    // Function to send message to the server
-    async function sendMessage() {
+    // Function to send message and handle SSE stream
+    function sendMessage() {
         const message = userInput.value.trim();
         if (!message) return;
 
-        // Add user message to chat
+        // Stop any previous stream if it's still running
+        if (currentEventSource) {
+            currentEventSource.close();
+            console.log("Closed previous EventSource connection.");
+        }
+
         addMessage(message, 'user');
         userInput.value = '';
 
-        // Add initial "Thinking..." placeholder for the assistant
-        const thinkingMessageId = `msg-${Date.now()}-${Math.random().toString(16).substring(2)}`;
-        const thinkingElement = document.createElement('div');
-        thinkingElement.classList.add('message', 'assistant', 'thinking'); // Add a 'thinking' class for potential styling
-        thinkingElement.dataset.messageId = thinkingMessageId;
-        thinkingElement.textContent = "Thinking...";
-        chatMessages.appendChild(thinkingElement);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        // Add placeholder for assistant message with initial status
+        const assistantMessageId = addMessage("", 'assistant'); 
+        updateMessageText(assistantMessageId, 'Searching knowledge base', true); // Show indicator after text
 
-        // Start simulated progress updates
-        const timer1 = setTimeout(() => updateMessage(thinkingMessageId, "Searching knowledge base..."), 1000); // Update after 1 sec
-        const timer2 = setTimeout(() => updateMessage(thinkingMessageId, "Consulting LLM..."), 3000); // Update after 3 secs total
+        // --- Use EventSource for streaming --- 
+        // Pass message via query parameter (simple approach, consider security/length limits)
+        // Alternatively, initiate SSE connection first, then send message via separate POST
+        const queryParams = new URLSearchParams({ message: message });
+        currentEventSource = new EventSource(`/api/chat?${queryParams.toString()}`);
+        console.log("EventSource connected.");
 
-        try {
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ message }),
-            });
-            
-            // Clear timers once response is received
-            clearTimeout(timer1);
-            clearTimeout(timer2);
+        let isFirstTextChunk = true; // Track first text chunk
 
-            const data = await response.json();
-            console.log("Received data from /api/chat:", data);
-
-            if (response.ok) {
-                console.log("Passing to addAssistantResponse:", {
-                    messageId: thinkingMessageId, 
-                    response: data.response,
-                    sources: data.sources,
-                    context_parts: data.context_parts
-                });
-                // Update the placeholder with the final response
-                addAssistantResponse(thinkingMessageId, data.response, data.sources, data.context_parts);
-
-                // Update LLM Info display
-                if (data.llm_provider && data.llm_model && llmInfoSpan) {
-                    llmInfoSpan.textContent = `LLM: ${data.llm_provider} (${data.llm_model})`;
+        currentEventSource.onmessage = function(event) {
+            console.log("SSE message received:", event.data);
+            try {
+                const data = JSON.parse(event.data);
+                
+                if (data.type === 'text') {
+                    if (isFirstTextChunk) {
+                        // Clear status text AND indicator from the text span
+                        const textSpan = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"] .message-text`);
+                        if (textSpan) textSpan.innerHTML = ""; 
+                        isFirstTextChunk = false;
+                    }
+                    appendToMessage(assistantMessageId, data.content);
                 }
-            } else {
-                // Update placeholder with error
-                updateMessage(thinkingMessageId, `Error: ${data.error}`);
-                chatMessages.querySelector(`[data-message-id="${thinkingMessageId}"]`)?.classList.remove('thinking');
-                chatMessages.querySelector(`[data-message-id="${thinkingMessageId}"]`)?.classList.add('system'); // Style as system error
+                // Note: Metadata event is handled by onopen or a specific event type
+            } catch (e) {
+                console.error("Failed to parse SSE data:", event.data, e);
+                // Maybe display raw data or an error?
+                appendToMessage(assistantMessageId, ` [Error parsing data: ${event.data}] `);
             }
-        } catch (error) {
-             // Clear timers on error
-            clearTimeout(timer1);
-            clearTimeout(timer2);
-            // Update placeholder with connection error
-            updateMessage(thinkingMessageId, 'Error: Could not connect to the server');
-            chatMessages.querySelector(`[data-message-id="${thinkingMessageId}"]`)?.classList.remove('thinking');
-            chatMessages.querySelector(`[data-message-id="${thinkingMessageId}"]`)?.classList.add('system'); // Style as system error
-            console.error('Error:', error);
-        }
+        };
+
+        currentEventSource.addEventListener('status', function(event) {
+            console.log("SSE status received:", event.data);
+             try {
+                const statusData = JSON.parse(event.data);
+                 // Update the text span with the new status, keep indicator
+                 updateMessageText(assistantMessageId, statusData.status || 'Processing', true);
+            } catch (e) {
+                console.error("Failed to parse SSE status:", event.data, e);
+            }
+        });
+
+        currentEventSource.addEventListener('metadata', function(event) {
+            console.log("SSE metadata received:", event.data);
+             try {
+                const metadata = JSON.parse(event.data);
+                 // Update LLM Info display
+                 if (metadata.llm_provider && metadata.llm_model && llmInfoSpan) {
+                     llmInfoSpan.textContent = `LLM: ${metadata.llm_provider} (${metadata.llm_model})`;
+                 }
+                 // Add source pills (will append to the dedicated container)
+                 addSourcePills(assistantMessageId, metadata.sources, metadata.context_parts);
+
+            } catch (e) {
+                console.error("Failed to parse SSE metadata:", event.data, e);
+            }
+        });
+
+        currentEventSource.addEventListener('error', function(event) {
+            console.error("SSE Error event:", event);
+            let errorMsg = "Error communicating with server.";
+             try {
+                // Attempt to parse error data if backend sends JSON in error event
+                 const errorData = JSON.parse(event.data); 
+                 if(errorData.error) errorMsg = errorData.error;
+             } catch(e) { /* Ignore if not JSON */ }
+
+            const assistantMsgElement = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"]`);
+            if (assistantMsgElement) {
+                 const textSpan = assistantMsgElement.querySelector('.message-text');
+                 // Update text span, explicitly no indicator needed for error message
+                 if(textSpan) updateMessageText(assistantMessageId, `Error: ${errorMsg}`, false);
+                 assistantMsgElement.classList.remove('assistant');
+                 assistantMsgElement.classList.add('system');
+            }
+            currentEventSource.close(); // Close connection on error
+            currentEventSource = null;
+        });
+
+         currentEventSource.addEventListener('end', function(event) {
+            console.log("SSE stream ended.");
+            currentEventSource.close();
+            currentEventSource = null;
+            // Optional: Check if the text span is still empty/showing indicator
+            const textSpan = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"] .message-text`);
+            // Check if empty OR if it still contains only the indicator span
+            if (textSpan && (textSpan.textContent.trim() === "" || textSpan.querySelector('.thinking-indicator'))) { 
+                // Update text span, explicitly no indicator
+                updateMessageText(assistantMessageId, "(No text received)", false);
+            }
+        });
+
+        // Note: The old try/catch around fetch is removed as errors are handled by EventSource listeners
     }
 
     // Event listeners

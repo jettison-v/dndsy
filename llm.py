@@ -6,6 +6,8 @@ import logging
 import tiktoken # Keep for token counting (OpenAI specific for now)
 from dotenv import load_dotenv
 import time # Import time module
+import json # Import json for encoding metadata
+from typing import Generator
 
 from llm_providers import get_llm_client # Import the factory function
 
@@ -117,22 +119,26 @@ def get_relevant_context(query: str, model: str, limit: int = 5) -> list[dict]:
         logger.error(f"Error searching vector store: {e}", exc_info=True)
         return []
 
-def ask_dndsy(prompt: str) -> dict:
+def ask_dndsy(prompt: str) -> Generator[str, None, None]:
     """
-    Process a query using RAG and the configured LLM provider.
+    Processes a query using RAG and streams the response using the configured LLM provider.
+    Yields JSON-encoded metadata first, then text chunks.
     """
     if not llm_client:
          error_msg = "LLM client failed to initialize. Cannot process query."
          logger.error(error_msg)
-         # Return error structure consistent with normal failures
-         return {"response": error_msg, "sources": [], "using_context": False, "context_parts": []}
+         # Yield an error event for SSE
+         yield f"event: error\ndata: {json.dumps({'error': error_msg})}\n\n"
+         return # Stop generation
 
     start_time_total = time.perf_counter()
-    
-    try:
-        current_model_name = llm_client.get_model_name()
-        logger.info(f"Using LLM model: {current_model_name}")
+    current_model_name = llm_client.get_model_name()
+    logger.info(f"Using LLM model: {current_model_name}")
+    context_parts = []
+    sources_for_display = []
+    error_occurred = False
 
+    try:
         # --- Vector Store Search --- 
         start_time_rag = time.perf_counter()
         context_parts = get_relevant_context(prompt, model=current_model_name)
@@ -140,9 +146,12 @@ def ask_dndsy(prompt: str) -> dict:
         logger.info(f"Context search took {end_time_rag - start_time_rag:.4f} seconds.")
         logger.info(f"Context found: {bool(context_parts)}")
         
-        # --- Prepare Prompt --- 
+        # --- Yield Status Update --- 
+        yield f"event: status\ndata: {json.dumps({'status': 'Consulting LLM'})}\n\n"
+        logger.info("Yielded status update to client.")
+
+        # --- Prepare Prompt & Initial Metadata --- 
         start_time_prompt = time.perf_counter()
-        sources_for_display = []
         context_text_for_prompt = ""
         if context_parts:
             for part in context_parts:
@@ -184,40 +193,51 @@ def ask_dndsy(prompt: str) -> dict:
         
         end_time_prompt = time.perf_counter()
         logger.info(f"Prompt preparation took {end_time_prompt - start_time_prompt:.4f} seconds.")
-        
-        # --- LLM API Call --- 
+
+        # --- Yield Initial Metadata --- 
+        initial_metadata = {
+            "type": "metadata",
+            "sources": sources_for_display,
+            "using_context": bool(context_parts),
+            "context_parts": context_parts,
+            "llm_provider": llm_client.get_provider_name(),
+            "llm_model": current_model_name
+        }
+        yield f"event: metadata\ndata: {json.dumps(initial_metadata)}\n\n"
+        logger.info("Yielded initial metadata to client.")
+
+        # --- LLM API Stream --- 
         start_time_llm = time.perf_counter()
-        logger.info("Generating response using LLM client...")
-        llm_response = llm_client.generate_response(
+        logger.info("Starting LLM stream...")
+        
+        stream_generator = llm_client.generate_response(
             prompt=prompt,
             system_message=system_message,
             temperature=0.3, 
-            max_tokens=500
+            max_tokens=500, # Still applies as a suggestion to the model
+            stream=True
         )
+        
+        # Yield text chunks as they arrive
+        text_chunk_count = 0
+        for text_chunk in stream_generator:
+            yield f"data: {json.dumps({'type': 'text', 'content': text_chunk})}\n\n"
+            text_chunk_count += 1
+        
         end_time_llm = time.perf_counter()
-        logger.info(f"LLM API call took {end_time_llm - start_time_llm:.4f} seconds.")
-        
-        response_text = llm_response.get("response_text", "Error: No response text received from LLM.")
-        logger.info(f"LLM response received. Length: {len(response_text)}")
+        logger.info(f"LLM stream finished after {end_time_llm - start_time_llm:.4f} seconds. Yielded {text_chunk_count} chunks.")
 
-        # --- Prepare Result --- 
-        final_sources = sources_for_display if sources_for_display else [current_model_name]
-        result = {
-            "response": response_text,
-            "sources": final_sources,
-            "using_context": bool(context_parts),
-            "context_parts": context_parts, # Pass the raw context parts back to the frontend
-            "llm_provider": llm_client.get_provider_name(), # Add provider name
-            "llm_model": current_model_name # Add model name
-        }
-        
-        end_time_total = time.perf_counter()
-        logger.info(f"Total ask_dndsy execution took {end_time_total - start_time_total:.4f} seconds.")
-        return result
-        
     except Exception as e:
-        end_time_total = time.perf_counter()
-        error_msg = f"Error processing query: {e}"
+        error_occurred = True
+        error_msg = f"Error during query processing: {e}"
         logger.error(error_msg, exc_info=True)
-        logger.info(f"Total ask_dndsy execution (error) took {end_time_total - start_time_total:.4f} seconds.")
-        return {"response": error_msg, "sources": [], "using_context": False, "context_parts": [], "llm_provider": "error", "llm_model": "error"}
+        # Yield an error event for SSE
+        try:
+            yield f"event: error\ndata: {json.dumps({'error': error_msg})}\n\n"
+        except Exception as yield_err:
+             logger.error(f"Error yielding error message: {yield_err}")
+    finally:
+        # --- Signal Stream End --- 
+        yield f"event: end\ndata: End of stream\n\n"
+        end_time_total = time.perf_counter()
+        logger.info(f"Total ask_dndsy execution ({'error' if error_occurred else 'success'}) took {end_time_total - start_time_total:.4f} seconds.")
