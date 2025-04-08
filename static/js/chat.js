@@ -102,7 +102,15 @@ document.addEventListener('DOMContentLoaded', () => {
         sourceContent.dataset.totalPages = part.total_pages;
         sourceContent.dataset.sourceDir = part.source_dir;
         sourceContent.dataset.sourceName = part.source; // Original source name
-        sourceContent.dataset.imagePattern = `/static/pdf_page_images/${part.source_dir}/page_{page}.png`; // URL pattern
+        // Store base S3 URL pattern if available, removing the filename part
+        if (part.image_url) {
+            const urlParts = part.image_url.split('/');
+            urlParts.pop(); // Remove the filename (e.g., page_84.png)
+            sourceContent.dataset.s3BaseUrl = urlParts.join('/'); 
+        } else {
+             sourceContent.dataset.s3BaseUrl = ''; // Handle case where image URL might be missing
+        }
+        // sourceContent.dataset.imagePattern = `/static/pdf_page_images/${part.source_dir}/page_{page}.png`; // REMOVED old static pattern
 
         // --- Header --- 
         const header = document.createElement('h4');
@@ -184,14 +192,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const nextButton = document.getElementById('source-next-button');
         const totalPages = parseInt(sourceContent.dataset.totalPages, 10);
         const sourceName = sourceContent.dataset.sourceName;
-        const imageUrlPattern = sourceContent.dataset.imagePattern;
+        const s3BaseUrl = sourceContent.dataset.s3BaseUrl; // Get the base S3 URL
 
-        if (!imageContainer || !imageUrlPattern || !headerText || !pageIndicator || !prevButton || !nextButton) {
-            console.error('Required elements for image update not found');
+        if (!imageContainer || !s3BaseUrl || !headerText || !pageIndicator || !prevButton || !nextButton) {
+            if (!s3BaseUrl) {
+                 imageContainer.innerHTML = '<p style="color: orange; font-style: italic;">Source image not available (S3 URL missing).</p>';
+                 return; // Don't proceed if no base URL
+            }
+            console.error('Required elements or base URL for image update not found');
             return;
         }
 
-        const imageUrl = imageUrlPattern.replace('{page}', pageNumber);
+        // Construct the full S3 URL for the target page
+        const imageUrl = `${s3BaseUrl}/page_${pageNumber}.png`;
 
         // Update stored state
         sourceContent.dataset.currentPage = pageNumber;
