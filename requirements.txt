@@ -37,7 +37,7 @@ uvicorn==0.34.0
 flask==3.0.2
 flask-cors==4.0.0
 PyMuPDF==1.25.5
-qdrant-client==1.13.3
+qdrant-client==1.7.3
 sentence-transformers==2.5.1
 beautifulsoup4==4.12.3
 requests==2.31.0
