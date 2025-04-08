@@ -34,6 +34,11 @@ class BaseLLMProvider(ABC):
         """Returns the name of the model being used by this provider instance."""
         pass
 
+    @abstractmethod
+    def get_provider_name(self) -> str:
+        """Returns the name of the LLM provider (e.g., 'openai')."""
+        pass
+
 # Optional: Define a standard response structure if needed, e.g., using Pydantic
 # class LLMResponse(TypedDict):
 #     response_text: str

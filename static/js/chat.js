@@ -5,7 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const sourcePanel = document.getElementById('source-panel');
     const sourceContent = document.getElementById('source-content');
     const closePanel = document.getElementById('close-panel');
+    const llmInfoSpan = document.getElementById('llm-info');
     let isFirstMessage = true;
+    let messageContextParts = {};
 
     // Function to add a message to the chat
     function addMessage(content, type, sources = null, contextParts = []) {
@@ -269,6 +271,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     context_parts: data.context_parts 
                 });
                 addMessage(data.response, 'assistant', data.sources, data.context_parts);
+
+                // Update LLM Info display
+                if (data.llm_provider && data.llm_model && llmInfoSpan) {
+                    llmInfoSpan.textContent = `LLM: ${data.llm_provider} (${data.llm_model})`;
+                }
             } else {
                 addMessage(`Error: ${data.error}`, 'system');
             }

@@ -58,4 +58,8 @@ class OpenAILLM(BaseLLMProvider):
 
     def get_model_name(self) -> str:
         """Returns the configured OpenAI model name."""
-        return self._model_name 
+        return self._model_name
+
+    def get_provider_name(self) -> str:
+        """Returns the provider name."""
+        return "openai" 

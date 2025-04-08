@@ -195,7 +195,9 @@ def ask_dndsy(prompt: str) -> dict:
             "response": response_text,
             "sources": final_sources,
             "using_context": bool(context_parts),
-            "context_parts": context_parts # Pass the raw context parts back to the frontend
+            "context_parts": context_parts, # Pass the raw context parts back to the frontend
+            "llm_provider": llm_client.get_provider_name(), # Add provider name
+            "llm_model": current_model_name # Add model name
         }
         
         return result

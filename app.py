@@ -70,7 +70,9 @@ def chat():
             'response': result['response'],
             'sources': result['sources'],
             'using_context': result['using_context'],
-            'context_parts': result['context_parts']
+            'context_parts': result['context_parts'],
+            'llm_provider': result.get('llm_provider', 'unknown'),
+            'llm_model': result.get('llm_model', 'unknown')
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
