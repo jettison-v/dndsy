@@ -24,11 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Render markdown for assistant, otherwise use textContent
         if (sender === 'assistant') {
-            if (typeof marked === 'function') { 
-                textSpan.innerHTML = marked.parse(text || ""); 
+            if (typeof window.marked === 'function') { 
+                textSpan.innerHTML = window.marked.parse(text || ""); 
             } else {
-                console.error("marked.js function not found when trying to render.");
-                textSpan.textContent = text; // Fallback
+                console.error("window.marked function not found. Displaying raw text.");
+                textSpan.textContent = text; 
             }
         } else {
             textSpan.textContent = text; // User/System messages as plain text
@@ -51,11 +51,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const textSpan = chatMessages.querySelector(`[data-message-id="${messageId}"] .message-text`);
         if (textSpan) {
             textSpan.textContent += textChunk;
-            if (typeof marked === 'function') {
+            if (typeof window.marked === 'function') {
                  // Store current scroll position
                  const isScrolledToBottom = chatMessages.scrollHeight - chatMessages.clientHeight <= chatMessages.scrollTop + 1;
                  
-                 textSpan.innerHTML = marked.parse(textSpan.textContent || "");
+                 textSpan.innerHTML = window.marked.parse(textSpan.textContent || "");
                  
                  // Restore scroll position if it was at the bottom
                  if (isScrolledToBottom) {
