@@ -28,7 +28,7 @@ services:
         sleep 1;
       done &&
       echo 'Qdrant is up - starting Gunicorn' &&
-      gunicorn --bind 0.0.0.0:$PORT --workers 4 --log-level info app:app"
+      gunicorn --bind 0.0.0.0:5001 --workers 4 --log-level info app:app"
 
   qdrant:
     image: qdrant/qdrant:latest
