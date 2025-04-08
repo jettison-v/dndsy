@@ -87,21 +87,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Function to update message text (used for status)
-    function updateMessageText(messageId, newText) {
+    function updateMessageText(messageId, newText, showIndicator = true) {
         const textSpan = chatMessages.querySelector(`[data-message-id="${messageId}"] .message-text`);
         if (textSpan) {
-            textSpan.innerHTML = newText; // Use innerHTML for status which might include indicator
+            let content = newText;
+            if (showIndicator) {
+                content += ' <span class="thinking-indicator"><span></span><span></span><span></span></span>'; // Append indicator
+            }
+            textSpan.innerHTML = content; 
             chatMessages.scrollTop = chatMessages.scrollHeight; 
-        }
-    }
-
-    // Function to update a message in the chat (for status updates)
-    function updateMessage(messageId, newText) {
-        const messageElement = chatMessages.querySelector(`[data-message-id="${messageId}"]`);
-        if (messageElement) {
-            // Potentially use a markdown parser here in the future
-            messageElement.textContent = newText;
-            chatMessages.scrollTop = chatMessages.scrollHeight; // Re-scroll
         }
     }
 
@@ -290,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Add placeholder for assistant message with initial status
         const assistantMessageId = addMessage("", 'assistant'); 
-        updateMessageText(assistantMessageId, '<span class="thinking-indicator"><span></span><span></span><span></span></span> Searching knowledge base...'); // Initial status
+        updateMessageText(assistantMessageId, 'Searching knowledge base', true); // Show indicator after text
 
         // --- Use EventSource for streaming --- 
         // Pass message via query parameter (simple approach, consider security/length limits)
@@ -308,7 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (data.type === 'text') {
                     if (isFirstTextChunk) {
-                        // Clear status text ONLY from the text span on first actual text chunk
+                        // Clear status text AND indicator from the text span
                         const textSpan = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"] .message-text`);
                         if (textSpan) textSpan.innerHTML = ""; 
                         isFirstTextChunk = false;
@@ -327,8 +321,8 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("SSE status received:", event.data);
              try {
                 const statusData = JSON.parse(event.data);
-                 // Update the text span with the new status
-                 updateMessageText(assistantMessageId, `<span class="thinking-indicator"><span></span><span></span><span></span></span> ${statusData.status || 'Processing...'}`);
+                 // Update the text span with the new status, keep indicator
+                 updateMessageText(assistantMessageId, statusData.status || 'Processing', true);
             } catch (e) {
                 console.error("Failed to parse SSE status:", event.data, e);
             }
@@ -362,7 +356,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const assistantMsgElement = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"]`);
             if (assistantMsgElement) {
                  const textSpan = assistantMsgElement.querySelector('.message-text');
-                 if(textSpan) textSpan.textContent = `Error: ${errorMsg}`;
+                 // Update text span, explicitly no indicator needed for error message
+                 if(textSpan) updateMessageText(assistantMessageId, `Error: ${errorMsg}`, false);
                  assistantMsgElement.classList.remove('assistant');
                  assistantMsgElement.classList.add('system');
             }
@@ -376,8 +371,10 @@ document.addEventListener('DOMContentLoaded', () => {
             currentEventSource = null;
             // Optional: Check if the text span is still empty/showing indicator
             const textSpan = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"] .message-text`);
-            if (textSpan && (textSpan.innerHTML === "" || textSpan.querySelector('.thinking-indicator'))) { 
-                textSpan.textContent = "(No text received)"; 
+            // Check if empty OR if it still contains only the indicator span
+            if (textSpan && (textSpan.textContent.trim() === "" || textSpan.querySelector('.thinking-indicator'))) { 
+                // Update text span, explicitly no indicator
+                updateMessageText(assistantMessageId, "(No text received)", false);
             }
         });
 

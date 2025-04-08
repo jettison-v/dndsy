@@ -147,7 +147,7 @@ def ask_dndsy(prompt: str) -> Generator[str, None, None]:
         logger.info(f"Context found: {bool(context_parts)}")
         
         # --- Yield Status Update --- 
-        yield f"event: status\ndata: {json.dumps({'status': 'Consulting LLM...'})}\n\n"
+        yield f"event: status\ndata: {json.dumps({'status': 'Consulting LLM'})}\n\n"
         logger.info("Yielded status update to client.")
 
         # --- Prepare Prompt & Initial Metadata --- 
