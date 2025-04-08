@@ -2,6 +2,11 @@ from qdrant_client import QdrantClient
 import os
 from process_data_sources import DataProcessor
 import logging
+from dotenv import load_dotenv
+from pathlib import Path
+
+env_path = Path('.') / '.env' # Define path to .env file
+load_dotenv(dotenv_path=env_path) # Load environment variables from specified path
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)

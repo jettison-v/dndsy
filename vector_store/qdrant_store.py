@@ -5,6 +5,11 @@ from qdrant_client.http import models
 from sentence_transformers import SentenceTransformer
 import json
 import logging
+from dotenv import load_dotenv
+from pathlib import Path
+
+env_path = Path(__file__).parent.parent / '.env' # Define path to .env file relative to this script
+load_dotenv(dotenv_path=env_path) # Load environment variables from specified path
 
 class QdrantStore:
     def __init__(self, collection_name: str = "dnd_knowledge"):
