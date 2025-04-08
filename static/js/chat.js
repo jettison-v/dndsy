@@ -20,8 +20,20 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Create a span for the main text content
         const textSpan = document.createElement('span');
-        textSpan.className = 'message-text'; // Add class for targeting
-        textSpan.textContent = text; // Initial text (or empty for placeholder)
+        textSpan.className = 'message-text'; 
+        
+        // Render markdown for assistant, otherwise use textContent
+        if (sender === 'assistant') {
+            // Ensure marked is loaded
+            if (typeof marked === 'function') { 
+                textSpan.innerHTML = marked.parse(text || ""); // Use marked to parse markdown
+            } else {
+                console.error("marked.js not loaded. Displaying raw text.");
+                textSpan.textContent = text; // Fallback
+            }
+        } else {
+            textSpan.textContent = text; // User/System messages as plain text
+        }
         messageElement.appendChild(textSpan);
         
         // Placeholder for source pills container (added later if needed)
@@ -37,10 +49,25 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Function to append text to the message text span
     function appendToMessage(messageId, textChunk) {
-        const messageElement = chatMessages.querySelector(`[data-message-id="${messageId}"] .message-text`); // Target the inner span
-        if (messageElement) {
-            messageElement.textContent += textChunk;
-            chatMessages.scrollTop = chatMessages.scrollHeight; 
+        const textSpan = chatMessages.querySelector(`[data-message-id="${messageId}"] .message-text`);
+        if (textSpan) {
+            // Append raw text chunk
+            textSpan.textContent += textChunk;
+            // Re-parse the whole content with marked (might be slightly inefficient but ensures correct rendering)
+            if (typeof marked === 'function') {
+                 // Store current scroll position
+                 const isScrolledToBottom = chatMessages.scrollHeight - chatMessages.clientHeight <= chatMessages.scrollTop + 1;
+                 
+                 textSpan.innerHTML = marked.parse(textSpan.textContent || "");
+                 
+                 // Restore scroll position if it was at the bottom
+                 if (isScrolledToBottom) {
+                     chatMessages.scrollTop = chatMessages.scrollHeight;
+                 }
+            } else {
+                 // Fallback if marked not loaded (shouldn't happen)
+                 chatMessages.scrollTop = chatMessages.scrollHeight; 
+            }
         }
     }
 
@@ -92,8 +119,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (textSpan) {
             let content = newText;
             if (showIndicator) {
-                content += ' <span class="thinking-indicator"><span></span><span></span><span></span></span>'; // Append indicator
+                content += ' <span class="thinking-indicator"><span></span><span></span><span></span></span>';
             }
+            // Status messages are temporary, don't parse markdown here
             textSpan.innerHTML = content; 
             chatMessages.scrollTop = chatMessages.scrollHeight; 
         }

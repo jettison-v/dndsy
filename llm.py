@@ -174,7 +174,7 @@ def ask_dndsy(prompt: str) -> Generator[str, None, None]:
             "3. If NO relevant context is found, clearly state that you couldn't find specific rules and answer based on general knowledge of D&D 2024.\n"
             "4. If comparing with 5e (2014) rules, clearly state this.\n"
             "5. Be specific and cite rules when possible (using the Source and Page info from the context).\n"
-            "6. Keep responses clear, concise, and well-formatted, using markdown where appropriate.\n\n"
+            "6. Format your response clearly using Markdown (headings, lists, bold text, etc.) for readability.\n\n"
         )
         
         if context_text_for_prompt:
