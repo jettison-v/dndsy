@@ -62,4 +62,4 @@ class OpenAILLM(BaseLLMProvider):
 
     def get_provider_name(self) -> str:
         """Returns the provider name."""
-        return "openai" 
+        return "OpenAI" 
