@@ -131,8 +131,26 @@ document.addEventListener('DOMContentLoaded', () => {
         chatMessages.scrollTop = chatMessages.scrollHeight; // Re-scroll
     }
 
+    // Helper function to create a source pill element
+    function createSourcePill(sourceText, messageId, index) {
+        const pill = document.createElement('span');
+        pill.className = 'source-pill';
+        pill.textContent = sourceText;
+        pill.dataset.messageId = messageId;
+        pill.dataset.index = index;
+        pill.addEventListener('click', () => {
+            const contextParts = messageContextParts[messageId];
+            if (contextParts && contextParts[index]) {
+                showSourcePanel(contextParts, index);
+            } else {
+                console.error('Could not find context data for source pill', messageId, index);
+            }
+        });
+        return pill;
+    }
+
     // Function to show source content in the side panel
-    function showSourceContent(index, messageContextParts) {
+    function showSourcePanel(messageContextParts, index) {
         if (!messageContextParts || !messageContextParts[index]) {
             console.error(`No context part found for index: ${index}`);
             return;
