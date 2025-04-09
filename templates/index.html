@@ -44,6 +44,47 @@
             box-shadow: 0 6px 20px rgba(228, 7, 18, 0.5);
         }
         
+        /* Vector store selector styles */
+        .vector-store-container {
+            margin: 1rem 0;
+            padding: 0.75rem;
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .vector-store-container h4 {
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        
+        .vector-store-selector {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .vector-store-option {
+            padding: 6px 12px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            border: 1px solid transparent;
+        }
+        
+        .vector-store-option:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+        
+        .vector-store-option.active {
+            background-color: var(--accent-color);
+            color: white;
+            font-weight: 500;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        
         @media (max-width: 768px) {
             .fab-container {
                 display: block;
@@ -60,9 +101,23 @@
                 <p>Your AI-powered D&D Rules Companion</p>
             </div>
             
+            <!-- Vector Store Selector -->
+            <div class="vector-store-container">
+                <h4>Search Method</h4>
+                <div class="vector-store-selector" id="vector-store-selector">
+                    {% for store_type in vector_store_types %}
+                    <div class="vector-store-option {% if store_type == default_vector_store %}active{% endif %}" 
+                         data-store-type="{{ store_type }}">
+                        {{ store_type|capitalize }}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
             <div class="sidebar-footer">
                 <p>Powered by AskDnD</p>
                 <p><span id="llm-info">LLM: Loading...</span></p>
+                <p><span id="vector-store-info">Store: {{ default_vector_store|capitalize }}</span></p>
             </div>
         </div>
 

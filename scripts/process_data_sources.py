@@ -2,7 +2,7 @@ import os
 import json
 from pathlib import Path
 import fitz  # PyMuPDF
-from vector_store.qdrant_store import QdrantStore
+from vector_store import get_vector_store
 from tqdm import tqdm
 import logging
 import sys
@@ -61,7 +61,9 @@ else:
 class DataProcessor:
     def __init__(self):
         """Initialize the data processor."""
-        self.vector_store = QdrantStore()
+        # Get both vector stores
+        self.standard_store = get_vector_store("standard")
+        self.semantic_store = get_vector_store("semantic")
         self.processed_sources = set()
     
     def _clean_filename(self, filename: str) -> str:
@@ -109,10 +111,8 @@ class DataProcessor:
 
         except ClientError as e:
             logging.error(f"Failed to list or delete objects from S3 prefix '{image_prefix_to_delete}': {e}")
-            # Optionally decide if you want to proceed without cleanup or return []
         except Exception as e:
             logging.error(f"Unexpected error during S3 image cleanup: {e}")
-            # Optionally decide if you want to proceed without cleanup or return []
         # --- End S3 Image Cleanup Logic ---
 
         documents = []
@@ -165,6 +165,10 @@ class DataProcessor:
                 doc = fitz.open(stream=pdf_bytes, filetype="pdf")
                 total_pages = len(doc) # Get total page count
 
+                # Process document for both standard and semantic approaches
+                standard_docs = []
+                semantic_docs = []
+
                 for page_num, page in enumerate(doc): 
                     page_text = page.get_text().strip()
                     if not page_text: 
@@ -174,7 +178,6 @@ class DataProcessor:
                     page_source_id = f"{rel_path}_page_{page_label}"
 
                     if page_source_id in self.processed_sources:
-                        # logging.info(f"Skipping already processed page: {page_source_id}") # Can be verbose
                         continue
                     
                     # Generate image
@@ -199,56 +202,87 @@ class DataProcessor:
                                         'ContentType': 'image/png'
                                     }
                                 )
-                                # Construct the public S3 URL
+                                # Construct the URL for public bucket access
+                                # This assumes the bucket is public or has proper permissions
                                 s3_image_url = f"https://{AWS_S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{s3_object_key}"
-                                logging.debug(f"Successfully uploaded {s3_object_key} to S3.")
-                            except ClientError as s3_e:
-                                logging.error(f"Error uploading {s3_object_key} to S3: {s3_e}")
-                            except Exception as s3_e:
-                                logging.error(f"Unexpected error during S3 upload for {s3_object_key}: {s3_e}")
-                        else:
-                            logging.warning(f"S3 client not configured. Skipping upload for {s3_object_key}")
-
-                    except Exception as img_e:
-                        logging.error(f"Error generating image for {rel_path} page {page_label}: {img_e}")
-                        s3_image_url = None # Ensure URL is None if image gen fails
-
-                    # Create document per page
-                    document = {
-                        "text": page_text, 
-                        "metadata": {
-                            "source": s3_pdf_key, # Store the S3 key as the source identifier
-                            "page": page_label, 
-                            "image_url": s3_image_url, # Store the S3 URL (or None)
-                            "total_pages": total_pages, # Add total pages
-                            "source_dir": pdf_image_sub_dir_name, # Add cleaned source dir name
-                            "type": "pdf",
-                            "folder": str(Path(rel_path).parent), # Store relative folder correctly
+                                logging.info(f"Uploaded page image to S3: {s3_object_key}")
+                            except Exception as e:
+                                logging.error(f"Failed to upload page image to S3: {e}")
+                                # Keep s3_image_url as None to indicate no image available
+                        
+                        # Create document metadata
+                        metadata = {
+                            "source": s3_pdf_key,  # Store the S3 key as the source
                             "filename": pdf_filename,
+                            "page": page_label,
+                            "total_pages": total_pages,
+                            "image_url": s3_image_url,
+                            "source_dir": pdf_image_sub_dir_name,
+                            "type": "pdf",
+                            "folder": str(Path(rel_path).parent),
                             "processed_at": datetime.now().isoformat()
                         }
-                    }
-                    documents.append(document)
-                    self.processed_sources.add(page_source_id) 
-
+                        
+                        # Standard approach - process whole page as one document
+                        standard_docs.append({
+                            "text": page_text,
+                            "metadata": metadata.copy()  # Use a copy to avoid reference issues
+                        })
+                        
+                        # Semantic approach - chunk the page into sections (paragraphs)
+                        # This is a simple implementation - can be improved with better chunking
+                        paragraphs = [p for p in page_text.split('\n\n') if p.strip()]
+                        
+                        for i, paragraph in enumerate(paragraphs):
+                            if paragraph.strip():
+                                para_metadata = metadata.copy()
+                                para_metadata["chunk_index"] = i
+                                para_metadata["chunk_type"] = "paragraph"
+                                
+                                semantic_docs.append({
+                                    "text": paragraph,
+                                    "metadata": para_metadata
+                                })
+                        
+                        # Mark as processed
+                        self.processed_sources.add(page_source_id)
+                        
+                    except Exception as e:
+                        logging.error(f"Error processing page {page_label} of {s3_pdf_key}: {e}")
+                        continue
+                
+                # Add documents to both vector stores
+                if standard_docs:
+                    logging.info(f"Adding {len(standard_docs)} documents to standard store from {pdf_filename}")
+                    self.standard_store.add_documents(standard_docs)
+                    documents.extend(standard_docs)
+                
+                if semantic_docs:
+                    logging.info(f"Adding {len(semantic_docs)} documents to semantic store from {pdf_filename}")
+                    self.semantic_store.add_documents(semantic_docs)
+                
+                # Close the document when done
                 doc.close()
-
+                
             except Exception as e:
-                logging.error(f"Error processing S3 PDF {s3_pdf_key}: {str(e)}")
+                logging.error(f"Error processing PDF {s3_pdf_key}: {e}")
+                continue
         
         return documents
-    
+
     def process_all_sources(self):
-        """Process all data sources and add to vector store."""
-        # Process PDFs
+        """Process all data sources and add them to vector store."""
+        documents = []
+        # Process PDFs from S3
         pdf_documents = self.process_pdfs_from_s3()
         if pdf_documents:
-            logging.info(f"Adding {len(pdf_documents)} PDF documents to vector store")
-            self.vector_store.add_documents(pdf_documents)
+            documents.extend(pdf_documents)
         
-        logging.info("PDF Processing complete!") # Updated log message
+        logging.info(f"Processed a total of {len(documents)} documents")
+        return documents
 
 def main():
+    """Main function."""
     processor = DataProcessor()
     processor.process_all_sources()
 

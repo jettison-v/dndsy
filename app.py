@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, Response
 from flask_cors import CORS
-from llm import ask_dndsy, vector_store
+from llm import ask_dndsy, default_vector_store
+from vector_store import get_vector_store
 import os
 from datetime import timedelta
 import logging
@@ -19,6 +20,10 @@ CORS(app)
 
 PASSWORD = os.environ.get('APP_PASSWORD', 'dndsy')  # Get password from env var or use default
 logger.info(f"Password loaded from environment variable {'APP_PASSWORD' if 'APP_PASSWORD' in os.environ else '(using default)'}. ")
+
+# Vector store types
+VECTOR_STORE_TYPES = ["standard", "semantic"]
+DEFAULT_VECTOR_STORE = os.environ.get('DEFAULT_VECTOR_STORE', 'standard')
 
 def check_auth():
     auth_status = session.get('authenticated', False)
@@ -52,7 +57,9 @@ def login():
 def home():
     if not check_auth():
         return redirect(url_for('login'))
-    return render_template('index.html')
+    return render_template('index.html', 
+                          vector_store_types=VECTOR_STORE_TYPES,
+                          default_vector_store=DEFAULT_VECTOR_STORE)
 
 @app.route('/api/chat')
 def chat():
@@ -62,12 +69,20 @@ def chat():
     # Read message from query parameters for SSE
     user_message = request.args.get('message', '') 
     
+    # Get vector store type from request
+    vector_store_type = request.args.get('vector_store_type', None)
+    
+    # Validate vector store type
+    if vector_store_type and vector_store_type not in VECTOR_STORE_TYPES:
+        return Response(f"event: error\ndata: {json.dumps({'error': f'Invalid vector store type: {vector_store_type}'})}\n\n", 
+                       status=400, mimetype='text/event-stream')
+    
     if not user_message:
          return Response(f"event: error\ndata: {json.dumps({'error': 'No message provided'})}\n\n", status=400, mimetype='text/event-stream')
 
     # Return a streaming response
-    # The ask_dndsy function is now a generator yielding SSE events
-    return Response(ask_dndsy(user_message), mimetype='text/event-stream')
+    # Pass vector_store_type to ask_dndsy
+    return Response(ask_dndsy(user_message, store_type=vector_store_type), mimetype='text/event-stream')
 
 @app.route('/api/get_context_details')
 def get_context_details():
@@ -76,6 +91,7 @@ def get_context_details():
 
     source_name = request.args.get('source')
     page_number_str = request.args.get('page')
+    vector_store_type = request.args.get('vector_store_type', DEFAULT_VECTOR_STORE)
 
     if not source_name or not page_number_str:
         return jsonify({'error': 'Missing source or page parameter'}), 400
@@ -85,31 +101,40 @@ def get_context_details():
     except ValueError:
         return jsonify({'error': 'Invalid page number'}), 400
 
-    logger.info(f"Fetching details for source: '{source_name}', page: {page_number}")
+    # Validate vector store type
+    if vector_store_type not in VECTOR_STORE_TYPES:
+        return jsonify({'error': f'Invalid vector store type: {vector_store_type}'}), 400
+    
+    logger.info(f"Fetching details for source: '{source_name}', page: {page_number}, store type: {vector_store_type}")
     
     try:
-        # Log the exact values before calling the store
-        logger.info(f"Calling vector_store.get_details_by_source_page with source_name='{source_name}', page_number={page_number}")
+        # Get the appropriate vector store
+        vector_store = get_vector_store(vector_store_type)
         
         # Attempt to get details from the vector store
-        # NOTE: We need to ensure vector_store has a method like get_details_by_source_page
-        # This might involve searching Qdrant with a specific filter
         details = vector_store.get_details_by_source_page(source_name, page_number)
         
         if details:
-            # Assuming details is a dict like {'text': '...', 'image_url': '...'}
             logger.info(f"Found details: image_url exists = {details.get('image_url') is not None}")
             return jsonify(details)
         else:
             logger.warning(f"No details found for source: '{source_name}', page: {page_number}")
             return jsonify({'error': 'Context details not found'}), 404
             
-    except AttributeError:
-         logger.error(f"Vector store does not have method 'get_details_by_source_page'. Needs implementation.")
-         return jsonify({'error': 'Server configuration error: Cannot fetch context details.'}), 500
     except Exception as e:
         logger.error(f"Error fetching context details for '{source_name}' page {page_number}: {e}", exc_info=True)
         return jsonify({'error': 'Internal server error fetching context details'}), 500
+
+@app.route('/api/vector_stores')
+def get_vector_store_types():
+    """Return available vector store types"""
+    if not check_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    return jsonify({
+        'types': VECTOR_STORE_TYPES,
+        'default': DEFAULT_VECTOR_STORE
+    })
 
 @app.route('/logout')
 def logout():

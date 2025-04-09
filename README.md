@@ -4,6 +4,9 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
 
 ## Features
 
+*   **Multiple RAG Approaches:** Choose between different vector store approaches for optimal retrieval:
+    * **Standard:** Process PDFs page-by-page for broader context.
+    * **Semantic:** Chunk content into paragraphs for more precise, semantic search.
 *   **RAG Chatbot:** Answers questions about D&D 2024 rules using provided PDFs as context.
 *   **Streaming Responses:** Assistant responses are streamed word-by-word for a real-time feel.
 *   **Markdown Formatting:** Assistant responses are formatted using Markdown for enhanced readability (headings, bold, lists, etc.).
@@ -21,8 +24,9 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
 *   **Backend:** Python, Flask
 *   **Vector Database:** Qdrant (Cloud recommended for deployment)
 *   **LLM:** Pluggable via `llm_providers` (e.g., OpenAI, Anthropic)
-*   **Embeddings:** Sentence Transformers (`all-MiniLM-L6-v2`)
+*   **Embeddings:** Sentence Transformers (`all-MiniLM-L6-v2` for standard, `paraphrase-MiniLM-L6-v2` for semantic)
 *   **PDF Parsing:** PyMuPDF (`fitz`)
+*   **NLP Processing:** spaCy, NLTK, langchain for semantic chunking
 *   **Frontend:** HTML, CSS, JavaScript (with Marked.js for Markdown rendering)
 *   **Cloud Storage:** AWS S3
 *   **Deployment:** Docker, Gunicorn, Heroku (or similar platform)
@@ -54,9 +58,9 @@ dndsy/
 │   ├── index.html           # Main chat interface template
 │   └── login.html           # Login page template
 ├── vector_store/
-│   ├── __init__.py
-│   ├── base_store.py
-│   └── qdrant_store.py      # Qdrant vector store implementation
+│   ├── __init__.py          # Vector store factory
+│   ├── qdrant_store.py      # Standard vector store implementation
+│   └── semantic_store.py    # Semantic vector store implementation
 ├── scripts/
 │   ├── process_pdfs_s3.py   # Script to process PDFs from S3
 │   ├── reset_and_process.py # Helper to clear DB and reprocess
@@ -102,6 +106,8 @@ dndsy/
         *   `LLM_PROVIDER`: Set to `openai` or `anthropic`.
         *   `LLM_MODEL_NAME`: Specify the model (e.g., `gpt-4o-mini`, `claude-3-haiku-20240307`).
         *   `OPENAI_API_KEY` / `ANTHROPIC_API_KEY`: Add the key for your chosen provider.
+        *   **Vector Store Config:**
+            *   `DEFAULT_VECTOR_STORE`: Set to `standard` or `semantic` (default: `standard`).
         *   **Qdrant Config:**
             *   *Local Docker:* Set `QDRANT_HOST=qdrant`, `QDRANT_PORT=6333`. Leave `QDRANT_API_KEY` blank.
             *   *Cloud:* Set `QDRANT_HOST` to your cloud URL, set `QDRANT_API_KEY`.
@@ -179,6 +185,7 @@ dndsy/
         *   `LLM_PROVIDER` (e.g., `openai`)
         *   `LLM_MODEL_NAME` (e.g., `gpt-4o-mini`)
         *   `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`
+        *   `DEFAULT_VECTOR_STORE` (e.g., `standard` or `semantic`)
         *   `QDRANT_HOST` (Your Cloud URL)
         *   `QDRANT_API_KEY`
         *   `AWS_ACCESS_KEY_ID`
@@ -203,8 +210,20 @@ dndsy/
     *   Heroku will build using `requirements.txt` and run using the `web` process in the `Procfile`.
     *   *(Optional)* Scale your dynos if needed (e.g., `heroku ps:scale web=1:standard-1x -a your-app-name`). Check memory usage in Metrics.
 
-## Notes
+## Vector Store Approaches
 
-*   **Token Counting:** Current token counting uses `tiktoken`, which is specific to OpenAI models. If using other providers extensively, consider a more generic tokenizer or provider-specific methods.
-*   **Memory Usage:** RAG applications can be memory-intensive due to holding context. Monitor memory usage, especially during PDF processing and chat interactions. Consider upgrading dyno resources if needed.
-*   **Error Handling:** Basic error handling is included, but can be enhanced for production environments. 
+DnDSy implements two different vector store approaches to optimize retrieval:
+
+1. **Standard Approach**
+   * Processes PDF content page-by-page
+   * Uses `all-MiniLM-L6-v2` embedding model
+   * Good for maintaining full page context
+   * Default approach
+
+2. **Semantic Approach**
+   * Chunks content into paragraphs
+   * Uses `paraphrase-MiniLM-L6-v2` embedding model
+   * Better for retrieving specific pieces of information
+   * More precise, especially for detailed rules questions
+   
+Users can switch between these two approaches via the UI selector. Both approaches are processed and stored in separate Qdrant collections. 

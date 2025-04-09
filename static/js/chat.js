@@ -8,10 +8,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const expandPanel = document.getElementById('expand-panel');
     const expandedSourcePills = document.getElementById('expanded-source-pills');
     const llmInfoSpan = document.getElementById('llm-info');
+    const vectorStoreInfoSpan = document.getElementById('vector-store-info');
     const mobileSourceToggle = document.getElementById('mobile-source-toggle');
     const zoomInBtn = document.getElementById('zoom-in');
     const zoomOutBtn = document.getElementById('zoom-out');
     const zoomResetBtn = document.getElementById('zoom-reset');
+    const vectorStoreSelector = document.getElementById('vector-store-selector');
     
     let isFirstMessage = true;
     let messageContextParts = {};
@@ -19,9 +21,32 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentZoomLevel = 1;
     let isPanelExpanded = false;
     let activeSources = []; // Store active sources for expanded view
+    let currentVectorStore = document.querySelector('.vector-store-option.active')?.dataset.storeType || 'standard';
     
     // Initialize source panel state
     let sourcePanelOpen = false;
+
+    // Vector store selection
+    if (vectorStoreSelector) {
+        const options = vectorStoreSelector.querySelectorAll('.vector-store-option');
+        options.forEach(option => {
+            option.addEventListener('click', () => {
+                // Update active state
+                options.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+                
+                // Update current vector store
+                currentVectorStore = option.dataset.storeType;
+                
+                // Update info display
+                if (vectorStoreInfoSpan) {
+                    vectorStoreInfoSpan.textContent = `Store: ${currentVectorStore.charAt(0).toUpperCase() + currentVectorStore.slice(1)}`;
+                }
+                
+                console.log(`Vector store changed to: ${currentVectorStore}`);
+            });
+        });
+    }
 
     // Add expand panel functionality
     if (expandPanel) {
@@ -60,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const pageNumber = clonedPill.dataset.pageNumber;
                 const score = clonedPill.dataset.score;
                 const displayText = clonedPill.textContent;
+                const storeType = clonedPill.dataset.storeType || currentVectorStore;
                 
                 // Clear previous active states
                 document.querySelectorAll('.source-pill').forEach(p => p.classList.remove('active'));
@@ -69,10 +95,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 sourceContent.innerHTML = '<p class="loading-source">Loading source details...</p>';
                 
                 // Log the values being sent
-                console.log(`Fetching details for: s3Key='${s3Key}', pageNumber='${pageNumber}', score='${score}'`);
+                console.log(`Fetching details for: s3Key='${s3Key}', pageNumber='${pageNumber}', score='${score}', storeType='${storeType}'`);
                 
                 // Fetch and show source
-                fetch(`/api/get_context_details?source=${encodeURIComponent(s3Key)}&page=${pageNumber}`)
+                fetch(`/api/get_context_details?source=${encodeURIComponent(s3Key)}&page=${pageNumber}&vector_store_type=${storeType}`)
                     .then(response => {
                         if (!response.ok) {
                             return response.json().then(errorData => {
@@ -82,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         return response.json();
                     })
                     .then(details => {
-                        showSourcePanel(details, displayText, pageNumber, s3Key, score);
+                        showSourcePanel(details, displayText, pageNumber, s3Key, score, storeType);
                     })
                     .catch(error => {
                         console.error('Error fetching source details:', error);
@@ -202,66 +228,48 @@ document.addEventListener('DOMContentLoaded', () => {
         textSpan.textContent += textChunk;
     }
 
-    // Function to add source pills (appends to existing container)
-    function addSourcePills(messageId, sources /* contextParts removed */) {
+    // Function to add source pills
+    function addSourcePills(messageId, sources) {
         const messageElement = chatMessages.querySelector(`[data-message-id="${messageId}"]`);
-        const sourceContainer = messageElement?.querySelector('.source-pills'); // Find the container
-         if (!sourceContainer || !sources || sources.length === 0) return;
-
-         sourceContainer.innerHTML = ''; // Clear previous pills if any (e.g., on error)
-         
-         // Store sources for expanded view
-         activeSources = sources;
-
-         const MAX_VISIBLE_PILLS = 5;
-         let sourcesToShow = sources; // sources is now a list of objects
-         let hiddenCount = 0;
-
-         if (sources.length > MAX_VISIBLE_PILLS) {
-             sourcesToShow = sources.slice(0, MAX_VISIBLE_PILLS);
-             hiddenCount = sources.length - MAX_VISIBLE_PILLS;
-         }
-
-         sourcesToShow.forEach((sourceObj, index) => {
-             // sourceObj = { display: "... (page X)", s3_key: "...", page: X, score: Y }
-             if (sourceObj && sourceObj.display && sourceObj.s3_key && sourceObj.page) {
-                 const sourcePill = createSourcePill(sourceObj.display, messageId, sourceObj.s3_key, sourceObj.page, sourceObj.score);
-                 sourceContainer.appendChild(sourcePill);
-             } else {
-                 console.warn("Invalid source object received:", sourceObj);
-             }
-         });
-
-         if (hiddenCount > 0) {
-             const showMore = document.createElement('a');
-             showMore.href = '#';
-             showMore.textContent = `Show ${hiddenCount} more source${hiddenCount > 1 ? 's' : ''}`;
-             showMore.className = 'show-more-sources';
-             showMore.onclick = (e) => {
-                 e.preventDefault();
-                 sourceContainer.innerHTML = ''; 
-                 sources.forEach((sourceObj, index) => { // Iterate full list
-                     if (sourceObj && sourceObj.display && sourceObj.s3_key && sourceObj.page) {
-                         const sourcePill = createSourcePill(sourceObj.display, messageId, sourceObj.s3_key, sourceObj.page, sourceObj.score);
-                         sourceContainer.appendChild(sourcePill);
-                     } else {
-                         console.warn("Invalid source object received when showing more:", sourceObj);
-                     }
-                 });
-                 
-                 // Update expanded view if panel is expanded
-                 if (isPanelExpanded) {
-                     updateExpandedSourcePills();
-                 }
-             };
-             sourceContainer.appendChild(showMore);
-         }
-         sourceContainer.style.display = 'flex'; // Show the container
-         
-         // Update expanded view if panel is expanded
-         if (isPanelExpanded) {
-             updateExpandedSourcePills();
-         }
+        if (!messageElement) return;
+        
+        const pillsContainer = messageElement.querySelector('.source-pills');
+        if (!pillsContainer) return;
+        
+        if (!sources || sources.length === 0) {
+            pillsContainer.style.display = 'none';
+            return;
+        }
+        
+        // Store active sources for expanded view
+        activeSources = sources;
+        
+        // Clear existing pills
+        pillsContainer.innerHTML = '';
+        
+        // Create label
+        const label = document.createElement('span');
+        label.className = 'source-pills-label';
+        label.textContent = 'Sources:';
+        pillsContainer.appendChild(label);
+        
+        // Add source pills
+        sources.forEach(source => {
+            const displayText = source.display || `${source.s3_key.split('/').pop().replace('.pdf', '')} p.${source.page}`;
+            const pill = createSourcePill(
+                displayText, 
+                messageId, 
+                source.s3_key, 
+                source.page, 
+                source.score,
+                source.store_type || currentVectorStore,
+                source.chunk_info
+            );
+            pillsContainer.appendChild(pill);
+        });
+        
+        // Show the pills container
+        pillsContainer.style.display = 'flex';
     }
     
     // Function to update message text (used for status)
@@ -280,49 +288,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Helper function to create a source pill element
     // Now takes score
-    function createSourcePill(displayText, messageId, s3Key, pageNumber, score) {
-        const pill = document.createElement('span');
+    function createSourcePill(displayText, messageId, s3Key, pageNumber, score, storeType = currentVectorStore, chunkInfo = null) {
+        const pill = document.createElement('button');
         pill.className = 'source-pill';
-        pill.textContent = displayText; // Keep original display text
+        
+        // Support chunk info display
+        let pillText = displayText;
+        if (chunkInfo) {
+            pillText += ` (${chunkInfo})`;
+        }
+        
+        pill.textContent = pillText;
         pill.dataset.messageId = messageId;
         pill.dataset.s3Key = s3Key;
         pill.dataset.pageNumber = pageNumber;
-        pill.dataset.score = score !== undefined ? score : ''; // Store score
+        pill.dataset.score = score;
+        pill.dataset.storeType = storeType;
+        if (chunkInfo) {
+            pill.dataset.chunkInfo = chunkInfo;
+        }
         
-        pill.addEventListener('click', async () => { // Make listener async
+        pill.addEventListener('click', () => {
             // Clear previous active states
             document.querySelectorAll('.source-pill').forEach(p => p.classList.remove('active'));
             pill.classList.add('active');
             
             // Show loading state in panel
+            sourcePanel.classList.add('visible');
             sourceContent.innerHTML = '<p class="loading-source">Loading source details...</p>';
-            sourcePanel.classList.add('open');
             
-            const currentScore = pill.dataset.score;
-            // Log the values being sent
-            console.log(`Fetching details for: s3Key='${s3Key}', pageNumber='${pageNumber}', score='${currentScore}'`);
-            
-            try {
-                // Send s3Key as the 'source' parameter
-                const response = await fetch(`/api/get_context_details?source=${encodeURIComponent(s3Key)}&page=${pageNumber}`);
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-                }
-                const details = await response.json();
-                // Pass fetched details, original displayText, s3Key, AND score to showSourcePanel
-                showSourcePanel(details, displayText, pageNumber, s3Key, currentScore);
-                
-            } catch (error) {
-                console.error('Error fetching source details:', error);
-                sourceContent.innerHTML = `<p class="error-source">Error loading source: ${error.message}</p>`;
-            }
+            // Fetch and show source
+            fetch(`/api/get_context_details?source=${encodeURIComponent(s3Key)}&page=${pageNumber}&vector_store_type=${storeType}`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errorData => {
+                            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(details => {
+                    showSourcePanel(details, displayText, pageNumber, s3Key, score, storeType);
+                })
+                .catch(error => {
+                    console.error('Error fetching source details:', error);
+                    sourceContent.innerHTML = `<p class="error-source">Error loading source: ${error.message}</p>`;
+                });
         });
+        
         return pill;
     }
 
     // Function to show source content in the side panel
-    function showSourcePanel(details, displayText, pageNumber, s3Key, score) { 
+    function showSourcePanel(details, displayText, pageNumber, s3Key, score, storeType = currentVectorStore) { 
         // Details object expected: {"text": "...", "image_url": "...", "total_pages": ...} 
         if (!details) {
             sourceContent.innerHTML = '<p class="error-source">Error: Received no details for source.</p>';
@@ -404,7 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 
                 // Add page navigation
-                addSourceNavigation(pageNumber, totalPages, s3Key);
+                addSourceNavigation(pageNumber, totalPages, s3Key, storeType);
             };
             
             img.onerror = function() {
@@ -432,14 +450,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Navigate source page
-    async function navigateSourcePage(direction) {
+    async function navigateSourcePage(direction, context) {
         const currentPage = parseInt(sourceContent.dataset.currentPage, 10);
         const totalPages = parseInt(sourceContent.dataset.totalPages, 10);
-        // Need the S3 Key for the API call - how do we get it here?
-        // We could store it on sourceContent.dataset when showSourcePanel is first called.
-        // Let's assume we stored it: sourceContent.dataset.s3Key 
-        // !!! This requires adding sourceContent.dataset.s3Key = s3Key in showSourcePanel !!!
-        const s3Key = sourceContent.dataset.s3Key; // NEED TO ADD THIS TO showSourcePanel
+        const s3Key = context?.s3Key || sourceContent.dataset.s3Key;
         const readableSourceName = sourceContent.dataset.readableSourceName;
         const newPage = currentPage + direction;
 
@@ -462,7 +476,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(nextButton) nextButton.disabled = true;
         
         try {
-            const response = await fetch(`/api/get_context_details?source=${encodeURIComponent(s3Key)}&page=${newPage}`);
+            const response = await fetch(`/api/get_context_details?source=${encodeURIComponent(s3Key)}&page=${newPage}&vector_store_type=${context?.storeType || currentVectorStore}`);
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
@@ -470,7 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const details = await response.json();
             const newDisplayText = `${readableSourceName} (page ${newPage})`;
             // Call showSourcePanel without score for navigated pages
-            showSourcePanel(details, newDisplayText, newPage, s3Key, undefined); 
+            showSourcePanel(details, newDisplayText, newPage, s3Key, undefined, context?.storeType || currentVectorStore); 
         } catch (error) {
             console.error('Error fetching details for navigated page:', error);
             if(imageContainer) imageContainer.innerHTML = `<p class="error-source">Error loading page ${newPage}: ${error.message}</p>`;
@@ -672,7 +686,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Function to add navigation to source panel
-    function addSourceNavigation(currentPage, totalPages, s3Key) {
+    function addSourceNavigation(currentPage, totalPages, s3Key, storeType = currentVectorStore) {
         const sourceContent = document.getElementById('source-content');
         // Create navigation container
         const navContainer = document.createElement('div');
@@ -682,7 +696,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const prevButton = document.createElement('button');
         prevButton.innerHTML = '<i class="fas fa-arrow-left"></i> Previous';
         prevButton.disabled = currentPage <= 1;
-        prevButton.addEventListener('click', () => navigateSourcePage(-1));
+        prevButton.addEventListener('click', () => navigateSourcePage(-1, { s3Key, currentPage, totalPages, storeType }));
         
         // Page indicator
         const pageIndicator = document.createElement('span');
@@ -692,7 +706,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const nextButton = document.createElement('button');
         nextButton.innerHTML = 'Next <i class="fas fa-arrow-right"></i>';
         nextButton.disabled = totalPages === 'N/A' || currentPage >= parseInt(totalPages);
-        nextButton.addEventListener('click', () => navigateSourcePage(1));
+        nextButton.addEventListener('click', () => navigateSourcePage(1, { s3Key, currentPage, totalPages, storeType }));
         
         // Add elements to navigation container
         navContainer.appendChild(prevButton);

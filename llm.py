@@ -1,7 +1,7 @@
 import os
 # Remove direct OpenAI import if no longer needed directly
 # from openai import OpenAI 
-from vector_store.qdrant_store import QdrantStore
+from vector_store import get_vector_store
 import logging
 import tiktoken # Keep for token counting (OpenAI specific for now)
 from dotenv import load_dotenv
@@ -27,8 +27,9 @@ except Exception as e:
     # For now, we might let subsequent calls fail.
     llm_client = None 
 
-# Initialize vector store
-vector_store = QdrantStore()
+# Initialize default vector store
+default_store_type = os.getenv("DEFAULT_VECTOR_STORE", "standard")
+default_vector_store = get_vector_store(default_store_type)
 
 def num_tokens_from_string(string: str, model: str) -> int:
     """Returns the number of tokens in a text string."""
@@ -55,12 +56,21 @@ def truncate_text(text: str, max_tokens: int, model: str) -> str:
         return text
     return encoding.decode(tokens[:max_tokens]) + "..."
 
-def get_relevant_context(query: str, model: str, limit: int = 5) -> list[dict]:
-    """Search the vector store for relevant context."""
-    # NOTE: Passing 'model' here is currently only used for tiktoken calculations.
-    # The search itself is model-agnostic (uses embeddings from SentenceTransformer).
+def get_relevant_context(query: str, model: str, limit: int = 5, store_type: str = None) -> list[dict]:
+    """
+    Search the vector store for relevant context.
+    
+    Args:
+        query: The search query
+        model: The LLM model name (for token handling)
+        limit: Maximum number of results to return
+        store_type: Vector store type to use ("standard" or "semantic")
+    """
+    # Get the appropriate vector store
+    vector_store = get_vector_store(store_type)
+    
     try:
-        logger.info(f"Searching for context with query: {query}")
+        logger.info(f"Searching for context with query: {query} using store type: {store_type}")
         results = vector_store.search(query, limit=limit)
         logger.info(f"Found {len(results)} results from vector store")
         
@@ -87,7 +97,13 @@ def get_relevant_context(query: str, model: str, limit: int = 5) -> list[dict]:
             source_dir = metadata.get('source_dir', None) # Cleaned path for image dir
             original_s3_key = metadata.get('source') # The original S3 key
             
+            # Add semantic-specific information if available
+            chunk_index = metadata.get('chunk_index', None)
+            chunk_type = metadata.get('chunk_type', None)
+            
             logger.info(f"Result {idx + 1} from {source_filename} (page {page}) with score {score:.4f}")
+            if chunk_index is not None:
+                logger.info(f"  Chunk: {chunk_type} #{chunk_index}")
             
             context_piece = {
                 'text': text,
@@ -97,7 +113,8 @@ def get_relevant_context(query: str, model: str, limit: int = 5) -> list[dict]:
                 'total_pages': total_pages,
                 'source_dir': source_dir, 
                 'score': score,
-                'original_s3_key': original_s3_key # Add the S3 key here
+                'original_s3_key': original_s3_key, # Add the S3 key here
+                'chunk_info': f"{chunk_type} #{chunk_index}" if chunk_index is not None else None
             }
             
             # Use tiktoken for OpenAI-specific token counting
@@ -121,10 +138,14 @@ def get_relevant_context(query: str, model: str, limit: int = 5) -> list[dict]:
         logger.error(f"Error searching vector store: {e}", exc_info=True)
         return []
 
-def ask_dndsy(prompt: str) -> Generator[str, None, None]:
+def ask_dndsy(prompt: str, store_type: str = None) -> Generator[str, None, None]:
     """
     Processes a query using RAG and streams the response using the configured LLM provider.
     Yields JSON-encoded metadata first, then text chunks.
+    
+    Args:
+        prompt: The user query
+        store_type: Vector store type to use ("standard" or "semantic")
     """
     if not llm_client:
          error_msg = "LLM client failed to initialize. Cannot process query."
@@ -143,7 +164,7 @@ def ask_dndsy(prompt: str) -> Generator[str, None, None]:
     try:
         # --- Vector Store Search --- 
         start_time_rag = time.perf_counter()
-        context_parts = get_relevant_context(prompt, model=current_model_name)
+        context_parts = get_relevant_context(prompt, model=current_model_name, store_type=store_type)
         end_time_rag = time.perf_counter()
         logger.info(f"Context search took {end_time_rag - start_time_rag:.4f} seconds.")
         logger.info(f"Context found: {bool(context_parts)}")
@@ -159,6 +180,9 @@ def ask_dndsy(prompt: str) -> Generator[str, None, None]:
             for part in context_parts:
                 # Use the cleaned source name and page for display
                 display_text = f"{part['source']} (page {part['page']})"
+                if part.get('chunk_info'):
+                    display_text += f" - {part['chunk_info']}"
+                
                 # Get the original S3 key stored in the context part's metadata
                 # We need to ensure get_relevant_context populates this correctly
                 original_s3_key = part.get('original_s3_key') 
@@ -167,14 +191,17 @@ def ask_dndsy(prompt: str) -> Generator[str, None, None]:
                         'display': display_text,
                         's3_key': original_s3_key,
                         'page': part['page'], # Include page for easier access on frontend
-                        'score': part.get('score') # Add the score here
+                        'score': part.get('score'), # Add the score here
+                        'chunk_info': part.get('chunk_info')
                     })
                 else:
                     logger.warning(f"Missing 'original_s3_key' for context part: {part['source']} page {part['page']}")
                     
                 # Add source info to the context text for the LLM    
-                context_text_for_prompt += f"Source: {part['source']} - Page {part['page']}\n"
-                context_text_for_prompt += f"Content:\n{part['text']}\n\n"
+                context_text_for_prompt += f"Source: {part['source']} - Page {part['page']}"
+                if part.get('chunk_info'):
+                    context_text_for_prompt += f" - {part['chunk_info']}"
+                context_text_for_prompt += f"\nContent:\n{part['text']}\n\n"
                 
             logger.info(f"Prepared sources for metadata: {len(sources_for_metadata)} items")
         
@@ -212,9 +239,9 @@ def ask_dndsy(prompt: str) -> Generator[str, None, None]:
             "type": "metadata",
             "sources": sources_for_metadata, # Use the list of objects
             "using_context": bool(context_parts),
-            # "context_parts": context_parts, # Removed: Avoid sending large text back
             "llm_provider": llm_client.get_provider_name(),
-            "llm_model": current_model_name
+            "llm_model": current_model_name,
+            "store_type": store_type or default_store_type
         }
         yield f"event: metadata\ndata: {json.dumps(initial_metadata)}\n\n"
         logger.info("Yielded initial metadata to client (excluding full context text).") # Updated log
@@ -248,9 +275,14 @@ def ask_dndsy(prompt: str) -> Generator[str, None, None]:
         try:
             yield f"event: error\ndata: {json.dumps({'error': error_msg})}\n\n"
         except Exception as yield_err:
-             logger.error(f"Error yielding error message: {yield_err}")
+            logger.error(f"Failed to yield error: {yield_err}")
+    
     finally:
-        # --- Signal Stream End --- 
-        yield f"event: end\ndata: End of stream\n\n"
+        # Final timing info
         end_time_total = time.perf_counter()
-        logger.info(f"Total ask_dndsy execution ({'error' if error_occurred else 'success'}) took {end_time_total - start_time_total:.4f} seconds.")
+        total_time = end_time_total - start_time_total
+        logger.info(f"Total processing time: {total_time:.4f} seconds")
+        
+        if not error_occurred:
+            # Yield completion event when everything is done
+            yield f"event: complete\ndata: {json.dumps({'success': True, 'processing_time': total_time})}\n\n"
