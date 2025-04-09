@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const sourcePanel = document.getElementById('source-panel');
     const sourceContent = document.getElementById('source-content');
     const closePanel = document.getElementById('close-panel');
+    const expandPanel = document.getElementById('expand-panel');
+    const expandedSourcePills = document.getElementById('expanded-source-pills');
     const llmInfoSpan = document.getElementById('llm-info');
     const mobileSourceToggle = document.getElementById('mobile-source-toggle');
     const zoomInBtn = document.getElementById('zoom-in');
@@ -15,9 +17,82 @@ document.addEventListener('DOMContentLoaded', () => {
     let messageContextParts = {};
     let currentEventSource = null;
     let currentZoomLevel = 1;
+    let isPanelExpanded = false;
+    let activeSources = []; // Store active sources for expanded view
     
     // Initialize source panel state
     let sourcePanelOpen = false;
+
+    // Add expand panel functionality
+    if (expandPanel) {
+        expandPanel.addEventListener('click', () => {
+            isPanelExpanded = !isPanelExpanded;
+            
+            if (isPanelExpanded) {
+                sourcePanel.classList.add('expanded');
+                expandPanel.innerHTML = '<i class="fas fa-compress-alt"></i>';
+                expandPanel.title = 'Compress';
+                
+                // Clone source pills to expanded view if available
+                updateExpandedSourcePills();
+            } else {
+                sourcePanel.classList.remove('expanded');
+                expandPanel.innerHTML = '<i class="fas fa-expand-alt"></i>';
+                expandPanel.title = 'Expand';
+            }
+        });
+    }
+    
+    // Function to update expanded source pills
+    function updateExpandedSourcePills() {
+        if (!expandedSourcePills) return;
+        
+        expandedSourcePills.innerHTML = '';
+        
+        // Clone active source pills to expanded view
+        document.querySelectorAll('.source-pill').forEach(pill => {
+            const clonedPill = pill.cloneNode(true);
+            
+            // Add the same click event listener
+            clonedPill.addEventListener('click', () => {
+                const messageId = clonedPill.dataset.messageId;
+                const s3Key = clonedPill.dataset.s3Key;
+                const pageNumber = clonedPill.dataset.pageNumber;
+                const score = clonedPill.dataset.score;
+                const displayText = clonedPill.textContent;
+                
+                // Clear previous active states
+                document.querySelectorAll('.source-pill').forEach(p => p.classList.remove('active'));
+                clonedPill.classList.add('active');
+                
+                // Show loading state in panel
+                sourceContent.innerHTML = '<p class="loading-source">Loading source details...</p>';
+                
+                // Log the values being sent
+                console.log(`Fetching details for: s3Key='${s3Key}', pageNumber='${pageNumber}', score='${score}'`);
+                
+                // Fetch and show source
+                fetch(`/api/get_context_details?source=${encodeURIComponent(s3Key)}&page=${pageNumber}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(errorData => {
+                                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(details => {
+                        showSourcePanel(details, displayText, pageNumber, s3Key, score);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching source details:', error);
+                        sourceContent.innerHTML = `<p class="error-source">Error loading source: ${error.message}</p>`;
+                    });
+            });
+            
+            expandedSourcePills.appendChild(clonedPill);
+        });
+    }
 
     // Add zoom functionality
     if (zoomInBtn && zoomOutBtn && zoomResetBtn) {
@@ -68,6 +143,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Function to add a message to the chat
     function addMessage(text, sender, messageId = null) {
+        // If this is the first user message, remove the welcome system message
+        if (sender === 'user' && isFirstMessage) {
+            const systemMessages = chatMessages.querySelectorAll('.message.system');
+            systemMessages.forEach(msg => {
+                msg.style.display = 'none';
+            });
+            isFirstMessage = false;
+        }
+        
         const messageElement = document.createElement('div');
         messageElement.classList.add('message', sender);
         
@@ -88,9 +172,6 @@ document.addEventListener('DOMContentLoaded', () => {
         sourceContainer.className = 'source-pills';
         sourceContainer.style.display = 'none'; // Hide initially
         messageElement.appendChild(sourceContainer);
-        
-        // Apply slide-in animation
-        messageElement.style.animationDuration = '0.3s';
         
         chatMessages.appendChild(messageElement);
         chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -127,15 +208,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const sourceContainer = messageElement?.querySelector('.source-pills'); // Find the container
          if (!sourceContainer || !sources || sources.length === 0) return;
 
-         // Removed: messageContextParts[messageId] = contextParts;
          sourceContainer.innerHTML = ''; // Clear previous pills if any (e.g., on error)
          
-         // --- Logic to parse source name and page from source string --- 
-         // REMOVED: No longer needed as backend sends structured data
-         /* 
-         const parseSourceString = (sourceStr) => { ... };
-         */
-         // --- End parsing logic --- 
+         // Store sources for expanded view
+         activeSources = sources;
 
          const MAX_VISIBLE_PILLS = 3;
          let sourcesToShow = sources; // sources is now a list of objects
@@ -172,10 +248,20 @@ document.addEventListener('DOMContentLoaded', () => {
                          console.warn("Invalid source object received when showing more:", sourceObj);
                      }
                  });
+                 
+                 // Update expanded view if panel is expanded
+                 if (isPanelExpanded) {
+                     updateExpandedSourcePills();
+                 }
              };
              sourceContainer.appendChild(showMore);
          }
          sourceContainer.style.display = 'flex'; // Show the container
+         
+         // Update expanded view if panel is expanded
+         if (isPanelExpanded) {
+             updateExpandedSourcePills();
+         }
     }
     
     // Function to update message text (used for status)
@@ -541,7 +627,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle close panel button
     closePanel.addEventListener('click', () => {
         sourcePanel.classList.remove('open');
+        sourcePanel.classList.remove('expanded');
         sourcePanelOpen = false;
+        isPanelExpanded = false;
+        
+        if (expandPanel) {
+            expandPanel.innerHTML = '<i class="fas fa-expand-alt"></i>';
+            expandPanel.title = 'Expand';
+        }
         
         // Update mobile toggle button if on mobile
         if (window.innerWidth <= 768 && mobileSourceToggle) {

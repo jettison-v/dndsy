@@ -108,8 +108,18 @@
             <div id="source-panel" class="source-panel">
                 <div class="source-panel-header">
                     <h3><i class="fas fa-book-open"></i> Source Content</h3>
-                    <button id="close-panel" class="close-button">&times;</button>
+                    <div>
+                        <button id="expand-panel" class="expand-button" title="Expand"><i class="fas fa-expand-alt"></i></button>
+                        <button id="close-panel" class="close-button">&times;</button>
+                    </div>
                 </div>
+                
+                <!-- Source Pills Container for expanded view -->
+                <div id="source-sources" class="source-sources">
+                    <h4>Sources</h4>
+                    <div id="expanded-source-pills"></div>
+                </div>
+                
                 <div id="source-content" class="source-content">
                     <p class="no-source">Select a source to view its content</p>
                 </div>
