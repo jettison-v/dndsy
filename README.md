@@ -7,6 +7,14 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
 *   **Multiple RAG Approaches:** Choose between different vector store approaches for optimal retrieval:
     * **Standard:** Process PDFs page-by-page for broader context.
     * **Semantic:** Chunk content into paragraphs for more precise, semantic search.
+*   **Document Structure Detection:** Intelligently analyzes PDF formatting to identify:
+    * Document hierarchy (chapters, sections, subsections)
+    * Different heading levels based on font sizes and styles
+    * Contextual relationship between content sections
+*   **Context-Aware Search Results:** Shows proper document structure context in search results:
+    * Displays hierarchical paths like "Chapter 5 > Equipment > Weapons" 
+    * Improves user understanding of where information comes from
+    * Maintains the relationship between content and its place in the document
 *   **RAG Chatbot:** Answers questions about D&D 2024 rules using provided PDFs as context.
 *   **Streaming Responses:** Assistant responses are streamed word-by-word for a real-time feel.
 *   **Markdown Formatting:** Assistant responses are formatted using Markdown for enhanced readability (headings, bold, lists, etc.).
@@ -65,6 +73,10 @@ dndsy/
 │   ├── process_pdfs_s3.py   # Script to process PDFs from S3
 │   ├── reset_and_process.py # Helper to clear DB and reprocess
 │   └── setup_env.py         # Helper to create initial .env file
+├── utils/
+│   ├── __init__.py          # Utils package initialization
+│   ├── document_structure.py # Document structure analysis library
+│   └── pdf_structure_analyzer.py # Tool for analyzing PDF formatting and structure
 └── docker/
     └── docker-compose.yml   # Docker Compose for local development (app + Qdrant)
 ├── logs/                   # Centralized directory for log files
@@ -278,33 +290,45 @@ The system processes PDFs from S3 to generate two distinct vector databases (col
 
 ### Semantic Vector Store Generation
 
-1. **Text Chunking**
+1. **Document Structure Analysis**
+   * Analyzes font sizes, styles, and formatting to identify document hierarchy
+   * Detects up to 6 levels of headings (chapters, sections, subsections, etc.)
+   * Builds a table of contents structure as pages are processed
+   * Maintains heading context throughout document processing
+
+2. **Text Chunking**
    * Uses `langchain`'s `RecursiveCharacterTextSplitter` to intelligently split text
    * Implements cross-page chunking to preserve context across page boundaries
    * Tracks which page each chunk starts on for proper attribution
    * Creates more focused, meaningful chunks with preserved context
 
-2. **Embedding Generation**
+3. **Hierarchical Context Preservation**
+   * Each chunk is tagged with its full hierarchical path (e.g., "Chapter 5 > Equipment > Weapons")
+   * Preserves section, subsection, and specific heading information
+   * Enhances search results with meaningful context labels instead of generic chunk numbers
+   * Improves user understanding of where information comes from in the source material
+
+4. **Embedding Generation**
    * Uses OpenAI's `text-embedding-3-small` model via API calls
    * Generates 1536-dimensional embeddings for each chunk
    * Higher dimensionality captures more semantic nuance
 
-3. **BM25 Retriever Setup**
+5. **BM25 Retriever Setup**
    * Implements a secondary text-based retrieval using `langchain_community`'s `BM25Retriever`
    * Based on the BM25 algorithm (extension of TF-IDF)
    * Provides complementary keyword-based search capabilities
 
-4. **Hybrid Retrieval System**
+6. **Hybrid Retrieval System**
    * Combines vector similarity search and BM25 keyword search
    * Results are re-ranked based on combined scores
    * Balances semantic understanding with keyword precision
 
-5. **Vector Storage**
+7. **Vector Storage**
    * Stores embeddings in Qdrant collection `dnd_semantic`
    * Each point contains:
      * The embedding vector
      * The chunk text
-     * Enhanced metadata (source document, page number, chunk index, chunk count, cross-page flag)
+     * Enhanced metadata (document hierarchy, headings, source document, page number, chunk index, chunk count, cross-page flag)
    * Uses `qdrant_client` for efficient batch upserts
 
 ### Database Reset and Rebuilding Process
