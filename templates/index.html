@@ -9,7 +9,8 @@
     <script src="{{ url_for('static', filename='js/marked.min.js') }}"></script>
     <title>AskDND - D&D Rules Assistant</title>
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Condensed:wght@700&family=EB+Garamond:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         .logout-button {
@@ -24,20 +25,64 @@
             cursor: pointer;
             font-size: 0.9rem;
             transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .logout-button:hover {
-            background-color: var(--accent-color);
-            border-color: var(--accent-color);
+            background: var(--accent-gradient);
+            border-color: transparent;
             color: white;
+            box-shadow: 0 2px 8px rgba(228, 7, 18, 0.3);
+        }
+        
+        .fab-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 999;
+            display: none;
+        }
+        
+        .fab {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--accent-gradient);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(228, 7, 18, 0.4);
+            cursor: pointer;
+            border: none;
+            font-size: 1.5rem;
+            transform: scale(1);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+                        box-shadow 0.3s ease;
+        }
+        
+        .fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(228, 7, 18, 0.5);
+        }
+        
+        @media (max-width: 768px) {
+            .fab-container {
+                display: block;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <a href="{{ url_for('logout') }}" class="logout-button">Logout</a>
+        <a href="{{ url_for('logout') }}" class="logout-button">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+        </a>
         <header>
-            <h1>AskDND</h1>
+            <h1><i class="fas fa-dragon"></i> AskDND</h1>
             <p>Your AI-powered D&D Rules Companion</p>
         </header>
         
@@ -45,26 +90,45 @@
             <div class="chat-container">
                 <div id="chat-messages" class="chat-messages">
                     <div class="message system">
-                        <p>Welcome to AskDND! I'm your D&D assistant, DnDSy, ready to help with the 2024 (5.5e) rules. Ask me anything about character creation, combat, spells, or any other rules!</p>
+                        <div class="message-text">
+                            <p>Welcome to AskDND! I'm your D&D assistant, DnDSy, ready to help with the 2024 (5.5e) rules. Ask me anything about character creation, combat, spells, or any other rules!</p>
+                        </div>
                     </div>
                 </div>
                 
                 <div class="input-container">
                     <textarea id="user-input" placeholder="Ask about D&D rules..." rows="3"></textarea>
-                    <button id="send-button">Ask</button>
+                    <button id="send-button">
+                        <i class="fas fa-paper-plane"></i>
+                        <span>Ask</span>
+                    </button>
                 </div>
             </div>
             
             <div id="source-panel" class="source-panel">
                 <div class="source-panel-header">
-                    <h3>Source Content</h3>
+                    <h3><i class="fas fa-book-open"></i> Source Content</h3>
                     <button id="close-panel" class="close-button">&times;</button>
                 </div>
                 <div id="source-content" class="source-content">
                     <p class="no-source">Select a source to view its content</p>
                 </div>
+                
+                <div class="source-controls">
+                    <div class="zoom-controls">
+                        <button id="zoom-in" title="Zoom In"><i class="fas fa-search-plus"></i></button>
+                        <button id="zoom-reset" title="Reset Zoom"><i class="fas fa-sync-alt"></i></button>
+                        <button id="zoom-out" title="Zoom Out"><i class="fas fa-search-minus"></i></button>
+                    </div>
+                </div>
             </div>
         </div>
+    </div>
+    
+    <div class="fab-container">
+        <button id="mobile-source-toggle" class="fab" title="Toggle Source Panel">
+            <i class="fas fa-book"></i>
+        </button>
     </div>
 
     <script src="{{ url_for('static', filename='js/chat.js') }}" defer></script>

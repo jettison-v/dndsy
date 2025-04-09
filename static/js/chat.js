@@ -6,9 +6,65 @@ document.addEventListener('DOMContentLoaded', () => {
     const sourceContent = document.getElementById('source-content');
     const closePanel = document.getElementById('close-panel');
     const llmInfoSpan = document.getElementById('llm-info');
+    const mobileSourceToggle = document.getElementById('mobile-source-toggle');
+    const zoomInBtn = document.getElementById('zoom-in');
+    const zoomOutBtn = document.getElementById('zoom-out');
+    const zoomResetBtn = document.getElementById('zoom-reset');
+    
     let isFirstMessage = true;
     let messageContextParts = {};
     let currentEventSource = null;
+    let currentZoomLevel = 1;
+    
+    // Initialize source panel state
+    let sourcePanelOpen = false;
+
+    // Add zoom functionality
+    if (zoomInBtn && zoomOutBtn && zoomResetBtn) {
+        zoomInBtn.addEventListener('click', () => {
+            if (currentZoomLevel < 2.5) {
+                currentZoomLevel += 0.25;
+                updateZoom();
+            }
+        });
+        
+        zoomOutBtn.addEventListener('click', () => {
+            if (currentZoomLevel > 0.5) {
+                currentZoomLevel -= 0.25;
+                updateZoom();
+            }
+        });
+        
+        zoomResetBtn.addEventListener('click', () => {
+            currentZoomLevel = 1;
+            updateZoom();
+        });
+    }
+    
+    function updateZoom() {
+        const imgContainer = document.getElementById('source-image-container');
+        if (imgContainer) {
+            const img = imgContainer.querySelector('img');
+            if (img) {
+                img.style.transform = `scale(${currentZoomLevel})`;
+                img.style.transformOrigin = 'center top';
+            }
+        }
+    }
+    
+    // Mobile source panel toggle
+    if (mobileSourceToggle) {
+        mobileSourceToggle.addEventListener('click', () => {
+            sourcePanelOpen = !sourcePanelOpen;
+            if (sourcePanelOpen) {
+                sourcePanel.classList.add('open');
+                mobileSourceToggle.querySelector('i').classList.replace('fa-book', 'fa-times');
+            } else {
+                sourcePanel.classList.remove('open');
+                mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+            }
+        });
+    }
 
     // Function to add a message to the chat
     function addMessage(text, sender, messageId = null) {
@@ -32,6 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
         sourceContainer.className = 'source-pills';
         sourceContainer.style.display = 'none'; // Hide initially
         messageElement.appendChild(sourceContainer);
+        
+        // Apply slide-in animation
+        messageElement.style.animationDuration = '0.3s';
         
         chatMessages.appendChild(messageElement);
         chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -177,7 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Function to show source content in the side panel
-    // Modified to accept score
+    // Modified to accept score and implement zoom
     function showSourcePanel(details, displayText, pageNumber, s3Key, score) { 
         // Details object expected: {"text": "...", "image_url": "...", "total_pages": ...} 
         if (!details) {
@@ -193,75 +252,68 @@ document.addEventListener('DOMContentLoaded', () => {
         sourceContent.dataset.currentPage = pageNumber; 
         sourceContent.dataset.totalPages = totalPages;
         // Store the displayText (which contains the readable name) for navigation header
-        // We might need to re-parse the readable name if needed for nav, or adjust how header is set
         const headerTextMatch = displayText.match(/^(.*?)\s*\(page\s*\d+\)$/i); 
         const readableSourceName = headerTextMatch ? headerTextMatch[1].trim() : displayText;
         sourceContent.dataset.readableSourceName = readableSourceName; 
-        // Store the s3Key needed for navigation 
         sourceContent.dataset.s3Key = s3Key;
 
-        // Extract S3 base URL from the fetched image URL
-        if (imageUrl) {
-            const urlParts = imageUrl.split('/');
-            urlParts.pop(); // Remove the filename 
-            sourceContent.dataset.s3BaseUrl = urlParts.join('/'); 
-        } else {
-             sourceContent.dataset.s3BaseUrl = '';
-        }
-
-        // --- Header --- 
-        const header = document.createElement('h4');
-        header.id = 'source-panel-header-text';
-        // Use the readable name parsed from the display text for the header
-        header.textContent = `${readableSourceName} (Page ${pageNumber} of ${totalPages})`;
-        sourceContent.appendChild(header);
+        // Create a header for the source info
+        const sourceHeader = document.createElement('div');
+        sourceHeader.className = 'source-detail-header';
+        sourceHeader.innerHTML = `
+            <h4>${readableSourceName}</h4>
+            <div class="source-metadata">
+                <span class="page-info">Page ${pageNumber}${totalPages !== 'N/A' ? ` of ${totalPages}` : ''}</span>
+                ${score ? `<span class="relevance-score">Relevance: ${Math.round(score * 100)}%</span>` : ''}
+            </div>
+        `;
+        sourceContent.appendChild(sourceHeader);
         
-        // --- Score --- 
-        if (score !== undefined && score !== '') { 
-            const scoreValue = parseFloat(score);
-            if (!isNaN(scoreValue)) {
-                const scoreP = document.createElement('p');
-                scoreP.className = 'source-score';
-                scoreP.textContent = `Relevance: ${(scoreValue * 100).toFixed(1)}%`;
-                sourceContent.appendChild(scoreP);
-            }
-        }
-
-        // --- Image Container ---
+        // Reset zoom level
+        currentZoomLevel = 1;
+        
+        // Container for the image with overflow scroll
         const imageContainer = document.createElement('div');
         imageContainer.id = 'source-image-container';
-        sourceContent.appendChild(imageContainer);
-
-        // --- Navigation --- 
-        const navContainer = document.createElement('div');
-        navContainer.className = 'source-nav';
-
-        const prevButton = document.createElement('button');
-        prevButton.id = 'source-prev-button';
-        prevButton.textContent = 'Previous';
-        prevButton.disabled = pageNumber <= 1;
-        prevButton.addEventListener('click', () => navigateSourcePage(-1));
-
-        const pageIndicator = document.createElement('span');
-        pageIndicator.id = 'source-page-indicator';
-        pageIndicator.textContent = `Page ${pageNumber} / ${totalPages}`;
-
-        const nextButton = document.createElement('button');
-        nextButton.id = 'source-next-button';
-        nextButton.textContent = 'Next';
-        nextButton.disabled = totalPages === 'N/A' || pageNumber >= totalPages;
-        nextButton.addEventListener('click', () => navigateSourcePage(1));
-
-        navContainer.appendChild(prevButton);
-        navContainer.appendChild(pageIndicator);
-        navContainer.appendChild(nextButton);
-        sourceContent.appendChild(navContainer);
         
-        // --- Initial Image Load --- 
-        updateSourceImage(pageNumber); // updateSourceImage needs to handle missing S3 URL
-
-        // --- Panel Display --- 
+        if (imageUrl) {
+            // Show loading indicator
+            imageContainer.innerHTML = `<p class="loading-source">Loading page image...</p>`;
+            sourceContent.appendChild(imageContainer);
+            
+            // Load the image
+            const img = new Image();
+            img.onload = function() {
+                // Remove loading indicator
+                imageContainer.innerHTML = '';
+                imageContainer.appendChild(img);
+                
+                // Add page navigation
+                addSourceNavigation(pageNumber, totalPages, s3Key);
+            };
+            
+            img.onerror = function() {
+                imageContainer.innerHTML = `<p class="error-source">Error loading image. Please try again.</p>`;
+            };
+            
+            img.src = imageUrl;
+            img.alt = `Page ${pageNumber} of ${readableSourceName}`;
+            img.style.transform = `scale(${currentZoomLevel})`;
+            img.style.transformOrigin = 'center top';
+            img.style.transition = 'transform 0.2s ease-out';
+        } else {
+            imageContainer.innerHTML = `<p class="error-source">No image available for this source.</p>`;
+            sourceContent.appendChild(imageContainer);
+        }
+        
+        // Show source panel if not already visible
         sourcePanel.classList.add('open');
+        sourcePanelOpen = true;
+        
+        // Update mobile toggle button if on mobile
+        if (window.innerWidth <= 768 && mobileSourceToggle) {
+            mobileSourceToggle.querySelector('i').classList.replace('fa-book', 'fa-times');
+        }
     }
 
     // Navigate source page
@@ -486,11 +538,46 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Close panel button
+    // Handle close panel button
     closePanel.addEventListener('click', () => {
         sourcePanel.classList.remove('open');
-        document.querySelectorAll('.source-pill').forEach(pill => {
-            pill.classList.remove('active');
-        });
+        sourcePanelOpen = false;
+        
+        // Update mobile toggle button if on mobile
+        if (window.innerWidth <= 768 && mobileSourceToggle) {
+            mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+        }
     });
+
+    // Function to add navigation to source panel
+    function addSourceNavigation(currentPage, totalPages, s3Key) {
+        const sourceContent = document.getElementById('source-content');
+        // Create navigation container
+        const navContainer = document.createElement('div');
+        navContainer.className = 'source-nav';
+        
+        // Previous button
+        const prevButton = document.createElement('button');
+        prevButton.innerHTML = '<i class="fas fa-arrow-left"></i> Previous';
+        prevButton.disabled = currentPage <= 1;
+        prevButton.addEventListener('click', () => navigateSourcePage(-1));
+        
+        // Page indicator
+        const pageIndicator = document.createElement('span');
+        pageIndicator.textContent = `${currentPage} / ${totalPages}`;
+        
+        // Next button
+        const nextButton = document.createElement('button');
+        nextButton.innerHTML = 'Next <i class="fas fa-arrow-right"></i>';
+        nextButton.disabled = totalPages === 'N/A' || currentPage >= parseInt(totalPages);
+        nextButton.addEventListener('click', () => navigateSourcePage(1));
+        
+        // Add elements to navigation container
+        navContainer.appendChild(prevButton);
+        navContainer.appendChild(pageIndicator);
+        navContainer.appendChild(nextButton);
+        
+        // Add navigation to source content
+        sourceContent.appendChild(navContainer);
+    }
 }); 
