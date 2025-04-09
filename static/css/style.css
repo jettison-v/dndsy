@@ -107,6 +107,9 @@ header p {
     overflow-y: auto;
     padding: 1rem;
     background: var(--secondary-color);
+    display: flex;
+    flex-direction: column;
+    min-height: 300px; /* Ensure minimal height even when empty */
 }
 
 .message {
@@ -285,8 +288,7 @@ header p {
 }
 
 .source-panel.expanded .source-panel-header .zoom-controls {
-    display: flex;
-    margin: 0 1.5rem;
+    display: none;
 }
 
 .close-button {
@@ -856,9 +858,7 @@ textarea:focus, button:focus {
 }
 
 .source-panel.expanded .source-panel-header .zoom-controls {
-    display: flex;
-    margin-left: auto;
-    margin-right: 1rem;
+    display: none;
 }
 
 /* Hide bottom source controls when in expanded view */
@@ -887,4 +887,43 @@ textarea:focus, button:focus {
 /* Hide the logout button */
 .logout-button {
     display: none;
+}
+
+/* Image zoom controls as an overlay */
+.image-zoom-controls {
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 10;
+    background: rgba(27, 27, 27, 0.7);
+    border-radius: 4px;
+    padding: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
+    transition: opacity 0.3s ease;
+    opacity: 0.7;
+}
+
+.image-zoom-controls:hover {
+    opacity: 1;
+}
+
+.image-zoom-controls button {
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-color);
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.image-zoom-controls button:hover {
+    background: var(--primary-color);
+    color: var(--accent-color);
 } 

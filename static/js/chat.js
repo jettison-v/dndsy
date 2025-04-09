@@ -322,7 +322,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Function to show source content in the side panel
-    // Modified to accept score and implement zoom
     function showSourcePanel(details, displayText, pageNumber, s3Key, score) { 
         // Details object expected: {"text": "...", "image_url": "...", "total_pages": ...} 
         if (!details) {
@@ -373,6 +372,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Remove loading indicator
                 imageContainer.innerHTML = '';
                 imageContainer.appendChild(img);
+                
+                // Add zoom controls as overlay
+                const zoomControls = document.createElement('div');
+                zoomControls.className = 'image-zoom-controls';
+                zoomControls.innerHTML = `
+                    <button id="zoom-in-overlay" title="Zoom In"><i class="fas fa-search-plus"></i></button>
+                    <button id="zoom-reset-overlay" title="Reset Zoom"><i class="fas fa-sync-alt"></i></button>
+                    <button id="zoom-out-overlay" title="Zoom Out"><i class="fas fa-search-minus"></i></button>
+                `;
+                imageContainer.appendChild(zoomControls);
+                
+                // Add zoom functionality
+                document.getElementById('zoom-in-overlay').addEventListener('click', () => {
+                    if (currentZoomLevel < 2.5) {
+                        currentZoomLevel += 0.25;
+                        updateZoom();
+                    }
+                });
+                
+                document.getElementById('zoom-out-overlay').addEventListener('click', () => {
+                    if (currentZoomLevel > 0.5) {
+                        currentZoomLevel -= 0.25;
+                        updateZoom();
+                    }
+                });
+                
+                document.getElementById('zoom-reset-overlay').addEventListener('click', () => {
+                    currentZoomLevel = 1;
+                    updateZoom();
+                });
                 
                 // Add page navigation
                 addSourceNavigation(pageNumber, totalPages, s3Key);
