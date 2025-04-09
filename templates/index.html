@@ -13,30 +13,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        .logout-button {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background-color: transparent;
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .logout-button:hover {
-            background: var(--accent-gradient);
-            border-color: transparent;
-            color: white;
-            box-shadow: 0 2px 8px rgba(228, 7, 18, 0.3);
-        }
-        
         .fab-container {
             position: fixed;
             bottom: 2rem;
@@ -77,10 +53,6 @@
 </head>
 <body>
     <div class="container">
-        <a href="{{ url_for('logout') }}" class="logout-button">
-            <i class="fas fa-sign-out-alt"></i>
-            <span>Logout</span>
-        </a>
         <header>
             <h1><i class="fas fa-dragon"></i> AskDND</h1>
             <p>Your AI-powered D&D Rules Companion</p>

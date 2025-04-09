@@ -39,6 +39,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
+    height: calc(100vh - 2rem);
 }
 
 header {
@@ -85,7 +86,7 @@ header p {
     gap: 1rem;
     position: relative;
     flex: 1;
-    min-height: 0; /* Allows container to shrink properly */
+    height: calc(100vh - 180px); /* More explicit height */
 }
 
 .chat-container {
@@ -97,8 +98,8 @@ header p {
     border: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
-    height: 100%;
-    max-height: calc(100vh - 200px);
+    height: 100%; /* Fill the parent height */
+    min-height: 400px; /* Minimum height */
 }
 
 .chat-messages {
@@ -255,7 +256,7 @@ header p {
     box-shadow: 0 4px 12px var(--shadow-color);
     border: 1px solid var(--border-color);
     overflow: hidden;
-    transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: width 0.3s ease-out; /* Reduced bounce */
     position: relative;
 }
 
@@ -275,6 +276,17 @@ header p {
 .source-panel-header h3 {
     margin: 0;
     color: var(--text-color);
+    flex: 1;
+}
+
+.source-panel-header .zoom-controls {
+    display: none;
+    margin: 0 1rem;
+}
+
+.source-panel.expanded .source-panel-header .zoom-controls {
+    display: flex;
+    margin: 0 1.5rem;
 }
 
 .close-button {
@@ -453,6 +465,24 @@ header p {
 
 .source-nav button {
     min-width: 100px;
+    background: var(--input-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.source-nav button:hover:not(:disabled) {
+    background: var(--accent-color);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.source-nav button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 footer {
@@ -852,4 +882,9 @@ textarea:focus, button:focus {
 
 .source-nav button {
     min-width: 100px;
+}
+
+/* Hide the logout button */
+.logout-button {
+    display: none;
 } 
