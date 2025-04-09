@@ -52,13 +52,22 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1><i class="fas fa-dragon"></i> AskDND</h1>
-            <p>Your AI-powered D&D Rules Companion</p>
-        </header>
-        
-        <div class="main-content">
+    <div class="layout-container">
+        <!-- Left Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1><i class="fas fa-dragon"></i> AskDND</h1>
+                <p>Your AI-powered D&D Rules Companion</p>
+            </div>
+            
+            <div class="sidebar-footer">
+                <p>Powered by AskDnD</p>
+                <p><span id="llm-info">LLM: Loading...</span></p>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="main-wrapper">
             <div class="chat-container">
                 <div id="chat-messages" class="chat-messages">
                     <div class="message system">
@@ -113,8 +122,5 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/chat.js') }}" defer></script>
-    <footer>
-        <p>Powered by AskDnD | <span id="llm-info">LLM: Loading...</span></p>
-    </footer>
 </body>
 </html> 
