@@ -2,32 +2,50 @@ import os
 import json
 from pathlib import Path
 import fitz  # PyMuPDF
+import sys
+import hashlib  # For PDF content hashing
+
+# Add parent directory to path to make imports work properly
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from vector_store import get_vector_store
+
 from tqdm import tqdm
 import logging
 import sys
 from typing import List, Dict, Any
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime
+from datetime import datetime, timedelta
 import re # Import re for path cleaning
 import boto3
 from botocore.exceptions import NoCredentialsError, PartialCredentialsError, ClientError
 import io # For handling image data in memory
+from dotenv import load_dotenv
+
+# Ensure logs directory exists
+logs_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs')
+os.makedirs(logs_dir, exist_ok=True)
 
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('data_processing.log'),
+        logging.FileHandler(os.path.join(logs_dir, 'data_processing.log')),
         logging.StreamHandler(sys.stdout)
     ]
 )
 
+# Load environment variables
+env_path = Path(__file__).parent.parent / '.env'
+load_dotenv(dotenv_path=env_path)
+
 # Define base directory for images relative to static folder
 PDF_IMAGE_DIR = "pdf_page_images"
 STATIC_DIR = "static" # Define static directory name
+# File to store processing history (both locally and on S3)
+PROCESS_HISTORY_FILE = "pdf_process_history.json"
+PROCESS_HISTORY_S3_KEY = "processing/pdf_process_history.json"  # S3 path
 
 # --- AWS S3 Configuration ---
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
@@ -65,6 +83,81 @@ class DataProcessor:
         self.standard_store = get_vector_store("standard")
         self.semantic_store = get_vector_store("semantic")
         self.processed_sources = set()
+        
+        # Load process history if exists
+        self.process_history = self._load_process_history()
+        self.reprocessed_pdfs = []  # Track which PDFs were reprocessed
+        self.unchanged_pdfs = []    # Track which PDFs were unchanged
+    
+    def _compute_pdf_hash(self, pdf_bytes):
+        """Compute a hash of PDF content to detect changes."""
+        return hashlib.sha256(pdf_bytes).hexdigest()
+    
+    def _load_process_history(self):
+        """Load the PDF processing history from S3 or fall back to local file."""
+        try:
+            # First try to get from S3
+            if s3_client:
+                try:
+                    logging.info(f"Trying to load process history from S3: {PROCESS_HISTORY_S3_KEY}")
+                    response = s3_client.get_object(
+                        Bucket=AWS_S3_BUCKET_NAME, 
+                        Key=PROCESS_HISTORY_S3_KEY
+                    )
+                    history_content = response['Body'].read().decode('utf-8')
+                    history = json.loads(history_content)
+                    logging.info(f"Successfully loaded process history from S3")
+                    
+                    # Also save it locally as a backup
+                    with open(PROCESS_HISTORY_FILE, 'w') as f:
+                        json.dump(history, f, indent=2)
+                    
+                    return history
+                except ClientError as e:
+                    if e.response['Error']['Code'] == 'NoSuchKey':
+                        logging.info(f"Process history file not found in S3, will create new one")
+                    else:
+                        logging.warning(f"Error accessing S3 process history: {e}")
+                except Exception as e:
+                    logging.warning(f"Unexpected error loading process history from S3: {e}")
+            
+            # Fall back to local file
+            if os.path.exists(PROCESS_HISTORY_FILE):
+                logging.info("Loading process history from local file")
+                with open(PROCESS_HISTORY_FILE, 'r') as f:
+                    return json.load(f)
+            
+            # If neither works, start fresh
+            logging.info("Starting with empty process history")
+            return {}
+            
+        except Exception as e:
+            logging.warning(f"Could not load process history: {e}")
+            return {}
+    
+    def _save_process_history(self):
+        """Save the PDF processing history to S3 and local file."""
+        try:
+            # First save locally as a backup
+            with open(PROCESS_HISTORY_FILE, 'w') as f:
+                json.dump(self.process_history, f, indent=2)
+            logging.info(f"Saved process history to local file {PROCESS_HISTORY_FILE}")
+            
+            # Then save to S3
+            if s3_client:
+                try:
+                    history_json = json.dumps(self.process_history)
+                    s3_client.put_object(
+                        Bucket=AWS_S3_BUCKET_NAME,
+                        Key=PROCESS_HISTORY_S3_KEY,
+                        Body=history_json,
+                        ContentType='application/json'
+                    )
+                    logging.info(f"Saved process history to S3: {PROCESS_HISTORY_S3_KEY}")
+                except Exception as e:
+                    logging.error(f"Failed to save process history to S3: {e}")
+        except Exception as e:
+            logging.error(f"Failed to save process history: {e}")
     
     def _clean_filename(self, filename: str) -> str:
         """Remove potentially problematic characters for filenames/paths."""
@@ -72,48 +165,47 @@ class DataProcessor:
         cleaned = re.sub(r'[/\\]+', '_', filename) # Replace slashes with underscore
         cleaned = re.sub(r'[^a-zA-Z0-9_\-\.]+', '_', cleaned) # Replace others
         return cleaned
-
-    def process_pdfs_from_s3(self) -> List[Dict[str, Any]]:
-        """Process PDF files from S3, generate page images, and return documents."""
+        
+    def _delete_specific_s3_images(self, pdf_prefix):
+        """Delete only images related to a specific PDF."""
         if not s3_client:
-            logging.error("S3 client not configured. Cannot process PDFs from S3.")
-            return []
-
-        # --- Add S3 Image Cleanup Logic ---
-        image_prefix_to_delete = PDF_IMAGE_DIR + '/'
-        logging.info(f"Attempting to delete existing images from S3 prefix: {image_prefix_to_delete}")
+            return
+            
+        image_prefix = f"{PDF_IMAGE_DIR}/{pdf_prefix}"
+        logging.info(f"Deleting images with prefix: {image_prefix}")
+        
         objects_to_delete = []
         try:
             paginator = s3_client.get_paginator('list_objects_v2')
-            pages = paginator.paginate(Bucket=AWS_S3_BUCKET_NAME, Prefix=image_prefix_to_delete)
+            pages = paginator.paginate(Bucket=AWS_S3_BUCKET_NAME, Prefix=image_prefix)
+            
             for page in pages:
                 if "Contents" in page:
                     for obj in page["Contents"]:
                         objects_to_delete.append({'Key': obj['Key']})
             
             if objects_to_delete:
-                logging.info(f"Found {len(objects_to_delete)} existing image objects to delete.")
-                # Delete objects in batches of 1000 (S3 API limit)
+                logging.info(f"Found {len(objects_to_delete)} image objects to delete for {pdf_prefix}")
+                # Delete objects in batches
                 for i in range(0, len(objects_to_delete), 1000):
                     batch = objects_to_delete[i:i + 1000]
                     delete_payload = {'Objects': batch, 'Quiet': True}
-                    response = s3_client.delete_objects(
+                    s3_client.delete_objects(
                         Bucket=AWS_S3_BUCKET_NAME,
                         Delete=delete_payload
                     )
-                    if 'Errors' in response and response['Errors']:
-                         logging.error(f"Errors encountered during S3 object deletion batch starting at index {i}: {response['Errors']}")
-                    else:
-                         logging.info(f"Deleted batch of {len(batch)} objects starting at index {i}.")
-                logging.info(f"Finished deleting objects under prefix: {image_prefix_to_delete}")
+                logging.info(f"Deleted {len(objects_to_delete)} images for {pdf_prefix}")
             else:
-                logging.info(f"No existing image objects found under prefix: {image_prefix_to_delete}")
-
-        except ClientError as e:
-            logging.error(f"Failed to list or delete objects from S3 prefix '{image_prefix_to_delete}': {e}")
+                logging.info(f"No existing images found for {pdf_prefix}")
+                
         except Exception as e:
-            logging.error(f"Unexpected error during S3 image cleanup: {e}")
-        # --- End S3 Image Cleanup Logic ---
+            logging.error(f"Error deleting images for {pdf_prefix}: {e}")
+
+    def process_pdfs_from_s3(self) -> List[Dict[str, Any]]:
+        """Process PDF files from S3, generate page images, and return documents."""
+        if not s3_client:
+            logging.error("S3 client not configured. Cannot process PDFs from S3.")
+            return []
 
         documents = []
         
@@ -123,6 +215,7 @@ class DataProcessor:
         # List PDF files from S3
         pdf_files_s3_keys = []
         try:
+            logging.info(f"Listing PDF files from S3 bucket {AWS_S3_BUCKET_NAME}, prefix {AWS_S3_PDF_PREFIX}")
             paginator = s3_client.get_paginator('list_objects_v2')
             pages = paginator.paginate(Bucket=AWS_S3_BUCKET_NAME, Prefix=AWS_S3_PDF_PREFIX)
             for page in pages:
@@ -139,10 +232,28 @@ class DataProcessor:
             logging.error(f"Unexpected error listing PDFs from S3: {e}")
             return []
 
-        logging.info(f"Found {len(pdf_files_s3_keys)} PDF files in S3 prefix '{AWS_S3_PDF_PREFIX}'")
+        start_time = datetime.now()
+        total_pdfs = len(pdf_files_s3_keys)
+        logging.info(f"===== Found {total_pdfs} PDF files in S3 prefix '{AWS_S3_PDF_PREFIX}' =====")
+        logging.info(f"Start time: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
         
-        for s3_pdf_key in tqdm(pdf_files_s3_keys, desc="Processing PDFs from S3"):
+        standard_docs_total = 0
+        semantic_docs_total = 0
+        
+        for pdf_index, s3_pdf_key in enumerate(tqdm(pdf_files_s3_keys, desc="Processing PDFs from S3")):
             try:
+                current_time = datetime.now()
+                elapsed = (current_time - start_time).total_seconds()
+                progress_pct = (pdf_index / total_pdfs) * 100 if total_pdfs > 0 else 0
+                
+                logging.info(f"===== Processing PDF {pdf_index+1}/{total_pdfs} ({progress_pct:.1f}%) - {s3_pdf_key} =====")
+                if pdf_index > 0:  # Only show time estimates after first PDF
+                    avg_time_per_pdf = elapsed / pdf_index
+                    remaining_pdfs = total_pdfs - pdf_index
+                    est_remaining_time = avg_time_per_pdf * remaining_pdfs
+                    est_completion_time = current_time + timedelta(seconds=est_remaining_time)
+                    logging.info(f"Elapsed time: {elapsed:.1f} seconds. Estimated completion time: {est_completion_time.strftime('%Y-%m-%d %H:%M:%S')}")
+                
                 # Extract relative path for use in naming etc.
                 rel_path = s3_pdf_key[len(AWS_S3_PDF_PREFIX):] if s3_pdf_key.startswith(AWS_S3_PDF_PREFIX) else s3_pdf_key
                 pdf_filename = rel_path.split('/')[-1]
@@ -154,6 +265,7 @@ class DataProcessor:
                 try:
                     pdf_object = s3_client.get_object(Bucket=AWS_S3_BUCKET_NAME, Key=s3_pdf_key)
                     pdf_bytes = pdf_object['Body'].read()
+                    last_modified = pdf_object.get('LastModified', datetime.now()).isoformat()
                 except ClientError as e:
                     logging.error(f"Failed to download PDF '{s3_pdf_key}' from S3: {e}")
                     continue # Skip this PDF
@@ -161,15 +273,122 @@ class DataProcessor:
                     logging.error(f"Unexpected error downloading PDF '{s3_pdf_key}' from S3: {e}")
                     continue
 
+                # Compute hash of PDF content
+                pdf_hash = self._compute_pdf_hash(pdf_bytes)
+                
+                # Check if PDF has changed since last processing
+                pdf_info = self.process_history.get(s3_pdf_key, {})
+                old_hash = pdf_info.get('hash')
+                
+                # If hash matches and images already exist, skip image generation
+                if old_hash == pdf_hash and pdf_info.get('processed'):
+                    logging.info(f"PDF {s3_pdf_key} unchanged since last processing, skipping image generation")
+                    self.unchanged_pdfs.append(s3_pdf_key)
+                    
+                    # Still need to process text for embeddings
+                    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+                    total_pages = len(doc)
+                    logging.info(f"PDF has {total_pages} pages to process for text embeddings")
+                    
+                    # Process document for both standard and semantic approaches
+                    standard_docs = []
+                    semantic_docs = []
+
+                    for page_num, page in enumerate(doc): 
+                        if page_num % 10 == 0 and page_num > 0:
+                            logging.info(f"Processed {page_num}/{total_pages} pages ({(page_num/total_pages*100):.1f}%)")
+                            
+                        page_text = page.get_text().strip()
+                        if not page_text: 
+                            continue
+
+                        page_label = page_num + 1 
+                        page_source_id = f"{rel_path}_page_{page_label}"
+
+                        if page_source_id in self.processed_sources:
+                            continue
+                        
+                        # Use existing image URL from history
+                        page_key = f"{page_label}"
+                        page_info = pdf_info.get('pages', {}).get(page_key, {})
+                        s3_image_url = page_info.get('image_url')
+                        
+                        # Create document metadata
+                        metadata = {
+                            "source": s3_pdf_key,
+                            "filename": pdf_filename,
+                            "page": page_label,
+                            "total_pages": total_pages,
+                            "image_url": s3_image_url,
+                            "source_dir": pdf_image_sub_dir_name,
+                            "type": "pdf",
+                            "folder": str(Path(rel_path).parent),
+                            "processed_at": datetime.now().isoformat()
+                        }
+                        
+                        # Standard approach
+                        standard_docs.append({
+                            "text": page_text,
+                            "metadata": metadata.copy()
+                        })
+                        
+                        # Semantic approach
+                        semantic_docs.append({
+                            "text": page_text,
+                            "metadata": metadata.copy()
+                        })
+                        
+                        # Mark as processed
+                        self.processed_sources.add(page_source_id)
+                    
+                    # Add documents to both vector stores
+                    if standard_docs:
+                        logging.info(f"Adding {len(standard_docs)} documents to standard store from {pdf_filename}")
+                        standard_docs_total += len(standard_docs)
+                        self.standard_store.add_documents(standard_docs)
+                        documents.extend(standard_docs)
+                    
+                    if semantic_docs:
+                        logging.info(f"Adding {len(semantic_docs)} documents to semantic store from {pdf_filename}")
+                        semantic_docs_total += len(semantic_docs)
+                        self.semantic_store.add_documents(semantic_docs)
+                    
+                    # Close the document
+                    doc.close()
+                    continue
+                
+                # If we got here, PDF is new or changed - delete any existing images
+                if old_hash and old_hash != pdf_hash:
+                    logging.info(f"PDF {s3_pdf_key} has changed, regenerating images")
+                    # Delete existing images for this PDF
+                    self._delete_specific_s3_images(pdf_image_sub_dir_name)
+                elif not old_hash:
+                    logging.info(f"New PDF {s3_pdf_key}, generating images")
+                
+                self.reprocessed_pdfs.append(s3_pdf_key)
+                
+                # Track processing in history
+                if s3_pdf_key not in self.process_history:
+                    self.process_history[s3_pdf_key] = {}
+                
+                self.process_history[s3_pdf_key]['hash'] = pdf_hash
+                self.process_history[s3_pdf_key]['last_modified'] = last_modified
+                self.process_history[s3_pdf_key]['processed'] = datetime.now().isoformat()
+                self.process_history[s3_pdf_key]['pages'] = {}
+
                 # Extract text and generate images page by page using content from memory
                 doc = fitz.open(stream=pdf_bytes, filetype="pdf")
                 total_pages = len(doc) # Get total page count
+                logging.info(f"PDF has {total_pages} pages to process with image generation")
 
                 # Process document for both standard and semantic approaches
                 standard_docs = []
                 semantic_docs = []
 
-                for page_num, page in enumerate(doc): 
+                for page_num, page in enumerate(doc):
+                    if page_num % 10 == 0 and page_num > 0:
+                        logging.info(f"Processed {page_num}/{total_pages} pages ({(page_num/total_pages*100):.1f}%)")
+                         
                     page_text = page.get_text().strip()
                     if not page_text: 
                         continue
@@ -206,6 +425,15 @@ class DataProcessor:
                                 # This assumes the bucket is public or has proper permissions
                                 s3_image_url = f"https://{AWS_S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{s3_object_key}"
                                 logging.info(f"Uploaded page image to S3: {s3_object_key}")
+                                
+                                # Store image URL in history
+                                page_key = f"{page_label}"
+                                if 'pages' not in self.process_history[s3_pdf_key]:
+                                    self.process_history[s3_pdf_key]['pages'] = {}
+                                self.process_history[s3_pdf_key]['pages'][page_key] = {
+                                    'image_url': s3_image_url
+                                }
+                                
                             except Exception as e:
                                 logging.error(f"Failed to upload page image to S3: {e}")
                                 # Keep s3_image_url as None to indicate no image available
@@ -229,22 +457,14 @@ class DataProcessor:
                             "metadata": metadata.copy()  # Use a copy to avoid reference issues
                         })
                         
-                        # Semantic approach - chunk the page into sections (paragraphs)
-                        # This is a simple implementation - can be improved with better chunking
-                        paragraphs = [p for p in page_text.split('\n\n') if p.strip()]
+                        # Semantic approach - send the entire page and let the semantic store handle chunking
+                        # The semantic store will use RecursiveCharacterTextSplitter for more advanced chunking
+                        semantic_docs.append({
+                            "text": page_text,
+                            "metadata": metadata.copy()  # Use a copy to avoid reference issues
+                        })
                         
-                        for i, paragraph in enumerate(paragraphs):
-                            if paragraph.strip():
-                                para_metadata = metadata.copy()
-                                para_metadata["chunk_index"] = i
-                                para_metadata["chunk_type"] = "paragraph"
-                                
-                                semantic_docs.append({
-                                    "text": paragraph,
-                                    "metadata": para_metadata
-                                })
-                        
-                        # Mark as processed
+                        # Mark this page as processed
                         self.processed_sources.add(page_source_id)
                         
                     except Exception as e:
@@ -254,11 +474,13 @@ class DataProcessor:
                 # Add documents to both vector stores
                 if standard_docs:
                     logging.info(f"Adding {len(standard_docs)} documents to standard store from {pdf_filename}")
+                    standard_docs_total += len(standard_docs)
                     self.standard_store.add_documents(standard_docs)
                     documents.extend(standard_docs)
                 
                 if semantic_docs:
                     logging.info(f"Adding {len(semantic_docs)} documents to semantic store from {pdf_filename}")
+                    semantic_docs_total += len(semantic_docs)
                     self.semantic_store.add_documents(semantic_docs)
                 
                 # Close the document when done
@@ -267,6 +489,22 @@ class DataProcessor:
             except Exception as e:
                 logging.error(f"Error processing PDF {s3_pdf_key}: {e}")
                 continue
+        
+        # Save updated process history
+        self._save_process_history()
+        
+        end_time = datetime.now()
+        total_duration = (end_time - start_time).total_seconds()
+        hours, remainder = divmod(total_duration, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        
+        logging.info(f"===== Processing Complete =====")
+        logging.info(f"Total run time: {int(hours)}h {int(minutes)}m {int(seconds)}s")
+        logging.info(f"Processed {len(documents)} total documents")
+        logging.info(f"Added {standard_docs_total} documents to standard store")
+        logging.info(f"Added {semantic_docs_total} documents to semantic store")
+        logging.info(f"Reprocessed {len(self.reprocessed_pdfs)} PDFs with new/changed content")
+        logging.info(f"Skipped image generation for {len(self.unchanged_pdfs)} unchanged PDFs")
         
         return documents
 

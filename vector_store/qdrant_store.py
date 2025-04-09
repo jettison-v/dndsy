@@ -42,6 +42,16 @@ class QdrantStore:
         # Create collection if it doesn't exist
         self._create_collection_if_not_exists()
         
+        # Track the highest ID used so far to avoid overwriting points
+        try:
+            collection_info = self.client.get_collection(self.collection_name)
+            collection_count = self.client.count(self.collection_name).count
+            self.next_id = collection_count  # Start from the next available ID
+            logging.info(f"Starting from ID: {self.next_id} for new documents in standard collection")
+        except Exception as e:
+            logging.warning(f"Error getting collection info: {e}")
+            self.next_id = 0
+        
         logging.info(f"Initialized Qdrant store with collection: {collection_name}")
     
     def _create_collection_if_not_exists(self):
@@ -66,13 +76,15 @@ class QdrantStore:
         
         # Prepare points for batch insertion
         points = []
-        for i, doc in enumerate(documents):
+        doc_id_counter = self.next_id  # Start from the next available ID
+        
+        for doc in documents:  # Remove enumerate since we're using doc_id_counter
             # Generate embedding
             embedding = self.model.encode(doc["text"]).tolist()
             
-            # Create point with sequential ID for this run
+            # Create point with sequential ID starting from next_id
             point = models.PointStruct(
-                id=i,  # Use loop index as ID (starts from 0)
+                id=doc_id_counter,  # Use the tracked ID counter
                 vector=embedding,
                 payload={
                     "text": doc["text"],
@@ -80,6 +92,10 @@ class QdrantStore:
                 }
             )
             points.append(point)
+            doc_id_counter += 1
+        
+        # Update the next_id for future additions
+        self.next_id = doc_id_counter
         
         # Insert points in batches
         batch_size = 100

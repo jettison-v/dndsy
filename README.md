@@ -67,6 +67,13 @@ dndsy/
 │   └── setup_env.py         # Helper to create initial .env file
 └── docker/
     └── docker-compose.yml   # Docker Compose for local development (app + Qdrant)
+├── logs/                   # Centralized directory for log files
+│   ├── data_processing.log # Data processing logs
+│   ├── reset_script.log    # Vector store reset logs
+│   └── fix_semantic.log    # Semantic fix logs
+├── debug/                  # Scripts for debugging and testing
+│   ├── check_qdrant.py     # Script to check Qdrant collection stats
+│   └── fix_semantic.py     # Script to fix semantic collection
 
 ```
 
@@ -170,17 +177,17 @@ dndsy/
 ## Deployment (Heroku Example)
 
 1.  **Prerequisites:**
-    *   Heroku Account & Heroku CLI installed.
+    *   Heroku Account
     *   Qdrant Cloud Cluster URL & API Key.
     *   AWS S3 Bucket configured and populated with PDFs.
 
 2.  **Heroku App Setup:**
-    *   Create a Heroku application: `heroku create your-app-name`
-    *   Set the buildpack to Python: `heroku buildpacks:set heroku/python -a your-app-name`
-    *   Connect your GitHub repository for deployment or use `git push heroku main`.
+    *   Create a Heroku application via the Heroku Dashboard
+    *   Connect your GitHub repository to the Heroku app in the "Deploy" tab
+    *   Set the GitHub branch to deploy from (e.g., main)
 
 3.  **Configure Heroku Config Vars:**
-    *   Set these in the Heroku Dashboard (Settings -> Config Vars) or via CLI.
+    *   Set these in the Heroku Dashboard (Settings -> Config Vars)
     *   **Required:**
         *   `LLM_PROVIDER` (e.g., `openai`)
         *   `LLM_MODEL_NAME` (e.g., `gpt-4o-mini`)
@@ -198,17 +205,15 @@ dndsy/
         *   `AWS_S3_PDF_PREFIX` (if different from `source-pdfs/`)
 
 4.  **Process Data in Cloud:**
-    *   Run the processing script as a one-off dyno on Heroku. This connects to S3 and Qdrant Cloud using the Config Vars.
-        ```bash
-        heroku run python scripts/reset_and_process.py -a your-app-name
-        ```
+    *   You'll need to run a one-off dyno to process the data. This can be done using the Heroku Dashboard:
+        *   Go to "More" -> "Run Console" and enter: `python scripts/reset_and_process.py`
     *   **Important:** Run this *after* setting all required Config Vars and *before* users access the app. Re-run if PDFs in S3 change.
 
 5.  **Deploy:**
-    *   Push your latest code to the branch Heroku monitors (e.g., `main`).
-    *   `git push heroku main` (if using Git deployment).
-    *   Heroku will build using `requirements.txt` and run using the `web` process in the `Procfile`.
-    *   *(Optional)* Scale your dynos if needed (e.g., `heroku ps:scale web=1:standard-1x -a your-app-name`). Check memory usage in Metrics.
+    *   Use the "Deploy" tab in the Heroku Dashboard to deploy your app
+    *   Click "Deploy Branch" to manually deploy, or enable "Automatic Deploys" for continuous deployment
+    *   Heroku will build using `requirements.txt` and run using the `web` process in the `Procfile`
+    *   *(Optional)* Adjust dyno type in the "Resources" tab if needed for performance
 
 ## Vector Store Approaches
 

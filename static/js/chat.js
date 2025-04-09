@@ -521,140 +521,133 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Function to send message and handle SSE stream
+    // Function to send a message
     function sendMessage() {
         const message = userInput.value.trim();
         if (!message) return;
-
-        // Stop any previous stream if it's still running
+        
+        // Add the user's message to the chat
+        addMessage(message, 'user');
+        
+        // Clear the input field
+        userInput.value = '';
+        
+        // Cancel any existing response if there is one
         if (currentEventSource) {
             currentEventSource.close();
-            console.log("Closed previous EventSource connection.");
+            currentEventSource = null;
         }
-
-        addMessage(message, 'user');
-        userInput.value = '';
-
-        // Add placeholder for assistant message with initial status
-        const assistantMessageId = addMessage("", 'assistant'); 
-        updateMessageText(assistantMessageId, 'Searching knowledge base', true); // Show indicator after text
-
-        // --- Use EventSource for streaming --- 
-        // Pass message via query parameter (simple approach, consider security/length limits)
-        // Alternatively, initiate SSE connection first, then send message via separate POST
-        const queryParams = new URLSearchParams({ message: message });
-        currentEventSource = new EventSource(`/api/chat?${queryParams.toString()}`);
-        console.log("EventSource connected.");
-
-        let isFirstTextChunk = true; // Track first text chunk
-
-        currentEventSource.onmessage = function(event) {
-            console.log("SSE message received:", event.data);
+        
+        // Add assistant message with thinking indicator
+        const assistantMessageId = addMessage('', 'assistant');
+        updateMessageText(assistantMessageId, '', true); // Show thinking indicator
+        
+        // Encode the message for the URL
+        const encodedMessage = encodeURIComponent(message);
+        
+        // Add vector store type to request
+        const url = `/api/chat?message=${encodedMessage}&vector_store_type=${currentVectorStore}`;
+        
+        // Use Server-Sent Events (EventSource) for streaming
+        currentEventSource = new EventSource(url);
+        
+        // Event listener for metadata
+        currentEventSource.addEventListener('metadata', event => {
+            const metadata = JSON.parse(event.data);
+            
+            // Store LLM info
+            if (llmInfoSpan && metadata.llm_provider && metadata.llm_model) {
+                llmInfoSpan.textContent = `LLM: ${metadata.llm_provider} (${metadata.llm_model})`;
+            }
+            
+            // Store vector store info
+            if (vectorStoreInfoSpan && metadata.store_type) {
+                vectorStoreInfoSpan.textContent = `Store: ${metadata.store_type.charAt(0).toUpperCase() + metadata.store_type.slice(1)}`;
+            }
+            
+            // Add source pills if available
+            if (metadata.sources && metadata.sources.length > 0) {
+                // Add store_type to each source
+                const sourcesWithStoreType = metadata.sources.map(source => ({
+                    ...source,
+                    store_type: metadata.store_type || currentVectorStore
+                }));
+                
+                addSourcePills(assistantMessageId, sourcesWithStoreType);
+                
+                // Store context parts for this message
+                messageContextParts[assistantMessageId] = metadata.sources;
+            }
+        });
+        
+        // Event listener for status updates
+        currentEventSource.addEventListener('status', event => {
+            const status = JSON.parse(event.data);
+            console.log('Status update:', status);
+        });
+        
+        // Event listener for streaming chunks of text
+        currentEventSource.addEventListener('message', event => {
             try {
                 const data = JSON.parse(event.data);
-                
-                if (data.type === 'text') {
-                    if (isFirstTextChunk) {
-                        // Clear status text AND indicator from the text span
-                        const textSpan = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"] .message-text`);
-                        if (textSpan) textSpan.innerHTML = ""; 
-                        isFirstTextChunk = false;
-                    }
+                if (data.type === 'text' && data.content) {
+                    // Update the message text with the new chunk
                     appendToMessage(assistantMessageId, data.content);
                 }
-                // Note: Metadata event is handled by onopen or a specific event type
             } catch (e) {
-                console.error("Failed to parse SSE data:", event.data, e);
-                // Maybe display raw data or an error?
-                appendToMessage(assistantMessageId, ` [Error parsing data: ${event.data}] `);
+                console.error('Error parsing message event data:', e);
+            }
+        });
+        
+        // Event listener for errors
+        currentEventSource.addEventListener('error', event => {
+            console.error('SSE Error event triggered');
+            
+            // Close the event source to prevent further errors
+            if (currentEventSource) {
+                currentEventSource.close();
+                currentEventSource = null;
+            }
+            
+            // Only show an error message if we haven't received a done event
+            if (event.data) {
+                try {
+                    const errorData = JSON.parse(event.data);
+                    console.error('Error data:', errorData);
+                    
+                    // Update UI to show error
+                    updateMessageText(
+                        assistantMessageId, 
+                        `<span class="error-message">Error: ${errorData.error || 'Connection to assistant lost.'}</span>`, 
+                        false
+                    );
+                } catch (e) {
+                    console.error('Error parsing error event data:', e);
+                }
+            }
+        });
+        
+        // Event listener for completion (done)
+        currentEventSource.addEventListener('done', event => {
+            console.log('Response complete - done event received');
+            
+            // Close the event source cleanly
+            if (currentEventSource) {
+                currentEventSource.close();
+                currentEventSource = null;
+            }
+        });
+        
+        // Handle general connection errors
+        currentEventSource.onerror = error => {
+            console.error('EventSource general error:', error);
+            
+            // Close the connection if it's not already closed
+            if (currentEventSource && currentEventSource.readyState !== 2) {
+                currentEventSource.close();
+                currentEventSource = null;
             }
         };
-
-        currentEventSource.addEventListener('status', function(event) {
-            console.log("SSE status received:", event.data);
-             try {
-                const statusData = JSON.parse(event.data);
-                 // Update the text span with the new status, keep indicator
-                 updateMessageText(assistantMessageId, statusData.status || 'Processing', true);
-            } catch (e) {
-                console.error("Failed to parse SSE status:", event.data, e);
-            }
-        });
-
-        currentEventSource.addEventListener('metadata', function(event) {
-            console.log("SSE metadata received:", event.data);
-             try {
-                const metadata = JSON.parse(event.data);
-                 // Update LLM Info display
-                 if (metadata.llm_provider && metadata.llm_model && llmInfoSpan) {
-                     llmInfoSpan.textContent = `LLM: ${metadata.llm_provider} (${metadata.llm_model})`;
-                 }
-                 // Add source pills (will append to the dedicated container)
-                 addSourcePills(assistantMessageId, metadata.sources);
-
-            } catch (e) {
-                console.error("Failed to parse SSE metadata:", event.data, e);
-            }
-        });
-
-        currentEventSource.addEventListener('error', function(event) {
-            console.error("SSE Error event:", event);
-            let errorMsg = "Error communicating with server.";
-             try {
-                // Attempt to parse error data if backend sends JSON in error event
-                 const errorData = JSON.parse(event.data); 
-                 if(errorData.error) errorMsg = errorData.error;
-             } catch(e) { /* Ignore if not JSON */ }
-
-            const assistantMsgElement = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"]`);
-            if (assistantMsgElement) {
-                 const textSpan = assistantMsgElement.querySelector('.message-text');
-                 // Update text span, explicitly no indicator needed for error message
-                 if(textSpan) updateMessageText(assistantMessageId, `Error: ${errorMsg}`, false);
-                 assistantMsgElement.classList.remove('assistant');
-                 assistantMsgElement.classList.add('system');
-            }
-            currentEventSource.close(); // Close connection on error
-            currentEventSource = null;
-        });
-
-         currentEventSource.addEventListener('end', function(event) {
-            console.log("SSE stream ended.");
-            currentEventSource.close();
-            currentEventSource = null;
-            
-            const textSpan = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"] .message-text`);
-            
-            if (textSpan) {
-                console.log("Attempting final parse. typeof window.marked:", typeof window.marked);
-                const fullText = textSpan.textContent || "";
-                let generatedHtml = null;
-
-                // Check if marked is loaded, could be function or object with .parse
-                if (typeof window.marked === 'function') {
-                    generatedHtml = window.marked(fullText); // Use marked directly if it's the function
-                } else if (typeof window.marked === 'object' && typeof window.marked.parse === 'function') {
-                    generatedHtml = window.marked.parse(fullText); // Use marked.parse if it's a method
-                }
-                
-                if (generatedHtml !== null) {
-                    textSpan.innerHTML = generatedHtml;
-                    // Ensure code blocks are highlighted after rendering
-                    // highlightCodeBlocks(textSpan); // Temporarily comment out
-                } else {
-                    console.error("Marked function or marked.parse not found after stream end. Cannot parse markdown.");
-                    // Keep the textContent as is
-                }
-                
-                // Remove indicator if somehow still present
-                const indicator = textSpan.querySelector('.thinking-indicator');
-                if (indicator) indicator.remove();
-            } else {
-                 console.error("Failed to find text span after stream end for ID:", assistantMessageId);
-            }
-        });
-
-        // Note: The old try/catch around fetch is removed as errors are handled by EventSource listeners
     }
 
     // Event listeners

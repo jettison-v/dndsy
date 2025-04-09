@@ -267,6 +267,9 @@ def ask_dndsy(prompt: str, store_type: str = None) -> Generator[str, None, None]
         end_time_llm = time.perf_counter()
         logger.info(f"LLM stream finished after {end_time_llm - start_time_llm:.4f} seconds. Yielded {text_chunk_count} chunks.")
 
+        # Send a proper close event
+        yield f"event: done\ndata: {json.dumps({'success': True})}\n\n"
+
     except Exception as e:
         error_occurred = True
         error_msg = f"Error during query processing: {e}"
@@ -282,7 +285,3 @@ def ask_dndsy(prompt: str, store_type: str = None) -> Generator[str, None, None]
         end_time_total = time.perf_counter()
         total_time = end_time_total - start_time_total
         logger.info(f"Total processing time: {total_time:.4f} seconds")
-        
-        if not error_occurred:
-            # Yield completion event when everything is done
-            yield f"event: complete\ndata: {json.dumps({'success': True, 'processing_time': total_time})}\n\n"
