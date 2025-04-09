@@ -49,7 +49,7 @@ pandas==2.2.1
 
 # Added Dependencies for Semantic Approach
 langchain==0.1.13
-langchain-community==0.0.24
+langchain-community==0.0.29
 langchain-openai==0.0.8
 rank_bm25==0.2.2
 spacy==3.7.4
