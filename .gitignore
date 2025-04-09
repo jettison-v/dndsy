@@ -49,6 +49,8 @@ pdf_processing.log
 data/qdrant_index
 data/documents.json
 static/pdf_page_images/
+pdf_process_history.json
+scripts/pdf_process_history.json
 
 # macOS
 .DS_Store

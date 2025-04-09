@@ -80,7 +80,7 @@ dndsy/
 ## Local Development Setup
 
 1.  **Prerequisites:**
-    *   Python 3.11+
+    *   Python 3.11+ (3.11 specifically used in production as defined in `.python-version`)
     *   Docker & Docker Compose (for running Qdrant locally easily)
     *   AWS Account & S3 Bucket (for PDF/image storage)
     *   LLM API Key (e.g., OpenAI, Anthropic)
@@ -227,8 +227,105 @@ DnDSy implements two different vector store approaches to optimize retrieval:
 
 2. **Semantic Approach**
    * Chunks content into paragraphs
-   * Uses `paraphrase-MiniLM-L6-v2` embedding model
+   * Uses OpenAI's `text-embedding-3-small` model via the OpenAI API
    * Better for retrieving specific pieces of information
    * More precise, especially for detailed rules questions
+   * Combines vector search with BM25 for hybrid retrieval
    
-Users can switch between these two approaches via the UI selector. Both approaches are processed and stored in separate Qdrant collections. 
+Users can switch between these two approaches via the UI selector. Both approaches are processed and stored in separate Qdrant collections.
+
+## Detailed Database Generation Process
+
+The system processes PDFs from S3 to generate two distinct vector databases (collections in Qdrant) using different approaches. Here's a detailed breakdown of the generation process:
+
+### PDF Processing Pipeline
+
+1. **PDF Discovery**
+   * Uses `boto3` to list PDFs from the configured S3 bucket and prefix
+   * Implements a smart caching system using SHA-256 hashes to detect changes
+   * Stores processing history in S3 (`processing/pdf_process_history.json`)
+
+2. **PDF Loading**
+   * Uses `PyMuPDF` (fitz) to load and process PDF documents
+   * Extracts text content and metadata page by page
+   * Generates PNG images for each page with `PyMuPDF`
+
+3. **Image Generation**
+   * Only generates images for new or changed PDFs (based on hash comparison)
+   * Renders each page as a PNG image using `PyMuPDF`
+   * Uploads images to S3 using `boto3` with a structured path format
+   * Skips image generation for unchanged PDFs to improve efficiency
+
+### Standard Vector Store Generation
+
+1. **Text Extraction**
+   * Processes PDFs page by page
+   * Preserves the entire page content as a single document
+   * Maintains original page context and structure
+
+2. **Embedding Generation**
+   * Uses `sentence-transformers` with the `all-MiniLM-L6-v2` model
+   * Generates 384-dimensional embeddings for each page
+   * Processing is done locally without API calls
+
+3. **Vector Storage**
+   * Stores embeddings in Qdrant collection `dnd_knowledge`
+   * Each point contains:
+     * The embedding vector
+     * The full page text
+     * Metadata (source document, page number, image URL)
+   * Uses `qdrant_client` for efficient batch upserts
+
+### Semantic Vector Store Generation
+
+1. **Text Chunking**
+   * Uses `langchain`'s `RecursiveCharacterTextSplitter` to intelligently split text
+   * Chunks content based on semantic boundaries rather than fixed sizes
+   * Creates more focused, meaningful chunks with preserved context
+
+2. **Embedding Generation**
+   * Uses OpenAI's `text-embedding-3-small` model via API calls
+   * Generates 1536-dimensional embeddings for each chunk
+   * Higher dimensionality captures more semantic nuance
+
+3. **BM25 Retriever Setup**
+   * Implements a secondary text-based retrieval using `langchain_community`'s `BM25Retriever`
+   * Based on the BM25 algorithm (extension of TF-IDF)
+   * Provides complementary keyword-based search capabilities
+
+4. **Hybrid Retrieval System**
+   * Combines vector similarity search and BM25 keyword search
+   * Results are re-ranked based on combined scores
+   * Balances semantic understanding with keyword precision
+
+5. **Vector Storage**
+   * Stores embeddings in Qdrant collection `dnd_semantic`
+   * Each point contains:
+     * The embedding vector
+     * The chunk text
+     * Enhanced metadata (source document, page number, chunk index, chunk count)
+   * Uses `qdrant_client` for efficient batch upserts
+
+### Database Reset and Rebuilding Process
+
+The `scripts/reset_and_process.py` script orchestrates the entire process:
+
+1. **Environment Setup**
+   * Loads environment variables using `python-dotenv`
+   * Initializes S3 client and Qdrant connection
+   * Configures logging to capture detailed processing information
+
+2. **Collection Reset**
+   * Deletes existing Qdrant collections if they exist
+   * Creates fresh collections with appropriate schemas and configurations
+
+3. **PDF Processing**
+   * Initializes the data processor
+   * Processes PDFs one by one from S3
+   * Updates the processing history cache in S3
+
+4. **Command-Line Options**
+   * `--force-reprocess-images`: Regenerates all images even for unchanged PDFs
+   * `--reset-history`: Clears the processing history cache completely
+
+This efficient pipeline ensures that both vector stores are optimized for their specific retrieval approaches while minimizing unnecessary processing by leveraging intelligent caching. 
