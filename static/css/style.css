@@ -98,6 +98,7 @@ header p {
     display: flex;
     flex-direction: column;
     height: 100%;
+    max-height: calc(100vh - 200px);
 }
 
 .chat-messages {
@@ -313,6 +314,10 @@ header p {
     max-width: 100%;
     margin: 0 auto;
     padding: 1rem;
+    object-fit: contain;
+    width: auto;
+    height: auto;
+    max-height: 100%;
 }
 
 /* Center loading/error text within the container */
@@ -435,10 +440,10 @@ header p {
 /* Source Navigation */
 .source-nav {
     display: flex;
-    justify-content: space-between;
-    padding: 1rem;
+    justify-content: center;
+    padding: 0.75rem;
     margin-top: 0;
-    gap: 1.5rem;
+    gap: 1rem;
     align-items: center;
     background: var(--secondary-color);
     border-top: 1px solid var(--border-color);
@@ -447,38 +452,7 @@ header p {
 }
 
 .source-nav button {
-    background-color: var(--input-bg);
-    color: var(--text-color);
-    border: 1px solid var(--border-color);
-    padding: 0.4rem 0.9rem;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.source-nav button:hover:not(:disabled) {
-    background-color: var(--accent-color);
-}
-
-.source-nav button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.source-nav span {
-    font-size: 0.9rem;
-    color: #a0a0a0;
-}
-
-@media (max-width: 768px) {
-    .main-content {
-        flex-direction: column;
-    }
-    
-    .source-panel.open {
-        width: 100%;
-        height: 300px;
-    }
+    min-width: 100px;
 }
 
 footer {
@@ -488,6 +462,7 @@ footer {
     color: #a0a0a0;
     font-size: 0.9rem;
     border-top: 1px solid var(--border-color);
+    text-align: center;
 }
 
 /* Styling for the new "Show more sources" link */
@@ -843,4 +818,38 @@ textarea:focus, button:focus {
 
 .expand-button:hover {
     color: var(--accent-color);
+}
+
+/* Move zoom controls to header in expanded view */
+.source-panel-header .zoom-controls {
+    display: none;
+}
+
+.source-panel.expanded .source-panel-header .zoom-controls {
+    display: flex;
+    margin-left: auto;
+    margin-right: 1rem;
+}
+
+/* Hide bottom source controls when in expanded view */
+.source-panel.expanded .source-controls {
+    display: none;
+}
+
+/* Adjust source navigation spacing */
+.source-nav {
+    display: flex;
+    justify-content: center;
+    padding: 0.75rem;
+    margin-top: 0;
+    gap: 1rem;
+    align-items: center;
+    background: var(--secondary-color);
+    border-top: 1px solid var(--border-color);
+    position: sticky;
+    bottom: 0;
+}
+
+.source-nav button {
+    min-width: 100px;
 } 
