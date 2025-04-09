@@ -8,6 +8,7 @@ import hashlib  # For PDF content hashing
 # Add parent directory to path to make imports work properly
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from vector_store import get_vector_store
+from utils.document_structure import DocumentStructureAnalyzer
 
 from tqdm import tqdm
 import logging
@@ -83,6 +84,9 @@ class DataProcessor:
         self.standard_store = get_vector_store("standard")
         self.semantic_store = get_vector_store("semantic")
         self.processed_sources = set()
+        
+        # Create document structure analyzer
+        self.doc_analyzer = DocumentStructureAnalyzer()
         
         # Load process history if exists
         self.process_history = self._load_process_history()
@@ -380,7 +384,37 @@ class DataProcessor:
                 doc = fitz.open(stream=pdf_bytes, filetype="pdf")
                 total_pages = len(doc) # Get total page count
                 logging.info(f"PDF has {total_pages} pages to process with image generation")
+                
+                # Reset the document analyzer for this PDF
+                self.doc_analyzer.reset_for_document(s3_pdf_key)
 
+                # First pass: Analyze document structure by sampling pages
+                # This helps identify heading levels and font styles used in the document
+                logging.info("Analyzing document structure...")
+                
+                # Sample pages throughout the document (first few, middle, last few)
+                sample_size = min(40, total_pages)
+                if total_pages <= sample_size:
+                    # If document is short, analyze all pages
+                    sample_pages = list(range(total_pages))
+                else:
+                    # Take first few, spaced middle pages, and last few
+                    first_pages = list(range(min(5, total_pages // 4)))
+                    step = max(1, (total_pages - 10) // (sample_size - 10))
+                    middle_pages = list(range(5, total_pages - 5, step))[:sample_size-10]
+                    last_pages = list(range(max(0, total_pages - 5), total_pages))
+                    sample_pages = sorted(set(first_pages + middle_pages + last_pages))
+                
+                for page_num in sample_pages:
+                    page = doc[page_num]
+                    # Extract text with formatting information
+                    page_dict = page.get_text('dict')
+                    # Analyze the page for font styles and heading levels
+                    self.doc_analyzer.analyze_page(page_dict, page_num)
+                
+                # Determine heading levels based on collected font statistics
+                self.doc_analyzer.determine_heading_levels()
+                
                 # Process document for standard approach page by page
                 # For semantic approach, we'll collect all text first
                 standard_docs = []
@@ -388,11 +422,31 @@ class DataProcessor:
                 # For semantic approach, collect all page texts with their page numbers
                 semantic_page_texts = [] 
                 
+                # Second pass: Process actual content with structure context
                 for page_num, page in enumerate(doc):
                     if page_num % 10 == 0 and page_num > 0:
                         logging.info(f"Processed {page_num}/{total_pages} pages ({(page_num/total_pages*100):.1f}%)")
-                         
-                    page_text = page.get_text().strip()
+                    
+                    # Extract text with formatting information
+                    page_dict = page.get_text('dict')
+                    
+                    # Process headings on this page to update document structure
+                    self.doc_analyzer.process_page_headings(page_dict, page_num)
+                    
+                    # Get the current document context (heading path)
+                    context = self.doc_analyzer.get_current_context()
+                     
+                    # Extract the plain text for processing
+                    page_text = ""
+                    for block in page_dict['blocks']:
+                        if block.get("type") == 0:  # Text blocks only
+                            for line in block.get("lines", []):
+                                line_text = ""
+                                for span in line.get("spans", []):
+                                    line_text += span.get("text", "")
+                                page_text += line_text + "\n"
+                    
+                    page_text = page_text.strip()
                     if not page_text: 
                         continue
 
@@ -439,7 +493,7 @@ class DataProcessor:
                         if pix:
                             pix = None  # Release pixmap resource
                     
-                    # Create document metadata
+                    # Create document metadata with heading context
                     metadata = {
                         "source": s3_pdf_key,
                         "filename": pdf_filename,
@@ -451,6 +505,22 @@ class DataProcessor:
                         "folder": str(Path(rel_path).parent),
                         "processed_at": datetime.now().isoformat()
                     }
+                    
+                    # Add heading context information
+                    if context.get("section"):
+                        metadata["section"] = context["section"]
+                    if context.get("subsection"):
+                        metadata["subsection"] = context["subsection"]
+                    
+                    # Add full heading path
+                    if context.get("heading_path"):
+                        metadata["heading_path"] = " > ".join(context["heading_path"])
+                    
+                    # Add individual heading level information
+                    for i in range(1, 7):  # H1 through H6
+                        key = f"h{i}"
+                        if key in context:
+                            metadata[key] = context[key]
                     
                     # Standard approach - add each page as a document
                     standard_docs.append({

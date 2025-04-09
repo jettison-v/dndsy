@@ -97,13 +97,39 @@ def get_relevant_context(query: str, model: str, limit: int = 5, store_type: str
             source_dir = metadata.get('source_dir', None) # Cleaned path for image dir
             original_s3_key = metadata.get('source') # The original S3 key
             
-            # Add semantic-specific information if available
+            # Extract heading context for better display
+            section = metadata.get('section', None)
+            subsection = metadata.get('subsection', None)
+            heading_path = metadata.get('heading_path', None)
+            
+            # Build a context description based on available heading information
+            context_info = None
+            
+            if heading_path:
+                # Use the complete heading path if available
+                context_info = heading_path
+            elif section:
+                # Use section and subsection if available
+                if subsection:
+                    context_info = f"{section} > {subsection}"
+                else:
+                    context_info = section
+            
+            # Get the most specific heading level available
+            for level in range(6, 0, -1):
+                heading_key = f"h{level}"
+                if heading_key in metadata and metadata[heading_key]:
+                    if not context_info:
+                        context_info = metadata[heading_key]
+                    break
+            
+            # Add specific position information from chunk metadata
             chunk_index = metadata.get('chunk_index', None)
-            chunk_type = metadata.get('chunk_type', None)
+            position = metadata.get('position', None)
             
             logger.info(f"Result {idx + 1} from {source_filename} (page {page}) with score {score:.4f}")
-            if chunk_index is not None:
-                logger.info(f"  Chunk: {chunk_type} #{chunk_index}")
+            if context_info:
+                logger.info(f"  Context: {context_info}")
             
             context_piece = {
                 'text': text,
@@ -114,7 +140,9 @@ def get_relevant_context(query: str, model: str, limit: int = 5, store_type: str
                 'source_dir': source_dir, 
                 'score': score,
                 'original_s3_key': original_s3_key, # Add the S3 key here
-                'chunk_info': f"{chunk_type} #{chunk_index}" if chunk_index is not None else None
+                'chunk_info': context_info if context_info else (
+                              f"Position: {position}" if position else (
+                              f"#{chunk_index}" if chunk_index is not None else None))
             }
             
             # Use tiktoken for OpenAI-specific token counting
