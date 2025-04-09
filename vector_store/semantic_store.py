@@ -219,6 +219,154 @@ class SemanticStore:
         logging.info(f"[{end_time.strftime('%H:%M:%S')}] Semantic processing complete - {total_duration:.1f} seconds total")
         logging.info(f"Added {len(points)} semantic chunks from {len(documents)} original documents")
     
+    def add_document_with_cross_page_chunking(self, page_texts: List[Dict[str, Any]]) -> None:
+        """
+        Add a document with cross-page chunking for semantic processing.
+        
+        This method combines text from multiple pages, applies semantic chunking
+        across page boundaries, but maintains page attribution by tracking which 
+        chunk starts on which page.
+        
+        Args:
+            page_texts: List of dictionaries containing page text and metadata,
+                       with each dictionary representing a single page.
+        """
+        if not page_texts:
+            return
+        
+        # Sort pages by page number to ensure correct order
+        page_texts = sorted(page_texts, key=lambda x: x["page"])
+        
+        # Combine text with page markers
+        combined_text = ""
+        page_markers = {}  # Map character positions to page numbers
+        
+        for page_info in page_texts:
+            page_num = page_info["page"]
+            page_text = page_info["text"]
+            
+            # Mark the starting position of this page's text
+            start_pos = len(combined_text)
+            page_markers[start_pos] = page_info
+            
+            # Add page text with a separator
+            combined_text += page_text
+            
+            # Add a newline separator between pages (optional)
+            if not combined_text.endswith("\n\n"):
+                combined_text += "\n\n"
+        
+        # Apply semantic chunking to the combined text
+        chunks = self.text_splitter.split_text(combined_text)
+        
+        # Initialize for batch insertion
+        points = []
+        doc_id_counter = self.next_id
+        total_chunks = len(chunks)
+        embedding_count = 0
+        start_time = datetime.now()
+        
+        # Reset BM25 documents for this new content
+        self.bm25_documents = []
+        
+        logging.info(f"[{start_time.strftime('%H:%M:%S')}] Starting cross-page semantic processing with {total_chunks} chunks")
+        
+        # Find which page each chunk belongs to based on its position in the original text
+        chunk_start_pos = 0
+        for i, chunk_text in enumerate(chunks):
+            if not chunk_text.strip():
+                continue
+                
+            # Find which page this chunk starts on
+            page_info = None
+            nearest_page_pos = 0
+            
+            for pos, marker in page_markers.items():
+                if pos <= chunk_start_pos and pos >= nearest_page_pos:
+                    nearest_page_pos = pos
+                    page_info = marker
+            
+            if not page_info:
+                logging.warning(f"Could not determine source page for chunk {i}, using first page")
+                page_info = page_texts[0]
+            
+            # Use metadata from the page where this chunk starts
+            metadata = page_info["metadata"].copy()
+            
+            # Update metadata with chunk info
+            metadata["chunk_index"] = i
+            metadata["chunk_count"] = total_chunks
+            metadata["cross_page"] = True
+            
+            # Generate embedding
+            embedding = self._get_embedding(chunk_text)
+            embedding_count += 1
+            
+            if embedding_count % 50 == 0:
+                elapsed = (datetime.now() - start_time).total_seconds()
+                logging.info(f"[{datetime.now().strftime('%H:%M:%S')}] Processed {embedding_count}/{total_chunks} embeddings ({(embedding_count/total_chunks*100):.1f}%) - {elapsed:.1f} seconds elapsed")
+            
+            # Create point for Qdrant
+            point = models.PointStruct(
+                id=doc_id_counter,
+                vector=embedding,
+                payload={
+                    "text": chunk_text,
+                    "metadata": metadata
+                }
+            )
+            points.append(point)
+            
+            # Also add to BM25 documents for hybrid search
+            self.bm25_documents.append(
+                Document(
+                    page_content=chunk_text,
+                    metadata=metadata
+                )
+            )
+            
+            # Update for next chunk
+            chunk_start_pos += len(chunk_text)
+            doc_id_counter += 1
+        
+        # Update the next_id for future additions
+        self.next_id = doc_id_counter
+        
+        # Initialize BM25 retriever with the documents
+        if self.bm25_documents:
+            logging.info(f"[{datetime.now().strftime('%H:%M:%S')}] Initializing BM25 retriever with {len(self.bm25_documents)} documents")
+            self.bm25_retriever = BM25Retriever.from_documents(
+                self.bm25_documents
+            )
+            logging.info(f"[{datetime.now().strftime('%H:%M:%S')}] BM25 retriever initialization complete")
+        
+        # Insert points in batches
+        batch_size = 100
+        batch_count = (len(points) + batch_size - 1) // batch_size  # Ceiling division
+        
+        logging.info(f"[{datetime.now().strftime('%H:%M:%S')}] Uploading {len(points)} cross-page embeddings to Qdrant in {batch_count} batches")
+        
+        for i in range(0, len(points), batch_size):
+            batch_num = i // batch_size + 1
+            batch = points[i:i + batch_size]
+            batch_start = datetime.now()
+            
+            logging.info(f"[{batch_start.strftime('%H:%M:%S')}] Uploading batch {batch_num}/{batch_count} ({len(batch)} points)")
+            
+            self.client.upsert(
+                collection_name=self.collection_name,
+                points=batch
+            )
+            
+            batch_end = datetime.now()
+            batch_duration = (batch_end - batch_start).total_seconds()
+            logging.info(f"[{batch_end.strftime('%H:%M:%S')}] Batch {batch_num}/{batch_count} complete in {batch_duration:.1f} seconds")
+        
+        end_time = datetime.now()
+        total_duration = (end_time - start_time).total_seconds()
+        logging.info(f"[{end_time.strftime('%H:%M:%S')}] Cross-page semantic processing complete - {total_duration:.1f} seconds total")
+        logging.info(f"Added {len(points)} semantic chunks from {len(page_texts)} pages with cross-page chunking")
+    
     def _hybrid_reranking(self, dense_results, sparse_results, query, k=5):
         """Combine and rerank results from dense and sparse retrievers."""
         # Combine results, removing duplicates by content

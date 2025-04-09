@@ -381,10 +381,13 @@ class DataProcessor:
                 total_pages = len(doc) # Get total page count
                 logging.info(f"PDF has {total_pages} pages to process with image generation")
 
-                # Process document for both standard and semantic approaches
+                # Process document for standard approach page by page
+                # For semantic approach, we'll collect all text first
                 standard_docs = []
-                semantic_docs = []
-
+                
+                # For semantic approach, collect all page texts with their page numbers
+                semantic_page_texts = [] 
+                
                 for page_num, page in enumerate(doc):
                     if page_num % 10 == 0 and page_num > 0:
                         logging.info(f"Processed {page_num}/{total_pages} pages ({(page_num/total_pages*100):.1f}%)")
@@ -399,91 +402,88 @@ class DataProcessor:
                     if page_source_id in self.processed_sources:
                         continue
                     
-                    # Generate image
-                    image_filename = f"page_{page_label}.png"
-                    s3_object_key = f"{s3_base_key_prefix}/{pdf_image_sub_dir_name}/{image_filename}"
-                    s3_image_url = None # Default to None
-                    
+                    # Generate image for the page
+                    s3_image_url = None
+                    page_preview_path = None
+                    pix = None
                     try:
-                        pix = page.get_pixmap(dpi=150) # Render at 150 DPI
-                        # Convert pixmap to PNG bytes in memory
+                        # Higher resolution for better readability
+                        pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
+                        page_preview_path = f"{pdf_image_sub_dir_name}/{page_label}.png"
+                        s3_image_url = f"s3://{AWS_S3_BUCKET_NAME}/{PDF_IMAGE_DIR}/{page_preview_path}"
+                        
+                        # Save image directly to bytes
                         img_bytes = pix.tobytes("png")
-                        img_file_obj = io.BytesIO(img_bytes)
-
-                        # Upload to S3 if client is configured
-                        if s3_client:
-                            try:
-                                s3_client.upload_fileobj(
-                                    img_file_obj, 
-                                    AWS_S3_BUCKET_NAME, 
-                                    s3_object_key,
-                                    ExtraArgs={
-                                        'ContentType': 'image/png'
-                                    }
-                                )
-                                # Construct the URL for public bucket access
-                                # This assumes the bucket is public or has proper permissions
-                                s3_image_url = f"https://{AWS_S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{s3_object_key}"
-                                logging.info(f"Uploaded page image to S3: {s3_object_key}")
-                                
-                                # Store image URL in history
-                                page_key = f"{page_label}"
-                                if 'pages' not in self.process_history[s3_pdf_key]:
-                                    self.process_history[s3_pdf_key]['pages'] = {}
-                                self.process_history[s3_pdf_key]['pages'][page_key] = {
-                                    'image_url': s3_image_url
-                                }
-                                
-                            except Exception as e:
-                                logging.error(f"Failed to upload page image to S3: {e}")
-                                # Keep s3_image_url as None to indicate no image available
                         
-                        # Create document metadata
-                        metadata = {
-                            "source": s3_pdf_key,  # Store the S3 key as the source
-                            "filename": pdf_filename,
-                            "page": page_label,
-                            "total_pages": total_pages,
-                            "image_url": s3_image_url,
-                            "source_dir": pdf_image_sub_dir_name,
-                            "type": "pdf",
-                            "folder": str(Path(rel_path).parent),
-                            "processed_at": datetime.now().isoformat()
+                        # Upload to S3
+                        s3_client.put_object(
+                            Bucket=AWS_S3_BUCKET_NAME,
+                            Key=f"{PDF_IMAGE_DIR}/{page_preview_path}",
+                            Body=img_bytes,
+                            ContentType="image/png"
+                        )
+                        
+                        # Store image URL in history
+                        if s3_pdf_key not in self.process_history:
+                            self.process_history[s3_pdf_key] = {}
+                        if 'pages' not in self.process_history[s3_pdf_key]:
+                            self.process_history[s3_pdf_key]['pages'] = {}
+                        
+                        self.process_history[s3_pdf_key]['pages'][str(page_label)] = {
+                            'image_url': s3_image_url,
+                            'processed': datetime.now().isoformat()
                         }
-                        
-                        # Standard approach - process whole page as one document
-                        standard_docs.append({
-                            "text": page_text,
-                            "metadata": metadata.copy()  # Use a copy to avoid reference issues
-                        })
-                        
-                        # Semantic approach - send the entire page and let the semantic store handle chunking
-                        # The semantic store will use RecursiveCharacterTextSplitter for more advanced chunking
-                        semantic_docs.append({
-                            "text": page_text,
-                            "metadata": metadata.copy()  # Use a copy to avoid reference issues
-                        })
-                        
-                        # Mark this page as processed
-                        self.processed_sources.add(page_source_id)
-                        
                     except Exception as e:
-                        logging.error(f"Error processing page {page_label} of {s3_pdf_key}: {e}")
-                        continue
+                        logging.error(f"Error creating page image for page {page_label}: {e}")
+                    finally:
+                        if pix:
+                            pix = None  # Release pixmap resource
+                    
+                    # Create document metadata
+                    metadata = {
+                        "source": s3_pdf_key,
+                        "filename": pdf_filename,
+                        "page": page_label,
+                        "total_pages": total_pages,
+                        "image_url": s3_image_url,
+                        "source_dir": pdf_image_sub_dir_name,
+                        "type": "pdf",
+                        "folder": str(Path(rel_path).parent),
+                        "processed_at": datetime.now().isoformat()
+                    }
+                    
+                    # Standard approach - add each page as a document
+                    standard_docs.append({
+                        "text": page_text,
+                        "metadata": metadata.copy()
+                    })
+                    
+                    # For semantic approach - collect text with metadata
+                    semantic_page_texts.append({
+                        "text": page_text,
+                        "page": page_label,
+                        "metadata": metadata.copy()
+                    })
+                    
+                    # Mark as processed
+                    self.processed_sources.add(page_source_id)
                 
-                # Add documents to both vector stores
+                # Process standard approach directly
                 if standard_docs:
                     logging.info(f"Adding {len(standard_docs)} documents to standard store from {pdf_filename}")
                     standard_docs_total += len(standard_docs)
                     self.standard_store.add_documents(standard_docs)
                     documents.extend(standard_docs)
                 
-                if semantic_docs:
-                    logging.info(f"Adding {len(semantic_docs)} documents to semantic store from {pdf_filename}")
-                    semantic_docs_total += len(semantic_docs)
-                    self.semantic_store.add_documents(semantic_docs)
+                # Process semantic approach with cross-page chunking
+                if semantic_page_texts:
+                    logging.info(f"Processing semantic chunking across {len(semantic_page_texts)} pages from {pdf_filename}")
+                    semantic_docs_total += len(semantic_page_texts)
+                    
+                    # Process the document as a whole for semantic chunking
+                    self.semantic_store.add_document_with_cross_page_chunking(semantic_page_texts)
                 
-                # Close the document when done
+                # Close the document
                 doc.close()
                 
             except Exception as e:

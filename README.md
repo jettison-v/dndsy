@@ -280,7 +280,8 @@ The system processes PDFs from S3 to generate two distinct vector databases (col
 
 1. **Text Chunking**
    * Uses `langchain`'s `RecursiveCharacterTextSplitter` to intelligently split text
-   * Chunks content based on semantic boundaries rather than fixed sizes
+   * Implements cross-page chunking to preserve context across page boundaries
+   * Tracks which page each chunk starts on for proper attribution
    * Creates more focused, meaningful chunks with preserved context
 
 2. **Embedding Generation**
@@ -303,7 +304,7 @@ The system processes PDFs from S3 to generate two distinct vector databases (col
    * Each point contains:
      * The embedding vector
      * The chunk text
-     * Enhanced metadata (source document, page number, chunk index, chunk count)
+     * Enhanced metadata (source document, page number, chunk index, chunk count, cross-page flag)
    * Uses `qdrant_client` for efficient batch upserts
 
 ### Database Reset and Rebuilding Process
