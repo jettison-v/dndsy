@@ -30,14 +30,14 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (isPanelExpanded) {
                 sourcePanel.classList.add('expanded');
-                expandPanel.innerHTML = '<i class="fas fa-compress-alt"></i>';
+                expandPanel.innerHTML = '<i class="fas fa-compress"></i>';
                 expandPanel.title = 'Compress';
                 
                 // Clone source pills to expanded view if available
                 updateExpandedSourcePills();
             } else {
                 sourcePanel.classList.remove('expanded');
-                expandPanel.innerHTML = '<i class="fas fa-expand-alt"></i>';
+                expandPanel.innerHTML = '<i class="fas fa-external-link-alt"></i>';
                 expandPanel.title = 'Expand';
             }
         });
@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
          // Store sources for expanded view
          activeSources = sources;
 
-         const MAX_VISIBLE_PILLS = 3;
+         const MAX_VISIBLE_PILLS = 5;
          let sourcesToShow = sources; // sources is now a list of objects
          let hiddenCount = 0;
 
@@ -632,7 +632,7 @@ document.addEventListener('DOMContentLoaded', () => {
         isPanelExpanded = false;
         
         if (expandPanel) {
-            expandPanel.innerHTML = '<i class="fas fa-expand-alt"></i>';
+            expandPanel.innerHTML = '<i class="fas fa-external-link-alt"></i>';
             expandPanel.title = 'Expand';
         }
         

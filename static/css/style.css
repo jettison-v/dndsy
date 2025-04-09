@@ -28,6 +28,7 @@ body {
     min-height: 100vh;
     margin: 0;
     padding: 0;
+    overflow-x: hidden;
 }
 
 .container {
@@ -35,10 +36,9 @@ body {
     width: 100%;
     margin: 0 auto;
     padding: 1rem;
-    flex-grow: 1;
+    flex: 1;
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 2rem);
 }
 
 header {
@@ -85,7 +85,7 @@ header p {
     gap: 1rem;
     position: relative;
     flex: 1;
-    height: calc(100vh - 150px);
+    min-height: 0; /* Allows container to shrink properly */
 }
 
 .chat-container {
@@ -291,43 +291,28 @@ header p {
 }
 
 .source-content {
-    padding: 1rem;
+    padding: 0;
     overflow-y: auto;
     height: calc(100% - 60px); /* Adjust based on header height */
 }
 
 /* Style for the image container itself */
 #source-image-container {
-    margin-top: 1rem;
-    margin-bottom: 1rem;
-    /* Remove old centering/min-height */
-    /* text-align: center; */
-    /* min-height: 300px; */
-    /* display: flex; */
-    /* justify-content: center; */
-    /* align-items: center; */
-
-    /* Aspect Ratio Box */
-    position: relative; /* For absolute positioning children */
-    width: 100%; /* Take full width */
-    height: 0; /* Height determined by padding */
-    padding-top: 141.4%; /* Approximate A4/Letter aspect ratio (sqrt(2)*100) */
-    background-color: var(--primary-color); /* Optional: background during load */
+    margin: 0;
+    position: relative;
+    width: 100%;
+    height: auto;
+    max-height: calc(100% - 100px);
+    background-color: var(--primary-color);
+    overflow: auto;
 }
 
-/* Limit the image size and position it within the aspect ratio box */
+/* Limit the image size and position it within the container */
 #source-image-container img {
-    /* Remove old block/margin styling */
-    /* display: block; */
-    /* margin: 0 auto; */
-    
-    /* Positioning within container */
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain; /* Fit image within container, maintaining aspect ratio */
+    display: block;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 1rem;
 }
 
 /* Center loading/error text within the container */
@@ -452,9 +437,13 @@ header p {
     display: flex;
     justify-content: space-between;
     padding: 1rem;
-    margin-top: 1rem;
+    margin-top: 0;
     gap: 1.5rem;
     align-items: center;
+    background: var(--secondary-color);
+    border-top: 1px solid var(--border-color);
+    position: sticky;
+    bottom: 0;
 }
 
 .source-nav button {
@@ -493,11 +482,12 @@ header p {
 }
 
 footer {
-    text-align: center;
+    margin-top: 0;
     padding: 1rem;
-    margin-top: auto; /* Pushes footer to the bottom */
-    color: var(--secondary-text-color);
+    background-color: var(--primary-color);
+    color: #a0a0a0;
     font-size: 0.9rem;
+    border-top: 1px solid var(--border-color);
 }
 
 /* Styling for the new "Show more sources" link */
@@ -601,15 +591,28 @@ a.show-more-sources:hover {
 }
 
 .source-controls {
+    display: none; /* Hidden by default, shown only in expanded mode */
+}
+
+.source-panel.expanded .source-controls {
     display: flex;
-    justify-content: center;
-    margin-top: 1rem;
-    padding: 0.5rem;
-    border-top: 1px solid var(--border-color);
-    position: sticky;
-    bottom: 0;
-    background: var(--secondary-color);
-    z-index: 10;
+}
+
+.source-sources h4 {
+    margin: 0.5rem 0 1rem;
+    font-size: 1.1rem;
+    color: var(--text-color);
+}
+
+#expanded-source-pills {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+#expanded-source-pills .source-pill {
+    margin: 0;
+    width: 100%;
 }
 
 .zoom-controls {
@@ -641,7 +644,7 @@ a.show-more-sources:hover {
 .source-detail-header {
     background: var(--primary-color);
     padding: 1rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0;
     border-bottom: 1px solid var(--border-color);
 }
 
@@ -663,56 +666,6 @@ a.show-more-sources:hover {
 .relevance-score {
     color: var(--accent-color);
     font-weight: 500;
-}
-
-#source-image-container {
-    overflow: auto;
-    text-align: center;
-    max-height: calc(100vh - 300px);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    margin: 0 1rem;
-    background-color: #1a1a1a;
-    position: relative;
-}
-
-#source-image-container img {
-    max-width: 100%;
-    display: block;
-    margin: 0 auto;
-    padding: 1rem;
-    transition: transform 0.2s ease-out;
-}
-
-.source-nav {
-    display: flex;
-    justify-content: space-between;
-    padding: 1rem;
-    margin-top: 1rem;
-    gap: 0.5rem;
-    align-items: center;
-}
-
-.source-nav button {
-    background: var(--input-bg);
-    color: var(--text-color);
-    border: 1px solid var(--border-color);
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    flex: 1;
-}
-
-.source-nav button:hover:not(:disabled) {
-    background: var(--accent-color);
-    color: white;
-    transform: translateY(-2px);
-}
-
-.source-nav button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
 }
 
 /* Updated message styling */
@@ -824,16 +777,6 @@ textarea:focus, button:focus {
     outline-offset: 2px;
 }
 
-/* Footer styling */
-footer {
-    text-align: center;
-    padding: 1rem;
-    background-color: var(--primary-color);
-    color: #a0a0a0;
-    font-size: 0.9rem;
-    border-top: 1px solid var(--border-color);
-}
-
 /* Expanded source panel styles */
 .source-panel.expanded {
     position: fixed;
@@ -843,7 +786,48 @@ footer {
     height: 100vh;
     z-index: 1000;
     border-radius: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.source-panel.expanded .source-panel-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.source-panel.expanded .source-content-wrapper {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.source-sources {
+    padding: 0.5rem;
+    border-right: 1px solid var(--border-color);
+    display: none; /* Hidden by default, shown only in expanded mode */
+    width: 250px;
     overflow-y: auto;
+    background: var(--primary-color);
+}
+
+.source-panel.expanded .source-sources {
+    display: block;
+}
+
+.source-panel.expanded .source-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    height: auto;
+}
+
+.source-panel.expanded #source-image-container {
+    flex: 1;
+    overflow: auto;
+    max-height: none;
 }
 
 .expand-button {
@@ -859,43 +843,4 @@ footer {
 
 .expand-button:hover {
     color: var(--accent-color);
-}
-
-.source-panel.expanded .source-panel-header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-.source-controls {
-    display: none; /* Hidden by default, shown only in expanded mode */
-}
-
-.source-panel.expanded .source-controls {
-    display: flex;
-}
-
-.source-sources {
-    padding: 0.5rem 1rem;
-    border-bottom: 1px solid var(--border-color);
-    display: none; /* Hidden by default, shown only in expanded mode */
-}
-
-.source-panel.expanded .source-sources {
-    display: block;
-}
-
-#source-image-container {
-    overflow: auto;
-    text-align: center;
-    max-height: calc(100vh - 350px);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    margin: 0 1rem;
-    background-color: #1a1a1a;
-    position: relative;
-}
-
-.source-panel.expanded #source-image-container {
-    max-height: calc(100vh - 200px);
 } 
