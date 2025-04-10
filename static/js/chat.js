@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
             clonedPill.addEventListener('click', () => {
                 const messageId = clonedPill.dataset.messageId;
                 const s3Key = clonedPill.dataset.s3Key;
-                const pageNumber = clonedPill.dataset.pageNumber;
+                const pageNumber = clonedPill.dataset.page;
                 const score = clonedPill.dataset.score;
                 const displayText = clonedPill.textContent;
                 const storeType = clonedPill.dataset.storeType || currentVectorStore;
@@ -256,15 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add source pills
         sources.forEach(source => {
             const displayText = source.display || `${source.s3_key.split('/').pop().replace('.pdf', '')} p.${source.page}`;
-            const pill = createSourcePill(
-                displayText, 
-                messageId, 
-                source.s3_key, 
-                source.page, 
-                source.score,
-                source.store_type || currentVectorStore,
-                source.chunk_info
-            );
+            const pill = createSourcePill(source);
             pillsContainer.appendChild(pill);
         });
         
@@ -287,56 +279,124 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Helper function to create a source pill element
-    // Now takes score
-    function createSourcePill(displayText, messageId, s3Key, pageNumber, score, storeType = currentVectorStore, chunkInfo = null) {
+    function createSourcePill(source) {
+        // Correct property names to match what comes from the API (snake_case)
+        const { s3_key, file_path, page, score, chunk_index } = source;
+        
+        // Extract just the filename without path or extension
+        let filename = s3_key.split('/').pop();
+        if (filename.includes('.')) {
+            filename = filename.substring(0, filename.lastIndexOf('.'));
+        }
+        
+        // Clean up filename for display
+        filename = filename.replace(/^\d+\s*-\s*/, ''); // Remove leading numbers and dashes
+        
+        // Get just the document name without nested folder structure for display
+        const simpleDocName = filename.split(' - ').pop() || filename;
+        
+        // Limit the filename length for display
+        const maxFilenameLength = 20;
+        const displayFilename = simpleDocName.length > maxFilenameLength 
+            ? simpleDocName.substring(0, maxFilenameLength) + '...' 
+            : simpleDocName;
+        
+        // Create the pill element
         const pill = document.createElement('button');
         pill.className = 'source-pill';
+        pill.innerText = `${displayFilename} (p.${page})`;
         
-        // Support chunk info display
-        let pillText = displayText;
-        if (chunkInfo) {
-            pillText += ` (${chunkInfo})`;
+        // Create more informative tooltip with full context
+        let tooltipContent = `Source: ${filename}\nPage: ${page}`;
+        if (chunk_index !== undefined) {
+            tooltipContent += `\nChunk: ${chunk_index}`;
+        }
+        if (score !== undefined) {
+            tooltipContent += `\nRelevance: ${(score * 100).toFixed(1)}%`;
+        }
+        if (file_path) {
+            tooltipContent += `\nPath: ${file_path}`;
         }
         
-        pill.textContent = pillText;
-        pill.dataset.messageId = messageId;
-        pill.dataset.s3Key = s3Key;
-        pill.dataset.pageNumber = pageNumber;
+        pill.title = tooltipContent;
+        
+        // Store data for retrieval
+        pill.dataset.s3Key = s3_key;
+        pill.dataset.page = page;
         pill.dataset.score = score;
-        pill.dataset.storeType = storeType;
-        if (chunkInfo) {
-            pill.dataset.chunkInfo = chunkInfo;
-        }
+        pill.dataset.filename = filename;
+        // Also need to update the store_type here
+        pill.dataset.storeType = source.store_type;
         
-        pill.addEventListener('click', () => {
-            // Clear previous active states
-            document.querySelectorAll('.source-pill').forEach(p => p.classList.remove('active'));
-            pill.classList.add('active');
+        // Add click event listener
+        pill.addEventListener('click', async function() {
+            // Show loading state
+            const originalText = pill.innerText;
+            pill.innerText = 'Loading...';
+            pill.disabled = true;
             
-            // Show loading state in panel
-            sourcePanel.classList.add('visible');
-            sourceContent.innerHTML = '<p class="loading-source">Loading source details...</p>';
-            
-            // Fetch and show source
-            fetch(`/api/get_context_details?source=${encodeURIComponent(s3Key)}&page=${pageNumber}&vector_store_type=${storeType}`)
-                .then(response => {
-                    if (!response.ok) {
-                        return response.json().then(errorData => {
-                            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-                        });
-                    }
-                    return response.json();
-                })
-                .then(details => {
-                    showSourcePanel(details, displayText, pageNumber, s3Key, score, storeType);
-                })
-                .catch(error => {
-                    console.error('Error fetching source details:', error);
-                    sourceContent.innerHTML = `<p class="error-source">Error loading source: ${error.message}</p>`;
-                });
+            try {
+                // Request source details from backend using the correct endpoint
+                const response = await fetch(`/api/get_context_details?source=${encodeURIComponent(s3_key)}&page=${page}&vector_store_type=${source.store_type || currentVectorStore}`);
+                
+                if (!response.ok) {
+                    return response.json().then(errorData => {
+                        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                    });
+                }
+                
+                // Parse response
+                const details = await response.json();
+                
+                if (!details) {
+                    throw new Error('No details returned from server');
+                }
+                
+                // Reset pill state first
+                pill.innerText = originalText;
+                pill.disabled = false;
+                
+                // Use the showSourcePanel function (same as expanded view)
+                showSourcePanel(details, `${filename} (page ${page})`, page, s3_key, score, source.store_type);
+                
+            } catch (error) {
+                console.error('Error fetching source details:', error);
+                pill.innerText = 'Error';
+                setTimeout(() => {
+                    pill.innerText = originalText;
+                    pill.disabled = false;
+                }, 2000);
+            }
         });
         
         return pill;
+    }
+
+    // Helper function to convert s3:// URLs to HTTPS URLs
+    function convertS3UrlToHttps(s3Url) {
+        if (!s3Url) return null;
+        
+        // If it's already an HTTPS URL, return it as is
+        if (s3Url.startsWith('http')) {
+            return s3Url;
+        }
+        
+        // Handle s3:// URLs
+        if (s3Url.startsWith('s3://')) {
+            // Extract bucket and key from s3:// URL
+            const s3Regex = /s3:\/\/([^/]+)\/(.+)/;
+            const match = s3Url.match(s3Regex);
+            
+            if (match && match.length === 3) {
+                const bucket = match[1];
+                const key = match[2];
+                // Convert to HTTPS URL
+                return `https://${bucket}.s3.amazonaws.com/${key}`;
+            }
+        }
+        
+        // For relative paths or other formats, return as is
+        return s3Url;
     }
 
     // Function to show source content in the side panel
@@ -347,7 +407,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        const imageUrl = details.image_url;
+        // Convert the S3 URL to an HTTPS URL that browsers can load
+        const imageUrl = convertS3UrlToHttps(details.image_url);
+        console.log("Original image URL:", details.image_url);
+        console.log("Converted image URL:", imageUrl);
+        
         const totalPages = details.total_pages || 'N/A'; 
 
         // Clear previous content
@@ -482,6 +546,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
             }
             const details = await response.json();
+            
+            // Ensure we convert S3 URLs to HTTPS
+            if (details.image_url && details.image_url.startsWith('s3://')) {
+                details.image_url = convertS3UrlToHttps(details.image_url);
+                console.log("Converted navigation image URL:", details.image_url);
+            }
+            
             const newDisplayText = `${readableSourceName} (page ${newPage})`;
             // Call showSourcePanel without score for navigated pages
             showSourcePanel(details, newDisplayText, newPage, s3Key, undefined, context?.storeType || currentVectorStore); 
@@ -508,7 +579,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return; 
         }
         
-        const imageUrl = `${s3BaseUrl}/page_${pageNumber}.png`;
+        // Ensure we use HTTP URLs, not S3 URLs
+        let imageUrl = `${s3BaseUrl}/page_${pageNumber}.png`;
+        if (imageUrl.startsWith('s3://')) {
+            imageUrl = convertS3UrlToHttps(imageUrl);
+        }
+        
         const img = document.createElement('img');
         img.src = imageUrl;
         img.alt = `Source page ${pageNumber}`;
@@ -567,6 +643,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Add source pills if available
             if (metadata.sources && metadata.sources.length > 0) {
+                // Log the sources to console for debugging
+                console.log('Sources from metadata:', metadata.sources);
+                
                 // Add store_type to each source
                 const sourcesWithStoreType = metadata.sources.map(source => ({
                     ...source,
