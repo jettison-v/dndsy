@@ -141,7 +141,22 @@ document.addEventListener('DOMContentLoaded', () => {
         messageContent.className = 'expanded-message-content';
         
         if (relatedMessageElement) {
-            messageContent.innerHTML = relatedMessageElement.innerHTML;
+            // Check if the message text has been fully processed with markdown
+            const fullText = relatedMessageElement.dataset.fullText;
+            
+            if (fullText && typeof window.marked !== 'undefined') {
+                try {
+                    // Use the same markdown formatting as in the chat window
+                    messageContent.innerHTML = window.marked.parse(fullText);
+                } catch (error) {
+                    console.error('Error parsing markdown in expanded view:', error);
+                    // Fallback to the HTML content of the message
+                    messageContent.innerHTML = relatedMessageElement.innerHTML;
+                }
+            } else {
+                // If no full text is available, use the HTML content directly
+                messageContent.innerHTML = relatedMessageElement.innerHTML;
+            }
         } else {
             messageContent.innerHTML = '<p class="info-text">Could not find related message content.</p>';
         }
@@ -347,6 +362,15 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 // If marked is not available, use basic text formatting
                 formatTextWithBasicRules(textSpan, textSpan.dataset.fullText);
+            }
+            
+            // If the source panel is expanded and the active message is being updated,
+            // refresh the expanded view to keep it in sync
+            if (isPanelExpanded) {
+                const activePill = chatMessages.querySelector('.source-pill.active');
+                if (activePill && activePill.dataset.messageId === messageId) {
+                    updateExpandedSourcePills();
+                }
             }
         } else {
             // For non-assistant messages (like user input), just append text directly
@@ -915,6 +939,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (currentEventSource) {
                 currentEventSource.close();
                 currentEventSource = null;
+            }
+            
+            // If the panel is expanded, refresh the expanded content view
+            // to ensure it has the final formatted message content
+            if (isPanelExpanded) {
+                updateExpandedSourcePills();
             }
         });
         
