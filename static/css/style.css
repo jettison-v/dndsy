@@ -62,6 +62,7 @@ body {
     display: flex;
     flex-direction: column;
     padding: 1.5rem;
+    padding-bottom: 2.5rem; /* Add extra padding at the bottom to compensate for removed footer */
 }
 
 .sidebar-header {

@@ -12,8 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const closePanel = document.getElementById('close-panel');
     const expandPanel = document.getElementById('expand-panel');
     const expandedSourcePills = document.getElementById('expanded-source-pills');
-    const llmInfoSpan = document.getElementById('llm-info');
-    const vectorStoreInfoSpan = document.getElementById('vector-store-info');
     const mobileSourceToggle = document.getElementById('mobile-source-toggle');
     const zoomInBtn = document.getElementById('zoom-in');
     const zoomOutBtn = document.getElementById('zoom-out');
@@ -48,13 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Update current vector store
             currentVectorStore = vectorStoreDropdown.value;
             
-            // Update info display
-            if (vectorStoreInfoSpan) {
-                const displayText = currentVectorStore === 'standard' ? 'Page Context' : 
-                                  currentVectorStore === 'semantic' ? 'Semantic Context' : 
-                                  currentVectorStore.charAt(0).toUpperCase() + currentVectorStore.slice(1);
-                vectorStoreInfoSpan.textContent = `Store: ${displayText}`;
-            }
+            // No longer need to update info display since elements were removed
         });
     }
 
@@ -917,15 +909,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentEventSource.addEventListener('metadata', event => {
             const metadata = JSON.parse(event.data);
             
-            // Store LLM info
-            if (llmInfoSpan && metadata.llm_provider && metadata.llm_model) {
-                llmInfoSpan.textContent = `LLM: ${metadata.llm_provider} (${metadata.llm_model})`;
-            }
-            
-            // Store vector store info
-            if (vectorStoreInfoSpan && metadata.store_type) {
-                vectorStoreInfoSpan.textContent = `Store: ${metadata.store_type.charAt(0).toUpperCase() + metadata.store_type.slice(1)}`;
-            }
+            // Store LLM and vector store info no longer needed since the display elements were removed
             
             // Add source pills if available
             if (metadata.sources && metadata.sources.length > 0) {
