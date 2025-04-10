@@ -23,7 +23,7 @@ logger.info(f"Password loaded from environment variable {'APP_PASSWORD' if 'APP_
 
 # Vector store types
 VECTOR_STORE_TYPES = ["standard", "semantic"]
-DEFAULT_VECTOR_STORE = os.environ.get('DEFAULT_VECTOR_STORE', 'standard')
+DEFAULT_VECTOR_STORE = os.environ.get('DEFAULT_VECTOR_STORE', 'semantic')
 
 def check_auth():
     auth_status = session.get('authenticated', False)
@@ -57,9 +57,14 @@ def login():
 def home():
     if not check_auth():
         return redirect(url_for('login'))
+    
+    # Get LLM model info
+    llm_model = os.environ.get('LLM_MODEL_NAME', 'Default Model')
+    
     return render_template('index.html', 
                           vector_store_types=VECTOR_STORE_TYPES,
-                          default_vector_store=DEFAULT_VECTOR_STORE)
+                          default_vector_store=DEFAULT_VECTOR_STORE,
+                          llm_model=llm_model)
 
 @app.route('/api/chat')
 def chat():

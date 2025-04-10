@@ -19,6 +19,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const zoomOutBtn = document.getElementById('zoom-out');
     const zoomResetBtn = document.getElementById('zoom-reset');
     const vectorStoreSelector = document.getElementById('vector-store-selector');
+    const vectorStoreDropdown = document.getElementById('vector-store-dropdown');
+    const vectorStoreInfoBtn = document.getElementById('vector-store-info-btn');
+    const modalOverlay = document.getElementById('modal-overlay');
+    const pageContextModal = document.getElementById('page-context-modal');
+    const semanticContextModal = document.getElementById('semantic-context-modal');
+    const modalCloseButtons = document.querySelectorAll('.modal-close');
+    const llmModelDropdown = document.getElementById('llm-model-dropdown');
     
     let isFirstMessage = true;
     let messageContextParts = {};
@@ -26,34 +33,82 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentZoomLevel = 1;
     let isPanelExpanded = false;
     let activeSources = []; // Store active sources for expanded view
-    let currentVectorStore = document.querySelector('.vector-store-option.active')?.dataset.storeType || 'standard';
+    let currentVectorStore = vectorStoreDropdown ? vectorStoreDropdown.value : 'semantic';
     
     // Initialize source panel state
     let sourcePanelOpen = false;
 
     /*
     ========================================
-      VECTOR STORE SELECTION
+      VECTOR STORE SELECTION & MODALS
     ========================================
     */
-    if (vectorStoreSelector) {
-        const options = vectorStoreSelector.querySelectorAll('.vector-store-option');
-        options.forEach(option => {
-            option.addEventListener('click', () => {
-                // Update active state
-                options.forEach(opt => opt.classList.remove('active'));
-                option.classList.add('active');
-                
-                // Update current vector store
-                currentVectorStore = option.dataset.storeType;
-                
-                // Update info display
-                if (vectorStoreInfoSpan) {
-                    vectorStoreInfoSpan.textContent = `Store: ${currentVectorStore.charAt(0).toUpperCase() + currentVectorStore.slice(1)}`;
-                }
-            });
+    if (vectorStoreDropdown) {
+        vectorStoreDropdown.addEventListener('change', () => {
+            // Update current vector store
+            currentVectorStore = vectorStoreDropdown.value;
+            
+            // Update info display
+            if (vectorStoreInfoSpan) {
+                const displayText = currentVectorStore === 'standard' ? 'Page Context' : 
+                                  currentVectorStore === 'semantic' ? 'Semantic Context' : 
+                                  currentVectorStore.charAt(0).toUpperCase() + currentVectorStore.slice(1);
+                vectorStoreInfoSpan.textContent = `Store: ${displayText}`;
+            }
         });
     }
+
+    // Vector Store Info Button
+    if (vectorStoreInfoBtn) {
+        vectorStoreInfoBtn.addEventListener('click', () => {
+            // Show appropriate modal
+            const currentValue = vectorStoreDropdown.value;
+            
+            if (currentValue === 'standard') {
+                showModal(pageContextModal);
+            } else if (currentValue === 'semantic') {
+                showModal(semanticContextModal);
+            }
+        });
+    }
+
+    // Handle modal visibility
+    function showModal(modal) {
+        if (modalOverlay && modal) {
+            modalOverlay.style.display = 'block';
+            modal.style.display = 'block';
+        }
+    }
+
+    function hideAllModals() {
+        if (modalOverlay) {
+            modalOverlay.style.display = 'none';
+        }
+        
+        const modals = document.querySelectorAll('.vector-store-modal');
+        modals.forEach(modal => {
+            modal.style.display = 'none';
+        });
+    }
+
+    // Modal close buttons
+    if (modalCloseButtons) {
+        modalCloseButtons.forEach(button => {
+            button.addEventListener('click', hideAllModals);
+        });
+    }
+
+    // Close modal when clicking overlay
+    if (modalOverlay) {
+        modalOverlay.addEventListener('click', hideAllModals);
+    }
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            hideAllModals();
+        }
+    });
 
     /*
     ========================================

@@ -15,7 +15,7 @@
     --user-msg-bg: #2d353e;
     --assistant-msg-bg: #2a2a2e;
     --shadow-color: rgba(0, 0, 0, 0.25);
-    --sidebar-width: 260px;
+    --sidebar-width: 300px;
     overflow: hidden; /* Prevent body scrolling */
 }
 
@@ -102,33 +102,179 @@ body {
     margin-top: 0;
     margin-bottom: 0.5rem;
     font-size: 0.9rem;
-    color: var(--text-muted); /* Make sure --text-muted is defined or use a specific color */
+    color: #a0a0a0;
 }
 
 .vector-store-selector {
     display: flex;
     gap: 0.5rem;
+    align-items: center;
 }
 
-.vector-store-option {
-    padding: 6px 12px;
-    background-color: rgba(255, 255, 255, 0.1);
+/* Dropdown styles */
+.vector-store-dropdown {
+    flex: 1;
+    padding: 8px 12px;
     border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    font-size: 0.9rem;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 16px;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 0.9rem;
-    border: 1px solid transparent;
 }
 
-.vector-store-option:hover {
+.vector-store-dropdown:hover {
     background-color: rgba(255, 255, 255, 0.15);
 }
 
-.vector-store-option.active {
-    background-color: var(--accent-color);
-    color: white;
-    font-weight: 500;
-    border-color: rgba(255, 255, 255, 0.2);
+.vector-store-dropdown:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+/* Disabled dropdown styling */
+.vector-store-dropdown:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    background-image: none;
+    pointer-events: none;
+}
+
+/* Info button styles */
+.vector-store-info-btn {
+    background: none;
+    border: none;
+    color: #a0a0a0;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+}
+
+.vector-store-info-btn:hover {
+    color: var(--text-color);
+}
+
+.vector-store-info-btn:focus {
+    outline: none;
+}
+
+/* Modal styles */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 999;
+    backdrop-filter: blur(2px);
+}
+
+.vector-store-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    max-width: 90%;
+    width: 500px;
+    max-height: 90vh;
+    background-color: var(--secondary-color);
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+.modal-content {
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+}
+
+.modal-header {
+    padding: 1rem;
+    background-color: var(--primary-color);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--text-color);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0 0.5rem;
+    line-height: 1;
+}
+
+.modal-close:hover {
+    color: var(--accent-color);
+}
+
+.modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+
+.modal-body h4 {
+    margin: 1rem 0 0.5rem;
+    color: var(--text-color);
+    font-size: 1rem;
+}
+
+.modal-body h4:first-child {
+    margin-top: 0;
+}
+
+.modal-body p {
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
+.modal-body ul {
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.modal-body li {
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+}
+
+.modal-body code {
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 0.9em;
+}
+
+/* Remove old selector button styles that are no longer needed */
+.vector-store-option {
+    display: none; /* Hide the old button style selector */
 }
 
 /*

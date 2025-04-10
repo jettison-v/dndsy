@@ -23,21 +23,35 @@
             
             <!-- Vector Store Selector -->
             <div class="vector-store-container">
-                <h4>Search Method</h4>
+                <h4>Vector Store</h4>
                 <div class="vector-store-selector" id="vector-store-selector">
-                    {% for store_type in vector_store_types %}
-                    <div class="vector-store-option {% if store_type == default_vector_store %}active{% endif %}" 
-                         data-store-type="{{ store_type }}">
-                        {{ store_type|capitalize }}
-                    </div>
-                    {% endfor %}
+                    <select id="vector-store-dropdown" class="vector-store-dropdown">
+                        {% for store_type in vector_store_types %}
+                            <option value="{{ store_type }}" {% if store_type == default_vector_store %}selected{% endif %}>
+                                {% if store_type == "standard" %}Page Context{% elif store_type == "semantic" %}Semantic Context{% else %}{{ store_type|capitalize }}{% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <button id="vector-store-info-btn" class="vector-store-info-btn" aria-label="Vector Store Information">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- LLM Model Selector -->
+            <div class="vector-store-container">
+                <h4>LLM Model</h4>
+                <div class="vector-store-selector" id="llm-model-selector">
+                    <select id="llm-model-dropdown" class="vector-store-dropdown" disabled>
+                        <option value="{{ llm_model }}">{{ llm_model }}</option>
+                    </select>
                 </div>
             </div>
             
             <div class="sidebar-footer">
                 <p>Powered by AskDnD</p>
                 <p><span id="llm-info">LLM: Loading...</span></p>
-                <p><span id="vector-store-info">Store: {{ default_vector_store|capitalize }}</span></p>
+                <p><span id="vector-store-info">Store: {% if default_vector_store == "standard" %}Page Context{% elif default_vector_store == "semantic" %}Semantic Context{% else %}{{ default_vector_store|capitalize }}{% endif %}</span></p>
             </div>
         </div>
 
@@ -93,6 +107,60 @@
         <button id="mobile-source-toggle" class="fab" title="Toggle Source Panel">
             <i class="fas fa-book"></i>
         </button>
+    </div>
+
+    <!-- Vector Store Info Modals -->
+    <div id="modal-overlay" class="modal-overlay"></div>
+    
+    <div id="page-context-modal" class="vector-store-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Page Context</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h4>Technical Details</h4>
+                <p>The <strong>Page Context</strong> approach processes PDF content page-by-page, maintaining full page context.</p>
+                
+                <h4>Implementation</h4>
+                <ul>
+                    <li>Uses <code>all-MiniLM-L6-v2</code> embedding model (384 dimensions)</li>
+                    <li>Preserves the entire page as a single document</li>
+                    <li>Maintains original page context and structure</li>
+                    <li>Processing is done locally without API calls</li>
+                    <li>Good for maintaining full page context</li>
+                </ul>
+                
+                <h4>Best For</h4>
+                <p>Use this approach when looking for general topics or information that might be spread across a page.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div id="semantic-context-modal" class="vector-store-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Semantic Context</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h4>Technical Details</h4>
+                <p>The <strong>Semantic Context</strong> approach chunks content into paragraphs for more precise, targeted answers.</p>
+                
+                <h4>Implementation</h4>
+                <ul>
+                    <li>Uses OpenAI's <code>text-embedding-3-small</code> model (1536 dimensions)</li>
+                    <li>Implements intelligent text chunking via <code>RecursiveCharacterTextSplitter</code></li>
+                    <li>Analyzes document structure to identify up to 6 levels of hierarchy</li>
+                    <li>Tags chunks with full hierarchical path (e.g., "Chapter 5 > Equipment > Weapons")</li>
+                    <li>Combines vector similarity search with BM25 for hybrid retrieval</li>
+                    <li>Better for retrieving specific pieces of information</li>
+                </ul>
+                
+                <h4>Best For</h4>
+                <p>Use this approach for detailed rules questions or when you need precise answers from specific sections.</p>
+            </div>
+        </div>
     </div>
 
     <!-- Add marked.js for markdown parsing -->
