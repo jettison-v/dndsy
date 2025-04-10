@@ -28,7 +28,7 @@ except Exception as e:
     llm_client = None 
 
 # Initialize default vector store
-default_store_type = os.getenv("DEFAULT_VECTOR_STORE", "standard")
+default_store_type = os.getenv("DEFAULT_VECTOR_STORE", "semantic")
 default_vector_store = get_vector_store(default_store_type)
 
 def num_tokens_from_string(string: str, model: str) -> int:
