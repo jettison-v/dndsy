@@ -146,18 +146,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (fullText && typeof window.marked !== 'undefined') {
                 try {
-                    // Configure marked options to preserve whitespace
-                    const markedOptions = {
-                        gfm: true,
-                        breaks: true,
-                        pedantic: false,
-                        sanitize: false,
-                        smartLists: true,
-                        smartypants: false
-                    };
-                    
-                    // Use the same markdown formatting as in the chat window with whitespace preservation
-                    messageContent.innerHTML = window.marked.parse(fullText, markedOptions);
+                    // Use the same markdown formatting as in the chat window
+                    messageContent.innerHTML = window.marked.parse(fullText);
                 } catch (error) {
                     console.error('Error parsing markdown in expanded view:', error);
                     // Fallback to the HTML content of the message
@@ -362,18 +352,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Check if marked library is available before using it
             if (typeof window.marked !== 'undefined') {
                 try {
-                    // Configure marked options to preserve whitespace
-                    const markedOptions = {
-                        gfm: true,
-                        breaks: true,
-                        pedantic: false,
-                        sanitize: false,
-                        smartLists: true,
-                        smartypants: false
-                    };
-                    
                     // Format with markdown
-                    textSpan.innerHTML = window.marked.parse(textSpan.dataset.fullText, markedOptions);
+                    textSpan.innerHTML = window.marked.parse(textSpan.dataset.fullText);
                 } catch (error) {
                     console.error('Error parsing markdown:', error);
                     // Fallback to simple formatting
@@ -410,17 +390,9 @@ document.addEventListener('DOMContentLoaded', () => {
         paragraphs.forEach(paragraph => {
             if (paragraph.trim() !== '') {
                 // Check if it might be a code block
-                if (paragraph.startsWith('```') && paragraph.includes('```')) {
-                    // Extract the code content, preserving indentation
-                    const endIndex = paragraph.indexOf('```', 3);
-                    if (endIndex > 3) {
-                        const lang = paragraph.substring(3, paragraph.indexOf('\n')).trim();
-                        const code = paragraph.substring(paragraph.indexOf('\n', 3) + 1, endIndex);
-                        formattedText += `<pre><code class="language-${lang}">${escapeHTML(code)}</code></pre>`;
-                    } else {
-                        const code = paragraph.substring(3, paragraph.length - 3);
-                        formattedText += `<pre><code>${escapeHTML(code)}</code></pre>`;
-                    }
+                if (paragraph.startsWith('```') && paragraph.endsWith('```')) {
+                    const code = paragraph.substring(3, paragraph.length - 3);
+                    formattedText += `<pre><code>${escapeHTML(code)}</code></pre>`;
                 } else if (paragraph.startsWith('# ')) {
                     // H1 heading
                     formattedText += `<h1>${escapeHTML(paragraph.substring(2))}</h1>`;
@@ -456,7 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
         text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
         
         // Handle inline code
-        text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+        text = text.replace(/`(.*?)`/g, '<code>$1</code>');
         
         // Handle links
         text = text.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>');
@@ -530,8 +502,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Get just the document name without nested folder structure for display
         const simpleDocName = filename.split(' - ').pop() || filename;
         
-        // Limit the filename length for display
-        const maxFilenameLength = 20;
+        // Limit the filename length for display - Increased from 20 to 30
+        const maxFilenameLength = 30;
         const displayFilename = simpleDocName.length > maxFilenameLength 
             ? simpleDocName.substring(0, maxFilenameLength) + '...' 
             : simpleDocName;
@@ -1153,6 +1125,111 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }, 300);
             }
+        }
+    });
+    
+    // ---- Dynamic Tooltip Positioning ----
+    document.addEventListener('mouseover', function(e) {
+        // Check if the hovered element is a source pill with a tooltip
+        if (e.target.classList.contains('source-pill') && e.target.dataset.tooltip) {
+            const pill = e.target;
+            const pillRect = pill.getBoundingClientRect();
+            const tooltipWidth = 300; // Matches the max-width in CSS
+            
+            // Get the after and before pseudo-elements (tooltip and arrow)
+            const tooltip = window.getComputedStyle(pill, '::after');
+            const arrow = window.getComputedStyle(pill, '::before');
+            
+            // Check position relative to viewport
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            // Calculate available space in each direction
+            const spaceAbove = pillRect.top;
+            const spaceBelow = viewportHeight - pillRect.bottom;
+            const spaceLeft = pillRect.left;
+            const spaceRight = viewportWidth - pillRect.right;
+            
+            // Determine if tooltip should go above, below, left or right
+            let position = 'bottom'; // Default position
+            
+            if (spaceBelow < 150 && spaceAbove > 150) {
+                // Not enough space below but enough space above
+                position = 'top';
+            } else if (pillRect.left < tooltipWidth / 2) {
+                // Too close to left edge
+                position = 'right-start';
+            } else if (viewportWidth - pillRect.right < tooltipWidth / 2) {
+                // Too close to right edge
+                position = 'left-start';
+            }
+            
+            // Apply custom positioning with inline styles
+            switch (position) {
+                case 'top':
+                    pill.style.setProperty('--tooltip-top', 'auto');
+                    pill.style.setProperty('--tooltip-bottom', '115%');
+                    pill.style.setProperty('--tooltip-transform', 'translateX(-50%)');
+                    pill.style.setProperty('--tooltip-arrow-top', 'auto');
+                    pill.style.setProperty('--tooltip-arrow-bottom', '100%');
+                    pill.style.setProperty('--tooltip-arrow-border-color', 'rgba(33, 33, 33, 0.9) transparent transparent transparent');
+                    break;
+                    
+                case 'right-start':
+                    pill.style.setProperty('--tooltip-top', '0');
+                    pill.style.setProperty('--tooltip-left', '100%');
+                    pill.style.setProperty('--tooltip-transform', 'translateY(0)');
+                    pill.style.setProperty('--tooltip-arrow-top', '10px');
+                    pill.style.setProperty('--tooltip-arrow-left', 'calc(100% - 5px)');
+                    pill.style.setProperty('--tooltip-arrow-border-color', 'transparent rgba(33, 33, 33, 0.9) transparent transparent');
+                    pill.style.setProperty('--tooltip-margin', '0 0 0 10px');
+                    break;
+                    
+                case 'left-start':
+                    pill.style.setProperty('--tooltip-top', '0');
+                    pill.style.setProperty('--tooltip-left', 'auto');
+                    pill.style.setProperty('--tooltip-right', '100%');
+                    pill.style.setProperty('--tooltip-transform', 'translateY(0)');
+                    pill.style.setProperty('--tooltip-arrow-top', '10px');
+                    pill.style.setProperty('--tooltip-arrow-left', 'auto');
+                    pill.style.setProperty('--tooltip-arrow-right', '-10px');
+                    pill.style.setProperty('--tooltip-arrow-border-color', 'transparent transparent transparent rgba(33, 33, 33, 0.9)');
+                    pill.style.setProperty('--tooltip-margin', '0 10px 0 0');
+                    break;
+                    
+                default: // bottom (default)
+                    pill.style.setProperty('--tooltip-top', '115%');
+                    pill.style.setProperty('--tooltip-bottom', 'auto');
+                    pill.style.setProperty('--tooltip-left', '50%');
+                    pill.style.setProperty('--tooltip-right', 'auto');
+                    pill.style.setProperty('--tooltip-transform', 'translateX(-50%)');
+                    pill.style.setProperty('--tooltip-arrow-top', '110%');
+                    pill.style.setProperty('--tooltip-arrow-bottom', 'auto');
+                    pill.style.setProperty('--tooltip-arrow-left', '50%');
+                    pill.style.setProperty('--tooltip-arrow-right', 'auto');
+                    pill.style.setProperty('--tooltip-arrow-border-color', 'transparent transparent rgba(33, 33, 33, 0.9) transparent');
+                    pill.style.setProperty('--tooltip-margin', '5px 0 0 0');
+                    break;
+            }
+        }
+    });
+    
+    // Clear custom positioning styles when leaving a pill
+    document.addEventListener('mouseout', function(e) {
+        if (e.target.classList.contains('source-pill') && e.target.dataset.tooltip) {
+            const pill = e.target;
+            // Reset any custom positioning
+            pill.style.removeProperty('--tooltip-top');
+            pill.style.removeProperty('--tooltip-bottom');
+            pill.style.removeProperty('--tooltip-left');
+            pill.style.removeProperty('--tooltip-right');
+            pill.style.removeProperty('--tooltip-transform');
+            pill.style.removeProperty('--tooltip-arrow-top');
+            pill.style.removeProperty('--tooltip-arrow-bottom');
+            pill.style.removeProperty('--tooltip-arrow-left');
+            pill.style.removeProperty('--tooltip-arrow-right');
+            pill.style.removeProperty('--tooltip-arrow-border-color');
+            pill.style.removeProperty('--tooltip-margin');
         }
     });
 }); 
