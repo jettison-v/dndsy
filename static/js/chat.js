@@ -15,6 +15,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const zoomResetBtn = document.getElementById('zoom-reset');
     const vectorStoreSelector = document.getElementById('vector-store-selector');
     
+    // Animation debugging
+    function logAnimation(action, details = {}) {
+        const timestamp = new Date().toISOString().substr(11, 12); // HH:MM:SS.mmm
+        const classes = sourcePanel ? sourcePanel.className : 'N/A';
+        const width = sourcePanel ? getComputedStyle(sourcePanel).width : 'N/A';
+        
+        console.log(`[${timestamp}] ${action} - Classes: [${classes}], Width: ${width}`, details);
+    }
+    
+    logAnimation('Initial state');
+    
     let isFirstMessage = true;
     let messageContextParts = {};
     let currentEventSource = null;
@@ -51,19 +62,62 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add expand panel functionality
     if (expandPanel) {
         expandPanel.addEventListener('click', () => {
-            isPanelExpanded = !isPanelExpanded;
-            
             if (isPanelExpanded) {
+                // Don't do anything if already in progress
+                if (sourcePanel.classList.contains('collapsing')) {
+                    logAnimation('Skipping collapse - already collapsing');
+                    return;
+                }
+                
+                logAnimation('Starting panel collapse');
+                
+                // Begin collapse animation by adding the collapsing class 
+                // but keep the expanded class for now for proper animation start point
+                sourcePanel.classList.add('collapsing');
+                logAnimation('Added collapsing class');
+                
+                // After a brief delay, remove expanded class so the animation continues correctly
+                setTimeout(() => {
+                    logAnimation('Removing expanded class during collapse');
+                    sourcePanel.classList.remove('expanded');
+                }, 10);
+                
+                // When animation completes, clean up classes
+                setTimeout(() => {
+                    logAnimation('Collapse animation finished - cleanup');
+                    sourcePanel.classList.remove('collapsing');
+                    // Ensure panel remains open at standard size
+                    sourcePanel.classList.add('open');
+                    logAnimation('Final collapse state');
+                }, 300);
+                
+                expandPanel.innerHTML = '<i class="fas fa-external-link-alt"></i>';
+                expandPanel.title = 'Expand';
+                isPanelExpanded = false;
+            } else {
+                // Don't do anything if already in progress
+                if (sourcePanel.classList.contains('expanded') || 
+                    sourcePanel.classList.contains('collapsing')) {
+                    logAnimation('Skipping expand - already expanded or in transition');
+                    return;
+                }
+                
+                logAnimation('Starting panel expand');
+                
+                // Add expanded class to begin animation
                 sourcePanel.classList.add('expanded');
+                logAnimation('Added expanded class');
+                
                 expandPanel.innerHTML = '<i class="fas fa-compress"></i>';
                 expandPanel.title = 'Compress';
+                isPanelExpanded = true;
                 
                 // Clone source pills to expanded view if available
                 updateExpandedSourcePills();
-            } else {
-                sourcePanel.classList.remove('expanded');
-                expandPanel.innerHTML = '<i class="fas fa-external-link-alt"></i>';
-                expandPanel.title = 'Expand';
+                
+                setTimeout(() => {
+                    logAnimation('Expand animation finished');
+                }, 300);
             }
         });
     }
@@ -156,13 +210,40 @@ document.addEventListener('DOMContentLoaded', () => {
     // Mobile source panel toggle
     if (mobileSourceToggle) {
         mobileSourceToggle.addEventListener('click', () => {
-            sourcePanelOpen = !sourcePanelOpen;
+            logAnimation('Mobile toggle clicked', { sourcePanelOpen });
+            
             if (sourcePanelOpen) {
-                sourcePanel.classList.add('open');
-                mobileSourceToggle.querySelector('i').classList.replace('fa-book', 'fa-times');
+                logAnimation('Starting mobile panel close');
+                
+                // Add closing class to animate the closing
+                sourcePanel.classList.add('closing');
+                
+                // Wait for animation to complete before removing open class
+                setTimeout(() => {
+                    logAnimation('Mobile panel close animation finished');
+                    sourcePanel.classList.remove('open');
+                    sourcePanel.classList.remove('closing');
+                    sourcePanelOpen = false;
+                    
+                    // Remove active class from all source pills when panel is closed
+                    document.querySelectorAll('.source-pill').forEach(pill => {
+                        pill.classList.remove('active');
+                    });
+                    
+                    mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+                    
+                    logAnimation('Mobile panel fully closed');
+                }, 300); // Match the animation duration
             } else {
-                sourcePanel.classList.remove('open');
-                mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+                logAnimation('Starting mobile panel open');
+                
+                sourcePanel.classList.add('open');
+                sourcePanelOpen = true;
+                mobileSourceToggle.querySelector('i').classList.replace('fa-book', 'fa-times');
+                
+                setTimeout(() => {
+                    logAnimation('Mobile panel open animation finished');
+                }, 300);
             }
         });
     }
@@ -255,7 +336,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Add source pills
         sources.forEach(source => {
-            const displayText = source.display || `${source.s3_key.split('/').pop().replace('.pdf', '')} p.${source.page}`;
             const pill = createSourcePill(source);
             pillsContainer.appendChild(pill);
         });
@@ -304,6 +384,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Create the pill element
         const pill = document.createElement('button');
         pill.className = 'source-pill';
+        
+        // Format display text to be more compact
         pill.innerText = `${displayFilename} (p.${page})`;
         
         // Create more informative tooltip with full context
@@ -330,10 +412,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Add click event listener
         pill.addEventListener('click', async function() {
-            // Show loading state
-            const originalText = pill.innerText;
-            pill.innerText = 'Loading...';
-            pill.disabled = true;
+            // Set this pill as active
+            document.querySelectorAll('.source-pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
             
             try {
                 // Request source details from backend using the correct endpoint
@@ -352,20 +433,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error('No details returned from server');
                 }
                 
-                // Reset pill state first
-                pill.innerText = originalText;
-                pill.disabled = false;
-                
                 // Use the showSourcePanel function (same as expanded view)
                 showSourcePanel(details, `${filename} (page ${page})`, page, s3_key, score, source.store_type);
                 
             } catch (error) {
                 console.error('Error fetching source details:', error);
-                pill.innerText = 'Error';
-                setTimeout(() => {
-                    pill.innerText = originalText;
-                    pill.disabled = false;
-                }, 2000);
+                sourceContent.innerHTML = `<p class="error-source">Error loading source: ${error.message}</p>`;
+                pill.classList.remove('active');
             }
         });
         
@@ -401,16 +475,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Function to show source content in the side panel
     function showSourcePanel(details, displayText, pageNumber, s3Key, score, storeType = currentVectorStore) { 
+        logAnimation('showSourcePanel called', {displayText, pageNumber, s3Key, score, storeType});
+        
         // Details object expected: {"text": "...", "image_url": "...", "total_pages": ...} 
         if (!details) {
             sourceContent.innerHTML = '<p class="error-source">Error: Received no details for source.</p>';
+            logAnimation('Error in showSourcePanel - no details');
             return;
         }
         
         // Convert the S3 URL to an HTTPS URL that browsers can load
         const imageUrl = convertS3UrlToHttps(details.image_url);
-        console.log("Original image URL:", details.image_url);
-        console.log("Converted image URL:", imageUrl);
         
         const totalPages = details.total_pages || 'N/A'; 
 
@@ -444,13 +519,23 @@ document.addEventListener('DOMContentLoaded', () => {
         imageContainer.id = 'source-image-container';
         
         if (imageUrl) {
-            // Show loading indicator
-            imageContainer.innerHTML = `<p class="loading-source">Loading page image...</p>`;
+            // Add image container to DOM first
             sourceContent.appendChild(imageContainer);
             
             // Load the image
             const img = new Image();
+            
+            // Add a simple loading indicator
+            imageContainer.innerHTML = `
+                <div class="source-loading">
+                    <div class="spinner"></div>
+                </div>
+            `;
+            logAnimation('Added loading spinner');
+            
             img.onload = function() {
+                logAnimation('Image loaded');
+                
                 // Remove loading indicator
                 imageContainer.innerHTML = '';
                 imageContainer.appendChild(img);
@@ -490,6 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             
             img.onerror = function() {
+                logAnimation('Image load error');
                 imageContainer.innerHTML = `<p class="error-source">Error loading image. Please try again.</p>`;
             };
             
@@ -499,18 +585,24 @@ document.addEventListener('DOMContentLoaded', () => {
             img.style.transformOrigin = 'center top';
             img.style.transition = 'transform 0.2s ease-out';
         } else {
+            logAnimation('No image URL available');
             imageContainer.innerHTML = `<p class="error-source">No image available for this source.</p>`;
             sourceContent.appendChild(imageContainer);
         }
         
         // Show source panel if not already visible
-        sourcePanel.classList.add('open');
-        sourcePanelOpen = true;
+        if (!sourcePanelOpen) {
+            logAnimation('Opening source panel from showSourcePanel');
+            sourcePanel.classList.add('open');
+            sourcePanelOpen = true;
+        }
         
         // Update mobile toggle button if on mobile
         if (window.innerWidth <= 768 && mobileSourceToggle) {
             mobileSourceToggle.querySelector('i').classList.replace('fa-book', 'fa-times');
         }
+        
+        logAnimation('showSourcePanel complete');
     }
 
     // Navigate source page
@@ -533,9 +625,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const prevButton = document.getElementById('source-prev-button');
         const nextButton = document.getElementById('source-next-button');
 
-        if(pageIndicator) pageIndicator.textContent = `Loading page ${newPage}...`;
-        if(headerText) headerText.textContent = `${readableSourceName} (Loading page ${newPage}...)`;
-        if(imageContainer) imageContainer.innerHTML = '<p class="loading-source">Loading image...</p>';
+        if(pageIndicator) pageIndicator.textContent = `Page ${newPage}`;
+        if(imageContainer) {
+            imageContainer.innerHTML = `
+                <div class="source-loading">
+                    <div class="spinner"></div>
+                </div>
+            `;
+        }
         if(prevButton) prevButton.disabled = true;
         if(nextButton) nextButton.disabled = true;
         
@@ -559,7 +656,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error fetching details for navigated page:', error);
             if(imageContainer) imageContainer.innerHTML = `<p class="error-source">Error loading page ${newPage}: ${error.message}</p>`;
-            // Re-enable buttons based on original page maybe?
+            // Re-enable buttons based on original page
             if(prevButton) prevButton.disabled = currentPage <= 1;
             if(nextButton) nextButton.disabled = isNaN(totalPages) || currentPage >= totalPages;
         }
@@ -741,19 +838,84 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle close panel button
     closePanel.addEventListener('click', () => {
-        sourcePanel.classList.remove('open');
-        sourcePanel.classList.remove('expanded');
-        sourcePanelOpen = false;
-        isPanelExpanded = false;
+        logAnimation('Close button clicked', { isPanelExpanded, sourcePanelOpen });
         
-        if (expandPanel) {
-            expandPanel.innerHTML = '<i class="fas fa-external-link-alt"></i>';
-            expandPanel.title = 'Expand';
+        // Don't close if we're in the middle of another animation
+        if (sourcePanel.classList.contains('collapsing') || 
+            sourcePanel.classList.contains('closing')) {
+            logAnimation('Skipping close - animation already in progress');
+            return;
         }
         
-        // Update mobile toggle button if on mobile
-        if (window.innerWidth <= 768 && mobileSourceToggle) {
-            mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+        // If expanded, collapse first then close
+        if (isPanelExpanded) {
+            logAnimation('Starting collapse then close sequence');
+            
+            // Begin collapse animation by adding the collapsing class
+            sourcePanel.classList.add('collapsing');
+            logAnimation('Added collapsing class for collapse-close');
+            
+            // After a brief delay, remove expanded class for proper animation
+            setTimeout(() => {
+                logAnimation('Removing expanded class for collapse-close');
+                sourcePanel.classList.remove('expanded');
+            }, 10);
+            
+            // When collapse animation completes, start closing animation
+            setTimeout(() => {
+                logAnimation('Collapse part finished - starting closing animation');
+                sourcePanel.classList.remove('collapsing');
+                sourcePanel.classList.add('closing');
+                
+                // When closing animation completes, remove classes
+                setTimeout(() => {
+                    logAnimation('Closing animation finished - cleanup');
+                    sourcePanel.classList.remove('open');
+                    sourcePanel.classList.remove('closing');
+                    sourcePanelOpen = false;
+                    
+                    // Remove active class from all source pills when panel is closed
+                    document.querySelectorAll('.source-pill').forEach(pill => {
+                        pill.classList.remove('active');
+                    });
+                    
+                    // Update mobile toggle button if on mobile
+                    if (window.innerWidth <= 768 && mobileSourceToggle) {
+                        mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+                    }
+                    
+                    logAnimation('Panel fully closed');
+                }, 300);
+            }, 300);
+            
+            expandPanel.innerHTML = '<i class="fas fa-external-link-alt"></i>';
+            expandPanel.title = 'Expand';
+            isPanelExpanded = false;
+        } else {
+            logAnimation('Starting simple close animation');
+            
+            // Standard closing for non-expanded panel
+            sourcePanel.classList.add('closing');
+            
+            // Wait for animation to complete before removing open class
+            setTimeout(() => {
+                logAnimation('Simple close animation finished - cleanup');
+                sourcePanel.classList.remove('open');
+                sourcePanel.classList.remove('closing');
+                sourcePanelOpen = false;
+                
+                // Remove active class from all source pills when panel is closed
+                document.querySelectorAll('.source-pill').forEach(pill => {
+                    pill.classList.remove('active');
+                });
+                
+                // Update mobile toggle button if on mobile
+                if (window.innerWidth <= 768 && mobileSourceToggle) {
+                    mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+                }
+                
+                logAnimation('Panel fully closed');
+            }, 300); // Match the animation duration
         }
     });
 
@@ -788,4 +950,72 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add navigation to source content
         sourceContent.appendChild(navContainer);
     }
+
+    // Add key events for ESC to close panel
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && (sourcePanelOpen || isPanelExpanded)) {
+            logAnimation('ESC key pressed, closing panel');
+            
+            // If panel is expanded, collapse it first
+            if (isPanelExpanded) {
+                // Similar to the collapse+close sequence but triggered by ESC
+                sourcePanel.classList.add('collapsing');
+                
+                setTimeout(() => {
+                    sourcePanel.classList.remove('expanded');
+                    
+                    setTimeout(() => {
+                        sourcePanel.classList.remove('collapsing');
+                        sourcePanel.classList.add('closing');
+                        
+                        setTimeout(() => {
+                            sourcePanel.classList.remove('open');
+                            sourcePanel.classList.remove('closing');
+                            sourcePanelOpen = false;
+                            isPanelExpanded = false;
+                            
+                            // Remove active class from all source pills when panel is closed
+                            document.querySelectorAll('.source-pill').forEach(pill => {
+                                pill.classList.remove('active');
+                            });
+                            
+                            // Update expand button state
+                            if (expandPanel) {
+                                expandPanel.innerHTML = '<i class="fas fa-external-link-alt"></i>';
+                                expandPanel.title = 'Expand';
+                            }
+                            
+                            // Update mobile toggle button if on mobile
+                            if (window.innerWidth <= 768 && mobileSourceToggle) {
+                                mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+                            }
+                            
+                            logAnimation('Panel fully closed via ESC');
+                        }, 300);
+                    }, 300);
+                }, 10);
+            } else {
+                // Just close the panel normally
+                sourcePanel.classList.add('closing');
+                
+                setTimeout(() => {
+                    sourcePanel.classList.remove('open');
+                    sourcePanel.classList.remove('closing');
+                    sourcePanelOpen = false;
+                    
+                    // Remove active class from all source pills when panel is closed
+                    document.querySelectorAll('.source-pill').forEach(pill => {
+                        pill.classList.remove('active');
+                    });
+                    
+                    // Update mobile toggle button if on mobile
+                    if (window.innerWidth <= 768 && mobileSourceToggle) {
+                        mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+                    }
+                    
+                    logAnimation('Panel closed via ESC');
+                }, 300);
+            }
+        }
+    });
 }); 

@@ -208,14 +208,103 @@ body {
     box-shadow: -4px 0 12px var(--shadow-color);
     border-left: 1px solid var(--border-color);
     overflow: hidden;
-    transition: width 0.3s ease-out;
+    transition: none; /* No default transition, animations are controlled by classes */
     position: relative;
     height: 100%;
 }
 
+/* Source Panel Animations
+--------------------------------------- */
+
+/* 1. Opening and Closing Small Panel */
 .source-panel.open {
     width: 400px;
+    animation: slideInFromRight 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
 }
+
+.source-panel.closing {
+    width: 400px;
+    animation: slideOutToRight 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+@keyframes slideInFromRight {
+    0% {
+        width: 0;
+        opacity: 0.5;
+    }
+    100% {
+        width: 400px;
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutToRight {
+    0% {
+        width: 400px;
+        opacity: 1;
+    }
+    100% {
+        width: 0;
+        opacity: 0.5;
+    }
+}
+
+/* 2. Expanding and Collapsing Panel */
+.source-panel.expanded {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 100% !important;
+    height: 100vh;
+    z-index: 1000;
+    border-radius: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: expandPanel 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+/* Important: We use higher specificity to ensure width is maintained */
+.source-panel.collapsing {
+    position: relative;
+    width: 400px !important; /* Use !important to ensure it takes precedence */
+    min-width: 400px;
+    animation: collapsePanel 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+/* Ensure the panel maintains the correct width even when closing after collapsing */
+.source-panel.collapsing.closing,
+.source-panel.collapsing + .source-panel.closing {
+    width: 400px !important;
+}
+
+/* Ensure proper open state after animation completes */
+.source-panel.collapsing.open,
+.source-panel.open:not(.expanded):not(.closing) {
+    width: 400px !important;
+}
+
+@keyframes expandPanel {
+    0% {
+        width: 400px;
+    }
+    100% {
+        width: 100%;
+    }
+}
+
+@keyframes collapsePanel {
+    0% {
+        width: 100%;
+        opacity: 1;
+    }
+    100% {
+        width: 400px;
+        opacity: 1;
+    }
+}
+
+/* 3. Mobile Panel Animation - Moved to @media section */
 
 .source-panel-header {
     display: flex;
@@ -305,38 +394,45 @@ body {
 }
 
 .source-pills {
-    margin-top: 0.75rem;
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+    margin-top: 1rem;
+    align-items: center;
+}
+
+.source-pills-label {
+    font-size: 0.85rem;
+    color: #a0a0a0;
+    font-weight: 500;
+    margin-right: 0.25rem;
 }
 
 .source-pill {
-    background-color: var(--input-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-    color: var(--text-color);
+    background-color: rgba(228, 7, 18, 0.1);
+    border: 1px solid rgba(228, 7, 18, 0.3);
+    color: #e6e6e6;
+    padding: 0.4rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
     cursor: pointer;
-    display: inline-block;
-    font-size: 0.75rem;
-    font-weight: 500;
-    line-height: 1;
-    margin: 0.25rem 0.5rem 0.25rem 0;
-    padding: 0.25rem 0.6rem;
-    text-decoration: none;
-    transition: all 0.2s ease;
+    transition: all 0.2s ease-out;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 180px;
-    vertical-align: middle;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    font-weight: 500;
 }
 
 .source-pill:hover {
-    background-color: var(--secondary-color);
+    background-color: rgba(228, 7, 18, 0.2);
+    border-color: rgba(228, 7, 18, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(228, 7, 18, 0.2);
+}
+
+.source-pill.active {
+    background-color: var(--accent-color);
+    color: white;
     border-color: var(--accent-color);
-    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(228, 7, 18, 0.4);
 }
 
 /* Enhanced tooltip styling */
@@ -386,13 +482,6 @@ body {
 .source-pill[title]:hover::after,
 .source-pill[title]:hover::before {
     opacity: 1;
-}
-
-.source-pill.active {
-    background-color: var(--accent-color);
-    border-color: var(--accent-color);
-    color: white;
-    box-shadow: 0 1px 4px rgba(228, 7, 18, 0.4);
 }
 
 /* Show More Sources Button */
@@ -447,55 +536,6 @@ body {
 @media (max-width: 1024px) {
     .sidebar {
         width: 200px;
-    }
-}
-
-@media (max-width: 768px) {
-    .layout-container {
-        flex-direction: column;
-    }
-    
-    .sidebar {
-        width: 100%;
-        height: auto;
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.5rem 1rem;
-        border-right: none;
-        border-bottom: 1px solid var(--border-color);
-    }
-    
-    .sidebar-header {
-        margin-bottom: 0;
-    }
-    
-    .sidebar-header h1 {
-        font-size: 1.5rem;
-    }
-    
-    .sidebar-header p {
-        display: none;
-    }
-    
-    .sidebar-footer {
-        padding-top: 0;
-        border-top: none;
-        text-align: right;
-    }
-    
-    .main-wrapper {
-        height: calc(100vh - 60px);
-    }
-    
-    .source-panel.open {
-        position: fixed;
-        top: 60px;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        width: 100%;
-        z-index: 1000;
     }
 }
 
@@ -864,19 +904,6 @@ textarea:focus, button:focus {
 }
 
 /* Expanded source panel styles */
-.source-panel.expanded {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100% !important;
-    height: 100vh;
-    z-index: 1000;
-    border-radius: 0;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
 .source-panel.expanded .source-panel-header {
     position: sticky;
     top: 0;
@@ -956,4 +983,105 @@ textarea:focus, button:focus {
 .source-nav button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Source loading spinner */
+.source-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(228, 7, 18, 0.1);
+    border-radius: 50%;
+    border-top: 4px solid var(--accent-color);
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+    .layout-container {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .sidebar-header {
+        margin-bottom: 0;
+    }
+    
+    .sidebar-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .sidebar-header p {
+        display: none;
+    }
+    
+    .sidebar-footer {
+        padding-top: 0;
+        border-top: none;
+        text-align: right;
+    }
+    
+    .main-wrapper {
+        height: calc(100vh - 60px);
+    }
+    
+    /* Mobile Source Panel Animations */
+    .source-panel.open {
+        position: fixed;
+        top: 60px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        z-index: 1000;
+        animation: mobileSlideIn 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+    }
+    
+    @keyframes mobileSlideIn {
+        0% {
+            transform: translateY(20px);
+            opacity: 0;
+        }
+        100% {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    /* Mobile closing animation */
+    .source-panel.closing {
+        width: 100%;
+        animation: mobileSlideOut 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+    }
+    
+    @keyframes mobileSlideOut {
+        0% {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        100% {
+            transform: translateY(20px);
+            opacity: 0;
+        }
+    }
 } 
