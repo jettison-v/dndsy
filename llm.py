@@ -199,7 +199,7 @@ def ask_dndsy(prompt: str, store_type: str = None) -> Generator[str, None, None]
 
         # --- Yield Status Update ---
         start_time_yield_status = time.perf_counter() # Log start
-        yield f"event: status\\ndata: {json.dumps({'status': 'Consulting LLM'})}\\n\\n"
+        yield f"event: status\ndata: {json.dumps({'status': 'Consulting LLM'})}\n\n"
         end_time_yield_status = time.perf_counter() # Log end
         logger.info(f"Yielded status update to client in {end_time_yield_status - start_time_yield_status:.4f} seconds.")
 
@@ -275,7 +275,7 @@ def ask_dndsy(prompt: str, store_type: str = None) -> Generator[str, None, None]
             "llm_model": current_model_name,
             "store_type": store_type or default_store_type
         }
-        yield f"event: metadata\\ndata: {json.dumps(initial_metadata)}\\n\\n"
+        yield f"event: metadata\ndata: {json.dumps(initial_metadata)}\n\n"
         end_time_yield_meta = time.perf_counter() # Log end
         logger.info(f"Yielded initial metadata to client in {end_time_yield_meta - start_time_yield_meta:.4f} seconds.")
 
@@ -298,7 +298,7 @@ def ask_dndsy(prompt: str, store_type: str = None) -> Generator[str, None, None]
         text_chunk_count = 0
         for text_chunk in stream_generator:
             start_time_yield_chunk = time.perf_counter() # Log start
-            yield f"data: {json.dumps({'type': 'text', 'content': text_chunk})}\\n\\n"
+            yield f"data: {json.dumps({'type': 'text', 'content': text_chunk})}\n\n"
             end_time_yield_chunk = time.perf_counter() # Log end
             logger.debug(f"Yielded chunk {text_chunk_count + 1} in {end_time_yield_chunk - start_time_yield_chunk:.4f} seconds.") # Use debug for potentially noisy logs
             text_chunk_count += 1
@@ -308,7 +308,7 @@ def ask_dndsy(prompt: str, store_type: str = None) -> Generator[str, None, None]
 
         # Send a proper close event
         start_time_yield_done = time.perf_counter() # Log start
-        yield f"event: done\\ndata: {json.dumps({'success': True})}\\n\\n"
+        yield f"event: done\ndata: {json.dumps({'success': True})}\n\n"
         end_time_yield_done = time.perf_counter() # Log end
         logger.info(f"Yielded done event in {end_time_yield_done - start_time_yield_done:.4f} seconds.")
 
