@@ -112,7 +112,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeMessageId = activePillInChat.dataset.messageId;
         const relatedMessageElement = chatMessages.querySelector(`.message[data-message-id="${activeMessageId}"] .message-text`);
         
-        // ===== 1. MESSAGE CONTENT SECTION =====
+        // ===== 1. SOURCES SECTION (now first) =====
+        const sourcesSection = document.createElement('div');
+        sourcesSection.className = 'expanded-sources-section';
+        
+        // Remove the Sources heading - per user request
+        // const sourcesHeading = document.createElement('h3');
+        // sourcesHeading.textContent = 'Sources';
+        // sourcesSection.appendChild(sourcesHeading);
+        
+        const pillsContainer = document.createElement('div');
+        pillsContainer.className = 'expanded-source-pills-container';
+        sourcesSection.appendChild(pillsContainer);
+        
+        sourcePillsContainer.appendChild(sourcesSection);
+        
+        // ===== 2. DIVIDER =====
+        const divider = document.createElement('div');
+        divider.className = 'expanded-sources-divider';
+        sourcePillsContainer.appendChild(divider);
+        
+        // ===== 3. MESSAGE CONTENT SECTION (now last) =====
         const messageContainer = document.createElement('div');
         messageContainer.className = 'expanded-message-container';
         
@@ -128,25 +148,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         messageContainer.appendChild(messageContent);
         sourcePillsContainer.appendChild(messageContainer);
-        
-        // ===== 2. DIVIDER =====
-        const divider = document.createElement('div');
-        divider.className = 'expanded-sources-divider';
-        sourcePillsContainer.appendChild(divider);
-        
-        // ===== 3. SOURCES SECTION =====
-        const sourcesSection = document.createElement('div');
-        sourcesSection.className = 'expanded-sources-section';
-        
-        const sourcesHeading = document.createElement('h3');
-        sourcesHeading.textContent = 'Sources';
-        sourcesSection.appendChild(sourcesHeading);
-        
-        const pillsContainer = document.createElement('div');
-        pillsContainer.className = 'expanded-source-pills-container';
-        sourcesSection.appendChild(pillsContainer);
-        
-        sourcePillsContainer.appendChild(sourcesSection);
 
         // Find all source pills in the chat associated with the active messageId
         chatMessages.querySelectorAll(`.message[data-message-id="${activeMessageId}"] .source-pill`).forEach(pillInChat => {
