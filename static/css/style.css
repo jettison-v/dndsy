@@ -312,33 +312,87 @@ body {
 }
 
 .source-pill {
-    display: inline-flex;
-    align-items: center;
-    background: rgba(228, 7, 18, 0.15);
-    color: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(228, 7, 18, 0.3);
-    border-radius: 20px;
-    padding: 0.3rem 0.7rem;
-    margin-right: 0.5rem;
-    margin-bottom: 0.5rem;
-    font-size: 0.8rem;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    color: var(--text-color);
     cursor: pointer;
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1;
+    margin: 0.25rem 0.5rem 0.25rem 0;
+    padding: 0.25rem 0.6rem;
+    text-decoration: none;
     transition: all 0.2s ease;
     white-space: nowrap;
-    overflow: visible;
-    max-width: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+    vertical-align: middle;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .source-pill:hover {
-    background: rgba(228, 7, 18, 0.25);
-    transform: translateY(-2px);
-    box-shadow: 0 2px 5px rgba(228, 7, 18, 0.2);
+    background-color: var(--secondary-color);
+    border-color: var(--accent-color);
+    transform: translateY(-1px);
+}
+
+/* Enhanced tooltip styling */
+.source-pill[title] {
+    position: relative;
+}
+
+.source-pill[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: pre;
+    z-index: 1000;
+    background-color: rgba(33, 33, 33, 0.9);
+    color: white;
+    text-align: left;
+    border-radius: 6px;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    min-width: 200px;
+    max-width: 250px;
+    margin-bottom: 5px;
+    font-family: 'Roboto Mono', monospace;
+}
+
+.source-pill[title]:hover::before {
+    content: '';
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    margin-bottom: -5px;
+    border-width: 5px;
+    border-style: solid;
+    opacity: 0;
+    transition: opacity 0.2s;
+    border-color: rgba(33, 33, 33, 0.9) transparent transparent transparent;
+    transform: translateX(-50%);
+}
+
+.source-pill[title]:hover::after,
+.source-pill[title]:hover::before {
+    opacity: 1;
 }
 
 .source-pill.active {
     background-color: var(--accent-color);
-    color: white;
     border-color: var(--accent-color);
+    color: white;
+    box-shadow: 0 1px 4px rgba(228, 7, 18, 0.4);
 }
 
 /* Show More Sources Button */
