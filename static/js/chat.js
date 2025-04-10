@@ -65,38 +65,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if (expandPanel) {
         expandPanel.addEventListener('click', () => {
             if (isPanelExpanded) {
-                // Don't do anything if already in progress
-                if (sourcePanel.classList.contains('collapsing')) {
-                    return;
-                }
-                
-                // Begin collapse animation by adding the collapsing class 
-                // but keep the expanded class for now for proper animation start point
+                // Toggle from expanded to normal open state
                 sourcePanel.classList.add('collapsing');
-                
-                // After a brief delay, remove expanded class so the animation continues correctly
                 setTimeout(() => {
                     sourcePanel.classList.remove('expanded');
+                    
+                    setTimeout(() => {
+                        sourcePanel.classList.remove('collapsing');
+                        sourcePanel.classList.add('open');
+                    }, 300);
                 }, 10);
-                
-                // When animation completes, clean up classes
-                setTimeout(() => {
-                    sourcePanel.classList.remove('collapsing');
-                    // Ensure panel remains open at standard size
-                    sourcePanel.classList.add('open');
-                }, 300);
-                
+
                 expandPanel.innerHTML = '<i class="fas fa-external-link-alt"></i>';
                 expandPanel.title = 'Expand';
                 isPanelExpanded = false;
             } else {
-                // Don't do anything if already in progress
-                if (sourcePanel.classList.contains('expanded') || 
-                    sourcePanel.classList.contains('collapsing')) {
-                    return;
-                }
-                
-                // Add expanded class to begin animation
+                // Toggle from normal to expanded state
                 sourcePanel.classList.add('expanded');
                 
                 expandPanel.innerHTML = '<i class="fas fa-compress"></i>';
@@ -105,9 +89,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Clone source pills to expanded view if available
                 updateExpandedSourcePills();
-                
-                setTimeout(() => {
-                }, 300);
             }
         });
     }
@@ -116,48 +97,105 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateExpandedSourcePills() {
         if (!expandedSourcePills) return;
         
-        expandedSourcePills.innerHTML = '';
+        // Clear the source pills container completely
+        const sourcePillsContainer = document.getElementById('expanded-source-pills');
+        sourcePillsContainer.innerHTML = '';
         
-        // Clone active source pills to expanded view
-        document.querySelectorAll('.source-pill').forEach(pill => {
-            const clonedPill = pill.cloneNode(true);
+        // Find the currently active source pill *in the main chat*
+        const activePillInChat = chatMessages.querySelector('.source-pill.active');
+        
+        if (!activePillInChat || !activePillInChat.dataset.messageId) {
+            sourcePillsContainer.innerHTML = '<p class="info-text">No active source selected.</p>';
+            return; // No active source to relate to
+        }
+        
+        const activeMessageId = activePillInChat.dataset.messageId;
+        const relatedMessageElement = chatMessages.querySelector(`.message[data-message-id="${activeMessageId}"] .message-text`);
+        
+        // ===== 1. MESSAGE CONTENT SECTION =====
+        const messageContainer = document.createElement('div');
+        messageContainer.className = 'expanded-message-container';
+        
+        const messageContent = document.createElement('div');
+        messageContent.id = 'expanded-message-content';
+        messageContent.className = 'expanded-message-content';
+        
+        if (relatedMessageElement) {
+            messageContent.innerHTML = relatedMessageElement.innerHTML;
+        } else {
+            messageContent.innerHTML = '<p class="info-text">Could not find related message content.</p>';
+        }
+        
+        messageContainer.appendChild(messageContent);
+        sourcePillsContainer.appendChild(messageContainer);
+        
+        // ===== 2. DIVIDER =====
+        const divider = document.createElement('div');
+        divider.className = 'expanded-sources-divider';
+        sourcePillsContainer.appendChild(divider);
+        
+        // ===== 3. SOURCES SECTION =====
+        const sourcesSection = document.createElement('div');
+        sourcesSection.className = 'expanded-sources-section';
+        
+        const sourcesHeading = document.createElement('h3');
+        sourcesHeading.textContent = 'Sources';
+        sourcesSection.appendChild(sourcesHeading);
+        
+        const pillsContainer = document.createElement('div');
+        pillsContainer.className = 'expanded-source-pills-container';
+        sourcesSection.appendChild(pillsContainer);
+        
+        sourcePillsContainer.appendChild(sourcesSection);
+
+        // Find all source pills in the chat associated with the active messageId
+        chatMessages.querySelectorAll(`.message[data-message-id="${activeMessageId}"] .source-pill`).forEach(pillInChat => {
+            const clonedPill = pillInChat.cloneNode(true);
             
-            // Add the same click event listener
-            clonedPill.addEventListener('click', () => {
-                const messageId = clonedPill.dataset.messageId;
+            // Re-attach click listener for the cloned pill
+            clonedPill.addEventListener('click', async () => {
                 const s3Key = clonedPill.dataset.s3Key;
                 const pageNumber = clonedPill.dataset.page;
                 const score = clonedPill.dataset.score;
-                const displayText = clonedPill.textContent;
                 const storeType = clonedPill.dataset.storeType || currentVectorStore;
+                const filename = clonedPill.dataset.filename; // Get filename from dataset
                 
-                // Clear previous active states
-                document.querySelectorAll('.source-pill').forEach(p => p.classList.remove('active'));
+                // Update active state within the *expanded* panel
+                pillsContainer.querySelectorAll('.source-pill').forEach(p => p.classList.remove('active'));
                 clonedPill.classList.add('active');
+
+                // Also update the corresponding pill in the main chat for consistency
+                const correspondingPillInChat = chatMessages.querySelector(`.message[data-message-id="${activeMessageId}"] .source-pill[data-s3-key="${s3Key}"][data-page="${pageNumber}"]`);
+                if (correspondingPillInChat) {
+                    chatMessages.querySelectorAll('.source-pill').forEach(p => p.classList.remove('active'));
+                    correspondingPillInChat.classList.add('active');
+                }
                 
-                // Show loading state in panel
+                // Don't change the left side layout when clicking pills in expanded view
+                // Just update the main content area
+                // Show loading in main content area
                 sourceContent.innerHTML = '<p class="loading-source">Loading source details...</p>';
                 
-                // Fetch and show source
-                fetch(`/api/get_context_details?source=${encodeURIComponent(s3Key)}&page=${pageNumber}&vector_store_type=${storeType}`)
-                    .then(response => {
-                        if (!response.ok) {
-                            return response.json().then(errorData => {
-                                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-                            });
-                        }
-                        return response.json();
-                    })
-                    .then(details => {
-                        showSourcePanel(details, displayText, pageNumber, s3Key, score, storeType);
-                    })
-                    .catch(error => {
-                        console.error('Error fetching source details:', error);
-                        sourceContent.innerHTML = `<p class="error-source">Error loading source: ${error.message}</p>`;
-                    });
+                try {
+                    // Fetch and show source in the main content area
+                    const response = await fetch(`/api/get_context_details?source=${encodeURIComponent(s3Key)}&page=${pageNumber}&vector_store_type=${storeType}`);
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                    }
+                    const details = await response.json();
+                    if (!details) throw new Error('No details returned from server');
+                    
+                    // Display in the main content area
+                    showSourcePanel(details, `${filename} (page ${pageNumber})`, pageNumber, s3Key, score, storeType);
+                    
+                } catch (error) {
+                    console.error('Error fetching source details from expanded pill click:', error);
+                    sourceContent.innerHTML = `<p class="error-source">Error loading source: ${error.message}</p>`;
+                }
             });
             
-            expandedSourcePills.appendChild(clonedPill);
+            pillsContainer.appendChild(clonedPill);
         });
     }
 
@@ -317,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Add source pills
         sources.forEach(source => {
-            const pill = createSourcePill(source);
+            const pill = createSourcePill(source, messageId);
             pillsContainer.appendChild(pill);
         });
         
@@ -340,7 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ---- Create Source Pill Helper ----
-    function createSourcePill(source) {
+    function createSourcePill(source, messageId) {
         // Correct property names to match what comes from the API (snake_case)
         const { s3_key, file_path, page, score, chunk_index } = source;
         
@@ -397,6 +435,7 @@ document.addEventListener('DOMContentLoaded', () => {
         pill.dataset.filename = filename;
         // Also need to update the store_type here
         pill.dataset.storeType = source.store_type;
+        pill.dataset.messageId = messageId;
         
         // Add click event listener
         pill.addEventListener('click', async function() {

@@ -1140,37 +1140,95 @@ textarea:focus, button:focus {
 
 .source-panel.expanded .source-content-wrapper {
     display: flex;
-    flex: 1;
+    width: 100%;
+    height: calc(100vh - 60px); /* Full height minus header */
     overflow: hidden;
 }
 
 /* Container for pills in expanded view */
 .source-sources {
-    padding: 1rem;
-    border-right: 1px solid var(--border-color);
-    display: none; /* Hidden by default, shown only in expanded mode */
-    width: 250px;
-    overflow-y: auto;
+    display: none; /* Hidden by default */
+    width: 30%; /* Percentage width for responsive behavior */
+    min-width: 350px;
     background: var(--primary-color);
+    border-right: 1px solid var(--border-color);
+    padding: 1rem;
+    height: 100%;
+    overflow-y: auto; /* Main scrolling happens at this level */
+    flex-shrink: 0; /* Don't allow width to shrink */
 }
 
 .source-panel.expanded .source-sources {
-    display: block;
+    display: block; /* Show in expanded mode */
 }
 
-/* Adjust source content area for expanded view */
+/* Section for message content */
+.expanded-message-container {
+    margin-bottom: 1.5rem;
+}
+
+.expanded-message-content {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    padding: 1rem;
+    overflow-y: auto;
+    max-height: none;
+    min-height: 300px;
+}
+
+/* Sources separator */
+.expanded-sources-divider {
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 1.5rem 0;
+    width: 100%;
+}
+
+/* Sources section */
+.expanded-sources-section h3 {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: var(--text-color);
+}
+
+.expanded-source-pills-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.expanded-source-pills-container .source-pill {
+    width: 100%;
+    text-align: left;
+}
+
+/* Main content area */
 .source-panel.expanded .source-content {
     flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    height: auto; /* Override height calc */
-    padding: 0; /* Remove padding for image container */
+    height: 100%;
 }
 
 .source-panel.expanded #source-image-container {
     flex: 1;
     overflow: auto;
-    max-height: none;
-    height: auto; /* Allow container to grow */
+}
+
+/* When sidebar content exceeds viewport height */
+@media (max-height: 700px) {
+    .expanded-message-content {
+        max-height: 40vh; /* Cap height on small screens */
+    }
+}
+
+/* Responsive behavior */
+@media (max-width: 900px) {
+    .source-sources {
+        width: 40%;
+    }
 }
