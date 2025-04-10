@@ -190,18 +190,21 @@ def ask_dndsy(prompt: str, store_type: str = None) -> Generator[str, None, None]
     error_occurred = False
 
     try:
-        # --- Vector Store Search --- 
+        # --- Vector Store Search ---
+        logger.info("Starting RAG context search...") # Log start
         start_time_rag = time.perf_counter()
         context_parts = get_relevant_context(prompt, model=current_model_name, store_type=store_type)
         end_time_rag = time.perf_counter()
-        logger.info(f"Context search took {end_time_rag - start_time_rag:.4f} seconds.")
-        logger.info(f"Context found: {bool(context_parts)}")
-        
-        # --- Yield Status Update --- 
-        yield f"event: status\ndata: {json.dumps({'status': 'Consulting LLM'})}\n\n"
-        logger.info("Yielded status update to client.")
+        logger.info(f"Context search completed in {end_time_rag - start_time_rag:.4f} seconds. Found {len(context_parts)} parts.") # Log end + result
 
-        # --- Prepare Prompt & Initial Metadata --- 
+        # --- Yield Status Update ---
+        start_time_yield_status = time.perf_counter() # Log start
+        yield f"event: status\\ndata: {json.dumps({'status': 'Consulting LLM'})}\\n\\n"
+        end_time_yield_status = time.perf_counter() # Log end
+        logger.info(f"Yielded status update to client in {end_time_yield_status - start_time_yield_status:.4f} seconds.")
+
+        # --- Prepare Prompt & Initial Metadata ---
+        logger.info("Starting prompt preparation...") # Log start
         start_time_prompt = time.perf_counter()
         context_text_for_prompt = ""
         if context_parts:
@@ -260,9 +263,10 @@ def ask_dndsy(prompt: str, store_type: str = None) -> Generator[str, None, None]
             )
         
         end_time_prompt = time.perf_counter()
-        logger.info(f"Prompt preparation took {end_time_prompt - start_time_prompt:.4f} seconds.")
+        logger.info(f"Prompt preparation completed in {end_time_prompt - start_time_prompt:.4f} seconds.") # Log end
 
-        # --- Yield Initial Metadata --- 
+        # --- Yield Initial Metadata ---
+        start_time_yield_meta = time.perf_counter() # Log start
         initial_metadata = {
             "type": "metadata",
             "sources": sources_for_metadata, # Use the list of objects
@@ -271,13 +275,13 @@ def ask_dndsy(prompt: str, store_type: str = None) -> Generator[str, None, None]
             "llm_model": current_model_name,
             "store_type": store_type or default_store_type
         }
-        yield f"event: metadata\ndata: {json.dumps(initial_metadata)}\n\n"
-        logger.info("Yielded initial metadata to client (excluding full context text).") # Updated log
+        yield f"event: metadata\\ndata: {json.dumps(initial_metadata)}\\n\\n"
+        end_time_yield_meta = time.perf_counter() # Log end
+        logger.info(f"Yielded initial metadata to client in {end_time_yield_meta - start_time_yield_meta:.4f} seconds.")
 
-        # --- LLM API Stream --- 
-        start_time_llm = time.perf_counter()
-        logger.info("Starting LLM stream...")
-        
+        # --- LLM API Stream ---
+        logger.info("Starting LLM stream initiation...") # Log start
+        start_time_llm_init = time.perf_counter()
         stream_generator = llm_client.generate_response(
             prompt=prompt,
             system_message=system_message,
@@ -285,18 +289,28 @@ def ask_dndsy(prompt: str, store_type: str = None) -> Generator[str, None, None]
             max_tokens=1500, # Increased max_tokens
             stream=True
         )
-        
+        end_time_llm_init = time.perf_counter() # Log end
+        logger.info(f"LLM stream initiated in {end_time_llm_init - start_time_llm_init:.4f} seconds.")
+
         # Yield text chunks as they arrive
+        logger.info("Iterating through LLM stream...") # Log start
+        start_time_llm_stream = time.perf_counter()
         text_chunk_count = 0
         for text_chunk in stream_generator:
-            yield f"data: {json.dumps({'type': 'text', 'content': text_chunk})}\n\n"
+            start_time_yield_chunk = time.perf_counter() # Log start
+            yield f"data: {json.dumps({'type': 'text', 'content': text_chunk})}\\n\\n"
+            end_time_yield_chunk = time.perf_counter() # Log end
+            logger.debug(f"Yielded chunk {text_chunk_count + 1} in {end_time_yield_chunk - start_time_yield_chunk:.4f} seconds.") # Use debug for potentially noisy logs
             text_chunk_count += 1
-        
-        end_time_llm = time.perf_counter()
-        logger.info(f"LLM stream finished after {end_time_llm - start_time_llm:.4f} seconds. Yielded {text_chunk_count} chunks.")
+
+        end_time_llm_stream = time.perf_counter() # Log end
+        logger.info(f"LLM stream iteration finished after {end_time_llm_stream - start_time_llm_stream:.4f} seconds. Yielded {text_chunk_count} chunks.")
 
         # Send a proper close event
-        yield f"event: done\ndata: {json.dumps({'success': True})}\n\n"
+        start_time_yield_done = time.perf_counter() # Log start
+        yield f"event: done\\ndata: {json.dumps({'success': True})}\\n\\n"
+        end_time_yield_done = time.perf_counter() # Log end
+        logger.info(f"Yielded done event in {end_time_yield_done - start_time_yield_done:.4f} seconds.")
 
     except Exception as e:
         error_occurred = True
