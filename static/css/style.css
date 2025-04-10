@@ -166,10 +166,10 @@ body {
 
 /* Message Styles */
 .message {
-    margin-bottom: 1.2rem;
-    padding: 1.2rem;
+    margin-bottom: 1rem;
+    padding: 0.9rem;
     border-radius: 12px;
-    max-width: 85%;
+    max-width: 75%;
     position: relative;
     animation: messageSlideIn 0.3s ease-out;
     box-shadow: 0 2px 8px var(--shadow-color);
@@ -696,10 +696,8 @@ a.show-more-sources:hover {
 }
 
 /* Markdown Formatting Styles inside messages */
-.message-text {
-    font-size: 1rem;
-    line-height: 1.6;
-    white-space: pre-wrap;
+.message-text p {
+    margin-bottom: 0.75rem; /* Spacing between paragraphs */
 }
 
 .message-text h1,
@@ -715,17 +713,20 @@ a.show-more-sources:hover {
 }
 
 .message-text h3 {
-    font-size: 1.1em;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 0.8rem;
+    margin-bottom: 0.4rem;
 }
 
 .message-text ul,
 .message-text ol {
-    margin-left: 1.5rem;
-    margin-bottom: 0.75rem;
+    margin-left: 1.2rem;
+    margin-bottom: 0.6rem;
 }
 
 .message-text li {
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.2rem;
 }
 
 .message-text strong,
@@ -735,27 +736,23 @@ a.show-more-sources:hover {
 
 .message-text code {
     background-color: var(--primary-color);
-    padding: 0.2em 0.4em;
+    padding: 0.1em 0.3em;
     border-radius: 3px;
     font-family: monospace;
-    font-size: 0.9em;
+    font-size: 0.85em;
 }
 
 .message-text pre {
     background-color: var(--primary-color);
-    padding: 0.75rem;
+    padding: 0.6rem;
     border-radius: 4px;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.6rem;
     overflow-x: auto; /* Allow scrolling for long code blocks */
-    white-space: pre;
 }
 
 .message-text pre code {
     background-color: transparent;
     padding: 0;
-    white-space: pre;
-    font-family: monospace;
-    tab-size: 4;
 }
 
 .source-controls {
@@ -837,11 +834,20 @@ a.show-more-sources:hover {
 }
 
 /* Updated message styling */
+.message-text {
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.message-text p {
+    margin-bottom: 0.6rem; /* Spacing between paragraphs */
+}
+
 .message-text h1,
 .message-text h2 {
     font-family: 'EB Garamond', serif;
-    margin-top: 1rem;
-    margin-bottom: 0.5rem;
+    margin-top: 0.8rem;
+    margin-bottom: 0.4rem;
     font-weight: 600;
     color: #ffffff;
 }
@@ -1169,40 +1175,15 @@ textarea:focus, button:focus {
 }
 
 .expanded-message-content {
-    padding: 1rem;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    padding: 0.9rem;
     overflow-y: auto;
-    max-height: 300px;
-    background: var(--input-bg);
-    border-radius: 4px;
-    color: var(--text-color);
+    max-height: none;
+    min-height: 300px;
     font-size: 0.95rem;
-    line-height: 1.6;
-    white-space: pre-wrap;
-}
-
-.expanded-message-content pre {
-    white-space: pre;
-    background-color: var(--primary-color);
-    padding: 0.75rem;
-    border-radius: 4px;
-    margin-bottom: 0.75rem;
-    overflow-x: auto;
-}
-
-.expanded-message-content code {
-    font-family: monospace;
-    background-color: var(--primary-color);
-    padding: 0.2em 0.4em;
-    border-radius: 3px;
-    font-size: 0.9em;
-}
-
-.expanded-message-content pre code {
-    display: block;
-    padding: 0;
-    background-color: transparent;
-    white-space: pre;
-    tab-size: 4;
+    line-height: 1.4;
 }
 
 /* Sources separator */
