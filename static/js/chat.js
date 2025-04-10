@@ -1,4 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
+    /*
+    ========================================
+      ELEMENT SELECTORS & INITIALIZATION
+    ========================================
+    */
     const chatMessages = document.getElementById('chat-messages');
     const userInput = document.getElementById('user-input');
     const sendButton = document.getElementById('send-button');
@@ -37,7 +42,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize source panel state
     let sourcePanelOpen = false;
 
-    // Vector store selection
+    /*
+    ========================================
+      VECTOR STORE SELECTION
+    ========================================
+    */
     if (vectorStoreSelector) {
         const options = vectorStoreSelector.querySelectorAll('.vector-store-option');
         options.forEach(option => {
@@ -59,7 +68,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Add expand panel functionality
+    /*
+    ========================================
+      SOURCE PANEL UI (EXPAND/COLLAPSE, ZOOM, MOBILE TOGGLE)
+    ========================================
+    */
+
+    // ---- Expand/Collapse ----
     if (expandPanel) {
         expandPanel.addEventListener('click', () => {
             if (isPanelExpanded) {
@@ -122,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Function to update expanded source pills
+    // ---- Update Expanded Pills Helper ----
     function updateExpandedSourcePills() {
         if (!expandedSourcePills) return;
         
@@ -174,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Add zoom functionality
+    // ---- Zoom Controls ----
     if (zoomInBtn && zoomOutBtn && zoomResetBtn) {
         zoomInBtn.addEventListener('click', () => {
             if (currentZoomLevel < 2.5) {
@@ -196,6 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
+    // ---- Update Zoom Helper ----
     function updateZoom() {
         const imgContainer = document.getElementById('source-image-container');
         if (imgContainer) {
@@ -207,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // Mobile source panel toggle
+    // ---- Mobile Source Toggle ----
     if (mobileSourceToggle) {
         mobileSourceToggle.addEventListener('click', () => {
             logAnimation('Mobile toggle clicked', { sourcePanelOpen });
@@ -248,7 +264,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Function to add a message to the chat
+    /*
+    ========================================
+      CHAT MESSAGE HANDLING
+    ========================================
+    */
+
+    // ---- Add Message to DOM ----
     function addMessage(text, sender, messageId = null) {
         // If this is the first user message, remove the welcome system message
         if (sender === 'user' && isFirstMessage) {
@@ -285,7 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return id;
     }
     
-    // Function to append text to the message text span
+    // ---- Append Text Chunk to Message ----
     function appendToMessage(messageId, textChunk) {
         const messageElement = chatMessages.querySelector(`[data-message-id="${messageId}"]`);
         if (!messageElement) {
@@ -309,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
         textSpan.textContent += textChunk;
     }
 
-    // Function to add source pills
+    // ---- Add Source Pills to Message ----
     function addSourcePills(messageId, sources) {
         const messageElement = chatMessages.querySelector(`[data-message-id="${messageId}"]`);
         if (!messageElement) return;
@@ -344,7 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
         pillsContainer.style.display = 'flex';
     }
     
-    // Function to update message text (used for status)
+    // ---- Update Message Text (for Status) ----
     function updateMessageText(messageId, newText, showIndicator = true) {
         const textSpan = chatMessages.querySelector(`[data-message-id="${messageId}"] .message-text`);
         if (textSpan) {
@@ -358,7 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Helper function to create a source pill element
+    // ---- Create Source Pill Helper ----
     function createSourcePill(source) {
         // Correct property names to match what comes from the API (snake_case)
         const { s3_key, file_path, page, score, chunk_index } = source;
@@ -446,7 +468,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return pill;
     }
 
-    // Helper function to convert s3:// URLs to HTTPS URLs
+    /*
+    ========================================
+      SOURCE PANEL CONTENT & NAVIGATION
+    ========================================
+    */
+
+    // ---- Convert S3 URL ----
     function convertS3UrlToHttps(s3Url) {
         if (!s3Url) return null;
         
@@ -473,7 +501,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return s3Url;
     }
 
-    // Function to show source content in the side panel
+    // ---- Show Source Content in Panel ----
     function showSourcePanel(details, displayText, pageNumber, s3Key, score, storeType = currentVectorStore) { 
         logAnimation('showSourcePanel called', {displayText, pageNumber, s3Key, score, storeType});
         
@@ -605,7 +633,7 @@ document.addEventListener('DOMContentLoaded', () => {
         logAnimation('showSourcePanel complete');
     }
 
-    // Navigate source page
+    // ---- Navigate Source Pages (Prev/Next) ----
     async function navigateSourcePage(direction, context) {
         const currentPage = parseInt(sourceContent.dataset.currentPage, 10);
         const totalPages = parseInt(sourceContent.dataset.totalPages, 10);
@@ -662,7 +690,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Update source image - simplified as showSourcePanel now handles most state
+    // ---- Update Source Image Display ----
     function updateSourceImage(pageNumber) {
         const imageContainer = document.getElementById('source-image-container');
         const s3BaseUrl = sourceContent.dataset.s3BaseUrl;
@@ -694,7 +722,11 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Function to send a message
+    /*
+    ========================================
+      API COMMUNICATION (SEND MESSAGE & SSE HANDLING)
+    ========================================
+    */
     function sendMessage() {
         const message = userInput.value.trim();
         if (!message) return;
@@ -826,7 +858,13 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Event listeners
+    /*
+    ========================================
+      EVENT LISTENERS (Send Button, Input, Close Panel, ESC Key)
+    ========================================
+    */
+
+    // ---- Send Button & Enter Key ----
     sendButton.addEventListener('click', sendMessage);
     
     userInput.addEventListener('keypress', (e) => {
@@ -836,7 +874,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Handle close panel button
+    // ---- Close Panel Button ----
     closePanel.addEventListener('click', () => {
         logAnimation('Close button clicked', { isPanelExpanded, sourcePanelOpen });
         
@@ -919,7 +957,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Function to add navigation to source panel
+    // ---- Add Source Navigation Buttons ----
     function addSourceNavigation(currentPage, totalPages, s3Key, storeType = currentVectorStore) {
         const sourceContent = document.getElementById('source-content');
         // Create navigation container
@@ -951,7 +989,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sourceContent.appendChild(navContainer);
     }
 
-    // Add key events for ESC to close panel
+    // ---- ESC Key to Close Panel ----
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && (sourcePanelOpen || isPanelExpanded)) {
             logAnimation('ESC key pressed, closing panel');

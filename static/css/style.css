@@ -1,3 +1,8 @@
+/*
+========================================
+  GLOBAL STYLES
+========================================
+*/
 :root {
     --primary-color: #1b1b1b;
     --secondary-color: #242527;
@@ -11,6 +16,7 @@
     --assistant-msg-bg: #2a2a2e;
     --shadow-color: rgba(0, 0, 0, 0.25);
     --sidebar-width: 260px;
+    overflow: hidden; /* Prevent body scrolling */
 }
 
 * {
@@ -32,7 +38,11 @@ body {
     overflow: hidden; /* Prevent body scrolling */
 }
 
-/* New Layout Structure */
+/*
+========================================
+  LAYOUT CONTAINER
+========================================
+*/
 .layout-container {
     display: flex;
     width: 100%;
@@ -40,7 +50,11 @@ body {
     overflow: hidden;
 }
 
-/* Sidebar Styles */
+/*
+========================================
+  SIDEBAR
+========================================
+*/
 .sidebar {
     width: var(--sidebar-width);
     background-color: var(--secondary-color);
@@ -76,7 +90,52 @@ body {
     color: #a0a0a0;
 }
 
-/* Main Content Wrapper */
+/* Vector store selector styles */
+.vector-store-container {
+    margin: 1rem 0;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.vector-store-container h4 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-muted); /* Make sure --text-muted is defined or use a specific color */
+}
+
+.vector-store-selector {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.vector-store-option {
+    padding: 6px 12px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    border: 1px solid transparent;
+}
+
+.vector-store-option:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.vector-store-option.active {
+    background-color: var(--accent-color);
+    color: white;
+    font-weight: 500;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/*
+========================================
+  MAIN CONTENT WRAPPER
+========================================
+*/
 .main-wrapper {
     flex: 1;
     display: flex;
@@ -84,7 +143,11 @@ body {
     overflow: hidden;
 }
 
-/* Chat Container */
+/*
+========================================
+  CHAT CONTAINER & MESSAGES
+========================================
+*/
 .chat-container {
     flex: 1;
     background: var(--secondary-color);
@@ -201,7 +264,11 @@ body {
     transform: translateY(0);
 }
 
-/* Source Panel */
+/*
+========================================
+  SOURCE PANEL
+========================================
+*/
 .source-panel {
     width: 0;
     background: var(--secondary-color);
@@ -211,6 +278,7 @@ body {
     transition: none; /* No default transition, animations are controlled by classes */
     position: relative;
     height: 100%;
+    opacity: 1;
 }
 
 /* Source Panel Animations
@@ -832,7 +900,13 @@ a.show-more-sources:hover {
     color: var(--accent-color);
 }
 
-/* Scrollbar styling */
+/*
+========================================
+  UTILITY & MISC
+========================================
+*/
+
+/* --- Scrollbar Styles --- */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -851,43 +925,13 @@ a.show-more-sources:hover {
     background: var(--accent-color);
 }
 
-/* Enhanced focus styles */
+/* --- Focus States --- */
 textarea:focus, button:focus {
     outline: 2px solid var(--accent-color);
     outline-offset: 2px;
 }
 
-/* Source Panel Header */
-.source-panel-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    background: var(--primary-color);
-    border-bottom: 1px solid var(--border-color);
-}
-
-.source-panel-header h3 {
-    margin: 0;
-    color: var(--text-color);
-    flex: 1;
-}
-
-.close-button {
-    background: none;
-    border: none;
-    color: var(--text-color);
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 0.25rem;
-    line-height: 1;
-}
-
-.close-button:hover {
-    color: var(--accent-color);
-}
-
-/* Expand Button */
+/* --- Expand/Close Buttons --- */
 .expand-button {
     background: none;
     border: none;
@@ -903,53 +947,7 @@ textarea:focus, button:focus {
     color: var(--accent-color);
 }
 
-/* Expanded source panel styles */
-.source-panel.expanded .source-panel-header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-.source-panel.expanded .source-content-wrapper {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-}
-
-.source-sources {
-    padding: 0.5rem;
-    border-right: 1px solid var(--border-color);
-    display: none; /* Hidden by default, shown only in expanded mode */
-    width: 250px;
-    overflow-y: auto;
-    background: var(--primary-color);
-}
-
-.source-panel.expanded .source-sources {
-    display: block;
-}
-
-.source-content {
-    padding: 0;
-    overflow-y: auto;
-    height: calc(100% - 60px);
-}
-
-.source-panel.expanded .source-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    height: auto;
-}
-
-.source-panel.expanded #source-image-container {
-    flex: 1;
-    overflow: auto;
-    max-height: none;
-}
-
-/* Source Navigation */
+/* --- Source Navigation --- */
 .source-nav {
     display: flex;
     justify-content: center;
@@ -985,7 +983,7 @@ textarea:focus, button:focus {
     cursor: not-allowed;
 }
 
-/* Source loading spinner */
+/* --- Loading Indicators --- */
 .source-loading {
     display: flex;
     justify-content: center;
@@ -1005,6 +1003,49 @@ textarea:focus, button:focus {
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+/* --- Floating Action Button (FAB) --- */
+.fab-container {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 999;
+    display: none; /* Initially hidden, shown via JS/Media Query */
+}
+
+.fab {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--accent-gradient);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(228, 7, 18, 0.4);
+    cursor: pointer;
+    border: none;
+    font-size: 1.5rem;
+    transform: scale(1);
+    transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1),
+                box-shadow 0.3s ease;
+}
+
+.fab:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(228, 7, 18, 0.5);
+}
+
+/*
+========================================
+  MEDIA QUERIES
+========================================
+*/
+@media (max-width: 1024px) {
+    .sidebar {
+        width: 200px;
+    }
 }
 
 @media (max-width: 768px) {
@@ -1084,4 +1125,53 @@ textarea:focus, button:focus {
             opacity: 0;
         }
     }
-} 
+
+    /* Show FAB on smaller screens */
+    .fab-container {
+        display: block;
+    }
+}
+
+/* Expanded source panel styles */
+.source-panel.expanded .source-panel-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.source-panel.expanded .source-content-wrapper {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Container for pills in expanded view */
+.source-sources {
+    padding: 1rem;
+    border-right: 1px solid var(--border-color);
+    display: none; /* Hidden by default, shown only in expanded mode */
+    width: 250px;
+    overflow-y: auto;
+    background: var(--primary-color);
+}
+
+.source-panel.expanded .source-sources {
+    display: block;
+}
+
+/* Adjust source content area for expanded view */
+.source-panel.expanded .source-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    height: auto; /* Override height calc */
+    padding: 0; /* Remove padding for image container */
+}
+
+.source-panel.expanded #source-image-container {
+    flex: 1;
+    overflow: auto;
+    max-height: none;
+    height: auto; /* Allow container to grow */
+}
