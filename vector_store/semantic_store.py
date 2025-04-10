@@ -380,7 +380,8 @@ class SemanticStore:
                     "text": text,
                     "metadata": result["metadata"],
                     "dense_score": result["score"],
-                    "sparse_score": 0.0
+                    "sparse_score": 0.0,
+                    "keyword_score": 0.0  # New score for keyword matching
                 }
         
         # Add sparse (BM25) search results
@@ -395,13 +396,47 @@ class SemanticStore:
                     "text": text,
                     "metadata": doc.metadata,
                     "dense_score": 0.0,
-                    "sparse_score": doc.metadata.get("score", 0.0)
+                    "sparse_score": doc.metadata.get("score", 0.0),
+                    "keyword_score": 0.0  # New score for keyword matching
                 }
         
-        # Calculate final score (weighted combination)
-        alpha = 0.7  # Weight for dense retrieval (can be tuned)
+        # Boost scores for exact keyword matches in metadata
+        query_terms = set(query.lower().split())
+        for doc_key, doc in combined.items():
+            metadata = doc["metadata"]
+            
+            # Check for matches in heading information
+            heading_score = 0.0
+            for level in range(1, 7):
+                heading_key = f"h{level}"
+                if heading_key in metadata and metadata[heading_key]:
+                    heading_text = metadata[heading_key].lower()
+                    # Count how many query terms appear in the heading
+                    matches = sum(1 for term in query_terms if term in heading_text)
+                    # Boost score based on heading level (h1 gets highest boost)
+                    heading_score += matches * (7 - level) * 0.05
+            
+            # Check section and subsection
+            section_score = 0.0
+            for key in ["section", "subsection"]:
+                if key in metadata and metadata[key]:
+                    section_text = metadata[key].lower()
+                    matches = sum(1 for term in query_terms if term in section_text)
+                    section_score += matches * 0.1
+            
+            # Combine heading and section scores
+            doc["keyword_score"] = heading_score + section_score
+        
+        # Calculate final score with adjusted weights
+        alpha = 0.5  # Reduce weight for dense retrieval (was 0.7)
+        beta = 0.3   # Weight for sparse (BM25) retrieval
+        gamma = 0.2  # Weight for keyword matching
+        
         for doc in combined.values():
-            doc["score"] = (alpha * doc["dense_score"]) + ((1 - alpha) * doc["sparse_score"])
+            dense_component = alpha * doc["dense_score"]
+            sparse_component = beta * doc["sparse_score"]
+            keyword_component = gamma * doc["keyword_score"]
+            doc["score"] = dense_component + sparse_component + keyword_component
         
         # Sort by combined score and return top k
         results = list(combined.values())
@@ -420,28 +455,172 @@ class SemanticStore:
     
     def search(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
         """Search for similar documents using hybrid search (dense + sparse retrieval)."""
+        logging.info(f"Searching for: '{query}'")
+        
+        # First, try direct exact match against section headings
+        # This addresses specific cases like "Circle of the Moon" where we want exact matches
+        query_normalized = query.lower().strip()
+        try:
+            # Get all documents first
+            all_documents = self.get_all_documents()
+            exact_matches = []
+            partial_matches = []
+            
+            # Extract query words for partial matching
+            query_words = set(query_normalized.split())
+            important_words = query_words.copy()
+            # Filter out common words/stopwords for the important word check
+            stopwords = {'the', 'of', 'and', 'a', 'to', 'in', 'that', 'it', 'with', 'for', 'as', 'on', 'at', 'by', 'from'}
+            important_words = important_words - stopwords
+            
+            for doc in all_documents:
+                metadata = doc.get("metadata", {})
+                
+                # Check headings
+                for i in range(1, 7):
+                    heading_key = f"h{i}"
+                    if heading_key in metadata and metadata[heading_key]:
+                        heading_text = metadata[heading_key].lower().strip()
+                        
+                        # Check for exact title match
+                        if heading_text == query_normalized:
+                            exact_matches.append({
+                                "text": doc["text"],
+                                "metadata": metadata,
+                                "score": 1.0,  # Maximum score for exact matches
+                                "match_type": "exact_heading"
+                            })
+                            logging.info(f"Found exact heading match: {metadata[heading_key]}")
+                        
+                        # Check for strong partial match (all query words present)
+                        elif query_words and all(word in heading_text for word in query_words):
+                            # Calculate match quality based on how much of the heading is matched
+                            heading_words = set(heading_text.split())
+                            match_percentage = len(query_words) / len(heading_words) if heading_words else 0
+                            
+                            # Strong match if the query words cover at least 75% of heading words
+                            if match_percentage >= 0.75:
+                                partial_matches.append({
+                                    "text": doc["text"],
+                                    "metadata": metadata,
+                                    "score": 0.95,  # High score for complete partial matches
+                                    "match_type": "strong_partial_heading",
+                                    "match_percentage": match_percentage
+                                })
+                                logging.info(f"Found strong partial heading match: {metadata[heading_key]} ({match_percentage:.2f})")
+                
+                # Check section and subsection
+                for key in ["section", "subsection", "heading_path"]:
+                    if key in metadata and metadata[key]:
+                        section_text = metadata[key].lower().strip()
+                        
+                        # Exact section match
+                        if section_text == query_normalized:
+                            exact_matches.append({
+                                "text": doc["text"],
+                                "metadata": metadata,
+                                "score": 1.0,  # Maximum score for exact matches
+                                "match_type": f"exact_{key}"
+                            })
+                            logging.info(f"Found exact {key} match: {metadata[key]}")
+                        
+                        # Partial section match (especially for heading paths which can be longer)
+                        elif query_words and all(word in section_text for word in query_words):
+                            section_words = set(section_text.split())
+                            match_percentage = len(query_words) / len(section_words) if section_words else 0
+                            
+                            if match_percentage >= 0.5:  # Lower threshold for sections/paths which can be longer
+                                partial_matches.append({
+                                    "text": doc["text"],
+                                    "metadata": metadata,
+                                    "score": 0.9,  # Good score for partial section matches
+                                    "match_type": f"partial_{key}",
+                                    "match_percentage": match_percentage
+                                })
+                                logging.info(f"Found partial {key} match: {metadata[key]} ({match_percentage:.2f})")
+            
+            # Combine and prioritize matches
+            all_matches = exact_matches + partial_matches
+            if all_matches:
+                logging.info(f"Found {len(exact_matches)} exact matches and {len(partial_matches)} partial matches for '{query}'")
+                
+                # Sort by score (highest first)
+                all_matches.sort(key=lambda x: x.get("score", 0), reverse=True)
+                
+                # Deduplicate by text content
+                unique_matches = {}
+                for match in all_matches:
+                    if match["text"] not in unique_matches:
+                        unique_matches[match["text"]] = match
+                
+                return list(unique_matches.values())[:limit]
+                
+        except Exception as e:
+            logging.error(f"Error in heading match search: {e}", exc_info=True)
+            # Continue with regular search if exact match fails
+        
+        # If no exact/partial matches or exception, continue with normal search
+        # Extract important query terms for filtering
+        query_terms = set(query_normalized.split())
+        important_terms = query_terms - {'the', 'of', 'and', 'a', 'to', 'in', 'that', 'it', 'with', 'for', 'as', 'on', 'at', 'by', 'from'}
+        
         # Dense vector search
         query_vector = self._get_embedding(query)
         
+        # Increase the retrieval limit to get more candidates for reranking
         dense_results = self.client.search(
             collection_name=self.collection_name,
             query_vector=query_vector,
-            limit=limit * 2  # Get more results for reranking
+            limit=limit * 5  # Increased to get more candidates before filtering
         )
         
-        # Format dense results
+        # Format dense results with keyword filtering
         dense_documents = []
+        filtered_out = 0
         for result in dense_results:
+            text = result.payload["text"].lower()
+            metadata = result.payload["metadata"]
+            
+            # For class/subclass searches, strictly require term presence
+            # Only apply filtering if the query has important terms and seems to be a specific search
+            if len(important_terms) > 0 and len(query_terms) <= 5:
+                # Check if any important term is present in text or metadata fields
+                term_found = any(term in text for term in important_terms)
+                
+                # Also check in metadata fields like headings and sections
+                if not term_found:
+                    for key in ["section", "subsection", "heading_path"]:
+                        if key in metadata and metadata[key]:
+                            if any(term in metadata[key].lower() for term in important_terms):
+                                term_found = True
+                                break
+                    
+                    for i in range(1, 7):
+                        heading_key = f"h{i}"
+                        if heading_key in metadata and metadata[heading_key]:
+                            if any(term in metadata[heading_key].lower() for term in important_terms):
+                                term_found = True
+                                break
+                
+                # Skip results that don't contain any important query terms
+                if not term_found:
+                    filtered_out += 1
+                    continue
+            
             dense_documents.append({
                 "text": result.payload["text"],
-                "metadata": result.payload["metadata"],
+                "metadata": metadata,
                 "score": result.score
             })
+        
+        if filtered_out > 0:
+            logging.info(f"Filtered out {filtered_out} results that didn't contain any query terms")
         
         # Sparse lexical search using BM25 (if available)
         sparse_documents = []
         if self.bm25_retriever:
-            sparse_documents = self.bm25_retriever.get_relevant_documents(query)
+            # Get more BM25 results for better coverage
+            sparse_documents = self.bm25_retriever.get_relevant_documents(query, k=limit * 3)
             # Add score to metadata for hybrid reranking
             for i, doc in enumerate(sparse_documents):
                 # Normalize scores (higher is better, decreasing with index)
@@ -451,6 +630,34 @@ class SemanticStore:
         # If we have both types of results, use hybrid reranking
         if sparse_documents and dense_documents:
             return self._hybrid_reranking(dense_documents, sparse_documents, query, limit)
+        
+        # If BM25 retriever is not available, initialize it with existing documents
+        elif not self.bm25_retriever and not sparse_documents:
+            try:
+                # Try to initialize BM25 with existing documents
+                logging.info("BM25 retriever not initialized. Attempting to initialize with existing documents...")
+                all_docs = self.get_all_documents()
+                if all_docs:
+                    langchain_docs = []
+                    for doc in all_docs:
+                        metadata = doc["metadata"].copy()
+                        langchain_docs.append(Document(
+                            page_content=doc["text"],
+                            metadata=metadata
+                        ))
+                    
+                    self.bm25_retriever = BM25Retriever.from_documents(langchain_docs)
+                    logging.info(f"Initialized BM25 retriever with {len(langchain_docs)} documents")
+                    
+                    # Try again with the newly initialized BM25 retriever
+                    sparse_documents = self.bm25_retriever.get_relevant_documents(query, k=limit * 3)
+                    for i, doc in enumerate(sparse_documents):
+                        score = 1.0 - (i / len(sparse_documents)) if sparse_documents else 0
+                        doc.metadata["score"] = score
+                    
+                    return self._hybrid_reranking(dense_documents, sparse_documents, query, limit)
+            except Exception as e:
+                logging.error(f"Failed to initialize BM25 retriever: {e}")
         
         # Otherwise return just the dense results
         return dense_documents[:limit]
