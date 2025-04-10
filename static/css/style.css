@@ -696,8 +696,10 @@ a.show-more-sources:hover {
 }
 
 /* Markdown Formatting Styles inside messages */
-.message-text p {
-    margin-bottom: 0.75rem; /* Spacing between paragraphs */
+.message-text {
+    font-size: 1rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
 }
 
 .message-text h1,
@@ -745,11 +747,15 @@ a.show-more-sources:hover {
     border-radius: 4px;
     margin-bottom: 0.75rem;
     overflow-x: auto; /* Allow scrolling for long code blocks */
+    white-space: pre;
 }
 
 .message-text pre code {
     background-color: transparent;
     padding: 0;
+    white-space: pre;
+    font-family: monospace;
+    tab-size: 4;
 }
 
 .source-controls {
@@ -831,11 +837,6 @@ a.show-more-sources:hover {
 }
 
 /* Updated message styling */
-.message-text {
-    font-size: 1rem;
-    line-height: 1.6;
-}
-
 .message-text h1,
 .message-text h2 {
     font-family: 'EB Garamond', serif;
@@ -1168,13 +1169,40 @@ textarea:focus, button:focus {
 }
 
 .expanded-message-content {
-    background-color: rgba(255, 255, 255, 0.05);
-    border-radius: 6px;
-    border: 1px solid var(--border-color);
     padding: 1rem;
     overflow-y: auto;
-    max-height: none;
-    min-height: 300px;
+    max-height: 300px;
+    background: var(--input-bg);
+    border-radius: 4px;
+    color: var(--text-color);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.expanded-message-content pre {
+    white-space: pre;
+    background-color: var(--primary-color);
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin-bottom: 0.75rem;
+    overflow-x: auto;
+}
+
+.expanded-message-content code {
+    font-family: monospace;
+    background-color: var(--primary-color);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+.expanded-message-content pre code {
+    display: block;
+    padding: 0;
+    background-color: transparent;
+    white-space: pre;
+    tab-size: 4;
 }
 
 /* Sources separator */

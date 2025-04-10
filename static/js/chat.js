@@ -146,8 +146,18 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (fullText && typeof window.marked !== 'undefined') {
                 try {
-                    // Use the same markdown formatting as in the chat window
-                    messageContent.innerHTML = window.marked.parse(fullText);
+                    // Configure marked options to preserve whitespace
+                    const markedOptions = {
+                        gfm: true,
+                        breaks: true,
+                        pedantic: false,
+                        sanitize: false,
+                        smartLists: true,
+                        smartypants: false
+                    };
+                    
+                    // Use the same markdown formatting as in the chat window with whitespace preservation
+                    messageContent.innerHTML = window.marked.parse(fullText, markedOptions);
                 } catch (error) {
                     console.error('Error parsing markdown in expanded view:', error);
                     // Fallback to the HTML content of the message
@@ -352,8 +362,18 @@ document.addEventListener('DOMContentLoaded', () => {
             // Check if marked library is available before using it
             if (typeof window.marked !== 'undefined') {
                 try {
+                    // Configure marked options to preserve whitespace
+                    const markedOptions = {
+                        gfm: true,
+                        breaks: true,
+                        pedantic: false,
+                        sanitize: false,
+                        smartLists: true,
+                        smartypants: false
+                    };
+                    
                     // Format with markdown
-                    textSpan.innerHTML = window.marked.parse(textSpan.dataset.fullText);
+                    textSpan.innerHTML = window.marked.parse(textSpan.dataset.fullText, markedOptions);
                 } catch (error) {
                     console.error('Error parsing markdown:', error);
                     // Fallback to simple formatting
@@ -390,9 +410,17 @@ document.addEventListener('DOMContentLoaded', () => {
         paragraphs.forEach(paragraph => {
             if (paragraph.trim() !== '') {
                 // Check if it might be a code block
-                if (paragraph.startsWith('```') && paragraph.endsWith('```')) {
-                    const code = paragraph.substring(3, paragraph.length - 3);
-                    formattedText += `<pre><code>${escapeHTML(code)}</code></pre>`;
+                if (paragraph.startsWith('```') && paragraph.includes('```')) {
+                    // Extract the code content, preserving indentation
+                    const endIndex = paragraph.indexOf('```', 3);
+                    if (endIndex > 3) {
+                        const lang = paragraph.substring(3, paragraph.indexOf('\n')).trim();
+                        const code = paragraph.substring(paragraph.indexOf('\n', 3) + 1, endIndex);
+                        formattedText += `<pre><code class="language-${lang}">${escapeHTML(code)}</code></pre>`;
+                    } else {
+                        const code = paragraph.substring(3, paragraph.length - 3);
+                        formattedText += `<pre><code>${escapeHTML(code)}</code></pre>`;
+                    }
                 } else if (paragraph.startsWith('# ')) {
                     // H1 heading
                     formattedText += `<h1>${escapeHTML(paragraph.substring(2))}</h1>`;
@@ -428,7 +456,7 @@ document.addEventListener('DOMContentLoaded', () => {
         text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
         
         // Handle inline code
-        text = text.replace(/`(.*?)`/g, '<code>$1</code>');
+        text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
         
         // Handle links
         text = text.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>');
