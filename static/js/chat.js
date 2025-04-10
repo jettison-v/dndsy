@@ -371,17 +371,24 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Create more informative tooltip with full context
         let tooltipContent = `Source: ${filename}\nPage: ${page}`;
-        if (chunk_index !== undefined) {
-            tooltipContent += `\nChunk: ${chunk_index}`;
-        }
         if (score !== undefined) {
             tooltipContent += `\nRelevance: ${(score * 100).toFixed(1)}%`;
         }
-        if (file_path) {
-            tooltipContent += `\nPath: ${file_path}`;
+        // Prioritize chunk_info and other path fields for tooltip
+        const hierarchyPath = source.chunk_info || 
+                              source.hierarchy_path || 
+                              source.document_path || 
+                              source.path || 
+                              source.context_path || 
+                              source.file_path || // Add original file_path as fallback
+                              ''; // Default to empty string if no path found
+        
+        // Only show path for semantic search results
+        if (source.store_type === 'semantic' && hierarchyPath) {
+            tooltipContent += `\nPath: ${hierarchyPath}`;
         }
         
-        pill.title = tooltipContent;
+        pill.dataset.tooltip = tooltipContent;
         
         // Store data for retrieval
         pill.dataset.s3Key = s3_key;
