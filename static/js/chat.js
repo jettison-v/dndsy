@@ -20,17 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const zoomResetBtn = document.getElementById('zoom-reset');
     const vectorStoreSelector = document.getElementById('vector-store-selector');
     
-    // Animation debugging
-    function logAnimation(action, details = {}) {
-        const timestamp = new Date().toISOString().substr(11, 12); // HH:MM:SS.mmm
-        const classes = sourcePanel ? sourcePanel.className : 'N/A';
-        const width = sourcePanel ? getComputedStyle(sourcePanel).width : 'N/A';
-        
-        console.log(`[${timestamp}] ${action} - Classes: [${classes}], Width: ${width}`, details);
-    }
-    
-    logAnimation('Initial state');
-    
     let isFirstMessage = true;
     let messageContextParts = {};
     let currentEventSource = null;
@@ -62,8 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (vectorStoreInfoSpan) {
                     vectorStoreInfoSpan.textContent = `Store: ${currentVectorStore.charAt(0).toUpperCase() + currentVectorStore.slice(1)}`;
                 }
-                
-                console.log(`Vector store changed to: ${currentVectorStore}`);
             });
         });
     }
@@ -80,30 +67,23 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isPanelExpanded) {
                 // Don't do anything if already in progress
                 if (sourcePanel.classList.contains('collapsing')) {
-                    logAnimation('Skipping collapse - already collapsing');
                     return;
                 }
-                
-                logAnimation('Starting panel collapse');
                 
                 // Begin collapse animation by adding the collapsing class 
                 // but keep the expanded class for now for proper animation start point
                 sourcePanel.classList.add('collapsing');
-                logAnimation('Added collapsing class');
                 
                 // After a brief delay, remove expanded class so the animation continues correctly
                 setTimeout(() => {
-                    logAnimation('Removing expanded class during collapse');
                     sourcePanel.classList.remove('expanded');
                 }, 10);
                 
                 // When animation completes, clean up classes
                 setTimeout(() => {
-                    logAnimation('Collapse animation finished - cleanup');
                     sourcePanel.classList.remove('collapsing');
                     // Ensure panel remains open at standard size
                     sourcePanel.classList.add('open');
-                    logAnimation('Final collapse state');
                 }, 300);
                 
                 expandPanel.innerHTML = '<i class="fas fa-external-link-alt"></i>';
@@ -113,15 +93,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Don't do anything if already in progress
                 if (sourcePanel.classList.contains('expanded') || 
                     sourcePanel.classList.contains('collapsing')) {
-                    logAnimation('Skipping expand - already expanded or in transition');
                     return;
                 }
                 
-                logAnimation('Starting panel expand');
-                
                 // Add expanded class to begin animation
                 sourcePanel.classList.add('expanded');
-                logAnimation('Added expanded class');
                 
                 expandPanel.innerHTML = '<i class="fas fa-compress"></i>';
                 expandPanel.title = 'Compress';
@@ -131,7 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateExpandedSourcePills();
                 
                 setTimeout(() => {
-                    logAnimation('Expand animation finished');
                 }, 300);
             }
         });
@@ -162,9 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Show loading state in panel
                 sourceContent.innerHTML = '<p class="loading-source">Loading source details...</p>';
-                
-                // Log the values being sent
-                console.log(`Fetching details for: s3Key='${s3Key}', pageNumber='${pageNumber}', score='${score}', storeType='${storeType}'`);
                 
                 // Fetch and show source
                 fetch(`/api/get_context_details?source=${encodeURIComponent(s3Key)}&page=${pageNumber}&vector_store_type=${storeType}`)
@@ -226,17 +198,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // ---- Mobile Source Toggle ----
     if (mobileSourceToggle) {
         mobileSourceToggle.addEventListener('click', () => {
-            logAnimation('Mobile toggle clicked', { sourcePanelOpen });
-            
             if (sourcePanelOpen) {
-                logAnimation('Starting mobile panel close');
-                
-                // Add closing class to animate the closing
                 sourcePanel.classList.add('closing');
                 
                 // Wait for animation to complete before removing open class
                 setTimeout(() => {
-                    logAnimation('Mobile panel close animation finished');
                     sourcePanel.classList.remove('open');
                     sourcePanel.classList.remove('closing');
                     sourcePanelOpen = false;
@@ -247,18 +213,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     
                     mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
-                    
-                    logAnimation('Mobile panel fully closed');
                 }, 300); // Match the animation duration
             } else {
-                logAnimation('Starting mobile panel open');
-                
                 sourcePanel.classList.add('open');
                 sourcePanelOpen = true;
                 mobileSourceToggle.querySelector('i').classList.replace('fa-book', 'fa-times');
                 
                 setTimeout(() => {
-                    logAnimation('Mobile panel open animation finished');
                 }, 300);
             }
         });
@@ -311,13 +272,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function appendToMessage(messageId, textChunk) {
         const messageElement = chatMessages.querySelector(`[data-message-id="${messageId}"]`);
         if (!messageElement) {
-            console.error("Failed to find message element for ID:", messageId);
             return;
         }
         
         const textSpan = messageElement.querySelector('.message-text');
         if (!textSpan) {
-            console.error("Failed to find text span within message element:", messageId);
             return;
         }
         
@@ -503,12 +462,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ---- Show Source Content in Panel ----
     function showSourcePanel(details, displayText, pageNumber, s3Key, score, storeType = currentVectorStore) { 
-        logAnimation('showSourcePanel called', {displayText, pageNumber, s3Key, score, storeType});
+        // Reset zoom level whenever a new source is shown
+        currentZoomLevel = 1;
+        updateZoom(); // Apply reset
         
         // Details object expected: {"text": "...", "image_url": "...", "total_pages": ...} 
         if (!details) {
             sourceContent.innerHTML = '<p class="error-source">Error: Received no details for source.</p>';
-            logAnimation('Error in showSourcePanel - no details');
             return;
         }
         
@@ -539,9 +499,6 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         sourceContent.appendChild(sourceHeader);
         
-        // Reset zoom level
-        currentZoomLevel = 1;
-        
         // Container for the image with overflow scroll
         const imageContainer = document.createElement('div');
         imageContainer.id = 'source-image-container';
@@ -559,11 +516,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="spinner"></div>
                 </div>
             `;
-            logAnimation('Added loading spinner');
             
             img.onload = function() {
-                logAnimation('Image loaded');
-                
                 // Remove loading indicator
                 imageContainer.innerHTML = '';
                 imageContainer.appendChild(img);
@@ -603,7 +557,6 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             
             img.onerror = function() {
-                logAnimation('Image load error');
                 imageContainer.innerHTML = `<p class="error-source">Error loading image. Please try again.</p>`;
             };
             
@@ -613,14 +566,12 @@ document.addEventListener('DOMContentLoaded', () => {
             img.style.transformOrigin = 'center top';
             img.style.transition = 'transform 0.2s ease-out';
         } else {
-            logAnimation('No image URL available');
             imageContainer.innerHTML = `<p class="error-source">No image available for this source.</p>`;
             sourceContent.appendChild(imageContainer);
         }
         
         // Show source panel if not already visible
         if (!sourcePanelOpen) {
-            logAnimation('Opening source panel from showSourcePanel');
             sourcePanel.classList.add('open');
             sourcePanelOpen = true;
         }
@@ -629,8 +580,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.innerWidth <= 768 && mobileSourceToggle) {
             mobileSourceToggle.querySelector('i').classList.replace('fa-book', 'fa-times');
         }
-        
-        logAnimation('showSourcePanel complete');
     }
 
     // ---- Navigate Source Pages (Prev/Next) ----
@@ -675,7 +624,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Ensure we convert S3 URLs to HTTPS
             if (details.image_url && details.image_url.startsWith('s3://')) {
                 details.image_url = convertS3UrlToHttps(details.image_url);
-                console.log("Converted navigation image URL:", details.image_url);
             }
             
             const newDisplayText = `${readableSourceName} (page ${newPage})`;
@@ -772,9 +720,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Add source pills if available
             if (metadata.sources && metadata.sources.length > 0) {
-                // Log the sources to console for debugging
-                console.log('Sources from metadata:', metadata.sources);
-                
                 // Add store_type to each source
                 const sourcesWithStoreType = metadata.sources.map(source => ({
                     ...source,
@@ -790,8 +735,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Event listener for status updates
         currentEventSource.addEventListener('status', event => {
-            const status = JSON.parse(event.data);
-            console.log('Status update:', status);
+            // Potentially update UI based on status in the future
         });
         
         // Event listener for streaming chunks of text
@@ -837,8 +781,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Event listener for completion (done)
         currentEventSource.addEventListener('done', event => {
-            console.log('Response complete - done event received');
-            
             // Close the event source cleanly
             if (currentEventSource) {
                 currentEventSource.close();
@@ -876,38 +818,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ---- Close Panel Button ----
     closePanel.addEventListener('click', () => {
-        logAnimation('Close button clicked', { isPanelExpanded, sourcePanelOpen });
-        
-        // Don't close if we're in the middle of another animation
         if (sourcePanel.classList.contains('collapsing') || 
             sourcePanel.classList.contains('closing')) {
-            logAnimation('Skipping close - animation already in progress');
             return;
         }
         
         // If expanded, collapse first then close
         if (isPanelExpanded) {
-            logAnimation('Starting collapse then close sequence');
-            
-            // Begin collapse animation by adding the collapsing class
             sourcePanel.classList.add('collapsing');
-            logAnimation('Added collapsing class for collapse-close');
             
-            // After a brief delay, remove expanded class for proper animation
             setTimeout(() => {
-                logAnimation('Removing expanded class for collapse-close');
                 sourcePanel.classList.remove('expanded');
             }, 10);
             
-            // When collapse animation completes, start closing animation
             setTimeout(() => {
-                logAnimation('Collapse part finished - starting closing animation');
                 sourcePanel.classList.remove('collapsing');
                 sourcePanel.classList.add('closing');
                 
-                // When closing animation completes, remove classes
                 setTimeout(() => {
-                    logAnimation('Closing animation finished - cleanup');
                     sourcePanel.classList.remove('open');
                     sourcePanel.classList.remove('closing');
                     sourcePanelOpen = false;
@@ -921,8 +849,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (window.innerWidth <= 768 && mobileSourceToggle) {
                         mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
                     }
-                    
-                    logAnimation('Panel fully closed');
                 }, 300);
             }, 300);
             
@@ -930,14 +856,9 @@ document.addEventListener('DOMContentLoaded', () => {
             expandPanel.title = 'Expand';
             isPanelExpanded = false;
         } else {
-            logAnimation('Starting simple close animation');
-            
-            // Standard closing for non-expanded panel
             sourcePanel.classList.add('closing');
             
-            // Wait for animation to complete before removing open class
             setTimeout(() => {
-                logAnimation('Simple close animation finished - cleanup');
                 sourcePanel.classList.remove('open');
                 sourcePanel.classList.remove('closing');
                 sourcePanelOpen = false;
@@ -951,8 +872,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (window.innerWidth <= 768 && mobileSourceToggle) {
                     mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
                 }
-                
-                logAnimation('Panel fully closed');
             }, 300); // Match the animation duration
         }
     });
@@ -992,11 +911,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ---- ESC Key to Close Panel ----
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && (sourcePanelOpen || isPanelExpanded)) {
-            logAnimation('ESC key pressed, closing panel');
-            
-            // If panel is expanded, collapse it first
             if (isPanelExpanded) {
-                // Similar to the collapse+close sequence but triggered by ESC
                 sourcePanel.classList.add('collapsing');
                 
                 setTimeout(() => {
@@ -1027,8 +942,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (window.innerWidth <= 768 && mobileSourceToggle) {
                                 mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
                             }
-                            
-                            logAnimation('Panel fully closed via ESC');
                         }, 300);
                     }, 300);
                 }, 10);
@@ -1050,8 +963,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (window.innerWidth <= 768 && mobileSourceToggle) {
                         mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
                     }
-                    
-                    logAnimation('Panel closed via ESC');
                 }, 300);
             }
         }
