@@ -292,7 +292,12 @@ document.addEventListener('DOMContentLoaded', () => {
         textSpan.className = 'message-text'; 
         
         // Set initial text (parsing happens in appendToMessage)
-        textSpan.textContent = text; 
+        textSpan.textContent = text;
+        
+        // Add a data attribute to store the accumulated text for formatting
+        if (sender === 'assistant') {
+            textSpan.dataset.fullText = '';
+        }
         
         messageElement.appendChild(textSpan);
         
@@ -325,8 +330,86 @@ document.addEventListener('DOMContentLoaded', () => {
             indicator.remove();
         }
 
-        // Directly append text chunk
-        textSpan.textContent += textChunk;
+        // Accumulate the full text to ensure proper markdown formatting
+        if (textSpan.dataset.fullText !== undefined) {
+            textSpan.dataset.fullText += textChunk;
+            
+            // Check if marked library is available before using it
+            if (typeof window.marked !== 'undefined') {
+                try {
+                    // Format with markdown
+                    textSpan.innerHTML = window.marked.parse(textSpan.dataset.fullText);
+                } catch (error) {
+                    console.error('Error parsing markdown:', error);
+                    // Fallback to simple formatting
+                    formatTextWithBasicRules(textSpan, textSpan.dataset.fullText);
+                }
+            } else {
+                // If marked is not available, use basic text formatting
+                formatTextWithBasicRules(textSpan, textSpan.dataset.fullText);
+            }
+        } else {
+            // For non-assistant messages (like user input), just append text directly
+            textSpan.textContent += textChunk;
+        }
+        
+        // Scroll to the bottom of the chat
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    // ---- Basic formatting helper without marked library ----
+    function formatTextWithBasicRules(element, text) {
+        // Convert line breaks to paragraphs
+        const paragraphs = text.split('\n\n');
+        let formattedText = '';
+        
+        paragraphs.forEach(paragraph => {
+            if (paragraph.trim() !== '') {
+                // Check if it might be a code block
+                if (paragraph.startsWith('```') && paragraph.endsWith('```')) {
+                    const code = paragraph.substring(3, paragraph.length - 3);
+                    formattedText += `<pre><code>${escapeHTML(code)}</code></pre>`;
+                } else if (paragraph.startsWith('# ')) {
+                    // H1 heading
+                    formattedText += `<h1>${escapeHTML(paragraph.substring(2))}</h1>`;
+                } else if (paragraph.startsWith('## ')) {
+                    // H2 heading
+                    formattedText += `<h2>${escapeHTML(paragraph.substring(3))}</h2>`;
+                } else if (paragraph.startsWith('### ')) {
+                    // H3 heading
+                    formattedText += `<h3>${escapeHTML(paragraph.substring(4))}</h3>`;
+                } else {
+                    // Regular paragraph
+                    formattedText += `<p>${formatInlineElements(paragraph)}</p>`;
+                }
+            }
+        });
+        
+        element.innerHTML = formattedText;
+    }
+    
+    // ---- Helper for escaping HTML ----
+    function escapeHTML(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // ---- Format inline markdown elements ----
+    function formatInlineElements(text) {
+        // Handle bold text
+        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        
+        // Handle italic text
+        text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        
+        // Handle inline code
+        text = text.replace(/`(.*?)`/g, '<code>$1</code>');
+        
+        // Handle links
+        text = text.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>');
+        
+        return text;
     }
 
     // ---- Add Source Pills to Message ----
