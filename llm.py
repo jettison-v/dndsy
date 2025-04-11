@@ -25,6 +25,21 @@ except Exception as e:
     logger.critical(f"Failed to initialize LLM client on startup: {e}")
     llm_client = None 
 
+def reinitialize_llm_client():
+    """
+    Reinitializes the LLM client with updated configuration.
+    This function should be called when model settings change.
+    """
+    global llm_client
+    try:
+        logger.info("Reinitializing LLM client with updated configuration")
+        llm_client = get_llm_client()
+        logger.info(f"LLM client reinitialized. Using model: {llm_client.get_model_name()}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to reinitialize LLM client: {e}")
+        return False
+
 # Get default store type from environment
 default_store_type = os.getenv("DEFAULT_VECTOR_STORE", "semantic")
 

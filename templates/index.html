@@ -30,8 +30,12 @@
             <div class="vector-store-container">
                 <h4>LLM Model</h4>
                 <div class="vector-store-selector" id="llm-model-selector">
-                    <select id="llm-model-dropdown" class="vector-store-dropdown" disabled>
-                        <option value="{{ llm_model }}">{{ llm_model }}</option>
+                    <select id="llm-model-dropdown" class="vector-store-dropdown">
+                        {% for model_key, model_display_name in available_llm_models.items() %}
+                            <option value="{{ model_key }}" {% if model_key == llm_model %}selected{% endif %}>
+                                {{ model_display_name }}
+                            </option>
+                        {% endfor %}
                     </select>
                 </div>
             </div>

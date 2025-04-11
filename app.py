@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, Response
 from flask_cors import CORS
-from llm import ask_dndsy, default_store_type
+from llm import ask_dndsy, default_store_type, reinitialize_llm_client
 from vector_store import get_vector_store
 import os
 from datetime import timedelta
@@ -24,6 +24,12 @@ logger.info(f"Password loaded from environment variable {'APP_PASSWORD' if 'APP_
 
 VECTOR_STORE_TYPES = ["standard", "semantic"]
 DEFAULT_VECTOR_STORE = default_store_type # Set from llm module
+
+# Define available LLM models with their display names
+AVAILABLE_LLM_MODELS = {
+    "gpt-4o-mini": "GPT-4o Mini",
+    "gpt-4-turbo": "GPT-4 Turbo"
+}
 
 def check_auth():
     """Checks if the current session is authenticated."""
@@ -63,12 +69,13 @@ def home():
         return redirect(url_for('login'))
     
     # Get LLM model info for display
-    llm_model = os.environ.get('LLM_MODEL_NAME', 'Default Model')
+    current_llm_model = os.environ.get('LLM_MODEL_NAME', 'gpt-4o-mini')
     
     return render_template('index.html', 
                           vector_store_types=VECTOR_STORE_TYPES,
                           default_vector_store=DEFAULT_VECTOR_STORE,
-                          llm_model=llm_model)
+                          llm_model=current_llm_model,
+                          available_llm_models=AVAILABLE_LLM_MODELS)
 
 @app.route('/api/chat')
 def chat():
@@ -78,6 +85,7 @@ def chat():
         
     user_message = request.args.get('message', '') 
     vector_store_type = request.args.get('vector_store_type', None)
+    model = request.args.get('model', None)
     
     if vector_store_type and vector_store_type not in VECTOR_STORE_TYPES:
         return Response(f"event: error\ndata: {json.dumps({'error': f'Invalid vector store type: {vector_store_type}'})}\n\n", 
@@ -85,7 +93,14 @@ def chat():
     
     if not user_message:
          return Response(f"event: error\ndata: {json.dumps({'error': 'No message provided'})}\n\n", status=400, mimetype='text/event-stream')
-
+    
+    # If model is provided and valid, set it for this request
+    if model and model in AVAILABLE_LLM_MODELS:
+        current_model = os.environ.get('LLM_MODEL_NAME')
+        if model != current_model:
+            os.environ['LLM_MODEL_NAME'] = model
+            reinitialize_llm_client()
+    
     # Return the Server-Sent Events stream from the RAG function
     return Response(ask_dndsy(user_message, store_type=vector_store_type), mimetype='text/event-stream')
 
@@ -136,6 +151,30 @@ def get_vector_store_types():
     return jsonify({
         'types': VECTOR_STORE_TYPES,
         'default': DEFAULT_VECTOR_STORE
+    })
+
+@app.route('/api/change_model', methods=['POST'])
+def change_model():
+    """Changes the LLM model to use for subsequent requests."""
+    if not check_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.json
+    model_name = data.get('model')
+    
+    if not model_name or model_name not in AVAILABLE_LLM_MODELS:
+        return jsonify({'error': 'Invalid model name'}), 400
+    
+    # Update the environment variable
+    os.environ['LLM_MODEL_NAME'] = model_name
+    
+    # Reinitialize the LLM client to use the new model
+    reinitialize_llm_client()
+    
+    return jsonify({
+        'success': True,
+        'model': model_name,
+        'display_name': AVAILABLE_LLM_MODELS[model_name]
     })
 
 @app.route('/logout')

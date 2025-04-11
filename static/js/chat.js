@@ -64,16 +64,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Add event listener for LLM model changes if it becomes enabled in the future
     if (llmModelDropdown) {
-        llmModelDropdown.addEventListener('change', () => {
+        llmModelDropdown.addEventListener('change', async () => {
             const previousModel = llmModelDropdown.getAttribute('data-current-model') || llmModelDropdown.value;
             const newModel = llmModelDropdown.value;
             
-            // Store current model for future reference
-            llmModelDropdown.setAttribute('data-current-model', newModel);
+            // Don't send request if there's no change
+            if (previousModel === newModel) return;
             
-            // Don't add system message on initial load - only for actual changes
-            if (isFirstMessage === false && previousModel !== newModel) {
-                addMessage(`LLM Model changed to ${newModel}`, 'system');
+            try {
+                // Send request to change model
+                const response = await fetch('/api/change_model', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ model: newModel }),
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Store current model for future reference
+                llmModelDropdown.setAttribute('data-current-model', newModel);
+                
+                // Don't add system message on initial load - only for actual changes
+                if (isFirstMessage === false) {
+                    addMessage(`LLM Model changed to ${data.display_name}`, 'system');
+                }
+            } catch (error) {
+                console.error('Error changing LLM model:', error);
+                // Revert to previous selection on error
+                llmModelDropdown.value = previousModel;
+                addMessage(`Error changing model: ${error.message}`, 'system');
             }
         });
     }
@@ -950,8 +976,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Encode the message for the URL
         const encodedMessage = encodeURIComponent(message);
         
-        // Add vector store type to request
-        const url = `/api/chat?message=${encodedMessage}&vector_store_type=${currentVectorStore}`;
+        // Get current model
+        const currentModel = llmModelDropdown ? llmModelDropdown.value : null;
+        
+        // Add vector store type and model to request
+        const url = `/api/chat?message=${encodedMessage}&vector_store_type=${currentVectorStore}${currentModel ? `&model=${currentModel}` : ''}`;
         
         // Use Server-Sent Events (EventSource) for streaming
         currentEventSource = new EventSource(url);
