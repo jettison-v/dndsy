@@ -1444,6 +1444,11 @@ textarea:focus, button:focus {
     .mobile-header-source-toggle:hover {
         color: var(--accent-color);
     }
+
+    /* Hide the expand button on mobile since panel is already full-screen */
+    .expand-button {
+        display: none;
+    }
 }
 
 /* Expanded source panel styles */
@@ -1568,4 +1573,9 @@ textarea:focus, button:focus {
     .source-sources {
         width: 40%;
     }
+}
+
+/* Create a new mobile source button in the header */
+.mobile-header-source-toggle {
+    display: none; /* Hidden by default on desktop */
 }
