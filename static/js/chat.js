@@ -73,32 +73,41 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Initial model dropdown value:', llmModelDropdown.value);
         console.log('Model dropdown options:', Array.from(llmModelDropdown.options).map(o => ({ value: o.value, text: o.text, selected: o.selected })));
         
+        // Set initial data-current-model to the current selected value
+        const initialSelectedValue = llmModelDropdown.options[llmModelDropdown.selectedIndex].value;
+        llmModelDropdown.setAttribute('data-current-model', initialSelectedValue);
+        console.log('Initial data-current-model set to:', initialSelectedValue);
+        
         llmModelDropdown.addEventListener('change', async () => {
             const selectedIndex = llmModelDropdown.selectedIndex;
             const selectedOption = llmModelDropdown.options[selectedIndex];
             console.log('Selected option:', { index: selectedIndex, value: selectedOption.value, text: selectedOption.text });
             
-            const previousModel = llmModelDropdown.getAttribute('data-current-model') || llmModelDropdown.value;
-            const newModel = llmModelDropdown.value;
+            // Use actual selected value instead of relying on data attribute
+            const oldValue = llmModelDropdown.getAttribute('data-current-model');
+            const newValue = selectedOption.value;
             
-            console.log('Model dropdown changed:', { previousModel, newModel, rawValue: llmModelDropdown.value });
+            console.log('Model dropdown changed:', { oldValue, newValue, rawValue: llmModelDropdown.value });
             console.log('Model dropdown element:', llmModelDropdown);
             
-            // Don't send request if there's no change
-            if (previousModel === newModel) {
+            // Always set the data-current-model first to avoid race conditions
+            llmModelDropdown.setAttribute('data-current-model', newValue);
+            
+            // Compare actual values
+            if (oldValue === newValue) {
                 console.log('No model change detected, skipping');
                 return;
             }
             
             try {
-                console.log('Sending model change request for:', newModel);
+                console.log('Sending model change request for:', newValue);
                 // Send request to change model
                 const response = await fetch('/api/change_model', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ model: newModel }),
+                    body: JSON.stringify({ model: newValue }),
                 });
                 
                 console.log('Model change response status:', response.status);
@@ -111,9 +120,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const data = await response.json();
                 console.log('Model change success data:', data);
-                
-                // Store current model for future reference
-                llmModelDropdown.setAttribute('data-current-model', newModel);
                 
                 // Don't add system message on initial load - only for actual changes
                 if (isFirstMessage === false) {
@@ -143,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 console.error('Error changing LLM model:', error);
                 // Revert to previous selection on error
-                llmModelDropdown.value = previousModel;
+                llmModelDropdown.value = oldValue;
                 addMessage(`Error changing model: ${error.message}`, 'system');
             }
         });
