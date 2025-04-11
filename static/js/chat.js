@@ -195,6 +195,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     // Use the same markdown formatting as in the chat window
                     messageContent.innerHTML = window.marked.parse(fullText);
+                    
+                    // Ensure code blocks are properly formatted
+                    messageContent.querySelectorAll('pre code').forEach(block => {
+                        block.style.display = 'block';
+                        block.style.whiteSpace = 'pre';
+                        block.style.overflowX = 'auto';
+                    });
+                    
+                    // Ensure list items have proper indentation
+                    messageContent.querySelectorAll('ul, ol').forEach(list => {
+                        list.style.paddingLeft = '1.5rem';
+                    });
                 } catch (error) {
                     console.error('Error parsing markdown in expanded view:', error);
                     // Fallback to the HTML content of the message
