@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const expandPanel = document.getElementById('expand-panel');
     const expandedSourcePills = document.getElementById('expanded-source-pills');
     const mobileSourceToggle = document.getElementById('mobile-source-toggle');
+    const mobileHeaderSourceToggle = document.getElementById('mobile-header-source-toggle');
     const zoomInBtn = document.getElementById('zoom-in');
     const zoomOutBtn = document.getElementById('zoom-out');
     const zoomResetBtn = document.getElementById('zoom-reset');
@@ -382,32 +383,53 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // ---- Mobile Source Toggle ----
     if (mobileSourceToggle) {
-        mobileSourceToggle.addEventListener('click', () => {
-            if (sourcePanelOpen) {
-                sourcePanel.classList.add('closing');
+        mobileSourceToggle.addEventListener('click', toggleSourcePanel);
+    }
+
+    // ---- Mobile Header Source Toggle ----
+    if (mobileHeaderSourceToggle) {
+        mobileHeaderSourceToggle.addEventListener('click', toggleSourcePanel);
+    }
+
+    // Function to toggle source panel visibility
+    function toggleSourcePanel() {
+        if (sourcePanelOpen) {
+            sourcePanel.classList.add('closing');
+            
+            // Wait for animation to complete before removing open class
+            setTimeout(() => {
+                sourcePanel.classList.remove('open');
+                sourcePanel.classList.remove('closing');
+                sourcePanelOpen = false;
                 
-                // Wait for animation to complete before removing open class
-                setTimeout(() => {
-                    sourcePanel.classList.remove('open');
-                    sourcePanel.classList.remove('closing');
-                    sourcePanelOpen = false;
-                    
-                    // Remove active class from all source pills when panel is closed
-                    document.querySelectorAll('.source-pill').forEach(pill => {
-                        pill.classList.remove('active');
-                    });
-                    
+                // Remove active class from all source pills when panel is closed
+                document.querySelectorAll('.source-pill').forEach(pill => {
+                    pill.classList.remove('active');
+                });
+                
+                // Update mobile toggle icons
+                if (mobileSourceToggle) {
                     mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
-                }, 300); // Match the animation duration
-            } else {
-                sourcePanel.classList.add('open');
-                sourcePanelOpen = true;
+                }
+                if (mobileHeaderSourceToggle) {
+                    mobileHeaderSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+                }
+            }, 300); // Match the animation duration
+        } else {
+            sourcePanel.classList.add('open');
+            sourcePanelOpen = true;
+            
+            // Update mobile toggle icons
+            if (mobileSourceToggle) {
                 mobileSourceToggle.querySelector('i').classList.replace('fa-book', 'fa-times');
-                
-                setTimeout(() => {
-                }, 300);
             }
-        });
+            if (mobileHeaderSourceToggle) {
+                mobileHeaderSourceToggle.querySelector('i').classList.replace('fa-book', 'fa-times');
+            }
+            
+            setTimeout(() => {
+            }, 300);
+        }
     }
 
     /*
@@ -875,9 +897,14 @@ document.addEventListener('DOMContentLoaded', () => {
             sourcePanelOpen = true;
         }
         
-        // Update mobile toggle button if on mobile
-        if (window.innerWidth <= 768 && mobileSourceToggle) {
-            mobileSourceToggle.querySelector('i').classList.replace('fa-book', 'fa-times');
+        // Update mobile toggle buttons if on mobile
+        if (window.innerWidth <= 768) {
+            if (mobileSourceToggle) {
+                mobileSourceToggle.querySelector('i').classList.replace('fa-book', 'fa-times');
+            }
+            if (mobileHeaderSourceToggle) {
+                mobileHeaderSourceToggle.querySelector('i').classList.replace('fa-book', 'fa-times');
+            }
         }
     }
 
@@ -1153,9 +1180,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         pill.classList.remove('active');
                     });
                     
-                    // Update mobile toggle button if on mobile
-                    if (window.innerWidth <= 768 && mobileSourceToggle) {
-                        mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+                    // Update mobile toggle buttons if on mobile
+                    if (window.innerWidth <= 768) {
+                        if (mobileSourceToggle) {
+                            mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+                        }
+                        if (mobileHeaderSourceToggle) {
+                            mobileHeaderSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+                        }
                     }
                 }, 300);
             }, 300);
@@ -1176,9 +1208,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     pill.classList.remove('active');
                 });
                 
-                // Update mobile toggle button if on mobile
-                if (window.innerWidth <= 768 && mobileSourceToggle) {
-                    mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+                // Update mobile toggle buttons if on mobile
+                if (window.innerWidth <= 768) {
+                    if (mobileSourceToggle) {
+                        mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+                    }
+                    if (mobileHeaderSourceToggle) {
+                        mobileHeaderSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+                    }
                 }
             }, 300); // Match the animation duration
         }
@@ -1246,9 +1283,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                 expandPanel.title = 'Expand';
                             }
                             
-                            // Update mobile toggle button if on mobile
-                            if (window.innerWidth <= 768 && mobileSourceToggle) {
-                                mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+                            // Update mobile toggle buttons if on mobile
+                            if (window.innerWidth <= 768) {
+                                if (mobileSourceToggle) {
+                                    mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+                                }
+                                if (mobileHeaderSourceToggle) {
+                                    mobileHeaderSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+                                }
                             }
                         }, 300);
                     }, 300);
@@ -1267,9 +1309,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         pill.classList.remove('active');
                     });
                     
-                    // Update mobile toggle button if on mobile
-                    if (window.innerWidth <= 768 && mobileSourceToggle) {
-                        mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+                    // Update mobile toggle buttons if on mobile
+                    if (window.innerWidth <= 768) {
+                        if (mobileSourceToggle) {
+                            mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+                        }
+                        if (mobileHeaderSourceToggle) {
+                            mobileHeaderSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+                        }
                     }
                 }, 300);
             }

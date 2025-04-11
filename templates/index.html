@@ -5,8 +5,12 @@
         <!-- Left Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">
-                <h1><i class="fas fa-dragon"></i> AskDND</h1>
+                <h1><i class="fas fa-dragon"></i> <span class="text-logo">AskDND</span></h1>
                 <p>Your AI-powered D&D Rules Companion</p>
+                <!-- Mobile header source toggle -->
+                <button id="mobile-header-source-toggle" class="mobile-header-source-toggle" title="Toggle Source Panel">
+                    <i class="fas fa-book"></i>
+                </button>
             </div>
             
             <!-- Vector Store Selector -->
@@ -92,7 +96,7 @@
         </div>
     </div>
     
-    <div class="fab-container">
+    <div class="fab-container mobile-only-fab">
         <button id="mobile-source-toggle" class="fab" title="Toggle Source Panel">
             <i class="fas fa-book"></i>
         </button>
