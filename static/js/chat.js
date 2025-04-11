@@ -70,11 +70,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add event listener for LLM model changes if it becomes enabled in the future
     if (llmModelDropdown) {
         console.log('Setting up model dropdown listener');
+        console.log('Initial model dropdown value:', llmModelDropdown.value);
+        console.log('Model dropdown options:', Array.from(llmModelDropdown.options).map(o => ({ value: o.value, text: o.text, selected: o.selected })));
+        
         llmModelDropdown.addEventListener('change', async () => {
+            const selectedIndex = llmModelDropdown.selectedIndex;
+            const selectedOption = llmModelDropdown.options[selectedIndex];
+            console.log('Selected option:', { index: selectedIndex, value: selectedOption.value, text: selectedOption.text });
+            
             const previousModel = llmModelDropdown.getAttribute('data-current-model') || llmModelDropdown.value;
             const newModel = llmModelDropdown.value;
             
-            console.log('Model dropdown changed:', { previousModel, newModel });
+            console.log('Model dropdown changed:', { previousModel, newModel, rawValue: llmModelDropdown.value });
+            console.log('Model dropdown element:', llmModelDropdown);
             
             // Don't send request if there's no change
             if (previousModel === newModel) {
@@ -142,6 +150,45 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         console.warn('LLM model dropdown element not found');
     }
+
+    // Debug function to force model change
+    window.debugForceModelChange = async (modelName) => {
+        console.log('DEBUG: Forcing model change to:', modelName);
+        
+        try {
+            const response = await fetch('/api/change_model', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ model: modelName }),
+            });
+            
+            console.log('DEBUG: Model change response status:', response.status);
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('DEBUG: Model change error:', errorData);
+                return false;
+            }
+            
+            const data = await response.json();
+            console.log('DEBUG: Model change success:', data);
+            
+            // Add the message manually
+            const messageText = `Model changed to ${data.display_name}`;
+            console.log('DEBUG: Adding message:', messageText);
+            const messageId = addMessage(messageText, 'system');
+            console.log('DEBUG: Message added with ID:', messageId);
+            
+            // Force scroll
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return true;
+        } catch (error) {
+            console.error('DEBUG: Error in force model change:', error);
+            return false;
+        }
+    };
 
     // Vector Store Info Button
     if (vectorStoreInfoBtn) {
