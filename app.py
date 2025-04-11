@@ -171,6 +171,8 @@ def change_model():
     # Reinitialize the LLM client to use the new model
     reinitialize_llm_client()
     
+    logger.info(f"Model changed to {model_name} ({AVAILABLE_LLM_MODELS[model_name]})")
+    
     return jsonify({
         'success': True,
         'model': model_name,
