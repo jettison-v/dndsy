@@ -6,29 +6,20 @@ document.addEventListener('DOMContentLoaded', () => {
     */
     // First, set the viewport height custom property
     const setViewportHeight = () => {
-        // Calculate the actual viewport height
-        const vh = window.innerHeight * 0.01;
-        // Set the --vh custom property to the root of the document
-        document.documentElement.style.setProperty('--vh', `${vh}px`);
+        // For standard browsers, 100vh works fine
+        // This is just a safety for older iOS browsers
+        document.documentElement.style.height = '100%';
+        document.body.style.height = '100%';
     };
     
     // Set the height initially
     setViewportHeight();
     
-    // Update the height whenever the window resizes
-    window.addEventListener('resize', () => {
-        // Use setTimeout to ensure the browser address bar has fully expanded/collapsed
-        setTimeout(setViewportHeight, 100);
-    });
-    
-    // For iOS Safari, when the address bar appears/disappears
+    // Update the height on resize and orientation change
+    window.addEventListener('resize', setViewportHeight);
     window.addEventListener('orientationchange', () => {
-        // Use setTimeout to ensure orientation has fully changed
         setTimeout(setViewportHeight, 100);
     });
-    
-    // Re-calculate after a short delay on page load, to account for all UI elements
-    setTimeout(setViewportHeight, 100);
     
     /*
     ========================================
