@@ -16,8 +16,13 @@ class OpenAILLM(BaseLLMProvider):
             raise ValueError("OPENAI_API_KEY environment variable or api_key parameter must be set")
         
         self.client = OpenAI(api_key=api_key)
-        self._model_name = model_name
-        logger.info(f"Initialized OpenAI client for model: {self._model_name}")
+        # Store separate model names for chat and embeddings if they differ
+        self._chat_model_name = model_name
+        # Default to the semantic embedding model name, but allow override if needed
+        self._embedding_model_name = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small") 
+        logger.info(f"Initialized OpenAI client.")
+        logger.info(f"  Chat model: {self._chat_model_name}")
+        logger.info(f"  Embedding model: {self._embedding_model_name}")
 
     def generate_response(
         self,
@@ -31,7 +36,6 @@ class OpenAILLM(BaseLLMProvider):
         """Generates a response using the OpenAI ChatCompletion API, optionally streaming."""
         try:
             if stream:
-                # Return a generator for streaming responses
                 return self._stream_response(
                     prompt=prompt, 
                     system_message=system_message, 
@@ -40,9 +44,9 @@ class OpenAILLM(BaseLLMProvider):
                     **kwargs
                 )
             else:
-                # Original non-streaming logic
                 response = self.client.chat.completions.create(
-                    model=self._model_name,
+                    # Use the chat model name here
+                    model=self._chat_model_name, 
                     messages=[
                         {"role": "system", "content": system_message},
                         {"role": "user", "content": prompt}
@@ -56,10 +60,10 @@ class OpenAILLM(BaseLLMProvider):
                 return {"response_text": response_text}
                 
         except OpenAIError as e:
-            logger.error(f"OpenAI API error: {e}")
+            logger.error(f"OpenAI API error (ChatCompletion): {e}")
             raise
         except Exception as e:
-            logger.error(f"Unexpected error during OpenAI API call: {e}")
+            logger.error(f"Unexpected error during OpenAI ChatCompletion API call: {e}")
             raise
 
     def _stream_response(
@@ -73,7 +77,8 @@ class OpenAILLM(BaseLLMProvider):
         """Handles the streaming logic."""
         logger.info("Initiating stream response from OpenAI...")
         stream = self.client.chat.completions.create(
-            model=self._model_name,
+            # Use the chat model name here
+            model=self._chat_model_name, 
             messages=[
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": prompt}
@@ -91,13 +96,30 @@ class OpenAILLM(BaseLLMProvider):
             logger.info("OpenAI stream finished.")
         except Exception as e:
             logger.error(f"Error during OpenAI stream: {e}", exc_info=True)
-            # You might want to yield a specific error message here
-            # Or just let the exception propagate up if handled elsewhere
-            raise # Re-raise for now
+            raise
+            
+    def get_embedding(self, text: str) -> list[float]:
+        """Generates an embedding for the given text using the configured embedding model."""
+        try:
+            response = self.client.embeddings.create(
+                input=[text], # API expects a list of strings
+                # Use the embedding model name here
+                model=self._embedding_model_name 
+            )
+            # Extract the embedding vector from the response
+            embedding = response.data[0].embedding
+            return embedding
+        except OpenAIError as e:
+            logger.error(f"OpenAI API error (Embeddings): {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error during OpenAI Embeddings API call: {e}")
+            raise
 
     def get_model_name(self) -> str:
-        """Returns the configured OpenAI model name."""
-        return self._model_name
+        """Returns the configured OpenAI chat model name."""
+        # Return the chat model specifically
+        return self._chat_model_name 
 
     def get_provider_name(self) -> str:
         """Returns the provider name."""

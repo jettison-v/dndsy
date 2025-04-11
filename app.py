@@ -1,11 +1,12 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, Response
 from flask_cors import CORS
-from llm import ask_dndsy, default_vector_store
+from llm import ask_dndsy, default_store_type
 from vector_store import get_vector_store
 import os
 from datetime import timedelta
 import logging
 import json
+from dotenv import load_dotenv
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -23,7 +24,7 @@ logger.info(f"Password loaded from environment variable {'APP_PASSWORD' if 'APP_
 
 # Vector store types
 VECTOR_STORE_TYPES = ["standard", "semantic"]
-DEFAULT_VECTOR_STORE = os.environ.get('DEFAULT_VECTOR_STORE', 'semantic')
+DEFAULT_VECTOR_STORE = default_store_type
 
 def check_auth():
     auth_status = session.get('authenticated', False)

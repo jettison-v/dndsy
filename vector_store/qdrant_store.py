@@ -2,7 +2,8 @@ import os
 from typing import List, Dict, Any, Optional
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
-from sentence_transformers import SentenceTransformer
+# Remove SentenceTransformer import as embedding is now external
+# from sentence_transformers import SentenceTransformer
 import json
 import logging
 from dotenv import load_dotenv
@@ -11,12 +12,16 @@ from pathlib import Path
 env_path = Path(__file__).parent.parent / '.env' # Define path to .env file relative to this script
 load_dotenv(dotenv_path=env_path) # Load environment variables from specified path
 
+# Define embedding size here - must match the model used externally
+# For 'all-MiniLM-L6-v2' it's 384
+STANDARD_EMBEDDING_DIMENSION = 384
+
 class QdrantStore:
     def __init__(self, collection_name: str = "dnd_knowledge"):
         """Initialize Qdrant vector store."""
         self.collection_name = collection_name
-        # Load model only once if possible or ensure it's handled efficiently
-        self.model = SentenceTransformer('all-MiniLM-L6-v2')
+        # Remove model loading from here
+        # self.model = SentenceTransformer('all-MiniLM-L6-v2')
         
         # Initialize Qdrant client for local or cloud
         qdrant_host = os.getenv("QDRANT_HOST", "localhost")
@@ -63,73 +68,72 @@ class QdrantStore:
             self.client.create_collection(
                 collection_name=self.collection_name,
                 vectors_config=models.VectorParams(
-                    size=self.model.get_sentence_embedding_dimension(),
+                    # Use the defined dimension
+                    size=STANDARD_EMBEDDING_DIMENSION, 
                     distance=models.Distance.COSINE
                 )
             )
             logging.info(f"Created new collection: {self.collection_name}")
     
-    def add_documents(self, documents: List[Dict[str, Any]]) -> None:
-        """Add documents to the vector store."""
-        if not documents:
+    def add_points(self, points: List[models.PointStruct]) -> None:
+        """Adds pre-constructed points (with vectors) to the Qdrant collection."""
+        if not points:
             return
-        
-        # Prepare points for batch insertion
-        points = []
-        doc_id_counter = self.next_id  # Start from the next available ID
-        
-        for doc in documents:  # Remove enumerate since we're using doc_id_counter
-            # Generate embedding
-            embedding = self.model.encode(doc["text"]).tolist()
-            
-            # Create point with sequential ID starting from next_id
-            point = models.PointStruct(
-                id=doc_id_counter,  # Use the tracked ID counter
-                vector=embedding,
-                payload={
-                    "text": doc["text"],
-                    "metadata": doc["metadata"]
-                }
-            )
-            points.append(point)
-            doc_id_counter += 1
-        
-        # Update the next_id for future additions
-        self.next_id = doc_id_counter
-        
-        # Insert points in batches
+
         batch_size = 100
+        num_batches = (len(points) + batch_size - 1) // batch_size
+        
         for i in range(0, len(points), batch_size):
             batch = points[i:i + batch_size]
-            self.client.upsert(
+            batch_num = (i // batch_size) + 1
+            try:
+                self.client.upsert(
+                    collection_name=self.collection_name,
+                    points=batch,
+                    wait=True # Wait for operation to complete for potentially better stability
+                )
+                logging.info(f"Added batch {batch_num}/{num_batches} ({len(batch)} points) to {self.collection_name}")
+                # Update next_id based on the highest ID in the current batch
+                max_id_in_batch = max(p.id for p in batch)
+                self.next_id = max(self.next_id, max_id_in_batch + 1)
+            except Exception as e:
+                logging.error(f"Error adding batch {batch_num}/{num_batches} to {self.collection_name}: {e}", exc_info=True)
+                # Optionally, re-raise or implement retry logic
+                raise
+        
+        logging.info(f"Finished adding {len(points)} points to {self.collection_name}. Next ID: {self.next_id}")
+
+    def search(self, query_vector: List[float], limit: int = 5) -> List[Dict[str, Any]]:
+        """Search for similar documents using a pre-computed query vector."""
+        # No query embedding generation here - uses the provided vector
+        # query_vector = self.model.encode(query).tolist()
+        
+        if not query_vector:
+             logging.error("Search called with an empty query vector.")
+             return []
+             
+        try:
+            # Search in Qdrant using the provided vector
+            results = self.client.search(
                 collection_name=self.collection_name,
-                points=batch
+                query_vector=query_vector,
+                limit=limit
             )
-            logging.info(f"Added batch of {len(batch)} documents to vector store")
-    
-    def search(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
-        """Search for similar documents."""
-        # Generate query embedding
-        query_vector = self.model.encode(query).tolist()
-        
-        # Search in Qdrant
-        results = self.client.search(
-            collection_name=self.collection_name,
-            query_vector=query_vector,
-            limit=limit
-        )
-        
-        # Format results
-        documents = []
-        for result in results:
-            documents.append({
-                "text": result.payload["text"],
-                "metadata": result.payload["metadata"],
-                "score": result.score
-            })
-        
-        return documents
-    
+            
+            # Format results
+            documents = []
+            for result in results:
+                documents.append({
+                    "text": result.payload["text"],
+                    "metadata": result.payload["metadata"],
+                    "score": result.score
+                })
+            
+            return documents
+        except Exception as e:
+            logging.error(f"Error searching Qdrant collection {self.collection_name}: {e}", exc_info=True)
+            return []
+
     def get_details_by_source_page(self, source_name: str, page_number: int) -> Optional[Dict[str, Any]]:
         """Fetch details (text, image_url) for a specific source document and page."""
         try:
@@ -194,26 +198,32 @@ class QdrantStore:
     def get_all_documents(self) -> List[Dict[str, Any]]:
         """Get all documents from the vector store."""
         documents = []
-        offset = 0
+        offset = None # Start scrolling from the beginning
         limit = 100
         
         while True:
-            batch = self.client.scroll(
+            response_tuple = self.client.scroll(
                 collection_name=self.collection_name,
                 limit=limit,
                 offset=offset,
-                with_vectors=False
-            )[0]
+                with_vectors=False,
+                with_payload=True
+            )
             
-            if not batch:
+            points = response_tuple[0]
+            next_page_offset = response_tuple[1]
+
+            if not points:
                 break
             
-            for point in batch:
+            for point in points:
                 documents.append({
-                    "text": point.payload["text"],
-                    "metadata": point.payload["metadata"]
+                    "text": point.payload.get("text", ""),
+                    "metadata": point.payload.get("metadata", {})
                 })
             
-            offset += limit
+            if next_page_offset is None:
+                 break # Reached the end
+            offset = next_page_offset
         
         return documents 
