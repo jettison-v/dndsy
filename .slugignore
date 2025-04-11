@@ -3,10 +3,15 @@
 /tests
 /logs
 /docker
+/vector_store/*.pkl
 .git
 .DS_Store
 *.pyc
 __pycache__/
 *.egg-info
 README.md
-*.md 
+*.md
+/venv
+.pytest_cache
+heroku.json
+pdf_process_history.json 

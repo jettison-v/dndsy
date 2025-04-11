@@ -1,6 +1,6 @@
 # Specify CPU-only PyTorch first
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch
+torch==2.0.0+cpu  # Using a smaller version to reduce slug size
 
 # AWS SDK
 boto3
