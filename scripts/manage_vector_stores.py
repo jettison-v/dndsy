@@ -16,12 +16,12 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 # Imports that need project root in path
-from vector_store import get_vector_store
+from vector_store import get_vector_store, PdfPagesStore, SemanticStore # Import store types
 # Import constants directly from the module
 from data_ingestion.processor import PROCESS_HISTORY_FILE, PROCESS_HISTORY_S3_KEY, AWS_S3_BUCKET_NAME
 
-env_path = project_root / '.env' # Define path to .env file
-load_dotenv(dotenv_path=env_path) # Load environment variables from specified path
+env_path = project_root / '.env'
+load_dotenv(dotenv_path=env_path, override=True) # Override system vars
 
 # Ensure logs directory exists relative to project root
 logs_dir = project_root / 'logs'
@@ -32,7 +32,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(logs_dir / 'reset_script.log'), # Use the new name consistent with logs folder
+        logging.FileHandler(logs_dir / 'reset_script.log'),
         logging.StreamHandler(sys.stdout)
     ]
 )
@@ -57,8 +57,16 @@ def get_s3_client():
         logger.error(f"Failed to initialize S3 client: {e}")
         return None
 
-def manage_vector_stores(force_reprocess_images=False, reset_history=False):
-    """Resets vector stores and processes source documents."""
+def manage_vector_stores(force_reprocess_images=False, reset_history=False, only_standard=False, only_semantic=False):
+    """Resets vector stores and processes source documents, optionally targeting specific stores."""
+    
+    # Determine which stores to process
+    process_standard = not only_semantic
+    process_semantic = not only_standard
+    
+    logger.info(f"Processing standard store: {process_standard}")
+    logger.info(f"Processing semantic store: {process_semantic}")
+
     # Reset processing history if requested
     if reset_history:
         logger.info("Resetting processing history as requested")
@@ -111,26 +119,26 @@ def manage_vector_stores(force_reprocess_images=False, reset_history=False):
         port = int(os.getenv("QDRANT_PORT", "6333"))
         client = QdrantClient(host=qdrant_host, port=port, timeout=60)
     
-    # Delete existing collections if they exist
-    try:
-        # Delete the renamed collection for PDF pages
-        logger.info("Deleting PDF pages collection (dnd_pdf_pages)")
-        client.delete_collection("dnd_pdf_pages") 
-        logger.info("PDF pages collection deleted successfully")
-    except Exception as e:
-        # Log warning if collection doesn't exist or other error
-        logger.warning(f"Could not delete PDF pages collection (dnd_pdf_pages): {e}")
+    # Conditionally delete existing collections
+    if process_standard:
+        try:
+            logger.info(f"Deleting PDF pages collection ({PdfPagesStore.DEFAULT_COLLECTION_NAME})")
+            client.delete_collection(PdfPagesStore.DEFAULT_COLLECTION_NAME) 
+            logger.info("PDF pages collection deleted successfully")
+        except Exception as e:
+            logger.warning(f"Could not delete PDF pages collection ({PdfPagesStore.DEFAULT_COLLECTION_NAME}): {e}")
     
-    try:
-        logger.info("Deleting semantic collection (dnd_semantic)")
-        client.delete_collection("dnd_semantic")
-        logger.info("Semantic collection deleted successfully")
-    except Exception as e:
-        logger.warning(f"Could not delete semantic collection: {e}")
+    if process_semantic:
+        try:
+            logger.info(f"Deleting semantic collection ({SemanticStore.DEFAULT_COLLECTION_NAME})")
+            client.delete_collection(SemanticStore.DEFAULT_COLLECTION_NAME)
+            logger.info("Semantic collection deleted successfully")
+        except Exception as e:
+            logger.warning(f"Could not delete semantic collection ({SemanticStore.DEFAULT_COLLECTION_NAME}): {e}")
     
     # Process PDFs from S3 for both collections
     logger.info("Initializing data processor")
-    processor = DataProcessor()
+    processor = DataProcessor(process_standard=process_standard, process_semantic=process_semantic)
     
     # If force reprocessing is requested, modify the process history
     if force_reprocess_images and not reset_history:
@@ -189,15 +197,26 @@ if __name__ == "__main__":
                         help="Force reprocessing of all images even if PDFs are unchanged")
     parser.add_argument('--reset-history', action='store_true', 
                         help="Reset processing history (forces complete reprocessing)")
+    # Add arguments to target specific stores
+    parser.add_argument('--only-standard', action='store_true', help="Only reset and process the standard (PDF pages) store.")
+    parser.add_argument('--only-semantic', action='store_true', help="Only reset and process the semantic store.")
     args = parser.parse_args()
     
+    if args.only_standard and args.only_semantic:
+        logger.error("Cannot specify both --only-standard and --only-semantic.")
+        sys.exit(1)
+        
     logger.info("Starting vector store management script")
     logger.info(f"Force reprocess images: {args.force_reprocess_images}")
     logger.info(f"Reset history: {args.reset_history}")
+    logger.info(f"Only Standard: {args.only_standard}")
+    logger.info(f"Only Semantic: {args.only_semantic}")
     
     success = manage_vector_stores(
         force_reprocess_images=args.force_reprocess_images, 
-        reset_history=args.reset_history
+        reset_history=args.reset_history,
+        only_standard=args.only_standard,
+        only_semantic=args.only_semantic
     )
     
     if success:

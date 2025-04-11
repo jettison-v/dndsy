@@ -2,11 +2,10 @@ import os
 from typing import Dict, Any, Optional
 import logging
 from dotenv import load_dotenv
-from vector_store.qdrant_store import QdrantStore
-from vector_store.semantic_store import SemanticStore
 
 # Import the specific store classes
 from .pdf_pages_store import PdfPagesStore
+from .semantic_store import SemanticStore
 
 load_dotenv()
 

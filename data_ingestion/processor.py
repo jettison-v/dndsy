@@ -46,9 +46,9 @@ logging.basicConfig(
     ]
 )
 
-# Load environment variables from project root
+# Load environment variables from project root, overriding existing ones
 env_path = project_root / '.env'
-load_dotenv(dotenv_path=env_path)
+load_dotenv(dotenv_path=env_path, override=True)
 
 # Define base directory for images relative to static folder
 PDF_IMAGE_DIR = "pdf_page_images"
@@ -88,20 +88,36 @@ else:
     logging.warning("AWS S3 credentials/bucket name not fully configured. Image uploads will be skipped.")
 
 class DataProcessor:
-    def __init__(self):
-        """Initialize the data processor."""
-        # Get both vector stores
-        self.standard_store = get_vector_store("standard")
-        self.semantic_store = get_vector_store("semantic")
+    def __init__(self, process_standard: bool = True, process_semantic: bool = True):
+        """Initialize the data processor, optionally skipping stores."""
+        
+        self.process_standard_flag = process_standard
+        self.process_semantic_flag = process_semantic
+        
+        # Initialize stores conditionally
+        self.standard_store = None
+        if self.process_standard_flag:
+            self.standard_store = get_vector_store("standard")
+            if not self.standard_store:
+                raise RuntimeError("Failed to initialize standard vector store.")
+            logger.info("Standard store initialized for processing.")
+        else:
+             logger.info("Skipping standard store initialization.")
+             
+        self.semantic_store = None
+        if self.process_semantic_flag:
+            self.semantic_store = get_vector_store("semantic")
+            if not self.semantic_store:
+                raise RuntimeError("Failed to initialize semantic vector store.")
+            logger.info("Semantic store initialized for processing.")
+        else:
+            logger.info("Skipping semantic store initialization.")
+            
         self.processed_sources = set()
-        
-        # Create document structure analyzer
         self.doc_analyzer = DocumentStructureAnalyzer()
-        
-        # Load process history if exists
         self.process_history = self._load_process_history()
-        self.reprocessed_pdfs = []  # Track which PDFs were reprocessed
-        self.unchanged_pdfs = []    # Track which PDFs were unchanged
+        self.reprocessed_pdfs = [] 
+        self.unchanged_pdfs = []   
     
     def _compute_pdf_hash(self, pdf_bytes):
         """Compute a hash of PDF content to detect changes."""
@@ -216,11 +232,11 @@ class DataProcessor:
             logging.error(f"Error deleting images for {pdf_prefix}: {e}")
 
     def process_pdfs_from_s3(self) -> int:
-        """Process PDF files from S3, generate page images, chunk, embed, and add to stores."""
+        """Process PDF files from S3, generate page images, chunk, embed, and add to selected stores."""
         if not s3_client:
             logging.error("S3 client not configured. Cannot process PDFs from S3.")
             return 0
-        documents_processed = 0 
+        documents_processed = 0
         s3_base_key_prefix = PDF_IMAGE_DIR
         pdf_files_s3_keys = []
         try:
@@ -232,17 +248,13 @@ class DataProcessor:
                         key = obj["Key"]
                         if key.lower().endswith('.pdf') and key != AWS_S3_PDF_PREFIX:
                             pdf_files_s3_keys.append(key)
-        except ClientError as e:
-            logging.error(f"Failed to list PDFs from S3 prefix '{AWS_S3_PDF_PREFIX}': {e}")
-            return 0
         except Exception as e:
-            logging.error(f"Unexpected error listing PDFs from S3: {e}")
+            logging.error(f"Error listing PDFs: {e}")
             return 0
 
         start_time = datetime.now()
         total_pdfs = len(pdf_files_s3_keys)
-        logging.info(f"===== Found {total_pdfs} PDF files in S3 prefix '{AWS_S3_PDF_PREFIX}' =====")
-        logging.info(f"Start time: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        logging.info(f"Processing {total_pdfs} PDFs...")
         standard_points_total = 0
         semantic_points_total = 0
         
@@ -316,8 +328,8 @@ class DataProcessor:
                 self.doc_analyzer.determine_heading_levels()
                 logging.info("Document structure analysis complete.")
 
-                standard_page_data = []
-                semantic_page_data = []
+                standard_page_data = [] if self.process_standard_flag else None
+                semantic_page_data = [] if self.process_semantic_flag else None
 
                 # --- Second pass: Extract text, generate images (if needed), collect data --- 
                 for page_num, page in enumerate(doc):
@@ -379,14 +391,18 @@ class DataProcessor:
                         key = f"h{i}"
                         if key in context: metadata[key] = context[key]
                     
-                    standard_page_data.append({"text": page_text, "metadata": metadata.copy()})
-                    semantic_page_data.append({"text": page_text, "page": page_label, "metadata": metadata.copy()})
+                    # Conditionally collect data based on flags
+                    if self.process_standard_flag:
+                        standard_page_data.append({"text": page_text, "metadata": metadata.copy()})
+                    if self.process_semantic_flag:
+                        semantic_page_data.append({"text": page_text, "page": page_label, "metadata": metadata.copy()})
+                    
                     self.processed_sources.add(page_source_id)
 
-                # --- Embed and Add to Stores (Batch Processing) --- 
+                # --- Embed and Add to Stores (Conditional Processing) --- 
                 
                 # 1. Standard Store 
-                if standard_page_data:
+                if self.process_standard_flag and standard_page_data:
                     logging.info(f"Embedding {len(standard_page_data)} pages for standard store...")
                     standard_texts = [item["text"] for item in standard_page_data]
                     standard_embeddings = embed_documents(standard_texts, store_type="standard")
@@ -404,20 +420,17 @@ class DataProcessor:
                         standard_points_total += len(standard_points)
                         documents_processed += len(standard_points)
 
-                # 2. Semantic Store (Refactored)
-                if semantic_page_data:
+                # 2. Semantic Store
+                if self.process_semantic_flag and semantic_page_data:
                     logging.info(f"Chunking {len(semantic_page_data)} pages for semantic store...")
-                    # Get chunks first (does not embed or upload)
                     semantic_chunks = self.semantic_store.chunk_document_with_cross_page_context(semantic_page_data)
-                    
                     if semantic_chunks:
                         logging.info(f"Embedding {len(semantic_chunks)} semantic chunks...")
                         chunk_texts = [chunk["text"] for chunk in semantic_chunks]
                         try:
                             semantic_embeddings = embed_documents(chunk_texts, store_type="semantic")
-                            
                             semantic_points = []
-                            doc_id_counter = self.semantic_store.next_id # Use store's counter
+                            doc_id_counter = self.semantic_store.next_id
                             if len(semantic_embeddings) == len(semantic_chunks):
                                 for i, chunk_data in enumerate(semantic_chunks):
                                     semantic_points.append(PointStruct(
@@ -425,19 +438,14 @@ class DataProcessor:
                                         vector=semantic_embeddings[i],
                                         payload={"text": chunk_data["text"], "metadata": chunk_data["metadata"]}
                                     ))
-                            else:
-                                logging.error(f"Mismatch between chunk count ({len(semantic_chunks)}) and embedding count ({len(semantic_embeddings)}) for {s3_pdf_key}")
-                                
+                            else: logging.error(f"Mismatch chunk/embedding count for {s3_pdf_key}")
                             if semantic_points:
                                 logging.info(f"Adding {len(semantic_points)} points to semantic store for {pdf_filename}")
                                 num_added = self.semantic_store.add_points(semantic_points)
                                 semantic_points_total += num_added
                                 documents_processed += num_added
-                                
-                        except Exception as e:
-                            logging.error(f"Failed to embed or add semantic chunks for {s3_pdf_key}: {e}", exc_info=True)
-                    else:
-                         logging.warning(f"No semantic chunks generated for {s3_pdf_key}")
+                        except Exception as e: logging.error(f"Failed to embed/add semantic chunks for {s3_pdf_key}: {e}", exc_info=True)
+                    else: logging.warning(f"No semantic chunks generated for {s3_pdf_key}")
                 
                 # Close the document
                 doc.close()
@@ -464,7 +472,7 @@ class DataProcessor:
         return documents_processed
 
     def process_all_sources(self):
-        """Process all data sources and add them to vector store."""
+        """Process all data sources based on initialization flags."""
         processed_count = self.process_pdfs_from_s3()
         logging.info(f"Processed a total of {processed_count} points/documents")
         return processed_count
