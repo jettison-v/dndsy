@@ -6,9 +6,12 @@ import sys
 import hashlib  # For PDF content hashing
 
 # Add parent directory to path to make imports work properly
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Imports need to be adjusted for the new package structure
+# Assume vector_store and utils are accessible from the top level or adjust sys.path accordingly
 from vector_store import get_vector_store
-from utils.document_structure import DocumentStructureAnalyzer
+# Updated import for DocumentStructureAnalyzer
+from .structure_analyzer import DocumentStructureAnalyzer
 
 from tqdm import tqdm
 import logging
@@ -23,8 +26,10 @@ from botocore.exceptions import NoCredentialsError, PartialCredentialsError, Cli
 import io # For handling image data in memory
 from dotenv import load_dotenv
 
-# Ensure logs directory exists
-logs_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs')
+# Ensure logs directory exists relative to project root
+# Assumes this script is run from the project root or sys.path is set correctly
+project_root = Path(__file__).parent.parent
+logs_dir = project_root / 'logs'
 os.makedirs(logs_dir, exist_ok=True)
 
 # Set up logging
@@ -32,20 +37,21 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(os.path.join(logs_dir, 'data_processing.log')),
+        logging.FileHandler(logs_dir / 'data_processing.log'),
         logging.StreamHandler(sys.stdout)
     ]
 )
 
-# Load environment variables
-env_path = Path(__file__).parent.parent / '.env'
+# Load environment variables from project root
+env_path = project_root / '.env'
 load_dotenv(dotenv_path=env_path)
 
 # Define base directory for images relative to static folder
 PDF_IMAGE_DIR = "pdf_page_images"
 STATIC_DIR = "static" # Define static directory name
 # File to store processing history (both locally and on S3)
-PROCESS_HISTORY_FILE = "pdf_process_history.json"
+# Use absolute path for local history file
+PROCESS_HISTORY_FILE = project_root / "pdf_process_history.json"
 PROCESS_HISTORY_S3_KEY = "processing/pdf_process_history.json"  # S3 path
 
 # --- AWS S3 Configuration ---
@@ -361,13 +367,21 @@ class DataProcessor:
                     doc.close()
                     continue
                 
-                # If we got here, PDF is new or changed - delete any existing images
+                # If we got here, PDF is new or changed.
+                # We should delete any pre-existing images for this PDF before generating new ones.
                 if old_hash and old_hash != pdf_hash:
-                    logging.info(f"PDF {s3_pdf_key} has changed, regenerating images")
+                    logging.info(f"PDF {s3_pdf_key} has changed. Deleting old images and regenerating.")
                     # Delete existing images for this PDF
                     self._delete_specific_s3_images(pdf_image_sub_dir_name)
                 elif not old_hash:
-                    logging.info(f"New PDF {s3_pdf_key}, generating images")
+                    logging.info(f"New PDF {s3_pdf_key}. Deleting any potentially stale images and generating new ones.")
+                    # Also delete images for new PDFs, in case of partial runs or stale state
+                    self._delete_specific_s3_images(pdf_image_sub_dir_name)
+                # else: # This case shouldn't be reached if the 'skip' logic above works, but potentially add for robustness if needed
+                #     logging.warning(f"Unexpected state for PDF {s3_pdf_key}. Attempting to delete images before generating.")
+                #     self._delete_specific_s3_images(pdf_image_sub_dir_name)
+
+                logging.info(f"Proceeding with image generation for {s3_pdf_key}")
                 
                 self.reprocessed_pdfs.append(s3_pdf_key)
                 
@@ -589,10 +603,4 @@ class DataProcessor:
         logging.info(f"Processed a total of {len(documents)} documents")
         return documents
 
-def main():
-    """Main function."""
-    processor = DataProcessor()
-    processor.process_all_sources()
-
-if __name__ == "__main__":
-    main() 
+# Removed main() and if __name__ == "__main__" block as this is now a module 

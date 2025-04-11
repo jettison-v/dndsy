@@ -92,7 +92,7 @@ dndsy/
 ## Local Development Setup
 
 1.  **Prerequisites:**
-    *   Python 3.11+ (3.11 specifically used in production as defined in `.python-version`)
+    *   Python 3.11+ (3.11.7 specifically used in production as defined in `runtime.txt` and `.python-version`). It is recommended to use a Python version manager like `pyenv` to install and manage Python versions.
     *   Docker & Docker Compose (for running Qdrant locally easily)
     *   AWS Account & S3 Bucket (for PDF/image storage)
     *   LLM API Key (e.g., OpenAI, Anthropic)
@@ -105,11 +105,17 @@ dndsy/
     ```
 
 3.  **Python Environment:**
-    *   Create and activate a virtual environment:
+    *   Ensure you are using Python 3.11.7. If using `pyenv`, it should automatically switch to this version when you `cd` into the directory (due to the `.python-version` file). You can verify with `python --version`.
+    *   Create and activate a virtual environment. This isolates project dependencies:
         ```bash
+        # Make sure you are using Python 3.11.7 before running this
         python -m venv venv
-        source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+        # Activate the environment (syntax varies by shell)
+        source venv/bin/activate  # On Bash/Zsh
+        # venv\Scripts\activate   # On Windows Command Prompt
+        # .\venv\Scripts\Activate.ps1 # On Windows PowerShell
         ```
+    *   Your terminal prompt should now indicate that the `venv` environment is active.
 
 4.  **Install Dependencies:**
     ```bash

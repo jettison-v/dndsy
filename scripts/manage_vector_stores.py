@@ -1,6 +1,7 @@
 from qdrant_client import QdrantClient
 import os
-from process_data_sources import DataProcessor  # Fix the import to use absolute import
+# Updated import for DataProcessor
+from data_ingestion.processor import DataProcessor
 import logging
 from dotenv import load_dotenv
 from pathlib import Path
@@ -10,16 +11,20 @@ import json
 import boto3
 from botocore.exceptions import ClientError
 
-# Add parent directory to path to make imports work properly
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from vector_store import get_vector_store
-from process_data_sources import PROCESS_HISTORY_FILE, PROCESS_HISTORY_S3_KEY, AWS_S3_BUCKET_NAME
+# Add project root to path to make imports work properly from script
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
 
-env_path = Path('.') / '.env' # Define path to .env file
+# Imports that need project root in path
+from vector_store import get_vector_store
+# Import constants directly from the module
+from data_ingestion.processor import PROCESS_HISTORY_FILE, PROCESS_HISTORY_S3_KEY, AWS_S3_BUCKET_NAME
+
+env_path = project_root / '.env' # Define path to .env file
 load_dotenv(dotenv_path=env_path) # Load environment variables from specified path
 
-# Ensure logs directory exists
-logs_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs')
+# Ensure logs directory exists relative to project root
+logs_dir = project_root / 'logs'
 os.makedirs(logs_dir, exist_ok=True)
 
 # Set up logging
@@ -27,7 +32,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(os.path.join(logs_dir, 'reset_script.log')),
+        logging.FileHandler(logs_dir / 'reset_script.log'), # Use the new name consistent with logs folder
         logging.StreamHandler(sys.stdout)
     ]
 )
@@ -52,7 +57,8 @@ def get_s3_client():
         logger.error(f"Failed to initialize S3 client: {e}")
         return None
 
-def reset_and_process(force_reprocess_images=False, reset_history=False):
+def manage_vector_stores(force_reprocess_images=False, reset_history=False):
+    """Resets vector stores and processes source documents."""
     # Reset processing history if requested
     if reset_history:
         logger.info("Resetting processing history as requested")
@@ -92,7 +98,7 @@ def reset_and_process(force_reprocess_images=False, reset_history=False):
     is_cloud = qdrant_host.startswith("http") or qdrant_host.startswith("https")
 
     if is_cloud:
-        logger.info(f"Reset script connecting to Qdrant Cloud at: {qdrant_host}")
+        logger.info(f"Management script connecting to Qdrant Cloud at: {qdrant_host}")
         # For cloud, use url and api_key. Port is usually inferred (443 for https).
         client = QdrantClient(
             url=qdrant_host, 
@@ -100,7 +106,7 @@ def reset_and_process(force_reprocess_images=False, reset_history=False):
             timeout=60
         )
     else:
-        logger.info(f"Reset script connecting to local Qdrant at: {qdrant_host}")
+        logger.info(f"Management script connecting to local Qdrant at: {qdrant_host}")
         # For local, use host and explicit port.
         port = int(os.getenv("QDRANT_PORT", "6333"))
         client = QdrantClient(host=qdrant_host, port=port, timeout=60)
@@ -161,7 +167,7 @@ def reset_and_process(force_reprocess_images=False, reset_history=False):
             logger.error(f"Error modifying process history: {e}")
     
     # Run the processing (the DataProcessor.process_all_sources method handles both collections)
-    logger.info("Starting PDF processing")
+    logger.info("Starting data processing...")
     documents = processor.process_all_sources()
     
     if documents:
@@ -173,25 +179,25 @@ def reset_and_process(force_reprocess_images=False, reset_history=False):
 
 if __name__ == "__main__":
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description="Reset vector stores and process documents")
+    parser = argparse.ArgumentParser(description="Manage vector stores: reset and process documents")
     parser.add_argument('--force-reprocess-images', action='store_true', 
                         help="Force reprocessing of all images even if PDFs are unchanged")
     parser.add_argument('--reset-history', action='store_true', 
                         help="Reset processing history (forces complete reprocessing)")
     args = parser.parse_args()
     
-    logger.info("Starting reset and process script")
+    logger.info("Starting vector store management script")
     logger.info(f"Force reprocess images: {args.force_reprocess_images}")
     logger.info(f"Reset history: {args.reset_history}")
     
-    success = reset_and_process(
+    success = manage_vector_stores(
         force_reprocess_images=args.force_reprocess_images, 
         reset_history=args.reset_history
     )
     
     if success:
-        logger.info("Reset and processing completed successfully!")
+        logger.info("Vector store management completed successfully!")
     else:
-        logger.error("Reset and processing completed with errors.")
+        logger.error("Vector store management completed with errors.")
     
     logger.info("Script finished") 
