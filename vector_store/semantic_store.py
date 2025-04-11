@@ -108,65 +108,6 @@ class SemanticStore:
             )
             logging.info(f"Created new semantic collection: {self.collection_name}")
     
-    def add_documents(self, documents: List[Dict[str, Any]]) -> int:
-        """(DEPRECATED - Use chunk_document and add_points) Add documents with internal embedding."""
-        logging.warning("Calling deprecated SemanticStore.add_documents with internal embedding.")
-        if not self._embeddings_for_ingestion:
-             raise RuntimeError("Semantic ingestion requires OpenAI API key for deprecated internal embedding.")
-        # Reset BM25 documents and retriever since we're adding new content
-        self.bm25_documents = []
-        points = []
-        doc_id_counter = self.next_id
-        total_chunks = 0
-        embedding_count = 0
-        start_time = datetime.now()
-        logging.info(f"[{start_time.strftime('%H:%M:%S')}] Starting semantic processing of {len(documents)} documents")
-        for doc in documents:
-            original_text = doc["text"]
-            metadata = doc["metadata"].copy()
-            chunks = self.text_splitter.split_text(original_text)
-            total_chunks += len(chunks)
-            for i, chunk_text in enumerate(chunks):
-                if not chunk_text.strip(): continue
-                chunk_metadata = metadata.copy()
-                chunk_metadata["chunk_index"] = i
-                chunk_metadata["chunk_count"] = len(chunks)
-                embedding = self._embeddings_for_ingestion.embed_query(chunk_text)
-                embedding_count += 1
-                if embedding_count % 50 == 0:
-                    elapsed = (datetime.now() - start_time).total_seconds()
-                    logging.info(f"[{datetime.now().strftime('%H:%M:%S')}] Processed {embedding_count}/{total_chunks} embeddings ({(embedding_count/total_chunks*100):.1f}%) - {elapsed:.1f} seconds elapsed")
-                point = models.PointStruct(
-                    id=doc_id_counter,
-                    vector=embedding,
-                    payload={"text": chunk_text, "metadata": chunk_metadata}
-                )
-                points.append(point)
-                self.bm25_documents.append(Document(page_content=chunk_text, metadata=chunk_metadata))
-                doc_id_counter += 1
-        self.next_id = doc_id_counter
-        if self.bm25_documents:
-            logging.info(f"[{datetime.now().strftime('%H:%M:%S')}] Initializing BM25 retriever with {len(self.bm25_documents)} documents")
-            self.bm25_retriever = BM25Retriever.from_documents(self.bm25_documents)
-            logging.info(f"[{datetime.now().strftime('%H:%M:%S')}] BM25 retriever initialization complete")
-        batch_size = 100
-        batch_count = (len(points) + batch_size - 1) // batch_size
-        logging.info(f"[{datetime.now().strftime('%H:%M:%S')}] Uploading {len(points)} embeddings to Qdrant in {batch_count} batches")
-        for i in range(0, len(points), batch_size):
-            batch_num = i // batch_size + 1
-            batch = points[i:i + batch_size]
-            batch_start = datetime.now()
-            logging.info(f"[{batch_start.strftime('%H:%M:%S')}] Uploading batch {batch_num}/{batch_count} ({len(batch)} points)")
-            self.client.upsert(collection_name=self.collection_name, points=batch)
-            batch_end = datetime.now()
-            batch_duration = (batch_end - batch_start).total_seconds()
-            logging.info(f"[{batch_end.strftime('%H:%M:%S')}] Batch {batch_num}/{batch_count} complete in {batch_duration:.1f} seconds")
-        end_time = datetime.now()
-        total_duration = (end_time - start_time).total_seconds()
-        logging.info(f"[{end_time.strftime('%H:%M:%S')}] Semantic processing complete - {total_duration:.1f} seconds total")
-        logging.info(f"Added {len(points)} semantic chunks from {len(documents)} original documents")
-        return len(points)
-    
     def chunk_document_with_cross_page_context(
         self, 
         page_texts: List[Dict[str, Any]]

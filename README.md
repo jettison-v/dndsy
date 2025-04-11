@@ -5,14 +5,14 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
 ## Features
 
 *   **Multiple RAG Approaches:** Choose between different vector store approaches for optimal retrieval:
-    * **Standard:** Process PDFs page-by-page for broader context.
-    * **Semantic:** Chunk content into paragraphs for more precise, semantic search.
+    * **Standard:** Process PDFs page-by-page, embedding each page for broader context.
+    * **Semantic:** Chunk content into semantically meaningful paragraphs, embedding each chunk for more precise search.
 *   **Document Structure Detection:** Intelligently analyzes PDF formatting to identify:
     * Document hierarchy (chapters, sections, subsections)
     * Different heading levels based on font sizes and styles
     * Contextual relationship between content sections
 *   **Context-Aware Search Results:** Shows proper document structure context in search results:
-    * Displays hierarchical paths like "Chapter 5 > Equipment > Weapons" 
+    * Displays hierarchical paths like "Chapter 5 > Equipment > Weapons"
     * Improves user understanding of where information comes from
     * Maintains the relationship between content and its place in the document
 *   **RAG Chatbot:** Answers questions about D&D 2024 rules using provided PDFs as context.
@@ -20,7 +20,7 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
 *   **Markdown Formatting:** Assistant responses are formatted using Markdown for enhanced readability (headings, bold, lists, etc.).
 *   **Source Attribution:** Shows which document and page number the answer was derived from.
 *   **Source Navigation:** Displays source page content as images directly in the interface. Allows navigating between pages of the source document within the side panel.
-*   **PDF Processing:** Automatically processes PDF documents, extracts text, generates page images, and indexes content for semantic search.
+*   **Modular Data Processing Pipeline:** Handles PDF parsing, text extraction, image generation, structure analysis, embedding generation, and vector store indexing.
 *   **AWS S3 Integration:** Handles PDF source files and generated page images stored in AWS S3.
 *   **Abstracted LLM Provider:** Easily switch between LLM providers (e.g., OpenAI, Anthropic) via environment variables.
 *   **Cloud Ready:** Designed for deployment with Qdrant Cloud for vector storage and AWS S3 for file storage.
@@ -32,9 +32,11 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
 *   **Backend:** Python, Flask
 *   **Vector Database:** Qdrant (Cloud recommended for deployment)
 *   **LLM:** Pluggable via `llm_providers` (e.g., OpenAI, Anthropic)
-*   **Embeddings:** Sentence Transformers (`all-MiniLM-L6-v2` for standard, `paraphrase-MiniLM-L6-v2` for semantic)
+*   **Embeddings:** Centralized in `embeddings` package.
+    *   Standard: Sentence Transformers (`all-MiniLM-L6-v2`)
+    *   Semantic: OpenAI (`text-embedding-3-small`) via API
 *   **PDF Parsing:** PyMuPDF (`fitz`)
-*   **NLP Processing:** spaCy, NLTK, langchain for semantic chunking
+*   **Data Ingestion & Processing:** Custom pipeline in `data_ingestion` package using `langchain` for chunking, custom structure analysis.
 *   **Frontend:** HTML, CSS, JavaScript (with Marked.js for Markdown rendering)
 *   **Cloud Storage:** AWS S3
 *   **Deployment:** Docker, Gunicorn, Heroku (or similar platform)
@@ -48,45 +50,48 @@ dndsy/
 ├── Dockerfile               # For building the application container
 ├── README.md                # This file
 ├── app.py                   # Main Flask application entry point
-├── llm.py                   # Handles RAG logic, LLM calls, context processing
+├── data_ingestion/          # Core data processing and ingestion logic
+│   ├── __init__.py
+│   ├── processor.py         # Handles PDF download, parsing, image gen, embedding calls
+│   └── structure_analyzer.py# Utility for analyzing PDF structure and hierarchy
+├── embeddings/              # Handles embedding model loading and vector generation
+│   ├── __init__.py
+│   └── model_provider.py    # Provides functions to get embeddings for text
+├── llm.py                   # Handles RAG orchestration (query embedding, search, context, LLM call)
 ├── llm_providers/           # Abstraction layer for different LLM APIs
 │   ├── __init__.py
-│   ├── anthropic_client.py
-│   ├── base_llm.py
-│   └── openai_client.py
+│   ├── base.py
+│   └── openai.py            # (Example: Add anthropic.py etc. here)
 ├── requirements.txt         # Python dependencies
+├── scripts/                 # Executable management/utility scripts
+│   ├── __init__.py
+│   ├── manage_vector_stores.py # Script to reset DB and trigger data processing
+│   └── setup_env.py         # Helper to create initial .env file
 ├── static/
-│   ├── css/style.css        # Main stylesheet
-│   ├── img/                   # Static images (e.g., background)
+│   ├── css/style.css
+│   ├── img/
 │   └── js/
-│       ├── chat.js            # Frontend JavaScript for chat interaction, SSE
-│       ├── marked.min.js      # Markdown rendering library
-│       └── source_viewer.js   # JS for source panel interaction
+│       ├── chat.js
+│       ├── marked.min.js
+│       └── source_viewer.js
 ├── templates/
-│   ├── index.html           # Main chat interface template
-│   └── login.html           # Login page template
+│   ├── index.html
+│   └── login.html
 ├── vector_store/
 │   ├── __init__.py          # Vector store factory
-│   ├── qdrant_store.py      # Standard vector store implementation
-│   └── semantic_store.py    # Semantic vector store implementation
-├── scripts/
-│   ├── process_pdfs_s3.py   # Script to process PDFs from S3
-│   ├── reset_and_process.py # Helper to clear DB and reprocess
-│   └── setup_env.py         # Helper to create initial .env file
-├── utils/
-│   ├── __init__.py          # Utils package initialization
-│   ├── document_structure.py # Document structure analysis library
-│   └── pdf_structure_analyzer.py # Tool for analyzing PDF formatting and structure
+│   ├── qdrant_store.py      # Standard Qdrant interaction (page-level)
+│   └── semantic_store.py    # Semantic Qdrant interaction (chunk-level, hybrid search)
+├── utils/                   # General utility functions (if any)
+│   └── __init__.py
 └── docker/
-    └── docker-compose.yml   # Docker Compose for local development (app + Qdrant)
-├── logs/                   # Centralized directory for log files
-│   ├── data_processing.log # Data processing logs
-│   ├── reset_script.log    # Vector store reset logs
-│   └── fix_semantic.log    # Semantic fix logs
-├── debug/                  # Scripts for debugging and testing
-│   ├── check_qdrant.py     # Script to check Qdrant collection stats
-│   └── fix_semantic.py     # Script to fix semantic collection
-
+    ├── docker-compose.yml   # Docker Compose for local development (app + Qdrant)
+    └── Dockerfile           # For building the application container
+├── logs/                    # Centralized directory for log files
+│   ├── data_processing.log
+│   └── reset_script.log     # Log for the scripts/manage_vector_stores.py script
+├── debug/                   # Scripts for debugging and testing
+│   ├── check_qdrant.py
+│   └── fix_semantic.py
 ```
 
 ## Local Development Setup
@@ -129,10 +134,11 @@ dndsy/
         ```
     *   Edit `.env` and fill in your specific details:
         *   `LLM_PROVIDER`: Set to `openai` or `anthropic`.
-        *   `LLM_MODEL_NAME`: Specify the model (e.g., `gpt-4o-mini`, `claude-3-haiku-20240307`).
+        *   `LLM_MODEL_NAME`: Specify the *chat completion* model (e.g., `gpt-4o-mini`, `claude-3-haiku-20240307`).
+        *   `OPENAI_EMBEDDING_MODEL`: (Optional, defaults to `text-embedding-3-small`) Specify the OpenAI embedding model if needed.
         *   `OPENAI_API_KEY` / `ANTHROPIC_API_KEY`: Add the key for your chosen provider.
         *   **Vector Store Config:**
-            *   `DEFAULT_VECTOR_STORE`: Set to `standard` or `semantic` (default: `standard`).
+            *   `DEFAULT_VECTOR_STORE`: Set to `standard` or `semantic` (default: `semantic`).
         *   **Qdrant Config:**
             *   *Local Docker:* Set `QDRANT_HOST=qdrant`, `QDRANT_PORT=6333`. Leave `QDRANT_API_KEY` blank.
             *   *Cloud:* Set `QDRANT_HOST` to your cloud URL, set `QDRANT_API_KEY`.
@@ -155,12 +161,12 @@ dndsy/
             docker compose -f docker/docker-compose.yml up --build app
             ```
         *   The application will be available at `http://localhost:5000` (or the mapped port).
-        *   First Run Only: You need to process the PDFs from S3. Open another terminal:
+        *   **First Run or Data Update:** You need to process the PDFs from S3. Open another terminal:
             ```bash
             # List running containers to find the app container name
             docker ps
-            # Execute the processing script inside the running app container
-            docker exec -it <your_app_container_name> python scripts/reset_and_process.py
+            # Execute the processing script inside the running app container (use -m flag)
+            docker exec -it <your_app_container_name> python -m scripts.manage_vector_stores --reset-history
             ```
 
     *   **Option B: Flask Dev Server + Docker Qdrant**
@@ -169,10 +175,11 @@ dndsy/
             ```bash
             docker compose -f docker/docker-compose.yml up -d qdrant
             ```
-        *   Process PDFs from S3 (runs locally, connects to Docker Qdrant):
+        *   **Process PDFs from S3:** Run the management script locally (connects to Docker Qdrant). Ensure your venv is active.
             ```bash
-            python scripts/reset_and_process.py
+            python -m scripts.manage_vector_stores --reset-history
             ```
+            *(Use `--reset-history` for initial setup or full reprocessing. Omit flags for incremental updates based on PDF changes.)*
         *   Run the Flask development server:
             ```bash
             flask run
@@ -181,9 +188,9 @@ dndsy/
 
     *   **Option C: Flask Dev Server + Qdrant Cloud**
         *   Ensure your `.env` is configured for Qdrant Cloud (Host URL + API Key).
-        *   Process PDFs from S3 (runs locally, connects to Qdrant Cloud):
+        *   **Process PDFs from S3:** Run the management script locally (connects to Qdrant Cloud). Ensure your venv is active.
             ```bash
-            python scripts/reset_and_process.py
+            python -m scripts.manage_vector_stores --reset-history
             ```
         *   Run the Flask development server:
             ```bash
@@ -221,11 +228,15 @@ dndsy/
         *   `APP_PASSWORD`
     *   **Optional:**
         *   `AWS_S3_PDF_PREFIX` (if different from `source-pdfs/`)
+        *   `OPENAI_EMBEDDING_MODEL` (if different from `text-embedding-3-small`)
 
 4.  **Process Data in Cloud:**
     *   You'll need to run a one-off dyno to process the data. This can be done using the Heroku Dashboard:
-        *   Go to "More" -> "Run Console" and enter: `python scripts/reset_and_process.py`
-    *   **Important:** Run this *after* setting all required Config Vars and *before* users access the app. Re-run if PDFs in S3 change.
+        *   Go to "More" -> "Run Console" and enter:
+          ```bash
+          python -m scripts.manage_vector_stores --reset-history
+          ```
+    *   **Important:** Run this *after* setting all required Config Vars and *before* users access the app. Re-run if PDFs in S3 change (potentially without `--reset-history` for efficiency).
 
 5.  **Deploy:**
     *   Use the "Deploy" tab in the Heroku Dashboard to deploy your app
@@ -237,126 +248,60 @@ dndsy/
 
 DnDSy implements two different vector store approaches to optimize retrieval:
 
-1. **Standard Approach**
-   * Processes PDF content page-by-page
-   * Uses `all-MiniLM-L6-v2` embedding model
-   * Good for maintaining full page context
-   * Default approach
+1. **Standard Approach** (`vector_store/qdrant_store.py`)
+   * Processes PDF content page-by-page.
+   * Embeds the full text of each page using `sentence-transformers` (`all-MiniLM-L6-v2`).
+   * Good for maintaining full page context.
 
-2. **Semantic Approach**
-   * Chunks content into paragraphs
-   * Uses OpenAI's `text-embedding-3-small` model via the OpenAI API
-   * Better for retrieving specific pieces of information
-   * More precise, especially for detailed rules questions
-   * Combines vector search with BM25 for hybrid retrieval
+2. **Semantic Approach** (`vector_store/semantic_store.py`)
+   * Chunks content into paragraphs using `langchain`'s `RecursiveCharacterTextSplitter`.
+   * Implements cross-page chunking to preserve context across page boundaries.
+   * Embeds each chunk using OpenAI's `text-embedding-3-small` model via API.
+   * Better for retrieving specific pieces of information.
+   * Combines vector similarity search with BM25 keyword search for hybrid retrieval.
    
-Users can switch between these two approaches via the UI selector. Both approaches are processed and stored in separate Qdrant collections.
+Users can switch between these two approaches via the UI selector. Both approaches are processed and stored in separate Qdrant collections (`dnd_knowledge` and `dnd_semantic`).
 
-## Detailed Database Generation Process
+## Detailed Data Processing and Indexing Pipeline
 
-The system processes PDFs from S3 to generate two distinct vector databases (collections in Qdrant) using different approaches. Here's a detailed breakdown of the generation process:
+The system processes PDFs from S3 to generate two distinct vector databases (collections in Qdrant) using different approaches. Here's a detailed breakdown:
 
-### PDF Processing Pipeline
+### Orchestration (`scripts/manage_vector_stores.py`)
 
-1. **PDF Discovery**
-   * Uses `boto3` to list PDFs from the configured S3 bucket and prefix
-   * Implements a smart caching system using SHA-256 hashes to detect changes
-   * Stores processing history in S3 (`processing/pdf_process_history.json`)
+*   Acts as the main entry point for populating or resetting the vector databases.
+*   Handles command-line arguments (`--force-reprocess-images`, `--reset-history`).
+*   Connects to Qdrant and deletes existing collections (`dnd_knowledge`, `dnd_semantic`) if resetting.
+*   Instantiates the `DataProcessor` from the `data_ingestion` package.
+*   Calls `DataProcessor.process_all_sources()` to trigger the main pipeline.
 
-2. **PDF Loading**
-   * Uses `PyMuPDF` (fitz) to load and process PDF documents
-   * Extracts text content and metadata page by page
-   * Generates PNG images for each page with `PyMuPDF`
+### Core Processing (`data_ingestion/processor.py`)
 
-3. **Image Generation**
-   * Only generates images for new or changed PDFs (based on hash comparison)
-   * Renders each page as a PNG image using `PyMuPDF`
-   * Uploads images to S3 using `boto3` with a structured path format
-   * Skips image generation for unchanged PDFs to improve efficiency
+1.  **PDF Discovery & Caching:**
+    *   Uses `boto3` to list PDFs from the configured S3 bucket and prefix.
+    *   Loads processing history (`pdf_process_history.json`) from S3 (or local file) to track processed PDFs and their hashes.
+    *   Compares current PDF hashes (computed via SHA-256) with stored hashes to detect changes.
+2.  **PDF Loading & Image Generation:**
+    *   Downloads new or changed PDFs from S3.
+    *   Uses `PyMuPDF` (fitz) to open PDFs.
+    *   If the PDF is new/changed (or forced), generates PNG images for each page and uploads them to a structured path in S3 (`pdf_page_images/`). Skips image generation for unchanged PDFs.
+3.  **Structure Analysis (`data_ingestion/structure_analyzer.py`):**
+    *   Samples pages from the PDF.
+    *   Analyzes font sizes, styles, and formatting using `PyMuPDF`'s dictionary output.
+    *   Identifies document hierarchy (up to 6 heading levels).
+4.  **Text Extraction & Metadata Collection:**
+    *   Iterates through each page of the PDF.
+    *   Extracts plain text content.
+    *   Uses the `DocumentStructureAnalyzer` to determine the current heading context (e.g., "Chapter > Section > Subsection") for each page.
+    *   Collects page text along with rich metadata (S3 source key, filename, page number, total pages, S3 image URL, heading hierarchy) into separate lists for standard and semantic processing.
+5.  **Embedding Generation (`embeddings/model_provider.py`):**
+    *   **Standard:** Takes the list of full page texts, calls `embed_documents(..., store_type='standard')` which uses `sentence-transformers` (`all-MiniLM-L6-v2`) to generate embeddings in batches.
+    *   **Semantic:** Takes the list of page data, calls the semantic store's chunking method (`chunk_document_with_cross_page_context`) to get text chunks. Then calls `embed_documents(chunk_texts, store_type='semantic')` which uses the OpenAI API (`text-embedding-3-small`) to generate embeddings for each chunk.
+6.  **Point Creation & Indexing (`vector_store/` modules):**
+    *   Constructs Qdrant `PointStruct` objects containing sequential IDs, the generated embedding vectors, the text (page or chunk), and the collected metadata.
+    *   Calls the `add_points` method of the appropriate vector store module (`QdrantStore` or `SemanticStore`).
+    *   The vector store modules handle batch upserting these points into the corresponding Qdrant collection (`dnd_knowledge` or `dnd_semantic`).
+    *   The `SemanticStore` also updates its internal BM25 retriever during `add_points`.
+7.  **History Update:**
+    *   Saves the updated `pdf_process_history.json` (with new hashes, timestamps, image URLs) back to S3 and locally.
 
-### Standard Vector Store Generation
-
-1. **Text Extraction**
-   * Processes PDFs page by page
-   * Preserves the entire page content as a single document
-   * Maintains original page context and structure
-
-2. **Embedding Generation**
-   * Uses `sentence-transformers` with the `all-MiniLM-L6-v2` model
-   * Generates 384-dimensional embeddings for each page
-   * Processing is done locally without API calls
-
-3. **Vector Storage**
-   * Stores embeddings in Qdrant collection `dnd_knowledge`
-   * Each point contains:
-     * The embedding vector
-     * The full page text
-     * Metadata (source document, page number, image URL)
-   * Uses `qdrant_client` for efficient batch upserts
-
-### Semantic Vector Store Generation
-
-1. **Document Structure Analysis**
-   * Analyzes font sizes, styles, and formatting to identify document hierarchy
-   * Detects up to 6 levels of headings (chapters, sections, subsections, etc.)
-   * Builds a table of contents structure as pages are processed
-   * Maintains heading context throughout document processing
-
-2. **Text Chunking**
-   * Uses `langchain`'s `RecursiveCharacterTextSplitter` to intelligently split text
-   * Implements cross-page chunking to preserve context across page boundaries
-   * Tracks which page each chunk starts on for proper attribution
-   * Creates more focused, meaningful chunks with preserved context
-
-3. **Hierarchical Context Preservation**
-   * Each chunk is tagged with its full hierarchical path (e.g., "Chapter 5 > Equipment > Weapons")
-   * Preserves section, subsection, and specific heading information
-   * Enhances search results with meaningful context labels instead of generic chunk numbers
-   * Improves user understanding of where information comes from in the source material
-
-4. **Embedding Generation**
-   * Uses OpenAI's `text-embedding-3-small` model via API calls
-   * Generates 1536-dimensional embeddings for each chunk
-   * Higher dimensionality captures more semantic nuance
-
-5. **BM25 Retriever Setup**
-   * Implements a secondary text-based retrieval using `langchain_community`'s `BM25Retriever`
-   * Based on the BM25 algorithm (extension of TF-IDF)
-   * Provides complementary keyword-based search capabilities
-
-6. **Hybrid Retrieval System**
-   * Combines vector similarity search and BM25 keyword search
-   * Results are re-ranked based on combined scores
-   * Balances semantic understanding with keyword precision
-
-7. **Vector Storage**
-   * Stores embeddings in Qdrant collection `dnd_semantic`
-   * Each point contains:
-     * The embedding vector
-     * The chunk text
-     * Enhanced metadata (document hierarchy, headings, source document, page number, chunk index, chunk count, cross-page flag)
-   * Uses `qdrant_client` for efficient batch upserts
-
-### Database Reset and Rebuilding Process
-
-The `scripts/reset_and_process.py` script orchestrates the entire process:
-
-1. **Environment Setup**
-   * Loads environment variables using `python-dotenv`
-   * Initializes S3 client and Qdrant connection
-   * Configures logging to capture detailed processing information
-
-2. **Collection Reset**
-   * Deletes existing Qdrant collections if they exist
-   * Creates fresh collections with appropriate schemas and configurations
-
-3. **PDF Processing**
-   * Initializes the data processor
-   * Processes PDFs one by one from S3
-   * Updates the processing history cache in S3
-
-4. **Command-Line Options**
-   * `--force-reprocess-images`: Regenerates all images even for unchanged PDFs
-   * `--reset-history`: Clears the processing history cache completely
-
-This efficient pipeline ensures that both vector stores are optimized for their specific retrieval approaches while minimizing unnecessary processing by leveraging intelligent caching. 
+This refactored pipeline separates concerns: `data_ingestion` orchestrates processing and calls `embeddings` for vector generation, while `vector_store` modules focus solely on Qdrant interaction (storage and retrieval). 
