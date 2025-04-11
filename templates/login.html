@@ -1,106 +1,103 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - AskDND</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        .login-container {
-            max-width: 400px;
-            margin: 100px auto;
-            padding: 2rem;
-            background: var(--secondary-color);
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-            border-bottom: 3px solid var(--accent-color);
-        }
+{% extends "base.html" %}
 
-        .login-form {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
+{% block title %}Login - AskDND{% endblock %}
 
-        .login-form input[type="password"] {
-            padding: 0.75rem;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            background-color: var(--input-bg);
-            color: var(--text-color);
-            font-size: 1rem;
-        }
+{% block extra_css %}
+<style>
+    .login-container {
+        max-width: 400px;
+        margin: 100px auto;
+        padding: 2rem;
+        background: var(--secondary-color);
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        border-bottom: 3px solid var(--accent-color);
+    }
 
-        .login-form input[type="password"]:focus {
-            outline: none;
-            border-color: var(--accent-color);
-        }
+    .login-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
 
-        .login-form button {
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 0.75rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.3s;
-        }
+    .login-form input[type="password"] {
+        padding: 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        background-color: var(--input-bg);
+        color: var(--text-color);
+        font-size: 1rem;
+    }
 
-        .login-form button:hover {
-            background-color: var(--hover-color);
-            transform: translateY(-2px);
-        }
+    .login-form input[type="password"]:focus {
+        outline: none;
+        border-color: var(--accent-color);
+    }
 
-        .error-message {
-            color: var(--accent-color);
-            margin-top: 1rem;
-            text-align: center;
-        }
+    .login-form button {
+        background-color: var(--accent-color);
+        color: white;
+        border: none;
+        padding: 0.75rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s;
+    }
 
-        .remember-me {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--text-color);
-            font-size: 0.9rem;
-        }
+    .login-form button:hover {
+        background-color: var(--hover-color);
+        transform: translateY(-2px);
+    }
 
-        .remember-me input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-        }
+    .error-message {
+        color: var(--accent-color);
+        margin-top: 1rem;
+        text-align: center;
+    }
 
-        .remember-me label {
-            cursor: pointer;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="login-container">
-            <header>
-                <h1>AskDND</h1>
-                <p>Enter Password to Continue</p>
-            </header>
-            
-            <form class="login-form" method="POST">
-                <input type="password" name="password" placeholder="Enter password" required>
-                <div class="remember-me">
-                    <input type="checkbox" id="remember" name="remember">
-                    <label for="remember">Remember me for 30 days</label>
-                </div>
-                <button type="submit">Login</button>
-                {% if error %}
-                <div class="error-message">{{ error }}</div>
-                {% endif %}
-            </form>
-        </div>
+    .remember-me {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-color);
+        font-size: 0.9rem;
+    }
+
+    .remember-me input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+    }
+
+    .remember-me label {
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="login-container">
+        <header>
+            <h1>AskDND</h1>
+            <p>Enter Password to Continue</p>
+        </header>
+        
+        <form class="login-form" method="POST">
+            <input type="password" name="password" placeholder="Enter password" required>
+            <div class="remember-me">
+                <input type="checkbox" id="remember" name="remember">
+                <label for="remember">Remember me for 30 days</label>
+            </div>
+            <button type="submit">Login</button>
+            {% if error %}
+            <div class="error-message">{{ error }}</div>
+            {% endif %}
+        </form>
     </div>
-</body>
-</html> 
+</div>
+{% endblock %} 
