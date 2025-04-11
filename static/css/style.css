@@ -847,6 +847,20 @@ a.show-more-sources:hover {
     opacity: 0.7;
 }
 
+/* Status Text Styling - matching thinking indicator */
+.status-text {
+    display: inline-block;
+    color: var(--accent-color);
+    font-weight: 500;
+    animation: status-pulse 1.4s infinite;
+    opacity: 0.9;
+}
+
+@keyframes status-pulse {
+    0%, 80%, 100% { opacity: 0.7; }
+    40% { opacity: 1; }
+}
+
 @keyframes thinking-dots {
     0%, 80%, 100% { opacity: 0.4; transform: scale(0.8); }
     40% { opacity: 1; transform: scale(1.0); }

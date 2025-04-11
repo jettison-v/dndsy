@@ -522,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateMessageText(messageId, newText, showIndicator = true) {
         const textSpan = chatMessages.querySelector(`[data-message-id="${messageId}"] .message-text`);
         if (textSpan) {
-            let content = newText;
+            let content = `<span class="status-text">${newText}</span>`;
             if (showIndicator) {
                 content += ' <span class="thinking-indicator"><span></span><span></span><span></span></span>';
             }
@@ -894,7 +894,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Add assistant message with thinking indicator
         const assistantMessageId = addMessage('', 'assistant');
-        updateMessageText(assistantMessageId, '', true); // Show thinking indicator
+        updateMessageText(assistantMessageId, 'Searching knowledge base', true); // Initial status
         
         // Encode the message for the URL
         const encodedMessage = encodeURIComponent(message);
@@ -928,7 +928,16 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Event listener for status updates
         currentEventSource.addEventListener('status', event => {
-            // Potentially update UI based on status in the future
+            try {
+                const status = JSON.parse(event.data);
+                console.log('Status update:', status);
+                // Update message with new status if provided
+                if (status && status.status) {
+                    updateMessageText(assistantMessageId, status.status, true);
+                }
+            } catch (e) {
+                console.error('Error parsing status event:', e);
+            }
         });
         
         // Event listener for streaming chunks of text
