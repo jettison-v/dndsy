@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Don't add system message on initial load - only for actual changes
                 if (isFirstMessage === false) {
                     console.log('Displaying model change message:', data.display_name);
-                    addMessage(`LLM Model changed to ${data.display_name}`, 'system');
+                    addMessage(`Model changed to ${data.display_name}`, 'system');
                 }
             } catch (error) {
                 console.error('Error changing LLM model:', error);
@@ -416,7 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
         messageElement.classList.add('message', sender);
         
         // Add special styling for setting change notifications
-        if (sender === 'system' && (text.includes('Vector Store changed') || text.includes('LLM Model changed'))) {
+        if (sender === 'system' && (text.includes('Vector Store changed') || text.includes('Model changed to'))) {
             messageElement.classList.add('setting-change');
             console.log('Added setting-change class to message:', text);
         }
