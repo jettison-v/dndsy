@@ -1,5 +1,6 @@
-# Specify PyTorch
-torch==2.6.0  # Updated to version 2.6.0 as requested
+# Specify CPU-only PyTorch first
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
 
 # AWS SDK
 boto3
