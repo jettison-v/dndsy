@@ -954,7 +954,8 @@ a.show-more-sources:hover {
 
 #expanded-source-pills .source-pill {
     margin: 0;
-    width: 100%;
+    width: fit-content; /* Change from 100% to fit-content */
+    max-width: 95%; /* Prevent overflow */
 }
 
 .zoom-controls {
@@ -1361,6 +1362,26 @@ textarea:focus, button:focus {
     min-height: 300px;
     font-size: 0.95rem;
     line-height: 1.4;
+    /* Less aggressive preservation of whitespace */
+    white-space: normal;
+}
+
+/* Apply proper indentation for lists in expanded view */
+.expanded-message-content ul,
+.expanded-message-content ol {
+    padding-left: 1.5rem;
+    margin-bottom: 0.6rem;
+}
+
+/* Match paragraph spacing with chat view */
+.expanded-message-content p {
+    margin-bottom: 0.6rem;
+}
+
+/* For code blocks, preserve formatting */
+.expanded-message-content pre,
+.expanded-message-content code {
+    white-space: pre;
 }
 
 /* Sources separator */
