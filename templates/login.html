@@ -13,6 +13,50 @@
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
         border-bottom: 3px solid var(--accent-color);
     }
+    
+    .login-header {
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    
+    .login-header h1 {
+        color: var(--text-color);
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .login-header h1 i {
+        margin-right: 8px;
+    }
+    
+    .login-header p {
+        color: #a0a0a0;
+        font-size: 1rem;
+    }
+    
+    .login-header .tagline {
+        color: #a0a0a0;
+        font-size: 1rem;
+        margin-top: 0.25rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .login-header .divider {
+        height: 1px;
+        background-color: var(--border-color);
+        width: 80%;
+        margin: 0 auto 1.5rem;
+    }
+    
+    .login-header .login-prompt {
+        margin-top: 1.5rem;
+    }
 
     .login-form {
         display: flex;
@@ -82,9 +126,11 @@
 {% block content %}
 <div class="container">
     <div class="login-container">
-        <header>
-            <h1>AskDND</h1>
-            <p>Enter Password to Continue</p>
+        <header class="login-header">
+            <h1><i class="fas fa-dragon"></i> AskDND</h1>
+            <p class="tagline">Your AI-powered D&D Rules Companion</p>
+            <div class="divider"></div>
+            <p class="login-prompt">Enter Password to Continue</p>
         </header>
         
         <form class="login-form" method="POST">
