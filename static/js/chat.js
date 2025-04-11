@@ -35,6 +35,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize source panel state
     let sourcePanelOpen = false;
+    
+    // Focus the input field on page load
+    if (userInput) {
+        setTimeout(() => {
+            userInput.focus();
+        }, 100);
+    }
 
     /*
     ========================================
