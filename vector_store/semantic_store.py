@@ -9,7 +9,7 @@ from datetime import datetime
 
 # LangChain imports for improved semantic search
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-# Add back OpenAIEmbeddings import - needed for ingestion currently
+# Add back OpenAIEmbeddings import - needed for internal BM25 init
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Qdrant as LangChainQdrant
 from langchain_community.retrievers import BM25Retriever
@@ -23,49 +23,45 @@ load_dotenv(dotenv_path=env_path)
 
 # Define embedding size for semantic model ("text-embedding-3-small")
 SEMANTIC_EMBEDDING_DIMENSION = 1536
+DEFAULT_COLLECTION_NAME = "dnd_semantic"
 
 class SemanticStore:
-    """A more semantic approach to vector storage using improved chunking and embeddings."""
+    """Handles semantic chunking, hybrid search (vector + BM25), and Qdrant interaction for the semantic collection."""
     
-    def __init__(self, collection_name: str = "dnd_semantic"):
-        """Initialize Semantic vector store using a separate Qdrant collection."""
+    def __init__(self, collection_name: str = DEFAULT_COLLECTION_NAME):
+        """Initialize Semantic vector store."""
         self.collection_name = collection_name
         
-        # Determine if OpenAI API key is available (used for ingestion embeddings)
+        # Internal embedding client ONLY needed for initial BM25 population fallback
+        # if the store is empty and search is called before ingestion.
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
+        self._embeddings_for_bm25_init = None
         if self.openai_api_key:
-            self._embeddings_for_ingestion = OpenAIEmbeddings(
-                 model="text-embedding-3-small",
-                 openai_api_key=self.openai_api_key
-            )
-            logging.info("Using OpenAI embeddings during ingestion (TEMPORARY)")
+            try:
+                self._embeddings_for_bm25_init = OpenAIEmbeddings(
+                     model="text-embedding-3-small", openai_api_key=self.openai_api_key
+                )
+                logging.debug("Internal OpenAI embeddings initialized for potential BM25 fallback.")
+            except Exception as e:
+                 logging.warning(f"Failed to initialize internal OpenAI embeddings for BM25 fallback: {e}")
         else:
-             self._embeddings_for_ingestion = None
-             logging.warning("OPENAI_API_KEY not found. Semantic ingestion requires OpenAI embeddings (currently handled internally).")
+             logging.warning("OPENAI_API_KEY not found. BM25 lazy initialization might fail if needed before ingestion.")
 
-        # Embedding dimension is now fixed for the collection
         embedding_dim = SEMANTIC_EMBEDDING_DIMENSION
         
-        # Initialize Qdrant client for local or cloud (reusing config from main store)
+        # Qdrant Client Initialization
         qdrant_host = os.getenv("QDRANT_HOST", "localhost")
         qdrant_api_key = os.getenv("QDRANT_API_KEY")
-        
-        # Determine if it's a cloud URL
         is_cloud = qdrant_host.startswith("http") or qdrant_host.startswith("https")
-
         if is_cloud:
-            logging.info(f"Connecting to Qdrant Cloud at: {qdrant_host} for semantic store")
-            self.client = QdrantClient(
-                url=qdrant_host, 
-                api_key=qdrant_api_key, 
-                timeout=60
-            )
+            logging.info(f"Connecting to Qdrant Cloud at: {qdrant_host} for {self.collection_name}")
+            self.client = QdrantClient(url=qdrant_host, api_key=qdrant_api_key, timeout=60)
         else:
-            logging.info(f"Connecting to local Qdrant at: {qdrant_host} for semantic store")
+            logging.info(f"Connecting to local Qdrant at: {qdrant_host} for {self.collection_name}")
             port = int(os.getenv("QDRANT_PORT", "6333"))
             self.client = QdrantClient(host=qdrant_host, port=port, timeout=60)
         
-        # Initialize text splitter for semantic chunking
+        # Text Splitter for Chunking
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=800,
             chunk_overlap=150,
@@ -73,26 +69,21 @@ class SemanticStore:
             separators=["\n\n", "\n", ". ", " ", ""]
         )
         
-        # Create collection if it doesn't exist
         self._create_collection_if_not_exists(embedding_dim)
         
-        # Initialize BM25 retriever for hybrid search
-        self.bm25_documents = []
+        # BM25 Retriever State (initialized/updated during add_points or lazy search)
+        self.bm25_documents = [] # Stores Langchain Documents for BM25
         self.bm25_retriever = None
         
-        # Track the highest ID used so far to avoid overwriting points
+        # Qdrant Point ID Tracking
         try:
-            collection_info = self.client.get_collection(self.collection_name)
-            collection_count = self.client.count(self.collection_name).count
-            self.next_id = collection_count  # Start from the next available ID
-            logging.info(f"Initialized Semantic store with collection: {self.collection_name}")
-            logging.info(f"Starting from ID: {self.next_id} for new documents")
+            # Get current point count to determine starting ID for new points
+            self.next_id = self.client.count(self.collection_name).count
+            logging.info(f"Initialized Semantic store. Next ID for '{self.collection_name}': {self.next_id}")
         except Exception as e:
-            logging.warning(f"Error getting collection info: {e}")
+            logging.warning(f"Error getting collection count for '{self.collection_name}': {e}. Starting ID count at 0.")
             self.next_id = 0
-        
-        logging.info(f"Initialized Semantic store with collection: {collection_name}")
-    
+            
     def _create_collection_if_not_exists(self, embedding_dim):
         """Create the collection if it doesn't exist."""
         collections = self.client.get_collections().collections
@@ -113,9 +104,11 @@ class SemanticStore:
         page_texts: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         """
-        Chunks a document spanning multiple pages, preserving context across boundaries.
-        Returns a list of chunks, each with its text and metadata (including page origin).
-        Does NOT perform embedding or Qdrant upload.
+        Chunks text spanning multiple pages, preserving context across boundaries.
+        Args:
+            page_texts: List of dicts, each containing 'text', 'page', 'metadata'.
+        Returns:
+            List of chunks, each dict containing 'text' and updated 'metadata'.
         """
         if not page_texts:
             return []
@@ -177,7 +170,7 @@ class SemanticStore:
         return processed_chunks
 
     def add_points(self, points: List[models.PointStruct]) -> int:
-        """Adds pre-constructed points (with vectors) to the semantic collection."""
+        """Adds pre-computed points to Qdrant and updates the BM25 retriever."""
         if not points:
             return 0
 
@@ -238,7 +231,7 @@ class SemanticStore:
         return points_added_count
     
     def _hybrid_reranking(self, dense_results: List[Dict], sparse_results: List[Document], query: str, k: int = 5):
-        """Combine and rerank results from dense and sparse retrievers."""
+        """Combines dense (vector) and sparse (BM25) results with keyword boosting."""
         # Combine results, removing duplicates by content
         combined = {}
         
@@ -324,10 +317,7 @@ class SemanticStore:
         return final_results
     
     def search(self, query_vector: List[float], query: str, limit: int = 5) -> List[Dict[str, Any]]:
-        """Search for similar documents using hybrid search (dense + sparse retrieval).
-           Accepts a pre-computed query_vector for dense search.
-           Still needs the original query string for BM25 and keyword boosting.
-        """
+        """Performs hybrid search: exact match -> dense search -> sparse search -> reranking."""
         logging.info(f"Searching (semantic) for: '{query}'")
         
         if not query_vector:
@@ -517,7 +507,7 @@ class SemanticStore:
         return dense_documents[:limit]
     
     def get_details_by_source_page(self, source_name: str, page_number: int) -> Optional[Dict[str, Any]]:
-        """Fetch details (text, image_url) for a specific source document and page."""
+        """Fetches and combines all text chunks for a specific source S3 key and page number."""
         try:
             search_filter = models.Filter(
                 must=[
@@ -574,7 +564,7 @@ class SemanticStore:
             return None
 
     def get_all_documents(self) -> List[Dict[str, Any]]:
-        """Get all documents from the vector store."""
+        """Scrolls through the entire collection to retrieve all documents (payloads)."""
         documents = []
         offset = 0
         limit = 100

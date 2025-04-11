@@ -88,9 +88,10 @@ else:
     logging.warning("AWS S3 credentials/bucket name not fully configured. Image uploads will be skipped.")
 
 class DataProcessor:
+    """Handles the end-to-end processing of PDF documents from S3 into vector stores."""
+
     def __init__(self, process_standard: bool = True, process_semantic: bool = True):
         """Initialize the data processor, optionally skipping stores."""
-        
         self.process_standard_flag = process_standard
         self.process_semantic_flag = process_semantic
         
@@ -118,6 +119,7 @@ class DataProcessor:
         self.process_history = self._load_process_history()
         self.reprocessed_pdfs = [] 
         self.unchanged_pdfs = []   
+        logging.info(f"DataProcessor initialized. Standard: {self.process_standard_flag}, Semantic: {self.process_semantic_flag}")
     
     def _compute_pdf_hash(self, pdf_bytes):
         """Compute a hash of PDF content to detect changes."""

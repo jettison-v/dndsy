@@ -14,34 +14,36 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))  # Use env var for secret key, fallback for local dev
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)  # Session lasts for 30 days
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30) 
 app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_ENV') != 'development'
 app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent JavaScript access to cookies
 CORS(app)
 
-PASSWORD = os.environ.get('APP_PASSWORD', 'dndsy')  # Get password from env var or use default
+PASSWORD = os.environ.get('APP_PASSWORD', 'dndsy')
 logger.info(f"Password loaded from environment variable {'APP_PASSWORD' if 'APP_PASSWORD' in os.environ else '(using default)'}. ")
 
-# Vector store types
 VECTOR_STORE_TYPES = ["standard", "semantic"]
-DEFAULT_VECTOR_STORE = default_store_type
+DEFAULT_VECTOR_STORE = default_store_type # Set from llm module
 
 def check_auth():
+    """Checks if the current session is authenticated."""
     auth_status = session.get('authenticated', False)
     logger.debug(f"Auth status: {auth_status}")
     return auth_status
 
 @app.route('/health')
 def health():
+    """Basic health check endpoint."""
     return jsonify({'status': 'healthy'}), 200
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    """Handles user login."""
     if request.method == 'POST':
         submitted_password = request.form.get('password')
         logger.debug(f"Submitted password: {submitted_password}")
-        logger.debug(f"Expected password: {PASSWORD}")
-        logger.debug(f"Password match: {submitted_password == PASSWORD}")
+        # logger.debug(f"Expected password: {PASSWORD}") # Avoid logging expected password
+        # logger.debug(f"Password match: {submitted_password == PASSWORD}")
         
         if submitted_password == PASSWORD:
             session['authenticated'] = True
@@ -56,10 +58,11 @@ def login():
 
 @app.route('/')
 def home():
+    """Renders the main chat page if authenticated."""
     if not check_auth():
         return redirect(url_for('login'))
     
-    # Get LLM model info
+    # Get LLM model info for display
     llm_model = os.environ.get('LLM_MODEL_NAME', 'Default Model')
     
     return render_template('index.html', 
@@ -69,16 +72,13 @@ def home():
 
 @app.route('/api/chat')
 def chat():
+    """Handles the chat message submission and streams the RAG response."""
     if not check_auth():
         return Response(f"event: error\ndata: {json.dumps({'error': 'Unauthorized'})}\n\n", status=401, mimetype='text/event-stream')
         
-    # Read message from query parameters for SSE
     user_message = request.args.get('message', '') 
-    
-    # Get vector store type from request
     vector_store_type = request.args.get('vector_store_type', None)
     
-    # Validate vector store type
     if vector_store_type and vector_store_type not in VECTOR_STORE_TYPES:
         return Response(f"event: error\ndata: {json.dumps({'error': f'Invalid vector store type: {vector_store_type}'})}\n\n", 
                        status=400, mimetype='text/event-stream')
@@ -86,12 +86,12 @@ def chat():
     if not user_message:
          return Response(f"event: error\ndata: {json.dumps({'error': 'No message provided'})}\n\n", status=400, mimetype='text/event-stream')
 
-    # Return a streaming response
-    # Pass vector_store_type to ask_dndsy
+    # Return the Server-Sent Events stream from the RAG function
     return Response(ask_dndsy(user_message, store_type=vector_store_type), mimetype='text/event-stream')
 
 @app.route('/api/get_context_details')
 def get_context_details():
+    """API endpoint to fetch specific context details (text, image) for the source viewer."""
     if not check_auth():
         return jsonify({'error': 'Unauthorized'}), 401
 
@@ -107,17 +107,13 @@ def get_context_details():
     except ValueError:
         return jsonify({'error': 'Invalid page number'}), 400
 
-    # Validate vector store type
     if vector_store_type not in VECTOR_STORE_TYPES:
         return jsonify({'error': f'Invalid vector store type: {vector_store_type}'}), 400
     
     logger.info(f"Fetching details for source: '{source_name}', page: {page_number}, store type: {vector_store_type}")
     
     try:
-        # Get the appropriate vector store
         vector_store = get_vector_store(vector_store_type)
-        
-        # Attempt to get details from the vector store
         details = vector_store.get_details_by_source_page(source_name, page_number)
         
         if details:
@@ -133,7 +129,7 @@ def get_context_details():
 
 @app.route('/api/vector_stores')
 def get_vector_store_types():
-    """Return available vector store types"""
+    """Return available vector store types and the default."""
     if not check_auth():
         return jsonify({'error': 'Unauthorized'}), 401
     
@@ -144,12 +140,15 @@ def get_vector_store_types():
 
 @app.route('/logout')
 def logout():
+    """Logs the user out by clearing the session."""
     session.clear()
     return redirect(url_for('login'))
 
 if __name__ == '__main__':
     logger.info("Starting Flask application...")
+    load_dotenv(override=True) # Ensure .env overrides system vars if running directly
     debug_mode = os.environ.get('FLASK_DEBUG') == '1'
     port = int(os.environ.get('PORT', 5001))
     logger.info(f"Running in {'debug' if debug_mode else 'production'} mode on port {port}")
+    # Use host='0.0.0.0' to be accessible on the network
     app.run(debug=debug_mode, host='0.0.0.0', port=port) 

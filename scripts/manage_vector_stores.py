@@ -122,19 +122,25 @@ def manage_vector_stores(force_reprocess_images=False, reset_history=False, only
     # Conditionally delete existing collections
     if process_standard:
         try:
-            logger.info(f"Deleting PDF pages collection ({PdfPagesStore.DEFAULT_COLLECTION_NAME})")
-            client.delete_collection(PdfPagesStore.DEFAULT_COLLECTION_NAME) 
+            # Use the constant defined in the class
+            collection_name = PdfPagesStore.DEFAULT_COLLECTION_NAME 
+            logger.info(f"Deleting PDF pages collection ({collection_name})")
+            client.delete_collection(collection_name)
             logger.info("PDF pages collection deleted successfully")
         except Exception as e:
-            logger.warning(f"Could not delete PDF pages collection ({PdfPagesStore.DEFAULT_COLLECTION_NAME}): {e}")
+            # Use the constant in the warning message too
+            logger.warning(f"Could not delete PDF pages collection ({collection_name}): {e}")
     
     if process_semantic:
         try:
-            logger.info(f"Deleting semantic collection ({SemanticStore.DEFAULT_COLLECTION_NAME})")
-            client.delete_collection(SemanticStore.DEFAULT_COLLECTION_NAME)
+            # Use the constant defined in the class
+            collection_name = SemanticStore.DEFAULT_COLLECTION_NAME 
+            logger.info(f"Deleting semantic collection ({collection_name})")
+            client.delete_collection(collection_name)
             logger.info("Semantic collection deleted successfully")
         except Exception as e:
-            logger.warning(f"Could not delete semantic collection ({SemanticStore.DEFAULT_COLLECTION_NAME}): {e}")
+            # Use the constant in the warning message too
+            logger.warning(f"Could not delete semantic collection ({collection_name}): {e}")
     
     # Process PDFs from S3 for both collections
     logger.info("Initializing data processor")
