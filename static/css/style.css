@@ -287,7 +287,6 @@ body {
 .main-wrapper {
     flex: 1;
     display: flex;
-    height: 100vh;
     overflow: hidden;
 }
 
@@ -301,9 +300,7 @@ body {
     background: var(--secondary-color);
     display: flex;
     flex-direction: column;
-    height: 100%;
     position: relative;
-    overflow: hidden; /* Prevent horizontal scrolling */
 }
 
 .chat-messages {
@@ -311,7 +308,7 @@ body {
     overflow-y: auto;
     padding: 1rem;
     background: var(--secondary-color);
-    -webkit-overflow-scrolling: touch; /* Better scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
 }
 
 /* When chat only contains the initial welcome message */
@@ -428,7 +425,8 @@ body {
     padding: 1rem;
     background: var(--secondary-color);
     border-top: 1px solid var(--border-color);
-    margin-top: auto; /* Push to bottom */
+    width: 100%;
+    flex-shrink: 0;
 }
 
 #user-input {
@@ -1300,53 +1298,17 @@ textarea:focus, button:focus {
 }
 
 @media (max-width: 768px) {
+    /* Body setup */
+    body {
+        position: fixed; /* This prevents iOS safari from bouncing */
+    }
+    
+    /* Main layout */
     .layout-container {
         flex-direction: column;
-        height: 100vh; /* Keep it simple with 100vh */
-        max-height: 100vh;
-        overflow: hidden;
     }
     
-    /* Main content area needs explicit height constraints */
-    .main-wrapper {
-        flex: 1;
-        height: auto; /* Let it flex instead of fixed calc */
-        min-height: 0; /* Important for flexbox to allow shrinking */
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
-    
-    /* Chat messages container should scroll */
-    .chat-container {
-        flex: 1;
-        height: auto; /* Let it flex */
-        min-height: 0; /* Critical for nested flexbox */
-        padding-bottom: 60px;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .chat-messages {
-        flex: 1;
-        min-height: 0; /* Critical for nested flexbox scrolling */
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    /* Fix iOS Safari issues */
-    @supports (-webkit-touch-callout: none) {
-        .layout-container {
-            height: -webkit-fill-available;
-        }
-        
-        .main-wrapper {
-            height: auto;
-        }
-    }
-    
-    /* Show only logo, hide text */
+    /* Sidebar header */
     .sidebar {
         width: 100%;
         height: auto;
@@ -1356,7 +1318,7 @@ textarea:focus, button:focus {
         padding: 0.5rem 1rem;
         border-right: none;
         border-bottom: 1px solid var(--border-color);
-        flex-shrink: 0; /* Prevent the header from shrinking */
+        flex-shrink: 0;
     }
     
     .sidebar-header {
@@ -1393,7 +1355,24 @@ textarea:focus, button:focus {
         text-align: right;
     }
     
-    /* Fix chat box positioning so it's fully visible */
+    /* Main content area */
+    .main-wrapper {
+        height: calc(100vh - 60px);
+    }
+    
+    /* Chat container */
+    .chat-container {
+        position: relative;
+        padding-bottom: 70px; /* Space for fixed input container */
+    }
+    
+    /* Chat messages */
+    .chat-messages {
+        height: 100%;
+        padding-bottom: 10px;
+    }
+    
+    /* Fixed input container */
     .input-container {
         position: fixed;
         bottom: 0;
@@ -1407,28 +1386,30 @@ textarea:focus, button:focus {
         height: auto;
         display: flex;
         align-items: center;
-        gap: 8px; /* Reduced gap */
+        gap: 8px;
     }
     
-    /* For iOS Safari - address the inset bottom for the input container */
+    /* For iOS Safari - address safe area at bottom */
     @supports (-webkit-touch-callout: none) {
         .input-container {
             padding-bottom: max(8px, env(safe-area-inset-bottom));
         }
     }
     
+    /* Mobile input sizing */
     #user-input {
-        min-height: 36px; /* Reduced from 40px */
-        max-height: 54px; /* Further reduced from 60px */
-        padding: 5px 8px; /* Further reduced padding */
-        font-size: 0.95rem; /* Slightly smaller font */
+        min-height: 36px;
+        max-height: 54px;
+        padding: 5px 8px;
+        font-size: 0.95rem;
         line-height: 1.4;
     }
     
+    /* Mobile button sizing */
     #send-button {
-        padding: 0.25rem 0.6rem; /* Even smaller padding */
+        padding: 0.25rem 0.6rem;
         font-size: 0.9rem;
-        min-width: auto; /* Allow button to be smaller */
+        min-width: auto;
         display: flex;
         align-items: center;
         justify-content: center;
