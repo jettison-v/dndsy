@@ -113,11 +113,13 @@ def manage_vector_stores(force_reprocess_images=False, reset_history=False):
     
     # Delete existing collections if they exist
     try:
-        logger.info("Deleting standard collection (dnd_knowledge)")
-        client.delete_collection("dnd_knowledge")
-        logger.info("Standard collection deleted successfully")
+        # Delete the renamed collection for PDF pages
+        logger.info("Deleting PDF pages collection (dnd_pdf_pages)")
+        client.delete_collection("dnd_pdf_pages") 
+        logger.info("PDF pages collection deleted successfully")
     except Exception as e:
-        logger.warning(f"Could not delete standard collection: {e}")
+        # Log warning if collection doesn't exist or other error
+        logger.warning(f"Could not delete PDF pages collection (dnd_pdf_pages): {e}")
     
     try:
         logger.info("Deleting semantic collection (dnd_semantic)")

@@ -31,6 +31,7 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
 
 *   **Backend:** Python, Flask
 *   **Vector Database:** Qdrant (Cloud recommended for deployment)
+    *   Collections: `dnd_pdf_pages` (standard), `dnd_semantic` (semantic)
 *   **LLM:** Pluggable via `llm_providers` (e.g., OpenAI, Anthropic)
 *   **Embeddings:** Centralized in `embeddings` package.
     *   Standard: Sentence Transformers (`all-MiniLM-L6-v2`)
@@ -38,7 +39,7 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
 *   **PDF Parsing:** PyMuPDF (`fitz`)
 *   **Data Ingestion & Processing:** Custom pipeline in `data_ingestion` package using `langchain` for chunking, custom structure analysis.
 *   **Frontend:** HTML, CSS, JavaScript (with Marked.js for Markdown rendering)
-*   **Cloud Storage:** AWS S3
+*   **Cloud Storage:** AWS S3 (Bucket name example: `askdnd-ai`)
 *   **Deployment:** Docker, Gunicorn, Heroku (or similar platform)
 
 ## Project Structure
@@ -79,7 +80,7 @@ dndsy/
 │   └── login.html
 ├── vector_store/
 │   ├── __init__.py          # Vector store factory
-│   ├── qdrant_store.py      # Standard Qdrant interaction (page-level)
+│   ├── pdf_pages_store.py   # Standard Qdrant interaction (page-level)
 │   └── semantic_store.py    # Semantic Qdrant interaction (chunk-level, hybrid search)
 ├── utils/                   # General utility functions (if any)
 │   └── __init__.py
@@ -142,14 +143,14 @@ dndsy/
         *   **Qdrant Config:**
             *   *Local Docker:* Set `QDRANT_HOST=qdrant`, `QDRANT_PORT=6333`. Leave `QDRANT_API_KEY` blank.
             *   *Cloud:* Set `QDRANT_HOST` to your cloud URL, set `QDRANT_API_KEY`.
-        *   **AWS S3 Config:** Fill in `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_BUCKET_NAME`, `AWS_REGION`. Adjust `AWS_S3_PDF_PREFIX` if needed.
+        *   **AWS S3 Config:** Fill in `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_BUCKET_NAME` (e.g., `askdnd-ai`), `AWS_REGION`. Adjust `AWS_S3_PDF_PREFIX` if needed.
         *   **Flask Config:** Generate a `SECRET_KEY` (e.g., `python -c 'import secrets; print(secrets.token_hex(24))'`), set `APP_PASSWORD`.
 
 6.  **Prepare Data (S3):**
-    *   Upload your source PDF files to your configured AWS S3 bucket under the specified prefix (default is `source-pdfs/`).
+    *   Upload your source PDF files to your configured AWS S3 bucket (`askdnd-ai` or your name) under the specified prefix (default is `source-pdfs/`).
     *   Example using AWS CLI:
         ```bash
-        aws s3 cp local/path/to/MyRulebook.pdf s3://YOUR_BUCKET_NAME/source-pdfs/MyRulebook.pdf
+        aws s3 cp local/path/to/MyRulebook.pdf s3://askdnd-ai/source-pdfs/MyRulebook.pdf
         ```
 
 7.  **Run the Application:**
@@ -222,7 +223,7 @@ dndsy/
         *   `QDRANT_API_KEY`
         *   `AWS_ACCESS_KEY_ID`
         *   `AWS_SECRET_ACCESS_KEY`
-        *   `AWS_S3_BUCKET_NAME`
+        *   `AWS_S3_BUCKET_NAME` (e.g., `askdnd-ai`)
         *   `AWS_REGION`
         *   `SECRET_KEY` (Generate a unique one for production)
         *   `APP_PASSWORD`
@@ -248,10 +249,11 @@ dndsy/
 
 DnDSy implements two different vector store approaches to optimize retrieval:
 
-1. **Standard Approach** (`vector_store/qdrant_store.py`)
+1. **Standard Approach** (`vector_store/pdf_pages_store.py`)
    * Processes PDF content page-by-page.
    * Embeds the full text of each page using `sentence-transformers` (`all-MiniLM-L6-v2`).
    * Good for maintaining full page context.
+   * Stores data in the `dnd_pdf_pages` Qdrant collection.
 
 2. **Semantic Approach** (`vector_store/semantic_store.py`)
    * Chunks content into paragraphs using `langchain`'s `RecursiveCharacterTextSplitter`.
@@ -260,7 +262,7 @@ DnDSy implements two different vector store approaches to optimize retrieval:
    * Better for retrieving specific pieces of information.
    * Combines vector similarity search with BM25 keyword search for hybrid retrieval.
    
-Users can switch between these two approaches via the UI selector. Both approaches are processed and stored in separate Qdrant collections (`dnd_knowledge` and `dnd_semantic`).
+Users can switch between these two approaches via the UI selector. Both approaches are processed and stored in separate Qdrant collections (`dnd_pdf_pages` and `dnd_semantic`).
 
 ## Detailed Data Processing and Indexing Pipeline
 
@@ -270,7 +272,7 @@ The system processes PDFs from S3 to generate two distinct vector databases (col
 
 *   Acts as the main entry point for populating or resetting the vector databases.
 *   Handles command-line arguments (`--force-reprocess-images`, `--reset-history`).
-*   Connects to Qdrant and deletes existing collections (`dnd_knowledge`, `dnd_semantic`) if resetting.
+*   Connects to Qdrant and deletes existing collections (`dnd_pdf_pages`, `dnd_semantic`) if resetting.
 *   Instantiates the `DataProcessor` from the `data_ingestion` package.
 *   Calls `DataProcessor.process_all_sources()` to trigger the main pipeline.
 
@@ -298,8 +300,8 @@ The system processes PDFs from S3 to generate two distinct vector databases (col
     *   **Semantic:** Takes the list of page data, calls the semantic store's chunking method (`chunk_document_with_cross_page_context`) to get text chunks. Then calls `embed_documents(chunk_texts, store_type='semantic')` which uses the OpenAI API (`text-embedding-3-small`) to generate embeddings for each chunk.
 6.  **Point Creation & Indexing (`vector_store/` modules):**
     *   Constructs Qdrant `PointStruct` objects containing sequential IDs, the generated embedding vectors, the text (page or chunk), and the collected metadata.
-    *   Calls the `add_points` method of the appropriate vector store module (`QdrantStore` or `SemanticStore`).
-    *   The vector store modules handle batch upserting these points into the corresponding Qdrant collection (`dnd_knowledge` or `dnd_semantic`).
+    *   Calls the `add_points` method of the appropriate vector store module (`PdfPagesStore` or `SemanticStore`).
+    *   The vector store modules handle batch upserting these points into the corresponding Qdrant collection (`dnd_pdf_pages` or `dnd_semantic`).
     *   The `SemanticStore` also updates its internal BM25 retriever during `add_points`.
 7.  **History Update:**
     *   Saves the updated `pdf_process_history.json` (with new hashes, timestamps, image URLs) back to S3 and locally.

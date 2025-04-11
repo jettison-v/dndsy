@@ -1,8 +1,14 @@
 import os
 from typing import Dict, Any, Optional
 import logging
+from dotenv import load_dotenv
 from vector_store.qdrant_store import QdrantStore
 from vector_store.semantic_store import SemanticStore
+
+# Import the specific store classes
+from .pdf_pages_store import PdfPagesStore
+
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -24,22 +30,33 @@ def get_vector_store(store_type: str = None) -> Any:
     """
     global _vector_stores
     
-    # Default to environment variable or fallback to standard
     if store_type is None:
-        store_type = os.getenv("DEFAULT_VECTOR_STORE", "standard")
+        store_type = os.getenv("DEFAULT_VECTOR_STORE", "semantic") # Default to semantic if not specified
+        logger.info(f"No store type specified, using default: {store_type}")
     
-    # Validate store_type
-    if store_type not in ["standard", "semantic"]:
-        logger.warning(f"Invalid store_type '{store_type}'. Falling back to 'standard'.")
-        store_type = "standard"
-    
-    # Instantiate and cache the vector store if needed
-    if store_type not in _vector_stores:
-        if store_type == "standard":
-            _vector_stores[store_type] = QdrantStore(collection_name="dnd_knowledge")
-            logger.info("Initialized standard vector store")
-        elif store_type == "semantic":
-            _vector_stores[store_type] = SemanticStore(collection_name="dnd_semantic")
-            logger.info("Initialized semantic vector store")
-    
-    return _vector_stores[store_type] 
+    # Return cached instance if available
+    if store_type in _vector_stores:
+        logger.debug(f"Returning cached vector store instance for type: {store_type}")
+        return _vector_stores[store_type]
+
+    # Create and cache new instance
+    logger.info(f"Creating new vector store instance for type: {store_type}")
+    if store_type == "standard": # Keep 'standard' as the key for now, maps to PdfPagesStore
+        try:
+            store = PdfPagesStore() # Instantiate the renamed class
+            _vector_stores[store_type] = store
+            return store
+        except Exception as e:
+            logger.error(f"Failed to initialize PdfPagesStore: {e}", exc_info=True)
+            raise
+    elif store_type == "semantic":
+        try:
+            store = SemanticStore()
+            _vector_stores[store_type] = store
+            return store
+        except Exception as e:
+            logger.error(f"Failed to initialize SemanticStore: {e}", exc_info=True)
+            raise
+    else:
+        logger.error(f"Unknown vector store type requested: {store_type}")
+        raise ValueError(f"Unknown vector store type: {store_type}") 
