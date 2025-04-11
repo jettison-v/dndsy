@@ -341,6 +341,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 msg.style.display = 'none';
             });
             isFirstMessage = false;
+            // Update centering since we removed the welcome message
+            centerInitialMessage();
         }
         
         const messageElement = document.createElement('div');
@@ -370,6 +372,10 @@ document.addEventListener('DOMContentLoaded', () => {
         messageElement.appendChild(sourceContainer);
         
         chatMessages.appendChild(messageElement);
+        
+        // Update centering after adding a new message
+        centerInitialMessage();
+        
         chatMessages.scrollTop = chatMessages.scrollHeight;
         return id;
     }
@@ -1280,4 +1286,20 @@ document.addEventListener('DOMContentLoaded', () => {
             pill.style.removeProperty('--tooltip-margin');
         }
     });
+
+    // Center the initial welcome message vertically
+    function centerInitialMessage() {
+        if (chatMessages.children.length === 1 && chatMessages.querySelector('.message.system')) {
+            chatMessages.style.display = 'flex';
+            chatMessages.style.justifyContent = 'center';
+            chatMessages.style.alignItems = 'center';
+        } else {
+            chatMessages.style.display = 'block';
+            chatMessages.style.justifyContent = '';
+            chatMessages.style.alignItems = '';
+        }
+    }
+    
+    // Call it on initial load
+    centerInitialMessage();
 }); 

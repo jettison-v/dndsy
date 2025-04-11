@@ -311,6 +311,12 @@ body {
     background: var(--secondary-color);
 }
 
+/* When chat only contains the initial welcome message */
+.chat-messages:only-child,
+.chat-messages:has(.message.system:only-child) {
+    justify-content: center;
+}
+
 /* Message Styles */
 .message {
     margin-bottom: 1rem;
