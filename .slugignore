@@ -4,7 +4,8 @@
 /logs
 /docker
 /vector_store/*.pkl
-.git
+/vector_store/data
+/.git
 .DS_Store
 *.pyc
 __pycache__/
