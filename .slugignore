@@ -1,0 +1,12 @@
+/data
+/debug
+/tests
+/logs
+/docker
+.git
+.DS_Store
+*.pyc
+__pycache__/
+*.egg-info
+README.md
+*.md 
