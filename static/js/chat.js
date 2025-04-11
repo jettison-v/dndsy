@@ -43,10 +43,38 @@ document.addEventListener('DOMContentLoaded', () => {
     */
     if (vectorStoreDropdown) {
         vectorStoreDropdown.addEventListener('change', () => {
-            // Update current vector store
-            currentVectorStore = vectorStoreDropdown.value;
+            // Get previous and new vector store values
+            const previousStore = currentVectorStore;
+            const newStore = vectorStoreDropdown.value;
             
-            // No longer need to update info display since elements were removed
+            // Update current vector store
+            currentVectorStore = newStore;
+            
+            // Add system message to chat indicating the change
+            const storeDisplayName = (newStore === 'standard') ? 'Page Context' : 
+                                    (newStore === 'semantic') ? 'Semantic Context' : 
+                                    newStore.charAt(0).toUpperCase() + newStore.slice(1);
+            
+            // Don't add system message on initial load - only for actual changes
+            if (isFirstMessage === false) {
+                addMessage(`Vector Store changed to ${storeDisplayName}`, 'system');
+            }
+        });
+    }
+
+    // Add event listener for LLM model changes if it becomes enabled in the future
+    if (llmModelDropdown) {
+        llmModelDropdown.addEventListener('change', () => {
+            const previousModel = llmModelDropdown.getAttribute('data-current-model') || llmModelDropdown.value;
+            const newModel = llmModelDropdown.value;
+            
+            // Store current model for future reference
+            llmModelDropdown.setAttribute('data-current-model', newModel);
+            
+            // Don't add system message on initial load - only for actual changes
+            if (isFirstMessage === false && previousModel !== newModel) {
+                addMessage(`LLM Model changed to ${newModel}`, 'system');
+            }
         });
     }
 
@@ -359,6 +387,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const messageElement = document.createElement('div');
         messageElement.classList.add('message', sender);
+        
+        // Add special styling for setting change notifications
+        if (sender === 'system' && (text.includes('Vector Store changed') || text.includes('LLM Model changed'))) {
+            messageElement.classList.add('setting-change');
+        }
         
         const id = messageId || `msg-${Date.now()}-${Math.random().toString(16).substring(2)}`;
         messageElement.dataset.messageId = id;
