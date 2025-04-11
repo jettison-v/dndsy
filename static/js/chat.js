@@ -1294,7 +1294,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Determine if tooltip should go above, below, left or right
             let position = 'bottom'; // Default position
             
-            if (spaceBelow < 150 && spaceAbove > 150) {
+            if (spaceBelow < 200 && spaceAbove > 200) {
                 // Not enough space below but enough space above
                 position = 'top';
             } else if (pillRect.left < tooltipWidth / 2) {
@@ -1309,48 +1309,46 @@ document.addEventListener('DOMContentLoaded', () => {
             switch (position) {
                 case 'top':
                     pill.style.setProperty('--tooltip-top', 'auto');
-                    pill.style.setProperty('--tooltip-bottom', '115%');
+                    pill.style.setProperty('--tooltip-bottom', '130%');
                     pill.style.setProperty('--tooltip-transform', 'translateX(-50%)');
                     pill.style.setProperty('--tooltip-arrow-top', 'auto');
-                    pill.style.setProperty('--tooltip-arrow-bottom', '100%');
-                    pill.style.setProperty('--tooltip-arrow-border-color', 'rgba(33, 33, 33, 0.9) transparent transparent transparent');
+                    pill.style.setProperty('--tooltip-arrow-bottom', '120%');
+                    pill.style.setProperty('--tooltip-arrow-border-color', 'rgba(20, 20, 20, 0.95) transparent transparent transparent');
+                    pill.style.setProperty('--tooltip-margin', '0');
                     break;
                     
                 case 'right-start':
                     pill.style.setProperty('--tooltip-top', '0');
-                    pill.style.setProperty('--tooltip-left', '100%');
-                    pill.style.setProperty('--tooltip-transform', 'translateY(0)');
-                    pill.style.setProperty('--tooltip-arrow-top', '10px');
-                    pill.style.setProperty('--tooltip-arrow-left', 'calc(100% - 5px)');
-                    pill.style.setProperty('--tooltip-arrow-border-color', 'transparent rgba(33, 33, 33, 0.9) transparent transparent');
-                    pill.style.setProperty('--tooltip-margin', '0 0 0 10px');
+                    pill.style.setProperty('--tooltip-left', 'calc(100% + 15px)');
+                    pill.style.setProperty('--tooltip-transform', 'translateY(-25%)');
+                    pill.style.setProperty('--tooltip-arrow-top', '25%');
+                    pill.style.setProperty('--tooltip-arrow-left', 'calc(100% + 5px)');
+                    pill.style.setProperty('--tooltip-arrow-border-color', 'transparent rgba(20, 20, 20, 0.95) transparent transparent');
+                    pill.style.setProperty('--tooltip-margin', '0');
                     break;
                     
                 case 'left-start':
                     pill.style.setProperty('--tooltip-top', '0');
                     pill.style.setProperty('--tooltip-left', 'auto');
-                    pill.style.setProperty('--tooltip-right', '100%');
-                    pill.style.setProperty('--tooltip-transform', 'translateY(0)');
-                    pill.style.setProperty('--tooltip-arrow-top', '10px');
+                    pill.style.setProperty('--tooltip-right', 'calc(100% + 15px)');
+                    pill.style.setProperty('--tooltip-transform', 'translateY(-25%)');
+                    pill.style.setProperty('--tooltip-arrow-top', '25%');
                     pill.style.setProperty('--tooltip-arrow-left', 'auto');
-                    pill.style.setProperty('--tooltip-arrow-right', '-10px');
-                    pill.style.setProperty('--tooltip-arrow-border-color', 'transparent transparent transparent rgba(33, 33, 33, 0.9)');
-                    pill.style.setProperty('--tooltip-margin', '0 10px 0 0');
+                    pill.style.setProperty('--tooltip-arrow-right', 'calc(100% + 5px)');
+                    pill.style.setProperty('--tooltip-arrow-border-color', 'transparent transparent transparent rgba(20, 20, 20, 0.95)');
+                    pill.style.setProperty('--tooltip-margin', '0');
                     break;
                     
-                default: // bottom (default)
-                    pill.style.setProperty('--tooltip-top', '115%');
+                default: // bottom 
+                    pill.style.setProperty('--tooltip-top', '130%');
                     pill.style.setProperty('--tooltip-bottom', 'auto');
                     pill.style.setProperty('--tooltip-left', '50%');
-                    pill.style.setProperty('--tooltip-right', 'auto');
                     pill.style.setProperty('--tooltip-transform', 'translateX(-50%)');
-                    pill.style.setProperty('--tooltip-arrow-top', '110%');
+                    pill.style.setProperty('--tooltip-arrow-top', 'calc(100% + 2px)');
                     pill.style.setProperty('--tooltip-arrow-bottom', 'auto');
                     pill.style.setProperty('--tooltip-arrow-left', '50%');
-                    pill.style.setProperty('--tooltip-arrow-right', 'auto');
-                    pill.style.setProperty('--tooltip-arrow-border-color', 'transparent transparent rgba(33, 33, 33, 0.9) transparent');
-                    pill.style.setProperty('--tooltip-margin', '5px 0 0 0');
-                    break;
+                    pill.style.setProperty('--tooltip-arrow-border-color', 'transparent transparent rgba(20, 20, 20, 0.95) transparent');
+                    pill.style.setProperty('--tooltip-margin', '8px 0 0 0');
             }
         }
     });
