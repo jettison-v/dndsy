@@ -1,6 +1,5 @@
-# Specify CPU-only PyTorch first
---extra-index-url https://download.pytorch.org/whl/cpu
-torch
+# Standard PyTorch (with GPU support)
+torch==2.6.0
 
 # AWS SDK
 boto3
