@@ -1,4 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Check if setting-change style is defined
+    const settingChangeStyle = getComputedStyle(document.documentElement)
+        .getPropertyValue('--setting-change-bg') || 'rgba(228, 7, 18, 0.1)';
+    console.log('Setting change style background:', settingChangeStyle);
+
     /*
     ========================================
       ELEMENT SELECTORS & INITIALIZATION
@@ -64,14 +69,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Add event listener for LLM model changes if it becomes enabled in the future
     if (llmModelDropdown) {
+        console.log('Setting up model dropdown listener');
         llmModelDropdown.addEventListener('change', async () => {
             const previousModel = llmModelDropdown.getAttribute('data-current-model') || llmModelDropdown.value;
             const newModel = llmModelDropdown.value;
             
+            console.log('Model dropdown changed:', { previousModel, newModel });
+            
             // Don't send request if there's no change
-            if (previousModel === newModel) return;
+            if (previousModel === newModel) {
+                console.log('No model change detected, skipping');
+                return;
+            }
             
             try {
+                console.log('Sending model change request for:', newModel);
                 // Send request to change model
                 const response = await fetch('/api/change_model', {
                     method: 'POST',
@@ -81,12 +93,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({ model: newModel }),
                 });
                 
+                console.log('Model change response status:', response.status);
+                
                 if (!response.ok) {
                     const errorData = await response.json();
+                    console.error('Model change error response:', errorData);
                     throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
                 }
                 
                 const data = await response.json();
+                console.log('Model change success data:', data);
                 
                 // Store current model for future reference
                 llmModelDropdown.setAttribute('data-current-model', newModel);
@@ -94,7 +110,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Don't add system message on initial load - only for actual changes
                 if (isFirstMessage === false) {
                     console.log('Displaying model change message:', data.display_name);
-                    addMessage(`Model changed to ${data.display_name}`, 'system');
+                    const messageText = `Model changed to ${data.display_name}`;
+                    console.log('Message text to be added:', messageText);
+                    const messageId = addMessage(messageText, 'system');
+                    console.log('Message added with ID:', messageId);
+                    
+                    // Add a test message the simple way to see if it shows up
+                    const testMsg = document.createElement('div');
+                    testMsg.className = 'message system setting-change';
+                    testMsg.textContent = `TEST: Model changed to ${data.display_name}`;
+                    testMsg.style.display = 'block';
+                    testMsg.style.marginTop = '10px';
+                    testMsg.style.backgroundColor = 'rgba(228, 7, 18, 0.2)'; 
+                    testMsg.style.color = 'white';
+                    testMsg.style.padding = '10px';
+                    testMsg.style.borderRadius = '8px';
+                    chatMessages.appendChild(testMsg);
+                    
+                    // Force scroll
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                } else {
+                    console.log('First message flag is true, not showing model change message');
                 }
             } catch (error) {
                 console.error('Error changing LLM model:', error);
@@ -103,6 +139,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 addMessage(`Error changing model: ${error.message}`, 'system');
             }
         });
+    } else {
+        console.warn('LLM model dropdown element not found');
     }
 
     // Vector Store Info Button
@@ -401,6 +439,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ---- Add Message to DOM ----
     function addMessage(text, sender, messageId = null) {
+        console.log('addMessage called with:', { text, sender });
         // If this is the first user message, remove the welcome system message
         if (sender === 'user' && isFirstMessage) {
             const systemMessages = chatMessages.querySelectorAll('.message.system');
@@ -416,9 +455,14 @@ document.addEventListener('DOMContentLoaded', () => {
         messageElement.classList.add('message', sender);
         
         // Add special styling for setting change notifications
-        if (sender === 'system' && (text.includes('Vector Store changed') || text.includes('Model changed to'))) {
+        const isVectorStoreMsg = text.includes('Vector Store changed');
+        const isModelChangeMsg = text.includes('Model changed to');
+        console.log('Message pattern check:', { isVectorStoreMsg, isModelChangeMsg, text });
+        
+        if (sender === 'system' && (isVectorStoreMsg || isModelChangeMsg)) {
             messageElement.classList.add('setting-change');
             console.log('Added setting-change class to message:', text);
+            console.log('Message classes:', messageElement.className);
         }
         
         const id = messageId || `msg-${Date.now()}-${Math.random().toString(16).substring(2)}`;
@@ -445,6 +489,18 @@ document.addEventListener('DOMContentLoaded', () => {
         messageElement.appendChild(sourceContainer);
         
         chatMessages.appendChild(messageElement);
+        
+        // Debug added message
+        if (sender === 'system' && messageElement.classList.contains('setting-change')) {
+            console.log('Setting-change message added to DOM:', messageElement);
+            console.log('All setting-change messages in DOM:', 
+                chatMessages.querySelectorAll('.message.system.setting-change').length);
+            
+            // Force message to be visible
+            messageElement.style.display = 'block';
+            messageElement.style.opacity = '1';
+            messageElement.style.visibility = 'visible';
+        }
         
         // Update centering after adding a new message
         centerInitialMessage();
