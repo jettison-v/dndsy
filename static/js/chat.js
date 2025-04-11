@@ -1,6 +1,37 @@
 document.addEventListener('DOMContentLoaded', () => {
     /*
     ========================================
+      VIEWPORT HEIGHT FIX FOR MOBILE
+    ========================================
+    */
+    // First, set the viewport height custom property
+    const setViewportHeight = () => {
+        // Calculate the actual viewport height
+        const vh = window.innerHeight * 0.01;
+        // Set the --vh custom property to the root of the document
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+    
+    // Set the height initially
+    setViewportHeight();
+    
+    // Update the height whenever the window resizes
+    window.addEventListener('resize', () => {
+        // Use setTimeout to ensure the browser address bar has fully expanded/collapsed
+        setTimeout(setViewportHeight, 100);
+    });
+    
+    // For iOS Safari, when the address bar appears/disappears
+    window.addEventListener('orientationchange', () => {
+        // Use setTimeout to ensure orientation has fully changed
+        setTimeout(setViewportHeight, 100);
+    });
+    
+    // Re-calculate after a short delay on page load, to account for all UI elements
+    setTimeout(setViewportHeight, 100);
+    
+    /*
+    ========================================
       ELEMENT SELECTORS & INITIALIZATION
     ========================================
     */
@@ -42,6 +73,17 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             userInput.focus();
         }, 100);
+    }
+
+    // Add event listener for chat messages scroll
+    if (chatMessages) {
+        chatMessages.addEventListener('scroll', () => {
+            // Recalculate viewport height when user scrolls
+            // This helps with iOS Safari's dynamic address bar
+            if (window.innerWidth <= 768) {
+                setTimeout(setViewportHeight, 100);
+            }
+        });
     }
 
     /*
