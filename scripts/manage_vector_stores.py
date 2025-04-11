@@ -168,13 +168,16 @@ def manage_vector_stores(force_reprocess_images=False, reset_history=False):
     
     # Run the processing (the DataProcessor.process_all_sources method handles both collections)
     logger.info("Starting data processing...")
-    documents = processor.process_all_sources()
+    processed_count = processor.process_all_sources()
     
-    if documents:
-        logger.info(f"Processing completed with {len(documents)} documents")
+    if processed_count > 0:
+        logger.info(f"Processing completed. Processed {processed_count} total points/documents.")
         return True
+    elif processed_count == 0:
+        logger.warning("Processing completed, but no documents/points were processed or added.")
+        return True # Still consider it a success if no errors, just nothing to process
     else:
-        logger.error("No documents were processed")
+        logger.error("Processing completed with unexpected result.")
         return False
 
 if __name__ == "__main__":
