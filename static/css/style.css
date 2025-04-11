@@ -363,6 +363,47 @@ body {
     box-shadow: 0 4px 15px rgba(228, 7, 18, 0.3);
 }
 
+/* Welcome message with improved styling */
+.message.system.welcome-message {
+    background: rgba(228, 7, 18, 0.15);
+    border: 2px solid rgba(228, 7, 18, 0.3);
+    color: var(--text-color);
+    max-width: 80%;
+    padding: 1rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-radius: 16px;
+    text-align: center;
+    font-size: 1.05rem;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+    position: relative;
+    overflow: hidden;
+}
+
+.message.system.welcome-message::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--accent-gradient);
+}
+
+.welcome-icon {
+    font-size: 2.4rem;
+    margin-bottom: 1rem;
+    color: var(--accent-color);
+    background: rgba(228, 7, 18, 0.15);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 /* Setting change notifications - more subtle than the welcome message */
 .message.system.setting-change {
     background: rgba(228, 7, 18, 0.1);

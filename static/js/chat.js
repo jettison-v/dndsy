@@ -981,7 +981,6 @@ document.addEventListener('DOMContentLoaded', () => {
         currentEventSource.addEventListener('status', event => {
             try {
                 const status = JSON.parse(event.data);
-                console.log('Status update:', status);
                 // Update message with new status if provided
                 if (status && status.status) {
                     updateMessageText(assistantMessageId, status.status, true);
