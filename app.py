@@ -144,6 +144,28 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
+@app.route('/api/gpu_status')
+def gpu_status():
+    """API endpoint to check GPU availability and status."""
+    if not check_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        import torch
+        gpu_available = torch.cuda.is_available()
+        device_count = torch.cuda.device_count() if gpu_available else 0
+        device_names = [torch.cuda.get_device_name(i) for i in range(device_count)] if gpu_available else []
+        
+        return jsonify({
+            'gpu_available': gpu_available,
+            'device_count': device_count,
+            'device_names': device_names,
+            'torch_version': torch.__version__
+        })
+    except Exception as e:
+        logger.error(f"Error checking GPU status: {e}", exc_info=True)
+        return jsonify({'error': f'Error checking GPU status: {str(e)}'}), 500
+
 if __name__ == '__main__':
     logger.info("Starting Flask application...")
     load_dotenv(override=True) # Ensure .env overrides system vars if running directly
