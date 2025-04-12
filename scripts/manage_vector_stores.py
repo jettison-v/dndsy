@@ -154,30 +154,32 @@ def manage_vector_stores(force_reprocess_images=False, reset_history=False, only
             
     if process_haystack:
         try:
-            # Try to get the collection name from the class
-            try:
-                collection_name = HaystackStore.DEFAULT_COLLECTION_NAME
-            except AttributeError:
-                # Fallback to a hardcoded value if not available as a class attribute
-                collection_name = "dnd_haystack"
-                
-            logger.info(f"Setting up haystack store ({collection_name})")
-            
-            # For haystack, we clean up differently since it's an in-memory store
-            # We'll initialize the store to clear any existing data
             haystack_store = get_vector_store("haystack")
-            if hasattr(haystack_store, "document_store"):
-                # For InMemoryDocumentStore in haystack, we need to recreate it
+            logger.info("Clearing haystack store")
+            
+            # For QdrantDocumentStore, we use delete_documents to clear it
+            try:
+                # Clean delete all documents in the store
+                haystack_store.document_store.delete_documents()
+                logger.info("Cleared all documents from haystack store")
+            except Exception as e:
+                logger.warning(f"Error clearing haystack store: {e}")
+                logger.info("Will attempt to reset the haystack store")
+                
+                # Try to completely delete and recreate the collection if available
                 try:
-                    # Create a new document store to replace the existing one
-                    from haystack.document_stores.in_memory import InMemoryDocumentStore
-                    haystack_store.document_store = InMemoryDocumentStore()
-                    logger.info("Reset haystack document store with a fresh instance")
-                except Exception as e:
-                    logger.warning(f"Error resetting haystack document store: {e}")
+                    haystack_store.document_store.delete_index(haystack_store.collection_name)
+                    logger.info(f"Deleted haystack index: {haystack_store.collection_name}")
+                    
+                    # Recreate the index with the same parameters
+                    haystack_store.document_store.create_index(
+                        index=haystack_store.collection_name,
+                        embedding_dim=384  # Match the EMBEDDING_DIMENSION in haystack_store.py
+                    )
+                    logger.info(f"Recreated haystack index: {haystack_store.collection_name}")
+                except Exception as inner_e:
+                    logger.warning(f"Could not reset haystack index: {inner_e}")
                     logger.info("Will initialize a fresh haystack store")
-            else:
-                logger.info("Haystack store will be initialized fresh")
         except Exception as e:
             logger.warning(f"Could not clear haystack store: {e}")
     

@@ -60,3 +60,4 @@ gevent
 
 # Haystack AI for vector store
 haystack-ai>=2.11.0
+qdrant-haystack>=9.1.1
