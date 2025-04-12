@@ -28,6 +28,8 @@ DEFAULT_COLLECTION_NAME = "dnd_semantic"
 class SemanticStore:
     """Handles semantic chunking, hybrid search (vector + BM25), and Qdrant interaction for the semantic collection."""
     
+    DEFAULT_COLLECTION_NAME = DEFAULT_COLLECTION_NAME
+    
     def __init__(self, collection_name: str = DEFAULT_COLLECTION_NAME):
         """Initialize Semantic vector store."""
         self.collection_name = collection_name

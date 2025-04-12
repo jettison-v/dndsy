@@ -7,29 +7,35 @@ from datetime import timedelta
 import logging
 import json
 from dotenv import load_dotenv
+from flask_session import Session
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
 app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))  # Use env var for secret key, fallback for local dev
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30) 
 app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_ENV') != 'development'
 app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent JavaScript access to cookies
 CORS(app)
+Session(app)
 
 PASSWORD = os.environ.get('APP_PASSWORD', 'dndsy')
 logger.info(f"Password loaded from environment variable {'APP_PASSWORD' if 'APP_PASSWORD' in os.environ else '(using default)'}. ")
 
-VECTOR_STORE_TYPES = ["standard", "semantic"]
+VECTOR_STORE_TYPES = ["standard", "semantic", "haystack"]
 # Get default store type from environment
 DEFAULT_VECTOR_STORE = os.getenv("DEFAULT_VECTOR_STORE", "standard") # Changed default from "semantic" to "standard"
 
 # Define available LLM models with their display names
 AVAILABLE_LLM_MODELS = {
-    "gpt-4o-mini": "GPT-4o Mini",
-    "gpt-4-turbo": "GPT-4 Turbo"
+    "gpt-3.5-turbo": "GPT-3.5 Turbo",
+    "gpt-4": "GPT-4",
+    "gpt-4-turbo": "GPT-4 Turbo",
+    "claude-3-opus-20240229": "Claude 3 Opus",
+    "claude-3-sonnet-20240229": "Claude 3 Sonnet",
+    "claude-3-haiku-20240307": "Claude 3 Haiku"
 }
 
 def check_auth():

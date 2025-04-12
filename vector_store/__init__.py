@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 # Import the specific store classes
 from .pdf_pages_store import PdfPagesStore
 from .semantic_store import SemanticStore
+from .haystack_store import HaystackStore
 
 load_dotenv()
 
@@ -22,7 +23,7 @@ def get_vector_store(store_type: str = None) -> Any:
     
     Args:
         store_type: The type of vector store to use.
-                   Options: 'standard' (default), 'semantic'
+                   Options: 'standard' (default), 'semantic', 'haystack'
     
     Returns:
         A vector store instance
@@ -55,6 +56,14 @@ def get_vector_store(store_type: str = None) -> Any:
             return store
         except Exception as e:
             logger.error(f"Failed to initialize SemanticStore: {e}", exc_info=True)
+            raise
+    elif store_type == "haystack":
+        try:
+            store = HaystackStore()
+            _vector_stores[store_type] = store
+            return store
+        except Exception as e:
+            logger.error(f"Failed to initialize HaystackStore: {e}", exc_info=True)
             raise
     else:
         logger.error(f"Unknown vector store type requested: {store_type}")

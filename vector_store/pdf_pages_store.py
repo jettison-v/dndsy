@@ -14,6 +14,10 @@ STANDARD_EMBEDDING_DIMENSION = 384
 DEFAULT_PDF_PAGES_COLLECTION = "dnd_pdf_pages"
 
 class PdfPagesStore:
+    """Store for full PDF pages."""
+    
+    DEFAULT_COLLECTION_NAME = DEFAULT_PDF_PAGES_COLLECTION
+    
     def __init__(self, collection_name: str = DEFAULT_PDF_PAGES_COLLECTION):
         """Initialize Qdrant vector store for full PDF pages."""
         self.collection_name = collection_name
