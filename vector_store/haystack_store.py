@@ -5,11 +5,14 @@ from dotenv import load_dotenv
 from pathlib import Path
 from datetime import datetime
 import numpy as np
+import pickle
+import json
 
 # Using direct sentence-transformers instead of haystack embedders
 from sentence_transformers import SentenceTransformer
 from haystack import Document
 from haystack.document_stores.in_memory import InMemoryDocumentStore
+from haystack.components.embedders import SentenceTransformersDocumentEmbedder, SentenceTransformersTextEmbedder
 
 # Text splitting for chunking
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -19,6 +22,7 @@ load_dotenv(dotenv_path=env_path)
 
 # Define constants
 DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+PERSISTENCE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "haystack_store")
 
 class HaystackStore:
     """Handles document storage and retrieval using Haystack-AI."""
@@ -29,6 +33,10 @@ class HaystackStore:
         """Initialize Haystack vector store."""
         self.collection_name = collection_name
         
+        # Create persistence directory if it doesn't exist
+        os.makedirs(PERSISTENCE_DIR, exist_ok=True)
+        self.persistence_file = os.path.join(PERSISTENCE_DIR, f"{collection_name}_documents.pkl")
+        
         # Initialize document store
         self.document_store = InMemoryDocumentStore()
         
@@ -37,9 +45,25 @@ class HaystackStore:
         try:
             self.sentence_transformer = SentenceTransformer(self.embedding_model_name)
             logging.info(f"Initialized SentenceTransformer with model: {self.embedding_model_name}")
+            
+            # Initialize Haystack embedders
+            try:
+                self.document_embedder = SentenceTransformersDocumentEmbedder(model=self.embedding_model_name)
+                self.text_embedder = SentenceTransformersTextEmbedder(model=self.embedding_model_name)
+                
+                # Warm up embedders
+                self.document_embedder.warm_up()
+                self.text_embedder.warm_up()
+                logging.info("Successfully warmed up Haystack embedders")
+            except Exception as e:
+                logging.error(f"Failed to initialize Haystack embedders: {e}")
+                self.document_embedder = None
+                self.text_embedder = None
         except Exception as e:
             logging.error(f"Error initializing SentenceTransformer: {e}")
             self.sentence_transformer = None
+            self.document_embedder = None
+            self.text_embedder = None
         
         # Text Splitter for Chunking
         self.text_splitter = RecursiveCharacterTextSplitter(
@@ -52,7 +76,59 @@ class HaystackStore:
         # Document ID tracking
         self.next_id = 0
         
+        # Try to load persisted documents
+        self._load_documents()
+        
         logging.info(f"Initialized Haystack store with model: {self.embedding_model_name}")
+    
+    def _save_documents(self):
+        """Save documents to disk for persistence."""
+        try:
+            # Get all documents
+            try:
+                # Try to use get_all_documents if available
+                documents = self.document_store.get_all_documents()
+            except (AttributeError, NotImplementedError):
+                # Fallback to get_documents
+                try:
+                    documents = self.document_store.get_documents()
+                except (AttributeError, NotImplementedError):
+                    # Try one more fallback - using filter_documents with empty filter
+                    try:
+                        documents = self.document_store.filter_documents({})
+                    except (AttributeError, NotImplementedError):
+                        logging.error("No compatible method found to get documents from the store for saving")
+                        return
+            
+            with open(self.persistence_file, 'wb') as f:
+                pickle.dump({
+                    'documents': documents,
+                    'next_id': self.next_id
+                }, f)
+            logging.info(f"Saved {len(documents)} documents to {self.persistence_file}")
+        except Exception as e:
+            logging.error(f"Error saving documents to disk: {e}", exc_info=True)
+    
+    def _load_documents(self):
+        """Load documents from disk if available."""
+        if os.path.exists(self.persistence_file):
+            try:
+                with open(self.persistence_file, 'rb') as f:
+                    data = pickle.load(f)
+                    documents = data.get('documents', [])
+                    self.next_id = data.get('next_id', 0)
+                
+                if documents:
+                    self.document_store.write_documents(documents)
+                    logging.info(f"Loaded {len(documents)} documents from {self.persistence_file}")
+                else:
+                    logging.warning(f"No documents found in {self.persistence_file}")
+            except Exception as e:
+                logging.error(f"Error loading documents from disk: {e}", exc_info=True)
+                self.next_id = 0
+        else:
+            logging.info(f"No persistence file found at {self.persistence_file}")
+            self.next_id = 0
     
     def chunk_document_with_cross_page_context(
         self, 
@@ -196,15 +272,19 @@ class HaystackStore:
         try:
             logging.info(f"Writing {len(documents)} documents to Haystack store")
             self.document_store.write_documents(documents)
+            
+            # Save documents to disk for persistence
+            self._save_documents()
+            
             logging.info(f"Successfully added {len(documents)} documents to Haystack store. Next ID: {self.next_id}")
             return len(documents)
         except Exception as e:
             logging.error(f"Error writing documents to Haystack store: {e}", exc_info=True)
             return 0
     
-    def search(self, query_vector: List[float], query: str, limit: int = 5) -> List[Dict[str, Any]]:
+    def search(self, query_vector: List[float], query: str = None, limit: int = 5) -> List[Dict[str, Any]]:
         """Performs hybrid search using Haystack components."""
-        logging.info(f"Searching (haystack) for: '{query}'")
+        logging.info(f"Searching (haystack) for: '{query if query else 'vector-only'}'")
         
         if not self.document_store.count_documents():
             logging.warning("No documents in Haystack store. Returning empty results.")
@@ -212,44 +292,75 @@ class HaystackStore:
         
         # Get all documents
         all_documents = self.get_all_documents()
+        logging.info(f"Retrieved {len(all_documents)} documents for search")
         
         # Basic similarity search with the query
         if self.sentence_transformer is not None:
             try:
-                # Generate query embedding
-                query_embedding = self.sentence_transformer.encode(query)
+                # If we have query text, use it to generate embedding
+                # Otherwise use the provided query_vector
+                if query is not None:
+                    query_embedding = self.sentence_transformer.encode(query)
+                    logging.info(f"Generated query embedding with shape {query_embedding.shape}")
+                else:
+                    query_embedding = np.array(query_vector)
+                    logging.info(f"Using provided query vector with shape {query_embedding.shape}")
                 
                 # Simple similarity search using dot product
                 results = []
                 for doc in all_documents:
-                    if hasattr(doc.get("embedding", None), "shape"):
-                        # Calculate similarity score
-                        score = np.dot(query_embedding, doc["embedding"]) / (
-                            np.linalg.norm(query_embedding) * np.linalg.norm(doc["embedding"])
-                        )
-                        results.append({
-                            "text": doc["text"],
-                            "metadata": doc["metadata"],
-                            "score": float(score)
-                        })
+                    # Get the embedding and ensure it's a numpy array
+                    doc_embedding = doc["embedding"]
+                    if doc_embedding is None:
+                        continue
+                    
+                    # Convert to numpy array if it's a list
+                    if not hasattr(doc_embedding, 'shape'):
+                        doc_embedding = np.array(doc_embedding)
+                    
+                    # Calculate similarity score
+                    score = np.dot(query_embedding, doc_embedding) / (
+                        np.linalg.norm(query_embedding) * np.linalg.norm(doc_embedding)
+                    )
+                    
+                    results.append({
+                        "text": doc["text"],
+                        "metadata": doc["metadata"],
+                        "score": float(score)
+                    })
                 
                 # Sort by score
                 results.sort(key=lambda x: x["score"], reverse=True)
-                return results[:limit]
+                
+                # Log top 5 similarity scores for debugging
+                if results:
+                    logging.info("Top similarity scores:")
+                    for i, result in enumerate(results[:5]):
+                        logging.info(f"  #{i+1}: {result['score']:.4f}")
+                else:
+                    logging.warning("No results with similarity scores")
+                
+                # Return top results without filtering by score threshold
+                top_results = results[:limit]
+                logging.info(f"Returning top {len(top_results)} results")
+                return top_results
             except Exception as e:
                 logging.error(f"Error in embedding search: {e}", exc_info=True)
         
         # Fallback to simple text matching if embedding search fails
+        logging.info("Falling back to simple text matching")
         results = []
-        for doc in all_documents:
-            # Simple text matching - check if query appears in the text
-            if query.lower() in doc["text"].lower():
-                results.append({
-                    "text": doc["text"],
-                    "metadata": doc["metadata"],
-                    "score": 0.5  # Default score for text matches
-                })
+        if query is not None:
+            for doc in all_documents:
+                # Simple text matching - check if query appears in the text
+                if query.lower() in doc["text"].lower():
+                    results.append({
+                        "text": doc["text"],
+                        "metadata": doc["metadata"],
+                        "score": 0.5  # Default score for text matches
+                    })
         
+        logging.info(f"Text matching found {len(results)} results")
         return results[:limit]
     
     def get_details_by_source_page(self, source_name: str, page_number: int) -> Optional[Dict[str, Any]]:
@@ -268,19 +379,79 @@ class HaystackStore:
         if not matching_docs:
             return None
         
+        # Extract image_url from first document's metadata (they should all have the same)
+        image_url = None
+        if matching_docs and "metadata" in matching_docs[0] and "image_url" in matching_docs[0]["metadata"]:
+            image_url = matching_docs[0]["metadata"]["image_url"]
+        
         # Create a consolidated response
         result = {
             "source": source_name,
             "page": page_number,
-            "chunks": matching_docs
+            "chunks": matching_docs,
+            "image_url": image_url  # Add image_url at top level
         }
         
         return result
     
     def get_all_documents(self) -> List[Dict[str, Any]]:
         """Retrieves all documents from the store."""
-        # Get all documents from the store
-        all_docs = self.document_store.get_all_documents()
+        try:
+            # Try to use get_all_documents if available
+            all_docs = self.document_store.get_all_documents()
+        except (AttributeError, NotImplementedError):
+            # Fallback to get_documents
+            try:
+                all_docs = self.document_store.get_documents()
+            except (AttributeError, NotImplementedError):
+                # If neither is available, check if we can find documents through other methods
+                logging.warning("Document store doesn't have get_all_documents or get_documents methods")
+                # Try one more fallback - using filter_documents with empty filter
+                try:
+                    all_docs = self.document_store.filter_documents({})
+                except (AttributeError, NotImplementedError):
+                    # Direct access to internal documents dictionary if all else fails
+                    try:
+                        # Print available attributes to help debug
+                        store_attrs = dir(self.document_store)
+                        logging.info(f"Document store attributes: {store_attrs}")
+                        
+                        # Try common attribute names for document storage
+                        if hasattr(self.document_store, "_documents"):
+                            all_docs = list(self.document_store._documents.values())
+                            logging.info(f"Retrieved {len(all_docs)} documents from _documents")
+                        elif hasattr(self.document_store, "documents"):
+                            all_docs = list(self.document_store.documents.values())
+                            logging.info(f"Retrieved {len(all_docs)} documents from documents")
+                        elif hasattr(self.document_store, "_index"):
+                            all_docs = list(self.document_store._index.values())
+                            logging.info(f"Retrieved {len(all_docs)} documents from _index")
+                        elif hasattr(self.document_store, "docs"):
+                            all_docs = list(self.document_store.docs.values())
+                            logging.info(f"Retrieved {len(all_docs)} documents from docs")
+                        else:
+                            # Last resort: try to find document-like attributes
+                            docs_found = False
+                            for attr_name in store_attrs:
+                                if attr_name.startswith("_") and attr_name != "__class__":
+                                    continue  # Skip most private attrs
+                                
+                                attr = getattr(self.document_store, attr_name)
+                                if isinstance(attr, dict) and len(attr) > 0:
+                                    # Check if dictionary values look like documents
+                                    sample = next(iter(attr.values()))
+                                    if hasattr(sample, "id") and hasattr(sample, "content"):
+                                        all_docs = list(attr.values())
+                                        logging.info(f"Retrieved {len(all_docs)} documents from {attr_name}")
+                                        docs_found = True
+                                        break
+                        
+                            if not docs_found:
+                                logging.error("Could not find documents in the document store")
+                                return []
+                    except Exception as e:
+                        logging.error(f"Error accessing internal documents: {e}")
+                        return []
         
         # Convert to standard format
         formatted_docs = []
@@ -291,4 +462,99 @@ class HaystackStore:
                 "embedding": doc.embedding
             })
         
-        return formatted_docs 
+        return formatted_docs
+
+    def search_monster_info(self, monster_type: str, limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Specialized search for finding information about specific monster types.
+        
+        Args:
+            monster_type: The type of monster to search for (e.g., "dragon", "goblin")
+            limit: Maximum number of results to return
+            
+        Returns:
+            List of document dictionaries containing monster information
+        """
+        logging.info(f"Searching for monster information about: '{monster_type}'")
+        
+        # Get all documents
+        all_documents = self.get_all_documents()
+        if not all_documents:
+            logging.warning("No documents in store to search")
+            return []
+        
+        # First, embed the monster type query for semantic search
+        try:
+            query_embedding = self.sentence_transformer.encode(f"{monster_type} monster information")
+            
+            # Calculate similarity scores
+            results = []
+            for doc in all_documents:
+                # Get the embedding and ensure it's a numpy array
+                doc_embedding = doc["embedding"]
+                if doc_embedding is None:
+                    continue
+                
+                # Convert to numpy array if it's a list
+                if not hasattr(doc_embedding, 'shape'):
+                    doc_embedding = np.array(doc_embedding)
+                
+                # Calculate semantic similarity score
+                sim_score = np.dot(query_embedding, doc_embedding) / (
+                    np.linalg.norm(query_embedding) * np.linalg.norm(doc_embedding)
+                )
+                
+                # Check if the document text or metadata contains the monster type
+                text = doc["text"].lower()
+                metadata = doc["metadata"]
+                
+                # Boosting factors
+                boost = 1.0
+                
+                # Boost score if monster type appears in the text
+                if monster_type.lower() in text:
+                    boost += 0.2
+                    
+                    # Additional boost if it appears multiple times
+                    mentions = text.count(monster_type.lower())
+                    if mentions > 1:
+                        boost += min(0.1 * mentions, 0.3)  # Cap at 0.3 additional boost
+                
+                # Boost if monster type is in section or heading_path
+                section = metadata.get("section", "").lower()
+                heading_path = metadata.get("heading_path", "").lower()
+                
+                if monster_type.lower() in section:
+                    boost += 0.3
+                
+                if monster_type.lower() in heading_path:
+                    boost += 0.3
+                
+                # Boost if it's a stat block (often has monster name in all caps)
+                if monster_type.upper() in text:
+                    boost += 0.4
+                
+                # Apply the boost
+                final_score = sim_score * boost
+                
+                results.append({
+                    "text": doc["text"],
+                    "metadata": metadata,
+                    "score": float(final_score)
+                })
+            
+            # Sort by boosted score
+            results.sort(key=lambda x: x["score"], reverse=True)
+            
+            # Log top scores
+            if results:
+                logging.info(f"Found {len(results)} results for '{monster_type}', returning top {min(limit, len(results))}")
+                logging.info("Top scores:")
+                for i, result in enumerate(results[:5]):
+                    logging.info(f"  #{i+1}: {result['score']:.4f}")
+            
+            return results[:limit]
+        
+        except Exception as e:
+            logging.error(f"Error searching for monster info: {e}", exc_info=True)
+            return [] 

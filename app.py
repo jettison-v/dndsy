@@ -18,6 +18,7 @@ app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))  # Use env var for
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30) 
 app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_ENV') != 'development'
 app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent JavaScript access to cookies
+app.config['SESSION_TYPE'] = 'filesystem'  # Add filesystem session type
 CORS(app)
 Session(app)
 
@@ -159,6 +160,52 @@ def get_vector_store_types():
         'types': VECTOR_STORE_TYPES,
         'default': DEFAULT_VECTOR_STORE
     })
+
+@app.route('/api/store_stats')
+def get_store_stats():
+    """Returns statistics about the vector stores for debugging."""
+    if not check_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    store_type = request.args.get('store_type', None)
+    if store_type and store_type not in VECTOR_STORE_TYPES:
+        return jsonify({'error': f'Invalid vector store type: {store_type}'}), 400
+    
+    stats = {}
+    sample_count = 3  # Number of sample documents to return per store
+    
+    if store_type:
+        types_to_check = [store_type]
+    else:
+        types_to_check = VECTOR_STORE_TYPES
+    
+    for store_type in types_to_check:
+        try:
+            vector_store = get_vector_store(store_type)
+            all_docs = vector_store.get_all_documents()
+            doc_count = len(all_docs)
+            
+            # Get sample documents
+            sample_docs = all_docs[:sample_count] if doc_count > 0 else []
+            
+            # Format sample docs for display
+            formatted_samples = []
+            for doc in sample_docs:
+                formatted_samples.append({
+                    'text': doc.get('text', '')[:200] + '...' if len(doc.get('text', '')) > 200 else doc.get('text', ''),
+                    'metadata': doc.get('metadata', {})
+                })
+            
+            stats[store_type] = {
+                'count': doc_count,
+                'sample_documents': formatted_samples
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting stats for {store_type}: {e}", exc_info=True)
+            stats[store_type] = {'error': str(e)}
+    
+    return jsonify(stats)
 
 @app.route('/api/change_model', methods=['POST'])
 def change_model():

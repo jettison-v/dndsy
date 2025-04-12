@@ -18,6 +18,7 @@ _embedding_models = {}
 # For consistency, using names from README/previous context
 STANDARD_EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 SEMANTIC_EMBEDDING_MODEL_NAME = "text-embedding-3-small" # Used by OpenAILLM
+HAYSTACK_EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 def _load_standard_model():
     """Loads the Sentence Transformer model for standard embeddings."""
@@ -46,12 +47,27 @@ def _load_semantic_model():
             _embedding_models["semantic"] = None
     return _embedding_models["semantic"]
 
+def _load_haystack_model():
+    """Loads the Sentence Transformer model for haystack embeddings."""
+    global _embedding_models
+    if "haystack" not in _embedding_models:
+        try:
+            logger.info(f"Loading haystack embedding model: {HAYSTACK_EMBEDDING_MODEL_NAME}")
+            _embedding_models["haystack"] = SentenceTransformer(HAYSTACK_EMBEDDING_MODEL_NAME)
+            logger.info("Haystack embedding model loaded.")
+        except Exception as e:
+            logger.error(f"Failed to load haystack embedding model: {e}", exc_info=True)
+            _embedding_models["haystack"] = None
+    return _embedding_models["haystack"]
+
 def get_embedding_model(store_type: str):
     """Factory function to get the appropriate embedding model/client."""
     if store_type == "standard":
         return _load_standard_model()
     elif store_type == "semantic":
         return _load_semantic_model()
+    elif store_type == "haystack":
+        return _load_haystack_model()
     else:
         logger.error(f"Unsupported store_type for embeddings: {store_type}")
         raise ValueError(f"Unsupported store_type for embeddings: {store_type}")
@@ -62,7 +78,7 @@ def embed_query(query: str, store_type: str) -> list[float]:
     if model_or_client is None:
         raise RuntimeError(f"Embedding model/client for {store_type} could not be loaded.")
 
-    logger.info(f"Embedding query for store_type '{store_type}': '{query[:50]}...'")
+    logger.info(f"Embedding query for {store_type} store: '{query[:50]}...'")
     if store_type == "standard":
         embedding = model_or_client.encode(query).tolist()
     elif store_type == "semantic":
@@ -74,6 +90,8 @@ def embed_query(query: str, store_type: str) -> list[float]:
         except Exception as e:
             logger.error(f"Error getting semantic embedding for query: {e}", exc_info=True)
             raise
+    elif store_type == "haystack":
+        embedding = model_or_client.encode(query).tolist()
     else:
         raise ValueError(f"Unsupported store_type: {store_type}")
         
@@ -93,7 +111,7 @@ def embed_documents(texts: List[str], store_type: str) -> List[list[float]]:
     embeddings = []
     start_time = time.time()
 
-    if store_type == "standard":
+    if store_type in ["standard", "haystack"]:
         # SentenceTransformer encode can handle lists directly and efficiently
         embeddings = model_or_client.encode(texts, show_progress_bar=True).tolist()
     elif store_type == "semantic":
