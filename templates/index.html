@@ -155,6 +155,32 @@
             </div>
         </div>
     </div>
+    
+    <div id="haystack-modal" class="vector-store-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Haystack</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h4>Technical Details</h4>
+                <p>The <strong>Haystack</strong> approach uses the Haystack framework with Qdrant backend for advanced document retrieval.</p>
+                
+                <h4>Implementation</h4>
+                <ul>
+                    <li>Uses <code>all-MiniLM-L6-v2</code> Sentence Transformer model (384 dimensions)</li>
+                    <li>Integrates directly with Haystack 2.x and QdrantDocumentStore</li>
+                    <li>Preserves rich document metadata including page context and hierarchical structure</li>
+                    <li>Implements specialized retrieval methods for monster information</li>
+                    <li>Provides direct document filtering capabilities using Haystack's filter syntax</li>
+                    <li>Stores data in the <code>dnd_haystack</code> Qdrant collection</li>
+                </ul>
+                
+                <h4>Best For</h4>
+                <p>Use this approach when you need specialized queries, particularly for monster information, or when working with complex filtering requirements.</p>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 
 {% block scripts %}

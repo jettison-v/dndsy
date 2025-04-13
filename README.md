@@ -31,11 +31,16 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
 
 *   **Backend:** Python, Flask
 *   **Vector Database:** Qdrant (Cloud recommended for deployment)
-    *   Collections: `dnd_pdf_pages` (standard), `dnd_semantic` (semantic)
+    *   Collections: `dnd_pdf_pages` (standard), `dnd_semantic` (semantic), `dnd_haystack` (haystack)
 *   **LLM:** Pluggable via `llm_providers` (e.g., OpenAI, Anthropic)
 *   **Embeddings:** Centralized in `embeddings` package.
     *   Standard: Sentence Transformers (`all-MiniLM-L6-v2`)
     *   Semantic: OpenAI (`text-embedding-3-small`) via API
+    *   Haystack: Sentence Transformers (`all-MiniLM-L6-v2`)
+*   **Vector Search:** Three distinct approaches
+    *   Standard: Page-level context with `PdfPagesStore`
+    *   Semantic: Fine-grained chunking with hybrid search in `SemanticStore`
+    *   Haystack: Direct integration with Haystack framework in `HaystackStore`
 *   **PDF Parsing:** PyMuPDF (`fitz`)
 *   **Data Ingestion & Processing:** Custom pipeline in `data_ingestion` package using `langchain` for chunking, custom structure analysis.
 *   **Frontend:** HTML, CSS, JavaScript (with Marked.js for Markdown rendering)
@@ -247,7 +252,7 @@ dndsy/
 
 ## Vector Store Approaches
 
-DnDSy implements two different vector store approaches to optimize retrieval:
+DnDSy implements three different vector store approaches to optimize retrieval:
 
 1. **Standard Approach** (`vector_store/pdf_pages_store.py`)
    * Processes PDF content page-by-page.
@@ -261,8 +266,16 @@ DnDSy implements two different vector store approaches to optimize retrieval:
    * Embeds each chunk using OpenAI's `text-embedding-3-small` model via API.
    * Better for retrieving specific pieces of information.
    * Combines vector similarity search with BM25 keyword search for hybrid retrieval.
+
+3. **Haystack Approach** (`vector_store/haystack_store.py`)
+   * Uses Haystack framework with Qdrant backend for document storage and retrieval.
+   * Leverages Sentence Transformers (`all-MiniLM-L6-v2`) for local embedding generation.
+   * Preserves rich document metadata including page context and hierarchical structure.
+   * Maintains compatibility with Haystack 2.x API for document filtering and searching.
+   * Stores data in the `dnd_haystack` Qdrant collection.
+   * Optimized for specialized search queries including monster information lookup.
    
-Users can switch between these two approaches via the UI selector. Both approaches are processed and stored in separate Qdrant collections (`dnd_pdf_pages` and `dnd_semantic`).
+Users can switch between these approaches via the UI selector. All approaches are processed and stored in separate Qdrant collections.
 
 ## Detailed Data Processing and Indexing Pipeline
 
