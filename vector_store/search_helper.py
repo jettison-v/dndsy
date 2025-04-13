@@ -1,3 +1,20 @@
+"""
+Search Helper Module
+-------------------
+Provides a standardized interface for vector store search operations.
+This abstraction reduces code duplication across different vector store
+implementations while allowing specialized functionality where needed.
+
+The SearchHelper base class defines common patterns for:
+- Vector similarity search
+- Filter-based document retrieval
+- Error handling and logging
+- Result formatting
+
+Each vector store implementation extends this base class and provides
+its specific implementation of the abstract methods.
+"""
+
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 import logging
