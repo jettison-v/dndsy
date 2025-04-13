@@ -17,6 +17,7 @@ from langchain.schema import Document
 import numpy as np
 # Remove SentenceTransformer import - no longer used here
 # from sentence_transformers import SentenceTransformer, util
+from .search_helper import SearchHelper
 
 env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
@@ -25,14 +26,14 @@ load_dotenv(dotenv_path=env_path)
 SEMANTIC_EMBEDDING_DIMENSION = 1536
 DEFAULT_COLLECTION_NAME = "dnd_semantic"
 
-class SemanticStore:
+class SemanticStore(SearchHelper):
     """Handles semantic chunking, hybrid search (vector + BM25), and Qdrant interaction for the semantic collection."""
     
     DEFAULT_COLLECTION_NAME = DEFAULT_COLLECTION_NAME
     
     def __init__(self, collection_name: str = DEFAULT_COLLECTION_NAME):
         """Initialize Semantic vector store."""
-        self.collection_name = collection_name
+        super().__init__(collection_name)
         
         # Internal embedding client ONLY needed for initial BM25 population fallback
         # if the store is empty and search is called before ingestion.
@@ -318,195 +319,174 @@ class SemanticStore:
         
         return final_results
     
-    def search(self, query_vector: List[float], query: str, limit: int = 5) -> List[Dict[str, Any]]:
+    # Implement abstract methods from SearchHelper
+    def _execute_vector_search(self, query_vector: List[float], limit: int) -> List[Dict[str, Any]]:
+        """Execute vector search using Qdrant client."""
+        # Increase the retrieval limit to get more candidates for reranking
+        results = self.client.search(
+            collection_name=self.collection_name,
+            query_vector=query_vector,
+            limit=limit * 5  # Increased to get more candidates for reranking/filtering
+        )
+        
+        # Format results
+        documents = []
+        for result in results:
+            documents.append({
+                "text": result.payload["text"],
+                "metadata": result.payload["metadata"],
+                "score": result.score
+            })
+        return documents[:limit]
+    
+    def _execute_filter_search(self, filters: Dict[str, Any], limit: int) -> List[Dict[str, Any]]:
+        """Execute filter search using Qdrant models.Filter."""
+        filter_conditions = []
+        for key, value in filters.items():
+            filter_conditions.append(
+                models.FieldCondition(
+                    key=f"metadata.{key}",
+                    match=models.MatchValue(value=value)
+                )
+            )
+            
+        search_filter = models.Filter(must=filter_conditions)
+        
+        scroll_response = self.client.scroll(
+            collection_name=self.collection_name,
+            scroll_filter=search_filter,
+            limit=limit,
+            with_payload=True,
+            with_vectors=False
+        )
+        
+        # Format results
+        documents = []
+        if scroll_response and scroll_response[0]:
+            for point in scroll_response[0]:
+                documents.append({
+                    "text": point.payload.get("text", ""),
+                    "metadata": point.payload.get("metadata", {})
+                })
+                
+        return documents
+    
+    def _get_document_by_filter(self, filter_conditions: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Get documents by filter, combine all chunks for the specified page."""
+        results = self._execute_filter_search(filter_conditions, limit=100)  # Get all chunks for the page
+        
+        if not results:
+            return None
+        
+        # Combine all chunks for this page into a single text
+        combined_text = ""
+        metadata = {}
+        image_url = None
+        
+        # Sort chunks by index if available
+        sorted_chunks = sorted(results, key=lambda x: x["metadata"].get("chunk_index", 0))
+        
+        for chunk in sorted_chunks:
+            combined_text += chunk["text"] + "\n\n"
+            chunk_metadata = chunk["metadata"]
+            
+            # Use first chunk's metadata as base
+            if not metadata:
+                metadata = chunk_metadata
+            
+            # Get image URL from any chunk (should be the same for all)
+            if not image_url and "image_url" in chunk_metadata:
+                image_url = chunk_metadata["image_url"]
+        
+        return {
+            "text": combined_text.strip(),
+            "metadata": metadata,
+            "image_url": image_url
+        }
+    
+    def _get_all_documents_raw(self, limit: int) -> List[Dict[str, Any]]:
+        """Implementation of get_all_documents for Qdrant."""
+        documents = []
+        offset = None
+        batch_size = 100
+        count = 0
+        
+        while count < limit:
+            response_tuple = self.client.scroll(
+                collection_name=self.collection_name,
+                limit=min(batch_size, limit - count),
+                offset=offset,
+                with_vectors=False,
+                with_payload=True
+            )
+            
+            points = response_tuple[0]
+            next_offset = response_tuple[1]
+            
+            if not points:
+                break
+                
+            for point in points:
+                documents.append({
+                    "text": point.payload.get("text", ""),
+                    "metadata": point.payload.get("metadata", {})
+                })
+                count += 1
+                
+            if next_offset is None or count >= limit:
+                break
+                
+            offset = next_offset
+            
+        return documents
+    
+    def _create_source_page_filter(self, source: str, page: int) -> Dict[str, Any]:
+        """Create source/page filter for Qdrant."""
+        return {
+            "source": source,
+            "page": page
+        }
+    
+    # Override the search method to provide the specialized semantic hybrid search
+    def search(self, query_vector: List[float], query: str = None, limit: int = 5) -> List[Dict[str, Any]]:
         """Performs hybrid search: exact match -> dense search -> sparse search -> reranking."""
         logging.info(f"Searching (semantic) for: '{query}'")
         
         if not query_vector:
              logging.error("Semantic search called with an empty query vector.")
              return []
-             
-        query_normalized = query.lower().strip()
         
-        # --- Exact/Partial Heading Match (Unchanged) ---
-        try:
-            # Get all documents first
-            all_documents = self.get_all_documents()
-            exact_matches = []
-            partial_matches = []
+        # Let's use our specialized semantic search if we have a query string
+        if query:
+            # Get dense vector results
+            dense_documents = self._execute_vector_search(query_vector, limit=limit * 3)
             
-            # Extract query words for partial matching
-            query_words = set(query_normalized.split())
-            stopwords = {'the', 'of', 'and', 'a', 'to', 'in', 'that', 'it', 'with', 'for', 'as', 'on', 'at', 'by', 'from'}
-            important_words = query_words - stopwords
-            
-            for doc in all_documents:
-                metadata = doc.get("metadata", {})
-                
-                # Check headings
-                for i in range(1, 7):
-                    heading_key = f"h{i}"
-                    if heading_key in metadata and metadata[heading_key]:
-                        heading_text = metadata[heading_key].lower().strip()
-                        
-                        # Check for exact title match
-                        if heading_text == query_normalized:
-                            exact_matches.append({
-                                "text": doc["text"],
-                                "metadata": metadata,
-                                "score": 1.0,  # Maximum score for exact matches
-                                "match_type": "exact_heading"
-                            })
-                            logging.info(f"Found exact heading match: {metadata[heading_key]}")
-                        
-                        # Check for strong partial match (all query words present)
-                        elif query_words and all(word in heading_text for word in query_words):
-                            heading_words = set(heading_text.split())
-                            match_percentage = len(query_words) / len(heading_words) if heading_words else 0
-                            if match_percentage >= 0.75:
-                                partial_matches.append({
-                                    "text": doc["text"],
-                                    "metadata": metadata,
-                                    "score": 0.95,  # High score for complete partial matches
-                                    "match_type": "strong_partial_heading",
-                                    "match_percentage": match_percentage
-                                })
-                                logging.info(f"Found strong partial heading match: {metadata[heading_key]} ({match_percentage:.2f})")
-                
-                # Check section and subsection
-                for key in ["section", "subsection", "heading_path"]:
-                    if key in metadata and metadata[key]:
-                        section_text = metadata[key].lower().strip()
-                        if section_text == query_normalized:
-                            exact_matches.append({
-                                "text": doc["text"],
-                                "metadata": metadata,
-                                "score": 1.0,
-                                "match_type": f"exact_{key}"
-                            })
-                            logging.info(f"Found exact {key} match: {metadata[key]}")
-                        elif query_words and all(word in section_text for word in query_words):
-                            section_words = set(section_text.split())
-                            match_percentage = len(query_words) / len(section_words) if section_words else 0
-                            if match_percentage >= 0.5:
-                                partial_matches.append({
-                                    "text": doc["text"],
-                                    "metadata": metadata,
-                                    "score": 0.9,
-                                    "match_type": f"partial_{key}",
-                                    "match_percentage": match_percentage
-                                })
-                                logging.info(f"Found partial {key} match: {metadata[key]} ({match_percentage:.2f})")
-            
-            # Combine and prioritize matches
-            all_matches = exact_matches + partial_matches
-            if all_matches:
-                logging.info(f"Found {len(exact_matches)} exact matches and {len(partial_matches)} partial matches for '{query}'")
-                all_matches.sort(key=lambda x: x.get("score", 0), reverse=True)
-                unique_matches = {}
-                for match in all_matches:
-                    if match["text"] not in unique_matches:
-                        unique_matches[match["text"]] = match
-                return list(unique_matches.values())[:limit]
-                
-        except Exception as e:
-            logging.error(f"Error in heading match search: {e}", exc_info=True)
-        
-        # --- Normal Hybrid Search --- 
-        query_terms = set(query_normalized.split())
-        important_terms = query_terms - stopwords
-        
-        # Dense vector search (Uses pre-computed query_vector)
-        # query_vector = self._get_embedding(query) # Removed
-        
-        dense_documents = []
-        try:
-            # Increase the retrieval limit to get more candidates for reranking
-            dense_results = self.client.search(
-                collection_name=self.collection_name,
-                query_vector=query_vector,
-                limit=limit * 5  # Increased to get more candidates before filtering
-            )
-            
-            # Format dense results with keyword filtering
-            filtered_out = 0
-            for result in dense_results:
-                text = result.payload["text"].lower()
-                metadata = result.payload["metadata"]
-                
-                # Apply filtering if the query has important terms
-                if len(important_terms) > 0 and len(query_terms) <= 5:
-                    term_found = any(term in text for term in important_terms)
-                    if not term_found:
-                        for key in ["section", "subsection", "heading_path"]:
-                            if key in metadata and metadata[key] and any(term in metadata[key].lower() for term in important_terms):
-                                term_found = True
-                                break
-                        if not term_found:
-                             for i in range(1, 7):
-                                heading_key = f"h{i}"
-                                if heading_key in metadata and metadata[heading_key] and any(term in metadata[heading_key].lower() for term in important_terms):
-                                    term_found = True
-                                    break
-                    if not term_found:
-                        filtered_out += 1
-                        continue
-                
-                dense_documents.append({
-                    "text": result.payload["text"],
-                    "metadata": metadata,
-                    "score": result.score
-                })
-            
-            if filtered_out > 0:
-                logging.info(f"Filtered out {filtered_out} dense results that didn't contain any query terms")
-        
-        except Exception as e:
-            logging.error(f"Error during dense search in semantic store: {e}", exc_info=True)
-            dense_documents = [] # Ensure it's empty on error
-            
-        # Sparse lexical search using BM25 (Requires original query string)
-        sparse_documents = []
-        if self.bm25_retriever:
-            try:
-                sparse_results_bm25 = self.bm25_retriever.get_relevant_documents(query, k=limit * 3)
-                for i, doc in enumerate(sparse_results_bm25):
-                    score = 1.0 - (i / len(sparse_results_bm25)) if sparse_results_bm25 else 0
-                    doc.metadata["score"] = score
-                    sparse_documents.append(doc)
-            except Exception as e:
-                 logging.error(f"Error during BM25 search: {e}", exc_info=True)
-                 sparse_documents = []
-        else:
-             # Attempt to initialize BM25 if not already done
-             try:
-                logging.info("BM25 retriever not initialized. Attempting lazy initialization...")
-                all_docs_payload = self.get_all_documents()
-                if all_docs_payload:
-                    langchain_docs = [Document(page_content=doc["text"], metadata=doc["metadata"]) for doc in all_docs_payload]
-                    self.bm25_retriever = BM25Retriever.from_documents(langchain_docs)
-                    logging.info(f"Initialized BM25 retriever with {len(langchain_docs)} documents")
-                    # Retry BM25 search
+            # Get sparse lexical search results using BM25 (if available)
+            sparse_documents = []
+            if self.bm25_retriever:
+                try:
                     sparse_results_bm25 = self.bm25_retriever.get_relevant_documents(query, k=limit * 3)
                     for i, doc in enumerate(sparse_results_bm25):
                         score = 1.0 - (i / len(sparse_results_bm25)) if sparse_results_bm25 else 0
                         doc.metadata["score"] = score
                         sparse_documents.append(doc)
-             except Exception as e:
-                logging.error(f"Failed to initialize BM25 retriever on demand: {e}")
-                sparse_documents = []
-        
-        # Perform hybrid reranking if possible
-        if sparse_documents and dense_documents:
-            try:
-                return self._hybrid_reranking(dense_documents, sparse_documents, query, limit)
-            except Exception as e:
-                logging.error(f"Error during hybrid reranking: {e}", exc_info=True)
-                # Fallback to dense results if reranking fails
-                return dense_documents[:limit]
-        
-        # Otherwise return just the filtered dense results
-        return dense_documents[:limit]
+                except Exception as e:
+                    logging.error(f"Error during BM25 search: {e}", exc_info=True)
+            
+            # Perform hybrid reranking if we have both dense and sparse results
+            if sparse_documents and dense_documents:
+                try:
+                    return self._hybrid_reranking(dense_documents, sparse_documents, query, limit)
+                except Exception as e:
+                    logging.error(f"Error during hybrid reranking: {e}", exc_info=True)
+                    # Fallback to just the dense results
+                    return dense_documents[:limit]
+            
+            # Just return dense results if no sparse results available
+            return dense_documents[:limit]
+        else:
+            # Fallback to standard search if no query string provided
+            return super().search(query_vector, query, limit)
     
     def get_details_by_source_page(self, source_name: str, page_number: int) -> Optional[Dict[str, Any]]:
         """Fetches and combines all text chunks for a specific source S3 key and page number."""

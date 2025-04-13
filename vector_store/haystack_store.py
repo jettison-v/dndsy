@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 import numpy as np
 import json
+from .search_helper import SearchHelper
 
 # Haystack imports
 from haystack_integrations.document_stores.qdrant import QdrantDocumentStore
@@ -28,14 +29,14 @@ class SimpleSecret:
     def resolve_value(self):
         return self._value
 
-class HaystackStore:
+class HaystackStore(SearchHelper):
     """Handles document storage and retrieval using Haystack with Qdrant."""
     
     DEFAULT_COLLECTION_NAME = "dnd_haystack"  # Reverted to original collection name
     
     def __init__(self, collection_name: str = DEFAULT_COLLECTION_NAME):
         """Initialize Haystack vector store with Qdrant backend."""
-        self.collection_name = collection_name
+        super().__init__(collection_name)
         
         # Initialize sentence transformer model for embeddings
         self.embedding_model_name = os.getenv("HAYSTACK_EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL)
@@ -190,58 +191,113 @@ class HaystackStore:
             logging.error(f"Error adding documents: {e}", exc_info=True)
             return 0
     
-    def search(self, query_vector: List[float], query: str = None, limit: int = 5) -> List[Dict[str, Any]]:
-        """Performs search using QdrantDocumentStore."""
-        logging.info(f"Searching haystack for: '{query if query else 'vector-only'}'")
+    # Implement abstract methods from SearchHelper
+    def _execute_vector_search(self, query_vector: List[float], limit: int) -> List[Dict[str, Any]]:
+        """Execute vector search using Haystack document store."""
+        # Search documents with embeddings using native QdrantDocumentStore methods
+        documents = self.document_store._query_by_embedding(
+            query_embedding=query_vector,
+            top_k=limit
+        )
         
-        if not query and query_vector is None:
-            logging.warning("No query provided for search")
-            return []
+        # Format results
+        formatted_results = []
+        for doc in documents:
+            formatted_results.append({
+                "text": doc.content,
+                "metadata": doc.meta,
+                "score": doc.score if hasattr(doc, 'score') else 0.0
+            })
+        
+        return formatted_results
+    
+    def _execute_filter_search(self, filters: Dict[str, Any], limit: int) -> List[Dict[str, Any]]:
+        """Execute filter search using Haystack filter syntax."""
+        # Convert simple filter dict to Haystack format
+        haystack_filter = self._convert_to_haystack_filter(filters)
+        
+        documents = self.document_store.filter_documents(filters=haystack_filter)
+        
+        # Format results
+        formatted_results = []
+        for doc in documents[:limit]:
+            formatted_results.append({
+                "text": doc.content,
+                "metadata": doc.meta
+            })
             
+        return formatted_results
+    
+    def _get_document_by_filter(self, filter_conditions: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Get a document by filter using Haystack filter syntax."""
+        results = self._execute_filter_search(filter_conditions, limit=1)
+        if results:
+            doc = results[0]
+            return {
+                "text": doc["text"],
+                "metadata": doc["metadata"],
+                "image_url": doc["metadata"].get("image_url")
+            }
+        return None
+    
+    def _get_all_documents_raw(self, limit: int) -> List[Dict[str, Any]]:
+        """Get all documents using Haystack document store."""
         try:
-            if query and not query_vector:
-                # Generate embedding for the query
-                if self.sentence_transformer:
-                    query_vector = self.sentence_transformer.encode(query).tolist()
-                    logging.info(f"Generated query embedding with dimension {len(query_vector)}")
-                else:
-                    logging.error("SentenceTransformer not initialized, cannot encode query")
-                    return []
+            documents = []
+            count = 0
             
-            # Log connection details
-            logging.info(f"Searching in collection: {self.collection_name}")
-            
-            # Search documents with embeddings using native QdrantDocumentStore methods
-            documents = self.document_store._query_by_embedding(
-                query_embedding=query_vector,
-                top_k=limit
-            )
-            
-            # Format results
-            formatted_results = []
-            for doc in documents:
-                formatted_results.append({
+            # Try with generator if available
+            for doc in self.document_store._get_documents_generator():
+                if count >= limit:
+                    break
+                documents.append({
                     "text": doc.content,
-                    "metadata": doc.meta,
-                    "score": doc.score if hasattr(doc, 'score') else 0.0
+                    "metadata": doc.meta
                 })
-            
-            logging.info(f"Search returned {len(formatted_results)} results")
-            return formatted_results
-            
-        except Exception as e:
-            logging.error(f"Error during search: {e}", exc_info=True)
-            
-            # Try a fallback approach with direct Qdrant client if available
-            try:
-                logging.info("Attempting fallback search approach...")
-                # This is just for logging - we're not actually implementing a fallback
-                logging.info("No fallback currently implemented")
-            except Exception as fallback_error:
-                logging.error(f"Fallback search also failed: {fallback_error}")
+                count += 1
                 
-            return []
+            return documents
             
+        except (AttributeError, NotImplementedError):
+            # Fall back to filter_documents without a filter
+            documents = self.document_store.filter_documents(filters={})
+            
+            # Format documents
+            formatted_docs = []
+            for doc in documents[:limit]:
+                formatted_docs.append({
+                    "text": doc.content,
+                    "metadata": doc.meta
+                })
+                
+            return formatted_docs
+    
+    def _convert_to_haystack_filter(self, simple_filter: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert simple filter dict to Haystack filter syntax."""
+        if not simple_filter:
+            return {}
+            
+        conditions = []
+        for key, value in simple_filter.items():
+            conditions.append({
+                "field": f"meta.{key}",
+                "operator": "==",
+                "value": value
+            })
+            
+        return {
+            "operator": "AND",
+            "conditions": conditions
+        }
+    
+    def _create_source_page_filter(self, source: str, page: int) -> Dict[str, Any]:
+        """Create source/page filter specific to Haystack."""
+        return {
+            "source": source,
+            "page": page
+        }
+    
+    # Additional Haystack-specific method
     def search_monster_info(self, monster_type: str, limit: int = 10) -> List[Dict[str, Any]]:
         """Search specifically for monster information."""
         try:
@@ -275,87 +331,4 @@ class HaystackStore:
             
         except Exception as e:
             logging.error(f"Error searching for monster info: {str(e)}", exc_info=True)
-            return []
-    
-    def get_all_documents(self, limit: int = 1000) -> List[Dict[str, Any]]:
-        """Gets all documents from the document store."""
-        try:
-            # Try to use pagination with get_documents_generator if available
-            logging.info(f"Retrieving all documents (limit: {limit})")
-            
-            try:
-                documents = []
-                count = 0
-                
-                # Use the _get_documents_generator method if available
-                for doc in self.document_store._get_documents_generator():
-                    if count >= limit:
-                        break
-                    documents.append({
-                        "text": doc.content,
-                        "metadata": doc.meta
-                    })
-                    count += 1
-                    
-                logging.info(f"Retrieved {len(documents)} documents")
-                return documents
-                
-            except (AttributeError, NotImplementedError) as e:
-                # Fall back to filter_documents without a filter to get all docs
-                logging.info(f"Generator method not available, falling back to filter_documents")
-                
-                # Use empty filter to get all documents in Haystack 2.x format
-                documents = self.document_store.filter_documents(filters={})
-                
-                # Format documents
-                formatted_docs = []
-                for doc in documents[:limit]:
-                    formatted_docs.append({
-                        "text": doc.content,
-                        "metadata": doc.meta
-                    })
-                    
-                logging.info(f"Retrieved {len(formatted_docs)} documents using fallback method")
-                return formatted_docs
-                
-        except Exception as e:
-            logging.error(f"Error retrieving all documents: {str(e)}", exc_info=True)
-            return []
-    
-    def get_details_by_source_page(self, source: str, page: int) -> Optional[Dict[str, Any]]:
-        """Gets detailed information about a specific page from a source document."""
-        try:
-            # Create filter using Haystack 2.x filter syntax
-            # See: https://docs.haystack.deepset.ai/docs/metadata-filtering
-            filters = {
-                "operator": "AND",
-                "conditions": [
-                    {"field": "meta.source", "operator": "==", "value": source},
-                    {"field": "meta.page", "operator": "==", "value": page}
-                ]
-            }
-            
-            logging.info(f"Retrieving details for {source} page {page} using filter: {filters}")
-            documents = self.document_store.filter_documents(filters=filters)
-            
-            if not documents:
-                logging.warning(f"No documents found for {source} page {page}")
-                return None
-                
-            # Use the first matching document
-            doc = documents[0]
-            
-            # Get the image URL from metadata if available
-            image_url = None
-            if hasattr(doc, 'meta') and doc.meta and 'image_url' in doc.meta:
-                image_url = doc.meta['image_url']
-                
-            return {
-                "text": doc.content,
-                "metadata": doc.meta,
-                "image_url": image_url
-            }
-            
-        except Exception as e:
-            logging.error(f"Error retrieving page details: {str(e)}", exc_info=True)
-            return None 
+            return [] 
