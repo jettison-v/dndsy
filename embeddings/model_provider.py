@@ -66,7 +66,7 @@ def get_embedding_model(store_type: str):
         return _load_standard_model()
     elif store_type == "semantic":
         return _load_semantic_model()
-    elif store_type == "haystack":
+    elif store_type in ["haystack", "haystack-qdrant", "haystack-memory"]:
         return _load_haystack_model()
     else:
         logger.error(f"Unsupported store_type for embeddings: {store_type}")
@@ -90,7 +90,7 @@ def embed_query(query: str, store_type: str) -> list[float]:
         except Exception as e:
             logger.error(f"Error getting semantic embedding for query: {e}", exc_info=True)
             raise
-    elif store_type == "haystack":
+    elif store_type in ["haystack", "haystack-qdrant", "haystack-memory"]:
         embedding = model_or_client.encode(query).tolist()
     else:
         raise ValueError(f"Unsupported store_type: {store_type}")
@@ -111,7 +111,7 @@ def embed_documents(texts: List[str], store_type: str) -> List[list[float]]:
     embeddings = []
     start_time = time.time()
 
-    if store_type in ["standard", "haystack"]:
+    if store_type in ["standard", "haystack", "haystack-qdrant", "haystack-memory"]:
         # SentenceTransformer encode can handle lists directly and efficiently
         embeddings = model_or_client.encode(texts, show_progress_bar=True).tolist()
     elif store_type == "semantic":

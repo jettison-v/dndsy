@@ -945,57 +945,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ---- Navigate Source Pages (Prev/Next) ----
     async function navigateSourcePage(direction, context) {
-        const currentPage = parseInt(sourceContent.dataset.currentPage, 10);
-        const totalPages = parseInt(sourceContent.dataset.totalPages, 10);
+        const currentPage = parseInt(context?.currentPage || sourceContent.dataset.currentPage, 10);
         const s3Key = context?.s3Key || sourceContent.dataset.s3Key;
-        const readableSourceName = sourceContent.dataset.readableSourceName;
-        const newPage = currentPage + direction;
-
-        if (isNaN(newPage) || !s3Key || newPage < 1 || (!isNaN(totalPages) && newPage > totalPages)) {
-            console.error('Invalid page navigation attempt', { newPage, totalPages, s3Key });
+        const storeType = context?.storeType || currentVectorStore;
+        
+        if (!s3Key || isNaN(currentPage)) {
+            console.error('Invalid page navigation: missing required data', { currentPage, s3Key });
             return;
         }
         
-        // Update UI immediately to show loading
-        const pageIndicator = document.getElementById('source-page-indicator');
-        const headerText = document.getElementById('source-panel-header-text');
-        const imageContainer = document.getElementById('source-image-container');
-        const prevButton = document.getElementById('source-prev-button');
-        const nextButton = document.getElementById('source-next-button');
-
-        if(pageIndicator) pageIndicator.textContent = `Page ${newPage}`;
-        if(imageContainer) {
-            imageContainer.innerHTML = `
-                <div class="source-loading">
-                    <div class="spinner"></div>
-                </div>
-            `;
+        // Calculate new page based on direction
+        let newPage;
+        if (direction === 'prev') {
+            newPage = currentPage - 1;
+            if (newPage < 1) {
+                console.error('Cannot navigate to page below 1');
+                return;
+            }
+        } else if (direction === 'next') {
+            newPage = currentPage + 1;
+            // We'll allow navigating to the next page even if we don't know total pages
+        } else {
+            console.error('Invalid navigation direction:', direction);
+            return;
         }
-        if(prevButton) prevButton.disabled = true;
-        if(nextButton) nextButton.disabled = true;
+
+        // Show loading state
+        sourceContent.innerHTML = '<p class="loading-source">Loading page ' + newPage + '...</p>';
         
         try {
-            const response = await fetch(`/api/get_context_details?source=${encodeURIComponent(s3Key)}&page=${newPage}&vector_store_type=${context?.storeType || currentVectorStore}`);
+            // Fetch the details for the new page
+            const response = await fetch(`/api/get_context_details?source=${encodeURIComponent(s3Key)}&page=${newPage}&vector_store_type=${storeType}`);
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
             }
-            const details = await response.json();
             
-            // Ensure we convert S3 URLs to HTTPS
-            if (details.image_url && details.image_url.startsWith('s3://')) {
-                details.image_url = convertS3UrlToHttps(details.image_url);
+            const details = await response.json();
+            if (!details) {
+                throw new Error('No details returned from server');
             }
             
-            const newDisplayText = `${readableSourceName} (page ${newPage})`;
-            // Call showSourcePanel without score for navigated pages
-            showSourcePanel(details, newDisplayText, newPage, s3Key, undefined, context?.storeType || currentVectorStore); 
+            // Get the readable source name from the current display or dataset
+            const readableSourceName = sourceContent.dataset.readableSourceName || s3Key.split('/').pop().replace('.pdf', '');
+            
+            // Update the source panel with the new page
+            showSourcePanel(details, `${readableSourceName} (page ${newPage})`, newPage, s3Key, undefined, storeType);
         } catch (error) {
-            console.error('Error fetching details for navigated page:', error);
-            if(imageContainer) imageContainer.innerHTML = `<p class="error-source">Error loading page ${newPage}: ${error.message}</p>`;
-            // Re-enable buttons based on original page
-            if(prevButton) prevButton.disabled = currentPage <= 1;
-            if(nextButton) nextButton.disabled = isNaN(totalPages) || currentPage >= totalPages;
+            console.error('Error navigating to page:', error);
+            sourceContent.innerHTML = `<p class="error-source">Error loading page ${newPage}: ${error.message}</p>`;
         }
     }
 
@@ -1258,34 +1256,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ---- Add Source Navigation Buttons ----
     function addSourceNavigation(currentPage, totalPages, s3Key, storeType = currentVectorStore) {
-        const sourceContent = document.getElementById('source-content');
-        // Create navigation container
-        const navContainer = document.createElement('div');
-        navContainer.className = 'source-nav';
+        // Find or create the navigation container
+        let navContainer = document.querySelector('.source-navigation');
+        if (!navContainer) {
+            navContainer = document.createElement('div');
+            navContainer.className = 'source-navigation';
+            sourceContent.appendChild(navContainer);
+        } else {
+            // Clear existing navigation
+            navContainer.innerHTML = '';
+        }
         
-        // Previous button
+        // Create the page indicator
+        const pageIndicator = document.createElement('div');
+        pageIndicator.className = 'page-indicator';
+        
+        // Format page number and handle N/A total pages
+        const formattedTotalPages = totalPages && totalPages !== 'N/A' ? totalPages : '?';
+        pageIndicator.textContent = `${currentPage} / ${formattedTotalPages}`;
+        
+        // Create navigation buttons
         const prevButton = document.createElement('button');
-        prevButton.innerHTML = '<i class="fas fa-arrow-left"></i> Previous';
+        prevButton.innerHTML = '<i class="fas fa-chevron-left"></i> Prev';
+        prevButton.className = 'nav-button prev-button';
         prevButton.disabled = currentPage <= 1;
-        prevButton.addEventListener('click', () => navigateSourcePage(-1, { s3Key, currentPage, totalPages, storeType }));
+        prevButton.addEventListener('click', () => {
+            navigateSourcePage('prev', { 
+                currentPage: currentPage, 
+                s3Key: s3Key,
+                storeType: storeType
+            });
+        });
         
-        // Page indicator
-        const pageIndicator = document.createElement('span');
-        pageIndicator.textContent = `${currentPage} / ${totalPages}`;
-        
-        // Next button
         const nextButton = document.createElement('button');
-        nextButton.innerHTML = 'Next <i class="fas fa-arrow-right"></i>';
-        nextButton.disabled = totalPages === 'N/A' || currentPage >= parseInt(totalPages);
-        nextButton.addEventListener('click', () => navigateSourcePage(1, { s3Key, currentPage, totalPages, storeType }));
+        nextButton.innerHTML = 'Next <i class="fas fa-chevron-right"></i>';
+        nextButton.className = 'nav-button next-button';
         
-        // Add elements to navigation container
+        // Only disable next if we know the total pages and are at the last page
+        nextButton.disabled = totalPages && totalPages !== 'N/A' && currentPage >= totalPages;
+        
+        nextButton.addEventListener('click', () => {
+            navigateSourcePage('next', { 
+                currentPage: currentPage, 
+                s3Key: s3Key,
+                storeType: storeType
+            });
+        });
+        
+        // Append elements to navigation container
         navContainer.appendChild(prevButton);
         navContainer.appendChild(pageIndicator);
         navContainer.appendChild(nextButton);
-        
-        // Add navigation to source content
-        sourceContent.appendChild(navContainer);
     }
 
     // ---- ESC Key to Close Panel ----
