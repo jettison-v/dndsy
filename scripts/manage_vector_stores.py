@@ -14,7 +14,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 # Imports that need project root in path
-from vector_store import get_vector_store, PdfPagesStore, SemanticStore, HaystackStore # Import all store types
+from vector_store import get_vector_store, PdfPagesStore, SemanticStore
 # Now import DataProcessor after the path is set
 from data_ingestion.processor import DataProcessor
 # Import constants directly from the module
@@ -57,7 +57,8 @@ def get_s3_client():
         logger.error(f"Failed to initialize S3 client: {e}")
         return None
 
-def manage_vector_stores(force_reprocess_images=False, reset_history=False, only_standard=False, only_semantic=False, only_haystack=False):
+def manage_vector_stores(force_reprocess_images=False, reset_history=False, only_standard=False, 
+                         only_semantic=False, only_haystack=False, haystack_type='haystack-qdrant'):
     """Resets vector stores and processes source documents, optionally targeting specific stores."""
     
     # Determine which stores to process
@@ -68,6 +69,10 @@ def manage_vector_stores(force_reprocess_images=False, reset_history=False, only
     logger.info(f"Processing standard store: {process_standard}")
     logger.info(f"Processing semantic store: {process_semantic}")
     logger.info(f"Processing haystack store: {process_haystack}")
+    if process_haystack:
+        logger.info(f"Using haystack type: {haystack_type}")
+        # Set environment variable for DataProcessor to use
+        os.environ["HAYSTACK_STORE_TYPE"] = haystack_type
 
     # Reset processing history if requested
     if reset_history:
@@ -154,17 +159,28 @@ def manage_vector_stores(force_reprocess_images=False, reset_history=False, only
             
     if process_haystack:
         try:
-            haystack_store = get_vector_store("haystack")
-            logger.info("Clearing haystack store")
+            haystack_store = get_vector_store(haystack_type)
+            logger.info(f"Clearing {haystack_type} store")
             
             # For QdrantDocumentStore, we use delete_documents to clear it
             try:
                 # Clean delete all documents in the store
                 haystack_store.document_store.delete_documents()
-                logger.info("Cleared all documents from haystack store")
+                logger.info(f"Cleared all documents from {haystack_type} store")
             except Exception as e:
-                logger.warning(f"Error clearing haystack store: {e}")
-                logger.info("Will attempt to reset the haystack store")
+                logger.warning(f"Error clearing {haystack_type} store: {e}")
+                
+                # For Haystack Memory Store, we might need to delete the persistence file
+                if haystack_type == 'haystack-memory':
+                    try:
+                        persistence_file = getattr(haystack_store, 'persistence_file', None)
+                        if persistence_file and os.path.exists(persistence_file):
+                            os.remove(persistence_file)
+                            logger.info(f"Deleted haystack persistence file: {persistence_file}")
+                    except Exception as file_e:
+                        logger.warning(f"Could not delete persistence file: {file_e}")
+                
+                logger.info(f"Will attempt to reset the {haystack_type} store")
                 
                 # Try to completely delete and recreate the collection if available
                 try:
@@ -174,14 +190,14 @@ def manage_vector_stores(force_reprocess_images=False, reset_history=False, only
                     # Recreate the index with the same parameters
                     haystack_store.document_store.create_index(
                         index=haystack_store.collection_name,
-                        embedding_dim=384  # Match the EMBEDDING_DIMENSION in haystack_store.py
+                        embedding_dim=384  # Match the EMBEDDING_DIMENSION in common.py
                     )
                     logger.info(f"Recreated haystack index: {haystack_store.collection_name}")
                 except Exception as inner_e:
                     logger.warning(f"Could not reset haystack index: {inner_e}")
-                    logger.info("Will initialize a fresh haystack store")
+                    logger.info(f"Will initialize a fresh {haystack_type} store")
         except Exception as e:
-            logger.warning(f"Could not clear haystack store: {e}")
+            logger.warning(f"Could not clear {haystack_type} store: {e}")
     
     # Process PDFs from S3 for all applicable collections
     logger.info("Initializing data processor")
@@ -189,7 +205,7 @@ def manage_vector_stores(force_reprocess_images=False, reset_history=False, only
     # When processing only haystack, force it to process PDFs regardless of change status
     force_processing = only_haystack
     if force_processing:
-        logger.info("Forcing processing for haystack regardless of PDF change status")
+        logger.info(f"Forcing processing for {haystack_type} regardless of PDF change status")
     
     processor = DataProcessor(
         process_standard=process_standard, 
@@ -214,13 +230,14 @@ def manage_vector_stores(force_reprocess_images=False, reset_history=False, only
                     
                     # If processing only a specific store, clear only that store's processed flag
                     if only_haystack:
-                        logger.info(f"Clearing haystack from processed stores for all PDFs")
+                        logger.info(f"Clearing {haystack_type} from processed stores for all PDFs")
                         # Make sure processed_stores exists for each PDF
                         if 'processed_stores' not in history[pdf_key]:
                             history[pdf_key]['processed_stores'] = []
                         # Remove haystack from processed stores if it's there
-                        if 'haystack' in history[pdf_key].get('processed_stores', []):
-                            history[pdf_key]['processed_stores'].remove('haystack')
+                        for store_type in ['haystack', 'haystack-qdrant', 'haystack-memory']:
+                            if store_type in history[pdf_key].get('processed_stores', []):
+                                history[pdf_key]['processed_stores'].remove(store_type)
                     elif only_semantic:
                         logger.info(f"Clearing semantic from processed stores for all PDFs")
                         if 'processed_stores' not in history[pdf_key]:
@@ -274,10 +291,10 @@ def manage_vector_stores(force_reprocess_images=False, reset_history=False, only
     if process_haystack:
         # Try to get haystack-specific information if available
         if hasattr(processor, "haystack_points_total"):
-            summary["haystack"] = f"{processor.haystack_points_total} points added"
+            summary[haystack_type] = f"{processor.haystack_points_total} points added"
         else:
             # For backward compatibility
-            summary["haystack"] = "Processing completed"
+            summary[haystack_type] = "Processing completed"
     
     # Log the detailed processing summary
     logger.info("=== Processing Summary ===")
@@ -305,6 +322,9 @@ if __name__ == "__main__":
     parser.add_argument('--only-standard', action='store_true', help="Only reset and process the standard (PDF pages) store.")
     parser.add_argument('--only-semantic', action='store_true', help="Only reset and process the semantic store.")
     parser.add_argument('--only-haystack', action='store_true', help="Only reset and process the haystack store.")
+    # Add argument for haystack type
+    parser.add_argument('--haystack-type', choices=['haystack-qdrant', 'haystack-memory'], 
+                        default='haystack-qdrant', help="The type of Haystack store to use (default: haystack-qdrant)")
     args = parser.parse_args()
     
     # Count how many 'only' flags are set
@@ -320,13 +340,16 @@ if __name__ == "__main__":
     logger.info(f"Only Standard: {args.only_standard}")
     logger.info(f"Only Semantic: {args.only_semantic}")
     logger.info(f"Only Haystack: {args.only_haystack}")
+    if args.only_haystack or not only_flags_count:
+        logger.info(f"Haystack type: {args.haystack_type}")
     
     success = manage_vector_stores(
         force_reprocess_images=args.force_reprocess_images, 
         reset_history=args.reset_history,
         only_standard=args.only_standard,
         only_semantic=args.only_semantic,
-        only_haystack=args.only_haystack
+        only_haystack=args.only_haystack,
+        haystack_type=args.haystack_type
     )
     
     if success:

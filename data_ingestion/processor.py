@@ -123,11 +123,15 @@ class DataProcessor:
             
         self.haystack_store = None
         if self.process_haystack:
-            self.haystack_store = get_vector_store("haystack")
+            # Use the environment variable to determine which Haystack implementation to use
+            haystack_type = os.environ.get("HAYSTACK_STORE_TYPE", "haystack-qdrant")
+            self.haystack_type = haystack_type
+            self.haystack_store = get_vector_store(haystack_type)
             if not self.haystack_store:
-                raise RuntimeError("Failed to initialize haystack vector store.")
-            logger.info("Haystack store initialized for processing.")
+                raise RuntimeError(f"Failed to initialize {haystack_type} vector store.")
+            logger.info(f"{haystack_type} store initialized for processing.")
         else:
+            self.haystack_type = None
             logger.info("Skipping haystack store initialization.")
             
         self.processed_sources = set()
@@ -500,38 +504,38 @@ class DataProcessor:
                 # 3. Haystack Store
                 if self.process_haystack and semantic_page_data:
                     # Only skip if not force_processing and already processed by haystack
-                    if not self.force_processing and "haystack" in processed_stores and old_hash == pdf_hash:
-                        logger.info(f"Skipping haystack store processing for {s3_pdf_key} (already processed)")
+                    if not self.force_processing and self.haystack_type in processed_stores and old_hash == pdf_hash:
+                        logger.info(f"Skipping {self.haystack_type} store processing for {s3_pdf_key} (already processed)")
                     else:
                         if self.force_processing:
-                            logger.info(f"Force processing {s3_pdf_key} for haystack")
+                            logger.info(f"Force processing {s3_pdf_key} for {self.haystack_type}")
                         # The PDF hasn't been processed by haystack yet, process it now
-                        logger.info(f"Chunking {len(semantic_page_data)} pages for haystack store...")
+                        logger.info(f"Chunking {len(semantic_page_data)} pages for {self.haystack_type} store...")
                         try:
                             haystack_chunks = self.haystack_store.chunk_document_with_cross_page_context(semantic_page_data)
                             if haystack_chunks:
-                                logger.info(f"Generated {len(haystack_chunks)} chunks for haystack store")
+                                logger.info(f"Generated {len(haystack_chunks)} chunks for {self.haystack_type} store")
                                 try:
                                     # Add to haystack store (no need to pre-embed as haystack will handle it)
-                                    logger.info(f"Adding {len(haystack_chunks)} chunks to haystack store...")
+                                    logger.info(f"Adding {len(haystack_chunks)} chunks to {self.haystack_type} store...")
                                     num_added = self.haystack_store.add_points(haystack_chunks)
                                     if num_added > 0:
-                                        logger.info(f"Successfully added {num_added} points to haystack store for {pdf_filename}")
+                                        logger.info(f"Successfully added {num_added} points to {self.haystack_type} store for {pdf_filename}")
                                         haystack_points_total += num_added
                                         documents_processed += num_added
                                         # Mark this store as having processed this PDF
                                         if 'processed_stores' not in self.process_history[s3_pdf_key]:
                                             self.process_history[s3_pdf_key]['processed_stores'] = []
-                                        if "haystack" not in self.process_history[s3_pdf_key]['processed_stores']:
-                                            self.process_history[s3_pdf_key]['processed_stores'].append("haystack")
+                                        if self.haystack_type not in self.process_history[s3_pdf_key]['processed_stores']:
+                                            self.process_history[s3_pdf_key]['processed_stores'].append(self.haystack_type)
                                     else:
-                                        logger.error(f"Failed to add any points to haystack store for {pdf_filename}")
+                                        logger.error(f"Failed to add any points to {self.haystack_type} store for {pdf_filename}")
                                 except Exception as e:
-                                    logger.error(f"Failed to add chunks to haystack store for {s3_pdf_key}: {e}", exc_info=True)
+                                    logger.error(f"Failed to add chunks to {self.haystack_type} store for {s3_pdf_key}: {e}", exc_info=True)
                             else:
-                                logger.warning(f"No haystack chunks generated for {s3_pdf_key}")
+                                logger.warning(f"No {self.haystack_type} chunks generated for {s3_pdf_key}")
                         except Exception as e:
-                            logger.error(f"Error during haystack chunking for {s3_pdf_key}: {e}", exc_info=True)
+                            logger.error(f"Error during {self.haystack_type} chunking for {s3_pdf_key}: {e}", exc_info=True)
                 
                 # Close the document
                 doc.close()
@@ -554,7 +558,7 @@ class DataProcessor:
         logger.info(f"Added {standard_points_total} points to standard store")
         logger.info(f"Added {semantic_points_total} points to semantic store")
         if self.process_haystack:
-            logger.info(f"Added {haystack_points_total} points to haystack store")
+            logger.info(f"Added {haystack_points_total} points to {self.haystack_type} store")
         logger.info(f"Reprocessed {len(self.reprocessed_pdfs)} PDFs with new/changed content or images")
         logger.info(f"Skipped image generation for {len(self.unchanged_pdfs)} unchanged PDFs")
         
@@ -596,7 +600,7 @@ class DataProcessor:
                 # Special handling for haystack - we may still need to process it
                 # even if the PDF is unchanged
                 if self.process_haystack and self.force_processing:
-                    logging.info(f"Forcing haystack processing for unchanged PDF: {pdf_path}")
+                    logging.info(f"Forcing {self.haystack_type} processing for unchanged PDF: {pdf_path}")
                     semantic_page_data = self._process_pdf_for_semantic(pdf_path, pdf_hash, pdf_info)
                     self._process_pdf_for_haystack(pdf_path, pdf_hash, semantic_page_data, pdf_info)
                     process_history[pdf_path] = pdf_info
@@ -659,14 +663,14 @@ class DataProcessor:
             return
         
         try:
-            logging.info(f"Processing {pdf_path} for haystack store")
+            logging.info(f"Processing {pdf_path} for {self.haystack_type} store")
             
             # Check if PDF was already processed for haystack
             processed_stores = pdf_info.get("processed_stores", {})
             if (not self.force_processing and 
-                "haystack" in processed_stores and 
-                processed_stores.get("haystack") == pdf_hash):
-                logging.info(f"Skipping haystack processing for unchanged PDF: {pdf_path}")
+                self.haystack_type in processed_stores and 
+                processed_stores.get(self.haystack_type) == pdf_hash):
+                logging.info(f"Skipping {self.haystack_type} processing for unchanged PDF: {pdf_path}")
                 return
                 
             # If semantic_page_data is None, initialize it as an empty dict
@@ -719,30 +723,30 @@ class DataProcessor:
                     })
                     
                 except Exception as e:
-                    logging.error(f"Error preparing page {page_num} for haystack: {e}")
+                    logging.error(f"Error preparing page {page_num} for {self.haystack_type}: {e}")
                     continue
                     
             if not page_texts:
-                logging.warning(f"No valid pages found for haystack in {pdf_path}")
+                logging.warning(f"No valid pages found for {self.haystack_type} in {pdf_path}")
                 return
                 
             # Generate chunks for haystack
             chunks = self.haystack_store.chunk_document_with_cross_page_context(page_texts)
             
             if chunks:
-                logging.info(f"Generated {len(chunks)} chunks for haystack from {pdf_path}")
+                logging.info(f"Generated {len(chunks)} chunks for {self.haystack_type} from {pdf_path}")
                 
                 # Add chunks to haystack store
                 points_added = self.haystack_store.add_points(chunks)
-                logging.info(f"Added {points_added} chunks to haystack store from {pdf_path}")
+                logging.info(f"Added {points_added} chunks to {self.haystack_type} store from {pdf_path}")
                 
                 # Update processed flag for this store
-                processed_stores["haystack"] = pdf_hash
+                processed_stores[self.haystack_type] = pdf_hash
                 pdf_info["processed_stores"] = processed_stores
             else:
-                logging.warning(f"No chunks were generated for haystack from {pdf_path}")
+                logging.warning(f"No chunks were generated for {self.haystack_type} from {pdf_path}")
             
         except Exception as e:
-            logging.error(f"Error processing {pdf_path} for haystack: {e}", exc_info=True)
+            logging.error(f"Error processing {pdf_path} for {self.haystack_type}: {e}", exc_info=True)
 
 # Removed main() and if __name__ == "__main__" block as this is now a module 
