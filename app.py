@@ -136,6 +136,20 @@ def get_context_details():
     logger.info(f"Fetching details for source: '{source_name}', page: {page_number}, store type: {vector_store_type}")
     
     try:
+        # Special handling for haystack-memory when empty
+        if vector_store_type == 'haystack-memory':
+            # Check if the directory exists and if it contains any PKL files
+            haystack_dir = os.path.join('data', 'haystack_store')
+            if not os.path.exists(haystack_dir) or not any(f.endswith('.pkl') for f in os.listdir(haystack_dir)):
+                # Return a helpful message instead of a 404
+                return jsonify({
+                    'text': "The Haystack Memory store is empty. Please process documents using:\npython scripts/manage_vector_stores.py --only-haystack --haystack-type haystack-memory",
+                    'metadata': {},
+                    'image_url': None,
+                    'total_pages': None,
+                    'needs_processing': True
+                })
+        
         vector_store = get_vector_store(vector_store_type)
         details = vector_store.get_details_by_source_page(source_name, page_number)
         

@@ -491,6 +491,7 @@ class SemanticStore(SearchHelper):
     def get_details_by_source_page(self, source_name: str, page_number: int) -> Optional[Dict[str, Any]]:
         """Fetches and combines all text chunks for a specific source S3 key and page number."""
         try:
+            # Create a filter for the exact page
             search_filter = models.Filter(
                 must=[
                     models.FieldCondition( 
@@ -539,7 +540,70 @@ class SemanticStore(SearchHelper):
                     "total_pages": total_pages,
                 }
             else:
-                logging.warning(f"Semantic store scroll found no match for source: '{source_name}', page: {page_number}")
+                # No chunks found for this page, try to determine if the page exists in the document
+                logging.warning(f"Semantic store: No chunks found for source: '{source_name}', page: {page_number}")
+                
+                # Check if the document exists by looking for any page from this source
+                source_filter = models.Filter(
+                    must=[
+                        models.FieldCondition( 
+                            key="metadata.source",
+                            match=models.MatchValue(value=source_name)
+                        )
+                    ]
+                )
+                
+                # Get a sample of chunks from this document to find metadata
+                doc_response = self.client.scroll(
+                    collection_name=self.collection_name,
+                    scroll_filter=source_filter,
+                    limit=100,
+                    with_payload=True,
+                    with_vectors=False
+                )
+                
+                if doc_response and doc_response[0]:
+                    # Document exists but this specific page might not have chunks
+                    # Get image_url and total_pages from any chunk
+                    sample_points = doc_response[0]
+                    image_url = None
+                    total_pages = None
+                    existing_pages = set()
+                    
+                    for point in sample_points:
+                        metadata = point.payload.get("metadata", {})
+                        page = metadata.get("page")
+                        if page is not None:
+                            existing_pages.add(page)
+                        
+                        if not image_url and "image_url" in metadata:
+                            base_url = metadata["image_url"]
+                            # Extract base URL up to the page number
+                            if base_url and isinstance(base_url, str):
+                                image_url_parts = base_url.rsplit('/', 1)
+                                if len(image_url_parts) > 1:
+                                    # Construct URL for the requested page
+                                    image_url = f"{image_url_parts[0]}/{page_number}.png"
+                        
+                        if not total_pages and "total_pages" in metadata:
+                            total_pages = metadata["total_pages"]
+                    
+                    # Get closest page with content
+                    if existing_pages:
+                        closest_page = min(existing_pages, key=lambda x: abs(x - page_number))
+                        logging.info(f"Page {page_number} not found, closest page with content is {closest_page}")
+                        
+                        # Return a placeholder with available metadata
+                        # This allows navigation to work even if specific page chunks are missing
+                        return {
+                            "text": f"This page ({page_number}) does not have semantic chunks available. Try using the 'Page Context' view or navigate to nearby pages.",
+                            "image_url": image_url,
+                            "total_pages": total_pages,
+                            "closest_page": closest_page
+                        }
+                
+                # Document doesn't exist or no useful metadata found
+                logging.warning(f"Semantic store found no match for source: '{source_name}', page: {page_number}")
                 return None
         except Exception as e:
             logging.error(f"Error fetching details from Semantic store for '{source_name}' page {page_number}: {e}", exc_info=True)

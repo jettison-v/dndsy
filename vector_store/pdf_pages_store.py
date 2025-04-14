@@ -137,10 +137,33 @@ class PdfPagesStore(SearchHelper):
         results = self._execute_filter_search(filter_conditions, limit=1)
         if results:
             doc = results[0]
+            # Get the metadata
+            metadata = doc["metadata"]
+            # Ensure total_pages is included
+            total_pages = metadata.get("total_pages")
+            
+            # If total_pages isn't available in the document metadata,
+            # try to extract it from the source file name or use a default
+            if not total_pages and "source" in metadata:
+                try:
+                    # Try to get total pages by looking for other pages from same source
+                    source = metadata["source"]
+                    # Create a filter to find all pages from this source
+                    source_filter = {"source": source}
+                    all_pages = self._execute_filter_search(source_filter, limit=1000)
+                    if all_pages:
+                        # Get the maximum page number
+                        page_numbers = [page["metadata"].get("page", 0) for page in all_pages if "metadata" in page]
+                        if page_numbers:
+                            total_pages = max(page_numbers)
+                except Exception as e:
+                    logging.error(f"Error finding total pages: {e}")
+            
             return {
                 "text": doc["text"],
-                "metadata": doc["metadata"],
-                "image_url": doc["metadata"].get("image_url")
+                "metadata": metadata,
+                "image_url": metadata.get("image_url"),
+                "total_pages": total_pages
             }
         return None
     
