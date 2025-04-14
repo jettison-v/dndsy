@@ -52,6 +52,12 @@ static/pdf_page_images/
 pdf_process_history.json
 scripts/pdf_process_history.json
 
+# Flask session files
+flask_session/
+
+# Haystack persistence files
+data/haystack_store/*.pkl
+
 # macOS
 .DS_Store
 
