@@ -53,10 +53,12 @@ pdf_process_history.json
 scripts/pdf_process_history.json
 
 # Flask session files
-flask_session/
+flask_session/*
+!flask_session/README.md
 
 # Haystack persistence files
 data/haystack_store/*.pkl
+!data/haystack_store/README.md
 
 # macOS
 .DS_Store

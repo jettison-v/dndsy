@@ -1,0 +1,26 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up directories
+        run: |
+          mkdir -p data/haystack_store
+          mkdir -p flask_session
+          
+      - name: Create README files to maintain directory structure
+        run: |
+          echo "# Haystack Store Directory\nThis directory is used for storing Haystack memory persistence files." > data/haystack_store/README.md
+          echo "# Flask Session Directory\nThis directory is used for storing Flask session files." > flask_session/README.md
+
+      # Add other deployment steps below as needed 
