@@ -66,10 +66,16 @@ data/haystack_store/*.pkl
 # Docker
 .docker/
 
-# Test scripts and temporary files
-tests/
-*.dockerfile
-Dockerfile.*
+# Test files but allow tests directory structure
+tests/__pycache__/
+tests/data/
+tests/temp/
+!tests/*.py
+!tests/vector_store/
+tests/vector_store/__pycache__/
+!tests/vector_store/*.py
+!tests/vector_store/README.md
 
-# macOS
-.DS_Store 
+# Temporary test files
+*.dockerfile
+Dockerfile.* 

@@ -1,6 +1,10 @@
 from qdrant_client import QdrantClient
 import os
 import json
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Setup client
 qdrant_host = os.getenv("QDRANT_HOST", "localhost")
@@ -20,7 +24,7 @@ print(f"Available collections: {[col.name for col in collections]}")
 
 # Check point counts in each collection
 print("\nPoint counts:")
-for col_name in ["dnd_knowledge", "dnd_semantic"]:
+for col_name in ["dnd_pdf_pages", "dnd_semantic", "dnd_haystack"]:
     try:
         point_count = client.count(col_name).count
         print(f"  {col_name}: {point_count} points")
@@ -43,4 +47,8 @@ for col_name in ["dnd_knowledge", "dnd_semantic"]:
                 if "page" in metadata:
                     print(f"  Page: {metadata['page']}")
     except Exception as e:
-        print(f"  Error with {col_name}: {str(e)}") 
+        print(f"  Error with {col_name}: {str(e)}")
+
+# Add a main block to make it runnable
+if __name__ == "__main__":
+    print("Qdrant diagnostic check completed.") 

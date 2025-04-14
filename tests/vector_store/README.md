@@ -1,30 +1,34 @@
 # Vector Store Tests
 
-This directory contains test scripts for verifying the functionality of different vector store implementations.
+This directory contains tests for the various vector store implementations:
 
-## Test Files
-
-1. **test_haystack.py**
-   - Tests the functionality of the Haystack vector store
-   - Verifies document retrieval, search, and embedding initialization
-   - Prints detailed logs about document count and embedding values
-
-2. **test_force_auth.py**
-   - Direct test for the `get_details_by_source_page` method
-   - Bypasses authentication to test core functionality
-   - Useful for debugging issues with document retrieval
-   - Compares results between Haystack and Standard stores
+- Standard (PDF Pages) Store
+- Semantic Store 
+- Haystack implementations:
+  - Haystack with Qdrant
+  - Haystack with Memory storage
 
 ## Running Tests
 
-To run these tests, use:
+To run vector store tests:
 
 ```bash
-# Run a specific test file
-python -m tests.vector_store.test_haystack
+# Run all tests
+python -m tests.vector_store.test_vector_store
 
-# Run the force auth test
-python -m tests.vector_store.test_force_auth
+# Run specific tests
+python -m tests.vector_store.test_qdrant
+python -m tests.vector_store.test_haystack_memory
+python -m tests.vector_store.test_haystack_qdrant
 ```
 
-These tests can help verify that vector stores are properly initialized and functioning correctly after code changes. 
+## Test Coverage
+
+The tests verify the following functionality:
+
+- Initialization of vector stores
+- Document chunking
+- Adding points/documents
+- Vector search
+- Filtering by metadata
+- Source page lookups 
