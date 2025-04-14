@@ -426,12 +426,17 @@ document.addEventListener('DOMContentLoaded', () => {
         mobileHeaderSourceToggle.addEventListener('click', toggleSourcePanel);
     }
 
-    // Function to toggle source panel visibility
+    // ---- Toggle Source Panel (Open/Close) ----
     function toggleSourcePanel() {
+        if (sourcePanel.classList.contains('collapsing') || 
+            sourcePanel.classList.contains('closing')) {
+            return; // Already in transition
+        }
+        
         if (sourcePanelOpen) {
+            // Close panel
             sourcePanel.classList.add('closing');
             
-            // Wait for animation to complete before removing open class
             setTimeout(() => {
                 sourcePanel.classList.remove('open');
                 sourcePanel.classList.remove('closing');
@@ -442,28 +447,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     pill.classList.remove('active');
                 });
                 
-                // Update mobile toggle icons
-                if (mobileSourceToggle) {
-                    mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
-                }
-                if (mobileHeaderSourceToggle) {
-                    mobileHeaderSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+                // Update mobile toggle buttons if on mobile
+                if (window.innerWidth <= 768) {
+                    if (mobileSourceToggle) {
+                        mobileSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+                    }
+                    if (mobileHeaderSourceToggle) {
+                        mobileHeaderSourceToggle.querySelector('i').classList.replace('fa-times', 'fa-book');
+                    }
                 }
             }, 300); // Match the animation duration
         } else {
+            // Open panel
             sourcePanel.classList.add('open');
             sourcePanelOpen = true;
             
-            // Update mobile toggle icons
-            if (mobileSourceToggle) {
-                mobileSourceToggle.querySelector('i').classList.replace('fa-book', 'fa-times');
+            // Update mobile toggle buttons if on mobile
+            if (window.innerWidth <= 768) {
+                if (mobileSourceToggle) {
+                    mobileSourceToggle.querySelector('i').classList.replace('fa-book', 'fa-times');
+                }
+                if (mobileHeaderSourceToggle) {
+                    mobileHeaderSourceToggle.querySelector('i').classList.replace('fa-book', 'fa-times');
+                }
             }
-            if (mobileHeaderSourceToggle) {
-                mobileHeaderSourceToggle.querySelector('i').classList.replace('fa-book', 'fa-times');
-            }
-            
-            setTimeout(() => {
-            }, 300);
         }
     }
 
@@ -817,130 +824,114 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ---- Show Source Content in Panel ----
-    function showSourcePanel(details, displayText, pageNumber, s3Key, score, storeType = currentVectorStore) { 
-        // Reset zoom level whenever a new source is shown
-        currentZoomLevel = 1;
-        updateZoom(); // Apply reset
-        
-        // Details object expected: {"text": "...", "image_url": "...", "total_pages": ...} 
+    function showSourcePanel(details, displayText, pageNumber, s3Key, score, storeType = currentVectorStore) {
         if (!details) {
-            sourceContent.innerHTML = '<p class="error-source">Error: Received no details for source.</p>';
+            console.error("No details provided to showSourcePanel");
             return;
         }
         
-        // Convert the S3 URL to an HTTPS URL that browsers can load
-        const imageUrl = convertS3UrlToHttps(details.image_url);
+        // Check if the panel isn't already open, and open it
+        if (!sourcePanelOpen) {
+            toggleSourcePanel();
+        }
         
-        const totalPages = details.total_pages || 'N/A'; 
-
-        // Clear previous content
-        sourceContent.innerHTML = ''; 
-        sourceContent.dataset.currentPage = pageNumber; 
-        sourceContent.dataset.totalPages = totalPages;
-        // Store the displayText (which contains the readable name) for navigation header
-        const headerTextMatch = displayText.match(/^(.*?)\s*\(page\s*\d+\)$/i); 
-        const readableSourceName = headerTextMatch ? headerTextMatch[1].trim() : displayText;
-        sourceContent.dataset.readableSourceName = readableSourceName; 
-        sourceContent.dataset.s3Key = s3Key;
-
-        // Create a header for the source info
-        const sourceHeader = document.createElement('div');
-        sourceHeader.className = 'source-detail-header';
-        sourceHeader.innerHTML = `
-            <h4>${readableSourceName}</h4>
-            <div class="source-metadata">
-                <span class="page-info">Page ${pageNumber}${totalPages !== 'N/A' ? ` of ${totalPages}` : ''}</span>
-                ${score ? `<span class="relevance-score">Relevance: ${Math.round(score * 100)}%</span>` : ''}
-            </div>
-        `;
-        sourceContent.appendChild(sourceHeader);
+        // Clear any existing content
+        sourceContent.innerHTML = '';
         
-        // Container for the image with overflow scroll
+        // Add a header with source info
+        const header = document.createElement('div');
+        header.className = 'source-header';
+        
+        const sourceName = document.createElement('h4');
+        sourceName.id = 'source-panel-header-text';
+        sourceName.textContent = displayText;
+        header.appendChild(sourceName);
+        
+        sourceContent.appendChild(header);
+        
+        // Add image container (for PDF preview)
         const imageContainer = document.createElement('div');
         imageContainer.id = 'source-image-container';
+        imageContainer.className = 'source-image-container';
+        imageContainer.style.transform = `scale(${currentZoomLevel})`;
         
-        if (imageUrl) {
-            // Add image container to DOM first
-            sourceContent.appendChild(imageContainer);
+        // Format text for display
+        const textContainer = document.createElement('div');
+        textContainer.id = 'source-text-container';
+        textContainer.className = 'source-text-container';
+        
+        // Check if content is unavailable but we have an image
+        const isPlaceholder = details.available_in_store === false;
+        
+        if (isPlaceholder) {
+            // This is a placeholder page with no indexed content
+            const placeholderMessage = document.createElement('div');
+            placeholderMessage.className = 'source-unavailable-message';
+            placeholderMessage.textContent = details.text;
+            textContainer.appendChild(placeholderMessage);
+        } else {
+            // Normal content processing
+            const formattedText = document.createElement('div');
+            formattedText.className = 'source-text';
             
-            // Load the image
-            const img = new Image();
+            // Use helper function to handle basic formatting rules
+            if (details.text) {
+                formattedText.textContent = details.text;
+            } else {
+                formattedText.innerHTML = '<p class="error-source">No text content available for this source.</p>';
+            }
             
-            // Add a simple loading indicator
-            imageContainer.innerHTML = `
-                <div class="source-loading">
-                    <div class="spinner"></div>
-                </div>
-            `;
+            textContainer.appendChild(formattedText);
+        }
+        
+        // Only add text container for normal (non-placeholder) pages 
+        // or placeholders that explicitly want to show a message
+        if (details.text) {
+            sourceContent.appendChild(textContainer);
+        }
+        
+        // Add source image if available
+        if (details.image_url) {
+            // Convert S3 URLs to HTTPS if needed
+            let imageUrl = details.image_url;
+            if (imageUrl.startsWith('s3://')) {
+                imageUrl = convertS3UrlToHttps(imageUrl);
+            }
             
-            img.onload = function() {
-                // Remove loading indicator
+            // Create and load the image
+            const img = document.createElement('img');
+            img.className = 'source-image';
+            img.src = imageUrl;
+            img.alt = `Source page ${pageNumber}`;
+            
+            imageContainer.innerHTML = '<div class="image-loading">Loading image...</div>';
+            
+            img.onload = () => {
                 imageContainer.innerHTML = '';
                 imageContainer.appendChild(img);
-                
-                // Add zoom controls as overlay
-                const zoomControls = document.createElement('div');
-                zoomControls.className = 'image-zoom-controls';
-                zoomControls.innerHTML = `
-                    <button id="zoom-in-overlay" title="Zoom In"><i class="fas fa-search-plus"></i></button>
-                    <button id="zoom-reset-overlay" title="Reset Zoom"><i class="fas fa-sync-alt"></i></button>
-                    <button id="zoom-out-overlay" title="Zoom Out"><i class="fas fa-search-minus"></i></button>
-                `;
-                imageContainer.appendChild(zoomControls);
-                
-                // Add zoom functionality
-                document.getElementById('zoom-in-overlay').addEventListener('click', () => {
-                    if (currentZoomLevel < 2.5) {
-                        currentZoomLevel += 0.25;
-                        updateZoom();
-                    }
-                });
-                
-                document.getElementById('zoom-out-overlay').addEventListener('click', () => {
-                    if (currentZoomLevel > 0.5) {
-                        currentZoomLevel -= 0.25;
-                        updateZoom();
-                    }
-                });
-                
-                document.getElementById('zoom-reset-overlay').addEventListener('click', () => {
-                    currentZoomLevel = 1;
-                    updateZoom();
-                });
-                
-                // Add page navigation
-                addSourceNavigation(pageNumber, totalPages, s3Key, storeType);
             };
             
-            img.onerror = function() {
-                imageContainer.innerHTML = `<p class="error-source">Error loading image. Please try again.</p>`;
+            img.onerror = () => {
+                imageContainer.innerHTML = '<p class="error-source">Error loading image</p>';
             };
             
-            img.src = imageUrl;
-            img.alt = `Page ${pageNumber} of ${readableSourceName}`;
-            img.style.transform = `scale(${currentZoomLevel})`;
-            img.style.transformOrigin = 'center top';
-            img.style.transition = 'transform 0.2s ease-out';
+            sourceContent.appendChild(imageContainer);
         } else {
-            imageContainer.innerHTML = `<p class="error-source">No image available for this source.</p>`;
+            imageContainer.innerHTML = '<p class="error-source">No image available for this source</p>';
             sourceContent.appendChild(imageContainer);
         }
         
-        // Show source panel if not already visible
-        if (!sourcePanelOpen) {
-            sourcePanel.classList.add('open');
-            sourcePanelOpen = true;
-        }
+        // Store the relevant information in the sourceContent dataset
+        sourceContent.dataset.currentPage = pageNumber;
+        sourceContent.dataset.totalPages = details.total_pages || 'N/A';
+        sourceContent.dataset.s3Key = s3Key;
+        sourceContent.dataset.readableSourceName = displayText.split(' (page')[0]; // Extract source name without page
         
-        // Update mobile toggle buttons if on mobile
-        if (window.innerWidth <= 768) {
-            if (mobileSourceToggle) {
-                mobileSourceToggle.querySelector('i').classList.replace('fa-book', 'fa-times');
-            }
-            if (mobileHeaderSourceToggle) {
-                mobileHeaderSourceToggle.querySelector('i').classList.replace('fa-book', 'fa-times');
-            }
-        }
+        // Add navigation (if applicable)
+        addSourceNavigation(pageNumber, details.total_pages, s3Key, storeType);
+        
+        // Set zoom level
+        updateZoom();
     }
 
     // ---- Navigate Source Pages (Prev/Next) ----

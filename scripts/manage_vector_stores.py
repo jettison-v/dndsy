@@ -69,6 +69,38 @@ def manage_vector_stores(force_reprocess_images=False, reset_history=False, only
     logger.info(f"Processing standard store: {process_standard}")
     logger.info(f"Processing semantic store: {process_semantic}")
     logger.info(f"Processing haystack store: {process_haystack}")
+    
+    # Special handling when processing haystack without specifying a specific type
+    if process_haystack and not only_haystack and haystack_type == 'haystack-qdrant':
+        logger.info("Processing both Haystack implementations because no specific type was provided")
+        
+        # First process with Qdrant
+        logger.info("First processing with Haystack (Qdrant)")
+        os.environ["HAYSTACK_STORE_TYPE"] = "haystack-qdrant"
+        process_with_qdrant = manage_vector_stores(
+            force_reprocess_images=force_reprocess_images,
+            reset_history=reset_history,
+            only_standard=False,
+            only_semantic=False, 
+            only_haystack=True,
+            haystack_type='haystack-qdrant'
+        )
+        
+        # Then process with Memory
+        logger.info("Now processing with Haystack (Memory)")
+        os.environ["HAYSTACK_STORE_TYPE"] = "haystack-memory"
+        process_with_memory = manage_vector_stores(
+            force_reprocess_images=force_reprocess_images,
+            reset_history=reset_history,
+            only_standard=False,
+            only_semantic=False,
+            only_haystack=True, 
+            haystack_type='haystack-memory'
+        )
+        
+        # Return the combined result
+        return process_with_qdrant and process_with_memory
+    
     if process_haystack:
         logger.info(f"Using haystack type: {haystack_type}")
         # Set environment variable for DataProcessor to use

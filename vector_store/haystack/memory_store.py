@@ -309,4 +309,71 @@ class HaystackMemoryStore(SearchHelper):
             
         except Exception as e:
             logging.error(f"Error searching for monster info: {str(e)}", exc_info=True)
+            return []
+
+    def get_details_by_source_page(self, source: str, page: int) -> Optional[Dict[str, Any]]:
+        """Get a document by source and page."""
+        try:
+            filter_conditions = self._create_source_page_filter(source, page)
+            document = self._get_document_by_filter(filter_conditions)
+            
+            if document:
+                logging.info(f"Found document for {source} page {page}")
+                return document
+            else:
+                logging.warning(f"No document found for {source} page {page}")
+                
+                # Try to find any document from this source to get metadata
+                any_docs = self._get_documents_for_source(source)
+                if any_docs:
+                    # We have some documents from this source but not for this page
+                    # Extract total_pages and construct image_url
+                    image_url = None
+                    total_pages = None
+                    
+                    # Find the first document with useful metadata
+                    for doc in any_docs:
+                        doc_metadata = doc.get('metadata', {})
+                        
+                        # Get image_url pattern
+                        if not image_url and 'image_url' in doc_metadata:
+                            base_url = doc_metadata['image_url']
+                            # Extract base URL up to the page number
+                            if base_url and isinstance(base_url, str):
+                                image_url_parts = base_url.rsplit('/', 1)
+                                if len(image_url_parts) > 1:
+                                    # Construct URL for the requested page
+                                    image_url = f"{image_url_parts[0]}/{page}.png"
+                        
+                        # Get total_pages
+                        if not total_pages and 'total_pages' in doc_metadata:
+                            total_pages = doc_metadata['total_pages']
+                            
+                        if image_url and total_pages:
+                            break
+                    
+                    # Return a placeholder with the metadata we have
+                    return {
+                        "text": f"Page {page} is not available in the Memory store for this document. Try navigating to other pages.",
+                        "metadata": {"source": source, "page": page},
+                        "image_url": image_url,
+                        "total_pages": total_pages,
+                        "available_in_store": False
+                    }
+                
+                return None
+        except Exception as e:
+            logging.error(f"Error retrieving page details: {e}", exc_info=True)
+            return None
+
+    def _get_documents_for_source(self, source: str) -> List[Dict[str, Any]]:
+        """Get all documents from a specific source."""
+        try:
+            # Get all documents
+            all_docs = self._get_all_documents_raw(1000)
+            
+            # Filter for this source
+            return [doc for doc in all_docs if doc.get('metadata', {}).get('source') == source]
+        except Exception as e:
+            logging.error(f"Error retrieving documents for source {source}: {e}", exc_info=True)
             return [] 
