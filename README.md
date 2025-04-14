@@ -7,6 +7,8 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
 *   **Multiple RAG Approaches:** Choose between different vector store approaches for optimal retrieval:
     * **Standard:** Process PDFs page-by-page, embedding each page for broader context.
     * **Semantic:** Chunk content into semantically meaningful paragraphs, embedding each chunk for more precise search.
+    * **Haystack (Qdrant):** Leverages the Haystack framework with Qdrant backend for advanced document retrieval.
+    * **Haystack (Memory):** Uses in-memory storage with file persistence for deployments without Qdrant.
 *   **Document Structure Detection:** Intelligently analyzes PDF formatting to identify:
     * Document hierarchy (chapters, sections, subsections)
     * Different heading levels based on font sizes and styles
@@ -31,16 +33,18 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
 
 *   **Backend:** Python, Flask
 *   **Vector Database:** Qdrant (Cloud recommended for deployment)
-    *   Collections: `dnd_pdf_pages` (standard), `dnd_semantic` (semantic), `dnd_haystack` (haystack)
+    *   Collections: `dnd_pdf_pages` (standard), `dnd_semantic` (semantic), `dnd_haystack` (haystack-qdrant)
+    *   Optional in-memory persistence with pickle files for deployments without Qdrant
 *   **LLM:** Pluggable via `llm_providers` (e.g., OpenAI, Anthropic)
 *   **Embeddings:** Centralized in `embeddings` package.
     *   Standard: Sentence Transformers (`all-MiniLM-L6-v2`)
     *   Semantic: OpenAI (`text-embedding-3-small`) via API
     *   Haystack: Sentence Transformers (`all-MiniLM-L6-v2`)
-*   **Vector Search:** Three distinct approaches
+*   **Vector Search:** Four distinct approaches
     *   Standard: Page-level context with `PdfPagesStore`
     *   Semantic: Fine-grained chunking with hybrid search in `SemanticStore`
-    *   Haystack: Direct integration with Haystack framework in `HaystackStore`
+    *   Haystack (Qdrant): Direct integration with Haystack framework in `HaystackQdrantStore`
+    *   Haystack (Memory): In-memory storage with file persistence in `HaystackMemoryStore`
 *   **PDF Parsing:** PyMuPDF (`fitz`)
 *   **Data Ingestion & Processing:** Custom pipeline in `data_ingestion` package using `langchain` for chunking, custom structure analysis.
 *   **Frontend:** HTML, CSS, JavaScript (with Marked.js for Markdown rendering)
@@ -56,6 +60,8 @@ dndsy/
 ├── Dockerfile               # For building the application container
 ├── README.md                # This file
 ├── app.py                   # Main Flask application entry point
+├── data/                    # Data storage
+│   ├── haystack_store/      # Storage for Haystack Memory persistence files
 ├── data_ingestion/          # Core data processing and ingestion logic
 │   ├── __init__.py
 │   ├── processor.py         # Handles PDF download, parsing, image gen, embedding calls
@@ -63,15 +69,21 @@ dndsy/
 ├── embeddings/              # Handles embedding model loading and vector generation
 │   ├── __init__.py
 │   └── model_provider.py    # Provides functions to get embeddings for text
+├── extractors/              # Data extractors for content sources
+│   └── __init__.py
+├── flask_session/           # Storage for Flask session files
 ├── llm.py                   # Handles RAG orchestration (query embedding, search, context, LLM call)
 ├── llm_providers/           # Abstraction layer for different LLM APIs
 │   ├── __init__.py
 │   ├── base.py
 │   └── openai.py            # (Example: Add anthropic.py etc. here)
+├── logs/                    # Centralized directory for log files
 ├── requirements.txt         # Python dependencies
 ├── scripts/                 # Executable management/utility scripts
 │   ├── __init__.py
+│   ├── README.md            # Documentation for available scripts
 │   ├── manage_vector_stores.py # Script to reset DB and trigger data processing
+│   ├── load_haystack_store.py # Script to load documents into Haystack
 │   └── setup_env.py         # Helper to create initial .env file
 ├── static/
 │   ├── css/style.css
@@ -83,21 +95,29 @@ dndsy/
 ├── templates/
 │   ├── index.html
 │   └── login.html
-├── vector_store/
-│   ├── __init__.py          # Vector store factory
-│   ├── pdf_pages_store.py   # Standard Qdrant interaction (page-level)
-│   └── semantic_store.py    # Semantic Qdrant interaction (chunk-level, hybrid search)
+├── tests/                   # Test scripts and fixtures
+│   ├── __init__.py
+│   ├── README.md            # Test documentation
+│   ├── test_api.py
+│   ├── test_vector_store.py
+│   └── vector_store/        # Vector store specific tests
+│       ├── README.md
+│       └── check_qdrant.py
 ├── utils/                   # General utility functions (if any)
 │   └── __init__.py
+├── vector_store/
+│   ├── __init__.py          # Vector store factory
+│   ├── haystack/            # Haystack implementations
+│   │   ├── __init__.py
+│   │   ├── common.py        # Shared utilities for Haystack implementations
+│   │   ├── memory_store.py  # In-memory implementation with file persistence
+│   │   └── qdrant_store.py  # Qdrant backend implementation
+│   ├── pdf_pages_store.py   # Standard Qdrant interaction (page-level)
+│   ├── search_helper.py     # Base class for vector stores
+│   └── semantic_store.py    # Semantic Qdrant interaction (chunk-level, hybrid search)
 └── docker/
     ├── docker-compose.yml   # Docker Compose for local development (app + Qdrant)
     └── Dockerfile           # For building the application container
-├── logs/                    # Centralized directory for log files
-│   ├── data_processing.log
-│   └── reset_script.log     # Log for the scripts/manage_vector_stores.py script
-├── debug/                   # Scripts for debugging and testing
-│   ├── check_qdrant.py
-│   └── fix_semantic.py
 ```
 
 ## Local Development Setup
@@ -252,7 +272,7 @@ dndsy/
 
 ## Vector Store Approaches
 
-DnDSy implements three different vector store approaches to optimize retrieval:
+DnDSy implements four different vector store approaches to optimize retrieval:
 
 1. **Standard Approach** (`vector_store/pdf_pages_store.py`)
    * Processes PDF content page-by-page.
@@ -267,15 +287,39 @@ DnDSy implements three different vector store approaches to optimize retrieval:
    * Better for retrieving specific pieces of information.
    * Combines vector similarity search with BM25 keyword search for hybrid retrieval.
 
-3. **Haystack Approach** (`vector_store/haystack_store.py`)
+3. **Haystack with Qdrant** (`vector_store/haystack/qdrant_store.py`)
    * Uses Haystack framework with Qdrant backend for document storage and retrieval.
    * Leverages Sentence Transformers (`all-MiniLM-L6-v2`) for local embedding generation.
    * Preserves rich document metadata including page context and hierarchical structure.
    * Maintains compatibility with Haystack 2.x API for document filtering and searching.
    * Stores data in the `dnd_haystack` Qdrant collection.
    * Optimized for specialized search queries including monster information lookup.
+
+4. **Haystack with Memory Storage** (`vector_store/haystack/memory_store.py`)
+   * Uses Haystack's InMemoryDocumentStore with file persistence.
+   * Stores document embeddings in memory and persists to disk as PKL files.
+   * Perfect for deployments without Qdrant or for quick local testing.
+   * Maintains identical API to the Qdrant implementation for seamless switching.
+   * Provides the same functionality with potentially different performance characteristics.
    
-Users can switch between these approaches via the UI selector. All approaches are processed and stored in separate Qdrant collections.
+Users can switch between these approaches via the UI selector. All approaches are processed and stored in separate collections or persistence files.
+
+## Haystack Processing
+
+To process documents for both Haystack implementations, use the following commands:
+
+```bash
+# Process with Qdrant backend
+python -m scripts.manage_vector_stores --only-haystack --haystack-type haystack-qdrant
+
+# Process with Memory backend
+python -m scripts.manage_vector_stores --only-haystack --haystack-type haystack-memory
+
+# Process all vector stores, including both Haystack implementations
+python -m scripts.manage_vector_stores
+```
+
+The Memory implementation stores documents in a PKL file in the `data/haystack_store/` directory. This allows for persistence between application restarts without requiring a running Qdrant instance.
 
 ## Detailed Data Processing and Indexing Pipeline
 
