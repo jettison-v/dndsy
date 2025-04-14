@@ -285,12 +285,17 @@ class HaystackQdrantStore(SearchHelper):
     def get_details_by_source_page(self, source: str, page: int) -> Optional[Dict[str, Any]]:
         """Get a document by source and page number."""
         try:
-            # Create filter for exact match
-            result = None
-            filter_obj = create_source_page_filter(source, page)
+            # Create filter for exact match using Haystack 2.x filter format
+            haystack_filter = {
+                "operator": "AND",
+                "conditions": [
+                    {"field": "meta.source", "operator": "==", "value": source},
+                    {"field": "meta.page", "operator": "==", "value": page}
+                ]
+            }
             
             # First attempt to get document by direct filter
-            results = self.document_store.filter_documents(filter_obj)
+            results = self.document_store.filter_documents(filters=haystack_filter)
             
             if results:
                 # Combine all documents for this page
@@ -318,8 +323,14 @@ class HaystackQdrantStore(SearchHelper):
                 logging.warning(f"No documents found for source: {source}, page: {page}")
                 
                 # Try to get documents from the same source to extract metadata
-                source_filter = {"source": source}
-                any_docs = self.document_store.filter_documents(source_filter)
+                source_filter = {
+                    "operator": "AND",
+                    "conditions": [
+                        {"field": "meta.source", "operator": "==", "value": source}
+                    ]
+                }
+                
+                any_docs = self.document_store.filter_documents(filters=source_filter)
                 
                 if any_docs:
                     # Found documents from same source, extract metadata
