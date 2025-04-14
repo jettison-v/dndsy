@@ -89,4 +89,12 @@ test_force_auth.py
 
 # Temporary files
 cookies.txt
-*.log.* 
+*.log.*
+
+# Pytest and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+pytest.ini
+.coveragerc 
