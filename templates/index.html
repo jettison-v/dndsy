@@ -20,7 +20,7 @@
                     <select id="vector-store-dropdown" class="vector-store-dropdown">
                         {% for store_type in vector_store_types %}
                             <option value="{{ store_type }}" {% if store_type == default_vector_store %}selected{% endif %}>
-                                {% if store_type == "standard" %}Page Context{% elif store_type == "semantic" %}Semantic Context{% else %}{{ store_type|capitalize }}{% endif %}
+                                {% if store_type == "standard" %}Page Context{% elif store_type == "semantic" %}Semantic Context{% elif store_type == "haystack-qdrant" %}Haystack (Qdrant){% elif store_type == "haystack-memory" %}Haystack (Memory){% else %}{{ store_type|capitalize }}{% endif %}
                             </option>
                         {% endfor %}
                     </select>

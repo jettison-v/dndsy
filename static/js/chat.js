@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showModal(pageContextModal);
             } else if (currentValue === 'semantic') {
                 showModal(semanticContextModal);
-            } else if (currentValue === 'haystack') {
+            } else if (currentValue === 'haystack-qdrant' || currentValue === 'haystack-memory' || currentValue === 'haystack') {
                 showModal(document.getElementById('haystack-modal'));
             }
         });

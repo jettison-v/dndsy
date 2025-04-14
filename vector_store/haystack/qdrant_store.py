@@ -1,51 +1,42 @@
+"""
+Haystack implementation using Qdrant as the backend.
+"""
+
 import os
-from typing import List, Dict, Any, Optional, Tuple
 import logging
-from dotenv import load_dotenv
-from pathlib import Path
+from typing import List, Dict, Any, Optional
 import numpy as np
-import json
-from .search_helper import SearchHelper
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Import from common utilities
+from .common import (
+    initialize_embedding_model, chunk_document_with_cross_page_context,
+    SimpleSecret, create_source_page_filter, EMBEDDING_DIMENSION
+)
 
 # Haystack imports
 from haystack_integrations.document_stores.qdrant import QdrantDocumentStore
 from haystack import Document
 
-# Sentence transformer
-from sentence_transformers import SentenceTransformer
+# Import base class
+from ..search_helper import SearchHelper
 
-env_path = Path(__file__).parent.parent / '.env'
+# Load environment variables
+env_path = Path(__file__).parents[2] / '.env'
 load_dotenv(dotenv_path=env_path)
 
-# Define constants
-DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-EMBEDDING_DIMENSION = 384  # Dimension for all-MiniLM-L6-v2
-
-# Create a custom Secret class to wrap the API key
-class SimpleSecret:
-    def __init__(self, value):
-        self._value = value
+class HaystackQdrantStore(SearchHelper):
+    """Handles document storage and retrieval using Haystack with Qdrant backend."""
     
-    def resolve_value(self):
-        return self._value
-
-class HaystackStore(SearchHelper):
-    """Handles document storage and retrieval using Haystack with Qdrant."""
-    
-    DEFAULT_COLLECTION_NAME = "dnd_haystack"  # Reverted to original collection name
+    DEFAULT_COLLECTION_NAME = "dnd_haystack_qdrant"
     
     def __init__(self, collection_name: str = DEFAULT_COLLECTION_NAME):
         """Initialize Haystack vector store with Qdrant backend."""
         super().__init__(collection_name)
         
         # Initialize sentence transformer model for embeddings
-        self.embedding_model_name = os.getenv("HAYSTACK_EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL)
-        try:
-            self.sentence_transformer = SentenceTransformer(self.embedding_model_name)
-            logging.info(f"Initialized SentenceTransformer with model: {self.embedding_model_name}")
-        except Exception as e:
-            logging.error(f"Error initializing SentenceTransformer: {e}")
-            self.sentence_transformer = None
+        self.sentence_transformer, self.embedding_model_name = initialize_embedding_model()
         
         # Initialize Qdrant document store
         try:
@@ -82,9 +73,6 @@ class HaystackStore(SearchHelper):
             
             logging.info(f"Successfully initialized QdrantDocumentStore for collection: {collection_name}")
             
-            # Initialize retrievers for search
-            self.init_retrievers()
-            
         except Exception as e:
             logging.error(f"Error initializing QdrantDocumentStore: {e}", exc_info=True)
             
@@ -96,53 +84,17 @@ class HaystackStore(SearchHelper):
                 embedding_dim=EMBEDDING_DIMENSION
             )
     
-    def init_retrievers(self):
-        """Initialize retrievers for searching documents."""
-        try:
-            # In haystack-ai 2.x, we'll simply use our SentenceTransformer model
-            # for generating embeddings and the QdrantDocumentStore for search
-            logging.info(f"Using SentenceTransformer model: {self.embedding_model_name}")
-            
-            # No need for additional retrievers - the document store has query methods
-        except Exception as e:
-            logging.error(f"Error in retriever initialization: {e}", exc_info=True)
-    
     def chunk_document_with_cross_page_context(self, page_texts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Creates chunks from document pages with improved context awareness."""
-        if not page_texts:
-            return []
-            
-        try:
-            chunks = []
-            
-            # We'll prepare each page as a separate chunk with complete metadata
-            for page_data in page_texts:
-                if not page_data.get("text", "").strip():
-                    continue
-                    
-                text = page_data["text"]
-                metadata = page_data["metadata"]
-                
-                # Create chunks with metadata
-                chunks.append({
-                    "text": text,
-                    "metadata": metadata
-                })
-                
-            logging.info(f"Created {len(chunks)} chunks from {len(page_texts)} pages")
-            return chunks
-            
-        except Exception as e:
-            logging.error(f"Error in haystack chunking: {e}", exc_info=True)
-            return []
+        return chunk_document_with_cross_page_context(page_texts)
     
     def add_points(self, points: List[Dict[str, Any]]) -> int:
         """Adds documents to the Haystack document store."""
         if not points:
-            logging.warning("No points to add to Haystack store")
+            logging.warning("No points to add to Haystack Qdrant store")
             return 0
             
-        logging.info(f"Adding {len(points)} documents to Haystack store")
+        logging.info(f"Adding {len(points)} documents to Haystack Qdrant store")
         
         # Convert points to Haystack Documents
         documents = []
@@ -181,7 +133,7 @@ class HaystackStore(SearchHelper):
                 
                 # Write documents with embeddings
                 self.document_store.write_documents(documents)
-                logging.info(f"Successfully added {len(documents)} documents to Haystack store")
+                logging.info(f"Successfully added {len(documents)} documents to Haystack Qdrant store")
                 return len(documents)
             else:
                 logging.warning("No valid documents to add")
@@ -292,10 +244,7 @@ class HaystackStore(SearchHelper):
     
     def _create_source_page_filter(self, source: str, page: int) -> Dict[str, Any]:
         """Create source/page filter specific to Haystack."""
-        return {
-            "source": source,
-            "page": page
-        }
+        return create_source_page_filter(source, page)
     
     # Additional Haystack-specific method
     def search_monster_info(self, monster_type: str, limit: int = 10) -> List[Dict[str, Any]]:

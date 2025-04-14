@@ -6,7 +6,8 @@ from dotenv import load_dotenv
 # Import the specific store classes
 from .pdf_pages_store import PdfPagesStore
 from .semantic_store import SemanticStore
-from .haystack_store import HaystackStore
+from .haystack.qdrant_store import HaystackQdrantStore
+from .haystack.memory_store import HaystackMemoryStore
 
 load_dotenv()
 
@@ -23,7 +24,7 @@ def get_vector_store(store_type: str = None) -> Any:
     
     Args:
         store_type: The type of vector store to use.
-                   Options: 'standard' (default), 'semantic', 'haystack'
+                   Options: 'standard' (default), 'semantic', 'haystack-qdrant', 'haystack-memory'
     
     Returns:
         A vector store instance
@@ -34,6 +35,10 @@ def get_vector_store(store_type: str = None) -> Any:
         store_type = os.getenv("DEFAULT_VECTOR_STORE", "semantic") # Default to semantic if not specified
         logger.info(f"No store type specified, using default: {store_type}")
     
+    # For backward compatibility
+    if store_type == 'haystack':
+        store_type = 'haystack-qdrant'
+    
     # Return cached instance if available
     if store_type in _vector_stores:
         logger.debug(f"Returning cached vector store instance for type: {store_type}")
@@ -41,30 +46,17 @@ def get_vector_store(store_type: str = None) -> Any:
 
     # Create and cache new instance
     logger.info(f"Creating new vector store instance for type: {store_type}")
-    if store_type == "standard": # Keep 'standard' as the key for now, maps to PdfPagesStore
-        try:
-            store = PdfPagesStore() # Instantiate the renamed class
-            _vector_stores[store_type] = store
-            return store
-        except Exception as e:
-            logger.error(f"Failed to initialize PdfPagesStore: {e}", exc_info=True)
-            raise
+    
+    if store_type == "standard":
+        _vector_stores[store_type] = PdfPagesStore()
     elif store_type == "semantic":
-        try:
-            store = SemanticStore()
-            _vector_stores[store_type] = store
-            return store
-        except Exception as e:
-            logger.error(f"Failed to initialize SemanticStore: {e}", exc_info=True)
-            raise
-    elif store_type == "haystack":
-        try:
-            store = HaystackStore()
-            _vector_stores[store_type] = store
-            return store
-        except Exception as e:
-            logger.error(f"Failed to initialize HaystackStore: {e}", exc_info=True)
-            raise
+        _vector_stores[store_type] = SemanticStore()
+    elif store_type == "haystack-qdrant":
+        _vector_stores[store_type] = HaystackQdrantStore()
+    elif store_type == "haystack-memory":
+        _vector_stores[store_type] = HaystackMemoryStore()
     else:
-        logger.error(f"Unknown vector store type requested: {store_type}")
-        raise ValueError(f"Unknown vector store type: {store_type}") 
+        logger.warning(f"Unknown vector store type: {store_type}. Defaulting to semantic.")
+        _vector_stores[store_type] = SemanticStore()
+        
+    return _vector_stores[store_type] 
