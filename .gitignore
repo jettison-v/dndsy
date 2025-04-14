@@ -96,5 +96,4 @@ cookies.txt
 .coverage
 htmlcov/
 coverage.xml
-pytest.ini
 .coveragerc 
