@@ -532,17 +532,42 @@ body {
 
 /* 2. Expanding and Collapsing Panel */
 .source-panel.expanded {
+    width: 100% !important;
+    max-width: 100%;
     position: fixed;
     top: 0;
     right: 0;
-    width: 100% !important;
     height: 100vh;
     z-index: 1000;
-    border-radius: 0;
+}
+
+.source-panel.expanded .source-panel-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.source-panel.expanded .source-content-wrapper {
+    display: flex;
+    width: 100%;
+    height: calc(100vh - 60px); /* Full height minus header */
+    overflow: hidden;
+}
+
+.source-panel.expanded .source-content {
+    width: 100%;
+    height: calc(100vh - 60px);
+    max-height: calc(100vh - 60px);
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    animation: expandPanel 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+.source-panel.expanded #source-image-container {
+    width: 100%;
+    height: calc(100vh - 110px);
+    max-height: calc(100vh - 110px);
+    overflow: auto;
 }
 
 /* Important: We use higher specificity to ensure width is maintained */
@@ -604,7 +629,6 @@ body {
 
 .source-panel-header .zoom-controls {
     display: none;
-    margin: 0 1rem;
 }
 
 .source-panel.expanded .source-panel-header .zoom-controls {
@@ -633,40 +657,64 @@ body {
 
 /* Style for the image container itself */
 #source-image-container {
-    margin: 0;
     position: relative;
     width: 100%;
-    height: auto;
-    max-height: calc(100% - 100px);
+    height: calc(100% - 110px); /* Account for header and navigation */
     background-color: var(--primary-color);
     overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
 }
 
-/* Limit the image size and position it within the container */
-#source-image-container img {
-    display: block;
+/* Placeholder to maintain size while loading */
+.image-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--primary-color);
+    z-index: 1;
+}
+
+.source-image {
     max-width: 100%;
-    margin: 0 auto;
-    padding: 1rem;
-    object-fit: contain;
-    width: auto;
-    height: auto;
     max-height: 100%;
+    object-fit: contain;
+    transition: transform 0.3s ease;
+    transform-origin: center center;
+    padding: 10px;
+    z-index: 2;
 }
 
-/* Center loading/error text within the container */
-#source-image-container p.loading-source,
-#source-image-container p.error-source {
+/* Loading indicator centered */
+.image-loading {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    color: #aaa; /* Match no-source color */
+    z-index: 3;
+    color: var(--text-color);
     font-style: italic;
-    margin: 0; /* Remove default paragraph margin */
-    padding: 0 1rem; /* Add some padding */
-    width: 100%; /* Ensure text wraps */
-    text-align: center; /* Center text */
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 12px 20px;
+    border-radius: 4px;
+}
+
+/* Error message styling */
+.error-source {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #ff5252;
+    font-style: italic;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 12px 20px;
+    border-radius: 4px;
+    z-index: 3;
 }
 
 .no-source {
@@ -864,6 +912,54 @@ body {
 .source-nav button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Source Panel Navigation */
+.source-navigation {
+    display: flex;
+    justify-content: center;
+    padding: 0.75rem;
+    margin-top: 0;
+    gap: 1rem;
+    align-items: center;
+    background: var(--secondary-color);
+    border-top: 1px solid var(--border-color);
+    position: sticky;
+    bottom: 0;
+}
+
+.nav-button {
+    min-width: 100px;
+    background: var(--input-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nav-button:hover:not(:disabled) {
+    background: var(--accent-color);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.nav-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.nav-button i {
+    margin: 0 4px;
+}
+
+.page-indicator {
+    font-size: 0.9rem;
+    color: var(--text-color);
 }
 
 footer {
@@ -1109,14 +1205,14 @@ a.show-more-sources:hover {
 /* Image zoom controls as an overlay */
 .image-zoom-controls {
     position: absolute;
-    bottom: 1rem;
-    right: 1rem;
+    bottom: 20px;
+    right: 20px;
     z-index: 10;
-    background: rgba(27, 27, 27, 0.7);
+    background: rgba(0, 0, 0, 0.7);
     border-radius: 4px;
-    padding: 0.5rem;
+    padding: 8px;
     display: flex;
-    gap: 0.5rem;
+    gap: 8px;
     transition: opacity 0.3s ease;
     opacity: 0.7;
 }
@@ -1127,7 +1223,7 @@ a.show-more-sources:hover {
 
 .image-zoom-controls button {
     background: var(--input-bg);
-    border: 1px solid var(--border-color);
+    border: none;
     border-radius: 4px;
     width: 32px;
     height: 32px;
@@ -1137,12 +1233,11 @@ a.show-more-sources:hover {
     cursor: pointer;
     color: var(--text-color);
     transition: all 0.2s ease;
-    padding: 0;
 }
 
 .image-zoom-controls button:hover {
-    background: var(--primary-color);
-    color: var(--accent-color);
+    background: var(--accent-color);
+    color: white;
 }
 
 /*
@@ -1190,42 +1285,6 @@ textarea:focus, button:focus {
 
 .expand-button:hover {
     color: var(--accent-color);
-}
-
-/* --- Source Navigation --- */
-.source-nav {
-    display: flex;
-    justify-content: center;
-    padding: 0.75rem;
-    margin-top: 0;
-    gap: 1rem;
-    align-items: center;
-    background: var(--secondary-color);
-    border-top: 1px solid var(--border-color);
-    position: sticky;
-    bottom: 0;
-}
-
-.source-nav button {
-    min-width: 100px;
-    background: var(--input-bg);
-    color: var(--text-color);
-    border: 1px solid var(--border-color);
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.source-nav button:hover:not(:disabled) {
-    background: var(--accent-color);
-    color: white;
-    transform: translateY(-2px);
-}
-
-.source-nav button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
 }
 
 /* --- Loading Indicators --- */
@@ -1522,6 +1581,9 @@ textarea:focus, button:focus {
         font-size: 0.8rem;
         padding: 0.25rem 0.5rem;
         margin: 0.25rem;
+        /* Make sure width behavior is consistent */
+        width: fit-content;
+        max-width: 95%;
     }
 
     /* Ensure centering works for welcome message */
@@ -1625,7 +1687,8 @@ textarea:focus, button:focus {
 }
 
 .expanded-source-pills-container .source-pill {
-    width: 100%;
+    width: fit-content; /* Match the width from #expanded-source-pills .source-pill */
+    max-width: 95%; /* Prevent overflow */
     text-align: left;
 }
 
@@ -1660,4 +1723,91 @@ textarea:focus, button:focus {
 /* Create a new mobile source button in the header */
 .mobile-header-source-toggle {
     display: none; /* Hidden by default on desktop */
+}
+
+/* Source Panel Content Styling */
+.source-image-container {
+    position: relative;
+    width: 100%;
+    height: calc(100% - 110px); /* Account for header and navigation */
+    background-color: var(--primary-color);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+/* Placeholder to maintain size while loading */
+.image-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--primary-color);
+    z-index: 1;
+}
+
+.source-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: transform 0.3s ease;
+    transform-origin: center center;
+    padding: 10px;
+    z-index: 2;
+}
+
+/* Loading indicator centered */
+.image-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    color: var(--text-color);
+    font-style: italic;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 12px 20px;
+    border-radius: 4px;
+}
+
+/* Error message styling */
+.error-source {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #ff5252;
+    font-style: italic;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 12px 20px;
+    border-radius: 4px;
+    z-index: 3;
+}
+
+/* Zoom controls */
+.source-panel-header .zoom-controls {
+    display: none;
+}
+
+.zoom-controls button {
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-color);
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.zoom-controls button:hover {
+    background: var(--primary-color);
+    color: var(--accent-color);
 }

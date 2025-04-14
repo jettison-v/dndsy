@@ -94,6 +94,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Add system message to chat indicating the change
             const storeDisplayName = (newStore === 'standard') ? 'Page Context' : 
                                     (newStore === 'semantic') ? 'Semantic Context' : 
+                                    (newStore === 'haystack-qdrant') ? 'Haystack (Qdrant)' :
+                                    (newStore === 'haystack-memory') ? 'Haystack (Memory)' :
                                     newStore.charAt(0).toUpperCase() + newStore.slice(1);
             
             // Don't add system message on initial load - only for actual changes
@@ -410,8 +412,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (imgContainer) {
             const img = imgContainer.querySelector('img');
             if (img) {
+                // Apply zoom directly to the image with better positioning
                 img.style.transform = `scale(${currentZoomLevel})`;
-                img.style.transformOrigin = 'center top';
+                img.style.transformOrigin = 'center center';
+                img.style.transition = 'transform 0.3s ease';
             }
         }
     }
@@ -853,44 +857,58 @@ document.addEventListener('DOMContentLoaded', () => {
         const imageContainer = document.createElement('div');
         imageContainer.id = 'source-image-container';
         imageContainer.className = 'source-image-container';
-        imageContainer.style.transform = `scale(${currentZoomLevel})`;
         
-        // Format text for display
-        const textContainer = document.createElement('div');
-        textContainer.id = 'source-text-container';
-        textContainer.className = 'source-text-container';
+        // Create zoom controls inside the image container
+        const zoomControls = document.createElement('div');
+        zoomControls.className = 'image-zoom-controls';
         
-        // Check if content is unavailable but we have an image
-        const isPlaceholder = details.available_in_store === false;
-        
-        if (isPlaceholder) {
-            // This is a placeholder page with no indexed content
-            const placeholderMessage = document.createElement('div');
-            placeholderMessage.className = 'source-unavailable-message';
-            placeholderMessage.textContent = details.text;
-            textContainer.appendChild(placeholderMessage);
-        } else {
-            // Normal content processing
-            const formattedText = document.createElement('div');
-            formattedText.className = 'source-text';
-            
-            // Use helper function to handle basic formatting rules
-            if (details.text) {
-                formattedText.textContent = details.text;
-            } else {
-                formattedText.innerHTML = '<p class="error-source">No text content available for this source.</p>';
+        const zoomInBtn = document.createElement('button');
+        zoomInBtn.innerHTML = '<i class="fas fa-search-plus"></i>';
+        zoomInBtn.title = 'Zoom In';
+        zoomInBtn.addEventListener('click', () => {
+            if (currentZoomLevel < 2.5) {
+                currentZoomLevel += 0.25;
+                updateZoom();
             }
-            
-            textContainer.appendChild(formattedText);
-        }
+        });
         
-        // Only add text container for normal (non-placeholder) pages 
-        // or placeholders that explicitly want to show a message
-        if (details.text) {
-            sourceContent.appendChild(textContainer);
-        }
+        const zoomResetBtn = document.createElement('button');
+        zoomResetBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+        zoomResetBtn.title = 'Reset Zoom';
+        zoomResetBtn.addEventListener('click', () => {
+            currentZoomLevel = 1;
+            updateZoom();
+        });
         
-        // Add source image if available
+        const zoomOutBtn = document.createElement('button');
+        zoomOutBtn.innerHTML = '<i class="fas fa-search-minus"></i>';
+        zoomOutBtn.title = 'Zoom Out';
+        zoomOutBtn.addEventListener('click', () => {
+            if (currentZoomLevel > 0.5) {
+                currentZoomLevel -= 0.25;
+                updateZoom();
+            }
+        });
+        
+        zoomControls.appendChild(zoomInBtn);
+        zoomControls.appendChild(zoomResetBtn);
+        zoomControls.appendChild(zoomOutBtn);
+        
+        // Add placeholder for consistent sizing before image loads
+        const placeholder = document.createElement('div');
+        placeholder.className = 'image-placeholder';
+        imageContainer.appendChild(placeholder);
+        
+        // Show loading indicator by default
+        const loadingIndicator = document.createElement('div');
+        loadingIndicator.className = 'image-loading';
+        loadingIndicator.textContent = 'Loading image...';
+        imageContainer.appendChild(loadingIndicator);
+        
+        // Add image container to the DOM immediately
+        sourceContent.appendChild(imageContainer);
+        
+        // Process image if available
         if (details.image_url) {
             // Convert S3 URLs to HTTPS if needed
             let imageUrl = details.image_url;
@@ -904,21 +922,26 @@ document.addEventListener('DOMContentLoaded', () => {
             img.src = imageUrl;
             img.alt = `Source page ${pageNumber}`;
             
-            imageContainer.innerHTML = '<div class="image-loading">Loading image...</div>';
-            
+            // When image loads, replace loading indicator
             img.onload = () => {
-                imageContainer.innerHTML = '';
+                // Clear loading state
+                placeholder.remove();
+                loadingIndicator.remove();
+                
+                // Add image and zoom controls
                 imageContainer.appendChild(img);
+                imageContainer.appendChild(zoomControls);
+                
+                // Apply zoom if set
+                updateZoom();
             };
             
             img.onerror = () => {
                 imageContainer.innerHTML = '<p class="error-source">Error loading image</p>';
             };
-            
-            sourceContent.appendChild(imageContainer);
         } else {
+            // No image available
             imageContainer.innerHTML = '<p class="error-source">No image available for this source</p>';
-            sourceContent.appendChild(imageContainer);
         }
         
         // Store the relevant information in the sourceContent dataset
@@ -929,9 +952,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Add navigation (if applicable)
         addSourceNavigation(pageNumber, details.total_pages, s3Key, storeType);
-        
-        // Set zoom level
-        updateZoom();
     }
 
     // ---- Navigate Source Pages (Prev/Next) ----
@@ -961,8 +981,22 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Show loading state
-        sourceContent.innerHTML = '<p class="loading-source">Loading page ' + newPage + '...</p>';
+        // Get the current image container
+        const imageContainer = document.getElementById('source-image-container');
+        if (!imageContainer) {
+            console.error('Image container not found');
+            return;
+        }
+        
+        // Save the container size and position
+        const containerRect = imageContainer.getBoundingClientRect();
+        const containerHeight = containerRect.height;
+        
+        // Create loading overlay instead of replacing entire content
+        const loadingOverlay = document.createElement('div');
+        loadingOverlay.className = 'image-loading';
+        loadingOverlay.textContent = `Loading page ${newPage}...`;
+        imageContainer.appendChild(loadingOverlay);
         
         try {
             // Fetch the details for the new page
@@ -984,7 +1018,10 @@ document.addEventListener('DOMContentLoaded', () => {
             showSourcePanel(details, `${readableSourceName} (page ${newPage})`, newPage, s3Key, undefined, storeType);
         } catch (error) {
             console.error('Error navigating to page:', error);
-            sourceContent.innerHTML = `<p class="error-source">Error loading page ${newPage}: ${error.message}</p>`;
+            
+            // Show error in the existing container without replacing it
+            loadingOverlay.textContent = `Error loading page ${newPage}: ${error.message}`;
+            loadingOverlay.className = 'error-source';
         }
     }
 
@@ -1488,4 +1525,31 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Call it on initial load
     centerInitialMessage();
+
+    // Update the storeChangeCounter and show toast when store changes
+    function handleStoreChange(newStore) {
+        storeChangeCounter++;
+        // Reset any previous search when store changes
+        clearSearchResults();
+
+        // Show toast
+        let formattedStoreName = newStore;
+        
+        // Format the store name for display
+        if (newStore === "haystack-qdrant") {
+            formattedStoreName = "Haystack (Qdrant)";
+        } else if (newStore === "haystack-memory") {
+            formattedStoreName = "Haystack (Memory)";
+        } else if (newStore === "chromadb") {
+            formattedStoreName = "ChromaDB";
+        } else if (newStore === "pinecone") {
+            formattedStoreName = "Pinecone";
+        }
+        
+        let toastHTML = `<span>Vector store changed to ${formattedStoreName}</span>`;
+        M.toast({html: toastHTML, classes: 'rounded'});
+        
+        // Update the currentVectorStore global
+        currentVectorStore = newStore;
+    }
 }); 
