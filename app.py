@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, Response, send_from_directory
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, Response
 from flask_cors import CORS
 from llm import ask_dndsy, default_store_type, reinitialize_llm_client
 from vector_store import get_vector_store
@@ -274,14 +274,6 @@ def gpu_status():
     except Exception as e:
         logger.error(f"Error checking GPU status: {e}", exc_info=True)
         return jsonify({'error': f'Error checking GPU status: {str(e)}'}), 500
-
-@app.route('/test_source_panel')
-def test_source_panel():
-    """Renders the test page for source panel if authenticated."""
-    if not check_auth():
-        return redirect(url_for('login'))
-    
-    return send_from_directory('static', 'test_source_panel.html')
 
 if __name__ == '__main__':
     logger.info("Starting Flask application...")

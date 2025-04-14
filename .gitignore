@@ -78,4 +78,15 @@ tests/vector_store/__pycache__/
 
 # Temporary test files
 *.dockerfile
-Dockerfile.* 
+Dockerfile.*
+
+# Test files
+test_source_panel.html
+test_source_panel.py
+test_source_panel_v*.py
+test_source_simple.py
+test_force_auth.py
+
+# Temporary files
+cookies.txt
+*.log.* 
