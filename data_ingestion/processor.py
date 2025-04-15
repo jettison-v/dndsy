@@ -58,6 +58,8 @@ STATIC_DIR = "static" # Define static directory name
 # Use absolute path for local history file
 PROCESS_HISTORY_FILE = project_root / "pdf_process_history.json"
 PROCESS_HISTORY_S3_KEY = "processing/pdf_process_history.json"  # S3 path
+# S3 prefix for storing extracted link data
+EXTRACTED_LINKS_S3_PREFIX = "extracted_links/"
 
 # --- AWS S3 Configuration ---
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
@@ -384,6 +386,8 @@ class DataProcessor:
                     
                     # Document structure analysis (remains the same)
                     self.doc_analyzer.reset_for_document(s3_pdf_key)
+                    # --- Initialize link data list for this PDF ---
+                    pdf_links_data = []
                     sample_size = min(40, total_pages) # Sample size calculation seems reasonable
                     if total_pages <= sample_size:
                         sample_pages = list(range(total_pages))
@@ -424,6 +428,110 @@ class DataProcessor:
                         page_text = page_text.strip()
                         
                         if not page_text: continue # Skip empty pages
+
+                        # --- Extract Links from Page ---
+                        try:
+                            links = page.get_links() # PyMuPDF function to get links
+                            for link in links:
+                                link_text = ""
+                                link_rect = fitz.Rect(link['from']) # Bounding box of the link
+
+                                # --- Attempt Text Extraction ---
+                                # Attempt 1: Extract text using words within the link's bounding box
+                                words = page.get_text("words", clip=link_rect)
+                                words.sort(key=lambda w: (w[1], w[0])) # Sort by y then x coordinate
+                                if words:
+                                    link_text = " ".join(w[4] for w in words).strip()
+
+                                # Attempt 2 (Fallback): Try get_textbox if get_text("words") failed
+                                if not link_text:
+                                    try:
+                                        expanded_rect = link_rect + (-1, -1, 1, 1) # Expand by 1 point
+                                        link_text = page.get_textbox(expanded_rect).strip()
+                                    except Exception:
+                                        pass
+
+                                # Clean up common issues like multiple spaces
+                                if link_text:
+                                    link_text = re.sub(r'\s+', ' ', link_text).strip()
+
+                                # --- Process Link ONLY if Text was Found ---
+                                if link_text:
+                                    link_info = {
+                                        "link_text": link_text,
+                                        "source_page": page_num + 1,
+                                        "source_rect": [link_rect.x0, link_rect.y0, link_rect.x1, link_rect.y1]
+                                    }
+
+                                    if link['kind'] == fitz.LINK_GOTO: # Internal page link
+                                        target_page_num = link['page']
+                                        target_page_label = target_page_num + 1
+                                        link_info['link_type'] = "internal"
+                                        link_info['target_page'] = target_page_label
+
+                                        # Extract Target Snippet (logic remains the same)
+                                        target_snippet = None
+                                        if 0 <= target_page_num < total_pages:
+                                            target_page = doc[target_page_num]
+                                            target_page_text = target_page.get_text("text")
+                                            match_start = -1
+                                            try:
+                                                pattern = r"\b" + re.escape(link_info['link_text']) + r"\b"
+                                                match = re.search(pattern, target_page_text, re.IGNORECASE | re.DOTALL)
+                                                if match:
+                                                    match_start = match.start()
+                                                else:
+                                                    match_start = target_page_text.lower().find(link_info['link_text'].lower())
+                                            except re.error:
+                                                match_start = target_page_text.lower().find(link_info['link_text'].lower())
+
+                                            if match_start != -1:
+                                                start_para = target_page_text.rfind('\n\n', 0, match_start)
+                                                start_para = 0 if start_para == -1 else start_para + 2
+                                                end_para = target_page_text.find('\n\n', match_start)
+                                                end_para = len(target_page_text) if end_para == -1 else end_para
+                                                target_snippet = target_page_text[start_para:end_para].strip().replace('\n', ' ')
+                                                snippet_max_len = 750
+                                                if len(target_snippet) > snippet_max_len:
+                                                    trunc_point = target_snippet.rfind('.', 0, snippet_max_len)
+                                                    if trunc_point > snippet_max_len * 0.7:
+                                                        target_snippet = target_snippet[:trunc_point+1] + "..."
+                                                    else:
+                                                        target_snippet = target_snippet[:snippet_max_len] + "..."
+                                            else:
+                                                logger.warning(f"Link text '{link_info['link_text']}' not found on target page {target_page_label} for {s3_pdf_key}. Using fallback snippet.")
+                                                first_para_end = target_page_text.find('\n\n')
+                                                if first_para_end != -1 and first_para_end > 50:
+                                                    target_snippet = target_page_text[:first_para_end].strip().replace('\n', ' ')
+                                                else:
+                                                    fallback_len = 350
+                                                    target_snippet = target_page_text[:fallback_len].strip().replace('\n', ' ') + ("..." if len(target_page_text) > fallback_len else "")
+                                            if not target_snippet:
+                                                target_snippet = f"Content from page {target_page_label}"
+                                        else:
+                                            logger.warning(f"Internal link target page {target_page_label} out of bounds for {s3_pdf_key}")
+                                            target_snippet = f"Error: Target page {target_page_label} invalid."
+
+                                        link_info['target_snippet'] = target_snippet
+                                        link_info['target_url'] = None
+                                        pdf_links_data.append(link_info) # Add internal link to list
+
+                                    elif link['kind'] == fitz.LINK_URI: # External URL link
+                                        link_info['link_type'] = "external"
+                                        link_info['target_url'] = link['uri']
+                                        link_info['target_page'] = None
+                                        link_info['target_snippet'] = None
+                                        pdf_links_data.append(link_info) # Add external link to list
+
+                                    # else: # Other kinds (Launch, GoToR) are implicitly skipped
+                                    #    pass
+
+                                else: # Text extraction failed for this link
+                                    # Log the failure and skip adding this link to our data
+                                    logger.warning(f"Could not extract text for link on {s3_pdf_key} page {page_num+1} (likely image link). Skipping. Link details: {link}")
+
+                        except Exception as link_e:
+                            logger.error(f"Error processing links on {s3_pdf_key} page {page_num+1}: {link_e}", exc_info=False)
 
                         page_label = page_num + 1 # 1-based index for user display
                         page_source_id = f"{rel_path}_page_{page_label}" # Unique ID for the page source
@@ -486,6 +594,47 @@ class DataProcessor:
                             page_data_for_semantic_and_haystack.append({"text": page_text, "page": page_label, "metadata": metadata.copy()})
                         
                         self.processed_sources.add(page_source_id) # Track processed page sources (seems unused)
+
+                    # --- Save Extracted Link Data to S3 (after page loop for the PDF) ---
+                    if pdf_links_data and s3_client:
+                        try:
+                            # Construct S3 key using the defined prefix and relative path
+                            links_s3_key_suffix = f"{rel_path}.links.json"
+                            # Ensure prefix ends with / if not empty
+                            s3_prefix = EXTRACTED_LINKS_S3_PREFIX
+                            if s3_prefix and not s3_prefix.endswith('/'):
+                                s3_prefix += '/'
+                            links_json_s3_key = f"{s3_prefix}{links_s3_key_suffix}"
+
+                            links_json_content = json.dumps(pdf_links_data, indent=2)
+
+                            # For review: Optionally print or save locally first during testing
+                            # print(f"--- Links for {s3_pdf_key} ({len(pdf_links_data)} found) ---")
+                            # print(f"Saving to S3 key: {links_json_s3_key}")
+                            # try:
+                            #     local_links_path = project_root / "temp_links" / f"{pdf_filename}.links.json"
+                            #     os.makedirs(local_links_path.parent, exist_ok=True)
+                            #     with open(local_links_path, "w") as f_local:
+                            #        f_local.write(links_json_content)
+                            #     logger.info(f"Also saved links locally to: {local_links_path}")
+                            # except Exception as local_save_e:
+                            #     logger.warning(f"Could not save links locally: {local_save_e}")
+
+                            s3_client.put_object(
+                                Bucket=AWS_S3_BUCKET_NAME,
+                                Key=links_json_s3_key,
+                                Body=links_json_content,
+                                ContentType='application/json'
+                            )
+                            logger.info(f"Saved {len(pdf_links_data)} extracted links to S3: {links_json_s3_key}")
+
+                            # Optional: Update process history with link count
+                            if s3_pdf_key in self.process_history:
+                                self.process_history[s3_pdf_key]['extracted_links_count'] = len(pdf_links_data)
+
+                        except Exception as save_e:
+                            logger.error(f"Failed to save extracted links to S3 for {s3_pdf_key}: {save_e}", exc_info=True)
+
 
                     # --- Embed and Add to Stores (Conditional Processing for this PDF) --- 
                     

@@ -7,7 +7,9 @@ import tiktoken # For token counting (OpenAI specific for now)
 from dotenv import load_dotenv
 import time
 import json
-from typing import Generator
+from typing import Generator, List, Dict, Set
+import boto3
+from botocore.exceptions import NoCredentialsError, PartialCredentialsError, ClientError
 
 from llm_providers import get_llm_client # Import the factory function
 from embeddings.model_provider import embed_query # Import query embedding function
@@ -16,6 +18,38 @@ load_dotenv(override=True) # Load .env, potentially overriding system vars
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# --- S3 Configuration for Link Data --- 
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_S3_BUCKET_NAME = os.getenv("AWS_S3_BUCKET_NAME")
+AWS_REGION = os.getenv("AWS_REGION", "us-east-1") # Default region if not set
+EXTRACTED_LINKS_S3_PREFIX = "extracted_links/"
+
+s3_client_links = None
+def get_s3_client_for_links():
+    """Initializes and returns the S3 client for fetching link data."""
+    global s3_client_links
+    if s3_client_links:
+        return s3_client_links
+
+    if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY and AWS_S3_BUCKET_NAME:
+        try:
+            s3_client_links = boto3.client(
+                's3',
+                aws_access_key_id=AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+                region_name=AWS_REGION
+            )
+            logger.info(f"Initialized S3 client for link data in region: {AWS_REGION}")
+            return s3_client_links
+        except (NoCredentialsError, PartialCredentialsError) as e:
+            logger.error(f"AWS Credentials for link data not found or incomplete: {e}")
+        except Exception as e:
+            logger.error(f"Failed to initialize S3 client for link data: {e}")
+    else:
+        logger.warning("AWS S3 credentials/bucket name not fully configured for link data.")
+    return None
 
 # Initialize LLM client using the factory
 # Reads LLM_PROVIDER and LLM_MODEL_NAME from env vars
@@ -66,6 +100,83 @@ def truncate_text(text: str, max_tokens: int, model: str) -> str:
     if len(tokens) <= max_tokens:
         return text
     return encoding.decode(tokens[:max_tokens]) + "..."
+
+def _get_link_data_for_sources(source_keys: List[str]) -> Dict[str, Dict]:
+    """
+    Fetches and consolidates link data from JSON files in S3 for given source keys.
+    
+    Args:
+        source_keys: A list of unique S3 keys for the source PDFs.
+        
+    Returns:
+        A dictionary where keys are lowercase link_text and values are link info 
+        (type, url, page, snippet).
+    """
+    consolidated_links = {}
+    if not source_keys:
+        return consolidated_links
+        
+    s3 = get_s3_client_for_links()
+    logger.info(f"S3 Client object for links check: {'VALID' if s3 else 'NONE'}")
+    if not s3:
+        logger.warning("S3 client not available, cannot fetch link data.")
+        return consolidated_links
+        
+    # Ensure prefix ends with a slash
+    s3_prefix = EXTRACTED_LINKS_S3_PREFIX
+    if s3_prefix and not s3_prefix.endswith('/'):
+        s3_prefix += '/'
+        
+    logger.info(f"Fetching link data from S3 prefix: {s3_prefix} for {len(source_keys)} sources")
+    
+    for s3_key in source_keys:
+        # Construct the key for the .links.json file
+        # Assumes s3_key includes the original prefix like 'source-pdfs/MyDoc.pdf'
+        # We need to derive the relative path part for the links key
+        original_pdf_prefix = os.getenv("AWS_S3_PDF_PREFIX", "source-pdfs/")
+        if original_pdf_prefix and not original_pdf_prefix.endswith('/'):
+            original_pdf_prefix += '/'
+            
+        rel_path = s3_key
+        if s3_key.startswith(original_pdf_prefix):
+            rel_path = s3_key[len(original_pdf_prefix):]
+            
+        links_s3_key = f"{s3_prefix}{rel_path}.links.json"
+        
+        logger.info(f"Attempting to fetch link key: {links_s3_key} (derived from source key: {s3_key})")
+        
+        try:
+            response = s3.get_object(Bucket=AWS_S3_BUCKET_NAME, Key=links_s3_key)
+            links_content = response['Body'].read().decode('utf-8')
+            links_list = json.loads(links_content)
+            
+            logger.debug(f"Successfully fetched and parsed {len(links_list)} links from {links_s3_key}")
+            
+            # Consolidate links, lowercasing the text for matching
+            for link_info in links_list:
+                link_text = link_info.get('link_text')
+                if link_text:
+                    key = link_text.lower()
+                    consolidated_links[key] = {
+                        'type': link_info.get('link_type'),
+                        'url': link_info.get('target_url'),
+                        'page': link_info.get('target_page'),
+                        'snippet': link_info.get('target_snippet'),
+                        'original_text': link_text # Keep original casing if needed later
+                    }
+                    
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'NoSuchKey':
+                logger.warning(f"Link data file not found in S3: {links_s3_key}")
+            else:
+                logger.error(f"S3 ClientError fetching link data {links_s3_key}: {e}")
+        except json.JSONDecodeError as e:
+            logger.error(f"Error decoding JSON from link data file {links_s3_key}: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error fetching link data {links_s3_key}: {e}", exc_info=True)
+            
+    logger.info(f"Consolidated {len(consolidated_links)} unique link texts from sources.")
+    return consolidated_links
 
 def _retrieve_and_prepare_context(query: str, model: str, limit: int = 5, store_type: str = None) -> list[dict]:
     """
@@ -183,6 +294,7 @@ def ask_dndsy(prompt: str, store_type: str = None) -> Generator[str, None, None]
     """
     Main RAG pipeline function.
     Processes a query using RAG and streams the response via SSE.
+    Includes fetching and streaming link data after the main response.
     
     Args:
         prompt: The user query.
@@ -190,7 +302,7 @@ def ask_dndsy(prompt: str, store_type: str = None) -> Generator[str, None, None]
         
     Yields:
         Server-Sent Events (SSE) strings containing metadata, status updates, 
-        text chunks, or errors.
+        text chunks, link data, or errors.
     """
     if not llm_client:
          # ... (error handling for LLM client unchanged) ...
@@ -204,6 +316,8 @@ def ask_dndsy(prompt: str, store_type: str = None) -> Generator[str, None, None]
     logger.info(f"Processing query with LLM: {current_model_name}")
     effective_store_type = store_type or default_store_type
     logger.info(f"Using vector store type: {effective_store_type}")
+
+    sources_for_metadata = [] # Keep track of sources used
 
     try:
         # --- Step 1: Retrieve and Prepare Context --- 
@@ -220,18 +334,17 @@ def ask_dndsy(prompt: str, store_type: str = None) -> Generator[str, None, None]
         # --- Step 2: Yield Status Update --- 
         yield f"event: status\ndata: {json.dumps({'status': 'Consulting LLM'})}\n\n"
 
-        # --- Step 3: Prepare Prompt & Initial Metadata --- 
-        logger.info("Step 3: Preparing LLM prompt...")
+        # --- Step 3: Prepare Prompt & Collect Source Keys --- 
+        logger.info("Step 3: Preparing LLM prompt and collecting source keys...")
         start_time_prompt = time.perf_counter()
         context_text_for_prompt = ""
-        sources_for_metadata = []
         if context_parts:
             for part in context_parts:
                 # Format source display text
                 display_text = f"{part['source']} (Pg {part['page']})"
                 if part.get('chunk_info'): display_text += f" - {part['chunk_info']}"
                 
-                # Prepare metadata object for frontend
+                # Prepare metadata object for frontend & collect source keys
                 original_s3_key = part.get('original_s3_key') 
                 if original_s3_key:
                     sources_for_metadata.append({
@@ -239,12 +352,13 @@ def ask_dndsy(prompt: str, store_type: str = None) -> Generator[str, None, None]
                         's3_key': original_s3_key,
                         'page': part['page'],
                         'score': part.get('score'),
-                        'chunk_info': part.get('chunk_info') # Keep raw context info
+                        'chunk_info': part.get('chunk_info')
                     })
-                else: logger.warning(f"Missing 'original_s3_key' for context part: {part}")
+                else: 
+                    logger.warning(f"Missing 'original_s3_key' for context part: {part}")
                     
                 # Append context to the text block for the LLM prompt
-                context_text_for_prompt += f"Source: {display_text}\nContent:\n{part['text']}\n\n" # Use display_text here too
+                context_text_for_prompt += f"Source: {display_text}\nContent:\n{part['text']}\n\n"
                 
             logger.info(f"Prepared {len(sources_for_metadata)} sources for metadata. Context length: {len(context_text_for_prompt)} chars.")
         
@@ -314,6 +428,27 @@ def ask_dndsy(prompt: str, store_type: str = None) -> Generator[str, None, None]
         
         end_time_llm_stream = time.perf_counter()
         logger.info(f"LLM stream finished in {end_time_llm_stream - start_time_llm_stream:.4f}s. Yielded {text_chunk_count} chunks.")
+        
+        # --- Step 5.5: Fetch and Yield Link Data --- 
+        link_data = {}
+        if sources_for_metadata: # Only fetch if context was used
+            unique_source_keys = list({s['s3_key'] for s in sources_for_metadata if s.get('s3_key')})
+            logger.info(f"Unique source keys found in metadata: {unique_source_keys}")
+            if unique_source_keys:
+                logger.info(f"Fetching link data for {len(unique_source_keys)} source(s)...")
+                start_time_links = time.perf_counter()
+                link_data = _get_link_data_for_sources(unique_source_keys)
+                end_time_links = time.perf_counter()
+                if link_data:
+                    logger.info(f"Found {len(link_data)} unique link texts. Yielding link data in {end_time_links - start_time_links:.4f}s.")
+                    # Use event type 'links' to distinguish from text chunks
+                    yield f"event: links\ndata: {json.dumps({'type': 'links', 'links': link_data})}\n\n"
+                else:
+                    logger.info(f"No link data found for sources in {end_time_links - start_time_links:.4f}s.")
+            else:
+                logger.info("No valid S3 keys found in sources, skipping link data fetch.")
+        else:
+             logger.info("No context used, skipping link data fetch.")
 
         # --- Step 6: Yield Done Event --- 
         yield f"event: done\ndata: {json.dumps({'success': True})}\n\n"

@@ -1062,7 +1062,7 @@ document.addEventListener('DOMContentLoaded', () => {
       API COMMUNICATION (SEND MESSAGE & SSE HANDLING)
     ========================================
     */
-    function sendMessage() {
+    async function sendMessage() {
         const message = userInput.value.trim();
         if (!message) return;
         
@@ -1080,8 +1080,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Add assistant message with thinking indicator
         const assistantMessageId = addMessage('', 'assistant');
-        updateMessageText(assistantMessageId, 'Searching knowledge base', true); // Initial status
+        updateMessageText(assistantMessageId, 'Thinking...', true);
         
+        // Disable input while processing
+        userInput.disabled = true;
+        sendButton.disabled = true;
+        sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
         // Encode the message for the URL
         const encodedMessage = encodeURIComponent(message);
         
@@ -1094,14 +1099,21 @@ document.addEventListener('DOMContentLoaded', () => {
         // Use Server-Sent Events (EventSource) for streaming
         currentEventSource = new EventSource(url);
         
+        let accumulatedText = '';
+        let sourcesReceived = [];
+        let messageLinks = null;
+        let renderComplete = false;
+
         // Event listener for metadata
         currentEventSource.addEventListener('metadata', event => {
             const metadata = JSON.parse(event.data);
+            sourcesReceived = metadata.sources || [];
             
             // Store LLM and vector store info no longer needed since the display elements were removed
             
             // Add source pills if available
-            if (metadata.sources && metadata.sources.length > 0) {
+            const assistantMessage = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"]`);
+            if (assistantMessage && metadata.sources && metadata.sources.length > 0) {
                 // Add store_type to each source
                 const sourcesWithStoreType = metadata.sources.map(source => ({
                     ...source,
@@ -1110,8 +1122,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 addSourcePills(assistantMessageId, sourcesWithStoreType);
                 
-                // Store context parts for this message
-                messageContextParts[assistantMessageId] = metadata.sources;
+                // Add data attributes for LLM/Store info
+                assistantMessage.dataset.llmProvider = metadata.llm_provider;
+                assistantMessage.dataset.llmModel = metadata.llm_model;
+                assistantMessage.dataset.storeType = metadata.store_type;
+
+                // Show initial source if panel is open and sources exist
+                if (sourcesReceived.length > 0 && sourcePanelOpen) {
+                    const firstSource = sourcesReceived[0];
+                    const firstPill = assistantMessage.querySelector(`.source-pill[data-s3-key="${firstSource.s3_key}"][data-page="${firstSource.page}"]`);
+                    if (firstPill) {
+                        firstPill.click();
+                    } 
+                }
             }
         });
         
@@ -1141,6 +1164,27 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
+        // Event listener for 'links' event
+        currentEventSource.addEventListener('links', (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'links' && data.links) {
+                    console.log("Received link data:", data.links);
+                    messageLinks = data.links;
+                    // If message rendering is already complete (done event arrived first), apply links now
+                    if (renderComplete) {
+                        const assistantMessage = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"]`);
+                        if (assistantMessage) {
+                            console.log("Applying hyperlinks after receiving links (render already complete).");
+                            applyHyperlinks(assistantMessage, messageLinks);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Error parsing links event data:', e);
+            }
+        });
+
         // Event listener for errors
         currentEventSource.addEventListener('error', event => {
             console.error('SSE Error event triggered');
@@ -1150,6 +1194,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentEventSource.close();
                 currentEventSource = null;
             }
+            
+            // Re-enable input on error
+            userInput.disabled = false;
+            sendButton.disabled = false;
+            sendButton.innerHTML = '<i class="fas fa-paper-plane"></i>';
             
             // Only show an error message if we haven't received a done event
             if (event.data) {
@@ -1171,17 +1220,59 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Event listener for completion (done)
         currentEventSource.addEventListener('done', event => {
+            console.log("Received done event");
+            renderComplete = true;
+            
             // Close the event source cleanly
             if (currentEventSource) {
                 currentEventSource.close();
                 currentEventSource = null;
             }
             
+            try {
+                const data = JSON.parse(event.data);
+                if (data.success) {
+                    // Clear status/indicator only if message was successful
+                    const textSpan = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"] .message-text`);
+                    if (textSpan) {
+                        const indicator = textSpan.querySelector('.thinking-indicator');
+                        if (indicator) indicator.remove();
+                        const statusText = textSpan.querySelector('.status-text');
+                        if (statusText) statusText.remove();
+                    }
+
+                    // If link data arrived *before* done, apply links now
+                    if (messageLinks) {
+                        const assistantMessage = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"]`);
+                        if (assistantMessage) {
+                            console.log("Applying hyperlinks after receiving done (link data received earlier).");
+                            applyHyperlinks(assistantMessage, messageLinks);
+                        }
+                    } else {
+                        console.log("Done event received, but link data hasn't arrived yet (or no links found). Links will be applied when/if 'links' event arrives.");
+                    }
+                } else {
+                    updateMessageText(assistantMessageId, 'Finished with errors', false);
+                }
+            } catch (e) {
+                console.error("Error parsing done event data:", e);
+                updateMessageText(assistantMessageId, 'Error processing completion', false);
+            }
+            
+            // Re-enable input after done
+            userInput.disabled = false;
+            sendButton.disabled = false;
+            sendButton.innerHTML = '<i class="fas fa-paper-plane"></i>';
+            
             // If the panel is expanded, refresh the expanded content view
             // to ensure it has the final formatted message content
             if (isPanelExpanded) {
                 updateExpandedSourcePills();
             }
+            // Auto-scroll might be needed again after final render + link application
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            // Update centering after response is fully rendered
+            centerInitialMessage();
         });
         
         // Handle general connection errors
