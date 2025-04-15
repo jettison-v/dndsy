@@ -93,18 +93,33 @@ logger = logging.getLogger(__name__)
 class DataProcessor:
     """Handles the end-to-end processing of PDF documents from S3 into vector stores."""
 
-    def __init__(self, process_pages: bool = True, process_semantic: bool = True, process_haystack: bool = False, force_processing: bool = False, force_reprocess_images: bool = False):
-        """Initialize the data processor, optionally skipping stores."""
+    def __init__(self, process_pages: bool = True, process_semantic: bool = True, process_haystack: bool = False, cache_behavior: str = 'use', s3_pdf_prefix_override: Optional[str] = None):
+        """Initialize the data processor with target stores, cache behavior, and optional S3 prefix override."""
         self.process_pages = process_pages
         self.process_semantic = process_semantic
         self.process_haystack = process_haystack
-        self.force_processing = force_processing # Forces processing for specific stores
-        self.force_reprocess_images = force_reprocess_images # Forces image regeneration
+        self.cache_behavior = cache_behavior # 'use' or 'rebuild'
         
-        if self.force_processing:
-            logger.info("Force processing enabled - will process documents for selected stores regardless of change status")
-        if self.force_reprocess_images:
-            logger.info("Force reprocess images enabled - will regenerate images even if PDF hash is unchanged")
+        # Determine the S3 prefix to use
+        self.s3_pdf_prefix = AWS_S3_PDF_PREFIX # Default from .env
+        if s3_pdf_prefix_override:
+            self.s3_pdf_prefix = s3_pdf_prefix_override
+            # Ensure override prefix ends with a slash if not empty
+            if self.s3_pdf_prefix and not self.s3_pdf_prefix.endswith('/'):
+                self.s3_pdf_prefix += '/'
+            logger.info(f"Using S3 PDF prefix override: {self.s3_pdf_prefix}")
+        else:
+            logger.info(f"Using S3 PDF prefix from environment: {self.s3_pdf_prefix}")
+
+        # Log the configuration
+        logger.info(f"DataProcessor initialized with config:")
+        logger.info(f"  - Process Pages: {self.process_pages}")
+        logger.info(f"  - Process Semantic: {self.process_semantic}")
+        logger.info(f"  - Process Haystack: {self.process_haystack}")
+        logger.info(f"  - Cache Behavior: {self.cache_behavior}")
+
+        # force_processing is effectively True if cache_behavior is 'rebuild'
+        self.force_processing = (self.cache_behavior == 'rebuild')
             
         # Initialize stores conditionally
         self.pages_store = None
@@ -112,7 +127,7 @@ class DataProcessor:
             self.pages_store = get_vector_store("pages")
             if not self.pages_store:
                 raise RuntimeError("Failed to initialize pages vector store.")
-            logger.info("Pages store initialized for processing.")
+            logger.info("Pages store initialized.")
         else:
             logger.info("Skipping pages store initialization.")
              
@@ -121,7 +136,7 @@ class DataProcessor:
             self.semantic_store = get_vector_store("semantic")
             if not self.semantic_store:
                 raise RuntimeError("Failed to initialize semantic vector store.")
-            logger.info("Semantic store initialized for processing.")
+            logger.info("Semantic store initialized.")
         else:
             logger.info("Skipping semantic store initialization.")
             
@@ -129,11 +144,11 @@ class DataProcessor:
         if self.process_haystack:
             # Use the environment variable to determine which Haystack implementation to use
             haystack_type = os.environ.get("HAYSTACK_STORE_TYPE", "haystack-qdrant")
-            self.haystack_type = haystack_type
+            self.haystack_type = haystack_type # Store the type being used
             self.haystack_store = get_vector_store(haystack_type)
             if not self.haystack_store:
                 raise RuntimeError(f"Failed to initialize {haystack_type} vector store.")
-            logger.info(f"{haystack_type} store initialized for processing.")
+            logger.info(f"{haystack_type} store initialized.")
         else:
             self.haystack_type = None
             logger.info("Skipping haystack store initialization.")
@@ -141,9 +156,9 @@ class DataProcessor:
         self.processed_sources = set()
         self.doc_analyzer = DocumentStructureAnalyzer()
         self.process_history = self._load_process_history()
-        self.reprocessed_pdfs = [] 
-        self.unchanged_pdfs = []   
-        logger.info(f"DataProcessor initialized. Pages: {self.process_pages}, Semantic: {self.process_semantic}, Haystack: {self.process_haystack}")
+        self.new_or_changed_pdfs = [] # Track PDFs needing full processing
+        self.unchanged_pdfs_skipped_images = [] # Track PDFs where image gen was skipped
+        logger.info(f"DataProcessor initialization complete.")
     
     def _compute_pdf_hash(self, pdf_bytes):
         """Compute a hash of PDF content to detect changes."""
@@ -262,334 +277,389 @@ class DataProcessor:
         if not s3_client:
             logger.error("S3 client not configured. Cannot process PDFs from S3.")
             return 0
-        documents_processed = 0
-        s3_base_key_prefix = PDF_IMAGE_DIR
+        documents_processed_total = 0 # Use a more descriptive name for the grand total
         pdf_files_s3_keys = []
         try:
+            logger.info(f"Listing PDFs from bucket '{AWS_S3_BUCKET_NAME}' with prefix '{self.s3_pdf_prefix}'")
             paginator = s3_client.get_paginator('list_objects_v2')
-            pages = paginator.paginate(Bucket=AWS_S3_BUCKET_NAME, Prefix=AWS_S3_PDF_PREFIX)
+            pages = paginator.paginate(Bucket=AWS_S3_BUCKET_NAME, Prefix=self.s3_pdf_prefix)
             for page in pages:
                 if "Contents" in page:
                     for obj in page["Contents"]:
                         key = obj["Key"]
-                        if key.lower().endswith('.pdf') and key != AWS_S3_PDF_PREFIX:
+                        # Ensure we only process actual PDFs and not the prefix "folder" itself
+                        if key.lower().endswith('.pdf') and key != self.s3_pdf_prefix:
                             pdf_files_s3_keys.append(key)
+            if not pdf_files_s3_keys:
+                 logger.warning(f"No PDF files found in S3 bucket '{AWS_S3_BUCKET_NAME}' with prefix '{self.s3_pdf_prefix}'.")
+                 return 0
         except Exception as e:
-            logger.error(f"Error listing PDFs: {e}")
-            return 0
+            logger.error(f"Error listing PDFs from S3: {e}")
+            return 0 # Return 0 instead of -1 for consistency
 
         start_time = datetime.now()
         total_pdfs = len(pdf_files_s3_keys)
-        logger.info(f"Processing {total_pdfs} PDFs...")
-        pages_points_total = 0
-        semantic_points_total = 0
-        haystack_points_total = 0
+        logger.info(f"Found {total_pdfs} PDFs in S3 to process.")
+        
+        # Reset totals for this run
+        self.pages_points_total = 0
+        self.semantic_points_total = 0
+        self.haystack_points_total = 0
+        self.new_or_changed_pdfs = [] 
+        self.unchanged_pdfs_skipped_images = []
         
         for pdf_index, s3_pdf_key in enumerate(tqdm(pdf_files_s3_keys, desc="Processing PDFs from S3")):
+            current_pdf_points = 0 # Track points added for the current PDF
             try:
                 current_time = datetime.now()
                 elapsed = (current_time - start_time).total_seconds()
-                progress_pct = (pdf_index / total_pdfs) * 100 if total_pdfs > 0 else 0
+                progress_pct = ((pdf_index + 1) / total_pdfs) * 100 if total_pdfs > 0 else 0
                 logger.info(f"===== Processing PDF {pdf_index+1}/{total_pdfs} ({progress_pct:.1f}%) - {s3_pdf_key} =====")
                 if pdf_index > 0:
+                    # Time estimation logic remains the same
                     avg_time_per_pdf = elapsed / pdf_index
-                    remaining_pdfs = total_pdfs - pdf_index
+                    remaining_pdfs = total_pdfs - (pdf_index + 1) # Correct remaining count
                     est_remaining_time = avg_time_per_pdf * remaining_pdfs
                     est_completion_time = current_time + timedelta(seconds=est_remaining_time)
-                    logger.info(f"Elapsed time: {elapsed:.1f} seconds. Estimated completion time: {est_completion_time.strftime('%Y-%m-%d %H:%M:%S')}")
-                rel_path = s3_pdf_key[len(AWS_S3_PDF_PREFIX):] if s3_pdf_key.startswith(AWS_S3_PDF_PREFIX) else s3_pdf_key
-                pdf_filename = rel_path.split('/')[-1]
-                pdf_image_sub_dir_name = self._clean_filename(rel_path.replace('.pdf', ''))
+                    logger.info(f"Elapsed: {elapsed:.1f}s. Est. completion: {est_completion_time.strftime('%Y-%m-%d %H:%M:%S')} ({timedelta(seconds=est_remaining_time)})")
+                
+                # Extract relative path and clean filename using the correct prefix
+                rel_path = s3_pdf_key[len(self.s3_pdf_prefix):] if s3_pdf_key.startswith(self.s3_pdf_prefix) else s3_pdf_key
+                pdf_filename = Path(rel_path).name # Use pathlib for safer filename extraction
+                pdf_image_sub_dir_name = self._clean_filename(Path(rel_path).stem) # Cleaned name based on stem
+                
+                # Download PDF
                 try:
                     pdf_object = s3_client.get_object(Bucket=AWS_S3_BUCKET_NAME, Key=s3_pdf_key)
                     pdf_bytes = pdf_object['Body'].read()
                     last_modified = pdf_object.get('LastModified', datetime.now()).isoformat()
                 except ClientError as e:
                     logger.error(f"Failed to download PDF '{s3_pdf_key}' from S3: {e}")
-                    continue
+                    continue # Skip this PDF
                 except Exception as e:
-                    logger.error(f"Unexpected error downloading PDF '{s3_pdf_key}' from S3: {e}")
-                    continue
+                    logger.error(f"Unexpected error downloading PDF '{s3_pdf_key}': {e}")
+                    continue # Skip this PDF
+
                 pdf_hash = self._compute_pdf_hash(pdf_bytes)
                 pdf_info = self.process_history.get(s3_pdf_key, {})
                 old_hash = pdf_info.get('hash')
-                process_this_pdf = True
-                generate_images = True
+                processed_stores = pdf_info.get('processed_stores', []) # Stores that processed this version
+
+                # Determine if the PDF is new or changed
+                is_new = not old_hash
+                has_changed = old_hash and old_hash != pdf_hash
                 
-                # Check if this PDF has been processed by this store type before
-                processed_stores = pdf_info.get('processed_stores', [])
+                # Determine if image generation is needed based on cache behavior and changes
+                # Regenerate images if: rebuilding cache OR PDF is new OR PDF has changed
+                generate_images = self.cache_behavior == 'rebuild' or is_new or has_changed
                 
-                # For image generation, we check if the PDF has changed OR if forcing image regeneration
-                if not self.force_reprocess_images and old_hash == pdf_hash and pdf_info.get('processed'):
-                    logger.info(f"PDF {s3_pdf_key} unchanged since last processing, skipping image generation")
-                    self.unchanged_pdfs.append(s3_pdf_key)
-                    generate_images = False
-                elif old_hash and old_hash != pdf_hash:
-                    logger.info(f"PDF {s3_pdf_key} has changed. Deleting old images and regenerating.")
-                    self._delete_specific_s3_images(pdf_image_sub_dir_name)
-                    # Reset processed stores since content changed
-                    processed_stores = [] 
-                    generate_images = True # Ensure generate_images is true if hash changed
-                elif not old_hash:
-                    logger.info(f"New PDF {s3_pdf_key}. Deleting any potentially stale images and generating new ones.")
-                    self._delete_specific_s3_images(pdf_image_sub_dir_name)
-                    # New PDF, so no processed stores
-                    processed_stores = []
-                    generate_images = True # Ensure generate_images is true for new PDFs
-                elif self.force_reprocess_images:
-                    logger.info(f"Forcing image regeneration for {s3_pdf_key} due to --force-reprocess-images flag.")
-                    self._delete_specific_s3_images(pdf_image_sub_dir_name)
-                    generate_images = True
-                
-                # Initialize process history if needed (now also includes force_reprocess case)
-                if generate_images or s3_pdf_key not in self.process_history:
-                    self.reprocessed_pdfs.append(s3_pdf_key)
-                    if s3_pdf_key not in self.process_history: 
-                        self.process_history[s3_pdf_key] = {}
+                if generate_images:
+                    logger.info(f"Image generation required for {s3_pdf_key} (Reason: {'rebuild' if self.cache_behavior == 'rebuild' else 'new' if is_new else 'changed'})")
+                    self.new_or_changed_pdfs.append(s3_pdf_key)
+                    # Delete old images before generating new ones
+                    self._delete_specific_s3_images(pdf_image_sub_dir_name) 
+                    # Reset processed stores if content changed
+                    if has_changed:
+                         processed_stores = [] 
+                         logger.info(f"Resetting processed stores history for changed PDF: {s3_pdf_key}")
+                    
+                    # Update history for new/changed PDF
+                    if s3_pdf_key not in self.process_history: self.process_history[s3_pdf_key] = {}
                     self.process_history[s3_pdf_key]['hash'] = pdf_hash
                     self.process_history[s3_pdf_key]['last_modified'] = last_modified
-                    self.process_history[s3_pdf_key]['processed'] = datetime.now().isoformat()
-                    if 'processed_stores' not in self.process_history[s3_pdf_key]:
-                        self.process_history[s3_pdf_key]['processed_stores'] = []
-                    self.process_history[s3_pdf_key]['pages'] = self.process_history[s3_pdf_key].get('pages', {})
+                    self.process_history[s3_pdf_key]['processed'] = datetime.now().isoformat() # Timestamp of this processing run
+                    self.process_history[s3_pdf_key]['processed_stores'] = processed_stores # Use potentially reset list
+                    self.process_history[s3_pdf_key]['pages'] = {} # Reset page image info
+                else:
+                    # PDF is unchanged and we are using cache
+                    logger.info(f"PDF {s3_pdf_key} is unchanged. Image generation skipped.")
+                    self.unchanged_pdfs_skipped_images.append(s3_pdf_key)
 
                 # --- Process PDF Content --- 
-                doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-                total_pages = len(doc)
-                logger.info(f"Processing {total_pages} pages for text embeddings (Image Gen: {generate_images})")
-                self.doc_analyzer.reset_for_document(s3_pdf_key)
-                logger.info("Analyzing document structure...")
-                sample_size = min(40, total_pages)
-                if total_pages <= sample_size:
-                    sample_pages = list(range(total_pages))
-                else:
-                    first_pages = list(range(min(5, total_pages // 4)))
-                    step = max(1, (total_pages - 10) // (sample_size - 10))
-                    middle_pages = list(range(5, total_pages - 5, step))[:sample_size-10]
-                    last_pages = list(range(max(0, total_pages - 5), total_pages))
-                    sample_pages = sorted(set(first_pages + middle_pages + last_pages))
-                for page_num in sample_pages:
-                    page = doc[page_num]
-                    page_dict = page.get_text('dict')
-                    self.doc_analyzer.analyze_page(page_dict, page_num)
-                self.doc_analyzer.determine_heading_levels()
-                logger.info("Document structure analysis complete.")
-
-                pages_data = [] if self.process_pages else None
-                semantic_page_data = [] if (self.process_semantic or self.process_haystack) else None
-
-                # --- Second pass: Extract text, generate images (if needed), collect data --- 
-                for page_num, page in enumerate(doc):
-                    if page_num % 10 == 0 and page_num > 0:
-                        logger.info(f"Extracted text from {page_num}/{total_pages} pages")
-                    page_dict = page.get_text('dict')
-                    self.doc_analyzer.process_page_headings(page_dict, page_num)
-                    context = self.doc_analyzer.get_current_context()
-                    page_text = ""
-                    for block in page_dict['blocks']:
-                        if block.get("type") == 0:
-                            for line in block.get("lines", []):
-                                line_text = "".join(span.get("text", "") for span in line.get("spans", []))
-                                page_text += line_text + "\n"
-                    page_text = page_text.strip()
-                    if not page_text: continue
-                    page_label = page_num + 1
-                    page_source_id = f"{rel_path}_page_{page_label}"
-                    s3_image_url = None
-                    if generate_images:
-                        pix = None
-                        try:
-                            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
-                            page_preview_path = f"{pdf_image_sub_dir_name}/{page_label}.png"
-                            s3_image_url = f"s3://{AWS_S3_BUCKET_NAME}/{PDF_IMAGE_DIR}/{page_preview_path}"
-                            img_bytes = pix.tobytes("png")
-                            s3_client.put_object(
-                                Bucket=AWS_S3_BUCKET_NAME,
-                                Key=f"{PDF_IMAGE_DIR}/{page_preview_path}",
-                                Body=img_bytes,
-                                ContentType="image/png"
-                            )
-                            self.process_history[s3_pdf_key]['pages'][str(page_label)] = {
-                                'image_url': s3_image_url,
-                                'processed': datetime.now().isoformat()
-                            }
-                        except Exception as e:
-                            logger.error(f"Error creating page image for page {page_label}: {e}")
-                        finally:
-                            if pix: pix = None
-                    else:
-                         page_info = pdf_info.get('pages', {}).get(str(page_label), {})
-                         s3_image_url = page_info.get('image_url')
-                    metadata = {
-                        "source": s3_pdf_key,
-                        "filename": pdf_filename,
-                        "page": page_label,
-                        "total_pages": total_pages,
-                        "image_url": s3_image_url,
-                        "source_dir": pdf_image_sub_dir_name,
-                        "type": "pdf",
-                        "folder": str(Path(rel_path).parent),
-                        "processed_at": datetime.now().isoformat()
-                    }
-                    if context.get("section"): metadata["section"] = context["section"]
-                    if context.get("subsection"): metadata["subsection"] = context["subsection"]
-                    if context.get("heading_path"): metadata["heading_path"] = " > ".join(context["heading_path"])
-                    for i in range(1, 7): 
-                        key = f"h{i}"
-                        if key in context: metadata[key] = context[key]
+                doc = None # Initialize doc to None
+                try:
+                    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+                    total_pages = len(doc)
+                    logger.info(f"Opened PDF: {total_pages} pages. Analyzing structure...")
                     
-                    # Conditionally collect data based on flags
-                    if self.process_pages:
-                        pages_data.append({"text": page_text, "metadata": metadata.copy()})
-                    if self.process_semantic or self.process_haystack:
-                        semantic_page_data.append({"text": page_text, "page": page_label, "metadata": metadata.copy()})
-                    
-                    self.processed_sources.add(page_source_id)
-
-                # --- Embed and Add to Stores (Conditional Processing) --- 
-                
-                # 1. Pages Store (Formerly Standard)
-                if self.process_pages and pages_data:
-                    # Skip if this store has already processed this PDF (with the same hash)
-                    if "pages" in processed_stores and old_hash == pdf_hash:
-                        logger.info(f"Skipping pages store processing for {s3_pdf_key} (already processed)")
+                    # Document structure analysis (remains the same)
+                    self.doc_analyzer.reset_for_document(s3_pdf_key)
+                    sample_size = min(40, total_pages) # Sample size calculation seems reasonable
+                    if total_pages <= sample_size:
+                        sample_pages = list(range(total_pages))
                     else:
-                        logger.info(f"Embedding {len(pages_data)} pages for pages store...")
-                        pages_texts = [item["text"] for item in pages_data]
-                        pages_embeddings = embed_documents(pages_texts, store_type="pages")
-                        pages_points = []
-                        if len(pages_embeddings) == len(pages_data):
-                            for i, data in enumerate(pages_data):
-                                pages_points.append(PointStruct(
-                                    id=str(uuid.uuid4()),
-                                    vector=pages_embeddings[i],
-                                    payload={"text": data["text"], "metadata": data["metadata"]}
-                                ))
-                        else:
-                            logger.error(f"Mismatch embedding/data count for pages store: {s3_pdf_key}")
-                            
-                        if pages_points:
-                            logger.info(f"Adding {len(pages_points)} points to pages store for {pdf_filename}")
+                        first_pages = list(range(min(5, total_pages // 4)))
+                        step = max(1, (total_pages - 10) // (sample_size - 10))
+                        middle_pages = list(range(5, total_pages - 5, step))[:sample_size-10]
+                        last_pages = list(range(max(0, total_pages - 5), total_pages))
+                        sample_pages = sorted(set(first_pages + middle_pages + last_pages))
+                    for page_num in sample_pages:
+                        if page_num < len(doc): # Add boundary check
+                             page = doc[page_num]
+                             page_dict = page.get_text('dict')
+                             self.doc_analyzer.analyze_page(page_dict, page_num)
+                    self.doc_analyzer.determine_heading_levels()
+                    logger.info("Document structure analysis complete.")
+
+                    pages_data_for_pages_store = [] if self.process_pages else None
+                    page_data_for_semantic_and_haystack = [] if (self.process_semantic or self.process_haystack) else None
+
+                    # --- Second pass: Extract text, generate images (if needed), collect data --- 
+                    logger.info(f"Extracting text and metadata from {total_pages} pages... (Image Gen: {generate_images})")
+                    for page_num, page in enumerate(tqdm(doc, desc=f"Pages [{pdf_filename}]", leave=False)):
+                        # Simplified logging for page extraction progress
+                        # if page_num % 50 == 0 and page_num > 0: logger.debug(f" Extracted {page_num}/{total_pages}")
+                        
+                        page_dict = page.get_text('dict')
+                        self.doc_analyzer.process_page_headings(page_dict, page_num)
+                        context = self.doc_analyzer.get_current_context()
+                        
+                        page_text = ""
+                        # Text extraction logic remains the same
+                        for block in page_dict.get('blocks', []):
+                            if block.get("type") == 0: # Text block
+                                for line in block.get("lines", []):
+                                    line_text = "".join(span.get("text", "") for span in line.get("spans", []))
+                                    page_text += line_text + "\n" # Use literal newline
+                        page_text = page_text.strip()
+                        
+                        if not page_text: continue # Skip empty pages
+
+                        page_label = page_num + 1 # 1-based index for user display
+                        page_source_id = f"{rel_path}_page_{page_label}" # Unique ID for the page source
+
+                        s3_image_url = None
+                        if generate_images:
+                            pix = None
                             try:
+                                pix = page.get_pixmap(matrix=fitz.Matrix(2, 2)) # Increase resolution slightly if needed
+                                page_preview_s3_key = f"{PDF_IMAGE_DIR}/{pdf_image_sub_dir_name}/{page_label}.png"
+                                s3_image_url = f"s3://{AWS_S3_BUCKET_NAME}/{page_preview_s3_key}"
+                                
+                                img_bytes = pix.tobytes("png")
+                                s3_client.put_object(
+                                    Bucket=AWS_S3_BUCKET_NAME,
+                                    Key=page_preview_s3_key,
+                                    Body=img_bytes,
+                                    ContentType="image/png"
+                                )
+                                # Update history with the generated image URL
+                                self.process_history[s3_pdf_key]['pages'][str(page_label)] = {
+                                    'image_url': s3_image_url,
+                                    'processed': datetime.now().isoformat()
+                                }
+                            except Exception as img_e:
+                                logger.error(f"Error generating/uploading image for {s3_pdf_key} page {page_label}: {img_e}")
+                                s3_image_url = None # Ensure URL is None if error occurs
+                            finally:
+                                if pix: pix = None # Release pixmap resources
+                        else:
+                             # Retrieve existing image URL from history
+                             page_info = self.process_history.get(s3_pdf_key, {}).get('pages', {}).get(str(page_label), {})
+                             s3_image_url = page_info.get('image_url')
+                             if not s3_image_url:
+                                 logger.warning(f"Missing image URL in history for {s3_pdf_key} page {page_label} when skipping generation.")
+
+                        # --- Metadata assembly --- (remains largely the same)
+                        metadata = {
+                            "source": s3_pdf_key, # S3 key acts as the canonical source identifier
+                            "filename": pdf_filename,
+                            "page": page_label,
+                            "total_pages": total_pages,
+                            "image_url": s3_image_url, 
+                            "source_dir": pdf_image_sub_dir_name, # Base name for image folder
+                            "type": "pdf",
+                            "folder": str(Path(rel_path).parent), # Original folder path relative to prefix
+                            "processed_at": datetime.now().isoformat(),
+                            # Add heading info directly
+                            **{f"h{i}": context.get(f"h{i}") for i in range(1, 7) if context.get(f"h{i}")},
+                            "heading_path": " > ".join(context["heading_path"]) if context.get("heading_path") else None
+                        }
+                        # Remove None values from metadata for cleaner storage
+                        metadata = {k: v for k, v in metadata.items() if v is not None}
+
+                        # Conditionally collect data for different stores
+                        if self.process_pages:
+                            pages_data_for_pages_store.append({"text": page_text, "metadata": metadata.copy()})
+                        if self.process_semantic or self.process_haystack:
+                            # We need page_text, page_label, and metadata for chunking
+                            page_data_for_semantic_and_haystack.append({"text": page_text, "page": page_label, "metadata": metadata.copy()})
+                        
+                        self.processed_sources.add(page_source_id) # Track processed page sources (seems unused)
+
+                    # --- Embed and Add to Stores (Conditional Processing for this PDF) --- 
+                    
+                    pdf_processed_successfully_for_all_targets = True # Track success for this PDF
+
+                    # 1. Pages Store
+                    # Skip if cache='use', store already processed this version
+                    skip_pages = (self.cache_behavior == 'use' and 
+                                  "pages" in processed_stores and 
+                                  not has_changed and not is_new)
+                                  
+                    if self.process_pages and pages_data_for_pages_store and not skip_pages:
+                        logger.info(f"Processing PDF for Pages store ({len(pages_data_for_pages_store)} pages)...")
+                        try:
+                            pages_texts = [item["text"] for item in pages_data_for_pages_store]
+                            pages_embeddings = embed_documents(pages_texts, store_type="pages")
+                            pages_points = []
+                            if len(pages_embeddings) == len(pages_data_for_pages_store):
+                                for i, data in enumerate(pages_data_for_pages_store):
+                                    pages_points.append(PointStruct(
+                                        id=str(uuid.uuid4()), # Use UUIDs for pages store
+                                        vector=pages_embeddings[i],
+                                        payload={"text": data["text"], "metadata": data["metadata"]}
+                                    ))
+                            else:
+                                logger.error(f"Mismatch embedding/data count for pages store: {s3_pdf_key} ({len(pages_embeddings)} vs {len(pages_data_for_pages_store)})")
+                            
+                            if pages_points:
+                                logger.info(f"Adding {len(pages_points)} points to Pages store for {pdf_filename}")
                                 self.pages_store.add_points(pages_points)
-                                logger.info(f"Successfully upserted {len(pages_points)} points to pages store.")
-                                pages_points_total += len(pages_points)
-                                documents_processed += len(pages_points)
-                                # Mark this store as having processed this PDF
+                                points_added_pages = len(pages_points)
+                                self.pages_points_total += points_added_pages
+                                current_pdf_points += points_added_pages
+                                # Mark this store as having processed this PDF version
                                 if "pages" not in self.process_history[s3_pdf_key]['processed_stores']:
                                     self.process_history[s3_pdf_key]['processed_stores'].append("pages")
-                            except Exception as e:
-                                logger.error(f"Error adding points to pages store for {s3_pdf_key}: {e}", exc_info=True)
+                                logger.info(f"Successfully added {points_added_pages} points to Pages store.")
+                        except Exception as e:
+                            logger.error(f"Error processing Pages store for {s3_pdf_key}: {e}", exc_info=True)
+                            pdf_processed_successfully_for_all_targets = False
+                    elif self.process_pages and skip_pages:
+                         logger.info(f"Skipping Pages store processing for {s3_pdf_key} (cached)")
 
-                # 2. Semantic Store
-                if self.process_semantic and semantic_page_data:
-                    # Skip if this store has already processed this PDF (with the same hash)
-                    if "semantic" in processed_stores and old_hash == pdf_hash:
-                        logger.info(f"Skipping semantic store processing for {s3_pdf_key} (already processed)")
-                    else:
-                        logger.info(f"Chunking {len(semantic_page_data)} pages for semantic store...")
-                        semantic_chunks = self.semantic_store.chunk_document_with_cross_page_context(semantic_page_data)
-                        if semantic_chunks:
-                            logger.info(f"Embedding {len(semantic_chunks)} semantic chunks...")
-                            chunk_texts = [chunk["text"] for chunk in semantic_chunks]
-                            try:
+
+                    # 2. Semantic Store
+                    # Skip if cache='use', store already processed this version
+                    skip_semantic = (self.cache_behavior == 'use' and 
+                                     "semantic" in processed_stores and 
+                                     not has_changed and not is_new)
+
+                    if self.process_semantic and page_data_for_semantic_and_haystack and not skip_semantic:
+                        logger.info(f"Processing PDF for Semantic store ({len(page_data_for_semantic_and_haystack)} pages)...")
+                        try:
+                            semantic_chunks = self.semantic_store.chunk_document_with_cross_page_context(page_data_for_semantic_and_haystack)
+                            if semantic_chunks:
+                                logger.info(f"Generated {len(semantic_chunks)} semantic chunks. Embedding...")
+                                chunk_texts = [chunk["text"] for chunk in semantic_chunks]
                                 semantic_embeddings = embed_documents(chunk_texts, store_type="semantic")
                                 semantic_points = []
-                                doc_id_counter = self.semantic_store.next_id
+                                doc_id_counter = self.semantic_store.next_id # Get next ID from store
                                 if len(semantic_embeddings) == len(semantic_chunks):
                                     for i, chunk_data in enumerate(semantic_chunks):
                                         semantic_points.append(PointStruct(
-                                            id=doc_id_counter + i,
+                                            id=doc_id_counter + i, # Use sequential IDs for semantic store
                                             vector=semantic_embeddings[i],
                                             payload={"text": chunk_data["text"], "metadata": chunk_data["metadata"]}
                                         ))
                                 else: 
-                                    logger.error(f"Mismatch chunk/embedding count for {s3_pdf_key}")
+                                    logger.error(f"Mismatch chunk/embedding count for semantic store: {s3_pdf_key} ({len(semantic_embeddings)} vs {len(semantic_chunks)})")
+                                
                                 if semantic_points:
-                                    logger.info(f"Adding {len(semantic_points)} points to semantic store for {pdf_filename}")
-                                    num_added = self.semantic_store.add_points(semantic_points)
-                                    semantic_points_total += num_added
-                                    documents_processed += num_added
-                                    # Mark this store as having processed this PDF
+                                    logger.info(f"Adding {len(semantic_points)} points to Semantic store for {pdf_filename}")
+                                    num_added = self.semantic_store.add_points(semantic_points) # Add points returns count added
+                                    self.semantic_points_total += num_added
+                                    current_pdf_points += num_added
+                                    # Mark this store as having processed this PDF version
                                     if "semantic" not in self.process_history[s3_pdf_key]['processed_stores']:
                                         self.process_history[s3_pdf_key]['processed_stores'].append("semantic")
-                            except Exception as e: 
-                                logger.error(f"Failed to embed/add semantic chunks for {s3_pdf_key}: {e}", exc_info=True)
-                        else: 
-                            logger.warning(f"No semantic chunks generated for {s3_pdf_key}")
-                
-                # 3. Haystack Store
-                if self.process_haystack and semantic_page_data:
-                    # Only skip if not force_processing and already processed by haystack
-                    if not self.force_processing and self.haystack_type in processed_stores and old_hash == pdf_hash:
-                        logger.info(f"Skipping {self.haystack_type} store processing for {s3_pdf_key} (already processed)")
-                    else:
-                        if self.force_processing:
-                            logger.info(f"Force processing {s3_pdf_key} for {self.haystack_type}")
-                        # The PDF hasn't been processed by haystack yet, process it now
-                        logger.info(f"Chunking {len(semantic_page_data)} pages for {self.haystack_type} store...")
+                                    logger.info(f"Successfully added {num_added} points to Semantic store.")
+                            else: 
+                                logger.warning(f"No semantic chunks generated for {s3_pdf_key}")
+                        except Exception as e: 
+                            logger.error(f"Error processing Semantic store for {s3_pdf_key}: {e}", exc_info=True)
+                            pdf_processed_successfully_for_all_targets = False
+                    elif self.process_semantic and skip_semantic:
+                         logger.info(f"Skipping Semantic store processing for {s3_pdf_key} (cached)")
+
+                    
+                    # 3. Haystack Store
+                    # Skip if cache='use', store already processed this version
+                    # Note: haystack_type might be None if process_haystack is False
+                    haystack_store_key = self.haystack_type if self.haystack_type else "haystack" # Key for history
+                    skip_haystack = (self.cache_behavior == 'use' and 
+                                     haystack_store_key in processed_stores and 
+                                     not has_changed and not is_new)
+
+                    if self.process_haystack and page_data_for_semantic_and_haystack and not skip_haystack:
+                        logger.info(f"Processing PDF for {self.haystack_type} store ({len(page_data_for_semantic_and_haystack)} pages)...")
                         try:
-                            haystack_chunks = self.haystack_store.chunk_document_with_cross_page_context(semantic_page_data)
+                            # Haystack store likely has its own chunking logic, pass the page data
+                            # Assuming haystack_store.add_points or similar handles chunking internally
+                            # Or we need a specific chunking call similar to semantic
+                            # Let's assume add_points takes the page data and handles it
+                            # THIS MIGHT NEED ADJUSTMENT based on haystack store implementation
+                            
+                            # If Haystack needs pre-chunked data like Semantic:
+                            haystack_chunks = self.haystack_store.chunk_document_with_cross_page_context(page_data_for_semantic_and_haystack)
+                            
                             if haystack_chunks:
-                                logger.info(f"Generated {len(haystack_chunks)} chunks for {self.haystack_type} store")
-                                try:
-                                    # Add to haystack store (no need to pre-embed as haystack will handle it)
-                                    logger.info(f"Adding {len(haystack_chunks)} chunks to {self.haystack_type} store...")
-                                    num_added = self.haystack_store.add_points(haystack_chunks)
-                                    if num_added > 0:
-                                        logger.info(f"Successfully added {num_added} points to {self.haystack_type} store for {pdf_filename}")
-                                        haystack_points_total += num_added
-                                        documents_processed += num_added
-                                        # Mark this store as having processed this PDF
-                                        if 'processed_stores' not in self.process_history[s3_pdf_key]:
-                                            self.process_history[s3_pdf_key]['processed_stores'] = []
-                                        if self.haystack_type not in self.process_history[s3_pdf_key]['processed_stores']:
-                                            self.process_history[s3_pdf_key]['processed_stores'].append(self.haystack_type)
-                                    else:
-                                        logger.error(f"Failed to add any points to {self.haystack_type} store for {pdf_filename}")
-                                except Exception as e:
-                                    logger.error(f"Failed to add chunks to {self.haystack_type} store for {s3_pdf_key}: {e}", exc_info=True)
+                                logger.info(f"Generated {len(haystack_chunks)} chunks for {self.haystack_type}. Adding to store...")
+                                num_added = self.haystack_store.add_points(haystack_chunks) # add_points handles embedding
+                                if num_added > 0:
+                                    self.haystack_points_total += num_added
+                                    current_pdf_points += num_added
+                                    # Mark this store as having processed this PDF version
+                                    if haystack_store_key not in self.process_history[s3_pdf_key]['processed_stores']:
+                                        self.process_history[s3_pdf_key]['processed_stores'].append(haystack_store_key)
+                                    logger.info(f"Successfully added {num_added} points to {self.haystack_type} store.")
+                                else:
+                                    # This could be normal if all chunks already exist, log carefully
+                                    logger.warning(f"add_points reported 0 new points added to {self.haystack_type} for {s3_pdf_key}. Might be duplicates or an issue.")
                             else:
-                                logger.warning(f"No {self.haystack_type} chunks generated for {s3_pdf_key}")
+                                logger.warning(f"No chunks generated for {self.haystack_type} store for {s3_pdf_key}")
+                        except AttributeError as ae:
+                             logger.error(f"Haystack store '{self.haystack_type}' might be missing expected methods (e.g., chunk_document_with_cross_page_context or add_points): {ae}", exc_info=True)
+                             pdf_processed_successfully_for_all_targets = False
                         except Exception as e:
-                            logger.error(f"Error during {self.haystack_type} chunking for {s3_pdf_key}: {e}", exc_info=True)
+                            logger.error(f"Error processing {self.haystack_type} store for {s3_pdf_key}: {e}", exc_info=True)
+                            pdf_processed_successfully_for_all_targets = False
+                    elif self.process_haystack and skip_haystack:
+                         logger.info(f"Skipping {self.haystack_type} store processing for {s3_pdf_key} (cached)")
+
+                finally:
+                    # Ensure PDF document is closed
+                    if doc:
+                        doc.close()
+                        logger.debug(f"Closed PDF document: {s3_pdf_key}")
                 
-                # Close the document
-                doc.close()
-                
-                # If we got this far, we are processing this PDF for at least one store
-                # Add its key to the tracker set if provided
-                if processed_pdf_keys_tracker is not None:
+                # Add the key to the tracker set if provided and if any points were added or attempted
+                if processed_pdf_keys_tracker is not None and current_pdf_points > 0 : # Only track if work was done
                     processed_pdf_keys_tracker.add(s3_pdf_key)
                 
+                # Update total points processed
+                documents_processed_total += current_pdf_points
+                logger.info(f"Finished processing {s3_pdf_key}. Added {current_pdf_points} points in this run.")
+
             except Exception as e:
-                logger.error(f"Error processing PDF {s3_pdf_key}: {e}", exc_info=True)
+                logger.error(f"--- Critical Error processing PDF {s3_pdf_key}: {e} ---", exc_info=True)
+                # Ensure doc is closed even if error occurs mid-processing
                 if 'doc' in locals() and doc is not None:
-                    try: doc.close()
+                    try: doc.close() 
                     except: pass 
-                continue
+                continue # Move to the next PDF
         
+        # Save history after processing all PDFs
         self._save_process_history()
+        
+        # --- Final Summary Logging ---
         end_time = datetime.now()
         total_duration = (end_time - start_time).total_seconds()
         hours, remainder = divmod(total_duration, 3600)
         minutes, seconds = divmod(remainder, 60)
         logger.info(f"===== Processing Complete =====")
-        logger.info(f"Total run time: {int(hours)}h {int(minutes)}m {int(seconds)}s")
-        logger.info(f"Processed {documents_processed} total points/documents across all stores")
-        logger.info(f"Added {pages_points_total} points to pages store")
-        logger.info(f"Added {semantic_points_total} points to semantic store")
-        if self.process_haystack:
-            logger.info(f"Added {haystack_points_total} points to {self.haystack_type} store")
-        logger.info(f"Reprocessed {len(self.reprocessed_pdfs)} PDFs with new/changed content or images")
-        logger.info(f"Skipped image generation for {len(self.unchanged_pdfs)} unchanged PDFs")
+        logger.info(f"Total time: {int(hours)}h {int(minutes)}m {int(seconds)}s")
+        logger.info(f"Processed {len(pdf_files_s3_keys)} PDFs from S3.")
+        logger.info(f"Total points/documents added across all stores in this run: {documents_processed_total}")
+        if self.process_pages: logger.info(f"  - Pages Store: {self.pages_points_total} points")
+        if self.process_semantic: logger.info(f"  - Semantic Store: {self.semantic_points_total} points")
+        if self.process_haystack: logger.info(f"  - {self.haystack_type} Store: {self.haystack_points_total} points")
+        logger.info(f"Processed {len(self.new_or_changed_pdfs)} new or changed PDFs (images generated/regenerated).")
+        logger.info(f"Skipped image generation for {len(self.unchanged_pdfs_skipped_images)} unchanged PDFs.")
         
-        # Store the totals as instance variables for reporting
-        self.pages_points_total = pages_points_total
-        self.semantic_points_total = semantic_points_total
-        self.haystack_points_total = haystack_points_total
-        
-        return documents_processed
+        # Return the grand total number of documents/points processed in this run
+        return documents_processed_total
 
     def process_all_sources(self, processed_pdf_keys_tracker: Optional[set] = None):
         """Process all data sources based on initialization flags.
@@ -600,181 +670,8 @@ class DataProcessor:
                 multiple processing steps in manage_vector_stores.py.
         """
         processed_count = self.process_pdfs_from_s3(processed_pdf_keys_tracker)
-        logger.info(f"Processed a total of {processed_count} points/documents in this step")
+        logger.info(f"DataProcessor finished run. Total points/documents processed: {processed_count}")
+        # Return the total count for the summary in the calling script
         return processed_count
-
-    def _process_pdf(self, pdf_path, process_history):
-        """Process a single PDF file"""
-        # Skip missing files
-        if not os.path.exists(pdf_path):
-            logging.error(f"PDF file not found: {pdf_path}")
-            return False
-        
-        try:
-            pdf_hash = self._compute_pdf_hash(open(pdf_path, 'rb').read())
-            pdf_info = process_history.get(pdf_path, {})
-            old_hash = pdf_info.get("hash")
-            changed = old_hash != pdf_hash
-            
-            # If force_processing is enabled, always treat as changed
-            if self.force_processing:
-                changed = True
-                logging.info(f"Force processing enabled for {pdf_path}")
-            
-            # If the PDF hasn't changed and we've processed it before, skip it
-            if not changed and pdf_info.get("processed", False):
-                logging.info(f"Skipping unchanged PDF: {pdf_path}")
-                
-                # Special handling for haystack - we may still need to process it
-                # even if the PDF is unchanged
-                if self.process_haystack and self.force_processing:
-                    logging.info(f"Forcing {self.haystack_type} processing for unchanged PDF: {pdf_path}")
-                    semantic_page_data = self._process_pdf_for_semantic(pdf_path, pdf_hash, pdf_info)
-                    self._process_pdf_for_haystack(pdf_path, pdf_hash, semantic_page_data, pdf_info)
-                    process_history[pdf_path] = pdf_info
-                    
-                return False
-                
-            # Process the PDF
-            logging.info(f"Processing PDF: {pdf_path}")
-            
-            # Update hash
-            pdf_info["hash"] = pdf_hash
-            
-            # Extract text and generate images if needed
-            if changed or not pdf_info.get("processed_text", False):
-                page_data = self._extract_text_and_images(pdf_path, pdf_info)
-                if not page_data:
-                    logging.error(f"Failed to extract text/images from {pdf_path}")
-                    return False
-                
-                pdf_info["page_data"] = page_data
-                pdf_info["processed_text"] = True
-                logging.info(f"Extracted text and generated images for {len(page_data)} pages")
-            else:
-                logging.info(f"Skipping text extraction for unchanged PDF: {pdf_path}")
-            
-            # Always initialize processed_stores if it doesn't exist
-            if "processed_stores" not in pdf_info:
-                pdf_info["processed_stores"] = {}
-            
-            # Process for semantic chunking if needed
-            semantic_page_data = None
-            if self.process_semantic:
-                semantic_page_data = self._process_pdf_for_semantic(pdf_path, pdf_hash, pdf_info)
-            
-            # Process for pages if needed
-            if self.process_pages:
-                self._process_pdf_for_pages(pdf_path, pdf_hash, pdf_info)
-            
-            # Process for haystack if needed
-            if self.process_haystack:
-                self._process_pdf_for_haystack(pdf_path, pdf_hash, semantic_page_data, pdf_info)
-            
-            # Mark as processed
-            pdf_info["processed"] = True
-            
-            # Save to history
-            process_history[pdf_path] = pdf_info
-            
-            return True
-        except Exception as e:
-            logging.error(f"Error processing PDF {pdf_path}: {e}", exc_info=True)
-            return False
-
-    def _process_pdf_for_haystack(self, pdf_path: str, pdf_hash: str, semantic_page_data: dict, pdf_info: dict):
-        """
-        Process the PDF for haystack vector store.
-        This includes chunking and adding to the haystack store.
-        """
-        if not self.process_haystack:
-            return
-        
-        try:
-            logging.info(f"Processing {pdf_path} for {self.haystack_type} store")
-            
-            # Check if PDF was already processed for haystack
-            processed_stores = pdf_info.get("processed_stores", {})
-            if (not self.force_processing and 
-                self.haystack_type in processed_stores and 
-                processed_stores.get(self.haystack_type) == pdf_hash):
-                logging.info(f"Skipping {self.haystack_type} processing for unchanged PDF: {pdf_path}")
-                return
-                
-            # If semantic_page_data is None, initialize it as an empty dict
-            if semantic_page_data is None:
-                semantic_page_data = {}
-                
-            # Prepare data for chunking
-            page_texts = []
-            for page_num, page_data in pdf_info.get("page_data", {}).items():
-                try:
-                    page_num = int(page_num)
-                    page_text = page_data.get("text", "")
-                    
-                    if not page_text.strip():
-                        continue
-                    
-                    # Include all metadata from the PDF info
-                    metadata = {
-                        "source": pdf_path,
-                        "filename": os.path.basename(pdf_path),
-                        "page": page_num,
-                        "total_pages": pdf_info.get("total_pages", 0),
-                        "image_url": page_data.get("image_url"),
-                        "source_dir": pdf_info.get("source_dir", ""),
-                        "type": "pdf",
-                        "folder": pdf_info.get("folder", "."),
-                        "processed_at": datetime.now().isoformat()
-                    }
-                    
-                    # Add section/heading data if available in semantic_page_data
-                    semantic_data = semantic_page_data.get(str(page_num), {})
-                    if semantic_data:
-                        # Add section info if available
-                        if "section" in semantic_data:
-                            metadata["section"] = semantic_data["section"]
-                        if "subsection" in semantic_data:
-                            metadata["subsection"] = semantic_data["subsection"]
-                        if "heading_path" in semantic_data:
-                            metadata["heading_path"] = semantic_data["heading_path"]
-                            
-                        # Add heading levels if available
-                        if "headings" in semantic_data:
-                            for level, heading in semantic_data["headings"].items():
-                                metadata[f"h{level}"] = heading
-                                
-                    page_texts.append({
-                        "text": page_text,
-                        "page": page_num,
-                        "metadata": metadata
-                    })
-                    
-                except Exception as e:
-                    logging.error(f"Error preparing page {page_num} for {self.haystack_type}: {e}")
-                    continue
-                    
-            if not page_texts:
-                logging.warning(f"No valid pages found for {self.haystack_type} in {pdf_path}")
-                return
-                
-            # Generate chunks for haystack
-            chunks = self.haystack_store.chunk_document_with_cross_page_context(page_texts)
-            
-            if chunks:
-                logging.info(f"Generated {len(chunks)} chunks for {self.haystack_type} from {pdf_path}")
-                
-                # Add chunks to haystack store
-                points_added = self.haystack_store.add_points(chunks)
-                logging.info(f"Added {points_added} chunks to {self.haystack_type} store from {pdf_path}")
-                
-                # Update processed flag for this store
-                processed_stores[self.haystack_type] = pdf_hash
-                pdf_info["processed_stores"] = processed_stores
-            else:
-                logging.warning(f"No chunks were generated for {self.haystack_type} from {pdf_path}")
-            
-        except Exception as e:
-            logging.error(f"Error processing {pdf_path} for {self.haystack_type}: {e}", exc_info=True)
 
 # Removed main() and if __name__ == "__main__" block as this is now a module 

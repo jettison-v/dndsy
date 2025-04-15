@@ -192,7 +192,10 @@ dndsy/
             # List running containers to find the app container name
             docker ps
             # Execute the processing script inside the running app container (use -m flag)
-            docker exec -it <your_app_container_name> python -m scripts.manage_vector_stores --reset-history
+            # Use --cache-behavior rebuild for initial setup or full reprocessing
+            docker exec -it <your_app_container_name> python -m scripts.manage_vector_stores --cache-behavior rebuild
+            # For incremental updates (use cache)
+            # docker exec -it <your_app_container_name> python -m scripts.manage_vector_stores --cache-behavior use 
             ```
 
     *   **Option B: Flask Dev Server + Docker Qdrant**
@@ -203,9 +206,13 @@ dndsy/
             ```
         *   **Process PDFs from S3:** Run the management script locally (connects to Docker Qdrant). Ensure your venv is active.
             ```bash
-            python -m scripts.manage_vector_stores --reset-history
+            # Use --cache-behavior rebuild for initial setup or full reprocessing
+            python -m scripts.manage_vector_stores --cache-behavior rebuild
+            # For incremental updates (use cache, default)
+            # python -m scripts.manage_vector_stores --cache-behavior use 
+            # Or simply (uses defaults: --store all --cache-behavior use)
+            # python -m scripts.manage_vector_stores
             ```
-            *(Use `--reset-history` for initial setup or full reprocessing. Omit flags for incremental updates based on PDF changes.)*
         *   Run the Flask development server:
             ```bash
             flask run
@@ -216,7 +223,10 @@ dndsy/
         *   Ensure your `.env` is configured for Qdrant Cloud (Host URL + API Key).
         *   **Process PDFs from S3:** Run the management script locally (connects to Qdrant Cloud). Ensure your venv is active.
             ```bash
-            python -m scripts.manage_vector_stores --reset-history
+            # Use --cache-behavior rebuild for initial setup or full reprocessing
+            python -m scripts.manage_vector_stores --cache-behavior rebuild
+            # For incremental updates (use cache, default)
+            # python -m scripts.manage_vector_stores
             ```
         *   Run the Flask development server:
             ```bash
@@ -260,9 +270,14 @@ dndsy/
     *   You'll need to run a one-off dyno to process the data. This can be done using the Heroku Dashboard:
         *   Go to "More" -> "Run Console" and enter:
           ```bash
-          python -m scripts.manage_vector_stores --reset-history
+          # Use --cache-behavior rebuild for initial setup/full reprocessing
+          python -m scripts.manage_vector_stores --cache-behavior rebuild
           ```
-    *   **Important:** Run this *after* setting all required Config Vars and *before* users access the app. Re-run if PDFs in S3 change (potentially without `--reset-history` for efficiency).
+    *   **Important:** Run this *after* setting all required Config Vars and *before* users access the app. Re-run if PDFs in S3 change, typically using the default `--cache-behavior use` for efficiency:
+        ```bash
+        # Example for incremental update
+        python -m scripts.manage_vector_stores --cache-behavior use
+        ```
 
 5.  **Deploy:**
     *   Use the "Deploy" tab in the Heroku Dashboard to deploy your app
@@ -306,61 +321,69 @@ Users can switch between these approaches via the UI selector. All approaches ar
 
 ## Haystack Processing
 
-To process documents for both Haystack implementations, use the following commands:
+To process documents specifically for the Haystack implementations, use the `--store` flag:
 
 ```bash
-# Process with Qdrant backend
-python -m scripts.manage_vector_stores --only-haystack --haystack-type haystack-qdrant
+# Process ONLY the Haystack Qdrant store (using cache by default)
+python -m scripts.manage_vector_stores --store haystack-qdrant
 
-# Process with Memory backend
-python -m scripts.manage_vector_stores --only-haystack --haystack-type haystack-memory
+# Process ONLY the Haystack Memory store (using cache by default)
+python -m scripts.manage_vector_stores --store haystack-memory
 
-# Process all vector stores, including both Haystack implementations
-python -m scripts.manage_vector_stores
+# Process BOTH Haystack stores sequentially (Qdrant then Memory, using cache by default)
+python -m scripts.manage_vector_stores --store haystack
+
+# Rebuild cache and process ONLY the Haystack Qdrant store
+python -m scripts.manage_vector_stores --store haystack-qdrant --cache-behavior rebuild
 ```
 
 The Memory implementation stores documents in a PKL file in the `data/haystack_store/` directory. This allows for persistence between application restarts without requiring a running Qdrant instance.
 
 ## Detailed Data Processing and Indexing Pipeline
 
-The system processes PDFs from S3 to generate two distinct vector databases (collections in Qdrant) using different approaches. Here's a detailed breakdown:
+The system processes PDFs from S3 to generate vector data for the selected stores using a unified pipeline.
 
 ### Orchestration (`scripts/manage_vector_stores.py`)
 
 *   Acts as the main entry point for populating or resetting the vector databases.
-*   Handles command-line arguments (`--force-reprocess-images`, `--reset-history`).
-*   Connects to Qdrant and deletes existing collections (`dnd_pdf_pages`, `dnd_semantic`) if resetting.
-*   Instantiates the `DataProcessor` from the `data_ingestion` package.
+*   Handles command-line arguments:
+    *   `--store`: Selects target store(s) (`all`, `pages`, `semantic`, `haystack`, `haystack-qdrant`, `haystack-memory`).
+    *   `--cache-behavior`: Controls caching (`use` or `rebuild`).
+    *   `--s3-pdf-prefix` (Optional): Overrides the S3 source PDF prefix from `.env`, useful for testing.
+*   If `cache-behavior` is `rebuild`, connects to Qdrant/handles local files to delete existing target collections/files and resets processing history.
+*   Instantiates the `DataProcessor` *once* (or twice if processing both Haystack types), configuring it based on flags and passing the S3 prefix.
 *   Calls `DataProcessor.process_all_sources()` to trigger the main pipeline.
 
 ### Core Processing (`data_ingestion/processor.py`)
 
-1.  **PDF Discovery & Caching:**
-    *   Uses `boto3` to list PDFs from the configured S3 bucket and prefix.
-    *   Loads processing history (`pdf_process_history.json`) from S3 (or local file) to track processed PDFs and their hashes.
-    *   Compares current PDF hashes (computed via SHA-256) with stored hashes to detect changes.
+1.  **PDF Discovery & Caching Check:**
+    *   Lists PDFs from the configured S3 bucket/prefix.
+    *   Loads processing history (`pdf_process_history.json`) from S3 or local file.
+    *   For each PDF, computes its hash.
+    *   Compares hash to history and checks `cache_behavior` to determine if processing is needed for each target store.
+    *   Determines if image generation is required (only if `cache_behavior=rebuild` or PDF is new/changed).
 2.  **PDF Loading & Image Generation:**
-    *   Downloads new or changed PDFs from S3.
-    *   Uses `PyMuPDF` (fitz) to open PDFs.
-    *   If the PDF is new/changed (or forced), generates PNG images for each page and uploads them to a structured path in S3 (`pdf_page_images/`). Skips image generation for unchanged PDFs.
+    *   Downloads the PDF from S3.
+    *   If image generation is required:
+        *   Deletes any old images for the PDF from S3.
+        *   Uses `PyMuPDF` (fitz) to generate PNG images for each page.
+        *   Uploads images to a structured path in S3 (`pdf_page_images/`).
+        *   Updates history with new image URLs.
+    *   If image generation is skipped, retrieves existing image URLs from history.
 3.  **Structure Analysis (`data_ingestion/structure_analyzer.py`):**
-    *   Samples pages from the PDF.
-    *   Analyzes font sizes, styles, and formatting using `PyMuPDF`'s dictionary output.
-    *   Identifies document hierarchy (up to 6 heading levels).
+    *   Analyzes font sizes/styles using `PyMuPDF` on sample pages to identify document hierarchy.
 4.  **Text Extraction & Metadata Collection:**
     *   Iterates through each page of the PDF.
-    *   Extracts plain text content.
-    *   Uses the `DocumentStructureAnalyzer` to determine the current heading context (e.g., "Chapter > Section > Subsection") for each page.
-    *   Collects page text along with rich metadata (S3 source key, filename, page number, total pages, S3 image URL, heading hierarchy) into separate lists for standard and semantic processing.
-5.  **Embedding Generation (`embeddings/model_provider.py`):**
-    *   **Standard:** Takes the list of full page texts, calls `embed_documents(..., store_type='standard')` which uses `sentence-transformers` (`all-MiniLM-L6-v2`) to generate embeddings in batches.
-    *   **Semantic:** Takes the list of page data, calls the semantic store's chunking method (`chunk_document_with_cross_page_context`) to get text chunks. Then calls `embed_documents(chunk_texts, store_type='semantic')` which uses the OpenAI API (`text-embedding-3-small`) to generate embeddings for each chunk.
-6.  **Point Creation & Indexing (`vector_store/` modules):**
-    *   Constructs Qdrant `PointStruct` objects containing sequential IDs, the generated embedding vectors, the text (page or chunk), and the collected metadata.
-    *   Calls the `add_points` method of the appropriate vector store module (`PdfPagesStore` or `SemanticStore`).
-    *   The vector store modules handle batch upserting these points into the corresponding Qdrant collection (`dnd_pdf_pages` or `dnd_semantic`).
-    *   The `SemanticStore` also updates its internal BM25 retriever during `add_points`.
-7.  **History Update:**
-    *   Saves the updated `pdf_process_history.json` (with new hashes, timestamps, image URLs) back to S3 and locally.
+    *   Extracts plain text.
+    *   Uses the `DocumentStructureAnalyzer` to determine heading context.
+    *   Collects page text along with rich metadata (S3 source key, filename, page number, total pages, S3 image URL, heading hierarchy, etc.).
+5.  **Sequential Processing for Target Stores:**
+    *   For the *current PDF*, proceeds based on which stores (`pages`, `semantic`, `haystack`) are targeted and not skipped due to cache:
+        *   **Pages Store:** If processing `pages`, embeds full page texts using `sentence-transformers` (`all-MiniLM-L6-v2`) via `embeddings/model_provider.py`. Creates Qdrant points and adds them to the `PdfPagesStore` (`dnd_pdf_pages` collection).
+        *   **Semantic Store:** If processing `semantic`, chunks page data (with cross-page context) using `semantic_store.chunk_document_with_cross_page_context`. Embeds chunks using OpenAI API (`text-embedding-3-small`) via `embeddings/model_provider.py`. Creates Qdrant points and adds them to the `SemanticStore` (`dnd_semantic` collection), updating its BM25 retriever.
+        *   **Haystack Store:** If processing `haystack`, chunks page data (using `haystack_store.chunk_document_with_cross_page_context`). Adds chunks to the configured Haystack store (`HaystackQdrantStore` or `HaystackMemoryStore`), which handles internal embedding (`sentence-transformers`).
+6.  **History Update:**
+    *   Updates the `processed_stores` list in the history for the PDF to mark which stores processed this version.
+    *   Saves the updated `pdf_process_history.json` back to S3 and locally after all PDFs are processed.
 
-This refactored pipeline separates concerns: `data_ingestion` orchestrates processing and calls `embeddings` for vector generation, while `vector_store` modules focus solely on Qdrant interaction (storage and retrieval). 
+This unified pipeline processes each PDF sequentially for all targeted stores, improving efficiency and ensuring image generation happens only once when needed. 
