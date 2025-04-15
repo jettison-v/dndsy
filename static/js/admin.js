@@ -272,6 +272,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    /**
+     * Establishes an SSE connection to monitor the processing run.
+     * Sets up listeners for updates, errors, and the final end event.
+     * @param {string} runId - The unique ID of the processing run.
+     */
     // Function to start listening to the processing stream
     function startProcessingStream(runId) {
         if (currentEventSource) {
@@ -302,6 +307,7 @@ document.addEventListener('DOMContentLoaded', function() {
             closeProcessingStream(false); // Close and indicate failure
         };
 
+        // Handles 'update' events: parses JSON data and routes it based on 'type'.
         // Listener for general updates (log, milestone, progress, etc.)
         currentEventSource.addEventListener('update', function(event) {
             try {
@@ -315,21 +321,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Listener for specific error events from the stream
-        currentEventSource.addEventListener('error', function(event) {
-            try {
-                const data = JSON.parse(event.data);
-                console.error("SSE stream error event:", data);
-                // showStatus(processStatus, `Stream Error: ${data.message || 'Unknown stream error'}`, 'error'); // Removed old status display
-                liveStatusSummary.textContent = `Error: ${data.message || 'Unknown stream error'}`;
-                liveStatusSummary.className = 'admin-status error';
-            } catch (e) {
-                console.error("Error parsing SSE error data:", e);
-                showStatus(processStatus, 'Received an unparsable stream error.', 'error');
-            }
-            // Don't close stream here, wait for 'end' or onerror
-        });
-
+        // Handles the final 'end' event from the SSE stream.
+        // Parses final status, updates UI, and changes the Cancel button to Close.
         // Listener for the final end event
         currentEventSource.addEventListener('end', function(event) {
             console.log("SSE end event received:", event.data);
@@ -387,6 +380,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    /**
+     * Processes a received message from the SSE stream based on its type.
+     * Updates the live status summary, milestones list, and log view.
+     * @param {object} data - The parsed JSON data from the SSE message.
+     */
     // Function to handle updates received from the SSE stream
     function handleStreamUpdate(data) {
         switch(data.type) {
@@ -421,6 +419,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    /**
+     * Appends a message to the live log display area.
+     * @param {string} message - The log message.
+     * @param {string} [level='info'] - The log level ('info' or 'error').
+     */
     // Function to add a log line to the live log view
     function addLogLine(message, level = 'info') {
         const logEntry = document.createElement('div');
@@ -433,6 +436,14 @@ document.addEventListener('DOMContentLoaded', function() {
         liveLogs.scrollTop = liveLogs.scrollHeight;
     }
 
+    /**
+     * Adds or updates a milestone in the live status display.
+     * If an element with `id="milestone-<id>"` exists, it updates it.
+     * Otherwise, it creates a new milestone element.
+     * @param {string} message - The milestone text.
+     * @param {boolean} [isLongRunning=false] - If true, displays a spinner (indicates start).
+     * @param {string|null} [id=null] - An optional ID to link start/end milestones.
+     */
     // Function to add a milestone
     function addMilestone(message, isLongRunning = false, id = null) {
         let milestoneEntry = null;
@@ -474,6 +485,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    /**
+     * Closes the current SSE connection, re-enables the process button,
+     * hides the cancel button, and triggers a history refresh.
+     * @param {boolean} finishedNaturally - True if the stream ended via an 'end' event.
+     */
     // Function to close the SSE stream and update UI
     function closeProcessingStream(finishedNaturally) {
         if (currentEventSource) {
@@ -514,6 +530,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 500); 
     }
     
+    /**
+     * Handles the click event for the 'Cancel Run' button.
+     * Sends a POST request to the backend cancellation endpoint.
+     * Updates the UI based on the response.
+     */
     // Function to handle cancel button click
     function handleCancelProcessing() {
         if (!currentRunId) {

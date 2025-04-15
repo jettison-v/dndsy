@@ -393,15 +393,20 @@ def admin_process():
     # Store the queue and initialize process entry for SSE streaming
     with RUN_LOCK:
         active_runs[run_id] = {
-            'queue': message_queue,
-            'process': None # Placeholder for the subprocess object
+            'queue': message_queue,      # Queue for this run's status messages
+            'process': None            # Placeholder for the subprocess.Popen object
         }
 
     # Run the command in a separate thread
     def run_process(current_run_id, command_args, msg_queue):
-        log_capture = io.StringIO()
+        """Runs the management script in a subprocess and streams output.
+
+        Captures stdout, parses JSON status updates, and puts them on the msg_queue.
+        Handles process termination and updates the persistent run history file.
+        """
+        log_capture = io.StringIO() # Captures the raw log output for history
         process_start_time = time.time()
-        final_status = "Unknown" 
+        final_status = "Unknown" # Track the final status reported by the script
         final_success = False
         final_duration = None
         return_code = -1
@@ -418,7 +423,7 @@ def admin_process():
                 bufsize=1 
             )
             
-            # Store the process object in active_runs
+            # Store the process object in active_runs dictionary for potential cancellation
             with RUN_LOCK:
                 if current_run_id in active_runs:
                     active_runs[current_run_id]['process'] = process
@@ -500,7 +505,7 @@ def admin_process():
                 logger.error(f"Failed to put Flask exception onto queue: {q_err}")
                 
         finally:
-            # Signal end of messages for this run
+            # Signal end of messages for this run to the SSE stream
             msg_queue.put({"type": "end", "success": final_success, "status": final_status, "duration": final_duration})
             
             end_time = datetime.now().isoformat()
@@ -527,9 +532,9 @@ def admin_process():
                     del active_runs[current_run_id]
                     logger.info(f"Removed run {current_run_id} from active runs.")
 
-    # Start thread
+    # Start the background thread
     thread = threading.Thread(target=run_process, args=(run_id, cmd_args, message_queue))
-    thread.daemon = True
+    thread.daemon = True # Allow Flask to exit even if thread is running
     thread.start()
     
     return jsonify({
@@ -561,6 +566,7 @@ def admin_process_stream(run_id):
 
     # Define the generator function for SSE
     def generate_updates():
+        """Generator function to yield SSE messages from the run's queue."""
         msg_queue = None
         with RUN_LOCK:
             if run_id in active_runs:

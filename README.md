@@ -28,6 +28,14 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
 *   **Cloud Ready:** Designed for deployment with Qdrant Cloud for vector storage and AWS S3 for file storage.
 *   **Password Protected:** Simple login system to protect access.
 *   **Dockerized:** Includes Docker setup for consistent development and deployment.
+*   **Admin Panel:** Provides UI for managing data processing, file uploads, configuration, and monitoring:
+    *   **Data Processing:** Trigger PDF processing into selected vector stores (`pages`, `semantic`, `haystack`). Choose cache behavior (`use` or `rebuild`).
+    *   **Live Status:** View real-time progress, milestones, and logs during processing runs via a modal window.
+    *   **Run History:** View history of processing runs, including start time, duration, parameters, status, and view detailed logs for each run.
+    *   **S3 File Management:** List existing PDFs in the source S3 bucket, upload new PDFs (including drag-and-drop).
+    *   **Qdrant Management:** View statistics for Qdrant collections, sample points from selected collections.
+    *   **Configuration:** View/Update system prompt, view key environment variables.
+    *   **External Links:** Quick links to relevant external services (Railway, Qdrant, S3, etc.).
 
 ## Technology Stack
 
@@ -92,6 +100,7 @@ dndsy/
 │       ├── chat.js
 │       ├── marked.min.js
 │       └── source_viewer.js
+│       └── admin.js # Added for Admin Panel functionality
 ├── templates/
 │   ├── index.html
 │   └── login.html

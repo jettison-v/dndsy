@@ -204,8 +204,10 @@ def manage_vector_stores(store='all', cache_behavior='use', haystack_type='hayst
                  processing_summary["Haystack-Qdrant"] = f"{getattr(processor, 'haystack_points_total', 0)} points added"
 
             # --- Handle Processing Second Haystack Type (if needed) ---
+            # If user selected 'all' or 'haystack', we process both Qdrant and Memory sequentially.
             if process_haystack_qdrant and process_haystack_memory:
                 logger.info("--- Initializing Second Haystack Processor (Memory) ---")
+                # Update environment variable for DataProcessor initialization
                 os.environ["HAYSTACK_STORE_TYPE"] = "haystack-memory"
                 # Re-run with only haystack memory enabled
                 send_status("milestone", {"message": "Initializing Haystack Memory Processor..."})
