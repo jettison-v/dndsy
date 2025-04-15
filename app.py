@@ -54,7 +54,7 @@ AVAILABLE_LLM_MODELS = {
 }
 
 # Path for the new run history file
-RUN_HISTORY_FILE = Path(__file__).parent / "admin_processing_runs.json"
+RUN_HISTORY_FILE = Path(__file__).parent / "data" / "admin_processing_runs.json"
 RUN_HISTORY_LOCK = threading.Lock() # Lock for thread-safe file access
 
 # Dictionary to hold active run queues for SSE streaming
