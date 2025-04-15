@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // DOM Elements
     const adminButton = document.getElementById('admin-button');
     const adminModal = document.getElementById('admin-modal');
+    const adminModalOverlay = document.getElementById('admin-modal-overlay');
     const adminCloseButton = document.getElementById('admin-close-button');
     const adminLoginSection = document.getElementById('admin-login-section');
     const adminContent = document.getElementById('admin-content');
@@ -24,6 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Open admin modal
     adminButton.addEventListener('click', function() {
         adminModal.style.display = 'block';
+        adminModalOverlay.style.display = 'block';
         document.body.style.overflow = 'hidden'; // Prevent body scrolling
         // Reset login form
         adminPassword.value = '';
@@ -33,15 +35,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Close admin modal
     adminCloseButton.addEventListener('click', function() {
         adminModal.style.display = 'none';
+        adminModalOverlay.style.display = 'none';
         document.body.style.overflow = ''; // Restore body scrolling
     });
     
     // Close modal when clicking outside
-    adminModal.addEventListener('click', function(event) {
-        if (event.target === adminModal) {
-            adminModal.style.display = 'none';
-            document.body.style.overflow = ''; // Restore body scrolling
-        }
+    adminModalOverlay.addEventListener('click', function() {
+        adminModal.style.display = 'none';
+        adminModalOverlay.style.display = 'none';
+        document.body.style.overflow = ''; // Restore body scrolling
     });
     
     // ============================

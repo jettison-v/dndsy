@@ -185,6 +185,11 @@ body {
     backdrop-filter: blur(2px);
 }
 
+/* Admin Modal specific overlay */
+#admin-modal-overlay {
+    z-index: 999;
+}
+
 .vector-store-modal {
     display: none;
     position: fixed;
@@ -1873,7 +1878,7 @@ textarea:focus, button:focus {
     background-color: #2a2a2e;
     color: #ffffff;
     border-radius: 8px;
-    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 8px 20px rgba(0, 0, 0, 0.4);
     display: flex;
     flex-direction: column;
     overflow: hidden; /* Content overflow will be handled by modal-body */
@@ -1953,13 +1958,65 @@ textarea:focus, button:focus {
 /* Admin Login Section */
 #admin-login-section {
     max-width: 400px;
-    margin: 0 auto;
-    padding: 20px;
+    margin: 40px auto;
+    padding: 30px;
     background-color: #242527;
     border-radius: 8px;
     border: 1px solid #383838;
+    text-align: center;
 }
 
+#admin-login-section h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.4rem;
+    color: #ffffff;
+}
+
+#admin-login-section .admin-form-group {
+    margin-bottom: 25px;
+    text-align: left;
+}
+
+#admin-login-section label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: 500;
+    color: #ffffff;
+}
+
+#admin-login-section input[type="password"] {
+    display: block;
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: #1b1b1b;
+    color: var(--text-color);
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#admin-login-section input[type="password"]:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(228, 7, 18, 0.2);
+}
+
+#admin-login-section .admin-button {
+    margin-top: 5px;
+    padding: 12px 30px;
+    font-size: 1rem;
+    width: 100%;
+}
+
+#admin-login-error {
+    margin-top: 15px;
+    color: #ff6b6b;
+    font-size: 0.9rem;
+}
+
+/* General Admin Form Styles */
 .admin-form-group {
     margin-bottom: 15px;
 }
@@ -2228,13 +2285,14 @@ button.admin-button:hover {
     font-size: 20px;
     color: #e40712;
     flex-shrink: 0;
-    padding: 10px;
+    padding: 0; /* Remove padding to give more space for icons */
 }
 
 /* Specific icon adjustments */
 .admin-link-icon .fab.fa-github,
 .admin-link-icon .fab.fa-aws {
-    font-size: 24px;
+    font-size: 26px; /* Increased from 24px */
+    transform: scale(1); /* Ensure proper scaling */
 }
 
 .admin-link-text {
@@ -2326,9 +2384,14 @@ button.admin-button:hover {
 
 /* Add specific styles for the system prompt textarea */
 #system-prompt {
-    overflow-y: visible; /* Prevent internal scrollbar */
-    height: auto;        /* Allow height to adjust to content */
-    min-height: 100px;   /* Set a minimum height */
+    overflow-y: auto; /* Only show scrollbars when needed */
+    height: auto;
+    min-height: 180px; /* Increased from 100px */
+    width: 100%;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical; /* Allow users to resize vertically if they want */
+    max-height: 400px; /* Cap the max height */
 }
 
 /* Drag and Drop Styles */

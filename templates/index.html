@@ -103,6 +103,9 @@
         </button>
     </div>
     
+    <!-- Admin Modal Overlay -->
+    <div id="admin-modal-overlay" class="modal-overlay"></div>
+    
     <!-- Admin Modal -->
     <div id="admin-modal" class="admin-modal">
         <div class="admin-modal-content">
@@ -133,7 +136,6 @@
                     
                     <div class="admin-tab-content">
                         <div id="data-processing-tab" class="admin-tab-pane active">
-                            <h3>Data Processing Management</h3>
                             
                             <!-- Section 1: Process PDF Documents -->
                             <div class="admin-section">
@@ -172,7 +174,6 @@
                         </div>
                         
                         <div id="file-management-tab" class="admin-tab-pane">
-                            <h3>S3 File Management</h3>
                             <div class="admin-section">
                                 <h4>Upload New PDF</h4>
                                 <div class="admin-form-group">
@@ -201,7 +202,6 @@
                         </div>
                         
                         <div id="vector-db-tab" class="admin-tab-pane">
-                            <h3>Qdrant Collections</h3>
                             <div class="admin-section">
                                 <h4>Collection Statistics</h4>
                                 <button id="load-collections-button" class="admin-button">Load Collections</button>
@@ -228,7 +228,6 @@
                         </div>
                         
                         <div id="api-costs-tab" class="admin-tab-pane">
-                            <h3>API Usage & Costs</h3>
                             <div class="admin-section">
                                 <h4>OpenAI API Usage</h4>
                                 <button id="load-api-costs-button" class="admin-button">Load API Stats</button>
@@ -239,7 +238,6 @@
                         </div>
                         
                         <div id="config-tab" class="admin-tab-pane">
-                            <h3>Configuration Management</h3>
                             <div class="admin-section">
                                 <h4>GPT Configuration</h4>
                                 <div class="admin-form-group">
@@ -259,7 +257,6 @@
                         </div>
                         
                         <div id="links-tab" class="admin-tab-pane">
-                            <h3>External System Links</h3>
                             <div class="admin-section admin-links-grid">
                                 <a href="https://railway.app" target="_blank" class="admin-external-link">
                                     <div class="admin-link-icon"><i class="fas fa-train"></i></div>
