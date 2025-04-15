@@ -96,6 +96,220 @@
         </div>
     </div>
     
+    <!-- Admin Button (Desktop Only) -->
+    <div class="admin-button-container desktop-only">
+        <button id="admin-button" class="admin-button" title="Admin Panel">
+            <i class="fas fa-cog"></i>
+        </button>
+    </div>
+    
+    <!-- Admin Modal -->
+    <div id="admin-modal" class="admin-modal">
+        <div class="admin-modal-content">
+            <div class="admin-modal-header">
+                <h2><i class="fas fa-shield-alt"></i> Admin Panel</h2>
+                <button id="admin-close-button" class="admin-close-button">&times;</button>
+            </div>
+            <div class="admin-modal-body">
+                <div id="admin-login-section">
+                    <h3>Admin Access</h3>
+                    <div class="admin-form-group">
+                        <label for="admin-password">Password</label>
+                        <input type="password" id="admin-password" placeholder="Enter admin password">
+                    </div>
+                    <button id="admin-login-button" class="admin-button">Login</button>
+                    <p id="admin-login-error" class="admin-error"></p>
+                </div>
+                
+                <div id="admin-content" class="admin-content" style="display: none;">
+                    <div class="admin-tabs">
+                        <button class="admin-tab-button active" data-tab="data-processing">Data Processing</button>
+                        <button class="admin-tab-button" data-tab="file-management">S3 Files</button>
+                        <button class="admin-tab-button" data-tab="vector-db">Qdrant Collections</button>
+                        <button class="admin-tab-button" data-tab="api-costs">API Costs</button>
+                        <button class="admin-tab-button" data-tab="config">Configuration</button>
+                        <button class="admin-tab-button" data-tab="links">External Links</button>
+                    </div>
+                    
+                    <div class="admin-tab-content">
+                        <div id="data-processing-tab" class="admin-tab-pane active">
+                            <h3>Data Processing Management</h3>
+                            <div class="admin-section">
+                                <h4>Process PDF Documents</h4>
+                                <div class="admin-form-group">
+                                    <label>Vector Store Type</label>
+                                    <div class="admin-checkbox-group">
+                                        <label><input type="checkbox" value="pages" checked> Pages</label>
+                                        <label><input type="checkbox" value="semantic" checked> Semantic</label>
+                                        <label><input type="checkbox" value="haystack-qdrant"> Haystack (Qdrant)</label>
+                                        <label><input type="checkbox" value="haystack-memory"> Haystack (Memory)</label>
+                                    </div>
+                                </div>
+                                <div class="admin-form-group">
+                                    <label>Cache Behavior</label>
+                                    <div class="admin-radio-group">
+                                        <label><input type="radio" name="cache-behavior" value="use" checked> Use Cache</label>
+                                        <label><input type="radio" name="cache-behavior" value="rebuild"> Rebuild Cache</label>
+                                    </div>
+                                </div>
+                                <div class="admin-form-group">
+                                    <label for="s3-prefix">S3 PDF Prefix (Optional)</label>
+                                    <input type="text" id="s3-prefix" placeholder="source-pdfs/">
+                                </div>
+                                <button id="process-button" class="admin-button">Process Documents</button>
+                                <div id="process-status" class="admin-status"></div>
+                            </div>
+                            
+                            <div class="admin-section">
+                                <h4>Processing History</h4>
+                                <button id="load-history-button" class="admin-button">Load History</button>
+                                <div id="processing-history" class="admin-table-container">
+                                    <p>Click "Load History" to view processing history</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="file-management-tab" class="admin-tab-pane">
+                            <h3>S3 File Management</h3>
+                            <div class="admin-section">
+                                <h4>Upload New PDF</h4>
+                                <div class="admin-form-group">
+                                    <label for="pdf-upload">Select PDF File</label>
+                                    <input type="file" id="pdf-upload" accept=".pdf">
+                                </div>
+                                <div class="admin-form-group">
+                                    <label for="upload-prefix">Destination Prefix (Optional)</label>
+                                    <input type="text" id="upload-prefix" placeholder="source-pdfs/">
+                                </div>
+                                <button id="upload-button" class="admin-button">Upload to S3</button>
+                                <div id="upload-status" class="admin-status"></div>
+                            </div>
+                            
+                            <div class="admin-section">
+                                <h4>Existing PDFs</h4>
+                                <button id="load-pdfs-button" class="admin-button">List S3 PDFs</button>
+                                <div id="pdf-list" class="admin-table-container">
+                                    <p>Click "List S3 PDFs" to view existing PDFs</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="vector-db-tab" class="admin-tab-pane">
+                            <h3>Qdrant Collections</h3>
+                            <div class="admin-section">
+                                <h4>Collection Statistics</h4>
+                                <button id="load-collections-button" class="admin-button">Load Collections</button>
+                                <div id="collections-stats" class="admin-table-container">
+                                    <p>Click "Load Collections" to view collection statistics</p>
+                                </div>
+                            </div>
+                            
+                            <div class="admin-section">
+                                <h4>Collection Points</h4>
+                                <div class="admin-form-group">
+                                    <label for="collection-select">Select Collection</label>
+                                    <select id="collection-select">
+                                        <option value="dnd_pdf_pages">Pages (dnd_pdf_pages)</option>
+                                        <option value="dnd_semantic">Semantic (dnd_semantic)</option>
+                                        <option value="dnd_haystack">Haystack (dnd_haystack)</option>
+                                    </select>
+                                </div>
+                                <button id="load-points-button" class="admin-button">Load Sample Points</button>
+                                <div id="collection-points" class="admin-table-container">
+                                    <p>Click "Load Sample Points" to view collection points</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="api-costs-tab" class="admin-tab-pane">
+                            <h3>API Usage & Costs</h3>
+                            <div class="admin-section">
+                                <h4>OpenAI API Usage</h4>
+                                <button id="load-api-costs-button" class="admin-button">Load API Stats</button>
+                                <div id="api-costs" class="admin-table-container">
+                                    <p>Click "Load API Stats" to view usage information</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="config-tab" class="admin-tab-pane">
+                            <h3>Configuration Management</h3>
+                            <div class="admin-section">
+                                <h4>GPT Configuration</h4>
+                                <div class="admin-form-group">
+                                    <label for="system-prompt">System Prompt</label>
+                                    <textarea id="system-prompt" rows="6" placeholder="Loading current prompt..."></textarea>
+                                </div>
+                                <button id="save-prompt-button" class="admin-button">Save System Prompt</button>
+                                <div id="prompt-status" class="admin-status"></div>
+                            </div>
+                            
+                            <div class="admin-section">
+                                <h4>Environment Variables</h4>
+                                <div id="env-vars" class="admin-table-container">
+                                    <p>Loading environment variables...</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="links-tab" class="admin-tab-pane">
+                            <h3>External System Links</h3>
+                            <div class="admin-section admin-links-grid">
+                                <a href="https://railway.app" target="_blank" class="admin-external-link">
+                                    <div class="admin-link-icon"><i class="fas fa-train"></i></div>
+                                    <div class="admin-link-text">
+                                        <h4>Railway</h4>
+                                        <p>Deployment Platform</p>
+                                    </div>
+                                </a>
+                                
+                                <a href="https://www.godaddy.com" target="_blank" class="admin-external-link">
+                                    <div class="admin-link-icon"><i class="fas fa-globe"></i></div>
+                                    <div class="admin-link-text">
+                                        <h4>GoDaddy</h4>
+                                        <p>Domain Registrar</p>
+                                    </div>
+                                </a>
+                                
+                                <a href="https://cloud.qdrant.io/" target="_blank" class="admin-external-link">
+                                    <div class="admin-link-icon"><i class="fas fa-database"></i></div>
+                                    <div class="admin-link-text">
+                                        <h4>Qdrant</h4>
+                                        <p>Vector Database</p>
+                                    </div>
+                                </a>
+                                
+                                <a href="https://github.com" target="_blank" class="admin-external-link">
+                                    <div class="admin-link-icon"><i class="fab fa-github"></i></div>
+                                    <div class="admin-link-text">
+                                        <h4>GitHub</h4>
+                                        <p>Source Code Repository</p>
+                                    </div>
+                                </a>
+                                
+                                <a href="https://platform.openai.com/usage" target="_blank" class="admin-external-link">
+                                    <div class="admin-link-icon"><i class="fas fa-chart-line"></i></div>
+                                    <div class="admin-link-text">
+                                        <h4>OpenAI Dashboard</h4>
+                                        <p>API Usage & Billing</p>
+                                    </div>
+                                </a>
+                                
+                                <a href="https://console.aws.amazon.com/s3/" target="_blank" class="admin-external-link">
+                                    <div class="admin-link-icon"><i class="fab fa-aws"></i></div>
+                                    <div class="admin-link-text">
+                                        <h4>AWS S3</h4>
+                                        <p>File Storage</p>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <div class="fab-container mobile-only-fab">
         <button id="mobile-source-toggle" class="fab" title="Toggle Source Panel">
             <i class="fas fa-book"></i>
@@ -196,4 +410,5 @@
     <!-- Add marked.js for markdown parsing -->
     <script src="{{ url_for('static', filename='js/marked.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/chat.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/admin.js') }}" defer></script>
 {% endblock %} 
