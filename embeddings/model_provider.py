@@ -62,7 +62,7 @@ def _load_haystack_model():
 
 def get_embedding_model(store_type: str):
     """Factory function to get the appropriate embedding model/client."""
-    if store_type == "standard":
+    if store_type == "pages":
         return _load_standard_model()
     elif store_type == "semantic":
         return _load_semantic_model()
@@ -79,7 +79,7 @@ def embed_query(query: str, store_type: str) -> list[float]:
         raise RuntimeError(f"Embedding model/client for {store_type} could not be loaded.")
 
     logger.info(f"Embedding query for {store_type} store: '{query[:50]}...'")
-    if store_type == "standard":
+    if store_type == "pages":
         embedding = model_or_client.encode(query).tolist()
     elif store_type == "semantic":
         try:
@@ -111,7 +111,7 @@ def embed_documents(texts: List[str], store_type: str) -> List[list[float]]:
     embeddings = []
     start_time = time.time()
 
-    if store_type in ["standard", "haystack", "haystack-qdrant", "haystack-memory"]:
+    if store_type in ["pages", "haystack", "haystack-qdrant", "haystack-memory"]:
         # SentenceTransformer encode can handle lists directly and efficiently
         embeddings = model_or_client.encode(texts, show_progress_bar=True).tolist()
     elif store_type == "semantic":

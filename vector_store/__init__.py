@@ -30,15 +30,14 @@ def get_vector_store(vector_store_type=None, force_new=False):
     Returns:
         VectorStore: An instance of the appropriate vector store class.
     """
-    vector_store_type = vector_store_type or os.getenv("VECTOR_STORE_TYPE", "standard")
+    vector_store_type = vector_store_type or os.getenv("VECTOR_STORE_TYPE", "pages")
     
     # If we have a cached instance and don't want to force a new one, return it
     if vector_store_type in _vector_store_instances and not force_new:
         return _vector_store_instances[vector_store_type]
         
-    if vector_store_type == "standard":
-        from vector_store.standard_store import StandardVectorStore
-        store = StandardVectorStore()
+    if vector_store_type == "pages":
+        store = PdfPagesStore()
     elif vector_store_type == "semantic":
         store = SemanticStore()
     elif vector_store_type == "haystack-qdrant":
@@ -46,7 +45,7 @@ def get_vector_store(vector_store_type=None, force_new=False):
     elif vector_store_type == "haystack-memory":
         store = HaystackMemoryStore()
     else:
-        logger.warning(f"Unknown vector store type: {vector_store_type}. Defaulting to standard.")
+        logger.warning(f"Unknown vector store type: {vector_store_type}. Defaulting to pages.")
         store = PdfPagesStore()
     
     _vector_store_instances[vector_store_type] = store

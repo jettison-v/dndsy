@@ -20,7 +20,7 @@ from qdrant_client.http.models import PointStruct
 from tqdm import tqdm
 import logging
 import sys
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
@@ -29,6 +29,7 @@ import boto3
 from botocore.exceptions import NoCredentialsError, PartialCredentialsError, ClientError
 import io # For handling image data in memory
 from dotenv import load_dotenv
+import uuid  # For generating unique UUIDs
 
 # Ensure logs directory exists relative to project root
 # Assumes this script is run from the project root or sys.path is set correctly
@@ -92,25 +93,28 @@ logger = logging.getLogger(__name__)
 class DataProcessor:
     """Handles the end-to-end processing of PDF documents from S3 into vector stores."""
 
-    def __init__(self, process_standard: bool = True, process_semantic: bool = True, process_haystack: bool = False, force_processing: bool = False):
+    def __init__(self, process_pages: bool = True, process_semantic: bool = True, process_haystack: bool = False, force_processing: bool = False, force_reprocess_images: bool = False):
         """Initialize the data processor, optionally skipping stores."""
-        self.process_standard = process_standard
+        self.process_pages = process_pages
         self.process_semantic = process_semantic
         self.process_haystack = process_haystack
-        self.force_processing = force_processing
+        self.force_processing = force_processing # Forces processing for specific stores
+        self.force_reprocess_images = force_reprocess_images # Forces image regeneration
         
         if self.force_processing:
-            logger.info("Force processing enabled - will process documents regardless of change status")
+            logger.info("Force processing enabled - will process documents for selected stores regardless of change status")
+        if self.force_reprocess_images:
+            logger.info("Force reprocess images enabled - will regenerate images even if PDF hash is unchanged")
             
         # Initialize stores conditionally
-        self.standard_store = None
-        if self.process_standard:
-            self.standard_store = get_vector_store("standard")
-            if not self.standard_store:
-                raise RuntimeError("Failed to initialize standard vector store.")
-            logger.info("Standard store initialized for processing.")
+        self.pages_store = None
+        if self.process_pages:
+            self.pages_store = get_vector_store("pages")
+            if not self.pages_store:
+                raise RuntimeError("Failed to initialize pages vector store.")
+            logger.info("Pages store initialized for processing.")
         else:
-            logger.info("Skipping standard store initialization.")
+            logger.info("Skipping pages store initialization.")
              
         self.semantic_store = None
         if self.process_semantic:
@@ -139,7 +143,7 @@ class DataProcessor:
         self.process_history = self._load_process_history()
         self.reprocessed_pdfs = [] 
         self.unchanged_pdfs = []   
-        logger.info(f"DataProcessor initialized. Standard: {self.process_standard}, Semantic: {self.process_semantic}, Haystack: {self.process_haystack}")
+        logger.info(f"DataProcessor initialized. Pages: {self.process_pages}, Semantic: {self.process_semantic}, Haystack: {self.process_haystack}")
     
     def _compute_pdf_hash(self, pdf_bytes):
         """Compute a hash of PDF content to detect changes."""
@@ -253,7 +257,7 @@ class DataProcessor:
         except Exception as e:
             logger.error(f"Error deleting images for {pdf_prefix}: {e}")
 
-    def process_pdfs_from_s3(self) -> int:
+    def process_pdfs_from_s3(self, processed_pdf_keys_tracker: Optional[set] = None) -> int:
         """Process PDF files from S3, generate page images, chunk, embed, and add to selected stores."""
         if not s3_client:
             logger.error("S3 client not configured. Cannot process PDFs from S3.")
@@ -277,7 +281,7 @@ class DataProcessor:
         start_time = datetime.now()
         total_pdfs = len(pdf_files_s3_keys)
         logger.info(f"Processing {total_pdfs} PDFs...")
-        standard_points_total = 0
+        pages_points_total = 0
         semantic_points_total = 0
         haystack_points_total = 0
         
@@ -315,8 +319,8 @@ class DataProcessor:
                 # Check if this PDF has been processed by this store type before
                 processed_stores = pdf_info.get('processed_stores', [])
                 
-                # For image generation, we check if the PDF has changed
-                if old_hash == pdf_hash and pdf_info.get('processed'):
+                # For image generation, we check if the PDF has changed OR if forcing image regeneration
+                if not self.force_reprocess_images and old_hash == pdf_hash and pdf_info.get('processed'):
                     logger.info(f"PDF {s3_pdf_key} unchanged since last processing, skipping image generation")
                     self.unchanged_pdfs.append(s3_pdf_key)
                     generate_images = False
@@ -324,14 +328,20 @@ class DataProcessor:
                     logger.info(f"PDF {s3_pdf_key} has changed. Deleting old images and regenerating.")
                     self._delete_specific_s3_images(pdf_image_sub_dir_name)
                     # Reset processed stores since content changed
-                    processed_stores = []
+                    processed_stores = [] 
+                    generate_images = True # Ensure generate_images is true if hash changed
                 elif not old_hash:
                     logger.info(f"New PDF {s3_pdf_key}. Deleting any potentially stale images and generating new ones.")
                     self._delete_specific_s3_images(pdf_image_sub_dir_name)
                     # New PDF, so no processed stores
                     processed_stores = []
+                    generate_images = True # Ensure generate_images is true for new PDFs
+                elif self.force_reprocess_images:
+                    logger.info(f"Forcing image regeneration for {s3_pdf_key} due to --force-reprocess-images flag.")
+                    self._delete_specific_s3_images(pdf_image_sub_dir_name)
+                    generate_images = True
                 
-                # Initialize process history if needed
+                # Initialize process history if needed (now also includes force_reprocess case)
                 if generate_images or s3_pdf_key not in self.process_history:
                     self.reprocessed_pdfs.append(s3_pdf_key)
                     if s3_pdf_key not in self.process_history: 
@@ -365,7 +375,7 @@ class DataProcessor:
                 self.doc_analyzer.determine_heading_levels()
                 logger.info("Document structure analysis complete.")
 
-                standard_page_data = [] if self.process_standard else None
+                pages_data = [] if self.process_pages else None
                 semantic_page_data = [] if (self.process_semantic or self.process_haystack) else None
 
                 # --- Second pass: Extract text, generate images (if needed), collect data --- 
@@ -429,8 +439,8 @@ class DataProcessor:
                         if key in context: metadata[key] = context[key]
                     
                     # Conditionally collect data based on flags
-                    if self.process_standard:
-                        standard_page_data.append({"text": page_text, "metadata": metadata.copy()})
+                    if self.process_pages:
+                        pages_data.append({"text": page_text, "metadata": metadata.copy()})
                     if self.process_semantic or self.process_haystack:
                         semantic_page_data.append({"text": page_text, "page": page_label, "metadata": metadata.copy()})
                     
@@ -438,31 +448,38 @@ class DataProcessor:
 
                 # --- Embed and Add to Stores (Conditional Processing) --- 
                 
-                # 1. Standard Store 
-                if self.process_standard and standard_page_data:
+                # 1. Pages Store (Formerly Standard)
+                if self.process_pages and pages_data:
                     # Skip if this store has already processed this PDF (with the same hash)
-                    if "standard" in processed_stores and old_hash == pdf_hash:
-                        logger.info(f"Skipping standard store processing for {s3_pdf_key} (already processed)")
+                    if "pages" in processed_stores and old_hash == pdf_hash:
+                        logger.info(f"Skipping pages store processing for {s3_pdf_key} (already processed)")
                     else:
-                        logger.info(f"Embedding {len(standard_page_data)} pages for standard store...")
-                        standard_texts = [item["text"] for item in standard_page_data]
-                        standard_embeddings = embed_documents(standard_texts, store_type="standard")
-                        standard_points = []
-                        doc_id_counter = self.standard_store.next_id 
-                        for i, data in enumerate(standard_page_data):
-                            standard_points.append(PointStruct(
-                                id=doc_id_counter + i,
-                                vector=standard_embeddings[i],
-                                payload={"text": data["text"], "metadata": data["metadata"]}
-                            ))
-                        if standard_points:
-                            logger.info(f"Adding {len(standard_points)} points to standard store for {pdf_filename}")
-                            self.standard_store.add_points(standard_points)
-                            standard_points_total += len(standard_points)
-                            documents_processed += len(standard_points)
-                            # Mark this store as having processed this PDF
-                            if "standard" not in self.process_history[s3_pdf_key]['processed_stores']:
-                                self.process_history[s3_pdf_key]['processed_stores'].append("standard")
+                        logger.info(f"Embedding {len(pages_data)} pages for pages store...")
+                        pages_texts = [item["text"] for item in pages_data]
+                        pages_embeddings = embed_documents(pages_texts, store_type="pages")
+                        pages_points = []
+                        if len(pages_embeddings) == len(pages_data):
+                            for i, data in enumerate(pages_data):
+                                pages_points.append(PointStruct(
+                                    id=str(uuid.uuid4()),
+                                    vector=pages_embeddings[i],
+                                    payload={"text": data["text"], "metadata": data["metadata"]}
+                                ))
+                        else:
+                            logger.error(f"Mismatch embedding/data count for pages store: {s3_pdf_key}")
+                            
+                        if pages_points:
+                            logger.info(f"Adding {len(pages_points)} points to pages store for {pdf_filename}")
+                            try:
+                                self.pages_store.add_points(pages_points)
+                                logger.info(f"Successfully upserted {len(pages_points)} points to pages store.")
+                                pages_points_total += len(pages_points)
+                                documents_processed += len(pages_points)
+                                # Mark this store as having processed this PDF
+                                if "pages" not in self.process_history[s3_pdf_key]['processed_stores']:
+                                    self.process_history[s3_pdf_key]['processed_stores'].append("pages")
+                            except Exception as e:
+                                logger.error(f"Error adding points to pages store for {s3_pdf_key}: {e}", exc_info=True)
 
                 # 2. Semantic Store
                 if self.process_semantic and semantic_page_data:
@@ -540,6 +557,11 @@ class DataProcessor:
                 # Close the document
                 doc.close()
                 
+                # If we got this far, we are processing this PDF for at least one store
+                # Add its key to the tracker set if provided
+                if processed_pdf_keys_tracker is not None:
+                    processed_pdf_keys_tracker.add(s3_pdf_key)
+                
             except Exception as e:
                 logger.error(f"Error processing PDF {s3_pdf_key}: {e}", exc_info=True)
                 if 'doc' in locals() and doc is not None:
@@ -555,7 +577,7 @@ class DataProcessor:
         logger.info(f"===== Processing Complete =====")
         logger.info(f"Total run time: {int(hours)}h {int(minutes)}m {int(seconds)}s")
         logger.info(f"Processed {documents_processed} total points/documents across all stores")
-        logger.info(f"Added {standard_points_total} points to standard store")
+        logger.info(f"Added {pages_points_total} points to pages store")
         logger.info(f"Added {semantic_points_total} points to semantic store")
         if self.process_haystack:
             logger.info(f"Added {haystack_points_total} points to {self.haystack_type} store")
@@ -563,16 +585,22 @@ class DataProcessor:
         logger.info(f"Skipped image generation for {len(self.unchanged_pdfs)} unchanged PDFs")
         
         # Store the totals as instance variables for reporting
-        self.standard_points_total = standard_points_total
+        self.pages_points_total = pages_points_total
         self.semantic_points_total = semantic_points_total
         self.haystack_points_total = haystack_points_total
         
         return documents_processed
 
-    def process_all_sources(self):
-        """Process all data sources based on initialization flags."""
-        processed_count = self.process_pdfs_from_s3()
-        logger.info(f"Processed a total of {processed_count} points/documents")
+    def process_all_sources(self, processed_pdf_keys_tracker: Optional[set] = None):
+        """Process all data sources based on initialization flags.
+        
+        Args:
+            processed_pdf_keys_tracker (Optional[set]): A set to track the keys of PDFs
+                that were processed during this run. Used to get a unique count across
+                multiple processing steps in manage_vector_stores.py.
+        """
+        processed_count = self.process_pdfs_from_s3(processed_pdf_keys_tracker)
+        logger.info(f"Processed a total of {processed_count} points/documents in this step")
         return processed_count
 
     def _process_pdf(self, pdf_path, process_history):
@@ -635,9 +663,9 @@ class DataProcessor:
             if self.process_semantic:
                 semantic_page_data = self._process_pdf_for_semantic(pdf_path, pdf_hash, pdf_info)
             
-            # Process for standard index if needed
-            if self.process_standard:
-                self._process_pdf_for_standard(pdf_path, pdf_hash, pdf_info)
+            # Process for pages if needed
+            if self.process_pages:
+                self._process_pdf_for_pages(pdf_path, pdf_hash, pdf_info)
             
             # Process for haystack if needed
             if self.process_haystack:

@@ -276,6 +276,12 @@ def ask_dndsy(prompt: str, store_type: str = None) -> Generator[str, None, None]
         end_time_prompt = time.perf_counter()
         logger.info(f"Prompt preparation completed in {end_time_prompt - start_time_prompt:.4f}s.")
 
+        # Log the context being sent for debugging, especially for semantic
+        if effective_store_type == "semantic":
+            logger.info(f"Context being sent to LLM for semantic query:\n---\n{context_text_for_prompt[:1000]}...\n---")
+        elif not context_parts: 
+             logger.info("No context parts found, sending prompt without specific context.")
+
         # --- Step 4: Yield Initial Metadata --- 
         start_time_yield_meta = time.perf_counter()
         initial_metadata = {

@@ -57,159 +57,165 @@ def get_s3_client():
         logger.error(f"Failed to initialize S3 client: {e}")
         return None
 
-def manage_vector_stores(force_reprocess_images=False, reset_history=False, only_standard=False, 
-                         only_semantic=False, only_haystack=False, haystack_type='haystack-qdrant',
-                         skip_standard_semantic_reset=False):
+def manage_vector_stores(force_reprocess_images=False, reset_history=False, only_pages=False,
+                         only_semantic=False, only_haystack=False, haystack_type='haystack-qdrant'):
     """Resets vector stores and processes source documents, optionally targeting specific stores."""
     
-    # Determine which stores to process
-    process_standard = not (only_semantic or only_haystack)
-    process_semantic = not (only_standard or only_haystack)
-    process_haystack = not (only_standard or only_semantic)
+    # Determine which stores to process based on the "only" flags
+    # These flags are derived from the --store-type argument in __main__
+    run_pages = only_pages or not (only_semantic or only_haystack)
+    run_semantic = only_semantic or not (only_pages or only_haystack)
+    run_haystack = only_haystack or not (only_pages or only_semantic)
     
-    logger.info(f"Processing standard store: {process_standard}")
-    logger.info(f"Processing semantic store: {process_semantic}")
-    logger.info(f"Processing haystack store: {process_haystack}")
-    
-    # Special handling when processing haystack without specifying a specific type
-    if process_haystack and not only_haystack and haystack_type == 'haystack-qdrant' and not skip_standard_semantic_reset:
-        logger.info("Processing both Haystack implementations because no specific type was provided")
-        
-        # First, handle standard and semantic collections if needed
-        if process_standard or process_semantic:
-            # Process the standard and semantic collections first
-            if reset_history:
-                # Only reset history once
-                _reset_processing_history()
-                # Don't reset it again in recursive calls
-                reset_history = False
-                
-            # Clear the standard and semantic collections now
-            if process_standard:
-                _clear_standard_collection()
-            if process_semantic:
-                _clear_semantic_collection()
-                
-        # Now handle both Haystack implementations
-        logger.info("First processing with Haystack (Qdrant)")
-        os.environ["HAYSTACK_STORE_TYPE"] = "haystack-qdrant"
-        process_with_qdrant = manage_vector_stores(
-            force_reprocess_images=force_reprocess_images,
-            reset_history=reset_history,
-            only_standard=only_standard,
-            only_semantic=only_semantic, 
-            only_haystack=True,
-            haystack_type='haystack-qdrant',
-            skip_standard_semantic_reset=True
-        )
-        
-        # Then process with Memory
-        logger.info("Now processing with Haystack (Memory)")
-        os.environ["HAYSTACK_STORE_TYPE"] = "haystack-memory"
-        process_with_memory = manage_vector_stores(
-            force_reprocess_images=force_reprocess_images,
-            reset_history=reset_history,
-            only_standard=only_standard,
-            only_semantic=only_semantic,
-            only_haystack=True, 
-            haystack_type='haystack-memory',
-            skip_standard_semantic_reset=True
-        )
-        
-        # Return the combined result
-        return process_with_qdrant and process_with_memory
-    
-    if process_haystack:
-        logger.info(f"Using haystack type: {haystack_type}")
-        # Set environment variable for DataProcessor to use
-        os.environ["HAYSTACK_STORE_TYPE"] = haystack_type
+    # Determine which Haystack types to run if Haystack processing is enabled
+    # Default to 'haystack-qdrant' if 'both' is selected but only processing haystack
+    effective_haystack_type = haystack_type
+    if only_haystack and haystack_type == 'both':
+         logger.warning("Cannot specify --haystack-type both when --store-type is haystack. Defaulting to haystack-qdrant.")
+         effective_haystack_type = 'haystack-qdrant'
+         
+    run_haystack_qdrant = run_haystack and (effective_haystack_type == 'haystack-qdrant' or effective_haystack_type == 'both')
+    run_haystack_memory = run_haystack and (effective_haystack_type == 'haystack-memory' or effective_haystack_type == 'both')
 
-    # Reset processing history if requested
+    logger.info(f"Processing Pages: {run_pages}")
+    logger.info(f"Processing Semantic: {run_semantic}")
+    logger.info(f"Processing Haystack Qdrant: {run_haystack_qdrant}")
+    logger.info(f"Processing Haystack Memory: {run_haystack_memory}")
+
+    overall_success = True
+    # Using a set to track unique processed PDFs across runs
+    processed_pdf_keys = set() 
+    processing_summary = {}
+
+    # --- Reset History (Run Once) ---
     if reset_history:
         _reset_processing_history()
+        # Clear the set as history is reset
+        processed_pdf_keys = set() 
 
-    # Initialize Qdrant client (handling cloud/local)
-    qdrant_host = os.getenv("QDRANT_HOST", "localhost")
-    qdrant_api_key = os.getenv("QDRANT_API_KEY")
-    
-    # Determine if it's a cloud URL
-    is_cloud = qdrant_host.startswith("http") or qdrant_host.startswith("https")
-
-    if is_cloud:
-        logger.info(f"Management script connecting to Qdrant Cloud at: {qdrant_host}")
-        # For cloud, use url and api_key. Port is usually inferred (443 for https).
-        client = QdrantClient(
-            url=qdrant_host, 
-            api_key=qdrant_api_key,
-            timeout=60
-        )
-    else:
-        logger.info(f"Management script connecting to local Qdrant at: {qdrant_host}")
-        # For local, use host and explicit port.
-        port = int(os.getenv("QDRANT_PORT", "6333"))
-        client = QdrantClient(host=qdrant_host, port=port, timeout=60)
-    
-    # Conditionally delete existing collections
-    if process_standard and not skip_standard_semantic_reset:
-        _clear_standard_collection(client)
-    
-    if process_semantic and not skip_standard_semantic_reset:
-        _clear_semantic_collection(client)
+    # --- Pages and Semantic Processing ---
+    if run_pages or run_semantic:
+        logger.info("--- Starting Pages/Semantic Processing ---")
+        client = _get_qdrant_client()
+        if run_pages:
+            _clear_pages_collection(client)
+        if run_semantic:
+            _clear_semantic_collection(client)
             
-    if process_haystack:
-        _clear_haystack_store(haystack_type)
-    
-    # Process PDFs from S3 for all applicable collections
-    logger.info("Initializing data processor")
-    
-    # When processing only haystack, force it to process PDFs regardless of change status
-    force_processing = only_haystack
-    if force_processing:
-        logger.info(f"Forcing processing for {haystack_type} regardless of PDF change status")
-    
-    processor = DataProcessor(
-        process_standard=process_standard, 
-        process_semantic=process_semantic,
-        process_haystack=process_haystack,
-        force_processing=force_processing
-    )
-    
-    # If force reprocessing is requested, modify the process history
-    if force_reprocess_images and not reset_history:
-        _modify_history_for_reprocessing(only_standard, only_semantic, only_haystack, haystack_type)
-    
-    # Run the processing
-    logger.info("Starting data processing...")
-    processed_count = processor.process_all_sources()
-    
-    # Prepare a detailed summary of what was processed
-    summary = {}
-    if process_standard:
-        summary["standard"] = f"{processor.standard_points_total if hasattr(processor, 'standard_points_total') else 'Unknown'} points added"
-    if process_semantic:
-        summary["semantic"] = f"{processor.semantic_points_total if hasattr(processor, 'semantic_points_total') else 'Unknown'} points added"
-    if process_haystack:
-        # Try to get haystack-specific information if available
-        if hasattr(processor, "haystack_points_total"):
-            summary[haystack_type] = f"{processor.haystack_points_total} points added"
-        else:
-            # For backward compatibility
-            summary[haystack_type] = "Processing completed"
-    
-    # Log the detailed processing summary
-    logger.info("=== Processing Summary ===")
-    for store_name, result in summary.items():
-        logger.info(f"{store_name.capitalize()}: {result}")
-    
-    if processed_count > 0:
-        logger.info(f"Processing completed. Processed {processed_count} total points/documents.")
-        return True
-    elif processed_count == 0:
-        logger.warning("Processing completed, but no documents/points were processed or added.")
-        return True # Still consider it a success if no errors, just nothing to process
+        # Modify history for reprocessing pages/semantic if needed
+        if force_reprocess_images and not reset_history:
+            _modify_history_for_reprocessing(run_pages, run_semantic, False, None)
+
+        logger.info("Initializing data processor for Pages/Semantic stores...")
+        processor_pg_sem = DataProcessor(
+            process_pages=run_pages,
+            process_semantic=run_semantic,
+            process_haystack=False,
+            force_reprocess_images=force_reprocess_images
+        )
+        
+        logger.info("Running data processing for Pages/Semantic stores...")
+        processed_count_pg_sem = processor_pg_sem.process_all_sources(processed_pdf_keys_tracker=processed_pdf_keys)
+        
+        # Capture summary details
+        if run_pages:
+             processing_summary["Pages"] = f"{getattr(processor_pg_sem, 'pages_points_total', 'Unknown')} points added"
+        if run_semantic:
+            processing_summary["Semantic"] = f"{getattr(processor_pg_sem, 'semantic_points_total', 'Unknown')} points added"
+            
+        if processed_count_pg_sem < 0:
+             overall_success = False
+             logger.error("Errors occurred during Pages/Semantic processing.")
+        logger.info("--- Finished Pages/Semantic Processing ---")
+
+
+    # --- Haystack Qdrant Processing ---
+    if run_haystack_qdrant:
+        logger.info("--- Starting Haystack Qdrant Processing ---")
+        _clear_haystack_store('haystack-qdrant')
+        os.environ["HAYSTACK_STORE_TYPE"] = "haystack-qdrant"
+
+        # Modify history for reprocessing haystack if needed
+        # Check reset_history flag because _reset_processing_history already clears history
+        if force_reprocess_images and not reset_history:
+             if not (run_pages or run_semantic):
+                 _modify_history_for_reprocessing(False, False, True, 'haystack-qdrant')
+
+        logger.info("Initializing data processor for Haystack Qdrant store...")
+        # Use force_processing=True because we always clear the store here
+        processor_hq = DataProcessor(
+            process_pages=False,
+            process_semantic=False,
+            process_haystack=True, # This processor instance only handles haystack
+            force_processing=True, 
+            force_reprocess_images=force_reprocess_images # Pass the flag
+        )
+
+        logger.info("Running data processing for Haystack Qdrant store...")
+        # Pass the set to track processed files
+        processed_count_hq = processor_hq.process_all_sources(processed_pdf_keys_tracker=processed_pdf_keys) 
+
+        # Capture summary details
+        processing_summary["Haystack-qdrant"] = f"{getattr(processor_hq, 'haystack_points_total', 'Unknown')} points added"
+        
+        if processed_count_hq < 0: # Check for errors
+            overall_success = False
+            logger.error("Errors occurred during Haystack Qdrant processing.")
+        logger.info("--- Finished Haystack Qdrant Processing ---")
+
+
+    # --- Haystack Memory Processing ---
+    if run_haystack_memory:
+        logger.info("--- Starting Haystack Memory Processing ---")
+        _clear_haystack_store('haystack-memory')
+        os.environ["HAYSTACK_STORE_TYPE"] = "haystack-memory"
+
+        # Modify history for reprocessing haystack if needed
+        # Check reset_history flag because _reset_processing_history already clears history
+        if force_reprocess_images and not reset_history:
+             if not (run_pages or run_semantic or run_haystack_qdrant):
+                 _modify_history_for_reprocessing(False, False, True, 'haystack-memory')
+
+        logger.info("Initializing data processor for Haystack Memory store...")
+        # Use force_processing=True because we always clear the store here
+        processor_hm = DataProcessor(
+            process_pages=False,
+            process_semantic=False,
+            process_haystack=True, # This processor instance only handles haystack
+            force_processing=True, 
+            force_reprocess_images=force_reprocess_images # Pass the flag
+        )
+
+        logger.info("Running data processing for Haystack Memory store...")
+        # Pass the set to track processed files
+        processed_count_hm = processor_hm.process_all_sources(processed_pdf_keys_tracker=processed_pdf_keys)
+        
+        # Capture summary details
+        processing_summary["Haystack-memory"] = f"{getattr(processor_hm, 'haystack_points_total', 'Unknown')} points added"
+
+        if processed_count_hm < 0: # Check for errors
+            overall_success = False
+            logger.error("Errors occurred during Haystack Memory processing.")
+        logger.info("--- Finished Haystack Memory Processing ---")
+
+
+    # --- Final Summary ---
+    logger.info("=== Overall Processing Summary ===")
+    if not processing_summary:
+         logger.warning("No stores were processed.")
     else:
-        logger.error("Processing completed with unexpected result.")
-        return False
+        for store_name, result in processing_summary.items():
+            logger.info(f"{store_name}: {result}")
+
+    # Report total unique PDFs processed
+    logger.info(f"Processed {len(processed_pdf_keys)} unique PDFs across all relevant stores.")
+
+    if overall_success:
+        logger.info(f"Vector store management completed successfully!")
+    else:
+         logger.error("Vector store management completed with errors in one or more steps.")
+
+    return overall_success
 
 # Helper functions to extract functionality
 def _reset_processing_history():
@@ -243,24 +249,21 @@ def _reset_processing_history():
     except Exception as e:
         logger.error(f"Error deleting process history: {e}")
 
-def _clear_standard_collection(client=None):
-    """Clear the standard (PDF pages) collection."""
+def _clear_pages_collection(client=None):
+    """Clear the Pages (PDF pages) collection."""
     if client is None:
         client = _get_qdrant_client()
     
     try:
-        # Try to get the collection name from the class
-        try:
-            collection_name = PdfPagesStore.DEFAULT_COLLECTION_NAME
-        except AttributeError:
-            # Fallback to a hardcoded value if not available as a class attribute
-            collection_name = "dnd_pdf_pages"
+        # Get collection name from PdfPagesStore
+        from vector_store.pdf_pages_store import PdfPagesStore 
+        collection_name = PdfPagesStore.DEFAULT_COLLECTION_NAME
             
-        logger.info(f"Deleting PDF pages collection ({collection_name})")
+        logger.info(f"Deleting PDF Pages collection ({collection_name})")
         client.delete_collection(collection_name)
-        logger.info("PDF pages collection deleted successfully")
+        logger.info("PDF Pages collection deleted successfully")
     except Exception as e:
-        logger.warning(f"Could not delete PDF pages collection ({collection_name}): {e}")
+        logger.warning(f"Could not delete PDF Pages collection ({collection_name}): {e}")
 
 def _clear_semantic_collection(client=None):
     """Clear the semantic collection."""
@@ -389,7 +392,7 @@ def _get_qdrant_client():
         client = QdrantClient(host=qdrant_host, port=port, timeout=60)
     return client
 
-def _modify_history_for_reprocessing(only_standard, only_semantic, only_haystack, haystack_type):
+def _modify_history_for_reprocessing(only_pages, only_semantic, only_haystack, haystack_type):
     """Modify processing history to force reprocessing."""
     logger.info("Force reprocessing of images requested")
     # Load the history if it exists
@@ -400,7 +403,6 @@ def _modify_history_for_reprocessing(only_standard, only_semantic, only_haystack
             
             # Set all PDFs as not processed to force regeneration
             for pdf_key in history:
-                # Mark as not processed overall
                 history[pdf_key]['processed'] = False
                 
                 # If processing only a specific store, clear only that store's processed flag
@@ -419,12 +421,12 @@ def _modify_history_for_reprocessing(only_standard, only_semantic, only_haystack
                         history[pdf_key]['processed_stores'] = []
                     if 'semantic' in history[pdf_key].get('processed_stores', []):
                         history[pdf_key]['processed_stores'].remove('semantic')
-                elif only_standard:
-                    logger.info(f"Clearing standard from processed stores for all PDFs")
+                elif only_pages:
+                    logger.info(f"Clearing pages from processed stores for all PDFs")
                     if 'processed_stores' not in history[pdf_key]:
                         history[pdf_key]['processed_stores'] = []
-                    if 'standard' in history[pdf_key].get('processed_stores', []):
-                        history[pdf_key]['processed_stores'].remove('standard')
+                    if 'pages' in history[pdf_key].get('processed_stores', []):
+                        history[pdf_key]['processed_stores'].remove('pages')
                 else:
                     # If processing all stores, clear all processed_stores
                     logger.info(f"Clearing all processed stores for all PDFs")
@@ -462,7 +464,7 @@ if __name__ == "__main__":
                         help="Reset processing history (forces complete reprocessing)")
     
     # Replace multiple flags with a single store type parameter
-    parser.add_argument('--store-type', choices=['all', 'standard', 'semantic', 'haystack'], 
+    parser.add_argument('--store-type', choices=['all', 'pages', 'semantic', 'haystack'], 
                         default='all', help="Which store type to process (default: all)")
     
     # Haystack type is now only relevant when store-type is haystack
@@ -479,7 +481,7 @@ if __name__ == "__main__":
         logger.info(f"Haystack type: {args.haystack_type}")
     
     # Convert new parameters to old format
-    only_standard = args.store_type == 'standard'
+    only_pages = args.store_type == 'pages'
     only_semantic = args.store_type == 'semantic'
     only_haystack = args.store_type == 'haystack'
     
@@ -492,7 +494,7 @@ if __name__ == "__main__":
     success = manage_vector_stores(
         force_reprocess_images=args.force_reprocess_images, 
         reset_history=args.reset_history,
-        only_standard=only_standard,
+        only_pages=only_pages,
         only_semantic=only_semantic,
         only_haystack=only_haystack,
         haystack_type=haystack_type

@@ -25,9 +25,9 @@ Session(app)
 PASSWORD = os.environ.get('APP_PASSWORD', 'dndsy')
 logger.info(f"Password loaded from environment variable {'APP_PASSWORD' if 'APP_PASSWORD' in os.environ else '(using default)'}. ")
 
-VECTOR_STORE_TYPES = ["standard", "semantic", "haystack-qdrant", "haystack-memory"]
+VECTOR_STORE_TYPES = ["pages", "semantic", "haystack-qdrant", "haystack-memory"]
 # Get default store type from environment
-DEFAULT_VECTOR_STORE = os.getenv("DEFAULT_VECTOR_STORE", "standard") # Changed default from "semantic" to "standard"
+DEFAULT_VECTOR_STORE = os.getenv("DEFAULT_VECTOR_STORE", "pages")
 
 # Define available LLM models with their display names
 AVAILABLE_LLM_MODELS = {

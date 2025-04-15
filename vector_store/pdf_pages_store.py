@@ -34,14 +34,6 @@ class PdfPagesStore(SearchHelper):
             port = int(os.getenv("QDRANT_PORT", "6333"))
             self.client = QdrantClient(host=qdrant_host, port=port, timeout=60)
         self._create_collection_if_not_exists()
-        try:
-            collection_info = self.client.get_collection(self.collection_name)
-            collection_count = self.client.count(self.collection_name).count
-            self.next_id = collection_count
-            logging.info(f"Starting from ID: {self.next_id} for new documents in {self.collection_name}")
-        except Exception as e:
-            logging.warning(f"Error getting collection info for {self.collection_name}: {e}")
-            self.next_id = 0
         logging.info(f"Initialized PdfPagesStore with collection: {collection_name}")
 
     def _create_collection_if_not_exists(self):
@@ -74,12 +66,10 @@ class PdfPagesStore(SearchHelper):
                     wait=True
                 )
                 logging.info(f"Added batch {batch_num}/{num_batches} ({len(batch)} points) to {self.collection_name}")
-                max_id_in_batch = max(p.id for p in batch)
-                self.next_id = max(self.next_id, max_id_in_batch + 1)
             except Exception as e:
                 logging.error(f"Error adding batch {batch_num}/{num_batches} to {self.collection_name}: {e}", exc_info=True)
                 raise
-        logging.info(f"Finished adding {len(points)} points to {self.collection_name}. Next ID: {self.next_id}")
+        logging.info(f"Finished adding {len(points)} points to {self.collection_name}.")
 
     # Implement abstract methods from SearchHelper
     def _execute_vector_search(self, query_vector: List[float], limit: int) -> List[Dict[str, Any]]:
