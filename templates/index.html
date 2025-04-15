@@ -158,6 +158,21 @@
                                 </div>
                                 <button id="process-button" class="admin-button">Process Documents</button>
                                 <div id="process-status" class="admin-status"></div>
+                                
+                                <!-- Live Processing Status Area -->
+                                <div id="live-status-container" style="margin-top: 1rem; display: none;">
+                                    <h4>Live Processing Status</h4>
+                                    <div id="live-status-summary" class="admin-status info" style="margin-bottom: 0.5rem;">Starting...</div>
+                                    <div id="live-milestones" style="margin-bottom: 0.5rem;">
+                                        <!-- Milestones will be added here -->
+                                    </div>
+                                    <div id="live-logs" style="max-height: 200px; overflow-y: auto; background-color: var(--input-bg); padding: 0.5rem; border-radius: 4px; font-family: monospace; font-size: 0.8rem; white-space: pre-wrap;">
+                                        <!-- Logs will appear here -->
+                                    </div>
+                                    <button id="cancel-processing-button" class="admin-button" style="margin-top: 0.5rem; background-color: #dc3545; display: none;">Cancel Run</button>
+                                </div>
+                                <!-- End Live Processing Status Area -->
+                                
                             </div>
                             
                             <div class="admin-section">
@@ -175,7 +190,11 @@
                                 <h4>Upload New PDF</h4>
                                 <div class="admin-form-group">
                                     <label for="pdf-upload">Select PDF File</label>
-                                    <input type="file" id="pdf-upload" accept=".pdf">
+                                    <input type="file" id="pdf-upload" accept=".pdf" style="display: none;">
+                                    <div id="drop-zone" class="drop-zone">
+                                        <p>Drag and drop PDF files here, or <a href="#" id="browse-link">click to browse</a></p>
+                                    </div>
+                                    <div id="file-list" class="file-list"></div>
                                 </div>
                                 <div class="admin-form-group">
                                     <label for="upload-prefix">Destination Prefix (Optional)</label>
@@ -401,6 +420,20 @@
                 
                 <h4>Best For</h4>
                 <p>Use Haystack when you need specialized queries, particularly for monster information, or when working with complex filtering requirements. Choose Memory implementation for local development/testing and Qdrant for production deployments.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log Modal -->
+    <div id="log-modal-overlay" class="modal-overlay" style="z-index: 1050;"></div> <!-- Ensure overlay is below modal -->
+    <div id="log-modal" class="admin-modal" style="display: none; z-index: 1051; max-width: 80%; width: 900px;">
+        <div class="admin-modal-content" style="height: 80vh;">
+            <div class="admin-modal-header">
+                <h2 id="log-modal-title">Processing Run Log</h2>
+                <button id="log-close-button" class="admin-close-button">&times;</button>
+            </div>
+            <div class="admin-modal-body" style="height: calc(80vh - 60px); /* Adjust based on header */ display: flex; flex-direction: column;">
+                <pre id="log-content" style="flex-grow: 1; overflow-y: auto; background-color: var(--input-bg); padding: 1rem; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word;">Log content will appear here...</pre>
             </div>
         </div>
     </div>

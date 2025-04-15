@@ -8,6 +8,7 @@ import argparse
 import json
 import boto3
 from botocore.exceptions import ClientError
+import time # For timing
 
 # Add project root to path to make imports work properly from script
 project_root = Path(__file__).parent.parent
@@ -41,6 +42,22 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__) # Get logger for this module
 
+# --- Structured Output Function --- 
+def send_status(status_type, data):
+    """Prints a JSON status message to stdout for the parent process."""
+    try:
+        # Combine status type and data into a single dictionary
+        status_update = {"type": status_type, **data}
+        message = json.dumps(status_update)
+        print(message, flush=True) # Ensure it's flushed immediately
+        # Also log milestones/errors locally for debugging
+        # if status_type in ['milestone', 'error', 'summary', 'start', 'end']:
+        #     log_level = logging.ERROR if status_type == 'error' else logging.INFO
+        #     logger.log(log_level, f"Status Update ({status_type}): {data}") # REMOVED - app.py handles logging if needed
+    except Exception as e:
+        # Log error but don't crash the script
+        logger.error(f"Failed to send status update: {e}")
+
 # Initialize S3 client
 def get_s3_client():
     try:
@@ -62,6 +79,9 @@ def get_s3_client():
 
 def manage_vector_stores(store='all', cache_behavior='use', haystack_type='haystack-qdrant', s3_pdf_prefix=None):
     """Processes source documents and manages vector stores based on selected store and cache behavior."""
+    
+    start_time = time.time()
+    send_status("start", {"message": "Processing run started.", "params": {"store": store, "cache_behavior": cache_behavior, "s3_prefix": s3_pdf_prefix}})
     
     # Log the received prefix
     logger.info(f"Starting vector store management. Store(s): '{store}', Cache Behavior: '{cache_behavior}'")
@@ -94,25 +114,38 @@ def manage_vector_stores(store='all', cache_behavior='use', haystack_type='hayst
     # --- Handle Cache Behavior (Reset/Rebuild) ---
     if cache_behavior == 'rebuild':
         logger.info("Cache behavior set to 'rebuild'. Resetting history and clearing target stores.")
+        send_status("milestone", {"message": "Resetting processing history..."})
         _reset_processing_history()
         processed_pdf_keys = set() # Ensure set is clear after reset
+        send_status("milestone", {"message": "Processing history reset."})
 
         # Clear collections based on which stores are being processed
         client = None
         # Consolidate client getting
         if process_pages or process_semantic or (process_haystack_qdrant and haystack_type != 'haystack-memory'):
-            client = _get_qdrant_client() 
+            send_status("milestone", {"message": "Connecting to Qdrant..."})
+            client = _get_qdrant_client()
+            if client:
+                send_status("milestone", {"message": "Connected to Qdrant."})
+            else:
+                send_status("error", {"message": "Failed to connect to Qdrant."})
+                overall_success = False # Mark failure if Qdrant connection fails
 
         if process_pages and client:
+            send_status("milestone", {"message": "Clearing Pages collection..."})
             _clear_pages_collection(client)
         if process_semantic and client:
+            send_status("milestone", {"message": "Clearing Semantic collection..."})
             _clear_semantic_collection(client)
         # Pass client to haystack clearing if it's qdrant
         if process_haystack_qdrant:
+             send_status("milestone", {"message": "Clearing Haystack-Qdrant store..."})
              _clear_haystack_store('haystack-qdrant', client)
         if process_haystack_memory:
-            # Memory store clearing doesn't need the client
+            send_status("milestone", {"message": "Clearing Haystack-Memory store..."})
             _clear_haystack_store('haystack-memory', None)
+        
+        send_status("milestone", {"message": "Store clearing finished."})
 
     # --- Combined Data Processing --- 
     logger.info("--- Initializing Unified Data Processor ---")
@@ -133,80 +166,107 @@ def manage_vector_stores(store='all', cache_behavior='use', haystack_type='hayst
             os.environ["HAYSTACK_STORE_TYPE"] = effective_haystack_type
         
         # Instantiate DataProcessor ONCE with all necessary flags
-        processor = DataProcessor(
-            process_pages=process_pages,
-            process_semantic=process_semantic,
-            # Only tell processor to handle haystack if at least one type is selected
-            process_haystack=(process_haystack_qdrant or process_haystack_memory),
-            cache_behavior=cache_behavior,
-            s3_pdf_prefix_override=s3_pdf_prefix # Pass the prefix
-        )
-        
-        logger.info("--- Starting Unified Data Processing Run --- ")
-        # Run processing. The processor handles logic based on its initialized flags and cache behavior.
-        processed_count = processor.process_all_sources(processed_pdf_keys_tracker=processed_pdf_keys)
-        
-        # --- Populate Summary --- 
-        if process_pages:
-             processing_summary["Pages"] = f"{getattr(processor, 'pages_points_total', 0)} points added"
-        if process_semantic:
-            processing_summary["Semantic"] = f"{getattr(processor, 'semantic_points_total', 0)} points added"
-        # Report Haystack based on the type(s) actually processed
-        if process_haystack_qdrant:
-             # If both ran, this reflects the first run (Qdrant)
-             processing_summary["Haystack-Qdrant"] = f"{getattr(processor, 'haystack_points_total', 0)} points added"
-
-        # --- Handle Processing Second Haystack Type (if needed) ---
-        if process_haystack_qdrant and process_haystack_memory:
-            logger.info("--- Initializing Second Haystack Processor (Memory) ---")
-            os.environ["HAYSTACK_STORE_TYPE"] = "haystack-memory"
-            # Re-run with only haystack memory enabled
-            processor_mem = DataProcessor(
-                process_pages=False,
-                process_semantic=False,
-                process_haystack=True,
-                cache_behavior=cache_behavior, # Keep same cache behavior
-                s3_pdf_prefix_override=s3_pdf_prefix # Pass prefix here too
+        send_status("milestone", {"message": "Initializing Data Processor..."})
+        try:
+            processor = DataProcessor(
+                process_pages=process_pages,
+                process_semantic=process_semantic,
+                # Only tell processor to handle haystack if at least one type is selected
+                process_haystack=(process_haystack_qdrant or process_haystack_memory),
+                cache_behavior=cache_behavior,
+                s3_pdf_prefix_override=s3_pdf_prefix,
+                # Pass the status function to the processor if it supports it
+                # status_callback=send_status 
             )
-            logger.info("--- Starting Haystack Memory Processing Run --- ")
-            processed_count_mem = processor_mem.process_all_sources(processed_pdf_keys_tracker=processed_pdf_keys) # Use same tracker
-            processing_summary["Haystack-Memory"] = f"{getattr(processor_mem, 'haystack_points_total', 0)} points added"
-            # Add to total count if needed, though summary tracks specific stores
-            processed_count += processed_count_mem 
-        elif process_haystack_memory and not process_haystack_qdrant:
-            # Only memory was processed in the first run
-            processing_summary["Haystack-Memory"] = f"{getattr(processor, 'haystack_points_total', 0)} points added"
-
-
-        if processed_count < 0: # Check if processor reported errors (e.g., returned -1)
-             # Note: Processor currently returns 0 on S3 error, need consistent error signaling
+            send_status("milestone", {"message": "Data Processor initialized."})
+        except Exception as e:
+            logger.error(f"Failed to initialize Data Processor: {e}", exc_info=True)
+            send_status("error", {"message": f"Failed to initialize Data Processor: {e}"})
             overall_success = False
-            logger.error("Errors may have occurred during data processing (check logs).")
-        else:
-            logger.info(f"Unified data processing finished. Total points added across targeted stores: {processed_count}")
+            processor = None # Ensure processor is None if init fails
+
+        if processor:
+            logger.info("--- Starting Unified Data Processing Run --- ")
+            send_status("milestone", {"message": "Starting main data processing...", "long_running": True, "id": "main_processing"})
             
+            # Run processing. The processor handles logic based on its initialized flags and cache behavior.
+            processed_count = processor.process_all_sources(processed_pdf_keys_tracker=processed_pdf_keys)
+            send_status("milestone", {"message": "Main data processing finished.", "id": "main_processing"})
+            
+            # --- Populate Summary --- 
+            if process_pages:
+                 processing_summary["Pages"] = f"{getattr(processor, 'pages_points_total', 0)} points added"
+            if process_semantic:
+                processing_summary["Semantic"] = f"{getattr(processor, 'semantic_points_total', 0)} points added"
+            # Report Haystack based on the type(s) actually processed
+            if process_haystack_qdrant:
+                 # If both ran, this reflects the first run (Qdrant)
+                 processing_summary["Haystack-Qdrant"] = f"{getattr(processor, 'haystack_points_total', 0)} points added"
+
+            # --- Handle Processing Second Haystack Type (if needed) ---
+            if process_haystack_qdrant and process_haystack_memory:
+                logger.info("--- Initializing Second Haystack Processor (Memory) ---")
+                os.environ["HAYSTACK_STORE_TYPE"] = "haystack-memory"
+                # Re-run with only haystack memory enabled
+                send_status("milestone", {"message": "Initializing Haystack Memory Processor..."})
+                try:
+                    processor_mem = DataProcessor(
+                        process_pages=False,
+                        process_semantic=False,
+                        process_haystack=True,
+                        cache_behavior=cache_behavior, # Keep same cache behavior
+                        s3_pdf_prefix_override=s3_pdf_prefix # Pass prefix here too
+                    )
+                except Exception as e:
+                     logger.error(f"Failed to initialize Haystack Memory Processor: {e}", exc_info=True)
+                     send_status("error", {"message": f"Failed to initialize Haystack Memory Processor: {e}"})
+                     overall_success = False
+                     processor_mem = None
+
+                if processor_mem:
+                    logger.info("--- Starting Haystack Memory Processing Run --- ")
+                    send_status("milestone", {"message": "Starting Haystack Memory processing...", "long_running": True, "id": "haystack_memory_processing"})
+                    processed_count_mem = processor_mem.process_all_sources(processed_pdf_keys_tracker=processed_pdf_keys) # Use same tracker
+                    send_status("milestone", {"message": "Haystack Memory processing finished.", "id": "haystack_memory_processing"})
+                    processing_summary["Haystack-Memory"] = f"{getattr(processor_mem, 'haystack_points_total', 0)} points added"
+                    processed_count += processed_count_mem 
+            elif process_haystack_memory and not process_haystack_qdrant:
+                # Only memory was processed in the first run (assuming init succeeded)
+                if processor:
+                    processing_summary["Haystack-Memory"] = f"{getattr(processor, 'haystack_points_total', 0)} points added"
+
+            if processed_count < 0: # Check if processor reported errors (e.g., returned -1)
+                overall_success = False
+                logger.error("Errors may have occurred during data processing (check logs).")
+                send_status("error", {"message": "Errors occurred during data processing."}) # Generic error
+            else:
+                logger.info(f"Unified data processing finished. Total points added across targeted stores: {processed_count}")
+                
     except Exception as e:
-        logger.error(f"An unexpected error occurred during DataProcessor initialization or execution: {e}", exc_info=True)
+        # Catch errors during the main processing block (after processor init)
+        logger.error(f"An unexpected error occurred during DataProcessor execution: {e}", exc_info=True)
+        send_status("error", {"message": f"Unexpected error during processing: {e}"})
         overall_success = False
 
     # --- Final Summary --- 
     logger.info("=== Overall Processing Summary ===")
-    if not processing_summary:
-         # This case should be less likely now unless no stores were selected
-         logger.warning("No stores were targeted for processing.")
+    send_status("summary", {"details": processing_summary, "unique_pdfs": len(processed_pdf_keys)})
+    if not processing_summary and overall_success:
+         logger.warning("No stores were targeted or processed.")
     else:
         for store_name, result in processing_summary.items():
             logger.info(f"  - {store_name}: {result}")
 
-    # Report total unique PDFs processed (using the tracker set)
     logger.info(f"Processed {len(processed_pdf_keys)} unique PDF(s) across all runs.")
 
-    if overall_success:
-        # Success message moved to the end of __main__
-        pass
-    else:
+    if not overall_success:
          logger.error("Vector store management finished with errors.")
+         # Error status already sent if specific errors occurred
+         # Send a general end error if not already sent
+         # send_status("error", {"message": "Run finished with errors."})
 
+    duration = time.time() - start_time
+    send_status("end", {"success": overall_success, "duration": round(duration, 2)})
     return overall_success
 
 # Helper functions to extract functionality

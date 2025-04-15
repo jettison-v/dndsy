@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Open admin modal
     adminButton.addEventListener('click', function() {
         adminModal.style.display = 'block';
+        document.body.style.overflow = 'hidden'; // Prevent body scrolling
         // Reset login form
         adminPassword.value = '';
         adminLoginError.textContent = '';
@@ -32,12 +33,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Close admin modal
     adminCloseButton.addEventListener('click', function() {
         adminModal.style.display = 'none';
+        document.body.style.overflow = ''; // Restore body scrolling
     });
     
     // Close modal when clicking outside
     adminModal.addEventListener('click', function(event) {
         if (event.target === adminModal) {
             adminModal.style.display = 'none';
+            document.body.style.overflow = ''; // Restore body scrolling
         }
     });
     
@@ -66,8 +69,20 @@ document.addEventListener('DOMContentLoaded', function() {
             adminLoginSection.style.display = 'none';
             adminContent.style.display = 'block';
             
+            // Force a browser reflow to ensure proper rendering
+            void adminContent.offsetHeight;
+            
             // Load initial data for active tab
-            loadTabData(document.querySelector('.admin-tab-button.active').dataset.tab);
+            const activeTab = document.querySelector('.admin-tab-button.active');
+            if (activeTab) {
+                loadTabData(activeTab.dataset.tab);
+            } else {
+                // If no active tab, select the first one
+                const firstTab = document.querySelector('.admin-tab-button');
+                if (firstTab) {
+                    firstTab.click();
+                }
+            }
         } else {
             adminLoginError.textContent = 'Incorrect password. Please try again.';
             adminPassword.value = '';
@@ -90,10 +105,16 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Update active tab pane
             tabPanes.forEach(pane => pane.classList.remove('active'));
-            document.getElementById(`${tabName}-tab`).classList.add('active');
-            
-            // Load tab-specific data
-            loadTabData(tabName);
+            const targetPane = document.getElementById(`${tabName}-tab`);
+            if (targetPane) {
+                targetPane.classList.add('active');
+                
+                // Force a browser reflow to ensure proper rendering
+                void targetPane.offsetHeight;
+                
+                // Load tab-specific data
+                loadTabData(tabName);
+            }
         });
     });
     
@@ -101,7 +122,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function loadTabData(tabName) {
         switch(tabName) {
             case 'data-processing':
-                // Nothing to load initially
+                // Nothing to load initially, will be loaded on button click
+                ensureCheckboxesVisible('data-processing-tab');
                 break;
                 
             case 'file-management':
@@ -127,6 +149,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Ensure checkboxes and radio buttons are visible 
+    function ensureCheckboxesVisible(tabId) {
+        const tab = document.getElementById(tabId);
+        if (!tab) return;
+        
+        // Force checkbox visibility by toggling a class
+        const checkboxes = tab.querySelectorAll('input[type="checkbox"], input[type="radio"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.classList.add('visible-input');
+            checkbox.style.opacity = '1';
+            checkbox.style.position = 'static';
+        });
+    }
+    
     // ============================
     // Data Processing Tab
     // ============================
@@ -136,6 +172,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const loadHistoryButton = document.getElementById('load-history-button');
     const processingHistory = document.getElementById('processing-history');
     
+    // Elements for live processing status
+    const liveStatusContainer = document.getElementById('live-status-container');
+    const liveStatusSummary = document.getElementById('live-status-summary');
+    const liveMilestones = document.getElementById('live-milestones');
+    const liveLogs = document.getElementById('live-logs');
+    const cancelProcessingButton = document.getElementById('cancel-processing-button');
+    
+    let currentEventSource = null; // To hold the active EventSource connection
+    let currentRunId = null; // Track the current run ID
+
     // Process documents button
     processButton.addEventListener('click', function() {
         // Get selected store types
@@ -148,7 +194,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Get cache behavior
-        const cacheBehavior = document.querySelector('input[name="cache-behavior"]:checked').value;
+        const cacheBehavior = document.querySelector('input[name="cache-behavior"]:checked');
+        if (!cacheBehavior) {
+            showStatus(processStatus, 'Please select a cache behavior option', 'error');
+            return;
+        }
         
         // Get S3 prefix (optional)
         const s3Prefix = document.getElementById('s3-prefix').value.trim();
@@ -156,7 +206,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Prepare request data
         const requestData = {
             store_types: storeTypes,
-            cache_behavior: cacheBehavior
+            cache_behavior: cacheBehavior.value
         };
         
         if (s3Prefix) {
@@ -166,7 +216,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Confirm with user
         const confirmMessage = `Process documents with the following settings?\n\n` +
             `Vector Stores: ${storeTypes.join(', ')}\n` +
-            `Cache Behavior: ${cacheBehavior}\n` +
+            `Cache Behavior: ${cacheBehavior.value}\n` +
             (s3Prefix ? `S3 Prefix: ${s3Prefix}\n` : '') +
             `\nThis operation may take several minutes.`;
         
@@ -174,10 +224,16 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Update UI
+        // Update UI - Show processing started, clear old live status
         processButton.disabled = true;
-        showStatus(processStatus, 'Processing started. This may take several minutes...', 'info');
-        
+        showStatus(processStatus, 'Initiating processing run...', 'info');
+        liveStatusContainer.style.display = 'none'; // Hide previous live status if any
+        liveMilestones.innerHTML = ''; // Clear milestones
+        liveLogs.innerHTML = ''; // Clear logs
+        liveStatusSummary.className = 'admin-status info'; // Reset summary style
+        liveStatusSummary.textContent = 'Initiating...';
+        cancelProcessingButton.style.display = 'none'; // Hide cancel button initially
+
         // Send request to API
         fetch('/api/admin/process', {
             method: 'POST',
@@ -195,16 +251,253 @@ document.addEventListener('DOMContentLoaded', function() {
             return response.json();
         })
         .then(data => {
-            showStatus(processStatus, `Processing complete. ${data.message}`, 'success');
+            if (data.success && data.run_id) {
+                // SUCCESS: Start listening to the SSE stream
+                showStatus(processStatus, `Processing run ${data.run_id.substring(0, 8)}... started. See live status below.`, 'info');
+                currentRunId = data.run_id;
+                liveStatusContainer.style.display = 'block'; // Show live status area
+                cancelProcessingButton.style.display = 'inline-block'; // Show cancel button
+                startProcessingStream(data.run_id);
+            } else {
+                // Handle cases where the API call succeeded but didn't return a run_id (shouldn't happen)
+                throw new Error(data.message || 'Processing initiation failed to return a run ID.');
+            }
         })
         .catch(error => {
             showStatus(processStatus, `Error: ${error.message}`, 'error');
-        })
-        .finally(() => {
-            processButton.disabled = false;
+            processButton.disabled = false; // Re-enable button on error
         });
     });
     
+    // Function to start listening to the processing stream
+    function startProcessingStream(runId) {
+        if (currentEventSource) {
+            currentEventSource.close(); // Close any existing connection
+        }
+
+        const eventSourceUrl = `/api/admin/process_stream/${runId}`;
+        console.log(`Connecting to SSE: ${eventSourceUrl}`);
+        currentEventSource = new EventSource(eventSourceUrl);
+
+        currentEventSource.onopen = function() {
+            console.log("SSE connection opened for run:", runId);
+            liveStatusSummary.textContent = 'Connected to processing stream...';
+            liveStatusSummary.className = 'admin-status info';
+        };
+
+        currentEventSource.onerror = function(event) {
+            console.error("SSE Error: ", event);
+            let errorMessage = "Connection error with processing stream.";
+            if (event.target && event.target.readyState === EventSource.CLOSED) {
+                 errorMessage = "Connection closed unexpectedly.";
+            } else if (event.message) {
+                 errorMessage = `Stream error: ${event.message}`;
+            }
+            showStatus(processStatus, `Error: ${errorMessage}`, 'error');
+            liveStatusSummary.textContent = `Error: ${errorMessage}`;
+            liveStatusSummary.className = 'admin-status error';
+            closeProcessingStream(false); // Close and indicate failure
+        };
+
+        // Listener for general updates (log, milestone, progress, etc.)
+        currentEventSource.addEventListener('update', function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                console.log("SSE update:", data);
+                handleStreamUpdate(data);
+            } catch (e) {
+                console.error("Error parsing SSE update data:", e);
+                // Add raw data as log if parsing fails
+                addLogLine(`[RAW] ${event.data}`);
+            }
+        });
+
+        // Listener for specific error events from the stream
+        currentEventSource.addEventListener('error', function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                console.error("SSE stream error event:", data);
+                showStatus(processStatus, `Stream Error: ${data.message || 'Unknown stream error'}`, 'error');
+                liveStatusSummary.textContent = `Error: ${data.message || 'Unknown stream error'}`;
+                liveStatusSummary.className = 'admin-status error';
+            } catch (e) {
+                console.error("Error parsing SSE error data:", e);
+                showStatus(processStatus, 'Received an unparsable stream error.', 'error');
+            }
+            // Don't close stream here, wait for 'end' or onerror
+        });
+
+        // Listener for the final end event
+        currentEventSource.addEventListener('end', function(event) {
+            console.log("SSE end event received:", event.data);
+             try {
+                const data = JSON.parse(event.data);
+                // Use the status field from the end event data
+                const finalStatus = data.status || ('Unknown Status'); 
+                const finalMessage = `Run finished. Status: ${finalStatus}${data.duration ? ` (Duration: ${data.duration}s)` : ''}`;
+                
+                // Update ONLY the live summary status
+                liveStatusSummary.textContent = finalMessage;
+                liveStatusSummary.className = data.success ? 'admin-status success' : 'admin-status error';
+                // Clear the old status message
+                showStatus(processStatus, '', ''); 
+                processStatus.style.display = 'none'; // Hide the old status div
+
+            } catch (e) {
+                console.error("Error parsing SSE end data:", e);
+                 const fallbackMessage = "Processing run finished, but status couldn't be parsed.";
+                 liveStatusSummary.textContent = fallbackMessage;
+                 liveStatusSummary.className = 'admin-status warning';
+                 // Clear the old status message
+                 showStatus(processStatus, '', '');
+                 processStatus.style.display = 'none'; // Hide the old status div
+            }
+            closeProcessingStream(true); // Close stream after end event
+        });
+        
+        // Add listener for the cancel button
+        // Remove previous listener if any to avoid duplicates
+        cancelProcessingButton.replaceWith(cancelProcessingButton.cloneNode(true));
+        // Re-select the button after cloning
+        const newCancelButton = document.getElementById('cancel-processing-button'); 
+        if (newCancelButton) {
+             newCancelButton.style.display = 'inline-block'; // Ensure it's visible
+             newCancelButton.addEventListener('click', handleCancelProcessing);
+        }
+    }
+    
+    // Function to handle updates received from the SSE stream
+    function handleStreamUpdate(data) {
+        switch(data.type) {
+            case 'start':
+                liveStatusSummary.textContent = data.message || 'Processing started.';
+                // addLogLine(`[START] ${data.message}`); // Don't clutter logs
+                break;
+            case 'milestone':
+                addMilestone(data.message, data.long_running, data.id);
+                // addLogLine(`[MILESTONE] ${data.message}`); // Don't clutter logs
+                // Update summary only when a *specific* long-running task starts/finishes
+                if (data.id) { 
+                    liveStatusSummary.textContent = data.message;
+                }
+                break;
+            case 'log':
+                addLogLine(data.message); // Only add explicit logs
+                break;
+            case 'summary':
+                 addLogLine(`[SUMMARY] Unique PDFs: ${data.unique_pdfs}. Details: ${JSON.stringify(data.details)}`); // Keep summary log
+                 break;
+            case 'progress': // Placeholder for future progress bar handling
+                // Update progress bar for data.document / data.step ?
+                // addLogLine(`[PROGRESS] ${data.document ? data.document + ' - ' : ''}${data.step}: ${data.value * 100}%`); // Optional: Log progress?
+                break;
+            case 'error': // Handle errors reported by the script itself
+                addLogLine(`[ERROR] ${data.message}`, 'error');
+                liveStatusSummary.textContent = `Error: ${data.message}`;
+                liveStatusSummary.className = 'admin-status error';
+                break;
+            // Ignore 'end' type here, it's handled by the specific 'end' event listener
+        }
+    }
+
+    // Function to add a log line to the live log view
+    function addLogLine(message, level = 'info') {
+        const logEntry = document.createElement('div');
+        logEntry.textContent = message;
+        if (level === 'error') {
+            logEntry.style.color = 'var(--accent-color)';
+        }
+        liveLogs.appendChild(logEntry);
+        // Auto-scroll to the bottom
+        liveLogs.scrollTop = liveLogs.scrollHeight;
+    }
+
+    // Function to add a milestone
+    function addMilestone(message, isLongRunning = false, id = null) {
+        let milestoneEntry = null;
+        const elementId = id ? `milestone-${id}` : null;
+        
+        // If an ID is provided, try to find an existing element
+        if (elementId) {
+            milestoneEntry = document.getElementById(elementId);
+        }
+        
+        if (milestoneEntry) {
+            // Existing milestone found - Update it (assume it's finishing)
+            milestoneEntry.innerHTML = `<i class="fas fa-check-circle" style="color: #28a745; margin-right: 5px;"></i> ${message}`;
+        } else {
+            // No existing milestone found OR no ID provided - Create a new one
+            milestoneEntry = document.createElement('div');
+            milestoneEntry.classList.add('milestone');
+            if (elementId) {
+                 milestoneEntry.id = elementId;
+            }
+            
+            let content = `<i class="fas fa-check-circle" style="color: #28a745; margin-right: 5px;"></i> ${message}`;
+            // Use spinner only if it's explicitly a long-running task *start*
+            if (isLongRunning) {
+                content = `<i class="fas fa-spinner fa-spin" style="margin-right: 5px;"></i> ${message}`;
+            }
+            milestoneEntry.innerHTML = content;
+            liveMilestones.appendChild(milestoneEntry);
+        }
+    }
+
+    // Function to close the SSE stream and update UI
+    function closeProcessingStream(finishedNaturally) {
+        if (currentEventSource) {
+            currentEventSource.close();
+            currentEventSource = null;
+            console.log("SSE connection closed for run:", currentRunId);
+        }
+        processButton.disabled = false; // Re-enable process button
+        cancelProcessingButton.style.display = 'none'; // Hide cancel button
+        
+        // If the stream didn't finish naturally (e.g., error, manual cancel), 
+        // ensure the final status reflects interruption if not already set.
+        if (!finishedNaturally && liveStatusSummary.textContent.startsWith('Connected')) {
+            liveStatusSummary.textContent = "Stream interrupted.";
+            liveStatusSummary.className = 'admin-status warning';
+            showStatus(processStatus, '', ''); // Clear old status
+            processStatus.style.display = 'none'; 
+        } 
+        // Reset run ID *after* potential history refresh
+        const runIdToRefresh = currentRunId;
+        currentRunId = null;
+        
+        // Refresh history if the run finished (naturally or via error)
+        if (finishedNaturally) {
+             // Add a small delay before refreshing history to allow backend to potentially update the file
+            setTimeout(() => {
+                console.log("Refreshing history after run completion...");
+                loadHistoryButton.click(); // Trigger history reload
+            }, 500); 
+        }
+    }
+    
+    // Function to handle cancel button click
+    function handleCancelProcessing() {
+        if (!currentRunId) {
+            alert("No active processing run to cancel.");
+            return;
+        }
+        
+        if (!confirm(`Are you sure you want to attempt to cancel processing run ${currentRunId.substring(0,8)}...? This might leave things in an inconsistent state.`)) {
+            return;
+        }
+        
+        console.log(`Attempting to cancel run: ${currentRunId}`);
+        // Send request to backend to cancel (Need a new backend endpoint for this)
+        // For now, we just close the stream and update UI
+        showStatus(processStatus, `Attempting to cancel run ${currentRunId.substring(0,8)}...`, 'warning');
+        liveStatusSummary.textContent = "Cancellation requested...";
+        liveStatusSummary.className = 'admin-status warning';
+        closeProcessingStream(false); // Close stream, indicate not finished naturally
+        // TODO: Implement backend cancellation endpoint (/api/admin/cancel_process/<run_id>)
+        // This endpoint would need to find the process and terminate it.
+        alert("Frontend cancelled stream. Backend cancellation needs implementation.");
+    }
+
     // Load processing history
     loadHistoryButton.addEventListener('click', function() {
         loadHistoryButton.disabled = true;
@@ -232,8 +525,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Display processing history data
     function displayProcessingHistory(data) {
-        if (!data || Object.keys(data).length === 0) {
-            processingHistory.innerHTML = '<p>No processing history available.</p>';
+        if (!data || data.length === 0) { // Check if array is empty
+            processingHistory.innerHTML = '<p>No processing run history available.</p>';
             return;
         }
         
@@ -241,27 +534,34 @@ document.addEventListener('DOMContentLoaded', function() {
             <table class="admin-table">
                 <thead>
                     <tr>
-                        <th>PDF</th>
-                        <th>Last Modified</th>
-                        <th>Last Processed</th>
-                        <th>Stores Processed</th>
+                        <th>Start Time</th>
+                        <th>Duration</th>
+                        <th>Status</th>
+                        <th>Parameters</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
         `;
         
-        for (const [pdfKey, pdfInfo] of Object.entries(data)) {
-            const filename = pdfKey.split('/').pop();
-            const lastModified = new Date(pdfInfo.last_modified).toLocaleString();
-            const lastProcessed = new Date(pdfInfo.processed).toLocaleString();
-            const storesProcessed = pdfInfo.processed_stores.join(', ') || 'None';
+        // Data is already sorted by start time (newest first) from the backend
+        for (const run of data) {
+            const startTime = new Date(run.start_time).toLocaleString();
+            const duration = run.duration_seconds !== null ? `${run.duration_seconds.toFixed(1)}s` : 'N/A';
+            const statusClass = run.status.toLowerCase().includes('fail') ? 'admin-error' : (run.status === 'Running' ? 'admin-info' : 'admin-success');
+            const statusText = run.status;
+            const params = run.parameters;
+            const paramsSummary = `Stores: ${params.store_types.join(', ') || 'N/A'}; Cache: ${params.cache_behavior}; Prefix: ${params.s3_prefix || 'None'}`;
             
             html += `
                 <tr>
-                    <td title="${pdfKey}">${filename}</td>
-                    <td>${lastModified}</td>
-                    <td>${lastProcessed}</td>
-                    <td>${storesProcessed}</td>
+                    <td>${startTime}</td>
+                    <td>${duration}</td>
+                    <td><span class="${statusClass}" style="padding: 2px 5px; border-radius: 3px;">${statusText}</span></td>
+                    <td title="${run.command}">${paramsSummary}</td>
+                    <td>
+                        <button class="admin-button view-log-button" data-run-id="${run.run_id}" ${run.status === 'Running' ? 'disabled' : ''}>View Log</button>
+                    </td>
                 </tr>
             `;
         }
@@ -272,6 +572,72 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         
         processingHistory.innerHTML = html;
+        
+        // Add event listeners to the new View Log buttons
+        processingHistory.querySelectorAll('.view-log-button').forEach(button => {
+            button.addEventListener('click', function() {
+                viewRunLog(this.dataset.runId);
+            });
+        });
+    }
+    
+    // Function to view a specific run log
+    function viewRunLog(runId) {
+        const logModal = document.getElementById('log-modal');
+        const logContent = document.getElementById('log-content');
+        const logModalTitle = document.getElementById('log-modal-title');
+        const logCloseButton = document.getElementById('log-close-button');
+        const modalOverlay = document.getElementById('log-modal-overlay');
+
+        if (!logModal || !logContent || !logModalTitle || !logCloseButton || !modalOverlay) {
+            console.error("Log modal elements not found!");
+            alert("Error: Could not display log modal.");
+            return;
+        }
+        
+        logModalTitle.textContent = `Log for Run: ${runId.substring(0, 8)}...`;
+        logContent.textContent = 'Loading log...';
+        logModal.style.display = 'block';
+        modalOverlay.style.display = 'block';
+
+        fetch(`/api/admin/run_log/${runId}`)
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(`Failed to load log (${response.status}): ${text}`);
+                    });
+                }
+                return response.text();
+            })
+            .then(logData => {
+                logContent.textContent = logData;
+            })
+            .catch(error => {
+                logContent.textContent = `Error loading log:\n${error.message}`;
+                logContent.style.color = 'var(--accent-color)'; // Use accent color for error
+            });
+    }
+
+    // Add event listener to close the log modal
+    const logCloseButton = document.getElementById('log-close-button');
+    const logModalOverlay = document.getElementById('log-modal-overlay');
+    if (logCloseButton && logModalOverlay) {
+        const logModal = document.getElementById('log-modal');
+        logCloseButton.addEventListener('click', () => {
+            logModal.style.display = 'none';
+            logModalOverlay.style.display = 'none';
+            // Reset potential error styling
+            const logContent = document.getElementById('log-content');
+            if(logContent) logContent.style.color = ''; 
+        });
+        logModalOverlay.addEventListener('click', () => {
+            logModal.style.display = 'none';
+            logModalOverlay.style.display = 'none';
+            const logContent = document.getElementById('log-content');
+             if(logContent) logContent.style.color = '';
+        });
+    } else {
+        console.warn("Log modal close button or overlay not found during initial setup.");
     }
     
     // ============================
@@ -282,25 +648,130 @@ document.addEventListener('DOMContentLoaded', function() {
     const uploadStatus = document.getElementById('upload-status');
     const loadPdfsButton = document.getElementById('load-pdfs-button');
     const pdfList = document.getElementById('pdf-list');
+    const fileInput = document.getElementById('pdf-upload');
+    const dropZone = document.getElementById('drop-zone');
+    const fileListContainer = document.getElementById('file-list');
+    const browseLink = document.getElementById('browse-link');
     
-    // Upload PDF to S3
-    uploadButton.addEventListener('click', function() {
-        const fileInput = document.getElementById('pdf-upload');
-        const prefix = document.getElementById('upload-prefix').value.trim();
-        
-        if (!fileInput.files || fileInput.files.length === 0) {
-            showStatus(uploadStatus, 'Please select a PDF file to upload', 'error');
+    let selectedFile = null; // Store the selected file
+    
+    // --- Drag and Drop --- 
+
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false); // Prevent accidental drops outside the zone
+    });
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    // Highlight drop zone when item is dragged over
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, highlight, false);
+    });
+    
+    // Remove highlight when item leaves drop zone
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, unhighlight, false);
+    });
+    
+    function highlight(e) {
+        dropZone.classList.add('dragover');
+    }
+    
+    function unhighlight(e) {
+        dropZone.classList.remove('dragover');
+    }
+    
+    // Handle dropped files
+    dropZone.addEventListener('drop', handleDrop, false);
+    
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+    }
+    
+    // Handle file selection via browse link
+    browseLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        fileInput.click();
+    });
+    
+    // Handle file selection via input
+    fileInput.addEventListener('change', function() {
+        handleFiles(this.files);
+    });
+    
+    // Process selected/dropped files
+    function handleFiles(files) {
+        if (files.length > 1) {
+            showStatus(uploadStatus, 'Please upload only one file at a time.', 'warning');
             return;
         }
         
-        const file = fileInput.files[0];
+        if (files.length === 0) {
+            return; // No file selected/dropped
+        }
+        
+        const file = files[0];
+        
         if (!file.name.toLowerCase().endsWith('.pdf')) {
             showStatus(uploadStatus, 'Only PDF files are supported', 'error');
+            clearSelectedFile();
             return;
         }
         
+        selectedFile = file;
+        displaySelectedFile(file);
+        showStatus(uploadStatus, '', ''); // Clear previous status
+    }
+    
+    // Display the selected file in the list
+    function displaySelectedFile(file) {
+        fileListContainer.innerHTML = ''; // Clear previous file
+        const fileItem = document.createElement('div');
+        fileItem.classList.add('file-list-item');
+        fileItem.innerHTML = `
+            <span>${file.name} (${formatFileSize(file.size)})</span>
+            <button class="remove-file-btn" title="Remove file">&times;</button>
+        `;
+        fileListContainer.appendChild(fileItem);
+        
+        // Add event listener to remove button
+        fileItem.querySelector('.remove-file-btn').addEventListener('click', clearSelectedFile);
+    }
+    
+    // Clear the selected file display
+    function clearSelectedFile() {
+        selectedFile = null;
+        fileInput.value = ''; // Reset the file input
+        fileListContainer.innerHTML = '';
+    }
+
+    // Upload PDF to S3
+    uploadButton.addEventListener('click', function() {
+        // const fileInput = document.getElementById('pdf-upload'); // Removed - using selectedFile now
+        const prefix = document.getElementById('upload-prefix').value.trim();
+        
+        // Use the stored selectedFile instead of fileInput.files
+        if (!selectedFile) {
+            showStatus(uploadStatus, 'Please select or drop a PDF file to upload', 'error');
+            return;
+        }
+        
+        // Removed file type check here as it's done in handleFiles
+        // const file = fileInput.files[0];
+        // if (!file.name.toLowerCase().endsWith('.pdf')) {
+        //     showStatus(uploadStatus, 'Only PDF files are supported', 'error');
+        //     return;
+        // }
+        
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', selectedFile);
         if (prefix) {
             formData.append('prefix', prefix);
         }
@@ -324,7 +795,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(data => {
             showStatus(uploadStatus, `Upload complete. File saved as: ${data.key}`, 'success');
-            fileInput.value = ''; // Clear the file input
+            clearSelectedFile(); // Clear the selected file display
         })
         .catch(error => {
             showStatus(uploadStatus, `Error: ${error.message}`, 'error');
@@ -617,7 +1088,19 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        let html = `
+        let html = '';
+        
+        // Add disclaimer if this is mock data
+        if (data.is_mock_data) {
+            html += `
+                <div class="admin-status warning" style="margin-bottom: 20px;">
+                    <strong>Demo Data:</strong> This is sample data for demonstration purposes only. 
+                    To track actual API usage, please implement one of the approaches described in the server-side code.
+                </div>
+            `;
+        }
+        
+        html += `
             <div class="admin-section">
                 <h4>Current Cost Summary</h4>
                 <table class="admin-table">
@@ -813,9 +1296,7 @@ document.addEventListener('DOMContentLoaded', function() {
         html += `
                 </tbody>
             </table>
-        `;
-        
-        envVars.innerHTML = html;
+        `
     }
     
     // ============================
@@ -825,9 +1306,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Show status message with appropriate styling
     function showStatus(element, message, type) {
         element.textContent = message;
-        element.className = 'admin-status';
+        element.className = 'admin-status'; // Reset class
         if (type) {
             element.classList.add(type);
+            element.style.display = message ? 'block' : 'none'; // Show only if message exists
+        } else {
+            element.style.display = 'none'; // Hide if no type/message
+        }
+        
+        // Ensure visibility by scrolling to the element only if there's a message
+        if (message && element.style.display !== 'none') { // Check if it's actually visible
+            element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
     }
-}); 
+    
+});

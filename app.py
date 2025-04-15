@@ -3,7 +3,7 @@ from flask_cors import CORS
 from llm import ask_dndsy, default_store_type, reinitialize_llm_client
 from vector_store import get_vector_store
 import os
-from datetime import timedelta
+from datetime import timedelta, datetime
 import logging
 import json
 from dotenv import load_dotenv
@@ -17,6 +17,11 @@ import io
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import CollectionDescription
 import requests
+import uuid
+import time
+from pathlib import Path
+from queue import Queue, Empty
+import collections
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -47,6 +52,36 @@ AVAILABLE_LLM_MODELS = {
     "claude-3-sonnet-20240229": "Claude 3 Sonnet",
     "claude-3-haiku-20240307": "Claude 3 Haiku"
 }
+
+# Path for the new run history file
+RUN_HISTORY_FILE = Path(__file__).parent / "admin_processing_runs.json"
+RUN_HISTORY_LOCK = threading.Lock() # Lock for thread-safe file access
+
+# Dictionary to hold active run queues for SSE streaming
+# Key: run_id, Value: Queue
+active_runs = {}
+RUN_LOCK = threading.Lock() # Lock for accessing active_runs dictionary
+
+def read_run_history():
+    """Reads the run history JSON file safely."""
+    with RUN_HISTORY_LOCK:
+        if not RUN_HISTORY_FILE.exists():
+            return []
+        try:
+            with open(RUN_HISTORY_FILE, 'r') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            logger.error(f"Error reading run history file {RUN_HISTORY_FILE}: {e}")
+            return []
+
+def write_run_history(history_data):
+    """Writes the run history JSON file safely."""
+    with RUN_HISTORY_LOCK:
+        try:
+            with open(RUN_HISTORY_FILE, 'w') as f:
+                json.dump(history_data, f, indent=2)
+        except IOError as e:
+            logger.error(f"Error writing run history file {RUN_HISTORY_FILE}: {e}")
 
 def check_auth():
     """Checks if the current session is authenticated."""
@@ -290,7 +325,7 @@ def gpu_status():
 
 @app.route('/api/admin/process', methods=['POST'])
 def admin_process():
-    """API endpoint to process documents and update vector stores."""
+    """API endpoint to trigger processing and provide a run_id for streaming."""
     if not check_auth():
         return jsonify({'error': 'Unauthorized'}), 401
     
@@ -312,89 +347,302 @@ def admin_process():
     # Create command arguments
     cmd_args = ['python', '-m', 'scripts.manage_vector_stores']
     
-    if 'pages' in store_types and 'semantic' in store_types and 'haystack-qdrant' in store_types and 'haystack-memory' in store_types:
-        cmd_args.extend(['--store', 'all'])
+    # Simplified logic for adding store types
+    valid_store_types = [st for st in store_types if st in VECTOR_STORE_TYPES]
+    if not valid_store_types:
+         return jsonify({'error': 'No valid store types specified'}), 400
+         
+    if set(valid_store_types) == set(VECTOR_STORE_TYPES):
+         cmd_args.extend(['--store', 'all'])
     else:
-        if 'pages' in store_types:
-            cmd_args.extend(['--store', 'pages'])
-        if 'semantic' in store_types:
-            cmd_args.extend(['--store', 'semantic'])
-        if 'haystack-qdrant' in store_types:
-            cmd_args.extend(['--store', 'haystack-qdrant'])
-        if 'haystack-memory' in store_types:
-            cmd_args.extend(['--store', 'haystack-memory'])
-    
+         for st in valid_store_types:
+             cmd_args.extend(['--store', st])
+
     cmd_args.extend(['--cache-behavior', cache_behavior])
     
     if s3_prefix:
         cmd_args.extend(['--s3-pdf-prefix', s3_prefix])
+        
+    run_id = str(uuid.uuid4())
+    start_time = datetime.now().isoformat()
     
+    # Create a queue for this run's messages
+    message_queue = Queue()
+
+    run_info = {
+        "run_id": run_id,
+        "start_time": start_time,
+        "parameters": {
+            "store_types": valid_store_types,
+            "cache_behavior": cache_behavior,
+            "s3_prefix": s3_prefix
+        },
+        "command": ' '.join(cmd_args),
+        "status": "Running",
+        "end_time": None,
+        "duration_seconds": None,
+        "log": "Processing started...",
+        "return_code": None
+    }
+
+    # Add run to history (initial state)
+    history = read_run_history()
+    history.insert(0, run_info)
+    write_run_history(history)
+
+    # Store the queue for SSE streaming
+    with RUN_LOCK:
+        active_runs[run_id] = message_queue
+
     # Run the command in a separate thread
-    def run_process():
+    def run_process(current_run_id, command_args, msg_queue):
+        log_capture = io.StringIO()
+        process_start_time = time.time()
+        final_status = "Unknown" # Track the final status reported by the script
+        final_success = False
+        final_duration = None
+        return_code = -1
+        
         try:
             process = subprocess.Popen(
-                cmd_args,
+                command_args,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
-                text=True
+                text=True,
+                encoding='utf-8',
+                errors='replace',
+                bufsize=1 # Line buffering
             )
             
-            # Read and log output
-            for line in process.stdout:
-                logger.info(f"Processing: {line.strip()}")
+            initial_log = f"Starting process with command: {' '.join(command_args)}\n" + "-" * 30 + "\n"
+            log_capture.write(initial_log)
+            # Send initial log lines via queue as well
+            msg_queue.put({"type": "log", "message": initial_log.strip()})
+
+            # Read and process output line by line
+            for line in iter(process.stdout.readline, ''):
+                clean_line = line.strip()
+                if not clean_line:
+                    continue # Skip empty lines
+                
+                log_capture.write(clean_line + "\n") # Capture all output for final log
+                
+                # Attempt to parse as JSON status update
+                parsed_as_status = False
+                try:
+                    status_update = json.loads(clean_line)
+                    if isinstance(status_update, dict) and 'type' in status_update:
+                        # Put the structured update onto the queue
+                        msg_queue.put(status_update)
+                        parsed_as_status = True # Flag that we handled this line as a status update
+                        
+                        # Check for final status message from script
+                        if status_update.get('type') == 'end':
+                            final_success = status_update.get('success', False)
+                            final_duration = status_update.get('duration')
+                            final_status = "Success" if final_success else "Failed (Script Error)"
+                    # else: it was valid JSON but not a status update - treat as log below
+                except json.JSONDecodeError:
+                    # Line is not JSON - treat as log below
+                    pass 
+                
+                # If the line wasn't handled as a structured status update, send it as a log message
+                if not parsed_as_status:
+                    logger.info(f"Processing Log [{current_run_id}]: {clean_line}") # Log non-status lines locally
+                    msg_queue.put({"type": "log", "message": clean_line})
             
             process.wait()
-            logger.info(f"Document processing completed with exit code {process.returncode}")
+            return_code = process.returncode
+            logger.info(f"Subprocess [{current_run_id}] finished with exit code {return_code}")
+
+            # Determine final status based on script output and exit code
+            if final_status == "Unknown": # If script didn't send 'end' status
+                final_success = (return_code == 0)
+                final_status = "Success" if final_success else f"Failed (Exit Code {return_code})"
+            elif return_code != 0 and final_success: # Script said success but exited non-zero
+                 final_status = f"Warning (Finished with exit code {return_code} despite success status)"
+                 final_success = False # Treat as failure overall
+            
+            end_log = "-" * 30 + f"\nProcess finished with exit code: {return_code} ({final_status})\n"
+            log_capture.write(end_log)
+            msg_queue.put({"type": "log", "message": end_log.strip()})
+            
         except Exception as e:
-            logger.error(f"Error running document processing: {e}", exc_info=True)
-    
+            error_message = f"Error running document processing [{current_run_id}]: {e}"
+            logger.error(error_message, exc_info=True)
+            log_capture.write("\n!!! ERROR DURING FLASK EXECUTION !!!\n")
+            log_capture.write(error_message + "\n")
+            final_status = "Failed (Flask Exception)"
+            final_success = False
+            return_code = -1
+            try:
+                # Try to put the error on the queue for the frontend
+                msg_queue.put({"type": "error", "message": error_message})
+            except Exception as q_err:
+                logger.error(f"Failed to put Flask exception onto queue: {q_err}")
+                
+        finally:
+            # Signal end of messages for this run
+            msg_queue.put({"type": "end", "success": final_success, "status": final_status, "duration": final_duration})
+            
+            end_time = datetime.now().isoformat()
+            # Calculate duration if script didn't provide it
+            if final_duration is None:
+                final_duration = time.time() - process_start_time
+            
+            # Update history entry with final details
+            updated_history = read_run_history()
+            for run in updated_history:
+                if run["run_id"] == current_run_id:
+                    run["status"] = final_status
+                    run["end_time"] = end_time
+                    run["duration_seconds"] = round(final_duration, 2)
+                    run["log"] = log_capture.getvalue()
+                    run["return_code"] = return_code
+                    break # Found the run, no need to continue
+            write_run_history(updated_history)
+            log_capture.close()
+            
+            # Remove run from active dictionary
+            with RUN_LOCK:
+                if current_run_id in active_runs:
+                    del active_runs[current_run_id]
+                    logger.info(f"Removed run {current_run_id} from active runs.")
+
     # Start thread
-    thread = threading.Thread(target=run_process)
+    thread = threading.Thread(target=run_process, args=(run_id, cmd_args, message_queue))
     thread.daemon = True
     thread.start()
     
     return jsonify({
         'success': True,
-        'message': f"Processing started with: {', '.join(store_types)} (cache: {cache_behavior})",
-        'command': ' '.join(cmd_args)
+        'message': f"Processing run '{run_id}' started.",
+        'run_id': run_id
     })
 
 @app.route('/api/admin/history')
 def admin_history():
-    """API endpoint to get PDF processing history."""
+    """API endpoint to get PDF processing RUN history."""
     if not check_auth():
         return jsonify({'error': 'Unauthorized'}), 401
     
-    # Try to get history from S3 first
-    try:
-        s3_client = get_s3_client()
-        if s3_client:
-            s3_pdf_process_history_key = "processing/pdf_process_history.json"
-            try:
-                response = s3_client.get_object(
-                    Bucket=os.environ.get('AWS_S3_BUCKET_NAME'),
-                    Key=s3_pdf_process_history_key
-                )
-                history_content = response['Body'].read().decode('utf-8')
-                history = json.loads(history_content)
-                return jsonify(history)
-            except Exception as e:
-                logger.warning(f"Error getting history from S3: {e}")
-    except Exception as e:
-        logger.warning(f"Error getting S3 client: {e}")
+    # Read the new run history file
+    history = read_run_history()
     
-    # Fall back to local file
-    try:
-        history_file = os.path.join(os.path.dirname(__file__), "pdf_process_history.json")
-        if os.path.exists(history_file):
-            with open(history_file, 'r') as f:
-                history = json.load(f)
-                return jsonify(history)
-        else:
-            return jsonify({}), 200
-    except Exception as e:
-        logger.error(f"Error reading history file: {e}", exc_info=True)
-        return jsonify({'error': f'Error reading history file: {str(e)}'}), 500
+    # Optionally limit the history size returned
+    max_history = 50 
+    return jsonify(history[:max_history])
+
+@app.route('/api/admin/process_stream/<run_id>')
+def admin_process_stream(run_id):
+    """SSE endpoint to stream processing status for a given run_id."""
+    if not check_auth():
+        return Response("event: error\ndata: {\"error\": \"Unauthorized\"}\n\n", status=401, mimetype='text/event-stream')
+
+    logger.info(f"SSE connection requested for run_id: {run_id}")
+
+    # Define the generator function for SSE
+    def generate_updates():
+        msg_queue = None
+        with RUN_LOCK:
+            if run_id in active_runs:
+                msg_queue = active_runs[run_id]
+            else:
+                # Check if run recently finished and might still be in history
+                history = read_run_history()
+                recent_run = next((r for r in history if r["run_id"] == run_id), None)
+                if recent_run and recent_run["status"] != "Running":
+                    # Run already finished, send final status from history
+                    logger.warning(f"SSE requested for completed run {run_id}. Sending final status.")
+                    final_data = {
+                        "type": "end",
+                        "success": recent_run["status"] == "Success",
+                        "status": recent_run["status"],
+                        "duration": recent_run.get("duration_seconds")
+                    }
+                    yield f"event: end\ndata: {json.dumps(final_data)}\n\n"
+                    return # End the stream
+                else:
+                     logger.error(f"Run ID {run_id} not found in active runs or recent history.")
+                     yield f"event: error\ndata: {json.dumps({'error': 'Run ID not found or invalid'})}\n\n"
+                     return # End the stream
+
+        if msg_queue is None:
+            # Should not happen if logic above is correct, but handle defensively
+             logger.error(f"Queue not found for run ID {run_id} despite being in active_runs.")
+             yield f"event: error\ndata: {json.dumps({'error': 'Internal server error: Queue not found'})}\n\n"
+             return
+
+        logger.info(f"SSE stream started for run_id: {run_id}")
+        
+        keep_streaming = True
+        while keep_streaming:
+            try:
+                # Wait for a message from the queue (with timeout)
+                message = msg_queue.get(timeout=1)
+                
+                # Determine event type based on message content
+                event_type = message.get('type', 'update') # Default to 'update'
+                if event_type == 'end':
+                    keep_streaming = False # Stop after sending the end event
+                    event_type = 'end' # Ensure correct event name for final message
+                elif event_type == 'error':
+                     event_type = 'error' # Ensure correct event name for errors
+                else:
+                    event_type = 'update' # Use 'update' for log, milestone, progress etc.
+                
+                # Format and yield the message
+                yield f"event: {event_type}\ndata: {json.dumps(message)}\n\n"
+                
+                # If it was the end message, break the loop
+                if not keep_streaming:
+                     logger.info(f"End message received for {run_id}. Closing SSE stream.")
+                     break
+                     
+            except Empty:
+                # Timeout - check if the run is still active
+                with RUN_LOCK:
+                    if run_id not in active_runs:
+                        logger.warning(f"Run {run_id} disappeared from active runs. Closing SSE stream.")
+                        # Send a final generic end event if the run vanished unexpectedly
+                        yield f"event: end\ndata: {json.dumps({'type': 'end', 'success': False, 'status': 'Unknown (Stream Interrupted)', 'duration': None})}\n\n"
+                        keep_streaming = False
+                        break
+                # If still active, just continue waiting for messages
+                pass 
+            except Exception as e:
+                logger.error(f"Error in SSE generator for run {run_id}: {e}", exc_info=True)
+                # Try to send an error to the client
+                try:
+                    yield f"event: error\ndata: {json.dumps({'error': f'Stream error: {e}'})}\n\n"
+                except Exception:
+                    pass # Ignore if yield fails
+                keep_streaming = False # Stop streaming on error
+                break
+        
+        logger.info(f"SSE stream finished for run_id: {run_id}")
+
+    # Return the SSE response
+    return Response(generate_updates(), mimetype='text/event-stream')
+
+@app.route('/api/admin/run_log/<run_id>')
+def admin_run_log(run_id):
+    """API endpoint to get the log for a specific processing run."""
+    if not check_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
+        
+    history = read_run_history()
+    run_log = None
+    for run in history:
+        if run.get("run_id") == run_id:
+            run_log = run.get("log", "Log not found for this run.")
+            break
+            
+    if run_log is None:
+        return jsonify({'error': f'Run ID {run_id} not found'}), 404
+        
+    # Return log content as plain text
+    return Response(run_log, mimetype='text/plain')
 
 @app.route('/api/admin/upload', methods=['POST'])
 def admin_upload():
@@ -612,13 +860,29 @@ def admin_api_costs():
     if not check_auth():
         return jsonify({'error': 'Unauthorized'}), 401
     
-    # For now, we'll return mock data since OpenAI doesn't provide
-    # a simple usage API without OAuth. In a real implementation,
-    # you would integrate with the OpenAI API or use a tracking system.
+    # NOTE: This currently returns mock data for demonstration purposes.
+    # To implement actual usage tracking, you would need to either:
+    #
+    # 1. Use OpenAI API directly (requires OAuth setup):
+    #    - Set up OAuth credentials in the OpenAI dashboard
+    #    - Use the OpenAI API's usage endpoints:
+    #      https://platform.openai.com/docs/api-reference/usage
+    #
+    # 2. Implement a local usage tracker:
+    #    - Create a database table to log each API call with:
+    #      * timestamp, model, prompt_tokens, completion_tokens, total_cost
+    #    - Calculate cost based on current pricing for each model
+    #    - Aggregate data when this endpoint is called
+    #
+    # 3. Use OpenAI's export data feature to download usage periodically
+    #    and import into your local database
     
-    # Sample data structure to demonstrate UI
+    # For now, displaying sample data to demonstrate the UI
+    current_month = datetime.now().strftime('%B %Y')
+    sample_period = f"Usage for {current_month}"
+    
     mock_data = {
-        'period': 'May 1 - May 31, 2023',
+        'period': sample_period,
         'total_cost': 28.75,
         'usage': [
             {
@@ -642,7 +906,8 @@ def admin_api_costs():
                 'output_tokens': 2000,
                 'cost': 8.00
             }
-        ]
+        ],
+        'is_mock_data': True  # Flag to indicate this is sample data
     }
     
     return jsonify(mock_data)
