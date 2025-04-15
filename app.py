@@ -390,18 +390,22 @@ def admin_process():
     history.insert(0, run_info)
     write_run_history(history)
 
-    # Store the queue for SSE streaming
+    # Store the queue and initialize process entry for SSE streaming
     with RUN_LOCK:
-        active_runs[run_id] = message_queue
+        active_runs[run_id] = {
+            'queue': message_queue,
+            'process': None # Placeholder for the subprocess object
+        }
 
     # Run the command in a separate thread
     def run_process(current_run_id, command_args, msg_queue):
         log_capture = io.StringIO()
         process_start_time = time.time()
-        final_status = "Unknown" # Track the final status reported by the script
+        final_status = "Unknown" 
         final_success = False
         final_duration = None
         return_code = -1
+        process = None # Define process variable here
         
         try:
             process = subprocess.Popen(
@@ -411,9 +415,23 @@ def admin_process():
                 text=True,
                 encoding='utf-8',
                 errors='replace',
-                bufsize=1 # Line buffering
+                bufsize=1 
             )
             
+            # Store the process object in active_runs
+            with RUN_LOCK:
+                if current_run_id in active_runs:
+                    active_runs[current_run_id]['process'] = process
+                else:
+                    # Should not happen if started correctly, but handle defensively
+                    logger.warning(f"Run ID {current_run_id} not found in active_runs when storing process object.")
+                    # Attempt to terminate the process if we can't track it
+                    try:
+                         process.terminate()
+                    except Exception as term_err:
+                         logger.error(f"Failed to terminate untracked process: {term_err}")
+                    raise Exception("Run ID missing from active runs, cannot track process.")
+
             initial_log = f"Starting process with command: {' '.join(command_args)}\n" + "-" * 30 + "\n"
             log_capture.write(initial_log)
             # Send initial log lines via queue as well
@@ -546,7 +564,7 @@ def admin_process_stream(run_id):
         msg_queue = None
         with RUN_LOCK:
             if run_id in active_runs:
-                msg_queue = active_runs[run_id]
+                msg_queue = active_runs[run_id]['queue']
             else:
                 # Check if run recently finished and might still be in history
                 history = read_run_history()
@@ -1057,6 +1075,44 @@ def get_qdrant_client():
     except Exception as e:
         logger.error(f"Error creating Qdrant client: {e}", exc_info=True)
         return None
+
+@app.route('/api/admin/cancel_run/<run_id>', methods=['POST'])
+def cancel_run(run_id):
+    """Attempts to terminate a running processing script."""
+    if not check_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    logger.info(f"Cancellation requested for run ID: {run_id}")
+    process_terminated = False
+    message = ""
+
+    with RUN_LOCK:
+        run_details = active_runs.get(run_id)
+        if run_details and run_details.get('process'):
+            process = run_details['process']
+            # Check if the process is still running
+            if process.poll() is None: # poll() returns None if process is running
+                try:
+                    process.terminate() # Send SIGTERM
+                    logger.info(f"Sent terminate signal to process for run ID: {run_id}")
+                    # Give it a moment to terminate, then check
+                    time.sleep(0.5)
+                    if process.poll() is None:
+                         logger.warning(f"Process {run_id} did not terminate gracefully, sending kill signal.")
+                         process.kill() # Send SIGKILL if still running
+                    process_terminated = True
+                    message = f"Cancellation signal sent to run {run_id}. The process should stop shortly."
+                except Exception as e:
+                    logger.error(f"Error terminating process for run ID {run_id}: {e}", exc_info=True)
+                    message = f"Error attempting to cancel run {run_id}: {e}"
+            else:
+                logger.warning(f"Attempted to cancel run {run_id}, but process has already finished.")
+                message = f"Run {run_id} has already finished."
+        else:
+            logger.warning(f"Attempted to cancel run {run_id}, but it was not found or process object missing.")
+            message = f"Run {run_id} not found or not active."
+
+    return jsonify({'success': process_terminated, 'message': message})
 
 if __name__ == '__main__':
     logger.info("Starting Flask application...")

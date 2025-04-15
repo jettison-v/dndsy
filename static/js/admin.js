@@ -172,8 +172,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const loadHistoryButton = document.getElementById('load-history-button');
     const processingHistory = document.getElementById('processing-history');
     
-    // Elements for live processing status
-    const liveStatusContainer = document.getElementById('live-status-container');
+    // Elements for live processing status (now in a modal)
+    const liveStatusModal = document.getElementById('live-status-modal');
+    const liveStatusModalOverlay = document.getElementById('live-status-modal-overlay');
+    const liveStatusCloseButton = document.getElementById('live-status-close-button');
     const liveStatusSummary = document.getElementById('live-status-summary');
     const liveMilestones = document.getElementById('live-milestones');
     const liveLogs = document.getElementById('live-logs');
@@ -224,10 +226,9 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Update UI - Show processing started, clear old live status
+        // Update UI - Clear previous live status, disable button
         processButton.disabled = true;
-        showStatus(processStatus, 'Initiating processing run...', 'info');
-        liveStatusContainer.style.display = 'none'; // Hide previous live status if any
+        // showStatus(processStatus, 'Initiating processing run...', 'info'); // Removed old status display
         liveMilestones.innerHTML = ''; // Clear milestones
         liveLogs.innerHTML = ''; // Clear logs
         liveStatusSummary.className = 'admin-status info'; // Reset summary style
@@ -252,10 +253,11 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(data => {
             if (data.success && data.run_id) {
-                // SUCCESS: Start listening to the SSE stream
-                showStatus(processStatus, `Processing run ${data.run_id.substring(0, 8)}... started. See live status below.`, 'info');
+                // SUCCESS: Show the modal and start listening to the SSE stream
+                // showStatus(processStatus, `Processing run ${data.run_id.substring(0, 8)}... started. See live status below.`, 'info'); // Removed old status display
                 currentRunId = data.run_id;
-                liveStatusContainer.style.display = 'block'; // Show live status area
+                liveStatusModal.style.display = 'block'; // Show live status modal
+                liveStatusModalOverlay.style.display = 'block';
                 cancelProcessingButton.style.display = 'inline-block'; // Show cancel button
                 startProcessingStream(data.run_id);
             } else {
@@ -264,7 +266,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(error => {
-            showStatus(processStatus, `Error: ${error.message}`, 'error');
+            // showStatus(processStatus, `Error: ${error.message}`, 'error'); // Removed old status display
+            alert(`Error initiating processing: ${error.message}`); // Use alert for initiation errors now
             processButton.disabled = false; // Re-enable button on error
         });
     });
@@ -293,7 +296,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (event.message) {
                  errorMessage = `Stream error: ${event.message}`;
             }
-            showStatus(processStatus, `Error: ${errorMessage}`, 'error');
+            // showStatus(processStatus, `Error: ${errorMessage}`, 'error'); // Removed old status display
             liveStatusSummary.textContent = `Error: ${errorMessage}`;
             liveStatusSummary.className = 'admin-status error';
             closeProcessingStream(false); // Close and indicate failure
@@ -317,7 +320,7 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 const data = JSON.parse(event.data);
                 console.error("SSE stream error event:", data);
-                showStatus(processStatus, `Stream Error: ${data.message || 'Unknown stream error'}`, 'error');
+                // showStatus(processStatus, `Stream Error: ${data.message || 'Unknown stream error'}`, 'error'); // Removed old status display
                 liveStatusSummary.textContent = `Error: ${data.message || 'Unknown stream error'}`;
                 liveStatusSummary.className = 'admin-status error';
             } catch (e) {
@@ -339,20 +342,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Update ONLY the live summary status
                 liveStatusSummary.textContent = finalMessage;
                 liveStatusSummary.className = data.success ? 'admin-status success' : 'admin-status error';
-                // Clear the old status message
-                showStatus(processStatus, '', ''); 
-                processStatus.style.display = 'none'; // Hide the old status div
+                // Clear the old status message - No longer needed
+                // showStatus(processStatus, '', ''); 
+                // processStatus.style.display = 'none'; 
 
             } catch (e) {
                 console.error("Error parsing SSE end data:", e);
                  const fallbackMessage = "Processing run finished, but status couldn't be parsed.";
                  liveStatusSummary.textContent = fallbackMessage;
                  liveStatusSummary.className = 'admin-status warning';
-                 // Clear the old status message
-                 showStatus(processStatus, '', '');
-                 processStatus.style.display = 'none'; // Hide the old status div
+                 // Clear the old status message - No longer needed
+                 // showStatus(processStatus, '', '');
+                 // processStatus.style.display = 'none'; 
             }
             closeProcessingStream(true); // Close stream after end event
+            
+            // Change Cancel button to Close button
+            // Re-select the button by ID inside the handler to ensure we have the correct node
+            const buttonToUpdate = document.getElementById('cancel-processing-button');
+            if (buttonToUpdate) {
+                buttonToUpdate.textContent = 'Close';
+                buttonToUpdate.style.backgroundColor = ''; // Reset background color
+                // Remove previous listener and add a new one to just close the modal
+                const newCloseButton = buttonToUpdate.cloneNode(true);
+                // Replace the updated button in the DOM before adding listener to the new node
+                buttonToUpdate.parentNode.replaceChild(newCloseButton, buttonToUpdate);
+                newCloseButton.addEventListener('click', () => {
+                    liveStatusModal.style.display = 'none';
+                    liveStatusModalOverlay.style.display = 'none';
+                });
+            } else {
+                console.warn("Could not find cancel/close button to update on stream end.");
+            }
         });
         
         // Add listener for the cancel button
@@ -443,6 +464,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Add event listener for the live status modal close button
+    if (liveStatusCloseButton) {
+        liveStatusCloseButton.addEventListener('click', () => {
+            liveStatusModal.style.display = 'none';
+            liveStatusModalOverlay.style.display = 'none';
+            // Note: We don't close the EventSource here, 
+            // processing continues in the background.
+        });
+    }
+
     // Function to close the SSE stream and update UI
     function closeProcessingStream(finishedNaturally) {
         if (currentEventSource) {
@@ -453,26 +484,34 @@ document.addEventListener('DOMContentLoaded', function() {
         processButton.disabled = false; // Re-enable process button
         cancelProcessingButton.style.display = 'none'; // Hide cancel button
         
+        // Hide the modal if the stream ends (naturally or error)
+        // Unless the user manually closed it already.
+        if (liveStatusModal.style.display === 'block') {
+            // Keep the modal open for a short time to show final status?
+            // Or close immediately:
+            // liveStatusModal.style.display = 'none';
+            // liveStatusModalOverlay.style.display = 'none';
+            // For now, let's keep it open showing the final status.
+            // The user can close it manually.
+        }
+
         // If the stream didn't finish naturally (e.g., error, manual cancel), 
         // ensure the final status reflects interruption if not already set.
         if (!finishedNaturally && liveStatusSummary.textContent.startsWith('Connected')) {
             liveStatusSummary.textContent = "Stream interrupted.";
             liveStatusSummary.className = 'admin-status warning';
-            showStatus(processStatus, '', ''); // Clear old status
-            processStatus.style.display = 'none'; 
+            // showStatus(processStatus, '', ''); // Removed old status display
+            // processStatus.style.display = 'none'; 
         } 
         // Reset run ID *after* potential history refresh
-        const runIdToRefresh = currentRunId;
         currentRunId = null;
         
-        // Refresh history if the run finished (naturally or via error)
-        if (finishedNaturally) {
-             // Add a small delay before refreshing history to allow backend to potentially update the file
-            setTimeout(() => {
-                console.log("Refreshing history after run completion...");
-                loadHistoryButton.click(); // Trigger history reload
-            }, 500); 
-        }
+        // Refresh history whenever the stream closes after a run started
+        // Add a small delay before refreshing history to allow backend to potentially update the file
+        setTimeout(() => {
+            console.log("Refreshing history after stream closed...");
+            loadHistoryButton.click(); // Trigger history reload
+        }, 500); 
     }
     
     // Function to handle cancel button click
@@ -482,20 +521,57 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        if (!confirm(`Are you sure you want to attempt to cancel processing run ${currentRunId.substring(0,8)}...? This might leave things in an inconsistent state.`)) {
+        const runIdShort = currentRunId.substring(0,8);
+        
+        if (!confirm(`Are you sure you want to attempt to cancel processing run ${runIdShort}...? This might leave things in an inconsistent state.`)) {
             return;
         }
         
         console.log(`Attempting to cancel run: ${currentRunId}`);
-        // Send request to backend to cancel (Need a new backend endpoint for this)
-        // For now, we just close the stream and update UI
-        showStatus(processStatus, `Attempting to cancel run ${currentRunId.substring(0,8)}...`, 'warning');
-        liveStatusSummary.textContent = "Cancellation requested...";
+        liveStatusSummary.textContent = "Sending cancellation request...";
         liveStatusSummary.className = 'admin-status warning';
-        closeProcessingStream(false); // Close stream, indicate not finished naturally
-        // TODO: Implement backend cancellation endpoint (/api/admin/cancel_process/<run_id>)
-        // This endpoint would need to find the process and terminate it.
-        alert("Frontend cancelled stream. Backend cancellation needs implementation.");
+        cancelProcessingButton.disabled = true; // Disable button while cancelling
+
+        // Send request to backend to cancel
+        fetch(`/api/admin/cancel_run/${currentRunId}`, {
+            method: 'POST',
+            headers: {
+                 // Add any necessary headers, e.g., CSRF token if implemented
+            }
+        })
+        .then(response => response.json()) // Always expect JSON back
+        .then(data => {
+            console.log("Cancel response:", data);
+            if (data.success) {
+                 alert(`Cancellation signal sent to run ${runIdShort}.`);
+                 // Update UI immediately, but stream closure will handle final state
+                 liveStatusSummary.textContent = "Cancellation signal sent...";
+                 liveStatusSummary.className = 'admin-status warning';
+                 // Close the modal after user dismisses the alert
+                 liveStatusModal.style.display = 'none';
+                 liveStatusModalOverlay.style.display = 'none';
+            } else {
+                alert(`Failed to cancel run ${runIdShort}: ${data.message || 'Unknown error'}`);
+                liveStatusSummary.textContent = `Cancellation failed: ${data.message || 'Unknown error'}`;
+                liveStatusSummary.className = 'admin-status error';
+                 cancelProcessingButton.disabled = false; // Re-enable if cancel failed
+            }
+             // Don't close the stream here; let the backend thread finish and send the 'end' event
+             // which will trigger closeProcessingStream.
+        })
+        .catch(error => {
+            console.error("Error sending cancel request:", error);
+            alert(`Error sending cancellation request: ${error.message}`);
+            liveStatusSummary.textContent = `Cancellation request error: ${error.message}`;
+            liveStatusSummary.className = 'admin-status error';
+            cancelProcessingButton.disabled = false; // Re-enable on fetch error
+        });
+
+        // // For now, we just close the stream and update UI - REMOVED OLD LOGIC
+        // liveStatusSummary.textContent = "Cancellation requested...";
+        // liveStatusSummary.className = 'admin-status warning';
+        // closeProcessingStream(false); // Close stream, indicate not finished naturally
+        // alert("Frontend cancelled stream. Backend cancellation needs implementation.");
     }
 
     // Load processing history
@@ -553,15 +629,23 @@ document.addEventListener('DOMContentLoaded', function() {
             const params = run.parameters;
             const paramsSummary = `Stores: ${params.store_types.join(', ') || 'N/A'}; Cache: ${params.cache_behavior}; Prefix: ${params.s3_prefix || 'None'}`;
             
+            // Determine button class and action based on status
+            let buttonHtml;
+            if (run.status === 'Running' && run.run_id === currentRunId) {
+                // Special button/class to reopen live modal
+                buttonHtml = `<button class="admin-button view-live-log-button" data-run-id="${run.run_id}">View Live Status</button>`;
+            } else {
+                // Standard button to view historical log
+                buttonHtml = `<button class="admin-button view-log-button" data-run-id="${run.run_id}" ${run.status === 'Running' ? 'disabled' : ''}>View Log</button>`;
+            }
+
             html += `
                 <tr>
                     <td>${startTime}</td>
                     <td>${duration}</td>
                     <td><span class="${statusClass}" style="padding: 2px 5px; border-radius: 3px;">${statusText}</span></td>
                     <td title="${run.command}">${paramsSummary}</td>
-                    <td>
-                        <button class="admin-button view-log-button" data-run-id="${run.run_id}" ${run.status === 'Running' ? 'disabled' : ''}>View Log</button>
-                    </td>
+                    <td>${buttonHtml}</td>
                 </tr>
             `;
         }
@@ -573,10 +657,24 @@ document.addEventListener('DOMContentLoaded', function() {
         
         processingHistory.innerHTML = html;
         
-        // Add event listeners to the new View Log buttons
-        processingHistory.querySelectorAll('.view-log-button').forEach(button => {
+        // Add event listeners to the history action buttons
+        processingHistory.querySelectorAll('.view-log-button, .view-live-log-button').forEach(button => {
             button.addEventListener('click', function() {
-                viewRunLog(this.dataset.runId);
+                const clickedRunId = this.dataset.runId;
+                if (this.classList.contains('view-live-log-button')) {
+                    // Reopen the live modal if it matches the current run
+                    if (clickedRunId === currentRunId && currentEventSource) {
+                        liveStatusModal.style.display = 'block';
+                        liveStatusModalOverlay.style.display = 'block';
+                    } else {
+                        // Edge case: Button says live, but stream is no longer active? Show log.
+                        alert("Live stream for this run is no longer active. Showing historical log instead.");
+                        viewRunLog(clickedRunId);
+                    }
+                } else {
+                    // Fetch and show historical log
+                    viewRunLog(clickedRunId);
+                }
             });
         });
     }

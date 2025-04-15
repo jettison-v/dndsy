@@ -134,6 +134,8 @@
                     <div class="admin-tab-content">
                         <div id="data-processing-tab" class="admin-tab-pane active">
                             <h3>Data Processing Management</h3>
+                            
+                            <!-- Section 1: Process PDF Documents -->
                             <div class="admin-section">
                                 <h4>Process PDF Documents</h4>
                                 <div class="admin-form-group">
@@ -157,24 +159,9 @@
                                     <input type="text" id="s3-prefix" placeholder="source-pdfs/">
                                 </div>
                                 <button id="process-button" class="admin-button">Process Documents</button>
-                                <div id="process-status" class="admin-status"></div>
-                                
-                                <!-- Live Processing Status Area -->
-                                <div id="live-status-container" style="margin-top: 1rem; display: none;">
-                                    <h4>Live Processing Status</h4>
-                                    <div id="live-status-summary" class="admin-status info" style="margin-bottom: 0.5rem;">Starting...</div>
-                                    <div id="live-milestones" style="margin-bottom: 0.5rem;">
-                                        <!-- Milestones will be added here -->
-                                    </div>
-                                    <div id="live-logs" style="max-height: 200px; overflow-y: auto; background-color: var(--input-bg); padding: 0.5rem; border-radius: 4px; font-family: monospace; font-size: 0.8rem; white-space: pre-wrap;">
-                                        <!-- Logs will appear here -->
-                                    </div>
-                                    <button id="cancel-processing-button" class="admin-button" style="margin-top: 0.5rem; background-color: #dc3545; display: none;">Cancel Run</button>
-                                </div>
-                                <!-- End Live Processing Status Area -->
-                                
                             </div>
                             
+                            <!-- Section 2: Processing History -->
                             <div class="admin-section">
                                 <h4>Processing History</h4>
                                 <button id="load-history-button" class="admin-button">Load History</button>
@@ -434,6 +421,28 @@
             </div>
             <div class="admin-modal-body" style="height: calc(80vh - 60px); /* Adjust based on header */ display: flex; flex-direction: column;">
                 <pre id="log-content" style="flex-grow: 1; overflow-y: auto; background-color: var(--input-bg); padding: 1rem; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word;">Log content will appear here...</pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Processing Status Modal -->
+    <div id="live-status-modal-overlay" class="modal-overlay" style="z-index: 1040;"></div> <!-- Slightly lower z-index -->
+    <div id="live-status-modal" class="admin-modal" style="display: none; z-index: 1041; max-width: 70%; width: 800px;">
+        <div class="admin-modal-content" style="height: 70vh;">
+            <div class="admin-modal-header">
+                <h2><i class="fas fa-cogs" style="margin-right: 10px;"></i>Live Processing Status</h2>
+                <button id="live-status-close-button" class="admin-close-button">&times;</button>
+            </div>
+            <div class="admin-modal-body" style="height: calc(70vh - 60px); display: flex; flex-direction: column;">
+                <!-- Content moved from live-status-container -->
+                <div id="live-status-summary" class="admin-status info" style="margin-bottom: 0.5rem; flex-shrink: 0;">Starting...</div>
+                <div id="live-milestones" style="margin-bottom: 0.5rem; flex-shrink: 0;">
+                    <!-- Milestones will be added here -->
+                </div>
+                <div id="live-logs" style="flex-grow: 1; overflow-y: auto; background-color: var(--input-bg); padding: 0.5rem; border-radius: 4px; font-family: monospace; font-size: 0.8rem; white-space: pre-wrap;">
+                    <!-- Logs will appear here -->
+                </div>
+                <button id="cancel-processing-button" class="admin-button" style="margin-top: 0.5rem; background-color: #dc3545; display: none; flex-shrink: 0;">Cancel Run</button>
             </div>
         </div>
     </div>

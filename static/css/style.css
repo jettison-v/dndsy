@@ -1853,30 +1853,55 @@ textarea:focus, button:focus {
 
 /* Admin Modal */
 .admin-modal {
-    display: none;
+    display: none; /* Display is controlled by JS - MODAL MUST BE HIDDEN INITIALLY */
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 1000;
-    background-color: rgba(0, 0, 0, 0.7);
-    overflow-y: auto;
+    z-index: 1000; 
+    
+    /* Horizontal Centering only */
+    left: 50%;
+    transform: translateX(-50%); 
+    top: 30px; /* Add some margin from the top */
+    margin-bottom: 30px; /* Ensure space at bottom if content overflows */
+    
+    /* Sizing (moved from admin-modal-content) */
+    width: 90%; 
+    max-width: 1200px; /* Default max-width */
+    max-height: calc(100vh - 60px); /* Max height considering top/bottom margin */
 }
 
 .admin-modal-content {
     background-color: #2a2a2e;
     color: #ffffff;
-    margin: 30px auto;
-    width: 90%;
-    max-width: 1200px;
-    max-height: 90vh;
     border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.35);
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: hidden; /* Content overflow will be handled by modal-body */
     border: 1px solid #383838;
+    height: 100%; /* Make content fill the modal height */
+    max-height: inherit; /* Inherit max-height from parent */
+}
+
+/* Specific overrides for log and status modals */
+#log-modal,
+#live-status-modal {
+    /* Re-apply vertical centering */
+    top: 50%;
+    transform: translate(-50%, -50%);
+    /* Adjust max-height to avoid conflict with top/transform */
+    max-height: 85vh; 
+}
+
+#log-modal {
+    max-width: 80%; 
+    width: 900px; 
+    height: 80vh; 
+}
+
+#live-status-modal {
+    max-width: 70%; 
+    width: 800px; 
+    height: 70vh; 
 }
 
 .admin-modal-header {
