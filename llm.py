@@ -168,6 +168,10 @@ def _get_link_data_for_sources(source_keys: List[str]) -> Dict[str, Dict]:
                     # Add the source document s3_key for internal links
                     if link_info.get('link_type') == 'internal':
                         consolidated_links[key]['s3_key'] = s3_key
+                        
+                    # Add color information if available
+                    if link_info.get('color'):
+                        consolidated_links[key]['color'] = link_info.get('color')
                     
         except ClientError as e:
             if e.response['Error']['Code'] == 'NoSuchKey':

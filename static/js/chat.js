@@ -649,6 +649,85 @@ document.addEventListener('DOMContentLoaded', () => {
         return text;
     }
 
+    // Category color mapping for different link types
+    const categoryColors = {
+        "monster": "#a70000", // or #bc0f0f
+        "spell": "#704cd9",
+        "skill": "#036634", // or #11884c
+        "item": "#623a1e", // or #774521
+        "rule": "#6a5009", // or #9b740b
+        "sense": "#a41b96",
+        "condition": "#364d00", // or #5a8100
+        "lore": "#a83e3e",
+        "default": "#036634" // or #11884c
+    };
+    
+    // Helper function to determine link category from text or context
+    function detectLinkCategory(text, linkInfo) {
+        // First check if the link has a pre-defined color from the PDF
+        if (linkInfo && linkInfo.color) {
+            // Try to match with existing category colors first
+            const extractedColor = linkInfo.color.toLowerCase();
+            
+            // Check if it's an exact match with any of our category colors
+            for (const category in categoryColors) {
+                if (categoryColors[category].toLowerCase() === extractedColor) {
+                    return categoryColors[category]; // Use our standardized version
+                }
+            }
+            
+            // If no exact match, check for similarity using a simple RGB distance
+            if (extractedColor.startsWith('#') && extractedColor.length === 7) {
+                try {
+                    // Parse the extracted color
+                    const r = parseInt(extractedColor.substring(1, 3), 16);
+                    const g = parseInt(extractedColor.substring(3, 5), 16);
+                    const b = parseInt(extractedColor.substring(5, 7), 16);
+                    
+                    // Find the closest category color
+                    let closestCategory = null;
+                    let minDistance = Number.MAX_VALUE;
+                    
+                    for (const category in categoryColors) {
+                        const catColor = categoryColors[category].toLowerCase();
+                        if (catColor.startsWith('#') && catColor.length === 7) {
+                            const cr = parseInt(catColor.substring(1, 3), 16);
+                            const cg = parseInt(catColor.substring(3, 5), 16);
+                            const cb = parseInt(catColor.substring(5, 7), 16);
+                            
+                            // Simple Euclidean distance in RGB space
+                            const distance = Math.sqrt(
+                                Math.pow(r - cr, 2) + 
+                                Math.pow(g - cg, 2) + 
+                                Math.pow(b - cb, 2)
+                            );
+                            
+                            // If this color is closer than our current closest
+                            if (distance < minDistance) {
+                                minDistance = distance;
+                                closestCategory = category;
+                            }
+                        }
+                    }
+                    
+                    // If we found a close match (distance threshold of 50)
+                    if (closestCategory && minDistance < 50) {
+                        console.log(`Extracted color ${extractedColor} matched to category: ${closestCategory}`);
+                        return categoryColors[closestCategory];
+                    }
+                } catch (e) {
+                    console.log("Error parsing color:", e);
+                }
+            }
+            
+            // If we reach here, use the extracted color directly
+            return extractedColor;
+        }
+        
+        // If no color information is available, use default color
+        return categoryColors.default;
+    }
+
     // ---- Apply Hyperlinks from Link Data ----
     function applyHyperlinks(messageElement, linksData) {
         const textSpan = messageElement.querySelector('.message-text');
@@ -743,6 +822,12 @@ document.addEventListener('DOMContentLoaded', () => {
                                     linkElement.href = linkInfo.url || '#'; // Use '#' as fallback
                                     linkElement.textContent = matchedText;
                                     linkElement.classList.add('dynamic-link');
+                                    
+                                    // Apply color styling based on category
+                                    const linkColor = detectLinkCategory(matchedText, linkInfo);
+                                    linkElement.style.color = linkColor;
+                                    linkElement.style.textDecoration = 'underline';
+                                    linkElement.style.textDecorationColor = linkColor;
                                     
                                     if (linkInfo.type === 'internal' && linkInfo.page) {
                                         linkElement.dataset.linkType = 'internal';
@@ -1568,6 +1653,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.querySelectorAll('.source-pill').forEach(pill => {
                         pill.classList.remove('active');
                     });
+                    
+                    // Update expand button state
+                    if (expandPanel) {
+                        expandPanel.innerHTML = '<i class="fas fa-external-link-alt"></i>';
+                        expandPanel.title = 'Expand';
+                    }
                     
                     // Update mobile toggle buttons if on mobile
                     if (window.innerWidth <= 768) {

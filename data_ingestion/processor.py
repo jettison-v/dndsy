@@ -413,6 +413,38 @@ class DataProcessor:
                                     "source_rect": [link_rect.x0, link_rect.y0, link_rect.x1, link_rect.y1]
                                 }
 
+                                # Extract and analyze text spans in the link area to detect color
+                                try:
+                                    text_dict = page.get_text("dict", clip=link_rect)
+                                    found_color = None
+                                    # Look through all blocks, lines, and spans to find text color
+                                    for block in text_dict.get("blocks", []):
+                                        if block.get("type") == 0:  # Text block
+                                            for line in block.get("lines", []):
+                                                for span in line.get("spans", []):
+                                                    # Found a colored span
+                                                    if span.get("color") and span.get("text").strip():
+                                                        span_color = span.get("color")
+                                                        # Convert to hex format
+                                                        if isinstance(span_color, int):
+                                                            rgb = fitz.sRGB_to_rgb(span_color)
+                                                            hex_color = "#{:02x}{:02x}{:02x}".format(
+                                                                int(rgb[0] * 255), 
+                                                                int(rgb[1] * 255), 
+                                                                int(rgb[2] * 255)
+                                                            )
+                                                            found_color = hex_color
+                                                            break
+                                                if found_color:
+                                                    break
+                                        if found_color:
+                                            break
+                                    
+                                    if found_color:
+                                        link_info["color"] = found_color
+                                except Exception as color_e:
+                                    logger.warning(f"Error extracting link color on {s3_pdf_key} page {page_num+1}: {color_e}")
+
                                 if link['kind'] == fitz.LINK_GOTO:
                                     target_page_num = link['page']
                                     target_page_label = target_page_num + 1
