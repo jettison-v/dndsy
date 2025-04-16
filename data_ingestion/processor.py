@@ -307,9 +307,7 @@ class DataProcessor:
                 s3_prefix_links = EXTRACTED_LINKS_S3_PREFIX
                 if s3_prefix_links and not s3_prefix_links.endswith('/'): s3_prefix_links += '/'
                 links_json_s3_key = f"{s3_prefix_links}{links_s3_key_suffix}"
-                # --- DEBUG PRINT --- 
-                print(f"DEBUG: Attempting to delete links file with key: [{links_json_s3_key}]", file=sys.stderr)
-                # --- END DEBUG --- 
+
                 self._delete_s3_object(links_json_s3_key)
                 
                 # Reset processed stores list if content changed (important for Phase 2)
@@ -532,16 +530,16 @@ class DataProcessor:
                         links_json_s3_key = f"{s3_prefix}{links_s3_key_suffix}"
                         links_json_content = json.dumps(pdf_links_data, indent=2)
 
-                        # --- DEBUG PRINT --- 
-                        print(f"DEBUG: Attempting to save links file with key: [{links_json_s3_key}]", file=sys.stderr)
-                        # --- END DEBUG --- 
+                        # Save extracted links to S3
+                        try:
+                            s3_client.put_object(
+                                Bucket=AWS_S3_BUCKET_NAME, Key=links_json_s3_key, Body=links_json_content, ContentType='application/json'
+                            )
 
-                        s3_client.put_object(
-                            Bucket=AWS_S3_BUCKET_NAME, Key=links_json_s3_key, Body=links_json_content, ContentType='application/json'
-                        )
-                        logger.info(f"Saved {len(pdf_links_data)} extracted links to S3: {links_json_s3_key}")
-                        # Optional: Update process history with link count
-                        self.process_history[s3_pdf_key]['extracted_links_count'] = len(pdf_links_data)
+                            logger.info(f"Saved {len(pdf_links_data)} extracted links to S3: {links_json_s3_key}")
+                        except Exception as e:
+                            logger.error(f"Failed to save links to S3: {links_json_s3_key} - Error: {str(e)}")
+
                     except Exception as save_e:
                         logger.error(f"Failed to save extracted links to S3 for {s3_pdf_key}: {save_e}", exc_info=True)
 

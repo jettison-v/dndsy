@@ -13,6 +13,9 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
     * Document hierarchy (chapters, sections, subsections)
     * Different heading levels based on font sizes and styles
     * Contextual relationship between content sections
+*   **Link Extraction:** Extracts internal document links (GOTO) and external web links (URI) from PDFs.
+    * For internal links, attempts to capture link text and a snippet of the target page content.
+    * Stores extracted link data as structured JSON files in S3 (`extracted_links/`).
 *   **Context-Aware Search Results:** Shows proper document structure context in search results:
     * Displays hierarchical paths like "Chapter 5 > Equipment > Weapons"
     * Improves user understanding of where information comes from
@@ -22,8 +25,8 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
 *   **Markdown Formatting:** Assistant responses are formatted using Markdown for enhanced readability (headings, bold, lists, etc.).
 *   **Source Attribution:** Shows which document and page number the answer was derived from.
 *   **Source Navigation:** Displays source page content as images directly in the interface. Allows navigating between pages of the source document within the side panel.
-*   **Modular Data Processing Pipeline:** Handles PDF parsing, text extraction, image generation, structure analysis, embedding generation, and vector store indexing.
-*   **AWS S3 Integration:** Handles PDF source files and generated page images stored in AWS S3.
+*   **Modular Data Processing Pipeline:** Handles PDF parsing, text extraction, image generation, structure analysis, link extraction, embedding generation, and vector store indexing.
+*   **AWS S3 Integration:** Handles PDF source files (e.g., `source-pdfs/`), generated page images (`pdf_page_images/`), extracted link data (`extracted_links/`), and processing history (`processing/`) stored in AWS S3.
 *   **Abstracted LLM Provider:** Easily switch between LLM providers (e.g., OpenAI, Anthropic) via environment variables.
 *   **Cloud Ready:** Designed for deployment with Qdrant Cloud for vector storage and AWS S3 for file storage.
 *   **Password Protected:** Simple login system to protect access.
@@ -53,10 +56,10 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
     *   Semantic: Fine-grained chunking with hybrid search in `SemanticStore`
     *   Haystack (Qdrant): Direct integration with Haystack framework in `HaystackQdrantStore`
     *   Haystack (Memory): In-memory storage with file persistence in `HaystackMemoryStore`
-*   **PDF Parsing:** PyMuPDF (`fitz`)
-*   **Data Ingestion & Processing:** Custom pipeline in `data_ingestion` package using `langchain` for chunking, custom structure analysis.
+*   **PDF Parsing:** PyMuPDF (`fitz`) for text, image, and link extraction.
+*   **Data Ingestion & Processing:** Custom pipeline in `data_ingestion` package using `langchain` for chunking, custom structure analysis, and link extraction.
 *   **Frontend:** HTML, CSS, JavaScript (with Marked.js for Markdown rendering)
-*   **Cloud Storage:** AWS S3 (Bucket name example: `askdnd-ai`)
+*   **Cloud Storage:** AWS S3 (Bucket name example: `askdnd-ai`). Stores source PDFs (e.g., `source-pdfs/`), page images (`pdf_page_images/`), extracted links (`extracted_links/`), and processing history (`processing/`).
 *   **Deployment:** Docker, Gunicorn, Heroku (or similar platform)
 
 ## Project Structure

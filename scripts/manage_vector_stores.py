@@ -193,16 +193,6 @@ def manage_vector_stores(store_arg='all', cache_behavior='use', s3_pdf_prefix=No
             )
             send_status("milestone", {"message": "Data Processor initialized."})
 
-            # --- DEBUG: Check handlers before main processing --- 
-            print("DEBUG: Checking handlers before process_all_sources...", file=sys.stderr)
-            if logging.root.hasHandlers():
-                print(f"DEBUG: Found {len(logging.root.handlers)} handlers:", file=sys.stderr)
-                for h in logging.root.handlers:
-                    print(f"DEBUG: - {h}", file=sys.stderr)
-            else:
-                print("DEBUG: NO handlers found on root logger!", file=sys.stderr)
-            # --- END DEBUG --- 
-
             logger.info(f"--- Starting Data Processing for stores: {target_stores} --- ")
             # Call the main refactored method
             total_points_added = processor.process_all_sources(target_stores=target_stores)
