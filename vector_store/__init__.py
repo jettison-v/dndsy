@@ -12,7 +12,7 @@ from .haystack.memory_store import HaystackMemoryStore
 load_dotenv()
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Global vector store instances

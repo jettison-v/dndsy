@@ -9,6 +9,11 @@ import numpy as np
 from pathlib import Path
 from dotenv import load_dotenv
 
+# Import QdrantClient for type checking in clear_store
+from qdrant_client import QdrantClient
+from qdrant_client.http import models
+from qdrant_client.http.models import Filter, FieldCondition, MatchValue
+
 # Import from common utilities
 from .common import (
     initialize_embedding_model, chunk_document_with_cross_page_context,
@@ -370,4 +375,36 @@ class HaystackQdrantStore(SearchHelper):
                 return None
         except Exception as e:
             logging.error(f"Error in get_details_by_source_page: {e}", exc_info=True)
-            return None 
+            return None
+
+    def clear_store(self, client: Any = None):
+        """Deletes the entire Qdrant collection associated with this Haystack store."""
+        # Use the passed Qdrant client if available, otherwise log error.
+        # Haystack's QdrantDocumentStore doesn't seem to expose a reliable delete method.
+        q_client = client # Expecting a QdrantClient instance here
+        
+        if not q_client:
+            logging.error(f"Qdrant client instance was not provided to clear Haystack collection: {self.collection_name}. Cannot clear.")
+            return
+        
+        if not isinstance(q_client, QdrantClient):
+             logging.error(f"Invalid client type passed to HaystackQdrantStore.clear_store: {type(q_client)}. Expected QdrantClient.")
+             return
+
+        try:
+            collection_name = self.document_store.index # Get collection name from Haystack store
+            logging.info(f"Attempting to delete Qdrant collection for Haystack store: {collection_name}")
+            q_client.delete_collection(collection_name=collection_name)
+            logging.info(f"Successfully deleted Qdrant collection: {collection_name}")
+            # Immediately recreate the collection after deletion
+            # Note: Haystack's QdrantDocumentStore handles creation on init if missing,
+            # but recreating explicitly ensures it exists before potential add_points.
+            # We need the embedding dimension here.
+            logging.info(f"Recreating collection {collection_name}...")
+            q_client.recreate_collection(
+                 collection_name=collection_name,
+                 vectors_config=models.VectorParams(size=EMBEDDING_DIMENSION, distance=models.Distance.COSINE)
+            )
+            logging.info(f"Recreated collection {collection_name} via Qdrant client.")
+        except Exception as e:
+            logging.warning(f"Could not delete or recreate Qdrant collection '{self.collection_name}' for Haystack: {e}") 

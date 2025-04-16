@@ -641,3 +641,24 @@ class SemanticStore(SearchHelper):
             offset = next_offset
         
         return documents 
+
+    def clear_store(self, client: QdrantClient = None):
+        """Deletes the entire Qdrant collection associated with this store."""
+        q_client = client if client else self.client
+        if not q_client:
+            logging.error(f"Qdrant client not available for clearing collection {self.collection_name}")
+            return
+
+        try:
+            logging.info(f"Attempting to delete Qdrant collection: {self.collection_name}")
+            q_client.delete_collection(collection_name=self.collection_name)
+            logging.info(f"Successfully deleted Qdrant collection: {self.collection_name}")
+            # Reset internal state after clearing
+            self.next_id = 0
+            self.bm25_documents = []
+            self.bm25_retriever = None
+            # Immediately recreate the collection after deletion
+            logging.info(f"Recreating collection {self.collection_name}...")
+            self._create_collection_if_not_exists(SEMANTIC_EMBEDDING_DIMENSION)
+        except Exception as e:
+            logging.warning(f"Could not delete Qdrant collection '{self.collection_name}': {e}") 

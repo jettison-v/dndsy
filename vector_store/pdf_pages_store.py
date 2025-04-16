@@ -193,6 +193,25 @@ class PdfPagesStore(SearchHelper):
             
         return documents
     
+    def clear_store(self, client: QdrantClient = None):
+        """Deletes the entire Qdrant collection associated with this store."""
+        # Use the passed client if provided, otherwise use the instance's client
+        q_client = client if client else self.client
+        if not q_client:
+            logging.error(f"Qdrant client not available for clearing collection {self.collection_name}")
+            return
+
+        try:
+            logging.info(f"Attempting to delete Qdrant collection: {self.collection_name}")
+            q_client.delete_collection(collection_name=self.collection_name)
+            logging.info(f"Successfully deleted Qdrant collection: {self.collection_name}")
+            # Immediately recreate the collection after deletion
+            logging.info(f"Recreating collection {self.collection_name}...")
+            self._create_collection_if_not_exists() 
+        except Exception as e:
+            # Log error if deletion fails (e.g., collection doesn't exist)
+            logging.warning(f"Could not delete Qdrant collection '{self.collection_name}': {e}")
+
     def _create_source_page_filter(self, source: str, page: int) -> Dict[str, Any]:
         """Create source/page filter for Qdrant."""
         return {

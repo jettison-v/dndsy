@@ -376,4 +376,24 @@ class HaystackMemoryStore(SearchHelper):
             return [doc for doc in all_docs if doc.get('metadata', {}).get('source') == source]
         except Exception as e:
             logging.error(f"Error retrieving documents for source {source}: {e}", exc_info=True)
-            return [] 
+            return []
+
+    def clear_store(self, client: Any = None):
+        """Clears the in-memory store and deletes the persistence file."""
+        # client parameter is ignored for memory store
+        try:
+            # Delete the persistence file if it exists
+            if os.path.exists(self.persistence_file):
+                os.remove(self.persistence_file)
+                logging.info(f"Deleted haystack persistence file: {self.persistence_file}")
+            else:
+                 logging.info(f"No persistence file to delete: {self.persistence_file}")
+            
+            # Reinitialize the underlying Haystack InMemoryDocumentStore
+            self.document_store = InMemoryDocumentStore()
+            # Reset the document ID counter
+            self.next_id = 0
+            logging.info("Successfully cleared and reinitialized Haystack Memory store.")
+            
+        except Exception as e:
+            logging.error(f"Error clearing Haystack Memory store: {e}", exc_info=True) 
