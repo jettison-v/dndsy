@@ -649,6 +649,239 @@ document.addEventListener('DOMContentLoaded', () => {
         return text;
     }
 
+    // ---- Apply Hyperlinks from Link Data ----
+    function applyHyperlinks(messageElement, linksData) {
+        const textSpan = messageElement.querySelector('.message-text');
+        if (!textSpan || !linksData || Object.keys(linksData).length === 0) {
+            console.log("Skipping hyperlinks - missing text span or link data");
+            return; // Nothing to do if no text span or no links data
+        }
+
+        console.log("Attempting to apply links:", linksData);
+
+        // Define common words to exclude from linking
+        const stopWords = new Set([
+            // Articles
+            'a', 'an', 'the',
+            // Prepositions
+            'to', 'in', 'on', 'at', 'by', 'for', 'with', 'from', 'of', 'about',
+            // Conjunctions
+            'and', 'or', 'but', 'so', 'if', 'as',
+            // Other common short words
+            'is', 'it', 'be', 'this', 'that',
+            // D&D-specific common words that might be too frequent
+            'd20'
+        ]);
+
+        try {
+            // Create a TreeWalker to efficiently find all text nodes within the message
+            const walker = document.createTreeWalker(
+                textSpan,
+                NodeFilter.SHOW_TEXT, // Only find text nodes
+                null,
+                false
+            );
+
+            let node;
+            const nodesToProcess = [];
+            // Collect all text nodes first to avoid issues with modifying the DOM while iterating
+            while (node = walker.nextNode()) {
+                // Ignore nodes that are already inside a link or within <pre> or <code> tags
+                if (node.parentElement.nodeName !== 'A' &&
+                    node.parentElement.closest('pre, code') === null) {
+                    nodesToProcess.push(node);
+                }
+            }
+
+            // Get the link keys (lowercase text) sorted by length descending
+            // This prevents issues where a shorter link text is part of a longer one (e.g., "DMG" vs "DMG chapter 7")
+            const sortedLinkKeys = Object.keys(linksData)
+                .filter(key => {
+                    // Skip single-character keys and common stop words
+                    return key.length > 1 && !stopWords.has(key.toLowerCase());
+                })
+                .sort((a, b) => b.length - a.length);
+            console.log(`Found ${nodesToProcess.length} text nodes and ${sortedLinkKeys.length} potential link terms (after filtering)`);
+
+            nodesToProcess.forEach((textNode, nodeIndex) => {
+                try {
+                    let currentNode = textNode;
+                    let remainingText = currentNode.nodeValue;
+                    const parentElement = currentNode.parentNode;
+                    let newNodes = []; // Array to hold new nodes (text or link) created from this text node
+
+                    sortedLinkKeys.forEach((key, keyIndex) => {
+                        try {
+                            if (!linksData[key]) {
+                                console.warn(`Missing data for link key "${key}"`);
+                                return; // Skip this key
+                            }
+
+                            const linkInfo = linksData[key];
+                            const originalText = linkInfo.original_text || key; // Use original casing if available
+                            
+                            // Log what we're trying to match
+                            if (nodeIndex === 0 && keyIndex === 0) {
+                                console.log(`Example link search: Looking for "${originalText}" with regex pattern using key "${key}"`);
+                            }
+                            
+                            try {
+                                // Create the regex pattern safely
+                                const pattern = `(^|\\W)(${escapeRegex(originalText)})(\\W|$)`;
+                                const regex = new RegExp(pattern, 'gi'); // Case-insensitive, word boundaries
+                                
+                                let match;
+                                let lastIndex = 0;
+                                let tempRemainingText = remainingText; // Work on a temporary copy for this key
+                                let fragmentsForKey = []; // Fragments created by splitting for *this* key
+
+                                while ((match = regex.exec(tempRemainingText)) !== null) {
+                                    const beforeText = tempRemainingText.substring(lastIndex, match.index + match[1].length);
+                                    const matchedText = match[2]; // The actual matched text (original casing)
+                                    const linkElement = document.createElement('a');
+                                    
+                                    linkElement.href = linkInfo.url || '#'; // Use '#' as fallback
+                                    linkElement.textContent = matchedText;
+                                    linkElement.classList.add('dynamic-link');
+                                    
+                                    if (linkInfo.type === 'internal' && linkInfo.page) {
+                                        linkElement.dataset.linkType = 'internal';
+                                        linkElement.dataset.targetPage = linkInfo.page;
+                                        linkElement.dataset.s3Key = linkInfo.s3_key || '';
+                                        // Set a better href with fragment for page number
+                                        linkElement.href = `#page=${linkInfo.page}`;
+                                        linkElement.title = `Internal link to page ${linkInfo.page}: ${linkInfo.snippet || ''}`;
+                                        
+                                        // Add click handler to navigate to the target page
+                                        linkElement.addEventListener('click', function(e) {
+                                            e.preventDefault();
+                                            
+                                            const targetPage = this.dataset.targetPage;
+                                            const s3Key = this.dataset.s3Key;
+                                            
+                                            console.log("Internal link clicked:", {
+                                                targetPage,
+                                                s3Key,
+                                                linkInfo
+                                            });
+                                            
+                                            if (!targetPage) {
+                                                console.error('No target page specified for internal link');
+                                                return;
+                                            }
+                                            
+                                            try {
+                                                // If we don't have the source panel open, open it
+                                                if (!sourcePanelOpen) {
+                                                    toggleSourcePanel();
+                                                }
+                                                
+                                                // If we have the s3Key, we can go directly to that page
+                                                if (s3Key) {
+                                                    // Use the same function that source pills use to navigate
+                                                    // First we need to fetch the page details
+                                                    fetch(`/api/get_context_details?source=${encodeURIComponent(s3Key)}&page=${targetPage}&vector_store_type=${currentVectorStore}`)
+                                                        .then(response => {
+                                                            if (!response.ok) {
+                                                                return response.json().then(errorData => {
+                                                                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                                                                });
+                                                            }
+                                                            return response.json();
+                                                        })
+                                                        .then(details => {
+                                                            if (!details) {
+                                                                throw new Error('No details returned from server');
+                                                            }
+                                                            
+                                                            // Display the target page
+                                                            let filename = s3Key.split('/').pop();
+                                                            if (filename.includes('.')) {
+                                                                filename = filename.substring(0, filename.lastIndexOf('.'));
+                                                            }
+                                                            showSourcePanel(details, `${filename} (page ${targetPage})`, targetPage, s3Key, null, currentVectorStore);
+                                                        })
+                                                        .catch(error => {
+                                                            console.error('Error loading internal link target:', error);
+                                                            sourceContent.innerHTML = `<p class="error-source">Error loading target page: ${error.message}</p>`;
+                                                        });
+                                                }
+                                                // If we have a valid page number but no s3Key, try to use the current document
+                                                else if (sourceContent.dataset.s3Key) {
+                                                    // Use the navigation function with the current s3Key
+                                                    navigateSourcePage('direct', {
+                                                        currentPage: parseInt(targetPage),
+                                                        s3Key: sourceContent.dataset.s3Key,
+                                                        storeType: currentVectorStore
+                                                    });
+                                                }
+                                                else {
+                                                    console.error('No source document available for internal link');
+                                                    sourceContent.innerHTML = `<p class="error-source">Could not determine source document for page ${targetPage}</p>`;
+                                                }
+                                            } catch (e) {
+                                                console.error('Error handling internal link click:', e);
+                                            }
+                                        });
+                                    } else if (linkInfo.type === 'external' && linkInfo.url) {
+                                        linkElement.dataset.linkType = 'external';
+                                        linkElement.target = '_blank'; // Open external links in new tab
+                                        linkElement.rel = 'noopener noreferrer';
+                                        linkElement.title = `External link: ${linkInfo.url}`;
+                                    } else {
+                                        linkElement.title = linkInfo.original_text || key; // Fallback title
+                                    }
+                                    
+                                    // Add the text before the match
+                                    if (beforeText) fragmentsForKey.push(document.createTextNode(beforeText));
+                                    // Add the created link element
+                                    fragmentsForKey.push(linkElement);
+                                    
+                                    lastIndex = regex.lastIndex - match[3].length; // Adjust lastIndex to exclude trailing boundary
+                                }
+
+                                // Add the remaining text after the last match for this key
+                                if (lastIndex < tempRemainingText.length) {
+                                    fragmentsForKey.push(document.createTextNode(tempRemainingText.substring(lastIndex)));
+                                }
+                                
+                                // If this key resulted in splits, update remainingText for the next key
+                                if (fragmentsForKey.length > 1 && newNodes.length === 0) { // Only apply the first match found (has at least one link)
+                                    newNodes = fragmentsForKey;
+                                    remainingText = ''; // Mark remaining text as processed by this match
+                                }
+                            } catch (regexError) {
+                                console.error(`Regex error for key "${key}", originalText "${originalText}":`, regexError);
+                            }
+                        } catch (keyError) {
+                            console.error(`Error processing link key "${key}":`, keyError);
+                        }
+                    });
+
+                    // If any replacements were made, replace the original text node
+                    if (newNodes.length > 0) {
+                        newNodes.forEach(newNode => {
+                            parentElement.insertBefore(newNode, currentNode);
+                        });
+                        parentElement.removeChild(currentNode);
+                    }
+                    // If no links matched within this text node, newNodes will be empty, and the original node remains untouched.
+                } catch (nodeError) {
+                    console.error(`Error processing text node at index ${nodeIndex}:`, nodeError);
+                }
+            });
+            
+            console.log("Finished applying links.");
+        } catch (error) {
+            console.error("Error in applyHyperlinks:", error);
+        }
+    }
+    
+    // Helper function to escape regex special characters
+    function escapeRegex(string) {
+      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+    }
+
     // ---- Add Source Pills to Message ----
     function addSourcePills(messageId, sources) {
         const messageElement = chatMessages.querySelector(`[data-message-id="${messageId}"]`);
@@ -976,6 +1209,10 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (direction === 'next') {
             newPage = currentPage + 1;
             // We'll allow navigating to the next page even if we don't know total pages
+        } else if (direction === 'direct') {
+            // Use the provided page directly
+            newPage = currentPage;
+            // No validation needed as we're using the directly provided page number
         } else {
             console.error('Invalid navigation direction:', direction);
             return;

@@ -165,6 +165,10 @@ def _get_link_data_for_sources(source_keys: List[str]) -> Dict[str, Dict]:
                         'original_text': link_text # Keep original casing if needed later
                     }
                     
+                    # Add the source document s3_key for internal links
+                    if link_info.get('link_type') == 'internal':
+                        consolidated_links[key]['s3_key'] = s3_key
+                    
         except ClientError as e:
             if e.response['Error']['Code'] == 'NoSuchKey':
                 logger.warning(f"Link data file not found in S3: {links_s3_key}")
