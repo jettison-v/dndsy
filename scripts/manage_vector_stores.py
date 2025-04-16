@@ -37,6 +37,7 @@ os.makedirs(logs_dir, exist_ok=True)
 # Use a more descriptive log file name and overwrite it on each run
 log_file_path = logs_dir / 'data_processing.log'
 
+# Create a root logger configuration to ensure logs from all modules are captured
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - [%(name)s] - %(message)s', # Added logger name
@@ -44,7 +45,8 @@ logging.basicConfig(
         # Overwrite log file each time (filemode='w')
         logging.FileHandler(log_file_path, mode='w'),
         logging.StreamHandler(sys.stdout) # Restore StreamHandler
-    ]
+    ],
+    force=True  # Force reconfiguration to ensure our handlers are applied
 )
 
 logger = logging.getLogger(__name__) # Get logger for this module
