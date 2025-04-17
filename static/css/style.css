@@ -2498,3 +2498,73 @@ button.admin-button:hover {
     margin-left: 0.2em;
     opacity: 0.7;
 }
+
+/* Improve link visibility against dark backgrounds */
+.message.assistant .dynamic-link {
+    font-weight: 600; /* Make links bolder in assistant messages */
+    text-shadow: 0 0 1px rgba(0, 0, 0, 0.5); /* Add subtle text shadow for better contrast */
+}
+
+/* Link color legend */
+.link-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px;
+    margin-top: 12px;
+    background-color: rgba(20, 20, 20, 0.5);
+    border-radius: 4px;
+    font-size: 0.8rem;
+    max-width: 100%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.link-legend-item {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background-color: rgba(0, 0, 0, 0.25);
+}
+
+.link-legend-color {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    margin-right: 5px;
+}
+
+/* Color boxes for each category */
+.link-legend-color.monster { background-color: #a70000; }
+.link-legend-color.spell { background-color: #704cd9; }
+.link-legend-color.skill { background-color: #036634; }
+.link-legend-color.item { background-color: #623a1e; }
+.link-legend-color.magic-item { background-color: #0f5cbc; }
+.link-legend-color.rule { background-color: #6a5009; }
+.link-legend-color.sense { background-color: #a41b96; }
+.link-legend-color.condition { background-color: #364d00; }
+.link-legend-color.lore { background-color: #a83e3e; }
+
+/* Link legend toggle button */
+.toggle-legend-btn {
+    font-size: 0.85rem;
+    color: #aaa;
+    background: none;
+    border: none;
+    padding: 4px 8px;
+    cursor: pointer;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s ease;
+}
+
+.toggle-legend-btn:hover {
+    color: white;
+}
+
+.toggle-legend-btn i {
+    margin-right: 4px;
+    font-size: 0.8rem;
+}

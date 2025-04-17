@@ -655,12 +655,99 @@ document.addEventListener('DOMContentLoaded', () => {
         "spell": "#704cd9",
         "skill": "#036634", // or #11884c
         "item": "#623a1e", // or #774521
+        "magic-item": "#0f5cbc", // Light blue for magic items
         "rule": "#6a5009", // or #9b740b
         "sense": "#a41b96",
         "condition": "#364d00", // or #5a8100
         "lore": "#a83e3e",
         "default": "#036634" // or #11884c
     };
+    
+    // Category descriptions for the legend
+    const categoryDescriptions = {
+        "monster": "Monsters & Creatures",
+        "spell": "Spells & Magic",
+        "skill": "Skills & Abilities",
+        "item": "Items & Equipment",
+        "magic-item": "Magic Items & Potions",
+        "rule": "Rules & Mechanics",
+        "sense": "Senses & Perception",
+        "condition": "Conditions & States",
+        "lore": "Lore & World Info"
+    };
+    
+    // Create and initialize the link color legend
+    function createLinkLegend() {
+        // Check if legend already exists
+        if (document.getElementById('link-legend')) {
+            return;
+        }
+        
+        // Create legend container
+        const legend = document.createElement('div');
+        legend.id = 'link-legend';
+        legend.className = 'link-legend';
+        legend.style.display = 'none'; // Hidden by default
+        
+        // Create legend items for each category
+        for (const category in categoryDescriptions) {
+            if (categoryColors[category]) {
+                const item = document.createElement('div');
+                item.className = 'link-legend-item';
+                
+                const colorBox = document.createElement('span');
+                colorBox.className = `link-legend-color ${category}`;
+                
+                const text = document.createElement('span');
+                text.textContent = categoryDescriptions[category];
+                
+                item.appendChild(colorBox);
+                item.appendChild(text);
+                legend.appendChild(item);
+            }
+        }
+        
+        // Create toggle button
+        const toggleBtn = document.createElement('button');
+        toggleBtn.id = 'toggle-legend-btn';
+        toggleBtn.className = 'toggle-legend-btn';
+        toggleBtn.innerHTML = '<i class="fas fa-palette"></i> Link Colors';
+        toggleBtn.title = 'Show/hide link color legend';
+        toggleBtn.onclick = toggleLinkLegend;
+        
+        // Add elements to the DOM
+        const chatContainer = document.querySelector('.chat-container');
+        const inputContainer = document.querySelector('.input-container');
+        
+        chatContainer.insertBefore(legend, inputContainer);
+        chatContainer.insertBefore(toggleBtn, inputContainer);
+    }
+    
+    // Toggle the link legend visibility
+    function toggleLinkLegend() {
+        const legend = document.getElementById('link-legend');
+        if (!legend) {
+            return;
+        }
+        
+        const isVisible = legend.style.display !== 'none';
+        legend.style.display = isVisible ? 'none' : 'flex';
+        
+        // Update the toggle button text accordingly
+        const toggleBtn = document.getElementById('toggle-legend-btn');
+        if (toggleBtn) {
+            toggleBtn.innerHTML = isVisible ? 
+                '<i class="fas fa-palette"></i> Link Colors' : 
+                '<i class="fas fa-times"></i> Hide Legend';
+        }
+        
+        // Save preference in local storage
+        try {
+            localStorage.setItem('linkLegendVisible', isVisible ? 'false' : 'true');
+        } catch (e) {
+            console.warn('Could not save legend visibility preference', e);
+        }
+    }
     
     // Helper function to determine link category from text or context
     function detectLinkCategory(text, linkInfo) {
@@ -1970,5 +2057,19 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Update the currentVectorStore global
         currentVectorStore = newStore;
+    }
+    
+    // Initialize the link color legend
+    createLinkLegend();
+    
+    // Check if legend visibility preference exists in local storage
+    try {
+        const isLegendVisible = localStorage.getItem('linkLegendVisible') === 'true';
+        if (isLegendVisible) {
+            // Show the legend if the preference was to have it visible
+            toggleLinkLegend();
+        }
+    } catch (e) {
+        console.warn('Could not load legend visibility preference', e);
     }
 }); 

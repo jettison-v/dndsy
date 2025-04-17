@@ -81,7 +81,9 @@ COLOR_CATEGORY_MAP = {
     # Item colors
     "#623a1e": "item", 
     "#774521": "item",
-    "#0f5cbc": "item",  # Light blue color for magic items/potions
+    
+    # Magic Item colors
+    "#0f5cbc": "magic-item",  # Light blue color for magic items/potions
     
     # Rule colors
     "#6a5009": "rule",
