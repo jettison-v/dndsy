@@ -7,10 +7,10 @@ containing link information, without running the full vector store processing pi
 It's designed for testing and debugging the link extraction functionality.
 
 Usage:
-    python link_extractor_test.py --pdf-key path/to/pdf.pdf
-    python link_extractor_test.py --list-pdfs
-    python link_extractor_test.py --process-all
-    python link_extractor_test.py --limit 5
+    python tests/data_ingestion/link_extractor_test.py --pdf-key path/to/pdf.pdf
+    python tests/data_ingestion/link_extractor_test.py --list-pdfs
+    python tests/data_ingestion/link_extractor_test.py --process-all
+    python tests/data_ingestion/link_extractor_test.py --limit 5
 """
 
 import os
@@ -27,8 +27,8 @@ from dotenv import load_dotenv
 from tqdm import tqdm
 from datetime import datetime
 
-# Add parent directory to path for imports
-project_root = Path(__file__).parent.parent
+# Add parent directory to path for imports - updated for new location
+project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 # Setup logging
@@ -702,12 +702,6 @@ class LinkExtractorTest:
                         )
                         
                         logger.info(f"Saved {len(pdf_links_data)} extracted links to S3: {links_json_s3_key}")
-                        # Also save locally for inspection
-                        local_json_path = project_root / 'test_output'
-                        local_json_path.mkdir(exist_ok=True)
-                        with open(local_json_path / f"{Path(rel_path).stem}.links.json", 'w') as f:
-                            f.write(links_json_content)
-                        logger.info(f"Saved local copy to {local_json_path / f'{Path(rel_path).stem}.links.json'}")
                         
                         # Print color stats
                         colored_links = sum(1 for link in pdf_links_data if 'color' in link)

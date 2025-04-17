@@ -53,17 +53,17 @@ Extracted links are saved in a JSON format with this structure:
 
 ## Debugging and Testing
 
-To test the link extraction independently, use the `link_extractor_test.py` script:
+To test the link extraction independently, use the `link_extractor_test.py` script in the tests directory:
 
 ```bash
 # List all PDFs in the bucket, sorted by size
-python data_ingestion/link_extractor_test.py --list-pdfs
+python tests/data_ingestion/link_extractor_test.py --list-pdfs
 
 # Process a specific PDF
-python data_ingestion/link_extractor_test.py --pdf-key source-pdfs/your-file.pdf
+python tests/data_ingestion/link_extractor_test.py --pdf-key source-pdfs/your-file.pdf
 
 # Process the 5 smallest PDFs
-python data_ingestion/link_extractor_test.py --process-all --limit 5
+python tests/data_ingestion/link_extractor_test.py --process-all --limit 5
 ```
 
-The test script provides detailed logs and saves extracted links both to S3 and to a local `test_output` directory for inspection. 
+The test script provides detailed logs and saves extracted links to S3. 
