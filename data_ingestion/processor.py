@@ -65,6 +65,47 @@ PROCESS_HISTORY_S3_KEY = "processing/pdf_process_history.json"  # S3 path
 # S3 prefix for storing extracted link data
 EXTRACTED_LINKS_S3_PREFIX = "extracted_links/"
 
+# Color to category mapping for link extraction
+COLOR_CATEGORY_MAP = {
+    # Monster colors
+    "#a70000": "monster",
+    "#bc0f0f": "monster",
+    
+    # Spell colors
+    "#704cd9": "spell",
+    
+    # Skill colors
+    "#036634": "skill",
+    "#11884c": "skill",
+    
+    # Item colors
+    "#623a1e": "item", 
+    "#774521": "item",
+    "#0f5cbc": "item",  # Light blue color for magic items/potions
+    
+    # Rule colors
+    "#6a5009": "rule",
+    "#9b740b": "rule",
+    "#efb311": "rule",  # Yellow color for rules
+    
+    # Sense colors
+    "#a41b96": "sense",
+    
+    # Condition colors
+    "#364d00": "condition",
+    "#5a8100": "condition",
+    
+    # Lore colors
+    "#a83e3e": "lore",
+    
+    # Default - fallback
+    "#0053a3": "reference",
+    "#006abe": "reference",
+    "#141414": "navigation",
+    "#9a9a9a": "footer",
+    "#e8f6ff": "footer"
+}
+
 # --- AWS S3 Configuration ---
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
@@ -406,12 +447,137 @@ class DataProcessor:
                             if link_text:
                                 link_text = re.sub(r'\\s+', ' ', link_text).strip()
 
-                            if link_text:
                                 link_info = {
                                     "link_text": link_text,
                                     "source_page": page_num + 1,
                                     "source_rect": [link_rect.x0, link_rect.y0, link_rect.x1, link_rect.y1]
                                 }
+                                
+                                # Extract link color information
+                                try:
+                                    # Get the text with detailed information including color
+                                    page_dict = page.get_text('dict')
+                                    
+                                    # Track if we found a color
+                                    found_color = False
+                                    
+                                    # Look for text blocks that overlap with our link rectangle
+                                    for block in page_dict.get("blocks", []):
+                                        if block.get("type") == 0:  # Text block
+                                            for line in block.get("lines", []):
+                                                line_rect = fitz.Rect(line.get("bbox"))
+                                                
+                                                # Check if this line overlaps with our link
+                                                if line_rect.intersects(link_rect):
+                                                    # Check the spans in this line
+                                                    for span in line.get("spans", []):
+                                                        span_rect = fitz.Rect(span.get("bbox"))
+                                                        span_text = span.get("text", "")
+                                                        
+                                                        # If the span's rectangle intersects with our link and contains part of the link text
+                                                        if span_rect.intersects(link_rect) and span_text and (span_text in link_text or link_text in span_text):
+                                                            # Get the color of this span
+                                                            span_color = span.get("color")
+                                                            
+                                                            if span_color:
+                                                                # Convert the color to our hex format
+                                                                # In PyMuPDF, text colors are typically RGB integers
+                                                                if isinstance(span_color, int):
+                                                                    # Convert from integer RGB value (0xRRGGBB)
+                                                                    r = (span_color >> 16) & 0xFF
+                                                                    g = (span_color >> 8) & 0xFF
+                                                                    b = span_color & 0xFF
+                                                                    color_hex = f"#{r:02x}{g:02x}{b:02x}"
+                                                                else:
+                                                                    # For other color formats
+                                                                    if isinstance(span_color, (list, tuple)):
+                                                                        if len(span_color) == 3:  # RGB color
+                                                                            r, g, b = [max(0, min(255, int(c * 255))) for c in span_color]
+                                                                            color_hex = f"#{r:02x}{g:02x}{b:02x}"
+                                                                        elif len(span_color) == 1:  # Gray
+                                                                            gray = max(0, min(255, int(span_color[0] * 255)))
+                                                                            color_hex = f"#{gray:02x}{gray:02x}{gray:02x}"
+                                                                    else:
+                                                                        continue
+                                                                
+                                                                link_info["color"] = color_hex
+                                                                found_color = True
+                                                                
+                                                                # Once we find a color, we can stop looking
+                                                                break
+                                                    
+                                                    if found_color:
+                                                        break
+                                        
+                                        if found_color:
+                                            break
+                                    
+                                    # If we didn't find a color through spans, as a fallback, try to extract 
+                                    # a color from the annotation (original method)
+                                    if not found_color and page.annots():
+                                        # Direct approach - try to match URI in link with annotation URI
+                                        for annot in page.annots():
+                                            # First check if it's a link annotation
+                                            if annot.type[1] == "Link":
+                                                # More reliable matching based on rectangle overlap
+                                                annot_rect = annot.rect
+                                                
+                                                # Check for significant overlap (rectangles are very close)
+                                                if (abs(annot_rect.x0 - link_rect.x0) < 10 and 
+                                                    abs(annot_rect.y0 - link_rect.y0) < 10 and
+                                                    abs(annot_rect.x1 - link_rect.x1) < 10 and
+                                                    abs(annot_rect.y1 - link_rect.y1) < 10):
+                                                    
+                                                    # For external links, also confirm URL matches
+                                                    if link.get('kind') == fitz.LINK_URI:
+                                                        uri = link.get('uri')
+                                                        annot_uri = annot.uri if hasattr(annot, 'uri') else None
+                                                        # If both URIs exist and don't match, skip
+                                                        if uri and annot_uri and uri != annot_uri:
+                                                            continue
+                                                            
+                                                    # Extract color information
+                                                    if hasattr(annot, "colors") and annot.colors:
+                                                        colors = annot.colors
+                                                        color = None
+                                                        if "stroke" in colors and colors["stroke"]:
+                                                            color = colors["stroke"]
+                                                        elif "fill" in colors and colors["fill"]:
+                                                            color = colors["fill"]
+                                                            
+                                                        # If we found a color
+                                                        if color:
+                                                            # Process different color formats
+                                                            if isinstance(color, (list, tuple)):
+                                                                if len(color) == 3:  # RGB color
+                                                                    r, g, b = [max(0, min(255, int(c * 255))) for c in color]
+                                                                    color_hex = f"#{r:02x}{g:02x}{b:02x}"
+                                                                    link_info["color"] = color_hex
+                                                                elif len(color) == 1:  # Gray color
+                                                                    gray = max(0, min(255, int(color[0] * 255)))
+                                                                    color_hex = f"#{gray:02x}{gray:02x}{gray:02x}"
+                                                                    link_info["color"] = color_hex
+                                                                elif len(color) == 4:  # CMYK color - approximate conversion to RGB
+                                                                    c, m, y, k = color
+                                                                    # Simple CMYK to RGB conversion
+                                                                    r = max(0, min(255, int((1 - c) * (1 - k) * 255)))
+                                                                    g = max(0, min(255, int((1 - m) * (1 - k) * 255)))
+                                                                    b = max(0, min(255, int((1 - y) * (1 - k) * 255)))
+                                                                    color_hex = f"#{r:02x}{g:02x}{b:02x}"
+                                                                    link_info["color"] = color_hex
+                                                            elif isinstance(color, (int, float)):  # Single value for gray
+                                                                gray = max(0, min(255, int(color * 255)))
+                                                                color_hex = f"#{gray:02x}{gray:02x}{gray:02x}"
+                                                                link_info["color"] = color_hex
+                                    
+                                    # Add category information based on color
+                                    if "color" in link_info:
+                                        color = link_info["color"].lower()
+                                        if color in COLOR_CATEGORY_MAP:
+                                            link_info["link_category"] = COLOR_CATEGORY_MAP[color]
+                                
+                                except Exception as color_e:
+                                    logger.warning(f"Error extracting link color: {color_e}")
 
                                 # Extract and analyze text spans in the link area to detect color
                                 try:
@@ -598,7 +764,7 @@ class DataProcessor:
             logger.error("S3 client not configured. Cannot preprocess PDFs.")
             return {}, []
 
-        pdf_files_s3_keys = []
+        pdf_files_info = []  # Will store tuples of (s3_key, size)
         try:
             logger.info(f"Listing PDFs from bucket '{AWS_S3_BUCKET_NAME}' with prefix '{self.s3_pdf_prefix}'")
             paginator = s3_client.get_paginator('list_objects_v2')
@@ -608,10 +774,24 @@ class DataProcessor:
                     for obj in page["Contents"]:
                         key = obj["Key"]
                         if key.lower().endswith('.pdf') and key != self.s3_pdf_prefix:
-                            pdf_files_s3_keys.append(key)
-            if not pdf_files_s3_keys:
+                            # Store both the key and file size
+                            pdf_files_info.append((key, obj.get("Size", 0)))
+            if not pdf_files_info:
                  logger.warning(f"No PDF files found in S3 bucket '{AWS_S3_BUCKET_NAME}' with prefix '{self.s3_pdf_prefix}'.")
                  return {}, []
+                 
+            # Sort PDFs by size (smallest first)
+            pdf_files_info.sort(key=lambda x: x[1])  # Sort by the size (second element in tuple)
+            logger.info(f"Sorted {len(pdf_files_info)} PDFs by size (smallest first)")
+            # Log size range
+            if pdf_files_info:
+                smallest = pdf_files_info[0]
+                largest = pdf_files_info[-1]
+                logger.info(f"Size range: Smallest {smallest[0]} ({smallest[1]} bytes) - Largest {largest[0]} ({largest[1]} bytes)")
+                
+            # Extract just the keys in size-sorted order
+            pdf_files_s3_keys = [info[0] for info in pdf_files_info]
+            
         except Exception as e:
             logger.error(f"Error listing PDFs from S3: {e}")
             return {}, []
