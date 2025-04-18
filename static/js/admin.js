@@ -22,15 +22,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Admin Modal Functionality
     // ============================
     
-    // Open admin modal
-    adminButton.addEventListener('click', function() {
-        adminModal.style.display = 'block';
-        adminModalOverlay.style.display = 'block';
-        document.body.style.overflow = 'hidden'; // Prevent body scrolling
-        // Reset login form
-        adminPassword.value = '';
-        adminLoginError.textContent = '';
-    });
+    // Open admin modal (ensure we have the right selector)
+    if (adminButton) {
+        adminButton.addEventListener('click', function() {
+            adminModal.style.display = 'block';
+            adminModalOverlay.style.display = 'block';
+            document.body.style.overflow = 'hidden'; // Prevent body scrolling
+            // Reset login form
+            adminPassword.value = '';
+            adminLoginError.textContent = '';
+        });
+    }
     
     // Close admin modal
     adminCloseButton.addEventListener('click', function() {
