@@ -172,6 +172,117 @@ body {
     outline: none;
 }
 
+/* About Project Container and Button */
+.about-project-container {
+    margin: 1rem 0;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.05);
+    margin-top: auto;
+}
+
+.about-project-button {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--accent-gradient);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(228, 7, 18, 0.2);
+}
+
+.about-project-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(228, 7, 18, 0.3);
+}
+
+.about-project-button i {
+    font-size: 1.1rem;
+}
+
+/* About Project Modal styles */
+#about-project-modal .admin-tab-pane {
+    padding: 1rem;
+    display: none;
+    overflow-y: auto;
+}
+
+#about-project-modal .admin-tab-pane.active {
+    display: block !important;
+}
+
+#about-project-modal .admin-tab-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+}
+
+#about-project-modal .about-section {
+    max-width: 100%;
+    margin-bottom: 2rem;
+}
+
+#about-project-modal .about-section h3 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--text-color);
+    font-size: 1.2rem;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+#about-project-modal .about-section h3:first-child {
+    margin-top: 0;
+}
+
+#about-project-modal .about-section h4 {
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+#about-project-modal .about-section p {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+#about-project-modal .about-section ul,
+#about-project-modal .about-section ol {
+    padding-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+#about-project-modal .about-section li {
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+}
+
+#about-project-modal .about-section strong {
+    color: var(--accent-color);
+    font-weight: 600;
+}
+
+#about-project-modal .feature-item,
+#about-project-modal .roadmap-section {
+    margin-bottom: 1.5rem;
+    padding: 0.75rem 1rem;
+    background-color: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    border-left: 3px solid var(--accent-color);
+}
+
 /* Modal styles */
 .modal-overlay {
     display: none;

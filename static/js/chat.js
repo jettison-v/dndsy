@@ -79,6 +79,97 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /*
     ========================================
+      ABOUT PROJECT MODAL
+    ========================================
+    */
+    const aboutProjectButton = document.getElementById('about-project-button');
+    const aboutProjectModal = document.getElementById('about-project-modal');
+    const aboutProjectModalOverlay = document.getElementById('about-project-modal-overlay');
+    const aboutProjectCloseButton = document.getElementById('about-project-close-button');
+    const aboutTabButtons = document.querySelectorAll('#about-project-modal .admin-tab-button');
+    const aboutTabPanes = document.querySelectorAll('#about-project-modal .admin-tab-pane');
+
+    // Show About Project modal
+    if (aboutProjectButton) {
+        aboutProjectButton.addEventListener('click', () => {
+            aboutProjectModal.style.display = 'block';
+            aboutProjectModalOverlay.style.display = 'block';
+            
+            // Initialize tabs when opening modal
+            const activeTabButton = document.querySelector('#about-project-modal .admin-tab-button.active');
+            if (activeTabButton) {
+                // Get the active tab name
+                const activeTabName = activeTabButton.dataset.tab;
+                
+                // Hide all panes
+                document.querySelectorAll('#about-project-modal .admin-tab-pane').forEach(pane => {
+                    pane.style.display = 'none';
+                    pane.classList.remove('active');
+                });
+                
+                // Show active pane
+                const activePane = document.getElementById(`${activeTabName}-tab`);
+                if (activePane) {
+                    activePane.style.display = 'block';
+                    activePane.classList.add('active');
+                }
+                
+                // Ensure the tab content container is visible
+                document.querySelector('#about-project-modal .admin-tab-content').style.display = 'flex';
+            }
+        });
+    }
+
+    // Hide About Project modal
+    if (aboutProjectCloseButton) {
+        aboutProjectCloseButton.addEventListener('click', () => {
+            aboutProjectModal.style.display = 'none';
+            aboutProjectModalOverlay.style.display = 'none';
+        });
+    }
+
+    // Hide modal when clicking overlay
+    if (aboutProjectModalOverlay) {
+        aboutProjectModalOverlay.addEventListener('click', () => {
+            aboutProjectModal.style.display = 'none';
+            aboutProjectModalOverlay.style.display = 'none';
+        });
+    }
+    
+    // Tab switching for About Project modal - more reliable implementation
+    aboutTabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            console.log('Tab button clicked:', this.dataset.tab);
+            const tabName = this.dataset.tab;
+            
+            // Update active tab button
+            aboutTabButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Get tab content container and all tab panes
+            const tabContent = document.querySelector('#about-project-modal .admin-tab-content');
+            const allPanes = document.querySelectorAll('#about-project-modal .admin-tab-pane');
+            
+            // Hide all panes
+            allPanes.forEach(pane => {
+                pane.style.display = 'none';
+                pane.classList.remove('active');
+            });
+            
+            // Show the selected pane
+            const targetPane = document.getElementById(`${tabName}-tab`);
+            if (targetPane) {
+                targetPane.style.display = 'block';
+                targetPane.classList.add('active');
+                
+                // Make sure content is visible
+                tabContent.style.display = 'flex';
+            }
+        });
+    });
+
+    /*
+    ========================================
       VECTOR STORE SELECTION & MODALS
     ========================================
     */
@@ -225,6 +316,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             hideAllModals();
+            
+            // Hide About Project modal
+            if (aboutProjectModal && aboutProjectModal.style.display === 'block') {
+                aboutProjectModal.style.display = 'none';
+                aboutProjectModalOverlay.style.display = 'none';
+            }
         }
     });
 
