@@ -179,7 +179,8 @@ body {
     background-color: rgba(255, 255, 255, 0.05);
 }
 
-.about-project-button {
+/* Use ID and Class for higher specificity */
+button#about-project-button.about-project-button {
     width: 100%;
     padding: 10px 12px;
     background: var(--accent-gradient);
@@ -197,12 +198,14 @@ body {
     box-shadow: 0 2px 5px rgba(228, 7, 18, 0.2);
 }
 
-.about-project-button:hover {
+/* Use ID and Class for higher specificity */
+button#about-project-button.about-project-button:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(228, 7, 18, 0.3);
 }
 
-.about-project-button i {
+/* Use ID and Class for higher specificity */
+button#about-project-button.about-project-button i {
     font-size: 1.1rem;
 }
 
