@@ -111,6 +111,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const initialSelectedValue = llmModelDropdown.options[llmModelDropdown.selectedIndex].value;
         llmModelDropdown.setAttribute('data-current-model', initialSelectedValue);
         
+        // Set default to GPT-4 Turbo if available in the dropdown
+        const defaultModel = 'gpt-4-turbo';
+        for(let i = 0; i < llmModelDropdown.options.length; i++) {
+            if(llmModelDropdown.options[i].value === defaultModel) {
+                llmModelDropdown.selectedIndex = i;
+                llmModelDropdown.setAttribute('data-current-model', defaultModel);
+                // Send a request to change the model server-side
+                fetch('/api/change_model', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: defaultModel })
+                }).catch(error => console.error('Error setting default model:', error));
+                break;
+            }
+        }
+        
         llmModelDropdown.addEventListener('change', async () => {
             const selectedIndex = llmModelDropdown.selectedIndex;
             const selectedOption = llmModelDropdown.options[selectedIndex];
@@ -164,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Show appropriate modal
             const currentValue = vectorStoreDropdown.value;
             
-            if (currentValue === 'standard') {
+            if (currentValue === 'standard' || currentValue === 'pages') {
                 showModal(pageContextModal);
             } else if (currentValue === 'semantic') {
                 showModal(semanticContextModal);
@@ -1489,7 +1505,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Add assistant message with thinking indicator
         const assistantMessageId = addMessage('', 'assistant');
-        updateMessageText(assistantMessageId, 'Thinking...', true);
+        updateMessageText(assistantMessageId, 'Searching the official 2024 DnD rules', true);
         
         // Disable input while processing
         userInput.disabled = true;

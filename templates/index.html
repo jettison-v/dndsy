@@ -20,7 +20,7 @@
                     <select id="vector-store-dropdown" class="vector-store-dropdown">
                         {% for store_type in vector_store_types %}
                             <option value="{{ store_type }}" {% if store_type == default_vector_store %}selected{% endif %}>
-                                {% if store_type == "standard" %}Page Context{% elif store_type == "semantic" %}Semantic Context{% elif store_type == "haystack-qdrant" %}Haystack (Qdrant){% elif store_type == "haystack-memory" %}Haystack (Memory){% else %}{{ store_type|capitalize }}{% endif %}
+                                {% if store_type == "standard" or store_type == "pages" %}Page Context{% elif store_type == "semantic" %}Semantic Context{% elif store_type == "haystack-qdrant" %}Haystack (Qdrant){% elif store_type == "haystack-memory" %}Haystack (Memory){% else %}{{ store_type|capitalize }}{% endif %}
                             </option>
                         {% endfor %}
                     </select>
@@ -143,8 +143,8 @@
                                 <div class="admin-form-group">
                                     <label>Vector Store Type</label>
                                     <div class="admin-checkbox-group">
-                                        <label><input type="checkbox" value="pages" checked> Pages</label>
-                                        <label><input type="checkbox" value="semantic" checked> Semantic</label>
+                                        <label><input type="checkbox" value="pages" checked> Page Context</label>
+                                        <label><input type="checkbox" value="semantic" checked> Semantic Context</label>
                                         <label><input type="checkbox" value="haystack-qdrant"> Haystack (Qdrant)</label>
                                         <label><input type="checkbox" value="haystack-memory"> Haystack (Memory)</label>
                                     </div>
@@ -215,7 +215,7 @@
                                 <div class="admin-form-group">
                                     <label for="collection-select">Select Collection</label>
                                     <select id="collection-select">
-                                        <option value="dnd_pdf_pages">Pages (dnd_pdf_pages)</option>
+                                        <option value="dnd_pdf_pages">Page Context (dnd_pdf_pages)</option>
                                         <option value="dnd_semantic">Semantic (dnd_semantic)</option>
                                         <option value="dnd_haystack">Haystack (dnd_haystack)</option>
                                     </select>
