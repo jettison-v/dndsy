@@ -185,20 +185,9 @@ class SemanticStore(SearchHelper):
                  metadata=point.payload['metadata']
              ))
              
-        # TODO: Decide how to handle BM25 updates. Rebuild completely or append?
-        # Rebuilding is simpler but potentially slow for large updates.
-        # Appending might be faster but state management is harder. 
-        # For now, let's rebuild if new docs exist.
+        # Rebuild BM25 index if new docs exist
         if new_bm25_docs:
              logging.info(f"Updating BM25 retriever with {len(new_bm25_docs)} new documents...")
-             # Option 1: Append (if BM25Retriever supports it well - needs testing)
-             # if self.bm25_retriever:
-             #     self.bm25_retriever.add_documents(new_bm25_docs)
-             # else:
-             #     self.bm25_documents.extend(new_bm25_docs)
-             #     self.bm25_retriever = BM25Retriever.from_documents(self.bm25_documents)
-             
-             # Option 2: Rebuild (Simpler for now)
              self.bm25_documents.extend(new_bm25_docs)
              try:
                  self.bm25_retriever = BM25Retriever.from_documents(self.bm25_documents)

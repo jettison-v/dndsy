@@ -116,8 +116,6 @@ def embed_documents(texts: List[str], store_type: str) -> List[list[float]]:
         embeddings = model_or_client.encode(texts, show_progress_bar=True).tolist()
     elif store_type == "semantic":
         # OpenAI API might need batching or sequential calls depending on client implementation
-        # Assuming OpenAILLM's get_embedding handles single texts, we loop. 
-        # TODO: Potentially optimize OpenAILLM to handle batches if the underlying API supports it well.
         batch_size = 50 # Arbitrary batch size for logging
         for i in range(0, len(texts), batch_size):
             batch_texts = texts[i:i+batch_size]

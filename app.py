@@ -911,7 +911,7 @@ def admin_api_costs():
     if not check_auth():
         return jsonify({'error': 'Unauthorized'}), 401
     
-    # NOTE: This currently returns mock data for demonstration purposes.
+    # This implementation returns mock data for demonstration purposes.
     # To implement actual usage tracking, you would need to either:
     #
     # 1. Use OpenAI API directly (requires OAuth setup):

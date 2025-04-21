@@ -202,7 +202,6 @@ class DocumentStructureAnalyzer:
     
     def _add_to_toc(self, heading: Dict[str, Any]) -> None:
         """Add a heading to the table of contents"""
-        # TODO: Implement hierarchical TOC creation
         self.toc.append(heading)
     
     def _update_current_path(self, heading: Dict[str, Any]) -> None:

@@ -25,6 +25,11 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
 *   **Markdown Formatting:** Assistant responses are formatted using Markdown for enhanced readability (headings, bold, lists, etc.).
 *   **Source Attribution:** Shows which document and page number the answer was derived from.
 *   **Source Navigation:** Displays source page content as images directly in the interface. Allows navigating between pages of the source document within the side panel.
+*   **Context Inspector:** Provides detailed analysis of retrieval results for any query:
+    * Visualizes token distribution across context sources
+    * Shows exact context pieces sent to the LLM
+    * Helps debug and improve retrieval quality
+    * Allows testing different retrieval parameters without affecting application settings
 *   **Modular Data Processing Pipeline:** Handles PDF parsing, text extraction, image generation, structure analysis, link extraction, embedding generation, and vector store indexing.
 *   **AWS S3 Integration:** Handles PDF source files (e.g., `source-pdfs/`), generated page images (`pdf_page_images/`), extracted link data (`extracted_links/`), and processing history (`processing/`) stored in AWS S3.
 *   **Abstracted LLM Provider:** Easily switch between LLM providers (e.g., OpenAI, Anthropic) via environment variables.
@@ -37,7 +42,8 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
     *   **Run History:** View history of processing runs, including start time, duration, parameters, status, and view detailed logs for each run.
     *   **S3 File Management:** List existing PDFs in the source S3 bucket, upload new PDFs (including drag-and-drop).
     *   **Qdrant Management:** View statistics for Qdrant collections, sample points from selected collections.
-    *   **Configuration:** View/Update system prompt, view key environment variables.
+    *   **Configuration:** View/Update system prompt, tune retrieval parameters (reranking weights, result count), and adjust LLM settings, with comprehensive help text for each option.
+    *   **Context Inspector:** Debug tool to analyze what context is retrieved for any query, visualize token distribution, and test retrieval parameters.
     *   **External Links:** Quick links to relevant external services (Railway, Qdrant, S3, etc.).
 
 ## Technology Stack
@@ -71,6 +77,7 @@ dndsy/
 ├── Dockerfile               # For building the application container
 ├── README.md                # This file
 ├── app.py                   # Main Flask application entry point
+├── config.py                # Centralized configuration management
 ├── data/                    # Data storage
 │   ├── haystack_store/      # Storage for Haystack Memory persistence files
 ├── data_ingestion/          # Core data processing and ingestion logic
@@ -97,13 +104,15 @@ dndsy/
 │   ├── load_haystack_store.py # Script to load documents into Haystack
 │   └── setup_env.py         # Helper to create initial .env file
 ├── static/
-│   ├── css/style.css
+│   ├── css/
+│   │   ├── style.css
+│   │   └── admin-config.css # Styling for admin configuration panels
 │   ├── img/
 │   └── js/
 │       ├── chat.js
 │       ├── marked.min.js
-│       └── source_viewer.js
-│       └── admin.js # Added for Admin Panel functionality
+│       ├── source_viewer.js
+│       └── admin.js         # Admin panel functionality
 ├── templates/
 │   ├── index.html
 │   └── login.html
