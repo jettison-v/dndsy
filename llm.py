@@ -13,6 +13,7 @@ from botocore.exceptions import NoCredentialsError, PartialCredentialsError, Cli
 
 from llm_providers import get_llm_client # Import the factory function
 from embeddings.model_provider import embed_query # Import query embedding function
+from app import app_config # Import the global config dictionary
 
 load_dotenv(override=True) # Load .env, potentially overriding system vars
 
@@ -186,7 +187,10 @@ def _get_link_data_for_sources(source_keys: List[str]) -> Dict[str, Dict]:
     logger.info(f"Consolidated {len(consolidated_links)} unique link texts from sources.")
     return consolidated_links
 
-def _retrieve_and_prepare_context(query: str, model: str, limit: int = 5, store_type: str = None) -> list[dict]:
+def _retrieve_and_prepare_context(query: str, model: str, limit: int = 5, store_type: str = None, 
+                              max_tokens_per_result: int = 1000, max_total_context_tokens: int = 4000,
+                              rerank_alpha: float = 0.5, rerank_beta: float = 0.3, rerank_gamma: float = 0.2,
+                              fetch_multiplier: int = 3) -> list[dict]:
     """
     Orchestrates context retrieval: embeds query, searches store, formats results.
     
@@ -195,6 +199,12 @@ def _retrieve_and_prepare_context(query: str, model: str, limit: int = 5, store_
         model: The LLM model name (used for token counting/limits).
         limit: Max number of context results to return.
         store_type: Vector store type ("standard" or "semantic"). Uses default if None.
+        max_tokens_per_result: Maximum tokens allowed per context result
+        max_total_context_tokens: Maximum total tokens for all context combined
+        rerank_alpha: Weight for dense vector scores (semantic store)
+        rerank_beta: Weight for sparse BM25 scores (semantic store)
+        rerank_gamma: Weight for keyword match scores (semantic store)
+        fetch_multiplier: Multiplier for initial retrieval before reranking
     """
     effective_store_type = store_type or default_store_type
         
@@ -212,7 +222,15 @@ def _retrieve_and_prepare_context(query: str, model: str, limit: int = 5, store_
         logger.info(f"Searching {effective_store_type} store with query: '{query}'")
         if effective_store_type == "semantic":
              # Semantic store uses hybrid search (vector + original query for BM25/keywords)
-             results = vector_store.search(query_vector=query_vector, query=query, limit=limit)
+             results = vector_store.search(
+                 query_vector=query_vector, 
+                 query=query, 
+                 limit=limit,
+                 rerank_alpha=rerank_alpha,
+                 rerank_beta=rerank_beta,
+                 rerank_gamma=rerank_gamma,
+                 fetch_multiplier=fetch_multiplier
+             )
         else: 
              # Standard store uses simple vector search
              results = vector_store.search(query_vector=query_vector, limit=limit)
@@ -223,10 +241,8 @@ def _retrieve_and_prepare_context(query: str, model: str, limit: int = 5, store_
         # Process and format results, applying token limits
         context_parts = []
         total_tokens = 0
-        # Limit tokens per individual context piece to avoid overly long items
-        max_tokens_per_result = 1000 
-        # Limit total tokens added to context (adjust as needed for LLM context window)
-        max_total_context_tokens = 4000 
+        # Use the token limits passed in as parameters
+        # max_tokens_per_result and max_total_context_tokens are now parameters
         
         for idx, result in enumerate(results):
             # Extract necessary data from result payload/metadata
@@ -298,7 +314,11 @@ def _retrieve_and_prepare_context(query: str, model: str, limit: int = 5, store_
         logger.error(f"Error retrieving context for query '{query}': {e}", exc_info=True)
         return []
 
-def ask_dndsy(prompt: str, store_type: str = None) -> Generator[str, None, None]:
+def ask_dndsy(prompt: str, store_type: str = None, temperature: float = 0.3, max_tokens: int = 1500,
+              retrieval_limit: int = 5, max_tokens_per_result: int = 1000, 
+              max_total_context_tokens: int = 4000, rerank_alpha: float = 0.5, 
+              rerank_beta: float = 0.3, rerank_gamma: float = 0.2,
+              fetch_multiplier: int = 3) -> Generator[str, None, None]:
     """
     Main RAG pipeline function.
     Processes a query using RAG and streams the response via SSE.
@@ -307,6 +327,15 @@ def ask_dndsy(prompt: str, store_type: str = None) -> Generator[str, None, None]
     Args:
         prompt: The user query.
         store_type: Vector store type ("standard" or "semantic"). Uses default if None.
+        temperature: Temperature setting for LLM response generation.
+        max_tokens: Maximum number of tokens the LLM should generate.
+        retrieval_limit: Maximum number of context results to return.
+        max_tokens_per_result: Maximum tokens allowed per context result.
+        max_total_context_tokens: Maximum total tokens for all context combined.
+        rerank_alpha: Weight for dense vector scores (semantic store).
+        rerank_beta: Weight for sparse BM25 scores (semantic store).
+        rerank_gamma: Weight for keyword match scores (semantic store).
+        fetch_multiplier: Multiplier for initial retrieval before reranking.
         
     Yields:
         Server-Sent Events (SSE) strings containing metadata, status updates, 
@@ -334,7 +363,14 @@ def ask_dndsy(prompt: str, store_type: str = None) -> Generator[str, None, None]
         context_parts = _retrieve_and_prepare_context(
             query=prompt, 
             model=current_model_name, # Pass model for token calculations
-            store_type=effective_store_type
+            store_type=effective_store_type,
+            limit=retrieval_limit,
+            max_tokens_per_result=max_tokens_per_result,
+            max_total_context_tokens=max_total_context_tokens,
+            rerank_alpha=rerank_alpha,
+            rerank_beta=rerank_beta,
+            rerank_gamma=rerank_gamma,
+            fetch_multiplier=fetch_multiplier
         )
         end_time_rag = time.perf_counter()
         logger.info(f"Context retrieval completed in {end_time_rag - start_time_rag:.4f}s. Found {len(context_parts)} parts.")
@@ -424,8 +460,8 @@ def ask_dndsy(prompt: str, store_type: str = None) -> Generator[str, None, None]
         stream_generator = llm_client.generate_response(
             prompt=prompt,
             system_message=system_message,
-            temperature=0.3, 
-            max_tokens=1500,
+            temperature=temperature, 
+            max_tokens=max_tokens,
             stream=True
         )
         

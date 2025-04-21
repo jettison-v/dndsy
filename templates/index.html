@@ -252,6 +252,69 @@
                         
                         <div id="config-tab" class="admin-tab-pane">
                             <div class="admin-section">
+                                <h4>LLM Configuration</h4>
+                                <div class="admin-form-group">
+                                    <label for="llm-temperature">Temperature</label>
+                                    <div class="range-with-value">
+                                        <input type="range" id="llm-temperature" min="0" max="2" step="0.1" value="0.3">
+                                        <span id="llm-temperature-value">0.3</span>
+                                    </div>
+                                </div>
+                                <div class="admin-form-group">
+                                    <label for="llm-max-tokens">Max Output Tokens</label>
+                                    <input type="number" id="llm-max-tokens" min="100" max="4000" step="50" value="1500">
+                                </div>
+                            </div>
+
+                            <div class="admin-section">
+                                <h4>Retrieval Parameters</h4>
+                                <div class="admin-form-group">
+                                    <label for="retrieval-k">Results Count (k)</label>
+                                    <input type="number" id="retrieval-k" min="1" max="20" step="1" value="5">
+                                </div>
+                                <div class="admin-form-group">
+                                    <label for="retrieval-multiplier">Fetch Multiplier</label>
+                                    <input type="number" id="retrieval-multiplier" min="1" max="10" step="1" value="3">
+                                    <small>Number of candidates fetched is k × multiplier</small>
+                                </div>
+                                <div class="admin-form-group">
+                                    <label for="context-max-per-result">Max Tokens Per Result</label>
+                                    <input type="number" id="context-max-per-result" min="100" max="4000" step="100" value="1000">
+                                </div>
+                                <div class="admin-form-group">
+                                    <label for="context-max-total">Max Total Context Tokens</label>
+                                    <input type="number" id="context-max-total" min="1000" max="16000" step="500" value="4000">
+                                </div>
+                            </div>
+
+                            <div class="admin-section">
+                                <h4>Semantic Search Reranking Weights</h4>
+                                <div class="admin-form-group">
+                                    <label for="rerank-alpha">Dense Vector Weight (α)</label>
+                                    <div class="range-with-value">
+                                        <input type="range" id="rerank-alpha" min="0" max="1" step="0.05" value="0.5">
+                                        <span id="rerank-alpha-value">0.5</span>
+                                    </div>
+                                </div>
+                                <div class="admin-form-group">
+                                    <label for="rerank-beta">Sparse BM25 Weight (β)</label>
+                                    <div class="range-with-value">
+                                        <input type="range" id="rerank-beta" min="0" max="1" step="0.05" value="0.3">
+                                        <span id="rerank-beta-value">0.3</span>
+                                    </div>
+                                </div>
+                                <div class="admin-form-group">
+                                    <label for="rerank-gamma">Keyword Boost Weight (γ)</label>
+                                    <div class="range-with-value">
+                                        <input type="range" id="rerank-gamma" min="0" max="1" step="0.05" value="0.2">
+                                        <span id="rerank-gamma-value">0.2</span>
+                                    </div>
+                                </div>
+                                <button id="save-weights-button" class="admin-button">Save Retrieval Settings</button>
+                                <div id="weights-status" class="admin-status"></div>
+                            </div>
+
+                            <div class="admin-section">
                                 <h4>GPT Configuration</h4>
                                 <div class="admin-form-group">
                                     <label for="system-prompt">System Prompt</label>

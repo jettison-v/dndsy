@@ -233,8 +233,20 @@ class SemanticStore(SearchHelper):
         logging.info(f"Finished adding {points_added_count} points to {self.collection_name}. Next ID: {self.next_id}")
         return points_added_count
     
-    def _hybrid_reranking(self, dense_results: List[Dict], sparse_results: List[Document], query: str, k: int = 5):
-        """Combines dense (vector) and sparse (BM25) results with keyword boosting."""
+    def _hybrid_reranking(self, dense_results: List[Dict], sparse_results: List[Document], query: str, k: int = 5,
+                      alpha: float = 0.5, beta: float = 0.3, gamma: float = 0.2):
+        """
+        Combines dense (vector) and sparse (BM25) results with keyword boosting.
+        
+        Args:
+            dense_results: Results from vector search
+            sparse_results: Results from BM25 search
+            query: Original query string
+            k: Number of results to return
+            alpha: Weight for dense vector score (default 0.5)
+            beta: Weight for sparse BM25 score (default 0.3)
+            gamma: Weight for keyword boost score (default 0.2)
+        """
         # Combine results, removing duplicates by content
         combined = {}
         
@@ -293,10 +305,9 @@ class SemanticStore(SearchHelper):
             # Combine heading and section scores
             doc["keyword_score"] = heading_score + section_score
         
-        # Calculate final score with adjusted weights
-        alpha = 0.5  # Reduce weight for dense retrieval (was 0.7)
-        beta = 0.3   # Weight for sparse (BM25) retrieval
-        gamma = 0.2  # Weight for keyword matching
+        # Calculate final score using the provided weights
+        # (alpha for dense, beta for sparse, gamma for keyword)
+        logging.info(f"Using weights: alpha={alpha}, beta={beta}, gamma={gamma}")
         
         for doc in combined.values():
             dense_component = alpha * doc["dense_score"]
@@ -448,8 +459,21 @@ class SemanticStore(SearchHelper):
         }
     
     # Override the search method to provide the specialized semantic hybrid search
-    def search(self, query_vector: List[float], query: str = None, limit: int = 5) -> List[Dict[str, Any]]:
-        """Performs hybrid search: exact match -> dense search -> sparse search -> reranking."""
+    def search(self, query_vector: List[float], query: str = None, limit: int = 5, 
+               rerank_alpha: float = 0.5, rerank_beta: float = 0.3, rerank_gamma: float = 0.2,
+               fetch_multiplier: int = 3) -> List[Dict[str, Any]]:
+        """
+        Performs hybrid search: exact match -> dense search -> sparse search -> reranking.
+        
+        Args:
+            query_vector: Embedded query vector
+            query: Original query string (needed for BM25 and keyword boosting)
+            limit: Number of results to return
+            rerank_alpha: Weight for dense vector score in reranking
+            rerank_beta: Weight for sparse BM25 score in reranking
+            rerank_gamma: Weight for keyword match score in reranking  
+            fetch_multiplier: Multiplier for initial retrieval before reranking
+        """
         logging.info(f"Searching (semantic) for: '{query}'")
         
         if not query_vector:
@@ -459,13 +483,13 @@ class SemanticStore(SearchHelper):
         # Let's use our specialized semantic search if we have a query string
         if query:
             # Get dense vector results
-            dense_documents = self._execute_vector_search(query_vector, limit=limit * 3)
+            dense_documents = self._execute_vector_search(query_vector, limit=limit * fetch_multiplier)
             
             # Get sparse lexical search results using BM25 (if available)
             sparse_documents = []
             if self.bm25_retriever:
                 try:
-                    sparse_results_bm25 = self.bm25_retriever.get_relevant_documents(query, k=limit * 3)
+                    sparse_results_bm25 = self.bm25_retriever.get_relevant_documents(query, k=limit * fetch_multiplier)
                     for i, doc in enumerate(sparse_results_bm25):
                         score = 1.0 - (i / len(sparse_results_bm25)) if sparse_results_bm25 else 0
                         doc.metadata["score"] = score
@@ -476,7 +500,15 @@ class SemanticStore(SearchHelper):
             # Perform hybrid reranking if we have both dense and sparse results
             if sparse_documents and dense_documents:
                 try:
-                    return self._hybrid_reranking(dense_documents, sparse_documents, query, limit)
+                    return self._hybrid_reranking(
+                        dense_documents, 
+                        sparse_documents, 
+                        query, 
+                        limit,
+                        alpha=rerank_alpha,
+                        beta=rerank_beta,
+                        gamma=rerank_gamma
+                    )
                 except Exception as e:
                     logging.error(f"Error during hybrid reranking: {e}", exc_info=True)
                     # Fallback to just the dense results

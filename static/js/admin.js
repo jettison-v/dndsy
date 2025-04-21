@@ -143,8 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 break;
                 
             case 'config':
-                loadSystemPrompt();
-                loadEnvironmentVars();
+                loadAllConfiguration();
                 break;
                 
             case 'links':
@@ -1283,6 +1282,33 @@ document.addEventListener('DOMContentLoaded', function() {
     const promptStatus = document.getElementById('prompt-status');
     const envVars = document.getElementById('env-vars');
     
+    // New retrieval configuration elements
+    const llmTemperature = document.getElementById('llm-temperature');
+    const llmTemperatureValue = document.getElementById('llm-temperature-value');
+    const llmMaxTokens = document.getElementById('llm-max-tokens');
+    const retrievalK = document.getElementById('retrieval-k');
+    const retrievalMultiplier = document.getElementById('retrieval-multiplier');
+    const contextMaxPerResult = document.getElementById('context-max-per-result');
+    const contextMaxTotal = document.getElementById('context-max-total');
+    const rerankAlpha = document.getElementById('rerank-alpha');
+    const rerankAlphaValue = document.getElementById('rerank-alpha-value');
+    const rerankBeta = document.getElementById('rerank-beta');
+    const rerankBetaValue = document.getElementById('rerank-beta-value');
+    const rerankGamma = document.getElementById('rerank-gamma');
+    const rerankGammaValue = document.getElementById('rerank-gamma-value');
+    const saveWeightsButton = document.getElementById('save-weights-button');
+    const weightsStatus = document.getElementById('weights-status');
+    
+    // Load all configuration
+    function loadAllConfiguration() {
+        // Load system prompt
+        loadSystemPrompt();
+        // Load environment variables
+        loadEnvironmentVars();
+        // Load retrieval configuration
+        loadRetrievalConfig();
+    }
+    
     // Load system prompt
     function loadSystemPrompt() {
         systemPrompt.value = 'Loading...';
@@ -1305,6 +1331,73 @@ document.addEventListener('DOMContentLoaded', function() {
             systemPrompt.value = '';
             systemPrompt.disabled = false;
             showStatus(promptStatus, `Error: ${error.message}`, 'error');
+        });
+    }
+    
+    // Load retrieval configuration
+    function loadRetrievalConfig() {
+        fetch('/api/admin/config')
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.error || 'Failed to load configuration');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data.config) {
+                throw new Error('Invalid configuration data received');
+            }
+            
+            const config = data.config;
+            
+            // Update LLM config
+            llmTemperature.value = config.llm_temperature || 0.3;
+            llmTemperatureValue.textContent = llmTemperature.value;
+            llmMaxTokens.value = config.llm_max_output_tokens || 1500;
+            
+            // Update retrieval params
+            retrievalK.value = config.retrieval_k || 5;
+            retrievalMultiplier.value = config.retrieval_fetch_multiplier || 3;
+            contextMaxPerResult.value = config.context_max_tokens_per_result || 1000;
+            contextMaxTotal.value = config.context_max_total_tokens || 4000;
+            
+            // Update reranking weights
+            rerankAlpha.value = config.rerank_alpha || 0.5;
+            rerankAlphaValue.textContent = rerankAlpha.value;
+            rerankBeta.value = config.rerank_beta || 0.3;
+            rerankBetaValue.textContent = rerankBeta.value;
+            rerankGamma.value = config.rerank_gamma || 0.2;
+            rerankGammaValue.textContent = rerankGamma.value;
+        })
+        .catch(error => {
+            showStatus(weightsStatus, `Error: ${error.message}`, 'error');
+        });
+    }
+    
+    // Add event listeners for slider value display updates
+    if (llmTemperature) {
+        llmTemperature.addEventListener('input', function() {
+            llmTemperatureValue.textContent = this.value;
+        });
+    }
+    
+    if (rerankAlpha) {
+        rerankAlpha.addEventListener('input', function() {
+            rerankAlphaValue.textContent = this.value;
+        });
+    }
+    
+    if (rerankBeta) {
+        rerankBeta.addEventListener('input', function() {
+            rerankBetaValue.textContent = this.value;
+        });
+    }
+    
+    if (rerankGamma) {
+        rerankGamma.addEventListener('input', function() {
+            rerankGammaValue.textContent = this.value;
         });
     }
     
@@ -1348,6 +1441,56 @@ document.addEventListener('DOMContentLoaded', function() {
             savePromptButton.disabled = false;
         });
     });
+    
+    // Save retrieval settings
+    if (saveWeightsButton) {
+        saveWeightsButton.addEventListener('click', function() {
+            const config = {
+                // LLM config
+                llm_temperature: parseFloat(llmTemperature.value),
+                llm_max_output_tokens: parseInt(llmMaxTokens.value),
+                
+                // Retrieval params
+                retrieval_k: parseInt(retrievalK.value),
+                retrieval_fetch_multiplier: parseInt(retrievalMultiplier.value),
+                context_max_tokens_per_result: parseInt(contextMaxPerResult.value),
+                context_max_total_tokens: parseInt(contextMaxTotal.value),
+                
+                // Reranking weights
+                rerank_alpha: parseFloat(rerankAlpha.value),
+                rerank_beta: parseFloat(rerankBeta.value),
+                rerank_gamma: parseFloat(rerankGamma.value)
+            };
+            
+            saveWeightsButton.disabled = true;
+            showStatus(weightsStatus, 'Saving retrieval settings...', 'info');
+            
+            fetch('/api/admin/config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(config)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || 'Failed to save retrieval settings');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                showStatus(weightsStatus, 'Retrieval settings saved successfully', 'success');
+            })
+            .catch(error => {
+                showStatus(weightsStatus, `Error: ${error.message}`, 'error');
+            })
+            .finally(() => {
+                saveWeightsButton.disabled = false;
+            });
+        });
+    }
     
     // Load environment variables
     function loadEnvironmentVars() {
