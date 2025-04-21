@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, Response
 from flask_cors import CORS
-from llm import ask_dndsy, default_store_type, reinitialize_llm_client
+from llm import ask_dndsy, reinitialize_llm_client
 from vector_store import get_vector_store
 import os
 from datetime import timedelta, datetime
@@ -22,47 +22,14 @@ import time
 from pathlib import Path
 from queue import Queue, Empty
 import collections
+from config import app_config, update_app_config, default_store_type
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # --- Global Configuration Dictionary ---
-# This dictionary stores all configurable parameters with sensible defaults
-# It will be used by the admin panel and the various components
-# Values here can be overridden via the admin panel
-app_config = {
-    # LLM Configuration
-    "llm_model": os.environ.get("LLM_MODEL_NAME", "gpt-4o-mini"),
-    "llm_temperature": 0.3,
-    "llm_max_output_tokens": 1500,
-    
-    # Vector Store Configuration
-    "vector_store_type": os.environ.get("DEFAULT_VECTOR_STORE", "semantic"),
-    
-    # Semantic Store Reranking Weights
-    "rerank_alpha": 0.5,  # Dense vector weight (was 0.7 previously)
-    "rerank_beta": 0.3,   # Sparse BM25 weight
-    "rerank_gamma": 0.2,  # Keyword boost weight
-    
-    # Retrieval Parameters
-    "retrieval_k": 5,     # Final results count before token limiting
-    "retrieval_fetch_multiplier": 3,  # Multiplier for initial candidate fetching (e.g., 3 * k)
-    
-    # Context Token Limits
-    "context_max_tokens_per_result": 1000,
-    "context_max_total_tokens": 4000,
-    
-    # System Prompt
-    "system_prompt": """You are a Dungeons & Dragons assistant focused on the 2024 (5.5e) rules. Follow these guidelines:
-
-1. ALWAYS prioritize using the provided 2024 rules context when available.
-2. If context is provided, base your answer ONLY on that context.
-3. If NO relevant context is found, clearly state that you couldn't find specific rules and answer based on general knowledge of D&D 2024.
-4. If comparing with 5e (2014) rules, clearly state this.
-5. Be specific and cite rules when possible (using the Source and Page info from the context).
-6. Format your response clearly using Markdown (headings, lists, bold text, etc.) for readability."""
-}
+# Moved to config.py
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))  # Use env var for secret key, fallback for local dev
@@ -74,80 +41,14 @@ CORS(app)
 Session(app)
 
 # Helper function to validate and update configuration
-def update_app_config(new_config):
-    """
-    Updates the app_config dictionary with new values, applying validation rules.
-    
-    Args:
-        new_config: Dictionary containing new configuration values
-        
-    Returns:
-        (success, message) tuple
-    """
-    global app_config
-    
-    try:
-        # Validate and update numeric values with bounds checking
-        if "llm_temperature" in new_config:
-            app_config["llm_temperature"] = max(0.0, min(2.0, float(new_config["llm_temperature"])))
-            
-        if "llm_max_output_tokens" in new_config:
-            app_config["llm_max_output_tokens"] = max(100, min(4000, int(new_config["llm_max_output_tokens"])))
-            
-        if "rerank_alpha" in new_config:
-            app_config["rerank_alpha"] = max(0.0, min(1.0, float(new_config["rerank_alpha"])))
-            
-        if "rerank_beta" in new_config:
-            app_config["rerank_beta"] = max(0.0, min(1.0, float(new_config["rerank_beta"])))
-            
-        if "rerank_gamma" in new_config:
-            app_config["rerank_gamma"] = max(0.0, min(1.0, float(new_config["rerank_gamma"])))
-            
-        if "retrieval_k" in new_config:
-            app_config["retrieval_k"] = max(1, min(20, int(new_config["retrieval_k"])))
-            
-        if "retrieval_fetch_multiplier" in new_config:
-            app_config["retrieval_fetch_multiplier"] = max(1, min(10, int(new_config["retrieval_fetch_multiplier"])))
-            
-        if "context_max_tokens_per_result" in new_config:
-            app_config["context_max_tokens_per_result"] = max(100, min(4000, int(new_config["context_max_tokens_per_result"])))
-            
-        if "context_max_total_tokens" in new_config:
-            app_config["context_max_total_tokens"] = max(1000, min(16000, int(new_config["context_max_total_tokens"])))
-            
-        # Update string values directly
-        for key in ["llm_model", "vector_store_type", "system_prompt"]:
-            if key in new_config:
-                app_config[key] = str(new_config[key])
-                
-        # If LLM model changed, reinitialize the client
-        if "llm_model" in new_config and new_config["llm_model"] != os.environ.get("LLM_MODEL_NAME"):
-            os.environ["LLM_MODEL_NAME"] = new_config["llm_model"]
-            reinitialize_llm_client()
-            logger.info(f"LLM model changed to: {new_config['llm_model']}, client reinitialized")
-            
-        # Optional: If vector store type changed, update the default
-        if "vector_store_type" in new_config:
-            global DEFAULT_VECTOR_STORE
-            DEFAULT_VECTOR_STORE = new_config["vector_store_type"]
-            
-        logger.info(f"Configuration updated successfully: {app_config}")
-        return True, "Configuration updated successfully"
-        
-    except ValueError as e:
-        logger.error(f"Invalid value type during config update: {e}")
-        return False, f"Invalid value type provided: {e}"
-        
-    except Exception as e:
-        logger.error(f"Error updating config: {e}", exc_info=True)
-        return False, f"An unexpected error occurred while updating configuration: {str(e)}"
+# Moved to config.py
 
 PASSWORD = os.environ.get('APP_PASSWORD', 'dndsy')
 logger.info(f"Password loaded from environment variable {'APP_PASSWORD' if 'APP_PASSWORD' in os.environ else '(using default)'}. ")
 
 VECTOR_STORE_TYPES = ["pages", "semantic", "haystack-qdrant", "haystack-memory"]
 # Get default store type from environment
-DEFAULT_VECTOR_STORE = os.getenv("DEFAULT_VECTOR_STORE", "pages")
+# DEFAULT_VECTOR_STORE = os.getenv("DEFAULT_VECTOR_STORE", "pages")
 
 # Define available LLM models with their display names
 AVAILABLE_LLM_MODELS = {
@@ -228,7 +129,7 @@ def home():
     
     return render_template('index.html', 
                           vector_store_types=VECTOR_STORE_TYPES,
-                          default_vector_store=DEFAULT_VECTOR_STORE,
+                          default_vector_store=default_store_type,
                           llm_model=current_llm_model,
                           available_llm_models=AVAILABLE_LLM_MODELS)
 
@@ -290,7 +191,7 @@ def get_context_details():
 
     source_name = request.args.get('source')
     page_number_str = request.args.get('page')
-    vector_store_type = request.args.get('vector_store_type', DEFAULT_VECTOR_STORE)
+    vector_store_type = request.args.get('vector_store_type', default_store_type)
 
     if not source_name or not page_number_str:
         return jsonify({'error': 'Missing source or page parameter'}), 400
@@ -342,7 +243,7 @@ def get_vector_store_types():
     
     return jsonify({
         'types': VECTOR_STORE_TYPES,
-        'default': DEFAULT_VECTOR_STORE
+        'default': default_store_type
     })
 
 @app.route('/api/store_stats')
@@ -1245,6 +1146,125 @@ def cancel_run(run_id):
             message = f"Run {run_id} not found or not active."
 
     return jsonify({'success': process_terminated, 'message': message})
+
+@app.route('/api/admin/inspect-context')
+def inspect_context():
+    """API endpoint to inspect what context would be retrieved for a query without sending to LLM."""
+    if not check_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    query = request.args.get('query', '')
+    store_type = request.args.get('store_type', default_store_type)
+    k = int(request.args.get('k', 5))
+    include_detailed = request.args.get('include_detailed', 'false') == 'true'
+    include_tokens = request.args.get('include_tokens', 'false') == 'true'
+    
+    if not query:
+        return jsonify({'error': 'No query provided'}), 400
+    
+    if store_type not in VECTOR_STORE_TYPES:
+        return jsonify({'error': f'Invalid vector store type: {store_type}'}), 400
+    
+    try:
+        # Import here to avoid circular dependency
+        from llm import _retrieve_and_prepare_context, num_tokens_from_string
+        
+        # Get the current model name
+        import llm
+        current_model_name = llm.llm_client.get_model_name() if llm.llm_client else "gpt-4o-mini"
+        
+        # Get the configs from app_config
+        rerank_alpha = app_config["rerank_alpha"]
+        rerank_beta = app_config["rerank_beta"]
+        rerank_gamma = app_config["rerank_gamma"]
+        fetch_multiplier = app_config["retrieval_fetch_multiplier"]
+        max_tokens_per_result = app_config["context_max_tokens_per_result"]
+        max_total_context_tokens = app_config["context_max_total_tokens"]
+        
+        # Retrieve context
+        start_time = time.time()
+        context_parts = _retrieve_and_prepare_context(
+            query=query,
+            model=current_model_name,
+            store_type=store_type,
+            limit=k,
+            max_tokens_per_result=max_tokens_per_result,
+            max_total_context_tokens=max_total_context_tokens,
+            rerank_alpha=rerank_alpha,
+            rerank_beta=rerank_beta,
+            rerank_gamma=rerank_gamma,
+            fetch_multiplier=fetch_multiplier
+        )
+        retrieval_time = time.time() - start_time
+        
+        # Generate system prompt with context
+        system_prompt = app_config["system_prompt"]
+        
+        context_text_for_prompt = ""
+        if context_parts:
+            for part in context_parts:
+                # Format source display text
+                display_text = f"{part['source']} (Pg {part['page']})"
+                if part.get('chunk_info'): 
+                    display_text += f" - {part['chunk_info']}"
+                
+                # Append context to the text block for the LLM prompt
+                context_text_for_prompt += f"Source: {display_text}\nContent:\n{part['text']}\n\n"
+                
+        # Add context to system prompt if available
+        complete_system_prompt = system_prompt
+        if context_text_for_prompt:
+            complete_system_prompt += (
+                "\n\nUse the following official 2024 D&D rules context to answer the question. "
+                "Prioritize this information:\n\n---\n"
+                f"{context_text_for_prompt}"
+                "---\n\nAnswer the user's question based *only* on the context above:"
+            )
+        else:
+            complete_system_prompt += (
+                "\n\nWARNING: No specific rule context was found for this query. "
+                "Answer based on your general knowledge of D&D 2024 rules, "
+                "but explicitly state that the information is not from the provided source materials.\n"
+            )
+        
+        # Calculate token counts for analysis
+        total_tokens = 0
+        prompt_tokens = num_tokens_from_string(complete_system_prompt, model=current_model_name)
+        user_tokens = num_tokens_from_string(query, model=current_model_name)
+        
+        # Prepare results
+        results = {
+            'context_parts': context_parts,
+            'retrieval_time': round(retrieval_time, 3),
+            'context_count': len(context_parts),
+            'system_prompt': complete_system_prompt if include_detailed else None,
+            'prompt_tokens': prompt_tokens,
+            'user_tokens': user_tokens,
+            'total_tokens': prompt_tokens + user_tokens,
+            'model': current_model_name,
+            'store_type': store_type
+        }
+        
+        # Add per-context token information if requested
+        if include_tokens and context_parts:
+            token_data = []
+            for part in context_parts:
+                tokens = num_tokens_from_string(part['text'], model=current_model_name)
+                token_data.append({
+                    'source': part['source'],
+                    'page': part['page'],
+                    'tokens': tokens,
+                    'percentage': round((tokens / prompt_tokens) * 100, 1)
+                })
+                total_tokens += tokens
+            
+            results['token_breakdown'] = token_data
+        
+        return jsonify(results)
+        
+    except Exception as e:
+        logger.error(f"Error inspecting context: {e}", exc_info=True)
+        return jsonify({'error': f'Error inspecting context: {str(e)}'}), 500
 
 if __name__ == '__main__':
     logger.info("Starting Flask application...")

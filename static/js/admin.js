@@ -1566,6 +1566,259 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // ============================
+    // Configuration Tab Help Icons
+    // ============================
+    
+    // Handle help icon hover effects (optional enhancement)
+    const helpIcons = document.querySelectorAll('.help-icon');
+    helpIcons.forEach(icon => {
+        // We could enhance this with custom tooltips if needed
+        // For now, we're using the built-in title attribute
+        // This section is ready for future enhancements
+        
+        // Example of how to add a custom tooltip implementation:
+        /*
+        icon.addEventListener('mouseenter', function(e) {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'custom-tooltip';
+            tooltip.textContent = this.getAttribute('title');
+            document.body.appendChild(tooltip);
+            
+            const rect = icon.getBoundingClientRect();
+            tooltip.style.top = rect.bottom + 10 + 'px';
+            tooltip.style.left = rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2) + 'px';
+            
+            this.tooltip = tooltip;
+        });
+        
+        icon.addEventListener('mouseleave', function() {
+            if (this.tooltip) {
+                document.body.removeChild(this.tooltip);
+                this.tooltip = null;
+            }
+        });
+        */
+    });
+    
+    // ============================
+    // Context Inspector Tab
+    // ============================
+    
+    const inspectorQuery = document.getElementById('inspector-query');
+    const inspectorStoreType = document.getElementById('inspector-store-type');
+    const inspectorKValue = document.getElementById('inspector-k-value');
+    const inspectorIncludeDetailed = document.getElementById('inspector-include-detailed');
+    const inspectorIncludeTokens = document.getElementById('inspector-include-tokens');
+    const inspectorRunButton = document.getElementById('inspector-run-button');
+    const inspectorStatus = document.getElementById('inspector-status');
+    const inspectorResults = document.getElementById('inspector-results');
+    const inspectorSummary = document.getElementById('inspector-summary');
+    const inspectorSummaryData = document.querySelector('.inspector-summary-data');
+    const inspectorSystemPrompt = document.getElementById('inspector-system-prompt');
+    const inspectorPromptContainer = document.getElementById('inspector-prompt-container');
+    const inspectorPromptPlaceholder = document.getElementById('inspector-prompt-placeholder');
+    const inspectorPromptTokenCount = document.getElementById('inspector-prompt-token-count');
+    const inspectorTokensChart = document.getElementById('inspector-tokens-chart');
+    const inspectorScoresContainer = document.getElementById('inspector-scores-container');
+    
+    if (inspectorRunButton) {
+        inspectorRunButton.addEventListener('click', runContextInspection);
+    }
+    
+    function runContextInspection() {
+        // Get query and options
+        const query = inspectorQuery.value.trim();
+        const storeType = inspectorStoreType.value;
+        const k = inspectorKValue.value;
+        const includeDetailed = inspectorIncludeDetailed.checked;
+        const includeTokens = inspectorIncludeTokens.checked;
+        
+        if (!query) {
+            showStatus(inspectorStatus, 'Please enter a query', 'error');
+            return;
+        }
+        
+        // Reset UI components
+        inspectorRunButton.disabled = true;
+        inspectorSummary.style.display = 'none';
+        inspectorPromptContainer.style.display = 'none';
+        inspectorPromptPlaceholder.style.display = 'block';
+        inspectorTokensChart.style.display = 'none';
+        inspectorScoresContainer.style.display = 'none';
+        
+        // Show loading status
+        showStatus(inspectorStatus, 'Retrieving context...', 'info');
+        inspectorResults.innerHTML = '<p>Analyzing query and retrieving context...</p>';
+        
+        // Build URL with parameters
+        const url = `/api/admin/inspect-context?query=${encodeURIComponent(query)}&store_type=${storeType}&k=${k}&include_detailed=${includeDetailed}&include_tokens=${includeTokens}`;
+        
+        // Fetch context inspection results
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || 'Failed to inspect context');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                displayInspectionResults(data, query);
+                showStatus(inspectorStatus, 'Inspection complete', 'success');
+            })
+            .catch(error => {
+                showStatus(inspectorStatus, `Error: ${error.message}`, 'error');
+                inspectorResults.innerHTML = `<p class="admin-error">Error: ${error.message}</p>`;
+            })
+            .finally(() => {
+                inspectorRunButton.disabled = false;
+            });
+    }
+    
+    function displayInspectionResults(data, query) {
+        // Display summary information
+        inspectorSummary.style.display = 'block';
+        inspectorSummaryData.innerHTML = `
+            <div class="inspector-summary-item">
+                <span class="inspector-summary-label">Retrieval Time</span>
+                <span class="inspector-summary-value">${data.retrieval_time}s</span>
+            </div>
+            <div class="inspector-summary-item">
+                <span class="inspector-summary-label">Context Chunks</span>
+                <span class="inspector-summary-value">${data.context_count}</span>
+            </div>
+            <div class="inspector-summary-item">
+                <span class="inspector-summary-label">Total Tokens</span>
+                <span class="inspector-summary-value">${data.total_tokens.toLocaleString()}</span>
+            </div>
+            <div class="inspector-summary-item">
+                <span class="inspector-summary-label">System Tokens</span>
+                <span class="inspector-summary-value">${data.prompt_tokens.toLocaleString()}</span>
+            </div>
+            <div class="inspector-summary-item">
+                <span class="inspector-summary-label">User Tokens</span>
+                <span class="inspector-summary-value">${data.user_tokens.toLocaleString()}</span>
+            </div>
+            <div class="inspector-summary-item">
+                <span class="inspector-summary-label">Model</span>
+                <span class="inspector-summary-value">${data.model}</span>
+            </div>
+        `;
+        
+        // Display context parts
+        if (data.context_count === 0) {
+            inspectorResults.innerHTML = '<p>No context was retrieved for this query.</p>';
+        } else {
+            let html = '<div class="inspector-context-list">';
+            
+            data.context_parts.forEach((part, index) => {
+                // Determine relevance class based on score
+                let relevanceClass = 'medium-relevance';
+                if (part.score >= 0.75) {
+                    relevanceClass = 'high-relevance';
+                } else if (part.score < 0.5) {
+                    relevanceClass = 'low-relevance';
+                }
+                
+                html += `
+                    <div class="inspector-context-item ${relevanceClass}">
+                        <div class="inspector-context-header">
+                            <div class="inspector-context-source">
+                                ${part.source} (Page ${part.page})${part.chunk_info ? ` - ${part.chunk_info}` : ''}
+                            </div>
+                            <div class="inspector-context-scores">
+                                <div class="inspector-context-score">
+                                    <span>Score:</span>
+                                    <span class="score-value">${part.score.toFixed(4)}</span>
+                                </div>
+                                ${data.token_breakdown ? `
+                                <div class="inspector-context-score">
+                                    <span>Tokens:</span>
+                                    <span class="score-value">${data.token_breakdown[index].tokens}</span>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        <div class="inspector-context-text">${highlightTerms(part.text, query)}</div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            inspectorResults.innerHTML = html;
+        }
+        
+        // Display system prompt if detailed info is included
+        if (data.system_prompt) {
+            inspectorSystemPrompt.value = data.system_prompt;
+            inspectorPromptContainer.style.display = 'block';
+            inspectorPromptPlaceholder.style.display = 'none';
+            inspectorPromptTokenCount.textContent = `${data.prompt_tokens.toLocaleString()} tokens`;
+        }
+        
+        // Display token breakdown chart if available
+        if (data.token_breakdown && data.token_breakdown.length > 0) {
+            displayTokenBreakdown(data.token_breakdown);
+        }
+    }
+    
+    function highlightTerms(text, query) {
+        // Simple term highlighting function
+        // Could be enhanced with more sophisticated NLP
+        const terms = query.toLowerCase().split(/\s+/).filter(term => term.length > 3);
+        let highlightedText = text;
+        
+        terms.forEach(term => {
+            // Create regex that matches whole words only, case insensitive
+            const regex = new RegExp(`\\b${escapeRegExp(term)}\\b`, 'gi');
+            highlightedText = highlightedText.replace(regex, match => 
+                `<span class="inspector-highlight">${match}</span>`
+            );
+        });
+        
+        return highlightedText;
+    }
+    
+    function escapeRegExp(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+    
+    function displayTokenBreakdown(tokenBreakdown) {
+        // Basic visualization of token distribution
+        // Ensure proper display with adequate spacing between items
+        inspectorTokensChart.style.display = 'block';
+        
+        let html = '<div class="token-breakdown-chart">';
+        html += '<h5>Token Distribution by Context Source</h5>';
+        
+        // Sort by token count (descending) for better visualization
+        const sortedBreakdown = [...tokenBreakdown].sort((a, b) => b.tokens - a.tokens);
+        
+        sortedBreakdown.forEach(item => {
+            // Format source name for better display
+            const sourceName = item.source.length > 40 
+                ? item.source.substring(0, 38) + '...' 
+                : item.source;
+                
+            html += `
+                <div class="token-breakdown-item">
+                    <div class="token-breakdown-label" title="${item.source} (Pg ${item.page})">
+                        ${sourceName} (Pg ${item.page})
+                    </div>
+                    <div class="token-breakdown-bar-container">
+                        <div class="token-breakdown-bar" style="width: ${item.percentage}%"></div>
+                        <div class="token-breakdown-value">${item.tokens} tokens (${item.percentage}%)</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        inspectorTokensChart.innerHTML = html;
+    }
+    
+    // ============================
     // Helper Functions
     // ============================
     

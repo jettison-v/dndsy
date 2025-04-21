@@ -144,6 +144,7 @@
                         <button class="admin-tab-button" data-tab="vector-db">Qdrant Collections</button>
                         <button class="admin-tab-button" data-tab="api-costs">API Costs</button>
                         <button class="admin-tab-button" data-tab="config">Configuration</button>
+                        <button class="admin-tab-button" data-tab="context-inspector">Context Inspector</button>
                         <button class="admin-tab-button" data-tab="links">External Links</button>
                     </div>
                     
@@ -252,49 +253,64 @@
                         
                         <div id="config-tab" class="admin-tab-pane">
                             <div class="admin-section">
-                                <h4>LLM Configuration</h4>
+                                <h4>LLM Configuration <i class="fas fa-info-circle help-icon" title="Control the LLM's response style and length"></i></h4>
+                                <div class="config-section-help">
+                                    These settings control how the AI generates responses, affecting creativity and output length.
+                                </div>
                                 <div class="admin-form-group">
                                     <label for="llm-temperature">Temperature</label>
                                     <div class="range-with-value">
                                         <input type="range" id="llm-temperature" min="0" max="2" step="0.1" value="0.3">
                                         <span id="llm-temperature-value">0.3</span>
                                     </div>
+                                    <span class="help-text">Controls response randomness. Lower values (0.0-0.3) produce more focused, deterministic answers. Higher values (0.7-1.0) create more creative, varied responses.</span>
                                 </div>
                                 <div class="admin-form-group">
                                     <label for="llm-max-tokens">Max Output Tokens</label>
                                     <input type="number" id="llm-max-tokens" min="100" max="4000" step="50" value="1500">
+                                    <span class="help-text">Maximum number of tokens in the AI's response. Higher values allow longer, more detailed answers but may increase response time. (1 token ≈ 4 characters)</span>
                                 </div>
                             </div>
 
                             <div class="admin-section">
-                                <h4>Retrieval Parameters</h4>
+                                <h4>Retrieval Parameters <i class="fas fa-info-circle help-icon" title="Control how context is retrieved from the vector database"></i></h4>
+                                <div class="config-section-help">
+                                    These settings control how many chunks of context are retrieved from the knowledge base and how they're processed before being sent to the LLM.
+                                </div>
                                 <div class="admin-form-group">
                                     <label for="retrieval-k">Results Count (k)</label>
                                     <input type="number" id="retrieval-k" min="1" max="20" step="1" value="5">
+                                    <span class="help-text">Number of final results to include in context. Higher values provide more comprehensive information but may dilute relevance.</span>
                                 </div>
                                 <div class="admin-form-group">
                                     <label for="retrieval-multiplier">Fetch Multiplier</label>
                                     <input type="number" id="retrieval-multiplier" min="1" max="10" step="1" value="3">
-                                    <small>Number of candidates fetched is k × multiplier</small>
+                                    <span class="help-text">Number of candidates fetched is k × multiplier. Higher values cast a wider net for initial retrieval before final ranking.</span>
                                 </div>
                                 <div class="admin-form-group">
                                     <label for="context-max-per-result">Max Tokens Per Result</label>
                                     <input type="number" id="context-max-per-result" min="100" max="4000" step="100" value="1000">
+                                    <span class="help-text">Maximum tokens allowed for each individual context chunk. Limits are applied before sending to the LLM.</span>
                                 </div>
                                 <div class="admin-form-group">
                                     <label for="context-max-total">Max Total Context Tokens</label>
                                     <input type="number" id="context-max-total" min="1000" max="16000" step="500" value="4000">
+                                    <span class="help-text">Maximum combined tokens across all context items. Controls total context size sent to the LLM. Higher values increase accuracy but also increase token usage.</span>
                                 </div>
                             </div>
 
                             <div class="admin-section">
-                                <h4>Semantic Search Reranking Weights</h4>
+                                <h4>Semantic Search Reranking Weights <i class="fas fa-info-circle help-icon" title="Control the balance between different search techniques"></i></h4>
+                                <div class="config-section-help">
+                                    These weights control how the Semantic search combines different retrieval approaches. The three weights (α+β+γ) should ideally sum to 1.0.
+                                </div>
                                 <div class="admin-form-group">
                                     <label for="rerank-alpha">Dense Vector Weight (α)</label>
                                     <div class="range-with-value">
                                         <input type="range" id="rerank-alpha" min="0" max="1" step="0.05" value="0.5">
                                         <span id="rerank-alpha-value">0.5</span>
                                     </div>
+                                    <span class="help-text">Weight for semantic vector similarity. Higher values prioritize conceptual matches over exact keyword matches.</span>
                                 </div>
                                 <div class="admin-form-group">
                                     <label for="rerank-beta">Sparse BM25 Weight (β)</label>
@@ -302,6 +318,7 @@
                                         <input type="range" id="rerank-beta" min="0" max="1" step="0.05" value="0.3">
                                         <span id="rerank-beta-value">0.3</span>
                                     </div>
+                                    <span class="help-text">Weight for lexical BM25 search. Higher values prioritize documents containing query terms with appropriate term frequency/inverse document frequency.</span>
                                 </div>
                                 <div class="admin-form-group">
                                     <label for="rerank-gamma">Keyword Boost Weight (γ)</label>
@@ -309,25 +326,103 @@
                                         <input type="range" id="rerank-gamma" min="0" max="1" step="0.05" value="0.2">
                                         <span id="rerank-gamma-value">0.2</span>
                                     </div>
+                                    <span class="help-text">Weight for exact keyword matches. Higher values boost documents containing exact query keywords, especially useful for specific terms like spell or monster names.</span>
                                 </div>
                                 <button id="save-weights-button" class="admin-button">Save Retrieval Settings</button>
                                 <div id="weights-status" class="admin-status"></div>
                             </div>
 
                             <div class="admin-section">
-                                <h4>GPT Configuration</h4>
+                                <h4>GPT Configuration <i class="fas fa-info-circle help-icon" title="System instructions for the AI model"></i></h4>
+                                <div class="config-section-help">
+                                    The system prompt defines the AI assistant's behavior, knowledge context, and response guidelines.
+                                </div>
                                 <div class="admin-form-group">
                                     <label for="system-prompt">System Prompt</label>
                                     <textarea id="system-prompt" rows="6" placeholder="Loading current prompt..."></textarea>
+                                    <span class="help-text">Instructions that define how the AI responds. Be specific about tone, format, rules to follow, and any constraints.</span>
                                 </div>
                                 <button id="save-prompt-button" class="admin-button">Save System Prompt</button>
                                 <div id="prompt-status" class="admin-status"></div>
                             </div>
                             
                             <div class="admin-section">
-                                <h4>Environment Variables</h4>
+                                <h4>Environment Variables <i class="fas fa-info-circle help-icon" title="System configuration values"></i></h4>
                                 <div id="env-vars" class="admin-table-container">
                                     <p>Loading environment variables...</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="context-inspector-tab" class="admin-tab-pane">
+                            <div class="admin-section">
+                                <h4>Context Inspector <i class="fas fa-info-circle help-icon" title="Debug which context is retrieved and why"></i></h4>
+                                <div class="config-section-help">
+                                    This tool helps you debug what content is being sent to the LLM and why it was selected. Enter a query and see the exact context that would be retrieved.
+                                </div>
+                                <div class="admin-form-group">
+                                    <label for="inspector-query">Test Query</label>
+                                    <textarea id="inspector-query" rows="2" placeholder="Enter a test query here..."></textarea>
+                                    <span class="help-text">Enter a question or query to see what context would be retrieved for it.</span>
+                                </div>
+                                <div class="admin-form-group">
+                                    <label>Vector Store Type</label>
+                                    <select id="inspector-store-type" class="vector-store-dropdown">
+                                        {% for store_type in vector_store_types %}
+                                            <option value="{{ store_type }}" {% if store_type == default_vector_store %}selected{% endif %}>
+                                                {% if store_type == "standard" or store_type == "pages" %}Page Context{% elif store_type == "semantic" %}Semantic Context{% elif store_type == "haystack-qdrant" %}Haystack (Qdrant){% elif store_type == "haystack-memory" %}Haystack (Memory){% else %}{{ store_type|capitalize }}{% endif %}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <span class="help-text">Select which vector store to use for retrieval.</span>
+                                </div>
+                                <div class="admin-form-group">
+                                    <div class="range-with-value">
+                                        <label for="inspector-k-value">Results Count (k)</label>
+                                        <input type="number" id="inspector-k-value" min="1" max="20" step="1" value="5">
+                                    </div>
+                                    <span class="help-text">Number of results to retrieve.</span>
+                                </div>
+                                <div class="inspector-options">
+                                    <label><input type="checkbox" id="inspector-include-detailed" checked> Show Detailed Metrics</label>
+                                    <label><input type="checkbox" id="inspector-include-tokens" checked> Show Token Breakdown</label>
+                                </div>
+                                <button id="inspector-run-button" class="admin-button">Run Query Inspection</button>
+                                <div id="inspector-status" class="admin-status"></div>
+                            </div>
+                            
+                            <div class="admin-section">
+                                <h4>Inspection Results</h4>
+                                <div id="inspector-summary" class="config-section-help" style="display: none;">
+                                    <div class="inspector-summary-data"></div>
+                                </div>
+                                <div id="inspector-results" class="admin-table-container">
+                                    <p>Run a query above to see the context that would be sent to the LLM.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="admin-section">
+                                <h4>Context Analysis</h4>
+                                <div id="inspector-tokens-chart" class="inspector-chart-container" style="display: none;">
+                                    <!-- Token breakdown chart will be rendered here -->
+                                </div>
+                                <div id="inspector-scores-container" style="display: none;">
+                                    <h5>Scores Breakdown</h5>
+                                    <div id="inspector-scores-chart" class="inspector-chart-container" style="height: 350px;">
+                                        <!-- Scores chart will be rendered here -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="admin-section">
+                                <h4>LLM Prompt Preview</h4>
+                                <div class="admin-form-group">
+                                    <div id="inspector-prompt-container" style="display: none;">
+                                        <label for="inspector-system-prompt">System Prompt with Retrieved Context</label>
+                                        <textarea id="inspector-system-prompt" rows="10" readonly></textarea>
+                                        <div class="inspector-token-count" id="inspector-prompt-token-count"></div>
+                                    </div>
+                                    <p id="inspector-prompt-placeholder">Run a query above to see the complete system prompt that would be sent to the LLM.</p>
                                 </div>
                             </div>
                         </div>

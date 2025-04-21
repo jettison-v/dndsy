@@ -13,7 +13,7 @@ from botocore.exceptions import NoCredentialsError, PartialCredentialsError, Cli
 
 from llm_providers import get_llm_client # Import the factory function
 from embeddings.model_provider import embed_query # Import query embedding function
-from app import app_config # Import the global config dictionary
+from config import app_config, default_store_type # Import from config instead of app
 
 load_dotenv(override=True) # Load .env, potentially overriding system vars
 
