@@ -2,6 +2,24 @@
  * Admin UI functionality for DnDSy
  */
 document.addEventListener('DOMContentLoaded', function() {
+    // Fix Font Awesome icon styling and number inputs
+    const customStyles = document.createElement('style');
+    customStyles.textContent = `
+        .admin-modal .fas {
+            width: auto !important;
+            height: auto !important;
+            color: inherit !important;
+            background: none !important;
+            box-shadow: none !important;
+        }
+        
+        .admin-modal input[type="number"] {
+            width: auto !important;
+            min-width: 80px !important;
+        }
+    `;
+    document.head.appendChild(customStyles);
+    
     // DOM Elements
     const adminButton = document.getElementById('admin-button');
     const adminModal = document.getElementById('admin-modal');
@@ -459,7 +477,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (milestoneEntry) {
             // Existing milestone found - Update it (assume it's finishing)
-            milestoneEntry.innerHTML = `<i class="fas fa-check-circle" style="color: #28a745; margin-right: 5px;"></i> ${message}`;
+            milestoneEntry.innerHTML = `<i class="fas fa-check-circle" style="color: #28a745; margin-right: 5px; width: auto; height: auto; background: none; box-shadow: none;"></i> ${message}`;
         } else {
             // No existing milestone found OR no ID provided - Create a new one
             milestoneEntry = document.createElement('div');
@@ -468,10 +486,10 @@ document.addEventListener('DOMContentLoaded', function() {
                  milestoneEntry.id = elementId;
             }
             
-            let content = `<i class="fas fa-check-circle" style="color: #28a745; margin-right: 5px;"></i> ${message}`;
+            let content = `<i class="fas fa-check-circle" style="color: #28a745; margin-right: 5px; width: auto; height: auto; background: none; box-shadow: none;"></i> ${message}`;
             // Use spinner only if it's explicitly a long-running task *start*
             if (isLongRunning) {
-                content = `<i class="fas fa-spinner fa-spin" style="margin-right: 5px;"></i> ${message}`;
+                content = `<i class="fas fa-spinner fa-spin" style="margin-right: 5px; width: auto; height: auto; color: inherit; background: none; box-shadow: none;"></i> ${message}`;
             }
             milestoneEntry.innerHTML = content;
             liveMilestones.appendChild(milestoneEntry);
