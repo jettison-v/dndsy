@@ -9,8 +9,8 @@ import json
 from dotenv import load_dotenv
 from flask_session import Session
 import boto3
-from werkzeug.utils import secure_filename
 from botocore.exceptions import NoCredentialsError, PartialCredentialsError, ClientError
+from werkzeug.utils import secure_filename
 import subprocess
 import threading
 import io
@@ -59,6 +59,7 @@ AVAILABLE_LLM_MODELS = {
 
 # Path for the new run history file
 RUN_HISTORY_FILE = Path(__file__).parent / "data" / "admin_processing_runs.json"
+RUN_HISTORY_S3_KEY = "processing/admin_processing_runs.json"  # S3 path for run history
 RUN_HISTORY_LOCK = threading.Lock() # Lock for thread-safe file access
 
 # Dictionary to hold active run queues for SSE streaming
@@ -67,25 +68,89 @@ active_runs = {}
 RUN_LOCK = threading.Lock() # Lock for accessing active_runs dictionary
 
 def read_run_history():
-    """Reads the run history JSON file safely."""
+    """
+    Reads the run history JSON file from S3 or local file.
+    First tries to get from S3, falls back to local file.
+    """
     with RUN_HISTORY_LOCK:
-        if not RUN_HISTORY_FILE.exists():
-            return []
-        try:
-            with open(RUN_HISTORY_FILE, 'r') as f:
-                return json.load(f)
-        except (json.JSONDecodeError, IOError) as e:
-            logger.error(f"Error reading run history file {RUN_HISTORY_FILE}: {e}")
-            return []
+        history_data = []
+        
+        # First try to get from S3
+        s3_client = get_s3_client()
+        if s3_client:
+            try:
+                bucket_name = os.environ.get('AWS_S3_BUCKET_NAME')
+                if bucket_name:
+                    logger.info(f"Attempting to read run history from S3: {RUN_HISTORY_S3_KEY}")
+                    response = s3_client.get_object(
+                        Bucket=bucket_name,
+                        Key=RUN_HISTORY_S3_KEY
+                    )
+                    history_data = json.loads(response['Body'].read().decode('utf-8'))
+                    logger.info(f"Successfully loaded run history from S3")
+                    
+                    # Also save it locally as a backup
+                    try:
+                        RUN_HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
+                        with open(RUN_HISTORY_FILE, 'w') as f:
+                            json.dump(history_data, f, indent=2)
+                        logger.info(f"Saved S3 run history locally to {RUN_HISTORY_FILE}")
+                        return history_data
+                    except IOError as e:
+                        logger.error(f"Could not write local run history backup: {e}")
+                        # Continue with S3 data even if local write fails
+                        return history_data
+            except ClientError as e:
+                if e.response['Error']['Code'] == 'NoSuchKey':
+                    logger.info(f"Run history file not found in S3, will try local file")
+                else:
+                    logger.warning(f"S3 error accessing run history: {e}")
+            except Exception as e:
+                logger.warning(f"Unexpected error loading run history from S3: {e}")
+        
+        # If S3 fails or isn't configured, try local file
+        if RUN_HISTORY_FILE.exists():
+            try:
+                with open(RUN_HISTORY_FILE, 'r') as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, IOError) as e:
+                logger.error(f"Error reading local run history file: {e}")
+                return []
+        
+        # If all else fails, return empty list
+        return []
 
 def write_run_history(history_data):
-    """Writes the run history JSON file safely."""
+    """
+    Writes the run history JSON file to both S3 and local storage.
+    """
     with RUN_HISTORY_LOCK:
+        # First save locally as a backup
         try:
+            RUN_HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
             with open(RUN_HISTORY_FILE, 'w') as f:
                 json.dump(history_data, f, indent=2)
+            logger.info(f"Saved run history to local file")
         except IOError as e:
-            logger.error(f"Error writing run history file {RUN_HISTORY_FILE}: {e}")
+            logger.error(f"Error writing local run history file: {e}")
+        
+        # Then save to S3
+        s3_client = get_s3_client()
+        if s3_client:
+            try:
+                bucket_name = os.environ.get('AWS_S3_BUCKET_NAME')
+                if bucket_name:
+                    history_json = json.dumps(history_data)
+                    s3_client.put_object(
+                        Bucket=bucket_name,
+                        Key=RUN_HISTORY_S3_KEY,
+                        Body=history_json,
+                        ContentType='application/json'
+                    )
+                    logger.info(f"Saved run history to S3: {RUN_HISTORY_S3_KEY}")
+            except Exception as e:
+                logger.error(f"Failed to save run history to S3: {e}")
+                # Continue even if S3 save fails
 
 def check_auth():
     """Checks if the current session is authenticated."""
