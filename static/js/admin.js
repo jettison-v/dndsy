@@ -1562,7 +1562,10 @@ document.addEventListener('DOMContentLoaded', function() {
         html += `
                 </tbody>
             </table>
-        `
+        `;
+
+        // Update the DOM with the environment variables
+        envVars.innerHTML = html;
     }
     
     // ============================
