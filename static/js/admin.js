@@ -665,11 +665,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Data is already sorted by start time (newest first) from the backend
         for (const run of data) {
             const startTime = new Date(run.start_time).toLocaleString();
-            const duration = run.duration_seconds !== null ? `${run.duration_seconds.toFixed(1)}s` : 'N/A';
+            const duration = run.duration_seconds !== null && run.duration_seconds !== undefined 
+                ? `${run.duration_seconds.toFixed(1)}s` 
+                : 'N/A';
             const statusClass = run.status.toLowerCase().includes('fail') ? 'admin-error' : (run.status === 'Running' ? 'admin-info' : 'admin-success');
             const statusText = run.status;
-            const params = run.parameters;
-            const paramsSummary = `Stores: ${params.store_types.join(', ') || 'N/A'}; Cache: ${params.cache_behavior}; Prefix: ${params.s3_prefix || 'None'}`;
+            const params = run.parameters || {}; // Add fallback if parameters is undefined
+            const paramsSummary = `Stores: ${params.store_types?.join(', ') || 'N/A'}; Cache: ${params.cache_behavior || 'N/A'}; Prefix: ${params.s3_prefix || 'None'}`;
             
             // Determine button class and action based on status
             let buttonHtml;
@@ -686,7 +688,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${startTime}</td>
                     <td>${duration}</td>
                     <td><span class="${statusClass}" style="padding: 2px 5px; border-radius: 3px;">${statusText}</span></td>
-                    <td title="${run.command}">${paramsSummary}</td>
+                    <td title="${run.command || ''}">${paramsSummary}</td>
                     <td>${buttonHtml}</td>
                 </tr>
             `;
