@@ -385,6 +385,8 @@ class DataProcessor:
             doc = None
             preprocessed_page_data: List[PreprocessedData] = []
             pdf_links_data: List[Dict[str, Any]] = []
+            # Store for links to future pages - we'll process these after going through all pages
+            pending_future_links = []
 
             try:
                 doc = fitz.open(stream=pdf_bytes, filetype="pdf")
@@ -410,9 +412,10 @@ class DataProcessor:
                 self.doc_analyzer.determine_heading_levels()
                 logger.info("Document structure analysis complete.")
 
-                logger.info(f"Extracting text, links, and metadata from {total_pages} pages... (Image Gen: {generate_images})")
-                for page_num, page in enumerate(tqdm(doc, desc=f"Pages [{pdf_filename}]", leave=False)):
-
+                # First pass - process all pages and extract text
+                page_texts = {}
+                logger.info(f"First pass: Extracting text and metadata from {total_pages} pages...")
+                for page_num, page in enumerate(tqdm(doc, desc=f"Pages - First Pass [{pdf_filename}]", leave=False)):
                     page_dict = page.get_text('dict')
                     self.doc_analyzer.process_page_headings(page_dict, page_num)
                     context = self.doc_analyzer.get_current_context()
@@ -425,7 +428,22 @@ class DataProcessor:
                                 page_text += line_text + "\\n"
                     page_text = page_text.strip()
 
-                    if not page_text: continue # Skip empty pages
+                    if not page_text: continue
+                    
+                    page_label = page_num + 1
+                    page_texts[page_label] = page_text
+                
+                # Second pass - process all pages for links and images, with complete text available
+                logger.info(f"Second pass: Processing links and images for {total_pages} pages... (Image Gen: {generate_images})")
+                for page_num, page in enumerate(tqdm(doc, desc=f"Pages - Second Pass [{pdf_filename}]", leave=False)):
+                    page_dict = page.get_text('dict')
+                    self.doc_analyzer.process_page_headings(page_dict, page_num)
+                    context = self.doc_analyzer.get_current_context()
+                    
+                    page_label = page_num + 1
+                    page_text = page_texts.get(page_label)
+                    
+                    if not page_text: continue
 
                     # --- Extract Links from Page ---
                     try:
@@ -589,36 +607,43 @@ class DataProcessor:
 
                                     target_snippet = None
                                     if 0 <= target_page_num < total_pages:
-                                        target_page = doc[target_page_num]
-                                        target_page_text = target_page.get_text("text")
-                                        match_start = -1
-                                        try:
-                                            pattern = r"\\b" + re.escape(link_info['link_text']) + r"\\b"
-                                            match = re.search(pattern, target_page_text, re.IGNORECASE | re.DOTALL)
-                                            if match: match_start = match.start()
-                                            else: match_start = target_page_text.lower().find(link_info['link_text'].lower())
-                                        except re.error:
-                                            match_start = target_page_text.lower().find(link_info['link_text'].lower())
+                                        # Check if we have the target text in our page_texts dictionary
+                                        target_page_text = page_texts.get(target_page_label)
+                                        if target_page_text:
+                                            match_start = -1
+                                            try:
+                                                pattern = r"\\b" + re.escape(link_info['link_text']) + r"\\b"
+                                                match = re.search(pattern, target_page_text, re.IGNORECASE | re.DOTALL)
+                                                if match: match_start = match.start()
+                                                else: match_start = target_page_text.lower().find(link_info['link_text'].lower())
+                                            except re.error:
+                                                match_start = target_page_text.lower().find(link_info['link_text'].lower())
 
-                                        if match_start != -1:
-                                            start_para = target_page_text.rfind('\\n\\n', 0, match_start)
-                                            start_para = 0 if start_para == -1 else start_para + 2
-                                            end_para = target_page_text.find('\\n\\n', match_start)
-                                            end_para = len(target_page_text) if end_para == -1 else end_para
-                                            target_snippet = target_page_text[start_para:end_para].strip().replace('\\n', ' ')
-                                            snippet_max_len = 750
-                                            if len(target_snippet) > snippet_max_len:
-                                                trunc_point = target_snippet.rfind('.', 0, snippet_max_len)
-                                                if trunc_point > snippet_max_len * 0.7: target_snippet = target_snippet[:trunc_point+1] + "..."
-                                                else: target_snippet = target_snippet[:snippet_max_len] + "..."
-                                        else:
-                                            logger.warning(f"Link text '{link_info['link_text']}' not found on target page {target_page_label} for {s3_pdf_key}. Using fallback snippet.")
-                                            first_para_end = target_page_text.find('\\n\\n')
-                                            if first_para_end != -1 and first_para_end > 50: target_snippet = target_page_text[:first_para_end].strip().replace('\\n', ' ')
+                                            if match_start != -1:
+                                                start_para = target_page_text.rfind('\\n\\n', 0, match_start)
+                                                start_para = 0 if start_para == -1 else start_para + 2
+                                                end_para = target_page_text.find('\\n\\n', match_start)
+                                                end_para = len(target_page_text) if end_para == -1 else end_para
+                                                target_snippet = target_page_text[start_para:end_para].strip().replace('\\n', ' ')
+                                                snippet_max_len = 750
+                                                if len(target_snippet) > snippet_max_len:
+                                                    trunc_point = target_snippet.rfind('.', 0, snippet_max_len)
+                                                    if trunc_point > snippet_max_len * 0.7: target_snippet = target_snippet[:trunc_point+1] + "..."
+                                                    else: target_snippet = target_snippet[:snippet_max_len] + "..."
                                             else:
-                                                fallback_len = 350
-                                                target_snippet = target_page_text[:fallback_len].strip().replace('\\n', ' ') + ("..." if len(target_page_text) > fallback_len else "")
-                                        if not target_snippet: target_snippet = f"Content from page {target_page_label}"
+                                                # Use a fallback snippet, but don't log a warning since we're handling future links better now
+                                                first_para_end = target_page_text.find('\\n\\n')
+                                                if first_para_end != -1 and first_para_end > 50: target_snippet = target_page_text[:first_para_end].strip().replace('\\n', ' ')
+                                                else:
+                                                    fallback_len = 350
+                                                    target_snippet = target_page_text[:fallback_len].strip().replace('\\n', ' ') + ("..." if len(target_page_text) > fallback_len else "")
+                                        else:
+                                            # This is a link to a future page, add to pending list to process later
+                                            pending_future_links.append({
+                                                "link_info": link_info,
+                                                "target_page_num": target_page_num
+                                            })
+                                            continue
                                     else:
                                         logger.warning(f"Internal link target page {target_page_label} out of bounds for {s3_pdf_key}")
                                         target_snippet = f"Error: Target page {target_page_label} invalid."
@@ -639,7 +664,6 @@ class DataProcessor:
                     except Exception as link_e:
                         logger.error(f"Error processing links on {s3_pdf_key} page {page_num+1}: {link_e}", exc_info=False)
 
-                    page_label = page_num + 1
                     s3_image_url = None
                     if generate_images:
                         pix = None
@@ -688,6 +712,53 @@ class DataProcessor:
                     # --- Collect data needed for Phase 2 ---
                     # We need page_text, page_label, and metadata for all store types now
                     preprocessed_page_data.append({"text": page_text, "page": page_label, "metadata": metadata.copy()})
+
+                # Process any pending future links now that we have all pages
+                if pending_future_links:
+                    logger.info(f"Processing {len(pending_future_links)} links to future pages...")
+                    for pending_link in pending_future_links:
+                        link_info = pending_link["link_info"]
+                        target_page_num = pending_link["target_page_num"]
+                        target_page_label = target_page_num + 1
+                        
+                        target_page_text = page_texts.get(target_page_label)
+                        if target_page_text:
+                            match_start = -1
+                            try:
+                                pattern = r"\\b" + re.escape(link_info['link_text']) + r"\\b"
+                                match = re.search(pattern, target_page_text, re.IGNORECASE | re.DOTALL)
+                                if match: match_start = match.start()
+                                else: match_start = target_page_text.lower().find(link_info['link_text'].lower())
+                            except re.error:
+                                match_start = target_page_text.lower().find(link_info['link_text'].lower())
+
+                            if match_start != -1:
+                                start_para = target_page_text.rfind('\\n\\n', 0, match_start)
+                                start_para = 0 if start_para == -1 else start_para + 2
+                                end_para = target_page_text.find('\\n\\n', match_start)
+                                end_para = len(target_page_text) if end_para == -1 else end_para
+                                target_snippet = target_page_text[start_para:end_para].strip().replace('\\n', ' ')
+                                snippet_max_len = 750
+                                if len(target_snippet) > snippet_max_len:
+                                    trunc_point = target_snippet.rfind('.', 0, snippet_max_len)
+                                    if trunc_point > snippet_max_len * 0.7: target_snippet = target_snippet[:trunc_point+1] + "..."
+                                    else: target_snippet = target_snippet[:snippet_max_len] + "..."
+                            else:
+                                # Even after post-processing, we couldn't find the exact text. Use a fallback
+                                logger.warning(f"Link text '{link_info['link_text']}' not found on target page {target_page_label} for {s3_pdf_key} even in second pass. Using fallback snippet.")
+                                first_para_end = target_page_text.find('\\n\\n')
+                                if first_para_end != -1 and first_para_end > 50: target_snippet = target_page_text[:first_para_end].strip().replace('\\n', ' ')
+                                else:
+                                    fallback_len = 350
+                                    target_snippet = target_page_text[:fallback_len].strip().replace('\\n', ' ') + ("..." if len(target_page_text) > fallback_len else "")
+                        else:
+                            # Still can't find the target page
+                            logger.warning(f"Target page {target_page_label} still not found for link after processing all pages in {s3_pdf_key}")
+                            target_snippet = f"Content from page {target_page_label}"
+                            
+                        link_info['target_snippet'] = target_snippet
+                        link_info['target_url'] = None
+                        pdf_links_data.append(link_info)
 
                 # --- Save Extracted Link Data to S3 ---
                 if pdf_links_data and s3_client:
