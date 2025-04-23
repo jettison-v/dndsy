@@ -1035,6 +1035,77 @@ class DataProcessor:
 
         return self.total_points_added_across_stores
 
+    def rebuild_semantic_store(self, validate=True, test_search=True, sample_size=10):
+        """
+        Rebuilds the semantic vector store from scratch.
+        
+        This method:
+        1. Clears the existing semantic collection
+        2. Reprocesses all PDFs with cache_behavior="rebuild"
+        3. Optionally validates that metadata matches content
+        4. Optionally tests search functionality
+        
+        Args:
+            validate (bool): Whether to validate metadata alignment
+            test_search (bool): Whether to test search functionality
+            sample_size (int): Number of chunks to sample for validation
+            
+        Returns:
+            bool: True if rebuild was successful, False otherwise
+        """
+        import time
+        from vector_store import get_vector_store
+        
+        start_time = time.time()
+        logger.info("Starting semantic store rebuild process...")
+        
+        # 1. Initialize semantic store
+        semantic_store = get_vector_store("semantic")
+        if not semantic_store:
+            logger.error("Failed to initialize semantic store")
+            return False
+        
+        # Optional: validate current store to document issues
+        if validate:
+            logger.info("Validating current semantic store for issues...")
+            semantic_store.validate_metadata_alignment(sample_size=sample_size)
+        
+        # 2. Delete the existing semantic collection
+        try:
+            logger.info("Deleting existing semantic collection...")
+            semantic_store.clear_store()
+            logger.info("Successfully cleared semantic collection")
+        except Exception as e:
+            logger.error(f"Error deleting semantic collection: {e}")
+            return False
+        
+        # 3. Process all PDFs targeting only the semantic store
+        logger.info("Beginning PDF processing with rebuilt semantic store...")
+        result = self.process_all_sources(target_stores=["semantic"])
+        
+        # 4. Validate the rebuilt store if requested
+        if result and validate:
+            logger.info("Validating rebuilt semantic store...")
+            validation_passed = semantic_store.validate_metadata_alignment(sample_size=sample_size)
+            
+            # 5. Test search functionality if requested
+            if test_search:
+                logger.info("Testing semantic search functionality...")
+                search_passed = semantic_store.test_semantic_search()
+                
+                if validation_passed and search_passed:
+                    logger.info("Validation and search tests successful!")
+                else:
+                    logger.warning("Some validation or search tests failed - review logs for details")
+        
+        duration = time.time() - start_time
+        if result:
+            logger.info(f"Semantic store rebuild completed successfully in {duration:.2f} seconds!")
+            return True
+        else:
+            logger.error(f"Semantic store rebuild failed after {duration:.2f} seconds")
+            return False
+
 # Example usage (if run directly, though typically called from manage_vector_stores.py)
 if __name__ == "__main__":
     logger.info("Running DataProcessor directly for testing...")

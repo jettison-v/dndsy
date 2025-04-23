@@ -739,4 +739,136 @@ class SemanticStore(SearchHelper):
             logging.info(f"Recreating collection {self.collection_name}...")
             self._create_collection_if_not_exists(SEMANTIC_EMBEDDING_DIMENSION)
         except Exception as e:
-            logging.warning(f"Could not delete Qdrant collection '{self.collection_name}': {e}") 
+            logging.warning(f"Could not delete Qdrant collection '{self.collection_name}': {e}")
+            
+    def validate_metadata_alignment(self, sample_size=5):
+        """
+        Validates a sample of chunks to ensure metadata matches content.
+        
+        Args:
+            sample_size: Number of chunks to sample for validation
+            
+        Returns:
+            Boolean indicating if validation passed
+        """
+        # Get all documents
+        try:
+            all_docs = self._get_all_documents_raw(limit=1000)
+            logging.info(f"Retrieved {len(all_docs)} documents for validation sampling")
+            
+            if not all_docs:
+                logging.warning("No documents found for validation")
+                return False
+                
+            # Select random sample
+            import random
+            import re
+            sample_docs = random.sample(all_docs, min(sample_size, len(all_docs)))
+            logging.info(f"Validating {len(sample_docs)} random chunks")
+            
+            valid_count = 0
+            issues_count = 0
+            
+            for doc in sample_docs:
+                text = doc["text"]
+                metadata = doc["metadata"]
+                
+                # Check for page number reference patterns in text
+                page_patterns = [
+                    r"Page (\d+)",
+                    r"Pg\.? (\d+)",
+                    r"p\.? (\d+)"
+                ]
+                
+                metadata_page = metadata.get("page")
+                pages_mentioned = []
+                
+                # Extract potential page numbers mentioned in text
+                for pattern in page_patterns:
+                    matches = re.finditer(pattern, text, re.IGNORECASE)
+                    for match in matches:
+                        try:
+                            page_num = int(match.group(1))
+                            pages_mentioned.append(page_num)
+                        except (ValueError, IndexError):
+                            pass
+                
+                # Check heading path in metadata
+                metadata_headings = metadata.get("heading_path", "")
+                if isinstance(metadata_headings, list):
+                    metadata_headings = " > ".join(metadata_headings)
+                
+                # Basic validation logic
+                valid = True
+                
+                # Check if page mentions align with metadata
+                if pages_mentioned and metadata_page not in pages_mentioned:
+                    valid = False
+                    logging.warning(f"Page mismatch - Metadata: {metadata_page}, Mentioned: {pages_mentioned}")
+                    logging.warning(f"Text excerpt: {text[:100]}...")
+                
+                # Check if headings are relevant to content
+                heading_words = set(re.findall(r'\b\w+\b', metadata_headings.lower()))
+                significant_words = set(word.lower() for word in re.findall(r'\b[A-Za-z]{4,}\b', text))
+                
+                # Calculate content descriptor overlap
+                if heading_words and significant_words:
+                    overlap = heading_words.intersection(significant_words)
+                    if not overlap and len(heading_words) > 1:
+                        logging.warning(f"Heading doesn't match content - Heading: {metadata_headings}")
+                        logging.warning(f"Text excerpt: {text[:100]}...")
+                        valid = False
+                
+                if valid:
+                    valid_count += 1
+                else:
+                    issues_count += 1
+                    
+            logging.info(f"Validation complete: {valid_count}/{len(sample_docs)} chunks valid")
+            return issues_count == 0
+            
+        except Exception as e:
+            logging.error(f"Error during validation: {e}")
+            return False
+    
+    def test_semantic_search(self, test_queries=None):
+        """Tests the semantic store with sample queries to ensure it's working properly"""
+        from llm import embed_query
+        
+        if test_queries is None:
+            test_queries = [
+                "How does Circle of the Moon druid wild shape work?",
+                "What are the rules for spell components?",
+                "Explain the rogue's sneak attack feature"
+            ]
+        
+        success = True
+        
+        for query in test_queries:
+            try:
+                # Embed the query
+                query_vector = embed_query(query, "semantic")
+                
+                # Search for results
+                results = self.search(query_vector=query_vector, query=query, limit=3)
+                
+                if results:
+                    logging.info(f"Query '{query}' returned {len(results)} results")
+                    top_result = results[0]
+                    logging.info(f"Top result from: {top_result['metadata'].get('source')} (page {top_result['metadata'].get('page')})")
+                    
+                    # Check if top result has required metadata
+                    required_keys = ["page", "source", "heading_path"]
+                    for key in required_keys:
+                        if key not in top_result['metadata']:
+                            logging.warning(f"Missing required metadata key '{key}' in search result")
+                            success = False
+                else:
+                    logging.warning(f"Query '{query}' returned no results")
+                    success = False
+                    
+            except Exception as e:
+                logging.error(f"Error testing query '{query}': {e}")
+                success = False
+        
+        return success 
