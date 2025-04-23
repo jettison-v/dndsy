@@ -107,7 +107,9 @@ class SemanticStore(SearchHelper):
         page_texts: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         """
-        Chunks text spanning multiple pages, preserving context across boundaries.
+        Chunks text spanning multiple pages, preserving context across boundaries 
+        while ensuring metadata accurately reflects chunk content.
+        
         Args:
             page_texts: List of dicts, each containing 'text', 'page', 'metadata'.
         Returns:
@@ -119,53 +121,112 @@ class SemanticStore(SearchHelper):
         # Sort pages by page number to ensure correct order
         page_texts = sorted(page_texts, key=lambda x: x["page"])
         
-        # IMPROVED APPROACH: Instead of combining all text and tracking positions,
-        # we'll chunk each page separately but track content across pages
+        # 1. First, create a combined text document with markers for page boundaries
+        combined_text = ""
+        page_boundary_positions = {}  # Maps character positions to page info
         
-        processed_chunks = []
-        chunk_index = 0
-        total_pages = len(page_texts)
+        # 2. Store original documents and positions for later analysis
+        original_documents = []
+        current_position = 0
         
-        # First, process each page individually with the text splitter
-        page_chunks = []
         for page_info in page_texts:
-            page_num = page_info["page"]
-            page_text = page_info["text"]
-            page_metadata = page_info["metadata"].copy()
+            # Store page boundary position
+            page_boundary_positions[current_position] = page_info
             
-            # Skip empty pages
-            if not page_text.strip():
-                continue
-                
-            # Apply text splitter to this page only
-            chunks = self.text_splitter.split_text(page_text)
+            # Add text with a special page marker that won't interfere with chunking
+            # but will help us identify page boundaries
+            page_marker = f"[[PAGE:{page_info['page']}]]"
             
-            # Store each chunk with its original page metadata
-            for chunk_text in chunks:
-                if not chunk_text.strip():
-                    continue
-                    
-                page_chunks.append({
-                    "text": chunk_text,
-                    "page_num": page_num,
-                    "metadata": page_metadata.copy()
-                })
+            # Store original document with positions
+            original_documents.append({
+                "start_pos": current_position,
+                "text": page_info["text"],
+                "page": page_info["page"],
+                "metadata": page_info["metadata"],
+                "page_marker": page_marker
+            })
+            
+            # Add text to combined document
+            if combined_text and not combined_text.endswith("\n\n"):
+                combined_text += "\n\n"
+            
+            combined_text += page_marker + " " + page_info["text"]
+            current_position = len(combined_text)
         
-        # Process all chunks and assign proper indices
-        total_chunks = len(page_chunks)
-        for i, chunk in enumerate(page_chunks):
-            # Update metadata for this chunk
-            metadata = chunk["metadata"]
+        # 3. Apply semantic chunking to the combined text
+        chunks_text = self.text_splitter.split_text(combined_text)
+        
+        # 4. Process chunks and determine proper metadata
+        processed_chunks = []
+        
+        for i, chunk_text in enumerate(chunks_text):
+            if not chunk_text.strip():
+                continue
+            
+            # Check which page markers are in this chunk to determine content sources
+            chunk_pages = []
+            primary_page = None
+            primary_metadata = None
+            
+            # Extract page markers from the chunk
+            for doc in original_documents:
+                page_marker = doc["page_marker"]
+                if page_marker in chunk_text:
+                    chunk_pages.append(doc["page"])
+                    
+                    # First page marker is the primary source for metadata
+                    if primary_page is None:
+                        primary_page = doc["page"]
+                        primary_metadata = doc["metadata"].copy()
+            
+            # If no page markers found (unlikely), use content analysis
+            if not primary_page and chunk_text:
+                # Find best matching page by content similarity
+                best_match = None
+                best_match_score = 0
+                
+                for doc in original_documents:
+                    # Simple overlap score - can be improved with more sophisticated measures
+                    common_text = set(chunk_text.split()) & set(doc["text"].split())
+                    match_score = len(common_text)
+                    
+                    if match_score > best_match_score:
+                        best_match_score = match_score
+                        best_match = doc
+                
+                if best_match:
+                    primary_page = best_match["page"]
+                    primary_metadata = best_match["metadata"].copy()
+                else:
+                    # Fallback: use the first page's metadata
+                    primary_page = page_texts[0]["page"]
+                    primary_metadata = page_texts[0]["metadata"].copy()
+            
+            # Remove page markers from the final chunk text
+            clean_chunk_text = chunk_text
+            for doc in original_documents:
+                clean_chunk_text = clean_chunk_text.replace(doc["page_marker"], "")
+            clean_chunk_text = clean_chunk_text.strip()
+            
+            if not clean_chunk_text:
+                continue
+            
+            # Create metadata for the chunk
+            metadata = primary_metadata
             metadata["chunk_index"] = i
-            metadata["chunk_count"] = total_chunks
-            metadata["single_page"] = True  # This is a chunk from a single page
+            metadata["chunk_count"] = len(chunks_text)
+            metadata["cross_page"] = len(chunk_pages) > 1
+            metadata["pages_spanned"] = chunk_pages
+            
+            # Ensure the metadata's page field matches the primary page
+            metadata["page"] = primary_page
             
             processed_chunks.append({
-                "text": chunk["text"],
+                "text": clean_chunk_text,
                 "metadata": metadata
             })
         
-        logging.info(f"Generated {len(processed_chunks)} semantic chunks from {total_pages} pages using single-page chunking.")
+        logging.info(f"Generated {len(processed_chunks)} semantic chunks from {len(page_texts)} pages using cross-page aware chunking.")
         return processed_chunks
 
     def add_points(self, points: List[models.PointStruct]) -> int:
