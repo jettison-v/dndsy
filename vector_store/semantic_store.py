@@ -119,57 +119,53 @@ class SemanticStore(SearchHelper):
         # Sort pages by page number to ensure correct order
         page_texts = sorted(page_texts, key=lambda x: x["page"])
         
-        # Combine text with page markers
-        combined_text = ""
-        page_markers = {}  # Map character positions to page numbers and original metadata
-        
-        for page_info in page_texts:
-            start_pos = len(combined_text)
-            page_markers[start_pos] = page_info # Store original page info (text, metadata, page)
-            combined_text += page_info["text"]
-            if not combined_text.endswith("\n\n"): combined_text += "\n\n"
-        
-        # Apply semantic chunking to the combined text
-        chunks_text = self.text_splitter.split_text(combined_text)
+        # IMPROVED APPROACH: Instead of combining all text and tracking positions,
+        # we'll chunk each page separately but track content across pages
         
         processed_chunks = []
-        chunk_start_pos = 0
-        total_chunks = len(chunks_text)
+        chunk_index = 0
+        total_pages = len(page_texts)
         
-        # Find which page each chunk belongs to based on its position in the original text
-        for i, chunk_text in enumerate(chunks_text):
-            if not chunk_text.strip(): continue
+        # First, process each page individually with the text splitter
+        page_chunks = []
+        for page_info in page_texts:
+            page_num = page_info["page"]
+            page_text = page_info["text"]
+            page_metadata = page_info["metadata"].copy()
+            
+            # Skip empty pages
+            if not page_text.strip():
+                continue
                 
-            # Find which page this chunk starts on
-            origin_page_info = None
-            nearest_page_pos = -1
-            for pos, marker in page_markers.items():
-                if pos <= chunk_start_pos and pos > nearest_page_pos:
-                    nearest_page_pos = pos
-                    origin_page_info = marker
+            # Apply text splitter to this page only
+            chunks = self.text_splitter.split_text(page_text)
             
-            if not origin_page_info:
-                logging.warning(f"Could not determine source page for chunk {i}, using first page")
-                origin_page_info = page_texts[0]
-            
-            # Use metadata from the page where this chunk starts
-            metadata = origin_page_info["metadata"].copy()
-            # Update metadata with chunk info
+            # Store each chunk with its original page metadata
+            for chunk_text in chunks:
+                if not chunk_text.strip():
+                    continue
+                    
+                page_chunks.append({
+                    "text": chunk_text,
+                    "page_num": page_num,
+                    "metadata": page_metadata.copy()
+                })
+        
+        # Process all chunks and assign proper indices
+        total_chunks = len(page_chunks)
+        for i, chunk in enumerate(page_chunks):
+            # Update metadata for this chunk
+            metadata = chunk["metadata"]
             metadata["chunk_index"] = i
             metadata["chunk_count"] = total_chunks
-            metadata["cross_page"] = True # Indicate it came from cross-page processing
-            # Ensure original page number from originating page is kept
-            metadata["page"] = origin_page_info["page"]
-
+            metadata["single_page"] = True  # This is a chunk from a single page
+            
             processed_chunks.append({
-                "text": chunk_text,
+                "text": chunk["text"],
                 "metadata": metadata
             })
-            
-            # Update start position for the next chunk
-            chunk_start_pos += len(chunk_text) + (2 if combined_text[chunk_start_pos + len(chunk_text):].startswith("\n\n") else 0) # Account for separators potentially removed by splitter
         
-        logging.info(f"Generated {len(processed_chunks)} semantic chunks from {len(page_texts)} pages.")
+        logging.info(f"Generated {len(processed_chunks)} semantic chunks from {total_pages} pages using single-page chunking.")
         return processed_chunks
 
     def add_points(self, points: List[models.PointStruct]) -> int:
