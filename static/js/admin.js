@@ -1629,7 +1629,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const inspectorQuery = document.getElementById('inspector-query');
     const inspectorStoreType = document.getElementById('inspector-store-type');
-    const inspectorKValue = document.getElementById('inspector-k-value');
     const inspectorIncludeDetailed = document.getElementById('inspector-include-detailed');
     const inspectorIncludeTokens = document.getElementById('inspector-include-tokens');
     const inspectorRunButton = document.getElementById('inspector-run-button');
@@ -1652,7 +1651,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Get query and options
         const query = inspectorQuery.value.trim();
         const storeType = inspectorStoreType.value;
-        const k = inspectorKValue.value;
         const includeDetailed = inspectorIncludeDetailed.checked;
         const includeTokens = inspectorIncludeTokens.checked;
         
@@ -1674,7 +1672,7 @@ document.addEventListener('DOMContentLoaded', function() {
         inspectorResults.innerHTML = '<p>Analyzing query and retrieving context...</p>';
         
         // Build URL with parameters
-        const url = `/api/admin/inspect-context?query=${encodeURIComponent(query)}&store_type=${storeType}&k=${k}&include_detailed=${includeDetailed}&include_tokens=${includeTokens}`;
+        const url = `/api/admin/inspect-context?query=${encodeURIComponent(query)}&store_type=${storeType}&k=${retrievalK.value}&include_detailed=${includeDetailed}&include_tokens=${includeTokens}`;
         
         // Fetch context inspection results
         fetch(url)
