@@ -45,49 +45,87 @@ import io # For handling image data in memory
 from dotenv import load_dotenv
 import uuid  # For generating unique UUIDs
 
-# Import shared modules (adjust path)
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import ENV_PREFIX, S3_BUCKET_NAME
+# Ensure logs directory exists relative to project root
+# Assumes this script is run from the project root or sys.path is set correctly
+project_root = Path(__file__).parent.parent
+logs_dir = project_root / 'logs'
+os.makedirs(logs_dir, exist_ok=True)
 
-# Create the data directory if it doesn't exist
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
-os.makedirs(DATA_DIR, exist_ok=True)
+# Load environment variables from project root, overriding existing ones
+env_path = project_root / '.env'
+load_dotenv(dotenv_path=env_path, override=True)
 
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-    handlers=[
-        logging.FileHandler(os.path.join(DATA_DIR, "processor.log"), encoding='utf-8'),
-        logging.StreamHandler()
-    ]
-)
+# Import environment-specific S3 bucket name
+sys.path.append(str(project_root))
+try:
+    from config import S3_BUCKET_NAME
+    print(f"Using environment-specific S3 bucket: {S3_BUCKET_NAME}")
+except ImportError:
+    S3_BUCKET_NAME = os.getenv("AWS_S3_BUCKET_NAME")
+    print(f"Using default S3 bucket from environment: {S3_BUCKET_NAME}")
 
-# Import after logging is configured
-from .extractors import PDFTextExtractor
-from .common_utils import hash_file, delete_specific_s3_images
-from vector_store import get_vector_store
+# Define base directory for images relative to static folder
+PDF_IMAGE_DIR = "pdf_page_images"
+STATIC_DIR = "static" # Define static directory name
+# File to store processing history (both locally and on S3)
+# Use absolute path for local history file
+PROCESS_HISTORY_FILE = project_root / "pdf_process_history.json"
+PROCESS_HISTORY_S3_KEY = "processing/pdf_process_history.json"  # S3 path
+# S3 prefix for storing extracted link data
+EXTRACTED_LINKS_S3_PREFIX = "extracted_links/"
 
-# Load environment variables
-from dotenv import load_dotenv
-load_dotenv()
+# Color to category mapping for link extraction
+COLOR_CATEGORY_MAP = {
+    # Monster colors
+    "#a70000": "monster",
+    "#bc0f0f": "monster",
+    
+    # Spell colors
+    "#704cd9": "spell",
+    
+    # Skill colors
+    "#036634": "skill",
+    "#11884c": "skill",
+    
+    # Item colors
+    "#623a1e": "item", 
+    "#774521": "item",
+    
+    # Magic Item colors
+    "#0f5cbc": "magic-item",  # Light blue color for magic items/potions
+    
+    # Rule colors
+    "#6a5009": "rule",
+    "#9b740b": "rule",
+    "#efb311": "rule",  # Yellow color for rules
+    
+    # Sense colors
+    "#a41b96": "sense",
+    
+    # Condition colors
+    "#364d00": "condition",
+    "#5a8100": "condition",
+    
+    # Lore colors
+    "#a83e3e": "lore",
+    
+    # Default - fallback
+    "#0053a3": "reference",
+    "#006abe": "reference",
+    "#141414": "navigation",
+    "#9a9a9a": "footer",
+    "#e8f6ff": "footer"
+}
 
-# Constants
-PREPROCESSED_CACHE_FILE = os.path.join(DATA_DIR, "preprocessed_cache.json")
-PDF_DIGEST_KEY = "pdf_hash_digest"
-PREPROCESSED_TIMESTAMP = "preprocessed_timestamp"
-DEFAULT_CONFIG_PATH = os.path.join(DATA_DIR, "source_pdf_config.json")
-EXTRACTION_TYPE = "openai"
-
-# Amazon S3 configuration
+# --- AWS S3 Configuration ---
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
-AWS_S3_PDF_PREFIX = os.getenv("AWS_S3_PDF_PREFIX", "source-pdfs/")
-PDF_IMAGE_DIR = "pdf-images" 
-# Use the environment-specific bucket name
+AWS_REGION = os.getenv("AWS_REGION", "us-east-1") # Default region if not set
+# Use environment-specific bucket
 AWS_S3_BUCKET_NAME = S3_BUCKET_NAME
 
+# New variable for PDF source location in S3
+AWS_S3_PDF_PREFIX = os.getenv("AWS_S3_PDF_PREFIX", "source-pdfs/")
 # Ensure prefix ends with a slash if it's not empty
 if AWS_S3_PDF_PREFIX and not AWS_S3_PDF_PREFIX.endswith('/'):
     AWS_S3_PDF_PREFIX += '/'
