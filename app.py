@@ -23,6 +23,7 @@ from pathlib import Path
 from queue import Queue, Empty
 import collections
 from config import app_config, update_app_config, default_store_type, S3_BUCKET_NAME, IS_DEV_ENV
+from functools import wraps
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -157,6 +158,15 @@ def check_auth():
     auth_status = session.get('authenticated', False)
     logger.debug(f"Auth status: {auth_status}")
     return auth_status
+
+def requires_auth(f):
+    """Decorator to require authentication for routes."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not check_auth():
+            return jsonify({'error': 'Unauthorized'}), 401
+        return f(*args, **kwargs)
+    return decorated
 
 @app.route('/health')
 def health():
