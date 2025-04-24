@@ -1,0 +1,41 @@
+{
+  "thread_id": "rpg-se-210474",
+  "title": "Migrate D&amp;D 5e home made campaign to Pathfinder 2e",
+  "url": "https://rpg.stackexchange.com/questions/210474",
+  "forum_section": "RPG Stack Exchange",
+  "tags": [
+    "dnd-5e-2014",
+    "pathfinder-2e",
+    "conversion"
+  ],
+  "crawled_at": "2025-04-23T15:25:53",
+  "posts": [
+    {
+      "post_id": "q-210474",
+      "author": "Jorge C&#243;rdoba",
+      "timestamp": "2024-02-11T11:48:21",
+      "text": "I have a very long lived 5e campaign with a set of 4 characters that we are considering migrating to Pathfinder 2e. The campaign itself is homebrew so there's no need to migrate the adventure itself (as I'm making most of it as I go I plan on simply present the challenges based on PF Monsters and enemies). Currently my players are Level 10. My plan was to simply have the player remake their characters from scratch on Pathfinder , start at level 1 and progress their character as they see fit even if it doesn't match 1 to 1 their 5e character, then simply use the rules for magic items from PF2 so they get an \"equivalent\" of magic items that is appropriate for the PF version. The only homebrew things to take into account is: They all got access to haste spell as a free action one per long rest as a result of some magic experiments they were subjected to (this is the base for the adventure) They all got some boons to their base stats (+1 to some random stat) which is a bit more difficult for me to actually translate. Those were meant to simply increase the epicness of the characters and the campaign and I have been adjusting CR of encounters to account for this and still make a challenge. From the migration onwards the plan is to simply fully embrace PF2 rules and evolve the adventure as if we had always played there. Any advice or things I should take into consideration when planning the migration?",
+      "thread_id": "rpg-se-210474",
+      "thread_title": "Migrate D&amp;D 5e home made campaign to Pathfinder 2e",
+      "forum_section": "RPG Stack Exchange",
+      "url": "https://rpg.stackexchange.com/questions/210474",
+      "title": "Migrate D&amp;D 5e home made campaign to Pathfinder 2e",
+      "post_type": "question",
+      "score": 7
+    },
+    {
+      "post_id": "a-210484",
+      "author": "brandon",
+      "timestamp": "2024-02-11T18:29:57",
+      "text": "Remaking Characters One difference worth highlighting is that the characters will likely have some means to fully heal between serious encounters without spending daily resources, provided they have some time. If a character has master proficiency in Medicine and the Continual Recovery and Ward Medic feats they can restore ~20–30 Hit Points to 4 creatures every 10 minutes by Treating Wounds , likely restoring the entire 10th-level party with an hour or less between battles depending on injuries/rolls. Other methods exist such as a champion's lay on hands or an chirurgeon alchemist's persistent infusions for healing elixirs, but they'll generally be able to take some time to patch up between combats, overlapping with activities like Identifying new items or Refocusing to regain focus points. If the remade characters don't take these abilities or proficiency in Medicine, you might want to suggest otherwise. Magic Items Characters are expected to have more magic items in Pathfinder 2e compared to D&D 5e, with most characters having 6 substantial permanent items and some lesser items or consumables. Good choices for remade characters would include magic weapons(s) and armor (with any property runes like flaming as separate items), and items that grant bonuses to the character's skills (see item bonuses for each skill on the SRD). Homebrew They all got access to haste spell as a free action one per long rest as a result of some magic experiments they were subjected to (this is the base for the adventure) This is very potent, but would otherwise be fine to directly include. You could give the free action ability a trigger to activate before a character gains their actions at the start of their turn , so using it allows them to gain the extra action on that turn. Otherwise a way to include this ability naturally using the rules would be to have it as a Deviant Ability , allowing it to be used more regularly but risking some substantial backlash for whatever else this magic experiment might be doing to them. They all got some boons to their base stats (+1 to some random stat) which is a bit more difficult for me to actually translate. This could be translated as some free additional ability boosts beyond the ones granted with character creation and at 5th/10th level. Following the no-stacking limitation (each boost must be to a different ability) of these other boost opportunities should prevent this from being wildly imbalanced, though still quite strong. Those were meant to simply increase the epicness of the characters and the campaign and I have been adjusting CR of encounters to account for this and still make a challenge. I'd recommend against increasing encounter difficulty initially, and testing how the characters perform against the standard balancing of Pathfinder 2e. Things are much tighter in regards to difficulty, with severe and extreme encounters easily able to overwhelm parties especially if they're new to the system and not familiar with their options for more dynamic battle strategies.",
+      "thread_id": "rpg-se-210474",
+      "thread_title": "Migrate D&amp;D 5e home made campaign to Pathfinder 2e",
+      "forum_section": "RPG Stack Exchange",
+      "url": "https://rpg.stackexchange.com/questions/210474#210484",
+      "title": "Migrate D&amp;D 5e home made campaign to Pathfinder 2e",
+      "post_type": "answer",
+      "score": 4,
+      "is_accepted": true
+    }
+  ]
+}

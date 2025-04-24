@@ -1,0 +1,42 @@
+{
+  "thread_id": "rpg-se-170185",
+  "title": "How do I address a player&#39;s complaint that Vancian spell preparation is too restrictive to make Wizards worth playing?",
+  "url": "https://rpg.stackexchange.com/questions/170185",
+  "forum_section": "RPG Stack Exchange",
+  "tags": [
+    "dnd-5e-2014",
+    "wizard",
+    "pathfinder-2e",
+    "edition-comparison"
+  ],
+  "crawled_at": "2025-04-23T15:25:44",
+  "posts": [
+    {
+      "post_id": "q-170185",
+      "author": "Ben R.",
+      "timestamp": "2020-06-09T10:57:49",
+      "text": "I'm a DM for a fifth edition D&D campaign. After discovering Pathfinder 2e earlier this year, I've been eager to give it a try with my regular group of players. I like the action economy and critical success/failure mechanics baked into the system. We started on 4e several years ago, and when 5e came out I was the one who proposed migrating. I'll be running a dungeon crawl, with a few social elements to give everyone a feel for how different aspects of the game work. I've used the pre-gen characters from Paizo's official 2e demo adventure as a base for the party. However, I've levelled everyone up to 5 (the party is lvl 4 in 5e), to give them all a little more versatility and options. One of the players will be playing the pre-gen universalist wizard, Ezren. This player is usually the most outspoken of the party when it comes to 5e game mechanics, having done a fair amount of DMing himself. \"I don't think this makes sense, we should try...\" sort of stuff. I've been open to a lot of it. When I explained how the wizard works, using Vancian magic and spells at specfic levels prepared into specific slots, his response was to the effect of \"that sounds stupid and restrictive.\" Are there any counters to this argument of restrictiveness I can give him to alleviate the negative bias that I'm sure he now has towards this upcoming playtest? So far I've told him that cantrips seem more potent than in 5e, as they're auto-heightened to be the same level as your highest level spell slot. I've also said that wizards in 2e get more spell slots in 5e, and I've given him the spell substitution thesis (which I had done before this interaction) for extra versatility. But I can't shake the feeling that he's right. Sorcerers in 2e get more spell slots of each level, can choose what they cast using what slots (unless I misunderstand their mechanics), automatically regain focus points without actively doing anything... 5e wizards could choose to cast the Fireball they'd prepared at level 5 instead of level 3, to give it a bit more oomph. His argument here was, in a clutch moment in a combat encounter, the wizard can't 'save the day' by doing so, if he hasn't prepared that spell in that slot. Wizards also don't get an equivalent to 5e's Arcane Recovery, to give them more slots than the 5e sorcerer. What arguments can I provide to counter his complaints about this restrictiveness?",
+      "thread_id": "rpg-se-170185",
+      "thread_title": "How do I address a player&#39;s complaint that Vancian spell preparation is too restrictive to make Wizards worth playing?",
+      "forum_section": "RPG Stack Exchange",
+      "url": "https://rpg.stackexchange.com/questions/170185",
+      "title": "How do I address a player&#39;s complaint that Vancian spell preparation is too restrictive to make Wizards worth playing?",
+      "post_type": "question",
+      "score": 17
+    },
+    {
+      "post_id": "a-170201",
+      "author": "Szega",
+      "timestamp": "2020-06-09T13:39:23",
+      "text": "Spell Substitution PF2-wizards are unmatched in versatility out of combat In 5e a wizard can learn any number of spells and cast certain spells as rituals. This takes 10 minutes (+ original casting time) and you can do it even if the spell is not prepared. This does not cost a spell slot. A PF2 spell substitution wizard can also learn any number of spells, and they can cast ANY spell they know at any level in 10 minutes (+ original casting time), even if it is not prepared. This includes cantrips too. While in 5e this does not cost a spell slot, the ritual tag is rather rare. Even in contrast to that, the potential of spell substitution is VAST. As a wizard, you can learn any number of spells. Which, if you have coin and sense, means ALL of them. Situational spells that other classes would skip as inefficient are your bread and butter. Out of combat spending 10 minutes on a spell is usually much better than the alternative. For example, I substituted in spider climb to allow a party member to get down a cliff safely. Going around it or finding a better spot could have taken an hour or more. I did not have any idea that we will have to get down a cliff, but I didn't need to. In 5e you either had prepared spider climb or you did not, as it is not a ritual spell. Friendly tip: Prepare spells that you might need in a hurry (e.g. feather fall , fireball ). Do not bother with any spells with a casting time of 1min+, if you have that amount of time, you usually have 10 minutes to substitute it. A PF2 sorcerer fills a very different niche. I they want to cast a spell at a different level, they have to LEARN it at a different level, with the exception of their signature spells, which are limited in number. So while they are flexible within the level, they are quite restricted outside of it. For combat spells this is barely an issue, but most utility spells have qualitatively different effects when cast at different levels, making them waste either known spells or a signature spell to make use of them properly. Thus, if you want to play a combat mage, you will probably fare better as a sorcerer. If you look at magic as more of a tool than a weapon, go with wizard (of course, spell substitution is heavily recommended). The sorcerer will be able to spontaneously pull out their signature fireball at any time, but the wizard will be able to practically do so with spider climb , illusory object , comprehend languages , temporary tool , create food , shrink item , ... etc etc In response to your specific arguments PF2 wizards do get an equivalent of Arcane Recovery, called Arcane Bond / Drain Bonded Item. Its function is quite similar, allowing you to regain spent spell slots. Wizards have effectively the same number of slots as sorcerers. The wizard spell slots table on p.205 does not include the spell they can prepare from their Arcane School. If they do not have a school (a Universalist), they have a matching number of uses of Drain Bonded Item. Adding this +1 per spell level brings Universalists to the same number as sorcerers. Those with an Arcane School have 1 use of Drain Bonded Item on top of this.",
+      "thread_id": "rpg-se-170185",
+      "thread_title": "How do I address a player&#39;s complaint that Vancian spell preparation is too restrictive to make Wizards worth playing?",
+      "forum_section": "RPG Stack Exchange",
+      "url": "https://rpg.stackexchange.com/questions/170185#170201",
+      "title": "How do I address a player&#39;s complaint that Vancian spell preparation is too restrictive to make Wizards worth playing?",
+      "post_type": "answer",
+      "score": 18,
+      "is_accepted": true
+    }
+  ]
+}

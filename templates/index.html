@@ -30,6 +30,21 @@
                 </div>
             </div>
             
+            <!-- External Data Sources Toggle -->
+            <div class="vector-store-container">
+                <h4>External Data Sources</h4>
+                <div class="vector-store-selector">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="external-sources-toggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label">Include DnD Beyond Forums</span>
+                    <button id="external-sources-info-btn" class="vector-store-info-btn" aria-label="External Data Sources Information">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                </div>
+            </div>
+            
             <!-- LLM Model Selector -->
             <div class="vector-store-container">
                 <h4>LLM Model</h4>
@@ -571,6 +586,40 @@
                 
                 <h4>Best For</h4>
                 <p>Use Haystack when you need specialized queries, particularly for monster information, or when working with complex filtering requirements. Choose Memory implementation for local development/testing and Qdrant for production deployments.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- External Data Sources Modal -->
+    <div id="external-sources-modal" class="vector-store-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>External Data Sources</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h4>DnD Beyond Forums</h4>
+                <p>This feature allows the assistant to access content from <strong>DnD Beyond forums</strong> to supplement the official rulebook information.</p>
+                
+                <h4>Implementation</h4>
+                <ul>
+                    <li>Uses OpenAI's <code>text-embedding-3-small</code> model (1536 dimensions)</li>
+                    <li>Data is gathered via a specialized crawler that respects rate limits</li>
+                    <li>Forum posts are processed and stored in the <code>dnd_beyond_forum</code> Qdrant collection</li>
+                    <li>Content includes posts from rules discussions, character builds, and DM advice sections</li>
+                    <li>Sources are clearly identified in responses as community content (not official rules)</li>
+                </ul>
+                
+                <h4>Considerations</h4>
+                <ul>
+                    <li><strong>Community content:</strong> Forum posts represent player opinions and interpretations, not official rules</li>
+                    <li><strong>Quality varies:</strong> Community discussions may contain inaccuracies or debates on rule interpretations</li>
+                    <li><strong>Prioritization:</strong> The assistant will always prioritize official rulebook content over forum posts</li>
+                    <li><strong>Attribution:</strong> Content from forums will be clearly marked in responses</li>
+                </ul>
+                
+                <h4>Best For</h4>
+                <p>Use this feature when looking for additional insights, player experiences, or community interpretations of rules. Great for creative content like character build ideas, DM advice, or unofficial rules discussions.</p>
             </div>
         </div>
     </div>

@@ -42,9 +42,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const vectorStoreSelector = document.getElementById('vector-store-selector');
     const vectorStoreDropdown = document.getElementById('vector-store-dropdown');
     const vectorStoreInfoBtn = document.getElementById('vector-store-info-btn');
+    const externalSourcesToggle = document.getElementById('external-sources-toggle');
+    const externalSourcesInfoBtn = document.getElementById('external-sources-info-btn');
     const modalOverlay = document.getElementById('modal-overlay');
     const pageContextModal = document.getElementById('page-context-modal');
     const semanticContextModal = document.getElementById('semantic-context-modal');
+    const externalSourcesModal = document.getElementById('external-sources-modal');
     const modalCloseButtons = document.querySelectorAll('.modal-close');
     const llmModelDropdown = document.getElementById('llm-model-dropdown');
     
@@ -278,6 +281,33 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (currentValue === 'haystack-qdrant' || currentValue === 'haystack-memory' || currentValue === 'haystack') {
                 showModal(document.getElementById('haystack-modal'));
             }
+        });
+    }
+
+    // External Data Sources Toggle Event Listener
+    if (externalSourcesToggle) {
+        // Check if the toggle state is saved in localStorage
+        const savedToggleState = localStorage.getItem('externalSourcesEnabled') === 'true';
+        externalSourcesToggle.checked = savedToggleState;
+        
+        externalSourcesToggle.addEventListener('change', () => {
+            // Save toggle state to localStorage
+            localStorage.setItem('externalSourcesEnabled', externalSourcesToggle.checked);
+            
+            // Add system message to chat indicating the change
+            if (isFirstMessage === false) {
+                const message = externalSourcesToggle.checked 
+                    ? "External data sources (DnD Beyond Forums) enabled" 
+                    : "External data sources disabled";
+                addMessage(message, 'system');
+            }
+        });
+    }
+
+    // External Data Sources Info Button
+    if (externalSourcesInfoBtn) {
+        externalSourcesInfoBtn.addEventListener('click', () => {
+            showModal(externalSourcesModal);
         });
     }
 
@@ -1218,6 +1248,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ---- Create Source Pill Helper ----
     function createSourcePill(source, messageId) {
+        // Check if this is an external source
+        const isExternalSource = source.external_source === 'dnd_beyond_forum';
+        
+        if (isExternalSource) {
+            return createExternalSourcePill(source, messageId);
+        } else {
+            return createStandardSourcePill(source, messageId);
+        }
+    }
+    
+    // Create a pill for standard PDF/document source
+    function createStandardSourcePill(source, messageId) {
         // Correct property names to match what comes from the API (snake_case)
         const { s3_key, file_path, page, score, chunk_index } = source;
         
@@ -1305,6 +1347,131 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 console.error('Error fetching source details:', error);
                 sourceContent.innerHTML = `<p class="error-source">Error loading source: ${error.message}</p>`;
+                pill.classList.remove('active');
+            }
+        });
+        
+        return pill;
+    }
+    
+    // Create a pill for external sources like forum posts
+    function createExternalSourcePill(source, messageId) {
+        const { display, url, page, score, chunk_info, external_source } = source;
+        
+        // Extract display title - use source display or try to extract from metadata
+        let displayTitle = display || "DnD Beyond Forum";
+        
+        // Create the pill element
+        const pill = document.createElement('button');
+        pill.className = 'source-pill external-source';
+        
+        // Format display text
+        pill.innerText = displayTitle;
+        
+        // Create tooltip with additional information
+        let tooltipContent = `Source: DnD Beyond Forum`;
+        if (source.forum_section) {
+            tooltipContent += `\nSection: ${source.forum_section}`;
+        }
+        if (source.author) {
+            tooltipContent += `\nAuthor: ${source.author}`;
+        }
+        if (score !== undefined) {
+            tooltipContent += `\nRelevance: ${(score * 100).toFixed(1)}%`;
+        }
+        if (chunk_info) {
+            tooltipContent += `\nContext: ${chunk_info}`;
+        }
+        
+        pill.dataset.tooltip = tooltipContent;
+        
+        // Store data for retrieval
+        pill.dataset.url = url;
+        pill.dataset.page = page;
+        pill.dataset.score = score;
+        pill.dataset.externalSource = external_source;
+        pill.dataset.messageId = messageId;
+        pill.dataset.storeType = "dnd-beyond-forum";
+        
+        // Add click event listener
+        pill.addEventListener('click', async function() {
+            // Set this pill as active
+            document.querySelectorAll('.source-pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+            
+            try {
+                // For forum posts, we'll show the content directly rather than fetching from API
+                
+                // Create a source panel with the forum post content
+                const forumContent = source.text || "No content available for this forum post.";
+                const authorInfo = source.author ? `Posted by ${source.author}` : "";
+                const forumSection = source.forum_section ? `in ${source.forum_section}` : "";
+                const timestamp = source.timestamp ? `on ${source.timestamp}` : "";
+                
+                // For external sources, we'll display the content directly without API call
+                // Create a custom details object with the forum post information
+                const forumDetails = {
+                    text: forumContent,
+                    metadata: {
+                        title: displayTitle,
+                        author: source.author,
+                        forum_section: source.forum_section,
+                        timestamp: source.timestamp,
+                        url: url
+                    }
+                };
+                
+                // Check if the panel isn't already open, and open it
+                if (!sourcePanelOpen) {
+                    toggleSourcePanel();
+                }
+                
+                // Clear any existing content
+                sourceContent.innerHTML = '';
+                
+                // Add a header with source info
+                const header = document.createElement('div');
+                header.className = 'source-header';
+                
+                const sourceName = document.createElement('h4');
+                sourceName.id = 'source-panel-header-text';
+                sourceName.textContent = displayTitle;
+                header.appendChild(sourceName);
+                
+                // Add a subtitle with forum information
+                if (authorInfo || forumSection || timestamp) {
+                    const subtitle = document.createElement('div');
+                    subtitle.className = 'source-subtitle';
+                    subtitle.innerHTML = `${authorInfo} ${forumSection} ${timestamp}`.trim();
+                    header.appendChild(subtitle);
+                }
+                
+                sourceContent.appendChild(header);
+                
+                // Add the forum content
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'forum-content';
+                contentDiv.innerText = forumContent;
+                sourceContent.appendChild(contentDiv);
+                
+                // Add a link to the original post if available
+                if (url) {
+                    const linkContainer = document.createElement('div');
+                    linkContainer.className = 'external-link-container';
+                    
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.target = '_blank';
+                    link.className = 'external-link';
+                    link.innerHTML = '<i class="fas fa-external-link-alt"></i> View original post on DnD Beyond';
+                    
+                    linkContainer.appendChild(link);
+                    sourceContent.appendChild(linkContainer);
+                }
+                
+            } catch (error) {
+                console.error('Error showing forum post:', error);
+                sourceContent.innerHTML = `<p class="error-source">Error loading forum post: ${error.message}</p>`;
                 pill.classList.remove('active');
             }
         });
@@ -1609,204 +1776,225 @@ document.addEventListener('DOMContentLoaded', () => {
         sendButton.disabled = true;
         sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
-        // Encode the message for the URL
-        const encodedMessage = encodeURIComponent(message);
-        
         // Get current model
         const currentModel = llmModelDropdown ? llmModelDropdown.value : null;
         
-        // Add vector store type and model to request
-        const url = `/api/chat?message=${encodedMessage}&vector_store_type=${currentVectorStore}${currentModel ? `&model=${currentModel}` : ''}`;
+        // Get external sources toggle state
+        const includeExternalSources = externalSourcesToggle ? externalSourcesToggle.checked : false;
         
-        // Use Server-Sent Events (EventSource) for streaming
-        currentEventSource = new EventSource(url);
+        // Create request payload
+        const requestPayload = {
+            message: message,
+            vector_store_type: currentVectorStore,
+            include_external_sources: includeExternalSources
+        };
         
-        let accumulatedText = '';
-        let sourcesReceived = [];
-        let messageLinks = null;
-        let renderComplete = false;
-
-        // Event listener for metadata
-        currentEventSource.addEventListener('metadata', event => {
-            const metadata = JSON.parse(event.data);
-            sourcesReceived = metadata.sources || [];
+        // Add model if specified
+        if (currentModel) {
+            requestPayload.model = currentModel;
+        }
+        
+        // Send the request using fetch
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestPayload)
+            });
             
-            // Store LLM and vector store info no longer needed since the display elements were removed
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             
-            // Add source pills if available
-            const assistantMessage = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"]`);
-            if (assistantMessage && metadata.sources && metadata.sources.length > 0) {
-                // Add store_type to each source
-                const sourcesWithStoreType = metadata.sources.map(source => ({
-                    ...source,
-                    store_type: metadata.store_type || currentVectorStore
-                }));
+            // Set up event source to read the SSE stream from the response
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            
+            let accumulatedText = '';
+            let sourcesReceived = [];
+            let messageLinks = null;
+            let renderComplete = false;
+            
+            // Process the streaming response
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
                 
-                addSourcePills(assistantMessageId, sourcesWithStoreType);
+                // Decode the chunk and add it to the buffer
+                buffer += decoder.decode(value, { stream: true });
                 
-                // Add data attributes for LLM/Store info
-                assistantMessage.dataset.llmProvider = metadata.llm_provider;
-                assistantMessage.dataset.llmModel = metadata.llm_model;
-                assistantMessage.dataset.storeType = metadata.store_type;
-
-                // Show initial source if panel is open and sources exist
-                if (sourcesReceived.length > 0 && sourcePanelOpen) {
-                    const firstSource = sourcesReceived[0];
-                    const firstPill = assistantMessage.querySelector(`.source-pill[data-s3-key="${firstSource.s3_key}"][data-page="${firstSource.page}"]`);
-                    if (firstPill) {
-                        firstPill.click();
-                    } 
-                }
-            }
-        });
-        
-        // Event listener for status updates
-        currentEventSource.addEventListener('status', event => {
-            try {
-                const status = JSON.parse(event.data);
-                // Update message with new status if provided
-                if (status && status.status) {
-                    updateMessageText(assistantMessageId, status.status, true);
-                }
-            } catch (e) {
-                console.error('Error parsing status event:', e);
-            }
-        });
-        
-        // Event listener for streaming chunks of text
-        currentEventSource.addEventListener('message', event => {
-            try {
-                const data = JSON.parse(event.data);
-                if (data.type === 'text' && data.content) {
-                    // Update the message text with the new chunk
-                    appendToMessage(assistantMessageId, data.content);
-                }
-            } catch (e) {
-                console.error('Error parsing message event data:', e);
-            }
-        });
-        
-        // Event listener for 'links' event
-        currentEventSource.addEventListener('links', (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                if (data.type === 'links' && data.links) {
-                    console.log("Received link data:", data.links);
-                    messageLinks = data.links;
-                    // If message rendering is already complete (done event arrived first), apply links now
-                    if (renderComplete) {
-                        const assistantMessage = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"]`);
-                        if (assistantMessage) {
-                            console.log("Applying hyperlinks after receiving links (render already complete).");
-                            applyHyperlinks(assistantMessage, messageLinks);
-                        }
-                    }
-                }
-            } catch (e) {
-                console.error('Error parsing links event data:', e);
-            }
-        });
-
-        // Event listener for errors
-        currentEventSource.addEventListener('error', event => {
-            console.error('SSE Error event triggered');
-            
-            // Close the event source to prevent further errors
-            if (currentEventSource) {
-                currentEventSource.close();
-                currentEventSource = null;
-            }
-            
-            // Re-enable input on error
-            userInput.disabled = false;
-            sendButton.disabled = false;
-            sendButton.innerHTML = '<i class="fas fa-paper-plane"></i>';
-            
-            // Only show an error message if we haven't received a done event
-            if (event.data) {
-                try {
-                    const errorData = JSON.parse(event.data);
-                    console.error('Error data:', errorData);
+                // Process all complete events in the buffer
+                while (buffer.includes('\n\n')) {
+                    const eventEndIndex = buffer.indexOf('\n\n');
+                    const eventText = buffer.substring(0, eventEndIndex);
+                    buffer = buffer.substring(eventEndIndex + 2);
                     
-                    // Update UI to show error
-                    updateMessageText(
-                        assistantMessageId, 
-                        `<span class="error-message">Error: ${errorData.error || 'Connection to assistant lost.'}</span>`, 
-                        false
-                    );
-                } catch (e) {
-                    console.error('Error parsing error event data:', e);
-                }
-            }
-        });
-        
-        // Event listener for completion (done)
-        currentEventSource.addEventListener('done', event => {
-            console.log("Received done event");
-            renderComplete = true;
-            
-            // Close the event source cleanly
-            if (currentEventSource) {
-                currentEventSource.close();
-                currentEventSource = null;
-            }
-            
-            try {
-                const data = JSON.parse(event.data);
-                if (data.success) {
-                    // Clear status/indicator only if message was successful
-                    const textSpan = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"] .message-text`);
-                    if (textSpan) {
-                        const indicator = textSpan.querySelector('.thinking-indicator');
-                        if (indicator) indicator.remove();
-                        const statusText = textSpan.querySelector('.status-text');
-                        if (statusText) statusText.remove();
-                    }
-
-                    // If link data arrived *before* done, apply links now
-                    if (messageLinks) {
-                        const assistantMessage = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"]`);
-                        if (assistantMessage) {
-                            console.log("Applying hyperlinks after receiving done (link data received earlier).");
-                            applyHyperlinks(assistantMessage, messageLinks);
+                    // Parse the event text
+                    let eventType = 'message';
+                    let eventData = '';
+                    
+                    for (const line of eventText.split('\n')) {
+                        if (line.startsWith('event:')) {
+                            eventType = line.substring(6).trim();
+                        } else if (line.startsWith('data:')) {
+                            eventData = line.substring(5).trim();
                         }
-                    } else {
-                        console.log("Done event received, but link data hasn't arrived yet (or no links found). Links will be applied when/if 'links' event arrives.");
                     }
-                } else {
-                    updateMessageText(assistantMessageId, 'Finished with errors', false);
+                    
+                    // Process the event based on its type
+                    try {
+                        // Handle metadata event
+                        if (eventType === 'metadata') {
+                            const metadata = JSON.parse(eventData);
+                            sourcesReceived = metadata.sources || [];
+                            
+                            // Add source pills if available
+                            const assistantMessage = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"]`);
+                            if (assistantMessage && metadata.sources && metadata.sources.length > 0) {
+                                // Add store_type to each source
+                                const sourcesWithStoreType = metadata.sources.map(source => ({
+                                    ...source,
+                                    store_type: metadata.store_type || currentVectorStore
+                                }));
+                                
+                                addSourcePills(assistantMessageId, sourcesWithStoreType);
+                                
+                                // Add data attributes for LLM/Store info
+                                assistantMessage.dataset.llmProvider = metadata.llm_provider;
+                                assistantMessage.dataset.llmModel = metadata.llm_model;
+                                assistantMessage.dataset.storeType = metadata.store_type;
+                                assistantMessage.dataset.includeExternalSources = metadata.include_external_sources;
+
+                                // Show initial source if panel is open and sources exist
+                                if (sourcesReceived.length > 0 && sourcePanelOpen) {
+                                    // Try to find the first source - could be s3_key or url based
+                                    const firstSource = sourcesReceived[0];
+                                    let firstPill;
+                                    
+                                    if (firstSource.s3_key) {
+                                        firstPill = assistantMessage.querySelector(`.source-pill[data-s3-key="${firstSource.s3_key}"][data-page="${firstSource.page}"]`);
+                                    } else if (firstSource.external_source) {
+                                        firstPill = assistantMessage.querySelector(`.source-pill[data-external-source="${firstSource.external_source}"][data-page="${firstSource.page}"]`);
+                                    }
+                                    
+                                    if (firstPill) {
+                                        firstPill.click();
+                                    }
+                                }
+                            }
+                        }
+                        // Handle status event
+                        else if (eventType === 'status') {
+                            const status = JSON.parse(eventData);
+                            if (status && status.status) {
+                                updateMessageText(assistantMessageId, status.status, true);
+                            }
+                        }
+                        // Handle text chunks
+                        else if (eventType === 'message') {
+                            const data = JSON.parse(eventData);
+                            if (data.type === 'text' && data.content) {
+                                appendToMessage(assistantMessageId, data.content);
+                            }
+                        }
+                        // Handle links event
+                        else if (eventType === 'links') {
+                            const data = JSON.parse(eventData);
+                            if (data.type === 'links' && data.links) {
+                                console.log("Received link data:", data.links);
+                                messageLinks = data.links;
+                                if (renderComplete) {
+                                    const assistantMessage = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"]`);
+                                    if (assistantMessage) {
+                                        console.log("Applying hyperlinks after receiving links (render already complete).");
+                                        applyHyperlinks(assistantMessage, messageLinks);
+                                    }
+                                }
+                            }
+                        }
+                        // Handle done event
+                        else if (eventType === 'done') {
+                            console.log("Received done event");
+                            renderComplete = true;
+                            
+                            const data = JSON.parse(eventData);
+                            if (data.success) {
+                                // Clear status/indicator
+                                const textSpan = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"] .message-text`);
+                                if (textSpan) {
+                                    const indicator = textSpan.querySelector('.thinking-indicator');
+                                    if (indicator) indicator.remove();
+                                    const statusText = textSpan.querySelector('.status-text');
+                                    if (statusText) statusText.remove();
+                                }
+
+                                // Apply links if available
+                                if (messageLinks) {
+                                    const assistantMessage = chatMessages.querySelector(`[data-message-id="${assistantMessageId}"]`);
+                                    if (assistantMessage) {
+                                        console.log("Applying hyperlinks after receiving done (link data received earlier).");
+                                        applyHyperlinks(assistantMessage, messageLinks);
+                                    }
+                                }
+                            } else {
+                                updateMessageText(assistantMessageId, 'Finished with errors', false);
+                            }
+                            
+                            // Break the loop since we're done
+                            break;
+                        }
+                        // Handle error event
+                        else if (eventType === 'error') {
+                            const errorData = JSON.parse(eventData);
+                            console.error('Error data:', errorData);
+                            
+                            // Update UI to show error
+                            updateMessageText(
+                                assistantMessageId, 
+                                `<span class="error-message">Error: ${errorData.error || 'Connection to assistant lost.'}</span>`, 
+                                false
+                            );
+                            
+                            // Break the loop since we encountered an error
+                            break;
+                        }
+                    } catch (e) {
+                        console.error(`Error processing ${eventType} event:`, e);
+                    }
                 }
-            } catch (e) {
-                console.error("Error parsing done event data:", e);
-                updateMessageText(assistantMessageId, 'Error processing completion', false);
             }
+        } catch (error) {
+            console.error('Error streaming response:', error);
             
-            // Re-enable input after done
+            // Update UI to show error
+            updateMessageText(
+                assistantMessageId, 
+                `<span class="error-message">Error: ${error.message || 'Failed to get response from assistant.'}</span>`, 
+                false
+            );
+        } finally {
+            // Re-enable input after completion
             userInput.disabled = false;
             sendButton.disabled = false;
             sendButton.innerHTML = '<i class="fas fa-paper-plane"></i>';
             
             // If the panel is expanded, refresh the expanded content view
-            // to ensure it has the final formatted message content
             if (isPanelExpanded) {
                 updateExpandedSourcePills();
             }
-            // Auto-scroll might be needed again after final render + link application
+            
+            // Auto-scroll
             chatMessages.scrollTop = chatMessages.scrollHeight;
+            
             // Update centering after response is fully rendered
             centerInitialMessage();
-        });
-        
-        // Handle general connection errors
-        currentEventSource.onerror = error => {
-            console.error('EventSource general error:', error);
             
-            // Close the connection if it's not already closed
-            if (currentEventSource && currentEventSource.readyState !== 2) {
-                currentEventSource.close();
-                currentEventSource = null;
-            }
-        };
+            // Set isFirstMessage to false after first successful message
+            isFirstMessage = false;
+        }
     }
 
     /*

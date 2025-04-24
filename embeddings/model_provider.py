@@ -64,7 +64,7 @@ def get_embedding_model(store_type: str):
     """Factory function to get the appropriate embedding model/client."""
     if store_type == "pages":
         return _load_standard_model()
-    elif store_type == "semantic":
+    elif store_type in ["semantic", "forum", "dnd-beyond-forum"]:
         return _load_semantic_model()
     elif store_type in ["haystack", "haystack-qdrant", "haystack-memory"]:
         return _load_haystack_model()
@@ -81,7 +81,7 @@ def embed_query(query: str, store_type: str) -> list[float]:
     logger.info(f"Embedding query for {store_type} store: '{query[:50]}...'")
     if store_type == "pages":
         embedding = model_or_client.encode(query).tolist()
-    elif store_type == "semantic":
+    elif store_type in ["semantic", "forum", "dnd-beyond-forum"]:
         try:
             embedding = model_or_client.get_embedding(query) 
         except AttributeError:
@@ -114,7 +114,7 @@ def embed_documents(texts: List[str], store_type: str) -> List[list[float]]:
     if store_type in ["pages", "haystack", "haystack-qdrant", "haystack-memory"]:
         # SentenceTransformer encode can handle lists directly and efficiently
         embeddings = model_or_client.encode(texts, show_progress_bar=True).tolist()
-    elif store_type == "semantic":
+    elif store_type in ["semantic", "forum", "dnd-beyond-forum"]:
         # OpenAI API might need batching or sequential calls depending on client implementation
         batch_size = 50 # Arbitrary batch size for logging
         for i in range(0, len(texts), batch_size):

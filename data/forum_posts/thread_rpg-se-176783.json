@@ -1,0 +1,42 @@
+{
+  "thread_id": "rpg-se-176783",
+  "title": "Would there be a problem to incorporate Pathfinder-2e&#39;s &quot;Step&quot; action in place of DND 5e&#39;s &quot;Disengage&quot; action?",
+  "url": "https://rpg.stackexchange.com/questions/176783",
+  "forum_section": "RPG Stack Exchange",
+  "tags": [
+    "dnd-5e-2014",
+    "actions",
+    "house-rules",
+    "pathfinder-2e"
+  ],
+  "crawled_at": "2025-04-23T15:25:50",
+  "posts": [
+    {
+      "post_id": "q-176783",
+      "author": "Jon Aristotle",
+      "timestamp": "2020-10-24T05:32:00",
+      "text": "Pathfinder's Step : You carefully move 5 feet. Unlike most types of movement, Stepping doesn’t trigger reactions, such as Attacks of Opportunity, that can be triggered by move actions or upon leaving or entering a square. You can’t Step into difficult terrain, and you can’t Step using a Speed other than your land Speed. DND 5e's Disengage : If you take the Disengage action, your Movement doesn’t provoke Opportunity Attacks for the rest of the turn. My intention would be to create for DND 5e something like: If you take the Step action, you can move 5 feet to an unoccupied space not in difficult terrain without triggering any opportunity attacks. This 5 feet is not considered part of your normal movement. As Disengage applies for a creature's full movement, I think giving the creature an extra 5 feet of movement when taking the Step action makes up for the loss. This would of course apply for NPCs and PCs, so I don't see this giving an unfair advantage to one group over the other, except for maybe those with the ability to disengage as a bonus action, like Goblins or Rogues; switching that for the Step action about may be a slight nerf to the class/creature/race. I find the Pathfinder Step makes more sense than the DND Disengage, as I can't make sense of Disengage working for more than the enemies directly threatening the character: a creature that takes the disengage action could then run there full movement, potentially avoiding a dozen or more attacks.",
+      "thread_id": "rpg-se-176783",
+      "thread_title": "Would there be a problem to incorporate Pathfinder-2e&#39;s &quot;Step&quot; action in place of DND 5e&#39;s &quot;Disengage&quot; action?",
+      "forum_section": "RPG Stack Exchange",
+      "url": "https://rpg.stackexchange.com/questions/176783",
+      "title": "Would there be a problem to incorporate Pathfinder-2e&#39;s &quot;Step&quot; action in place of DND 5e&#39;s &quot;Disengage&quot; action?",
+      "post_type": "question",
+      "score": 8
+    },
+    {
+      "post_id": "a-176785",
+      "author": "Exempt-Medic",
+      "timestamp": "2020-10-24T07:39:45",
+      "text": "The Step action is going to be mechanically worse than the Disengage action Moving 5 feet is a small benefit Personally, I don't believe moving an additional 5 feet is a significant benefit in most situations. Often that small extra distance won't change anything because your opponent is faster or was already slower or just has ranged attacks. The only time such a small benefit changes things is when your opponent prefers melee and would only just have reached you otherwise (this could also matter for just barely getting out of an AoE or similar region, though I can't imagine that coming up with any frequency). Not stopping all opportunity attacks is a large drawback One of the great benefits of the Disengage action is it stops all opportunity attacks, allowing you to step past and weave between numerous enemies. The Step action would not allow for this to occur anymore, which would be a significant loss of maneuverability and evasiveness for the small gain of only 5 feet of movement. Note, there is also the somewhat unusual case of XOX where X are enemies and O is a PC. In order to get away without provoking any Opportunity Attacks, O would have to move 5 feet North or South and then take the Step action and then continue moving: - - - - - - Initial Picture X O X - - - - O - Moving 5 Feet X - X - O - - - - Step Action X - X Similar to this are the following (and numerous others I've left out): X - X - O - X - X - X - X O - (This can be rotated) - X - X - - - O X (This can be rotated) X - - X - - - O X (This can be rotated) - X - In these scenarios, the Disengage action would allow the PC to fully escape, whereas the Step action (even combined with regular movement) would not. Thus there may be some changes to formations/tactics in battle if positioning in these ways is allowed. Step being worse than Disengage doesn't mean it won't work The fourth edition of D&D had a mechanic very similar to this Step action (though the action economy of 4e is a good bit different from 5e), so similar things have certainly been done; as has literally this exact mechanic (in the second edition of Pathfinder). Clearly then, it can (and has) worked. Additionally, you've said Step simply makes more sense to you, and if your table agrees with that and values realism, that's certainly a reason to use it instead of Disengage. I don't believe your game will break by switching out Disengage for Step I don't believe swapping an action out for one that is, in my opinion, worse has a meaningful chance of breaking your game. Features that grant Disengage as a bonus action would be somewhat worse, and any features that require or affect the Disengage action (assuming any exist) would have to be adjusted to fit the new Step action; but both of those are more bookkeeping issues than significant alterations to play. Three Words: Playtest, Playtest, Playtest At the end if the day, I believe playtesting will show best what effects this houserule can have, but I at least have not thought of any alarming changes this change would bring. That said, I'll certainly keep thinking about it over the next few days and add to this answer as I discover more nuance and quirks of the houserule.",
+      "thread_id": "rpg-se-176783",
+      "thread_title": "Would there be a problem to incorporate Pathfinder-2e&#39;s &quot;Step&quot; action in place of DND 5e&#39;s &quot;Disengage&quot; action?",
+      "forum_section": "RPG Stack Exchange",
+      "url": "https://rpg.stackexchange.com/questions/176783#176785",
+      "title": "Would there be a problem to incorporate Pathfinder-2e&#39;s &quot;Step&quot; action in place of DND 5e&#39;s &quot;Disengage&quot; action?",
+      "post_type": "answer",
+      "score": 20,
+      "is_accepted": true
+    }
+  ]
+}

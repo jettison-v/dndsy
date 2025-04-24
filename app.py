@@ -198,15 +198,15 @@ def home():
                           llm_model=current_llm_model,
                           available_llm_models=AVAILABLE_LLM_MODELS)
 
-@app.route('/api/chat')
+@app.route('/api/chat', methods=['GET', 'POST'])
 def chat():
     """Handles the chat message submission and streams the RAG response."""
     if not check_auth():
         return Response(f"event: error\ndata: {json.dumps({'error': 'Unauthorized'})}\n\n", status=401, mimetype='text/event-stream')
         
-    user_message = request.args.get('message', '') 
-    vector_store_type = request.args.get('vector_store_type', None)
-    model = request.args.get('model', None)
+    user_message = request.json.get('message', '')
+    vector_store_type = request.json.get('vector_store_type')
+    model = request.json.get('model')
     
     if vector_store_type and vector_store_type not in VECTOR_STORE_TYPES:
         return Response(f"event: error\ndata: {json.dumps({'error': f'Invalid vector store type: {vector_store_type}'})}\n\n", 
@@ -230,6 +230,9 @@ def chat():
     # Get other parameters from app_config (use the vector_store_type from request if provided)
     effective_store_type = vector_store_type or app_config["vector_store_type"]
     
+    # Check for external data sources toggle
+    include_external_sources = request.json.get('include_external_sources', False)
+    
     # Return the Server-Sent Events stream from the RAG function, passing all config parameters
     return Response(
         ask_dndsy(
@@ -243,7 +246,8 @@ def chat():
             rerank_alpha=app_config["rerank_alpha"],
             rerank_beta=app_config["rerank_beta"],
             rerank_gamma=app_config["rerank_gamma"],
-            fetch_multiplier=app_config["retrieval_fetch_multiplier"]
+            fetch_multiplier=app_config["retrieval_fetch_multiplier"],
+            include_external_sources=include_external_sources
         ), 
         mimetype='text/event-stream'
     )

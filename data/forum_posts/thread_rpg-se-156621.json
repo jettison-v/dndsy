@@ -1,0 +1,41 @@
+{
+  "thread_id": "rpg-se-156621",
+  "title": "Does Pathfinder 2e have more in common with D&amp;D 5e than it does with Pathfinder 1e?",
+  "url": "https://rpg.stackexchange.com/questions/156621",
+  "forum_section": "RPG Stack Exchange",
+  "tags": [
+    "dnd-5e-2014",
+    "edition-comparison",
+    "pathfinder-2e"
+  ],
+  "crawled_at": "2025-04-23T15:25:47",
+  "posts": [
+    {
+      "post_id": "q-156621",
+      "author": "Amethyst Wizard",
+      "timestamp": "2019-09-22T00:12:32",
+      "text": "Pathfinder 2e came out more recently than D&D 5e, and there may be some similarities or influences that 5e has had on Pathfinder. Is the new Pathfinder edition more similar or less similar to D&D 5e than the prior Pathfinder edition? In other words, does Pathfinder 2e have more in common with D&D 5e than it does with Pathfinder 1e?",
+      "thread_id": "rpg-se-156621",
+      "thread_title": "Does Pathfinder 2e have more in common with D&amp;D 5e than it does with Pathfinder 1e?",
+      "forum_section": "RPG Stack Exchange",
+      "url": "https://rpg.stackexchange.com/questions/156621",
+      "title": "Does Pathfinder 2e have more in common with D&amp;D 5e than it does with Pathfinder 1e?",
+      "post_type": "question",
+      "score": 14
+    },
+    {
+      "post_id": "a-156634",
+      "author": "Quadratic Wizard",
+      "timestamp": "2019-09-22T16:17:17",
+      "text": "Pathfinder 2e is still more like Pathfinder 1e than D&D 5e The second edition of the Pathfinder rules does not draw very much at all from D&D 5th edition. If anything, there are a handful of influences from D&D 4th edition. Most of the changes between Pathfinder 1e and 2e are new features which don't appear in either 4e or 5e. Similarities to Pathfinder 1e rather than D&D 5e Races—now rather termed ancestries —still have ability score penalties. There are still three saving throws: Fortitude, Reflex and Will. Feats are still a standard mechanic. There is no Advantage/Disadvantage mechanic. Status effects inflict numeric penalties as normal for Pathfinder 1e or D&D 3.5. Material components are still consumed when casting a spell. Creature armor class can be very high at high levels; e.g. the balor's AC is 45, unlike D&D 5e where it is AC 19 because attack values are flatter. Characters still take a -5 penalty to each successive attack in a round, similar to D&D 3.5's iterative attacks. However, due to the action economy system, you can use successive attacks as successive Strike simple actions (you have up to 3 simple actions in one round) as soon as the first level, rather than when your character reaches BBA bonus of at least +6. Characters add their level to things in which they are proficient. The exact numbers have changed, but high level characters will still have +20 or more to attacks, saving throws, skill checks and so forth; unlike D&D 5e's flat number mechanics. Classes mainly specialize by feats rather than 5e-style subclasses. There are \"archetypes\", but these are just feats to customize or multiclass your character, and are not class-specific. Spellcasters still prepare and cast spells normally as in Pathfinder 1st edition. Similarities to D&D 5e Characters now have Backgrounds which grant skill proficiencies and other abilities. You can prepare a spell in a higher level slot to have greater effect, such as increased damage for fireball . The term \"proficiency\" is used to refer to all manner of d20-based rolls; however, one's proficiency bonus is not flat based on level like it is in 5e, but rather it varies based on class features and options. Nor does it use the flatter numbers of 5e, but usually adds the character's entire level to rolls. Cantrips (already at-will since Pathfinder 1e) now scale with caster level. Similarities to D&D 4e Character classes and such include summaries in three bullet points. Characters now have backgrounds, a feature introduced by D&D 4e, though made more famous by D&D 5e. Characters can perform up to three actions per turn, not entirely unlike 4e's Move/Minor/Standard, although Pathfinder's version works somewhat differently. Druids are considered \"Primal\" spellcasters rather than Divine. In a feature originally announced for D&D 4e but cut from the final version, Pathfinder 2e gives increased race-based abilities at higher levels. Characters have more hit points. You gain hit points from your ancestry (race) and a flat number of hit points per level. This means a level 1 character may start with 20 hit points like they can in D&D 4e. Unarmed strike deals 1d4 damage, rather than 1d3 (as in Pathfinder 1e) or 1 damage (as in D&D 5e).",
+      "thread_id": "rpg-se-156621",
+      "thread_title": "Does Pathfinder 2e have more in common with D&amp;D 5e than it does with Pathfinder 1e?",
+      "forum_section": "RPG Stack Exchange",
+      "url": "https://rpg.stackexchange.com/questions/156621#156634",
+      "title": "Does Pathfinder 2e have more in common with D&amp;D 5e than it does with Pathfinder 1e?",
+      "post_type": "answer",
+      "score": 25,
+      "is_accepted": true
+    }
+  ]
+}

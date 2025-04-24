@@ -8,6 +8,7 @@ from .pdf_pages_store import PdfPagesStore
 from .semantic_store import SemanticStore
 from .haystack.qdrant_store import HaystackQdrantStore
 from .haystack.memory_store import HaystackMemoryStore
+from .dnd_beyond_forum_store import DnDBeyondForumStore
 
 load_dotenv()
 
@@ -44,6 +45,8 @@ def get_vector_store(vector_store_type=None, force_new=False):
         store = HaystackQdrantStore()
     elif vector_store_type == "haystack-memory":
         store = HaystackMemoryStore()
+    elif vector_store_type == "dnd-beyond-forum":
+        store = DnDBeyondForumStore()
     else:
         logger.warning(f"Unknown vector store type: {vector_store_type}. Defaulting to pages.")
         store = PdfPagesStore()

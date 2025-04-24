@@ -190,7 +190,7 @@ def _get_link_data_for_sources(source_keys: List[str]) -> Dict[str, Dict]:
 def _retrieve_and_prepare_context(query: str, model: str, limit: int = 5, store_type: str = None, 
                               max_tokens_per_result: int = 1000, max_total_context_tokens: int = 4000,
                               rerank_alpha: float = 0.5, rerank_beta: float = 0.3, rerank_gamma: float = 0.2,
-                              fetch_multiplier: int = 3) -> list[dict]:
+                              fetch_multiplier: int = 3, include_external_sources: bool = False) -> list[dict]:
     """
     Orchestrates context retrieval: embeds query, searches store, formats results.
     
@@ -205,21 +205,35 @@ def _retrieve_and_prepare_context(query: str, model: str, limit: int = 5, store_
         rerank_beta: Weight for sparse BM25 scores (semantic store)
         rerank_gamma: Weight for keyword match scores (semantic store)
         fetch_multiplier: Multiplier for initial retrieval before reranking
+        include_external_sources: If True, also search external data sources like DnD Beyond forums
     """
     effective_store_type = store_type or default_store_type
         
+    # Get the primary vector store
     vector_store = get_vector_store(effective_store_type)
     if vector_store is None:
          logger.error(f"Could not get vector store for type: {effective_store_type}")
          return []
+
+    # Setup external vector store if requested
+    external_store = None
+    if include_external_sources:
+        try:
+            external_store = get_vector_store("dnd-beyond-forum")
+            logger.info(f"Including external data from DnD Beyond forums")
+        except Exception as e:
+            logger.error(f"Failed to initialize external data source: {e}")
 
     try:
         # Embed the query based on the selected store type
         logger.info(f"Embedding query for {effective_store_type} store: '{query[:50]}...'")
         query_vector = embed_query(query, effective_store_type)
         
-        # Search the vector store
+        # Search the primary vector store
         logger.info(f"Searching {effective_store_type} store with query: '{query}'")
+        all_results = []
+        
+        # Search primary store
         if effective_store_type == "semantic":
              # Semantic store uses hybrid search (vector + original query for BM25/keywords)
              results = vector_store.search(
@@ -234,9 +248,34 @@ def _retrieve_and_prepare_context(query: str, model: str, limit: int = 5, store_
         else: 
              # Standard store uses simple vector search
              results = vector_store.search(query_vector=query_vector, limit=limit)
-             
-        logger.info(f"Found {len(results)} results from vector store")
-        if not results: return []
+        
+        all_results.extend(results)
+        
+        # Search external store if enabled
+        if external_store and include_external_sources:
+            # Embed the query for the external store
+            external_query_vector = embed_query(query, "forum")
+            external_results = external_store.search(query_vector=external_query_vector, limit=limit)
+            
+            # Add external results
+            if external_results:
+                # Add a source tag to identify external content
+                for result in external_results:
+                    if "metadata" in result:
+                        result["metadata"]["external_source"] = "dnd_beyond_forum"
+                
+                logger.info(f"Found {len(external_results)} relevant results from DnD Beyond forums")
+                all_results.extend(external_results)
+                
+                # Sort combined results by score
+                all_results = sorted(all_results, key=lambda x: x.get("score", 0), reverse=True)
+                
+                # Keep only the top results up to the limit
+                all_results = all_results[:limit * 2]  # Double the limit for combined results
+            
+        logger.info(f"Found {len(all_results)} total results from vector stores")
+        if not all_results:
+            return []
             
         # Process and format results, applying token limits
         context_parts = []
@@ -244,44 +283,64 @@ def _retrieve_and_prepare_context(query: str, model: str, limit: int = 5, store_
         # Use the token limits passed in as parameters
         # max_tokens_per_result and max_total_context_tokens are now parameters
         
-        for idx, result in enumerate(results):
+        for idx, result in enumerate(all_results):
             # Extract necessary data from result payload/metadata
             metadata = result.get('metadata', {})
             text = result.get('text', '').strip()
             score = result.get('score', 0)
+            
+            # Check for external source
+            is_external = metadata.get('external_source') == "dnd_beyond_forum"
+            
             source_key = metadata.get('source', 'unknown')
             page = metadata.get('page', 'unknown')
             
-            if not text: continue # Skip empty results
+            if not text:
+                continue # Skip empty results
             
             # --- Format result for display and internal use --- 
-            source_filename = source_key.split('/')[-1]
-            source_display_name = source_filename.replace('.pdf', '')
+            # Handle external and internal sources differently
+            if is_external:
+                # For forum posts, use more meaningful source information
+                thread_title = metadata.get('thread_title', 'Unknown Thread')
+                post_id = metadata.get('post_id', 'unknown')
+                author = metadata.get('author', 'Unknown')
+                forum_section = metadata.get('forum_section', 'Unknown Section')
+                url = metadata.get('url', '')
+                
+                source_display_name = f"DnD Beyond Forum: {thread_title}"
+                context_info = f"Forum: {forum_section} | Author: {author}"
+            else:
+                # Standard PDF sources
+                source_filename = source_key.split('/')[-1]
+                source_display_name = source_filename.replace('.pdf', '')
+                
+                # Build context info string (e.g., heading path)
+                context_info = None
+                heading_path = metadata.get('heading_path')
+                section = metadata.get('section')
+                subsection = metadata.get('subsection')
+                if heading_path: context_info = heading_path
+                elif section: context_info = f"{section}{f' > {subsection}' if subsection else ''}"
+                # Fallback to most specific heading level if no path/section
+                if not context_info:
+                    for level in range(6, 0, -1):
+                        heading_key = f"h{level}"
+                        if heading_key in metadata and metadata[heading_key]:
+                            context_info = metadata[heading_key]
+                            break
+                
+                # Add chunk index if available (primarily for semantic chunks)
+                chunk_index = metadata.get('chunk_index')
+                if chunk_index is not None and not context_info:
+                     context_info = f"Chunk #{chunk_index}" # Basic fallback if no context
+                elif chunk_index is not None: # Append chunk index if context exists
+                     context_info = f"{context_info} (#{chunk_index})"
             
-            # Build context info string (e.g., heading path)
-            context_info = None
-            heading_path = metadata.get('heading_path')
-            section = metadata.get('section')
-            subsection = metadata.get('subsection')
-            if heading_path: context_info = heading_path
-            elif section: context_info = f"{section}{f' > {subsection}' if subsection else ''}"
-            # Fallback to most specific heading level if no path/section
-            if not context_info:
-                for level in range(6, 0, -1):
-                    heading_key = f"h{level}"
-                    if heading_key in metadata and metadata[heading_key]:
-                        context_info = metadata[heading_key]
-                        break
-            
-            # Add chunk index if available (primarily for semantic chunks)
-            chunk_index = metadata.get('chunk_index')
+            # Determine display name based on source type
             chunk_info_display = context_info
-            if chunk_index is not None and not context_info:
-                 chunk_info_display = f"Chunk #{chunk_index}" # Basic fallback if no context
-            elif chunk_index is not None: # Append chunk index if context exists
-                 chunk_info_display = f"{context_info} (#{chunk_index})"
-
-            logger.info(f"Result {idx + 1} from {source_filename} (page {page}) score={score:.4f}")
+            
+            logger.info(f"Result {idx + 1} from {source_display_name} (page {page}) score={score:.4f}")
             if context_info: logger.info(f"  Context: {context_info}")
             
             # Truncate individual result text if it exceeds per-result limit
@@ -292,17 +351,25 @@ def _retrieve_and_prepare_context(query: str, model: str, limit: int = 5, store_
             
             # Check if adding this result exceeds total context token limit
             if total_tokens + tokens <= max_total_context_tokens:
-                context_parts.append({
+                context_part = {
                     'text': text,
                     'source': source_display_name,
                     'page': page,
-                    'image_url': metadata.get('image_url'),
-                    'total_pages': metadata.get('total_pages'),
-                    'source_dir': metadata.get('source_dir'), 
                     'score': score,
-                    'original_s3_key': source_key, # Use the original S3 key
-                    'chunk_info': chunk_info_display # Formatted context/chunk info
-                })
+                    'original_s3_key': source_key,  # Use the original S3 key
+                    'chunk_info': chunk_info_display  # Formatted context/chunk info
+                }
+                
+                # Add additional metadata for external sources
+                if is_external:
+                    context_part['external_source'] = 'dnd_beyond_forum'
+                    context_part['url'] = metadata.get('url', '')
+                else:
+                    context_part['image_url'] = metadata.get('image_url')
+                    context_part['total_pages'] = metadata.get('total_pages')
+                    context_part['source_dir'] = metadata.get('source_dir')
+                
+                context_parts.append(context_part)
                 total_tokens += tokens
                 logger.info(f"Added context {idx+1} ({tokens} tokens). Total context: {total_tokens}/{max_total_context_tokens}")
             else:
@@ -318,7 +385,7 @@ def ask_dndsy(prompt: str, store_type: str = None, temperature: float = 0.3, max
               retrieval_limit: int = 5, max_tokens_per_result: int = 1000, 
               max_total_context_tokens: int = 4000, rerank_alpha: float = 0.5, 
               rerank_beta: float = 0.3, rerank_gamma: float = 0.2,
-              fetch_multiplier: int = 3) -> Generator[str, None, None]:
+              fetch_multiplier: int = 3, include_external_sources: bool = False) -> Generator[str, None, None]:
     """
     Main RAG pipeline function.
     Processes a query using RAG and streams the response via SSE.
@@ -336,6 +403,7 @@ def ask_dndsy(prompt: str, store_type: str = None, temperature: float = 0.3, max
         rerank_beta: Weight for sparse BM25 scores (semantic store).
         rerank_gamma: Weight for keyword match scores (semantic store).
         fetch_multiplier: Multiplier for initial retrieval before reranking.
+        include_external_sources: Whether to include external data sources like DnD Beyond forums.
         
     Yields:
         Server-Sent Events (SSE) strings containing metadata, status updates, 
@@ -353,6 +421,8 @@ def ask_dndsy(prompt: str, store_type: str = None, temperature: float = 0.3, max
     logger.info(f"Processing query with LLM: {current_model_name}")
     effective_store_type = store_type or default_store_type
     logger.info(f"Using vector store type: {effective_store_type}")
+    if include_external_sources:
+        logger.info("Including external data sources")
 
     sources_for_metadata = [] # Keep track of sources used
 
@@ -370,7 +440,8 @@ def ask_dndsy(prompt: str, store_type: str = None, temperature: float = 0.3, max
             rerank_alpha=rerank_alpha,
             rerank_beta=rerank_beta,
             rerank_gamma=rerank_gamma,
-            fetch_multiplier=fetch_multiplier
+            fetch_multiplier=fetch_multiplier,
+            include_external_sources=include_external_sources
         )
         end_time_rag = time.perf_counter()
         logger.info(f"Context retrieval completed in {end_time_rag - start_time_rag:.4f}s. Found {len(context_parts)} parts.")
@@ -388,18 +459,29 @@ def ask_dndsy(prompt: str, store_type: str = None, temperature: float = 0.3, max
                 display_text = f"{part['source']} (Pg {part['page']})"
                 if part.get('chunk_info'): display_text += f" - {part['chunk_info']}"
                 
-                # Prepare metadata object for frontend & collect source keys
-                original_s3_key = part.get('original_s3_key') 
-                if original_s3_key:
+                # Handle external sources differently for metadata
+                if part.get('external_source') == 'dnd_beyond_forum':
                     sources_for_metadata.append({
                         'display': display_text,
-                        's3_key': original_s3_key,
+                        'url': part.get('url', ''),
                         'page': part['page'],
                         'score': part.get('score'),
-                        'chunk_info': part.get('chunk_info')
+                        'chunk_info': part.get('chunk_info'),
+                        'external_source': 'dnd_beyond_forum'
                     })
-                else: 
-                    logger.warning(f"Missing 'original_s3_key' for context part: {part}")
+                else:
+                    # Standard S3 source handling
+                    original_s3_key = part.get('original_s3_key') 
+                    if original_s3_key:
+                        sources_for_metadata.append({
+                            'display': display_text,
+                            's3_key': original_s3_key,
+                            'page': part['page'],
+                            'score': part.get('score'),
+                            'chunk_info': part.get('chunk_info')
+                        })
+                    else: 
+                        logger.warning(f"Missing 'original_s3_key' for context part: {part}")
                     
                 # Append context to the text block for the LLM prompt
                 context_text_for_prompt += f"Source: {display_text}\nContent:\n{part['text']}\n\n"
@@ -418,9 +500,18 @@ def ask_dndsy(prompt: str, store_type: str = None, temperature: float = 0.3, max
             "5. Be specific and cite rules when possible (using the Source and Page info from the context).\n"
             "6. Format your response clearly using Markdown (headings, lists, bold text, etc.) for readability.\n\n"
         )
+        
+        # Add note about external sources if they're included
+        if include_external_sources:
+            system_message += (
+                "Some of the context may come from DnD Beyond forums. When using forum information, "
+                "be sure to indicate that it comes from community sources, not official rules. "
+                "Always prioritize official rulebook information over forum posts.\n\n"
+            )
+        
         if context_text_for_prompt:
             system_message += (
-                "Use the following official 2024 D&D rules context to answer the question. "
+                "Use the following D&D 2024 context to answer the question. "
                 "Prioritize this information:\n\n---\n"
                 f"{context_text_for_prompt}"
                 "---\n\nAnswer the user's question based *only* on the context above:"
@@ -448,7 +539,8 @@ def ask_dndsy(prompt: str, store_type: str = None, temperature: float = 0.3, max
             "using_context": bool(context_parts),
             "llm_provider": llm_client.get_provider_name(),
             "llm_model": current_model_name,
-            "store_type": effective_store_type
+            "store_type": effective_store_type,
+            "include_external_sources": include_external_sources
         }
         yield f"event: metadata\ndata: {json.dumps(initial_metadata)}\n\n"
         end_time_yield_meta = time.perf_counter()
@@ -475,8 +567,11 @@ def ask_dndsy(prompt: str, store_type: str = None, temperature: float = 0.3, max
         
         # --- Step 5.5: Fetch and Yield Link Data --- 
         link_data = {}
-        if sources_for_metadata: # Only fetch if context was used
-            unique_source_keys = list({s['s3_key'] for s in sources_for_metadata if s.get('s3_key')})
+        
+        # Only fetch S3 links for non-external sources
+        s3_sources = [s for s in sources_for_metadata if 's3_key' in s]
+        if s3_sources:
+            unique_source_keys = list({s['s3_key'] for s in s3_sources if s.get('s3_key')})
             logger.info(f"Unique source keys found in metadata: {unique_source_keys}")
             if unique_source_keys:
                 logger.info(f"Fetching link data for {len(unique_source_keys)} source(s)...")
@@ -492,7 +587,7 @@ def ask_dndsy(prompt: str, store_type: str = None, temperature: float = 0.3, max
             else:
                 logger.info("No valid S3 keys found in sources, skipping link data fetch.")
         else:
-             logger.info("No context used, skipping link data fetch.")
+             logger.info("No S3 sources used, skipping link data fetch.")
 
         # --- Step 6: Yield Done Event --- 
         yield f"event: done\ndata: {json.dumps({'success': True})}\n\n"
