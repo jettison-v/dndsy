@@ -22,7 +22,7 @@ import time
 from pathlib import Path
 from queue import Queue, Empty
 import collections
-from config import app_config, update_app_config, default_store_type
+from config import app_config, update_app_config, default_store_type, S3_BUCKET_NAME, IS_DEV_ENV
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -1330,6 +1330,53 @@ def inspect_context():
     except Exception as e:
         logger.error(f"Error inspecting context: {e}", exc_info=True)
         return jsonify({'error': f'Error inspecting context: {str(e)}'}), 500
+
+@app.route('/api/admin/system-info', methods=['GET'])
+@requires_auth
+def get_system_info():
+    """Get information about the system status and configuration."""
+    # Check if we have vector store access
+    stores_available = {}
+    
+    # Check for various vector stores
+    for store_type in VECTOR_STORE_TYPES:
+        try:
+            store = get_vector_store(store_type, force_new=False)
+            stores_available[store_type] = {
+                "available": True,
+                "collection_name": getattr(store, "collection_name", "unknown")
+            }
+        except Exception as e:
+            stores_available[store_type] = {
+                "available": False,
+                "error": str(e)
+            }
+    
+    # Get info about S3 buckets
+    s3_client = get_s3_client()
+    s3_info = {
+        "available": s3_client is not None,
+        "bucket": S3_BUCKET_NAME,
+        "environment": "development" if IS_DEV_ENV else "production"
+    }
+    
+    if s3_client:
+        try:
+            # Check if we can list the bucket
+            response = s3_client.list_objects_v2(Bucket=S3_BUCKET_NAME, MaxKeys=1)
+            s3_info["accessible"] = True
+        except Exception as e:
+            s3_info["accessible"] = False
+            s3_info["error"] = str(e)
+    
+    # System information
+    return jsonify({
+        "vector_stores": stores_available,
+        "s3": s3_info,
+        "environment": "development" if IS_DEV_ENV else "production",
+        "app_config": app_config,
+        "default_store_type": default_store_type
+    })
 
 if __name__ == '__main__':
     logger.info("Starting Flask application...")

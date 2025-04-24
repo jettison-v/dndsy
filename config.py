@@ -13,6 +13,16 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv(override=True)
 
+# Environment detection
+IS_DEV_ENV = os.environ.get("ENV", "production").lower() in ("dev", "development", "beta")
+ENV_PREFIX = "dev__" if IS_DEV_ENV else ""
+S3_BUCKET_NAME = os.environ.get("AWS_S3_BUCKET_NAME", "askdnd-ai")
+if IS_DEV_ENV and not S3_BUCKET_NAME.startswith("dev-"):
+    S3_BUCKET_NAME = f"dev-{S3_BUCKET_NAME}"
+    logger.info(f"Development environment detected. Using S3 bucket: {S3_BUCKET_NAME}")
+else:
+    logger.info(f"Production environment detected. Using S3 bucket: {S3_BUCKET_NAME}")
+
 # S3 configuration constants
 S3_CONFIG_KEY = "config/app_config.json"
 
@@ -92,7 +102,8 @@ def load_config_from_s3():
             logger.warning("S3 client not available, using default configuration")
             return DEFAULT_CONFIG.copy()
         
-        bucket_name = os.environ.get('AWS_S3_BUCKET_NAME')
+        # Use the environment-specific bucket name
+        bucket_name = S3_BUCKET_NAME
         if not bucket_name:
             logger.warning("S3 bucket name not configured, using default configuration")
             return DEFAULT_CONFIG.copy()
@@ -100,7 +111,7 @@ def load_config_from_s3():
         # Try to get the config file from S3
         response = s3_client.get_object(Bucket=bucket_name, Key=S3_CONFIG_KEY)
         config_data = json.loads(response['Body'].read().decode('utf-8'))
-        logger.info(f"Loaded configuration from S3: {S3_CONFIG_KEY}")
+        logger.info(f"Loaded configuration from S3: {bucket_name}/{S3_CONFIG_KEY}")
         
         # Set default_store_type from loaded config if available
         if "vector_store_type" in config_data:
@@ -133,7 +144,8 @@ def save_config_to_s3(config_data):
             logger.warning("S3 client not available, cannot save configuration")
             return False
         
-        bucket_name = os.environ.get('AWS_S3_BUCKET_NAME')
+        # Use the environment-specific bucket name
+        bucket_name = S3_BUCKET_NAME
         if not bucket_name:
             logger.warning("S3 bucket name not configured, cannot save configuration")
             return False
@@ -149,7 +161,7 @@ def save_config_to_s3(config_data):
             ContentType='application/json'
         )
         
-        logger.info(f"Saved configuration to S3: {S3_CONFIG_KEY}")
+        logger.info(f"Saved configuration to S3: {bucket_name}/{S3_CONFIG_KEY}")
         return True
     except Exception as e:
         logger.error(f"Error saving configuration to S3: {e}", exc_info=True)

@@ -2,6 +2,7 @@ import os
 from typing import Dict, Any, Optional
 import logging
 from dotenv import load_dotenv
+from config import ENV_PREFIX
 
 # Import the specific store classes
 from .pdf_pages_store import PdfPagesStore
@@ -32,21 +33,27 @@ def get_vector_store(vector_store_type=None, force_new=False):
     """
     vector_store_type = vector_store_type or os.getenv("VECTOR_STORE_TYPE", "pages")
     
+    # Apply environment prefix for caching
+    cache_key = vector_store_type
+    
     # If we have a cached instance and don't want to force a new one, return it
-    if vector_store_type in _vector_store_instances and not force_new:
-        return _vector_store_instances[vector_store_type]
-        
+    if cache_key in _vector_store_instances and not force_new:
+        return _vector_store_instances[cache_key]
+    
+    # Build the collection name with appropriate prefix
+    collection_name_prefix = ENV_PREFIX
+    
     if vector_store_type == "pages":
-        store = PdfPagesStore()
+        store = PdfPagesStore(collection_name=f"{collection_name_prefix}dnd_pdf_pages")
     elif vector_store_type == "semantic":
-        store = SemanticStore()
+        store = SemanticStore(collection_name=f"{collection_name_prefix}dnd_semantic")
     elif vector_store_type == "haystack-qdrant":
-        store = HaystackQdrantStore()
+        store = HaystackQdrantStore(collection_name=f"{collection_name_prefix}dnd_haystack_qdrant")
     elif vector_store_type == "haystack-memory":
-        store = HaystackMemoryStore()
+        store = HaystackMemoryStore(collection_name=f"{collection_name_prefix}dnd_haystack_memory")
     else:
         logger.warning(f"Unknown vector store type: {vector_store_type}. Defaulting to pages.")
-        store = PdfPagesStore()
+        store = PdfPagesStore(collection_name=f"{collection_name_prefix}dnd_pdf_pages")
     
-    _vector_store_instances[vector_store_type] = store
+    _vector_store_instances[cache_key] = store
     return store 
