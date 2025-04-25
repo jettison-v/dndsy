@@ -2034,9 +2034,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const pillRect = pill.getBoundingClientRect();
             const tooltipWidth = 300; // Matches the max-width in CSS
             
-            // Get the after and before pseudo-elements (tooltip and arrow)
-            const tooltip = window.getComputedStyle(pill, '::after');
-            const arrow = window.getComputedStyle(pill, '::before');
+            // Force a high z-index for all tooltips
+            pill.style.setProperty('--tooltip-z-index', '999999');
+            
+            // Check if this is in the expanded view
+            const isInExpandedView = pill.closest('#expanded-source-pills') !== null;
+            
+            if (isInExpandedView) {
+                // For expanded view, position tooltip to the right
+                // Let CSS handle the exact positioning for expanded view
+                pill.style.setProperty('--tooltip-top', '0');
+                pill.style.setProperty('--tooltip-left', '100%');
+                pill.style.setProperty('--tooltip-right', 'auto');
+                pill.style.setProperty('--tooltip-transform', 'none');
+                pill.style.setProperty('--tooltip-arrow-top', '50%');
+                pill.style.setProperty('--tooltip-arrow-left', '100%');
+                pill.style.setProperty('--tooltip-arrow-right', 'auto');
+                pill.style.setProperty('--tooltip-arrow-transform', 'none');
+                pill.style.setProperty('--tooltip-arrow-border-color', 'transparent rgba(20, 20, 20, 0.95) transparent transparent');
+                pill.style.setProperty('--tooltip-margin', '0');
+                return; // Exit early to let CSS handle positioning
+            }
             
             // Check position relative to viewport
             const viewportWidth = window.innerWidth;
@@ -2070,6 +2088,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     pill.style.setProperty('--tooltip-transform', 'translateX(-50%)');
                     pill.style.setProperty('--tooltip-arrow-top', 'auto');
                     pill.style.setProperty('--tooltip-arrow-bottom', '120%');
+                    pill.style.setProperty('--tooltip-arrow-transform', 'translateX(-50%)');
                     pill.style.setProperty('--tooltip-arrow-border-color', 'rgba(20, 20, 20, 0.95) transparent transparent transparent');
                     pill.style.setProperty('--tooltip-margin', '0');
                     break;
@@ -2080,6 +2099,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     pill.style.setProperty('--tooltip-transform', 'translateY(-25%)');
                     pill.style.setProperty('--tooltip-arrow-top', '25%');
                     pill.style.setProperty('--tooltip-arrow-left', 'calc(100% + 5px)');
+                    pill.style.setProperty('--tooltip-arrow-transform', 'translateY(-50%)');
                     pill.style.setProperty('--tooltip-arrow-border-color', 'transparent rgba(20, 20, 20, 0.95) transparent transparent');
                     pill.style.setProperty('--tooltip-margin', '0');
                     break;
@@ -2092,6 +2112,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     pill.style.setProperty('--tooltip-arrow-top', '25%');
                     pill.style.setProperty('--tooltip-arrow-left', 'auto');
                     pill.style.setProperty('--tooltip-arrow-right', 'calc(100% + 5px)');
+                    pill.style.setProperty('--tooltip-arrow-transform', 'translateY(-50%)');
                     pill.style.setProperty('--tooltip-arrow-border-color', 'transparent transparent transparent rgba(20, 20, 20, 0.95)');
                     pill.style.setProperty('--tooltip-margin', '0');
                     break;
@@ -2101,11 +2122,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     pill.style.setProperty('--tooltip-bottom', 'auto');
                     pill.style.setProperty('--tooltip-left', '50%');
                     pill.style.setProperty('--tooltip-transform', 'translateX(-50%)');
-                    pill.style.setProperty('--tooltip-arrow-top', 'calc(100% + 2px)');
+                    pill.style.setProperty('--tooltip-arrow-top', 'calc(100% + 0px)'); // Adjust to 0px to remove gap
                     pill.style.setProperty('--tooltip-arrow-bottom', 'auto');
                     pill.style.setProperty('--tooltip-arrow-left', '50%');
+                    pill.style.setProperty('--tooltip-arrow-transform', 'translateX(-50%)');
                     pill.style.setProperty('--tooltip-arrow-border-color', 'transparent transparent rgba(20, 20, 20, 0.95) transparent');
-                    pill.style.setProperty('--tooltip-margin', '8px 0 0 0');
+                    pill.style.setProperty('--tooltip-margin', '0');
             }
         }
     });
@@ -2126,6 +2148,7 @@ document.addEventListener('DOMContentLoaded', () => {
             pill.style.removeProperty('--tooltip-arrow-right');
             pill.style.removeProperty('--tooltip-arrow-border-color');
             pill.style.removeProperty('--tooltip-margin');
+            pill.style.removeProperty('--tooltip-z-index');
         }
     });
 

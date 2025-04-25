@@ -625,6 +625,7 @@ button#about-project-button.about-project-button i {
     position: relative;
     height: 100%;
     opacity: 1;
+    z-index: 5; /* Base z-index for source panel */
 }
 
 /* Source Panel Animations
@@ -671,7 +672,7 @@ button#about-project-button.about-project-button i {
     top: 0;
     right: 0;
     height: 100vh;
-    z-index: 1000;
+    z-index: 1000 !important;
 }
 
 .source-panel.expanded .source-panel-header {
@@ -786,6 +787,8 @@ button#about-project-button.about-project-button i {
     padding: 0;
     overflow-y: auto;
     height: calc(100% - 60px); /* Adjust based on header height */
+    position: relative;
+    z-index: 1;
 }
 
 /* Style for the image container itself */
@@ -799,6 +802,7 @@ button#about-project-button.about-project-button i {
     align-items: center;
     justify-content: center;
     flex-direction: column;
+    z-index: 1;
 }
 
 /* Placeholder to maintain size while loading */
@@ -862,7 +866,7 @@ button#about-project-button.about-project-button i {
     margin-top: 1rem;
     align-items: center;
     position: relative;
-    z-index: 1;
+    z-index: 2;
 }
 
 .source-pills-label {
@@ -890,6 +894,7 @@ button#about-project-button.about-project-button i {
     border-color: rgba(228, 7, 18, 0.5);
     transform: translateY(-2px);
     box-shadow: 0 2px 4px rgba(228, 7, 18, 0.2);
+    z-index: 100 !important;  /* Ensure hovered pill is above other pills */
 }
 
 .source-pill.active {
@@ -913,7 +918,7 @@ button#about-project-button.about-project-button i {
     right: var(--tooltip-right, auto);
     transform: var(--tooltip-transform, translateX(-50%));
     white-space: pre-wrap;
-    z-index: 9999;
+    z-index: 999999 !important; /* Force with !important */
     background-color: rgba(20, 20, 20, 0.95);
     color: white;
     text-align: left;
@@ -927,7 +932,7 @@ button#about-project-button.about-project-button i {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
     min-width: 200px;
     max-width: 300px;
-    margin: var(--tooltip-margin, 8px 0 0 0);
+    margin: var(--tooltip-margin, 0); /* Default to 0 margin */
     visibility: hidden;
     word-break: break-word;
 }
@@ -939,14 +944,14 @@ button#about-project-button.about-project-button i {
     bottom: var(--tooltip-arrow-bottom, auto);
     left: var(--tooltip-arrow-left, 50%);
     right: var(--tooltip-arrow-right, auto);
-    margin-top: -5px;
+    margin-top: 0; /* Remove the negative margin */
     border-width: 5px;
     border-style: solid;
     border-color: var(--tooltip-arrow-border-color, transparent transparent rgba(20, 20, 20, 0.95) transparent);
     opacity: 0;
     transition: opacity 0.2s;
-    transform: translateX(-50%);
-    z-index: 9999;
+    transform: var(--tooltip-arrow-transform, translateX(-50%));
+    z-index: 999999 !important; /* Force with !important */
     visibility: hidden;
 }
 
@@ -954,6 +959,7 @@ button#about-project-button.about-project-button i {
 .source-pill[data-tooltip]:hover::before {
     opacity: 1;
     visibility: visible;
+    z-index: 999999 !important;
 }
 
 /* Show More Sources Button */
@@ -1240,6 +1246,8 @@ a.show-more-sources:hover {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    position: relative;
+    z-index: 1000 !important; /* High z-index to ensure tooltips can be positioned correctly */
 }
 
 #expanded-source-pills .source-pill {
@@ -1753,6 +1761,8 @@ textarea:focus, button:focus {
     height: 100%;
     overflow-y: auto; /* Main scrolling happens at this level */
     flex-shrink: 0; /* Don't allow width to shrink */
+    position: relative;
+    z-index: 5; /* Ensure this container has a stacking context */
 }
 
 .source-panel.expanded .source-sources {
@@ -1817,6 +1827,8 @@ textarea:focus, button:focus {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    position: relative;
+    z-index: 10 !important;
 }
 
 .expanded-source-pills-container .source-pill {
@@ -1869,6 +1881,7 @@ textarea:focus, button:focus {
     align-items: center;
     justify-content: center;
     flex-direction: column;
+    z-index: 1;
 }
 
 /* Placeholder to maintain size while loading */
@@ -2711,4 +2724,85 @@ button.admin-button:hover {
     .sidebar-bottom-content {
         display: none !important;
     }
+}
+
+#expanded-source-pills .source-pill[data-tooltip]::after {
+    --tooltip-left: 100%;
+    --tooltip-top: 0;
+    --tooltip-transform: translateX(10px);
+    width: 250px;
+    z-index: 999999 !important;
+    position: fixed !important;
+    /* Adjust the positioning to ensure the tooltip is visible */
+    left: auto !important; /* Override calculated position */
+    right: auto !important;
+    transform: none !important; /* Override transform to control position directly */
+}
+
+#expanded-source-pills .source-pill[data-tooltip]::before {
+    --tooltip-arrow-left: 0;
+    --tooltip-arrow-top: 50%;
+    --tooltip-arrow-border-color: transparent rgba(20, 20, 20, 0.95) transparent transparent;
+    z-index: 999999 !important;
+    position: fixed !important;
+    /* Adjust the positioning to ensure the arrow is visible */
+    left: auto !important; /* Override calculated position */
+    right: auto !important;
+    transform: none !important; /* Override transform to control position directly */
+}
+
+/* Specifically target expanded source pills */
+#expanded-source-pills .source-pill {
+    position: relative;
+    z-index: 100 !important;
+}
+
+/* Override positioning for expanded view tooltips */
+#expanded-source-pills .source-pill[data-tooltip]:hover::after {
+    margin-left: 10px;
+    top: 0 !important;
+    left: 100% !important;
+}
+
+#expanded-source-pills .source-pill[data-tooltip]:hover::before {
+    margin-left: 0;
+    top: 50% !important;
+    left: 100% !important;
+    margin-top: -5px !important;
+    border-color: transparent rgba(20, 20, 20, 0.95) transparent transparent !important;
+}
+
+/* Source content panel styles */
+.source-content-wrapper {
+    position: relative;
+    z-index: 1;
+}
+
+/* Ensure tooltips in expanded view are always on top and positioned correctly */
+#expanded-source-pills .source-pill[data-tooltip]::after {
+    display: block;
+    position: absolute; /* Not fixed, to allow for scrolling */
+    top: 0 !important;
+    left: 100% !important;
+    margin-left: 10px !important;
+    transform: none !important;
+    z-index: 9999999 !important; /* Ultra high z-index */
+    pointer-events: none;
+}
+
+#expanded-source-pills .source-pill[data-tooltip]::before {
+    display: block;
+    position: absolute; /* Not fixed, to allow for scrolling */
+    top: 50% !important;
+    left: 100% !important;
+    margin-top: -5px !important;
+    transform: none !important;
+    z-index: 9999999 !important; /* Ultra high z-index */
+    border-color: transparent rgba(20, 20, 20, 0.95) transparent transparent !important;
+}
+
+/* Make sure source-content has a lower z-index than tooltips */
+.source-content {
+    z-index: 5;
+    position: relative;
 }
