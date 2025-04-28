@@ -707,7 +707,7 @@ button#about-project-button.about-project-button i {
 /* Important: We use higher specificity to ensure width is maintained */
 .source-panel.collapsing {
     position: relative;
-    width: 400px !important; /* Use !important to ensure it takes precedence */
+    width: 35% !important; /* Use !important to ensure it takes precedence */
     min-width: 400px;
     animation: collapsePanel 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
 }
@@ -715,13 +715,15 @@ button#about-project-button.about-project-button i {
 /* Ensure the panel maintains the correct width even when closing after collapsing */
 .source-panel.collapsing.closing,
 .source-panel.collapsing + .source-panel.closing {
-    width: 400px !important;
+    width: 35% !important;
+    min-width: 400px;
 }
 
 /* Ensure proper open state after animation completes */
 .source-panel.collapsing.open,
 .source-panel.open:not(.expanded):not(.closing) {
-    width: 400px !important;
+    width: 35% !important;
+    min-width: 400px;
 }
 
 @keyframes expandPanel {
