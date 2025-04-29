@@ -34,6 +34,9 @@ function toggleSourcePanel() {
         if (isMobile() || isTablet()) {
             // For mobile and tablet, just remove the open class immediately
             sourcePanel.classList.remove('open');
+            // Ensure no other classes remain
+            sourcePanel.classList.remove('expanded');
+            sourcePanel.classList.remove('collapsing');
         } else {
             // For desktop, use animation
             sourcePanel.classList.add('closing');
@@ -53,6 +56,14 @@ function toggleSourcePanel() {
         // On mobile or tablet, prevent body scrolling when panel is open
         if (isMobile() || isTablet()) {
             document.body.style.overflow = 'hidden';
+            
+            // For tablets, ensure panel is in full screen mode by removing other classes
+            if (isTablet()) {
+                sourcePanel.classList.remove('expanded');
+                sourcePanel.classList.remove('collapsing');
+                // Force recalculation of styles
+                void sourcePanel.offsetWidth;
+            }
         }
         
         // Reset expanded state (desktop only feature)

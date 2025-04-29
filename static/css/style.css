@@ -750,10 +750,19 @@ button#about-project-button.about-project-button i {
 
 /* Tablet-specific behavior - Make source panel behave like mobile for tablet sizes */
 @media (min-width: 769px) and (max-width: 950px) {
-    /* Override the desktop panel behavior for tablets */
-    .source-panel.open {
+    /* Override ALL desktop panel behavior states for tablets with maximum specificity */
+    .source-panel.open,
+    .source-panel.expanded,
+    .source-panel.collapsing,
+    .source-panel.collapsing.open,
+    .source-panel.open:not(.expanded):not(.closing),
+    .source-panel.collapsing.closing,
+    .source-panel.expanded.open,
+    html body .source-panel.open,
+    html body .source-panel.collapsing.open {
         width: 100% !important;
         max-width: 100% !important;
+        min-width: 100% !important;
         position: fixed !important;
         top: 0 !important;
         right: 0 !important;
@@ -761,10 +770,13 @@ button#about-project-button.about-project-button i {
         height: 100vh !important;
         z-index: 1000 !important;
         animation: tabletSlideInFromRight 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards !important;
+        transform: none !important;
     }
 
     .source-panel.closing {
         width: 100% !important;
+        max-width: 100% !important;
+        min-width: 100% !important;
         animation: tabletSlideOutToRight 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards !important;
     }
 
@@ -796,26 +808,37 @@ button#about-project-button.about-project-button i {
     }
 
     /* Ensure content fills the width correctly */
-    .source-panel.open .source-content {
+    .source-panel.open .source-content,
+    html body .source-panel.open .source-content,
+    html body .source-panel.collapsing.open .source-content {
         width: 100% !important;
         height: calc(100vh - 110px) !important;
+        max-width: 100% !important;
     }
 
-    .source-panel.open .source-content-wrapper {
+    .source-panel.open .source-content-wrapper,
+    html body .source-panel.open .source-content-wrapper,
+    html body .source-panel.collapsing.open .source-content-wrapper {
         width: 100% !important;
         height: calc(100vh - 60px) !important;
-    }
-
-    /* Override any expanded panel styles for tablets */
-    .source-panel.expanded,
-    .source-panel.collapsing {
-        width: 100% !important;
         max-width: 100% !important;
     }
 
     /* Hide the source sidebar section that appears in expanded view */
     .source-panel .source-sources {
         display: none !important;
+    }
+
+    /* This is a critical override to prevent size conflicts */
+    .source-panel.collapsing.open,
+    .source-panel.collapsing,
+    .source-panel.expanded {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 100% !important;
+        position: fixed !important;
+        animation: none !important;
+        transform: none !important;
     }
 }
 
