@@ -2922,3 +2922,41 @@ button.admin-button:hover {
     background-color: var(--primary-color);
     text-align: center;
 }
+
+/* GitHub Repo Button - Match About Project style */
+button#github-repo-button.about-project-button {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--accent-gradient);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(228, 7, 18, 0.2);
+}
+
+button#github-repo-button.about-project-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(228, 7, 18, 0.3);
+}
+
+button#github-repo-button.about-project-button i {
+    font-size: 1.1rem;
+}
+
+/* Override FAB styles if they affect the GitHub button */
+#github-repo-button {
+    width: 100% !important;
+    height: auto !important;
+    border-radius: 6px !important;
+    transform: none;
+    display: flex !important;
+    box-shadow: 0 2px 5px rgba(228, 7, 18, 0.2) !important;
+}

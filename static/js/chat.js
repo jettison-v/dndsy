@@ -88,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const aboutProjectCloseButton = document.getElementById('about-project-close-button');
     const aboutTabButtons = document.querySelectorAll('#about-project-modal .admin-tab-button');
     const aboutTabPanes = document.querySelectorAll('#about-project-modal .admin-tab-pane');
+    const githubRepoButton = document.getElementById('github-repo-button');
 
     // Show About Project modal
     if (aboutProjectButton) {
@@ -117,6 +118,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Ensure the tab content container is visible
                 document.querySelector('#about-project-modal .admin-tab-content').style.display = 'flex';
             }
+        });
+    }
+
+    // GitHub Repository Button - open in new tab
+    if (githubRepoButton) {
+        githubRepoButton.addEventListener('click', () => {
+            window.open('https://github.com/jettison-v/dndsy', '_blank');
         });
     }
 
