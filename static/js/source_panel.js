@@ -5,6 +5,11 @@ function isMobile() {
     return window.innerWidth <= 768;
 }
 
+// Check if we're on a tablet device (769px-950px)
+function isTablet() {
+    return window.innerWidth > 768 && window.innerWidth <= 950;
+}
+
 // Add mobile class to body if on mobile device
 function initializeMobileView() {
     if (isMobile()) {
@@ -26,8 +31,8 @@ function toggleSourcePanel() {
     
     if (isSourcePanelOpen) {
         // Close panel
-        if (isMobile()) {
-            // For mobile, just remove the open class immediately
+        if (isMobile() || isTablet()) {
+            // For mobile and tablet, just remove the open class immediately
             sourcePanel.classList.remove('open');
         } else {
             // For desktop, use animation
@@ -45,13 +50,13 @@ function toggleSourcePanel() {
         sourcePanel.classList.add('open');
         isSourcePanelOpen = true;
         
-        // On mobile, prevent body scrolling when panel is open
-        if (isMobile()) {
+        // On mobile or tablet, prevent body scrolling when panel is open
+        if (isMobile() || isTablet()) {
             document.body.style.overflow = 'hidden';
         }
         
         // Reset expanded state (desktop only feature)
-        if (isMobile()) {
+        if (isMobile() || isTablet()) {
             isSourcePanelExpanded = false;
             sourcePanel.classList.remove('expanded');
         }
@@ -62,7 +67,7 @@ function toggleSourcePanel() {
 function toggleSourcePanelExpanded() {
     const sourcePanel = document.querySelector('.source-panel');
     
-    if (!sourcePanel || isMobile()) return; // Don't expand on mobile
+    if (!sourcePanel || isMobile() || isTablet()) return; // Don't expand on mobile or tablet
     
     if (isSourcePanelExpanded) {
         sourcePanel.classList.remove('expanded');
@@ -75,8 +80,8 @@ function toggleSourcePanelExpanded() {
 
 // Cleanup after closing source panel
 function cleanupSourcePanel() {
-    // Restore body scrolling if on mobile
-    if (isMobile()) {
+    // Restore body scrolling if on mobile or tablet
+    if (isMobile() || isTablet()) {
         document.body.style.overflow = '';
     }
 }
@@ -107,7 +112,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const sourcePanel = document.querySelector('.source-panel');
     if (sourcePanel) {
         sourcePanel.addEventListener('animationend', function(e) {
-            if (!isMobile() && e.animationName.includes('Out')) {
+            if ((!isMobile() && !isTablet()) && e.animationName.includes('Out')) {
                 sourcePanel.classList.remove('closing');
             }
         });
@@ -117,8 +122,8 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('resize', function() {
         initializeMobileView();
         
-        // Reset expanded state on resize to mobile
-        if (isMobile() && isSourcePanelExpanded) {
+        // Reset expanded state on resize to mobile or tablet
+        if ((isMobile() || isTablet()) && isSourcePanelExpanded) {
             const sourcePanel = document.querySelector('.source-panel');
             if (sourcePanel) {
                 sourcePanel.classList.remove('expanded');
