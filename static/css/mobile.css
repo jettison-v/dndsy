@@ -3,6 +3,229 @@
   MOBILE-SPECIFIC STYLES
 ========================================
 */
+
+/* General mobile adjustments */
+@media (max-width: 768px) {
+    body.mobile-view {
+        overflow-x: hidden;
+        max-width: 100vw;
+        margin: 0;
+        padding: 0;
+    }
+    
+    /* Hide desktop elements on mobile */
+    .desktop-only {
+        display: none !important;
+    }
+    
+    /* Typography adjustments */
+    body {
+        font-size: 16px !important;
+    }
+    
+    h1 {
+        font-size: 24px !important;
+    }
+    
+    h2 {
+        font-size: 20px !important;
+    }
+}
+
+/* Mobile Source Panel - Simple approach */
+@media (max-width: 768px) {
+    /* Base source panel - hidden by default */
+    .source-panel {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        z-index: 1000 !important;
+        background-color: var(--secondary-color) !important;
+        display: none !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+    }
+    
+    /* Show panel when open class is present */
+    .source-panel.open {
+        display: flex !important;
+    }
+    
+    /* Panel header */
+    .source-panel-header {
+        flex: 0 0 auto !important;
+        padding: 1rem !important;
+        background-color: var(--primary-color) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        border-bottom: 1px solid var(--border-color) !important;
+    }
+    
+    .source-panel-header h3 {
+        margin: 0 !important;
+        flex: 1 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    
+    /* Source content title - add more padding */
+    #source-panel-header-text {
+        padding: 15px 20px !important;
+        margin: 0 !important;
+        font-size: 1.2rem !important;
+        font-weight: 500 !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        background-color: var(--primary-color) !important;
+        text-align: center !important;
+    }
+    
+    /* Content area */
+    .source-content-wrapper {
+        flex: 1 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+        position: relative !important;
+    }
+    
+    .source-content {
+        flex: 1 !important;
+        position: relative !important;
+        overflow: hidden !important;
+    }
+    
+    /* Image container */
+    #source-image-container {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 50px !important; /* Space for navigation */
+        overflow: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0.5rem !important;
+    }
+    
+    .source-image {
+        max-width: 100% !important;
+        max-height: 100% !important;
+        object-fit: contain !important;
+    }
+    
+    /* Navigation bar */
+    .source-navigation {
+        position: absolute !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        padding: 0.5rem !important;
+        background-color: var(--primary-color) !important;
+        border-top: 1px solid var(--border-color) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        z-index: 10 !important;
+    }
+    
+    /* Zoom controls */
+    .zoom-controls {
+        display: none !important; /* Hide all zoom controls by default */
+    }
+    
+    /* Only show zoom controls inside the source panel when open */
+    .source-panel.open .zoom-controls {
+        display: flex !important;
+        position: fixed !important;
+        bottom: 60px !important; /* Position above the navigation bar */
+        right: 10px !important;
+        z-index: 1001 !important;
+        background-color: rgba(27, 27, 27, 0.8) !important;
+        padding: 6px !important;
+        border-radius: 6px !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    /* Hide redundant zoom controls */
+    .source-panel-header .zoom-controls,
+    #source-image-container .zoom-controls,
+    .image-zoom-controls {
+        display: none !important;
+    }
+    
+    .zoom-controls button {
+        background-color: var(--secondary-color) !important;
+        color: var(--text-color) !important;
+        border: 1px solid var(--border-color) !important;
+        width: 32px !important;
+        height: 32px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 0 0.25rem !important;
+        border-radius: 4px !important;
+    }
+    
+    /* Controls */
+    .close-source-btn {
+        background: none !important;
+        border: none !important;
+        color: var(--text-color) !important;
+        font-size: 1.5rem !important;
+        padding: 0.5rem !important;
+        cursor: pointer !important;
+    }
+    
+    /* Hide expand button - not needed on mobile */
+    .expand-button {
+        display: none !important;
+    }
+    
+    /* Source pills */
+    .source-pill {
+        font-size: 0.85rem !important;
+        padding: 0.3rem 0.5rem !important;
+        margin-right: 0.3rem !important;
+        margin-bottom: 0.3rem !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        max-width: 100% !important;
+    }
+    
+    /* Ensure the source sources section is hidden on mobile */
+    .source-sources {
+        display: none !important;
+    }
+}
+
+/* Tablet adjustments - now using the consistent 768px breakpoint */
+@media (min-width: 769px) and (max-width: 1024px) {
+    /* Keep the desktop experience for tablets */
+    body.mobile-view {
+        overflow: hidden;
+        position: fixed;
+    }
+    
+    /* Sidebar adjustments for tablets */
+    .sidebar {
+        width: 250px;
+    }
+}
+
+/*
+========================================
+  MOBILE-SPECIFIC STYLES
+========================================
+*/
 /* Mobile View */
 .mobile-view .layout-container {
     position: relative;
@@ -10,7 +233,7 @@
 }
 
 /* Simple mobile UI for phones */
-@media (max-width: 767px) {
+@media (max-width: 768px) {
     body.mobile-view {
         overflow: auto;
         position: relative;
@@ -24,15 +247,17 @@
     
     /* Full-screen source panel for mobile */
     .mobile-view .source-panel.open {
-        position: fixed;
-        top: 0;
-        left: 0;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
         width: 100% !important;
         height: 100% !important;
         max-width: none !important;
         min-width: 0 !important;
-        z-index: 1000;
-        animation: mobileFullScreenIn 0.3s ease forwards;
+        z-index: 1000 !important;
+        animation: mobileFullScreenIn 0.3s ease forwards !important;
+        border: none !important;
     }
     
     @keyframes mobileFullScreenIn {
@@ -41,7 +266,7 @@
     }
     
     .mobile-view .source-panel.closing {
-        animation: mobileFullScreenOut 0.3s ease forwards;
+        animation: mobileFullScreenOut 0.3s ease forwards !important;
     }
     
     @keyframes mobileFullScreenOut {
@@ -69,16 +294,18 @@
     
     /* Source content for mobile */
     .mobile-view .source-content {
-        height: calc(100% - 44px);
+        height: calc(100% - 44px) !important;
         padding: 0.5rem;
         overflow-y: auto;
+        width: 100% !important;
     }
     
     .mobile-view #source-image-container {
-        height: calc(100% - 10px);
+        height: calc(100% - 10px) !important;
         display: flex;
         align-items: center;
         justify-content: center;
+        width: 100% !important;
     }
     
     .mobile-view .source-image {
@@ -89,8 +316,7 @@
     
     /* Adjust zoom controls for mobile */
     .mobile-view .zoom-controls {
-        display: flex;
-        margin-right: 0.5rem;
+        display: none !important; /* Hide all zoom controls by default */
     }
     
     .mobile-view .zoom-controls button {
@@ -112,13 +338,14 @@
     
     /* Adjust source content wrapper for mobile */
     .mobile-view .source-content-wrapper {
-        height: calc(100% - 44px);
-        flex-direction: column;
+        height: calc(100% - 44px) !important;
+        flex-direction: column !important;
+        width: 100% !important;
     }
     
     /* Hide expand button on mobile */
     .mobile-view .expand-button {
-        display: none;
+        display: none !important;
     }
     
     /* Adjust FAB position for mobile */
@@ -126,10 +353,106 @@
         bottom: 1rem;
         right: 1rem;
     }
+    
+    /* Ensure mobile styles override ALL desktop source panel states with very high specificity */
+    body.mobile-view .source-panel.open,
+    body.mobile-view .source-panel.expanded,
+    body.mobile-view .source-panel.collapsing,
+    body.mobile-view .source-panel.collapsing.open,
+    body.mobile-view .source-panel.open:not(.expanded):not(.closing),
+    body.mobile-view .source-panel.collapsing.closing,
+    body.mobile-view .source-panel.expanded.open,
+    body.mobile-view .source-panel.expanded.closing {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        z-index: 1000 !important;
+        border: none !important;
+    }
+    
+    /* Additional overrides to ensure source panel is full width */
+    html body.mobile-view .source-panel.open * {
+        box-sizing: border-box !important;
+    }
+    
+    html body.mobile-view .source-panel.open .source-panel-header,
+    html body.mobile-view .source-panel.open .source-content,
+    html body.mobile-view .source-panel.open .source-content-wrapper {
+        width: 100% !important;
+    }
+    
+    html body.mobile-view .source-panel.open .source-sources {
+        display: none !important;
+    }
+
+    /* SOURCE PANEL ANIMATIONS */
+    /* Opening/expanding the panel */
+    .source-panel.open {
+        width: 100% !important;
+        animation: mobileSlideInFromRight 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards !important;
+    }
+
+    /* Closing the panel */
+    .source-panel.closing {
+        width: 100% !important;
+        animation: mobileSlideOutToRight 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards !important;
+    }
+
+    @keyframes mobileSlideInFromRight {
+        0% {
+            transform: translateX(100%);
+            opacity: 0.5;
+        }
+        100% {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes mobileSlideOutToRight {
+        0% {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        100% {
+            transform: translateX(100%);
+            opacity: 0.5;
+        }
+    }
+
+    /* Fix for zoom controls - single instance only */
+    .zoom-controls {
+        display: none !important; /* Hide all zoom controls by default */
+    }
+    
+    /* Only show zoom controls as fixed element at bottom */
+    .source-panel.open .zoom-controls {
+        display: flex !important;
+        position: fixed !important;
+        bottom: 60px !important; /* Position above the nav buttons */
+        right: 10px !important;
+        z-index: 1001 !important; /* Above other elements */
+        background-color: rgba(27, 27, 27, 0.8) !important;
+        padding: 6px !important;
+        border-radius: 6px !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    /* Hide all other zoom controls anywhere */
+    .source-panel-header .zoom-controls,
+    #source-image-container .zoom-controls,
+    .image-zoom-controls {
+        display: none !important;
+    }
 }
 
 /* Tablet devices should use desktop experience */
-@media (min-width: 768px) and (max-width: 1024px) {
+@media (min-width: 769px) and (max-width: 1024px) {
     /* Keep the desktop experience for tablets */
     body.mobile-view {
         overflow: hidden;
@@ -156,4 +479,612 @@
     min-width: 0 !important;
     max-width: none !important;
     position: fixed !important;
-} 
+}
+
+/* Mobile-specific overrides */
+body.mobile-view .source-panel.open {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    transform: translateX(0) !important;
+    z-index: 1000 !important;
+    box-sizing: border-box !important;
+    border-radius: 0 !important;
+    border: none !important;
+    overflow: auto !important;
+}
+
+body.mobile-view .source-panel.open .source-content-wrapper {
+    height: 100% !important;
+    width: 100% !important;
+    padding: 10px !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+}
+
+body.mobile-view .source-panel.open .source-content {
+    height: calc(100% - 40px) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+body.mobile-view .source-panel.open #source-image-container {
+    height: 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    box-sizing: border-box !important;
+}
+
+body.mobile-view .source-panel.open #source-image {
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    margin: 0 auto !important;
+    display: block !important;
+}
+
+body.mobile-view .source-panel.open .close-source-btn {
+    display: block !important;
+    position: absolute !important;
+    top: 10px !important;
+    right: 10px !important;
+    z-index: 1001 !important;
+    font-size: 24px !important;
+    padding: 5px !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    color: white !important;
+    border-radius: 50% !important;
+    width: 40px !important;
+    height: 40px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.mobile-view .source-panel.open .expand-button {
+    display: none !important;
+}
+
+body.mobile-view .source-panel.closing {
+    animation: mobileFullScreenOut 0.3s ease-in forwards !important;
+}
+
+body.mobile-view .source-panel.open {
+    animation: mobileFullScreenIn 0.3s ease-out forwards !important;
+}
+
+/* Animation keyframes for mobile */
+@keyframes mobileFullScreenIn {
+    from {
+        opacity: 0;
+        transform: translateY(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes mobileFullScreenOut {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(100%);
+    }
+}
+
+/* Hide specific desktop elements in mobile view */
+body.mobile-view .desktop-only {
+    display: none !important;
+}
+
+/* Mobile navigation adjustments */
+body.mobile-view .nav-container {
+    padding: 5px !important;
+}
+
+body.mobile-view #toggle-source-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 8px 12px !important;
+}
+
+/* Mobile typography adjustments */
+@media (max-width: 768px) {
+    body {
+        font-size: 16px !important;
+    }
+    
+    h1 {
+        font-size: 24px !important;
+    }
+    
+    h2 {
+        font-size: 20px !important;
+    }
+}
+
+/* Mobile-specific CSS */
+
+/* Global mobile overrides */
+body.mobile-view {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* Source panel overrides for mobile */
+body.mobile-view .source-panel.open {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+    z-index: 1000 !important;
+    overflow-y: auto !important;
+    background: #fff !important;
+    animation: mobileFullScreenIn 0.3s ease forwards !important;
+}
+
+body.mobile-view .source-panel.closing {
+    animation: mobileFullScreenOut 0.3s ease forwards !important;
+}
+
+/* Source panel content adjustments */
+body.mobile-view .source-panel .source-content-wrapper {
+    height: calc(100vh - 60px) !important;
+    max-height: none !important;
+    padding: 15px !important;
+    margin: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+}
+
+body.mobile-view .source-panel-header {
+    position: sticky !important;
+    top: 0 !important;
+    padding: 15px !important;
+    background: #fff !important;
+    z-index: 10 !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;
+}
+
+body.mobile-view .source-panel-header h2 {
+    font-size: 1.2rem !important;
+    margin: 0 !important;
+}
+
+/* Hide desktop-only buttons on mobile */
+body.mobile-view .expand-button {
+    display: none !important;
+}
+
+body.mobile-view .collapse-button {
+    display: none !important;
+}
+
+/* Enhance close button for mobile */
+body.mobile-view .close-source-btn {
+    position: absolute !important;
+    top: 10px !important;
+    right: 10px !important;
+    width: 40px !important;
+    height: 40px !important;
+    line-height: 40px !important;
+    text-align: center !important;
+    font-size: 24px !important;
+    background: rgba(0,0,0,0.1) !important;
+    border-radius: 50% !important;
+    color: #333 !important;
+    cursor: pointer !important;
+    z-index: 20 !important;
+}
+
+/* Main content adjustments for mobile */
+body.mobile-view .main-content {
+    padding: 10px !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
+}
+
+body.mobile-view .toggle-button {
+    display: block !important;
+    position: fixed !important;
+    bottom: 20px !important;
+    right: 20px !important;
+    width: 50px !important;
+    height: 50px !important;
+    background: #007bff !important;
+    color: white !important;
+    border-radius: 50% !important;
+    text-align: center !important;
+    line-height: 50px !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2) !important;
+    z-index: 100 !important;
+}
+
+/* Animation keyframes */
+@keyframes mobileFullScreenIn {
+    from {
+        opacity: 0;
+        transform: translateY(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes mobileFullScreenOut {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(100%);
+    }
+}
+
+/* Navigation adjustments for mobile */
+body.mobile-view .navigation {
+    padding: 10px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+}
+
+body.mobile-view .nav-links {
+    display: none !important;
+}
+
+body.mobile-view .nav-links.open {
+    display: flex !important;
+    flex-direction: column !important;
+    position: fixed !important;
+    top: 60px !important;
+    left: 0 !important;
+    right: 0 !important;
+    background: white !important;
+    padding: 20px !important;
+    box-shadow: 0 5px 10px rgba(0,0,0,0.1) !important;
+    z-index: 90 !important;
+}
+
+body.mobile-view .nav-links.open a {
+    padding: 15px 10px !important;
+    border-bottom: 1px solid #eee !important;
+    width: 100% !important;
+    text-align: left !important;
+}
+
+body.mobile-view .menu-button {
+    display: block !important;
+    font-size: 24px !important;
+}
+
+/* Typography adjustments for mobile */
+@media (max-width: 768px) {
+    body.mobile-view h1 {
+        font-size: 1.6rem !important;
+    }
+    
+    body.mobile-view h2 {
+        font-size: 1.4rem !important;
+    }
+    
+    body.mobile-view h3 {
+        font-size: 1.2rem !important;
+    }
+    
+    body.mobile-view p, 
+    body.mobile-view li, 
+    body.mobile-view div {
+        font-size: 16px !important;
+        line-height: 1.4 !important;
+    }
+    
+    body.mobile-view pre, 
+    body.mobile-view code {
+        font-size: 14px !important;
+        white-space: pre-wrap !important;
+        overflow-x: auto !important;
+    }
+}
+
+/* Table adjustments for mobile */
+body.mobile-view table {
+    width: 100% !important;
+    max-width: 100vw !important;
+    display: block !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-collapse: collapse !important;
+}
+
+body.mobile-view td, 
+body.mobile-view th {
+    min-width: 100px !important;
+    padding: 8px !important;
+    font-size: 14px !important;
+}
+
+/* Forms and inputs */
+body.mobile-view input, 
+body.mobile-view textarea, 
+body.mobile-view select, 
+body.mobile-view button {
+    font-size: 16px !important; /* Prevents iOS zoom on focus */
+    width: 100% !important;
+    padding: 12px !important;
+    margin-bottom: 15px !important;
+    box-sizing: border-box !important;
+}
+
+/* Touch-friendly buttons */
+body.mobile-view button, 
+body.mobile-view .button, 
+body.mobile-view [role="button"], 
+body.mobile-view a.button {
+    min-height: 44px !important; /* Touch target size */
+    line-height: 44px !important;
+    padding: 0 15px !important;
+    display: inline-block !important;
+    text-align: center !important;
+}
+
+/* Source Panel Mobile
+--------------------------------------- */
+.mobile-view .source-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    height: 100vh !important;
+    z-index: 1000;
+    width: 0;
+    overflow: hidden;
+}
+
+.mobile-view .source-panel.open {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    animation: mobileSlideInFromRight 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards !important;
+}
+
+.mobile-view .source-panel.closing {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    animation: mobileSlideOutToRight 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards !important;
+}
+
+.mobile-view .source-panel.expanded,
+.mobile-view .source-panel.collapsing.open,
+.mobile-view .source-panel.collapsing,
+.mobile-view .source-panel.collapsing.closing {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+}
+
+@keyframes mobileSlideInFromRight {
+    0% {
+        transform: translateX(100%);
+        opacity: 0.5;
+    }
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes mobileSlideOutToRight {
+    0% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(100%);
+        opacity: 0.5;
+    }
+}
+
+/* Mobile Panel Inner Content */
+.mobile-view .source-panel .source-content-wrapper {
+    height: calc(100vh - 60px);
+    overflow: hidden;
+}
+
+.mobile-view .source-panel .source-content {
+    width: 100%;
+    height: calc(100vh - 60px);
+    overflow: hidden;
+}
+
+.mobile-view .source-panel #source-image-container {
+    width: 100%;
+    height: calc(100vh - 110px);
+    overflow: auto;
+}
+
+/* 
+==============================================
+  Mobile Styles for Layout
+==============================================
+*/
+
+/* 
+==============================================
+  Mobile Styles for Source Panel
+==============================================
+*/
+
+/* Mobile Source Panel - Simple approach */
+@media (max-width: 768px) {
+    /* Base panel styles */
+    .source-panel {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 1000 !important;
+        background-color: var(--secondary-color) !important;
+        display: none !important; /* Hidden by default */
+        flex-direction: column !important;
+        overflow: hidden !important;
+    }
+    
+    /* Show panel when open */
+    .source-panel.open {
+        display: flex !important;
+    }
+    
+    /* Panel header */
+    .source-panel-header {
+        flex: 0 0 auto !important;
+        padding: 1rem !important;
+        background-color: var(--primary-color) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        border-bottom: 1px solid var(--border-color) !important;
+    }
+    
+    /* Panel main content */
+    .source-content-wrapper {
+        flex: 1 1 auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+    }
+    
+    .source-content {
+        flex: 1 1 auto !important;
+        overflow: hidden !important;
+        position: relative !important;
+    }
+    
+    /* Image container */
+    #source-image-container {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 50px !important; /* Space for navigation */
+        overflow: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    .source-image {
+        max-width: 100% !important;
+        max-height: 100% !important;
+        object-fit: contain !important;
+    }
+    
+    /* Panel navigation */
+    .source-navigation {
+        flex: 0 0 auto !important;
+        padding: 0.5rem !important;
+        background-color: var(--primary-color) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border-top: 1px solid var(--border-color) !important;
+        position: absolute !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+    }
+    
+    /* Fix for zoom controls - single instance only */
+    .zoom-controls {
+        display: none !important; /* Hide all zoom controls by default */
+    }
+    
+    /* Only show zoom controls as fixed element at bottom */
+    .source-panel.open .zoom-controls {
+        display: flex !important;
+        position: fixed !important;
+        bottom: 60px !important; /* Position above the nav buttons */
+        right: 10px !important;
+        z-index: 1001 !important; /* Above other elements */
+        background-color: rgba(27, 27, 27, 0.8) !important;
+        padding: 6px !important;
+        border-radius: 6px !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    /* Hide all other zoom controls anywhere */
+    .source-panel-header .zoom-controls,
+    #source-image-container .zoom-controls,
+    .image-zoom-controls {
+        display: none !important;
+    }
+    
+    /* Button styling */
+    .zoom-controls button {
+        background-color: var(--secondary-color) !important;
+        color: var(--text-color) !important;
+        border: 1px solid var(--border-color) !important;
+        width: 32px !important;
+        height: 32px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 0 0.25rem !important;
+        border-radius: 4px !important;
+    }
+    
+    /* Hide expand button on mobile */
+    .expand-button {
+        display: none !important;
+    }
+    
+    /* Close button positioning */
+    .close-source-btn {
+        background: none !important;
+        border: none !important;
+        color: var(--text-color) !important;
+        font-size: 1.5rem !important;
+        padding: 0.5rem !important;
+        cursor: pointer !important;
+    }
+}
+
+/* Rest of the CSS remains unchanged */ 

@@ -632,121 +632,123 @@ button#about-project-button.about-project-button i {
 --------------------------------------- */
 
 /* 1. Opening and Closing Small Panel */
-.source-panel.open {
-    width: 400px;
-    animation: slideInFromRight 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
-}
-
-.source-panel.closing {
-    width: 400px;
-    animation: slideOutToRight 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
-}
-
-@keyframes slideInFromRight {
-    0% {
-        width: 0;
-        opacity: 0.5;
+@media (min-width: 769px) {
+    .source-panel.open {
+        width: 400px !important;
+        animation: slideInFromRight 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards !important;
     }
-    100% {
-        width: 400px;
-        opacity: 1;
+
+    .source-panel.closing {
+        width: 400px !important;
+        animation: slideOutToRight 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards !important;
     }
-}
 
-@keyframes slideOutToRight {
-    0% {
-        width: 400px;
-        opacity: 1;
+    @keyframes slideInFromRight {
+        0% {
+            width: 0;
+            opacity: 0.5;
+        }
+        100% {
+            width: 400px;
+            opacity: 1;
+        }
     }
-    100% {
-        width: 0;
-        opacity: 0.5;
+
+    @keyframes slideOutToRight {
+        0% {
+            width: 400px;
+            opacity: 1;
+        }
+        100% {
+            width: 0;
+            opacity: 0.5;
+        }
     }
-}
 
-/* 2. Expanding and Collapsing Panel */
-.source-panel.expanded {
-    width: 100% !important;
-    max-width: 100%;
-    position: fixed;
-    top: 0;
-    right: 0;
-    height: 100vh;
-    z-index: 1000 !important;
-}
-
-.source-panel.expanded .source-panel-header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-.source-panel.expanded .source-content-wrapper {
-    display: flex;
-    width: 100%;
-    height: calc(100vh - 60px); /* Full height minus header */
-    overflow: hidden;
-}
-
-.source-panel.expanded .source-content {
-    width: 100%;
-    height: calc(100vh - 60px);
-    max-height: calc(100vh - 60px);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
-.source-panel.expanded #source-image-container {
-    width: 100%;
-    height: calc(100vh - 110px);
-    max-height: calc(100vh - 110px);
-    overflow: auto;
-}
-
-/* Important: We use higher specificity to ensure width is maintained */
-.source-panel.collapsing {
-    position: relative;
-    width: 35% !important; /* Use !important to ensure it takes precedence */
-    min-width: 400px;
-    animation: collapsePanel 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
-}
-
-/* Ensure the panel maintains the correct width even when closing after collapsing */
-.source-panel.collapsing.closing,
-.source-panel.collapsing + .source-panel.closing {
-    width: 35% !important;
-    min-width: 400px;
-}
-
-/* Ensure proper open state after animation completes */
-.source-panel.collapsing.open,
-.source-panel.open:not(.expanded):not(.closing) {
-    width: 35% !important;
-    min-width: 400px;
-}
-
-@keyframes expandPanel {
-    0% {
-        width: 400px;
+    /* 2. Expanding and Collapsing Panel */
+    .source-panel.expanded {
+        width: 100% !important;
+        max-width: 100%;
+        position: fixed;
+        top: 0;
+        right: 0;
+        height: 100vh;
+        z-index: 1000 !important;
     }
-    100% {
+
+    .source-panel.expanded .source-panel-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .source-panel.expanded .source-content-wrapper {
+        display: flex;
         width: 100%;
+        height: calc(100vh - 60px); /* Full height minus header */
+        overflow: hidden;
     }
-}
 
-@keyframes collapsePanel {
-    0% {
+    .source-panel.expanded .source-content {
         width: 100%;
-        opacity: 1;
+        height: calc(100vh - 60px);
+        max-height: calc(100vh - 60px);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
     }
-    100% {
-        width: 400px;
-        opacity: 1;
+
+    .source-panel.expanded #source-image-container {
+        width: 100%;
+        height: calc(100vh - 110px);
+        max-height: calc(100vh - 110px);
+        overflow: auto;
+    }
+
+    /* Important: We use higher specificity to ensure width is maintained */
+    .source-panel.collapsing {
+        position: relative;
+        width: 35% !important; /* Use !important to ensure it takes precedence */
+        min-width: 400px;
+        animation: collapsePanel 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+    }
+
+    /* Ensure the panel maintains the correct width even when closing after collapsing */
+    .source-panel.collapsing.closing,
+    .source-panel.collapsing + .source-panel.closing {
+        width: 35% !important;
+        min-width: 400px;
+    }
+
+    /* Ensure proper open state after animation completes */
+    .source-panel.collapsing.open,
+    .source-panel.open:not(.expanded):not(.closing) {
+        width: 35% !important;
+        min-width: 400px;
+    }
+
+    @keyframes expandPanel {
+        0% {
+            width: 400px;
+        }
+        100% {
+            width: 100%;
+        }
+    }
+
+    @keyframes collapsePanel {
+        0% {
+            width: 100%;
+            opacity: 1;
+        }
+        100% {
+            width: 400px;
+            opacity: 1;
+        }
     }
 }
 
-/* 3. Mobile Panel Animation - Moved to @media section */
+/* 3. Mobile Panel Animation - This part is kept outside so mobile.css can override it */
 
 .source-panel-header {
     display: flex;
@@ -767,8 +769,10 @@ button#about-project-button.about-project-button i {
     display: none;
 }
 
-.source-panel.expanded .source-panel-header .zoom-controls {
-    display: none;
+@media (min-width: 769px) {
+    .source-panel.expanded .source-panel-header .zoom-controls {
+        display: none;
+    }
 }
 
 .close-button {
@@ -788,7 +792,7 @@ button#about-project-button.about-project-button i {
 .source-content {
     padding: 0;
     overflow-y: auto;
-    height: calc(100% - 60px); /* Adjust based on header height */
+    height: calc(100% - 110px); /* Adjust to account for header and navigation bar */
     position: relative;
     z-index: 1;
 }
@@ -1259,9 +1263,14 @@ a.show-more-sources:hover {
 }
 
 .zoom-controls {
-    display: flex;
+    display: none; /* Hide by default */
     gap: 0.5rem;
     align-items: center;
+}
+
+/* Only show zoom controls in source panel */
+.source-panel .zoom-controls {
+    display: flex;
 }
 
 .zoom-controls button {
@@ -1964,7 +1973,7 @@ textarea:focus, button:focus {
     display: none;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 769px) {
     .desktop-only {
         display: block;
     }
@@ -2809,7 +2818,13 @@ button.admin-button:hover {
     position: relative;
 }
 
-/* 
-   Mobile-specific styles have been moved to mobile.css 
-   for better separation of concerns and maintainability 
-*/
+/* Custom styling for the source content header */
+#source-panel-header-text {
+    padding: 15px 20px;
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 500;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--primary-color);
+    text-align: center;
+}

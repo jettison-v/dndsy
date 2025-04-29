@@ -8,8 +8,8 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Only run this code on mobile devices
-    if (window.innerWidth >= 768) return;
+    // Only run this code on mobile devices - use strict less than or equal comparison
+    if (window.innerWidth > 768) return;
     
     // Apply mobile-specific class to body for CSS targeting
     document.body.classList.add('mobile-view');
@@ -68,13 +68,13 @@ document.addEventListener('DOMContentLoaded', () => {
      * Handle window resize events
      */
     function handleResize() {
-        if (window.innerWidth >= 768) {
+        if (window.innerWidth > 768) {
             // Remove mobile view class if no longer a mobile device
             document.body.classList.remove('mobile-view');
             
             // Restore original behaviors (if we're switching back to desktop)
             cleanupMobileBehaviors();
-        } else {
+        } else if (window.innerWidth <= 768) {
             // Add mobile view class if this is a mobile device
             document.body.classList.add('mobile-view');
             
