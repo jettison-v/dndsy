@@ -45,6 +45,11 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
     *   **Configuration:** View/Update system prompt, tune retrieval parameters (reranking weights, result count), and adjust LLM settings, with comprehensive help text for each option.
     *   **Context Inspector:** Debug tool to analyze what context is retrieved for any query, visualize token distribution, and test retrieval parameters.
     *   **External Links:** Quick links to relevant external services (Railway, Qdrant, S3, etc.).
+*   **Responsive Mobile UI:** Fully optimized interface for mobile, tablet, and desktop devices:
+    *   **Standardized Breakpoints:** Mobile (≤768px), Tablet (769px-950px), Desktop (>950px).
+    *   **Device-Specific Source Panel:** Mobile and tablet use full-screen source panels, desktop uses expandable side panel.
+    *   **Touch-Optimized Controls:** Mobile-friendly navigation and zoom controls.
+    *   **Consistent Experience:** UI adapts seamlessly across all device sizes.
 
 ## Technology Stack
 
@@ -105,13 +110,16 @@ dndsy/
 │   └── setup_env.py         # Helper to create initial .env file
 ├── static/
 │   ├── css/
-│   │   ├── style.css
+│   │   ├── style.css        # Main application styles
+│   │   ├── mobile.css       # Mobile-specific responsive styles
 │   │   └── admin-config.css # Styling for admin configuration panels
 │   ├── img/
 │   └── js/
-│       ├── chat.js
-│       ├── marked.min.js
-│       ├── source_viewer.js
+│       ├── chat.js          # Main chat interface functionality
+│       ├── marked.min.js    # Markdown rendering
+│       ├── source_viewer.js # Source panel management for desktop
+│       ├── source_panel.js  # Responsive source panel behavior
+│       ├── mobile-ui.js     # Mobile-specific UI enhancements
 │       └── admin.js         # Admin panel functionality
 ├── templates/
 │   ├── index.html
