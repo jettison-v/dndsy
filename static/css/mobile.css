@@ -29,8 +29,8 @@
         left: 0;
         width: 100% !important;
         height: 100% !important;
-        max-width: none;
-        min-width: 0;
+        max-width: none !important;
+        min-width: 0 !important;
         z-index: 1000;
         animation: mobileFullScreenIn 0.3s ease forwards;
     }
@@ -140,4 +140,20 @@
     .sidebar {
         width: 250px;
     }
+}
+
+/* Ensure all variations of source panel in mobile view have full width */
+.mobile-view .source-panel.collapsing.open,
+.mobile-view .source-panel.open:not(.expanded):not(.closing) {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+}
+
+/* Ensure collapsing panels also stay full width on mobile */
+.mobile-view .source-panel.collapsing {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    position: fixed !important;
 } 
