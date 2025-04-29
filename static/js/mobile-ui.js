@@ -8,13 +8,12 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Only run this code on mobile devices - use strict less than or equal comparison
+    // Only run this code on mobile devices
     if (window.innerWidth > 768) return;
     
-    // Apply mobile-specific class to body for CSS targeting
+    // Apply mobile-specific class and initialize elements
     document.body.classList.add('mobile-view');
     
-    // Elements
     const sourcePanel = document.getElementById('source-panel');
     const mobileSourceToggle = document.getElementById('mobile-source-toggle');
     const mobileHeaderSourceToggle = document.getElementById('mobile-header-source-toggle');
@@ -24,17 +23,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Store the original toggle functions to avoid conflict
     const originalToggleSourcePanel = window.toggleSourcePanel;
     
-    // Enable mobile-specific behaviors
     initializeMobileBehaviors();
-    
-    // Handle window resize
     window.addEventListener('resize', handleResize);
     
     /**
      * Initialize mobile-specific behaviors
      */
     function initializeMobileBehaviors() {
-        // Add event listeners for mobile source toggles
+        // Set up toggle button events
         if (mobileSourceToggle) {
             mobileSourceToggle.addEventListener('click', handleMobileSourceToggle);
         }
@@ -43,22 +39,21 @@ document.addEventListener('DOMContentLoaded', () => {
             mobileHeaderSourceToggle.addEventListener('click', handleMobileSourceToggle);
         }
         
-        // Override close button behavior on mobile
+        // Override close button behavior
         if (closePanel) {
-            // Remove any existing event listeners (inefficient but effective)
             const newCloseBtn = closePanel.cloneNode(true);
             closePanel.parentNode.replaceChild(newCloseBtn, closePanel);
             newCloseBtn.addEventListener('click', closeMobileSourcePanel);
         }
         
-        // Add event delegation for source pill clicks in chat
+        // Set up source pill click handling
         if (chatMessages) {
             chatMessages.addEventListener('click', (event) => {
                 const sourcePill = event.target.closest('.source-pill');
                 if (sourcePill) {
                     handleMobileSourcePillClick(sourcePill);
-                    event.preventDefault(); // Prevent default behavior
-                    event.stopPropagation(); // Stop event from bubbling up
+                    event.preventDefault();
+                    event.stopPropagation();
                 }
             });
         }
@@ -69,16 +64,12 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function handleResize() {
         if (window.innerWidth > 768) {
-            // Remove mobile view class if no longer a mobile device
+            // Switch to desktop mode
             document.body.classList.remove('mobile-view');
-            
-            // Restore original behaviors (if we're switching back to desktop)
             cleanupMobileBehaviors();
         } else if (window.innerWidth <= 768) {
-            // Add mobile view class if this is a mobile device
+            // Switch to mobile mode
             document.body.classList.add('mobile-view');
-            
-            // Reinitialize mobile behaviors if we switched to mobile
             initializeMobileBehaviors();
         }
     }
@@ -87,7 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
      * Clean up mobile-specific behaviors
      */
     function cleanupMobileBehaviors() {
-        // Remove mobile-specific event listeners
         if (mobileSourceToggle) {
             mobileSourceToggle.removeEventListener('click', handleMobileSourceToggle);
         }
@@ -96,9 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
             mobileHeaderSourceToggle.removeEventListener('click', handleMobileSourceToggle);
         }
         
-        // Restore original close button behavior
         if (closePanel) {
-            // This is a crude way to restore original behavior, but it works
             const newCloseBtn = closePanel.cloneNode(true);
             closePanel.parentNode.replaceChild(newCloseBtn, closePanel);
         }
@@ -111,7 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleMobileSourceToggle(event) {
         event.preventDefault();
         event.stopPropagation();
-        
         toggleMobileSourcePanel();
     }
     
@@ -126,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
             sourcePanel.classList.remove('closing');
             sourcePanel.classList.add('open');
             
-            // Update toggle button icons
+            // Update button icons
             if (mobileSourceToggle) {
                 const icon = mobileSourceToggle.querySelector('i');
                 if (icon) icon.classList.replace('fa-book', 'fa-times');
@@ -137,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (icon) icon.classList.replace('fa-book', 'fa-times');
             }
             
-            // Scroll the source content to the top when opening
+            // Scroll to top
             const sourceContent = document.getElementById('source-content');
             if (sourceContent) {
                 sourceContent.scrollTop = 0;
@@ -149,10 +136,9 @@ document.addEventListener('DOMContentLoaded', () => {
      * Close the source panel for mobile
      */
     function closeMobileSourcePanel() {
-        // Add closing animation class
         sourcePanel.classList.add('closing');
         
-        // Update toggle button icons
+        // Update button icons
         if (mobileSourceToggle) {
             const icon = mobileSourceToggle.querySelector('i');
             if (icon) icon.classList.replace('fa-times', 'fa-book');
@@ -163,12 +149,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (icon) icon.classList.replace('fa-times', 'fa-book');
         }
         
-        // Remove open class after animation completes
+        // Remove classes after animation
         setTimeout(() => {
             sourcePanel.classList.remove('open');
             sourcePanel.classList.remove('closing');
             
-            // Remove active class from all source pills when panel is closed
+            // Remove active class from pills
             document.querySelectorAll('.source-pill').forEach(pill => {
                 pill.classList.remove('active');
             });
@@ -180,30 +166,29 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {HTMLElement} pill The source pill element that was clicked
      */
     function handleMobileSourcePillClick(pill) {
-        // Get data attributes from the pill
+        // Get data from pill
         const s3Key = pill.dataset.s3Key;
         const pageNumber = pill.dataset.page;
         const score = pill.dataset.score;
-        // Get current vector store setting from the dropdown or use semantic as fallback
         const storeType = pill.dataset.storeType || document.getElementById('vector-store-dropdown')?.value || 'semantic';
         const filename = pill.dataset.filename;
         
-        // Set this pill as active
+        // Set active pill
         document.querySelectorAll('.source-pill').forEach(p => p.classList.remove('active'));
         pill.classList.add('active');
         
-        // Show loading in source panel
+        // Show loading indicator
         const sourceContent = document.getElementById('source-content');
         if (sourceContent) {
             sourceContent.innerHTML = '<div class="source-loading"><div class="spinner"></div><p>Loading source content...</p></div>';
         }
         
-        // Open the source panel if not already open
+        // Open panel if needed
         if (!sourcePanel.classList.contains('open')) {
             toggleMobileSourcePanel();
         }
         
-        // Fetch context details from API
+        // Fetch content
         fetch(`/api/get_context_details?source=${encodeURIComponent(s3Key)}&page=${pageNumber}&vector_store_type=${storeType}`)
             .then(response => {
                 if (!response.ok) {
@@ -217,7 +202,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!details) {
                     throw new Error('No details returned from server');
                 }
-                
                 displayMobileSource(details, `${filename} (page ${pageNumber})`, pageNumber, s3Key, score, storeType);
             })
             .catch(error => {
@@ -245,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Clear existing content
         sourceContent.innerHTML = '';
         
-        // Create header with source info
+        // Create header
         const header = document.createElement('div');
         header.className = 'source-header';
         
@@ -310,7 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
             sourceContent.innerHTML += '<p class="no-source">No source content available</p>';
         }
         
-        // Add navigation if total_pages is provided
+        // Add navigation if needed
         if (details.total_pages && details.total_pages > 1) {
             addMobileSourceNavigation(sourceContent, parseInt(pageNumber), details.total_pages, s3Key, storeType);
         }
@@ -325,28 +309,27 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {string} storeType Vector store type
      */
     function addMobileSourceNavigation(container, currentPage, totalPages, s3Key, storeType) {
-        // Create navigation container
         const navContainer = document.createElement('div');
         navContainer.className = 'source-navigation';
         
-        // Create previous button
+        // Previous button
         const prevButton = document.createElement('button');
         prevButton.innerHTML = '<i class="fas fa-chevron-left"></i> Prev';
         prevButton.className = 'nav-button prev-button';
         prevButton.disabled = currentPage <= 1;
         
-        // Create page indicator
+        // Page indicator
         const pageIndicator = document.createElement('div');
         pageIndicator.className = 'page-indicator';
         pageIndicator.textContent = `${currentPage} / ${totalPages}`;
         
-        // Create next button
+        // Next button
         const nextButton = document.createElement('button');
         nextButton.innerHTML = 'Next <i class="fas fa-chevron-right"></i>';
         nextButton.className = 'nav-button next-button';
         nextButton.disabled = currentPage >= totalPages;
         
-        // Add event listeners for navigation
+        // Add event listeners
         prevButton.addEventListener('click', () => {
             navigateMobileSourcePage('prev', currentPage, s3Key, storeType);
         });
@@ -355,12 +338,11 @@ document.addEventListener('DOMContentLoaded', () => {
             navigateMobileSourcePage('next', currentPage, s3Key, storeType);
         });
         
-        // Add elements to navigation container
+        // Add elements to container
         navContainer.appendChild(prevButton);
         navContainer.appendChild(pageIndicator);
         navContainer.appendChild(nextButton);
         
-        // Add navigation to the container
         container.appendChild(navContainer);
     }
     
@@ -372,24 +354,24 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {string} storeType Vector store type
      */
     function navigateMobileSourcePage(direction, currentPage, s3Key, storeType) {
-        // Calculate new page based on direction
+        // Calculate new page
         let newPage;
         if (direction === 'prev') {
             newPage = currentPage - 1;
-            if (newPage < 1) return; // Cannot go below page 1
+            if (newPage < 1) return;
         } else if (direction === 'next') {
             newPage = currentPage + 1;
         } else {
-            return; // Invalid direction
+            return;
         }
         
-        // Show loading indicator
+        // Show loading
         const sourceContent = document.getElementById('source-content');
         if (sourceContent) {
             sourceContent.innerHTML = '<div class="source-loading"><div class="spinner"></div><p>Loading page...</p></div>';
         }
         
-        // Fetch new page details
+        // Fetch new page
         fetch(`/api/get_context_details?source=${encodeURIComponent(s3Key)}&page=${newPage}&vector_store_type=${storeType}`)
             .then(response => {
                 if (!response.ok) {
@@ -404,10 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error('No details returned from server');
                 }
                 
-                // Get readable source name from the s3Key
                 const filename = s3Key.split('/').pop().replace(/\.[^/.]+$/, "");
-                
-                // Display the new page
                 displayMobileSource(details, `${filename} (page ${newPage})`, newPage, s3Key, null, storeType);
             })
             .catch(error => {

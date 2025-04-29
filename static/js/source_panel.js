@@ -1,11 +1,10 @@
 // Source panel management
 
-// Check if we're on a mobile device
+// Device detection functions
 function isMobile() {
     return window.innerWidth <= 768;
 }
 
-// Check if we're on a tablet device (769px-950px)
 function isTablet() {
     return window.innerWidth > 768 && window.innerWidth <= 950;
 }

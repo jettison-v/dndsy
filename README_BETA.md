@@ -8,6 +8,7 @@ This branch implements a development environment separation for DnDSy, allowing 
 2. **Vector Store Prefixing**: Development vector stores are prefixed with `dev__`
 3. **S3 Infrastructure Duplication**: Uses a separate `dev-askdnd-ai` S3 bucket
 4. **Environment Detection**: Automatically detects and applies the correct environment settings
+5. **Responsive Mobile UI**: Fully optimized mobile interface with consistent breakpoints
 
 ## How to Use
 
@@ -61,6 +62,30 @@ Vector store collections in development mode are prefixed with `dev__`, for exam
 The S3 bucket for development is prefixed with `dev-`, for example:
 - Production: `askdnd-ai`
 - Development: `dev-askdnd-ai`
+
+## Mobile UI Enhancements
+
+The Beta version includes significant improvements to the mobile user experience:
+
+1. **Standardized Breakpoints**: 
+   - Mobile: Devices up to 768px width
+   - Tablet: Devices 769px-950px width
+   - Desktop: Devices above 950px width
+
+2. **Device-Specific Source Panel Behavior**:
+   - Mobile: Full-screen source panel with optimized navigation
+   - Tablet: Full-screen source panel with desktop interface elements
+   - Desktop: Side panel with expand/collapse functionality
+
+3. **Responsive Styling**:
+   - Consistent source panel appearance and behavior across all devices
+   - Mobile-optimized controls for zooming and navigation
+   - Improved touch interaction for small screens
+
+4. **Architectural Components**:
+   - `mobile.css`: Dedicated styles for mobile devices
+   - `mobile-ui.js`: Handles mobile-specific interactions
+   - `source_panel.js`: Manages panel behavior across all device types
 
 ## Deployment
 
