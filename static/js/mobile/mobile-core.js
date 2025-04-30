@@ -4,6 +4,8 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log("[Debug] mobile-core.js loaded");
+    
     // UI elements
     const mobileSettingsToggle = document.getElementById('mobile-settings-toggle');
     const mobileSettingsPanel = document.getElementById('mobile-settings-panel');
@@ -18,26 +20,37 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize settings panel functionality
     if (mobileSettingsToggle && mobileSettingsPanel && closeSettingsPanel) {
-        // Add both click and touchstart events to ensure it works on mobile
-        ['click', 'touchstart'].forEach(eventType => {
-            mobileSettingsToggle.addEventListener(eventType, function(event) {
-                event.preventDefault();
-                event.stopPropagation();
-                toggleSettingsPanel();
-                return false;
-            }, { passive: false });
+        console.log("[Debug] Setting up standard click listener for settings button.");
+        mobileSettingsToggle.addEventListener('click', function(e) {
+            e.stopPropagation(); // Stop event bubbling
+            e.preventDefault();  // Prevent default link behavior (if any)
+            console.log("[Debug] Settings Toggle Clicked!");
+            if (mobileSettingsPanel.classList.contains('open')) {
+                closeSettings();
+            } else {
+                openSettings();
+            }
         });
-        
-        closeSettingsPanel.addEventListener('click', closeSettings);
-        
-        // Close settings when clicking outside
+
+        closeSettingsPanel.addEventListener('click', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            console.log("[Debug] Close Settings Clicked!");
+            closeSettings();
+        });
+
+        // Close when clicking outside
         document.addEventListener('click', (event) => {
+            if (!mobileSettingsPanel || !mobileSettingsToggle) return; // Safety check
             if (mobileSettingsPanel.classList.contains('open') && 
                 !mobileSettingsPanel.contains(event.target) && 
-                event.target !== mobileSettingsToggle) {
+                !mobileSettingsToggle.contains(event.target)) {
+                console.log("[Debug] Click outside detected, closing settings.");
                 closeSettings();
             }
         });
+    } else {
+        console.error("[Debug] Could not find all settings elements for initialization.");
     }
     
     // Initialize source panel functionality
@@ -60,7 +73,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize about modal functionality
     if (aboutProjectButton && aboutProjectModal && aboutProjectCloseButton) {
-        aboutProjectButton.addEventListener('click', openAboutModal);
+        aboutProjectButton.addEventListener('click', (e) => {
+            e.stopPropagation(); // Stop click from propagating further
+            e.preventDefault(); // Prevent any default button action
+            console.log("[Debug] About Project button clicked");
+            openAboutModal();
+        });
         aboutProjectCloseButton.addEventListener('click', closeAboutModal);
         
         // Close modal when clicking outside
@@ -96,22 +114,18 @@ document.addEventListener('DOMContentLoaded', () => {
      * Open settings panel
      */
     function openSettings() {
-        // Close other panels first
-        closeSourcePanel();
-        closeAboutModal();
-        
-        // Open settings panel
+        if (!mobileSettingsPanel) return;
+        console.log("[Debug] Opening Settings Panel");
         mobileSettingsPanel.classList.add('open');
         document.body.classList.add('panel-open');
-        
-        // Add history state for back button
-        history.pushState({ panel: 'settings' }, '');
     }
     
     /**
      * Close settings panel
      */
     function closeSettings() {
+        if (!mobileSettingsPanel) return;
+        console.log("[Debug] Closing Settings Panel");
         mobileSettingsPanel.classList.remove('open');
         document.body.classList.remove('panel-open');
     }
@@ -131,56 +145,50 @@ document.addEventListener('DOMContentLoaded', () => {
      * Open source panel
      */
     function openSourcePanel() {
+        if (!sourcePanel) return;
+        console.log("[Debug] Opening Source Panel");
         // Close other panels first
-        closeSettings();
-        closeAboutModal();
-        
-        // Open source panel
+        closeSettings(); // Ensure settings is closed
+        closeAboutModal(); // Ensure about modal is closed
         sourcePanel.classList.add('open');
         document.body.classList.add('panel-open');
-        
-        // Update button icon
-        const icon = mobileHeaderSourceToggle.querySelector('i');
-        if (icon) icon.className = 'fas fa-times';
-        
-        // Add history state for back button
-        history.pushState({ panel: 'source' }, '');
+        // Update button icon if needed (assuming mobileHeaderSourceToggle exists)
+        // const icon = mobileHeaderSourceToggle?.querySelector('i');
+        // if (icon) icon.className = 'fas fa-times';
     }
     
     /**
      * Close source panel
      */
     function closeSourcePanel() {
+        if (!sourcePanel) return;
+        console.log("[Debug] Closing Source Panel");
         sourcePanel.classList.remove('open');
         document.body.classList.remove('panel-open');
-        
-        // Update button icon
-        const icon = mobileHeaderSourceToggle.querySelector('i');
-        if (icon) icon.className = 'fas fa-book';
+        // Update button icon if needed
+        // const icon = mobileHeaderSourceToggle?.querySelector('i');
+        // if (icon) icon.className = 'fas fa-book';
     }
     
     /**
      * Open about modal
      */
     function openAboutModal() {
-        // Close other panels first
-        closeSettings();
-        closeSourcePanel();
-        
-        // Open about modal
-        aboutProjectModal.classList.add('open');
-        document.body.classList.add('modal-open');
-        
-        // Add history state for back button
-        history.pushState({ panel: 'about' }, '');
-    }
+        if(!aboutProjectModal) return; 
+        console.log("[Debug] Opening About Modal"); 
+        closeSettings(); closeSourcePanel(); 
+        aboutProjectModal.classList.add('open'); 
+        document.body.classList.add('modal-open'); 
+    } 
     
     /**
      * Close about modal
      */
-    function closeAboutModal() {
-        aboutProjectModal.classList.remove('open');
-        document.body.classList.remove('modal-open');
+    function closeAboutModal() { 
+        if(!aboutProjectModal) return; 
+        console.log("[Debug] Closing About Modal"); 
+        aboutProjectModal.classList.remove('open'); 
+        document.body.classList.remove('modal-open'); 
     }
     
     /**
@@ -205,13 +213,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Make functions available globally
     window.mobileUI = {
-        toggleSettingsPanel,
-        openSettings,
-        closeSettings,
-        toggleSourcePanel,
-        openSourcePanel,
-        closeSourcePanel,
-        openAboutModal,
-        closeAboutModal
+        openSourcePanel: openSourcePanel, 
+        closeSourcePanel: closeSourcePanel,
+        openAboutModal: openAboutModal,
+        closeAboutModal: closeAboutModal,
+        closeSettings: closeSettings // Keep closeSettings exposed if needed
     };
+    console.log("[Debug] mobileUI object created:", window.mobileUI);
 }); 

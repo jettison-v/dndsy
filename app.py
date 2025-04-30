@@ -212,8 +212,10 @@ def home():
     if not check_auth():
         return redirect(url_for('login'))
     
-    # Get LLM model info for display
-    current_llm_model = os.environ.get('LLM_MODEL_NAME', 'gpt-4o-mini')
+    # Get LLM model info from app_config (which loads from env or S3)
+    current_llm_model = app_config.get("llm_model", "gpt-4-turbo") # Default to gpt-4-turbo if not found
+    logger.info(f"[Debug] Value from app_config for llm_model: {app_config.get('llm_model')}")
+    logger.info(f"[Debug] Effective current_llm_model for template: {current_llm_model}")
     
     # Detect device type
     device_type = get_device_type(request)
@@ -223,14 +225,14 @@ def home():
         return render_template('mobile/mobile-index.html', 
                               vector_store_types=VECTOR_STORE_TYPES,
                               default_vector_store=default_store_type,
-                              llm_model=current_llm_model,
+                              llm_model=current_llm_model, # Pass the configured model
                               available_llm_models=AVAILABLE_LLM_MODELS)
     else:
         # Desktop and tablet use the standard template
         return render_template('index.html', 
                               vector_store_types=VECTOR_STORE_TYPES,
                               default_vector_store=default_store_type,
-                              llm_model=current_llm_model,
+                              llm_model=current_llm_model, # Pass the configured model
                               available_llm_models=AVAILABLE_LLM_MODELS)
 
 @app.route('/toggle-view/<view_type>')

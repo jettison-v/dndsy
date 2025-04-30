@@ -11,87 +11,35 @@ const DNDUtilities = (function() {
      * @returns {string} Formatted HTML
      */
     function formatMessageText(text) {
-        if (!text) return '';
-        
-        // First process code blocks to prevent other formatting inside them
-        let formattedText = text;
-        
-        // Find and replace code blocks first
-        const codeBlockRegex = /```([\s\S]*?)```/g;
-        const codeBlocks = [];
-        let match;
-        
-        // Replace code blocks with placeholders
-        while ((match = codeBlockRegex.exec(text)) !== null) {
-            const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
-            codeBlocks.push(match[1]);
-            formattedText = formattedText.replace(match[0], placeholder);
+        console.log("[>>>formatMessageText] Input text length:", text?.length);
+        if (!text) {
+            console.log("[<<<formatMessageText] Returning empty string for no text.");
+            return '';
         }
-        
-        // Find and replace inline code
-        const inlineCodeRegex = /`([^`]+)`/g;
-        const inlineCodes = [];
-        
-        // Replace inline code with placeholders
-        while ((match = inlineCodeRegex.exec(formattedText)) !== null) {
-            const placeholder = `__INLINE_CODE_${inlineCodes.length}__`;
-            inlineCodes.push(match[1]);
-            formattedText = formattedText.replace(match[0], placeholder);
-        }
-        
-        // Process markdown
-        formattedText = formattedText
-            // Headers
-            .replace(/^### (.*$)/gm, '<h3>$1</h3>')
-            .replace(/^## (.*$)/gm, '<h2>$1</h2>')
-            .replace(/^# (.*$)/gm, '<h1>$1</h1>')
-            // Bold and italic
-            .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            // Lists (need to handle them as groups)
-            .replace(/^\s*\n\* (.*)/gm, '<ul>\n<li>$1</li>')
-            .replace(/^\* (.*)/gm, '<li>$1</li>')
-            .replace(/^\s*\n\d+\. (.*)/gm, '<ol>\n<li>$1</li>')
-            .replace(/^\d+\. (.*)/gm, '<li>$1</li>')
-            // Line breaks
-            .replace(/\n/g, '<br>');
-        
-        // Clean up list tags
-        formattedText = formattedText
-            .replace(/<\/ul>\s*<br><ul>/g, '')
-            .replace(/<\/ol>\s*<br><ol>/g, '')
-            .replace(/(<\/li><br>)/g, '</li>');
-        
-        // If we have an unclosed list tag at the end, close it
-        if (formattedText.includes('<ul>') || formattedText.includes('<ol>')) {
-            if ((formattedText.match(/<ul>/g) || []).length > (formattedText.match(/<\/ul>/g) || []).length) {
-                formattedText += '</ul>';
+
+        try {
+            if (typeof marked === 'undefined') {
+                console.error("[!!!formatMessageText] marked library is NOT defined.");
+                // Basic fallback: escape HTML characters and convert newlines
+                const fallbackHtml = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>'); 
+                console.log("[<<<formatMessageText] Returning fallback HTML (length:", fallbackHtml.length, ")");
+                return fallbackHtml;
             }
-            if ((formattedText.match(/<ol>/g) || []).length > (formattedText.match(/<\/ol>/g) || []).length) {
-                formattedText += '</ol>';
-            }
+            
+            console.log("[>>>formatMessageText] marked library found. Calling marked.parse() with defaults...");
+            // Use default marked options - this should handle basic markdown including links and breaks
+            const parsedHtml = marked.parse(text); 
+            console.log("[<<<formatMessageText] marked.parse successful. Output HTML length:", parsedHtml?.length);
+            // console.log("[<<<formatMessageText] Sample Output:", parsedHtml?.substring(0, 300)); // Uncomment for detail
+            return parsedHtml;
+            
+        } catch (error) {
+            console.error("[!!!formatMessageText] CRITICAL ERROR:", error);
+            // Ultimate fallback: return escaped text with simple line breaks
+             const errorFallbackHtml = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+             console.log("[<<<formatMessageText] Returning ERROR fallback HTML (length:", errorFallbackHtml.length, ")");
+             return errorFallbackHtml;
         }
-        
-        // Put code blocks back
-        codeBlocks.forEach((block, index) => {
-            const escapedHtml = block
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
-            formattedText = formattedText.replace(`__CODE_BLOCK_${index}__`, `<pre><code>${escapedHtml}</code></pre>`);
-        });
-        
-        // Put inline code back
-        inlineCodes.forEach((code, index) => {
-            const escapedHtml = code
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
-            formattedText = formattedText.replace(`__INLINE_CODE_${index}__`, `<code>${escapedHtml}</code>`);
-        });
-        
-        return formattedText;
     }
     
     /**
@@ -100,13 +48,20 @@ const DNDUtilities = (function() {
      * @param {Object} linkData Link data from the server
      */
     function processLinksInMessage(messageElement, linkData) {
-        if (!messageElement || !linkData) return;
+        if (!messageElement || !linkData) {
+            console.log("[Debug] processLinksInMessage: Exiting - No element or linkData.");
+            return false;
+        }
         
         const messageText = messageElement.querySelector('.message-text');
-        if (!messageText) return;
+        if (!messageText) {
+             console.log("[Debug] processLinksInMessage: Exiting - .message-text not found.");
+            return false;
+        }
         
-        // Process the message HTML to find potential link texts
+        console.log("[Debug] processLinksInMessage: Starting link processing for element:", messageElement.className);
         const content = messageText.innerHTML;
+        console.log("[Debug] processLinksInMessage: Initial innerHTML length:", content.length);
         
         // Create temporary element to work with the HTML
         const tempDiv = document.createElement('div');
@@ -114,48 +69,55 @@ const DNDUtilities = (function() {
         
         // Process all text nodes
         const textNodes = [];
-        const walk = document.createTreeWalker(
-            tempDiv, 
-            NodeFilter.SHOW_TEXT, 
-            null, 
-            false
-        );
-        
+        const walk = document.createTreeWalker(tempDiv, NodeFilter.SHOW_TEXT, null, false);
         let node;
         while (node = walk.nextNode()) {
-            textNodes.push(node);
+             if (node.nodeValue.trim()) { // Only process non-empty text nodes
+                textNodes.push(node);
+             }
         }
-        
+        console.log(`[Debug] processLinksInMessage: Found ${textNodes.length} non-empty text nodes.`);
+
         // Check each text node for potential links
         let hasChanges = false;
-        textNodes.forEach(textNode => {
-            const original = textNode.nodeValue;
-            let updated = original;
-            
-            // Check against link data
+        textNodes.forEach((textNode, index) => {
+            const originalValue = textNode.nodeValue;
+            let processedValue = originalValue;
+            console.log(`[Debug] processLinksInMessage: Processing text node ${index}: "${originalValue.substring(0,50)}..."`);
+
             for (const [linkText, linkInfo] of Object.entries(linkData)) {
-                // Case-insensitive match
-                const regex = new RegExp(`(\\b${escapeRegExp(linkText)}\\b)`, 'gi');
-                if (regex.test(updated)) {
-                    const typeClass = linkInfo.type === 'internal' ? 'internal-link' : 'external-link';
-                    const attrs = linkInfo.type === 'internal' 
-                        ? `data-s3-key="${linkInfo.s3_key || ''}" data-page="${linkInfo.page || ''}"` 
-                        : `href="${linkInfo.url || '#'}" target="_blank"`;
-                    
-                    updated = updated.replace(regex, `<a class="${typeClass}" ${attrs}>$1</a>`);
-                    hasChanges = true;
+                try {
+                    const regex = new RegExp(`(\\b${escapeRegExp(linkText)}\\b)`, 'gi');
+                    if (regex.test(processedValue)) {
+                        console.log(`[Debug] processLinksInMessage: Found match for "${linkText}" in node ${index}.`);
+                        const typeClass = linkInfo.type === 'internal' ? 'internal-link' : 'external-link';
+                        const attrs = linkInfo.type === 'internal' 
+                            ? `data-s3-key="${linkInfo.s3_key || ''}" data-page="${linkInfo.page || ''}"` 
+                            : `href="${linkInfo.url || '#'}" target="_blank"`;
+                        
+                        // IMPORTANT: Replace only within the current processedValue string, not globally
+                        processedValue = processedValue.replace(regex, `<a class="${typeClass}" ${attrs}>$1</a>`);
+                        hasChanges = true; // Mark that a change occurred in this node
+                    }
+                } catch (e) {
+                    console.error(`[Debug] processLinksInMessage: Regex error for linkText "${linkText}":`, e);
                 }
             }
             
-            // Replace node if changes were made
-            if (updated !== original) {
-                const fragment = document.createRange().createContextualFragment(updated);
+            // If this specific node's text was modified, replace it in the tempDiv
+            if (processedValue !== originalValue) {
+                console.log(`[Debug] processLinksInMessage: Replacing node ${index} content.`);
+                const fragment = document.createRange().createContextualFragment(processedValue);
                 textNode.parentNode.replaceChild(fragment, textNode);
             }
         });
         
+        // Only update the actual DOM if any changes were made across all text nodes
         if (hasChanges) {
+            console.log("[Debug] processLinksInMessage: Changes detected, updating messageText.innerHTML.");
             messageText.innerHTML = tempDiv.innerHTML;
+        } else {
+            console.log("[Debug] processLinksInMessage: No link changes detected.");
         }
         
         return hasChanges;

@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatMessages = document.getElementById('chat-messages');
     const vectorStoreDropdown = document.getElementById('vector-store-dropdown');
     const llmModelDropdown = document.getElementById('llm-model-dropdown');
+    const sourceContent = document.getElementById('source-content');
     
     // State tracking
     let isWaitingForResponse = false;
@@ -31,6 +32,15 @@ document.addEventListener('DOMContentLoaded', () => {
         userInput.addEventListener('input', autoResizeTextarea);
     }
     
+    // Initialize with system message
+    if (chatMessages) {
+        // Show welcome message
+        const welcomeMessage = document.querySelector('.welcome-message');
+        if (welcomeMessage) {
+            chatMessages.appendChild(welcomeMessage);
+        }
+    }
+    
     // Handle vector store change
     if (vectorStoreDropdown) {
         vectorStoreDropdown.addEventListener('change', () => {
@@ -47,23 +57,24 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Handle LLM model change
     if (llmModelDropdown) {
-        llmModelDropdown.addEventListener('change', () => {
-            // Make API call to change the model
-            changeModel(llmModelDropdown.value);
-            
-            // Store the selection in local storage
-            localStorage.setItem('preferred_llm_model', llmModelDropdown.value);
-        });
+        // Get the initial model set by the server and log it
+        const serverModel = llmModelDropdown.value;
+        console.log(`[Debug] LLM Dropdown: Initial value from server = ${serverModel}`);
         
-        // Load stored preference if available
-        const storedLlmModel = localStorage.getItem('preferred_llm_model');
-        if (storedLlmModel && [...llmModelDropdown.options].some(opt => opt.value === storedLlmModel)) {
-            // If stored model is different from current selection, change it
-            if (llmModelDropdown.value !== storedLlmModel) {
-                llmModelDropdown.value = storedLlmModel;
-                changeModel(storedLlmModel);
-            }
-        }
+        // Trust the server-set value on load. Do not check localStorage here.
+        // LocalStorage is only used to remember the *user's* last explicit selection.
+        
+        console.log(`[Debug] LLM Dropdown: Using server value: ${llmModelDropdown.value}`);
+
+        // Add event listener for USER changes
+        llmModelDropdown.addEventListener('change', () => {
+            const selectedModel = llmModelDropdown.value;
+            console.log(`[Debug] User changed LLM Model dropdown to: ${selectedModel}`);
+            // Make API call to change the model
+            changeModel(selectedModel);
+            // Store the user's selection in local storage
+            localStorage.setItem('preferred_llm_model', selectedModel);
+        });
     }
     
     /**
@@ -107,7 +118,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Create message element
         const messageElement = document.createElement('div');
         messageElement.className = 'message user';
-        messageElement.innerHTML = `<div class="message-text">${formatMessageText(message)}</div>`;
+        const formattedHtml = formatMessageText(message);
+        console.log("[Debug] User message HTML before insert:", formattedHtml?.substring(0,200));
+        messageElement.innerHTML = `<div class="message-text">${formattedHtml}</div>`;
         
         // Add to chat and scroll to bottom
         chatMessages.appendChild(messageElement);
@@ -116,76 +129,125 @@ document.addEventListener('DOMContentLoaded', () => {
     
     /**
      * Add the AI's response to the chat
-     * @param {string} message AI's message text
+     * @param {string} initialContent Initial content for the AI message
+     * @returns {HTMLElement} The created AI message element
      */
-    function addAIMessage(message) {
-        if (!chatMessages) return;
+    function addAIMessage(initialContent = '') {
+        if (!chatMessages) return null;
         
-        // Create message element
         const messageElement = document.createElement('div');
         messageElement.className = 'message assistant';
-        messageElement.innerHTML = `<div class="message-text">${formatMessageText(message)}</div>`;
         
-        // Add to chat and scroll to bottom
+        // Start with potentially empty, but formatted content
+        const formattedHtml = formatMessageText(initialContent);
+        console.log("[Debug] Initial AI message HTML:", formattedHtml?.substring(0,100));
+        messageElement.innerHTML = `<div class="message-text">${formattedHtml}</div>`;
+        
         chatMessages.appendChild(messageElement);
         scrollToBottom();
-        
-        return messageElement;
+        return messageElement; // Return the created element
     }
     
     /**
-     * Format message text with markdown rendering
-     * @param {string} text Raw message text
-     * @returns {string} Formatted HTML
+     * Format message text with rich formatting
      */
     function formatMessageText(text) {
-        // Use the shared utility
-        return window.DNDUtilities ? DNDUtilities.formatMessageText(text) : text;
+        // First try to use DNDUtilities
+        if (window.DNDUtilities && typeof DNDUtilities.formatMessageText === 'function') {
+            try {
+                return DNDUtilities.formatMessageText(text);
+            } catch (e) {
+                console.error('Error using DNDUtilities.formatMessageText:', e);
+                // Continue to fallback options
+            }
+        }
+        
+        // Next try to use marked library directly
+        if (typeof marked !== 'undefined') {
+            try {
+                return marked.parse(text);
+            } catch (e) {
+                console.error('Error using marked.parse:', e);
+                // Continue to fallback options
+            }
+        }
+        
+        // Basic fallback formatting
+        return text
+            // Bold
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            // Italic
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            // Links (simple case)
+            .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>')
+            // New lines
+            .replace(/\n/g, '<br>')
+            // Basic code
+            .replace(/`(.*?)`/g, '<code>$1</code>');
     }
     
     /**
-     * Process text for links
-     * @param {HTMLElement} messageElement The message element to process
-     * @param {Object} linkData Link data from the server
+     * Process links in message
      */
-    function processLinksInMessage(messageElement, linkData) {
-        // Use the shared utility, but add our own event handlers for mobile
-        if (window.DNDUtilities) {
+    function processLinks(messageElement, linkData) {
+        console.log("[Debug] processLinks called. Element:", messageElement?.className, "Link data keys:", Object.keys(linkData || {}));
+        if (!messageElement || !linkData || Object.keys(linkData).length === 0) {
+            console.log("[Debug] processLinks exiting early - no element or linkData.");
+            return false;
+        }
+
+        // Check if DNDUtilities function exists
+        if (!window.DNDUtilities || typeof window.DNDUtilities.processLinksInMessage !== 'function') {
+            console.error("[Debug] DNDUtilities.processLinksInMessage is not available!");
+            return false;
+        }
+
+        try {
+            console.log("[Debug] Calling DNDUtilities.processLinksInMessage...");
             const hasLinks = DNDUtilities.processLinksInMessage(messageElement, linkData);
+            console.log("[Debug] DNDUtilities.processLinksInMessage returned:", hasLinks);
             
             // If links were added, add our mobile-specific event listeners
             if (hasLinks) {
+                console.log("[Debug] Links were added, setting up internal link listeners...");
                 // Add event listeners for internal links
-                messageElement.querySelectorAll('.internal-link').forEach(link => {
+                const internalLinks = messageElement.querySelectorAll('.internal-link');
+                console.log(`[Debug] Found ${internalLinks.length} internal links.`);
+                
+                internalLinks.forEach(link => {
+                    // Remove previous listener if any to avoid duplicates
+                    link.onclick = null; 
+                    
                     link.addEventListener('click', (e) => {
                         e.preventDefault();
+                        e.stopPropagation(); // Stop propagation here as well
+                        
                         const s3Key = link.getAttribute('data-s3-key');
                         const page = link.getAttribute('data-page');
+                        console.log(`[Debug] Internal link clicked! Key: ${s3Key}, Page: ${page}`);
+                        
                         if (s3Key && page) {
                             // Trigger source content viewer
                             if (window.mobileUI && window.mobileUI.openSourcePanel) {
-                                const pillsContainer = messageElement.querySelector('.source-pills-container');
-                                if (pillsContainer) {
-                                    // Find matching pill if it exists
-                                    const pill = Array.from(pillsContainer.children).find(
-                                        p => p.dataset.s3Key === s3Key && p.dataset.page === page
-                                    );
-                                    if (pill) {
-                                        pill.click();
-                                    }
-                                } else {
-                                    // No pill, just open source panel and fetch content
-                                    window.mobileUI.openSourcePanel();
-                                    fetchSourceContent(s3Key, page, 'semantic');
-                                }
+                                console.log("[Debug] Opening source panel via internal link.");
+                                window.mobileUI.openSourcePanel();
+                                fetchSourceContent(s3Key, page, 'semantic'); // Assuming semantic for now
+                            } else {
+                                console.error("[Debug] mobileUI.openSourcePanel not found!");
                             }
+                        } else {
+                            console.error("[Debug] Missing s3Key or page on internal link!");
                         }
-                    });
+                    }, true); // Use capture phase
                 });
+            } else {
+                 console.log("[Debug] No links processed by DNDUtilities.");
             }
             return hasLinks;
+        } catch (e) {
+            console.error('[Debug] CRITICAL ERROR processing links:', e);
+            return false;
         }
-        return false;
     }
     
     /**
@@ -278,132 +340,66 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 
-                // Handle typed responses
+                // Handle text chunk
                 if (data.type === 'text' && data.content) {
                     if (!currentStreamedMessage) {
-                        // Replace loading indicator with actual message
+                        // First chunk: Remove loading message and create new message element
                         if (loadingMessage && loadingMessage.parentNode) {
                             chatMessages.removeChild(loadingMessage);
                         }
-                        currentStreamedMessage = addAIMessage('');
+                        // Format the first chunk and add it
+                        currentStreamedMessage = addAIMessage(data.content);
+                        console.log("[Debug mobile-chat] Added first AI message chunk.");
+                    } else {
+                        // Subsequent chunks: Format and append to existing message
+                        const messageTextElement = currentStreamedMessage.querySelector('.message-text');
+                        if (messageTextElement) {
+                            const formattedChunk = formatMessageText(data.content);
+                            // IMPORTANT: Append to innerHTML
+                            messageTextElement.innerHTML += formattedChunk;
+                            // console.log("[Debug mobile-chat] Appended AI chunk:", formattedChunk.substring(0, 50)); // Verbose
+                        }
                     }
-                    
-                    // Append token to current message
-                    const messageText = currentStreamedMessage.querySelector('.message-text');
-                    messageText.innerHTML += data.content;
-                    
-                    // Scroll to keep up with new content
                     scrollToBottom();
                 }
-                // Keeping original 'token' handler for backward compatibility
-                else if (data.token) {
+                
+                // Handle links event (store for later processing)
+                if (data.type === 'links' && data.links) {
+                    console.log("[Debug mobile-chat] Storing link data received.");
                     if (!currentStreamedMessage) {
-                        // Replace loading indicator with actual message
-                        if (loadingMessage && loadingMessage.parentNode) {
-                            chatMessages.removeChild(loadingMessage);
-                        }
+                        // If links arrive before any text, ensure message element exists
+                        if (loadingMessage && loadingMessage.parentNode) chatMessages.removeChild(loadingMessage);
                         currentStreamedMessage = addAIMessage('');
                     }
-                    
-                    // Append token to current message
-                    const messageText = currentStreamedMessage.querySelector('.message-text');
-                    messageText.innerHTML += data.token;
-                    
-                    // Scroll to keep up with new content
-                    scrollToBottom();
+                    // Store link data on the element itself
+                    currentStreamedMessage.linkData = data.links;
                 }
-                
-                // Handle source documents
-                if (data.sources && data.sources.length > 0) {
-                    // Create source pills container if it doesn't exist
-                    if (currentStreamedMessage && !currentStreamedMessage.querySelector('.source-pills-container')) {
-                        const pillsContainer = document.createElement('div');
-                        pillsContainer.className = 'source-pills-container';
-                        currentStreamedMessage.appendChild(pillsContainer);
-                    }
-                    
-                    const pillsContainer = currentStreamedMessage.querySelector('.source-pills-container');
-                    if (pillsContainer) {
-                        // Process each source
-                        data.sources.forEach(source => {
-                            // Check if pill for this source already exists
-                            const sourceId = `${source.s3_key}-${source.page}`;
-                            if (!document.getElementById(sourceId)) {
-                                const pill = document.createElement('div');
-                                pill.className = 'source-pill';
-                                pill.id = sourceId;
-                                
-                                // Format source name to be more concise: "Document Name (Pg X)"
-                                let displayName = source.filename || source.s3_key.split('/').pop().replace(/\.[^/.]+$/, "");
-                                // If the filename is too long, truncate it
-                                if (displayName.length > 20) {
-                                    displayName = displayName.substring(0, 18) + '...';
-                                }
-                                pill.innerHTML = `<i class="fas fa-book"></i> ${displayName} (Pg ${source.page})`;
-                                
-                                // Set data attributes
-                                pill.dataset.s3Key = source.s3_key;
-                                pill.dataset.page = source.page;
-                                pill.dataset.score = source.score;
-                                pill.dataset.filename = source.filename || source.s3_key.split('/').pop().replace(/\.[^/.]+$/, "");
-                                pill.dataset.storeType = vectorStoreType;
-                                
-                                // Add click handler to pill for displaying source content
-                                pill.addEventListener('click', function() {
-                                    // Open source panel if available
-                                    if (window.mobileUI && window.mobileUI.openSourcePanel) {
-                                        window.mobileUI.openSourcePanel();
-                                    }
-                                    
-                                    // Fetch and display source content
-                                    fetchSourceContent(source.s3_key, source.page, vectorStoreType);
-                                });
-                                
-                                pillsContainer.appendChild(pill);
-                            }
-                        });
-                    }
-                    
-                    // Scroll to keep up with new content
-                    scrollToBottom();
-                }
-                
+
                 // Handle end of response
                 if (data.done) {
+                    console.log("[Debug mobile-chat] Received done event.");
+                    if (currentStreamedMessage) {
+                        // Process links now that the full message is rendered
+                        const linkDataToProcess = currentStreamedMessage.linkData || {};
+                        console.log("[Debug mobile-chat] Processing links on final message. Link keys count:", Object.keys(linkDataToProcess).length);
+                        processLinks(currentStreamedMessage, linkDataToProcess);
+                        delete currentStreamedMessage.linkData; // Clean up
+                    } else {
+                        console.warn("[Debug mobile-chat] Done event but no message element?");
+                    }
+                    
+                    // Final cleanup
                     eventSource.close();
                     isWaitingForResponse = false;
-                    currentStreamedMessage = null;
+                    currentStreamedMessage = null; 
                 }
             } catch (error) {
-                console.error('Error parsing event data:', error);
+                 console.error('Error parsing event data:', error);
+                 if (eventSource) eventSource.close();
+                 isWaitingForResponse = false;
+                 currentStreamedMessage = null;
             }
         };
-        
-        // Add specific event handlers for SSE events
-        eventSource.addEventListener('error', (event) => {
-            console.error('EventSource error:', event);
-            
-            // Remove loading indicator if needed
-            if (loadingMessage && loadingMessage.parentNode) {
-                chatMessages.removeChild(loadingMessage);
-            }
-            
-            // Add error message
-            const errorMessage = document.createElement('div');
-            errorMessage.className = 'message error';
-            errorMessage.innerHTML = `
-                <div class="message-text">
-                    <p>Sorry, there was an error connecting to the server. Please try again.</p>
-                </div>
-            `;
-            chatMessages.appendChild(errorMessage);
-            
-            // Clean up
-            eventSource.close();
-            isWaitingForResponse = false;
-            currentStreamedMessage = null;
-            scrollToBottom();
-        });
         
         // Handle metadata event
         eventSource.addEventListener('metadata', (event) => {
@@ -452,17 +448,35 @@ document.addEventListener('DOMContentLoaded', () => {
                             pill.dataset.page = source.page;
                             pill.dataset.score = source.score;
                             pill.dataset.filename = source.filename || source.s3_key.split('/').pop().replace(/\.[^/.]+$/, "");
-                            pill.dataset.storeType = vectorStoreType;
+                            // Ensure vectorStoreType is defined in this scope before assigning
+                            if (typeof vectorStoreType !== 'undefined') {
+                                pill.dataset.storeType = vectorStoreType;
+                                console.log(`[Debug] Set data-store-type=${vectorStoreType} for pill ${sourceId}`);
+                            } else {
+                                 console.error(`[!!!Debug Error] vectorStoreType is undefined when creating pill ${sourceId}!`);
+                                 pill.dataset.storeType = 'semantic'; // Fallback, but log error
+                            }
                             
                             // Add click handler to pill for displaying source content
-                            pill.addEventListener('click', function() {
-                                // Open source panel if available
-                                if (window.mobileUI && window.mobileUI.openSourcePanel) {
+                            pill.addEventListener('click', function(e) {
+                                e.stopPropagation(); // Stop this event from bubbling up
+                                e.preventDefault();  // Prevent any default button behavior
+                                console.log("[Debug] Source Pill Clicked!", {
+                                    s3Key: this.dataset.s3Key,
+                                    page: this.dataset.page,
+                                    storeType: this.dataset.storeType
+                                });
+
+                                // Check if mobileUI and openSourcePanel exist
+                                if (typeof window.mobileUI !== 'undefined' && typeof window.mobileUI.openSourcePanel === 'function') {
+                                    console.log("[Debug] Calling mobileUI.openSourcePanel()");
                                     window.mobileUI.openSourcePanel();
+                                    // Fetch and display source content
+                                    fetchSourceContent(this.dataset.s3Key, this.dataset.page, this.dataset.storeType);
+                                } else {
+                                    console.error("[Debug] mobileUI.openSourcePanel not found or not a function!");
+                                    alert("Error: Could not open source panel."); // User feedback
                                 }
-                                
-                                // Fetch and display source content
-                                fetchSourceContent(source.s3_key, source.page, vectorStoreType);
                             });
                             
                             pillsContainer.appendChild(pill);
@@ -471,19 +485,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (error) {
                 console.error('Error parsing metadata event:', error);
-            }
-        });
-        
-        // Handle links event
-        eventSource.addEventListener('links', (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                if (data.type === 'links' && data.links && currentStreamedMessage) {
-                    // Process links in the current message
-                    processLinksInMessage(currentStreamedMessage, data.links);
-                }
-            } catch (error) {
-                console.error('Error parsing links event:', error);
             }
         });
         
@@ -522,127 +523,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     /**
-     * Fetch and display source content
-     * @param {string} s3Key The S3 key of the source
-     * @param {number} page The page number
-     * @param {string} storeType The vector store type
+     * Fetch source content
+     * Uses the shared utility if available or provides a fallback
      */
     function fetchSourceContent(s3Key, page, storeType) {
-        // Get the source panel content element
-        const sourceContent = document.getElementById('source-content');
-        if (!sourceContent) return;
+        if (!sourceContent) {
+            console.error('Source content element not found');
+            return;
+        }
         
         // Show loading indicator
-        sourceContent.innerHTML = '<div class="source-loading"><div class="spinner"></div><p>Loading source content...</p></div>';
+        sourceContent.innerHTML = '<p class="loading-source">Loading source content...</p>';
         
-        // Use the shared utility
-        if (window.DNDUtilities) {
-            DNDUtilities.fetchSourceContent(
-                s3Key, 
-                page, 
-                storeType, 
-                // Success callback
-                (details, s3Key, pageNumber) => {
-                    // Clear loading indicator
-                    sourceContent.innerHTML = '';
-                    
-                    // Display source name
-                    const filename = s3Key.split('/').pop().replace(/\.[^/.]+$/, "");
-                    const header = document.createElement('div');
-                    header.className = 'source-header';
-                    
-                    const sourceName = document.createElement('h4');
-                    sourceName.textContent = `${filename} (page ${page})`;
-                    header.appendChild(sourceName);
-                    
-                    sourceContent.appendChild(header);
-                    
-                    // Display content based on type
-                    if (details.image_base64) {
-                        // Display image content
-                        const imageContainer = document.createElement('div');
-                        imageContainer.id = 'source-image-container';
-                        imageContainer.className = 'source-image-container';
-                        
-                        const img = document.createElement('img');
-                        img.className = 'source-image';
-                        img.alt = `${filename} (page ${page})`;
-                        
-                        // Use the shared utility for image loading if available
-                        if (window.DNDUtilities && details.imageStrategies) {
-                            // Use the shared image loading utility with the provided strategies
-                            DNDUtilities.loadImageWithFallback(img, details.imageStrategies, (errorMsg) => {
-                                console.error('Image loading failed:', errorMsg);
-                                img.alt = 'Error loading image';
-                                img.style.display = 'none';
-                                imageContainer.innerHTML += `<p class="error-source">Failed to load image after trying all methods.</p>`;
-                            });
-                        } else {
-                            // Fallback to basic approach if utilities aren't available
-                            // Handle different image sources appropriately
-                            if (details.transformed_image_url) {
-                                // Use pre-transformed URL from utilities
-                                img.src = details.transformed_image_url;
-                                console.log('Using transformed image URL:', img.src);
-                            } else if (details.image_url) {
-                                // Transform S3 URLs to HTTP URLs if needed
-                                if (details.image_url.startsWith('s3://')) {
-                                    // Use API proxy for S3 images
-                                    img.src = `/api/get_pdf_image?key=${encodeURIComponent(details.image_url)}`;
-                                    console.log('Using API proxy for S3 image:', img.src);
-                                } else {
-                                    img.src = details.image_url;
-                                }
-                            } else if (details.image_base64) {
-                                img.src = `data:image/jpeg;base64,${details.image_base64}`;
-                            }
-                            
-                            // Add error handler for debugging
-                            img.onerror = (e) => {
-                                console.error('Failed to load image:', e);
-                                console.error('Image src was:', img.src);
-                                
-                                // Try fallback to direct S3 URL if available
-                                if (details.direct_s3_url && img.src !== details.direct_s3_url) {
-                                    console.log('Trying fallback to direct S3 URL:', details.direct_s3_url);
-                                    img.src = details.direct_s3_url;
-                                    return; // Stop here to let the fallback attempt work
-                                }
-                                
-                                // If fallback also fails or isn't available
-                                img.alt = 'Error loading image';
-                                img.style.display = 'none';
-                                imageContainer.innerHTML += `<p class="error-source">Error loading image.<br>URL: ${img.src.substring(0, 100)}...</p>`;
-                            };
-                        }
-                        
-                        imageContainer.appendChild(img);
-                        sourceContent.appendChild(imageContainer);
-                        
-                        // Native pinch-zoom is used instead of custom zoom controls
-                    } else if (details.text_content) {
-                        // Display text content
-                        const textContainer = document.createElement('div');
-                        textContainer.className = 'source-text';
-                        textContainer.innerHTML = details.text_content;
-                        sourceContent.appendChild(textContainer);
-                    } else {
-                        // No content available
-                        sourceContent.innerHTML += '<p class="no-source">No source content available</p>';
-                    }
-                    
-                    // Add page navigation if needed
-                    if (details.total_pages && details.total_pages > 1) {
-                        addSourceNavigation(sourceContent, parseInt(page), details.total_pages, s3Key, storeType);
-                    }
-                },
+        // Use the shared utility if available
+        if (window.DNDUtilities && typeof DNDUtilities.fetchSourceContent === 'function') {
+            DNDUtilities.fetchSourceContent(s3Key, page, storeType, 
+                // Success callback - Pass storeType through
+                (details) => {
+                    displaySourceDetails(details, s3Key, page, storeType); // Pass storeType here
+                }, 
                 // Error callback
-                (errorMsg) => {
-                    sourceContent.innerHTML = `<p class="error-source">Error: ${errorMsg}</p>`;
+                (errorMessage) => {
+                    sourceContent.innerHTML = `<p class="error-source">Error: ${errorMessage}</p>`;
                 }
             );
         } else {
-            // Fallback if utility isn't available
+            // Fallback implementation
             fetch(`/api/get_context_details?source=${encodeURIComponent(s3Key)}&page=${page}&vector_store_type=${storeType}`)
                 .then(response => {
                     if (!response.ok) {
@@ -653,102 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return response.json();
                 })
                 .then(details => {
-                    if (!details) {
-                        throw new Error('No details returned from server');
-                    }
-                    
-                    // Clear loading indicator
-                    sourceContent.innerHTML = '';
-                    
-                    // Display source name
-                    const filename = s3Key.split('/').pop().replace(/\.[^/.]+$/, "");
-                    const header = document.createElement('div');
-                    header.className = 'source-header';
-                    
-                    const sourceName = document.createElement('h4');
-                    sourceName.textContent = `${filename} (page ${page})`;
-                    header.appendChild(sourceName);
-                    
-                    sourceContent.appendChild(header);
-                    
-                    // Display content based on type
-                    if (details.image_base64) {
-                        // Display image content
-                        const imageContainer = document.createElement('div');
-                        imageContainer.id = 'source-image-container';
-                        imageContainer.className = 'source-image-container';
-                        
-                        const img = document.createElement('img');
-                        img.className = 'source-image';
-                        img.alt = `${filename} (page ${page})`;
-                        
-                        // Use the shared utility for image loading if available
-                        if (window.DNDUtilities && details.imageStrategies) {
-                            // Use the shared image loading utility with the provided strategies
-                            DNDUtilities.loadImageWithFallback(img, details.imageStrategies, (errorMsg) => {
-                                console.error('Image loading failed:', errorMsg);
-                                img.alt = 'Error loading image';
-                                img.style.display = 'none';
-                                imageContainer.innerHTML += `<p class="error-source">Failed to load image after trying all methods.</p>`;
-                            });
-                        } else {
-                            // Fallback to basic approach if utilities aren't available
-                            // Handle different image sources appropriately
-                            if (details.transformed_image_url) {
-                                // Use pre-transformed URL from utilities
-                                img.src = details.transformed_image_url;
-                                console.log('Using transformed image URL:', img.src);
-                            } else if (details.image_url) {
-                                // Transform S3 URLs to HTTP URLs if needed
-                                if (details.image_url.startsWith('s3://')) {
-                                    // Use API proxy for S3 images
-                                    img.src = `/api/get_pdf_image?key=${encodeURIComponent(details.image_url)}`;
-                                    console.log('Using API proxy for S3 image:', img.src);
-                                } else {
-                                    img.src = details.image_url;
-                                }
-                            } else if (details.image_base64) {
-                                img.src = `data:image/jpeg;base64,${details.image_base64}`;
-                            }
-                            
-                            // Add error handler for debugging
-                            img.onerror = (e) => {
-                                console.error('Failed to load image:', e);
-                                console.error('Image src was:', img.src);
-                                
-                                // Try fallback to direct S3 URL if available
-                                if (details.direct_s3_url && img.src !== details.direct_s3_url) {
-                                    console.log('Trying fallback to direct S3 URL:', details.direct_s3_url);
-                                    img.src = details.direct_s3_url;
-                                    return; // Stop here to let the fallback attempt work
-                                }
-                                
-                                // If fallback also fails or isn't available
-                                img.alt = 'Error loading image';
-                                img.style.display = 'none';
-                                imageContainer.innerHTML += `<p class="error-source">Error loading image.<br>URL: ${img.src.substring(0, 100)}...</p>`;
-                            };
-                        }
-                        
-                        imageContainer.appendChild(img);
-                        sourceContent.appendChild(imageContainer);
-                        
-                        // Native pinch-zoom is used instead of custom zoom controls
-                    } else if (details.text_content) {
-                        // Display text content
-                        const textContainer = document.createElement('div');
-                        textContainer.className = 'source-text';
-                        textContainer.innerHTML = details.text_content;
-                        sourceContent.appendChild(textContainer);
-                    } else {
-                        // No content available
-                        sourceContent.innerHTML += '<p class="no-source">No source content available</p>';
-                    }
-                    
-                    // Add page navigation if needed
-                    if (details.total_pages && details.total_pages > 1) {
-                        addSourceNavigation(sourceContent, parseInt(page), details.total_pages, s3Key, storeType);
-                    }
+                    displaySourceDetails(details, s3Key, page, storeType); // Pass storeType here too
                 })
                 .catch(error => {
                     console.error('Error fetching source content:', error);
@@ -758,12 +569,87 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     /**
+     * Display source details in the source panel
+     */
+    function displaySourceDetails(details, s3Key, page, storeType) { // Add storeType parameter
+        if (!details) {
+            sourceContent.innerHTML = '<p class="error-source">No details returned from server</p>';
+            return;
+        }
+        
+        // Clear loading indicator
+        sourceContent.innerHTML = '';
+        
+        // Display source name
+        const filename = s3Key.split('/').pop().replace(/\.[^/.]+$/, "");
+        const header = document.createElement('div');
+        header.className = 'source-header';
+        
+        const sourceName = document.createElement('h4');
+        sourceName.textContent = `${filename} (page ${page})`;
+        header.appendChild(sourceName);
+        
+        sourceContent.appendChild(header);
+        
+        // Display content based on type
+        if (details.image_url || details.image_base64) {
+            // Display image content
+            const imageContainer = document.createElement('div');
+            imageContainer.id = 'source-image-container';
+            imageContainer.className = 'source-image-container';
+            
+            const img = document.createElement('img');
+            img.className = 'source-image';
+            img.alt = `${filename} (page ${page})`;
+            
+            // Use the shared utility for image loading if available
+            if (window.DNDUtilities && DNDUtilities.loadImageWithFallback && details.imageStrategies) {
+                DNDUtilities.loadImageWithFallback(img, details.imageStrategies, (errorMsg) => {
+                    console.error('Image loading failed:', errorMsg);
+                    img.alt = 'Error loading image';
+                    img.style.display = 'none';
+                    imageContainer.innerHTML += `<p class="error-source">Failed to load image.</p>`;
+                });
+            } else {
+                // Basic fallback implementation
+                if (details.image_url) {
+                    if (details.image_url.startsWith('s3://')) {
+                        img.src = `/api/get_pdf_image?key=${encodeURIComponent(details.image_url)}`;
+                    } else {
+                        img.src = details.image_url;
+                    }
+                } else if (details.image_base64) {
+                    img.src = `data:image/jpeg;base64,${details.image_base64}`;
+                }
+                
+                img.onerror = () => {
+                    img.alt = 'Error loading image';
+                    img.style.display = 'none';
+                    imageContainer.innerHTML += `<p class="error-source">Error loading image.</p>`;
+                };
+            }
+            
+            imageContainer.appendChild(img);
+            sourceContent.appendChild(imageContainer);
+        } else if (details.text_content) {
+            // Display text content
+            const textContainer = document.createElement('div');
+            textContainer.className = 'source-text';
+            textContainer.innerHTML = details.text_content;
+            sourceContent.appendChild(textContainer);
+        } else {
+            // No content available
+            sourceContent.innerHTML += '<p class="no-source">No source content available</p>';
+        }
+        
+        // Add page navigation if needed
+        if (details.total_pages && details.total_pages > 1) {
+            addSourceNavigation(sourceContent, parseInt(page), details.total_pages, s3Key, storeType); // Pass storeType
+        }
+    }
+    
+    /**
      * Add source navigation buttons
-     * @param {HTMLElement} container The container element
-     * @param {number} currentPage Current page number
-     * @param {number} totalPages Total number of pages
-     * @param {string} s3Key S3 key for the source
-     * @param {string} storeType Vector store type
      */
     function addSourceNavigation(container, currentPage, totalPages, s3Key, storeType) {
         const navContainer = document.createElement('div');
@@ -812,6 +698,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {string} modelName New model name
      */
     function changeModel(modelName) {
+        console.log(`[Debug] changeModel function called with: ${modelName}`); // Log when this is called
         fetch('/api/change_model', {
             method: 'POST',
             headers: {

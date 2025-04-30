@@ -39,6 +39,9 @@
     {% block content %}{% endblock %}
     
     {% block scripts %}
+    <!-- Markdown parsing library -->
+    <script src="{{ url_for('static', filename='js/marked.min.js') }}"></script>
+    
     <!-- Shared utilities -->
     <script src="{{ url_for('static', filename='js/dnd-utilities.js') }}" defer></script>
     

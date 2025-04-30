@@ -9,8 +9,10 @@
             </div>
             
             <div class="mobile-header-actions">
-                <button id="mobile-settings-toggle" class="mobile-header-button" title="Settings" style="min-width: 44px; min-height: 44px; margin: -10px; padding: 10px;">
-                    <i class="fas fa-cog"></i>
+                <button id="mobile-settings-toggle" class="mobile-header-button" 
+                    title="Settings" 
+                    style="position: relative; width: 60px; height: 60px; padding: 15px; margin: -10px; background-color: rgba(40, 40, 40, 0.6); z-index: 9999; border-radius: 8px;">
+                    <i class="fas fa-cog" style="font-size: 1.6rem; color: white;"></i>
                 </button>
             </div>
         </div>
@@ -60,7 +62,7 @@
                 </div>
                 
                 <!-- Logout Option -->
-                <div class="settings-section">
+                <div class="settings-section logout-section">
                     <a href="/logout" class="mobile-button full-width">
                         <i class="fas fa-sign-out-alt"></i> Logout
                     </a>
@@ -137,7 +139,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/mobile/mobile-core.js') }}" defer></script>
-<script src="{{ url_for('static', filename='js/mobile/mobile-source-panel.js') }}" defer></script>
-<script src="{{ url_for('static', filename='js/mobile/mobile-chat.js') }}" defer></script>
+{{ super() }}
 {% endblock %} 
