@@ -191,8 +191,20 @@ def login():
                 logger.debug("Remember me enabled")
             return redirect(url_for('home'))
         logger.warning("Login failed - incorrect password")
-        return render_template('login.html', error="Incorrect password")
-    return render_template('login.html', error=None)
+        
+        # Get device type for appropriate template
+        device_type = get_device_type(request)
+        if device_type == 'mobile':
+            return render_template('mobile/login.html', error="Incorrect password")
+        else:
+            return render_template('login.html', error="Incorrect password")
+            
+    # GET request - show login form
+    device_type = get_device_type(request)
+    if device_type == 'mobile':
+        return render_template('mobile/login.html', error=None)
+    else:
+        return render_template('login.html', error=None)
 
 @app.route('/')
 def home():

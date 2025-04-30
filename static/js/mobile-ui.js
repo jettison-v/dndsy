@@ -1,5 +1,15 @@
 /**
- * mobile-ui.js
+ * mobile-ui.js [DEPRECATED]
+ * 
+ * ⚠️ WARNING: This file is DEPRECATED and will be removed in a future update.
+ * ⚠️ Please use the following files instead:
+ * - /js/mobile/mobile-core.js
+ * - /js/mobile/mobile-source-panel.js
+ * - /js/mobile/mobile-chat.js
+ * 
+ * This file is maintained only for backward compatibility.
+ * New mobile functionality should be added to the appropriate files in /js/mobile/.
+ * 
  * Handles mobile-specific UI behavior for the DNDsy application.
  * This provides a simplified mobile experience with limited functionality:
  * 1. Chat with DNDsy
@@ -10,6 +20,12 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Only run this code on mobile devices
     if (window.innerWidth > 768) return;
+    
+    // Check if we should run this deprecated code
+    if (document.querySelector('script[src*="mobile/mobile-core.js"]')) {
+        console.log('Using new mobile scripts. Skipping deprecated mobile-ui.js');
+        return;
+    }
     
     // Apply mobile-specific class and initialize elements
     document.body.classList.add('mobile-view');
