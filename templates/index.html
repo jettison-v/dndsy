@@ -809,6 +809,9 @@
 {% endblock %}
 
 {% block scripts %}
+    <!-- Shared utilities -->
+    <script src="{{ url_for('static', filename='js/dnd-utilities.js') }}"></script>
+    
     <!-- Add marked.js for markdown parsing -->
     <script src="{{ url_for('static', filename='js/marked.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/chat.js') }}" defer></script>

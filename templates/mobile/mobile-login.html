@@ -12,16 +12,24 @@
         min-height: 100vh;
         padding: 1rem;
         background-color: var(--primary-color);
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
     }
     
     .login-box {
-        width: 100%;
+        width: 90%;
         max-width: 350px;
         padding: 1.5rem;
         background: var(--secondary-color);
         border-radius: 12px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         border-bottom: 3px solid var(--accent-color);
+        margin: 0 auto;
     }
     
     .login-header {
@@ -44,10 +52,7 @@
     }
     
     .login-header .text-logo {
-        background-image: var(--accent-gradient);
-        background-clip: text;
-        -webkit-background-clip: text;
-        color: transparent;
+        color: white;
         font-weight: 700;
     }
     

@@ -9,11 +9,8 @@
             </div>
             
             <div class="mobile-header-actions">
-                <button id="mobile-settings-toggle" class="mobile-header-button" title="Settings">
+                <button id="mobile-settings-toggle" class="mobile-header-button" title="Settings" style="min-width: 44px; min-height: 44px; margin: -10px; padding: 10px;">
                     <i class="fas fa-cog"></i>
-                </button>
-                <button id="mobile-header-source-toggle" class="mobile-header-button" title="Toggle Source Panel">
-                    <i class="fas fa-book"></i>
                 </button>
             </div>
         </div>
@@ -96,7 +93,7 @@
         <div id="source-panel" class="mobile-source-panel">
             <div class="source-panel-header">
                 <h3>Source Content</h3>
-                <button id="close-panel" class="close-button">&times;</button>
+                <button id="close-panel" class="close-button" onclick="if(window.mobileUI) window.mobileUI.closeSourcePanel(); return false;">&times;</button>
             </div>
             
             <div id="source-content" class="source-content">

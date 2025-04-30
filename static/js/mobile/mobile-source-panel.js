@@ -68,36 +68,74 @@ document.addEventListener('DOMContentLoaded', () => {
         currentPage = pageNumber;
         currentStoreType = storeType;
         
-        fetch(`/api/get_context_details?source=${encodeURIComponent(s3Key)}&page=${pageNumber}&vector_store_type=${storeType}`)
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(errorData => {
-                        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-                    });
+        // Show loading indicator if content exists
+        if (sourceContent) {
+            sourceContent.innerHTML = '<div class="source-loading"><div class="spinner"></div><p>Loading source content...</p></div>';
+        }
+        
+        // Use the shared utility if available
+        if (window.DNDUtilities) {
+            DNDUtilities.fetchSourceContent(
+                s3Key,
+                pageNumber,
+                storeType,
+                // Success callback
+                (details, s3Key, pageNumber) => {
+                    if (!details) {
+                        throw new Error('No details returned from server');
+                    }
+                    
+                    // Extract source name from S3 key
+                    const sourceName = s3Key.split('/').pop().replace(/\.[^/.]+$/, "");
+                    totalPages = details.total_pages || 1;
+                    
+                    // Display content
+                    displaySourceContent(details, sourceName, pageNumber);
+                },
+                // Error callback
+                (errorMessage) => {
+                    console.error('Error fetching source details:', errorMessage);
+                    if (sourceContent) {
+                        sourceContent.innerHTML = `<p class="error-source">Error loading source: ${errorMessage}</p>`;
+                    }
+                    
+                    // Remove active state from pills on error
+                    document.querySelectorAll('.source-pill').forEach(p => p.classList.remove('active'));
                 }
-                return response.json();
-            })
-            .then(details => {
-                if (!details) {
-                    throw new Error('No details returned from server');
-                }
-                
-                // Extract source name from S3 key
-                const sourceName = s3Key.split('/').pop().replace(/\.[^/.]+$/, "");
-                totalPages = details.total_pages || 1;
-                
-                // Display content
-                displaySourceContent(details, sourceName, pageNumber);
-            })
-            .catch(error => {
-                console.error('Error fetching source details:', error);
-                if (sourceContent) {
-                    sourceContent.innerHTML = `<p class="error-source">Error loading source: ${error.message}</p>`;
-                }
-                
-                // Remove active state from pills on error
-                document.querySelectorAll('.source-pill').forEach(p => p.classList.remove('active'));
-            });
+            );
+        } else {
+            // Fallback to direct fetch if utility not available
+            fetch(`/api/get_context_details?source=${encodeURIComponent(s3Key)}&page=${pageNumber}&vector_store_type=${storeType}`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errorData => {
+                            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(details => {
+                    if (!details) {
+                        throw new Error('No details returned from server');
+                    }
+                    
+                    // Extract source name from S3 key
+                    const sourceName = s3Key.split('/').pop().replace(/\.[^/.]+$/, "");
+                    totalPages = details.total_pages || 1;
+                    
+                    // Display content
+                    displaySourceContent(details, sourceName, pageNumber);
+                })
+                .catch(error => {
+                    console.error('Error fetching source details:', error);
+                    if (sourceContent) {
+                        sourceContent.innerHTML = `<p class="error-source">Error loading source: ${error.message}</p>`;
+                    }
+                    
+                    // Remove active state from pills on error
+                    document.querySelectorAll('.source-pill').forEach(p => p.classList.remove('active'));
+                });
+        }
     }
     
     /**

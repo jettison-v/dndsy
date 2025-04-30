@@ -39,6 +39,9 @@
     {% block content %}{% endblock %}
     
     {% block scripts %}
+    <!-- Shared utilities -->
+    <script src="{{ url_for('static', filename='js/dnd-utilities.js') }}" defer></script>
+    
     <!-- Core mobile scripts -->
     <script src="{{ url_for('static', filename='js/mobile/mobile-core.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/mobile/mobile-source-panel.js') }}" defer></script>

@@ -18,7 +18,16 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize settings panel functionality
     if (mobileSettingsToggle && mobileSettingsPanel && closeSettingsPanel) {
-        mobileSettingsToggle.addEventListener('click', toggleSettingsPanel);
+        // Add both click and touchstart events to ensure it works on mobile
+        ['click', 'touchstart'].forEach(eventType => {
+            mobileSettingsToggle.addEventListener(eventType, function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                toggleSettingsPanel();
+                return false;
+            }, { passive: false });
+        });
+        
         closeSettingsPanel.addEventListener('click', closeSettings);
         
         // Close settings when clicking outside
@@ -33,8 +42,20 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize source panel functionality
     if (mobileHeaderSourceToggle && sourcePanel && closePanel) {
-        mobileHeaderSourceToggle.addEventListener('click', toggleSourcePanel);
-        closePanel.addEventListener('click', closeSourcePanel);
+        // Use direct onclick handlers instead of event listeners
+        mobileHeaderSourceToggle.onclick = function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleSourcePanel();
+            return false;
+        };
+        
+        closePanel.onclick = function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            closeSourcePanel();
+            return false;
+        };
     }
     
     // Initialize about modal functionality

@@ -3,18 +3,15 @@
  * 
  * ⚠️ WARNING: This file is DEPRECATED and will be removed in a future update.
  * ⚠️ Please use the following files instead:
- * - /js/mobile/mobile-core.js
- * - /js/mobile/mobile-source-panel.js
- * - /js/mobile/mobile-chat.js
+ * - /js/dnd-utilities.js (shared utilities)
+ * - /js/mobile/mobile-core.js (mobile core functionality)
+ * - /js/mobile/mobile-source-panel.js (mobile source panel)
+ * - /js/mobile/mobile-chat.js (mobile chat interactions)
  * 
- * This file is maintained only for backward compatibility.
- * New mobile functionality should be added to the appropriate files in /js/mobile/.
+ * This file is maintained ONLY for backward compatibility with existing desktop views.
+ * It will be phased out completely in a future update.
  * 
- * Handles mobile-specific UI behavior for the DNDsy application.
- * This provides a simplified mobile experience with limited functionality:
- * 1. Chat with DNDsy
- * 2. Open source content one at a time in full screen
- * 3. Apply links for opening source content or new browser tabs
+ * NO NEW FUNCTIONALITY should be added here.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -26,6 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Using new mobile scripts. Skipping deprecated mobile-ui.js');
         return;
     }
+    
+    console.warn('Using deprecated mobile-ui.js. Consider upgrading to the new mobile scripts.');
     
     // Apply mobile-specific class and initialize elements
     document.body.classList.add('mobile-view');

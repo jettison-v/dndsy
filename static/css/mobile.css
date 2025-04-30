@@ -4,10 +4,14 @@
 ========================================
   
   ⚠️ WARNING: This file is DEPRECATED and will be removed in a future update.
-  ⚠️ Please use /css/mobile/mobile.css instead.
+  ⚠️ Please use these files instead:
+  - /css/mobile/mobile-style.css (main mobile styles)
+  - /css/mobile/mobile-ios-fixes.css (iOS specific fixes)
   
-  This file is maintained only for backward compatibility.
-  New mobile styles should be added to /css/mobile/mobile.css.
+  This file is maintained ONLY for backward compatibility with existing desktop views.
+  It will be phased out completely in a future update.
+  
+  NO NEW STYLES should be added here.
   
 ========================================
 */

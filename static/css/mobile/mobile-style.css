@@ -131,10 +131,7 @@ a {
 }
 
 .text-logo {
-    background-image: var(--accent-gradient);
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
+    color: white;
     font-weight: 700;
 }
 
@@ -147,9 +144,17 @@ a {
     background: none;
     color: var(--text-color);
     font-size: 1.2rem;
-    padding: 0.3rem;
+    padding: 0.5rem;
     border-radius: 4px;
     transition: background-color var(--transition-speed);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+    touch-action: manipulation;
 }
 
 .mobile-header-button:active {
@@ -319,6 +324,7 @@ a {
     background-color: var(--secondary-color);
     width: 100%;
     z-index: 10;
+    align-items: center;
 }
 
 #user-input {
@@ -352,6 +358,7 @@ a {
     font-size: 1.2rem;
     transition: transform var(--transition-speed), box-shadow var(--transition-speed);
     box-shadow: 0 2px 5px rgba(228, 7, 18, 0.3);
+    align-self: center;
 }
 
 .mobile-send-button:active {
@@ -710,4 +717,71 @@ a {
     .source-navigation {
         padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0));
     }
+}
+
+/* Links in messages */
+.message-text a {
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.message-text a.internal-link {
+    color: var(--accent-color);
+    font-weight: 500;
+}
+
+.message-text a.external-link {
+    color: #4a90e2;
+    font-weight: 500;
+}
+
+/* Improved markdown styling */
+.message-text h1, .message-text h2, .message-text h3 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.message-text h1 {
+    font-size: 1.4rem;
+}
+
+.message-text h2 {
+    font-size: 1.2rem;
+}
+
+.message-text h3 {
+    font-size: 1.1rem;
+}
+
+.message-text ul, .message-text ol {
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.message-text li {
+    margin-bottom: 0.25rem;
+}
+
+.message-text pre {
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 0.75rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+.message-text code {
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.9rem;
+    font-family: monospace;
+}
+
+.message-text pre code {
+    background-color: transparent;
+    padding: 0;
+    border-radius: 0;
 } 

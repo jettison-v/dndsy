@@ -139,11 +139,53 @@ document.addEventListener('DOMContentLoaded', () => {
      * @returns {string} Formatted HTML
      */
     function formatMessageText(text) {
-        // Simple markdown handling
-        return text
-            .replace(/\n/g, '<br>') // Line breaks
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
-            .replace(/\*(.*?)\*/g, '<em>$1</em>'); // Italic
+        // Use the shared utility
+        return window.DNDUtilities ? DNDUtilities.formatMessageText(text) : text;
+    }
+    
+    /**
+     * Process text for links
+     * @param {HTMLElement} messageElement The message element to process
+     * @param {Object} linkData Link data from the server
+     */
+    function processLinksInMessage(messageElement, linkData) {
+        // Use the shared utility, but add our own event handlers for mobile
+        if (window.DNDUtilities) {
+            const hasLinks = DNDUtilities.processLinksInMessage(messageElement, linkData);
+            
+            // If links were added, add our mobile-specific event listeners
+            if (hasLinks) {
+                // Add event listeners for internal links
+                messageElement.querySelectorAll('.internal-link').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const s3Key = link.getAttribute('data-s3-key');
+                        const page = link.getAttribute('data-page');
+                        if (s3Key && page) {
+                            // Trigger source content viewer
+                            if (window.mobileUI && window.mobileUI.openSourcePanel) {
+                                const pillsContainer = messageElement.querySelector('.source-pills-container');
+                                if (pillsContainer) {
+                                    // Find matching pill if it exists
+                                    const pill = Array.from(pillsContainer.children).find(
+                                        p => p.dataset.s3Key === s3Key && p.dataset.page === page
+                                    );
+                                    if (pill) {
+                                        pill.click();
+                                    }
+                                } else {
+                                    // No pill, just open source panel and fetch content
+                                    window.mobileUI.openSourcePanel();
+                                    fetchSourceContent(s3Key, page, 'semantic');
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+            return hasLinks;
+        }
+        return false;
     }
     
     /**
@@ -190,6 +232,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show loading indicator
         const loadingMessage = createLoadingMessage();
         
+        // Hide welcome message when first message is sent
+        const welcomeMessage = document.querySelector('.welcome-message');
+        if (welcomeMessage) {
+            welcomeMessage.style.display = 'none';
+        }
+        
         // Get the current vector store type
         const vectorStoreType = vectorStoreDropdown ? vectorStoreDropdown.value : 'semantic';
         
@@ -230,11 +278,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 
-                // Handle token responses
-                if (data.token) {
+                // Handle typed responses
+                if (data.type === 'text' && data.content) {
                     if (!currentStreamedMessage) {
                         // Replace loading indicator with actual message
-                        chatMessages.removeChild(loadingMessage);
+                        if (loadingMessage && loadingMessage.parentNode) {
+                            chatMessages.removeChild(loadingMessage);
+                        }
+                        currentStreamedMessage = addAIMessage('');
+                    }
+                    
+                    // Append token to current message
+                    const messageText = currentStreamedMessage.querySelector('.message-text');
+                    messageText.innerHTML += data.content;
+                    
+                    // Scroll to keep up with new content
+                    scrollToBottom();
+                }
+                // Keeping original 'token' handler for backward compatibility
+                else if (data.token) {
+                    if (!currentStreamedMessage) {
+                        // Replace loading indicator with actual message
+                        if (loadingMessage && loadingMessage.parentNode) {
+                            chatMessages.removeChild(loadingMessage);
+                        }
                         currentStreamedMessage = addAIMessage('');
                     }
                     
@@ -248,6 +315,105 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Handle source documents
                 if (data.sources && data.sources.length > 0) {
+                    // Create source pills container if it doesn't exist
+                    if (currentStreamedMessage && !currentStreamedMessage.querySelector('.source-pills-container')) {
+                        const pillsContainer = document.createElement('div');
+                        pillsContainer.className = 'source-pills-container';
+                        currentStreamedMessage.appendChild(pillsContainer);
+                    }
+                    
+                    const pillsContainer = currentStreamedMessage.querySelector('.source-pills-container');
+                    if (pillsContainer) {
+                        // Process each source
+                        data.sources.forEach(source => {
+                            // Check if pill for this source already exists
+                            const sourceId = `${source.s3_key}-${source.page}`;
+                            if (!document.getElementById(sourceId)) {
+                                const pill = document.createElement('div');
+                                pill.className = 'source-pill';
+                                pill.id = sourceId;
+                                pill.innerHTML = `<i class="fas fa-book"></i> ${source.filename} (p.${source.page})`;
+                                
+                                // Set data attributes
+                                pill.dataset.s3Key = source.s3_key;
+                                pill.dataset.page = source.page;
+                                pill.dataset.score = source.score;
+                                pill.dataset.filename = source.filename;
+                                pill.dataset.storeType = vectorStoreType;
+                                
+                                // Add click handler to pill for displaying source content
+                                pill.addEventListener('click', function() {
+                                    // Open source panel if available
+                                    if (window.mobileUI && window.mobileUI.openSourcePanel) {
+                                        window.mobileUI.openSourcePanel();
+                                    }
+                                    
+                                    // Fetch and display source content
+                                    fetchSourceContent(source.s3_key, source.page, vectorStoreType);
+                                });
+                                
+                                pillsContainer.appendChild(pill);
+                            }
+                        });
+                    }
+                    
+                    // Scroll to keep up with new content
+                    scrollToBottom();
+                }
+                
+                // Handle end of response
+                if (data.done) {
+                    eventSource.close();
+                    isWaitingForResponse = false;
+                    currentStreamedMessage = null;
+                }
+            } catch (error) {
+                console.error('Error parsing event data:', error);
+            }
+        };
+        
+        // Add specific event handlers for SSE events
+        eventSource.addEventListener('error', (event) => {
+            console.error('EventSource error:', event);
+            
+            // Remove loading indicator if needed
+            if (loadingMessage && loadingMessage.parentNode) {
+                chatMessages.removeChild(loadingMessage);
+            }
+            
+            // Add error message
+            const errorMessage = document.createElement('div');
+            errorMessage.className = 'message error';
+            errorMessage.innerHTML = `
+                <div class="message-text">
+                    <p>Sorry, there was an error connecting to the server. Please try again.</p>
+                </div>
+            `;
+            chatMessages.appendChild(errorMessage);
+            
+            // Clean up
+            eventSource.close();
+            isWaitingForResponse = false;
+            currentStreamedMessage = null;
+            scrollToBottom();
+        });
+        
+        // Handle metadata event
+        eventSource.addEventListener('metadata', (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                console.log('Received metadata:', data);
+                
+                // Create a message if none exists yet
+                if (!currentStreamedMessage) {
+                    if (loadingMessage && loadingMessage.parentNode) {
+                        chatMessages.removeChild(loadingMessage);
+                    }
+                    currentStreamedMessage = addAIMessage('');
+                }
+                
+                // Handle sources if available
+                if (data.sources && data.sources.length > 0 && currentStreamedMessage) {
                     // Create source pills container if it doesn't exist
                     if (!currentStreamedMessage.querySelector('.source-pills-container')) {
                         const pillsContainer = document.createElement('div');
@@ -265,35 +431,56 @@ document.addEventListener('DOMContentLoaded', () => {
                             const pill = document.createElement('div');
                             pill.className = 'source-pill';
                             pill.id = sourceId;
-                            pill.innerHTML = `<i class="fas fa-book"></i> ${source.filename} (p.${source.page})`;
+                            pill.innerHTML = `<i class="fas fa-book"></i> ${source.display || `${source.s3_key.split('/').pop()} (p.${source.page})`}`;
                             
                             // Set data attributes
                             pill.dataset.s3Key = source.s3_key;
                             pill.dataset.page = source.page;
                             pill.dataset.score = source.score;
-                            pill.dataset.filename = source.filename;
+                            pill.dataset.filename = source.display || source.s3_key.split('/').pop();
                             pill.dataset.storeType = vectorStoreType;
+                            
+                            // Add click handler to pill for displaying source content
+                            pill.addEventListener('click', function() {
+                                // Open source panel if available
+                                if (window.mobileUI && window.mobileUI.openSourcePanel) {
+                                    window.mobileUI.openSourcePanel();
+                                }
+                                
+                                // Fetch and display source content
+                                fetchSourceContent(source.s3_key, source.page, vectorStoreType);
+                            });
                             
                             pillsContainer.appendChild(pill);
                         }
                     });
-                    
-                    // Scroll to keep up with new content
-                    scrollToBottom();
-                }
-                
-                // Handle end of response
-                if (data.done) {
-                    eventSource.close();
-                    isWaitingForResponse = false;
-                    currentStreamedMessage = null;
                 }
             } catch (error) {
-                console.error('Error parsing event data:', error);
+                console.error('Error parsing metadata event:', error);
             }
-        };
+        });
         
-        // Handle errors
+        // Handle links event
+        eventSource.addEventListener('links', (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'links' && data.links && currentStreamedMessage) {
+                    // Process links in the current message
+                    processLinksInMessage(currentStreamedMessage, data.links);
+                }
+            } catch (error) {
+                console.error('Error parsing links event:', error);
+            }
+        });
+        
+        // Handle done event
+        eventSource.addEventListener('done', (event) => {
+            eventSource.close();
+            isWaitingForResponse = false;
+            currentStreamedMessage = null;
+        });
+        
+        // Handle error event
         eventSource.onerror = (error) => {
             console.error('EventSource error:', error);
             
@@ -318,6 +505,237 @@ document.addEventListener('DOMContentLoaded', () => {
             currentStreamedMessage = null;
             scrollToBottom();
         };
+    }
+    
+    /**
+     * Fetch and display source content
+     * @param {string} s3Key The S3 key of the source
+     * @param {number} page The page number
+     * @param {string} storeType The vector store type
+     */
+    function fetchSourceContent(s3Key, page, storeType) {
+        // Get the source panel content element
+        const sourceContent = document.getElementById('source-content');
+        if (!sourceContent) return;
+        
+        // Show loading indicator
+        sourceContent.innerHTML = '<div class="source-loading"><div class="spinner"></div><p>Loading source content...</p></div>';
+        
+        // Use the shared utility
+        if (window.DNDUtilities) {
+            DNDUtilities.fetchSourceContent(
+                s3Key, 
+                page, 
+                storeType, 
+                // Success callback
+                (details, s3Key, pageNumber) => {
+                    // Clear loading indicator
+                    sourceContent.innerHTML = '';
+                    
+                    // Display source name
+                    const filename = s3Key.split('/').pop().replace(/\.[^/.]+$/, "");
+                    const header = document.createElement('div');
+                    header.className = 'source-header';
+                    
+                    const sourceName = document.createElement('h4');
+                    sourceName.textContent = `${filename} (page ${page})`;
+                    header.appendChild(sourceName);
+                    
+                    sourceContent.appendChild(header);
+                    
+                    // Display content based on type
+                    if (details.image_base64) {
+                        // Display image content
+                        const imageContainer = document.createElement('div');
+                        imageContainer.id = 'source-image-container';
+                        imageContainer.className = 'source-image-container';
+                        
+                        const img = document.createElement('img');
+                        img.className = 'source-image';
+                        img.alt = `${filename} (page ${page})`;
+                        img.src = `data:image/jpeg;base64,${details.image_base64}`;
+                        
+                        imageContainer.appendChild(img);
+                        sourceContent.appendChild(imageContainer);
+                        
+                        // Add zoom controls
+                        addZoomControls(sourceContent, img);
+                    } else if (details.text_content) {
+                        // Display text content
+                        const textContainer = document.createElement('div');
+                        textContainer.className = 'source-text';
+                        textContainer.innerHTML = details.text_content;
+                        sourceContent.appendChild(textContainer);
+                    } else {
+                        // No content available
+                        sourceContent.innerHTML += '<p class="no-source">No source content available</p>';
+                    }
+                    
+                    // Add page navigation if needed
+                    if (details.total_pages && details.total_pages > 1) {
+                        addSourceNavigation(sourceContent, parseInt(page), details.total_pages, s3Key, storeType);
+                    }
+                },
+                // Error callback
+                (errorMsg) => {
+                    sourceContent.innerHTML = `<p class="error-source">Error: ${errorMsg}</p>`;
+                }
+            );
+        } else {
+            // Fallback if utility isn't available
+            fetch(`/api/get_context_details?source=${encodeURIComponent(s3Key)}&page=${page}&vector_store_type=${storeType}`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errorData => {
+                            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(details => {
+                    if (!details) {
+                        throw new Error('No details returned from server');
+                    }
+                    
+                    // Clear loading indicator
+                    sourceContent.innerHTML = '';
+                    
+                    // Display source name
+                    const filename = s3Key.split('/').pop().replace(/\.[^/.]+$/, "");
+                    const header = document.createElement('div');
+                    header.className = 'source-header';
+                    
+                    const sourceName = document.createElement('h4');
+                    sourceName.textContent = `${filename} (page ${page})`;
+                    header.appendChild(sourceName);
+                    
+                    sourceContent.appendChild(header);
+                    
+                    // Display content based on type
+                    if (details.image_base64) {
+                        // Display image content
+                        const imageContainer = document.createElement('div');
+                        imageContainer.id = 'source-image-container';
+                        imageContainer.className = 'source-image-container';
+                        
+                        const img = document.createElement('img');
+                        img.className = 'source-image';
+                        img.alt = `${filename} (page ${page})`;
+                        img.src = `data:image/jpeg;base64,${details.image_base64}`;
+                        
+                        imageContainer.appendChild(img);
+                        sourceContent.appendChild(imageContainer);
+                        
+                        // Add zoom controls
+                        addZoomControls(sourceContent, img);
+                    } else if (details.text_content) {
+                        // Display text content
+                        const textContainer = document.createElement('div');
+                        textContainer.className = 'source-text';
+                        textContainer.innerHTML = details.text_content;
+                        sourceContent.appendChild(textContainer);
+                    } else {
+                        // No content available
+                        sourceContent.innerHTML += '<p class="no-source">No source content available</p>';
+                    }
+                    
+                    // Add page navigation if needed
+                    if (details.total_pages && details.total_pages > 1) {
+                        addSourceNavigation(sourceContent, parseInt(page), details.total_pages, s3Key, storeType);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching source content:', error);
+                    sourceContent.innerHTML = `<p class="error-source">Error: ${error.message}</p>`;
+                });
+        }
+    }
+    
+    /**
+     * Add zoom controls to the source panel
+     * @param {HTMLElement} container The container element
+     * @param {HTMLImageElement} img The image element
+     */
+    function addZoomControls(container, img) {
+        const zoomControls = document.createElement('div');
+        zoomControls.className = 'zoom-controls';
+        zoomControls.innerHTML = `
+            <button id="mobile-zoom-in" title="Zoom In"><i class="fas fa-search-plus"></i></button>
+            <button id="mobile-zoom-reset" title="Reset Zoom"><i class="fas fa-sync-alt"></i></button>
+            <button id="mobile-zoom-out" title="Zoom Out"><i class="fas fa-search-minus"></i></button>
+        `;
+        container.appendChild(zoomControls);
+        
+        // Add zoom functionality
+        let currentZoomLevel = 1;
+        document.getElementById('mobile-zoom-in').addEventListener('click', () => {
+            if (currentZoomLevel < 2.5) {
+                currentZoomLevel += 0.25;
+                img.style.transform = `scale(${currentZoomLevel})`;
+            }
+        });
+        
+        document.getElementById('mobile-zoom-reset').addEventListener('click', () => {
+            currentZoomLevel = 1;
+            img.style.transform = `scale(${currentZoomLevel})`;
+        });
+        
+        document.getElementById('mobile-zoom-out').addEventListener('click', () => {
+            if (currentZoomLevel > 0.5) {
+                currentZoomLevel -= 0.25;
+                img.style.transform = `scale(${currentZoomLevel})`;
+            }
+        });
+    }
+    
+    /**
+     * Add source navigation buttons
+     * @param {HTMLElement} container The container element
+     * @param {number} currentPage Current page number
+     * @param {number} totalPages Total number of pages
+     * @param {string} s3Key S3 key for the source
+     * @param {string} storeType Vector store type
+     */
+    function addSourceNavigation(container, currentPage, totalPages, s3Key, storeType) {
+        const navContainer = document.createElement('div');
+        navContainer.className = 'source-navigation';
+        
+        // Previous button
+        const prevButton = document.createElement('button');
+        prevButton.innerHTML = '<i class="fas fa-chevron-left"></i> Prev';
+        prevButton.className = 'nav-button prev-button';
+        prevButton.disabled = currentPage <= 1;
+        
+        // Page indicator
+        const pageIndicator = document.createElement('div');
+        pageIndicator.className = 'page-indicator';
+        pageIndicator.textContent = `${currentPage} / ${totalPages}`;
+        
+        // Next button
+        const nextButton = document.createElement('button');
+        nextButton.innerHTML = 'Next <i class="fas fa-chevron-right"></i>';
+        nextButton.className = 'nav-button next-button';
+        nextButton.disabled = currentPage >= totalPages;
+        
+        // Add event listeners
+        prevButton.addEventListener('click', () => {
+            if (currentPage > 1) {
+                fetchSourceContent(s3Key, currentPage - 1, storeType);
+            }
+        });
+        
+        nextButton.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                fetchSourceContent(s3Key, currentPage + 1, storeType);
+            }
+        });
+        
+        // Add elements to container
+        navContainer.appendChild(prevButton);
+        navContainer.appendChild(pageIndicator);
+        navContainer.appendChild(nextButton);
+        
+        container.appendChild(navContainer);
     }
     
     /**
