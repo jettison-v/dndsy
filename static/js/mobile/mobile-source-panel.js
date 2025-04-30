@@ -156,78 +156,161 @@ document.addEventListener('DOMContentLoaded', () => {
             panelHeader.textContent = `${sourceName} (Page ${pageNumber})`;
         }
         
-        if (details.image_url || details.image_base64) {
+        // Main content container with appropriate styling
+        const contentContainer = document.createElement('div');
+        contentContainer.className = 'mobile-source-content-container';
+        sourceContent.appendChild(contentContainer);
+        
+        if (details.image_base64 || details.image_url) {
             // Display image content
             const imageContainer = document.createElement('div');
             imageContainer.id = 'source-image-container';
+            imageContainer.className = 'mobile-source-image-container';
+            
+            // Create debug info element for troubleshooting
+            console.log('Image source details:', {
+                hasImageUrl: !!details.image_url,
+                imageUrl: details.image_url,
+                hasImageBase64: !!details.image_base64,
+                imageBase64Length: details.image_base64 ? details.image_base64.length : 0
+            });
             
             const img = document.createElement('img');
             img.className = 'source-image';
             img.alt = `${sourceName} page ${pageNumber}`;
-            img.src = details.image_url || `data:image/jpeg;base64,${details.image_base64}`;
+            
+            // Use the shared utility for image loading with fallback strategies
+            if (window.DNDUtilities && details.imageStrategies) {
+                // Use the shared image loading utility with the provided strategies
+                DNDUtilities.loadImageWithFallback(img, details.imageStrategies, (errorMsg) => {
+                    console.error('Image loading failed:', errorMsg);
+                    img.alt = 'Error loading image';
+                    img.style.display = 'none';
+                    imageContainer.innerHTML += `<p class="error-source">Failed to load image after trying all methods.</p>`;
+                });
+            } else {
+                // Fallback to previous cascade approach if utilities aren't available
+                // Track attempts to avoid infinite retries
+                let attemptCount = 0;
+                const maxAttempts = 3;
+                
+                // Function to try loading the image with different methods
+                const tryLoadImage = (method) => {
+                    attemptCount++;
+                    
+                    if (attemptCount > maxAttempts) {
+                        console.error('Max image loading attempts reached');
+                        img.alt = 'Error loading image after multiple attempts';
+                        img.style.display = 'none';
+                        imageContainer.innerHTML += `<p class="error-source">Error loading image after multiple attempts.</p>`;
+                        return;
+                    }
+                    
+                    switch(method) {
+                        case 'transformed':
+                            if (details.transformed_image_url) {
+                                img.src = details.transformed_image_url;
+                                console.log('Using transformed image URL:', img.src);
+                            } else {
+                                tryLoadImage('api_proxy');
+                            }
+                            break;
+                            
+                        case 'api_proxy':
+                            if (details.image_url && details.image_url.startsWith('s3://')) {
+                                // Format: Extract bucket and key parts correctly
+                                const s3Url = details.image_url;
+                                console.log('Processing S3 URL:', s3Url);
+                                
+                                // Try the API proxy endpoint with full URL
+                                img.src = `/api/get_pdf_image?key=${encodeURIComponent(s3Url)}`;
+                                console.log('Using API proxy for S3 image:', img.src);
+                            } else {
+                                tryLoadImage('direct_url');
+                            }
+                            break;
+                            
+                        case 'direct_url':
+                            if (details.image_url && !details.image_url.startsWith('s3://')) {
+                                img.src = details.image_url;
+                                console.log('Using direct image URL:', img.src);
+                            } else {
+                                tryLoadImage('direct_s3');
+                            }
+                            break;
+                            
+                        case 'direct_s3':
+                            if (details.image_url && details.image_url.startsWith('s3://')) {
+                                // Try constructing a direct S3 URL
+                                const s3Url = details.image_url;
+                                const s3Parts = s3Url.replace('s3://', '').split('/');
+                                const bucket = s3Parts.shift();
+                                const key = s3Parts.join('/');
+                                
+                                img.src = `https://${bucket}.s3.amazonaws.com/${key}`;
+                                console.log('Using direct S3 URL:', img.src);
+                            } else {
+                                tryLoadImage('base64');
+                            }
+                            break;
+                            
+                        case 'base64':
+                            if (details.image_base64) {
+                                img.src = `data:image/jpeg;base64,${details.image_base64}`;
+                                console.log('Using base64 image data');
+                            } else {
+                                console.error('No more image loading methods available');
+                                img.alt = 'No image available';
+                                img.style.display = 'none';
+                                imageContainer.innerHTML += `<p class="error-source">No image available for this source.</p>`;
+                            }
+                            break;
+                            
+                        default:
+                            console.error('Unknown image loading method:', method);
+                            break;
+                    }
+                };
+                
+                // Handle image load errors
+                img.onerror = (e) => {
+                    console.error('Failed to load image with method', attemptCount, e);
+                    console.error('Failed image URL was:', img.src);
+                    
+                    // Try the next method based on the current attempt
+                    const methods = ['transformed', 'api_proxy', 'direct_url', 'direct_s3', 'base64'];
+                    if (attemptCount < methods.length) {
+                        tryLoadImage(methods[attemptCount]);
+                    } else {
+                        img.alt = 'Error loading image';
+                        img.style.display = 'none';
+                        imageContainer.innerHTML += `<p class="error-source">Failed to load image after trying all methods.</p>`;
+                    }
+                };
+                
+                // Start loading the image with the first method
+                tryLoadImage('transformed');
+            }
             
             imageContainer.appendChild(img);
-            sourceContent.appendChild(imageContainer);
+            contentContainer.appendChild(imageContainer);
             
-            // Add zoom controls
-            addZoomControls(img);
-        } else if (details.text) {
+            // Don't add zoom controls on mobile - use native pinch/zoom instead
+        } else if (details.text || details.text_content) {
             // Display text content
             const textContainer = document.createElement('div');
             textContainer.className = 'source-text';
-            textContainer.innerHTML = details.text;
-            sourceContent.appendChild(textContainer);
+            textContainer.innerHTML = details.text || details.text_content;
+            contentContainer.appendChild(textContainer);
         } else {
             // No content available
-            sourceContent.innerHTML = '<p class="no-source">No source content available</p>';
+            contentContainer.innerHTML = '<p class="no-source">No source content available</p>';
         }
         
-        // Add navigation if needed
+        // Add navigation if needed - this is now added to the source content outside the content container
         if (totalPages > 1) {
             addSourceNavigation(sourceContent, pageNumber, totalPages);
         }
-    }
-    
-    /**
-     * Add zoom controls for image content
-     * @param {HTMLImageElement} img The image element to control
-     */
-    function addZoomControls(img) {
-        // Create zoom controls container
-        const zoomControls = document.createElement('div');
-        zoomControls.className = 'zoom-controls';
-        zoomControls.innerHTML = `
-            <button id="zoom-in" title="Zoom In"><i class="fas fa-search-plus"></i></button>
-            <button id="zoom-reset" title="Reset Zoom"><i class="fas fa-sync-alt"></i></button>
-            <button id="zoom-out" title="Zoom Out"><i class="fas fa-search-minus"></i></button>
-        `;
-        
-        sourceContent.appendChild(zoomControls);
-        
-        // Current zoom level
-        let zoomLevel = 1;
-        
-        // Zoom in button
-        document.getElementById('zoom-in').addEventListener('click', () => {
-            if (zoomLevel < 3) {
-                zoomLevel += 0.25;
-                img.style.transform = `scale(${zoomLevel})`;
-            }
-        });
-        
-        // Reset zoom button
-        document.getElementById('zoom-reset').addEventListener('click', () => {
-            zoomLevel = 1;
-            img.style.transform = 'scale(1)';
-        });
-        
-        // Zoom out button
-        document.getElementById('zoom-out').addEventListener('click', () => {
-            if (zoomLevel > 0.5) {
-                zoomLevel -= 0.25;
-                img.style.transform = `scale(${zoomLevel})`;
-            }
-        });
     }
     
     /**
@@ -277,5 +360,29 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Add navigation to container
         container.appendChild(navContainer);
+    }
+
+    // When the source panel is closed, remove active state from source pills
+    document.addEventListener('click', function(event) {
+        if (event.target.id === 'close-panel' || event.target.closest('#close-panel')) {
+            // Remove active state from all pills
+            document.querySelectorAll('.source-pill').forEach(pill => {
+                pill.classList.remove('active');
+            });
+        }
+    });
+    
+    // Add global handler for the closeSourcePanel function
+    if (window.mobileUI && window.mobileUI.closeSourcePanel) {
+        const originalCloseSourcePanel = window.mobileUI.closeSourcePanel;
+        window.mobileUI.closeSourcePanel = function() {
+            // Remove active state from all pills
+            document.querySelectorAll('.source-pill').forEach(pill => {
+                pill.classList.remove('active');
+            });
+            
+            // Call the original function
+            originalCloseSourcePanel();
+        };
     }
 }); 

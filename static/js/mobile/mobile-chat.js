@@ -332,13 +332,20 @@ document.addEventListener('DOMContentLoaded', () => {
                                 const pill = document.createElement('div');
                                 pill.className = 'source-pill';
                                 pill.id = sourceId;
-                                pill.innerHTML = `<i class="fas fa-book"></i> ${source.filename} (p.${source.page})`;
+                                
+                                // Format source name to be more concise: "Document Name (Pg X)"
+                                let displayName = source.filename || source.s3_key.split('/').pop().replace(/\.[^/.]+$/, "");
+                                // If the filename is too long, truncate it
+                                if (displayName.length > 20) {
+                                    displayName = displayName.substring(0, 18) + '...';
+                                }
+                                pill.innerHTML = `<i class="fas fa-book"></i> ${displayName} (Pg ${source.page})`;
                                 
                                 // Set data attributes
                                 pill.dataset.s3Key = source.s3_key;
                                 pill.dataset.page = source.page;
                                 pill.dataset.score = source.score;
-                                pill.dataset.filename = source.filename;
+                                pill.dataset.filename = source.filename || source.s3_key.split('/').pop().replace(/\.[^/.]+$/, "");
                                 pill.dataset.storeType = vectorStoreType;
                                 
                                 // Add click handler to pill for displaying source content
@@ -431,13 +438,20 @@ document.addEventListener('DOMContentLoaded', () => {
                             const pill = document.createElement('div');
                             pill.className = 'source-pill';
                             pill.id = sourceId;
-                            pill.innerHTML = `<i class="fas fa-book"></i> ${source.display || `${source.s3_key.split('/').pop()} (p.${source.page})`}`;
+                            
+                            // Format source name to be more concise: "Document Name (Pg X)"
+                            let displayName = source.display || source.s3_key.split('/').pop().replace(/\.[^/.]+$/, "");
+                            // If the filename is too long, truncate it
+                            if (displayName.length > 20) {
+                                displayName = displayName.substring(0, 18) + '...';
+                            }
+                            pill.innerHTML = `<i class="fas fa-book"></i> ${displayName} (Pg ${source.page})`;
                             
                             // Set data attributes
                             pill.dataset.s3Key = source.s3_key;
                             pill.dataset.page = source.page;
                             pill.dataset.score = source.score;
-                            pill.dataset.filename = source.display || source.s3_key.split('/').pop();
+                            pill.dataset.filename = source.filename || source.s3_key.split('/').pop().replace(/\.[^/.]+$/, "");
                             pill.dataset.storeType = vectorStoreType;
                             
                             // Add click handler to pill for displaying source content
@@ -553,13 +567,59 @@ document.addEventListener('DOMContentLoaded', () => {
                         const img = document.createElement('img');
                         img.className = 'source-image';
                         img.alt = `${filename} (page ${page})`;
-                        img.src = `data:image/jpeg;base64,${details.image_base64}`;
+                        
+                        // Use the shared utility for image loading if available
+                        if (window.DNDUtilities && details.imageStrategies) {
+                            // Use the shared image loading utility with the provided strategies
+                            DNDUtilities.loadImageWithFallback(img, details.imageStrategies, (errorMsg) => {
+                                console.error('Image loading failed:', errorMsg);
+                                img.alt = 'Error loading image';
+                                img.style.display = 'none';
+                                imageContainer.innerHTML += `<p class="error-source">Failed to load image after trying all methods.</p>`;
+                            });
+                        } else {
+                            // Fallback to basic approach if utilities aren't available
+                            // Handle different image sources appropriately
+                            if (details.transformed_image_url) {
+                                // Use pre-transformed URL from utilities
+                                img.src = details.transformed_image_url;
+                                console.log('Using transformed image URL:', img.src);
+                            } else if (details.image_url) {
+                                // Transform S3 URLs to HTTP URLs if needed
+                                if (details.image_url.startsWith('s3://')) {
+                                    // Use API proxy for S3 images
+                                    img.src = `/api/get_pdf_image?key=${encodeURIComponent(details.image_url)}`;
+                                    console.log('Using API proxy for S3 image:', img.src);
+                                } else {
+                                    img.src = details.image_url;
+                                }
+                            } else if (details.image_base64) {
+                                img.src = `data:image/jpeg;base64,${details.image_base64}`;
+                            }
+                            
+                            // Add error handler for debugging
+                            img.onerror = (e) => {
+                                console.error('Failed to load image:', e);
+                                console.error('Image src was:', img.src);
+                                
+                                // Try fallback to direct S3 URL if available
+                                if (details.direct_s3_url && img.src !== details.direct_s3_url) {
+                                    console.log('Trying fallback to direct S3 URL:', details.direct_s3_url);
+                                    img.src = details.direct_s3_url;
+                                    return; // Stop here to let the fallback attempt work
+                                }
+                                
+                                // If fallback also fails or isn't available
+                                img.alt = 'Error loading image';
+                                img.style.display = 'none';
+                                imageContainer.innerHTML += `<p class="error-source">Error loading image.<br>URL: ${img.src.substring(0, 100)}...</p>`;
+                            };
+                        }
                         
                         imageContainer.appendChild(img);
                         sourceContent.appendChild(imageContainer);
                         
-                        // Add zoom controls
-                        addZoomControls(sourceContent, img);
+                        // Native pinch-zoom is used instead of custom zoom controls
                     } else if (details.text_content) {
                         // Display text content
                         const textContainer = document.createElement('div');
@@ -621,13 +681,59 @@ document.addEventListener('DOMContentLoaded', () => {
                         const img = document.createElement('img');
                         img.className = 'source-image';
                         img.alt = `${filename} (page ${page})`;
-                        img.src = `data:image/jpeg;base64,${details.image_base64}`;
+                        
+                        // Use the shared utility for image loading if available
+                        if (window.DNDUtilities && details.imageStrategies) {
+                            // Use the shared image loading utility with the provided strategies
+                            DNDUtilities.loadImageWithFallback(img, details.imageStrategies, (errorMsg) => {
+                                console.error('Image loading failed:', errorMsg);
+                                img.alt = 'Error loading image';
+                                img.style.display = 'none';
+                                imageContainer.innerHTML += `<p class="error-source">Failed to load image after trying all methods.</p>`;
+                            });
+                        } else {
+                            // Fallback to basic approach if utilities aren't available
+                            // Handle different image sources appropriately
+                            if (details.transformed_image_url) {
+                                // Use pre-transformed URL from utilities
+                                img.src = details.transformed_image_url;
+                                console.log('Using transformed image URL:', img.src);
+                            } else if (details.image_url) {
+                                // Transform S3 URLs to HTTP URLs if needed
+                                if (details.image_url.startsWith('s3://')) {
+                                    // Use API proxy for S3 images
+                                    img.src = `/api/get_pdf_image?key=${encodeURIComponent(details.image_url)}`;
+                                    console.log('Using API proxy for S3 image:', img.src);
+                                } else {
+                                    img.src = details.image_url;
+                                }
+                            } else if (details.image_base64) {
+                                img.src = `data:image/jpeg;base64,${details.image_base64}`;
+                            }
+                            
+                            // Add error handler for debugging
+                            img.onerror = (e) => {
+                                console.error('Failed to load image:', e);
+                                console.error('Image src was:', img.src);
+                                
+                                // Try fallback to direct S3 URL if available
+                                if (details.direct_s3_url && img.src !== details.direct_s3_url) {
+                                    console.log('Trying fallback to direct S3 URL:', details.direct_s3_url);
+                                    img.src = details.direct_s3_url;
+                                    return; // Stop here to let the fallback attempt work
+                                }
+                                
+                                // If fallback also fails or isn't available
+                                img.alt = 'Error loading image';
+                                img.style.display = 'none';
+                                imageContainer.innerHTML += `<p class="error-source">Error loading image.<br>URL: ${img.src.substring(0, 100)}...</p>`;
+                            };
+                        }
                         
                         imageContainer.appendChild(img);
                         sourceContent.appendChild(imageContainer);
                         
-                        // Add zoom controls
-                        addZoomControls(sourceContent, img);
+                        // Native pinch-zoom is used instead of custom zoom controls
                     } else if (details.text_content) {
                         // Display text content
                         const textContainer = document.createElement('div');
@@ -649,43 +755,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     sourceContent.innerHTML = `<p class="error-source">Error: ${error.message}</p>`;
                 });
         }
-    }
-    
-    /**
-     * Add zoom controls to the source panel
-     * @param {HTMLElement} container The container element
-     * @param {HTMLImageElement} img The image element
-     */
-    function addZoomControls(container, img) {
-        const zoomControls = document.createElement('div');
-        zoomControls.className = 'zoom-controls';
-        zoomControls.innerHTML = `
-            <button id="mobile-zoom-in" title="Zoom In"><i class="fas fa-search-plus"></i></button>
-            <button id="mobile-zoom-reset" title="Reset Zoom"><i class="fas fa-sync-alt"></i></button>
-            <button id="mobile-zoom-out" title="Zoom Out"><i class="fas fa-search-minus"></i></button>
-        `;
-        container.appendChild(zoomControls);
-        
-        // Add zoom functionality
-        let currentZoomLevel = 1;
-        document.getElementById('mobile-zoom-in').addEventListener('click', () => {
-            if (currentZoomLevel < 2.5) {
-                currentZoomLevel += 0.25;
-                img.style.transform = `scale(${currentZoomLevel})`;
-            }
-        });
-        
-        document.getElementById('mobile-zoom-reset').addEventListener('click', () => {
-            currentZoomLevel = 1;
-            img.style.transform = `scale(${currentZoomLevel})`;
-        });
-        
-        document.getElementById('mobile-zoom-out').addEventListener('click', () => {
-            if (currentZoomLevel > 0.5) {
-                currentZoomLevel -= 0.25;
-                img.style.transform = `scale(${currentZoomLevel})`;
-            }
-        });
     }
     
     /**

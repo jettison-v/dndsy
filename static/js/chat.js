@@ -1436,35 +1436,59 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Process image if available
         if (details.image_url) {
-            // Convert S3 URLs to HTTPS if needed
-            let imageUrl = details.image_url;
-            if (imageUrl.startsWith('s3://')) {
-                imageUrl = convertS3UrlToHttps(imageUrl);
-            }
-            
             // Create and load the image
             const img = document.createElement('img');
             img.className = 'source-image';
-            img.src = imageUrl;
             img.alt = `Source page ${pageNumber}`;
             
-            // When image loads, replace loading indicator
-            img.onload = () => {
-                // Clear loading state
-                placeholder.remove();
-                loadingIndicator.remove();
+            // Use the shared utility for image loading if available
+            if (window.DNDUtilities && details.imageStrategies) {
+                // Use the shared image loading utility with the provided strategies
+                DNDUtilities.loadImageWithFallback(img, details.imageStrategies, (errorMsg) => {
+                    imageContainer.innerHTML = `<p class="error-source">Error loading image: ${errorMsg}</p>`;
+                });
                 
-                // Add image and zoom controls
-                imageContainer.appendChild(img);
-                imageContainer.appendChild(zoomControls);
+                // Set up onload handler to remove loading indicator and add controls
+                img.onload = () => {
+                    // Clear loading state
+                    placeholder.remove();
+                    loadingIndicator.remove();
+                    
+                    // Add image and zoom controls
+                    imageContainer.appendChild(img);
+                    imageContainer.appendChild(zoomControls);
+                    
+                    // Apply zoom if set
+                    updateZoom();
+                };
+            } else {
+                // Fallback to legacy approach if utilities aren't available
+                // Convert S3 URLs to HTTPS if needed
+                let imageUrl = details.image_url;
+                if (imageUrl.startsWith('s3://')) {
+                    imageUrl = convertS3UrlToHttps(imageUrl);
+                }
                 
-                // Apply zoom if set
-                updateZoom();
-            };
-            
-            img.onerror = () => {
-                imageContainer.innerHTML = '<p class="error-source">Error loading image</p>';
-            };
+                img.src = imageUrl;
+                
+                // When image loads, replace loading indicator
+                img.onload = () => {
+                    // Clear loading state
+                    placeholder.remove();
+                    loadingIndicator.remove();
+                    
+                    // Add image and zoom controls
+                    imageContainer.appendChild(img);
+                    imageContainer.appendChild(zoomControls);
+                    
+                    // Apply zoom if set
+                    updateZoom();
+                };
+                
+                img.onerror = () => {
+                    imageContainer.innerHTML = '<p class="error-source">Error loading image</p>';
+                };
+            }
         } else {
             // No image available
             imageContainer.innerHTML = '<p class="error-source">No image available for this source</p>';
@@ -1569,22 +1593,66 @@ document.addEventListener('DOMContentLoaded', () => {
             return; 
         }
         
-        // Ensure we use HTTP URLs, not S3 URLs
+        // Create the image strategies array for the loadImageWithFallback function
         let imageUrl = `${s3BaseUrl}/page_${pageNumber}.png`;
+        const strategies = [];
+        
+        // If it's an S3 URL, add multiple strategies
         if (imageUrl.startsWith('s3://')) {
-            imageUrl = convertS3UrlToHttps(imageUrl);
+            // 1. API proxy strategy
+            strategies.push({
+                name: 'api_proxy',
+                url: `/api/get_pdf_image?key=${encodeURIComponent(imageUrl)}`,
+                description: 'Using API proxy for S3 image'
+            });
+            
+            // 2. Direct S3 URL strategy
+            const s3Url = imageUrl;
+            const s3Parts = s3Url.replace('s3://', '').split('/');
+            const bucket = s3Parts.shift();
+            const key = s3Parts.join('/');
+            strategies.push({
+                name: 'direct_s3',
+                url: `https://${bucket}.s3.amazonaws.com/${key}`,
+                description: 'Using direct S3 URL'
+            });
+        } else {
+            // Standard HTTP URL
+            strategies.push({
+                name: 'direct_url',
+                url: imageUrl,
+                description: 'Using direct image URL'
+            });
         }
         
         const img = document.createElement('img');
-        img.src = imageUrl;
         img.alt = `Source page ${pageNumber}`;
-        img.onload = () => {
-            imageContainer.innerHTML = ''; // Clear loading indicator
-            imageContainer.appendChild(img);
-        };
-        img.onerror = () => {
-            imageContainer.innerHTML = `<p class="error-source">Error loading image for page ${pageNumber}.</p>`;
-        };
+        
+        // Use the shared utility if available
+        if (window.DNDUtilities && DNDUtilities.loadImageWithFallback) {
+            DNDUtilities.loadImageWithFallback(img, strategies, (errorMsg) => {
+                imageContainer.innerHTML = `<p class="error-source">Error loading image for page ${pageNumber}: ${errorMsg}</p>`;
+            });
+            
+            img.onload = () => {
+                imageContainer.innerHTML = ''; // Clear loading indicator
+                imageContainer.appendChild(img);
+            };
+        } else {
+            // Legacy approach
+            if (imageUrl.startsWith('s3://')) {
+                imageUrl = convertS3UrlToHttps(imageUrl);
+            }
+            
+            img.src = imageUrl;
+            img.onload = () => {
+                imageContainer.innerHTML = ''; // Clear loading indicator
+                imageContainer.appendChild(img);
+            };
+            img.onerror = () => {
+                imageContainer.innerHTML = `<p class="error-source">Error loading image for page ${pageNumber}.</p>`;
+            };
+        }
     }
 
     /*

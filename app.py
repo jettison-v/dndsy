@@ -459,6 +459,65 @@ def gpu_status():
         logger.error(f"Error checking GPU status: {e}", exc_info=True)
         return jsonify({'error': f'Error checking GPU status: {str(e)}'}), 500
 
+@app.route('/api/get_pdf_image')
+def get_pdf_image():
+    """API endpoint to fetch images from S3 and serve them to clients.
+    Handles S3 URLs and serves the image directly to the client.
+    """
+    if not check_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    key = request.args.get('key')
+    if not key:
+        return jsonify({'error': 'Missing key parameter'}), 400
+    
+    # Parse the s3 URL format (s3://bucket/path)
+    if not key.startswith('s3://'):
+        return jsonify({'error': 'Invalid S3 URL format, must start with s3://'}), 400
+    
+    try:
+        s3_url = key
+        s3_parts = s3_url.replace('s3://', '').split('/')
+        bucket = s3_parts[0]
+        key_path = '/'.join(s3_parts[1:])
+        
+        # Get S3 client
+        s3_client = get_s3_client()
+        if not s3_client:
+            return jsonify({'error': 'S3 client not available'}), 500
+        
+        logger.info(f"Fetching PDF image from S3: bucket={bucket}, key={key_path}")
+        
+        # Get the object from S3
+        response = s3_client.get_object(Bucket=bucket, Key=key_path)
+        image_data = response['Body'].read()
+        
+        # Determine content type based on file extension
+        content_type = 'image/jpeg'  # Default
+        if key_path.lower().endswith('.png'):
+            content_type = 'image/png'
+        elif key_path.lower().endswith('.gif'):
+            content_type = 'image/gif'
+        elif key_path.lower().endswith('.webp'):
+            content_type = 'image/webp'
+        
+        # Return the image data with appropriate content type
+        return Response(image_data, content_type=content_type)
+        
+    except NoCredentialsError:
+        logger.error("AWS credentials not found")
+        return jsonify({'error': 'AWS credentials not found'}), 500
+    except ClientError as e:
+        error_code = e.response['Error']['Code']
+        logger.error(f"S3 client error retrieving image: {error_code}")
+        if error_code == 'NoSuchKey':
+            return jsonify({'error': 'Image not found in S3'}), 404
+        else:
+            return jsonify({'error': f'S3 client error: {error_code}'}), 500
+    except Exception as e:
+        logger.error(f"Error retrieving PDF image from S3: {e}", exc_info=True)
+        return jsonify({'error': f'Error retrieving image: {str(e)}'}), 500
+
 # =============================================================================
 # Admin API Routes
 # =============================================================================

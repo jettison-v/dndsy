@@ -170,6 +170,9 @@ const DNDUtilities = (function() {
      * @param {Function} onError Error callback with error message
      */
     function fetchSourceContent(s3Key, pageNumber, storeType, onSuccess, onError) {
+        // Debug log - can be removed after troubleshooting
+        console.log('Fetching source content:', s3Key, pageNumber, storeType);
+        
         fetch(`/api/get_context_details?source=${encodeURIComponent(s3Key)}&page=${pageNumber}&vector_store_type=${storeType}`)
             .then(response => {
                 if (!response.ok) {
@@ -182,6 +185,85 @@ const DNDUtilities = (function() {
             .then(details => {
                 if (!details) {
                     throw new Error('No details returned from server');
+                }
+                
+                // Debug log - can be removed after troubleshooting
+                console.log('Source details received:', {
+                    hasImageBase64: !!details.image_base64,
+                    imageBase64Length: details.image_base64 ? details.image_base64.length : 0,
+                    hasImageUrl: !!details.image_url,
+                    hasTextContent: !!(details.text_content || details.text),
+                    totalPages: details.total_pages
+                });
+                
+                // Ensure we have a uniform structure for both APIs
+                if (details.text && !details.text_content) {
+                    details.text_content = details.text;
+                }
+                
+                // Setup image URL handling with multiple fallback options
+                if (details.image_url) {
+                    // Array of possible image loading strategies
+                    const strategies = [];
+                    
+                    if (details.image_url.startsWith('s3://')) {
+                        // 1. Primary strategy: Use the API proxy endpoint for S3 images
+                        details.transformed_image_url = `/api/get_pdf_image?key=${encodeURIComponent(details.image_url)}`;
+                        strategies.push({
+                            name: 'api_proxy',
+                            url: details.transformed_image_url,
+                            description: 'Using API proxy for S3 image'
+                        });
+                        
+                        // 2. Fallback: Direct S3 URL
+                        const s3Url = details.image_url;
+                        const s3Parts = s3Url.replace('s3://', '').split('/');
+                        const bucket = s3Parts.shift();
+                        const key = s3Parts.join('/');
+                        details.direct_s3_url = `https://${bucket}.s3.amazonaws.com/${key}`;
+                        strategies.push({
+                            name: 'direct_s3',
+                            url: details.direct_s3_url,
+                            description: 'Using direct S3 URL'
+                        });
+                    } else if (details.image_url.includes('s3.amazonaws.com')) {
+                        // Already a direct S3 URL, just ensure it's HTTPS
+                        details.transformed_image_url = details.image_url.replace('http://', 'https://');
+                        strategies.push({
+                            name: 'direct_url',
+                            url: details.transformed_image_url,
+                            description: 'Using standardized S3 URL'
+                        });
+                    } else if (details.image_url.startsWith('/api/get_pdf_image')) {
+                        // API endpoint URL - keep as is
+                        details.transformed_image_url = details.image_url;
+                        strategies.push({
+                            name: 'api_endpoint',
+                            url: details.transformed_image_url,
+                            description: 'Using existing API endpoint URL'
+                        });
+                    } else {
+                        // Any other URL format, use directly
+                        details.transformed_image_url = details.image_url;
+                        strategies.push({
+                            name: 'direct_url',
+                            url: details.transformed_image_url,
+                            description: 'Using direct image URL'
+                        });
+                    }
+                    
+                    // If we have base64 data as well, add that as the last fallback
+                    if (details.image_base64) {
+                        strategies.push({
+                            name: 'base64',
+                            url: `data:image/jpeg;base64,${details.image_base64}`,
+                            description: 'Using base64 image data'
+                        });
+                    }
+                    
+                    // Add strategies to details for use by clients
+                    details.imageStrategies = strategies;
+                    console.log('Image loading strategies:', strategies);
                 }
                 
                 if (typeof onSuccess === 'function') {
@@ -198,6 +280,48 @@ const DNDUtilities = (function() {
     }
     
     /**
+     * Load an image with fallback strategies
+     * @param {HTMLImageElement} imgElement The image element to load
+     * @param {Array} strategies Array of image loading strategies 
+     * @param {Function} onError Optional error callback
+     */
+    function loadImageWithFallback(imgElement, strategies, onError) {
+        if (!imgElement || !strategies || strategies.length === 0) {
+            console.error('Missing required parameters for loadImageWithFallback');
+            return;
+        }
+        
+        let currentIndex = 0;
+        
+        // Function to try the next strategy
+        const tryNextStrategy = () => {
+            if (currentIndex >= strategies.length) {
+                console.error('All image loading strategies failed');
+                if (typeof onError === 'function') {
+                    onError('Failed to load image after trying all methods');
+                }
+                return;
+            }
+            
+            const strategy = strategies[currentIndex];
+            console.log(`Trying image strategy ${currentIndex + 1}/${strategies.length}: ${strategy.name}`);
+            
+            // Set the image source to the current strategy
+            imgElement.src = strategy.url;
+            currentIndex++;
+        };
+        
+        // Add error handler to try next strategy on failure
+        imgElement.onerror = () => {
+            console.error(`Strategy ${currentIndex} failed: ${strategies[currentIndex - 1].name}`);
+            tryNextStrategy();
+        };
+        
+        // Start with the first strategy
+        tryNextStrategy();
+    }
+    
+    /**
      * Helper function to escape special characters in regex
      */
     function escapeRegExp(string) {
@@ -209,6 +333,7 @@ const DNDUtilities = (function() {
         formatMessageText,
         processLinksInMessage,
         fetchSourceContent,
+        loadImageWithFallback,
         escapeRegExp
     };
 })();
