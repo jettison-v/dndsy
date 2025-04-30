@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
     <meta name="description" content="AskDND - Your AI-powered Dungeons & Dragons assistant for 2024 (5.5e) rules">
     <meta name="keywords" content="D&D, Dungeons and Dragons, D&D assistant, 5.5e, 2024 rules">
     <meta name="author" content="AskDND">
@@ -28,19 +28,21 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     
     <!-- Mobile-specific styles -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile/mobile.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile/mobile-style.css') }}">
     
     <!-- iOS-specific fixes -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/ios-fixes.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile/mobile-ios-fixes.css') }}">
     
     {% block extra_css %}{% endblock %}
 </head>
 <body class="mobile-view">
     {% block content %}{% endblock %}
     
-    <!-- Essential scripts -->
+    {% block scripts %}
+    <!-- Core mobile scripts -->
     <script src="{{ url_for('static', filename='js/mobile/mobile-core.js') }}" defer></script>
-    
-    {% block scripts %}{% endblock %}
+    <script src="{{ url_for('static', filename='js/mobile/mobile-source-panel.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/mobile/mobile-chat.js') }}" defer></script>
+    {% endblock %}
 </body>
 </html> 

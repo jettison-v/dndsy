@@ -195,14 +195,14 @@ def login():
         # Get device type for appropriate template
         device_type = get_device_type(request)
         if device_type == 'mobile':
-            return render_template('mobile/login.html', error="Incorrect password")
+            return render_template('mobile/mobile-login.html', error="Incorrect password")
         else:
             return render_template('login.html', error="Incorrect password")
             
     # GET request - show login form
     device_type = get_device_type(request)
     if device_type == 'mobile':
-        return render_template('mobile/login.html', error=None)
+        return render_template('mobile/mobile-login.html', error=None)
     else:
         return render_template('login.html', error=None)
 
@@ -220,7 +220,7 @@ def home():
     
     # Serve different templates based on device type
     if device_type == 'mobile':
-        return render_template('mobile/index.html', 
+        return render_template('mobile/mobile-index.html', 
                               vector_store_types=VECTOR_STORE_TYPES,
                               default_vector_store=default_store_type,
                               llm_model=current_llm_model,
