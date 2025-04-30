@@ -50,6 +50,8 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
     *   **Device-Specific Source Panel:** Mobile and tablet use full-screen source panels, desktop uses expandable side panel.
     *   **Touch-Optimized Controls:** Mobile-friendly navigation and zoom controls.
     *   **Consistent Experience:** UI adapts seamlessly across all device sizes.
+    *   **Centralized Utilities:** Shared JavaScript utilities in `dnd-utilities.js` for consistent functionality across all platforms.
+    *   **Modular Architecture:** Separate mobile implementations in dedicated files with clear separation of concerns.
 
 ## Technology Stack
 
@@ -111,15 +113,23 @@ dndsy/
 ├── static/
 │   ├── css/
 │   │   ├── style.css        # Main application styles
-│   │   ├── mobile.css       # Mobile-specific responsive styles
+│   │   ├── mobile.css       # Mobile-specific responsive styles [DEPRECATED]
+│   │   ├── mobile/
+│   │   │   ├── mobile-style.css   # Mobile-specific styles
+│   │   │   └── mobile-ios-fixes.css # iOS-specific fixes
 │   │   └── admin-config.css # Styling for admin configuration panels
 │   ├── img/
 │   └── js/
 │       ├── chat.js          # Main chat interface functionality
+│       ├── dnd-utilities.js # Shared utilities for both desktop and mobile
 │       ├── marked.min.js    # Markdown rendering
 │       ├── source_viewer.js # Source panel management for desktop
 │       ├── source_panel.js  # Responsive source panel behavior
-│       ├── mobile-ui.js     # Mobile-specific UI enhancements
+│       ├── mobile-ui.js     # Mobile-specific UI enhancements [DEPRECATED]
+│       ├── mobile/
+│       │   ├── mobile-core.js      # Core mobile functionality
+│       │   ├── mobile-chat.js      # Mobile chat interactions
+│       │   └── mobile-source-panel.js # Mobile source panel management
 │       └── admin.js         # Admin panel functionality
 ├── templates/
 │   ├── index.html
