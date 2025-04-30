@@ -24,6 +24,7 @@ from queue import Queue, Empty
 import collections
 from config import app_config, update_app_config, default_store_type, S3_BUCKET_NAME, IS_DEV_ENV
 from functools import wraps
+from utils.device_detection import get_device_type
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -202,11 +203,36 @@ def home():
     # Get LLM model info for display
     current_llm_model = os.environ.get('LLM_MODEL_NAME', 'gpt-4o-mini')
     
-    return render_template('index.html', 
-                          vector_store_types=VECTOR_STORE_TYPES,
-                          default_vector_store=default_store_type,
-                          llm_model=current_llm_model,
-                          available_llm_models=AVAILABLE_LLM_MODELS)
+    # Detect device type
+    device_type = get_device_type(request)
+    
+    # Serve different templates based on device type
+    if device_type == 'mobile':
+        return render_template('mobile/index.html', 
+                              vector_store_types=VECTOR_STORE_TYPES,
+                              default_vector_store=default_store_type,
+                              llm_model=current_llm_model,
+                              available_llm_models=AVAILABLE_LLM_MODELS)
+    else:
+        # Desktop and tablet use the standard template
+        return render_template('index.html', 
+                              vector_store_types=VECTOR_STORE_TYPES,
+                              default_vector_store=default_store_type,
+                              llm_model=current_llm_model,
+                              available_llm_models=AVAILABLE_LLM_MODELS)
+
+@app.route('/toggle-view/<view_type>')
+def toggle_view(view_type):
+    """Toggle between mobile and desktop views."""
+    if not check_auth():
+        return redirect(url_for('login'))
+    
+    # Set cookie for view preference
+    response = redirect(url_for('home'))
+    if view_type in ['mobile', 'desktop']:
+        response.set_cookie('preferred_view', view_type, max_age=30*24*60*60)  # 30 days
+    
+    return response
 
 @app.route('/api/chat')
 def chat():

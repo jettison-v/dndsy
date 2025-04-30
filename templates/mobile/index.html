@@ -1,0 +1,146 @@
+{% extends "mobile/base.html" %}
+
+{% block content %}
+    <div class="mobile-layout">
+        <!-- Mobile Header Bar -->
+        <div class="mobile-header">
+            <div class="mobile-logo">
+                <h1><i class="fas fa-dragon"></i> <span class="text-logo">AskDND</span></h1>
+            </div>
+            
+            <div class="mobile-header-actions">
+                <button id="mobile-settings-toggle" class="mobile-header-button" title="Settings">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <button id="mobile-header-source-toggle" class="mobile-header-button" title="Toggle Source Panel">
+                    <i class="fas fa-book"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Mobile Settings Panel - Hidden by default -->
+        <div id="mobile-settings-panel" class="mobile-settings-panel">
+            <div class="settings-panel-header">
+                <h2>Settings</h2>
+                <button id="close-settings-panel" class="close-button">&times;</button>
+            </div>
+            
+            <div class="settings-content">
+                <!-- Vector Store Selector -->
+                <div class="settings-section">
+                    <h4>Vector Store</h4>
+                    <select id="vector-store-dropdown" class="mobile-dropdown">
+                        {% for store_type in vector_store_types %}
+                            <option value="{{ store_type }}" {% if store_type == default_vector_store %}selected{% endif %}>
+                                {% if store_type == "standard" or store_type == "pages" %}Page Context{% elif store_type == "semantic" %}Semantic Context{% elif store_type == "haystack-qdrant" %}Haystack (Qdrant){% elif store_type == "haystack-memory" %}Haystack (Memory){% else %}{{ store_type|capitalize }}{% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- LLM Model Selector -->
+                <div class="settings-section">
+                    <h4>LLM Model</h4>
+                    <select id="llm-model-dropdown" class="mobile-dropdown">
+                        {% for model_key, model_display_name in available_llm_models.items() %}
+                            <option value="{{ model_key }}" {% if model_key == llm_model %}selected{% endif %}>
+                                {{ model_display_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- About Panel -->
+                <div class="settings-section">
+                    <h4>About</h4>
+                    <button id="about-project-button" class="mobile-button full-width">
+                        <i class="fas fa-info-circle"></i> About AskDnD
+                    </button>
+                    
+                    <button id="github-repo-button" class="mobile-button full-width">
+                        <i class="fab fa-github"></i> GitHub Repo
+                    </button>
+                </div>
+                
+                <!-- Logout Option -->
+                <div class="settings-section">
+                    <a href="/logout" class="mobile-button full-width">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="mobile-main">
+            <div id="chat-messages" class="mobile-messages">
+                <div class="message system welcome-message">
+                    <div class="welcome-icon">
+                        <i class="fas fa-dragon"></i>
+                    </div>
+                    <div class="message-text">
+                        <p>Welcome to AskDND! I'm your D&D assistant, ready to help with the 2024 (5.5e) rules. Ask me anything about character creation, combat, spells, or any other rules!</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mobile-input">
+                <textarea id="user-input" placeholder="Ask about D&D rules..." rows="2"></textarea>
+                <button id="send-button" class="mobile-send-button">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Source Panel - Hidden by default -->
+        <div id="source-panel" class="mobile-source-panel">
+            <div class="source-panel-header">
+                <h3>Source Content</h3>
+                <button id="close-panel" class="close-button">&times;</button>
+            </div>
+            
+            <div id="source-content" class="source-content">
+                <p class="no-source">Select a source to view its content</p>
+            </div>
+            
+            <!-- The rest of the source panel (image container, zoom controls, etc.) will be added dynamically by JavaScript -->
+        </div>
+    </div>
+
+    <!-- About Project Modal -->
+    <div id="about-project-modal" class="mobile-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>About AskDND</h2>
+                <button id="about-project-close-button" class="close-button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="about-content">
+                    <p>AskDND is an AI-powered assistant designed to help players and Dungeon Masters with the 2024 D&D rules (5.5e).</p>
+                    
+                    <h3>Key Features</h3>
+                    <ul>
+                        <li><strong>Rules Knowledge</strong>: Quick access to official D&D 2024 rules</li>
+                        <li><strong>Source References</strong>: See exactly where information comes from</li>
+                        <li><strong>Mobile Friendly</strong>: Optimized for both desktop and mobile use</li>
+                        <li><strong>Accurate Context</strong>: Uses advanced Retrieval-Augmented Generation</li>
+                    </ul>
+                    
+                    <h3>Future Plans</h3>
+                    <ul>
+                        <li><strong>Character Building</strong>: Step-by-step character creation assistance</li>
+                        <li><strong>Combat Helper</strong>: Track initiative, conditions, and combat status</li>
+                        <li><strong>Mobile Optimization</strong>: Further improve the mobile experience for on-the-go rules lookup</li>
+                        <li><strong>More Source Books</strong>: Add additional official source material as it's released</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/mobile/mobile-ui.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/mobile/mobile-source-panel.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/mobile/mobile-chat.js') }}" defer></script>
+{% endblock %} 

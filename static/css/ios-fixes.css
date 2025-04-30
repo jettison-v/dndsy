@@ -1,0 +1,134 @@
+/*
+============================================
+  iOS-SPECIFIC FIXES
+  These fixes address known Safari iOS issues
+============================================
+*/
+
+/* Fix for 100vh issue on iOS Safari (viewport height calculation problems) */
+@supports (-webkit-touch-callout: none) {
+    /* iOS Safari viewport height fix */
+    .mobile-layout {
+        height: -webkit-fill-available;
+    }
+    
+    html, body {
+        height: -webkit-fill-available;
+    }
+    
+    /* Fix for the position:fixed elements that disappear when focusing inputs */
+    .mobile-source-panel.open {
+        position: absolute;
+    }
+    
+    .mobile-settings-panel.open {
+        position: absolute;
+    }
+    
+    .mobile-modal.open {
+        position: absolute;
+    }
+    
+    /* Fix for input zooming */
+    input, textarea, select {
+        font-size: 16px; /* Prevents zoom on focus */
+    }
+    
+    /* Fix for overscroll bounce effect (iOS Safari's elastic scrolling) */
+    .mobile-messages,
+    .source-content,
+    .settings-content,
+    .modal-body {
+        /* Use momentum-based scrolling but prevent the bounce */
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+    }
+    
+    /* Fix for safe area insets */
+    .mobile-input {
+        padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    }
+    
+    .source-navigation {
+        padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    }
+    
+    /* Fix for hover states that can get stuck on mobile */
+    button:hover, a:hover {
+        /* Prevent hover states from sticking on iOS Safari */
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* Fix for -webkit-appearance on form elements */
+    input, textarea, select, button {
+        -webkit-appearance: none;
+        border-radius: 0;
+    }
+    
+    /* Restore border radius where needed */
+    #user-input {
+        border-radius: 18px;
+    }
+    
+    .mobile-dropdown {
+        border-radius: 6px;
+    }
+    
+    .mobile-send-button {
+        border-radius: 50%;
+    }
+    
+    .mobile-button {
+        border-radius: 6px;
+    }
+    
+    /* Fix for sticky hover states on iOS */
+    @media (hover: hover) {
+        /* Only apply hover styles when device supports true hovering */
+        .mobile-button:hover {
+            background-color: var(--hover-color);
+        }
+        
+        .mobile-header-button:hover {
+            background-color: var(--hover-color);
+        }
+    }
+}
+
+/* Specific iPad fixes */
+@media only screen and (min-device-width: 768px) and (max-device-width: 1024px) and (-webkit-min-device-pixel-ratio: 2) {
+    /* iPad-specific adjustments if needed */
+    body {
+        font-size: 16px; /* Ensure readable text */
+    }
+}
+
+/* iPhone X/newer models with notch */
+@supports (padding: max(0px)) {
+    .mobile-header {
+        padding-left: max(1rem, env(safe-area-inset-left));
+        padding-right: max(1rem, env(safe-area-inset-right));
+    }
+    
+    .mobile-input {
+        padding-left: max(0.75rem, env(safe-area-inset-left));
+        padding-right: max(0.75rem, env(safe-area-inset-right));
+        padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    }
+    
+    .zoom-controls {
+        right: max(1rem, env(safe-area-inset-right));
+        bottom: max(1rem, env(safe-area-inset-bottom));
+    }
+}
+
+/* Prevent Safari from adjusting font sizes */
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
+/* Fix for momentum scrolling rounding errors causing visual flicker */
+* {
+    -webkit-backface-visibility: hidden;
+    -webkit-transform: translateZ(0);
+} 

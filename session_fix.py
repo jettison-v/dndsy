@@ -7,6 +7,7 @@ python session_fix.py
 
 import os
 import logging
+import socket
 from app import app
 from flask_session import Session
 from datetime import timedelta
@@ -28,7 +29,24 @@ class SessionDebugMiddleware:
             return start_response(status, headers, exc_info)
         
         logger.debug(f"Request to: {environ.get('PATH_INFO')}")
+        # Force mobile view query param support
+        if '?' in environ.get('PATH_INFO', '') and 'device=mobile' in environ.get('PATH_INFO', ''):
+            logger.debug("Mobile view forced via URL parameter")
+        
         return self.app(environ, session_start_response)
+
+def get_local_ip():
+    """Get the local IP address for displaying to the user."""
+    try:
+        # Create a socket to determine the local IP address
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # Doesn't need to be reachable, just used to determine the IP
+        s.connect(('8.8.8.8', 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"  # Fallback to localhost
 
 if __name__ == "__main__":
     # Essential session fixes for mobile testing
@@ -65,13 +83,17 @@ if __name__ == "__main__":
     # Set environment variable for local testing
     os.environ['FLASK_ENV'] = 'development'
     
+    # Get local IP for display
+    local_ip = get_local_ip()
+    port = 5001
+    
     # Print useful information
     print("=" * 80)
-    print(f"Mobile testing server running at: http://192.168.0.229:5001")
-    print("You may need to replace the IP with your actual local IP address")
-    print("To find your IP, run 'ipconfig' on Windows or 'ifconfig' on Mac/Linux")
+    print(f"Mobile testing server running at: http://{local_ip}:{port}")
+    print(f"Force mobile view: http://{local_ip}:{port}/?device=mobile")
+    print(f"Force desktop view: http://{local_ip}:{port}/?device=desktop")
     print("=" * 80)
     
     # Run the app with increased request timeout
-    app.run(host='0.0.0.0', port=5001, debug=True, threaded=True, 
+    app.run(host='0.0.0.0', port=port, debug=True, threaded=True, 
             use_reloader=True, use_debugger=True) 
