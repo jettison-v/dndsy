@@ -141,26 +141,24 @@ a {
 }
 
 .mobile-header-button {
-    background-color: rgba(30, 30, 30, 0.4);
+    background-color: transparent;
     color: var(--text-color);
     font-size: 1.4rem;
-    padding: 0.5rem;
-    border-radius: 8px;
-    transition: background-color 0.3s;
-    width: 50px;
-    height: 50px;
+    padding: 0;
+    border-radius: 0;
+    transition: transform 0.2s ease-out;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000; /* Very high z-index to ensure it's above everything */
+    z-index: 1000;
     position: relative;
     -webkit-tap-highlight-color: rgba(228, 7, 18, 0.3);
     touch-action: manipulation;
+    border: none;
 }
 
 .mobile-header-button:active {
-    background-color: var(--accent-color);
-    transform: scale(0.95);
+    transform: scale(0.90);
 }
 
 /* Main content */
@@ -200,7 +198,7 @@ a {
 /* Messages */
 .message {
     max-width: 100%;
-    padding: 0.75rem;
+    padding: 0.5rem 0.75rem 0.75rem 0.75rem;
     border-radius: 8px;
     box-shadow: 0 1px 3px var(--shadow-color);
     animation: fadeIn 0.3s ease-out;
@@ -511,6 +509,7 @@ a {
     margin-bottom: 0.5rem;
     transition: background-color var(--transition-speed);
     text-align: left;
+    outline: none;
 }
 
 .mobile-button i {

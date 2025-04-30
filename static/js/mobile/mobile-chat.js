@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // State tracking
     let isWaitingForResponse = false;
     let currentStreamedMessage = null;
+    let accumulatedRawText = ''; // Added: Variable to store raw text chunks
+    let receivedLinkData = null; // Added: Variable to store link data
     
     // Initialize event listeners
     if (userInput && sendButton) {
@@ -191,20 +193,47 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function processLinks(messageElement, linkData) {
         console.log("[Debug] processLinks called. Element:", messageElement?.className, "Link data keys:", Object.keys(linkData || {}));
-        if (!messageElement || !linkData || Object.keys(linkData).length === 0) {
-            console.log("[Debug] processLinks exiting early - no element or linkData.");
+        
+        // Define common words to exclude from linking (similar to desktop)
+        const stopWords = new Set([
+            // Articles
+            'a', 'an', 'the',
+            // Prepositions
+            'to', 'in', 'on', 'at', 'by', 'for', 'with', 'from', 'of', 'about',
+            // Conjunctions
+            'and', 'or', 'but', 'so', 'if', 'as',
+            // Other common short words
+            'is', 'it', 'be', 'this', 'that', 'do', 'go', 'me', 'my',
+            // D&D-specific common words
+            'd20', 'dm', 'pc', 'ac', 'hp'
+        ]);
+
+        // Filter and sort linkData (similar to desktop)
+        const filteredSortedLinkData = {};
+        if (linkData) {
+            Object.keys(linkData)
+                .filter(key => key && key.length > 2 && !stopWords.has(key.toLowerCase())) // Filter length > 2 and stopwords
+                .sort((a, b) => b.length - a.length) // Sort by length descending
+                .forEach(key => {
+                    filteredSortedLinkData[key] = linkData[key];
+                });
+        }
+
+        if (!messageElement || !filteredSortedLinkData || Object.keys(filteredSortedLinkData).length === 0) {
+            console.log("[Debug] processLinks exiting early - no element or no valid/filtered linkData.");
             return false;
         }
 
         // Check if DNDUtilities function exists
         if (!window.DNDUtilities || typeof window.DNDUtilities.processLinksInMessage !== 'function') {
-            console.error("[Debug] DNDUtilities.processLinksInMessage is not available!");
+            console.error("[!!! Debug] DNDUtilities.processLinksInMessage is not available!");
             return false;
         }
 
         try {
-            console.log("[Debug] Calling DNDUtilities.processLinksInMessage...");
-            const hasLinks = DNDUtilities.processLinksInMessage(messageElement, linkData);
+            console.log(`[Debug] Calling DNDUtilities.processLinksInMessage with ${Object.keys(filteredSortedLinkData).length} filtered/sorted links.`);
+            // Use the filtered and sorted link data
+            const hasLinks = DNDUtilities.processLinksInMessage(messageElement, filteredSortedLinkData);
             console.log("[Debug] DNDUtilities.processLinksInMessage returned:", hasLinks);
             
             // If links were added, add our mobile-specific event listeners
@@ -300,6 +329,11 @@ document.addEventListener('DOMContentLoaded', () => {
             welcomeMessage.style.display = 'none';
         }
         
+        // Reset accumulators for new response
+        accumulatedRawText = ''; 
+        receivedLinkData = null;
+        currentStreamedMessage = null; // Ensure it's reset too
+        
         // Get the current vector store type
         const vectorStoreType = vectorStoreDropdown ? vectorStoreDropdown.value : 'semantic';
         
@@ -324,202 +358,353 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const data = JSON.parse(event.data);
                 
-                // Check for error messages
+                // Check for error messages first
                 if (data.error) {
                     // Replace loading message with error
-                    if (loadingMessage) {
-                        loadingMessage.innerHTML = `
-                            <div class="message-text">
-                                <p class="error">Error: ${data.error}</p>
-                            </div>
-                        `;
-                        loadingMessage.className = 'message error';
+                    if (loadingMessage && loadingMessage.parentNode) {
+                       chatMessages.removeChild(loadingMessage);
                     }
+                    // Add a dedicated error message element
+                    const errorElement = document.createElement('div');
+                    errorElement.className = 'message error';
+                    errorElement.innerHTML = `<div class="message-text"><p>Error: ${data.error}</p></div>`;
+                    chatMessages.appendChild(errorElement);
+                    scrollToBottom();
+                    
                     eventSource.close();
                     isWaitingForResponse = false;
+                    accumulatedRawText = ''; // Reset on error
+                    receivedLinkData = null;
+                    currentStreamedMessage = null;
                     return;
                 }
-                
-                // Handle text chunk
-                if (data.type === 'text' && data.content) {
-                    if (!currentStreamedMessage) {
-                        // First chunk: Remove loading message and create new message element
-                        if (loadingMessage && loadingMessage.parentNode) {
+
+                // --- Handle different event types ---
+
+                // Handle 'metadata' event (usually arrives early)
+                if (data.type === 'metadata') {
+                     console.log('[Debug mobile-chat] Received metadata:', data);
+                     // Create the message element if it doesn't exist yet
+                     if (!currentStreamedMessage) {
+                         if (loadingMessage && loadingMessage.parentNode) {
                             chatMessages.removeChild(loadingMessage);
-                        }
-                        // Format the first chunk and add it
-                        currentStreamedMessage = addAIMessage(data.content);
-                        console.log("[Debug mobile-chat] Added first AI message chunk.");
-                    } else {
-                        // Subsequent chunks: Format and append to existing message
-                        const messageTextElement = currentStreamedMessage.querySelector('.message-text');
-                        if (messageTextElement) {
-                            const formattedChunk = formatMessageText(data.content);
-                            // IMPORTANT: Append to innerHTML
-                            messageTextElement.innerHTML += formattedChunk;
-                            // console.log("[Debug mobile-chat] Appended AI chunk:", formattedChunk.substring(0, 50)); // Verbose
-                        }
-                    }
-                    scrollToBottom();
-                }
-                
-                // Handle links event (store for later processing)
-                if (data.type === 'links' && data.links) {
-                    console.log("[Debug mobile-chat] Storing link data received.");
-                    if (!currentStreamedMessage) {
-                        // If links arrive before any text, ensure message element exists
-                        if (loadingMessage && loadingMessage.parentNode) chatMessages.removeChild(loadingMessage);
-                        currentStreamedMessage = addAIMessage('');
-                    }
-                    // Store link data on the element itself
-                    currentStreamedMessage.linkData = data.links;
+                         }
+                         currentStreamedMessage = addAIMessage(''); // Create empty message container
+                         console.log("[Debug mobile-chat] Created initial AI message element for metadata/text.");
+                     }
+                     // Process source pills if provided in metadata
+                     if (data.sources && data.sources.length > 0 && currentStreamedMessage) {
+                         processSourcePills(currentStreamedMessage, data.sources, vectorStoreType); // Extracted pill logic
+                     }
+                     // Potentially store other metadata if needed later
+                     // currentStreamedMessage.metadata = data; 
+                     return; // Don't process further for metadata events
                 }
 
-                // Handle end of response
-                if (data.done) {
-                    console.log("[Debug mobile-chat] Received done event.");
+                // Handle 'links' event (store data)
+                if (data.type === 'links' && data.links) {
+                    console.log("[Debug mobile-chat] Storing link data received.");
+                    receivedLinkData = data.links; // Store globally for this response
+                    // Ensure message element exists if links arrive before text
+                     if (!currentStreamedMessage) {
+                         if (loadingMessage && loadingMessage.parentNode) {
+                            chatMessages.removeChild(loadingMessage);
+                         }
+                         currentStreamedMessage = addAIMessage(''); 
+                         console.log("[Debug mobile-chat] Created initial AI message element because links arrived first.");
+                     }
+                    return; // Don't process further for link events
+                }
+
+                // Handle 'text' chunk (accumulate raw text)
+                if (data.type === 'text' && data.content) {
+                    // Ensure the message element exists (might be created by metadata/links first)
+                     if (!currentStreamedMessage) {
+                         if (loadingMessage && loadingMessage.parentNode) {
+                             chatMessages.removeChild(loadingMessage);
+                         }
+                         currentStreamedMessage = addAIMessage('');
+                         console.log("[Debug mobile-chat] Created initial AI message element for first text chunk.");
+                     }
+                    
+                    accumulatedRawText += data.content; // Append raw text
+                    // OPTIONAL: Display streaming text with basic formatting (no links yet)
+                    // This provides immediate feedback but formatting might be slightly off until 'done'
+                    // const tempFormatted = formatMessageText(accumulatedRawText); // Format accumulated text
+                    // const messageTextElement = currentStreamedMessage.querySelector('.message-text');
+                    // if (messageTextElement) {
+                    //      messageTextElement.innerHTML = tempFormatted; // Replace content
+                    // }
+                    // scrollToBottom(); // Scroll as text accumulates
+                    return; // Don't process further for text chunk events
+                }
+                
+                // Handle 'done' event (final processing)
+                if (data.type === 'done' || data.done) { // Handle both event:done and data.done for robustness
+                    console.log("[Debug mobile-chat] Received done event. Processing final message.");
+                    eventSource.close(); // Close connection first
+                    
                     if (currentStreamedMessage) {
-                        // Process links now that the full message is rendered
-                        const linkDataToProcess = currentStreamedMessage.linkData || {};
-                        console.log("[Debug mobile-chat] Processing links on final message. Link keys count:", Object.keys(linkDataToProcess).length);
-                        processLinks(currentStreamedMessage, linkDataToProcess);
-                        delete currentStreamedMessage.linkData; // Clean up
+                        const messageTextElement = currentStreamedMessage.querySelector('.message-text');
+                        if (messageTextElement) {
+                            // 1. Format the *entire* accumulated text
+                            console.log(`[Debug mobile-chat] Formatting final accumulated text (length: ${accumulatedRawText.length})`);
+                            const finalFormattedHtml = formatMessageText(accumulatedRawText);
+                            messageTextElement.innerHTML = finalFormattedHtml; // Set final HTML
+                            console.log(`[Debug mobile-chat] Final HTML set (length: ${finalFormattedHtml.length})`);
+
+                            // 2. Process links using the stored link data
+                            if (receivedLinkData && Object.keys(receivedLinkData).length > 0) {
+                                // Pass the raw receivedLinkData here; filtering/sorting happens inside processLinks
+                                console.log("[Debug mobile-chat] Processing links on final message. Raw link keys count:", Object.keys(receivedLinkData).length);
+                                processLinks(currentStreamedMessage, receivedLinkData);
+                            } else {
+                                console.log("[Debug mobile-chat] No link data found or links event not received.");
+                            }
+                        } else {
+                             console.error("[Debug mobile-chat] Done event: Cannot find .message-text element in final message.");
+                        }
                     } else {
-                        console.warn("[Debug mobile-chat] Done event but no message element?");
+                        console.warn("[Debug mobile-chat] Done event received but no currentStreamedMessage element exists. Was there any content?");
+                        // If loading message still exists, remove it
+                         if (loadingMessage && loadingMessage.parentNode) {
+                            chatMessages.removeChild(loadingMessage);
+                         }
                     }
                     
                     // Final cleanup
-                    eventSource.close();
                     isWaitingForResponse = false;
+                    accumulatedRawText = ''; 
+                    receivedLinkData = null;
                     currentStreamedMessage = null; 
+                    scrollToBottom(); // Ensure scrolled to the very end
+                    return; 
                 }
+
+                // Handle unknown event types
+                console.warn("[Debug mobile-chat] Received unknown event data structure:", data);
+
             } catch (error) {
-                 console.error('Error parsing event data:', error);
+                 console.error('Error parsing SSE event data:', error, 'Raw data:', event.data);
+                 // More robust error handling
+                 if (loadingMessage && loadingMessage.parentNode) {
+                     chatMessages.removeChild(loadingMessage);
+                 }
+                 // Add error message if none exists for this response
+                 if (!document.querySelector('.message.error')) { // Avoid duplicate errors
+                    const errorElement = document.createElement('div');
+                    errorElement.className = 'message error';
+                    errorElement.innerHTML = `<div class="message-text"><p>Error processing response. Please check console.</p></div>`;
+                    chatMessages.appendChild(errorElement);
+                    scrollToBottom();
+                 }
                  if (eventSource) eventSource.close();
                  isWaitingForResponse = false;
+                 accumulatedRawText = ''; 
+                 receivedLinkData = null;
                  currentStreamedMessage = null;
             }
         };
         
-        // Handle metadata event
+        // Separate handler for metadata event via addEventListener
+        // Note: This might be redundant if metadata is also sent via onmessage
         eventSource.addEventListener('metadata', (event) => {
-            try {
+             try {
                 const data = JSON.parse(event.data);
-                console.log('Received metadata:', data);
-                
-                // Create a message if none exists yet
+                console.log('[Debug mobile-chat] Received metadata via addEventListener:', data);
                 if (!currentStreamedMessage) {
                     if (loadingMessage && loadingMessage.parentNode) {
-                        chatMessages.removeChild(loadingMessage);
+                       chatMessages.removeChild(loadingMessage);
                     }
-                    currentStreamedMessage = addAIMessage('');
+                    currentStreamedMessage = addAIMessage(''); 
+                    console.log("[Debug mobile-chat] Created initial AI message element for metadata event (via addEventListener).");
                 }
-                
-                // Handle sources if available
-                if (data.sources && data.sources.length > 0 && currentStreamedMessage) {
-                    // Create source pills container if it doesn't exist
-                    if (!currentStreamedMessage.querySelector('.source-pills-container')) {
-                        const pillsContainer = document.createElement('div');
-                        pillsContainer.className = 'source-pills-container';
-                        currentStreamedMessage.appendChild(pillsContainer);
-                    }
-                    
-                    const pillsContainer = currentStreamedMessage.querySelector('.source-pills-container');
-                    
-                    // Process each source
-                    data.sources.forEach(source => {
-                        // Check if pill for this source already exists
-                        const sourceId = `${source.s3_key}-${source.page}`;
-                        if (!document.getElementById(sourceId)) {
-                            const pill = document.createElement('div');
-                            pill.className = 'source-pill';
-                            pill.id = sourceId;
-                            
-                            // Format source name to be more concise: "Document Name (Pg X)"
-                            let displayName = source.display || source.s3_key.split('/').pop().replace(/\.[^/.]+$/, "");
-                            // If the filename is too long, truncate it
-                            if (displayName.length > 20) {
-                                displayName = displayName.substring(0, 18) + '...';
-                            }
-                            pill.innerHTML = `<i class="fas fa-book"></i> ${displayName} (Pg ${source.page})`;
-                            
-                            // Set data attributes
-                            pill.dataset.s3Key = source.s3_key;
-                            pill.dataset.page = source.page;
-                            pill.dataset.score = source.score;
-                            pill.dataset.filename = source.filename || source.s3_key.split('/').pop().replace(/\.[^/.]+$/, "");
-                            // Ensure vectorStoreType is defined in this scope before assigning
-                            if (typeof vectorStoreType !== 'undefined') {
-                                pill.dataset.storeType = vectorStoreType;
-                                console.log(`[Debug] Set data-store-type=${vectorStoreType} for pill ${sourceId}`);
-                            } else {
-                                 console.error(`[!!!Debug Error] vectorStoreType is undefined when creating pill ${sourceId}!`);
-                                 pill.dataset.storeType = 'semantic'; // Fallback, but log error
-                            }
-                            
-                            // Add click handler to pill for displaying source content
-                            pill.addEventListener('click', function(e) {
-                                e.stopPropagation(); // Stop this event from bubbling up
-                                e.preventDefault();  // Prevent any default button behavior
-                                console.log("[Debug] Source Pill Clicked!", {
-                                    s3Key: this.dataset.s3Key,
-                                    page: this.dataset.page,
-                                    storeType: this.dataset.storeType
-                                });
+                 if (data.sources && data.sources.length > 0 && currentStreamedMessage) {
+                     processSourcePills(currentStreamedMessage, data.sources, vectorStoreType);
+                 }
+             } catch (error) {
+                 console.error('Error parsing metadata event (via addEventListener):', error);
+             }
+        });
 
-                                // Check if mobileUI and openSourcePanel exist
-                                if (typeof window.mobileUI !== 'undefined' && typeof window.mobileUI.openSourcePanel === 'function') {
-                                    console.log("[Debug] Calling mobileUI.openSourcePanel()");
-                                    window.mobileUI.openSourcePanel();
-                                    // Fetch and display source content
-                                    fetchSourceContent(this.dataset.s3Key, this.dataset.page, this.dataset.storeType);
-                                } else {
-                                    console.error("[Debug] mobileUI.openSourcePanel not found or not a function!");
-                                    alert("Error: Could not open source panel."); // User feedback
-                                }
-                            });
-                            
-                            pillsContainer.appendChild(pill);
-                        }
-                    });
-                }
-            } catch (error) {
-                console.error('Error parsing metadata event:', error);
-            }
-        });
-        
-        // Handle done event
+        // Separate handler for links event via addEventListener
+        // Note: This might be redundant if links are also sent via onmessage
+         eventSource.addEventListener('links', (event) => {
+             try {
+                 const data = JSON.parse(event.data);
+                 console.log('[Debug mobile-chat] Received links via addEventListener:', data);
+                 if (data.links) {
+                    receivedLinkData = data.links;
+                     if (!currentStreamedMessage) {
+                         if (loadingMessage && loadingMessage.parentNode) {
+                             chatMessages.removeChild(loadingMessage);
+                         }
+                         currentStreamedMessage = addAIMessage(''); 
+                         console.log("[Debug mobile-chat] Created initial AI message element for links event (via addEventListener).");
+                     }
+                 }
+             } catch (error) {
+                 console.error('Error parsing links event (via addEventListener):', error);
+             }
+         });
+
+        // Separate handler for done event via addEventListener
+        // Note: This might be redundant if done is also sent via onmessage
         eventSource.addEventListener('done', (event) => {
-            eventSource.close();
-            isWaitingForResponse = false;
-            currentStreamedMessage = null;
+            console.log("[Debug mobile-chat] Received done event via addEventListener. Processing final message.");
+             eventSource.close(); // Close connection first
+             
+            if (currentStreamedMessage) {
+                 const messageTextElement = currentStreamedMessage.querySelector('.message-text');
+                 if (messageTextElement) {
+                     // 1. Format the *entire* accumulated text
+                     console.log(`[Debug mobile-chat] Formatting final accumulated text (length: ${accumulatedRawText.length}) (from addEventListener)`);
+                     const finalFormattedHtml = formatMessageText(accumulatedRawText);
+                     messageTextElement.innerHTML = finalFormattedHtml; // Set final HTML
+                     console.log(`[Debug mobile-chat] Final HTML set (length: ${finalFormattedHtml.length}) (from addEventListener)`);
+
+                     // 2. Process links using the stored link data
+                     if (receivedLinkData && Object.keys(receivedLinkData).length > 0) {
+                         // Pass the raw receivedLinkData here; filtering/sorting happens inside processLinks
+                         console.log("[Debug mobile-chat] Processing links on final message (from addEventListener). Raw link keys count:", Object.keys(receivedLinkData).length);
+                         processLinks(currentStreamedMessage, receivedLinkData);
+                     } else {
+                         console.log("[Debug mobile-chat] No link data found or links event not received. (from addEventListener)");
+                     }
+                 } else {
+                      console.error("[Debug mobile-chat] Done event (addEventListener): Cannot find .message-text element in final message.");
+                 }
+             } else {
+                 console.warn("[Debug mobile-chat] Done event received (addEventListener) but no currentStreamedMessage element exists.");
+                  if (loadingMessage && loadingMessage.parentNode) {
+                     chatMessages.removeChild(loadingMessage);
+                  }
+             }
+             
+             // Final cleanup
+             isWaitingForResponse = false;
+             accumulatedRawText = ''; 
+             receivedLinkData = null;
+             currentStreamedMessage = null; 
+             scrollToBottom(); 
         });
         
-        // Handle error event
+        // Handle general error event for the connection
         eventSource.onerror = (error) => {
-            console.error('EventSource error:', error);
+            console.error('EventSource connection error:', error);
             
-            // Remove loading indicator if needed
+            // Remove loading indicator if it still exists
             if (loadingMessage && loadingMessage.parentNode) {
                 chatMessages.removeChild(loadingMessage);
             }
             
-            // Add error message
-            const errorMessage = document.createElement('div');
-            errorMessage.className = 'message error';
-            errorMessage.innerHTML = `
-                <div class="message-text">
-                    <p>Sorry, there was an error connecting to the server. Please try again.</p>
-                </div>
-            `;
-            chatMessages.appendChild(errorMessage);
+            // Add a generic error message if one isn't already present
+            if (!document.querySelector('.message.error')) { 
+                const errorMessageElement = document.createElement('div');
+                errorMessageElement.className = 'message error';
+                errorMessageElement.innerHTML = `
+                    <div class="message-text">
+                        <p>Sorry, there was a connection error. Please try again.</p>
+                    </div>
+                `;
+                chatMessages.appendChild(errorMessageElement);
+                 scrollToBottom();
+            }
             
-            // Clean up
+            // Clean up state
             eventSource.close();
             isWaitingForResponse = false;
+            accumulatedRawText = '';
+            receivedLinkData = null;
             currentStreamedMessage = null;
-            scrollToBottom();
         };
+    }
+    
+    /**
+     * Processes source pills and adds them to the message element.
+     * @param {HTMLElement} messageElement The AI message element.
+     * @param {Array} sources Array of source objects from metadata.
+     * @param {string} vectorStoreType The vector store type used for the query.
+     */
+    function processSourcePills(messageElement, sources, vectorStoreType) {
+        if (!messageElement || !sources || sources.length === 0) return;
+
+        // Ensure the message text element exists or create it if needed
+        let messageText = messageElement.querySelector('.message-text');
+        if (!messageText) {
+            messageText = document.createElement('div');
+            messageText.className = 'message-text';
+            messageElement.appendChild(messageText);
+            console.warn("[Debug mobile-chat] Created .message-text in processSourcePills as it was missing.")
+        }
+
+        // Create source pills container if it doesn't exist
+        let pillsContainer = messageElement.querySelector('.source-pills-container');
+        if (!pillsContainer) {
+            pillsContainer = document.createElement('div');
+            pillsContainer.className = 'source-pills-container';
+            // Always append the pills container *after* the message text container
+            messageElement.appendChild(pillsContainer);
+        }
+                    
+        // Process each source
+        sources.forEach(source => {
+            // Check if pill for this source already exists
+            const sourceId = `${source.s3_key}-${source.page}`;
+            // Use a more specific selector within the current message element
+            if (!messageElement.querySelector(`#pill-${sourceId.replace(/[^a-zA-Z0-9-_]/g, '')}`)) { // Sanitize ID for querySelector
+                const pill = document.createElement('div');
+                pill.className = 'source-pill';
+                pill.id = `pill-${sourceId.replace(/[^a-zA-Z0-9-_]/g, '')}`; // Sanitize ID
+                           
+                // Format source name to be more concise: "Document Name (Pg X)"
+                let displayName = source.display || source.s3_key.split('/').pop().replace(/\.[^/.]+$/, "");
+                // If the filename is too long, truncate it
+                if (displayName.length > 20) {
+                   displayName = displayName.substring(0, 18) + '...';
+                }
+                pill.innerHTML = `<i class="fas fa-book"></i> ${displayName} (Pg ${source.page})`;
+                           
+                // Set data attributes
+                pill.dataset.s3Key = source.s3_key;
+                pill.dataset.page = source.page;
+                pill.dataset.score = source.score;
+                pill.dataset.filename = source.filename || source.s3_key.split('/').pop().replace(/\.[^/.]+$/, "");
+                // Ensure vectorStoreType is defined in this scope before assigning
+                if (typeof vectorStoreType !== 'undefined') {
+                   pill.dataset.storeType = vectorStoreType;
+                } else {
+                    console.error(`[!!!Debug Error] vectorStoreType is undefined when creating pill ${sourceId}! Using fallback.`);
+                    pill.dataset.storeType = 'semantic'; // Fallback
+                }
+                           
+                // Add click handler to pill for displaying source content
+                pill.addEventListener('click', function(e) {
+                    e.stopPropagation(); 
+                    e.preventDefault();  
+                    console.log("[Debug] Source Pill Clicked!", {
+                        s3Key: this.dataset.s3Key,
+                        page: this.dataset.page,
+                        storeType: this.dataset.storeType
+                    });
+
+                    // Highlight the clicked pill
+                    document.querySelectorAll('.source-pill.active').forEach(activePill => activePill.classList.remove('active'));
+                    this.classList.add('active');
+
+                    if (typeof window.mobileUI !== 'undefined' && typeof window.mobileUI.openSourcePanel === 'function') {
+                        console.log("[Debug] Calling mobileUI.openSourcePanel()");
+                        window.mobileUI.openSourcePanel();
+                        fetchSourceContent(this.dataset.s3Key, this.dataset.page, this.dataset.storeType);
+                    } else {
+                        console.error("[Debug] mobileUI.openSourcePanel not found or not a function!");
+                        alert("Error: Could not open source panel."); 
+                    }
+                });
+                           
+                pillsContainer.appendChild(pill);
+            }
+        });
     }
     
     /**
