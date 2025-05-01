@@ -210,22 +210,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const initialSelectedValue = llmModelDropdown.options[llmModelDropdown.selectedIndex].value;
         llmModelDropdown.setAttribute('data-current-model', initialSelectedValue);
         
-        // Set default to GPT-4 Turbo if available in the dropdown
-        const defaultModel = 'gpt-4-turbo';
-        for(let i = 0; i < llmModelDropdown.options.length; i++) {
-            if(llmModelDropdown.options[i].value === defaultModel) {
-                llmModelDropdown.selectedIndex = i;
-                llmModelDropdown.setAttribute('data-current-model', defaultModel);
-                // Send a request to change the model server-side
-                fetch('/api/change_model', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ model: defaultModel })
-                }).catch(error => console.error('Error setting default model:', error));
-                break;
-            }
-        }
-        
         llmModelDropdown.addEventListener('change', async () => {
             const selectedIndex = llmModelDropdown.selectedIndex;
             const selectedOption = llmModelDropdown.options[selectedIndex];

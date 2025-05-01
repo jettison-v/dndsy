@@ -29,7 +29,7 @@ S3_CONFIG_KEY = "config/app_config.json"
 # Default configuration dictionary with sensible defaults
 DEFAULT_CONFIG = {
     # LLM Configuration
-    "llm_model": os.environ.get("LLM_MODEL_NAME", "gpt-4o-mini"),
+    "llm_model": os.environ.get("LLM_MODEL_NAME", "gpt-4-turbo"),
     "llm_temperature": 0.3,
     "llm_max_output_tokens": 1500,
     
