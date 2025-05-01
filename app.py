@@ -30,6 +30,9 @@ from utils.device_detection import get_device_type
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Import config directly
+import config
+
 # --- Global Configuration Dictionary ---
 # Moved to config.py
 
@@ -41,6 +44,13 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent JavaScript access to coo
 app.config['SESSION_TYPE'] = 'filesystem'  # Add filesystem session type
 CORS(app)
 Session(app)
+
+# Context processor to inject variables into all templates
+@app.context_processor
+def inject_global_vars():
+    return dict(
+        ga_measurement_id=config.GA_MEASUREMENT_ID
+    )
 
 # Helper function to validate and update configuration
 # Moved to config.py

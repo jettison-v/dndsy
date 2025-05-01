@@ -23,6 +23,9 @@ if IS_DEV_ENV and not S3_BUCKET_NAME.startswith("dev-"):
 else:
     logger.info(f"Production environment detected. Using S3 bucket: {S3_BUCKET_NAME}")
 
+# Google Analytics
+GA_MEASUREMENT_ID = os.getenv("GA_MEASUREMENT_ID", None)
+
 # S3 configuration constants
 S3_CONFIG_KEY = "config/app_config.json"
 
