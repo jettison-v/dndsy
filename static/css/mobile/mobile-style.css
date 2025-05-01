@@ -755,6 +755,7 @@ a {
     display: flex;
     align-items: center;
     gap: 4px;
+    padding: 0.5rem;
 }
 
 .loading-dots span {

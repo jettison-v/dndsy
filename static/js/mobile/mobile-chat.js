@@ -230,6 +230,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return false;
         }
 
+        console.log("[Debug Mobile Chat] Data passed to DNDUtilities.processLinksInMessage:", JSON.stringify(filteredSortedLinkData, null, 2));
+
         try {
             console.log(`[Debug] Calling DNDUtilities.processLinksInMessage with ${Object.keys(filteredSortedLinkData).length} filtered/sorted links.`);
             // Use the filtered and sorted link data
@@ -248,15 +250,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     link.onclick = null; 
                     
                     link.addEventListener('click', (e) => {
+                        console.log("[Debug] Internal link click listener fired.");
                         e.preventDefault();
                         e.stopPropagation(); // Stop propagation here as well
                         
                         const s3Key = link.getAttribute('data-s3-key');
                         const page = link.getAttribute('data-page');
-                        console.log(`[Debug] Internal link clicked! Key: ${s3Key}, Page: ${page}`);
+                        console.log(`[Debug] Internal link data: Key=${s3Key}, Page=${page}`);
                         
                         if (s3Key && page) {
                             // Trigger source content viewer
+                            console.log("[Debug] Attempting to open source panel via window.mobileUI...");
                             if (window.mobileUI && window.mobileUI.openSourcePanel) {
                                 console.log("[Debug] Opening source panel via internal link.");
                                 window.mobileUI.openSourcePanel();
@@ -332,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Reset accumulators for new response
         accumulatedRawText = ''; 
         receivedLinkData = null;
-        currentStreamedMessage = null; // Ensure it's reset too
+        currentStreamedMessage = null; // Reset the reference to the message element
         
         // Get the current vector store type
         const vectorStoreType = vectorStoreDropdown ? vectorStoreDropdown.value : 'semantic';
@@ -385,12 +389,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.type === 'metadata') {
                      console.log('[Debug mobile-chat] Received metadata:', data);
                      // Create the message element if it doesn't exist yet
-                     if (!currentStreamedMessage) {
-                         if (loadingMessage && loadingMessage.parentNode) {
-                            chatMessages.removeChild(loadingMessage);
-                         }
-                         currentStreamedMessage = addAIMessage(''); // Create empty message container
-                         console.log("[Debug mobile-chat] Created initial AI message element for metadata/text.");
+                     if (!currentStreamedMessage && loadingMessage) {
+                         // Message element doesn't exist yet, use the loading message div
+                         currentStreamedMessage = loadingMessage;
+                         // Keep loading dots for now, just ensure class is right
+                         currentStreamedMessage.className = 'message assistant'; 
+                         console.log("[Debug mobile-chat] Initializing message element from loading msg (metadata).");
                      }
                      // Process source pills if provided in metadata
                      if (data.sources && data.sources.length > 0 && currentStreamedMessage) {
@@ -406,46 +410,52 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log("[Debug mobile-chat] Storing link data received.");
                     receivedLinkData = data.links; // Store globally for this response
                     // Ensure message element exists if links arrive before text
-                     if (!currentStreamedMessage) {
-                         if (loadingMessage && loadingMessage.parentNode) {
-                            chatMessages.removeChild(loadingMessage);
-                         }
-                         currentStreamedMessage = addAIMessage(''); 
-                         console.log("[Debug mobile-chat] Created initial AI message element because links arrived first.");
+                     if (!currentStreamedMessage && loadingMessage) {
+                         // Message element doesn't exist yet, use the loading message div
+                         currentStreamedMessage = loadingMessage;
+                         // Keep loading dots for now, just ensure class is right
+                         currentStreamedMessage.className = 'message assistant'; 
+                         console.log("[Debug mobile-chat] Initializing message element from loading msg (links).");
                      }
                     return; // Don't process further for link events
                 }
 
                 // Handle 'text' chunk (accumulate raw text)
                 if (data.type === 'text' && data.content) {
-                    // Ensure the message element exists (might be created by metadata/links first)
-                     if (!currentStreamedMessage) {
-                         if (loadingMessage && loadingMessage.parentNode) {
-                             chatMessages.removeChild(loadingMessage);
-                         }
-                         currentStreamedMessage = addAIMessage('');
-                         console.log("[Debug mobile-chat] Created initial AI message element for first text chunk.");
-                     }
-                    
-                    accumulatedRawText += data.content; // Append raw text
-                    // OPTIONAL: Display streaming text with basic formatting (no links yet)
-                    // This provides immediate feedback but formatting might be slightly off until 'done'
-                    // const tempFormatted = formatMessageText(accumulatedRawText); // Format accumulated text
-                    // const messageTextElement = currentStreamedMessage.querySelector('.message-text');
-                    // if (messageTextElement) {
-                    //      messageTextElement.innerHTML = tempFormatted; // Replace content
-                    // }
-                    // scrollToBottom(); // Scroll as text accumulates
-                    return; // Don't process further for text chunk events
+                    // Ensure message element exists, using loading msg if needed
+                    if (!currentStreamedMessage && loadingMessage) {
+                        currentStreamedMessage = loadingMessage;
+                        // Keep loading dots for now, just ensure class is right
+                        currentStreamedMessage.className = 'message assistant'; 
+                        console.log("[Debug mobile-chat] Initializing message element from loading msg (text).");
+                    }
+                      accumulatedRawText += data.content; // Append raw text
+                      return; // Don't process further for text chunk events
                 }
                 
                 // Handle 'done' event (final processing)
                 if (data.type === 'done' || data.done) { // Handle both event:done and data.done for robustness
                     console.log("[Debug mobile-chat] Received done event. Processing final message.");
-                    eventSource.close(); // Close connection first
                     
+                    eventSource.close(); // Close connection first
+
                     if (currentStreamedMessage) {
-                        const messageTextElement = currentStreamedMessage.querySelector('.message-text');
+                        // Find the message text container (should exist from loading message)
+                        let messageTextElement = currentStreamedMessage.querySelector('.message-text');
+                        
+                        if (messageTextElement) {
+                            // Clear only the text container (removes loading dots)
+                            messageTextElement.innerHTML = ''; 
+                        } else {
+                            // Fallback: create if it doesn't exist (should not happen)
+                            console.warn("[Debug mobile-chat] .message-text not found in done handler, creating.");
+                            messageTextElement = document.createElement('div');
+                            messageTextElement.className = 'message-text';
+                            // Prepend it so pills (if added later) come after
+                            currentStreamedMessage.prepend(messageTextElement); 
+                        }
+                        
+                        // Render final content
                         if (messageTextElement) {
                             // 1. Format the *entire* accumulated text
                             console.log(`[Debug mobile-chat] Formatting final accumulated text (length: ${accumulatedRawText.length})`);
@@ -488,6 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
                  console.error('Error parsing SSE event data:', error, 'Raw data:', event.data);
                  // More robust error handling
                  if (loadingMessage && loadingMessage.parentNode) {
+                     // Remove loading message on error too
                      chatMessages.removeChild(loadingMessage);
                  }
                  // Add error message if none exists for this response
@@ -513,11 +524,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = JSON.parse(event.data);
                 console.log('[Debug mobile-chat] Received metadata via addEventListener:', data);
                 if (!currentStreamedMessage) {
-                    if (loadingMessage && loadingMessage.parentNode) {
-                       chatMessages.removeChild(loadingMessage);
+                    // Use loading message if first event
+                    if (loadingMessage) {
+                        currentStreamedMessage = loadingMessage;
+                        currentStreamedMessage.className = 'message assistant'; 
+                        console.log("[Debug mobile-chat] Initializing message element from loading msg (metadata listener).");
                     }
-                    currentStreamedMessage = addAIMessage(''); 
-                    console.log("[Debug mobile-chat] Created initial AI message element for metadata event (via addEventListener).");
                 }
                  if (data.sources && data.sources.length > 0 && currentStreamedMessage) {
                      processSourcePills(currentStreamedMessage, data.sources, vectorStoreType);
@@ -536,11 +548,12 @@ document.addEventListener('DOMContentLoaded', () => {
                  if (data.links) {
                     receivedLinkData = data.links;
                      if (!currentStreamedMessage) {
-                         if (loadingMessage && loadingMessage.parentNode) {
-                             chatMessages.removeChild(loadingMessage);
-                         }
-                         currentStreamedMessage = addAIMessage(''); 
-                         console.log("[Debug mobile-chat] Created initial AI message element for links event (via addEventListener).");
+                         // Use loading message if first event
+                         if (loadingMessage) {
+                            currentStreamedMessage = loadingMessage;
+                            currentStreamedMessage.className = 'message assistant'; 
+                            console.log("[Debug mobile-chat] Initializing message element from loading msg (links listener).");
+                        }
                      }
                  }
              } catch (error) {
@@ -552,41 +565,57 @@ document.addEventListener('DOMContentLoaded', () => {
         // Note: This might be redundant if done is also sent via onmessage
         eventSource.addEventListener('done', (event) => {
             console.log("[Debug mobile-chat] Received done event via addEventListener. Processing final message.");
-             eventSource.close(); // Close connection first
-             
+            
+            eventSource.close(); // Close connection first
+            
             if (currentStreamedMessage) {
-                 const messageTextElement = currentStreamedMessage.querySelector('.message-text');
-                 if (messageTextElement) {
-                     // 1. Format the *entire* accumulated text
-                     console.log(`[Debug mobile-chat] Formatting final accumulated text (length: ${accumulatedRawText.length}) (from addEventListener)`);
-                     const finalFormattedHtml = formatMessageText(accumulatedRawText);
-                     messageTextElement.innerHTML = finalFormattedHtml; // Set final HTML
-                     console.log(`[Debug mobile-chat] Final HTML set (length: ${finalFormattedHtml.length}) (from addEventListener)`);
+                // Find the message text container (should exist from loading message)
+                let messageTextElement = currentStreamedMessage.querySelector('.message-text');
+                
+                if (messageTextElement) {
+                    // Clear only the text container (removes loading dots)
+                    messageTextElement.innerHTML = ''; 
+                } else {
+                    // Fallback: create if it doesn't exist (should not happen)
+                    console.warn("[Debug mobile-chat] .message-text not found in done listener, creating.");
+                    messageTextElement = document.createElement('div');
+                    messageTextElement.className = 'message-text';
+                    // Prepend it so pills (if added later) come after
+                    currentStreamedMessage.prepend(messageTextElement); 
+                }
+                
+                // Render final content
+                if (messageTextElement) {
+                    // 1. Format the *entire* accumulated text
+                    console.log(`[Debug mobile-chat] Formatting final accumulated text (length: ${accumulatedRawText.length}) (from addEventListener)`);
+                    const finalFormattedHtml = formatMessageText(accumulatedRawText);
+                    messageTextElement.innerHTML = finalFormattedHtml; // Set final HTML
+                    console.log(`[Debug mobile-chat] Final HTML set (length: ${finalFormattedHtml.length}) (from addEventListener)`);
 
-                     // 2. Process links using the stored link data
-                     if (receivedLinkData && Object.keys(receivedLinkData).length > 0) {
-                         // Pass the raw receivedLinkData here; filtering/sorting happens inside processLinks
-                         console.log("[Debug mobile-chat] Processing links on final message (from addEventListener). Raw link keys count:", Object.keys(receivedLinkData).length);
-                         processLinks(currentStreamedMessage, receivedLinkData);
-                     } else {
-                         console.log("[Debug mobile-chat] No link data found or links event not received. (from addEventListener)");
-                     }
-                 } else {
-                      console.error("[Debug mobile-chat] Done event (addEventListener): Cannot find .message-text element in final message.");
+                    // 2. Process links using the stored link data
+                    if (receivedLinkData && Object.keys(receivedLinkData).length > 0) {
+                        // Pass the raw receivedLinkData here; filtering/sorting happens inside processLinks
+                        console.log("[Debug mobile-chat] Processing links on final message (from addEventListener). Raw link keys count:", Object.keys(receivedLinkData).length);
+                        processLinks(currentStreamedMessage, receivedLinkData);
+                    } else {
+                        console.log("[Debug mobile-chat] No link data found or links event not received. (from addEventListener)");
+                    }
+                } else {
+                     console.error("[Debug mobile-chat] Done event (addEventListener): Cannot find .message-text element in final message.");
+                }
+            } else {
+                console.warn("[Debug mobile-chat] Done event received (addEventListener) but no currentStreamedMessage element exists.");
+                 if (loadingMessage && loadingMessage.parentNode) {
+                    chatMessages.removeChild(loadingMessage);
                  }
-             } else {
-                 console.warn("[Debug mobile-chat] Done event received (addEventListener) but no currentStreamedMessage element exists.");
-                  if (loadingMessage && loadingMessage.parentNode) {
-                     chatMessages.removeChild(loadingMessage);
-                  }
-             }
-             
-             // Final cleanup
-             isWaitingForResponse = false;
-             accumulatedRawText = ''; 
-             receivedLinkData = null;
-             currentStreamedMessage = null; 
-             scrollToBottom(); 
+            }
+            
+            // Final cleanup
+            isWaitingForResponse = false;
+            accumulatedRawText = ''; 
+            receivedLinkData = null;
+            currentStreamedMessage = null; 
+            scrollToBottom(); 
         });
         
         // Handle general error event for the connection
@@ -680,6 +709,7 @@ document.addEventListener('DOMContentLoaded', () => {
                            
                 // Add click handler to pill for displaying source content
                 pill.addEventListener('click', function(e) {
+                    console.log("[Debug] Source pill click listener fired.");
                     e.stopPropagation(); 
                     e.preventDefault();  
                     console.log("[Debug] Source Pill Clicked!", {
@@ -692,6 +722,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.querySelectorAll('.source-pill.active').forEach(activePill => activePill.classList.remove('active'));
                     this.classList.add('active');
 
+                    console.log("[Debug] Attempting to open source panel via window.mobileUI...");
                     if (typeof window.mobileUI !== 'undefined' && typeof window.mobileUI.openSourcePanel === 'function') {
                         console.log("[Debug] Calling mobileUI.openSourcePanel()");
                         window.mobileUI.openSourcePanel();
@@ -712,6 +743,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * Uses the shared utility if available or provides a fallback
      */
     function fetchSourceContent(s3Key, page, storeType) {
+        console.log(`[Debug] fetchSourceContent called with: key=${s3Key}, page=${page}, store=${storeType}`);
         if (!sourceContent) {
             console.error('Source content element not found');
             return;
@@ -745,12 +777,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
                 .then(details => {
                     displaySourceDetails(details, s3Key, page, storeType); // Pass storeType here too
+                    console.log(`[Debug] fetchSourceContent (fallback) successful for: key=${s3Key}, page=${page}`);
                 })
                 .catch(error => {
                     console.error('Error fetching source content:', error);
                     sourceContent.innerHTML = `<p class="error-source">Error: ${error.message}</p>`;
                 });
         }
+        console.log(`[Debug] fetchSourceContent finished for: key=${s3Key}, page=${page}`);
     }
     
     /**

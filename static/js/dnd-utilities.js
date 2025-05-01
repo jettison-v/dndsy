@@ -43,83 +43,122 @@ const DNDUtilities = (function() {
     }
     
     /**
-     * Process text for links
+     * Process text for links using direct DOM manipulation.
      * @param {HTMLElement} messageElement The message element to process
-     * @param {Object} linkData Link data from the server
+     * @param {Object} linkData Link data from the server (already filtered/sorted)
      */
     function processLinksInMessage(messageElement, linkData) {
-        if (!messageElement || !linkData) {
-            console.log("[Debug] processLinksInMessage: Exiting - No element or linkData.");
+        if (!messageElement || !linkData || Object.keys(linkData).length === 0) {
+            console.log("[DNDUtils Debug] processLinks: Exiting - No element or linkData.");
             return false;
         }
-        
-        const messageText = messageElement.querySelector('.message-text');
-        if (!messageText) {
-             console.log("[Debug] processLinksInMessage: Exiting - .message-text not found.");
-            return false;
-        }
-        
-        console.log("[Debug] processLinksInMessage: Starting link processing for element:", messageElement.className);
-        const content = messageText.innerHTML;
-        console.log("[Debug] processLinksInMessage: Initial innerHTML length:", content.length);
-        
-        // Create temporary element to work with the HTML
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = content;
-        
-        // Process all text nodes
-        const textNodes = [];
-        const walk = document.createTreeWalker(tempDiv, NodeFilter.SHOW_TEXT, null, false);
-        let node;
-        while (node = walk.nextNode()) {
-             if (node.nodeValue.trim()) { // Only process non-empty text nodes
-                textNodes.push(node);
-             }
-        }
-        console.log(`[Debug] processLinksInMessage: Found ${textNodes.length} non-empty text nodes.`);
 
-        // Check each text node for potential links
+        const messageTextElement = messageElement.querySelector('.message-text');
+        if (!messageTextElement) {
+            console.log("[DNDUtils Debug] processLinks: Exiting - .message-text not found.");
+            return false;
+        }
+
+        console.log(`[DNDUtils Debug] processLinks: Starting link processing for element: ${messageElement.className}, Links: ${Object.keys(linkData).length}`);
         let hasChanges = false;
-        textNodes.forEach((textNode, index) => {
-            const originalValue = textNode.nodeValue;
-            let processedValue = originalValue;
-            console.log(`[Debug] processLinksInMessage: Processing text node ${index}: "${originalValue.substring(0,50)}..."`);
 
-            for (const [linkText, linkInfo] of Object.entries(linkData)) {
-                try {
-                    const regex = new RegExp(`(\\b${escapeRegExp(linkText)}\\b)`, 'gi');
-                    if (regex.test(processedValue)) {
-                        console.log(`[Debug] processLinksInMessage: Found match for "${linkText}" in node ${index}.`);
-                        const typeClass = linkInfo.type === 'internal' ? 'internal-link' : 'external-link';
-                        const attrs = linkInfo.type === 'internal' 
-                            ? `data-s3-key="${linkInfo.s3_key || ''}" data-page="${linkInfo.page || ''}"` 
-                            : `href="${linkInfo.url || '#'}" target="_blank"`;
-                        
-                        // IMPORTANT: Replace only within the current processedValue string, not globally
-                        processedValue = processedValue.replace(regex, `<a class="${typeClass}" ${attrs}>$1</a>`);
-                        hasChanges = true; // Mark that a change occurred in this node
+        try {
+            // Use TreeWalker to find text nodes, ignoring those inside existing links or code blocks
+            const walker = document.createTreeWalker(
+                messageTextElement,
+                NodeFilter.SHOW_TEXT,
+                {
+                    acceptNode: function(node) {
+                        // Ignore nodes within existing <a>, <pre>, or <code> tags
+                        if (node.parentElement.closest('a, pre, code')) {
+                            return NodeFilter.FILTER_REJECT;
+                        }
+                        // Accept non-empty text nodes
+                        if (node.nodeValue.trim() === '') {
+                            return NodeFilter.FILTER_REJECT;
+                        }
+                        return NodeFilter.FILTER_ACCEPT;
                     }
-                } catch (e) {
-                    console.error(`[Debug] processLinksInMessage: Regex error for linkText "${linkText}":`, e);
-                }
+                },
+                false
+            );
+
+            let node;
+            const nodesToProcess = [];
+            while (node = walker.nextNode()) {
+                nodesToProcess.push(node);
             }
-            
-            // If this specific node's text was modified, replace it in the tempDiv
-            if (processedValue !== originalValue) {
-                console.log(`[Debug] processLinksInMessage: Replacing node ${index} content.`);
-                const fragment = document.createRange().createContextualFragment(processedValue);
-                textNode.parentNode.replaceChild(fragment, textNode);
-            }
-        });
-        
-        // Only update the actual DOM if any changes were made across all text nodes
-        if (hasChanges) {
-            console.log("[Debug] processLinksInMessage: Changes detected, updating messageText.innerHTML.");
-            messageText.innerHTML = tempDiv.innerHTML;
-        } else {
-            console.log("[Debug] processLinksInMessage: No link changes detected.");
+            console.log(`[DNDUtils Debug] Found ${nodesToProcess.length} text nodes to process.`);
+
+            // Get link keys sorted by length descending (already done in mobile-chat.js, but good to have here too for robustness)
+            const sortedLinkKeys = Object.keys(linkData).sort((a, b) => b.length - a.length);
+
+            nodesToProcess.forEach((textNode) => {
+                let currentNode = textNode;
+                // Process keys from longest to shortest for this node
+                for (const key of sortedLinkKeys) {
+                    if (!currentNode || !currentNode.nodeValue) break; // Stop if node is removed or empty
+
+                    const linkInfo = linkData[key];
+                    const originalText = linkInfo.original_text || key; // Use original casing if available
+                    // Use word boundaries in regex ( doesn't work well with some punctuation)
+                    const pattern = `(^|[^a-zA-Z0-9])(${escapeRegExp(originalText)})([^a-zA-Z0-9]|$)`;
+                    const regex = new RegExp(pattern, 'gi'); // Case-insensitive
+
+                    let match = regex.exec(currentNode.nodeValue);
+                    if (match) {
+                         console.log(`[DNDUtils Debug] Match found for "${originalText}" in node: "${currentNode.nodeValue.substring(0, 50)}..."`);
+                        
+                        // Calculate split points
+                        const matchStartIndex = match.index + match[1].length; // Start of actual keyword
+                        const matchEndIndex = matchStartIndex + match[2].length; // End of actual keyword
+
+                        // Create the link element
+                        const linkElement = document.createElement('a');
+                        linkElement.textContent = match[2]; // The matched text
+                        linkElement.className = linkInfo.type === 'internal' ? 'internal-link' : 'external-link';
+
+                        if (linkInfo.type === 'internal') {
+                            linkElement.href = '#'; // Prevent page jump
+                            linkElement.dataset.s3Key = linkInfo.s3_key || '';
+                            linkElement.dataset.page = linkInfo.page || '';
+                            linkElement.title = `Internal link to page ${linkInfo.page || '?'}: ${linkInfo.snippet || ''}`;
+                        } else { // External link
+                            linkElement.href = linkInfo.url || '#';
+                            linkElement.target = '_blank';
+                            linkElement.rel = 'noopener noreferrer';
+                            linkElement.title = `External link: ${linkInfo.url || ''}`;
+                            // Append external link icon
+                            linkElement.innerHTML += ' <i class="fas fa-external-link-alt fa-xs" style="vertical-align: super; opacity: 0.7;"></i>';
+                        }
+
+                        // Split the text node
+                        let textAfter = currentNode.splitText(matchEndIndex);
+                        let matchedTextNode = currentNode.splitText(matchStartIndex); // This node contains the text to be replaced
+                        
+                        // Insert the link element before the 'after' text node
+                        currentNode.parentNode.insertBefore(linkElement, textAfter);
+                        
+                        // *** Remove the original text node that contained the matched text ***
+                        currentNode.parentNode.removeChild(matchedTextNode);
+                        
+                        hasChanges = true;
+
+                        // Continue searching *after* the inserted link
+                        currentNode = textAfter;
+                        regex.lastIndex = 0; // Reset regex index for the new text node
+                        // Re-run the *same* key search on the remaining part of the node
+                        // This is complex; simpler to just move to next node for now
+                        break; // Move to the next key for this node segment (or next node)
+                    }
+                } // End loop through keys
+            }); // End loop through text nodes
+
+            console.log("[DNDUtils Debug] Finished link processing DOM modifications.");
+        } catch (error) {
+            console.error("[DNDUtils Error] Error processing links:", error);
         }
-        
+
         return hasChanges;
     }
     

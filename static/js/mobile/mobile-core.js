@@ -53,15 +53,27 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("[Debug] Could not find all settings elements for initialization.");
     }
     
+    // --- Define modal functions in broader scope --- 
+    const openAboutModal = () => {
+        console.log("[Debug] Opening About Project modal.");
+        if (aboutProjectModal) {
+            aboutProjectModal.classList.add('open');
+            document.body.classList.add('modal-open'); // Prevent background scroll
+        }
+    };
+
+    const closeAboutModal = () => {
+        console.log("[Debug] Closing About Project modal.");
+        if (aboutProjectModal) {
+            aboutProjectModal.classList.remove('open');
+            document.body.classList.remove('modal-open'); // Allow background scroll
+        }
+    };
+
     // Initialize source panel functionality
-    if (mobileHeaderSourceToggle && sourcePanel && closePanel) {
+    if (sourcePanel && closePanel) {
         // Use direct onclick handlers instead of event listeners
-        mobileHeaderSourceToggle.onclick = function(event) {
-            event.preventDefault();
-            event.stopPropagation();
-            toggleSourcePanel();
-            return false;
-        };
+        // mobileHeaderSourceToggle is only on desktop template, so no listener needed here
         
         closePanel.onclick = function(event) {
             event.preventDefault();
@@ -75,24 +87,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (aboutProjectButton && aboutProjectModal && aboutProjectCloseButton) {
         console.log("[Debug] Initializing About Project modal listeners.");
         
-        // Function to open the modal
-        const openAboutModal = () => {
-            console.log("[Debug] Opening About Project modal.");
-            if (aboutProjectModal) {
-                aboutProjectModal.classList.add('open');
-                document.body.classList.add('modal-open'); // Prevent background scroll
-            }
-        };
-
-        // Function to close the modal
-        const closeAboutModal = () => {
-            console.log("[Debug] Closing About Project modal.");
-            if (aboutProjectModal) {
-                aboutProjectModal.classList.remove('open');
-                document.body.classList.remove('modal-open'); // Allow background scroll
-            }
-        };
-
         // Open modal when button is clicked
         aboutProjectButton.addEventListener('click', openAboutModal);
         
@@ -187,9 +181,12 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("[Debug] Closing Source Panel");
         sourcePanel.classList.remove('open');
         document.body.classList.remove('panel-open');
-        // Update button icon if needed
-        // const icon = mobileHeaderSourceToggle?.querySelector('i');
-        // if (icon) icon.className = 'fas fa-book';
+        
+        // *** Add logic to deactivate all source pills ***
+        document.querySelectorAll('.source-pill.active').forEach(pill => {
+            pill.classList.remove('active');
+        });
+        
     }
     
     /**
@@ -212,6 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    console.log("[Debug] mobile-core.js: Reached point before assigning window.mobileUI.");
     // Make functions available globally
     window.mobileUI = {
         openSourcePanel: openSourcePanel, 
@@ -220,5 +218,5 @@ document.addEventListener('DOMContentLoaded', () => {
         closeAboutModal: closeAboutModal,
         closeSettings: closeSettings // Keep closeSettings exposed if needed
     };
-    console.log("[Debug] mobileUI object created:", window.mobileUI);
+    console.log("[Debug] mobile-core.js: window.mobileUI assigned:", window.mobileUI);
 }); 
