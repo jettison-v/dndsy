@@ -73,20 +73,42 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize about modal functionality
     if (aboutProjectButton && aboutProjectModal && aboutProjectCloseButton) {
-        aboutProjectButton.addEventListener('click', (e) => {
-            e.stopPropagation(); // Stop click from propagating further
-            e.preventDefault(); // Prevent any default button action
-            console.log("[Debug] About Project button clicked");
-            openAboutModal();
-        });
+        console.log("[Debug] Initializing About Project modal listeners.");
+        
+        // Function to open the modal
+        const openAboutModal = () => {
+            console.log("[Debug] Opening About Project modal.");
+            if (aboutProjectModal) {
+                aboutProjectModal.classList.add('open');
+                document.body.classList.add('modal-open'); // Prevent background scroll
+            }
+        };
+
+        // Function to close the modal
+        const closeAboutModal = () => {
+            console.log("[Debug] Closing About Project modal.");
+            if (aboutProjectModal) {
+                aboutProjectModal.classList.remove('open');
+                document.body.classList.remove('modal-open'); // Allow background scroll
+            }
+        };
+
+        // Open modal when button is clicked
+        aboutProjectButton.addEventListener('click', openAboutModal);
+        
+        // Close modal when close button is clicked
         aboutProjectCloseButton.addEventListener('click', closeAboutModal);
         
-        // Close modal when clicking outside
+        // Close modal when clicking outside the modal content (on the overlay)
         aboutProjectModal.addEventListener('click', (event) => {
+            // Check if the click is directly on the overlay element itself
             if (event.target === aboutProjectModal) {
+                console.log("[Debug] Clicked on modal overlay.");
                 closeAboutModal();
             }
         });
+    } else {
+         console.warn("[Debug] Could not find all elements for About Project modal.");
     }
     
     // GitHub repo button
@@ -168,27 +190,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Update button icon if needed
         // const icon = mobileHeaderSourceToggle?.querySelector('i');
         // if (icon) icon.className = 'fas fa-book';
-    }
-    
-    /**
-     * Open about modal
-     */
-    function openAboutModal() {
-        if(!aboutProjectModal) return; 
-        console.log("[Debug] Opening About Modal"); 
-        closeSettings(); closeSourcePanel(); 
-        aboutProjectModal.classList.add('open'); 
-        document.body.classList.add('modal-open'); 
-    } 
-    
-    /**
-     * Close about modal
-     */
-    function closeAboutModal() { 
-        if(!aboutProjectModal) return; 
-        console.log("[Debug] Closing About Modal"); 
-        aboutProjectModal.classList.remove('open'); 
-        document.body.classList.remove('modal-open'); 
     }
     
     /**

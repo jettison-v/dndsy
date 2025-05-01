@@ -60,7 +60,10 @@
     }
     
     /* Fix for -webkit-appearance on form elements */
-    input, textarea, select, button {
+    input:not([type="checkbox"]):not([type="radio"]), 
+    textarea, 
+    select, 
+    button {
         -webkit-appearance: none;
         border-radius: 0;
     }
