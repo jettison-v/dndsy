@@ -232,12 +232,12 @@ const DNDUtilities = (function() {
                         linkElement.textContent = match[2]; // The matched text
                         linkElement.className = linkInfo.type === 'internal' ? 'internal-link' : 'external-link'; // Standardized class
                         linkElement.dataset.type = linkInfo.type; // Standardized data attribute
+                        linkElement.dataset.key = key; // Store the original key used for the match
 
                         if (linkInfo.type === 'internal') {
                             linkElement.href = '#'; // Prevent page jump
                             linkElement.dataset.s3Key = linkInfo.s3_key || ''; // Standardized
                             linkElement.dataset.page = linkInfo.page || ''; // Standardized
-                            linkElement.title = `Internal link to page ${linkInfo.page || '?'}: ${linkInfo.snippet || ''}`;
                         } else { // External link
                             linkElement.href = linkInfo.url || '#';
                             linkElement.dataset.url = linkInfo.url || ''; // Standardized
@@ -251,7 +251,6 @@ const DNDUtilities = (function() {
                              try {
                                  const linkColor = detectLinkCategory(match[2], linkInfo);
                                  linkElement.style.color = linkColor;
-                                 linkElement.style.textDecoration = 'underline';
                                  linkElement.style.textDecorationColor = linkColor;
                              } catch (colorError) {
                                  console.error("[DNDUtils Error] Error applying category color:", colorError);
