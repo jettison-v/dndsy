@@ -114,23 +114,159 @@
             </div>
             <div class="modal-body">
                 <div class="about-content">
-                    <p>AskDND is an AI-powered assistant designed to help players and Dungeon Masters with the 2024 D&D rules (5.5e).</p>
-                    
-                    <h3>Key Features</h3>
-                    <ul>
-                        <li><strong>Rules Knowledge</strong>: Quick access to official D&D 2024 rules</li>
-                        <li><strong>Source References</strong>: See exactly where information comes from</li>
-                        <li><strong>Mobile Friendly</strong>: Optimized for both desktop and mobile use</li>
-                        <li><strong>Accurate Context</strong>: Uses advanced Retrieval-Augmented Generation</li>
-                    </ul>
-                    
-                    <h3>Future Plans</h3>
-                    <ul>
-                        <li><strong>Character Building</strong>: Step-by-step character creation assistance</li>
-                        <li><strong>Combat Helper</strong>: Track initiative, conditions, and combat status</li>
-                        <li><strong>Mobile Optimization</strong>: Further improve the mobile experience for on-the-go rules lookup</li>
-                        <li><strong>More Source Books</strong>: Add additional official source material as it's released</li>
-                    </ul>
+                    <div class="about-section">
+                        <h3>Project Overview</h3>
+                        <p>AskDnD is an AI-powered copilot designed to enhance the Dungeons & Dragons experience. It leverages advanced LLM technology combined with Retrieval-Augmented Generation (RAG) to provide accurate, context-aware assistance for players and Dungeon Masters.</p>
+                        
+                        <h3>Mission</h3>
+                        <p>Our mission is to make the D&D experience more accessible and enjoyable by providing instant access to rules, lore, and strategic advice, allowing players to focus on the creative aspects of gameplay.</p>
+                        
+                        <h3>Core Benefits</h3>
+                        <ul>
+                            <li><strong>Real-time Rules Assistance</strong>: Accelerate gameplay by answering rules and context-specific questions instantly</li>
+                            <li><strong>Balance Creativity & Structure</strong>: Promote rule adherence while maintaining creative freedom</li>
+                            <li><strong>Character Development</strong>: Assist players with character creation and optimization</li>
+                            <li><strong>Strategic Planning</strong>: Advise on party composition and battle strategy</li>
+                        </ul>
+
+                        <h3>Development Approach</h3>
+                        <p>AskDnD was built with a focus on accuracy, relevance, and user experience. The system integrates official D&D 2024 materials with specialized retrieval methods to ensure responses are grounded in the actual rules rather than hallucinated content.</p>
+                    </div>
+
+                    <div class="about-section">
+                        <h3>Technology Overview</h3>
+                        <p>AskDnD leverages a modern tech stack focused on delivering accurate, context-aware responses with minimal latency.</p>
+                        
+                        <h3>Core Technologies</h3>
+                        <ul>
+                            <li><strong>Backend</strong>: Python, Flask</li>
+                            <li><strong>Frontend</strong>: JavaScript, HTML5, CSS3</li>
+                            <li><strong>Vector Database</strong>: Qdrant (with both cloud and local deployment options)</li>
+                            <li><strong>Storage</strong>: AWS S3 for document and image storage</li>
+                            <li><strong>LLM Integration</strong>: OpenAI API (with Claude support in codebase)</li>
+                        </ul>
+                        
+                        <h3>RAG Implementation</h3>
+                        <ul>
+                            <li><strong>Document Processing</strong>: PyMuPDF for PDF parsing with enhanced link extraction</li>
+                            <li><strong>Embedding Models</strong>:
+                                <ul>
+                                    <li>OpenAI's text-embedding-3-small (1536 dimensions)</li>
+                                    <li>Sentence Transformers all-MiniLM-L6-v2 (384 dimensions)</li>
+                                </ul>
+                            </li>
+                            <li><strong>Vector Stores</strong>:
+                                <ul>
+                                    <li>Page Context: Full-page embeddings maintaining complete context</li>
+                                    <li>Semantic Context: Paragraph-level chunks with hierarchical metadata</li>
+                                    <li>Haystack: Advanced document retrieval with specialized filtering</li>
+                                </ul>
+                            </li>
+                            <li><strong>Hybrid Search</strong>: Combined vector similarity and BM25 lexical search</li>
+                        </ul>
+                        
+                        <h3>Deployment</h3>
+                        <ul>
+                            <li><strong>Hosting</strong>: Railway with customizable environment variables</li>
+                            <li><strong>Domain</strong>: Custom domain with SSL</li>
+                            <li><strong>Authentication</strong>: Basic password protection</li>
+                        </ul>
+                    </div>
+
+                    <div class="about-section">
+                        <h3>Key Features</h3>
+                        
+                        <div class="feature-item">
+                            <h4>Multiple Retrieval Strategies</h4>
+                            <p>AskDnD offers three distinct vector store types that users can switch between depending on their query needs:</p>
+                            <ul>
+                                <li><strong>Page Context</strong>: Maintains full page context, ideal for general topics spread across a page</li>
+                                <li><strong>Semantic Context</strong>: Uses paragraph-level chunks with hierarchical metadata for precise answers to specific rules questions</li>
+                                <li><strong>Haystack</strong>: Specialized filtering capabilities for targeted queries, particularly useful for monster information</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="feature-item">
+                            <h4>Source Citation & Verification</h4>
+                            <p>All responses include clickable source citations that open the exact page where information was retrieved, allowing users to verify answers against the official materials.</p>
+                        </div>
+                        
+                        <div class="feature-item">
+                            <h4>Intelligent Link Detection</h4>
+                            <p>The system extracts and preserves links from source PDFs, including:</p>
+                            <ul>
+                                <li>Internal links between PDF sections with correct page jumps</li>
+                                <li>External web links preserved with their original URLs</li>
+                                <li>Color-coded links categorized by content type (monsters, spells, items, etc.)</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="feature-item">
+                            <h4>Interactive Source Panel</h4>
+                            <p>The expandable source panel allows users to:</p>
+                            <ul>
+                                <li>View the exact page from source materials</li>
+                                <li>Navigate between pages with prev/next controls</li>
+                                <li>Zoom in/out of source images</li>
+                                <li>Expand the panel for a larger view while maintaining context</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="feature-item">
+                            <h4>Administrative Tools</h4>
+                            <p>The built-in admin interface provides:</p>
+                            <ul>
+                                <li>PDF upload and management</li>
+                                <li>Vector store processing with live status updates</li>
+                                <li>Collection statistics and sample points visualization</li>
+                                <li>API usage monitoring</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="about-section">
+                        <h3>Project Roadmap</h3>
+                        <p>AskDnD is continuously evolving to provide more value to D&D players and DMs. Here are some planned enhancements:</p>
+                        
+                        <div class="roadmap-section">
+                            <h4>Near-Term Improvements</h4>
+                            <ul>
+                                <li><strong>Enhanced Image Processing</strong>: Better handling of tables and diagrams in source materials</li>
+                                <li><strong>User Query History</strong>: Save and categorize previous questions and answers</li>
+                                <li><strong>Mobile Optimization</strong>: Further improve the mobile experience for on-the-go rules lookup</li>
+                                <li><strong>Additional Source Materials</strong>: Support for supplemental rulebooks and adventure modules</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="roadmap-section">
+                            <h4>Feature Expansions</h4>
+                            <ul>
+                                <li><strong>Character Sheet Integration</strong>: Allow uploading character sheets for context-aware advice</li>
+                                <li><strong>Campaign Notes</strong>: Integration with DM's campaign notes for game-specific assistance</li>
+                                <li><strong>Combat Tracker</strong>: Interactive initiative and combat state management</li>
+                                <li><strong>Multi-user Collaboration</strong>: Support for party-wide access and shared resources</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="roadmap-section">
+                            <h4>Technical Enhancements</h4>
+                            <ul>
+                                <li><strong>Local LLM Support</strong>: Option to use local LLM models for offline use and privacy</li>
+                                <li><strong>Fine-tuned Models</strong>: D&D-specific fine-tuning for even more accurate responses</li>
+                                <li><strong>Advanced Search Features</strong>: Faceted search, filters, and query templates</li>
+                                <li><strong>Image Generation</strong>: Integration with image models for character and scene visualization</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="roadmap-section">
+                            <h4>Community Features</h4>
+                            <ul>
+                                <li><strong>User Feedback Loop</strong>: Allow users to rate and correct responses</li>
+                                <li><strong>Community Content</strong>: Option to include vetted homebrew and community content</li>
+                                <li><strong>Resource Sharing</strong>: Allow DMs to share custom resources with their players</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
