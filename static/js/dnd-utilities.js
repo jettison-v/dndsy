@@ -5,6 +5,34 @@
 
 // Module pattern for encapsulation
 const DNDUtilities = (function() {
+    // Define common words to exclude from linking
+    const stopWords = new Set([
+        // Articles
+        'a', 'an', 'the',
+        // Prepositions
+        'to', 'in', 'on', 'at', 'by', 'for', 'with', 'from', 'of', 'about',
+        // Conjunctions
+        'and', 'or', 'but', 'so', 'if', 'as',
+        // Other common short words
+        'is', 'it', 'be', 'this', 'that', 'do', 'go', 'me', 'my',
+        // D&D-specific common words
+        'd20', 'dm', 'pc', 'ac', 'hp'
+    ]);
+
+    // Category color mapping for different link types (moved from chat.js)
+    const categoryColors = {
+        "monster": "#a70000",
+        "spell": "#704cd9",
+        "skill": "#036634",
+        "item": "#623a1e",
+        "magic-item": "#0f5cbc",
+        "rule": "#6a5009",
+        "sense": "#a41b96",
+        "condition": "#364d00",
+        "lore": "#a83e3e",
+        "default": "#036634"
+    };
+
     /**
      * Format message text with markdown rendering
      * @param {string} text Raw message text
@@ -43,11 +71,91 @@ const DNDUtilities = (function() {
     }
     
     /**
+     * Helper function to determine link category from text or context (moved from chat.js)
+     * @param {string} text Matched text (not currently used for detection, relies on linkInfo)
+     * @param {object} linkInfo Data associated with the link
+     * @returns {string} CSS color value
+     */
+    function detectLinkCategory(text, linkInfo) {
+        // First check if the link has a pre-defined color from the PDF
+        if (linkInfo && linkInfo.color) {
+            // Try to match with existing category colors first
+            const extractedColor = linkInfo.color.toLowerCase();
+            
+            // Check if it's an exact match with any of our category colors
+            for (const category in categoryColors) {
+                if (categoryColors[category].toLowerCase() === extractedColor) {
+                    return categoryColors[category]; // Use our standardized version
+                }
+            }
+            
+            // If no exact match, check for similarity using a simple RGB distance
+            if (extractedColor.startsWith('#') && extractedColor.length === 7) {
+                try {
+                    // Parse the extracted color
+                    const r = parseInt(extractedColor.substring(1, 3), 16);
+                    const g = parseInt(extractedColor.substring(3, 5), 16);
+                    const b = parseInt(extractedColor.substring(5, 7), 16);
+                    
+                    // Find the closest category color
+                    let closestCategory = null;
+                    let minDistance = Number.MAX_VALUE;
+                    
+                    for (const category in categoryColors) {
+                        const catColor = categoryColors[category].toLowerCase();
+                        if (catColor.startsWith('#') && catColor.length === 7) {
+                            const cr = parseInt(catColor.substring(1, 3), 16);
+                            const cg = parseInt(catColor.substring(3, 5), 16);
+                            const cb = parseInt(catColor.substring(5, 7), 16);
+                            
+                            // Simple Euclidean distance in RGB space
+                            const distance = Math.sqrt(
+                                Math.pow(r - cr, 2) + 
+                                Math.pow(g - cg, 2) + 
+                                Math.pow(b - cb, 2)
+                            );
+                            
+                            // If this color is closer than our current closest
+                            if (distance < minDistance) {
+                                minDistance = distance;
+                                closestCategory = category;
+                            }
+                        }
+                    }
+                    
+                    // If we found a close match (distance threshold of 50)
+                    if (closestCategory && minDistance < 50) {
+                        console.log(`[DNDUtils Debug] Extracted color ${extractedColor} matched to category: ${closestCategory}`);
+                        return categoryColors[closestCategory];
+                    }
+                } catch (e) {
+                    console.log("[DNDUtils Debug] Error parsing color:", e);
+                }
+            }
+            
+            // If we reach here, use the extracted color directly if valid hex
+             if (/^#[0-9a-f]{6}$/i.test(extractedColor)) {
+                return extractedColor;
+             } 
+             // Otherwise, fall back to default
+             console.warn(`[DNDUtils Debug] Invalid extracted color "${extractedColor}", using default.`);
+             return categoryColors.default;
+        }
+        
+        // If no color information is available in linkInfo, use default color
+        return categoryColors.default;
+    }
+    
+    /**
      * Process text for links using direct DOM manipulation.
      * @param {HTMLElement} messageElement The message element to process
-     * @param {Object} linkData Link data from the server (already filtered/sorted)
+     * @param {Object} linkData Link data from the server
+     * @param {Object} [options={}] Optional parameters
+     * @param {boolean} [options.applyCategoryColoring=false] Whether to apply category-based inline colors
      */
-    function processLinksInMessage(messageElement, linkData) {
+    function processLinksInMessage(messageElement, linkData, options = {}) {
+        const { applyCategoryColoring = false } = options; // Destructure options with default
+
         if (!messageElement || !linkData || Object.keys(linkData).length === 0) {
             console.log("[DNDUtils Debug] processLinks: Exiting - No element or linkData.");
             return false;
@@ -90,8 +198,14 @@ const DNDUtilities = (function() {
             }
             console.log(`[DNDUtils Debug] Found ${nodesToProcess.length} text nodes to process.`);
 
-            // Get link keys sorted by length descending (already done in mobile-chat.js, but good to have here too for robustness)
-            const sortedLinkKeys = Object.keys(linkData).sort((a, b) => b.length - a.length);
+            // Get link keys, FILTER, and sort by length descending
+            const sortedLinkKeys = Object.keys(linkData)
+                .filter(key => key && key.length > 1 && !stopWords.has(key.toLowerCase())) // Filter length > 1 and stopwords
+                .sort((a, b) => b.length - a.length); // Sort by length descending
+            
+            if (sortedLinkKeys.length < Object.keys(linkData).length) {
+                 console.log(`[DNDUtils Debug] Filtered link keys. Original: ${Object.keys(linkData).length}, Filtered: ${sortedLinkKeys.length}`);
+            }
 
             nodesToProcess.forEach((textNode) => {
                 let currentNode = textNode;
@@ -116,20 +230,32 @@ const DNDUtilities = (function() {
                         // Create the link element
                         const linkElement = document.createElement('a');
                         linkElement.textContent = match[2]; // The matched text
-                        linkElement.className = linkInfo.type === 'internal' ? 'internal-link' : 'external-link';
+                        linkElement.className = linkInfo.type === 'internal' ? 'internal-link' : 'external-link'; // Standardized class
+                        linkElement.dataset.type = linkInfo.type; // Standardized data attribute
 
                         if (linkInfo.type === 'internal') {
                             linkElement.href = '#'; // Prevent page jump
-                            linkElement.dataset.s3Key = linkInfo.s3_key || '';
-                            linkElement.dataset.page = linkInfo.page || '';
+                            linkElement.dataset.s3Key = linkInfo.s3_key || ''; // Standardized
+                            linkElement.dataset.page = linkInfo.page || ''; // Standardized
                             linkElement.title = `Internal link to page ${linkInfo.page || '?'}: ${linkInfo.snippet || ''}`;
                         } else { // External link
                             linkElement.href = linkInfo.url || '#';
+                            linkElement.dataset.url = linkInfo.url || ''; // Standardized
                             linkElement.target = '_blank';
                             linkElement.rel = 'noopener noreferrer';
                             linkElement.title = `External link: ${linkInfo.url || ''}`;
-                            // Append external link icon
-                            linkElement.innerHTML += ' <i class="fas fa-external-link-alt fa-xs" style="vertical-align: super; opacity: 0.7;"></i>';
+                        }
+                        
+                        // Apply category coloring if option is enabled
+                        if (applyCategoryColoring) {
+                             try {
+                                 const linkColor = detectLinkCategory(match[2], linkInfo);
+                                 linkElement.style.color = linkColor;
+                                 linkElement.style.textDecoration = 'underline';
+                                 linkElement.style.textDecorationColor = linkColor;
+                             } catch (colorError) {
+                                 console.error("[DNDUtils Error] Error applying category color:", colorError);
+                             }
                         }
 
                         // Split the text node
@@ -335,7 +461,10 @@ const DNDUtilities = (function() {
         processLinksInMessage,
         fetchSourceContent,
         loadImageWithFallback,
-        escapeRegExp
+        escapeRegExp,
+        // Expose category colors and detection if needed externally (optional)
+        // categoryColors,
+        // detectLinkCategory 
     };
 })();
 

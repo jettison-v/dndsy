@@ -192,9 +192,10 @@ document.addEventListener('DOMContentLoaded', () => {
      * Process links in message
      */
     function processLinks(messageElement, linkData) {
-        console.log("[Debug] processLinks called. Element:", messageElement?.className, "Link data keys:", Object.keys(linkData || {}));
-        
-        // Define common words to exclude from linking (similar to desktop)
+        console.log("[Debug] processLinks called. Raw link keys:", linkData ? Object.keys(linkData).length : 'N/A');
+
+        // Define common words to exclude from linking - REMOVED (Now handled in DNDUtilities)
+        /*
         const stopWords = new Set([
             // Articles
             'a', 'an', 'the',
@@ -207,20 +208,25 @@ document.addEventListener('DOMContentLoaded', () => {
             // D&D-specific common words
             'd20', 'dm', 'pc', 'ac', 'hp'
         ]);
+        */
 
-        // Filter and sort linkData (similar to desktop)
-        const filteredSortedLinkData = {};
+        // Filter and sort linkData (similar to desktop) - REMOVED filtering/sorting, pass raw data
+        // const filteredSortedLinkData = {}; // Old name
+        const processedLinkData = linkData || {}; // Use raw data, ensure it's an object
+        /*
         if (linkData) {
             Object.keys(linkData)
-                .filter(key => key && key.length > 2 && !stopWords.has(key.toLowerCase())) // Filter length > 2 and stopwords
-                .sort((a, b) => b.length - a.length) // Sort by length descending
+                .filter(key => key && key.length > 2 && !stopWords.has(key.toLowerCase())) // Filter length > 2 and stopwords - REMOVED
+                .sort((a, b) => b.length - a.length) // Sort by length descending - REMOVED (Handled in DNDUtilities)
                 .forEach(key => {
                     filteredSortedLinkData[key] = linkData[key];
                 });
         }
+        */
 
-        if (!messageElement || !filteredSortedLinkData || Object.keys(filteredSortedLinkData).length === 0) {
-            console.log("[Debug] processLinks exiting early - no element or no valid/filtered linkData.");
+        // Check based on raw linkData existence before processing
+        if (!messageElement || !linkData || Object.keys(linkData).length === 0) {
+            console.log("[Debug] processLinks exiting early - no element or no raw linkData provided.");
             return false;
         }
 
@@ -230,12 +236,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return false;
         }
 
-        console.log("[Debug Mobile Chat] Data passed to DNDUtilities.processLinksInMessage:", JSON.stringify(filteredSortedLinkData, null, 2));
+        console.log("[Debug Mobile Chat] Data passed to DNDUtilities.processLinksInMessage (unfiltered):", JSON.stringify(processedLinkData, null, 2));
 
         try {
-            console.log(`[Debug] Calling DNDUtilities.processLinksInMessage with ${Object.keys(filteredSortedLinkData).length} filtered/sorted links.`);
-            // Use the filtered and sorted link data
-            const hasLinks = DNDUtilities.processLinksInMessage(messageElement, filteredSortedLinkData);
+            console.log(`[Debug] Calling DNDUtilities.processLinksInMessage with ${Object.keys(processedLinkData).length} raw links.`);
+            // Use the raw link data - filtering and sorting is now done inside the utility
+            // Pass raw data (processedLinkData) and no options (defaults will apply)
+            const hasLinks = DNDUtilities.processLinksInMessage(messageElement, processedLinkData);
             console.log("[Debug] DNDUtilities.processLinksInMessage returned:", hasLinks);
             
             // If links were added, add our mobile-specific event listeners
