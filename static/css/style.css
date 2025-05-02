@@ -2965,7 +2965,8 @@ button#github-repo-button.about-project-button i {
 .message-text a {
     /* Let inline styles (from category coloring) or specific classes override */
     color: inherit; 
-    text-decoration: underline;
+    text-decoration: underline; /* Base underline, overridden by .internal-link */
+    font-weight: 600; /* Set base weight to match strong tags */
     transition: color 0.2s ease;
 }
 
