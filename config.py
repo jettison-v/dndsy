@@ -29,6 +29,41 @@ GA_MEASUREMENT_ID = os.getenv("GA_MEASUREMENT_ID", None)
 # S3 configuration constants
 S3_CONFIG_KEY = "config/app_config.json"
 
+# --- Predefined Document Categories ---
+# List of categories (with descriptions) the LLM should choose from 
+# for the 'constrained_category' metadata field.
+PREDEFINED_CATEGORIES = [
+    {
+        "name": "Core Rules", 
+        "description": "Foundational gameplay mechanics, character creation, combat rules, equipment."
+    },
+    {
+        "name": "Monsters", 
+        "description": "Stat blocks, descriptions, and lore for creatures."
+    },
+    {
+        "name": "Adventure Module", 
+        "description": "Content related to specific adventures, locations, NPCs, and plot points."
+    },
+    {
+        "name": "Legacy Rules (5e)", 
+        "description": "Rules content specifically from the 2014 5th Edition rulebooks."
+    },
+    {
+        "name": "Spells", 
+        "description": "Descriptions, levels, effects, and rules for spells."
+    },
+    {
+        "name": "Items", 
+        "description": "Descriptions and rules for non-magical equipment and gear."
+    },
+    {
+        "name": "Magic Items", 
+        "description": "Descriptions, rules, and properties of magical items."
+    }
+    # Add more category dictionaries as needed
+]
+
 # Default configuration dictionary with sensible defaults
 DEFAULT_CONFIG = {
     # LLM Configuration
