@@ -10,7 +10,7 @@ import sys
 from typing import List, Dict, Any, Optional
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone # Import timezone here
 import re # Import re for path cleaning
 import boto3
 from botocore.exceptions import NoCredentialsError, PartialCredentialsError, ClientError
@@ -38,7 +38,7 @@ import sys
 from typing import List, Dict, Any, Optional
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone # Import timezone here
 import re # Import re for path cleaning
 import boto3
 from botocore.exceptions import NoCredentialsError, PartialCredentialsError, ClientError
@@ -1565,7 +1565,7 @@ class DataProcessor:
         # but milestones could be added there too if needed for store population progress.
         for store_type in target_stores:
             # ... (store selection logic) ...
-            self.populate_store(actual_store_type, successfully_preprocessed_keys)
+            self.populate_store(store_type, successfully_preprocessed_keys)
 
         # ... (Final Summary Logging) ...
         total_elapsed = (datetime.now() - overall_start_time).total_seconds()
