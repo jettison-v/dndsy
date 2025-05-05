@@ -26,26 +26,40 @@ Before running the tests, make sure you have:
 
 ### Running All Tests
 
-To run all tests:
+To run all tests discovered by pytest in the `tests/` directory and its subdirectories:
 
 ```bash
-python -m pytest
+pytest
+# Or with explicit verbosity
+# pytest -v
 ```
 
-### Running Specific Test Categories
+### Running Specific Test Files or Categories
 
-To run specific categories of tests:
+You can run specific test files directly or use markers defined in `pytest.ini`.
 
 ```bash
-# Run API tests
-python -m pytest tests/test_app.py
+# Run all tests in a specific file
+pytest tests/test_api.py
+pytest tests/test_app.py
+pytest tests/test_search.py
+pytest tests/test_vector_store.py
+pytest tests/test_qdrant.py
+pytest tests/test_qdrant_cloud.py
+pytest tests/test_hybrid.py
+pytest tests/test_tiktoken.py
 
-# Run vector store tests
-python -m pytest tests/test_vector_store.py
+# Run all tests in a subdirectory
+pytest tests/vector_store/
 
-# Run Qdrant-specific tests
-python -m pytest tests/test_qdrant.py
+# Run tests marked with 'api' (if markers are used in test functions)
+# pytest -m api
 ```
+
+### Test Configuration (`pytest.ini` and `conftest.py`)
+
+*   `pytest.ini`: Configures test discovery patterns, logging, default options (`addopts`), and marker definitions.
+*   `conftest.py`: This file contains shared fixtures (setup/teardown code) used by multiple tests, helping to avoid code duplication.
 
 ### Test Coverage
 

@@ -10,17 +10,25 @@ This directory contains tests for the various vector store implementations:
 
 ## Running Tests
 
-To run vector store tests:
+To run vector store tests located in this directory:
 
 ```bash
-# Run all tests
-python -m tests.vector_store.test_vector_store
+# Run all tests in this directory
+pytest tests/vector_store/
 
-# Run specific tests
-python -m tests.vector_store.test_qdrant
-python -m tests.vector_store.test_haystack_memory
-python -m tests.vector_store.test_haystack_qdrant
+# Run specific test files within this directory
+pytest tests/vector_store/test_haystack.py
+pytest tests/vector_store/test_force_auth.py
 ```
+
+## Test Files
+
+*   `test_haystack.py`: Contains tests for both Haystack Qdrant and Haystack Memory implementations.
+*   `test_force_auth.py`: Contains tests related to authentication forcing mechanisms within vector store interactions (details may vary).
+
+## Diagnostic Script
+
+*   `check_qdrant.py`: This is not a pytest test file, but a standalone diagnostic script. Run it with `python tests/vector_store/check_qdrant.py` to connect to your configured Qdrant instance, list collections, check point counts, and view sample points. Useful for debugging Qdrant connection and data status.
 
 ## Test Coverage
 

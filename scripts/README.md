@@ -55,4 +55,17 @@ python -m scripts.manage_vector_stores --store semantic --cache-behavior rebuild
     *   If provided, overrides the `AWS_S3_PDF_PREFIX` setting from the `.env` file. Useful for testing with a subset of documents.
 
 **load_haystack_store.py**
+
+*Deprecated:* This script was used in earlier versions to specifically load documents into a Haystack store. This functionality is now integrated into `manage_vector_stores.py` using the `--store haystack`, `--store haystack-qdrant`, or `--store haystack-memory` flags. This script is no longer needed and may be removed in the future.
+
+**setup_env.py**
+
+This is a helper script to interactively create an initial `.env` file for local development. It prompts the user for their OpenAI API Key and writes it to `.env`, along with default settings for connecting to a local Qdrant instance (`QDRANT_HOST=localhost`, `QDRANT_PORT=6333`).
+
+**Usage:**
+
+```bash
+python scripts/setup_env.py
 ```
+
+If a `.env` file already exists, it will ask if you want to overwrite it.
