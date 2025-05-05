@@ -1,0 +1,42 @@
+# Core Web Framework
+Flask==3.0.2
+Flask-Cors==4.0.0
+Flask-Login==0.6.3
+Flask-Session==0.6.0
+gunicorn==22.0.0  # Web Server
+gevent          # Gunicorn worker type
+
+# LLM & Embeddings
+openai==1.70.0
+sentence-transformers==2.5.1
+tiktoken==0.9.0
+transformers==4.36.2
+torch==2.6.0 # Needed by transformers/sentence-transformers
+
+# Vector Database
+qdrant-client>=1.10.0
+
+# Haystack (Optional Vector Stores)
+haystack-ai>=2.11.0
+qdrant-haystack>=9.1.1
+
+# Data Ingestion & Processing
+PyMuPDF==1.25.5  # PDF Parsing
+langchain==0.1.13 # Chunking (Semantic)
+langchain-community==0.0.29 # (Langchain)
+langchain-openai==0.0.8 # (Langchain)
+rank_bm25==0.2.2  # Semantic Store BM25
+nltk==3.8.1      # Text processing support
+spacy==3.7.4     # Text processing support
+en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl # Spacy model
+
+# AWS
+boto3
+
+# Utilities
+python-dotenv==1.0.1
+requests==2.31.0
+beautifulsoup4==4.12.3 # Might be used for link/metadata extraction? Keep for now.
+numpy==1.26.4 # Often needed by ML/data libraries
+pandas==2.2.1 # Often needed by ML/data libraries
+tqdm==4.66.2 # Progress bars 
