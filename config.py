@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import logging
 import boto3
 from botocore.exceptions import ClientError
+from pathlib import Path
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -16,18 +17,56 @@ load_dotenv(override=True)
 # Environment detection
 IS_DEV_ENV = os.environ.get("ENV", "production").lower() in ("dev", "development", "beta")
 ENV_PREFIX = "dev__" if IS_DEV_ENV else ""
-S3_BUCKET_NAME = os.environ.get("AWS_S3_BUCKET_NAME", "askdnd-ai")
-if IS_DEV_ENV and not S3_BUCKET_NAME.startswith("dev-"):
-    S3_BUCKET_NAME = f"dev-{S3_BUCKET_NAME}"
-    logger.info(f"Development environment detected. Using S3 bucket: {S3_BUCKET_NAME}")
+
+# --- S3 Bucket Name (Read Only) ---
+# We no longer modify the bucket name based on environment here.
+# The correct bucket (e.g., 'dev-askdnd-ai' or 'askdnd-ai') 
+# should be set directly via the AWS_S3_BUCKET_NAME env var.
+S3_BUCKET_NAME = os.environ.get("AWS_S3_BUCKET_NAME")
+if not S3_BUCKET_NAME:
+    logger.error("AWS_S3_BUCKET_NAME environment variable not set!")
+    # Potentially raise an error or set a dummy value depending on desired behavior
+    # raise ValueError("AWS_S3_BUCKET_NAME must be set")
+    S3_BUCKET_NAME = "default-bucket-name-error" # Placeholder
+
+if IS_DEV_ENV:
+    logger.info(f"Development environment detected. Using ENV_PREFIX='{ENV_PREFIX}'. S3 Bucket: {S3_BUCKET_NAME}")
 else:
-    logger.info(f"Production environment detected. Using S3 bucket: {S3_BUCKET_NAME}")
+    logger.info(f"Production environment detected. ENV_PREFIX is empty. S3 Bucket: {S3_BUCKET_NAME}")
 
 # Google Analytics
 GA_MEASUREMENT_ID = os.getenv("GA_MEASUREMENT_ID", None)
 
-# S3 configuration constants
-S3_CONFIG_KEY = "config/app_config.json"
+# --- S3 Base Keys/Prefixes (without environment prefix) ---
+BASE_S3_CONFIG_KEY = "config/app_config.json"
+BASE_S3_HISTORY_KEY = "processing/pdf_process_history.json"
+BASE_S3_PDF_PREFIX = "source-pdfs/"
+BASE_S3_IMAGE_PREFIX = "pdf_page_images/"
+BASE_S3_LINKS_PREFIX = "extracted_links/"
+BASE_S3_METADATA_PREFIX = "pdf-metadata/"
+# --------------------------------------------------------
+
+# --- Helper to Get Environment-Specific S3 Keys/Prefixes ---
+def get_s3_key(base_key: str) -> str:
+    """Prepends the environment prefix to a base S3 key."""
+    return f"{ENV_PREFIX}{base_key}"
+
+def get_s3_prefix(base_prefix: str) -> str:
+    """Prepends the environment prefix to a base S3 prefix, ensuring trailing slash."""
+    prefixed = f"{ENV_PREFIX}{base_prefix}"
+    # Ensure trailing slash for prefixes
+    if not prefixed.endswith('/'):
+        prefixed += '/'
+    return prefixed
+
+# --- Environment-Specific S3 Keys/Prefixes (used by other modules) ---
+S3_CONFIG_KEY = get_s3_key(BASE_S3_CONFIG_KEY)
+S3_HISTORY_KEY = get_s3_key(BASE_S3_HISTORY_KEY)
+S3_PDF_PREFIX = get_s3_prefix(BASE_S3_PDF_PREFIX)
+S3_IMAGE_PREFIX = get_s3_prefix(BASE_S3_IMAGE_PREFIX)
+S3_LINKS_PREFIX = get_s3_prefix(BASE_S3_LINKS_PREFIX)
+S3_METADATA_PREFIX = get_s3_prefix(BASE_S3_METADATA_PREFIX)
+# --------------------------------------------------------------------
 
 # --- Predefined Document Categories ---
 # List of categories (with descriptions) the LLM should choose from 
@@ -288,3 +327,16 @@ def update_app_config(new_config):
 
 # Initialize app_config by loading from S3 (falling back to defaults if needed)
 app_config = load_config_from_s3() 
+
+# --- Getters for Environment Specific Names ---
+def get_qdrant_collection_name(base_name: str) -> str:
+    """Prepends the environment prefix to a base Qdrant collection name."""
+    return f"{ENV_PREFIX}{base_name}"
+
+def get_haystack_memory_dir(base_dir_name: str = "haystack_store") -> str:
+    """Returns the environment-specific path for the Haystack memory store directory."""
+    # Assumes it lives under a 'data/' directory relative to project root
+    # Modify path logic if needed
+    project_root = Path(__file__).parent
+    return str(project_root / "data" / f"{ENV_PREFIX}{base_dir_name}")
+# ------------------------------------------- 
