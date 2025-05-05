@@ -103,33 +103,34 @@ def manage_vector_stores(store_arg='all', cache_behavior='use', s3_pdf_prefix=No
     if isinstance(store_arg, list):
          # Handle special keywords 'all' and 'haystack'
          if 'all' in store_arg:
-              requested_stores = ['pages', 'semantic', 'haystack-qdrant']
+              requested_stores = ['pages', 'semantic', 'haystack-qdrant', 'haystack-memory']
          else:
               temp_stores = set()
               for store in store_arg:
                    if store == 'haystack':
                         temp_stores.add('haystack-qdrant')
+                        temp_stores.add('haystack-memory')
                    else:
                         temp_stores.add(store)
               requested_stores = list(temp_stores)
     elif isinstance(store_arg, str): # Handle case where only one --store is passed or default is used
           if store_arg == 'all':
-               requested_stores = ['pages', 'semantic', 'haystack-qdrant']
+               requested_stores = ['pages', 'semantic', 'haystack-qdrant', 'haystack-memory']
           elif store_arg == 'haystack':
-               requested_stores = ['haystack-qdrant']
+               requested_stores = ['haystack-qdrant', 'haystack-memory']
           else:
                requested_stores = [store_arg]
     else:
          # Default case if no store is specified - treat as 'all'
          if not store_arg:
               logger.info("No store specified, defaulting to 'all'.")
-              requested_stores = ['pages', 'semantic', 'haystack-qdrant']
+              requested_stores = ['pages', 'semantic', 'haystack-qdrant', 'haystack-memory']
          else:
              logger.warning(f"Unrecognized store argument format: {store_arg}. Defaulting to all.")
-             requested_stores = ['pages', 'semantic', 'haystack-qdrant']
+             requested_stores = ['pages', 'semantic', 'haystack-qdrant', 'haystack-memory']
 
     # Validate final list against known types
-    all_known_stores = ['pages', 'semantic', 'haystack-qdrant']
+    all_known_stores = ['pages', 'semantic', 'haystack-qdrant', 'haystack-memory']
     target_stores = [s for s in requested_stores if s in all_known_stores]
 
     if not target_stores:
@@ -173,6 +174,9 @@ def manage_vector_stores(store_arg='all', cache_behavior='use', s3_pdf_prefix=No
         if 'haystack-qdrant' in target_stores:
              send_status("milestone", {"message": "Clearing Haystack-Qdrant store..."})
              _clear_store('haystack-qdrant', qdrant_client)
+        if 'haystack-memory' in target_stores:
+            send_status("milestone", {"message": "Clearing Haystack-Memory store..."})
+            _clear_store('haystack-memory', None) # Memory store doesn't need qdrant client
 
         send_status("milestone", {"message": "Store clearing finished."})
 
@@ -271,7 +275,19 @@ def _clear_store(store_type: str, qdrant_client: QdrantClient = None):
             raise RuntimeError(f"Failed to get instance for store type '{store_type}' to clear.")
 
         # Special handling based on type might still be needed if clear_store isn't uniform
-        if store_type in ['pages', 'semantic', 'haystack-qdrant']:
+        if store_type == 'haystack-memory':
+            # Memory store clearing might involve deleting a file + reinit
+            try:
+                persistence_file = getattr(store_instance, 'persistence_file', None)
+                if persistence_file and os.path.exists(persistence_file):
+                    os.remove(persistence_file)
+                    logger.info(f"Deleted haystack persistence file: {persistence_file}")
+                # Attempt reinitialization via get_vector_store if needed
+                store_instance = get_vector_store(store_type, force_new=True)
+                logger.info(f"Reinitialized {store_type} store")
+            except Exception as mem_e:
+                logger.warning(f"Could not fully clear/reset {store_type}: {mem_e}")
+        elif store_type in ['pages', 'semantic', 'haystack-qdrant']:
             # Assume Qdrant-based stores need the client and have a clear_store method
             if not qdrant_client:
                 logger.warning(f"Qdrant client not available, cannot clear Qdrant-based store: {store_type}")
@@ -332,16 +348,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Manage vector stores using the two-phase processing pipeline.")
 
     # --- Argument Definitions ---
-    all_store_choices = ['pages', 'semantic', 'haystack-qdrant']
+    all_store_choices = ['pages', 'semantic', 'haystack-qdrant', 'haystack-memory']
     
     parser.add_argument(
         '--store',
         action='append',  # Allow the argument to be specified multiple times
-        choices=all_store_choices + ['all', 'haystack'], # 'haystack' now only means haystack-qdrant
+        choices=all_store_choices + ['all', 'haystack'], # Add 'all' and 'haystack' as valid choices
         dest='stores',  # Store the results in a list called 'stores'
         default=[],
         help=("Which store(s) to process. Specify multiple times (e.g., --store pages --store semantic) "
-              "or use 'all' or 'haystack' (implies haystack-qdrant). Defaults to ['all'] if none specified.")
+              "or use 'all' or 'haystack' (implies both qdrant/memory). Defaults to ['all'] if none specified.")
     )
     parser.add_argument(
         '--cache-behavior',
