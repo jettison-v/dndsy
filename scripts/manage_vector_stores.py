@@ -189,13 +189,15 @@ def manage_vector_stores(store_arg='all', cache_behavior='use', s3_pdf_prefix=No
             send_status("milestone", {"message": "Initializing Data Processor..."})
             processor = DataProcessor(
                 cache_behavior=cache_behavior,
-                s3_pdf_prefix_override=s3_pdf_prefix
+                s3_pdf_prefix_override=s3_pdf_prefix,
+                status_callback=send_status
             )
             send_status("milestone", {"message": "Data Processor initialized."})
 
             logger.info(f"--- Starting Data Processing for stores: {target_stores} --- ")
             # Call the main refactored method
             total_points_added = processor.process_all_sources(target_stores=target_stores)
+            # Status updates now come directly from the processor via the callback
 
             if total_points_added < 0: # Check if processor indicated errors
                  overall_success = False

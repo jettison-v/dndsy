@@ -99,4 +99,76 @@ python tests/data_ingestion/link_extractor_test.py --pdf-key source-pdfs/your-fi
 python tests/data_ingestion/link_extractor_test.py --process-all --limit 5
 ```
 
-The test script provides detailed logs and saves extracted links to S3. 
+The test script provides detailed logs and saves extracted links to S3.
+
+## Metadata Generation (Integrated into `processor.py`)
+
+This functionality is responsible for generating rich metadata for processed documents (originally PDFs). The goal of this metadata is to enhance the Retrieval-Augmented Generation (RAG) process by providing additional context about the source documents, allowing the system to better rank or filter retrieval results based on the user's query intent.
+
+### Purpose
+
+During data ingestion, simply chunking and embedding document text may not be enough, especially when dealing with multiple documents covering overlapping topics (e.g., the same term like "Druid" appearing as a class in one book and a monster in another). This functionality aims to:
+
+1.  **Extract Key Information:** Pull out relevant details like title, summary, and keywords from the document content using LLM calls.
+2.  **Categorize Documents:** Assign categories based on both a predefined list (constrained) and free-form analysis (automatic), also using LLM calls.
+3.  **Standardize Metadata:** Produce a consistent JSON structure for each document's metadata.
+4.  **Store Metadata:** Upload the generated metadata JSON to a designated S3 location (`pdf-metadata/` prefix) for later retrieval.
+
+### Functionality Overview (within `processor.py`)
+
+1.  **Initialization:** Relies on AWS S3 credentials (`AWS_S3_BUCKET_NAME`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`) and LLM provider credentials (e.g., `OPENAI_API_KEY`, `LLM_PROVIDER`, `LLM_MODEL_NAME`) set as environment variables. An LLM client (`metadata_llm_client`) is initialized at the module level.
+2.  **Orchestration Function (`_generate_and_upload_metadata`):**
+    *   Called from within `_preprocess_single_pdf` after text and link extraction for a document.
+    *   Takes raw PDF bytes, extracted text, filename, S3 key, and the predefined category list (from `config.py`) as input.
+    *   Generates a unique `document_id`.
+    *   Calls helper functions (prefixed with `_`) to populate metadata fields.
+    *   Calls `upload_metadata_to_s3` to store the result.
+    *   Includes error handling and status reporting via the `status_callback`.
+3.  **Metadata Extraction Functions (internal to `processor.py`):**
+    *   `_determine_metadata_constrained_category`: Uses the LLM to classify the document text (based on its summary) and select the single best-fitting category from the `PREDEFINED_CATEGORIES` list in `config.py`.
+    *   `_determine_metadata_automatic_category`: Uses the LLM to analyze the document summary and generate a concise, descriptive category name freely.
+    *   `_extract_metadata_source_book_title`: Attempts to extract the title from the beginning of the document text using regex and fallback logic.
+    *   `_generate_metadata_summary`: Uses the LLM to create a brief summary of the document text (truncating input if needed).
+    *   `_extract_metadata_keywords`: Uses the LLM to identify and extract relevant keywords/phrases from the document summary.
+4.  **S3 Interaction:**
+    *   `upload_metadata_to_s3`: Uploads the generated metadata dictionary to the configured S3 bucket under the `pdf-metadata/` prefix.
+    *   `get_metadata_from_s3`: (Available but not currently used by the main pipeline) Retrieves a specific metadata JSON file from S3.
+
+### Metadata Schema
+
+The generated metadata JSON follows this structure:
+
+```json
+{
+  "document_id": "unique_identifier_for_the_document",
+  "original_filename": "source_pdf_filename.pdf",
+  "s3_pdf_path": "s3://your-raw-pdf-bucket/path/to/document.pdf",
+  "constrained_category": "Category chosen from predefined list",
+  "automatic_category": "Category determined freely by LLM",
+  "source_book_title": "Extracted Title | null",
+  "summary": "LLM-generated summary of the document.",
+  "keywords": ["keyword1", "keyword2", "topic3"],
+  "processing_timestamp": "ISO_8601_timestamp"
+}
+```
+
+*   `constrained_category`: The best fit from the `PREDEFINED_CATEGORIES` in `config.py`, chosen by the LLM (based on summary).
+*   `automatic_category`: A descriptive category generated freely by the LLM (based on summary).
+
+### Configuration (Environment Variables)
+
+This functionality relies on environment variables shared with the rest of the processing pipeline:
+
+*   **S3 Configuration:**
+    *   `AWS_S3_BUCKET_NAME`
+    *   `AWS_ACCESS_KEY_ID`
+    *   `AWS_SECRET_ACCESS_KEY`
+    *   `AWS_REGION`
+*   **LLM Configuration:**
+    *   `LLM_PROVIDER`
+    *   `LLM_MODEL_NAME`
+    *   Provider-specific API key (e.g., `OPENAI_API_KEY`)
+
+### Predefined Categories (`config.py`)
+
+The list of categories used for the `constrained_category` field is defined in `config.py` as `PREDEFINED_CATEGORIES`. This list should contain dictionaries with `name` and `description` keys. 

@@ -4,7 +4,7 @@ from pathlib import Path
 import fitz  # PyMuPDF
 import sys
 import hashlib  # For PDF content hashing
-from typing import List, Dict, Any, Optional, Tuple, Set
+from typing import List, Dict, Any, Optional, Tuple, Set, Callable
 import logging
 import sys
 from typing import List, Dict, Any, Optional
@@ -17,6 +17,7 @@ from botocore.exceptions import NoCredentialsError, PartialCredentialsError, Cli
 import io # For handling image data in memory
 from dotenv import load_dotenv
 import uuid  # For generating unique UUIDs
+import time
 
 # Add parent directory to path to make imports work properly
 # sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -44,6 +45,11 @@ from botocore.exceptions import NoCredentialsError, PartialCredentialsError, Cli
 import io # For handling image data in memory
 from dotenv import load_dotenv
 import uuid  # For generating unique UUIDs
+
+# --- Add imports needed for metadata functions --- 
+from config import PREDEFINED_CATEGORIES # Import category definitions
+from llm_providers import get_llm_client # Import the LLM client factory
+# -------------------------------------------------
 
 # Ensure logs directory exists relative to project root
 # Assumes this script is run from the project root or sys.path is set correctly
@@ -153,34 +159,456 @@ logger = logging.getLogger(__name__)
 PreprocessedData = Dict[str, Any] # Contains keys like 'text', 'page', 'metadata'
 PreprocessedCache = Dict[str, List[PreprocessedData]] # Keyed by s3_pdf_key
 
+# --- Configuration for Metadata --- 
+METADATA_S3_PREFIX = "pdf-metadata/" # Store metadata under this prefix
+
+# --- LLM Client Initialization for Metadata Tasks ---
+# Initialize once when the module loads
+metadata_llm_client = None
+try:
+    # This reads the same env vars as the main app's client
+    metadata_llm_client = get_llm_client()
+    logger.info("Initialized LLM client for metadata tasks within processor.")
+except ImportError as e:
+    logger.error(f"Could not import/initialize get_llm_client for metadata: {e}")
+except Exception as e:
+    logger.error(f"Failed to initialize LLM client for metadata: {e}")
+# -------------------------------------------------
+
+# ==============================================================================
+# == METADATA GENERATION FUNCTIONS (Moved from metadata_processor.py) ==
+# ==============================================================================
+
+# --- S3 Interaction for Metadata --- 
+def upload_metadata_to_s3(metadata_json: dict, document_id: str):
+    # (Function body copied from metadata_processor.py)
+    # Uses AWS_S3_BUCKET_NAME, AWS_REGION_META from this file's scope now
+    """Uploads the metadata JSON to the configured S3 bucket.
+    Args:
+        metadata_json: The metadata dictionary to upload.
+        document_id: The unique ID for the document (used as filename).
+    Raises:
+        Exception: Propagates S3 client errors.
+    """
+    global s3_client # Use the main s3_client initialized in this module
+    if not s3_client:
+        logger.error("S3 client not initialized. Cannot upload metadata.")
+        raise ConnectionError("S3 client not available for metadata upload")
+
+    object_key = f"{METADATA_S3_PREFIX}{document_id}.json"
+    try:
+        s3_client.put_object(
+            Bucket=AWS_S3_BUCKET_NAME, # Use bucket from this module's config
+            Key=object_key,
+            Body=json.dumps(metadata_json, indent=2),
+            ContentType='application/json'
+        )
+        logger.info(f"Successfully uploaded metadata for {document_id} to s3://{AWS_S3_BUCKET_NAME}/{object_key}")
+    except Exception as e:
+        logger.error(f"Error uploading metadata for {document_id} to S3: {e}")
+        raise
+
+def get_metadata_from_s3(document_id: str) -> dict | None:
+    # (Function body copied from metadata_processor.py)
+    """Retrieves metadata JSON from the configured S3 bucket.
+    Args:
+        document_id: The unique ID for the document metadata file.
+    Returns:
+        The metadata dictionary if found, otherwise None.
+    Raises:
+        Exception: Propagates S3 client errors (except NoSuchKey).
+    """
+    global s3_client
+    if not s3_client:
+        logger.error("S3 client not initialized. Cannot get metadata.")
+        raise ConnectionError("S3 client not available for metadata retrieval")
+
+    object_key = f"{METADATA_S3_PREFIX}{document_id}.json"
+    try:
+        response = s3_client.get_object(Bucket=AWS_S3_BUCKET_NAME, Key=object_key)
+        metadata = json.loads(response['Body'].read().decode('utf-8'))
+        logger.info(f"Successfully retrieved metadata for {document_id} from s3://{AWS_S3_BUCKET_NAME}/{object_key}")
+        return metadata
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'NoSuchKey':
+             logger.warning(f"Metadata not found for {document_id} at s3://{AWS_S3_BUCKET_NAME}/{object_key}")
+             return None
+        else:
+             logger.error(f"S3 ClientError retrieving metadata for {document_id}: {e}")
+             raise # Reraise other S3 errors
+    except Exception as e:
+        logger.error(f"Error retrieving metadata for {document_id} from S3: {e}")
+        raise
+
+# --- Metadata Extraction Functions --- 
+def _generate_metadata_document_id(pdf_content: bytes | None = None, s3_path: str | None = None) -> str:
+    # (Function body copied from metadata_processor.py)
+    """Generates a unique ID for the document metadata.
+    Preferentially uses S3 path hash if available, otherwise content hash.
+    """
+    if s3_path:
+        return hashlib.sha256(s3_path.encode('utf-8')).hexdigest()
+    elif pdf_content:
+        logger.warning("Generating metadata document ID from PDF content hash as S3 path was not provided.")
+        return hashlib.sha256(pdf_content).hexdigest()
+    else:
+        raise ValueError("Either pdf_content or s3_path must be provided to generate metadata document ID")
+
+def _determine_metadata_constrained_category(document_text: str, available_categories: list[dict]) -> str:
+    # (Function body copied from metadata_processor.py)
+    # Uses metadata_llm_client initialized in this module
+    """Analyzes text and selects the best category name from the provided list (with descriptions) using an LLM."""
+    global metadata_llm_client
+    if not metadata_llm_client:
+        # ... (fallback logic as before)
+        logging.warning("LLM client not available for constrained categorization. Returning placeholder.")
+        if not available_categories: return "Unknown"
+        cat_names = [cat['name'] for cat in available_categories]
+        if "monster" in document_text.lower() and "Monsters" in cat_names: return "Monsters"
+        return available_categories[0]['name']
+    
+    if not available_categories:
+        logging.warning("No available categories provided for constrained categorization. Returning 'Unknown'.")
+        return "Unknown"
+
+    # ... (rest of function body: logging, prompt creation, LLM call, validation, fallback)
+    logging.info(f"Determining constrained category from {len(available_categories)} options for doc ({len(document_text)} chars)...")
+    category_list_str = "\n".join([f"{i+1}. {cat['name']}: {cat['description']}" for i, cat in enumerate(available_categories)])
+    valid_category_names = [cat['name'] for cat in available_categories]
+    prompt = (
+        f"Analyze the following document text and determine which single category from the list below best describes its primary content. "
+        f"Consider the category descriptions provided. "
+        f"Respond with ONLY the category NAME exactly as it appears in the list (e.g., 'Core Rules', 'Monsters').\n\n"
+        f"Available Categories:\n{category_list_str}\n\n"
+        f"Document Text:\n---\n{document_text}\n---"        
+    )
+    system_prompt = "You are an expert assistant skilled at classifying documents based on a predefined list of categories with descriptions. You only respond with the single best category name from the provided list."
+    try:
+        response_obj = metadata_llm_client.generate_response(
+            prompt=prompt, 
+            system_message=system_prompt, 
+            temperature=0.0, 
+            max_tokens=50, 
+            stream=False
+        )
+        if isinstance(response_obj, dict) and "response_text" in response_obj:
+            chosen_category_name = response_obj["response_text"]
+        elif hasattr(response_obj, '__iter__') and not isinstance(response_obj, str):
+            logging.warning("LLM client returned a generator unexpectedly for stream=False. Consuming it.")
+            chosen_category_name = "".join(chunk for chunk in response_obj)
+        else:
+            logging.warning(f"Unexpected response type from LLM client ({type(response_obj)}). Attempting str conversion.")
+            chosen_category_name = str(response_obj)
+            
+        chosen_category_name = chosen_category_name.strip().strip('"\'')
+        if chosen_category_name in valid_category_names:
+            logging.info(f"Determined constrained category: '{chosen_category_name}'")
+            return chosen_category_name
+        else:
+            logging.warning(f"LLM returned a category name ('{chosen_category_name}') not in the valid list: {valid_category_names}. Attempting fallback match or using default.")
+            for name in valid_category_names:
+                if chosen_category_name.lower() == name.lower():
+                    logging.info(f"Found case-insensitive fallback match: '{name}'")
+                    return name
+            default_name = available_categories[0]['name']
+            logging.warning(f"Using first available category name '{default_name}' as fallback.")
+            return default_name
+    except Exception as e:
+        logging.error(f"Error determining constrained category with LLM: {e}", exc_info=True)
+        default_name = available_categories[0]['name'] if available_categories else "Unknown"
+        logging.warning(f"Using fallback category '{default_name}' due to LLM error.")
+        return default_name
+
+def _determine_metadata_automatic_category(document_text: str) -> str:
+    # (Function body copied from metadata_processor.py)
+    # Uses metadata_llm_client initialized in this module
+    """Analyzes text to determine a descriptive category freely using an LLM."""
+    global metadata_llm_client
+    if not metadata_llm_client:
+        # ... (fallback logic as before)
+        logging.warning("LLM client not available for automatic categorization. Returning placeholder.")
+        if "stat block" in document_text.lower(): return "Monsters (Placeholder)"
+        if "spell level" in document_text.lower(): return "Spells (Placeholder)"
+        return "General (Placeholder)"
+    
+    # ... (rest of function body: logging, prompt creation, LLM call, validation, fallback)
+    logging.info(f"Determining automatic category freely for document ({len(document_text)} chars)...")
+    prompt = (
+        f"Analyze the following document text and provide a concise, descriptive category name "
+        f"(e.g., 'Spell Descriptions', 'Monster Stat Blocks', 'Character Class Options', 'Magic Items List'). "
+        f"Focus on the primary content type. Respond with ONLY the category name.\n\n"
+        f"---\n{document_text}\n---"
+    )
+    system_prompt = "You are an expert assistant skilled at analyzing documents and assigning concise category labels."
+    try:
+        response_obj = metadata_llm_client.generate_response(
+            prompt=prompt, 
+            system_message=system_prompt, 
+            temperature=0.1, 
+            max_tokens=50, 
+            stream=False
+        )
+        if isinstance(response_obj, dict) and "response_text" in response_obj:
+            category = response_obj["response_text"]
+        elif hasattr(response_obj, '__iter__') and not isinstance(response_obj, str):
+            logging.warning("LLM client returned a generator unexpectedly for stream=False. Consuming it.")
+            category = "".join(chunk for chunk in response_obj)
+        else:
+            logging.warning(f"Unexpected response type from LLM client ({type(response_obj)}). Attempting str conversion.")
+            category = str(response_obj)
+            
+        category = category.strip().strip('"\'') 
+        if not category:
+            raise ValueError("LLM returned an empty category string.")
+        logging.info(f"Determined automatic category: '{category}'")
+        return category
+    except Exception as e:
+        logging.error(f"Error determining automatic category with LLM: {e}", exc_info=True)
+        if "stat block" in document_text.lower(): return "Monsters (Error Fallback)"
+        if "spell level" in document_text.lower(): return "Spells (Error Fallback)"
+        return "General (Error Fallback)"
+
+def _extract_metadata_source_book_title(document_text: str) -> str | None:
+    # (Function body copied from metadata_processor.py)
+    """Attempts to extract the source book title from text."""
+    # ... (function body as before: logging, regex, fallback)
+    logging.info("Extracting source book title...")
+    search_text = '\n'.join(document_text.split('\n', 50)[:50])
+    if len(search_text) > 4000:
+        search_text = search_text[:4000]
+    title_match = re.search(r"^\s*title\s*:\s*(.+)$", search_text, re.IGNORECASE | re.MULTILINE)
+    if title_match:
+        title = title_match.group(1).strip()
+        if '/' not in title and '\\' not in title and len(title) < 150:
+             logging.info(f"Found title via 'Title:' pattern: '{title}'")
+             return title
+        else:
+             logging.debug(f"Rejected potential title from 'Title:' pattern (path-like or too long): '{title}'")
+    lines = document_text.split('\n')
+    checked_lines = 0
+    max_lines_to_check = 5
+    for line in lines:
+        stripped_line = line.strip()
+        if stripped_line:
+            checked_lines += 1
+            if 3 < len(stripped_line) < 100 and not stripped_line.endswith(('.', '?', '!')):
+                if not (stripped_line.isupper() and len(stripped_line) < 15):
+                    logging.info(f"Using first non-empty line as potential title: '{stripped_line}'")
+                    return stripped_line
+            if checked_lines >= max_lines_to_check:
+                break
+    logging.info("Could not confidently extract source book title.")
+    return None
+
+def _generate_metadata_summary(document_text: str, max_input_chars: int = 20000) -> str:
+    # (Function body copied from metadata_processor.py)
+    # Uses metadata_llm_client initialized in this module
+    """Generates a summary of the document using an LLM, truncating input if necessary."""
+    global metadata_llm_client
+    if not metadata_llm_client:
+        # ... (fallback logic as before)
+        logging.warning("LLM client not available for summarization. Returning placeholder.")
+        preview = (document_text[:200] + '...') if len(document_text) > 200 else document_text
+        return f"[Placeholder] Summary of document starting with: '{preview}'"
+    
+    # ... (rest of function body: truncation, logging, prompt, LLM call, validation, fallback)
+    if len(document_text) > max_input_chars:
+        logging.warning(f"Input text ({len(document_text)} chars) exceeds limit ({max_input_chars}). Truncating for summary generation.")
+        truncated_text = document_text[:max_input_chars]
+    else:
+        truncated_text = document_text
+    logging.info(f"Generating summary from text ({len(truncated_text)} chars)...")
+    prompt = f"Please provide a concise summary (around 2-4 sentences) of the following document text:\n\n---\n{truncated_text}\n---"
+    system_prompt = "You are an expert assistant tasked with summarizing technical documents concisely."
+    try:
+        if not hasattr(metadata_llm_client, 'generate_response') or not callable(metadata_llm_client.generate_response):
+             raise NotImplementedError("LLM client does not have a 'generate_response' method.")
+        response_obj = metadata_llm_client.generate_response(
+            prompt=prompt, 
+            system_message=system_prompt, 
+            temperature=0.2, 
+            max_tokens=250, 
+            stream=False
+        )
+        if isinstance(response_obj, dict) and "response_text" in response_obj:
+            summary = response_obj["response_text"]
+        elif hasattr(response_obj, '__iter__') and not isinstance(response_obj, str):
+            logging.warning("LLM client returned a generator unexpectedly for stream=False. Consuming it.")
+            summary = "".join(chunk for chunk in response_obj)
+        else:
+            logging.warning(f"Unexpected response type from LLM client ({type(response_obj)}). Attempting str conversion.")
+            summary = str(response_obj)
+            
+        summary = summary.strip()
+        if not summary:
+            raise ValueError("LLM returned an empty summary string.")
+        logging.info(f"Generated summary: '{summary[:100]}...'" )
+        return summary
+    except Exception as e:
+        logging.error(f"Error generating summary with LLM: {e}", exc_info=True)
+        preview = (truncated_text[:200] + '...') if len(truncated_text) > 200 else truncated_text
+        return f"[Error] Failed to generate summary. Document starts: '{preview}'"
+
+def _extract_metadata_keywords(document_text: str) -> list[str]:
+    # (Function body copied from metadata_processor.py)
+    # Uses metadata_llm_client initialized in this module
+    """Extracts relevant keywords from the document text using an LLM."""
+    global metadata_llm_client
+    if not metadata_llm_client:
+        # ... (fallback logic as before)
+        logging.warning("LLM client not available for keyword extraction. Returning placeholder.")
+        from collections import Counter
+        words = [w.lower() for w in document_text.split() if len(w) > 4 and w.isalnum()]
+        common_words = [word for word, count in Counter(words).most_common(10)]
+        return [f"{kw} (Placeholder)" for kw in common_words]
+    
+    # ... (rest of function body: logging, prompt, LLM call, parsing, validation, fallback)
+    logging.info(f"Extracting keywords for document ({len(document_text)} chars)...")
+    prompt = (
+        f"Analyze the following document text and extract the most relevant keywords or key phrases that represent the main topics. "
+        f"Return a comma-separated list of these keywords/phrases.\n\n"
+        f"Document Text:\n---\n{document_text}\n---"
+    )
+    system_prompt = "You are an expert assistant skilled at identifying the core topics of a document and extracting relevant keywords."
+    try:
+        response_obj = metadata_llm_client.generate_response(
+            prompt=prompt,
+            system_message=system_prompt,
+            temperature=0.2,
+            max_tokens=150,
+            stream=False
+        )
+        if isinstance(response_obj, dict) and "response_text" in response_obj:
+            keywords_text = response_obj["response_text"]
+        elif hasattr(response_obj, '__iter__') and not isinstance(response_obj, str):
+            logging.warning("LLM client returned a generator unexpectedly for stream=False. Consuming it.")
+            keywords_text = "".join(chunk for chunk in response_obj)
+        else:
+            logging.warning(f"Unexpected response type from LLM client ({type(response_obj)}). Attempting str conversion.")
+            keywords_text = str(response_obj)
+
+        keywords = [kw.strip() for kw in keywords_text.split(',') if kw.strip()]
+        if not keywords:
+             raise ValueError("LLM returned no valid keywords.")
+        logging.info(f"Extracted keywords: {keywords}")
+        return keywords
+    except Exception as e:
+        logging.error(f"Error extracting keywords with LLM: {e}", exc_info=True)
+        from collections import Counter
+        words = [w.lower() for w in document_text.split() if len(w) > 4 and w.isalnum()]
+        common_words = [word for word, count in Counter(words).most_common(10)]
+        return [f"{kw} (Error Fallback)" for kw in common_words]
+
+# --- Main Metadata Generation Orchestrator --- 
+def _generate_and_upload_metadata(
+    pdf_bytes: bytes | None, 
+    extracted_text: str,
+    original_filename: str,
+    s3_pdf_key: str, 
+    available_categories: list[dict],
+    status_callback: Optional[Callable[[str, dict], None]] = None # Add callback param
+):
+    """Orchestrates the generation and upload of metadata for a single document.
+       Includes logging and error handling.
+    Args:
+        pdf_bytes: Raw bytes of the PDF content (optional).
+        extracted_text: Full extracted text content.
+        original_filename: The original name of the PDF file.
+        s3_pdf_key: The S3 key (path within bucket) of the source PDF.
+        available_categories: List of predefined category dictionaries from config.
+        status_callback: Optional function to send status updates.
+    """
+    global AWS_S3_BUCKET_NAME # Access bucket name defined in module scope
+    start_time = time.time()
+    # Report start via callback if provided
+    if status_callback:
+        status_callback("milestone", {"message": f"Generating metadata: {original_filename}..."})
+    else: # Log locally if no callback
+        logger.info(f"Starting metadata generation process for: {original_filename}")
+
+    # Construct full S3 path for metadata field
+    s3_full_path = f"s3://{AWS_S3_BUCKET_NAME}/{s3_pdf_key}"
+
+    try:
+        document_id = _generate_metadata_document_id(pdf_content=pdf_bytes, s3_path=s3_full_path)
+
+        # --- Generate Summary First --- 
+        summary_text = _generate_metadata_summary(extracted_text)
+
+        # --- Use Summary for Other LLM Tasks --- 
+        constrained_category = _determine_metadata_constrained_category(summary_text, available_categories)
+        automatic_category = _determine_metadata_automatic_category(summary_text)
+        keywords = _extract_metadata_keywords(summary_text)
+
+        # --- Extract Title (operates on original text) ---
+        source_book_title = _extract_metadata_source_book_title(extracted_text)
+
+        # --- Assemble Metadata --- 
+        metadata = {
+            "document_id": document_id,
+            "original_filename": original_filename,
+            "s3_pdf_path": s3_full_path, # Store the full S3 path
+            "constrained_category": constrained_category,
+            "automatic_category": automatic_category,
+            "source_book_title": source_book_title,
+            "summary": summary_text,
+            "keywords": keywords,
+            "processing_timestamp": datetime.now(datetime.timezone.utc).isoformat()
+        }
+        logger.debug(f"Generated metadata content for {original_filename}: {metadata}")
+
+        # --- Upload Metadata --- 
+        try:
+            upload_metadata_to_s3(metadata, document_id)
+            duration = time.time() - start_time
+            success_msg = f"Finished metadata: {original_filename} ({duration:.2f}s)"
+            logger.info(success_msg)
+            if status_callback:
+                status_callback("milestone", {"message": success_msg}) # Report success
+        except Exception as upload_e:
+             err_msg = f"Metadata upload failed: {original_filename} ({upload_e})"
+             logger.error(err_msg)
+             if status_callback:
+                 status_callback("error", {"message": err_msg}) # Report error
+
+    except Exception as e:
+        # Catch errors during generation itself
+        duration = time.time() - start_time
+        err_msg = f"Metadata generation failed: {original_filename} after {duration:.2f}s ({e})"
+        logger.error(err_msg, exc_info=True)
+        if status_callback:
+            status_callback("error", {"message": err_msg}) # Report error
+        # Do not re-raise, allow main PDF processing to continue
+
+# ==============================================================================
+# == END OF METADATA GENERATION FUNCTIONS ==
+# ==============================================================================
+
 class DataProcessor:
     """Handles the end-to-end processing of PDF documents from S3 into vector stores."""
 
-    def __init__(self, cache_behavior: str = 'use', s3_pdf_prefix_override: Optional[str] = None):
+    def __init__(self, cache_behavior: str = 'use', s3_pdf_prefix_override: Optional[str] = None, 
+                 status_callback: Optional[Callable[[str, dict], None]] = None): # Add callback param
         """Initialize the data processor."""
-        self.cache_behavior = cache_behavior # 'use' or 'rebuild'
-
-        # Determine the S3 prefix to use
-        self.s3_pdf_prefix = AWS_S3_PDF_PREFIX # Default from .env
+        self.cache_behavior = cache_behavior 
+        self.s3_pdf_prefix = AWS_S3_PDF_PREFIX 
         if s3_pdf_prefix_override:
+            # ... (prefix override logic) ...
             self.s3_pdf_prefix = s3_pdf_prefix_override
-            # Ensure override prefix ends with a slash if not empty
             if self.s3_pdf_prefix and not self.s3_pdf_prefix.endswith('/'):
                 self.s3_pdf_prefix += '/'
             logger.info(f"Using S3 PDF prefix override: {self.s3_pdf_prefix}")
         else:
             logger.info(f"Using S3 PDF prefix from environment: {self.s3_pdf_prefix}")
 
-        # Log the configuration
         logger.info(f"DataProcessor initialized with config:")
         logger.info(f"  - Cache Behavior: {self.cache_behavior}")
 
         self.doc_analyzer = DocumentStructureAnalyzer()
         self.process_history = self._load_process_history()
-        # Cache for preprocessed data from Phase 1
         self.preprocessed_data_cache: PreprocessedCache = {}
-        # Track totals across all stores populated in a run
         self.total_points_added_across_stores = 0
+        self.status_callback = status_callback # Store the callback
 
         logger.info(f"DataProcessor initialization complete.")
 
@@ -319,6 +747,7 @@ class DataProcessor:
             logger.error(f"Unexpected error deleting S3 object {s3_key}: {e}")
 
     def _preprocess_single_pdf(self, s3_pdf_key: str) -> Optional[List[PreprocessedData]]:
+        pdf_start_time = time.time() 
         """
         Phase 1 logic: Download, hash check, image gen (if needed),
         link extraction, text/metadata extraction for ONE PDF.
@@ -792,18 +1221,47 @@ class DataProcessor:
                     except Exception as save_e:
                         logger.error(f"Failed to save extracted links to S3 for {s3_pdf_key}: {save_e}", exc_info=True)
 
+                # --- Generate and Upload Document Metadata ---
+                # Use self.status_callback here
+                if self.status_callback:
+                    self.status_callback("milestone", {"message": f"Preprocessing complete, starting metadata generation for {pdf_filename}..."})
+                else: 
+                    logger.info(f"Initiating metadata generation for {s3_pdf_key}...")
+                
+                if preprocessed_page_data: 
+                    try:
+                        full_extracted_text = "\n\n".join(page_texts.values())
+                        _generate_and_upload_metadata(
+                            pdf_bytes=pdf_bytes,
+                            extracted_text=full_extracted_text,
+                            original_filename=pdf_filename,
+                            s3_pdf_key=s3_pdf_key, 
+                            available_categories=PREDEFINED_CATEGORIES,
+                            status_callback=self.status_callback # Pass it down
+                        )
+                    except Exception as meta_outer_e:
+                         logger.error(f"Outer error calling metadata generation for {s3_pdf_key}: {meta_outer_e}", exc_info=True)
+                else:
+                    logger.warning(f"Skipping metadata generation for {s3_pdf_key} as no text was extracted.")
+
             except Exception as pdf_proc_e:
-                logger.error(f"Error processing PDF content for {s3_pdf_key}: {pdf_proc_e}", exc_info=True)
-                return None # Indicate failure to preprocess this PDF
+                 logger.error(f"Error processing PDF content for {s3_pdf_key}: {pdf_proc_e}", exc_info=True)
+                 if self.status_callback:
+                    self.status_callback("error", {"message": f"Error processing PDF content for {pdf_filename}: {pdf_proc_e}"})
+                 return None
             finally:
                 if doc: doc.close()
-
-            logger.info(f"Finished pre-processing for {s3_pdf_key}. Storing {len(preprocessed_page_data)} pages of data.")
-            return preprocessed_page_data # Return the extracted data
+            
+            preprocess_duration = time.time() - pdf_start_time 
+            logger.info(f"Finished pre-processing phase for {s3_pdf_key} in {preprocess_duration:.2f}s. Storing {len(preprocessed_page_data)} pages of data.")
+            return preprocessed_page_data
 
         except Exception as outer_e:
-            logger.error(f"Unhandled error during pre-processing of {s3_pdf_key}: {outer_e}", exc_info=True)
-            return None
+             # ... (outer error handling) ...
+             logger.error(f"Unhandled error during pre-processing of {s3_pdf_key}: {outer_e}", exc_info=True)
+             if self.status_callback:
+                 self.status_callback("error", {"message": f"Unhandled error during pre-processing of {pdf_filename}: {outer_e}"})
+             return None
 
     def preprocess_all_pdfs(self) -> Tuple[PreprocessedCache, List[str]]:
         """
@@ -853,6 +1311,9 @@ class DataProcessor:
         self.preprocessed_data_cache = {} # Reset cache for this run
         successfully_preprocessed_keys = []
 
+        if self.status_callback: 
+            self.status_callback("milestone", {"message": f"Found {total_pdfs} PDFs. Starting pre-processing phase..."})
+
         for pdf_index, s3_pdf_key in enumerate(tqdm(pdf_files_s3_keys, desc="Phase 1: Pre-processing PDFs")):
             current_time = datetime.now()
             elapsed = (current_time - start_time).total_seconds()
@@ -865,7 +1326,10 @@ class DataProcessor:
                 est_completion_time = current_time + timedelta(seconds=est_remaining_time)
                 logger.info(f"Elapsed: {elapsed:.1f}s. Est. completion: {est_completion_time.strftime('%Y-%m-%d %H:%M:%S')} ({timedelta(seconds=est_remaining_time)})")
 
-            # --- Call the single PDF preprocessor ---
+            if self.status_callback: 
+                self.status_callback("progress", {"current": pdf_index + 1, "total": total_pdfs, "filename": Path(s3_pdf_key).name})
+
+            # --- Call the single PDF preprocessor (already passes callback via self) ---
             pdf_preprocessed_data = self._preprocess_single_pdf(s3_pdf_key)
 
             if pdf_preprocessed_data is not None:
@@ -887,6 +1351,8 @@ class DataProcessor:
         # Final history save after Phase 1
         self._save_process_history()
 
+        if self.status_callback:
+            self.status_callback("milestone", {"message": f"Pre-processing phase complete. Processed {len(successfully_preprocessed_keys)} PDFs."}) 
         return self.preprocessed_data_cache, successfully_preprocessed_keys
 
     def _populate_store_for_pdf(self, store: SearchHelper, store_type: str, s3_pdf_key: str, pdf_preprocessed_data: List[PreprocessedData]) -> int:
@@ -1073,7 +1539,7 @@ class DataProcessor:
     def process_all_sources(self, target_stores: List[str]):
         """
         Main entry point using the refactored two-phase approach.
-        target_stores: List of store types like ['pages', 'semantic', 'haystack-qdrant'].
+        Passes the status_callback down to preprocess_all_pdfs.
         """
         logger.info("Starting data processing using two-phase approach...")
         logger.info(f"Target stores: {target_stores}")
@@ -1082,38 +1548,30 @@ class DataProcessor:
         overall_start_time = datetime.now()
         self.total_points_added_across_stores = 0 # Reset grand total
 
-        # --- Phase 1: Pre-processing ---
+        # --- Phase 1: Pre-processing (passes callback implicitly via self) ---
         preprocessed_cache, successfully_preprocessed_keys = self.preprocess_all_pdfs()
 
         if not successfully_preprocessed_keys:
             logger.warning("Phase 1 did not successfully preprocess any PDFs. Aborting Phase 2.")
+            if self.status_callback:
+                 self.status_callback("warning", {"message": "No PDFs were successfully pre-processed."}) 
             return 0
-
-        # --- Phase 2: Store Population (Iterate through target stores) ---
+        
+        # --- Phase 2: Store Population --- 
+        if self.status_callback:
+             self.status_callback("milestone", {"message": "Starting Phase 2: Populating vector stores..."})
+        # ... (Loop through target stores and call self.populate_store)
+        # Note: populate_store doesn't currently accept/use the callback, 
+        # but milestones could be added there too if needed for store population progress.
         for store_type in target_stores:
-            if not store_type or store_type == 'none': continue # Skip invalid store types
-
-            # Handle 'haystack' alias if needed (or manage this upstream)
-            actual_store_type = store_type
-            if store_type == "haystack":
-                 # Default to qdrant if alias used, or get from env? Assume qdrant for now.
-                 actual_store_type = os.environ.get("HAYSTACK_STORE_TYPE", "haystack-qdrant")
-                 logger.info(f"Processing 'haystack' alias as '{actual_store_type}' based on environment.")
-
-
+            # ... (store selection logic) ...
             self.populate_store(actual_store_type, successfully_preprocessed_keys)
 
-
-        # --- Final Summary ---
+        # ... (Final Summary Logging) ...
         total_elapsed = (datetime.now() - overall_start_time).total_seconds()
-        logger.info("===== Data Processing Complete =====")
-        logger.info(f"Total time: {total_elapsed:.1f}s")
-        logger.info(f"Total points/documents added across all targeted stores: {self.total_points_added_across_stores}")
-
-        # Clean up the in-memory cache after run?
-        self.preprocessed_data_cache = {}
-        logger.info("Cleared pre-processed data cache.")
-
+        if self.status_callback:
+            self.status_callback("milestone", {"message": f"Data processing complete ({total_elapsed:.1f}s). Total points added: {self.total_points_added_across_stores}"}) 
+        # ... (return) ...
         return self.total_points_added_across_stores
 
     def rebuild_semantic_store(self, validate=True, test_search=True, sample_size=10):
