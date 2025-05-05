@@ -12,7 +12,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Load environment variables
-load_dotenv(override=True)
+dotenv_success = load_dotenv(override=True) # Rely on default search path (starting from CWD)
+logger.info(f"load_dotenv successful? {dotenv_success}") # Log the return value
+
+# --- DEBUG: Print ENV variable right after loading --- 
+print(f"DEBUG: Loaded ENV variable = {os.environ.get('ENV')}")
+# ----------------------------------------------------
 
 # Environment detection
 IS_DEV_ENV = os.environ.get("ENV", "production").lower() in ("dev", "development", "beta")

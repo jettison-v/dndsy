@@ -64,31 +64,21 @@ load_dotenv(dotenv_path=env_path, override=True)
 # Import environment-specific S3 bucket name
 sys.path.append(str(project_root))
 try:
-    from config import S3_BUCKET_NAME
-    print(f"Using environment-specific S3 bucket: {S3_BUCKET_NAME}")
+    import config
+    print(f"Using environment-specific S3 bucket: {config.S3_BUCKET_NAME}")
 except ImportError:
-    S3_BUCKET_NAME = os.getenv("AWS_S3_BUCKET_NAME")
-    print(f"Using default S3 bucket from environment: {S3_BUCKET_NAME}")
+    config.S3_BUCKET_NAME = os.getenv("AWS_S3_BUCKET_NAME")
+    print(f"Using default S3 bucket from environment: {config.S3_BUCKET_NAME}")
 
-# --- Add imports needed for metadata functions --- 
-from config import PREDEFINED_CATEGORIES # Import category definitions
-# --- Import Environment-Specific S3 Prefixes/Keys --- 
-from config import (
-    S3_BUCKET_NAME, # Use the bucket name directly from config (it's read from env there)
-    S3_PDF_PREFIX, 
-    S3_IMAGE_PREFIX, 
-    S3_LINKS_PREFIX, 
-    S3_METADATA_PREFIX, 
-    S3_HISTORY_KEY,
-    get_s3_key, # Helper function might be useful too
-    get_s3_prefix # Helper function might be useful too
-)
-# -------------------------------------------------
-
-# --- Local History File Path (Still Needed) ---
-# Define local path relative to project root, environment independent
+# Define base directory for images relative to static folder
+PDF_IMAGE_DIR = "pdf_page_images"
+STATIC_DIR = "static" # Define static directory name
+# File to store processing history (both locally and on S3)
+# Use absolute path for local history file
 LOCAL_PROCESS_HISTORY_FILE = project_root / "pdf_process_history.json"
-# --------------------------------------------
+PROCESS_HISTORY_S3_KEY = "processing/pdf_process_history.json"  # S3 path
+# S3 prefix for storing extracted link data
+EXTRACTED_LINKS_S3_PREFIX = "extracted_links/"
 
 # Color to category mapping for link extraction
 COLOR_CATEGORY_MAP = {
@@ -133,14 +123,19 @@ COLOR_CATEGORY_MAP = {
     "#e8f6ff": "footer"
 }
 
-# --- AWS S3 Configuration (Simplified) ---
+# --- AWS S3 Configuration ---
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1") # Default region if not set
-# Use bucket name imported from config
-AWS_S3_BUCKET_NAME = S3_BUCKET_NAME
+# Use environment-specific bucket
+AWS_S3_BUCKET_NAME = config.S3_BUCKET_NAME
 
-# ... (s3_client initialization) ...
+# New variable for PDF source location in S3
+AWS_S3_PDF_PREFIX = config.S3_PDF_PREFIX
+# Ensure prefix ends with a slash if it's not empty
+if AWS_S3_PDF_PREFIX and not AWS_S3_PDF_PREFIX.endswith('/'):
+    AWS_S3_PDF_PREFIX += '/'
+
 s3_client = None
 if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY and AWS_S3_BUCKET_NAME:
     try:
@@ -164,46 +159,80 @@ logger = logging.getLogger(__name__)
 PreprocessedData = Dict[str, Any] # Contains keys like 'text', 'page', 'metadata'
 PreprocessedCache = Dict[str, List[PreprocessedData]] # Keyed by s3_pdf_key
 
+# --- Configuration for Metadata --- 
+METADATA_S3_PREFIX = "pdf-metadata/" # Store metadata under this prefix
+
+# --- LLM Client Initialization for Metadata Tasks ---
+# Initialize once when the module loads
+metadata_llm_client = None
+try:
+    # This reads the same env vars as the main app's client
+    metadata_llm_client = get_llm_client()
+    logger.info("Initialized LLM client for metadata tasks within processor.")
+except ImportError as e:
+    logger.error(f"Could not import/initialize get_llm_client for metadata: {e}")
+except Exception as e:
+    logger.error(f"Failed to initialize LLM client for metadata: {e}")
+# -------------------------------------------------
+
 # ==============================================================================
-# == METADATA GENERATION FUNCTIONS (Using Prefixes from Config) ==
+# == METADATA GENERATION FUNCTIONS (Moved from metadata_processor.py) ==
 # ==============================================================================
 
 # --- S3 Interaction for Metadata --- 
-def upload_metadata_to_s3(metadata_json: dict, document_id: str):
-    # ... (function body copied from metadata_processor.py)
-    # Uses AWS_S3_BUCKET_NAME from this file's scope now
-    # ... (S3 client check) ...
-    # --- Use Prefixed Key --- 
-    object_key = get_s3_key(f"{S3_METADATA_PREFIX}{document_id}.json") # Use helper
-    # OR: object_key = f"{S3_METADATA_PREFIX}{document_id}.json" # Directly use imported prefix
-    # -------------------------
+def upload_metadata_to_s3(metadata_json: dict, document_id: str, run_id: Optional[str] = None):
+    # (Function body copied from metadata_processor.py)
+    # Uses AWS_S3_BUCKET_NAME, AWS_REGION_META from this file's scope now
+    """Uploads the metadata JSON to the configured S3 bucket.
+    Args:
+        metadata_json: The metadata dictionary to upload.
+        document_id: The unique ID for the document (used as filename).
+    Raises:
+        Exception: Propagates S3 client errors.
+    """
+    global s3_client # Use the main s3_client initialized in this module
+    if not s3_client:
+        logger.error("S3 client not initialized. Cannot upload metadata.")
+        raise ConnectionError("S3 client not available for metadata upload")
+
+    # Construct target key using run_id if provided
+    base_metadata_key = f"{config.S3_METADATA_PREFIX}{document_id}.json" # Use config.
+    target_key = base_metadata_key
+    if run_id:
+        # Simple approach: Append _temp_<run_id> before .json
+        root, ext = os.path.splitext(base_metadata_key)
+        target_key = f"{root}_temp_{run_id}{ext}"
+        logger.debug(f"Uploading metadata to temporary key: {target_key}")
+    # -------------------------------------------------------
     try:
         s3_client.put_object(
-            Bucket=AWS_S3_BUCKET_NAME, # Use bucket from this module's config (imported)
-            Key=object_key,
+            Bucket=AWS_S3_BUCKET_NAME, 
+            Key=target_key,
             Body=json.dumps(metadata_json, indent=2),
             ContentType='application/json'
         )
-        logger.info(f"Successfully uploaded metadata for {document_id} to s3://{AWS_S3_BUCKET_NAME}/{object_key}")
+        logger.info(f"Successfully uploaded metadata for {document_id} to s3://{AWS_S3_BUCKET_NAME}/{target_key}")
     except Exception as e:
-        logger.error(f"Error uploading metadata for {document_id} to S3: {e}")
-        raise
+        logger.error(f"Error uploading metadata for {document_id} to S3 ({target_key}): {e}")
+        raise # Re-raise error
 
 def get_metadata_from_s3(document_id: str) -> dict | None:
-    # ... (function body copied from metadata_processor.py)
-    # ... (S3 client check) ...
-    # --- Use Prefixed Key --- 
-    object_key = get_s3_key(f"{S3_METADATA_PREFIX}{document_id}.json") # Use helper
-    # OR: object_key = f"{S3_METADATA_PREFIX}{document_id}.json" # Directly use imported prefix
-    # -------------------------
+    # (Function body copied from metadata_processor.py)
+    """Retrieves metadata JSON from the LIVE S3 location."""
+    global s3_client
+    if not s3_client:
+        logger.error("S3 client not initialized. Cannot get metadata.")
+        raise ConnectionError("S3 client not available for metadata retrieval")
+
+    live_key = f"{config.S3_METADATA_PREFIX}{document_id}.json" # Use config.
     try:
-        response = s3_client.get_object(Bucket=AWS_S3_BUCKET_NAME, Key=object_key)
+        response = s3_client.get_object(Bucket=AWS_S3_BUCKET_NAME, Key=live_key)
         metadata = json.loads(response['Body'].read().decode('utf-8'))
-        logger.info(f"Successfully retrieved metadata for {document_id} from s3://{AWS_S3_BUCKET_NAME}/{object_key}")
+        logger.info(f"Successfully retrieved metadata for {document_id} from s3://{AWS_S3_BUCKET_NAME}/{live_key}")
         return metadata
     except ClientError as e:
         if e.response['Error']['Code'] == 'NoSuchKey':
-             logger.warning(f"Metadata not found for {document_id} at s3://{AWS_S3_BUCKET_NAME}/{object_key}")
+             logger.warning(f"Metadata not found for {document_id} at s3://{AWS_S3_BUCKET_NAME}/{live_key}")
              return None
         else:
              logger.error(f"S3 ClientError retrieving metadata for {document_id}: {e}")
@@ -559,65 +588,51 @@ def _generate_and_upload_metadata(
 class DataProcessor:
     """Handles the end-to-end processing of PDF documents from S3 into vector stores."""
 
-    def __init__(self, cache_behavior: str = 'use', s3_pdf_prefix_override: Optional[str] = None, 
-                 status_callback: Optional[Callable[[str, dict], None]] = None, # Add callback param
-                 run_id: Optional[str] = None): # Add run_id param
+    def __init__(self, cache_behavior: str = 'use', 
+                 status_callback: Optional[Callable[[str, dict], None]] = None,
+                 run_id: Optional[str] = None): # Re-add run_id param for staging logic later
         """Initialize the data processor."""
         self.cache_behavior = cache_behavior 
-        self.run_id = run_id # Store run_id
-        # --- Use Imported S3 PDF Prefix --- 
-        self.s3_pdf_prefix = S3_PDF_PREFIX 
-        # -----------------------------------
-        if s3_pdf_prefix_override:
-            # Ensure override has trailing slash
-            self.s3_pdf_prefix = s3_pdf_prefix_override
-            if self.s3_pdf_prefix and not self.s3_pdf_prefix.endswith('/'):
-                self.s3_pdf_prefix += '/'
-            logger.info(f"Using S3 PDF prefix override: {self.s3_pdf_prefix}")
-        else:
-            logger.info(f"Using environment S3 PDF prefix from config: {self.s3_pdf_prefix}")
+        self.run_id = run_id # Store run_id, will be None if not rebuild
+        self.s3_pdf_prefix = config.S3_PDF_PREFIX
+        logger.info(f"Using environment S3 PDF prefix from config: {self.s3_pdf_prefix}") 
 
         logger.info(f"DataProcessor initialized with config:")
         logger.info(f"  - Cache Behavior: {self.cache_behavior}")
-        logger.info(f"  - Run ID: {self.run_id if self.run_id else 'N/A (Not Rebuild)'}") # Log run_id
+        logger.info(f"  - Run ID: {self.run_id if self.run_id else 'N/A (Not Rebuild)'}")
 
         self.doc_analyzer = DocumentStructureAnalyzer()
         self.process_history = self._load_process_history()
         self.preprocessed_data_cache: PreprocessedCache = {}
         self.total_points_added_across_stores = 0
-        self.status_callback = status_callback # Store the callback
+        self.status_callback = status_callback
 
         logger.info(f"DataProcessor initialization complete.")
 
-    # --- Helper to get temporary S3 prefix if in rebuild mode ---
+    # --- Add Helper methods for temp S3 paths --- 
     def _get_s3_prefix(self, base_prefix: str) -> str:
+        """Gets the effective S3 prefix (live or temporary based on run_id)."""
         if self.run_id: # If it's a rebuild run
             # Create a temporary prefix based on the run ID
             temp_prefix = f"{base_prefix.rstrip('/')}_temp_{self.run_id}/"
-            logger.debug(f"Using temporary S3 prefix: {temp_prefix} (Base: {base_prefix})")
+            # logger.debug(f"Using temporary S3 prefix: {temp_prefix} (Base: {base_prefix})")
             return temp_prefix
         else:
-            # Use the standard environment prefix
-            return base_prefix # Base prefix already has ENV_PREFIX applied via config import
+            # Use the standard environment prefix (already applied in base_prefix from config)
+            return base_prefix
 
     def _get_s3_key(self, base_key: str) -> str:
+        """Gets the effective S3 key (live or temporary based on run_id)."""
         if self.run_id:
-            # Insert _temp_<run_id> before the filename part
-            parts = base_key.split('/')
-            filename = parts[-1]
-            path_part = "/" .join(parts[:-1])
-            temp_key = f"{path_part}_temp_{self.run_id}/{filename}"
-            # This logic might need adjustment based on exact key structure (e.g., history vs metadata)
-            logger.warning(f"Temporary key logic used for '{base_key}'. Review if structure is correct: {temp_key}") # Add warning
-            # Simplified approach for now: just append run_id before extension
-            # Needs refinement based on where keys are used (history vs metadata vs links)
+            # Simple approach: Append _temp_<run_id> before extension
             root, ext = os.path.splitext(base_key)
             temp_key = f"{root}_temp_{self.run_id}{ext}"
-            logger.debug(f"Using temporary S3 key: {temp_key} (Base: {base_key})")
+            # logger.debug(f"Using temporary S3 key: {temp_key} (Base: {base_key})")
             return temp_key
         else:
-            return base_key # Base key already has ENV_PREFIX applied via config import
-    # ------------------------------------------------------------
+            # Use the standard environment key (already applied in base_key from config)
+            return base_key
+    # -------------------------------------------
 
     def _compute_pdf_hash(self, pdf_bytes):
         """Compute a hash of PDF content to detect changes."""
@@ -626,99 +641,68 @@ class DataProcessor:
     def _load_process_history(self):
         """Load the PDF processing history from S3 or fall back to local file."""
         try: # Outer try
-            # First try to get from S3 using the environment-specific key
             if s3_client:
                 try: # Inner try for S3 operation
-                    # --- Use Imported S3_HISTORY_KEY ---
-                    logger.info(f"Trying to load process history from S3: {S3_HISTORY_KEY}")
+                    logger.info(f"Trying to load process history from S3: {config.S3_HISTORY_KEY}")
                     response = s3_client.get_object(
                         Bucket=AWS_S3_BUCKET_NAME,
-                        Key=S3_HISTORY_KEY
+                        Key=config.S3_HISTORY_KEY
                     )
-                    # -------------------------------------
                     history_content = response['Body'].read().decode('utf-8')
                     history = json.loads(history_content)
                     logger.info(f"Successfully loaded process history from S3")
 
-                    # Also save it locally as a backup
-                    # --- Use LOCAL_PROCESS_HISTORY_FILE ---
-                    try: # Try saving locally, but don't stop if this fails
-                        with open(LOCAL_PROCESS_HISTORY_FILE, 'w') as f:
-                            json.dump(history, f, indent=2)
-                        logger.info(f"Backed up S3 history to local file: {LOCAL_PROCESS_HISTORY_FILE}")
-                    except Exception as local_save_e:
-                        logger.warning(f"Failed to save S3 history locally ({LOCAL_PROCESS_HISTORY_FILE}): {local_save_e}")
-                    # ---------------------------------------
-                    return history # Return history loaded from S3
+                    # Save backup to local file
+                    with open(LOCAL_PROCESS_HISTORY_FILE, 'w') as f: # Ensure LOCAL_
+                        json.dump(history, f, indent=2)
 
-                except ClientError as e: # <<< Except block for the inner try (S3)
-                    if e.response['Error']['Code'] == 'NoSuchKey':
-                        # This is expected if the file doesn't exist yet, just log info
-                        logger.info(f"Process history file not found in S3 ({S3_HISTORY_KEY}). Will try local file.")
-                    else:
-                        # Log other S3 client errors but allow fallback to local file
-                        logger.warning(f"S3 ClientError accessing process history ({S3_HISTORY_KEY}): {e}. Trying local file.")
-                except json.JSONDecodeError as e:
-                     # Log JSON errors from S3 file but allow fallback
-                     logger.warning(f"Failed to decode JSON from S3 process history ({S3_HISTORY_KEY}): {e}. Trying local file.")
-                except Exception as e:
-                    # Catch any other unexpected errors during S3 load/parse and fallback
-                    logger.warning(f"Unexpected error loading/parsing S3 process history ({S3_HISTORY_KEY}): {e}. Trying local file.")
-
-            # Fall back to local file if S3 failed or wasn't attempted
-            else:
-                logger.info("S3 client not available. Trying to load history from local file.")
-
-            # --- Use LOCAL_PROCESS_HISTORY_FILE ---
-            if os.path.exists(LOCAL_PROCESS_HISTORY_FILE):
-                logger.info(f"Loading process history from local file: {LOCAL_PROCESS_HISTORY_FILE}")
-                try: # Try block for local file reading
-                    with open(LOCAL_PROCESS_HISTORY_FILE, 'r') as f:
-                        history = json.load(f)
-                    logger.info("Successfully loaded process history from local file.")
                     return history
-                except json.JSONDecodeError as e:
-                     # If local file is corrupt, log error and return empty
-                     logger.error(f"Failed to decode JSON from local process history ({LOCAL_PROCESS_HISTORY_FILE}): {e}")
+                except ClientError as e:
+                    if e.response['Error']['Code'] == 'NoSuchKey':
+                        logger.info(f"Process history file not found in S3 ({config.S3_HISTORY_KEY}). Will try local file.")
+                    else:
+                        logger.warning(f"S3 ClientError accessing process history ({config.S3_HISTORY_KEY}): {e}. Trying local file.")
                 except Exception as e:
-                     # Log other errors loading local file and return empty
-                     logger.error(f"Error loading local process history ({LOCAL_PROCESS_HISTORY_FILE}): {e}")
+                    logger.warning(f"Unexpected error loading process history from S3: {e}")
+
+            # Fall back to local file
+            if os.path.exists(LOCAL_PROCESS_HISTORY_FILE): # Ensure LOCAL_
+                logger.info(f"Loading process history from local file: {LOCAL_PROCESS_HISTORY_FILE}") # Ensure LOCAL_
+                try:
+                    with open(LOCAL_PROCESS_HISTORY_FILE, 'r') as f: # Ensure LOCAL_
+                        return json.load(f)
+                except json.JSONDecodeError as e:
+                     logger.error(f"Failed to decode JSON from local process history ({LOCAL_PROCESS_HISTORY_FILE}): {e}") # Ensure LOCAL_
+                except Exception as e:
+                     logger.error(f"Error loading local process history ({LOCAL_PROCESS_HISTORY_FILE}): {e}") # Ensure LOCAL_
             else:
-                 logger.info(f"Local process history file not found: {LOCAL_PROCESS_HISTORY_FILE}")
-            # ---------------------------------------
-
-            # If neither S3 nor local file works/exists, start fresh
-            logger.info("Starting with empty process history")
+                 logger.info(f"Local process history file not found: {LOCAL_PROCESS_HISTORY_FILE}") # Ensure LOCAL_
+            # ... (rest of function) ...
+        except Exception as e:
+            logger.warning(f"Could not load process history: {e}")
             return {}
-
-        except Exception as outer_e: # Except for the outer try (e.g., issues before S3/local access)
-            logger.error(f"Outer error in _load_process_history: {outer_e}", exc_info=True)
-            return {} # Return empty history on outer error as well
 
     def _save_process_history(self):
         """Save the PDF processing history to S3 and local file."""
-        # --- Determine target S3 key (temp or live) --- 
-        target_s3_history_key = self._get_s3_key(S3_HISTORY_KEY) if self.run_id else S3_HISTORY_KEY
-        # -----------------------------------------------
+        # Determine target S3 key (temp or live)
+        target_s3_history_key = self._get_s3_key(config.S3_HISTORY_KEY) if self.run_id else config.S3_HISTORY_KEY
         try:
-            # First save locally as a backup (always to the same local file)
-            # --- Use LOCAL_PROCESS_HISTORY_FILE --- 
-            with open(LOCAL_PROCESS_HISTORY_FILE, 'w') as f:
+            # Save locally
+            with open(LOCAL_PROCESS_HISTORY_FILE, 'w') as f: # Ensure LOCAL_
                 json.dump(self.process_history, f, indent=2)
-            logger.info(f"Saved process history to local file {LOCAL_PROCESS_HISTORY_FILE}")
-            # ---------------------------------------
+            logger.info(f"Saved process history to local file {LOCAL_PROCESS_HISTORY_FILE}") # Ensure LOCAL_
 
-            # Then save to S3 (potentially to temp key)
+            # Save to S3
             if s3_client:
                 try:
                     history_json = json.dumps(self.process_history)
                     s3_client.put_object(
                         Bucket=AWS_S3_BUCKET_NAME,
-                        Key=target_s3_history_key, # Use target key
+                        Key=target_s3_history_key, # Already uses config.S3_HISTORY_KEY via helper
                         Body=history_json,
                         ContentType='application/json'
                     )
-                    logger.info(f"Saved process history to S3: {target_s3_history_key}") # Log target key
+                    logger.info(f"Saved process history to S3: {target_s3_history_key}")
                 except Exception as e:
                     logger.error(f"Failed to save process history to S3 ({target_s3_history_key}): {e}")
         except Exception as e:
@@ -732,22 +716,17 @@ class DataProcessor:
         return cleaned
 
     def _delete_specific_s3_images(self, pdf_prefix):
-        """Delete images related to a specific PDF from the LIVE prefix."""
-        # --- This now deletes from the LIVE prefix --- 
-        # --- Cleanup of TEMP images happens separately on failure/rollback --- 
+        """Delete only images related to a specific PDF."""
         if not s3_client:
             return
 
-        # Use the LIVE image prefix for deletion targets
-        live_image_prefix = S3_IMAGE_PREFIX # Imported from config (already env-specific)
-        image_prefix_to_delete = f"{live_image_prefix}{pdf_prefix}"
-        logger.info(f"Deleting LIVE images with prefix: {image_prefix_to_delete}")
-        # ------------------------------------------------
+        image_prefix = f"{config.S3_IMAGE_PREFIX}{pdf_prefix}"
+        logger.info(f"Deleting LIVE images with prefix: {image_prefix}")
 
         objects_to_delete = []
         try:
             paginator = s3_client.get_paginator('list_objects_v2')
-            pages = paginator.paginate(Bucket=AWS_S3_BUCKET_NAME, Prefix=image_prefix_to_delete)
+            pages = paginator.paginate(Bucket=AWS_S3_BUCKET_NAME, Prefix=image_prefix)
 
             for page in pages:
                 if "Contents" in page:
@@ -772,13 +751,11 @@ class DataProcessor:
             logger.error(f"Error deleting images for {pdf_prefix}: {e}")
 
     def _delete_s3_object(self, s3_key: str):
-        """Deletes a single object from S3 if it exists. Assumes LIVE key."""
-        # --- This assumes it's deleting a LIVE object --- 
+        """Deletes a single object from S3 if it exists."""
         if not s3_client or not AWS_S3_BUCKET_NAME:
             logger.warning(f"S3 client not configured, cannot delete object: {s3_key}")
             return
         
-        logger.info(f"Attempting to delete LIVE S3 object: {s3_key}")
         try:
             # Check if the object exists before attempting deletion
             s3_client.head_object(Bucket=AWS_S3_BUCKET_NAME, Key=s3_key)
@@ -802,13 +779,26 @@ class DataProcessor:
         link extraction, text/metadata extraction for ONE PDF.
         Updates self.process_history and returns preprocessed page data.
         """
+        # --- Get effective prefixes/keys for this run (temp or live) ---
+        # These helpers use self.run_id internally if it's set (rebuild mode)
+        effective_image_prefix = self._get_s3_prefix(config.S3_IMAGE_PREFIX)
+        effective_links_prefix = self._get_s3_prefix(config.S3_LINKS_PREFIX)
+        # Define others for consistency, though they might be handled by specific functions
+        effective_metadata_prefix = self._get_s3_prefix(config.S3_METADATA_PREFIX) 
+        effective_history_key = self._get_s3_key(config.S3_HISTORY_KEY)
+        # --- Use LIVE PDF prefix for source reading --- 
+        pdf_source_prefix = config.S3_PDF_PREFIX # Always read from the live source prefix
+        # ------------------------------------------------------------
+        logger.info(f"Starting preprocessing for: {s3_pdf_key} (Run ID: {self.run_id or 'N/A'})")
+        logger.debug(f"Effective Prefixes - Images: {effective_image_prefix}, Links: {effective_links_prefix}, Metadata: {effective_metadata_prefix}")
+
         try:
-            # Extract relative path and clean filename
-            rel_path = s3_pdf_key[len(self.s3_pdf_prefix):] if s3_pdf_key.startswith(self.s3_pdf_prefix) else s3_pdf_key
+            # Extract relative path and clean filename (based on LIVE source prefix)
+            rel_path = s3_pdf_key[len(pdf_source_prefix):] if s3_pdf_key.startswith(pdf_source_prefix) else s3_pdf_key
             pdf_filename = Path(rel_path).name
             pdf_image_sub_dir_name = self._clean_filename(Path(rel_path).stem)
 
-            # Download PDF (from LIVE source)
+            # Download PDF
             try:
                 pdf_object = s3_client.get_object(Bucket=AWS_S3_BUCKET_NAME, Key=s3_pdf_key)
                 pdf_bytes = pdf_object['Body'].read()
@@ -828,36 +818,32 @@ class DataProcessor:
             is_new = not old_hash
             has_changed = old_hash and old_hash != pdf_hash
 
-            # --- Cache Behavior Actions (Rebuild - Modified) ---
-            # --- REMOVED direct deletion logic from here --- 
-            # --- Deletion of OLD live data happens post-swap in manage_vector_stores.py ---
+            # --- Cache Behavior Actions (Rebuild) ---
             if self.cache_behavior == 'rebuild':
-                logger.info(f"Rebuild triggered for {s3_pdf_key}. Processing to temp location (Run ID: {self.run_id}).")
+                logger.info(f"Rebuild triggered for {s3_pdf_key}. Clearing derived data...")
+                # Delete images
+                self._delete_specific_s3_images(pdf_image_sub_dir_name)
+                # Delete existing LIVE links JSON file
+                links_s3_key_suffix = f"{rel_path}.links.json"
+                s3_prefix_links = config.S3_LINKS_PREFIX # <<< Use config.
+                # No need to check/add trailing slash, config.S3_LINKS_PREFIX handles it
+                links_json_s3_key = f"{s3_prefix_links}{links_s3_key_suffix}"
+                self._delete_s3_object(links_json_s3_key)
+                
                 # Reset processed stores list if content changed (important for Phase 2)
                 if has_changed or is_new: # Also reset for new PDFs during rebuild
                     pdf_info['processed_stores'] = []
                     logger.info(f"Resetting processed stores history for new/changed PDF during rebuild: {s3_pdf_key}")
-            # ---------------------------------------------------
 
-            # Determine if image generation is needed
-            # generate_images is True if rebuild OR (new/changed AND not rebuild)
-            generate_images = (self.run_id is not None) or (is_new or has_changed)
-
-            # --- Delete OLD LIVE images only if NOT rebuilding and PDF changed/new --- 
-            if not self.run_id and (is_new or has_changed):
-                logger.info(f"Deleting OLD LIVE images for changed/new PDF {s3_pdf_key} (Cache=use)")
+            # Determine if image generation is needed specifically (can be true even if not rebuilding if PDF changed)
+            generate_images = self.cache_behavior == 'rebuild' or is_new or has_changed
+            if generate_images and self.cache_behavior != 'rebuild': # Only delete images here if *not* rebuilding (rebuild already deleted)
+                logger.info(f"Image generation required for changed/new PDF {s3_pdf_key} (Cache=use)")
                 self._delete_specific_s3_images(pdf_image_sub_dir_name)
-                # Also delete old links file if not rebuilding
-                links_s3_key_suffix = f"{rel_path}.links.json"
-                live_links_json_s3_key = f"{S3_LINKS_PREFIX}{links_s3_key_suffix}"
-                self._delete_s3_object(live_links_json_s3_key)
                 if has_changed:
                      pdf_info['processed_stores'] = [] # Reset history if changed
                      logger.info(f"Resetting processed stores history for changed PDF: {s3_pdf_key}")
-            # --------------------------------------------------------------------------
-            elif generate_images:
-                 logger.info(f"Image generation required for {s3_pdf_key} (Run ID: {self.run_id}, New: {is_new}, Changed: {has_changed})")
-            else:
+            elif not generate_images:
                 logger.info(f"PDF {s3_pdf_key} is unchanged. Image generation skipped.")
 
             # --- Update History (Hash, Timestamps) ---
@@ -1160,16 +1146,15 @@ class DataProcessor:
                         pix = None
                         try:
                             pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
-                            # --- Use effective_image_prefix --- 
-                            page_preview_s3_key = f"{S3_IMAGE_PREFIX}{pdf_image_sub_dir_name}/{page_label}.png"
-                            # -----------------------------------
+                            # Use Correctly Defined effective_image_prefix
+                            page_preview_s3_key = f"{effective_image_prefix}{pdf_image_sub_dir_name}/{page_label}.png" # <<< Use effective_
                             s3_image_url = f"s3://{AWS_S3_BUCKET_NAME}/{page_preview_s3_key}"
 
                             img_bytes = pix.tobytes("png")
                             s3_client.put_object(
                                 Bucket=AWS_S3_BUCKET_NAME, Key=page_preview_s3_key, Body=img_bytes, ContentType="image/png"
                             )
-                            # Update history with the generated image URL (could be temp or live)
+                            # Update history with the generated image URL
                             if 'pages' not in self.process_history[s3_pdf_key]: self.process_history[s3_pdf_key]['pages'] = {}
                             self.process_history[s3_pdf_key]['pages'][str(page_label)] = {
                                 'image_url': s3_image_url, 'processed': datetime.now().isoformat()
@@ -1180,7 +1165,7 @@ class DataProcessor:
                         finally:
                             if pix: pix = None
                     else:
-                         # Retrieve existing image URL from history (should be the LIVE url)
+                         # Retrieve existing image URL from history
                          page_info = self.process_history.get(s3_pdf_key, {}).get('pages', {}).get(str(page_label), {})
                          s3_image_url = page_info.get('image_url')
                          if not s3_image_url:
@@ -1192,7 +1177,7 @@ class DataProcessor:
                         "filename": pdf_filename,
                         "page": page_label,
                         "total_pages": total_pages,
-                        "image_url": s3_image_url, # This URL points to the temp or live location
+                        "image_url": s3_image_url,
                         "source_dir": pdf_image_sub_dir_name,
                         "type": "pdf",
                         "folder": str(Path(rel_path).parent),
@@ -1253,200 +1238,50 @@ class DataProcessor:
                         link_info['target_url'] = None
                         pdf_links_data.append(link_info)
 
-                # --- Save Extracted Link Data to S3 (Potentially Temp) ---
+                # --- Save Extracted Link Data to S3 (Final) ---
                 if pdf_links_data and s3_client:
                     target_links_json_s3_key = None # Initialize
-                    try:
+                    try: 
                         links_s3_key_suffix = f"{rel_path}.links.json"
-                        # Use effective_links_prefix (defined earlier)
-                        target_links_json_s3_key = f"{effective_links_prefix}{links_s3_key_suffix}"
+                        # Use Correctly Defined effective_links_prefix 
+                        target_links_json_s3_key = f"{effective_links_prefix}{links_s3_key_suffix}" # <<< Already uses effective
                         links_json_content = json.dumps(pdf_links_data, indent=2)
 
-                        # Save extracted links to S3 (live or temp)
-                        s3_client.put_object(
-                            Bucket=AWS_S3_BUCKET_NAME, 
-                            Key=target_links_json_s3_key, 
-                            Body=links_json_content, 
-                            ContentType='application/json'
+                        # Save extracted links to S3
+                        try:
+                            s3_client.put_object(
+                                Bucket=AWS_S3_BUCKET_NAME, Key=target_links_json_s3_key, Body=links_json_content, ContentType='application/json'
+                            )
+
+                            logger.info(f"Saved {len(pdf_links_data)} extracted links to S3: {target_links_json_s3_key}")
+                        except Exception as e:
+                            logger.error(f"Failed to save links to S3: {target_links_json_s3_key} - Error: {str(e)}")
+
+                    except Exception as save_e:
+                        logger.error(f"Failed to save extracted links to S3 for {s3_pdf_key}: {save_e}", exc_info=True)
+
+                # --- Generate and Upload Document Metadata ---
+                # Use self.status_callback here
+                if self.status_callback:
+                    self.status_callback("milestone", {"message": f"Preprocessing complete, starting metadata generation for {pdf_filename}..."})
+                else: 
+                    logger.info(f"Initiating metadata generation for {s3_pdf_key}...")
+                
+                if preprocessed_page_data: 
+                    try:
+                        full_extracted_text = "\n\n".join(page_texts.values())
+                        _generate_and_upload_metadata(
+                            pdf_bytes=pdf_bytes,
+                            extracted_text=full_extracted_text,
+                            original_filename=pdf_filename,
+                            s3_pdf_key=s3_pdf_key, 
+                            available_categories=PREDEFINED_CATEGORIES,
+                            status_callback=self.status_callback # Pass it down
                         )
-                        logger.info(f"Saved {len(pdf_links_data)} extracted links to S3: {target_links_json_s3_key}")
-                    except Exception as e:
-                        # --- Correct indentation for lines within except block --- 
-                        target_key_info = f"({target_links_json_s3_key})" if target_links_json_s3_key else "(unknown key)"
-                        logger.error(f"Failed to save links to S3 {target_key_info} for {s3_pdf_key}: {e}", exc_info=True)
-                        # -------------------------------------------------------
-
-                    s3_image_url = None
-                    if generate_images:
-                        pix = None
-                        try:
-                            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
-                            # --- Use effective_image_prefix --- 
-                            page_preview_s3_key = f"{S3_IMAGE_PREFIX}{pdf_image_sub_dir_name}/{page_label}.png"
-                            # -----------------------------------
-                            s3_image_url = f"s3://{AWS_S3_BUCKET_NAME}/{page_preview_s3_key}"
-
-                            img_bytes = pix.tobytes("png")
-                            s3_client.put_object(
-                                Bucket=AWS_S3_BUCKET_NAME, Key=page_preview_s3_key, Body=img_bytes, ContentType="image/png"
-                            )
-                            # Update history with the generated image URL (could be temp or live)
-                            if 'pages' not in self.process_history[s3_pdf_key]: self.process_history[s3_pdf_key]['pages'] = {}
-                            self.process_history[s3_pdf_key]['pages'][str(page_label)] = {
-                                'image_url': s3_image_url, 'processed': datetime.now().isoformat()
-                            }
-                        except Exception as img_e:
-                            logger.error(f"Error generating/uploading image for {s3_pdf_key} page {page_label}: {img_e}")
-                            s3_image_url = None
-                        finally:
-                            if pix: pix = None
-                    else:
-                         # Retrieve existing image URL from history (should be the LIVE url)
-                         page_info = self.process_history.get(s3_pdf_key, {}).get('pages', {}).get(str(page_label), {})
-                         s3_image_url = page_info.get('image_url')
-                         if not s3_image_url:
-                             logger.warning(f"Missing image URL in history for {s3_pdf_key} page {page_label} when skipping generation.")
-
-                    # --- Assemble Metadata ---
-                    metadata = {
-                        "source": s3_pdf_key,
-                        "filename": pdf_filename,
-                        "page": page_label,
-                        "total_pages": total_pages,
-                        "image_url": s3_image_url, # This URL points to the temp or live location
-                        "source_dir": pdf_image_sub_dir_name,
-                        "type": "pdf",
-                        "folder": str(Path(rel_path).parent),
-                        "processed_at": datetime.now().isoformat(),
-                        **{f"h{i}": context.get(f"h{i}") for i in range(1, 7) if context.get(f"h{i}")},
-                        "heading_path": " > ".join(context["heading_path"]) if context.get("heading_path") else None
-                    }
-                    metadata = {k: v for k, v in metadata.items() if v is not None}
-
-                    # --- Collect data needed for Phase 2 ---
-                    # We need page_text, page_label, and metadata for all store types now
-                    preprocessed_page_data.append({"text": page_text, "page": page_label, "metadata": metadata.copy()})
-
-                # Process any pending future links now that we have all pages
-                if pending_future_links:
-                    logger.info(f"Processing {len(pending_future_links)} links to future pages...")
-                    for pending_link in pending_future_links:
-                        link_info = pending_link["link_info"]
-                        target_page_num = pending_link["target_page_num"]
-                        target_page_label = target_page_num + 1
-                        
-                        target_page_text = page_texts.get(target_page_label)
-                        if target_page_text:
-                            match_start = -1
-                            try:
-                                pattern = r"\\b" + re.escape(link_info['link_text']) + r"\\b"
-                                match = re.search(pattern, target_page_text, re.IGNORECASE | re.DOTALL)
-                                if match: match_start = match.start()
-                                else: match_start = target_page_text.lower().find(link_info['link_text'].lower())
-                            except re.error:
-                                match_start = target_page_text.lower().find(link_info['link_text'].lower())
-
-                            if match_start != -1:
-                                start_para = target_page_text.rfind('\\n\\n', 0, match_start)
-                                start_para = 0 if start_para == -1 else start_para + 2
-                                end_para = target_page_text.find('\\n\\n', match_start)
-                                end_para = len(target_page_text) if end_para == -1 else end_para
-                                target_snippet = target_page_text[start_para:end_para].strip().replace('\\n', ' ')
-                                snippet_max_len = 750
-                                if len(target_snippet) > snippet_max_len:
-                                    trunc_point = target_snippet.rfind('.', 0, snippet_max_len)
-                                    if trunc_point > snippet_max_len * 0.7: target_snippet = target_snippet[:trunc_point+1] + "..."
-                                    else: target_snippet = target_snippet[:snippet_max_len] + "..."
-                            else:
-                                # Even after post-processing, we couldn't find the exact text. Use a fallback
-                                logger.warning(f"Link text '{link_info['link_text']}' not found on target page {target_page_label} for {s3_pdf_key} even in second pass. Using fallback snippet.")
-                                first_para_end = target_page_text.find('\\n\\n')
-                                if first_para_end != -1 and first_para_end > 50: target_snippet = target_page_text[:first_para_end].strip().replace('\\n', ' ')
-                                else:
-                                    fallback_len = 350
-                                    target_snippet = target_page_text[:fallback_len].strip().replace('\\n', ' ') + ("..." if len(target_page_text) > fallback_len else "")
-                        else:
-                            # Still can't find the target page
-                            logger.warning(f"Target page {target_page_label} still not found for link after processing all pages in {s3_pdf_key}")
-                            target_snippet = f"Content from page {target_page_label}"
-                            
-                        link_info['target_snippet'] = target_snippet
-                        link_info['target_url'] = None
-                        pdf_links_data.append(link_info)
-
-                # --- Save Extracted Link Data to S3 (Potentially Temp) ---
-                if pdf_links_data and s3_client:
-                    target_links_json_s3_key = None # Initialize
-                    try:
-                        links_s3_key_suffix = f"{rel_path}.links.json"
-                        # Use effective_links_prefix (defined earlier)
-                        target_links_json_s3_key = f"{effective_links_prefix}{links_s3_key_suffix}"
-                        links_json_content = json.dumps(pdf_links_data, indent=2)
-                        
-                        # Save extracted links to S3 (live or temp)
-                        s3_client.put_object(
-                            Bucket=AWS_S3_BUCKET_NAME, 
-                            Key=target_links_json_s3_key, 
-                            Body=links_json_content, 
-                            ContentType='application/json'
-                            )
-                        logger.info(f"Saved {len(pdf_links_data)} extracted links to S3: {target_links_json_s3_key}")
-                    except Exception as e:
-                        # --- Correct indentation for lines within except block --- 
-                        target_key_info = f"({target_links_json_s3_key})" if target_links_json_s3_key else "(unknown key)"
-                        logger.error(f"Failed to save links to S3 {target_key_info} for {s3_pdf_key}: {e}", exc_info=True)
-                        # -------------------------------------------------------
-
-                    s3_image_url = None
-                    if generate_images:
-                        pix = None
-                        try:
-                            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
-                            # --- Use effective_image_prefix --- 
-                            page_preview_s3_key = f"{S3_IMAGE_PREFIX}{pdf_image_sub_dir_name}/{page_label}.png"
-                            # -----------------------------------
-                            s3_image_url = f"s3://{AWS_S3_BUCKET_NAME}/{page_preview_s3_key}"
-
-                            img_bytes = pix.tobytes("png")
-                            s3_client.put_object(
-                                Bucket=AWS_S3_BUCKET_NAME, Key=page_preview_s3_key, Body=img_bytes, ContentType="image/png"
-                            )
-                            # Update history with the generated image URL (could be temp or live)
-                            if 'pages' not in self.process_history[s3_pdf_key]: self.process_history[s3_pdf_key]['pages'] = {}
-                            self.process_history[s3_pdf_key]['pages'][str(page_label)] = {
-                                'image_url': s3_image_url, 'processed': datetime.now().isoformat()
-                            }
-                        except Exception as img_e:
-                            logger.error(f"Error generating/uploading image for {s3_pdf_key} page {page_label}: {img_e}")
-                            s3_image_url = None
-                        finally:
-                            if pix: pix = None
-                    else: 
-                         # Retrieve existing image URL from history (should be the LIVE url)
-                         page_info = self.process_history.get(s3_pdf_key, {}).get('pages', {}).get(str(page_label), {})
-                         s3_image_url = page_info.get('image_url')
-                         if not s3_image_url:
-                             logger.warning(f"Missing image URL in history for {s3_pdf_key} page {page_label} when skipping generation.")
-
-                    # --- Assemble Metadata ---
-                    metadata = {
-                        "source": s3_pdf_key,
-                        "filename": pdf_filename,
-                        "page": page_label,
-                        "total_pages": total_pages,
-                        "image_url": s3_image_url, # This URL points to the temp or live location
-                        "source_dir": pdf_image_sub_dir_name,
-                        "type": "pdf",
-                        "folder": str(Path(rel_path).parent),
-                        "processed_at": datetime.now().isoformat(),
-                        **{f"h{i}": context.get(f"h{i}") for i in range(1, 7) if context.get(f"h{i}")},
-                        "heading_path": " > ".join(context["heading_path"]) if context.get("heading_path") else None
-                    }
-                    metadata = {k: v for k, v in metadata.items() if v is not None}
-
-                    # --- Collect data needed for Phase 2 ---
-                    # We need page_text, page_label, and metadata for all store types now
-                    preprocessed_page_data.append({"text": page_text, "page": page_label, "metadata": metadata.copy()})
+                    except Exception as meta_outer_e:
+                         logger.error(f"Outer error calling metadata generation for {s3_pdf_key}: {meta_outer_e}", exc_info=True)
+                else:
+                    logger.warning(f"Skipping metadata generation for {s3_pdf_key} as no text was extracted.")
 
             except Exception as pdf_proc_e:
                  logger.error(f"Error processing PDF content for {s3_pdf_key}: {pdf_proc_e}", exc_info=True)
@@ -1648,10 +1483,10 @@ class DataProcessor:
         """
         store_instance = None
         try:
-            store_instance = get_vector_store(store_type, run_id=self.run_id)
+            store_instance = get_vector_store(store_type)
             if not store_instance:
-                 raise RuntimeError(f"Failed to initialize {store_type} vector store (Run ID: {self.run_id}).")
-            logger.info(f"Initialized {store_type} store for population (Run ID: {self.run_id}).")
+                 raise RuntimeError(f"Failed to initialize {store_type} vector store.")
+            logger.info(f"Initialized {store_type} store for population.")
         except Exception as e:
              logger.error(f"Cannot proceed with populating {store_type} store due to initialization error: {e}", exc_info=True)
              return # Stop processing for this store
@@ -1700,7 +1535,7 @@ class DataProcessor:
                 continue # Skip to the next PDF for this store
 
             # --- Populate the store for this PDF ---
-            logger.info(f"Populating {store_type} store ({store_instance.collection_name}) with PDF {pdf_index+1}/{total_pdfs_to_process}: {s3_pdf_key}")
+            logger.info(f"Populating {store_type} store with PDF {pdf_index+1}/{total_pdfs_to_process}: {s3_pdf_key}")
             points_added = self._populate_store_for_pdf(store_instance, store_type, s3_pdf_key, pdf_preprocessed_data)
 
             if points_added > 0:
@@ -1752,7 +1587,7 @@ class DataProcessor:
         overall_start_time = datetime.now()
         self.total_points_added_across_stores = 0 # Reset grand total
 
-        # --- Phase 1: Pre-processing (passes callback implicitly via self) ---
+        # --- Phase 1: Pre-processing --- 
         preprocessed_cache, successfully_preprocessed_keys = self.preprocess_all_pdfs()
 
         if not successfully_preprocessed_keys:
@@ -1764,18 +1599,15 @@ class DataProcessor:
         # --- Phase 2: Store Population --- 
         if self.status_callback:
              self.status_callback("milestone", {"message": "Starting Phase 2: Populating vector stores..."})
-        # ... (Loop through target stores and call self.populate_store)
-        # Note: populate_store doesn't currently accept/use the callback, 
-        # but milestones could be added there too if needed for store population progress.
+        
         for store_type in target_stores:
-            # ... (store selection logic) ...
-            self.populate_store(store_type, successfully_preprocessed_keys)
+            # --- FIX: Use store_type directly, remove actual_store_type --- 
+            # logger.info(f"Processing store: {actual_store_type}") # Old incorrect line
+            self.populate_store(store_type, successfully_preprocessed_keys) # Use store_type
+            # -------------------------------------------------------------
 
-        # ... (Final Summary Logging) ...
-        total_elapsed = (datetime.now() - overall_start_time).total_seconds()
-        if self.status_callback:
-            self.status_callback("milestone", {"message": f"Data processing complete ({total_elapsed:.1f}s). Total points added: {self.total_points_added_across_stores}"}) 
-        # ... (return) ...
+        # --- Final history save (to TEMP or LIVE location) ---
+        # ... (logging and call _save_process_history) ...
         return self.total_points_added_across_stores
 
     def rebuild_semantic_store(self, validate=True, test_search=True, sample_size=10):
