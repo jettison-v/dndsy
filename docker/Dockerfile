@@ -29,6 +29,7 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:5001/health || exit 1
 
 # Start the Gunicorn server, binding to the dynamic PORT or defaulting to 5001
-CMD ["gunicorn", "--bind", "0.0.0.0:${PORT:-5001}", "--worker-class", "gevent", "--workers", "1", "--timeout", "120", "app:app"]
+# Use shell form to allow $PORT expansion
+CMD gunicorn --bind "0.0.0.0:${PORT:-5001}" --worker-class gevent --workers 1 --timeout 120 app:app
 
 # The entrypoint is now handled by docker-compose.yml 
