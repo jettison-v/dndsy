@@ -98,6 +98,15 @@ DEFAULT_CONFIG = {
 6. Format your response clearly using Markdown (headings, lists, bold text, etc.) for readability."""
 }
 
+# --- Configuration Loading --- 
+# The application uses a layered configuration approach:
+# 1. Default values are defined in DEFAULT_CONFIG above.
+# 2. Some defaults (like llm_model, vector_store_type) can be initially set via environment variables.
+# 3. On startup, the application attempts to load config/app_config.json from S3.
+# 4. If S3 config is loaded successfully, it overrides the defaults.
+# 5. The final configuration used by the app is stored in the global app_config dictionary.
+# 6. The Admin Panel can update the in-memory app_config and save it back to S3.
+
 # Get default store type from environment
 default_store_type = os.getenv("DEFAULT_VECTOR_STORE", "semantic")
 
@@ -287,4 +296,5 @@ def update_app_config(new_config):
         return False, f"An unexpected error occurred while updating configuration: {str(e)}"
 
 # Initialize app_config by loading from S3 (falling back to defaults if needed)
+# This establishes the active configuration for the application session.
 app_config = load_config_from_s3() 
