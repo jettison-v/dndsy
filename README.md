@@ -258,7 +258,6 @@ dndsy/
             flask run
             ```
         *   Application at `http://localhost:5000`.
-        *   *Note:* For local mobile testing with specific session configurations, you can alternatively run `python run_mobile_test_server.py` which starts the server on port 5001 and makes it accessible on your local network.
 
     *   **Option C: Flask Dev Server + Qdrant Cloud**
         *   Ensure your `.env` is configured for Qdrant Cloud (Host URL + API Key).
@@ -273,7 +272,7 @@ dndsy/
             ```bash
             flask run
             ```
-        *   *Note:* For local mobile testing with specific session configurations, you can alternatively run `python run_mobile_test_server.py` which starts the server on port 5001 and makes it accessible on your local network.
+        *   Application at `http://localhost:5000`.
 
 8.  **Access:** Open your browser to `http://localhost:5000` (or the appropriate host/port) and log in with the `APP_PASSWORD` set in your `.env` file.
 

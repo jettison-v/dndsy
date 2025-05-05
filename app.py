@@ -37,13 +37,40 @@ import config
 # Moved to config.py
 
 app = Flask(__name__, static_folder='static')
-app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))  # Use env var for secret key, fallback for local dev
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30) 
-app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_ENV') != 'development'
-app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent JavaScript access to cookies
-app.config['SESSION_TYPE'] = 'filesystem'  # Add filesystem session type
+
+# --- Mobile Testing Mode Overrides ---
+# Apply less restrictive session settings if FLASK_MOBILE_TEST_MODE is set
+if os.getenv("FLASK_MOBILE_TEST_MODE", "false").lower() == "true":
+    logger.warning("FLASK_MOBILE_TEST_MODE enabled: Applying mobile testing session settings.")
+    app.config['SESSION_COOKIE_SAMESITE'] = None   # Most permissive for testing
+    app.config['SESSION_COOKIE_SECURE'] = False    # Allow non-HTTPS for local testing
+    app.config['SESSION_USE_SIGNER'] = False      # Disable signing (potential mobile issue)
+    app.config['SESSION_TYPE'] = 'filesystem'     # Ensure filesystem session for persistence
+    app.config['SESSION_FILE_DIR'] = './flask_session'
+    app.config['SESSION_FILE_THRESHOLD'] = 100
+    # Ensure directory exists
+    os.makedirs('./flask_session', exist_ok=True)
+    # Optional overrides from run_mobile_test_server.py (might be defaults already):
+    # app.config['SESSION_COOKIE_HTTPONLY'] = True
+    # app.config['SESSION_COOKIE_DOMAIN'] = None
+    # app.config['SESSION_COOKIE_PATH'] = '/'
+    # app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1) # Shorter lifetime for testing?
+    # app.config['SESSION_PERMANENT'] = True
+    # app.url_map.strict_slashes = False # Consider if needed globally
+else:
+    # Standard Production/Development settings
+    app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30) 
+    # Secure cookies only if not in explicit development ENV or mobile test mode
+    is_development = os.environ.get('FLASK_ENV', '').lower() == 'development' or os.getenv("ENV", "production").lower() == "development"
+    app.config['SESSION_COOKIE_SECURE'] = not is_development
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_TYPE'] = 'filesystem'
+    app.config['SESSION_FILE_DIR'] = './flask_session'
+    os.makedirs('./flask_session', exist_ok=True)
+
 CORS(app)
-Session(app)
+Session(app) # Initialize session AFTER potentially overriding config
 
 # Context processor to inject variables into all templates
 @app.context_processor
