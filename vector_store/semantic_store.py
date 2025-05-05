@@ -18,6 +18,7 @@ import numpy as np
 # Remove SentenceTransformer import - no longer used here
 # from sentence_transformers import SentenceTransformer, util
 from .search_helper import SearchHelper
+from embeddings.model_provider import embed_documents, create_sparse_vectors, EMBEDDING_MODEL_DIMENSIONS
 
 env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
@@ -25,6 +26,11 @@ load_dotenv(dotenv_path=env_path)
 # Define embedding size for semantic model ("text-embedding-3-small")
 SEMANTIC_EMBEDDING_DIMENSION = 1536
 DEFAULT_COLLECTION_NAME = "dnd_semantic"
+
+# Define collection name using environment variable with fallback
+COLLECTION_NAME = os.getenv("QDRANT_SEMANTIC_COLLECTION", "dnd_semantic")
+# Define embedding model key based on store type
+EMBEDDING_MODEL_KEY = 'semantic' # Used to get dimension from EMBEDDING_MODEL_DIMENSIONS
 
 class SemanticStore(SearchHelper):
     """Handles semantic chunking, hybrid search (vector + BM25), and Qdrant interaction for the semantic collection."""

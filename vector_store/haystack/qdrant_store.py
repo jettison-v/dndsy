@@ -31,10 +31,11 @@ from ..search_helper import SearchHelper
 env_path = Path(__file__).parents[2] / '.env'
 load_dotenv(dotenv_path=env_path)
 
+# Define collection name using environment variable with fallback
+DEFAULT_COLLECTION_NAME = os.getenv("QDRANT_HAYSTACK_COLLECTION", "dnd_haystack_qdrant")
+
 class HaystackQdrantStore(SearchHelper):
     """Handles document storage and retrieval using Haystack with Qdrant backend."""
-    
-    DEFAULT_COLLECTION_NAME = "dnd_haystack_qdrant"
     
     def __init__(self, collection_name: str = DEFAULT_COLLECTION_NAME):
         """Initialize Haystack vector store with Qdrant backend."""

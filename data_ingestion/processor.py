@@ -1645,6 +1645,114 @@ class DataProcessor:
             logger.error(f"Semantic store rebuild failed after {duration:.2f} seconds")
             return False
 
+    # <<< NEW METHOD START >>>
+    def process_single_source(self, s3_pdf_key: str, target_stores: List[str]) -> bool:
+        """
+        Processes a single PDF source end-to-end: preprocessing and population
+        of specified target vector stores. Reloads and saves history safely.
+        Args:
+            s3_pdf_key: The S3 key of the PDF to process.
+            target_stores: List of store types (e.g., ['pages', 'semantic']) to populate.
+        Returns:
+            True if processing completed successfully, False otherwise.
+        """
+        logger.info(f"Starting single-source processing for: {s3_pdf_key}")
+        processing_successful = False
+
+        # --- 1. Reload history before processing this file ---
+        # Ensures we have the latest state, important if multiple workers run
+        self.process_history = self._load_process_history()
+        logger.info(f"Loaded latest process history for processing {s3_pdf_key}")
+
+        # --- 2. Preprocess the single PDF ---
+        # This performs download, image gen (if needed), text/link extraction,
+        # and metadata generation/upload. It updates self.process_history internally.
+        pdf_preprocessed_data = self._preprocess_single_pdf(s3_pdf_key)
+
+        if pdf_preprocessed_data is None:
+            logger.error(f"Preprocessing failed for {s3_pdf_key}. Aborting single-source processing.")
+            # Save history even on failure, as _preprocess_single_pdf might have updated hashes/timestamps
+            self._save_process_history()
+            return False # Indicate failure
+
+        # Add preprocessed data to the instance cache for this run
+        self.preprocessed_data_cache[s3_pdf_key] = pdf_preprocessed_data
+        logger.info(f"Successfully preprocessed {s3_pdf_key}. Proceeding to populate stores: {target_stores}")
+
+        # --- 3. Populate Target Stores ---
+        pdf_filename = Path(pdf_preprocessed_data[0]['metadata']['filename']).name if pdf_preprocessed_data else "Unknown"
+        pdf_history_entry = self.process_history.get(s3_pdf_key, {}) # Get potentially updated history
+        processed_stores_for_this_hash = pdf_history_entry.get('processed_stores', [])
+
+        total_points_added_this_pdf = 0
+        stores_populated_count = 0
+
+        for store_type in target_stores:
+            # Check if this store needs processing based on history (respect cache_behavior='use')
+            skip_store = (self.cache_behavior == 'use' and
+                          store_type in processed_stores_for_this_hash)
+
+            if skip_store:
+                logger.info(f"Skipping population of '{store_type}' store for {s3_pdf_key} (cached in history).")
+                continue
+
+            logger.info(f"Attempting to populate '{store_type}' store for {s3_pdf_key}...")
+            store_instance = None
+            try:
+                store_instance = get_vector_store(store_type)
+                if not store_instance:
+                     raise RuntimeError(f"Failed to initialize {store_type} vector store.")
+
+                # If rebuilding, clear the store *before* adding points for this PDF
+                # Note: This clears the entire store, which might not be desired if
+                # process_single_source is called concurrently. For a worker processing
+                # individual S3 uploads, cache_behavior should likely always be 'use'.
+                # Clearing should happen in a dedicated 'rebuild' task.
+                if self.cache_behavior == 'rebuild':
+                    logger.warning(f"Cache behavior is 'rebuild' in single source processing. Clearing ENTIRE store: {store_type}. This is unusual for single-file processing.")
+                    try:
+                        store_instance.clear_store()
+                        logger.info(f"Cleared store {store_type} due to rebuild flag.")
+                        # Reset history for this store type across all PDFs if rebuilding
+                        for key in self.process_history:
+                            if 'processed_stores' in self.process_history[key] and store_type in self.process_history[key]['processed_stores']:
+                                self.process_history[key]['processed_stores'].remove(store_type)
+                    except Exception as clear_e:
+                         logger.error(f"Error clearing store {store_type} during rebuild: {clear_e}. Proceeding cautiously...")
+
+                # Populate the store with data for the current PDF
+                points_added = self._populate_store_for_pdf(store_instance, store_type, s3_pdf_key, pdf_preprocessed_data)
+                total_points_added_this_pdf += points_added
+
+                # Update history *only if processing was successful* for this store
+                if store_type not in processed_stores_for_this_hash:
+                     processed_stores_for_this_hash.append(store_type)
+                stores_populated_count += 1
+
+            except Exception as pop_e:
+                 logger.error(f"Failed to populate '{store_type}' store for {s3_pdf_key}: {pop_e}", exc_info=True)
+                 # Optionally, decide if failure to populate one store should halt others
+                 # For now, we continue to other stores but mark overall processing as failed
+                 processing_successful = False # Mark as failed if any store fails
+                 # We don't update history for this store if population failed
+
+        # Update the history entry with the potentially modified list of processed stores
+        self.process_history[s3_pdf_key]['processed_stores'] = processed_stores_for_this_hash
+
+        # If we reach here without preprocessing failing, consider it successful
+        # even if some store populations failed (errors are logged).
+        # Modify this logic if stricter success criteria are needed.
+        if pdf_preprocessed_data is not None:
+            processing_successful = True
+
+        logger.info(f"Finished populating {stores_populated_count}/{len(target_stores)} target stores for {s3_pdf_key}. Total points added: {total_points_added_this_pdf}.")
+
+        # --- 4. Save Updated History ---
+        self._save_process_history()
+
+        return processing_successful
+    # <<< NEW METHOD END >>>
+
 # Example usage (if run directly, though typically called from manage_vector_stores.py)
 if __name__ == "__main__":
     logger.info("Running DataProcessor directly for testing...")

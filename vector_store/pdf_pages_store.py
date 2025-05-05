@@ -11,8 +11,14 @@ from .search_helper import SearchHelper
 env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
+# Configure logging
+logger = logging.getLogger(__name__)
+
 STANDARD_EMBEDDING_DIMENSION = 384
 DEFAULT_PDF_PAGES_COLLECTION = "dnd_pdf_pages"
+
+# Define collection name using environment variable with fallback
+COLLECTION_NAME = os.getenv("QDRANT_PAGES_COLLECTION", "dnd_pdf_pages")
 
 class PdfPagesStore(SearchHelper):
     """Store for full PDF pages with standardized search methods."""
@@ -22,54 +28,73 @@ class PdfPagesStore(SearchHelper):
     def __init__(self, collection_name: str = DEFAULT_PDF_PAGES_COLLECTION):
         """Initialize Qdrant vector store for full PDF pages."""
         super().__init__(collection_name)
-        # Initialize Qdrant client
+        # Use instance variable for collection name, allows overriding if needed
+        self.collection_name = collection_name
+        # Qdrant client initialization logic (should be consistent with other stores)
         qdrant_host = os.getenv("QDRANT_HOST", "localhost")
         qdrant_api_key = os.getenv("QDRANT_API_KEY")
-        is_cloud = qdrant_host.startswith("http") or qdrant_host.startswith("https")
-        if is_cloud:
-            logging.info(f"Connecting to Qdrant Cloud at: {qdrant_host}")
-            self.client = QdrantClient(url=qdrant_host, api_key=qdrant_api_key, timeout=60)
-        else:
-            logging.info(f"Connecting to local Qdrant at: {qdrant_host}")
-            port = int(os.getenv("QDRANT_PORT", "6333"))
-            self.client = QdrantClient(host=qdrant_host, port=port, timeout=60)
-        self._create_collection_if_not_exists()
-        logging.info(f"Initialized PdfPagesStore with collection: {collection_name}")
-
-    def _create_collection_if_not_exists(self):
-        """Create the collection if it doesn't exist."""
-        collections = self.client.get_collections().collections
-        exists = any(col.name == self.collection_name for col in collections)
-        if not exists:
-            self.client.create_collection(
-                collection_name=self.collection_name,
-                vectors_config=models.VectorParams(
-                    size=STANDARD_EMBEDDING_DIMENSION, 
-                    distance=models.Distance.COSINE
-                )
+        qdrant_port = int(os.getenv("QDRANT_PORT", 6333))
+        prefer_grpc = os.getenv("QDRANT_PREFER_GRPC", "false").lower() == "true"
+        
+        logger.info(f"Connecting to Qdrant host: {qdrant_host} for {self.collection_name}")
+        try:
+            self.client = QdrantClient(
+                host=qdrant_host,
+                port=qdrant_port, 
+                api_key=qdrant_api_key,
+                prefer_grpc=prefer_grpc,
+                 timeout=60 # Increase timeout
             )
-            logging.info(f"Created new collection: {self.collection_name}")
+            # Ensure collection exists
+            self._ensure_collection()
+            logger.info(f"Initialized PdfPagesStore with collection: {self.collection_name}")
+        except Exception as e:
+            logger.error(f"Failed to initialize Qdrant client for PdfPagesStore: {e}", exc_info=True)
+            raise
+
+    def _ensure_collection(self):
+        """Ensure the Qdrant collection exists, creating it if necessary."""
+        try:
+            collections_response = self.client.get_collections()
+            collection_names = [c.name for c in collections_response.collections]
+            if self.collection_name not in collection_names:
+                logger.info(f"Collection '{self.collection_name}' not found. Creating...")
+                # Assuming embedding dimension is known (e.g., 384 for all-MiniLM-L6-v2)
+                # This should ideally be configured or determined dynamically
+                embedding_dim = 384 # Example dimension
+                self.client.recreate_collection(
+                    collection_name=self.collection_name,
+                    vectors_config=models.VectorParams(size=embedding_dim, distance=models.Distance.COSINE)
+                )
+                logger.info(f"Created collection: {self.collection_name}")
+            else:
+                logger.debug(f"Collection '{self.collection_name}' already exists.")
+        except Exception as e:
+            logger.error(f"Error checking/creating collection {self.collection_name}: {e}", exc_info=True)
+            raise
 
     def add_points(self, points: List[models.PointStruct]) -> None:
         """Adds pre-constructed points (with vectors) to the Qdrant collection."""
         if not points:
-            return
-        batch_size = 100
-        num_batches = (len(points) + batch_size - 1) // batch_size
-        for i in range(0, len(points), batch_size):
-            batch = points[i:i + batch_size]
-            batch_num = (i // batch_size) + 1
-            try:
-                self.client.upsert(
-                    collection_name=self.collection_name,
-                    points=batch,
-                    wait=True
-                )
-                logging.info(f"Added batch {batch_num}/{num_batches} ({len(batch)} points) to {self.collection_name}")
-            except Exception as e:
-                logging.error(f"Error adding batch {batch_num}/{num_batches} to {self.collection_name}: {e}", exc_info=True)
-                raise
-        logging.info(f"Finished adding {len(points)} points to {self.collection_name}.")
+            logger.warning("No points provided to add.")
+            return 0
+            
+        logger.info(f"Adding {len(points)} points to collection '{self.collection_name}'")
+        try:
+            operation_info = self.client.upsert(
+                collection_name=self.collection_name,
+                points=points,
+                wait=True # Wait for operation to complete
+            )
+            if operation_info.status == models.UpdateStatus.COMPLETED:
+                logger.info(f"Successfully added {len(points)} points.")
+                return len(points) # Return number added
+            else:
+                logger.error(f"Failed to add points to {self.collection_name}. Status: {operation_info.status}")
+                return 0
+        except Exception as e:
+            logger.error(f"Error adding points to {self.collection_name}: {e}", exc_info=True)
+            return 0
 
     # Implement abstract methods from SearchHelper
     def _execute_vector_search(self, query_vector: List[float], limit: int) -> List[Dict[str, Any]]:
@@ -193,24 +218,22 @@ class PdfPagesStore(SearchHelper):
             
         return documents
     
-    def clear_store(self, client: QdrantClient = None):
-        """Deletes the entire Qdrant collection associated with this store."""
-        # Use the passed client if provided, otherwise use the instance's client
-        q_client = client if client else self.client
-        if not q_client:
-            logging.error(f"Qdrant client not available for clearing collection {self.collection_name}")
-            return
-
+    def clear_store(self):
+        """Deletes and recreates the Qdrant collection."""
         try:
-            logging.info(f"Attempting to delete Qdrant collection: {self.collection_name}")
-            q_client.delete_collection(collection_name=self.collection_name)
-            logging.info(f"Successfully deleted Qdrant collection: {self.collection_name}")
-            # Immediately recreate the collection after deletion
-            logging.info(f"Recreating collection {self.collection_name}...")
-            self._create_collection_if_not_exists() 
+            logger.info(f"Attempting to delete Qdrant collection: {self.collection_name}")
+            self.client.delete_collection(collection_name=self.collection_name)
+            logger.info(f"Successfully deleted Qdrant collection: {self.collection_name}")
+            # Recreate it immediately
+            logger.info(f"Recreating collection {self.collection_name}...")
+            self._ensure_collection() 
         except Exception as e:
-            # Log error if deletion fails (e.g., collection doesn't exist)
-            logging.warning(f"Could not delete Qdrant collection '{self.collection_name}': {e}")
+            # Handle case where collection might not exist - log as warning
+            if "not found" in str(e).lower() or "doesn't exist" in str(e).lower():
+                 logger.warning(f"Collection {self.collection_name} not found during clear_store (already deleted?)")
+            else:
+                 logger.error(f"Error clearing/recreating collection {self.collection_name}: {e}", exc_info=True)
+                 raise # Reraise other errors
 
     def _create_source_page_filter(self, source: str, page: int) -> Dict[str, Any]:
         """Create source/page filter for Qdrant."""

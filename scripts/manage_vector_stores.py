@@ -22,6 +22,7 @@ from vector_store.search_helper import SearchHelper # Import SearchHelper direct
 from data_ingestion.processor import DataProcessor
 # Import constants directly from the module
 from data_ingestion.processor import PROCESS_HISTORY_FILE, PROCESS_HISTORY_S3_KEY, AWS_S3_BUCKET_NAME
+from config import S3_BUCKET_NAME # Import bucket name
 
 env_path = project_root / '.env'
 load_dotenv(dotenv_path=env_path, override=True) # Override system vars
@@ -50,6 +51,29 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__) # Get logger for this module
+
+# --- SQS Configuration ---
+SQS_QUEUE_URL = os.getenv("SQS_QUEUE_URL")
+AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
+
+s3_client = None
+sqs_client = None
+
+try:
+    # Initialize S3 client (needed for listing PDFs)
+    s3_client = boto3.client('s3', region_name=AWS_REGION)
+    logger.info(f"Initialized S3 client for region {AWS_REGION}")
+    
+    # Initialize SQS client (needed for sending messages)
+    if SQS_QUEUE_URL:
+        sqs_client = boto3.client('sqs', region_name=AWS_REGION)
+        logger.info(f"Initialized SQS client for queue: {SQS_QUEUE_URL}")
+    else:
+        logger.warning("SQS_QUEUE_URL environment variable not set. Cannot trigger processing.")
+except Exception as e:
+    logger.exception(f"Failed to initialize AWS clients: {e}")
+    s3_client = None
+    sqs_client = None
 
 # --- Structured Output Function --- 
 def send_status(status_type, data):
@@ -343,55 +367,164 @@ def _get_qdrant_client() -> QdrantClient | None:
         logger.error(f"Failed to connect to Qdrant: {e}", exc_info=True)
         return None
 
+def clear_stores(stores_to_clear: List[str]):
+    """Clears the specified vector stores."""
+    logger.info(f"Attempting to clear stores: {stores_to_clear}")
+    cleared_count = 0
+    for store_type in stores_to_clear:
+        try:
+            logger.info(f"Clearing store: {store_type}")
+            store = get_vector_store(store_type)
+            if store:
+                store.clear_store()
+                logger.info(f"Successfully cleared store: {store_type}")
+                cleared_count += 1
+            else:
+                logger.warning(f"Could not get instance for store type '{store_type}' to clear.")
+        except Exception as e:
+            logger.error(f"Failed to clear store '{store_type}': {e}", exc_info=True)
+    logger.info(f"Finished clearing stores. Cleared {cleared_count}/{len(stores_to_clear)}.")
+
+def trigger_processing_for_pdf(s3_pdf_key: str, bucket_name: str):
+    """Sends an SQS message to trigger processing for a single PDF."""
+    if not sqs_client or not SQS_QUEUE_URL:
+        logger.error(f"SQS client or URL not available. Cannot trigger processing for {s3_pdf_key}")
+        return False
+
+    # Construct message body mimicking S3 event notification structure
+    # Note: S3 keys in event notifications are often URL-encoded.
+    # The worker should handle decoding. We send it raw here.
+    message_body = json.dumps({
+        "Records": [{
+            "s3": {
+                "bucket": {"name": bucket_name},
+                "object": {"key": s3_pdf_key}
+            }
+        }]
+    })
+
+    try:
+        response = sqs_client.send_message(
+            QueueUrl=SQS_QUEUE_URL,
+            MessageBody=message_body
+        )
+        logger.info(f"Sent SQS message for {s3_pdf_key}. Message ID: {response.get('MessageId')}")
+        return True
+    except ClientError as e:
+        logger.error(f"Failed to send SQS message for {s3_pdf_key}: {e}")
+        return False
+    except Exception as e:
+        logger.exception(f"Unexpected error sending SQS message for {s3_pdf_key}: {e}")
+        return False
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Manage vector stores using the two-phase processing pipeline.")
-
-    # --- Argument Definitions ---
-    all_store_choices = ['pages', 'semantic', 'haystack-qdrant', 'haystack-memory']
+    parser = argparse.ArgumentParser(description="Manage vector stores: clear and trigger processing.")
     
+    # Get available store choices dynamically
+    available_stores = list_available_stores()
+    store_choices = available_stores + ['all', 'haystack'] # Add aggregate options
+
     parser.add_argument(
-        '--store',
-        action='append',  # Allow the argument to be specified multiple times
-        choices=all_store_choices + ['all', 'haystack'], # Add 'all' and 'haystack' as valid choices
-        dest='stores',  # Store the results in a list called 'stores'
-        default=[],
-        help=("Which store(s) to process. Specify multiple times (e.g., --store pages --store semantic) "
-              "or use 'all' or 'haystack' (implies both qdrant/memory). Defaults to ['all'] if none specified.")
+        "--store", 
+        nargs='+', 
+        default=["all"], 
+        choices=store_choices,
+        help=f"Vector store(s) to manage. Choose from: {store_choices}"
     )
     parser.add_argument(
-        '--cache-behavior',
-        choices=['use', 'rebuild'],
-        default='use',
-        help="Cache behavior: 'use' (default) processes only new/changed files, 'rebuild' clears history/stores and processes all files."
+        "--cache-behavior", 
+        default='use', 
+        choices=['use', 'rebuild'], 
+        help="'rebuild' clears the stores before triggering processing. 'use' triggers processing without clearing."
     )
     parser.add_argument(
-        '--s3-pdf-prefix',
-        type=str,
-        default=None,
-        help="Optional S3 prefix for source PDF files (e.g., 'test-pdfs/'). Overrides the prefix from .env."
+        "--s3-pdf-prefix",
+        default=os.getenv("AWS_S3_PDF_PREFIX", "source-pdfs/"),
+        help="S3 prefix where source PDFs are located. Overrides environment variable."
     )
 
     args = parser.parse_args()
 
-    logger.info("Starting vector store management script")
-    logger.info(f"Selected Store(s): {args.stores}")
+    # Determine target stores
+    target_stores_arg = args.store
+    stores_to_manage = set()
+    if "all" in target_stores_arg:
+        stores_to_manage.update(available_stores)
+    elif "haystack" in target_stores_arg:
+        # Add both haystack types if 'haystack' is specified
+        if 'haystack-qdrant' in available_stores: stores_to_manage.add('haystack-qdrant')
+        if 'haystack-memory' in available_stores: stores_to_manage.add('haystack-memory')
+        # Add any other specified stores too
+        stores_to_manage.update(s for s in target_stores_arg if s != 'haystack' and s in available_stores)
+    else:
+        stores_to_manage.update(s for s in target_stores_arg if s in available_stores)
+    
+    stores_to_manage = sorted(list(stores_to_manage))
+    if not stores_to_manage:
+        logger.error("No valid stores selected to manage.")
+        sys.exit(1)
+        
+    logger.info(f"Selected Store(s): {stores_to_manage}")
     logger.info(f"Cache Behavior: {args.cache_behavior}")
-    if args.s3_pdf_prefix:
-        logger.info(f"Using S3 PDF Prefix Override: {args.s3_pdf_prefix}")
-    else:
-        logger.info(f"Using S3 PDF Prefix from environment variable.")
+    logger.info(f"Using S3 PDF Prefix: {args.s3_pdf_prefix}")
 
-    # Call the main refactored function
-    success = manage_vector_stores(
-        store_arg=args.stores, # Pass the argument value
-        cache_behavior=args.cache_behavior,
-        s3_pdf_prefix=args.s3_pdf_prefix
-    )
-
-    if success:
-        logger.info("Vector store management script finished successfully!")
+    # --- Clear Stores if Rebuilding --- 
+    if args.cache_behavior == 'rebuild':
+        # We still need DataProcessor or equivalent logic to reset history file
+        # For simplicity now, just clear the vector stores themselves.
+        # Resetting history should ideally happen within the worker based on messages.
+        logger.info("Resetting processing history is now handled by workers receiving messages.")
+        # processor = DataProcessor(cache_behavior='rebuild', status_callback=log_status)
+        # processor.reset_history()
+        clear_stores(stores_to_manage)
     else:
-        logger.error("Vector store management script finished with errors.")
+        logger.info("Cache behavior is 'use'. Stores will not be cleared.")
+
+    # --- Trigger Processing via SQS --- 
+    if not sqs_client or not SQS_QUEUE_URL:
+        logger.error("SQS client not configured. Cannot trigger processing.")
+        sys.exit(1)
+    if not s3_client:
+        logger.error("S3 client not configured. Cannot list PDFs to trigger processing.")
+        sys.exit(1)
+
+    pdf_prefix = args.s3_pdf_prefix
+    if pdf_prefix and not pdf_prefix.endswith('/'):
+        pdf_prefix += '/'
+        
+    logger.info(f"Listing PDFs from bucket '{S3_BUCKET_NAME}' with prefix '{pdf_prefix}' to trigger processing...")
+    triggered_count = 0
+    skipped_count = 0
+    error_count = 0
+    try:
+        paginator = s3_client.get_paginator('list_objects_v2')
+        pages = paginator.paginate(Bucket=S3_BUCKET_NAME, Prefix=pdf_prefix)
+        pdf_keys_to_trigger = []
+        for page in pages:
+            if "Contents" in page:
+                for obj in page["Contents"]:
+                    key = obj["Key"]
+                    # Ensure it's a PDF and not just the prefix itself
+                    if key.lower().endswith('.pdf') and key != pdf_prefix:
+                        pdf_keys_to_trigger.append(key)
+        
+        if not pdf_keys_to_trigger:
+            logger.warning(f"No PDF files found in s3://{S3_BUCKET_NAME}/{pdf_prefix} to trigger.")
+        else:
+            logger.info(f"Found {len(pdf_keys_to_trigger)} PDFs. Sending SQS triggers...")
+            for s3_key in pdf_keys_to_trigger:
+                if trigger_processing_for_pdf(s3_key, S3_BUCKET_NAME):
+                    triggered_count += 1
+                    time.sleep(0.1) # Small delay to avoid overwhelming SQS API
+                else:
+                    error_count += 1
+            logger.info(f"Finished sending SQS triggers. Sent: {triggered_count}, Errors: {error_count}")
+            
+    except ClientError as e:
+        logger.error(f"Error listing PDFs from S3: {e}")
+    except Exception as e:
+        logger.exception(f"Unexpected error during PDF listing or SQS triggering: {e}")
+
+    logger.info("Vector store management script finished.")
 
     logger.info("Script finished") # Final script end message 
