@@ -73,7 +73,7 @@ DnDSy is a web application that acts as an intelligent assistant for the 2024 Du
 *   **Data Ingestion & Processing:** Custom pipeline in `data_ingestion` package using `langchain` for chunking, custom structure analysis, and link extraction.
 *   **Frontend:** HTML, CSS, JavaScript (with Marked.js for Markdown rendering)
 *   **Cloud Storage:** AWS S3 (Bucket name example: `askdnd-ai`). Stores source PDFs (e.g., `source-pdfs/`), page images (`pdf_page_images/`), extracted links (`extracted_links/`), and processing history (`processing/`).
-*   **Deployment:** Docker, Gunicorn, Heroku (or similar platform)
+*   **Deployment:** Docker, Gunicorn, Railway (or similar platform)
 
 ## Project Structure
 
@@ -257,6 +257,7 @@ dndsy/
             flask run
             ```
         *   Application at `http://localhost:5000`.
+        *   *Note:* For local mobile testing with specific session configurations, you can alternatively run `python run_mobile_test_server.py` which starts the server on port 5001 and makes it accessible on your local network.
 
     *   **Option C: Flask Dev Server + Qdrant Cloud**
         *   Ensure your `.env` is configured for Qdrant Cloud (Host URL + API Key).
@@ -271,23 +272,23 @@ dndsy/
             ```bash
             flask run
             ```
+        *   *Note:* For local mobile testing with specific session configurations, you can alternatively run `python run_mobile_test_server.py` which starts the server on port 5001 and makes it accessible on your local network.
 
 8.  **Access:** Open your browser to `http://localhost:5000` (or the appropriate host/port) and log in with the `APP_PASSWORD` set in your `.env` file.
 
-## Deployment (Heroku Example)
+## Deployment (Railway Example)
 
 1.  **Prerequisites:**
-    *   Heroku Account
+    *   Railway Account
     *   Qdrant Cloud Cluster URL & API Key.
     *   AWS S3 Bucket configured and populated with PDFs.
 
-2.  **Heroku App Setup:**
-    *   Create a Heroku application via the Heroku Dashboard
-    *   Connect your GitHub repository to the Heroku app in the "Deploy" tab
-    *   Set the GitHub branch to deploy from (e.g., main)
+2.  **Railway Project Setup:**
+    *   Create a new Railway project from your GitHub repository.
+    *   Railway will automatically detect the `Dockerfile` or use Nixpacks to build and deploy.
 
-3.  **Configure Heroku Config Vars:**
-    *   Set these in the Heroku Dashboard (Settings -> Config Vars)
+3.  **Configure Railway Environment Variables:**
+    *   Set these in the Railway project settings (Variables tab).
     *   **Required:**
         *   `LLM_PROVIDER` (e.g., `openai`)
         *   `LLM_MODEL_NAME` (e.g., `gpt-4o-mini`)
@@ -305,24 +306,109 @@ dndsy/
         *   `AWS_S3_PDF_PREFIX` (if different from `source-pdfs/`)
         *   `OPENAI_EMBEDDING_MODEL` (if different from `text-embedding-3-small`)
 
-4.  **Process Data in Cloud:**
-    *   You'll need to run a one-off dyno to process the data. This can be done using the Heroku Dashboard:
-        *   Go to "More" -> "Run Console" and enter:
-          ```bash
-          # Use --cache-behavior rebuild for initial setup/full reprocessing
-          python -m scripts.manage_vector_stores --cache-behavior rebuild
-          ```
-    *   **Important:** Run this *after* setting all required Config Vars and *before* users access the app. Re-run if PDFs in S3 change, typically using the default `--cache-behavior use` for efficiency:
-        ```bash
-        # Example for incremental update
-        python -m scripts.manage_vector_stores --cache-behavior use
-        ```
+4.  **Process Data in Cloud (One-Time Task or via Admin UI):**
+    *   **Option A (Railway Run Command - Manual):** You may need to run the processing script manually the first time or after major PDF updates. Use Railway's `railway run` command locally (requires Railway CLI) or trigger it through a deploy script if configured:
+      ```bash
+      # Example using Railway CLI (ensure environment variables are accessible)
+      # railway run python -m scripts.manage_vector_stores --cache-behavior rebuild
+      # railway run python -m scripts.manage_vector_stores --cache-behavior use # For updates
+      ```
+    *   **Option B (Admin Panel):** The recommended way is to deploy the application first, then use the Admin Panel's "Data Processing" feature to trigger the indexing job (`scripts.manage_vector_stores`). This avoids needing the Railway CLI for this task.
+    *   **Important:** Ensure data processing completes *after* setting all required environment variables and *before* users expect full functionality.
 
-5.  **Deploy:**
-    *   Use the "Deploy" tab in the Heroku Dashboard to deploy your app
-    *   Click "Deploy Branch" to manually deploy, or enable "Automatic Deploys" for continuous deployment
-    *   Heroku will build using `requirements.txt` and run using the `web` process in the `Procfile`
-    *   *(Optional)* Adjust dyno type in the "Resources" tab if needed for performance
+5.  **Deploy & Access:**
+    *   Railway automatically deploys upon code pushes to the connected branch.
+    *   Monitor the deployment logs in the Railway dashboard.
+    *   Once deployed, access the application via the public URL provided by Railway.
+    *   Railway uses the `Procfile` or the `CMD`/`ENTRYPOINT` in your `Dockerfile` to start the web server (Gunicorn).
+
+## Metadata Processing Module (`metadata_processor.py`)
+
+This module is responsible for generating rich metadata for processed documents (originally PDFs). The goal of this metadata is to enhance the Retrieval-Augmented Generation (RAG) process by providing additional context about the source documents, allowing the system to better rank or filter retrieval results based on the user's query intent.
+
+### Purpose
+
+During data ingestion, simply chunking and embedding document text may not be enough, especially when dealing with multiple documents covering overlapping topics (e.g., the same term like "Druid" appearing as a class in one book and a monster in another). This module aims to:
+
+1.  **Extract Key Information:** Pull out relevant details like title, summary, and keywords from the document content.
+2.  **Categorize Documents:** Assign categories based on both a predefined list (constrained) and free-form analysis (automatic).
+3.  **Standardize Metadata:** Produce a consistent JSON structure for each document's metadata.
+4.  **Store Metadata:** Upload the generated metadata JSON to a designated S3 location for later retrieval.
+
+### Functionality Overview
+
+1.  **Initialization:** Requires AWS S3 credentials (`AWS_S3_BUCKET_NAME`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`) and LLM provider credentials (e.g., `OPENAI_API_KEY`, `LLM_PROVIDER`, `LLM_MODEL_NAME`) to be set as environment variables. It initializes clients for S3 and the configured LLM provider.
+2.  **Main Function (`process_document_for_metadata`):**
+    *   Takes the raw PDF content (optional, for ID generation), extracted text, filename, S3 path, and a list of available categories (from `config.py`) as input.
+    *   Generates a unique `document_id` (currently SHA256 hash of S3 path or content).
+    *   Calls helper functions to populate metadata fields.
+    *   Returns the complete metadata dictionary.
+3.  **Metadata Extraction Functions:**
+    *   `determine_constrained_category`: Uses the LLM to classify the document text and select the single best-fitting category from the `available_categories` list provided.
+    *   `determine_automatic_category`: Uses the LLM to analyze the document text and generate a concise, descriptive category name freely (without constraints).
+    *   `extract_source_book_title`: Attempts to extract the title using regex (looking for `Title: ...`) and fallback logic (checking the first few non-empty lines).
+    *   `generate_summary`: Uses the LLM to create a brief (2-4 sentence) summary of the document text.
+    *   `extract_keywords`: Uses the LLM to identify and extract relevant keywords and key phrases as a comma-separated list.
+4.  **S3 Interaction:**
+    *   `upload_metadata_to_s3`: Takes the generated metadata dictionary and uploads it as a JSON file to the configured S3 bucket under the `metadata/` prefix (e.g., `s3://your-bucket/metadata/<document_id>.json`).
+    *   `get_metadata_from_s3`: Retrieves a specific metadata JSON file from S3 based on its `document_id`.
+
+### Metadata Schema
+
+The generated metadata JSON follows this structure:
+
+```json
+{
+  "document_id": "unique_identifier_for_the_document",
+  "original_filename": "source_pdf_filename.pdf",
+  "s3_pdf_path": "s3://your-raw-pdf-bucket/path/to/document.pdf",
+  "constrained_category": "Category chosen from predefined list",
+  "automatic_category": "Category determined freely by LLM",
+  "source_book_title": "Extracted Title | null",
+  "summary": "LLM-generated summary of the document.",
+  "keywords": ["keyword1", "keyword2", "topic3"],
+  "processing_timestamp": "ISO_8601_timestamp"
+}
+```
+
+*   `constrained_category`: The best fit from the `PREDEFINED_CATEGORIES_LIST` in `config.py`, chosen by the LLM.
+*   `automatic_category`: A descriptive category generated freely by the LLM.
+
+### Configuration
+
+This module relies on environment variables for configuration:
+
+*   **S3 Configuration:**
+    *   `AWS_S3_BUCKET_NAME`: Name of the S3 bucket to store metadata files (falls back to `your-metadata-bucket-name-fallback` if not set).
+    *   `AWS_ACCESS_KEY_ID`: Your AWS Access Key ID.
+    *   `AWS_SECRET_ACCESS_KEY`: Your AWS Secret Access Key.
+    *   `AWS_REGION`: The AWS Region where the bucket resides (defaults to `us-east-1` if not set).
+*   **LLM Configuration:**
+    *   `LLM_PROVIDER`: Specifies the LLM provider (e.g., `openai`, `anthropic`). Used by `llm_providers.get_llm_client()`.
+    *   `LLM_MODEL_NAME`: Specifies the model to use for generation tasks. Used by `llm_providers.get_llm_client()`.
+    *   `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` (etc.): API key for the chosen provider.
+
+### Standalone Testing
+
+The module can be run directly for testing using the `if __name__ == "__main__":` block.
+
+```bash
+python metadata_processor.py
+```
+
+This test block:
+
+*   Uses mock document content and S3 path.
+*   Uses a mock list of available categories.
+*   Calls `process_document_for_metadata`.
+*   Prints the generated metadata JSON to the console.
+*   **Optionally** attempts S3 upload/download if `MOCK_S3` is set to `True` within the script (requires valid AWS credentials and bucket configuration).
+
+You can modify the mock data or load real text content within this block for more specific testing.
+
+### Future Integration
+
+This module is designed to be integrated into the main data ingestion pipeline (`data_ingestion/processor.py`). The `process_document_for_metadata` function will be called after a PDF's text is extracted, and the resulting metadata will be uploaded via `upload_metadata_to_s3`.
 
 ## Vector Store Approaches
 
@@ -419,10 +505,4 @@ The system processes PDFs from S3 to generate vector data for the selected store
 5.  **Sequential Processing for Target Stores:**
     *   For the *current PDF*, proceeds based on which stores (`pages`, `semantic`, `haystack`) are targeted and not skipped due to cache:
         *   **Pages Store:** If processing `pages`, embeds full page texts using `sentence-transformers` (`all-MiniLM-L6-v2`) via `embeddings/model_provider.py`. Creates Qdrant points and adds them to the `PdfPagesStore` (`dnd_pdf_pages` collection).
-        *   **Semantic Store:** If processing `semantic`, chunks page data (with cross-page context) using `semantic_store.chunk_document_with_cross_page_context`. Embeds chunks using OpenAI API (`text-embedding-3-small`) via `embeddings/model_provider.py`. Creates Qdrant points and adds them to the `SemanticStore` (`dnd_semantic` collection), updating its BM25 retriever.
-        *   **Haystack Store:** If processing `haystack`, chunks page data (using `haystack_store.chunk_document_with_cross_page_context`). Adds chunks to the configured Haystack store (`HaystackQdrantStore` or `HaystackMemoryStore`), which handles internal embedding (`sentence-transformers`).
-6.  **History Update:**
-    *   Updates the `processed_stores` list in the history for the PDF to mark which stores processed this version.
-    *   Saves the updated `pdf_process_history.json` back to S3 and locally after all PDFs are processed.
-
-This unified pipeline processes each PDF sequentially for all targeted stores, improving efficiency and ensuring image generation happens only once when needed. 
+        *   **Semantic Store:** If processing `semantic`, chunks page data (with cross-page context) using `
