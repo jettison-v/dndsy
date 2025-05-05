@@ -8,7 +8,6 @@ from config import ENV_PREFIX
 from .pdf_pages_store import PdfPagesStore
 from .semantic_store import SemanticStore
 from .haystack.qdrant_store import HaystackQdrantStore
-from .haystack.memory_store import HaystackMemoryStore
 
 load_dotenv()
 
@@ -49,8 +48,6 @@ def get_vector_store(vector_store_type=None, force_new=False):
         store = SemanticStore(collection_name=f"{collection_name_prefix}dnd_semantic")
     elif vector_store_type == "haystack-qdrant":
         store = HaystackQdrantStore(collection_name=f"{collection_name_prefix}dnd_haystack_qdrant")
-    elif vector_store_type == "haystack-memory":
-        store = HaystackMemoryStore(collection_name=f"{collection_name_prefix}dnd_haystack_memory")
     else:
         logger.warning(f"Unknown vector store type: {vector_store_type}. Defaulting to pages.")
         store = PdfPagesStore(collection_name=f"{collection_name_prefix}dnd_pdf_pages")
