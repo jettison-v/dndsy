@@ -98,8 +98,8 @@ class HaystackQdrantStore(SearchHelper):
             collection_info = self.qdrant_client_for_admin.get_collection(collection_name=self.collection_name)
             existing_indices = collection_info.payload_schema or {}
             
-            # Check and create index for metadata.source
-            source_field = "metadata.source"
+            # Check and create index for meta.source
+            source_field = "meta.source" # Use 'meta' prefix for Haystack
             if source_field not in existing_indices:
                 logging.info(f"Creating keyword payload index for {source_field} in {self.collection_name}")
                 self.qdrant_client_for_admin.create_payload_index(
@@ -110,8 +110,8 @@ class HaystackQdrantStore(SearchHelper):
             else:
                  logging.debug(f"Index for {source_field} already exists.")
             
-            # Check and create index for metadata.page
-            page_field = "metadata.page"
+            # Check and create index for meta.page
+            page_field = "meta.page" # Use 'meta' prefix for Haystack
             if page_field not in existing_indices:
                 logging.info(f"Creating integer payload index for {page_field} in {self.collection_name}")
                 self.qdrant_client_for_admin.create_payload_index(
