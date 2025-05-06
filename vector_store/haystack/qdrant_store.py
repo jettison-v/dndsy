@@ -43,15 +43,28 @@ class HaystackQdrantStore(SearchHelper):
         # Initialize sentence transformer model for embeddings
         self.sentence_transformer, self.embedding_model_name = initialize_embedding_model()
         
-        # Initialize Qdrant document store
+        # --- Initialize Haystack QdrantDocumentStore --- 
+        qdrant_url = os.getenv("QDRANT_HOST", "localhost")
+        qdrant_port = int(os.getenv("QDRANT_PORT", "6333"))
+        qdrant_api_key = os.getenv("QDRANT_API_KEY", None)
+        is_cloud = qdrant_url.startswith("http") or qdrant_url.startswith("https")
+        self.qdrant_client_for_admin = None # Client for admin tasks like index creation
+
         try:
-            # Check if we should use Qdrant in-memory, local disk, or remote
-            qdrant_url = os.getenv("QDRANT_HOST", "localhost")
-            qdrant_port = int(os.getenv("QDRANT_PORT", "6333"))
-            qdrant_api_key = os.getenv("QDRANT_API_KEY", None)
-            
-            # Local Qdrant or in-memory (for development/testing)
-            if qdrant_url == "localhost" or qdrant_url == "127.0.0.1":
+            # Initialize Haystack Document Store
+            if is_cloud:
+                logging.info(f"Initializing Qdrant Cloud document store at {qdrant_url}")
+                secure_api_key = SimpleSecret(qdrant_api_key) if qdrant_api_key else None
+                self.document_store = QdrantDocumentStore(
+                    url=qdrant_url,
+                    api_key=secure_api_key,
+                    index=collection_name,
+                    embedding_dim=EMBEDDING_DIMENSION,
+                    recreate_index=False
+                )
+                # Also create direct client for admin tasks
+                self.qdrant_client_for_admin = QdrantClient(url=qdrant_url, api_key=qdrant_api_key, timeout=60)
+            else:
                 logging.info(f"Initializing Qdrant document store at {qdrant_url}:{qdrant_port}")
                 self.document_store = QdrantDocumentStore(
                     url=qdrant_url,
@@ -60,35 +73,58 @@ class HaystackQdrantStore(SearchHelper):
                     embedding_dim=EMBEDDING_DIMENSION,
                     recreate_index=False,
                     hnsw_config={"m": 16, "ef_construct": 64},
-                    api_key=None  # No API key for local
+                    api_key=None
                 )
-            # Qdrant Cloud
-            elif qdrant_url.startswith("http") or qdrant_url.startswith("https"):
-                logging.info(f"Initializing Qdrant Cloud document store at {qdrant_url}")
-                logging.debug(f"API key present: {qdrant_api_key is not None}")
-                # Wrap API key in our SimpleSecret class
-                secure_api_key = SimpleSecret(qdrant_api_key) if qdrant_api_key else None
-                self.document_store = QdrantDocumentStore(
-                    url=qdrant_url,
-                    api_key=secure_api_key,  # Use our wrapped API key
-                    index=collection_name,
-                    embedding_dim=EMBEDDING_DIMENSION,
-                    recreate_index=False
-                )
+                # Also create direct client for admin tasks
+                self.qdrant_client_for_admin = QdrantClient(host=qdrant_url, port=qdrant_port, timeout=60)
             
             logging.info(f"Successfully initialized QdrantDocumentStore for collection: {collection_name}")
-            
+            # Ensure payload indices exist
+            self._ensure_payload_indices_exist()
+
         except Exception as e:
             logging.error(f"Error initializing QdrantDocumentStore: {e}", exc_info=True)
-            
-            # Fallback to in-memory for testing
-            logging.warning("Falling back to in-memory document store")
-            self.document_store = QdrantDocumentStore(
-                ":memory:",  # In-memory Qdrant
-                index=collection_name,
-                embedding_dim=EMBEDDING_DIMENSION
-            )
+            logging.warning("Haystack Qdrant Store initialization failed.")
+            self.document_store = None # Ensure store is None on failure
+            self.qdrant_client_for_admin = None
     
+    def _ensure_payload_indices_exist(self):
+        """Checks for and creates necessary payload indices if they don't exist."""
+        if not self.qdrant_client_for_admin:
+            logging.warning("Direct Qdrant client not available, cannot ensure payload indices.")
+            return
+
+        try:
+            collection_info = self.qdrant_client_for_admin.get_collection(collection_name=self.collection_name)
+            existing_indices = collection_info.payload_schema or {}
+            
+            # Check and create index for metadata.source
+            source_field = "metadata.source"
+            if source_field not in existing_indices:
+                logging.info(f"Creating keyword payload index for {source_field} in {self.collection_name}")
+                self.qdrant_client_for_admin.create_payload_index(
+                    collection_name=self.collection_name,
+                    field_name=source_field,
+                    field_schema=models.PayloadSchemaType.KEYWORD
+                )
+            else:
+                 logging.debug(f"Index for {source_field} already exists.")
+            
+            # Check and create index for metadata.page
+            page_field = "metadata.page"
+            if page_field not in existing_indices:
+                logging.info(f"Creating integer payload index for {page_field} in {self.collection_name}")
+                self.qdrant_client_for_admin.create_payload_index(
+                    collection_name=self.collection_name,
+                    field_name=page_field,
+                    field_schema=models.PayloadSchemaType.INTEGER
+                )
+            else:
+                 logging.debug(f"Index for {page_field} already exists.")
+
+        except Exception as e:
+            logging.error(f"Error ensuring payload indices exist for {self.collection_name}: {e}", exc_info=True)
+
     def chunk_document_with_cross_page_context(self, page_texts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Creates chunks from document pages with improved context awareness."""
         return chunk_document_with_cross_page_context(page_texts)
@@ -379,17 +415,12 @@ class HaystackQdrantStore(SearchHelper):
 
     def clear_store(self, client: Any = None):
         """Deletes the entire Qdrant collection associated with this Haystack store."""
-        # Use the passed Qdrant client if available, otherwise log error.
-        # Haystack's QdrantDocumentStore doesn't seem to expose a reliable delete method.
-        q_client = client # Expecting a QdrantClient instance here
+        # Use the internal direct client instance for clearing
+        q_client = self.qdrant_client_for_admin
         
         if not q_client:
-            logging.error(f"Qdrant client instance was not provided to clear Haystack collection: {self.collection_name}. Cannot clear.")
+            logging.error(f"Direct Qdrant client not available for clearing Haystack collection: {self.collection_name}. Cannot clear.")
             return
-        
-        if not isinstance(q_client, QdrantClient):
-             logging.error(f"Invalid client type passed to HaystackQdrantStore.clear_store: {type(q_client)}. Expected QdrantClient.")
-             return
 
         try:
             collection_name = self.document_store.index # Get collection name from Haystack store
