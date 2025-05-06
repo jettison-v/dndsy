@@ -437,5 +437,7 @@ class HaystackQdrantStore(SearchHelper):
                  vectors_config=models.VectorParams(size=EMBEDDING_DIMENSION, distance=models.Distance.COSINE)
             )
             logging.info(f"Recreated collection {collection_name} via Qdrant client.")
+            # Ensure indices are created on the newly recreated collection
+            self._ensure_payload_indices_exist()
         except Exception as e:
             logging.warning(f"Could not delete or recreate Qdrant collection '{self.collection_name}' for Haystack: {e}") 
