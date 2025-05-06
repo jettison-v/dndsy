@@ -9,6 +9,41 @@ logger = logging.getLogger(__name__)
 
 class OpenAILLM(BaseLLMProvider):
     """LLM Provider implementation for OpenAI models."""
+
+    MODEL_PARAMETER_CONFIG = {
+        "o4-mini-2025-04-16": {
+            "param_name_map": {"max_tokens": "max_completion_tokens"},
+            "fixed_parameters": {"temperature": 1.0},
+            "unsupported_params": [], 
+            # Add other o4-mini specific rules here if discovered
+        },
+        "gpt-4.1-nano-2025-04-14": { # Assuming standard behavior for GPT-4.1 family for now
+            "param_name_map": {}, 
+            "unsupported_params": []
+        },
+        "gpt-4.1-mini-2025-04-14": {
+            "param_name_map": {},
+            "unsupported_params": []
+        },
+        "gpt-4.1-2025-04-14": {
+            "param_name_map": {},
+            "unsupported_params": []
+        },
+        # Default for other models not explicitly listed (e.g., older GPT models if any were kept)
+        "default": {
+             "param_name_map": {},
+             "unsupported_params": []
+        }
+    }
+
+    # Standard OpenAI parameters we generally expect to pass through if not overridden or unsupported
+    DEFAULT_SUPPORTED_KWARGS = [
+        "top_p", "frequency_penalty", "presence_penalty", 
+        "logit_bias", "seed", "stop", "user", "n", 
+        "response_format", # For features like JSON mode
+        # "tools", "tool_choice" are more complex and typically handled by dedicated logic
+    ]
+
     def __init__(self, api_key: str = None, model_name: str = "gpt-3.5-turbo"):
         if not api_key:
             api_key = os.getenv("OPENAI_API_KEY")
@@ -35,31 +70,89 @@ class OpenAILLM(BaseLLMProvider):
     ) -> Union[Dict[str, Any], Generator[str, None, None]]:
         """Generates a response using the OpenAI ChatCompletion API, optionally streaming."""
         try:
-            # Prepare common parameters for the API call
             api_params = {
                 "model": self._chat_model_name,
                 "messages": [
                     {"role": "system", "content": system_message},
                     {"role": "user", "content": prompt}
                 ],
-                "temperature": temperature,
-                **kwargs
             }
 
-            # Model-specific adjustments for max_tokens parameter
-            if self._chat_model_name == "o4-mini-2025-04-16":
-                api_params["max_completion_tokens"] = max_tokens
+            # Get model specific config, falling back to a default empty config if model not listed
+            model_config = self.MODEL_PARAMETER_CONFIG.get(self._chat_model_name, 
+                                                           self.MODEL_PARAMETER_CONFIG.get("default", {}))
+            param_name_map = model_config.get("param_name_map", {})
+            fixed_params = model_config.get("fixed_parameters", {})
+            unsupported_params_for_model = set(model_config.get("unsupported_params", []))
+
+            # 1. Handle max_tokens (from method signature, originally from app_config)
+            max_tokens_val = max_tokens 
+            max_tokens_key_actual = param_name_map.get("max_tokens", "max_tokens") # Get mapped name if any
+
+            if max_tokens_key_actual not in unsupported_params_for_model:
+                if max_tokens_key_actual in fixed_params:
+                    fixed_val = fixed_params[max_tokens_key_actual]
+                    if fixed_val != max_tokens_val:
+                        logger.warning(
+                            f"Model {self._chat_model_name} has fixed {max_tokens_key_actual}={fixed_val}. "
+                            f"Overriding passed value {max_tokens_val}."
+                        )
+                    api_params[max_tokens_key_actual] = fixed_val
+                elif max_tokens_val is not None:
+                    api_params[max_tokens_key_actual] = max_tokens_val
             else:
-                api_params["max_tokens"] = max_tokens
+                logger.warning(f"Parameter 'max_tokens' (mapped to {max_tokens_key_actual}) is unsupported for {self._chat_model_name} and will be omitted.")
+
+            # 2. Handle temperature (from method signature, originally from app_config)
+            temperature_val = temperature
+            temperature_key_actual = param_name_map.get("temperature", "temperature") # Usually just "temperature"
+
+            if temperature_key_actual not in unsupported_params_for_model:
+                if temperature_key_actual in fixed_params:
+                    fixed_val = fixed_params[temperature_key_actual]
+                    if fixed_val != temperature_val: # Log only if different
+                        logger.warning(
+                            f"Model {self._chat_model_name} has fixed {temperature_key_actual}={fixed_val}. "
+                            f"Overriding passed value {temperature_val}."
+                        )
+                    api_params[temperature_key_actual] = fixed_val
+                elif temperature_val is not None: # Allow API default if None
+                    api_params[temperature_key_actual] = temperature_val
+            else:
+                logger.warning(f"Parameter 'temperature' (mapped to {temperature_key_actual}) is unsupported for {self._chat_model_name} and will be omitted.")
+            
+            # 3. Handle other kwargs passed into generate_response (originally from app_config)
+            for k_orig, v_orig in kwargs.items():
+                k_actual = param_name_map.get(k_orig, k_orig)
+
+                if k_actual not in unsupported_params_for_model:
+                    if k_actual in fixed_params:
+                        fixed_val = fixed_params[k_actual]
+                        if fixed_val != v_orig: # Log only if different
+                             logger.warning(
+                                f"Model {self._chat_model_name} has fixed {k_actual}={fixed_val}. "
+                                f"Overriding passed kwarg {k_orig}={v_orig}."
+                            )
+                        api_params[k_actual] = fixed_val
+                    elif k_actual in self.DEFAULT_SUPPORTED_KWARGS:
+                        api_params[k_actual] = v_orig
+                    else:
+                        # This case means the kwarg is not in DEFAULT_SUPPORTED_KWARGS 
+                        # and not explicitly handled by model_config.
+                        # It might be a new/uncommon param or a typo from app_config.
+                        logger.warning(
+                            f"Parameter '{k_orig}' (mapped to '{k_actual}') from kwargs is not in "
+                            f"DEFAULT_SUPPORTED_KWARGS for {self._chat_model_name} and will be omitted."
+                        )
+                else:
+                    logger.warning(
+                        f"Parameter '{k_orig}' (mapped to '{k_actual}') is explicitly unsupported "
+                        f"for {self._chat_model_name} and will be omitted."
+                    )
 
             if stream:
-                # For streaming, call _stream_response with the assembled parameters
-                # Note: _stream_response will also need this logic if called directly elsewhere,
-                # or it should expect the correct parameter name.
-                # For now, assuming generate_response is the primary entry point.
                 return self._stream_response_with_params(api_params)
             else:
-                # For non-streaming, make the direct API call
                 api_params["stream"] = False
                 response = self.client.chat.completions.create(**api_params)
                 response_text = response.choices[0].message.content
@@ -80,28 +173,31 @@ class OpenAILLM(BaseLLMProvider):
         max_tokens: int,
         **kwargs
     ) -> Generator[str, None, None]:
-        """Handles the streaming logic. Consider refactoring to use a single param prep point."""
-        logger.info("Initiating stream response from OpenAI...")
-        
-        # Prepare common parameters for the API call (duplicated logic, ideally refactor)
-        api_params = {
+        """DEPRECATED: Streaming logic is now handled by generate_response calling _stream_response_with_params.
+        This method remains for potential direct calls but bypasses centralized param building."""
+        logger.warning("_stream_response called directly, bypassing centralized parameter building. Consider refactoring.")
+        # Original _stream_response logic, which does its own param building (now redundant/divergent)
+        # For consistency, this should ideally also use the MODEL_PARAMETER_CONFIG if it were to be maintained.
+        # However, the current flow through generate_response -> _stream_response_with_params is preferred.
+        _api_params_direct = {
             "model": self._chat_model_name,
             "messages": [
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": prompt}
             ],
-            "temperature": temperature,
-            "stream": True, # Explicitly set stream to True
+            "temperature": temperature, # This would be subject to model specific rules not applied here
+            "max_tokens": max_tokens,   # Same here
+            "stream": True,
             **kwargs
         }
-
-        # Model-specific adjustments for max_tokens parameter
+        # Quick fix for o4-mini if called directly (less robust than centralized):
         if self._chat_model_name == "o4-mini-2025-04-16":
-            api_params["max_completion_tokens"] = max_tokens # Assumes max_tokens arg is the value intended for either name
-        else:
-            api_params["max_tokens"] = max_tokens
+            if "max_tokens" in _api_params_direct:
+                _api_params_direct["max_completion_tokens"] = _api_params_direct.pop("max_tokens")
+            _api_params_direct["temperature"] = 1.0
 
-        stream_response = self.client.chat.completions.create(**api_params)
+
+        stream_response = self.client.chat.completions.create(**_api_params_direct)
         try:
             for chunk in stream_response:
                 content = chunk.choices[0].delta.content
