@@ -35,27 +35,33 @@ class OpenAILLM(BaseLLMProvider):
     ) -> Union[Dict[str, Any], Generator[str, None, None]]:
         """Generates a response using the OpenAI ChatCompletion API, optionally streaming."""
         try:
-            if stream:
-                return self._stream_response(
-                    prompt=prompt, 
-                    system_message=system_message, 
-                    temperature=temperature, 
-                    max_tokens=max_tokens, 
-                    **kwargs
-                )
+            # Prepare common parameters for the API call
+            api_params = {
+                "model": self._chat_model_name,
+                "messages": [
+                    {"role": "system", "content": system_message},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": temperature,
+                **kwargs
+            }
+
+            # Model-specific adjustments for max_tokens parameter
+            if self._chat_model_name == "o4-mini-2025-04-16":
+                api_params["max_completion_tokens"] = max_tokens
             else:
-                response = self.client.chat.completions.create(
-                    # Use the chat model name here
-                    model=self._chat_model_name, 
-                    messages=[
-                        {"role": "system", "content": system_message},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                    stream=False,
-                    **kwargs 
-                )
+                api_params["max_tokens"] = max_tokens
+
+            if stream:
+                # For streaming, call _stream_response with the assembled parameters
+                # Note: _stream_response will also need this logic if called directly elsewhere,
+                # or it should expect the correct parameter name.
+                # For now, assuming generate_response is the primary entry point.
+                return self._stream_response_with_params(api_params)
+            else:
+                # For non-streaming, make the direct API call
+                api_params["stream"] = False
+                response = self.client.chat.completions.create(**api_params)
                 response_text = response.choices[0].message.content
                 return {"response_text": response_text}
                 
@@ -74,22 +80,30 @@ class OpenAILLM(BaseLLMProvider):
         max_tokens: int,
         **kwargs
     ) -> Generator[str, None, None]:
-        """Handles the streaming logic."""
+        """Handles the streaming logic. Consider refactoring to use a single param prep point."""
         logger.info("Initiating stream response from OpenAI...")
-        stream = self.client.chat.completions.create(
-            # Use the chat model name here
-            model=self._chat_model_name, 
-            messages=[
+        
+        # Prepare common parameters for the API call (duplicated logic, ideally refactor)
+        api_params = {
+            "model": self._chat_model_name,
+            "messages": [
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": prompt}
             ],
-            temperature=temperature,
-            max_tokens=max_tokens,
-            stream=True,
+            "temperature": temperature,
+            "stream": True, # Explicitly set stream to True
             **kwargs
-        )
+        }
+
+        # Model-specific adjustments for max_tokens parameter
+        if self._chat_model_name == "o4-mini-2025-04-16":
+            api_params["max_completion_tokens"] = max_tokens # Assumes max_tokens arg is the value intended for either name
+        else:
+            api_params["max_tokens"] = max_tokens
+
+        stream_response = self.client.chat.completions.create(**api_params)
         try:
-            for chunk in stream:
+            for chunk in stream_response:
                 content = chunk.choices[0].delta.content
                 if content is not None:
                     yield content
@@ -98,6 +112,22 @@ class OpenAILLM(BaseLLMProvider):
             logger.error(f"Error during OpenAI stream: {e}", exc_info=True)
             raise
             
+    def _stream_response_with_params(self, api_params: Dict[str, Any]) -> Generator[str, None, None]:
+        """Internal streaming handler that expects fully prepared API parameters."""
+        logger.info(f"Initiating stream response with prepped params for model {api_params.get('model')}")
+        api_params["stream"] = True # Ensure stream is True
+        
+        stream_response = self.client.chat.completions.create(**api_params)
+        try:
+            for chunk in stream_response:
+                content = chunk.choices[0].delta.content
+                if content is not None:
+                    yield content
+            logger.info("OpenAI stream finished.")
+        except Exception as e:
+            logger.error(f"Error during OpenAI stream: {e}", exc_info=True)
+            raise
+
     def get_embedding(self, text: str) -> list[float]:
         """Generates an embedding for the given text using the configured embedding model."""
         try:

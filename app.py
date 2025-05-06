@@ -91,9 +91,10 @@ VECTOR_STORE_TYPES = ["pages", "semantic", "haystack-qdrant", "haystack-memory"]
 
 # Define available LLM models with their display names
 AVAILABLE_LLM_MODELS = {
-    "gpt-3.5-turbo": "GPT-3.5 Turbo",
-    "gpt-4": "GPT-4",
-    "gpt-4-turbo": "GPT-4 Turbo"
+    "gpt-4.1-nano-2025-04-14": "GPT 4.1 (Nano)",
+    "gpt-4.1-mini-2025-04-14": "GPT 4.1 (Mini)",
+    "o4-mini-2025-04-16": "GTP o4 (Mini)",
+    "gpt-4.1-2025-04-14": "GTP 4.1"
 }
 
 # Path for the new run history file
@@ -250,7 +251,7 @@ def home():
         return redirect(url_for('login'))
     
     # Get LLM model info from app_config (which loads from env or S3)
-    current_llm_model = app_config.get("llm_model", "gpt-4-turbo") # Default to gpt-4-turbo if not found
+    current_llm_model = app_config.get("llm_model", "gpt-4.1-mini-2025-04-14") # Default to gpt-4.1-mini-2025-04-14 if not found
     logger.info(f"[Debug] Value from app_config for llm_model: {app_config.get('llm_model')}")
     logger.info(f"[Debug] Effective current_llm_model for template: {current_llm_model}")
     

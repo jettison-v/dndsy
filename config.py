@@ -67,7 +67,7 @@ PREDEFINED_CATEGORIES = [
 # Default configuration dictionary with sensible defaults
 DEFAULT_CONFIG = {
     # LLM Configuration
-    "llm_model": os.environ.get("LLM_MODEL_NAME", "gpt-4-turbo"),
+    "llm_model": os.environ.get("LLM_MODEL_NAME", "gpt-4.1-mini-2025-04-14"),
     "llm_temperature": 0.3,
     "llm_max_output_tokens": 1500,
     
