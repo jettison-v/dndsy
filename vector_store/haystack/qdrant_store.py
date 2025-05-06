@@ -324,72 +324,111 @@ class HaystackQdrantStore(SearchHelper):
             return []
     
     def get_details_by_source_page(self, source: str, page: int) -> Optional[Dict[str, Any]]:
-        """Get a document by source and page number."""
+        """Get a document by source and page number using direct Qdrant query.
+        
+        Note: This method uses a direct Qdrant client query instead of relying 
+        solely on Haystack's self.document_store.filter_documents because 
+        testing revealed issues with retrieving documents based on exact 
+        source/page filters via the Haystack abstraction, even when indices were present.
+        Using the direct client ensures reliable lookup for the source panel.
+        """
+        if not self.qdrant_client_for_admin:
+            logging.error("Direct Qdrant client not available for get_details_by_source_page.")
+            return None
+            
         try:
-            # Create filter for exact match using Haystack 2.x filter format
-            haystack_filter = {
-                "operator": "AND",
-                "conditions": [
-                    {"field": "meta.source", "operator": "==", "value": source},
-                    {"field": "meta.page", "operator": "==", "value": page}
+            # Create filter for exact match using Qdrant models
+            search_filter = models.Filter(
+                must=[
+                    models.FieldCondition( 
+                        key="meta.source", # Target Haystack's meta field
+                        match=models.MatchValue(value=source)
+                    ),
+                    models.FieldCondition(
+                        key="meta.page",   # Target Haystack's meta field
+                        match=models.MatchValue(value=page)
+                    )
                 ]
-            }
+            )
             
-            # First attempt to get document by direct filter
-            results = self.document_store.filter_documents(filters=haystack_filter)
+            # Use the direct Qdrant client's scroll method
+            scroll_response, _ = self.qdrant_client_for_admin.scroll(
+                collection_name=self.collection_name,
+                scroll_filter=search_filter,
+                limit=100,  # Retrieve all chunks for this page
+                with_payload=True,
+                with_vectors=False
+            )
             
-            if results:
-                # Combine all documents for this page
+            if scroll_response:
+                # Combine all chunks for this page into a single text
+                points = scroll_response
                 combined_text = ""
                 metadata = {}
                 image_url = None
                 total_pages = None
                 
-                for i, doc in enumerate(results):
-                    if i == 0:  # Use metadata from first document
-                        metadata = doc.meta
-                        image_url = metadata.get("image_url")
-                        total_pages = metadata.get("total_pages")
-                    combined_text += doc.content + "\n\n"
+                # Sort points by chunk_index to maintain order (if available)
+                # Haystack doesn't add chunk_index, so sorting might not be needed/possible
+                # sorted_points = sorted(points, key=lambda p: p.payload.get("meta", {}).get("chunk_index", 0))
+                
+                for point in points: # Use unsorted points if chunk_index isn't present
+                    payload = point.payload
+                    meta = payload.get("meta", {})
+                    combined_text += payload.get("content", "") + "\n\n"
+                    
+                    # Use first point's metadata as base
+                    if not metadata:
+                        metadata = meta # Use the whole 'meta' dict
+                    
+                    # Get image_url and total_pages from any chunk
+                    if not image_url and "image_url" in meta:
+                        image_url = meta["image_url"]
+                    if not total_pages and "total_pages" in meta:
+                        total_pages = meta["total_pages"]
                 
                 # Return combined document
-                result = {
+                return {
                     "text": combined_text.strip(),
-                    "metadata": metadata,
+                    "metadata": metadata, # Return the Haystack meta dict
                     "image_url": image_url,
                     "total_pages": total_pages
                 }
-                return result
             else:
-                logging.warning(f"No documents found for source: {source}, page: {page}")
-                
-                # Try to get documents from the same source to extract metadata
-                source_filter = {
-                    "operator": "AND",
-                    "conditions": [
-                        {"field": "meta.source", "operator": "==", "value": source}
+                # No points found for this specific page using direct query
+                logging.warning(f"Direct Qdrant query found no documents for source: {source}, page: {page}")
+                # Attempt fallback using only source filter (similar to original logic)
+                source_filter = models.Filter(
+                    must=[
+                        models.FieldCondition(
+                            key="meta.source",
+                            match=models.MatchValue(value=source)
+                        )
                     ]
-                }
+                )
                 
-                any_docs = self.document_store.filter_documents(filters=source_filter)
-                
-                if any_docs:
+                any_docs_response, _ = self.qdrant_client_for_admin.scroll(
+                    collection_name=self.collection_name,
+                    scroll_filter=source_filter,
+                    limit=100,
+                    with_payload=True,
+                    with_vectors=False
+                )
+
+                if any_docs_response:
                     # Found documents from same source, extract metadata
                     image_url = None
                     total_pages = None
-                    
-                    # Get the first document with useful metadata
-                    for doc in any_docs:
-                        meta = doc.meta
-                        
+                    sample_points = any_docs_response
+
+                    for point in sample_points:
+                        meta = point.payload.get("meta", {})
                         # Get image_url pattern
                         if not image_url and "image_url" in meta:
                             base_url = meta["image_url"]
-                            # Extract base URL up to the page number
                             if base_url and isinstance(base_url, str):
                                 image_url_parts = base_url.rsplit('/', 1)
                                 if len(image_url_parts) > 1:
-                                    # Construct URL for the requested page
                                     image_url = f"{image_url_parts[0]}/{page}.png"
                         
                         # Get total pages
@@ -398,19 +437,21 @@ class HaystackQdrantStore(SearchHelper):
                         
                         if image_url and total_pages:
                             break
-                    
-                    # Return placeholder with available metadata
+                            
                     return {
-                        "text": f"Page {page} is not indexed in the Qdrant store for this document. Try navigating to other pages.",
-                        "metadata": {"source": source, "page": page},
+                        "text": f"Page {page} is not explicitly indexed in the Haystack store for this document. Try navigating to other pages.",
+                        "metadata": {"source": source, "page": page}, # Basic metadata
                         "image_url": image_url,
                         "total_pages": total_pages,
                         "available_in_store": False
                     }
-                
-                return None
+                else:
+                    # No documents found even for just the source
+                    logging.warning(f"Direct Qdrant query found no documents for source '{source}' at all.")
+                    return None
+                    
         except Exception as e:
-            logging.error(f"Error in get_details_by_source_page: {e}", exc_info=True)
+            logging.error(f"Error in get_details_by_source_page (direct Qdrant query): {e}", exc_info=True)
             return None
 
     def clear_store(self, client: Any = None):

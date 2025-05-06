@@ -91,6 +91,7 @@ dndsy/
 ├── data_ingestion/          # Core data processing and ingestion logic
 │   ├── __init__.py
 │   ├── processor.py         # Handles PDF download, parsing, image gen, embedding calls
+│   ├── common_utils.py      # Common utilities for PDF processing, S3 interaction, and filename cleaning
 │   └── structure_analyzer.py# Utility for analyzing PDF structure and hierarchy
 ├── embeddings/              # Handles embedding model loading and vector generation
 │   ├── __init__.py
@@ -143,8 +144,9 @@ dndsy/
 │   └── vector_store/        # Vector store specific tests
 │       ├── README.md
 │       └── check_qdrant.py
-├── utils/                   # General utility functions (if any)
-│   └── __init__.py
+├── utils/                   # General utility functions
+│   ├── __init__.py
+│   ├── device_detection.py  # Utilities for detecting device type (mobile, tablet, desktop)
 ├── vector_store/
 │   ├── __init__.py          # Vector store factory
 │   ├── haystack/            # Haystack implementations
