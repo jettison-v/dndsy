@@ -101,6 +101,23 @@ class SemanticStore(SearchHelper):
                 )
             )
             logging.info(f"Created new semantic collection: {self.collection_name}")
+            # Create payload indices
+            try:
+                self.client.create_payload_index(
+                    collection_name=self.collection_name,
+                    field_name="metadata.source",
+                    field_schema=models.PayloadSchemaType.KEYWORD
+                )
+                logging.info(f"Created keyword payload index for metadata.source in {self.collection_name}")
+                self.client.create_payload_index(
+                    collection_name=self.collection_name,
+                    field_name="metadata.page",
+                    field_schema=models.PayloadSchemaType.INTEGER
+                )
+                logging.info(f"Created integer payload index for metadata.page in {self.collection_name}")
+            except Exception as index_e:
+                logging.error(f"Failed to create payload indices for {self.collection_name}: {index_e}")
+                # Depending on severity, might want to raise or handle differently
     
     def chunk_document_with_cross_page_context(
         self, 
