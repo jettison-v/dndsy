@@ -318,7 +318,8 @@ def ask_dndsy(prompt: str, store_type: str = None, temperature: float = 0.3, max
               retrieval_limit: int = 5, max_tokens_per_result: int = 1000, 
               max_total_context_tokens: int = 4000, rerank_alpha: float = 0.5, 
               rerank_beta: float = 0.3, rerank_gamma: float = 0.2,
-              fetch_multiplier: int = 3) -> Generator[str, None, None]:
+              fetch_multiplier: int = 3,
+              configured_system_prompt: str = "You are a helpful assistant.") -> Generator[str, None, None]:
     """
     Main RAG pipeline function.
     Processes a query using RAG and streams the response via SSE.
@@ -336,6 +337,7 @@ def ask_dndsy(prompt: str, store_type: str = None, temperature: float = 0.3, max
         rerank_beta: Weight for sparse BM25 scores (semantic store).
         rerank_gamma: Weight for keyword match scores (semantic store).
         fetch_multiplier: Multiplier for initial retrieval before reranking.
+        configured_system_prompt: The base system prompt from application configuration.
         
     Yields:
         Server-Sent Events (SSE) strings containing metadata, status updates, 
@@ -406,30 +408,23 @@ def ask_dndsy(prompt: str, store_type: str = None, temperature: float = 0.3, max
                 
             logger.info(f"Prepared {len(sources_for_metadata)} sources for metadata. Context length: {len(context_text_for_prompt)} chars.")
         
-        # Define the system prompt for the LLM
-        system_message = (
-            "You are a Dungeons & Dragons assistant focused on the 2024 (5.5e) rules. "
-            "Follow these guidelines:\n"
-            # ... (guidelines unchanged) ...
-            "1. ALWAYS prioritize using the provided 2024 rules context when available.\n"
-            "2. If context is provided, base your answer ONLY on that context.\n"
-            "3. If NO relevant context is found, clearly state that you couldn't find specific rules and answer based on general knowledge of D&D 2024.\n"
-            "4. If comparing with 5e (2014) rules, clearly state this.\n"
-            "5. Be specific and cite rules when possible (using the Source and Page info from the context).\n"
-            "6. Format your response clearly using Markdown (headings, lists, bold text, etc.) for readability.\n\n"
-        )
+        # Use the configured system prompt
+        system_message = configured_system_prompt
+
         if context_text_for_prompt:
+            # Append context-related instructions and the context itself
+            # This structure is similar to what was previously hardcoded and also used in app.py's inspect_context
             system_message += (
-                "Use the following official 2024 D&D rules context to answer the question. "
+                "\n\nUse the following provided context to answer the question. "
                 "Prioritize this information:\n\n---\n"
                 f"{context_text_for_prompt}"
-                "---\n\nAnswer the user's question based *only* on the context above:"
+                "---\n\nAnswer the user's question based *primarily* on the context above:"
             )
         else:
+            # Append a warning if no context was found
             system_message += (
-                "WARNING: No specific rule context was found for this query. "
-                "Answer based on your general knowledge of D&D 2024 rules, "
-                "but explicitly state that the information is not from the provided source materials.\n"
+                "\n\nWARNING: No specific context was found for this query. "
+                "Answer based on your general knowledge, but be aware that you have not been provided with specific source materials for this query."
             )
         end_time_prompt = time.perf_counter()
         logger.info(f"Prompt preparation completed in {end_time_prompt - start_time_prompt:.4f}s.")

@@ -331,7 +331,8 @@ def chat():
             rerank_alpha=app_config["rerank_alpha"],
             rerank_beta=app_config["rerank_beta"],
             rerank_gamma=app_config["rerank_gamma"],
-            fetch_multiplier=app_config["retrieval_fetch_multiplier"]
+            fetch_multiplier=app_config["retrieval_fetch_multiplier"],
+            configured_system_prompt=app_config["system_prompt"]
         ), 
         mimetype='text/event-stream'
     )
