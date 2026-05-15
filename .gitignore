@@ -97,4 +97,8 @@ cookies.txt
 .coverage
 htmlcov/
 coverage.xml
-.coveragerc 
+.coveragerc
+
+# Local Python virtual environment
+.venv
+.venv/
