@@ -1,104 +1,43 @@
-# Python
+# --- Secrets: never commit ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- Private campaign data: lives in the database, never in git ---
+transcripts/
+private/
+exports/
+notes/
+*.docx
+*.doc
+*.pdf
+*.txt
+!requirements*.txt
+*.srt
+*.vtt
+*.m4a
+*.mp3
+*.wav
+
+# --- Python ---
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Virtual Environment
+.venv/
 venv/
-ENV/
-env/
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# Logs
-*.log
-
-# Environment variables
-.env
-
-# Source data (now stored in S3)
-data/pdfs/
-
-# Make sure specific generated data subdirs are ignored if needed,
-# but allow the source data/pdfs dir itself to be tracked.
-
-# Generated data
-data_processing.log
-pdf_processing.log
-data/qdrant_index
-data/documents.json
-static/pdf_page_images/
-pdf_process_history.json
-scripts/pdf_process_history.json
-data/admin_processing_runs.json
-
-# Flask session files
-flask_session/*
-!flask_session/README.md
-
-# Haystack persistence files
-data/haystack_store/*.pkl
-!data/haystack_store/README.md
-
-# macOS
-.DS_Store
-
-# Docker
-.docker/
-
-# Test files but allow tests directory structure
-tests/__pycache__/
-tests/data/
-tests/temp/
-!tests/*.py
-!tests/vector_store/
-tests/vector_store/__pycache__/
-!tests/vector_store/*.py
-!tests/vector_store/README.md
-
-# Temporary test files
-*.dockerfile
-Dockerfile.*
-
-# Test files
-test_source_panel.html
-test_source_panel.py
-test_source_panel_v*.py
-test_source_simple.py
-test_force_auth.py
-
-# Temporary files
-cookies.txt
-*.log.*
-
-# Pytest and coverage
+*.egg-info/
+build/
+dist/
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
 .coverage
 htmlcov/
-coverage.xml
-.coveragerc
 
-# Local Python virtual environment
-.venv
-.venv/
+# --- Local tooling ---
+.DS_Store
+.idea/
+.vscode/
+*.log
+logs/
