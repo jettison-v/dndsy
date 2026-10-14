@@ -1,0 +1,20 @@
+[project]
+name = "askdnd"
+version = "0.1.0"
+description = "A companion app for one D&D 2024 table: recaps, character briefings, rules answers."
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.143.1",
+    "jinja2>=3.1.6",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.13.1",
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
