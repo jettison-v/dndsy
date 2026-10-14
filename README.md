@@ -13,7 +13,13 @@ Requires [uv](https://docs.astral.sh/uv/).
 
 ```bash
 uv sync
-uv run uvicorn app.main:app --reload
+uv run uvicorn app.main:app --reload --env-file .env
+```
+
+Secrets live in `.env` locally and Railway variables in production (see `.env.example`). Set one in both places with:
+
+```bash
+scripts/set-secret.sh NAME
 ```
 
 Then open http://localhost:8000 (health check at `/health`).
