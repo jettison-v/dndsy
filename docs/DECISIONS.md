@@ -16,3 +16,8 @@ One line per decision: date — decision — why. Newest at the bottom.
 - 2026-10-14 — Brett reviews each recap; corrections feed a glossary and correction log — accuracy improves each session
 - 2026-10-14 — Brett wears headphones during sessions — Zoom echo duplicated ~45% of the transcript and scrambled speaker labels
 - 2026-10-14 — Switched from Cursor to the Claude desktop app's Code tab — Cursor's own AI agent competed with Claude Code and caused confusion; an editor isn't needed for the setup-learning goal
+- 2026-10-14 — Python 3.14 managed by uv; deps pinned in uv.lock — current stable; one tool for Python, deps and running
+- 2026-10-14 — v2 is a new Railway service `askdnd-v2` + Postgres in the `askdnd` project's production environment, auto-deploying from `main` — separate from legacy, which deploys from the `legacy` branch
+- 2026-10-14 — Railway builds with its auto-detection (Railpack) and a Procfile start command, not railway.json — railway.json is deprecated, and Railway's newer project-wide config could affect the legacy service
+- 2026-10-14 — Detached beta.askdnd.ai from legacy's old `dev` environment (May 2025 beta build) and attached it to v2 — Brett approved; a domain can only belong to one service; production domains untouched
+- 2026-10-14 — Old local `.env` kept as git-ignored `.env.legacy` — reference for legacy settings without risking a commit
