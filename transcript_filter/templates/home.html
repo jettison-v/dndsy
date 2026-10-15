@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<header>
+  <div><h1>askdnd Processor</h1><div class="muted">Runs only on this Mac. Raw transcripts never leave it.</div></div>
+  <form method="post" action="/quit"><button type="submit">Quit</button></form>
+</header>
+{% if error %}<div class="card bad">{{ error }}</div>{% endif %}
+{% if not ollama.running %}
+<div class="card warn">Ollama isn't running, so filtering can't start.
+  <form class="inline" method="post" action="/ollama/start"><button type="submit">Start Ollama</button></form></div>
+{% elif not ollama.model_ready %}
+<div class="card warn">The filter model isn't installed in Ollama yet.</div>
+{% endif %}
+
+<div class="card" id="drop">
+  <h2 style="margin-top:0">Add a session</h2>
+  <p>In MacWhisper, export <b>Segments</b> as <b>.json</b> (speaker names, timestamps and milliseconds on), then drop the file here.</p>
+  <form method="post" action="/upload" enctype="multipart/form-data" id="upload">
+    <p><label>Session date: <input type="date" name="played_on" value="{{ today }}" required></label></p>
+    <p><input type="file" name="file" accept=".json,application/json" required id="file"></p>
+    <p><label><input type="checkbox" name="replace" value="1"> Replace if this date already exists</label></p>
+    <p><button class="primary" type="submit">Add session</button></p>
+  </form>
+</div>
+
+{% if sessions %}
+<h2>Sessions</h2>
+<table class="list">
+{% for s in sessions %}
+  <tr>
+    <td><a href="/sessions/{{ s.stem }}">{{ s.stem }}</a></td>
+    <td><span class="pill {{ s.status }}">{{ {"new": "not filtered", "filtering": "filtering…", "review": "ready to review", "saved": "saved"}[s.status] }}</span></td>
+  </tr>
+{% endfor %}
+</table>
+{% endif %}
+<script>
+  const drop = document.getElementById('drop'), file = document.getElementById('file');
+  ['dragover', 'dragenter'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.style.background = '#eef4ff'; }));
+  ['dragleave', 'drop'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.style.background = ''; }));
+  drop.addEventListener('drop', ev => { if (ev.dataTransfer.files.length) file.files = ev.dataTransfer.files; });
+</script>
+{% endblock %}

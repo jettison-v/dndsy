@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "processor",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "python", "-m", "transcript_filter.web"],
+      "port": 8765,
+      "url": "http://127.0.0.1:8765"
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "--env-file", ".env", "uvicorn", "app.main:app", "--port", "8000"],
+      "port": 8000
+    }
+  ]
+}

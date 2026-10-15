@@ -67,3 +67,25 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 **Next steps**
 - Done: gemma4:12b is the default (0% game lost, 100% table talk removed on the hand-labeled first 45 min; full session in 18 min). Brett reviewed the full page and approved the cuts.
 - Check the mid-session break (around 2:00–2:35) and the end; add hand labels for them.
+
+## 2026-10-15 — Week 2: database, campaign import, Google Docs sync, processor GUI
+
+**What we set up**
+- **Postgres on the Mac** (Homebrew, version 18 to match Railway) for development and tests. **Migrations** (Alembic) are versioned scripts that change the database structure; Railway runs them automatically before each deploy starts the app.
+- **The data model**: campaigns, members with per-campaign roles, everything named in the story with aliases (renames like Sarkas → No Name), characters, sessions, recaps (keeping the AI draft), story events, glossary, corrections. No table for transcripts, by design.
+- **Admin import page** on beta: upload a campaign "bundle" file; re-importing updates instead of duplicating. The campaign skeleton (48 entities, glossary, sessions 17–29) went in this way.
+- **Notes sync from Google Docs**: a "Sync now" button reads your docs through the Google Docs API using your own Google sign-in with **read-only** access, asked for on each click and never stored. All tabs, nested bullets, tables (with merged cells), links and images come through; images are shrunk automatically; drawings like the family tree come from Drive's export.
+- **askdnd Processor**: a double-click Mac app that opens a local page to add a MacWhisper export, filter it with a progress bar, review cuts with Keep buttons, and save the final transcript.
+
+**Gotchas**
+- Google needs every API turned on separately (Drive API *and* Docs API) and every return address listed exactly (redirect URIs), and changes can take minutes.
+- In Google's Testing mode, saved long-term access expires after 7 days. Asking each time is simpler and safer.
+- A database that isn't publicly reachable is safer; data goes in through the app (admin pages) instead.
+- Commit only after tests pass: piping test output through `tail` hides failures from `&&` chains.
+
+**Reuse this on a new project**
+1. Same database engine and major version locally as in production.
+2. Migrations in the repo, applied automatically on deploy.
+3. Admin-only pages for data you'd otherwise load by hand.
+4. For Google data: one Cloud project per app, enable each API, minimal read-only scope, list every redirect URI.
+5. For anything private and local: a localhost-only web page plus a small `.app` launcher is a cheap, friendly GUI.

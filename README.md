@@ -33,6 +33,19 @@ scripts/set-secret.sh NAME
 
 Then open http://localhost:8000 (health check at `/health`).
 
+## Transcript processor (Brett's Mac only)
+
+Install the double-click app once (re-run after moving the repo):
+
+```bash
+scripts/install-processor-app.sh
+```
+
+Then open **askdnd Processor** from Applications (or the Dock): drop in a MacWhisper
+*Segments* `.json` export, click **Filter**, review the cuts, and **Save**. It runs at
+http://127.0.0.1:8765 only; raw transcripts never leave the Mac. Logs:
+`~/Library/Logs/askdnd-processor.log`.
+
 ## Database changes
 
 Edit `app/models.py`, then generate and apply a migration:
