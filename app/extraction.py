@@ -80,8 +80,16 @@ alternative names or spellings.
 Glossary: proper nouns that a transcription might mangle and that aren't \
 already in the glossary.
 
-to_check: short notes for Brett about anything ambiguous, contradictory, or \
-possibly wrong (including apparent rules mistakes in the notes)."""
+to_check: short questions for Brett about anything ambiguous, contradictory, \
+or possibly wrong (including apparent rules mistakes in the notes). Brett can \
+answer them, and his answers come back to you as clarifications. Don't ask \
+again about something a clarification already settles.
+
+Time: the known world describes the campaign as it stands NOW, which may be \
+well after the session you're drafting. Describe only what happened in this \
+session and what the party knew by its end; never mention later events (for \
+example a character's later death) in the recap or events. Don't flag the \
+known world being ahead of this session — that's expected."""
 
 _ENTITY_KINDS = [k.value for k in EntityKind]
 _EVENT_KINDS = [k.value for k in EventKind]
@@ -230,8 +238,12 @@ def _known_world(db: Session, campaign: Campaign) -> str:
         )
     )
     if rules:
-        lines.append("\nStanding instructions from past reviews:")
-        lines += [f"- {c.note}" for c in rules if c.note]
+        lines.append("\nStanding instructions and facts from Brett's past reviews:")
+        for c in rules:
+            if c.kind == "answer":
+                lines.append(f"- Q: {c.before} A: {c.after}")
+            elif c.note:
+                lines.append(f"- {c.note}")
     return "\n".join(lines)
 
 
@@ -298,6 +310,14 @@ def build_messages(db: Session, session: GameSession, source: Source, background
     ]
     for img in source.images[:MAX_IMAGES]:
         volatile += _image_block(img, img.name)
+    answers = list(
+        db.scalars(
+            select(Correction).where(Correction.session_id == session.id, Correction.kind == "answer").order_by(Correction.id)
+        )
+    )
+    if answers:
+        qa = "\n".join(f"- Q: {c.before}\n  A: {c.after}" for c in answers)
+        volatile.append({"type": "text", "text": f"<clarifications_from_brett>\n{qa}\n</clarifications_from_brett>"})
     volatile.append({"type": "text", "text": "Draft this session's record."})
     return [{"role": "user", "content": stable + volatile}]
 

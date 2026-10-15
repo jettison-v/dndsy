@@ -126,3 +126,30 @@ def test_story_shows_only_published(client, db):
     assert "The party fought devils." in page
     assert "Big fight." in page
     assert "Reach the library" in page
+
+
+def test_answers_saved_remembered_and_fed_to_claude(client, db, monkeypatch):
+    from app.extraction import Source, build_messages
+
+    s = drafted_session(db)
+    started = []
+    monkeypatch.setattr(admin_sessions, "_draft_in_background", lambda ids: started.append(ids) or True)
+    page = client.get(f"/admin/sessions/{s.id}").text
+    assert "Check the imp count." in page and "Save answers" in page
+
+    client.post(
+        f"/admin/sessions/{s.id}/answers",
+        data={"q-0": "Check the imp count.", "answer-0": "There were two imps.", "remember-0": "1", "action": "redraft"},
+    )
+    assert started == [[s.id]]
+    db.expire_all()
+    c = db.scalar(select(Correction))
+    assert (c.kind, c.before, c.after, c.standing_instruction) == ("answer", "Check the imp count.", "There were two imps.", True)
+
+    text = " ".join(b.get("text", "") for b in build_messages(db, s, Source("notes", "x"))[0]["content"])
+    assert "<clarifications_from_brett>" in text and "There were two imps." in text
+    assert "Q: Check the imp count. A: There were two imps." in text  # remembered -> standing
+
+    client.post(f"/admin/sessions/{s.id}/answers", data={"q-0": "Check the imp count.", "answer-0": ""})
+    db.expire_all()
+    assert db.scalar(select(Correction)) is None  # clearing an answer removes it

@@ -49,3 +49,5 @@ One line per decision: date — decision — why. Newest at the bottom.
 - 2026-10-15 — Brett's recap edits are saved as corrections (AI before / Brett after / note); notes marked "apply to future drafts" become standing instructions in every extraction — the feedback loop from the architecture
 - 2026-10-15 — Admin imports mark entities as published — an import is a deliberate admin action; extraction proposals still need explicit acceptance
 - 2026-10-15 — "Previously on…" shows only published recaps: latest in full with key moments, open quests and recent theories, earlier sessions folded — the pre-session refresher from the brief
+- 2026-10-15 — Brett answers Claude's flagged questions on the review page; answers are stored as corrections (kind "answer") and fed into that session's redraft, and "remembered" ones into every draft — closes the loop on to_check without editing prose
+- 2026-10-15 — Extraction treats the known world as "now" and describes only what happened by the end of the drafted session — backfilling older sessions must not leak later events (e.g. Myna's death)

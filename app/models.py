@@ -203,10 +203,13 @@ class GlossaryTerm(Timestamped, Base):
 
 
 class Correction(Timestamped, Base):
-    """What the AI got wrong. Recurring ones become standing instructions."""
+    """What the AI got wrong, or Brett's answer to a question it flagged.
+    Ones marked standing_instruction are fed into every future draft."""
 
     __tablename__ = "corrections"
     id: Mapped[int] = mapped_column(primary_key=True)
+    # "edit": Brett changed the recap (before/after); "answer": before=question, after=answer
+    kind: Mapped[str] = mapped_column(String(20), default="edit", server_default="edit")
     campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"), index=True)
     session_id: Mapped[int | None] = mapped_column(ForeignKey("game_sessions.id", ondelete="SET NULL"))
     before: Mapped[str] = mapped_column(Text, default="")

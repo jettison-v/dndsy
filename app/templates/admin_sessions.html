@@ -7,8 +7,9 @@
   <a class="button" href="/">Home</a>
 </header>
 {% if message %}<p class="card warn">{{ message }}</p>{% endif %}
-<p>Claude drafts each session's recap and story updates; nothing reaches the table until you publish it.
-Spent on drafting so far: <b>${{ "%.2f"|format(spent) }}</b>.</p>
+<p>Claude drafts each session's recap and story updates from your synced notes (or a transcript sent from the Processor).
+Nothing reaches the table until you open a session and <b>publish</b> it. Spent on drafting so far: <b>${{ "%.2f"|format(spent) }}</b>.</p>
+<p class="muted">Draft sessions in order (oldest first): each draft reads the recaps before it. After notes change, <i>Sync</i> them first, then redraft.</p>
 {% if not notes_synced %}<p class="card warn">Sync your campaign notes first (<a href="/admin/notes">Notes from Google Docs</a>).</p>{% endif %}
 {% if running %}<p class="card">Claude is drafting… this page refreshes every 10 seconds. Each session takes about a minute.</p>{% endif %}
 {% if missing and not running %}

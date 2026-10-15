@@ -130,6 +130,17 @@ def review_page(request: Request, session_id: int, db: Session = Depends(get_db)
     last_run = db.scalar(select(ExtractionRun).where(ExtractionRun.session_id == s.id).order_by(ExtractionRun.id.desc()))
     latest = s.recaps[-1] if s.recaps else None
     proposals = list(db.scalars(select(Proposal).where(Proposal.session_id == s.id, Proposal.status == "pending").order_by(Proposal.id)))
+    answers = {
+        c.before: c
+        for c in db.scalars(select(Correction).where(Correction.session_id == s.id, Correction.kind == "answer"))
+    }
+    last_done = db.scalar(
+        select(ExtractionRun)
+        .where(ExtractionRun.session_id == s.id, ExtractionRun.status == "done")
+        .order_by(ExtractionRun.id.desc())
+    )
+    questions = list(last_done.to_check) if last_done else []
+    earlier_answers = [c for q, c in answers.items() if q not in questions]
     return templates.TemplateResponse(
         request,
         "admin_review.html",
@@ -146,8 +157,49 @@ def review_page(request: Request, session_id: int, db: Session = Depends(get_db)
             "entity_proposals": [p for p in proposals if p.kind == "entity"],
             "glossary_proposals": [p for p in proposals if p.kind == "glossary"],
             "message": request.session.pop("review_message", None),
+            "questions": questions,
+            "answers": answers,
+            "earlier_answers": earlier_answers,
+            "can_redraft": s.source == "notes",
         },
     )
+
+
+@router.post("/sessions/{session_id}/answers")
+async def save_answers(request: Request, session_id: int, db: Session = Depends(get_db)):
+    """Brett's answers to Claude's questions. Stored as corrections of kind
+    "answer"; remembered ones feed every future draft."""
+    user, denied = _guard(request)
+    if denied:
+        return denied
+    s = db.get(GameSession, session_id)
+    form = await request.form()
+    saved = 0
+    i = 0
+    while f"q-{i}" in form:
+        question = str(form[f"q-{i}"]).strip()
+        answer = str(form.get(f"answer-{i}") or "").strip()
+        remember = bool(form.get(f"remember-{i}"))
+        existing = db.scalar(
+            select(Correction).where(Correction.session_id == s.id, Correction.kind == "answer", Correction.before == question)
+        )
+        if answer:
+            c = existing or Correction(campaign_id=s.campaign_id, session_id=s.id, kind="answer", before=question)
+            c.after, c.standing_instruction, c.note = answer, remember, ""
+            db.add(c)
+            saved += 1
+        elif existing:
+            db.delete(existing)
+        i += 1
+    db.commit()
+    if form.get("action") == "redraft" and s.source == "notes":
+        started = _draft_in_background([s.id])
+        request.session["review_message"] = (
+            "Answers saved. Claude is redrafting with them…" if started else "Answers saved. Claude is busy; try Redraft in a minute."
+        )
+    else:
+        request.session["review_message"] = f"Saved {saved} answer{'s' if saved != 1 else ''}."
+    return RedirectResponse(f"/admin/sessions/{s.id}", status_code=303)
 
 
 @router.post("/sessions/{session_id}/recap")
@@ -173,8 +225,12 @@ def save_recap(
         db.flush()
     ai_draft = next((r for r in reversed(s.recaps) if r.author == "ai"), None)
     if ai_draft and (note.strip() or ai_draft.body.strip() != body):
-        existing = db.scalar(select(Correction).where(Correction.session_id == s.id, Correction.before == ai_draft.body))
-        correction = existing or Correction(campaign_id=s.campaign_id, session_id=s.id, before=ai_draft.body)
+        existing = db.scalar(
+            select(Correction).where(
+                Correction.session_id == s.id, Correction.kind == "edit", Correction.before == ai_draft.body
+            )
+        )
+        correction = existing or Correction(campaign_id=s.campaign_id, session_id=s.id, kind="edit", before=ai_draft.body)
         correction.after = body
         if note.strip():  # a later save without a note keeps the earlier note and choice
             correction.note = note.strip()
