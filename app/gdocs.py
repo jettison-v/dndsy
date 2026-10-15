@@ -5,6 +5,7 @@ images too, which the Docs API alone does not.
 """
 
 import hashlib
+import html
 import io
 import mimetypes
 import re
@@ -134,12 +135,14 @@ def _runs_text(elements: list[dict], placeholder) -> str:
 
 
 def docs_json_to_text(doc: dict) -> tuple[str, list[dict]]:
-    """Docs API document (with tabs) -> (text, objects in document order).
+    """Docs API document (with tabs) -> (Markdown, objects in document order).
 
+    Headings, nested bullet lists and paragraphs become Markdown. Tables become
+    HTML <table> blocks so merged cells and bullets inside cells survive.
     Images become "[image: obj-N]"; each object is
     {"name": "obj-N", "kind": "image" | "drawing", "uri": contentUri or None}.
     """
-    lines: list[str] = []
+    blocks: list[tuple[str, str]] = []  # (kind, markdown); kind "li" blocks join tightly
     objects: list[dict] = []
 
     def walk(tabs: list[dict], depth: int):
@@ -155,38 +158,80 @@ def docs_json_to_text(doc: dict) -> tuple[str, list[dict]]:
                 objects.append({"name": name, "kind": "image" if uri else "drawing", "uri": uri})
                 return f" [image: {name}] "
 
-            lines.append(f"\n{'#' * (1 + depth)} {tab.get('tabProperties', {}).get('title', '')}")
+            def para_text(p: dict) -> str:
+                text = _runs_text(p.get("elements", []), placeholder)
+                for pid in p.get("positionedObjectIds", []):
+                    text += placeholder(pid, positioned, "positionedObjectProperties")
+                return " ".join(text.split())
+
+            title = tab.get("tabProperties", {}).get("title", "")
+            blocks.append(("h", f"{'#' * min(6, 1 + depth)} {title}"))
             for block in dtab.get("body", {}).get("content", []):
                 if "paragraph" in block:
                     p = block["paragraph"]
-                    text = _runs_text(p.get("elements", []), placeholder)
-                    for pid in p.get("positionedObjectIds", []):
-                        text += placeholder(pid, positioned, "positionedObjectProperties")
-                    if not text.strip():
+                    text = para_text(p)
+                    if not text:
                         continue
                     style = p.get("paragraphStyle", {}).get("namedStyleType", "")
-                    if style.startswith("HEADING_"):
-                        text = "#" * min(6, 1 + depth + int(style[-1])) + " " + text.strip()
-                    elif style == "TITLE":
-                        text = "#" * (1 + depth) + " " + text.strip()
+                    if style.startswith("HEADING_") or style == "TITLE":
+                        level = 1 + depth + (int(style[-1]) if style.startswith("HEADING_") else 0)
+                        blocks.append(("h", f"{'#' * min(6, level)} {text}"))
                     elif "bullet" in p:
-                        text = "  " * p["bullet"].get("nestingLevel", 0) + "- " + text.strip()
-                    lines.append(text)
+                        blocks.append(("li", "  " * p["bullet"].get("nestingLevel", 0) + "- " + text))
+                    else:
+                        blocks.append(("p", text))
                 elif "table" in block:
-                    for row in block["table"].get("tableRows", []):
-                        cells = []
-                        for cell in row.get("tableCells", []):
-                            parts = [
-                                _runs_text(c["paragraph"].get("elements", []), placeholder).strip()
-                                for c in cell.get("content", [])
-                                if "paragraph" in c
-                            ]
-                            cells.append(" ".join(x for x in parts if x))
-                        lines.append("| " + " | ".join(cells) + " |")
+                    blocks.append(("table", table_html(block["table"], para_text)))
             walk(tab.get("childTabs", []), depth + 1)
 
     walk(doc.get("tabs", []), 0)
-    return "\n".join(lines).strip() + "\n", objects
+    out = []
+    for i, (kind, md) in enumerate(blocks):
+        if i:
+            out.append("\n" if kind == "li" and blocks[i - 1][0] == "li" else "\n\n")
+        out.append(md)
+    return "".join(out).strip() + "\n", objects
+
+
+def table_html(table: dict, para_text) -> str:
+    """A Docs table as a compact HTML table, honoring merged cells."""
+    rows_html = []
+    covered: dict[tuple[int, int], bool] = {}  # (row, col) hidden by a rowSpan above
+    for r, row in enumerate(table.get("tableRows", [])):
+        cells_html, skip = [], 0
+        for c, cell in enumerate(row.get("tableCells", [])):
+            if skip:  # placeholder cells after a merged (column-spanning) cell
+                skip -= 1
+                continue
+            if covered.get((r, c)):
+                continue
+            style = cell.get("tableCellStyle", {})
+            colspan, rowspan = style.get("columnSpan", 1) or 1, style.get("rowSpan", 1) or 1
+            skip = colspan - 1
+            for dr in range(1, rowspan):
+                for dc in range(colspan):
+                    covered[(r + dr, c + dc)] = True
+            parts = []
+            for item in cell.get("content", []):
+                if "paragraph" not in item:
+                    continue
+                p = item["paragraph"]
+                text = para_text(p)
+                if not text:
+                    continue
+                if "bullet" in p:
+                    text = "&nbsp;&nbsp;" * p["bullet"].get("nestingLevel", 0) + "• " + html.escape(text)
+                else:
+                    text = html.escape(text)
+                parts.append(text)
+            attrs = (f' colspan="{colspan}"' if colspan > 1 else "") + (f' rowspan="{rowspan}"' if rowspan > 1 else "")
+            content = "<br>".join(parts)
+            # Short label cells ("When", "Pros", "Cons") read best as headers.
+            is_label = len(parts) == 1 and len(content.split()) <= 2 and not re.search(r"[\d•:]", content)
+            tag = "th" if is_label else "td"
+            cells_html.append(f"<{tag}{attrs}>{content}</{tag}>")
+        rows_html.append("<tr>" + "".join(cells_html) + "</tr>")
+    return "<table>\n" + "\n".join(rows_html) + "\n</table>"
 
 
 def shrink_image(content_type: str, data: bytes) -> tuple[str, bytes]:

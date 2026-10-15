@@ -161,6 +161,39 @@ def test_docs_json_keeps_nesting_tabs_and_objects():
     assert "[image: obj-1]" in text and "[image: obj-2]" in text
 
 
+def test_table_keeps_merged_cells_and_cell_bullets():
+    from app.gdocs import docs_json_to_text
+
+    def cell(*paras, colspan=1):
+        return {"tableCellStyle": {"columnSpan": colspan, "rowSpan": 1}, "content": list(paras)}
+
+    empty = cell()
+    doc = {"tabs": [{"tabProperties": {"title": "Wild Shape"}, "documentTab": {"body": {"content": [
+        {"table": {"tableRows": [
+            {"tableCells": [cell(para("When"), colspan=3), empty, empty]},
+            {"tableCells": [cell(para("Pros"), colspan=2), empty, cell(para("Cons"))]},
+            {"tableCells": [cell(para("Pack Tactics", nesting=0), para("Multiattack", nesting=0), colspan=2), empty, cell(para("Low <save>"))]},
+        ]}}
+    ]}}}]}
+    text, _ = docs_json_to_text(doc)
+    assert '<tr><th colspan="3">When</th></tr>' in text
+    assert '<tr><th colspan="2">Pros</th><th>Cons</th></tr>' in text
+    assert "• Pack Tactics<br>• Multiattack" in text
+    assert "Low &lt;save&gt;" in text  # cell text is escaped
+
+
+def test_render_is_sanitized_and_swaps_images():
+    from app.render import markdown_to_html
+
+    md = "# Title\n\n- a\n  - b\n\n<table><tr><td colspan=\"2\">x</td></tr></table>\n\n[image: obj-1] <script>alert(1)</script>"
+    html = markdown_to_html(md, lambda n: "/img/1" if n == "obj-1" else None)
+    assert "<h1>Title</h1>" in html
+    assert "<ul>" in html and html.count("<ul>") == 2  # nested list
+    assert '<td colspan="2">x</td>' in html
+    assert '<img src="/img/1"' in html
+    assert "<script>" not in html
+
+
 def test_shrink_image_limits_size():
     from PIL import Image
 
@@ -212,7 +245,7 @@ def test_add_source_and_sync(admin_client, db, monkeypatch):
     assert {i.name: i.data for i in snap.images} == {"obj-1": b"photo", "obj-2": b"tree"}
     view = admin_client.get(f"/admin/notes/snapshots/{snap.id}").text
     assert "/admin/notes/images/" in view
-    assert "padding-left: 1.5em" in view  # nested bullet indented
+    assert view.count("<ul>") >= 2  # nested bullet list
 
 
 def test_sync_rejects_missing_drive_scope(admin_client, db, monkeypatch):

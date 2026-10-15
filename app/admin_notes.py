@@ -4,7 +4,6 @@ Sync asks Google for read-only Drive access each time and keeps no token:
 in Testing mode Google expires stored refresh tokens after 7 days anyway.
 """
 
-import re
 
 from authlib.integrations.starlette_client import OAuthError
 from fastapi import APIRouter, Depends, Form, Request
@@ -29,6 +28,7 @@ from app.gdocs import (
 )
 from app.models import Campaign, Character, NoteImage, NoteSnapshot, NoteSource
 from app.notes_sync import sync_sources
+from app.render import markdown_to_html
 from app.templating import templates
 
 DRIVE_READONLY = "https://www.googleapis.com/auth/drive.readonly"
@@ -227,18 +227,8 @@ def view_snapshot(request: Request, snapshot_id: int, db: Session = Depends(get_
     if snap is None:
         return RedirectResponse("/admin/notes", status_code=303)
     ids = {img.name: img.id for img in snap.images}
-
-    def swap(m):
-        name = m.group(1)
-        return f"[[img:{ids[name]}]]" if name in ids else m.group(0)
-
-    text = re.sub(r"\[image: ([^\]]+)\]", swap, snap.text)
-    text = re.sub(r"\[image: [^\]]+\]", "(image not available)", text)
-    lines = []
-    for line in text.splitlines():
-        stripped = line.lstrip(" ")
-        lines.append({"indent": (len(line) - len(stripped)) // 2, "text": stripped})
-    return templates.TemplateResponse(request, "admin_snapshot.html", {"user": user, "snap": snap, "lines": lines})
+    body = markdown_to_html(snap.text, lambda name: f"/admin/notes/images/{ids[name]}" if name in ids else None)
+    return templates.TemplateResponse(request, "admin_snapshot.html", {"user": user, "snap": snap, "body": body})
 
 
 @router.get("/images/{image_id}")

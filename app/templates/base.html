@@ -16,14 +16,21 @@
     table.list { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
     table.list th, table.list td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid #ddd; vertical-align: top; }
     button.link { background: none; border: none; color: #a12; cursor: pointer; padding: 0; font: inherit; }
-    .snapshot div { margin: 0.1rem 0; }
-    .snapshot .h1 { font-size: 1.4rem; font-weight: 700; margin-top: 2rem; }
-    .snapshot .h2 { font-size: 1.2rem; font-weight: 700; margin-top: 1.5rem; }
-    .snapshot .h3, .snapshot .h4 { font-weight: 700; margin-top: 1rem; }
+    .doc { line-height: 1.5; }
+    .doc h1 { font-size: 1.5rem; margin-top: 2.5rem; border-bottom: 1px solid #ddd; }
+    .doc h2 { font-size: 1.25rem; margin-top: 2rem; }
+    .doc h3, .doc h4, .doc h5, .doc h6 { font-size: 1.05rem; margin-top: 1.25rem; }
+    .doc ul { padding-left: 1.4rem; margin: 0.3rem 0; }
+    .doc li { margin: 0.15rem 0; }
+    .doc table { border-collapse: collapse; width: 100%; margin: 0.75rem 0; font-size: 0.92rem; }
+    .doc td, .doc th { border: 1px solid #ccc; padding: 0.35rem 0.5rem; vertical-align: top; text-align: left; }
+    .doc th { background: #f3f1ea; }
+    body.wide { max-width: 52rem; }
+    .doc img { max-width: 100%; display: block; margin: 0.5rem 0; }
     header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
   </style>
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
   {% block content %}{% endblock %}
 </body>
 </html>
