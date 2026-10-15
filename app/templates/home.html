@@ -6,5 +6,6 @@
 </header>
 <p>Welcome, {{ user.name }}.</p>
 <p>A companion for our table: story recaps, character briefings and rules answers.</p>
+{% if is_admin %}<p><a class="button" href="/admin/import">Import campaign data</a></p>{% endif %}
 <p class="muted">v2 is under construction ({{ env }}). The current app lives at <a href="https://askdnd.ai">askdnd.ai</a>.</p>
 {% endblock %}

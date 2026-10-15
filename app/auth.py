@@ -26,6 +26,10 @@ def current_user(request: Request) -> dict | None:
     return None
 
 
+def is_admin(user: dict | None) -> bool:
+    return bool(user) and config.is_allowed(user.get("email"), config.ADMIN_EMAILS)
+
+
 @router.get("/auth/google")
 async def login_with_google(request: Request):
     if not config.GOOGLE_CONFIGURED:
