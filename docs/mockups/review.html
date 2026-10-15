@@ -6,458 +6,412 @@
 <title>Mockup: Session review · askdnd</title>
 <!-- Design mockup with made-up content. See docs/DESIGN.md. Not served by the app. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --page: #ece8e0; --card: #fff; --ink: #1e1e1e; --muted: #6b6458; --line: #ddd6c8;
-    --parchment: #fbf6ea; --parchment-line: #d9ccae;
-    --night: #1b1d20; --night-2: #26292e; --night-line: #3a3e44; --night-text: #e9e6df; --night-muted: #a7a399;
-    --red: #c53131; --red-dark: #9b2424; --red-soft: #f7e3e1;
-    --draft: #8a5a00; --draft-bg: #fcefcf;
-    --published: #22703f; --published-bg: #dff0e4;
-    --edited: #2a5694; --edited-bg: #e1eaf7;
-    --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+    --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e;
+    --text: #ebe7df; --muted: #a29d93; --faint: #6f6b64;
+    --story-bg: #221f1a; --story-line: #3b3428; --story-text: #f0e7d4;
+    --red: #d64545; --red-hover: #e35a5a; --red-soft: rgba(214, 69, 69, .14);
+    --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+    --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15);
+    --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .15);
     --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: Inter, system-ui, -apple-system, sans-serif;
+    --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.5 Roboto, system-ui, sans-serif; }
-  a { color: var(--red-dark); }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--sans); }
+  a { color: #f08a8a; }
   button { font: inherit; cursor: pointer; }
-  :focus-visible { outline: 3px solid rgba(197, 49, 49, .4); outline-offset: 2px; }
-  .label { font-family: var(--cond); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+  :focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+  [hidden] { display: none !important; }
 
   /* Top bar */
-  .topbar { background: var(--night); border-bottom: 3px solid var(--red); }
-  .topbar-inner { max-width: 1120px; margin: 0 auto; padding: 0 20px; height: 58px; display: flex; align-items: center; gap: 28px; }
-  .brand { font-family: var(--cond); font-weight: 700; font-size: 1.25rem; letter-spacing: .02em; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 10px; }
-  .brand span { display: inline-grid; place-items: center; width: 30px; height: 30px; background: var(--red); color: #fff; font-size: .8rem; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
-  .nav { display: flex; gap: 4px; flex: 1; }
-  .nav a { font-family: var(--cond); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; font-size: .9rem; color: var(--night-muted); text-decoration: none; padding: 18px 12px 15px; border-bottom: 3px solid transparent; margin-bottom: -3px; }
-  .nav a:hover { color: #fff; }
-  .nav a.active { color: #fff; border-bottom-color: #fff; }
-  .who { color: var(--night-muted); font-size: .9rem; margin-left: auto; }
+  .topbar { background: #0f1113; border-bottom: 2px solid var(--red); position: sticky; top: 0; z-index: 5; }
+  .topbar-inner { max-width: 1120px; margin: 0 auto; padding: 0 24px; height: 60px; display: flex; align-items: center; gap: 28px; }
+  .brand { font-family: var(--cond); font-size: 1.3rem; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 10px; }
+  .hex { display: inline-grid; place-items: center; width: 30px; height: 30px; background: var(--red); color: #fff; font-family: var(--cond); font-size: .8rem; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+  .nav { display: flex; gap: 2px; flex: 1; }
+  .nav a { color: var(--muted); text-decoration: none; font-weight: 500; font-size: .95rem; padding: 8px 12px; border-radius: 6px; }
+  .nav a:hover { color: var(--text); background: var(--surface); }
+  .nav a.active { color: #fff; }
+  .manage { position: relative; margin-left: auto; }
+  .manage > button { background: var(--surface); border: 1px solid var(--line); color: var(--text); border-radius: 6px; padding: 6px 12px; font-weight: 500; font-size: .95rem; }
+  .manage > button.active { border-color: var(--red); }
+  .menu { position: absolute; right: 0; top: 44px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px; width: 230px; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+  .menu a { display: block; color: var(--text); text-decoration: none; padding: 8px 10px; border-radius: 6px; }
+  .menu a small { display: block; color: var(--muted); font-size: .8rem; }
+  .menu a:hover, .menu a.active { background: var(--surface); }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: #3a3f46; display: grid; place-items: center; font-weight: 600; font-size: .85rem; flex: none; }
 
-  /* Page header band */
-  .band { background: linear-gradient(180deg, var(--night-2), #31353b); color: var(--night-text); }
-  .band-inner { max-width: 1120px; margin: 0 auto; padding: 20px 20px 22px; }
-  .crumbs { font-family: var(--cond); text-transform: uppercase; letter-spacing: .06em; font-size: .8rem; color: var(--night-muted); }
-  .crumbs a { color: var(--night-muted); text-decoration: none; }
-  .crumbs a:hover { color: #fff; }
-  .title-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 6px 0 4px; }
-  h1 { font-family: var(--cond); font-size: 2rem; font-weight: 700; margin: 0; color: #fff; }
-  .subtitle { color: var(--night-muted); margin: 0; font-size: .92rem; }
+  .page { max-width: 1120px; margin: 0 auto; padding: 32px 24px 140px; }
+  .crumbs { color: var(--muted); font-size: .9rem; }
+  .crumbs a { color: var(--muted); text-decoration: none; }
+  .crumbs a:hover { color: var(--text); }
+  .title-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 8px 0 4px; }
+  h1 { font-size: 1.9rem; font-weight: 700; margin: 0; letter-spacing: -.01em; }
+  .subtitle { color: var(--muted); margin: 0 0 32px; }
 
-  .page { max-width: 1120px; margin: 0 auto; padding: 24px 20px 120px; }
-  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; }
-  @media (max-width: 760px) { .layout { grid-template-columns: 1fr; } }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 32px; align-items: start; }
+  @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
 
-  /* Cards and stat-block style section headings */
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 20px 22px; margin-bottom: 18px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
-  .section-head { display: flex; align-items: center; gap: 10px; padding-bottom: 8px; margin-bottom: 14px; border-bottom: 2px solid var(--red); }
-  .step { display: inline-grid; place-items: center; width: 26px; height: 26px; background: var(--red); color: #fff; font-family: var(--cond); font-weight: 700; font-size: .9rem; flex: none; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
-  .step.done { background: var(--published); }
-  h2 { font-family: var(--cond); text-transform: uppercase; letter-spacing: .06em; font-size: 1.05rem; font-weight: 700; color: var(--red-dark); margin: 0; flex: 1; }
-  .hint { color: var(--muted); font-size: .88rem; margin: -4px 0 14px; }
+  /* Sections: few lines, lots of room */
+  .section { background: var(--surface); border-radius: 12px; padding: 28px 30px; margin-bottom: 24px; }
+  .section-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+  h2 { font-size: 1.2rem; font-weight: 600; margin: 0; flex: 1; }
+  h2 .num { color: var(--red); margin-right: 8px; font-weight: 700; }
+  .hint { color: var(--muted); font-size: .92rem; margin: 0 0 20px; }
+  .count { color: var(--muted); font-size: .9rem; }
 
   /* Tags */
-  .pill { display: inline-flex; align-items: center; font-family: var(--cond); text-transform: uppercase; letter-spacing: .05em; font-size: .72rem; font-weight: 700; padding: 3px 8px; border-radius: 3px; background: #e9e4da; color: var(--muted); white-space: nowrap; }
-  .pill.draft { background: var(--draft-bg); color: var(--draft); }
-  .pill.published { background: var(--published-bg); color: var(--published); }
-  .pill.edited, .pill.new { background: var(--edited-bg); color: var(--edited); }
-  .band .pill.draft { background: #f2c14e; color: #3b2a00; }
-  .band .pill.published { background: #5cb87a; color: #082b14; }
-  .band .pill.edited { background: #7ea6e0; color: #0c2244; }
+  .tag { display: inline-block; font-size: .78rem; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+  .tag.draft { background: var(--amber-soft); color: var(--amber); }
+  .tag.published { background: var(--green-soft); color: var(--green); }
+  .tag.edited, .tag.new { background: var(--blue-soft); color: var(--blue); }
 
   /* Buttons */
-  .btn { font-family: var(--cond); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; font-size: .85rem; border: 1px solid #c9c1b1; background: var(--card); color: var(--ink); border-radius: 3px; padding: 8px 14px; min-height: 36px; }
-  .btn:hover { border-color: var(--ink); }
-  .btn.primary { background: var(--red); border-color: var(--red); color: #fff; }
-  .btn.primary:hover { background: var(--red-dark); border-color: var(--red-dark); }
-  .btn.quiet { border-color: transparent; background: transparent; color: var(--muted); padding: 6px 10px; }
-  .btn.quiet:hover { background: #f1ece2; color: var(--ink); }
-  .btn.danger { color: var(--red-dark); }
+  .btn { border: 1px solid var(--line); background: var(--surface-2); color: var(--text); border-radius: 8px; padding: 8px 16px; font-weight: 500; min-height: 40px; }
+  .btn:hover { border-color: #4a4f57; }
+  .btn.primary { background: var(--red); border-color: var(--red); color: #fff; font-weight: 600; }
+  .btn.primary:hover { background: var(--red-hover); }
+  .btn.link { background: none; border: none; color: var(--muted); padding: 6px 8px; min-height: 0; }
+  .btn.link:hover { color: var(--text); }
+  .btn.danger:hover { color: #f08a8a; }
   .btn:disabled { opacity: .5; cursor: not-allowed; }
-  .btn-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .cost { color: var(--muted); font-size: .82rem; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .note { color: var(--muted); font-size: .85rem; }
 
-  textarea, input[type=text], select { width: 100%; font: inherit; color: var(--ink); background: #fffdf8; border: 1px solid #cfc5b1; border-radius: 3px; padding: 9px 11px; }
-  textarea:focus, input:focus, select:focus { border-color: var(--red); outline: none; box-shadow: 0 0 0 3px rgba(197,49,49,.15); }
-  textarea { resize: vertical; }
-  select { width: auto; padding: 6px 8px; }
-  label.check { display: inline-flex; gap: 8px; align-items: center; color: var(--muted); font-size: .9rem; }
-  input[type=checkbox] { accent-color: var(--red); }
+  textarea, input[type=text], select { width: 100%; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+  textarea:focus, input:focus, select:focus { border-color: var(--red); outline: none; }
+  select { width: auto; padding: 7px 10px; }
+  label.check { display: inline-flex; gap: 8px; align-items: center; color: var(--muted); font-size: .92rem; }
+  input[type=checkbox] { accent-color: var(--red); width: 16px; height: 16px; }
 
-  /* Story text: parchment, like a book page */
-  .story { font-family: var(--serif); font-size: 1.07rem; line-height: 1.65; background: var(--parchment); border: 1px solid var(--parchment-line); border-radius: 3px; padding: 18px 22px; }
-  .story p { margin: 0 0 .9em; max-width: 68ch; }
+  /* Items (questions, suggestions) */
+  .item { padding: 18px 0; }
+  .item + .item { border-top: 1px solid var(--line); }
+  .item-title { font-weight: 500; margin: 0 0 12px; }
+  .answer { font-family: var(--serif); color: var(--story-text); background: var(--story-bg); border-left: 3px solid var(--green); border-radius: 0 8px 8px 0; padding: 10px 14px; margin: 0 0 10px; }
+  .stack { display: grid; gap: 10px; }
+
+  /* "Done" drawer */
+  details.done { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 14px; }
+  details.done > summary { cursor: pointer; color: var(--muted); font-weight: 500; list-style: none; display: flex; align-items: center; gap: 8px; }
+  details.done > summary::-webkit-details-marker { display: none; }
+  details.done > summary::before { content: "▸"; transition: transform .15s; }
+  details.done[open] > summary::before { transform: rotate(90deg); }
+  .all-clear { color: var(--green); margin: 0; }
+
+  /* Story text */
+  .story { font-family: var(--serif); font-size: 1.12rem; line-height: 1.75; color: var(--story-text); background: var(--story-bg); border: 1px solid var(--story-line); border-radius: 10px; padding: 24px 28px; }
+  .story p { margin: 0 0 1em; max-width: 66ch; }
   .story p:last-child { margin-bottom: 0; }
-  .story b { color: var(--red-dark); }
-  .meta { color: var(--muted); font-size: .85rem; margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
-
-  /* Questions */
-  .q { padding: 14px 0; border-top: 1px solid var(--line); }
-  .q:first-of-type { border-top: none; padding-top: 2px; }
-  .q-text { font-weight: 500; margin-bottom: 8px; display: flex; gap: 10px; }
-  .q-text .pill { margin-left: auto; align-self: flex-start; }
-  .q-answer { background: var(--parchment); border-left: 3px solid var(--published); padding: 8px 12px; display: flex; gap: 10px; align-items: flex-start; }
-  .q-answer p { margin: 0; flex: 1; font-family: var(--serif); }
-  .q-edit { display: grid; gap: 8px; }
-  .redraft-bar { margin-top: 12px; padding: 12px 14px; background: var(--draft-bg); border-left: 3px solid #d39a1f; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-  .redraft-bar p { margin: 0; flex: 1; min-width: 200px; font-size: .9rem; }
+  .story b { color: #f3b9a8; font-weight: 600; }
+  .meta { color: var(--muted); font-size: .88rem; margin-top: 14px; }
 
   /* Events */
   .events { list-style: none; margin: 0; padding: 0; }
-  .ev { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--line); }
-  .ev:first-child { border-top: none; }
+  .ev { display: flex; gap: 14px; align-items: baseline; padding: 12px 0; }
+  .ev + .ev { border-top: 1px solid var(--line); }
   .ev-text { flex: 1; }
-  .ev-text small { display: block; color: var(--muted); font-size: .8rem; margin-top: 2px; }
-  .ev .btn.quiet { opacity: 0; transition: opacity .15s; }
-  .ev:hover .btn.quiet, .ev:focus-within .btn.quiet { opacity: 1; }
-  @media (hover: none) { .ev .btn.quiet { opacity: 1; } }
-  .badge { flex: none; width: 76px; text-align: center; font-family: var(--cond); font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding: 3px 0; border-radius: 3px; margin-top: 2px; color: #fff; }
-  .badge.event { background: #6b6458; }
-  .badge.reveal { background: #6a3f99; }
-  .badge.decision { background: #2a5694; }
-  .badge.loot { background: #a57a12; }
-  .badge.theory { background: transparent; color: var(--muted); border: 1.5px dashed #a79f8e; }
-  .ev.theory .ev-text { font-style: italic; color: #4d483e; }
-  .ev-form { display: grid; gap: 8px; width: 100%; }
+  .ev .btn.link { opacity: 0; }
+  .ev:hover .btn.link, .ev:focus-within .btn.link { opacity: 1; }
+  @media (hover: none) { .ev .btn.link { opacity: 1; } }
+  .kind { flex: none; width: 76px; font-size: .78rem; font-weight: 600; }
+  .kind.event { color: var(--muted); }
+  .kind.reveal { color: #c4a3ef; }
+  .kind.decision { color: var(--blue); }
+  .kind.loot { color: var(--amber); }
+  .kind.theory { color: var(--muted); font-style: italic; }
+  .ev.theory .ev-text { font-style: italic; color: var(--muted); }
+  .ev-form { display: grid; gap: 10px; width: 100%; }
 
   /* Suggestions */
-  .sug { border: 1px solid var(--line); border-left: 3px solid var(--red); border-radius: 3px; padding: 14px 16px; margin-top: 12px; }
-  .sug.accepted { border-left-color: var(--published); }
-  .sug.rejected { border-left-color: #a79f8e; opacity: .8; }
-  .sug-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
-  .sug-head b { font-family: var(--cond); font-size: 1.1rem; }
-  .sug-head .pill:last-of-type { margin-right: auto; }
-  .diff { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-  @media (max-width: 560px) { .diff { grid-template-columns: 1fr; } }
-  .diff div { font-size: .92rem; padding: 10px 12px; background: #f6f3ec; }
-  .diff .after { background: var(--parchment); border: 1px solid var(--parchment-line); }
-  .diff span { display: block; font-family: var(--cond); font-size: .72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
-  .decided-group { margin-top: 18px; }
-  .decided-group summary { cursor: pointer; font-family: var(--cond); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; font-size: .85rem; color: var(--muted); }
-  .result { font-size: .92rem; background: var(--parchment); border: 1px solid var(--parchment-line); padding: 10px 12px; margin-bottom: 10px; }
+  .sug-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+  .sug-head b { font-size: 1.05rem; }
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  @media (max-width: 560px) { .compare { grid-template-columns: 1fr; } }
+  .compare > div { font-size: .95rem; padding: 12px 14px; border-radius: 8px; background: var(--surface-2); }
+  .compare > div.after { background: var(--story-bg); border: 1px solid var(--story-line); color: var(--story-text); }
+  .compare span { display: block; font-size: .78rem; color: var(--muted); margin-bottom: 4px; }
 
-  /* Progress panel: dark, like a character-sheet sidebar */
-  .aside { position: sticky; top: 16px; }
-  .panel { background: var(--night-2); color: var(--night-text); border-radius: 4px; padding: 18px 20px; margin-bottom: 18px; border-top: 3px solid var(--red); }
-  .panel h3 { font-family: var(--cond); text-transform: uppercase; letter-spacing: .08em; font-size: .9rem; margin: 0 0 10px; color: #fff; }
-  .checklist { list-style: none; padding: 0; margin: 0 0 16px; }
-  .checklist li { display: flex; gap: 10px; align-items: center; padding: 8px 0; font-size: .92rem; border-bottom: 1px solid var(--night-line); }
-  .tick { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #5c6068; flex: none; display: grid; place-items: center; font-size: .7rem; color: #fff; }
-  .tick.on { background: #3c9a5f; border-color: #3c9a5f; }
-  .checklist small { color: var(--night-muted); margin-left: auto; font-family: var(--cond); text-transform: uppercase; letter-spacing: .05em; }
-  .publish-note { color: var(--night-muted); font-size: .82rem; margin: 10px 0 0; }
-  .publish-note a { color: #f0a9a3; }
-  .panel .btn.primary { width: 100%; min-height: 46px; font-size: 1rem; }
-  .panel .btn.primary:disabled { opacity: 1; background: #3c9a5f; border-color: #3c9a5f; }
-  .source { background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 14px 18px; font-size: .88rem; color: var(--muted); }
-  .source .label { color: var(--ink); font-size: .8rem; display: block; margin-bottom: 4px; }
+  /* Progress panel */
+  .aside { position: sticky; top: 84px; }
+  .panel { background: var(--surface); border-radius: 12px; padding: 22px; }
+  .panel h3 { font-size: 1rem; margin: 0 0 12px; }
+  .checklist { list-style: none; padding: 0; margin: 0 0 20px; }
+  .checklist li { display: flex; gap: 12px; align-items: center; padding: 7px 0; }
+  .tick { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #4a4f57; flex: none; display: grid; place-items: center; font-size: .7rem; color: #0f1113; font-weight: 700; }
+  .tick.on { background: var(--green); border-color: var(--green); }
+  .checklist small { color: var(--muted); margin-left: auto; font-size: .85rem; }
+  .panel .btn.primary { width: 100%; min-height: 48px; font-size: 1.02rem; }
+  .panel .btn.primary:disabled { opacity: 1; background: var(--green-soft); border-color: transparent; color: var(--green); cursor: default; }
+  .panel .note { margin: 12px 0 0; }
+  .source { margin-top: 16px; padding: 0 22px; color: var(--muted); font-size: .9rem; }
 
   .mobile-bar { display: none; }
-  @media (max-width: 760px) {
+  @media (max-width: 800px) {
     .aside .publish-block { display: none; }
-    .mobile-bar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--night); border-top: 3px solid var(--red); gap: 12px; align-items: center; }
-    .mobile-bar .btn.primary { flex: 1; min-height: 46px; }
+    .aside { position: static; }
+    .mobile-bar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: #0f1113; border-top: 2px solid var(--red); gap: 12px; align-items: center; }
+    .mobile-bar .btn.primary { flex: 1; min-height: 48px; }
+    .mobile-bar .btn.primary:disabled { opacity: 1; background: var(--green-soft); border-color: transparent; color: var(--green); }
     .nav { display: none; }
-    h1 { font-size: 1.6rem; }
+    .section { padding: 22px 18px; }
+    .story { padding: 18px; }
   }
 
-  .toast { position: fixed; top: 16px; left: 50%; transform: translate(-50%, -20px); background: var(--night); color: #fff; border-left: 4px solid var(--red); padding: 10px 18px; border-radius: 3px; font-weight: 500; opacity: 0; transition: all .25s; pointer-events: none; z-index: 10; }
+  .toast { position: fixed; top: 72px; left: 50%; transform: translate(-50%, -10px); background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-left: 3px solid var(--green); padding: 10px 18px; border-radius: 8px; opacity: 0; transition: all .2s; pointer-events: none; z-index: 10; }
   .toast.show { opacity: 1; transform: translate(-50%, 0); }
-  .mock-note { background: #000; color: #bbb; font-size: .8rem; text-align: center; padding: 6px; }
-  [hidden] { display: none !important; }
+  .mock-note { background: #000; color: #8d8880; font-size: .8rem; text-align: center; padding: 6px; }
 </style>
 </head>
 <body>
-<div class="mock-note">Design mockup with made-up content. Click around: Answer, Edit, Accept, Publish.</div>
+<div class="mock-note">Design mockup with made-up content. Try: Answer, Skip, Edit, Accept, Undo, Publish, and the Manage menu.</div>
+
 <header class="topbar"><div class="topbar-inner">
-  <a class="brand" href="#"><span>20</span>askdnd</a>
-  <nav class="nav"><a href="#">Previously on…</a><a href="#" class="active">Sessions</a><a href="#">Notes</a></nav>
-  <span class="who">Brett</span>
+  <a class="brand" href="#"><span class="hex">20</span>askdnd</a>
+  <nav class="nav">
+    <a href="#" title="The pre-session refresher (home)">Previously on…</a>
+    <a href="#" title="Every published session">Sessions</a>
+    <a href="#" title="Character briefings (Week 3)">Characters</a>
+    <a href="#" title="People, places, quests, glossary">Campaign</a>
+  </nav>
+  <div class="manage">
+    <button class="active" id="manage-btn" aria-expanded="false">Manage ▾</button>
+    <div class="menu" id="menu" hidden>
+      <a href="#" class="active">Review<small>Sessions waiting for you · 2</small></a>
+      <a href="#">Notes sync<small>Pull the latest Google Docs</small></a>
+      <a href="#">Import<small>Load campaign data</small></a>
+    </div>
+  </div>
+  <span class="avatar" title="Brett">B</span>
 </div></header>
 
-<section class="band"><div class="band-inner">
-  <div class="crumbs"><a href="#">Sessions</a> › Session 12</div>
+<main class="page">
+  <div class="crumbs"><a href="#">Manage</a> › <a href="#">Review</a> › Session 12</div>
   <div class="title-row">
     <h1>Session 12: The Drowned Bell</h1>
-    <span class="pill draft" id="status-pill">Draft</span>
+    <span class="tag draft" id="status-tag">Draft</span>
   </div>
-  <p class="subtitle">Played Mar 8, 2026 · drafted from notes by Claude</p>
-</div></section>
-<main class="page">
+  <p class="subtitle">Played Mar 8, 2026 · drafted from your notes by Claude · only you can see this page</p>
+
   <div class="layout">
     <div>
-      <!-- 1. Questions -->
-      <section class="card" id="questions">
-        <div class="section-head"><span class="step" id="step-1">1</span><h2>Claude's questions</h2></div>
-        <p class="hint">Answer what you know; skip the rest. Answers make the next draft more accurate.</p>
-
-        <div class="q" data-q>
-          <div class="q-text">Is the bard's name Tamsin Vell or Tamsin Bell? The notes use both.<span class="pill published">Answered</span></div>
-          <div class="q-answer" data-view><p>Tamsin Vell. "Bell" was a joke about the drowned bell.</p><button class="btn quiet" data-edit>Edit</button></div>
-          <div class="q-edit" data-form hidden>
-            <textarea rows="2">Tamsin Vell. "Bell" was a joke about the drowned bell.</textarea>
-            <label class="check"><input type="checkbox" checked> Remember for all future drafts</label>
-            <div class="btn-row"><button class="btn primary" data-save>Save answer</button><button class="btn quiet" data-cancel>Cancel</button></div>
+      <section class="section">
+        <div class="section-head"><h2><span class="num">1</span>Claude's questions</h2><span class="count" id="q-count"></span></div>
+        <p class="hint">Answer what you know and skip the rest. Answers make the next draft more accurate.</p>
+        <div id="q-open">
+          <div class="item" data-q="Did Wren keep the tide-key, or give it to the harbor master?"></div>
+          <div class="item" data-q="The notes say holy water healed Tobin's burns; in the 2024 rules it damages fiends and undead. Was that a DM ruling or just flavor?"></div>
+        </div>
+        <p class="all-clear" id="q-clear" hidden>✓ All questions handled.</p>
+        <div id="redraft" hidden style="margin-top:16px; padding:16px; background:var(--amber-soft); border-radius:10px">
+          <div class="row"><span style="flex:1;min-width:220px"><b id="redraft-count">1 new answer.</b> Redraft so the recap and key moments use it.</span>
+            <button class="btn primary" id="redraft-btn">Redraft</button><span class="note">≈ 12¢</span></div>
+        </div>
+        <details class="done" id="q-done"><summary id="q-done-summary">Done (1)</summary>
+          <div id="q-done-list">
+            <div class="item" data-q="Is the bard's name Tamsin Vell or Tamsin Bell? The notes use both." data-answer="Tamsin Vell. &quot;Bell&quot; was a joke about the drowned bell." data-remember="1"></div>
           </div>
-          <div class="meta" style="border:0;margin:6px 0 0;padding:0"><span class="pill">Remembered for future drafts</span></div>
-        </div>
-
-        <div class="q" data-q>
-          <div class="q-text">Did Wren keep the tide-key, or give it to the harbor master?<span class="pill draft" data-qstatus>Needs answer</span></div>
-          <div class="q-answer" data-view hidden><p></p><button class="btn quiet" data-edit>Edit</button></div>
-          <div class="btn-row" data-start><button class="btn" data-answer>Answer</button><button class="btn quiet" data-skip>Skip</button></div>
-          <div class="q-edit" data-form hidden>
-            <textarea rows="2" placeholder="Your answer…"></textarea>
-            <label class="check"><input type="checkbox"> Remember for all future drafts</label>
-            <div class="btn-row"><button class="btn primary" data-save>Save answer</button><button class="btn quiet" data-cancel>Cancel</button></div>
-          </div>
-        </div>
-
-        <div class="q" data-q>
-          <div class="q-text">The notes say holy water healed Tobin's burns; in the 2024 rules it damages fiends and undead. DM ruling, or flavor?<span class="pill draft" data-qstatus>Needs answer</span></div>
-          <div class="q-answer" data-view hidden><p></p><button class="btn quiet" data-edit>Edit</button></div>
-          <div class="btn-row" data-start><button class="btn" data-answer>Answer</button><button class="btn quiet" data-skip>Skip</button></div>
-          <div class="q-edit" data-form hidden>
-            <textarea rows="2" placeholder="Your answer…"></textarea>
-            <label class="check"><input type="checkbox"> Remember for all future drafts</label>
-            <div class="btn-row"><button class="btn primary" data-save>Save answer</button><button class="btn quiet" data-cancel>Cancel</button></div>
-          </div>
-        </div>
-
-        <div class="redraft-bar" id="redraft" hidden>
-          <p><b id="redraft-count">1 new answer.</b> Redraft so the recap and events reflect it. Your edits below are kept as an earlier version.</p>
-          <button class="btn primary" id="redraft-btn">Redraft with answers</button>
-          <span class="cost">≈ 12¢</span>
-        </div>
+        </details>
       </section>
 
-      <!-- 2. Recap -->
-      <section class="card" id="recap">
-        <div class="section-head"><span class="step" id="step-2">2</span><h2>Recap</h2><button class="btn quiet" id="recap-edit">Edit</button></div>
+      <section class="section">
+        <div class="section-head"><h2><span class="num">2</span>Recap</h2><button class="btn link" id="recap-edit">Edit</button></div>
+        <p class="hint">This is what the table reads on Previously on…</p>
         <div class="story" id="recap-view">
           <p>Beneath the flooded chapel at Saltmere, the party found the <b>Drowned Bell</b> still ringing, its sound pulling sailors into the sea. <b>Wren</b> recovered the tide-key from the bell's clapper while <b>Tobin</b> held back the drowned acolytes with a wall of fire.</p>
           <p>The bard <b>Tamsin Vell</b> revealed she had been sent by the Harbor Guild to silence the bell, not to help the town. The party chose to let her leave, but kept her map of the sea caves.</p>
-          <p>The session ended at the chapel steps at dawn, the bell finally quiet, with no word yet from the harbor master and one acolyte unaccounted for.</p>
+          <p>The session ended on the chapel steps at dawn, the bell finally quiet, with no word yet from the harbor master and one acolyte unaccounted for.</p>
         </div>
-        <div id="recap-form" hidden>
-          <textarea rows="10" id="recap-text"></textarea>
-          <p style="margin:12px 0 6px"><label>What did Claude get wrong? <span class="cost">(optional, helps future drafts)</span><input type="text" placeholder="e.g. Player banter about real-world jobs is never story"></label></p>
-          <label class="check"><input type="checkbox"> Apply this lesson to all future drafts</label>
-          <div class="btn-row" style="margin-top:12px"><button class="btn primary" id="recap-save">Save changes</button><button class="btn quiet" id="recap-cancel">Cancel</button></div>
+        <div id="recap-form" class="stack" hidden>
+          <textarea rows="11" id="recap-text"></textarea>
+          <input type="text" placeholder="Optional: what did Claude get wrong? (e.g. player banter is never story)">
+          <label class="check"><input type="checkbox"> Apply this lesson to future drafts</label>
+          <div class="row"><button class="btn primary" id="recap-save">Save</button><button class="btn link" id="recap-cancel">Cancel</button></div>
         </div>
-        <div class="meta"><span id="recap-version">Version 1 by Claude</span>·<span>drafting cost 12¢</span>·<a href="#">see earlier versions</a></div>
+        <p class="meta" id="recap-meta">Version 1 by Claude · 12¢ · <a href="#">earlier versions</a></p>
       </section>
 
-      <!-- 3. Events -->
-      <section class="card" id="events">
-        <div class="section-head"><span class="step" id="step-3">3</span><h2>Story events</h2></div>
-        <p class="hint">Key moments, in order. <i>Theories</i> are shown to the table as open threads, never as facts.</p>
+      <section class="section">
+        <div class="section-head"><h2><span class="num">3</span>Key moments</h2><button class="btn link" id="add-event">+ Add</button></div>
+        <p class="hint">Shown under the recap. Theories appear as open threads, never as facts.</p>
         <ul class="events" id="event-list">
-          <li class="ev"><span class="badge event">event</span><div class="ev-text">The party descended into the flooded chapel beneath Saltmere.<small>Saltmere · Drowned Bell</small></div><button class="btn quiet" data-ev-edit>Edit</button></li>
-          <li class="ev"><span class="badge loot">loot</span><div class="ev-text">Wren took the tide-key from the bell's clapper.<small>Wren · tide-key</small></div><button class="btn quiet" data-ev-edit>Edit</button></li>
-          <li class="ev"><span class="badge reveal">reveal</span><div class="ev-text">Tamsin Vell admitted the Harbor Guild sent her to silence the bell.<small>Tamsin Vell · Harbor Guild</small></div><button class="btn quiet" data-ev-edit>Edit</button></li>
-          <li class="ev"><span class="badge decision">decision</span><div class="ev-text">The party let Tamsin go but kept her map of the sea caves.<small>Tamsin Vell</small></div><button class="btn quiet" data-ev-edit>Edit</button></li>
-          <li class="ev theory"><span class="badge theory">theory</span><div class="ev-text">The missing acolyte may be the harbor master's son.<small>Harbor master</small></div><button class="btn quiet" data-ev-edit>Edit</button></li>
+          <li class="ev"><span class="kind event">Event</span><div class="ev-text">The party descended into the flooded chapel beneath Saltmere.</div><button class="btn link" data-ev-edit>Edit</button></li>
+          <li class="ev"><span class="kind loot">Loot</span><div class="ev-text">Wren took the tide-key from the bell's clapper.</div><button class="btn link" data-ev-edit>Edit</button></li>
+          <li class="ev"><span class="kind reveal">Reveal</span><div class="ev-text">Tamsin Vell admitted the Harbor Guild sent her to silence the bell.</div><button class="btn link" data-ev-edit>Edit</button></li>
+          <li class="ev"><span class="kind decision">Decision</span><div class="ev-text">The party let Tamsin go but kept her map of the sea caves.</div><button class="btn link" data-ev-edit>Edit</button></li>
+          <li class="ev theory"><span class="kind theory">Theory</span><div class="ev-text">The missing acolyte may be the harbor master's son.</div><button class="btn link" data-ev-edit>Edit</button></li>
         </ul>
-        <div class="btn-row" style="margin-top:10px"><button class="btn quiet" id="add-event">+ Add event</button></div>
       </section>
 
-      <!-- 4. Suggestions -->
-      <section class="card" id="suggestions">
-        <div class="section-head"><span class="step" id="step-4">4</span><h2>Suggested updates</h2><span class="cost" id="sug-count">3 to review</span></div>
-        <p class="hint">Changes to what askdnd knows about people, places and spellings. Accepted ones inform future drafts. You can edit or undo any decision later.</p>
-
-        <div id="pending">
-          <div class="sug" data-sug data-name="Tamsin Vell" data-before="Traveling bard who joined the party in Saltmere.">
-            <div class="sug-head"><b>Tamsin Vell</b><span class="pill">npc</span><span class="cost">also known as: Tamsin</span></div>
-            <div class="diff">
-              <div><span>Before</span>Traveling bard who joined the party in Saltmere.</div>
-              <div class="after"><span>Proposed</span><p data-proposed style="margin:0">Bard sent by the Harbor Guild to silence the Drowned Bell; parted ways with the party but left them her sea-cave map.</p></div>
-            </div>
-            <div class="btn-row" data-actions><button class="btn primary" data-accept>Accept</button><button class="btn" data-sug-edit>Edit first</button><button class="btn quiet" data-reject>Reject</button></div>
-          </div>
-
-          <div class="sug" data-sug data-name="The tide-key" data-before="">
-            <div class="sug-head"><b>The tide-key</b><span class="pill">item</span><span class="pill new">New</span></div>
-            <div class="diff" style="grid-template-columns:1fr"><div class="after"><span>Proposed</span><p data-proposed style="margin:0">Key taken from the Drowned Bell's clapper; opens something tied to the tides. Carried by Wren.</p></div></div>
-            <div class="btn-row" data-actions><button class="btn primary" data-accept>Accept</button><button class="btn" data-sug-edit>Edit first</button><button class="btn quiet" data-reject>Reject</button></div>
-          </div>
-
-          <div class="sug" data-sug data-name="Saltmere" data-glossary>
-            <div class="sug-head"><b>Saltmere</b><span class="pill">glossary</span><span class="cost">often misheard as "Salt Mirror", "Saltmar"</span></div>
-            <div class="btn-row" data-actions><button class="btn primary" data-accept>Add to glossary</button><button class="btn quiet" data-reject>Skip</button></div>
-          </div>
+      <section class="section">
+        <div class="section-head"><h2><span class="num">4</span>Suggested updates</h2><span class="count" id="s-count"></span></div>
+        <p class="hint">Changes to what askdnd knows about people, places and spellings.</p>
+        <div id="s-open">
+          <div class="item" data-sug data-name="Tamsin Vell" data-kind="NPC" data-aka="Tamsin" data-before="Traveling bard who joined the party in Saltmere." data-after="Bard sent by the Harbor Guild to silence the Drowned Bell; parted ways with the party but left them her sea-cave map."></div>
+          <div class="item" data-sug data-name="The tide-key" data-kind="Item" data-new="1" data-after="Key taken from the Drowned Bell's clapper; opens something tied to the tides. Carried by Wren."></div>
+          <div class="item" data-sug data-name="Saltmere" data-kind="Glossary" data-glossary="1" data-aka="often misheard as “Salt Mirror”, “Saltmar”"></div>
         </div>
-        <p class="hint" id="all-done" hidden style="margin:8px 0 0">All suggestions decided.</p>
-
-        <details class="decided-group" id="decided" hidden open>
-          <summary id="decided-summary">Decided</summary>
-          <div id="decided-list"></div>
-        </details>
+        <p class="all-clear" id="s-clear" hidden>✓ All suggestions handled.</p>
+        <details class="done" id="s-done" hidden><summary id="s-done-summary"></summary><div id="s-done-list"></div></details>
       </section>
     </div>
 
-    <!-- Progress panel -->
     <aside class="aside">
       <div class="panel">
-        <h3>Review progress</h3>
+        <h3>Review</h3>
         <ul class="checklist">
-          <li><span class="tick" id="t1"></span>Questions<small id="c1">1 of 3 answered</small></li>
-          <li><span class="tick on">✓</span>Recap read<small>v1</small></li>
-          <li><span class="tick on">✓</span>Events<small>5</small></li>
-          <li><span class="tick" id="t4"></span>Suggestions<small id="c4">3 left</small></li>
+          <li><span class="tick" id="t-q"></span>Questions<small id="p-q"></small></li>
+          <li><span class="tick on">✓</span>Recap<small>v1</small></li>
+          <li><span class="tick on">✓</span>Key moments<small>5</small></li>
+          <li><span class="tick" id="t-s"></span>Suggestions<small id="p-s"></small></li>
         </ul>
         <div class="publish-block">
           <button class="btn primary" id="publish">Publish to the table</button>
-          <p class="publish-note" id="publish-note">The table sees it on <a href="#">Previously on…</a>. You can keep editing and publish again.</p>
+          <p class="note">Shows on Previously on… You can edit and publish again any time.</p>
         </div>
       </div>
-      <div class="source"><span class="label">Source</span>Campaign notes, synced Oct 15<br><a href="#">View the notes for this session</a></div>
+      <p class="source">From your campaign notes, synced Oct 15 · <a href="#">view notes</a></p>
     </aside>
   </div>
 </main>
 
-<div class="mobile-bar"><span class="pill draft" id="mobile-pill">Draft</span><button class="btn primary" id="publish-m">Publish to the table</button></div>
+<div class="mobile-bar"><span class="tag draft" id="mobile-tag">Draft</span><button class="btn primary" id="publish-m">Publish to the table</button></div>
 <div class="toast" id="toast"></div>
 
 <script>
   const $ = (s, el = document) => el.querySelector(s), $$ = (s, el = document) => [...el.querySelectorAll(s)];
-  const toast = msg => { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2200); };
-  let newAnswers = 0;
+  const esc = t => t.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const toast = msg => { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2000); };
+  let newAnswers = 0, published = false;
 
-  function refresh() {
-    const qs = $$('[data-q]'), answered = qs.filter(q => !$('[data-view]', q).hidden || q.dataset.skipped).length;
-    $('#c1').textContent = `${qs.filter(q => !$('[data-view]', q).hidden).length} of ${qs.length} answered`;
-    $('#t1').classList.toggle('on', answered === qs.length); $('#t1').textContent = answered === qs.length ? '✓' : '';
-    $('#step-1').classList.toggle('done', answered === qs.length);
-    const left = $$('#pending .sug').length;
-    $('#c4').textContent = left ? `${left} left` : 'done'; $('#sug-count').textContent = left ? `${left} to review` : '';
-    $('#t4').classList.toggle('on', !left); $('#t4').textContent = left ? '' : '✓'; $('#step-4').classList.toggle('done', !left);
-    $('#redraft').hidden = !newAnswers;
-    $('#redraft-count').textContent = `${newAnswers} new answer${newAnswers > 1 ? 's' : ''}.`;
+  $('#manage-btn').onclick = e => { const m = $('#menu'); m.hidden = !m.hidden; e.target.setAttribute('aria-expanded', !m.hidden); };
+  document.addEventListener('click', e => { if (!e.target.closest('.manage')) $('#menu').hidden = true; });
+
+  /* Questions: open ones stay up top; answered/skipped move to "Done" */
+  function renderQ(item) {
+    const q = item.dataset.q, a = item.dataset.answer, done = item.closest('#q-done-list');
+    if (!done) {
+      item.innerHTML = `<p class="item-title">${esc(q)}</p>
+        <div class="row"><button class="btn" data-a>Answer</button><button class="btn link" data-skip>Skip</button></div>`;
+      $('[data-a]', item).onclick = () => editQ(item);
+      $('[data-skip]', item).onclick = () => { item.dataset.skipped = 1; moveQ(item, true); toast('Skipped'); };
+    } else if (item.dataset.skipped) {
+      item.innerHTML = `<p class="item-title" style="color:var(--muted)">${esc(q)}</p>
+        <div class="row"><span class="tag">Skipped</span><button class="btn link" data-undo>Answer instead</button></div>`;
+      $('[data-undo]', item).onclick = () => { delete item.dataset.skipped; moveQ(item, false); editQ(item); };
+    } else {
+      item.innerHTML = `<p class="item-title">${esc(q)}</p><p class="answer">${esc(a)}</p>
+        <div class="row">${item.dataset.remember ? '<span class="tag">Remembered for future drafts</span>' : ''}<button class="btn link" data-edit>Edit</button><button class="btn link danger" data-clear>Remove answer</button></div>`;
+      $('[data-edit]', item).onclick = () => editQ(item);
+      $('[data-clear]', item).onclick = () => { delete item.dataset.answer; delete item.dataset.remember; moveQ(item, false); toast('Answer removed'); };
+    }
   }
-
-  // Questions
-  $$('[data-q]').forEach(q => {
-    const view = $('[data-view]', q), form = $('[data-form]', q), start = $('[data-start]', q), ta = $('textarea', form);
-    const open = () => { form.hidden = false; view.hidden = true; if (start) start.hidden = true; ta.focus(); };
-    $$('[data-answer], [data-edit]', q).forEach(b => b.onclick = open);
-    $('[data-cancel]', q).onclick = () => { form.hidden = true; if ($('p', view).textContent) view.hidden = false; else if (start) start.hidden = false; };
-    $('[data-save]', q).onclick = () => {
-      if (!ta.value.trim()) return ta.focus();
-      const first = !$('p', view).textContent; $('p', view).textContent = ta.value.trim();
-      form.hidden = true; view.hidden = false; const pill = $('[data-qstatus]', q);
-      if (pill) { pill.className = 'pill published'; pill.textContent = 'Answered'; }
-      if (first) newAnswers++; toast('Answer saved'); refresh();
+  function editQ(item) {
+    item.innerHTML = `<p class="item-title">${esc(item.dataset.q)}</p><div class="stack">
+      <textarea rows="2" placeholder="Your answer…">${esc(item.dataset.answer || '')}</textarea>
+      <label class="check"><input type="checkbox" ${item.dataset.remember ? 'checked' : ''}> Remember for future drafts (names, who someone is)</label>
+      <div class="row"><button class="btn primary" data-save>Save answer</button><button class="btn link" data-cancel>Cancel</button></div></div>`;
+    $('textarea', item).focus();
+    $('[data-cancel]', item).onclick = () => renderQ(item);
+    $('[data-save]', item).onclick = () => {
+      const val = $('textarea', item).value.trim(); if (!val) return $('textarea', item).focus();
+      const isNew = !item.dataset.answer; item.dataset.answer = val;
+      if ($('input', item).checked) item.dataset.remember = 1; else delete item.dataset.remember;
+      if (isNew) newAnswers++;
+      moveQ(item, true); toast('Answer saved');
     };
-    const skip = $('[data-skip]', q);
-    if (skip) skip.onclick = () => { q.dataset.skipped = 1; start.hidden = true; const pill = $('[data-qstatus]', q); pill.className = 'pill'; pill.textContent = 'Skipped'; refresh(); };
-  });
-  $('#redraft-btn').onclick = () => { newAnswers = 0; toast('Claude is redrafting… (about a minute)'); refresh(); };
+  }
+  function moveQ(item, toDone) { (toDone ? $('#q-done-list') : $('#q-open')).append(item); renderQ(item); refresh(); }
 
-  // Recap
-  const rv = $('#recap-view'), rf = $('#recap-form'), rt = $('#recap-text');
-  $('#recap-edit').onclick = () => { rt.value = $$('p', rv).map(p => p.innerText.replace(/(Drowned Bell|Wren|Tobin|Tamsin Vell)/g, '**$1**')).join('\n\n'); rv.hidden = true; rf.hidden = false; $('#recap-edit').hidden = true; rt.focus(); };
-  $('#recap-cancel').onclick = () => { rv.hidden = false; rf.hidden = true; $('#recap-edit').hidden = false; };
+  /* Suggestions: same pattern */
+  function renderS(item) {
+    const d = item.dataset, done = item.closest('#s-done-list');
+    const head = `<div class="sug-head"><b>${esc(d.name)}</b><span class="tag">${d.kind}</span>${d.new ? '<span class="tag new">New</span>' : ''}${d.status ? `<span class="tag ${d.status === 'accepted' ? 'published' : ''}">${d.status === 'accepted' ? 'Accepted' : 'Rejected'}</span>` : ''}${d.aka ? `<span class="note">${esc(d.glossary ? d.aka : 'also: ' + d.aka)}</span>` : ''}</div>`;
+    const compare = d.glossary ? '' : `<div class="compare" ${d.before ? '' : 'style="grid-template-columns:1fr"'}>${d.before ? `<div><span>Before</span>${esc(d.before)}</div>` : ''}<div class="after"><span>${d.status === 'accepted' ? 'Now in askdnd' : 'Proposed'}</span>${esc(d.after)}</div></div>`;
+    if (!done) {
+      item.innerHTML = head + compare + `<div class="row"><button class="btn primary" data-accept>${d.glossary ? 'Add to glossary' : 'Accept'}</button>${d.glossary ? '' : '<button class="btn" data-edit>Edit</button>'}<button class="btn link" data-reject>${d.glossary ? 'Skip' : 'Reject'}</button></div>`;
+      $('[data-accept]', item).onclick = () => { d.status = 'accepted'; moveS(item, true); toast('Accepted'); };
+      $('[data-reject]', item).onclick = () => { d.status = 'rejected'; moveS(item, true); toast(d.glossary ? 'Skipped' : 'Rejected'); };
+      const e = $('[data-edit]', item); if (e) e.onclick = () => editS(item);
+    } else {
+      item.innerHTML = head + (d.status === 'accepted' ? compare : '') + `<div class="row">${d.status === 'accepted' && !d.glossary ? '<button class="btn link" data-edit>Edit</button>' : ''}<button class="btn link" data-undo>Undo</button></div>`;
+      $('[data-undo]', item).onclick = () => { delete d.status; moveS(item, false); toast(d.before ? `Undone: ${d.name} is back to the earlier summary` : 'Undone'); };
+      const e = $('[data-edit]', item); if (e) e.onclick = () => editS(item);
+    }
+  }
+  function editS(item) {
+    const d = item.dataset;
+    item.innerHTML = `<div class="sug-head"><b>${esc(d.name)}</b><span class="tag">${d.kind}</span></div><div class="stack">
+      <textarea rows="3">${esc(d.after)}</textarea>
+      <div class="row"><button class="btn primary" data-save>${d.status ? 'Save' : 'Save and accept'}</button><button class="btn link" data-cancel>Cancel</button></div></div>`;
+    $('textarea', item).focus();
+    $('[data-cancel]', item).onclick = () => renderS(item);
+    $('[data-save]', item).onclick = () => { d.after = $('textarea', item).value.trim(); const was = d.status; d.status = 'accepted'; if (was) { renderS(item); toast('Updated'); } else { moveS(item, true); toast('Accepted'); } };
+  }
+  function moveS(item, toDone) { (toDone ? $('#s-done-list') : $('#s-open')).prepend(item); renderS(item); refresh(); }
+
+  /* Recap */
+  const names = /(Drowned Bell|Wren|Tobin|Tamsin Vell)/g;
+  $('#recap-edit').onclick = () => { $('#recap-text').value = $$('#recap-view p').map(p => p.innerText.replace(names, '**$1**')).join('\n\n'); $('#recap-view').hidden = true; $('#recap-form').hidden = false; $('#recap-edit').hidden = true; $('#recap-text').focus(); };
+  $('#recap-cancel').onclick = () => { $('#recap-view').hidden = false; $('#recap-form').hidden = true; $('#recap-edit').hidden = false; };
   $('#recap-save').onclick = () => {
-    rv.innerHTML = rt.value.split(/\n\s*\n/).map(p => '<p>' + p.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>') + '</p>').join('');
-    rv.hidden = false; rf.hidden = true; $('#recap-edit').hidden = false;
-    $('#recap-version').textContent = 'Version 2 by you'; setStatus(published ? 'edited' : 'draft'); toast('Recap saved');
+    $('#recap-view').innerHTML = $('#recap-text').value.split(/\n\s*\n/).map(p => '<p>' + esc(p).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>') + '</p>').join('');
+    $('#recap-cancel').onclick(); $('#recap-meta').innerHTML = 'Version 2 by you · <a href="#">earlier versions</a>';
+    if (published) setStatus('edited'); toast('Recap saved');
   };
 
-  // Events
+  /* Key moments */
+  const KINDS = ['Event', 'Reveal', 'Decision', 'Loot', 'Theory'];
   function editEvent(li) {
-    const kind = $('.badge', li).textContent, text = $('.ev-text', li).firstChild.textContent;
-    const original = li.innerHTML;
-    li.innerHTML = `<div class="ev-form"><select>${['event','reveal','decision','loot','theory'].map(k => `<option ${k===kind?'selected':''}>${k}</option>`).join('')}</select>
-      <textarea rows="2">${text}</textarea>
-      <div class="btn-row"><button class="btn primary">Save</button><button class="btn quiet">Cancel</button><button class="btn quiet danger" style="margin-left:auto">Delete event</button></div></div>`;
+    const kind = $('.kind', li).textContent || 'Event', text = $('.ev-text', li).textContent, original = li.innerHTML;
+    li.innerHTML = `<div class="ev-form"><select>${KINDS.map(k => `<option ${k === kind ? 'selected' : ''}>${k}</option>`).join('')}</select>
+      <textarea rows="2" placeholder="What happened?">${esc(text)}</textarea>
+      <div class="row"><button class="btn primary">Save</button><button class="btn link">Cancel</button><button class="btn link danger" style="margin-left:auto">Delete</button></div></div>`;
     const [save, cancel, del] = $$('button', li);
-    cancel.onclick = () => { li.innerHTML = original; bindEvent(li); };
-    del.onclick = () => { li.remove(); toast('Event deleted'); };
+    $('textarea', li).focus();
+    cancel.onclick = () => { if (!text) return li.remove(); li.innerHTML = original; bindEvent(li); };
+    del.onclick = () => { li.remove(); toast('Deleted'); };
     save.onclick = () => {
-      const k = $('select', li).value, t = $('textarea', li).value.trim();
-      li.className = 'ev' + (k === 'theory' ? ' theory' : '');
-      li.innerHTML = `<span class="badge ${k}">${k}</span><div class="ev-text">${t}</div><button class="btn quiet" data-ev-edit>Edit</button>`;
-      bindEvent(li); toast('Event saved');
+      const k = $('select', li).value, t = $('textarea', li).value.trim(); if (!t) return;
+      li.className = 'ev' + (k === 'Theory' ? ' theory' : '');
+      li.innerHTML = `<span class="kind ${k.toLowerCase()}">${k}</span><div class="ev-text">${esc(t)}</div><button class="btn link" data-ev-edit>Edit</button>`;
+      bindEvent(li); toast('Saved');
     };
   }
   const bindEvent = li => $('[data-ev-edit]', li).onclick = () => editEvent(li);
   $$('#event-list .ev').forEach(bindEvent);
-  $('#add-event').onclick = () => {
-    const li = document.createElement('li'); li.className = 'ev';
-    li.innerHTML = '<span class="badge event">event</span><div class="ev-text"></div><button class="btn quiet" data-ev-edit>Edit</button>';
-    $('#event-list').append(li); editEvent(li);
-  };
+  $('#add-event').onclick = () => { const li = document.createElement('li'); li.className = 'ev'; li.innerHTML = '<span class="kind event"></span><div class="ev-text"></div>'; $('#event-list').append(li); editEvent(li); };
 
-  // Suggestions: decided ones move to a "Decided" list where they can be edited or undone
-  function updateDecided() {
-    const items = $$('#decided-list .sug');
-    $('#decided').hidden = !items.length;
-    const acc = items.filter(i => i.classList.contains('accepted')).length, rej = items.length - acc;
-    $('#decided-summary').textContent = `Decided (${[acc && acc + ' accepted', rej && rej + ' rejected'].filter(Boolean).join(', ')})`;
-    $('#all-done').hidden = $$('#pending .sug').length > 0;
-  }
-  function decide(sug, kind) {
-    const actions = $('[data-actions]', sug), proposed = $('[data-proposed]', sug);
-    const ta = $('.after textarea', sug);
-    if (ta) { const p = document.createElement('p'); p.dataset.proposed = ''; p.style.margin = 0; p.textContent = ta.value; ta.replaceWith(p); }
-    sug.classList.add(kind);
-    const label = $('.after span', sug); if (label) label.textContent = kind === 'accepted' ? 'Now in askdnd' : 'Proposed (not used)';
-    const head = $('.sug-head', sug);
-    const tag = document.createElement('span'); tag.className = 'pill ' + (kind === 'accepted' ? 'published' : ''); tag.textContent = kind === 'accepted' ? 'Accepted' : 'Rejected'; tag.dataset.tag = '';
-    head.append(tag);
-    actions.innerHTML = kind === 'accepted' && !('glossary' in sug.dataset)
-      ? '<button class="btn" data-change>Edit summary</button><button class="btn quiet" data-undo>Undo</button>'
-      : '<button class="btn quiet" data-undo>Undo</button>';
-    $('#decided-list').prepend(sug);
-    bindDecided(sug); toast(kind === 'accepted' ? 'Accepted. askdnd updated.' : 'Rejected'); updateDecided(); refresh();
-  }
-  function bindPending(sug) {
-    const actions = $('[data-actions]', sug);
-    if ('glossary' in sug.dataset) {
-      actions.innerHTML = '<button class="btn primary" data-accept>Add to glossary</button><button class="btn quiet" data-reject>Skip</button>';
-    } else {
-      actions.innerHTML = '<button class="btn primary" data-accept>Accept</button><button class="btn" data-sug-edit>Edit first</button><button class="btn quiet" data-reject>Reject</button>';
-      $('[data-sug-edit]', sug).onclick = e => {
-        const p = $('[data-proposed]', sug); const ta = document.createElement('textarea'); ta.rows = 3; ta.value = p.textContent; p.replaceWith(ta); ta.focus(); e.target.hidden = true;
-      };
-    }
-    $('[data-accept]', sug).onclick = () => decide(sug, 'accepted');
-    $('[data-reject]', sug).onclick = () => decide(sug, 'rejected');
-  }
-  function bindDecided(sug) {
-    $('[data-undo]', sug).onclick = () => {
-      sug.classList.remove('accepted', 'rejected'); $('[data-tag]', sug).remove();
-      const label = $('.after span', sug); if (label) label.textContent = 'Proposed';
-      $('#pending').append(sug); bindPending(sug);
-      toast(sug.dataset.before ? `Undone. ${sug.dataset.name}'s summary is back to before.` : 'Undone.'); updateDecided(); refresh();
-    };
-    const change = $('[data-change]', sug);
-    if (change) change.onclick = () => {
-      const p = $('[data-proposed]', sug); const ta = document.createElement('textarea'); ta.rows = 3; ta.value = p.textContent; p.replaceWith(ta); ta.focus();
-      $('[data-actions]', sug).innerHTML = '<button class="btn primary" data-save-change>Save</button><button class="btn quiet" data-cancel-change>Cancel</button>';
-      const done = text => { const np = document.createElement('p'); np.dataset.proposed = ''; np.style.margin = 0; np.textContent = text; ta.replaceWith(np);
-        $('[data-actions]', sug).innerHTML = '<button class="btn" data-change>Edit summary</button><button class="btn quiet" data-undo>Undo</button>'; bindDecided(sug); };
-      $('[data-save-change]', sug).onclick = () => { done(ta.value); toast('Summary updated'); };
-      $('[data-cancel-change]', sug).onclick = () => done(p.textContent);
-    };
-  }
-  $$('[data-sug]').forEach(bindPending);
-
-  // Publish
-  let published = false;
+  /* Status, progress, publish */
   function setStatus(s) {
-    const map = { draft: ['draft', 'Draft'], published: ['published', 'Published'], edited: ['edited', 'Edited since publishing'] };
-    for (const id of ['#status-pill', '#mobile-pill']) { $(id).className = 'pill ' + map[s][0]; $(id).textContent = map[s][1]; }
-    const label = s === 'published' ? 'Published ✓' : (s === 'edited' ? 'Publish changes' : 'Publish to the table');
-    for (const id of ['#publish', '#publish-m']) { $(id).textContent = label; $(id).disabled = s === 'published'; }
+    const m = { draft: ['draft', 'Draft', 'Publish to the table'], published: ['published', 'Published', 'Published ✓'], edited: ['edited', 'Edited since publishing', 'Publish changes'] }[s];
+    for (const id of ['#status-tag', '#mobile-tag']) { $(id).className = 'tag ' + m[0]; $(id).textContent = m[1]; }
+    for (const id of ['#publish', '#publish-m']) { $(id).textContent = m[2]; $(id).disabled = s === 'published'; }
   }
   const publish = () => { published = true; setStatus('published'); toast('Published. The table can read it now.'); };
   $('#publish').onclick = publish; $('#publish-m').onclick = publish;
+
+  function refresh() {
+    const qOpen = $$('#q-open .item').length, qDone = $$('#q-done-list .item').length;
+    $('#q-count').textContent = qOpen ? `${qOpen} to answer` : '';
+    $('#q-clear').hidden = !!qOpen; $('#q-done-summary').textContent = `Done (${qDone})`; $('#q-done').hidden = !qDone;
+    $('#p-q').textContent = qOpen ? `${qOpen} left` : 'done'; $('#t-q').classList.toggle('on', !qOpen); $('#t-q').textContent = qOpen ? '' : '✓';
+    $('#redraft').hidden = !newAnswers; $('#redraft-count').textContent = `${newAnswers} new answer${newAnswers > 1 ? 's' : ''}.`;
+    const sOpen = $$('#s-open .item').length, sDone = $$('#s-done-list .item');
+    $('#s-count').textContent = sOpen ? `${sOpen} to review` : '';
+    $('#s-clear').hidden = !!sOpen; $('#s-done').hidden = !sDone.length;
+    const acc = sDone.filter(i => i.dataset.status === 'accepted').length, rej = sDone.length - acc;
+    $('#s-done-summary').textContent = `Done (${[acc && acc + ' accepted', rej && rej + ' rejected'].filter(Boolean).join(', ')})`;
+    $('#p-s').textContent = sOpen ? `${sOpen} left` : 'done'; $('#t-s').classList.toggle('on', !sOpen); $('#t-s').textContent = sOpen ? '' : '✓';
+  }
+  $('#redraft-btn').onclick = () => { newAnswers = 0; refresh(); toast('Claude is redrafting… about a minute'); };
+
+  $$('[data-q]').forEach(renderQ);
+  $$('[data-sug]').forEach(renderS);
   refresh();
 </script>
 </body>
