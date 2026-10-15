@@ -20,7 +20,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -79,6 +79,7 @@ class Campaign(Timestamped, Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(200))
     slug: Mapped[str] = mapped_column(String(100), unique=True)
+    dm_name: Mapped[str] = mapped_column(String(200), default="", server_default="")
     members: Mapped[list["CampaignMember"]] = relationship(back_populates="campaign")
 
 
@@ -128,6 +129,7 @@ class Character(Timestamped, Base):
     entity_id: Mapped[int] = mapped_column(ForeignKey("entities.id", ondelete="CASCADE"), unique=True)
     owner_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     ddb_id: Mapped[str | None] = mapped_column(String(40))  # D&D Beyond character id
+    player_name: Mapped[str] = mapped_column(String(200), default="", server_default="")  # who plays it, before they have an account
     entity: Mapped[Entity] = relationship()
     owner: Mapped[User | None] = relationship()
 
@@ -261,3 +263,30 @@ class NoteImage(Base):
     name: Mapped[str] = mapped_column(String(300))
     content_type: Mapped[str] = mapped_column(String(100))
     data: Mapped[bytes] = mapped_column(LargeBinary)
+
+
+class ExtractionRun(Timestamped, Base):
+    """One call to Claude that drafted a session. Keeps cost visible."""
+
+    __tablename__ = "extraction_runs"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    session_id: Mapped[int] = mapped_column(ForeignKey("game_sessions.id", ondelete="CASCADE"), index=True)
+    source: Mapped[str] = mapped_column(String(20))  # "notes" or "transcript"
+    model: Mapped[str] = mapped_column(String(60), default="")
+    status: Mapped[str] = mapped_column(String(20), default="running")  # running | done | error
+    error: Mapped[str] = mapped_column(Text, default="")
+    input_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    output_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    cost_usd: Mapped[float] = mapped_column(default=0.0)
+    to_check: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list)  # things Brett should verify
+
+
+class Proposal(Timestamped, Base):
+    """A suggested change from extraction (entity or glossary) awaiting Brett's OK."""
+
+    __tablename__ = "proposals"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    session_id: Mapped[int] = mapped_column(ForeignKey("game_sessions.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(20))  # "entity" or "glossary"
+    payload: Mapped[dict] = mapped_column(JSONB)
+    status: Mapped[str] = mapped_column(String(20), default="pending")  # pending | accepted | rejected

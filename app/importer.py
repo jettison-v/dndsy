@@ -57,6 +57,8 @@ def import_bundle(db: Session, bundle: dict) -> Counter:
         counts["campaigns created"] += 1
     else:
         campaign.name = name
+    if c.get("dm_name"):
+        campaign.dm_name = c["dm_name"]
     db.flush()
 
     users: dict[str, User] = {}
@@ -121,6 +123,8 @@ def import_bundle(db: Session, bundle: dict) -> Counter:
                 db.add(ch)
                 counts["characters created"] += 1
             details = item["character"]
+            if details.get("player_name"):
+                ch.player_name = details["player_name"]
             if details.get("ddb_id"):
                 ch.ddb_id = str(details["ddb_id"])
             owner_email = (details.get("owner_email") or "").strip().lower()
