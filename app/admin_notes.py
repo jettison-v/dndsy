@@ -16,7 +16,17 @@ from app import config
 from app.admin import _guard
 from app.auth import oauth
 from app.db import get_db
-from app.gdocs import EXPORT_URL, MAX_EXPORT_BYTES, META_URL, doc_id_from_url, parse_export
+from app.gdocs import (
+    DOCS_URL,
+    EXPORT_URL,
+    MAX_EXPORT_BYTES,
+    ExportedDoc,
+    doc_id_from_url,
+    docs_json_to_text,
+    export_image_order,
+    parse_export,
+    shrink_image,
+)
 from app.models import Campaign, Character, NoteImage, NoteSnapshot, NoteSource
 from app.notes_sync import sync_sources
 from app.templating import templates
@@ -33,9 +43,14 @@ oauth.register(
 
 router = APIRouter(prefix="/admin/notes")
 
+_API_OFF = (
+    "A Google API this needs isn't turned on for your Google Cloud project. Enable both the "
+    "Google Docs API and the Google Drive API (Google Cloud → search each name → Enable), "
+    "wait a few minutes, then sync again."
+)
 GOOGLE_ERROR_HELP = {
-    "accessNotConfigured": "The Google Drive API isn't turned on for this Google Cloud project. Enable it (Google Cloud → search \"Google Drive API\" → Enable), wait a few minutes, then sync again.",
-    "SERVICE_DISABLED": "The Google Drive API isn't turned on for this Google Cloud project. Enable it (Google Cloud → search \"Google Drive API\" → Enable), wait a few minutes, then sync again.",
+    "accessNotConfigured": _API_OFF,
+    "SERVICE_DISABLED": _API_OFF,
     "notFound": "Google can't find this doc for your account. Check the link, and that you're signed in with the account that owns or can open the doc.",
     "insufficientFilePermissions": "Your account can't open this doc. Check it's shared with you.",
     "exportSizeLimitExceeded": "Google can't export a doc this large (10 MB limit). Try making its images smaller.",
@@ -155,15 +170,7 @@ async def sync_callback(request: Request, db: Session = Depends(get_db)):
     fetched: dict[str, object] = {}
     for s in sources:
         try:
-            meta = await oauth.google_drive.get(META_URL.format(id=s.google_doc_id), token=token)
-            if meta.status_code != 200:
-                raise GoogleError(explain_google_error(meta))
-            export = await oauth.google_drive.get(EXPORT_URL.format(id=s.google_doc_id), token=token, timeout=120)
-            if export.status_code != 200:
-                raise GoogleError(explain_google_error(export))
-            if len(export.content) > MAX_EXPORT_BYTES:
-                raise ValueError("export too large")
-            fetched[s.google_doc_id] = (meta.json().get("name", ""), parse_export(export.content))
+            fetched[s.google_doc_id] = await fetch_doc(s.google_doc_id, token)
         except Exception as e:
             fetched[s.google_doc_id] = e
 
@@ -177,6 +184,38 @@ async def sync_callback(request: Request, db: Session = Depends(get_db)):
     db.commit()
     request.session["sync_results"] = results
     return RedirectResponse("/admin/notes", status_code=303)
+
+
+async def fetch_doc(doc_id: str, token: dict) -> tuple[str, ExportedDoc]:
+    """Read a doc via the Docs API (all tabs, exact nesting, images). Drawings
+    aren't available there, so if the doc has any, fill them in from Drive's
+    HTML export, matching images by their order in the document."""
+    client = oauth.google_drive
+    resp = await client.get(DOCS_URL.format(id=doc_id), token=token, timeout=60)
+    if resp.status_code != 200:
+        raise GoogleError(explain_google_error(resp))
+    doc = resp.json()
+    text, objects = docs_json_to_text(doc)
+    images: dict[str, tuple[str, bytes]] = {}
+    for obj in objects:
+        if obj["kind"] == "image":
+            r = await client.get(obj["uri"], token=token, timeout=60)
+            if r.status_code == 200:
+                ctype = r.headers.get("content-type", "image/png").split(";")[0]
+                images[obj["name"]] = shrink_image(ctype, r.content)
+    if any(o["kind"] == "drawing" for o in objects):
+        try:
+            export = await client.get(EXPORT_URL.format(id=doc_id), token=token, timeout=120)
+            if export.status_code == 200 and len(export.content) <= MAX_EXPORT_BYTES:
+                exported = parse_export(export.content)
+                order = export_image_order(exported)
+                if len(order) == len(objects):
+                    for obj, name in zip(objects, order):
+                        if obj["kind"] == "drawing" and name in exported.images:
+                            images[obj["name"]] = shrink_image(*exported.images[name])
+        except Exception:
+            pass  # drawings are a bonus; the text and images still sync
+    return doc.get("title", ""), ExportedDoc(text=text, images=images)
 
 
 @router.get("/snapshots/{snapshot_id}")
@@ -194,7 +233,12 @@ def view_snapshot(request: Request, snapshot_id: int, db: Session = Depends(get_
         return f"[[img:{ids[name]}]]" if name in ids else m.group(0)
 
     text = re.sub(r"\[image: ([^\]]+)\]", swap, snap.text)
-    return templates.TemplateResponse(request, "admin_snapshot.html", {"user": user, "snap": snap, "lines": text.splitlines()})
+    text = re.sub(r"\[image: [^\]]+\]", "(image not available)", text)
+    lines = []
+    for line in text.splitlines():
+        stripped = line.lstrip(" ")
+        lines.append({"indent": (len(line) - len(stripped)) // 2, "text": stripped})
+    return templates.TemplateResponse(request, "admin_snapshot.html", {"user": user, "snap": snap, "lines": lines})
 
 
 @router.get("/images/{image_id}")

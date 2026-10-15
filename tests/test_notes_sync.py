@@ -117,6 +117,71 @@ def test_notes_page_admin_only(monkeypatch, db):
     app.dependency_overrides.clear()
 
 
+def para(text, nesting=None, style="NORMAL_TEXT", obj=None):
+    elements = [{"textRun": {"content": text + "\n"}}]
+    if obj:
+        elements.insert(0, {"inlineObjectElement": {"inlineObjectId": obj}})
+    p = {"elements": elements, "paragraphStyle": {"namedStyleType": style}}
+    if nesting is not None:
+        p["bullet"] = {"nestingLevel": nesting}
+    return {"paragraph": p}
+
+
+DOCS_JSON = {
+    "title": "DnD Notes",
+    "tabs": [
+        {
+            "tabProperties": {"title": "Notes"},
+            "documentTab": {
+                "body": {"content": [
+                    para("Session 17", style="HEADING_6"),
+                    para("Top bullet", nesting=0),
+                    para("Nested bullet", nesting=1),
+                    para("", obj="kix.img"),
+                    para("Family Tree", obj="kix.drawing"),
+                ]},
+                "inlineObjects": {
+                    "kix.img": {"inlineObjectProperties": {"embeddedObject": {"imageProperties": {"contentUri": "https://img.example/1"}}}},
+                    "kix.drawing": {"inlineObjectProperties": {"embeddedObject": {"embeddedDrawingProperties": {}}}},
+                },
+            },
+            "childTabs": [{"tabProperties": {"title": "Wild Shape"}, "documentTab": {"body": {"content": [para("Lion", nesting=0)]}}}],
+        }
+    ],
+}
+
+
+def test_docs_json_keeps_nesting_tabs_and_objects():
+    from app.gdocs import docs_json_to_text
+
+    text, objects = docs_json_to_text(DOCS_JSON)
+    assert "- Top bullet\n  - Nested bullet" in text
+    assert "## Wild Shape" in text and "- Lion" in text
+    assert [o["kind"] for o in objects] == ["image", "drawing"]
+    assert "[image: obj-1]" in text and "[image: obj-2]" in text
+
+
+def test_shrink_image_limits_size():
+    from PIL import Image
+
+    from app.gdocs import MAX_IMAGE_SIDE, shrink_image
+
+    buf = io.BytesIO()
+    Image.new("RGB", (4000, 3000), (120, 30, 200)).save(buf, "PNG")
+    ctype, data = shrink_image("image/png", buf.getvalue())
+    assert max(Image.open(io.BytesIO(data)).size) == MAX_IMAGE_SIDE
+    assert len(data) < len(buf.getvalue())
+
+
+class Resp:
+    def __init__(self, status=200, content=b"", json_data=None, ctype="image/png"):
+        self.status_code, self.content, self._json, self.text = status, content, json_data, ""
+        self.headers = {"content-type": ctype}
+
+    def json(self):
+        return self._json
+
+
 def test_add_source_and_sync(admin_client, db, monkeypatch):
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}})
     url = "https://docs.google.com/document/d/" + "a" * 44 + "/edit"
@@ -126,26 +191,28 @@ def test_add_source_and_sync(admin_client, db, monkeypatch):
     async def drive_token(request):
         return {"userinfo": {"email": "admin@example.com"}, "scope": f"openid email {admin_notes.DRIVE_READONLY}"}
 
-    class Resp:
-        def __init__(self, status=200, content=b"", json_data=None):
-            self.status_code, self.content, self._json, self.text = status, content, json_data, ""
-
-        def raise_for_status(self):
-            pass
-
-        def json(self):
-            return self._json
+    export_html = '<p><img src="images/image1.png"></p><p><img src="images/image2.png">Family Tree</p>'
+    export_zip = make_zip(html=export_html, images={"images/image1.png": b"one", "images/image2.png": b"tree"})
 
     async def fake_get(url, token=None, timeout=None):
-        return Resp(json_data={"name": "DnD Notes"}) if "fields=name" in url else Resp(content=make_zip())
+        if "docs.googleapis.com" in url:
+            return Resp(json_data=DOCS_JSON)
+        if "img.example" in url:
+            return Resp(content=b"photo")
+        if "export" in url:
+            return Resp(content=export_zip)
+        return Resp(status=404)
 
     monkeypatch.setattr(admin_notes.oauth.google_drive, "authorize_access_token", drive_token)
     monkeypatch.setattr(admin_notes.oauth.google_drive, "get", fake_get)
     page = admin_client.get("/admin/notes/callback")
     assert "<b>DnD Notes</b>: updated" in page.text
+    assert "2 images" in page.text
     snap = db.scalar(select(NoteSnapshot))
-    view = admin_client.get(f"/admin/notes/snapshots/{snap.id}")
-    assert "/admin/notes/images/" in view.text
+    assert {i.name: i.data for i in snap.images} == {"obj-1": b"photo", "obj-2": b"tree"}
+    view = admin_client.get(f"/admin/notes/snapshots/{snap.id}").text
+    assert "/admin/notes/images/" in view
+    assert "padding-left: 1.5em" in view  # nested bullet indented
 
 
 def test_sync_rejects_missing_drive_scope(admin_client, db, monkeypatch):
@@ -163,20 +230,13 @@ def test_google_errors_explained_and_shown_in_red(admin_client, db, monkeypatch)
     async def drive_token(request):
         return {"userinfo": {"email": "admin@example.com"}, "scope": admin_notes.DRIVE_READONLY}
 
-    class Resp:
-        status_code = 403
-        text = ""
-
-        def json(self):
-            return {"error": {"code": 403, "message": "Drive API has not been used", "errors": [{"reason": "accessNotConfigured"}]}}
-
     async def fake_get(url, token=None, timeout=None):
-        return Resp()
+        return Resp(status=403, json_data={"error": {"code": 403, "message": "API not used", "errors": [{"reason": "accessNotConfigured"}]}})
 
     monkeypatch.setattr(admin_notes.oauth.google_drive, "authorize_access_token", drive_token)
     monkeypatch.setattr(admin_notes.oauth.google_drive, "get", fake_get)
     page = admin_client.get("/admin/notes/callback").text
     assert "Sync failed." in page
     assert 'class="bad"' in page
-    assert "Google Drive API isn&#39;t turned on" in page
+    assert "isn&#39;t turned on for your Google Cloud project" in page
     assert db.scalar(select(NoteSource)).last_synced_at is None

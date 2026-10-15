@@ -115,3 +115,107 @@ def parse_export(zip_bytes: bytes) -> ExportedDoc:
             if ctype.startswith("image/"):
                 images[n] = (ctype, z.read(n))
     return ExportedDoc(text=text, images=images)
+
+
+# --- Docs API (primary): every tab, exact bullet nesting, all regular images ---
+
+DOCS_URL = "https://docs.googleapis.com/v1/documents/{id}?includeTabsContent=true"
+MAX_IMAGE_SIDE = 1568  # larger images cost more for Claude to read without helping
+
+
+def _runs_text(elements: list[dict], placeholder) -> str:
+    out = []
+    for el in elements:
+        if "textRun" in el:
+            out.append(el["textRun"].get("content", ""))
+        elif "inlineObjectElement" in el:
+            out.append(placeholder(el["inlineObjectElement"]["inlineObjectId"]))
+    return "".join(out).replace("\x0b", " ").rstrip("\n")
+
+
+def docs_json_to_text(doc: dict) -> tuple[str, list[dict]]:
+    """Docs API document (with tabs) -> (text, objects in document order).
+
+    Images become "[image: obj-N]"; each object is
+    {"name": "obj-N", "kind": "image" | "drawing", "uri": contentUri or None}.
+    """
+    lines: list[str] = []
+    objects: list[dict] = []
+
+    def walk(tabs: list[dict], depth: int):
+        for tab in tabs:
+            dtab = tab.get("documentTab", {})
+            inline = dtab.get("inlineObjects", {})
+            positioned = dtab.get("positionedObjects", {})
+
+            def placeholder(obj_id, table=inline, key="inlineObjectProperties"):
+                props = table.get(obj_id, {}).get(key, {}).get("embeddedObject", {})
+                name = f"obj-{len(objects) + 1}"
+                uri = props.get("imageProperties", {}).get("contentUri")
+                objects.append({"name": name, "kind": "image" if uri else "drawing", "uri": uri})
+                return f" [image: {name}] "
+
+            lines.append(f"\n{'#' * (1 + depth)} {tab.get('tabProperties', {}).get('title', '')}")
+            for block in dtab.get("body", {}).get("content", []):
+                if "paragraph" in block:
+                    p = block["paragraph"]
+                    text = _runs_text(p.get("elements", []), placeholder)
+                    for pid in p.get("positionedObjectIds", []):
+                        text += placeholder(pid, positioned, "positionedObjectProperties")
+                    if not text.strip():
+                        continue
+                    style = p.get("paragraphStyle", {}).get("namedStyleType", "")
+                    if style.startswith("HEADING_"):
+                        text = "#" * min(6, 1 + depth + int(style[-1])) + " " + text.strip()
+                    elif style == "TITLE":
+                        text = "#" * (1 + depth) + " " + text.strip()
+                    elif "bullet" in p:
+                        text = "  " * p["bullet"].get("nestingLevel", 0) + "- " + text.strip()
+                    lines.append(text)
+                elif "table" in block:
+                    for row in block["table"].get("tableRows", []):
+                        cells = []
+                        for cell in row.get("tableCells", []):
+                            parts = [
+                                _runs_text(c["paragraph"].get("elements", []), placeholder).strip()
+                                for c in cell.get("content", [])
+                                if "paragraph" in c
+                            ]
+                            cells.append(" ".join(x for x in parts if x))
+                        lines.append("| " + " | ".join(cells) + " |")
+            walk(tab.get("childTabs", []), depth + 1)
+
+    walk(doc.get("tabs", []), 0)
+    return "\n".join(lines).strip() + "\n", objects
+
+
+def shrink_image(content_type: str, data: bytes) -> tuple[str, bytes]:
+    """Resize to at most MAX_IMAGE_SIDE px; keep whichever encoding is smaller."""
+    from PIL import Image
+
+    try:
+        img = Image.open(io.BytesIO(data))
+        img.load()
+    except Exception:
+        return content_type, data
+    if max(img.size) > MAX_IMAGE_SIDE:
+        img.thumbnail((MAX_IMAGE_SIDE, MAX_IMAGE_SIDE))
+    has_alpha = img.mode in ("RGBA", "LA") or "transparency" in img.info
+    buf = io.BytesIO()
+    if has_alpha or content_type == "image/png":
+        img.save(buf, "PNG", optimize=True)
+        candidate = ("image/png", buf.getvalue())
+        if not has_alpha:
+            jbuf = io.BytesIO()
+            img.convert("RGB").save(jbuf, "JPEG", quality=85)
+            if len(jbuf.getvalue()) < len(candidate[1]) * 0.6:  # photos: JPEG wins big
+                candidate = ("image/jpeg", jbuf.getvalue())
+    else:
+        img.convert("RGB").save(buf, "JPEG", quality=85)
+        candidate = ("image/jpeg", buf.getvalue())
+    return candidate if len(candidate[1]) < len(data) else (content_type, data)
+
+
+def export_image_order(export: "ExportedDoc") -> list[str]:
+    """Image file names in the order they appear in an export's text."""
+    return re.findall(r"\[image: ([^\]]+)\]", export.text)
