@@ -154,3 +154,29 @@ def test_sync_rejects_missing_drive_scope(admin_client, db, monkeypatch):
 
     monkeypatch.setattr(admin_notes.oauth.google_drive, "authorize_access_token", drive_token)
     assert "read-only Drive access" in admin_client.get("/admin/notes/callback").text
+
+
+def test_google_errors_explained_and_shown_in_red(admin_client, db, monkeypatch):
+    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}})
+    admin_client.post("/admin/notes/sources", data={"url": "https://docs.google.com/document/d/" + "b" * 44 + "/edit"})
+
+    async def drive_token(request):
+        return {"userinfo": {"email": "admin@example.com"}, "scope": admin_notes.DRIVE_READONLY}
+
+    class Resp:
+        status_code = 403
+        text = ""
+
+        def json(self):
+            return {"error": {"code": 403, "message": "Drive API has not been used", "errors": [{"reason": "accessNotConfigured"}]}}
+
+    async def fake_get(url, token=None, timeout=None):
+        return Resp()
+
+    monkeypatch.setattr(admin_notes.oauth.google_drive, "authorize_access_token", drive_token)
+    monkeypatch.setattr(admin_notes.oauth.google_drive, "get", fake_get)
+    page = admin_client.get("/admin/notes/callback").text
+    assert "Sync failed." in page
+    assert 'class="bad"' in page
+    assert "Google Drive API isn't turned on" in page
+    assert db.scalar(select(NoteSource)).last_synced_at is None

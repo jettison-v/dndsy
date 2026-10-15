@@ -6,7 +6,10 @@
 </header>
 {% if error %}<p class="error">{{ error }}</p>{% endif %}
 {% if results %}
-<div class="ok"><p><b>Sync finished.</b></p><ul>{% for title, status in results.items() %}<li>{{ title }}: {{ status }}</li>{% endfor %}</ul></div>
+<div class="{{ 'bad' if failed_count else 'ok' }}">
+  <p><b>{% if not failed_count %}Sync finished.{% elif failed_count == results | length %}Sync failed.{% else %}Sync finished with problems.{% endif %}</b></p>
+  <ul>{% for title, status in results.items() %}<li><b>{{ title }}</b>: {{ status }}</li>{% endfor %}</ul>
+</div>
 {% endif %}
 {% if not campaign %}
 <p>Import the campaign first (<a href="/admin/import">Import campaign data</a>).</p>

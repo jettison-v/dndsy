@@ -33,6 +33,32 @@ oauth.register(
 
 router = APIRouter(prefix="/admin/notes")
 
+GOOGLE_ERROR_HELP = {
+    "accessNotConfigured": "The Google Drive API isn't turned on for this Google Cloud project. Enable it (Google Cloud → search \"Google Drive API\" → Enable), wait a few minutes, then sync again.",
+    "SERVICE_DISABLED": "The Google Drive API isn't turned on for this Google Cloud project. Enable it (Google Cloud → search \"Google Drive API\" → Enable), wait a few minutes, then sync again.",
+    "notFound": "Google can't find this doc for your account. Check the link, and that you're signed in with the account that owns or can open the doc.",
+    "insufficientFilePermissions": "Your account can't open this doc. Check it's shared with you.",
+    "exportSizeLimitExceeded": "Google can't export a doc this large (10 MB limit). Try making its images smaller.",
+}
+
+
+class GoogleError(Exception):
+    pass
+
+
+def explain_google_error(resp) -> str:
+    """Turn a Drive API error response into a plain-English message."""
+    try:
+        err = resp.json().get("error", {})
+    except Exception:
+        err = {}
+    reasons = [e.get("reason", "") for e in err.get("errors", [])]
+    reasons += [d.get("reason", "") for d in err.get("details", []) if isinstance(d, dict)]
+    for reason in reasons:
+        if reason in GOOGLE_ERROR_HELP:
+            return GOOGLE_ERROR_HELP[reason]
+    return f"Google said {resp.status_code}: {err.get('message') or 'unknown error'}"
+
 
 def _campaign(db: Session) -> Campaign | None:
     return db.scalar(select(Campaign).order_by(Campaign.id))
@@ -55,7 +81,16 @@ def notes_page(request: Request, db: Session = Depends(get_db), result: str | No
     return templates.TemplateResponse(
         request,
         "admin_notes.html",
-        {"user": user, "campaign": campaign, "sources": sources, "characters": characters, "stats": stats, "results": results, "error": request.session.pop("notes_error", None)},
+        {
+            "user": user,
+            "campaign": campaign,
+            "sources": sources,
+            "characters": characters,
+            "stats": stats,
+            "results": results,
+            "failed_count": sum(1 for v in (results or {}).values() if v.startswith("failed")),
+            "error": request.session.pop("notes_error", None),
+        },
     )
 
 
@@ -121,11 +156,11 @@ async def sync_callback(request: Request, db: Session = Depends(get_db)):
     for s in sources:
         try:
             meta = await oauth.google_drive.get(META_URL.format(id=s.google_doc_id), token=token)
-            meta.raise_for_status()
+            if meta.status_code != 200:
+                raise GoogleError(explain_google_error(meta))
             export = await oauth.google_drive.get(EXPORT_URL.format(id=s.google_doc_id), token=token, timeout=120)
-            if export.status_code == 403 and "exportSizeLimitExceeded" in export.text:
-                raise ValueError("Google can't export a doc this large (10 MB limit); try making images smaller")
-            export.raise_for_status()
+            if export.status_code != 200:
+                raise GoogleError(explain_google_error(export))
             if len(export.content) > MAX_EXPORT_BYTES:
                 raise ValueError("export too large")
             fetched[s.google_doc_id] = (meta.json().get("name", ""), parse_export(export.content))
