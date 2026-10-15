@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mockup: Session review · askdnd</title>
 <!-- Design mockup with made-up content. See docs/DESIGN.md. Not served by the app. -->
+<link rel="icon" href="../../app/static/icons/favicon-32x32.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
 <style>
@@ -171,7 +172,7 @@
 <div class="mock-note">Design mockup with made-up content. Try: Answer, Skip, Edit, Accept, Undo, Publish, and the Manage menu.</div>
 
 <header class="topbar"><div class="topbar-inner">
-  <a class="brand" href="#"><span class="hex">20</span>askdnd</a>
+  <a class="brand" href="#"><img src="../../app/static/icons/android-chrome-192x192.png" alt="" width="34" height="34" style="border-radius:7px">askdnd</a>
   <nav class="nav">
     <a href="#" title="The pre-session refresher (home)">Previously on…</a>
     <a href="#" title="Every published session">Sessions</a>
@@ -305,7 +306,7 @@
       $('[data-undo]', item).onclick = () => { delete item.dataset.skipped; moveQ(item, false); editQ(item); };
     } else {
       item.innerHTML = `<p class="item-title">${esc(q)}</p><p class="answer">${esc(a)}</p>
-        <div class="row">${item.dataset.remember ? '<span class="tag">Remembered for future drafts</span>' : ''}<button class="btn link" data-edit>Edit</button><button class="btn link danger" data-clear>Remove answer</button></div>`;
+        <div class="row">${item.dataset.remember ? '<span class="tag">Used in every future draft</span>' : ''}<button class="btn link" data-edit>Edit</button><button class="btn link danger" data-clear>Remove answer</button></div>`;
       $('[data-edit]', item).onclick = () => editQ(item);
       $('[data-clear]', item).onclick = () => { delete item.dataset.answer; delete item.dataset.remember; moveQ(item, false); toast('Answer removed'); };
     }
@@ -313,7 +314,7 @@
   function editQ(item) {
     item.innerHTML = `<p class="item-title">${esc(item.dataset.q)}</p><div class="stack">
       <textarea rows="2" placeholder="Your answer…">${esc(item.dataset.answer || '')}</textarea>
-      <label class="check"><input type="checkbox" ${item.dataset.remember ? 'checked' : ''}> Remember for future drafts (names, who someone is)</label>
+      <label class="check"><input type="checkbox" ${item.dataset.remember ? 'checked' : ''}> Use in every future draft (for lasting facts like name spellings)</label>
       <div class="row"><button class="btn primary" data-save>Save answer</button><button class="btn link" data-cancel>Cancel</button></div></div>`;
     $('textarea', item).focus();
     $('[data-cancel]', item).onclick = () => renderQ(item);

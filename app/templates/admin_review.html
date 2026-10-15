@@ -31,7 +31,7 @@
     <input type="hidden" name="q-{{ loop.index0 }}" value="{{ q }}">
     <p><b>{{ q }}</b></p>
     <textarea name="answer-{{ loop.index0 }}" rows="2" placeholder="Your answer…">{{ a.after if a else "" }}</textarea>
-    <label class="muted"><input type="checkbox" name="remember-{{ loop.index0 }}" value="1" {% if a and a.standing_instruction %}checked{% endif %}> Remember for all future drafts</label>
+    <label class="muted"><input type="checkbox" name="remember-{{ loop.index0 }}" value="1" {% if a and a.standing_instruction %}checked{% endif %}> Use in every future draft (for lasting facts like name spellings)</label>
   </div>
   {% endfor %}
   <p>

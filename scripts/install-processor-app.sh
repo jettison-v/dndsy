@@ -43,28 +43,15 @@ fi
 LAUNCH
 chmod +x "$APP/Contents/MacOS/askdnd-processor"
 
-# Icon: a simple d20-green tile drawn with Pillow, converted to .icns.
+# Icon: the askdnd d20 (app/static/icons), converted to .icns.
 TMP="$(mktemp -d)"
-"$UV" run --project "$REPO" python - "$TMP" <<'PY'
-import sys
-from PIL import Image, ImageDraw, ImageFont
-out = sys.argv[1]
-img = Image.new("RGBA", (1024, 1024), (0, 0, 0, 0))
-d = ImageDraw.Draw(img)
-d.rounded_rectangle((64, 64, 960, 960), radius=200, fill=(44, 94, 63))
-d.polygon([(512, 210), (790, 370), (790, 680), (512, 840), (234, 680), (234, 370)], outline=(240, 230, 200), width=36)
-try:
-    font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 230)
-except OSError:
-    font = ImageFont.load_default()
-d.text((512, 525), "20", fill=(240, 230, 200), font=font, anchor="mm")
-iconset = f"{out}/icon.iconset"
-import os
-os.makedirs(iconset)
-for size in (16, 32, 128, 256, 512):
-    img.resize((size, size), Image.LANCZOS).save(f"{iconset}/icon_{size}x{size}.png")
-    img.resize((size * 2, size * 2), Image.LANCZOS).save(f"{iconset}/icon_{size}x{size}@2x.png")
-PY
+mkdir "$TMP/icon.iconset"
+SRC="$REPO/app/static/icons/android-chrome-512x512.png"
+for size in 16 32 128 256 512; do
+  sips -z $size $size "$SRC" --out "$TMP/icon.iconset/icon_${size}x${size}.png" >/dev/null
+  double=$((size * 2)); [ $double -gt 512 ] && double=512
+  sips -z $double $double "$SRC" --out "$TMP/icon.iconset/icon_${size}x${size}@2x.png" >/dev/null
+done
 iconutil -c icns "$TMP/icon.iconset" -o "$APP/Contents/Resources/icon.icns"
 rm -rf "$TMP"
 touch "$APP"
