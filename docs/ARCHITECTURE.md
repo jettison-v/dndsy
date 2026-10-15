@@ -72,6 +72,7 @@ DURING A SESSION (phase 2)
 
 **Week 2 — Campaign memory**
 - Import the Google Doc notes and the filtered transcript
+- **Transcript processor GUI** (Brett's request: as much GUI as possible, no Terminal): a local page on Brett's Mac, opened by a double-click launcher. Drag in the MacWhisper JSON → Filter (progress bar) → review cuts with Keep/Cut toggles → "Send to askdnd" uploads only the filtered text to beta. It runs locally because Ollama and the raw transcript stay on the Mac.
 - Extraction, a review/edit screen for Brett, the campaign record, the "Previously on…" page
 
 **Week 3 — Character briefing and launch to the table**
