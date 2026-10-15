@@ -27,3 +27,23 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 **Where things are**
 - Railway URL: https://askdnd-v2-production.up.railway.app
 - Beta: https://beta.askdnd.ai (health check at `/health`)
+
+## 2026-10-15 — Week 1, part 2: secrets, Anthropic API key, Google sign-in
+
+**What we set up**
+- **Anthropic API key.** It lives in its own **askdnd workspace** in the Anthropic Console, with a monthly spend limit, so a leaked or runaway key can only cost so much. It's a normal key with no expiry. Identity federation (keyless sign-in) needs a hosting platform that issues identity tokens, and Railway doesn't, so it isn't worth it here. We checked the key with a free call that lists models.
+- **Google sign-in.** A Google Cloud OAuth app in **Testing** mode, with Brett as the only test user. Testing mode means Google itself blocks anyone not on that list, which keeps the app a surprise for the table. The app adds its own lock on top: an `ALLOWED_EMAILS` list (just Brett for now), checked on every page load, so removing an email locks that person out right away.
+- **Login cookie.** After signing in, the app remembers you with a signed cookie for 30 days. `SESSION_SECRET` is the key that signs it. Local and production use *different* random secrets, so a local copy can never be used to fake a production login.
+- **A secret-setting script.** `scripts/set-secret.sh NAME --clipboard` saves a value to both the local `.env` and Railway without ever showing it on screen, in shell history or in chat.
+
+**Gotchas we hit**
+- Google says "Ineligible accounts not added" if you add a test user who's already on the list. It's harmless.
+- The Google setup went into the default "My First Project". Better practice is **one Google Cloud project per app**; renaming the project is enough.
+- Behind Railway's proxy the app sees plain `http`, so Google would reject the callback address. The fix is to tell the web server to trust the proxy's "this was https" header (`--proxy-headers` in the Procfile).
+
+**Reuse this on a new project**
+1. Copy and paste secrets; never type them into a chat or a commit. Use a script that reads the clipboard and writes to `.env` and the host's variables together.
+2. Give every API provider its own workspace or project per app, with a spend limit.
+3. Google sign-in recipe: create a Cloud project → Google Auth Platform → **External** audience in **Testing** mode → add test users → create a **Web application** client with one redirect URI per environment (`https://<domain>/auth/callback` and `http://localhost:8000/auth/callback`) → save the client ID and secret as secrets.
+4. Gate access twice: Google's test-user list, plus an allowlist in your app. When you go live, publish the Google app and keep the allowlist.
+5. To add a player later: add their email to `ALLOWED_EMAILS` (`railway variable set ALLOWED_EMAILS=a@x.com,b@y.com -s askdnd-v2`) and to Google's test users (until the app is published).

@@ -21,3 +21,9 @@ One line per decision: date — decision — why. Newest at the bottom.
 - 2026-10-14 — Railway builds with its auto-detection (Railpack) and a Procfile start command, not railway.json — railway.json is deprecated, and Railway's newer project-wide config could affect the legacy service
 - 2026-10-14 — Detached beta.askdnd.ai from legacy's old `dev` environment (May 2025 beta build) and attached it to v2 — Brett approved; a domain can only belong to one service; production domains untouched
 - 2026-10-14 — Old local `.env` kept as git-ignored `.env.legacy` — reference for legacy settings without risking a commit
+- 2026-10-15 — Allowlist is only Brett's email until launch; Trah or a dummy account is added for multi-account testing — v2 is a surprise for the other players
+- 2026-10-15 — Google OAuth app stays in Testing mode with listed test users until launch — Google blocks unlisted accounts as a second lock on top of the app's allowlist
+- 2026-10-15 — Allowlist lives in the ALLOWED_EMAILS variable for now, not the database — five users; move to a users table when we add roles (DM vs player) for visibility rules
+- 2026-10-15 — Sessions are signed cookies (Starlette SessionMiddleware + Authlib for Google OIDC), allowlist re-checked every request — no session store needed; removing an email takes effect immediately
+- 2026-10-15 — Anthropic: dedicated askdnd workspace with a monthly spend limit; standard non-expiring key, no identity federation — Railway can't issue the identity tokens federation needs; the spend limit and the ability to swap keys cover the risk
+- 2026-10-15 — Secrets are set with scripts/set-secret.sh (clipboard → .env + Railway) and never pasted into chat — keeps them out of transcripts, history and git
