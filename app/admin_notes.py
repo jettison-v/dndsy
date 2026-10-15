@@ -1,0 +1,173 @@
+"""Admin: Google Docs note sources and the Sync button.
+
+Sync asks Google for read-only Drive access each time and keeps no token:
+in Testing mode Google expires stored refresh tokens after 7 days anyway.
+"""
+
+import re
+
+from authlib.integrations.starlette_client import OAuthError
+from fastapi import APIRouter, Depends, Form, Request
+from fastapi.responses import RedirectResponse, Response
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
+
+from app import config
+from app.admin import _guard
+from app.auth import oauth
+from app.db import get_db
+from app.gdocs import EXPORT_URL, MAX_EXPORT_BYTES, META_URL, doc_id_from_url, parse_export
+from app.models import Campaign, Character, NoteImage, NoteSnapshot, NoteSource
+from app.notes_sync import sync_sources
+from app.templating import templates
+
+DRIVE_READONLY = "https://www.googleapis.com/auth/drive.readonly"
+
+oauth.register(
+    name="google_drive",
+    client_id=config.GOOGLE_CLIENT_ID,
+    client_secret=config.GOOGLE_CLIENT_SECRET,
+    server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+    client_kwargs={"scope": f"openid email {DRIVE_READONLY}"},
+)
+
+router = APIRouter(prefix="/admin/notes")
+
+
+def _campaign(db: Session) -> Campaign | None:
+    return db.scalar(select(Campaign).order_by(Campaign.id))
+
+
+@router.get("")
+def notes_page(request: Request, db: Session = Depends(get_db), result: str | None = None):
+    user, denied = _guard(request)
+    if denied:
+        return denied
+    campaign = _campaign(db)
+    sources = list(db.scalars(select(NoteSource).order_by(NoteSource.id))) if campaign else []
+    characters = list(db.scalars(select(Character))) if campaign else []
+    stats = {}
+    for s in sources:
+        latest = s.snapshots[-1] if s.snapshots else None
+        n_images = db.scalar(select(func.count()).where(NoteImage.snapshot_id == latest.id)) if latest else 0
+        stats[s.id] = {"latest": latest, "words": len(latest.text.split()) if latest else 0, "images": n_images}
+    results = request.session.pop("sync_results", None)
+    return templates.TemplateResponse(
+        request,
+        "admin_notes.html",
+        {"user": user, "campaign": campaign, "sources": sources, "characters": characters, "stats": stats, "results": results, "error": request.session.pop("notes_error", None)},
+    )
+
+
+@router.post("/sources")
+def add_source(request: Request, url: str = Form(...), character_id: str = Form(""), db: Session = Depends(get_db)):
+    user, denied = _guard(request)
+    if denied:
+        return denied
+    campaign = _campaign(db)
+    doc_id = doc_id_from_url(url)
+    if campaign is None:
+        request.session["notes_error"] = "Import the campaign first."
+    elif doc_id is None:
+        request.session["notes_error"] = "That doesn't look like a Google Docs link."
+    elif db.scalar(select(NoteSource).where(NoteSource.google_doc_id == doc_id)):
+        request.session["notes_error"] = "That doc is already on the list."
+    else:
+        db.add(NoteSource(campaign_id=campaign.id, google_doc_id=doc_id, character_id=int(character_id) if character_id else None))
+        db.commit()
+    return RedirectResponse("/admin/notes", status_code=303)
+
+
+@router.post("/sources/{source_id}/delete")
+def delete_source(request: Request, source_id: int, db: Session = Depends(get_db)):
+    user, denied = _guard(request)
+    if denied:
+        return denied
+    source = db.get(NoteSource, source_id)
+    if source:
+        db.delete(source)
+        db.commit()
+    return RedirectResponse("/admin/notes", status_code=303)
+
+
+@router.post("/sync")
+async def start_sync(request: Request):
+    user, denied = _guard(request)
+    if denied:
+        return denied
+    redirect_uri = str(request.url_for("notes_sync_callback"))
+    return await oauth.google_drive.authorize_redirect(
+        request, redirect_uri, login_hint=user["email"], include_granted_scopes="true"
+    )
+
+
+@router.get("/callback", name="notes_sync_callback")
+async def sync_callback(request: Request, db: Session = Depends(get_db)):
+    user, denied = _guard(request)
+    if denied:
+        return denied
+    try:
+        token = await oauth.google_drive.authorize_access_token(request)
+    except OAuthError as e:
+        request.session["notes_error"] = f"Google didn't grant access: {e.description or e.error}"
+        return RedirectResponse("/admin/notes", status_code=303)
+    granted_email = (token.get("userinfo") or {}).get("email", "").lower()
+    if granted_email != user["email"] or DRIVE_READONLY not in token.get("scope", ""):
+        request.session["notes_error"] = "Sign in with your own account and allow read-only Drive access."
+        return RedirectResponse("/admin/notes", status_code=303)
+
+    sources = list(db.scalars(select(NoteSource).order_by(NoteSource.id)))
+    fetched: dict[str, object] = {}
+    for s in sources:
+        try:
+            meta = await oauth.google_drive.get(META_URL.format(id=s.google_doc_id), token=token)
+            meta.raise_for_status()
+            export = await oauth.google_drive.get(EXPORT_URL.format(id=s.google_doc_id), token=token, timeout=120)
+            if export.status_code == 403 and "exportSizeLimitExceeded" in export.text:
+                raise ValueError("Google can't export a doc this large (10 MB limit); try making images smaller")
+            export.raise_for_status()
+            if len(export.content) > MAX_EXPORT_BYTES:
+                raise ValueError("export too large")
+            fetched[s.google_doc_id] = (meta.json().get("name", ""), parse_export(export.content))
+        except Exception as e:
+            fetched[s.google_doc_id] = e
+
+    def fetch(doc_id):
+        value = fetched[doc_id]
+        if isinstance(value, Exception):
+            raise value
+        return value
+
+    results = sync_sources(db, sources, fetch)
+    db.commit()
+    request.session["sync_results"] = results
+    return RedirectResponse("/admin/notes", status_code=303)
+
+
+@router.get("/snapshots/{snapshot_id}")
+def view_snapshot(request: Request, snapshot_id: int, db: Session = Depends(get_db)):
+    user, denied = _guard(request)
+    if denied:
+        return denied
+    snap = db.get(NoteSnapshot, snapshot_id)
+    if snap is None:
+        return RedirectResponse("/admin/notes", status_code=303)
+    ids = {img.name: img.id for img in snap.images}
+
+    def swap(m):
+        name = m.group(1)
+        return f"[[img:{ids[name]}]]" if name in ids else m.group(0)
+
+    text = re.sub(r"\[image: ([^\]]+)\]", swap, snap.text)
+    return templates.TemplateResponse(request, "admin_snapshot.html", {"user": user, "snap": snap, "lines": text.splitlines()})
+
+
+@router.get("/images/{image_id}")
+def image(request: Request, image_id: int, db: Session = Depends(get_db)):
+    user, denied = _guard(request)
+    if denied:
+        return denied
+    img = db.get(NoteImage, image_id)
+    if img is None:
+        return Response(status_code=404)
+    return Response(img.data, media_type=img.content_type, headers={"Cache-Control": "private, max-age=3600"})

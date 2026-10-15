@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<header>
+  <h1>Notes from Google Docs</h1>
+  <a class="button" href="/">Home</a>
+</header>
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+{% if results %}
+<div class="ok"><p><b>Sync finished.</b></p><ul>{% for title, status in results.items() %}<li>{{ title }}: {{ status }}</li>{% endfor %}</ul></div>
+{% endif %}
+{% if not campaign %}
+<p>Import the campaign first (<a href="/admin/import">Import campaign data</a>).</p>
+{% else %}
+{% if sources %}
+<form method="post" action="/admin/notes/sync"><p><button class="button" type="submit">Sync now from Google Docs</button></p></form>
+<p class="muted">Google will ask you to allow <b>read-only</b> access each time. Nothing is kept afterwards.</p>
+<table class="list">
+  <tr><th>Doc</th><th>Kind</th><th>Last synced</th><th></th></tr>
+  {% for s in sources %}{% set st = stats[s.id] %}
+  <tr>
+    <td>{{ s.title or s.google_doc_id }}</td>
+    <td>{% if s.character %}{{ s.character.entity.name }}'s character notes{% else %}Campaign notes{% endif %}</td>
+    <td>{% if st.latest %}{{ s.last_synced_at.strftime("%b %-d, %-I:%M %p") }} UTC · {{ "{:,}".format(st.words) }} words, {{ st.images }} images · <a href="/admin/notes/snapshots/{{ st.latest.id }}">view</a>{% else %}never{% endif %}</td>
+    <td><form method="post" action="/admin/notes/sources/{{ s.id }}/delete" onsubmit="return confirm('Remove this doc from the list? Synced copies are deleted too.')"><button class="link" type="submit">remove</button></form></td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+<h2>Add a doc</h2>
+<form method="post" action="/admin/notes/sources">
+  <p><input type="url" name="url" placeholder="Paste a Google Docs link" required style="width:100%"></p>
+  <p>These notes are:
+    <select name="character_id">
+      <option value="">Campaign notes (visible to the whole table)</option>
+      {% for c in characters %}<option value="{{ c.id }}">{{ c.entity.name }}'s character notes (hidden from the DM)</option>{% endfor %}
+    </select>
+  </p>
+  <p><button class="button" type="submit">Add</button></p>
+</form>
+{% endif %}
+{% endblock %}

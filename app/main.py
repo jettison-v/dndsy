@@ -6,6 +6,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app import config
 from app.admin import router as admin_router
+from app.admin_notes import router as admin_notes_router
 from app.auth import current_user, is_admin
 from app.auth import router as auth_router
 from app.templating import templates
@@ -21,6 +22,7 @@ app.add_middleware(
 )
 app.include_router(auth_router)
 app.include_router(admin_router)
+app.include_router(admin_notes_router)
 
 LOGIN_ERRORS = {
     "not_allowed": "That Google account isn't on the list for this table.",

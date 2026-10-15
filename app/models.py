@@ -14,6 +14,7 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     Integer,
+    LargeBinary,
     String,
     Text,
     UniqueConstraint,
@@ -221,3 +222,42 @@ class SpeakerLabel(Base):
     campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"))
     label: Mapped[str] = mapped_column(String(200))
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+
+
+class NoteSource(Timestamped, Base):
+    """A Google Doc of notes that the admin syncs into the app."""
+
+    __tablename__ = "note_sources"
+    __table_args__ = (UniqueConstraint("campaign_id", "google_doc_id"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"))
+    google_doc_id: Mapped[str] = mapped_column(String(100))
+    title: Mapped[str] = mapped_column(String(300), default="")
+    # Character notes are hidden from the DM; campaign notes are not.
+    character_id: Mapped[int | None] = mapped_column(ForeignKey("characters.id", ondelete="SET NULL"))
+    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    character: Mapped[Character | None] = relationship()
+    snapshots: Mapped[list["NoteSnapshot"]] = relationship(
+        back_populates="source", order_by="NoteSnapshot.id", cascade="all, delete-orphan"
+    )
+
+
+class NoteSnapshot(Timestamped, Base):
+    """The doc's text and images at one sync. A new one is stored only when content changes."""
+
+    __tablename__ = "note_snapshots"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    source_id: Mapped[int] = mapped_column(ForeignKey("note_sources.id", ondelete="CASCADE"), index=True)
+    content_hash: Mapped[str] = mapped_column(String(64))
+    text: Mapped[str] = mapped_column(Text)  # Markdown-ish; images appear as [image: name]
+    source: Mapped[NoteSource] = relationship(back_populates="snapshots")
+    images: Mapped[list["NoteImage"]] = relationship(cascade="all, delete-orphan")
+
+
+class NoteImage(Base):
+    __tablename__ = "note_images"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    snapshot_id: Mapped[int] = mapped_column(ForeignKey("note_snapshots.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(300))
+    content_type: Mapped[str] = mapped_column(String(100))
+    data: Mapped[bytes] = mapped_column(LargeBinary)

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<header>
+  <h1>{{ snap.source.title or "Notes" }}</h1>
+  <a class="button" href="/admin/notes">Back</a>
+</header>
+<p class="muted">Synced copy from {{ snap.created_at.strftime("%b %-d, %Y %-I:%M %p") }} UTC.</p>
+<div class="snapshot">
+{% for line in lines %}
+  {% if line.startswith("#") %}<p><b>{{ line.lstrip("# ") }}</b></p>
+  {% elif "[[img:" in line %}
+    {% for part in line.split("[[img:") %}{% if loop.first %}{{ part }}{% else %}{% set id, rest = part.split("]]", 1) %}<br><img src="/admin/notes/images/{{ id }}" alt="" style="max-width:100%"><br>{{ rest }}{% endif %}{% endfor %}
+  {% else %}<div>{{ line }}</div>{% endif %}
+{% endfor %}
+</div>
+{% endblock %}
