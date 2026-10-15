@@ -142,7 +142,7 @@ def test_add_source_and_sync(admin_client, db, monkeypatch):
     monkeypatch.setattr(admin_notes.oauth.google_drive, "authorize_access_token", drive_token)
     monkeypatch.setattr(admin_notes.oauth.google_drive, "get", fake_get)
     page = admin_client.get("/admin/notes/callback")
-    assert "DnD Notes: updated" in page.text
+    assert "<b>DnD Notes</b>: updated" in page.text
     snap = db.scalar(select(NoteSnapshot))
     view = admin_client.get(f"/admin/notes/snapshots/{snap.id}")
     assert "/admin/notes/images/" in view.text
@@ -178,5 +178,5 @@ def test_google_errors_explained_and_shown_in_red(admin_client, db, monkeypatch)
     page = admin_client.get("/admin/notes/callback").text
     assert "Sync failed." in page
     assert 'class="bad"' in page
-    assert "Google Drive API isn't turned on" in page
+    assert "Google Drive API isn&#39;t turned on" in page
     assert db.scalar(select(NoteSource)).last_synced_at is None
