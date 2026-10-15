@@ -29,6 +29,7 @@ from app.models import (
     GameSession,
     GlossaryTerm,
     Role,
+    Status,
     User,
 )
 
@@ -102,6 +103,7 @@ def import_bundle(db: Session, bundle: dict) -> Counter:
             counts["entities created"] += 1
         else:
             counts["entities updated"] += 1
+        entity.status = Status.PUBLISHED  # an admin import is a deliberate, reviewed change
         if "summary" in item:
             entity.summary = item["summary"]
         if "quest_open" in item:

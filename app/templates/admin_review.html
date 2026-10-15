@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block body_class %}wide{% endblock %}
+{% block head %}{% if status == "drafting" %}<meta http-equiv="refresh" content="10">{% endif %}{% endblock %}
+{% block content %}
+<header>
+  <div><h1>{{ label }}</h1><div class="muted">{{ s.title }} · <span class="pill">{{ status }}</span></div></div>
+  <a class="button" href="/admin/sessions">All sessions</a>
+</header>
+{% if message %}<p class="card ok">{{ message }}</p>{% endif %}
+{% if status == "drafting" %}<p class="card">Claude is drafting this session… this page refreshes every 10 seconds.</p>{% endif %}
+{% if last_run and last_run.status == "error" %}<p class="card bad"><b>The last draft failed:</b> {{ last_run.error }}</p>{% endif %}
+
+{% if latest %}
+{% if last_run and last_run.to_check %}
+<div class="card warn"><b>Claude flagged these for you to check:</b>
+  <ul>{% for t in last_run.to_check %}<li>{{ t }}</li>{% endfor %}</ul></div>
+{% endif %}
+
+<h2>Recap</h2>
+<p class="muted">Version {{ latest.version }} by {{ "Claude" if latest.author == "ai" else "you" }}{% if latest.status.value == "published" %} · <b>published</b>{% endif %}{% if last_run and last_run.status == "done" %} · drafting cost ${{ "%.2f"|format(last_run.cost_usd) }}{% endif %}</p>
+<div class="card doc">{{ preview | safe }}</div>
+<form method="post" action="/admin/sessions/{{ s.id }}/recap">
+  <p><textarea name="body" rows="14" style="width:100%; font: inherit">{{ latest.body }}</textarea></p>
+  <p><label>What did Claude get wrong? <span class="muted">(optional; helps future drafts)</span><br>
+    <input type="text" name="note" style="width:100%" placeholder="e.g. Player banter about real-world jobs is never story"></label></p>
+  <p><label><input type="checkbox" name="standing" value="1"> Apply this to all future drafts</label></p>
+  <p>
+    <button class="button" type="submit" name="action" value="save">Save draft</button>
+    <button class="button primary" type="submit" name="action" value="publish">Publish to the table</button>
+  </p>
+</form>
+
+<h2 id="events">Story events</h2>
+<form method="post" action="/admin/sessions/{{ s.id }}/events">
+<table class="list">
+  {% for ev in events %}
+  <tr>
+    <td style="width:7.5rem"><select name="kind-{{ ev.id }}">{% for k in event_kinds %}<option {% if k == ev.kind.value %}selected{% endif %}>{{ k }}</option>{% endfor %}</select></td>
+    <td><textarea name="text-{{ ev.id }}" rows="2" style="width:100%; font: inherit">{{ ev.text }}</textarea>
+      {% if ev.entities %}<div class="muted">{{ ev.entities | map(attribute="name") | join(", ") }}</div>{% endif %}</td>
+    <td style="width:4.5rem"><label class="muted"><input type="checkbox" name="delete-{{ ev.id }}" value="1"> delete</label></td>
+  </tr>
+  {% endfor %}
+  <tr>
+    <td><select name="new-kind">{% for k in event_kinds %}<option>{{ k }}</option>{% endfor %}</select></td>
+    <td><textarea name="new-text" rows="2" style="width:100%; font: inherit" placeholder="Add an event…"></textarea></td><td></td>
+  </tr>
+</table>
+<p><button class="button" type="submit">Save events</button></p>
+</form>
+
+<h2 id="proposals">Suggested updates</h2>
+{% for p in entity_proposals %}
+<div class="card">
+  <p><b>{{ p.payload.name }}</b> <span class="pill">{{ p.payload.kind }}</span> {% if not p.payload.entity_id %}<span class="pill review">new</span>{% endif %}
+  {% if p.payload.new_aliases %}<span class="muted">also known as: {{ p.payload.new_aliases | join(", ") }}</span>{% endif %}
+  {% if p.payload.quest_open is not none %}<span class="muted">· quest {{ "open" if p.payload.quest_open else "done" }}</span>{% endif %}</p>
+  {% if p.payload.old_summary %}<p class="muted">Before: {{ p.payload.old_summary }}</p>{% endif %}
+  <form method="post" action="/admin/proposals/{{ p.id }}">
+    <textarea name="summary" rows="2" style="width:100%; font: inherit">{{ p.payload.summary }}</textarea>
+    <p><button class="button primary" type="submit" name="decision" value="accept">Accept</button>
+       <button class="button" type="submit" name="decision" value="reject">Reject</button></p>
+  </form>
+</div>
+{% endfor %}
+{% for p in glossary_proposals %}
+<div class="card">
+  <form method="post" action="/admin/proposals/{{ p.id }}">
+    Glossary: <b>{{ p.payload.term }}</b> — {{ p.payload.description }}
+    {% if p.payload.misheard_as %}<span class="muted">(misheard as {{ p.payload.misheard_as | join(", ") }})</span>{% endif %}
+    <button class="button" type="submit" name="decision" value="accept">Add</button>
+    <button class="button" type="submit" name="decision" value="reject">Skip</button>
+  </form>
+</div>
+{% endfor %}
+{% if not entity_proposals and not glossary_proposals %}<p class="muted">Nothing pending.</p>{% endif %}
+{% else %}
+<p>No draft yet. {% if s.source == "transcript" %}Send the transcript from the askdnd Processor on your Mac.{% else %}Use “Draft from notes” on the <a href="/admin/sessions">Sessions</a> page.{% endif %}</p>
+{% endif %}
+{% endblock %}
