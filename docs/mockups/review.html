@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup: Session review · askdnd</title>
+<!-- Design mockup with made-up content. See docs/DESIGN.md. Not served by the app. -->
+<style>
+  :root {
+    --paper: #f7f4ec; --card: #fff; --ink: #23211c; --muted: #6f6a5f; --line: #e6e0d2;
+    --primary: #2c5e3f; --primary-ink: #fff; --primary-soft: #e3eee7;
+    --draft: #9a6a12; --draft-bg: #fbf0d6;
+    --published: #2f7d4f; --published-bg: #e2f1e6;
+    --edited: #2f5e9e; --edited-bg: #e4ecf8;
+    --danger: #a3342b; --danger-bg: #fbe7e4;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, sans-serif; }
+  a { color: var(--primary); }
+  button { font: inherit; cursor: pointer; }
+  :focus-visible { outline: 3px solid color-mix(in srgb, var(--primary) 45%, transparent); outline-offset: 2px; }
+
+  /* Top bar */
+  .topbar { background: var(--card); border-bottom: 1px solid var(--line); }
+  .topbar-inner { max-width: 1120px; margin: 0 auto; padding: 0 20px; height: 56px; display: flex; align-items: center; gap: 24px; }
+  .brand { font-weight: 700; font-size: 1.1rem; color: var(--ink); text-decoration: none; display: flex; align-items: center; gap: 8px; }
+  .brand span { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; background: var(--primary); color: #f0e6c8; font-size: .75rem; }
+  .nav { display: flex; gap: 18px; flex: 1; }
+  .nav a { color: var(--muted); text-decoration: none; font-weight: 500; }
+  .nav a.active { color: var(--ink); }
+  .who { color: var(--muted); font-size: .9rem; }
+
+  .page { max-width: 1120px; margin: 0 auto; padding: 24px 20px 120px; }
+  .crumbs { color: var(--muted); font-size: .9rem; }
+  .crumbs a { color: var(--muted); }
+  .title-row { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 6px 0 4px; }
+  h1 { font-size: 1.75rem; margin: 0; letter-spacing: -.01em; }
+  .subtitle { color: var(--muted); margin: 0 0 20px; }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; }
+  @media (max-width: 760px) { .layout { grid-template-columns: 1fr; } }
+
+  /* Cards and sections */
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 16px; }
+  .section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .step { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); font-weight: 700; font-size: .85rem; flex: none; }
+  .step.done { background: var(--primary); color: #fff; }
+  h2 { font-size: 1.1rem; margin: 0; flex: 1; }
+  .hint { color: var(--muted); font-size: .88rem; margin: -4px 0 14px; }
+
+  /* Pills */
+  .pill { display: inline-flex; align-items: center; gap: 5px; font-size: .78rem; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: #eeebe3; color: var(--muted); white-space: nowrap; }
+  .pill.draft { background: var(--draft-bg); color: var(--draft); }
+  .pill.published { background: var(--published-bg); color: var(--published); }
+  .pill.edited { background: var(--edited-bg); color: var(--edited); }
+  .pill.new { background: var(--edited-bg); color: var(--edited); }
+
+  /* Buttons */
+  .btn { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 8px; padding: 7px 14px; font-weight: 500; min-height: 36px; }
+  .btn:hover { border-color: #cfc7b4; }
+  .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+  .btn.primary:hover { background: #244e34; }
+  .btn.quiet { border-color: transparent; background: transparent; color: var(--muted); padding: 6px 10px; }
+  .btn.quiet:hover { background: #f1ede3; color: var(--ink); }
+  .btn.danger { color: var(--danger); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .cost { color: var(--muted); font-size: .82rem; }
+
+  textarea, input[type=text], select { width: 100%; font: inherit; color: var(--ink); background: #fffdf8; border: 1px solid #d9d1bf; border-radius: 8px; padding: 9px 11px; }
+  textarea { resize: vertical; }
+  select { width: auto; padding: 6px 8px; }
+  label.check { display: inline-flex; gap: 8px; align-items: center; color: var(--muted); font-size: .9rem; }
+
+  /* Story text */
+  .story { font-family: var(--serif); font-size: 1.06rem; line-height: 1.65; max-width: 68ch; }
+  .story p { margin: 0 0 .9em; }
+  .story p:last-child { margin-bottom: 0; }
+  .meta { color: var(--muted); font-size: .85rem; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* Questions */
+  .q { padding: 14px 0; border-top: 1px solid var(--line); }
+  .q:first-of-type { border-top: none; padding-top: 4px; }
+  .q-text { font-weight: 600; margin-bottom: 6px; display: flex; gap: 10px; }
+  .q-text .pill { margin-left: auto; align-self: flex-start; }
+  .q-answer { background: #f6f9f6; border-left: 3px solid var(--published); padding: 8px 12px; border-radius: 0 8px 8px 0; display: flex; gap: 10px; align-items: flex-start; }
+  .q-answer p { margin: 0; flex: 1; }
+  .q-edit { display: grid; gap: 8px; }
+  .redraft-bar { margin-top: 10px; padding: 12px 14px; background: var(--draft-bg); border-radius: 8px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .redraft-bar p { margin: 0; flex: 1; min-width: 200px; font-size: .9rem; }
+
+  /* Events */
+  .events { list-style: none; margin: 0; padding: 0; }
+  .ev { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--line); }
+  .ev:first-child { border-top: none; }
+  .ev-text { flex: 1; }
+  .ev-text small { display: block; color: var(--muted); font-size: .8rem; margin-top: 2px; }
+  .ev .btn.quiet { opacity: 0; transition: opacity .15s; }
+  .ev:hover .btn.quiet, .ev:focus-within .btn.quiet { opacity: 1; }
+  @media (hover: none) { .ev .btn.quiet { opacity: 1; } }
+  .badge { flex: none; width: 74px; text-align: center; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 3px 0; border-radius: 6px; margin-top: 2px; }
+  .badge.event { background: #eeebe3; color: #5c574c; }
+  .badge.reveal { background: #efe7f7; color: #6a3f99; }
+  .badge.decision { background: var(--edited-bg); color: var(--edited); }
+  .badge.loot { background: #f8eccb; color: #8a6510; }
+  .badge.theory { background: transparent; color: var(--muted); border: 1.5px dashed #bdb5a3; }
+  .ev.theory .ev-text { font-style: italic; color: #4d483e; }
+  .ev-form { display: grid; gap: 8px; width: 100%; }
+
+  /* Suggestions */
+  .sug { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; margin-top: 12px; }
+  .sug-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+  .sug-head b { font-size: 1rem; }
+  .diff { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  @media (max-width: 560px) { .diff { grid-template-columns: 1fr; } }
+  .diff div { font-size: .92rem; padding: 10px 12px; border-radius: 8px; background: #faf8f2; }
+  .diff .after { background: #f2f8f3; }
+  .diff span { display: block; font-size: .72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+  .decided { color: var(--muted); font-size: .9rem; margin-top: 12px; }
+
+  /* Progress panel */
+  .aside { position: sticky; top: 16px; }
+  .checklist { list-style: none; padding: 0; margin: 0 0 16px; }
+  .checklist li { display: flex; gap: 10px; align-items: center; padding: 7px 0; font-size: .92rem; }
+  .tick { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #cfc7b4; flex: none; display: grid; place-items: center; font-size: .7rem; color: #fff; }
+  .tick.on { background: var(--primary); border-color: var(--primary); }
+  .checklist small { color: var(--muted); margin-left: auto; }
+  .publish-note { color: var(--muted); font-size: .82rem; margin: 8px 0 0; }
+  .aside .btn.primary { width: 100%; min-height: 44px; font-size: 1rem; }
+
+  .mobile-bar { display: none; }
+  @media (max-width: 760px) {
+    .aside .publish-block { display: none; }
+    .mobile-bar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--card); border-top: 1px solid var(--line); gap: 12px; align-items: center; }
+    .mobile-bar .btn.primary { flex: 1; min-height: 44px; }
+    .nav { display: none; }
+  }
+
+  .toast { position: fixed; top: 16px; left: 50%; transform: translate(-50%, -20px); background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 999px; font-weight: 500; opacity: 0; transition: all .25s; pointer-events: none; z-index: 10; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .mock-note { background: #222; color: #ddd; font-size: .8rem; text-align: center; padding: 6px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="mock-note">Design mockup with made-up content. Click around: Answer, Edit, Accept, Publish.</div>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="#"><span>20</span>askdnd</a>
+  <nav class="nav"><a href="#">Previously on…</a><a href="#" class="active">Sessions</a><a href="#">Notes</a></nav>
+  <span class="who">Brett</span>
+</div></header>
+
+<main class="page">
+  <div class="crumbs"><a href="#">Sessions</a> › Session 12</div>
+  <div class="title-row">
+    <h1>Session 12: The Drowned Bell</h1>
+    <span class="pill draft" id="status-pill">Draft</span>
+  </div>
+  <p class="subtitle">Played Mar 8, 2026 · drafted from notes by Claude</p>
+
+  <div class="layout">
+    <div>
+      <!-- 1. Questions -->
+      <section class="card" id="questions">
+        <div class="section-head"><span class="step" id="step-1">1</span><h2>Claude's questions</h2></div>
+        <p class="hint">Answer what you know; skip the rest. Answers make the next draft more accurate.</p>
+
+        <div class="q" data-q>
+          <div class="q-text">Is the bard's name Tamsin Vell or Tamsin Bell? The notes use both.<span class="pill published">Answered</span></div>
+          <div class="q-answer" data-view><p>Tamsin Vell. "Bell" was a joke about the drowned bell.</p><button class="btn quiet" data-edit>Edit</button></div>
+          <div class="q-edit" data-form hidden>
+            <textarea rows="2">Tamsin Vell. "Bell" was a joke about the drowned bell.</textarea>
+            <label class="check"><input type="checkbox" checked> Remember for all future drafts</label>
+            <div class="btn-row"><button class="btn primary" data-save>Save answer</button><button class="btn quiet" data-cancel>Cancel</button></div>
+          </div>
+          <div class="meta" style="border:0;margin:6px 0 0;padding:0"><span class="pill">Remembered for future drafts</span></div>
+        </div>
+
+        <div class="q" data-q>
+          <div class="q-text">Did Wren keep the tide-key, or give it to the harbor master?<span class="pill draft" data-qstatus>Needs answer</span></div>
+          <div class="q-answer" data-view hidden><p></p><button class="btn quiet" data-edit>Edit</button></div>
+          <div class="btn-row" data-start><button class="btn" data-answer>Answer</button><button class="btn quiet" data-skip>Skip</button></div>
+          <div class="q-edit" data-form hidden>
+            <textarea rows="2" placeholder="Your answer…"></textarea>
+            <label class="check"><input type="checkbox"> Remember for all future drafts</label>
+            <div class="btn-row"><button class="btn primary" data-save>Save answer</button><button class="btn quiet" data-cancel>Cancel</button></div>
+          </div>
+        </div>
+
+        <div class="q" data-q>
+          <div class="q-text">The notes say holy water healed Tobin's burns; in the 2024 rules it damages fiends and undead. DM ruling, or flavor?<span class="pill draft" data-qstatus>Needs answer</span></div>
+          <div class="q-answer" data-view hidden><p></p><button class="btn quiet" data-edit>Edit</button></div>
+          <div class="btn-row" data-start><button class="btn" data-answer>Answer</button><button class="btn quiet" data-skip>Skip</button></div>
+          <div class="q-edit" data-form hidden>
+            <textarea rows="2" placeholder="Your answer…"></textarea>
+            <label class="check"><input type="checkbox"> Remember for all future drafts</label>
+            <div class="btn-row"><button class="btn primary" data-save>Save answer</button><button class="btn quiet" data-cancel>Cancel</button></div>
+          </div>
+        </div>
+
+        <div class="redraft-bar" id="redraft" hidden>
+          <p><b id="redraft-count">1 new answer.</b> Redraft so the recap and events reflect it. Your edits below are kept as an earlier version.</p>
+          <button class="btn primary" id="redraft-btn">Redraft with answers</button>
+          <span class="cost">≈ 12¢</span>
+        </div>
+      </section>
+
+      <!-- 2. Recap -->
+      <section class="card" id="recap">
+        <div class="section-head"><span class="step" id="step-2">2</span><h2>Recap</h2><button class="btn quiet" id="recap-edit">Edit</button></div>
+        <div class="story" id="recap-view">
+          <p>Beneath the flooded chapel at Saltmere, the party found the <b>Drowned Bell</b> still ringing, its sound pulling sailors into the sea. <b>Wren</b> recovered the tide-key from the bell's clapper while <b>Tobin</b> held back the drowned acolytes with a wall of fire.</p>
+          <p>The bard <b>Tamsin Vell</b> revealed she had been sent by the Harbor Guild to silence the bell, not to help the town. The party chose to let her leave, but kept her map of the sea caves.</p>
+          <p>The session ended at the chapel steps at dawn, the bell finally quiet, with no word yet from the harbor master and one acolyte unaccounted for.</p>
+        </div>
+        <div id="recap-form" hidden>
+          <textarea rows="10" id="recap-text"></textarea>
+          <p style="margin:12px 0 6px"><label>What did Claude get wrong? <span class="cost">(optional, helps future drafts)</span><input type="text" placeholder="e.g. Player banter about real-world jobs is never story"></label></p>
+          <label class="check"><input type="checkbox"> Apply this lesson to all future drafts</label>
+          <div class="btn-row" style="margin-top:12px"><button class="btn primary" id="recap-save">Save changes</button><button class="btn quiet" id="recap-cancel">Cancel</button></div>
+        </div>
+        <div class="meta"><span id="recap-version">Version 1 by Claude</span>·<span>drafting cost 12¢</span>·<a href="#">see earlier versions</a></div>
+      </section>
+
+      <!-- 3. Events -->
+      <section class="card" id="events">
+        <div class="section-head"><span class="step" id="step-3">3</span><h2>Story events</h2></div>
+        <p class="hint">Key moments, in order. <i>Theories</i> are shown to the table as open threads, never as facts.</p>
+        <ul class="events" id="event-list">
+          <li class="ev"><span class="badge event">event</span><div class="ev-text">The party descended into the flooded chapel beneath Saltmere.<small>Saltmere · Drowned Bell</small></div><button class="btn quiet" data-ev-edit>Edit</button></li>
+          <li class="ev"><span class="badge loot">loot</span><div class="ev-text">Wren took the tide-key from the bell's clapper.<small>Wren · tide-key</small></div><button class="btn quiet" data-ev-edit>Edit</button></li>
+          <li class="ev"><span class="badge reveal">reveal</span><div class="ev-text">Tamsin Vell admitted the Harbor Guild sent her to silence the bell.<small>Tamsin Vell · Harbor Guild</small></div><button class="btn quiet" data-ev-edit>Edit</button></li>
+          <li class="ev"><span class="badge decision">decision</span><div class="ev-text">The party let Tamsin go but kept her map of the sea caves.<small>Tamsin Vell</small></div><button class="btn quiet" data-ev-edit>Edit</button></li>
+          <li class="ev theory"><span class="badge theory">theory</span><div class="ev-text">The missing acolyte may be the harbor master's son.<small>Harbor master</small></div><button class="btn quiet" data-ev-edit>Edit</button></li>
+        </ul>
+        <div class="btn-row" style="margin-top:10px"><button class="btn quiet" id="add-event">+ Add event</button></div>
+      </section>
+
+      <!-- 4. Suggestions -->
+      <section class="card" id="suggestions">
+        <div class="section-head"><span class="step" id="step-4">4</span><h2>Suggested updates</h2><span class="cost" id="sug-count">3 to review</span></div>
+        <p class="hint">Changes to what askdnd knows about people, places and spellings. Accepted ones inform future drafts.</p>
+
+        <div class="sug" data-sug>
+          <div class="sug-head"><b>Tamsin Vell</b><span class="pill">npc</span><span class="cost">also known as: Tamsin</span></div>
+          <div class="diff">
+            <div><span>Before</span>Traveling bard who joined the party in Saltmere.</div>
+            <div class="after"><span>Proposed</span>Bard sent by the Harbor Guild to silence the Drowned Bell; parted ways with the party but left them her sea-cave map.</div>
+          </div>
+          <div class="btn-row"><button class="btn primary" data-accept>Accept</button><button class="btn" data-sug-edit>Edit</button><button class="btn quiet" data-reject>Reject</button></div>
+        </div>
+
+        <div class="sug" data-sug>
+          <div class="sug-head"><b>The tide-key</b><span class="pill">item</span><span class="pill new">New</span></div>
+          <div class="diff" style="grid-template-columns:1fr"><div class="after"><span>Proposed</span>Key taken from the Drowned Bell's clapper; opens something tied to the tides. Carried by Wren.</div></div>
+          <div class="btn-row"><button class="btn primary" data-accept>Accept</button><button class="btn" data-sug-edit>Edit</button><button class="btn quiet" data-reject>Reject</button></div>
+        </div>
+
+        <div class="sug" data-sug>
+          <div class="sug-head"><b>Saltmere</b><span class="pill">glossary</span><span class="cost">often misheard as "Salt Mirror", "Saltmar"</span></div>
+          <div class="btn-row"><button class="btn primary" data-accept>Add to glossary</button><button class="btn quiet" data-reject>Skip</button></div>
+        </div>
+        <p class="decided" id="decided" hidden></p>
+      </section>
+    </div>
+
+    <!-- Progress panel -->
+    <aside class="aside">
+      <div class="card">
+        <h2 style="margin-bottom:10px">Review progress</h2>
+        <ul class="checklist">
+          <li><span class="tick" id="t1"></span>Questions<small id="c1">1 of 3 answered</small></li>
+          <li><span class="tick on">✓</span>Recap read<small>v1</small></li>
+          <li><span class="tick on">✓</span>Events<small>5</small></li>
+          <li><span class="tick" id="t4"></span>Suggestions<small id="c4">3 left</small></li>
+        </ul>
+        <div class="publish-block">
+          <button class="btn primary" id="publish">Publish to the table</button>
+          <p class="publish-note" id="publish-note">The table sees it on <a href="#">Previously on…</a>. You can keep editing and publish again.</p>
+        </div>
+      </div>
+      <div class="card" style="font-size:.88rem;color:var(--muted)">
+        <b style="color:var(--ink)">Source</b><br>Campaign notes, synced Oct 15<br><a href="#">View the notes for this session</a>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<div class="mobile-bar"><span class="pill draft" id="mobile-pill">Draft</span><button class="btn primary" id="publish-m">Publish to the table</button></div>
+<div class="toast" id="toast"></div>
+
+<script>
+  const $ = (s, el = document) => el.querySelector(s), $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const toast = msg => { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2200); };
+  let newAnswers = 0;
+
+  function refresh() {
+    const qs = $$('[data-q]'), answered = qs.filter(q => !$('[data-view]', q).hidden || q.dataset.skipped).length;
+    $('#c1').textContent = `${qs.filter(q => !$('[data-view]', q).hidden).length} of ${qs.length} answered`;
+    $('#t1').classList.toggle('on', answered === qs.length); $('#t1').textContent = answered === qs.length ? '✓' : '';
+    $('#step-1').classList.toggle('done', answered === qs.length);
+    const left = $$('[data-sug]').filter(s => !s.hidden).length;
+    $('#c4').textContent = left ? `${left} left` : 'done'; $('#sug-count').textContent = left ? `${left} to review` : '';
+    $('#t4').classList.toggle('on', !left); $('#t4').textContent = left ? '' : '✓'; $('#step-4').classList.toggle('done', !left);
+    $('#redraft').hidden = !newAnswers;
+    $('#redraft-count').textContent = `${newAnswers} new answer${newAnswers > 1 ? 's' : ''}.`;
+  }
+
+  // Questions
+  $$('[data-q]').forEach(q => {
+    const view = $('[data-view]', q), form = $('[data-form]', q), start = $('[data-start]', q), ta = $('textarea', form);
+    const open = () => { form.hidden = false; view.hidden = true; if (start) start.hidden = true; ta.focus(); };
+    $$('[data-answer], [data-edit]', q).forEach(b => b.onclick = open);
+    $('[data-cancel]', q).onclick = () => { form.hidden = true; if ($('p', view).textContent) view.hidden = false; else if (start) start.hidden = false; };
+    $('[data-save]', q).onclick = () => {
+      if (!ta.value.trim()) return ta.focus();
+      const first = !$('p', view).textContent; $('p', view).textContent = ta.value.trim();
+      form.hidden = true; view.hidden = false; const pill = $('[data-qstatus]', q);
+      if (pill) { pill.className = 'pill published'; pill.textContent = 'Answered'; }
+      if (first) newAnswers++; toast('Answer saved'); refresh();
+    };
+    const skip = $('[data-skip]', q);
+    if (skip) skip.onclick = () => { q.dataset.skipped = 1; start.hidden = true; const pill = $('[data-qstatus]', q); pill.className = 'pill'; pill.textContent = 'Skipped'; refresh(); };
+  });
+  $('#redraft-btn').onclick = () => { newAnswers = 0; toast('Claude is redrafting… (about a minute)'); refresh(); };
+
+  // Recap
+  const rv = $('#recap-view'), rf = $('#recap-form'), rt = $('#recap-text');
+  $('#recap-edit').onclick = () => { rt.value = $$('p', rv).map(p => p.innerText.replace(/(Drowned Bell|Wren|Tobin|Tamsin Vell)/g, '**$1**')).join('\n\n'); rv.hidden = true; rf.hidden = false; $('#recap-edit').hidden = true; rt.focus(); };
+  $('#recap-cancel').onclick = () => { rv.hidden = false; rf.hidden = true; $('#recap-edit').hidden = false; };
+  $('#recap-save').onclick = () => {
+    rv.innerHTML = rt.value.split(/\n\s*\n/).map(p => '<p>' + p.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>') + '</p>').join('');
+    rv.hidden = false; rf.hidden = true; $('#recap-edit').hidden = false;
+    $('#recap-version').textContent = 'Version 2 by you'; setStatus(published ? 'edited' : 'draft'); toast('Recap saved');
+  };
+
+  // Events
+  function editEvent(li) {
+    const kind = $('.badge', li).textContent, text = $('.ev-text', li).firstChild.textContent;
+    const original = li.innerHTML;
+    li.innerHTML = `<div class="ev-form"><select>${['event','reveal','decision','loot','theory'].map(k => `<option ${k===kind?'selected':''}>${k}</option>`).join('')}</select>
+      <textarea rows="2">${text}</textarea>
+      <div class="btn-row"><button class="btn primary">Save</button><button class="btn quiet">Cancel</button><button class="btn quiet danger" style="margin-left:auto">Delete event</button></div></div>`;
+    const [save, cancel, del] = $$('button', li);
+    cancel.onclick = () => { li.innerHTML = original; bindEvent(li); };
+    del.onclick = () => { li.remove(); toast('Event deleted'); };
+    save.onclick = () => {
+      const k = $('select', li).value, t = $('textarea', li).value.trim();
+      li.className = 'ev' + (k === 'theory' ? ' theory' : '');
+      li.innerHTML = `<span class="badge ${k}">${k}</span><div class="ev-text">${t}</div><button class="btn quiet" data-ev-edit>Edit</button>`;
+      bindEvent(li); toast('Event saved');
+    };
+  }
+  const bindEvent = li => $('[data-ev-edit]', li).onclick = () => editEvent(li);
+  $$('#event-list .ev').forEach(bindEvent);
+  $('#add-event').onclick = () => {
+    const li = document.createElement('li'); li.className = 'ev';
+    li.innerHTML = '<span class="badge event">event</span><div class="ev-text"></div><button class="btn quiet" data-ev-edit>Edit</button>';
+    $('#event-list').append(li); editEvent(li);
+  };
+
+  // Suggestions
+  const decided = { accepted: 0, rejected: 0 };
+  const decide = (sug, kind) => {
+    sug.hidden = true; decided[kind]++;
+    $('#decided').hidden = false;
+    $('#decided').textContent = [decided.accepted && `${decided.accepted} accepted`, decided.rejected && `${decided.rejected} rejected`].filter(Boolean).join(' · ') + ' · undo';
+    toast(kind === 'accepted' ? 'Accepted' : 'Rejected'); refresh();
+  };
+  $$('[data-sug]').forEach(s => {
+    $('[data-accept]', s).onclick = () => decide(s, 'accepted');
+    $('[data-reject]', s).onclick = () => decide(s, 'rejected');
+    const e = $('[data-sug-edit]', s);
+    if (e) e.onclick = () => { const after = $('.after', s); const text = after.lastChild.textContent; after.innerHTML = `<span>Proposed (editing)</span><textarea rows="3">${text}</textarea>`; e.hidden = true; $('textarea', after).focus(); };
+  });
+
+  // Publish
+  let published = false;
+  function setStatus(s) {
+    const map = { draft: ['draft', 'Draft'], published: ['published', 'Published'], edited: ['edited', 'Edited since publishing'] };
+    for (const id of ['#status-pill', '#mobile-pill']) { $(id).className = 'pill ' + map[s][0]; $(id).textContent = map[s][1]; }
+    const label = s === 'published' ? 'Published ✓' : (s === 'edited' ? 'Publish changes' : 'Publish to the table');
+    for (const id of ['#publish', '#publish-m']) { $(id).textContent = label; $(id).disabled = s === 'published'; }
+  }
+  const publish = () => { published = true; setStatus('published'); toast('Published. The table can read it now.'); };
+  $('#publish').onclick = publish; $('#publish-m').onclick = publish;
+  refresh();
+</script>
+</body>
+</html>
