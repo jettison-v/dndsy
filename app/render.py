@@ -6,7 +6,7 @@ from collections.abc import Callable
 import nh3
 from markdown_it import MarkdownIt
 
-_md = MarkdownIt("commonmark", {"html": True, "breaks": False}).enable("table")
+_md = MarkdownIt("commonmark", {"html": True, "breaks": False, "linkify": True}).enable(["table", "linkify"])
 
 ALLOWED_TAGS = {
     "p", "br", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "strong", "em", "b", "i",
@@ -24,6 +24,7 @@ def markdown_to_html(text: str, image_url: Callable[[str], str | None]) -> str:
         attributes=ALLOWED_ATTRS,
         url_schemes={"http", "https"},
         link_rel="noopener noreferrer",
+        set_tag_attribute_values={"a": {"target": "_blank"}},
     )
 
     def swap(m):

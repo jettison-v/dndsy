@@ -124,11 +124,29 @@ DOCS_URL = "https://docs.googleapis.com/v1/documents/{id}?includeTabsContent=tru
 MAX_IMAGE_SIDE = 1568  # larger images cost more for Claude to read without helping
 
 
-def _runs_text(elements: list[dict], placeholder) -> str:
+URL_IN_TEXT = re.compile(r"https?://[^\s<>\"']+[^\s<>\"'.,;:!?)]")
+
+
+def _runs_text(elements: list[dict], placeholder, as_html: bool = False) -> str:
+    """Text of paragraph elements. Embedded links become Markdown links, or
+    <a> tags when `as_html` (for table cells, where Markdown isn't parsed)."""
     out = []
     for el in elements:
         if "textRun" in el:
-            out.append(el["textRun"].get("content", ""))
+            run = el["textRun"]
+            text = run.get("content", "")
+            url = run.get("textStyle", {}).get("link", {}).get("url")
+            core = text.strip("\n")
+            if as_html:
+                if url and core.strip():
+                    out.append(f'<a href="{html.escape(url, quote=True)}">{html.escape(core)}</a>')
+                else:
+                    out.append(URL_IN_TEXT.sub(lambda m: f'<a href="{m.group(0)}">{m.group(0)}</a>', html.escape(text)))
+            elif url and core.strip() and core.strip() != url:
+                label = core.strip().replace("[", "(").replace("]", ")")
+                out.append(f"[{label}]({url.replace(')', '%29').replace(' ', '%20')})")
+            else:
+                out.append(text)
         elif "inlineObjectElement" in el:
             out.append(placeholder(el["inlineObjectElement"]["inlineObjectId"]))
     return "".join(out).replace("\x0b", " ").rstrip("\n")
@@ -158,8 +176,8 @@ def docs_json_to_text(doc: dict) -> tuple[str, list[dict]]:
                 objects.append({"name": name, "kind": "image" if uri else "drawing", "uri": uri})
                 return f" [image: {name}] "
 
-            def para_text(p: dict) -> str:
-                text = _runs_text(p.get("elements", []), placeholder)
+            def para_text(p: dict, as_html: bool = False) -> str:
+                text = _runs_text(p.get("elements", []), placeholder, as_html)
                 for pid in p.get("positionedObjectIds", []):
                     text += placeholder(pid, positioned, "positionedObjectProperties")
                 return " ".join(text.split())
@@ -216,18 +234,16 @@ def table_html(table: dict, para_text) -> str:
                 if "paragraph" not in item:
                     continue
                 p = item["paragraph"]
-                text = para_text(p)
+                text = para_text(p, as_html=True)
                 if not text:
                     continue
                 if "bullet" in p:
-                    text = "&nbsp;&nbsp;" * p["bullet"].get("nestingLevel", 0) + "• " + html.escape(text)
-                else:
-                    text = html.escape(text)
+                    text = "&nbsp;&nbsp;" * p["bullet"].get("nestingLevel", 0) + "• " + text
                 parts.append(text)
             attrs = (f' colspan="{colspan}"' if colspan > 1 else "") + (f' rowspan="{rowspan}"' if rowspan > 1 else "")
             content = "<br>".join(parts)
             # Short label cells ("When", "Pros", "Cons") read best as headers.
-            is_label = len(parts) == 1 and len(content.split()) <= 2 and not re.search(r"[\d•:]", content)
+            is_label = len(parts) == 1 and len(content.split()) <= 2 and not re.search(r"[\d•:<]", content)
             tag = "th" if is_label else "td"
             cells_html.append(f"<{tag}{attrs}>{content}</{tag}>")
         rows_html.append("<tr>" + "".join(cells_html) + "</tr>")

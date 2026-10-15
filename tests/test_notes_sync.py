@@ -182,6 +182,23 @@ def test_table_keeps_merged_cells_and_cell_bullets():
     assert "Low &lt;save&gt;" in text  # cell text is escaped
 
 
+def test_links_become_clickable_in_text_and_tables():
+    from app.gdocs import docs_json_to_text
+    from app.render import markdown_to_html
+
+    linked = {"textRun": {"content": "Cole sheet", "textStyle": {"link": {"url": "https://www.dndbeyond.com/characters/1"}}}}
+    plain = {"textRun": {"content": " map: https://example.com/map?a=1&b=2\n"}}
+    p = {"paragraph": {"elements": [linked, plain], "paragraphStyle": {"namedStyleType": "NORMAL_TEXT"}}}
+    cell = {"tableCellStyle": {"columnSpan": 1}, "content": [p]}
+    doc = {"tabs": [{"tabProperties": {"title": "T"}, "documentTab": {"body": {"content": [p, {"table": {"tableRows": [{"tableCells": [cell]}]}}]}}}]}
+    text, _ = docs_json_to_text(doc)
+    assert "[Cole sheet](https://www.dndbeyond.com/characters/1)" in text
+    html = markdown_to_html(text, lambda n: None)
+    assert html.count('href="https://www.dndbeyond.com/characters/1"') == 2  # paragraph + table cell
+    assert html.count('href="https://example.com/map?a=1&amp;b=2"') == 2
+    assert 'target="_blank"' in html
+
+
 def test_render_is_sanitized_and_swaps_images():
     from app.render import markdown_to_html
 
