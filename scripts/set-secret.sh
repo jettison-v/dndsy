@@ -41,6 +41,10 @@ chmod 600 .env
 echo "✓ $name saved to local .env"
 
 if ! $local_only; then
-  printf '%s' "$value" | railway variable set "$name" --stdin --service askdnd-v2 --environment production --skip-deploys >/dev/null
+  if ! out="$(printf '%s' "$value" | railway variable set "$name" --stdin --service askdnd-v2 --environment production --skip-deploys 2>&1)"; then
+    echo "✗ Railway update failed:" >&2
+    echo "$out" >&2
+    exit 1
+  fi
   echo "✓ $name saved to Railway (askdnd-v2, production) — takes effect on next deploy"
 fi
