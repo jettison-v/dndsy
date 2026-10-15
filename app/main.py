@@ -1,9 +1,11 @@
 """askdnd v2 web app."""
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import update
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -50,6 +52,7 @@ app.add_middleware(
     same_site="lax",
     https_only=config.IS_PRODUCTION,
 )
+app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(admin_notes_router)
@@ -72,16 +75,4 @@ def health() -> dict:
 def login(request: Request, error: str | None = None):
     if current_user(request):
         return RedirectResponse("/", status_code=303)
-    return templates.TemplateResponse(
-        request, "login.html", {"error": LOGIN_ERRORS.get(error or "")}
-    )
-
-
-@app.get("/")
-def home(request: Request):
-    user = current_user(request)
-    if not user:
-        return RedirectResponse("/login", status_code=303)
-    return templates.TemplateResponse(
-        request, "home.html", {"env": config.APP_ENV, "user": user, "is_admin": is_admin(user)}
-    )
+    return templates.TemplateResponse(request, "login.html", {"error": LOGIN_ERRORS.get(error or "")})

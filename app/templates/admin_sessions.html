@@ -1,39 +1,43 @@
 {% extends "base.html" %}
-{% block body_class %}wide{% endblock %}
-{% block head %}{% if running %}<meta http-equiv="refresh" content="10">{% endif %}{% endblock %}
+{% block title %}Review · askdnd{% endblock %}
 {% block content %}
-<header>
-  <h1>Sessions</h1>
-  <a class="button" href="/">Home</a>
-</header>
-{% if message %}<p class="card warn">{{ message }}</p>{% endif %}
-<p>Claude drafts each session's recap and story updates from your synced notes (or a transcript sent from the Processor).
-Nothing reaches the table until you open a session and <b>publish</b> it. Spent on drafting so far: <b>${{ "%.2f"|format(spent) }}</b>.</p>
-<p class="muted">Draft sessions in order (oldest first): each draft reads the recaps before it. After notes change, <i>Sync</i> them first, then redraft.</p>
-{% if not notes_synced %}<p class="card warn">Sync your campaign notes first (<a href="/admin/notes">Notes from Google Docs</a>).</p>{% endif %}
-{% if running %}<p class="card">Claude is drafting… this page refreshes every 10 seconds. Each session takes about a minute.</p>{% endif %}
-{% if missing and not running %}
-<form method="post" action="/admin/sessions/draft">
-  {% for id in missing %}<input type="hidden" name="session_ids" value="{{ id }}">{% endfor %}
-  <p><button class="button primary" type="submit">Draft all {{ missing | length }} undrafted sessions from notes</button>
-  <span class="muted">≈ ${{ "%.2f"|format(missing | length * 0.15) }}</span></p>
-</form>
-{% endif %}
-<table class="list">
-  <tr><th>Session</th><th>Title</th><th>Status</th><th>Last draft</th><th></th></tr>
-  {% for r in rows %}
-  <tr>
-    <td><a href="/admin/sessions/{{ r.s.id }}">{{ r.label }}</a></td>
-    <td>{{ r.s.title }}</td>
-    <td><span class="pill {{ r.status | replace(' ', '-') }}">{{ r.status }}</span></td>
-    <td>{% if r.last_run %}{% if r.last_run.status == "error" %}<span class="error">failed</span>{% elif r.last_run.status == "done" %}${{ "%.2f"|format(r.last_run.cost_usd) }}{% else %}…{% endif %}{% endif %}</td>
-    <td>
-      {% if r.has_notes and r.status != "drafting" and not running %}
-      <form method="post" action="/admin/sessions/draft"><input type="hidden" name="session_ids" value="{{ r.s.id }}">
-        <button class="link-button" type="submit">{{ "Redraft" if r.s.recaps else "Draft" }} from notes</button></form>
-      {% elif r.s.source == "transcript" and not r.s.recaps %}<span class="muted">send from Processor</span>{% endif %}
-    </td>
-  </tr>
-  {% endfor %}
-</table>
+<main class="page" {% if running %}hx-get="/admin/sessions" hx-trigger="every 10s" hx-select="main" hx-swap="outerHTML"{% endif %}>
+  <div class="crumbs">Manage › Review</div>
+  <div class="title-row"><h1>Review</h1></div>
+  <p class="subtitle">Claude drafts each session from your notes or a transcript. Nothing reaches the table until you open a session and publish it. Spent on drafting so far: <b>${{ "%.2f" | format(spent) }}</b>.</p>
+
+  {% if not notes_synced %}<div class="flash warn">Sync your campaign notes first: <a href="/admin/notes">Notes sync</a>.</div>{% endif %}
+  {% if running %}<div class="flash warn">Claude is drafting… this page updates by itself. Each session takes about a minute.</div>{% endif %}
+  {% if missing and not running %}
+  <section class="section">
+    <div class="row">
+      <div style="flex:1;min-width:240px"><b>{{ missing | length }} session{{ "s" if missing | length > 1 }} not drafted yet.</b>
+        <div class="note">Drafted oldest first, so each one reads the recaps before it. About ${{ "%.2f" | format(missing | length * 0.13) }}.</div></div>
+      <form method="post" action="/admin/sessions/draft">
+        {% for id in missing %}<input type="hidden" name="session_ids" value="{{ id }}">{% endfor %}
+        <button class="btn primary">Draft all</button>
+      </form>
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="section">
+    <table class="list">
+      <tr><th>Session</th><th>Status</th><th>Last draft</th><th></th></tr>
+      {% for r in rows %}
+      <tr>
+        <td><a href="/admin/sessions/{{ r.s.id }}">{{ r.label }}</a>{% if r.s.title %}<div class="note">{{ r.s.title }}</div>{% endif %}</td>
+        <td><span class="tag {{ {'draft': 'draft', 'published': 'published', 'edited': 'edited', 'drafting': 'working'}.get(r.status, '') }}">{{ {'draft': 'Draft', 'published': 'Published', 'edited': 'Edited since publishing', 'drafting': 'Drafting…', 'no draft': 'Not drafted'}[r.status] }}</span></td>
+        <td class="note">{% if r.last_run %}{% if r.last_run.status == "error" %}<span class="tag error">Failed</span>{% elif r.last_run.status == "done" %}{{ "%.0f" | format(r.last_run.cost_usd * 100) }}¢{% endif %}{% endif %}</td>
+        <td style="text-align:right">
+          {% if r.has_notes and r.status == "no draft" and not running %}
+          <form method="post" action="/admin/sessions/draft"><input type="hidden" name="session_ids" value="{{ r.s.id }}"><button class="btn">Draft from notes</button></form>
+          {% elif r.status != "no draft" %}<a class="btn" href="/admin/sessions/{{ r.s.id }}">Review</a>
+          {% elif r.s.source == "transcript" %}<span class="note">Send from the Processor</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </section>
+</main>
 {% endblock %}

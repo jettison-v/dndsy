@@ -287,6 +287,6 @@ def test_google_errors_explained_and_shown_in_red(admin_client, db, monkeypatch)
     monkeypatch.setattr(admin_notes.oauth.google_drive, "get", fake_get)
     page = admin_client.get("/admin/notes/callback").text
     assert "Sync failed." in page
-    assert 'class="bad"' in page
+    assert 'flash bad' in page
     assert "isn&#39;t turned on for your Google Cloud project" in page
     assert db.scalar(select(NoteSource)).last_synced_at is None

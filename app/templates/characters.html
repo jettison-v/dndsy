@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Characters · askdnd{% endblock %}
+{% block content %}
+<main class="page">
+  <div class="title-row"><h1>Characters</h1></div>
+  <p class="subtitle">Character briefings are coming soon: spells, wild shapes, items and what you can do on each turn, explained from D&amp;D Beyond.</p>
+  <div class="card-grid">
+    {% for c in characters %}
+    <div class="entry"><b>{{ c.entity.name }}</b><div class="note">{{ c.player_name }}</div>{% if c.entity.summary %}<p>{{ c.entity.summary }}</p>{% endif %}</div>
+    {% endfor %}
+  </div>
+</main>
+{% endblock %}

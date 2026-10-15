@@ -3,46 +3,52 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>askdnd</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 36rem; margin: 4rem auto; padding: 0 1rem; line-height: 1.5; color: #222; background: #fafaf7; }
-    h1 { margin-bottom: 0.25rem; }
-    .muted { color: #777; font-size: 0.9rem; }
-    .error { color: #a12; }
-    .button { display: inline-block; padding: 0.6rem 1.1rem; border: 1px solid #ccc; border-radius: 6px; background: #fff; color: #222; text-decoration: none; font: inherit; cursor: pointer; }
-    .bad { background: #fdeeee; border: 1px solid #d99; border-radius: 6px; padding: 0.25rem 1rem; }
-    .ok { background: #eef8ee; border: 1px solid #9c9; border-radius: 6px; padding: 0.25rem 1rem; }
-    code { background: #eee; padding: 0 0.25rem; border-radius: 3px; }
-    table.list { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
-    table.list th, table.list td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid #ddd; vertical-align: top; }
-    button.link { background: none; border: none; color: #a12; cursor: pointer; padding: 0; font: inherit; }
-    .doc { line-height: 1.5; }
-    .doc h1 { font-size: 1.5rem; margin-top: 2.5rem; border-bottom: 1px solid #ddd; }
-    .doc h2 { font-size: 1.25rem; margin-top: 2rem; }
-    .doc h3, .doc h4, .doc h5, .doc h6 { font-size: 1.05rem; margin-top: 1.25rem; }
-    .doc ul { padding-left: 1.4rem; margin: 0.3rem 0; }
-    .doc li { margin: 0.15rem 0; }
-    .doc table { border-collapse: collapse; width: 100%; margin: 0.75rem 0; font-size: 0.92rem; }
-    .doc td, .doc th { border: 1px solid #ccc; padding: 0.35rem 0.5rem; vertical-align: top; text-align: left; }
-    .doc th { background: #f3f1ea; }
-    body.wide { max-width: 52rem; }
-    .doc img { max-width: 100%; display: block; margin: 0.5rem 0; }
-    .card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 0.6rem 1rem; margin: 0.75rem 0; }
-    .warn { background: #fff6d6; border-color: #e3c766; }
-    .pill { font-size: 0.8rem; padding: 0.1rem 0.5rem; border-radius: 999px; background: #eee; white-space: nowrap; }
-    .pill.published { background: #d8f0dc; } .pill.draft-ready, .pill.review { background: #fff1c2; } .pill.drafting { background: #dde8fb; }
-    .primary { background: #2c5e3f; border-color: #2c5e3f; color: #fff; }
-    button.link-button { background: none; border: none; color: #2c5e3f; text-decoration: underline; cursor: pointer; padding: 0; font: inherit; }
-    textarea { width: 100%; font: inherit; box-sizing: border-box; padding: 0.4rem; border: 1px solid #ccc; border-radius: 6px; }
-    .qa { border-top: 1px solid #ead9a0; padding-top: 0.25rem; margin-top: 0.5rem; }
-    .qa p { margin: 0.4rem 0; }
-    details.help summary { cursor: pointer; }
-    h2 { margin-top: 2rem; }
-    header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
-  </style>
+  <title>{% block title %}askdnd{% endblock %}</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/static/icons/site.webmanifest">
+  <meta name="theme-color" content="#0f1113">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app.css?v=1">
+  <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js" defer></script>
+  <script src="/static/app.js?v=1" defer></script>
   {% block head %}{% endblock %}
 </head>
-<body class="{% block body_class %}{% endblock %}">
-  {% block content %}{% endblock %}
+<body data-toast="{{ toast or '' }}">
+{% block body %}
+<header class="topbar"><div class="topbar-inner">
+  <button class="nav-toggle" data-menu="nav" aria-label="Menu">☰</button>
+  <a class="brand" href="/"><img src="/static/icons/android-chrome-192x192.png" alt="">askdnd</a>
+  {% if user %}
+  <nav class="nav" id="nav">
+    <a href="/" class="{{ 'active' if path in ('/', '/story') }}">Previously on…</a>
+    <a href="/sessions" class="{{ 'active' if path.startswith('/sessions') }}">Sessions</a>
+    <a href="/characters" class="{{ 'active' if path.startswith('/characters') }}">Characters</a>
+    <a href="/campaign" class="{{ 'active' if path.startswith('/campaign') }}">Campaign</a>
+  </nav>
+  {% if is_admin %}
+  <div class="manage">
+    <button class="{{ 'active' if path.startswith('/admin') }}" data-menu="manage-menu" aria-haspopup="true">Manage ▾</button>
+    <div class="menu" id="manage-menu" hidden>
+      <a href="/admin/sessions" class="{{ 'active' if path.startswith('/admin/sessions') }}">Review<small>Draft and publish sessions</small></a>
+      <a href="/admin/notes" class="{{ 'active' if path.startswith('/admin/notes') }}">Notes sync<small>Pull the latest Google Docs</small></a>
+      <a href="/admin/import" class="{{ 'active' if path.startswith('/admin/import') }}">Import<small>Load campaign data</small></a>
+    </div>
+  </div>
+  {% endif %}
+  <div class="account" {% if not is_admin %}style="margin-left:auto"{% endif %}>
+    <button class="avatar" data-menu="account-menu" aria-label="Account">{% if user.picture %}<img src="{{ user.picture }}" alt="" referrerpolicy="no-referrer">{% else %}{{ (user.name or user.email)[:1] | upper }}{% endif %}</button>
+    <div class="menu" id="account-menu" hidden>
+      <a href="#" style="pointer-events:none">{{ user.name }}<small>{{ user.email }}</small></a>
+      <form method="post" action="/logout"><button type="submit">Sign out</button></form>
+    </div>
+  </div>
+  {% endif %}
+</div></header>
+{% block content %}{% endblock %}
+{% endblock %}
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>

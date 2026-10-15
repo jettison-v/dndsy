@@ -1,0 +1,327 @@
+"""Session review rules: answering Claude's questions, deciding suggestions
+(with undo), editing the recap and key moments, publishing.
+
+Routes live in admin_sessions.py; this module holds the behavior so it can be
+tested on its own.
+"""
+
+from sqlalchemy import delete, func, select
+from sqlalchemy.orm import Session
+
+from app.models import (
+    Correction,
+    Entity,
+    EntityAlias,
+    EntityKind,
+    EventKind,
+    ExtractionRun,
+    GameSession,
+    GlossaryTerm,
+    Proposal,
+    Recap,
+    Status,
+    StoryEvent,
+)
+
+
+class ReviewError(ValueError):
+    pass
+
+
+# --- Questions ---------------------------------------------------------------
+
+
+def _question_row(db: Session, session: GameSession, question: str) -> Correction | None:
+    return db.scalar(
+        select(Correction).where(
+            Correction.session_id == session.id,
+            Correction.kind.in_(("answer", "skip")),
+            Correction.before == question,
+        )
+    )
+
+
+def answer_question(db: Session, session: GameSession, question: str, answer: str, remember: bool) -> None:
+    answer = answer.strip()
+    if not answer:
+        raise ReviewError("Type an answer, or use Skip.")
+    row = _question_row(db, session, question) or Correction(
+        campaign_id=session.campaign_id, session_id=session.id, before=question
+    )
+    row.kind, row.after, row.standing_instruction, row.note = "answer", answer, remember, ""
+    db.add(row)
+
+
+def skip_question(db: Session, session: GameSession, question: str) -> None:
+    row = _question_row(db, session, question) or Correction(
+        campaign_id=session.campaign_id, session_id=session.id, before=question
+    )
+    row.kind, row.after, row.standing_instruction = "skip", "", False
+    db.add(row)
+
+
+def reopen_question(db: Session, session: GameSession, question: str) -> None:
+    """Remove an answer or a skip so the question is open again."""
+    row = _question_row(db, session, question)
+    if row:
+        db.delete(row)
+
+
+def latest_questions(db: Session, session: GameSession) -> list[str]:
+    run = db.scalar(
+        select(ExtractionRun)
+        .where(ExtractionRun.session_id == session.id, ExtractionRun.status == "done")
+        .order_by(ExtractionRun.id.desc())
+    )
+    return list(run.to_check) if run else []
+
+
+def unused_answer_count(db: Session, session: GameSession) -> int:
+    """Answers saved after the latest successful draft (so a redraft would use them)."""
+    run = db.scalar(
+        select(ExtractionRun)
+        .where(ExtractionRun.session_id == session.id, ExtractionRun.status == "done")
+        .order_by(ExtractionRun.id.desc())
+    )
+    if run is None:
+        return 0
+    return (
+        db.scalar(
+            select(func.count())
+            .select_from(Correction)
+            .where(
+                Correction.session_id == session.id,
+                Correction.kind == "answer",
+                Correction.updated_at >= run.updated_at,
+            )
+        )
+        or 0
+    )
+
+
+# --- Suggestions (proposals) -------------------------------------------------
+
+
+def accept_proposal(db: Session, p: Proposal, summary: str | None = None) -> None:
+    """Apply a suggestion and remember what it replaced, so Undo can restore it."""
+    if p.status != "pending":
+        raise ReviewError("That suggestion was already decided.")
+    session = db.get(GameSession, p.session_id)
+    data = dict(p.payload)
+    if p.kind == "glossary":
+        term = db.scalar(
+            select(GlossaryTerm).where(GlossaryTerm.campaign_id == session.campaign_id, GlossaryTerm.term == data["term"])
+        )
+        if term is None:
+            term = GlossaryTerm(
+                campaign_id=session.campaign_id,
+                term=data["term"],
+                description=data.get("description", ""),
+                misheard_as=data.get("misheard_as", []),
+            )
+            db.add(term)
+            db.flush()
+            data["undo"] = {"created_term_id": term.id}
+        else:
+            data["undo"] = {}
+    else:
+        if summary is not None and summary.strip():
+            data["summary"] = summary.strip()
+        entity = db.get(Entity, data["entity_id"]) if data.get("entity_id") else None
+        if entity is None:
+            entity = Entity(campaign_id=session.campaign_id, kind=EntityKind(data["kind"]), name=data["name"])
+            db.add(entity)
+            db.flush()
+            undo = {"created_entity_id": entity.id}
+        else:
+            undo = {
+                "entity_id": entity.id,
+                "summary": entity.summary,
+                "quest_open": entity.quest_open,
+                "status": entity.status.value,
+            }
+        entity.summary = data["summary"]
+        if data.get("quest_open") is not None:
+            entity.quest_open = data["quest_open"]
+        have = {a.alias.casefold() for a in entity.aliases}
+        added = []
+        for alias in data.get("new_aliases", []):
+            if alias.casefold() not in have and alias.casefold() != entity.name.casefold():
+                entity.aliases.append(EntityAlias(alias=alias))
+                have.add(alias.casefold())
+                added.append(alias)
+        entity.status = Status.PUBLISHED
+        undo["added_aliases"] = added
+        data["undo"] = undo
+        data["applied_entity_id"] = entity.id
+    p.payload = data
+    p.status = "accepted"
+
+
+def reject_proposal(db: Session, p: Proposal) -> None:
+    if p.status != "pending":
+        raise ReviewError("That suggestion was already decided.")
+    p.status = "rejected"
+
+
+def undo_proposal(db: Session, p: Proposal) -> None:
+    """Put things back as they were and make the suggestion pending again."""
+    if p.status == "rejected":
+        p.status = "pending"
+        return
+    if p.status != "accepted":
+        return
+    data = dict(p.payload)
+    undo = data.pop("undo", {}) or {}
+    if p.kind == "glossary":
+        term = db.get(GlossaryTerm, undo["created_term_id"]) if undo.get("created_term_id") else None
+        if term:
+            db.delete(term)
+    elif undo.get("created_entity_id"):
+        entity = db.get(Entity, undo["created_entity_id"])
+        if entity:
+            db.delete(entity)
+    elif undo.get("entity_id"):
+        entity = db.get(Entity, undo["entity_id"])
+        if entity:
+            entity.summary = undo.get("summary", entity.summary)
+            entity.quest_open = undo.get("quest_open")
+            entity.status = Status(undo.get("status", entity.status.value))
+            added = {a.casefold() for a in undo.get("added_aliases", [])}
+            for alias in list(entity.aliases):
+                if alias.alias.casefold() in added:
+                    entity.aliases.remove(alias)
+    data.pop("applied_entity_id", None)
+    p.payload = data
+    p.status = "pending"
+
+
+def edit_accepted_proposal(db: Session, p: Proposal, summary: str) -> None:
+    """Change the summary of an accepted suggestion (and the entity it updated)."""
+    summary = summary.strip()
+    if p.status != "accepted" or p.kind != "entity" or not summary:
+        raise ReviewError("Only accepted people/place suggestions can be edited.")
+    entity = db.get(Entity, p.payload.get("applied_entity_id"))
+    if entity:
+        entity.summary = summary
+    p.payload = {**p.payload, "summary": summary}
+
+
+# --- Recap, key moments, publishing -------------------------------------------
+
+
+def latest_recap(session: GameSession) -> Recap | None:
+    return session.recaps[-1] if session.recaps else None
+
+
+def published_recap(session: GameSession) -> Recap | None:
+    return next((r for r in reversed(session.recaps) if r.status == Status.PUBLISHED), None)
+
+
+def review_status(session: GameSession, drafting: bool) -> str:
+    if drafting:
+        return "drafting"
+    latest, published = latest_recap(session), published_recap(session)
+    if published is None:
+        return "draft" if latest else "no draft"
+    return "published" if latest.id == published.id else "edited"
+
+
+def save_recap(db: Session, session: GameSession, body: str, note: str = "", standing: bool = False) -> Recap:
+    body = body.replace("\r\n", "\n").strip()
+    if not body:
+        raise ReviewError("The recap can't be empty.")
+    latest = latest_recap(session)
+    if latest is None or latest.body.strip() != body:
+        version = (db.scalar(select(func.max(Recap.version)).where(Recap.session_id == session.id)) or 0) + 1
+        latest = Recap(session_id=session.id, version=version, body=body, author="brett", status=Status.DRAFT)
+        db.add(latest)
+        db.flush()
+        db.refresh(session)
+    ai_draft = next((r for r in reversed(session.recaps) if r.author == "ai"), None)
+    if ai_draft and (note.strip() or ai_draft.body.strip() != body):
+        existing = db.scalar(
+            select(Correction).where(
+                Correction.session_id == session.id, Correction.kind == "edit", Correction.before == ai_draft.body
+            )
+        )
+        correction = existing or Correction(campaign_id=session.campaign_id, session_id=session.id, kind="edit", before=ai_draft.body)
+        correction.after = body
+        if note.strip():  # a later save without a note keeps the earlier note and choice
+            correction.note = note.strip()
+            correction.standing_instruction = standing
+        db.add(correction)
+    return latest
+
+
+def publish(db: Session, session: GameSession) -> None:
+    latest = latest_recap(session)
+    if latest is None:
+        raise ReviewError("There's no recap to publish yet.")
+    for r in session.recaps:
+        if r.status == Status.PUBLISHED and r.id != latest.id:
+            r.status = Status.DRAFT
+    latest.status = Status.PUBLISHED
+    for ev in session.events:
+        ev.status = Status.PUBLISHED
+
+
+def save_event(db: Session, session: GameSession, event_id: int | None, kind: str, text: str) -> None:
+    text = text.strip()
+    if not text:
+        raise ReviewError("A key moment needs some text.")
+    if kind not in {k.value for k in EventKind}:
+        raise ReviewError("Unknown type.")
+    if event_id is None:
+        position = max((e.position for e in session.events), default=0) + 1
+        db.add(StoryEvent(session_id=session.id, position=position, kind=EventKind(kind), text=text))
+        return
+    ev = db.get(StoryEvent, event_id)
+    if ev is None or ev.session_id != session.id:
+        raise ReviewError("That key moment no longer exists.")
+    ev.kind, ev.text = EventKind(kind), text
+
+
+def delete_event(db: Session, session: GameSession, event_id: int) -> None:
+    db.execute(delete(StoryEvent).where(StoryEvent.id == event_id, StoryEvent.session_id == session.id))
+
+
+# --- Everything the review page needs ------------------------------------------
+
+
+def review_context(db: Session, session: GameSession, drafting: bool) -> dict:
+    questions = latest_questions(db, session)
+    rows = {
+        c.before: c
+        for c in db.scalars(
+            select(Correction).where(Correction.session_id == session.id, Correction.kind.in_(("answer", "skip")))
+        )
+    }
+    open_questions = [q for q in questions if q not in rows]
+    done_questions = [rows[q] for q in questions if q in rows] + [c for q, c in rows.items() if q not in questions]
+    proposals = list(db.scalars(select(Proposal).where(Proposal.session_id == session.id).order_by(Proposal.id)))
+    open_proposals = [p for p in proposals if p.status == "pending"]
+    done_proposals = sorted((p for p in proposals if p.status != "pending"), key=lambda p: p.updated_at, reverse=True)
+    last_run = db.scalar(select(ExtractionRun).where(ExtractionRun.session_id == session.id).order_by(ExtractionRun.id.desc()))
+    last_done = db.scalar(
+        select(ExtractionRun)
+        .where(ExtractionRun.session_id == session.id, ExtractionRun.status == "done")
+        .order_by(ExtractionRun.id.desc())
+    )
+    return {
+        "status": review_status(session, drafting),
+        "latest": latest_recap(session),
+        "published": published_recap(session),
+        "events": list(session.events),
+        "event_kinds": [k.value for k in EventKind],
+        "open_questions": open_questions,
+        "done_questions": done_questions,
+        "unused_answers": unused_answer_count(db, session),
+        "open_proposals": open_proposals,
+        "done_proposals": done_proposals,
+        "accepted_count": sum(1 for p in done_proposals if p.status == "accepted"),
+        "rejected_count": sum(1 for p in done_proposals if p.status == "rejected"),
+        "last_run": last_run,
+        "last_done": last_done,
+        "drafting": drafting,
+    }

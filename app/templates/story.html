@@ -1,36 +1,27 @@
 {% extends "base.html" %}
-{% block body_class %}wide{% endblock %}
+{% block title %}Previously on… · askdnd{% endblock %}
 {% block content %}
-<header>
-  <h1>Previously on…</h1>
-  <a class="button" href="/">Home</a>
-</header>
-{% if not latest %}
-<p>Nothing published yet. Recaps appear here once they're reviewed.</p>
-{% else %}
-<div class="card">
-  <h2 style="margin-top:.25rem">{{ latest.label }}{% if latest.s.title %}: {{ latest.s.title }}{% endif %}</h2>
-  <div class="doc">{{ latest.html | safe }}</div>
+<main class="page narrow">
+  <div class="title-row"><h1>Previously on…</h1></div>
+  {% if not latest %}
+  <p class="subtitle">Nothing published yet. Recaps appear here once they're reviewed.</p>
+  {% else %}
+  <p class="subtitle">{{ latest.label }}{% if latest.s.title %}: {{ latest.s.title }}{% endif %}</p>
+  <div class="story">{{ latest.html | safe }}</div>
   {% if latest.events %}
-  <h3>Key moments</h3>
-  <ul>{% for e in latest.events %}<li>{% if e.kind.value != "event" %}<span class="pill">{{ e.kind.value }}</span> {% endif %}{{ e.text }}</li>{% endfor %}</ul>
+  <section class="section" style="margin-top:24px">
+    <h2>Key moments</h2>
+    <ul class="events" style="margin-top:10px">{% for e in latest.events %}<li class="ev"><span class="kind {{ e.kind.value }}">{{ e.kind.value }}</span><div class="ev-text">{{ e.text }}</div></li>{% endfor %}</ul>
+  </section>
   {% endif %}
-</div>
-{% if threads or quests %}
-<div class="card">
-  <h2 style="margin-top:.25rem">Open threads</h2>
-  {% if quests %}<h3>Quests</h3><ul>{% for q in quests %}<li><b>{{ q.name }}</b>{% if q.summary %}: {{ q.summary }}{% endif %}</li>{% endfor %}</ul>{% endif %}
-  {% if threads %}<h3>Theories</h3><ul>{% for t in threads %}<li>{{ t.text }}</li>{% endfor %}</ul>{% endif %}
-</div>
-{% endif %}
-{% if earlier %}
-<h2>Earlier sessions</h2>
-{% for item in earlier %}
-<details class="card">
-  <summary><b>{{ item.label }}</b>{% if item.s.title %}: {{ item.s.title }}{% endif %}</summary>
-  <div class="doc">{{ item.html | safe }}</div>
-</details>
-{% endfor %}
-{% endif %}
-{% endif %}
+  {% if threads or quests %}
+  <section class="section">
+    <h2>Open threads</h2>
+    {% if quests %}<h3>Quests</h3><ul>{% for q in quests %}<li><b>{{ q.name }}</b>{% if q.summary %}: <span class="muted">{{ q.summary }}</span>{% endif %}</li>{% endfor %}</ul>{% endif %}
+    {% if threads %}<h3>Theories</h3><ul>{% for t in threads %}<li><i>{{ t.text }}</i></li>{% endfor %}</ul>{% endif %}
+  </section>
+  {% endif %}
+  {% if earlier %}<p><a class="btn" href="/sessions">Earlier sessions</a></p>{% endif %}
+  {% endif %}
+</main>
 {% endblock %}

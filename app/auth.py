@@ -59,6 +59,16 @@ async def auth_callback(request: Request):
     return RedirectResponse("/", status_code=303)
 
 
+@router.get("/dev/login")
+def dev_login(request: Request):
+    """Local-only shortcut for previewing pages without Google (see DEV_LOGIN_EMAIL)."""
+    local = request.client is not None and request.client.host in ("127.0.0.1", "::1", "testclient")
+    if config.IS_PRODUCTION or not config.DEV_LOGIN_EMAIL or not local:
+        return RedirectResponse("/login", status_code=303)
+    request.session["user"] = {"email": config.DEV_LOGIN_EMAIL, "name": "Dev preview", "picture": None}
+    return RedirectResponse("/", status_code=303)
+
+
 @router.post("/logout")
 async def logout(request: Request):
     request.session.clear()

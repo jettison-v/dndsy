@@ -1,19 +1,17 @@
 {% extends "base.html" %}
+{% block title %}Import · askdnd{% endblock %}
 {% block content %}
-<header>
-  <h1>Import campaign data</h1>
-  <a class="button" href="/">Home</a>
-</header>
-<p>Upload a campaign bundle (<code>.json</code>). Importing again is safe: matching records are updated, not duplicated.</p>
-{% if error %}<p class="error"><b>{{ filename }}</b>: {{ error }}</p>{% endif %}
-{% if counts %}
-<div class="ok">
-  <p><b>Imported {{ filename }}.</b></p>
-  <ul>{% for k, v in counts.items() %}<li>{{ k }}: {{ v }}</li>{% endfor %}</ul>
-</div>
-{% endif %}
-<form method="post" action="/admin/import" enctype="multipart/form-data">
-  <p><input type="file" name="file" accept=".json,application/json" required></p>
-  <p><button class="button" type="submit">Import</button></p>
-</form>
+<main class="page narrow">
+  <div class="crumbs">Manage › Import</div>
+  <div class="title-row"><h1>Import campaign data</h1></div>
+  <p class="subtitle">Upload a campaign bundle (.json). Importing again is safe: matching records are updated, not duplicated.</p>
+  {% if error %}<div class="flash bad"><b>{{ filename }}</b>: {{ error }}</div>{% endif %}
+  {% if counts %}<div class="flash"><b>Imported {{ filename }}.</b><ul>{% for k, v in counts.items() %}<li>{{ k }}: {{ v }}</li>{% endfor %}</ul></div>{% endif %}
+  <section class="section">
+    <form method="post" action="/admin/import" enctype="multipart/form-data" class="stack">
+      <input type="file" name="file" accept=".json,application/json" required>
+      <div><button class="btn primary">Import</button></div>
+    </form>
+  </section>
+</main>
 {% endblock %}

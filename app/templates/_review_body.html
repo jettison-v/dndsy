@@ -1,0 +1,209 @@
+{# The whole review area. Actions post with HTMX and swap this block in place. #}
+{% set hx = 'hx-target="#review" hx-swap="outerHTML"' %}
+<div id="review" {% if drafting %}hx-get="/admin/sessions/{{ s.id }}/body" hx-trigger="every 5s" hx-swap="outerHTML"{% endif %}>
+  <div class="title-row">
+    <h1>{{ ("Session " ~ s.number) if s.number is not none else label }}{% if s.title %}: {{ s.title }}{% endif %}</h1>
+    <span class="tag {{ {'draft': 'draft', 'published': 'published', 'edited': 'edited', 'drafting': 'working'}.get(status, '') }}">
+      {{ {'draft': 'Draft', 'published': 'Published', 'edited': 'Edited since publishing', 'drafting': 'Claude is drafting…', 'no draft': 'No draft yet'}[status] }}</span>
+  </div>
+  <p class="subtitle">{% if s.played_on %}Played {{ s.played_on.strftime("%b %-d, %Y") }} · {% endif %}{{ "from a transcript" if s.source == "transcript" else "from your notes" }} · only you can see this page</p>
+
+  {% if last_run and last_run.status == "error" %}<div class="flash bad"><b>The last draft failed.</b> {{ last_run.error }}</div>{% endif %}
+  {% if drafting %}<div class="flash warn">Claude is drafting this session. This page updates by itself in about a minute.</div>{% endif %}
+
+  {% if not latest %}
+  <section class="section">
+    <h2>No draft yet</h2>
+    <p class="hint" style="margin-top:8px">{% if s.source == "transcript" %}Send this session's transcript from the askdnd Processor on your Mac.{% else %}Go back to <a href="/admin/sessions">Review</a> and choose <i>Draft from notes</i>.{% endif %}</p>
+  </section>
+  {% else %}
+  <div class="layout">
+    <div>
+      {# 1. Questions #}
+      <section class="section" id="questions">
+        <div class="section-head"><h2><span class="num">1</span>Claude's questions</h2><span class="count">{% if open_questions %}{{ open_questions | length }} to answer{% endif %}</span></div>
+        <p class="hint">Answer what you know and skip the rest. Answers make the next draft more accurate.</p>
+        {% for q in open_questions %}{% set qid = "q" ~ loop.index %}
+        <div class="item">
+          <p class="item-title">{{ q }}</p>
+          <div class="row" id="{{ qid }}-buttons">
+            <button type="button" class="btn" data-show="{{ qid }}-form" data-hide="{{ qid }}-buttons">Answer</button>
+            <form class="inline" hx-post="/admin/sessions/{{ s.id }}/questions/skip" {{ hx | safe }}><input type="hidden" name="q" value="{{ q }}"><button class="btn link">Skip</button></form>
+          </div>
+          <form id="{{ qid }}-form" class="stack" hidden hx-post="/admin/sessions/{{ s.id }}/questions/answer" {{ hx | safe }}>
+            <input type="hidden" name="q" value="{{ q }}">
+            <textarea name="answer" rows="2" placeholder="Your answer…" required></textarea>
+            <label class="check"><input type="checkbox" name="remember" value="1"> Use in every future draft (for lasting facts like name spellings)</label>
+            <div class="row"><button class="btn primary">Save answer</button><button type="button" class="btn link" data-cancel="{{ qid }}-form" data-restore="{{ qid }}-buttons">Cancel</button></div>
+          </form>
+        </div>
+        {% else %}
+        <p class="all-clear">{% if done_questions %}✓ All questions handled.{% else %}No questions this time.{% endif %}</p>
+        {% endfor %}
+
+        {% if unused_answers and s.source == "notes" %}
+        <div class="callout"><div class="row">
+          <span style="flex:1;min-width:220px"><b>{{ unused_answers }} new answer{{ "s" if unused_answers > 1 }}.</b> Redraft so the recap and key moments use {{ "them" if unused_answers > 1 else "it" }}.</span>
+          <form class="inline" hx-post="/admin/sessions/{{ s.id }}/redraft" {{ hx | safe }}><button class="btn primary" {% if drafting %}disabled{% endif %}>Redraft</button></form>
+          <span class="note">≈ 12¢ · your current version stays until you publish again</span>
+        </div></div>
+        {% endif %}
+
+        {% if done_questions %}
+        <details class="done"><summary>Done ({{ done_questions | length }})</summary>
+          {% for c in done_questions %}{% set did = "dq" ~ loop.index %}
+          <div class="item">
+            <p class="item-title" {% if c.kind == "skip" %}style="color:var(--muted)"{% endif %}>{{ c.before }}</p>
+            {% if c.kind == "skip" %}
+            <div class="row"><span class="tag">Skipped</span>
+              <form class="inline" hx-post="/admin/sessions/{{ s.id }}/questions/reopen" {{ hx | safe }}><input type="hidden" name="q" value="{{ c.before }}"><button class="btn link">Answer instead</button></form></div>
+            {% else %}
+            <div id="{{ did }}-view">
+              <p class="answer">{{ c.after }}</p>
+              <div class="row">{% if c.standing_instruction %}<span class="tag">Used in every future draft</span>{% endif %}
+                <button type="button" class="btn link" data-show="{{ did }}-form" data-hide="{{ did }}-view">Edit</button>
+                <form class="inline" hx-post="/admin/sessions/{{ s.id }}/questions/reopen" {{ hx | safe }}><input type="hidden" name="q" value="{{ c.before }}"><button class="btn link danger">Remove answer</button></form></div>
+            </div>
+            <form id="{{ did }}-form" class="stack" hidden hx-post="/admin/sessions/{{ s.id }}/questions/answer" {{ hx | safe }}>
+              <input type="hidden" name="q" value="{{ c.before }}">
+              <textarea name="answer" rows="2" required>{{ c.after }}</textarea>
+              <label class="check"><input type="checkbox" name="remember" value="1" {% if c.standing_instruction %}checked{% endif %}> Use in every future draft (for lasting facts like name spellings)</label>
+              <div class="row"><button class="btn primary">Save answer</button><button type="button" class="btn link" data-cancel="{{ did }}-form" data-restore="{{ did }}-view">Cancel</button></div>
+            </form>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </details>
+        {% endif %}
+      </section>
+
+      {# 2. Recap #}
+      <section class="section" id="recap">
+        <div class="section-head"><h2><span class="num">2</span>Recap</h2><button type="button" class="btn link" id="recap-edit" data-show="recap-form" data-hide="recap-view recap-edit">Edit</button></div>
+        <p class="hint">This is what the table reads on Previously on…</p>
+        <div class="story" id="recap-view">{{ recap_html | safe }}</div>
+        <form id="recap-form" class="stack" hidden hx-post="/admin/sessions/{{ s.id }}/recap" {{ hx | safe }}>
+          <textarea name="body" rows="12" required>{{ latest.body }}</textarea>
+          <input type="text" name="note" placeholder="Optional: what did Claude get wrong? (e.g. player banter is never story)">
+          <label class="check"><input type="checkbox" name="standing" value="1"> Apply this lesson to every future draft</label>
+          <div class="row"><button class="btn primary">Save</button><button type="button" class="btn link" data-cancel="recap-form" data-restore="recap-view recap-edit">Cancel</button>
+            <span class="note">Use **double asterisks** for bold names.</span></div>
+        </form>
+        <p class="meta">Version {{ latest.version }} by {{ "Claude" if latest.author == "ai" else "you" }}{% if last_done %} · drafting cost {{ "%.0f" | format(last_done.cost_usd * 100) }}¢{% endif %}{% if published and published.id != latest.id %} · the table still sees version {{ published.version }}{% endif %}</p>
+      </section>
+
+      {# 3. Key moments #}
+      <section class="section" id="events">
+        <div class="section-head"><h2><span class="num">3</span>Key moments</h2><button type="button" class="btn link" data-show="ev-new" data-hide="">+ Add</button></div>
+        <p class="hint">Shown under the recap. Theories appear as open threads, never as facts.</p>
+        <ul class="events">
+          {% for ev in events %}
+          <li class="ev {{ 'theory' if ev.kind.value == 'theory' }}" id="ev{{ ev.id }}-view">
+            <span class="kind {{ ev.kind.value }}">{{ ev.kind.value }}</span>
+            <div class="ev-text">{{ ev.text }}{% if ev.entities %}<small>{{ ev.entities | map(attribute="name") | join(" · ") }}</small>{% endif %}</div>
+            <button type="button" class="btn link" data-show="ev{{ ev.id }}-form" data-hide="ev{{ ev.id }}-view">Edit</button>
+          </li>
+          <li class="ev" id="ev{{ ev.id }}-form" hidden>
+            <form class="ev-form" hx-post="/admin/sessions/{{ s.id }}/events" {{ hx | safe }}>
+              <input type="hidden" name="event_id" value="{{ ev.id }}">
+              <select name="kind">{% for k in event_kinds %}<option value="{{ k }}" {% if k == ev.kind.value %}selected{% endif %}>{{ k | capitalize }}</option>{% endfor %}</select>
+              <textarea name="text" rows="2" required>{{ ev.text }}</textarea>
+              <div class="row"><button class="btn primary">Save</button><button type="button" class="btn link" data-cancel="ev{{ ev.id }}-form" data-restore="ev{{ ev.id }}-view">Cancel</button>
+                <button type="button" class="btn link danger" style="margin-left:auto" hx-post="/admin/sessions/{{ s.id }}/events/{{ ev.id }}/delete" {{ hx | safe }} hx-confirm="Delete this key moment?">Delete</button></div>
+            </form>
+          </li>
+          {% endfor %}
+          <li class="ev" id="ev-new" hidden>
+            <form class="ev-form" hx-post="/admin/sessions/{{ s.id }}/events" {{ hx | safe }}>
+              <select name="kind">{% for k in event_kinds %}<option value="{{ k }}">{{ k | capitalize }}</option>{% endfor %}</select>
+              <textarea name="text" rows="2" placeholder="What happened?" required></textarea>
+              <div class="row"><button class="btn primary">Add</button><button type="button" class="btn link" data-cancel="ev-new">Cancel</button></div>
+            </form>
+          </li>
+        </ul>
+        {% if not events %}<p class="muted">No key moments yet.</p>{% endif %}
+      </section>
+
+      {# 4. Suggested updates #}
+      <section class="section" id="suggestions">
+        <div class="section-head"><h2><span class="num">4</span>Suggested updates</h2><span class="count">{% if open_proposals %}{{ open_proposals | length }} to review{% endif %}</span></div>
+        <p class="hint">Changes to what askdnd knows about people, places and spellings.</p>
+        {% for p in open_proposals %}{% set d = p.payload %}
+        <div class="item">
+          {% include "_proposal_head.html" %}
+          {% if p.kind == "entity" %}
+          <div id="p{{ p.id }}-view">
+            <div class="compare {{ 'single' if not d.old_summary }}">
+              {% if d.old_summary %}<div><span>Before</span>{{ d.old_summary }}</div>{% endif %}
+              <div class="after"><span>Proposed</span>{{ d.summary }}</div>
+            </div>
+            <div class="row">
+              <form class="inline" hx-post="/admin/proposals/{{ p.id }}/accept" {{ hx | safe }}><button class="btn primary">Accept</button></form>
+              <button type="button" class="btn" data-show="p{{ p.id }}-form" data-hide="p{{ p.id }}-view">Edit</button>
+              <form class="inline" hx-post="/admin/proposals/{{ p.id }}/reject" {{ hx | safe }}><button class="btn link">Reject</button></form>
+            </div>
+          </div>
+          <form id="p{{ p.id }}-form" class="stack" hidden hx-post="/admin/proposals/{{ p.id }}/accept" {{ hx | safe }}>
+            <textarea name="summary" rows="3" required>{{ d.summary }}</textarea>
+            <div class="row"><button class="btn primary">Save and accept</button><button type="button" class="btn link" data-cancel="p{{ p.id }}-form" data-restore="p{{ p.id }}-view">Cancel</button></div>
+          </form>
+          {% else %}
+          <div class="row">
+            <form class="inline" hx-post="/admin/proposals/{{ p.id }}/accept" {{ hx | safe }}><button class="btn primary">Add to glossary</button></form>
+            <form class="inline" hx-post="/admin/proposals/{{ p.id }}/reject" {{ hx | safe }}><button class="btn link">Skip</button></form>
+          </div>
+          {% endif %}
+        </div>
+        {% else %}
+        <p class="all-clear">{% if done_proposals %}✓ All suggestions handled.{% else %}No suggestions this time.{% endif %}</p>
+        {% endfor %}
+
+        {% if done_proposals %}
+        <details class="done"><summary>Done ({% if accepted_count %}{{ accepted_count }} accepted{% endif %}{% if accepted_count and rejected_count %}, {% endif %}{% if rejected_count %}{{ rejected_count }} rejected{% endif %})</summary>
+          {% for p in done_proposals %}{% set d = p.payload %}
+          <div class="item">
+            {% include "_proposal_head.html" %}
+            {% if p.status == "accepted" and p.kind == "entity" %}
+            <div id="dp{{ p.id }}-view">
+              <div class="compare {{ 'single' if not d.old_summary }}">
+                {% if d.old_summary %}<div><span>Before</span>{{ d.old_summary }}</div>{% endif %}
+                <div class="after"><span>Now in askdnd</span>{{ d.summary }}</div>
+              </div>
+              <div class="row"><button type="button" class="btn link" data-show="dp{{ p.id }}-form" data-hide="dp{{ p.id }}-view">Edit</button>
+                <form class="inline" hx-post="/admin/proposals/{{ p.id }}/undo" {{ hx | safe }}><button class="btn link">Undo</button></form></div>
+            </div>
+            <form id="dp{{ p.id }}-form" class="stack" hidden hx-post="/admin/proposals/{{ p.id }}/edit" {{ hx | safe }}>
+              <textarea name="summary" rows="3" required>{{ d.summary }}</textarea>
+              <div class="row"><button class="btn primary">Save</button><button type="button" class="btn link" data-cancel="dp{{ p.id }}-form" data-restore="dp{{ p.id }}-view">Cancel</button></div>
+            </form>
+            {% else %}
+            <form class="inline" hx-post="/admin/proposals/{{ p.id }}/undo" {{ hx | safe }}><button class="btn link">Undo</button></form>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </details>
+        {% endif %}
+      </section>
+    </div>
+
+    <aside class="aside">
+      <div class="panel">
+        <h3>Review</h3>
+        <ul class="checklist">
+          <li><span class="tick {{ 'on' if not open_questions }}">{{ '✓' if not open_questions }}</span>Questions<small>{{ (open_questions | length ~ ' left') if open_questions else 'done' }}</small></li>
+          <li><span class="tick on">✓</span>Recap<small>v{{ latest.version }}</small></li>
+          <li><span class="tick on">✓</span>Key moments<small>{{ events | length }}</small></li>
+          <li><span class="tick {{ 'on' if not open_proposals }}">{{ '✓' if not open_proposals }}</span>Suggestions<small>{{ (open_proposals | length ~ ' left') if open_proposals else 'done' }}</small></li>
+        </ul>
+        <div class="publish-block">{% include "_publish_button.html" %}
+          <p class="note">Shows on Previously on… You can edit and publish again any time.</p></div>
+      </div>
+      <p class="source">{{ "From a transcript" if s.source == "transcript" else "From your campaign notes" }}{% if s.source != "transcript" %} · <a href="/admin/notes">notes</a>{% endif %}</p>
+    </aside>
+  </div>
+  <div class="mobile-bar">
+    <span class="tag {{ {'draft': 'draft', 'published': 'published', 'edited': 'edited'}.get(status, '') }}">{{ {'draft': 'Draft', 'published': 'Published', 'edited': 'Edited'}.get(status, '') }}</span>
+    {% include "_publish_button.html" %}
+  </div>
+  {% endif %}
+</div>

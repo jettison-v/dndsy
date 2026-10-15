@@ -44,7 +44,7 @@ def test_allowed_user_signs_in(client, monkeypatch):
     assert response.headers["location"] == "/"
     home = client.get("/")
     assert home.status_code == 200
-    assert "Welcome, Player" in home.text
+    assert "Previously on" in home.text
 
 
 def test_unlisted_user_is_rejected(client, monkeypatch):
@@ -88,3 +88,15 @@ def test_logout(client, monkeypatch):
     client.get("/auth/callback", follow_redirects=False)
     client.post("/logout", follow_redirects=False)
     assert client.get("/", follow_redirects=False).status_code == 303
+
+
+def test_dev_login_only_when_configured_and_not_production(monkeypatch):
+    c = TestClient(app)
+    monkeypatch.setattr(config, "DEV_LOGIN_EMAIL", "")
+    assert c.get("/dev/login", follow_redirects=False).headers["location"] == "/login"
+    monkeypatch.setattr(config, "DEV_LOGIN_EMAIL", "player@example.com")
+    monkeypatch.setattr(config, "ALLOWED_EMAILS", parse_allowlist("player@example.com"))
+    monkeypatch.setattr(config, "IS_PRODUCTION", True)
+    assert c.get("/dev/login", follow_redirects=False).headers["location"] == "/login"
+    monkeypatch.setattr(config, "IS_PRODUCTION", False)
+    assert c.get("/dev/login", follow_redirects=False).headers["location"] == "/"

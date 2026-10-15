@@ -1,7 +1,13 @@
 {% extends "base.html" %}
-{% block content %}
-<h1>askdnd</h1>
-<p>A companion for our table.</p>
-{% if error %}<p class="error">{{ error }}</p>{% endif %}
-<p><a class="button" href="/auth/google">Sign in with Google</a></p>
+{% block title %}Sign in · askdnd{% endblock %}
+{% block body %}
+<main class="login">
+  <section class="section">
+    <img src="/static/icons/android-chrome-192x192.png" alt="">
+    <h1 style="margin:16px 0 6px">askdnd</h1>
+    <p class="muted" style="margin:0 0 24px">A companion for our table.</p>
+    {% if error %}<div class="flash bad" style="text-align:left">{{ error }}</div>{% endif %}
+    <a class="btn primary" href="/auth/google" style="width:100%">Sign in with Google</a>
+  </section>
+</main>
 {% endblock %}

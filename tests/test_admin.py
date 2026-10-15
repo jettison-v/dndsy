@@ -46,7 +46,7 @@ def test_import_requires_admin(client, monkeypatch):
 def test_admin_can_import(client, monkeypatch):
     sign_in(client, monkeypatch, "admin@example.com")
     page = client.get("/")
-    assert "Import campaign data" in page.text
+    assert "Manage" in page.text and "/admin/import" in page.text
     r = upload(client, {"campaign": {"slug": "x", "name": "X"}, "entities": [{"kind": "npc", "name": "Uni"}]})
     assert "entities created: 1" in r.text
 

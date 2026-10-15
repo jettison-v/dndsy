@@ -89,3 +89,18 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 3. Admin-only pages for data you'd otherwise load by hand.
 4. For Google data: one Cloud project per app, enable each API, minimal read-only scope, list every redirect URI.
 5. For anything private and local: a localhost-only web page plus a small `.app` launcher is a cheap, friendly GUI.
+
+## 2026-10-15 — Week 2: extraction, review and the new look
+
+**What we set up**
+- **Story extraction with Claude** (Opus 5.5, structured JSON output, automatic fallback if a safety filter misfires). Each session costs about 10–15¢; every run's cost is recorded and shown.
+- **Review flow**: Claude's questions (answer, skip, or use in every future draft), the recap (edit), key moments (edit/add/delete), suggested updates (accept, edit, reject, undo). Nothing reaches the table until you publish.
+- **A design system** (docs/DESIGN.md) and a clickable mockup before building: dark theme inspired by D&D Beyond, readable type, "Done" drawers for anything already handled, and one top bar for everyone plus an admin-only **Manage** menu.
+- **Pages for the table**: Previously on… (home), Sessions, Campaign, and a Characters placeholder.
+- **HTMX**: buttons on the review page update just that area instead of reloading the page.
+
+**Reuse this on a new project**
+1. Mock up important screens with fake data before building them; iterate on the mockup, not the code.
+2. Write the design rules down (colors, type, components) in the repo, so every future session follows them.
+3. Keep "what a button does" in a plain module with tests (app/review.py) and keep routes thin.
+4. A local-only sign-in shortcut (DEV_LOGIN_EMAIL) makes it possible to preview real pages without going through Google.
