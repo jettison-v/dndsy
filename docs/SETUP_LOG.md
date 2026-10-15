@@ -47,3 +47,23 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 3. Google sign-in recipe: create a Cloud project → Google Auth Platform → **External** audience in **Testing** mode → add test users → create a **Web application** client with one redirect URI per environment (`https://<domain>/auth/callback` and `http://localhost:8000/auth/callback`) → save the client ID and secret as secrets.
 4. Gate access twice: Google's test-user list, plus an allowlist in your app. When you go live, publish the Google app and keep the allowlist.
 5. To add a player later: add their email to `ALLOWED_EMAILS` (`railway variable set ALLOWED_EMAILS=a@x.com,b@y.com -s askdnd-v2`) and to Google's test users (until the app is published).
+
+## 2026-10-15 — Week 1, part 3: local transcript filter (in progress)
+
+**What we set up**
+- **Ollama on Brett's Mac** runs AI models locally; our script talks to it at `127.0.0.1:11434`, so raw transcripts never leave the Mac. No extra app needed.
+- **MacWhisper export:** *Segments* + *.json*, with speaker names, timestamps and milliseconds on. Save to `transcripts/raw/<date>.json` (git-ignored).
+- **The filter** (`uv run python -m transcript_filter transcripts/raw/<date>.json`):
+  1. *Echo de-dup* (plain code): Zoom echo makes the same words appear twice; drops the copy (about 39% of words).
+  2. *Table-talk filter* (local model): labels each line game or table talk, using private campaign notes in `transcripts/context.md`.
+  3. Writes the filtered transcript to `transcripts/filtered/` and a **review page** to `transcripts/review/` that shows exactly what was cut.
+- **Scoring:** `uv run python -m transcript_filter.score …` compares a run to hand labels (`transcripts/gold/`), so prompts and models can be compared with numbers instead of gut feel.
+
+**Lessons**
+- A local model can loop and never finish; cap its output, retry smaller pieces, and flag what still fails rather than crash.
+- Tell the model what *doesn't* count. Our group's other games (castles, spells, giants) fooled it until the prompt said so.
+- Keep private context (names, campaign details) in git-ignored files, and keep only the code in git.
+
+**Next steps**
+- Finish the model comparison (qwen3:30b-instruct, gemma4:12b, qwen3.8:27b), full run with the winner, Brett reviews the page.
+- Check the mid-session break (around 2:00–2:35) and the end; add hand labels for them.

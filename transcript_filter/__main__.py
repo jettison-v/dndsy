@@ -27,6 +27,13 @@ def main() -> int:
     parser.add_argument("input", type=Path)
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--out", type=Path, default=Path("transcripts"))
+    parser.add_argument(
+        "--context",
+        type=Path,
+        default=Path("transcripts/context.md"),
+        help="private campaign notes for the model (used if the file exists)",
+    )
+    parser.add_argument("--minutes", type=float, help="only process the first N minutes (for testing)")
     parser.add_argument("--echo-only", action="store_true", help="skip the Ollama step")
     args = parser.parse_args()
 
@@ -35,6 +42,8 @@ def main() -> int:
         return 1
 
     segments = load_macwhisper(args.input)
+    if args.minutes:
+        segments = [s for s in segments if s.start < args.minutes * 60]
     echo = remove_echo(segments)
     print(f"echo: removed {echo} of {len(segments)} segments", flush=True)
 
@@ -50,10 +59,11 @@ def main() -> int:
             return cache[key]
 
         progress = lambda done, total: print(f"  block {done}/{total} ({time.monotonic() - started:.0f}s)", flush=True)  # noqa: E731
-        classify(segments, ask, progress)
+        campaign = args.context.read_text() if args.context.exists() else ""
+        classify(segments, ask, progress, campaign)
 
     name = args.input.stem
-    tag = model_label.replace(":", "-").replace(" ", "-")
+    tag = model_label.replace(":", "-").replace(" ", "-") + (f".first{args.minutes:g}m" if args.minutes else "")
     (args.out / "filtered").mkdir(parents=True, exist_ok=True)
     (args.out / "review").mkdir(parents=True, exist_ok=True)
     write_filtered(segments, args.out / "filtered" / f"{name}.{tag}.json", args.out / "filtered" / f"{name}.{tag}.txt")
