@@ -5,90 +5,104 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mockup: Session review · askdnd</title>
 <!-- Design mockup with made-up content. See docs/DESIGN.md. Not served by the app. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --paper: #f7f4ec; --card: #fff; --ink: #23211c; --muted: #6f6a5f; --line: #e6e0d2;
-    --primary: #2c5e3f; --primary-ink: #fff; --primary-soft: #e3eee7;
-    --draft: #9a6a12; --draft-bg: #fbf0d6;
-    --published: #2f7d4f; --published-bg: #e2f1e6;
-    --edited: #2f5e9e; --edited-bg: #e4ecf8;
-    --danger: #a3342b; --danger-bg: #fbe7e4;
+    --page: #ece8e0; --card: #fff; --ink: #1e1e1e; --muted: #6b6458; --line: #ddd6c8;
+    --parchment: #fbf6ea; --parchment-line: #d9ccae;
+    --night: #1b1d20; --night-2: #26292e; --night-line: #3a3e44; --night-text: #e9e6df; --night-muted: #a7a399;
+    --red: #c53131; --red-dark: #9b2424; --red-soft: #f7e3e1;
+    --draft: #8a5a00; --draft-bg: #fcefcf;
+    --published: #22703f; --published-bg: #dff0e4;
+    --edited: #2a5694; --edited-bg: #e1eaf7;
+    --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
     --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-    --radius: 10px;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, sans-serif; }
-  a { color: var(--primary); }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.5 Roboto, system-ui, sans-serif; }
+  a { color: var(--red-dark); }
   button { font: inherit; cursor: pointer; }
-  :focus-visible { outline: 3px solid color-mix(in srgb, var(--primary) 45%, transparent); outline-offset: 2px; }
+  :focus-visible { outline: 3px solid rgba(197, 49, 49, .4); outline-offset: 2px; }
+  .label { font-family: var(--cond); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
 
   /* Top bar */
-  .topbar { background: var(--card); border-bottom: 1px solid var(--line); }
-  .topbar-inner { max-width: 1120px; margin: 0 auto; padding: 0 20px; height: 56px; display: flex; align-items: center; gap: 24px; }
-  .brand { font-weight: 700; font-size: 1.1rem; color: var(--ink); text-decoration: none; display: flex; align-items: center; gap: 8px; }
-  .brand span { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; background: var(--primary); color: #f0e6c8; font-size: .75rem; }
-  .nav { display: flex; gap: 18px; flex: 1; }
-  .nav a { color: var(--muted); text-decoration: none; font-weight: 500; }
-  .nav a.active { color: var(--ink); }
-  .who { color: var(--muted); font-size: .9rem; }
+  .topbar { background: var(--night); border-bottom: 3px solid var(--red); }
+  .topbar-inner { max-width: 1120px; margin: 0 auto; padding: 0 20px; height: 58px; display: flex; align-items: center; gap: 28px; }
+  .brand { font-family: var(--cond); font-weight: 700; font-size: 1.25rem; letter-spacing: .02em; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 10px; }
+  .brand span { display: inline-grid; place-items: center; width: 30px; height: 30px; background: var(--red); color: #fff; font-size: .8rem; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+  .nav { display: flex; gap: 4px; flex: 1; }
+  .nav a { font-family: var(--cond); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; font-size: .9rem; color: var(--night-muted); text-decoration: none; padding: 18px 12px 15px; border-bottom: 3px solid transparent; margin-bottom: -3px; }
+  .nav a:hover { color: #fff; }
+  .nav a.active { color: #fff; border-bottom-color: #fff; }
+  .who { color: var(--night-muted); font-size: .9rem; margin-left: auto; }
+
+  /* Page header band */
+  .band { background: linear-gradient(180deg, var(--night-2), #31353b); color: var(--night-text); }
+  .band-inner { max-width: 1120px; margin: 0 auto; padding: 20px 20px 22px; }
+  .crumbs { font-family: var(--cond); text-transform: uppercase; letter-spacing: .06em; font-size: .8rem; color: var(--night-muted); }
+  .crumbs a { color: var(--night-muted); text-decoration: none; }
+  .crumbs a:hover { color: #fff; }
+  .title-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 6px 0 4px; }
+  h1 { font-family: var(--cond); font-size: 2rem; font-weight: 700; margin: 0; color: #fff; }
+  .subtitle { color: var(--night-muted); margin: 0; font-size: .92rem; }
 
   .page { max-width: 1120px; margin: 0 auto; padding: 24px 20px 120px; }
-  .crumbs { color: var(--muted); font-size: .9rem; }
-  .crumbs a { color: var(--muted); }
-  .title-row { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 6px 0 4px; }
-  h1 { font-size: 1.75rem; margin: 0; letter-spacing: -.01em; }
-  .subtitle { color: var(--muted); margin: 0 0 20px; }
-
   .layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; }
   @media (max-width: 760px) { .layout { grid-template-columns: 1fr; } }
 
-  /* Cards and sections */
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 16px; }
-  .section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-  .step { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); font-weight: 700; font-size: .85rem; flex: none; }
-  .step.done { background: var(--primary); color: #fff; }
-  h2 { font-size: 1.1rem; margin: 0; flex: 1; }
+  /* Cards and stat-block style section headings */
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 20px 22px; margin-bottom: 18px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+  .section-head { display: flex; align-items: center; gap: 10px; padding-bottom: 8px; margin-bottom: 14px; border-bottom: 2px solid var(--red); }
+  .step { display: inline-grid; place-items: center; width: 26px; height: 26px; background: var(--red); color: #fff; font-family: var(--cond); font-weight: 700; font-size: .9rem; flex: none; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+  .step.done { background: var(--published); }
+  h2 { font-family: var(--cond); text-transform: uppercase; letter-spacing: .06em; font-size: 1.05rem; font-weight: 700; color: var(--red-dark); margin: 0; flex: 1; }
   .hint { color: var(--muted); font-size: .88rem; margin: -4px 0 14px; }
 
-  /* Pills */
-  .pill { display: inline-flex; align-items: center; gap: 5px; font-size: .78rem; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: #eeebe3; color: var(--muted); white-space: nowrap; }
+  /* Tags */
+  .pill { display: inline-flex; align-items: center; font-family: var(--cond); text-transform: uppercase; letter-spacing: .05em; font-size: .72rem; font-weight: 700; padding: 3px 8px; border-radius: 3px; background: #e9e4da; color: var(--muted); white-space: nowrap; }
   .pill.draft { background: var(--draft-bg); color: var(--draft); }
   .pill.published { background: var(--published-bg); color: var(--published); }
-  .pill.edited { background: var(--edited-bg); color: var(--edited); }
-  .pill.new { background: var(--edited-bg); color: var(--edited); }
+  .pill.edited, .pill.new { background: var(--edited-bg); color: var(--edited); }
+  .band .pill.draft { background: #f2c14e; color: #3b2a00; }
+  .band .pill.published { background: #5cb87a; color: #082b14; }
+  .band .pill.edited { background: #7ea6e0; color: #0c2244; }
 
   /* Buttons */
-  .btn { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 8px; padding: 7px 14px; font-weight: 500; min-height: 36px; }
-  .btn:hover { border-color: #cfc7b4; }
-  .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
-  .btn.primary:hover { background: #244e34; }
+  .btn { font-family: var(--cond); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; font-size: .85rem; border: 1px solid #c9c1b1; background: var(--card); color: var(--ink); border-radius: 3px; padding: 8px 14px; min-height: 36px; }
+  .btn:hover { border-color: var(--ink); }
+  .btn.primary { background: var(--red); border-color: var(--red); color: #fff; }
+  .btn.primary:hover { background: var(--red-dark); border-color: var(--red-dark); }
   .btn.quiet { border-color: transparent; background: transparent; color: var(--muted); padding: 6px 10px; }
-  .btn.quiet:hover { background: #f1ede3; color: var(--ink); }
-  .btn.danger { color: var(--danger); }
-  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn.quiet:hover { background: #f1ece2; color: var(--ink); }
+  .btn.danger { color: var(--red-dark); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
   .btn-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .cost { color: var(--muted); font-size: .82rem; }
 
-  textarea, input[type=text], select { width: 100%; font: inherit; color: var(--ink); background: #fffdf8; border: 1px solid #d9d1bf; border-radius: 8px; padding: 9px 11px; }
+  textarea, input[type=text], select { width: 100%; font: inherit; color: var(--ink); background: #fffdf8; border: 1px solid #cfc5b1; border-radius: 3px; padding: 9px 11px; }
+  textarea:focus, input:focus, select:focus { border-color: var(--red); outline: none; box-shadow: 0 0 0 3px rgba(197,49,49,.15); }
   textarea { resize: vertical; }
   select { width: auto; padding: 6px 8px; }
   label.check { display: inline-flex; gap: 8px; align-items: center; color: var(--muted); font-size: .9rem; }
+  input[type=checkbox] { accent-color: var(--red); }
 
-  /* Story text */
-  .story { font-family: var(--serif); font-size: 1.06rem; line-height: 1.65; max-width: 68ch; }
-  .story p { margin: 0 0 .9em; }
+  /* Story text: parchment, like a book page */
+  .story { font-family: var(--serif); font-size: 1.07rem; line-height: 1.65; background: var(--parchment); border: 1px solid var(--parchment-line); border-radius: 3px; padding: 18px 22px; }
+  .story p { margin: 0 0 .9em; max-width: 68ch; }
   .story p:last-child { margin-bottom: 0; }
-  .meta { color: var(--muted); font-size: .85rem; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; gap: 6px; flex-wrap: wrap; }
+  .story b { color: var(--red-dark); }
+  .meta { color: var(--muted); font-size: .85rem; margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
 
   /* Questions */
   .q { padding: 14px 0; border-top: 1px solid var(--line); }
-  .q:first-of-type { border-top: none; padding-top: 4px; }
-  .q-text { font-weight: 600; margin-bottom: 6px; display: flex; gap: 10px; }
+  .q:first-of-type { border-top: none; padding-top: 2px; }
+  .q-text { font-weight: 500; margin-bottom: 8px; display: flex; gap: 10px; }
   .q-text .pill { margin-left: auto; align-self: flex-start; }
-  .q-answer { background: #f6f9f6; border-left: 3px solid var(--published); padding: 8px 12px; border-radius: 0 8px 8px 0; display: flex; gap: 10px; align-items: flex-start; }
-  .q-answer p { margin: 0; flex: 1; }
+  .q-answer { background: var(--parchment); border-left: 3px solid var(--published); padding: 8px 12px; display: flex; gap: 10px; align-items: flex-start; }
+  .q-answer p { margin: 0; flex: 1; font-family: var(--serif); }
   .q-edit { display: grid; gap: 8px; }
-  .redraft-bar { margin-top: 10px; padding: 12px 14px; background: var(--draft-bg); border-radius: 8px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .redraft-bar { margin-top: 12px; padding: 12px 14px; background: var(--draft-bg); border-left: 3px solid #d39a1f; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
   .redraft-bar p { margin: 0; flex: 1; min-width: 200px; font-size: .9rem; }
 
   /* Events */
@@ -100,47 +114,59 @@
   .ev .btn.quiet { opacity: 0; transition: opacity .15s; }
   .ev:hover .btn.quiet, .ev:focus-within .btn.quiet { opacity: 1; }
   @media (hover: none) { .ev .btn.quiet { opacity: 1; } }
-  .badge { flex: none; width: 74px; text-align: center; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 3px 0; border-radius: 6px; margin-top: 2px; }
-  .badge.event { background: #eeebe3; color: #5c574c; }
-  .badge.reveal { background: #efe7f7; color: #6a3f99; }
-  .badge.decision { background: var(--edited-bg); color: var(--edited); }
-  .badge.loot { background: #f8eccb; color: #8a6510; }
-  .badge.theory { background: transparent; color: var(--muted); border: 1.5px dashed #bdb5a3; }
+  .badge { flex: none; width: 76px; text-align: center; font-family: var(--cond); font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding: 3px 0; border-radius: 3px; margin-top: 2px; color: #fff; }
+  .badge.event { background: #6b6458; }
+  .badge.reveal { background: #6a3f99; }
+  .badge.decision { background: #2a5694; }
+  .badge.loot { background: #a57a12; }
+  .badge.theory { background: transparent; color: var(--muted); border: 1.5px dashed #a79f8e; }
   .ev.theory .ev-text { font-style: italic; color: #4d483e; }
   .ev-form { display: grid; gap: 8px; width: 100%; }
 
   /* Suggestions */
-  .sug { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; margin-top: 12px; }
+  .sug { border: 1px solid var(--line); border-left: 3px solid var(--red); border-radius: 3px; padding: 14px 16px; margin-top: 12px; }
+  .sug.accepted { border-left-color: var(--published); }
+  .sug.rejected { border-left-color: #a79f8e; opacity: .8; }
   .sug-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
-  .sug-head b { font-size: 1rem; }
+  .sug-head b { font-family: var(--cond); font-size: 1.1rem; }
+  .sug-head .pill:last-of-type { margin-right: auto; }
   .diff { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
   @media (max-width: 560px) { .diff { grid-template-columns: 1fr; } }
-  .diff div { font-size: .92rem; padding: 10px 12px; border-radius: 8px; background: #faf8f2; }
-  .diff .after { background: #f2f8f3; }
-  .diff span { display: block; font-size: .72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
-  .decided { color: var(--muted); font-size: .9rem; margin-top: 12px; }
+  .diff div { font-size: .92rem; padding: 10px 12px; background: #f6f3ec; }
+  .diff .after { background: var(--parchment); border: 1px solid var(--parchment-line); }
+  .diff span { display: block; font-family: var(--cond); font-size: .72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+  .decided-group { margin-top: 18px; }
+  .decided-group summary { cursor: pointer; font-family: var(--cond); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; font-size: .85rem; color: var(--muted); }
+  .result { font-size: .92rem; background: var(--parchment); border: 1px solid var(--parchment-line); padding: 10px 12px; margin-bottom: 10px; }
 
-  /* Progress panel */
+  /* Progress panel: dark, like a character-sheet sidebar */
   .aside { position: sticky; top: 16px; }
+  .panel { background: var(--night-2); color: var(--night-text); border-radius: 4px; padding: 18px 20px; margin-bottom: 18px; border-top: 3px solid var(--red); }
+  .panel h3 { font-family: var(--cond); text-transform: uppercase; letter-spacing: .08em; font-size: .9rem; margin: 0 0 10px; color: #fff; }
   .checklist { list-style: none; padding: 0; margin: 0 0 16px; }
-  .checklist li { display: flex; gap: 10px; align-items: center; padding: 7px 0; font-size: .92rem; }
-  .tick { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #cfc7b4; flex: none; display: grid; place-items: center; font-size: .7rem; color: #fff; }
-  .tick.on { background: var(--primary); border-color: var(--primary); }
-  .checklist small { color: var(--muted); margin-left: auto; }
-  .publish-note { color: var(--muted); font-size: .82rem; margin: 8px 0 0; }
-  .aside .btn.primary { width: 100%; min-height: 44px; font-size: 1rem; }
+  .checklist li { display: flex; gap: 10px; align-items: center; padding: 8px 0; font-size: .92rem; border-bottom: 1px solid var(--night-line); }
+  .tick { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #5c6068; flex: none; display: grid; place-items: center; font-size: .7rem; color: #fff; }
+  .tick.on { background: #3c9a5f; border-color: #3c9a5f; }
+  .checklist small { color: var(--night-muted); margin-left: auto; font-family: var(--cond); text-transform: uppercase; letter-spacing: .05em; }
+  .publish-note { color: var(--night-muted); font-size: .82rem; margin: 10px 0 0; }
+  .publish-note a { color: #f0a9a3; }
+  .panel .btn.primary { width: 100%; min-height: 46px; font-size: 1rem; }
+  .panel .btn.primary:disabled { opacity: 1; background: #3c9a5f; border-color: #3c9a5f; }
+  .source { background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 14px 18px; font-size: .88rem; color: var(--muted); }
+  .source .label { color: var(--ink); font-size: .8rem; display: block; margin-bottom: 4px; }
 
   .mobile-bar { display: none; }
   @media (max-width: 760px) {
     .aside .publish-block { display: none; }
-    .mobile-bar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--card); border-top: 1px solid var(--line); gap: 12px; align-items: center; }
-    .mobile-bar .btn.primary { flex: 1; min-height: 44px; }
+    .mobile-bar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--night); border-top: 3px solid var(--red); gap: 12px; align-items: center; }
+    .mobile-bar .btn.primary { flex: 1; min-height: 46px; }
     .nav { display: none; }
+    h1 { font-size: 1.6rem; }
   }
 
-  .toast { position: fixed; top: 16px; left: 50%; transform: translate(-50%, -20px); background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 999px; font-weight: 500; opacity: 0; transition: all .25s; pointer-events: none; z-index: 10; }
+  .toast { position: fixed; top: 16px; left: 50%; transform: translate(-50%, -20px); background: var(--night); color: #fff; border-left: 4px solid var(--red); padding: 10px 18px; border-radius: 3px; font-weight: 500; opacity: 0; transition: all .25s; pointer-events: none; z-index: 10; }
   .toast.show { opacity: 1; transform: translate(-50%, 0); }
-  .mock-note { background: #222; color: #ddd; font-size: .8rem; text-align: center; padding: 6px; }
+  .mock-note { background: #000; color: #bbb; font-size: .8rem; text-align: center; padding: 6px; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -152,14 +178,15 @@
   <span class="who">Brett</span>
 </div></header>
 
-<main class="page">
+<section class="band"><div class="band-inner">
   <div class="crumbs"><a href="#">Sessions</a> › Session 12</div>
   <div class="title-row">
     <h1>Session 12: The Drowned Bell</h1>
     <span class="pill draft" id="status-pill">Draft</span>
   </div>
   <p class="subtitle">Played Mar 8, 2026 · drafted from notes by Claude</p>
-
+</div></section>
+<main class="page">
   <div class="layout">
     <div>
       <!-- 1. Questions -->
@@ -241,35 +268,42 @@
       <!-- 4. Suggestions -->
       <section class="card" id="suggestions">
         <div class="section-head"><span class="step" id="step-4">4</span><h2>Suggested updates</h2><span class="cost" id="sug-count">3 to review</span></div>
-        <p class="hint">Changes to what askdnd knows about people, places and spellings. Accepted ones inform future drafts.</p>
+        <p class="hint">Changes to what askdnd knows about people, places and spellings. Accepted ones inform future drafts. You can edit or undo any decision later.</p>
 
-        <div class="sug" data-sug>
-          <div class="sug-head"><b>Tamsin Vell</b><span class="pill">npc</span><span class="cost">also known as: Tamsin</span></div>
-          <div class="diff">
-            <div><span>Before</span>Traveling bard who joined the party in Saltmere.</div>
-            <div class="after"><span>Proposed</span>Bard sent by the Harbor Guild to silence the Drowned Bell; parted ways with the party but left them her sea-cave map.</div>
+        <div id="pending">
+          <div class="sug" data-sug data-name="Tamsin Vell" data-before="Traveling bard who joined the party in Saltmere.">
+            <div class="sug-head"><b>Tamsin Vell</b><span class="pill">npc</span><span class="cost">also known as: Tamsin</span></div>
+            <div class="diff">
+              <div><span>Before</span>Traveling bard who joined the party in Saltmere.</div>
+              <div class="after"><span>Proposed</span><p data-proposed style="margin:0">Bard sent by the Harbor Guild to silence the Drowned Bell; parted ways with the party but left them her sea-cave map.</p></div>
+            </div>
+            <div class="btn-row" data-actions><button class="btn primary" data-accept>Accept</button><button class="btn" data-sug-edit>Edit first</button><button class="btn quiet" data-reject>Reject</button></div>
           </div>
-          <div class="btn-row"><button class="btn primary" data-accept>Accept</button><button class="btn" data-sug-edit>Edit</button><button class="btn quiet" data-reject>Reject</button></div>
-        </div>
 
-        <div class="sug" data-sug>
-          <div class="sug-head"><b>The tide-key</b><span class="pill">item</span><span class="pill new">New</span></div>
-          <div class="diff" style="grid-template-columns:1fr"><div class="after"><span>Proposed</span>Key taken from the Drowned Bell's clapper; opens something tied to the tides. Carried by Wren.</div></div>
-          <div class="btn-row"><button class="btn primary" data-accept>Accept</button><button class="btn" data-sug-edit>Edit</button><button class="btn quiet" data-reject>Reject</button></div>
-        </div>
+          <div class="sug" data-sug data-name="The tide-key" data-before="">
+            <div class="sug-head"><b>The tide-key</b><span class="pill">item</span><span class="pill new">New</span></div>
+            <div class="diff" style="grid-template-columns:1fr"><div class="after"><span>Proposed</span><p data-proposed style="margin:0">Key taken from the Drowned Bell's clapper; opens something tied to the tides. Carried by Wren.</p></div></div>
+            <div class="btn-row" data-actions><button class="btn primary" data-accept>Accept</button><button class="btn" data-sug-edit>Edit first</button><button class="btn quiet" data-reject>Reject</button></div>
+          </div>
 
-        <div class="sug" data-sug>
-          <div class="sug-head"><b>Saltmere</b><span class="pill">glossary</span><span class="cost">often misheard as "Salt Mirror", "Saltmar"</span></div>
-          <div class="btn-row"><button class="btn primary" data-accept>Add to glossary</button><button class="btn quiet" data-reject>Skip</button></div>
+          <div class="sug" data-sug data-name="Saltmere" data-glossary>
+            <div class="sug-head"><b>Saltmere</b><span class="pill">glossary</span><span class="cost">often misheard as "Salt Mirror", "Saltmar"</span></div>
+            <div class="btn-row" data-actions><button class="btn primary" data-accept>Add to glossary</button><button class="btn quiet" data-reject>Skip</button></div>
+          </div>
         </div>
-        <p class="decided" id="decided" hidden></p>
+        <p class="hint" id="all-done" hidden style="margin:8px 0 0">All suggestions decided.</p>
+
+        <details class="decided-group" id="decided" hidden open>
+          <summary id="decided-summary">Decided</summary>
+          <div id="decided-list"></div>
+        </details>
       </section>
     </div>
 
     <!-- Progress panel -->
     <aside class="aside">
-      <div class="card">
-        <h2 style="margin-bottom:10px">Review progress</h2>
+      <div class="panel">
+        <h3>Review progress</h3>
         <ul class="checklist">
           <li><span class="tick" id="t1"></span>Questions<small id="c1">1 of 3 answered</small></li>
           <li><span class="tick on">✓</span>Recap read<small>v1</small></li>
@@ -281,9 +315,7 @@
           <p class="publish-note" id="publish-note">The table sees it on <a href="#">Previously on…</a>. You can keep editing and publish again.</p>
         </div>
       </div>
-      <div class="card" style="font-size:.88rem;color:var(--muted)">
-        <b style="color:var(--ink)">Source</b><br>Campaign notes, synced Oct 15<br><a href="#">View the notes for this session</a>
-      </div>
+      <div class="source"><span class="label">Source</span>Campaign notes, synced Oct 15<br><a href="#">View the notes for this session</a></div>
     </aside>
   </div>
 </main>
@@ -301,7 +333,7 @@
     $('#c1').textContent = `${qs.filter(q => !$('[data-view]', q).hidden).length} of ${qs.length} answered`;
     $('#t1').classList.toggle('on', answered === qs.length); $('#t1').textContent = answered === qs.length ? '✓' : '';
     $('#step-1').classList.toggle('done', answered === qs.length);
-    const left = $$('[data-sug]').filter(s => !s.hidden).length;
+    const left = $$('#pending .sug').length;
     $('#c4').textContent = left ? `${left} left` : 'done'; $('#sug-count').textContent = left ? `${left} to review` : '';
     $('#t4').classList.toggle('on', !left); $('#t4').textContent = left ? '' : '✓'; $('#step-4').classList.toggle('done', !left);
     $('#redraft').hidden = !newAnswers;
@@ -361,20 +393,60 @@
     $('#event-list').append(li); editEvent(li);
   };
 
-  // Suggestions
-  const decided = { accepted: 0, rejected: 0 };
-  const decide = (sug, kind) => {
-    sug.hidden = true; decided[kind]++;
-    $('#decided').hidden = false;
-    $('#decided').textContent = [decided.accepted && `${decided.accepted} accepted`, decided.rejected && `${decided.rejected} rejected`].filter(Boolean).join(' · ') + ' · undo';
-    toast(kind === 'accepted' ? 'Accepted' : 'Rejected'); refresh();
-  };
-  $$('[data-sug]').forEach(s => {
-    $('[data-accept]', s).onclick = () => decide(s, 'accepted');
-    $('[data-reject]', s).onclick = () => decide(s, 'rejected');
-    const e = $('[data-sug-edit]', s);
-    if (e) e.onclick = () => { const after = $('.after', s); const text = after.lastChild.textContent; after.innerHTML = `<span>Proposed (editing)</span><textarea rows="3">${text}</textarea>`; e.hidden = true; $('textarea', after).focus(); };
-  });
+  // Suggestions: decided ones move to a "Decided" list where they can be edited or undone
+  function updateDecided() {
+    const items = $$('#decided-list .sug');
+    $('#decided').hidden = !items.length;
+    const acc = items.filter(i => i.classList.contains('accepted')).length, rej = items.length - acc;
+    $('#decided-summary').textContent = `Decided (${[acc && acc + ' accepted', rej && rej + ' rejected'].filter(Boolean).join(', ')})`;
+    $('#all-done').hidden = $$('#pending .sug').length > 0;
+  }
+  function decide(sug, kind) {
+    const actions = $('[data-actions]', sug), proposed = $('[data-proposed]', sug);
+    const ta = $('.after textarea', sug);
+    if (ta) { const p = document.createElement('p'); p.dataset.proposed = ''; p.style.margin = 0; p.textContent = ta.value; ta.replaceWith(p); }
+    sug.classList.add(kind);
+    const label = $('.after span', sug); if (label) label.textContent = kind === 'accepted' ? 'Now in askdnd' : 'Proposed (not used)';
+    const head = $('.sug-head', sug);
+    const tag = document.createElement('span'); tag.className = 'pill ' + (kind === 'accepted' ? 'published' : ''); tag.textContent = kind === 'accepted' ? 'Accepted' : 'Rejected'; tag.dataset.tag = '';
+    head.append(tag);
+    actions.innerHTML = kind === 'accepted' && !('glossary' in sug.dataset)
+      ? '<button class="btn" data-change>Edit summary</button><button class="btn quiet" data-undo>Undo</button>'
+      : '<button class="btn quiet" data-undo>Undo</button>';
+    $('#decided-list').prepend(sug);
+    bindDecided(sug); toast(kind === 'accepted' ? 'Accepted. askdnd updated.' : 'Rejected'); updateDecided(); refresh();
+  }
+  function bindPending(sug) {
+    const actions = $('[data-actions]', sug);
+    if ('glossary' in sug.dataset) {
+      actions.innerHTML = '<button class="btn primary" data-accept>Add to glossary</button><button class="btn quiet" data-reject>Skip</button>';
+    } else {
+      actions.innerHTML = '<button class="btn primary" data-accept>Accept</button><button class="btn" data-sug-edit>Edit first</button><button class="btn quiet" data-reject>Reject</button>';
+      $('[data-sug-edit]', sug).onclick = e => {
+        const p = $('[data-proposed]', sug); const ta = document.createElement('textarea'); ta.rows = 3; ta.value = p.textContent; p.replaceWith(ta); ta.focus(); e.target.hidden = true;
+      };
+    }
+    $('[data-accept]', sug).onclick = () => decide(sug, 'accepted');
+    $('[data-reject]', sug).onclick = () => decide(sug, 'rejected');
+  }
+  function bindDecided(sug) {
+    $('[data-undo]', sug).onclick = () => {
+      sug.classList.remove('accepted', 'rejected'); $('[data-tag]', sug).remove();
+      const label = $('.after span', sug); if (label) label.textContent = 'Proposed';
+      $('#pending').append(sug); bindPending(sug);
+      toast(sug.dataset.before ? `Undone. ${sug.dataset.name}'s summary is back to before.` : 'Undone.'); updateDecided(); refresh();
+    };
+    const change = $('[data-change]', sug);
+    if (change) change.onclick = () => {
+      const p = $('[data-proposed]', sug); const ta = document.createElement('textarea'); ta.rows = 3; ta.value = p.textContent; p.replaceWith(ta); ta.focus();
+      $('[data-actions]', sug).innerHTML = '<button class="btn primary" data-save-change>Save</button><button class="btn quiet" data-cancel-change>Cancel</button>';
+      const done = text => { const np = document.createElement('p'); np.dataset.proposed = ''; np.style.margin = 0; np.textContent = text; ta.replaceWith(np);
+        $('[data-actions]', sug).innerHTML = '<button class="btn" data-change>Edit summary</button><button class="btn quiet" data-undo>Undo</button>'; bindDecided(sug); };
+      $('[data-save-change]', sug).onclick = () => { done(ta.value); toast('Summary updated'); };
+      $('[data-cancel-change]', sug).onclick = () => done(p.textContent);
+    };
+  }
+  $$('[data-sug]').forEach(bindPending);
 
   // Publish
   let published = false;
