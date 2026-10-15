@@ -60,8 +60,7 @@ body {{ font: 15px/1.45 system-ui, sans-serif; max-width: 60rem; margin: 2rem au
 .cut > .reason {{ font-weight: 600; color: #a22; margin-bottom: .2rem; }}
 .unchecked {{ background: #fff6d6; }}
 .echo {{ color: #aaa; text-decoration: line-through; }}
-body.hide-echo .unchecked {{ background: #fff6d6; }}
-.echo {{ display: none; }}
+body.hide-echo .echo {{ display: none; }}
 body.only-cuts .keep {{ display: none; }}
 </style></head>
 <body class="hide-echo">
@@ -73,13 +72,20 @@ body.only-cuts .keep {{ display: none; }}
 Yellow lines ({n_unchecked}) couldn't be checked by the model and were kept; review them by hand.</p>
 </div>
 <div class="controls">
-<label><input type="checkbox" id="echo"> Show echo duplicates</label> &nbsp;
-<label><input type="checkbox" id="cuts"> Show only cut stretches</label>
+<label><input type="checkbox" id="echo" autocomplete="off"> Show echo duplicates</label> &nbsp;
+<label><input type="checkbox" id="cuts" autocomplete="off"> Show only cut stretches</label>
 </div>
 {body}
 <script>
-document.getElementById('echo').onchange = e => document.body.classList.toggle('hide-echo', !e.target.checked);
-document.getElementById('cuts').onchange = e => document.body.classList.toggle('only-cuts', e.target.checked);
+const echoBox = document.getElementById('echo'), cutsBox = document.getElementById('cuts');
+function sync() {{
+  document.body.classList.toggle('hide-echo', !echoBox.checked);
+  document.body.classList.toggle('only-cuts', cutsBox.checked);
+}}
+echoBox.addEventListener('change', sync);
+cutsBox.addEventListener('change', sync);
+window.addEventListener('pageshow', sync);  // Safari restores checkbox state on reload/back
+sync();
 </script>
 </body></html>
 """

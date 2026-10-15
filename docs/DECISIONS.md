@@ -34,3 +34,4 @@ One line per decision: date — decision — why. Newest at the bottom.
 - 2026-10-15 — Campaign context for the filter lives in git-ignored transcripts/context.md; hand labels for scoring in transcripts/gold/ — campaign data stays out of git
 - 2026-10-15 — Models are scored on the first 45 minutes against hand labels: game words lost (must be ~0) and table talk removed (higher is better) — a repeatable way to compare models and prompts
 - 2026-10-15 — gemma4:12b chosen as the filter model (tentative, pending full-session review) — tied best on the 45-min test (0% game lost, 100% table talk removed), 2x faster than qwen3.8:27b and smallest (7.7 GB); qwen3:30b-instruct removed 95.8%
+- 2026-10-15 — Brett reviewed the gemma4:12b run: cuts look right at a high level (0:55 VTT troubleshooting and 2:25–2:33 both fine to cut); gemma4:12b confirmed as the filter model; qwen3.8:27b removed

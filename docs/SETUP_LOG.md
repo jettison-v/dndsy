@@ -65,5 +65,5 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 - Keep private context (names, campaign details) in git-ignored files, and keep only the code in git.
 
 **Next steps**
-- Model comparison done: gemma4:12b is the default (0% game lost, 100% table talk removed on the hand-labeled first 45 min; full session in 18 min). Brett reviews the full review page.
+- Done: gemma4:12b is the default (0% game lost, 100% table talk removed on the hand-labeled first 45 min; full session in 18 min). Brett reviewed the full page and approved the cuts.
 - Check the mid-session break (around 2:00–2:35) and the end; add hand labels for them.
