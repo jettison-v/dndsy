@@ -9,10 +9,19 @@ A companion app for one D&D 2024 table: pre-session recaps, character briefings 
 
 ## Run locally
 
-Requires [uv](https://docs.astral.sh/uv/).
+Requires [uv](https://docs.astral.sh/uv/) and Postgres 18 (Homebrew):
+
+```bash
+brew install postgresql@18 && brew services start postgresql@18
+/opt/homebrew/opt/postgresql@18/bin/createdb askdnd_dev
+/opt/homebrew/opt/postgresql@18/bin/createdb askdnd_test
+```
+
+Then:
 
 ```bash
 uv sync
+uv run alembic upgrade head
 uv run uvicorn app.main:app --reload --env-file .env
 ```
 
@@ -23,6 +32,17 @@ scripts/set-secret.sh NAME
 ```
 
 Then open http://localhost:8000 (health check at `/health`).
+
+## Database changes
+
+Edit `app/models.py`, then generate and apply a migration:
+
+```bash
+uv run alembic revision --autogenerate -m "describe the change"
+uv run alembic upgrade head
+```
+
+Railway applies migrations automatically on deploy (see `Procfile`).
 
 ## Test
 

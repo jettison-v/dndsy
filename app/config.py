@@ -30,3 +30,18 @@ if not SESSION_SECRET:
     SESSION_SECRET = secrets.token_urlsafe(32)
 
 GOOGLE_CONFIGURED = bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET)
+
+
+def sqlalchemy_url(raw: str | None) -> str:
+    """Railway gives postgresql://...; SQLAlchemy needs the psycopg (v3) driver named."""
+    if not raw:
+        return ""
+    for prefix in ("postgresql+psycopg://", "postgresql://", "postgres://"):
+        if raw.startswith(prefix):
+            return "postgresql+psycopg://" + raw[len(prefix) :]
+    return raw
+
+
+DATABASE_URL = sqlalchemy_url(os.getenv("DATABASE_URL")) or (
+    "" if IS_PRODUCTION else "postgresql+psycopg://localhost/askdnd_dev"
+)

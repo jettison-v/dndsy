@@ -4,11 +4,14 @@ version = "0.1.0"
 description = "A companion app for one D&D 2024 table: recaps, character briefings, rules answers."
 requires-python = ">=3.14"
 dependencies = [
+    "alembic>=1.20.0",
     "anthropic>=1.14.0",
     "authlib>=1.9.1",
     "fastapi>=0.143.1",
     "itsdangerous>=2.2.0",
     "jinja2>=3.1.6",
+    "psycopg[binary]>=3.3.6",
+    "sqlalchemy>=2",
     "uvicorn[standard]>=0.54.0",
 ]
 
