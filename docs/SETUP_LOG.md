@@ -65,5 +65,5 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 - Keep private context (names, campaign details) in git-ignored files, and keep only the code in git.
 
 **Next steps**
-- Finish the model comparison (qwen3:30b-instruct, gemma4:12b, qwen3.8:27b), full run with the winner, Brett reviews the page.
+- Model comparison done: gemma4:12b is the default (0% game lost, 100% table talk removed on the hand-labeled first 45 min; full session in 18 min). Brett reviews the full review page.
 - Check the mid-session break (around 2:00–2:35) and the end; add hand labels for them.

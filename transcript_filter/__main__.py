@@ -1,7 +1,7 @@
 """Filter a MacWhisper transcript locally.
 
     uv run python -m transcript_filter transcripts/raw/2026-08-29.json
-    uv run python -m transcript_filter transcripts/raw/2026-08-29.json --model gemma4:12b
+    uv run python -m transcript_filter transcripts/raw/2026-08-29.json --model qwen3:30b-instruct
 
 Prints only statistics, never transcript text.
 """
@@ -19,7 +19,7 @@ from transcript_filter.dedup import remove_echo
 from transcript_filter.report import stats, write_filtered, write_review
 from transcript_filter.segments import load_macwhisper
 
-DEFAULT_MODEL = "qwen3:30b-instruct"
+DEFAULT_MODEL = "gemma4:12b"
 
 
 def main() -> int:
