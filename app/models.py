@@ -223,6 +223,20 @@ class CharacterSnapshot(Timestamped, Base):
     character: Mapped[Character] = relationship(back_populates="snapshot")
 
 
+class CharacterPick(Timestamped, Base):
+    """A player's own marks on their character: a star (show it on Battle) or a
+    reminder (list it under Easy to forget). Only the character's player can set
+    them; like character notes, the DM never sees them (app/picks.py)."""
+
+    __tablename__ = "character_picks"
+    __table_args__ = (UniqueConstraint("character_id", "kind", "ref"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(10))  # "star" | "remind"
+    ref: Mapped[str] = mapped_column(String(300))  # a key from the parsed sheet, e.g. "spell:Moonbeam"
+    label: Mapped[str] = mapped_column(String(500), default="", server_default="")  # shown if the thing disappears from the sheet
+
+
 class CharacterNote(Timestamped, Base):
     """Why a player built their character this way. Hidden from the DM (see visibility.py)."""
 

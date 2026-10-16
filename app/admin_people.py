@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app import access, config
 from app.admin import _guard
 from app.db import get_db
-from app.models import User
+from app.models import Character, User
 from app.templating import templates
 
 router = APIRouter(prefix="/admin/people")
@@ -37,6 +37,11 @@ def people(db: Session) -> list[dict]:
             "is_dm": (rows.get(email) or {}).get("is_dm", False),
             "last_seen": u.last_seen_at if u else None,
         })
+    owned = {}
+    for ch in db.scalars(select(Character).where(Character.owner_id.is_not(None))):
+        owned.setdefault(ch.owner_id, ch.id)
+    for p in out:
+        p["character_id"] = owned.get(p["user"].id) if p["user"] else None
     order = {access.ADMIN: 0, access.REVIEWER: 1, access.PLAYER: 2, None: 3}
     return sorted(out, key=lambda p: (order[p["level"]], p["name"].lower() or p["email"]))
 
@@ -48,9 +53,26 @@ def people_page(request: Request, db: Session = Depends(get_db)):
         return denied
     return templates.TemplateResponse(
         request, "admin_people.html",
-        {"people": people(db), "levels": access.LEVELS, "labels": access.LABELS, "me": user["email"],
+        {"people": people(db), "characters": list(db.scalars(select(Character).order_by(Character.id))), "levels": access.LEVELS, "labels": access.LABELS, "me": user["email"],
          "toast": request.session.pop("toast", None)},
     )
+
+
+def assign_character(db: Session, email: str, character_id: int | None) -> None:
+    """Who plays which character: their stars and reminders are theirs to set."""
+    u = db.scalar(select(User).where(User.email == email))
+    if u is None:
+        u = User(email=email, name=email)
+        db.add(u)
+        db.flush()
+    for ch in db.scalars(select(Character).where(Character.owner_id == u.id)):
+        if ch.id != character_id:
+            ch.owner_id = None
+    if character_id:
+        ch = db.get(Character, character_id)
+        if ch:
+            ch.owner_id = u.id
+    db.flush()
 
 
 def _save(db: Session, email: str, level: str, is_dm: bool, name: str = "") -> User:
@@ -84,13 +106,18 @@ def add_person(request: Request, email: str = Form(...), name: str = Form(""), l
 
 @router.post("/update")
 def update_person(request: Request, email: str = Form(...), level: str = Form(""), is_dm: str = Form(""),
-                  remove: str = Form(""), db: Session = Depends(get_db)):
+                  remove: str = Form(""), character_id: str = Form("keep"), db: Session = Depends(get_db)):
     user, denied = _guard(request)
     if denied:
         return denied
     email = email.strip().lower()
     if remove:
         level = access.REMOVED
+    if character_id != "keep" and not remove:
+        assign_character(db, email, int(character_id) if character_id.isdigit() else None)
+        db.commit()
+    if access.is_owner(email) or email == user["email"].lower():
+        level = level or access.ADMIN  # their own row only has the character picker
     if access.is_owner(email) and level != access.ADMIN:
         request.session["toast"] = "Owners are set on Railway (ADMIN_EMAILS) and are always admins."
     elif email == user["email"].lower() and level != access.ADMIN:

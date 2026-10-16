@@ -12,7 +12,8 @@
       <dt>Player</dt><dd>Reads everything for the table and suggests corrections.</dd>
       <dt>Reviewer</dt><dd>Also drafts, edits and publishes sessions, answers Claude's questions, merges suggestions, and refreshes characters.</dd>
       <dt>Admin</dt><dd>Also Notes sync, Import, Usage and this page.</dd>
-      <dt>DM</dt><dd>Whoever is ticked as DM never sees players' character notes, whatever their access level.</dd>
+      <dt>DM</dt><dd>Whoever is ticked as DM never sees players' character notes, stars or reminders, whatever their access level.</dd>
+      <dt>Plays</dt><dd>The character a person plays. Only they can star things and set reminders on it, and Battle and Character open on it for them.</dd>
     </dl>
   </section>
 
@@ -23,11 +24,22 @@
       <li class="{{ 'removed' if not p.invited }}">
         <div class="who"><b>{{ p.name or p.email }}</b>{% if p.name %}<span class="note">{{ p.email }}</span>{% endif %}
           <span class="note">{% if p.owner %}Owner (set on Railway) · {% endif %}{% if p.removed %}Removed · {% elif not p.invited %}Not invited yet · {% elif p.from_railway and not p.owner %}From the Railway lists · {% endif %}{% if p.last_seen %}last signed in {{ p.last_seen | ago }}{% else %}hasn't signed in yet{% endif %}</span></div>
+        {% set pick %}<select name="character_id" aria-label="Character played by {{ p.email }}">
+            <option value="none">No character</option>
+            {% for ch in characters %}<option value="{{ ch.id }}" {{ "selected" if p.character_id == ch.id }}>Plays {{ ch.entity.name }}</option>{% endfor %}
+          </select>{% endset %}
         {% if p.owner or p.email == me %}
-        <div class="row"><span class="tag published">Admin</span>{% if p.is_dm %}<span class="tag">DM</span>{% endif %}</div>
+        <form method="post" action="/admin/people/update" class="row">
+          <input type="hidden" name="email" value="{{ p.email }}">
+          {{ pick }}
+          <span class="tag published">Admin</span>{% if p.is_dm %}<span class="tag">DM</span>{% endif %}
+          <input type="hidden" name="is_dm" value="{{ '1' if p.is_dm }}">
+          <button class="btn" type="submit">Save</button>
+        </form>
         {% else %}
         <form method="post" action="/admin/people/update" class="row">
           <input type="hidden" name="email" value="{{ p.email }}">
+          {{ pick }}
           <select name="level" aria-label="Access for {{ p.email }}">
             {% for l in levels %}<option value="{{ l }}" {{ "selected" if p.level == l }}>{{ labels[l] }}</option>{% endfor %}
           </select>

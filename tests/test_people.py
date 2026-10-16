@@ -48,9 +48,9 @@ def test_owner_adds_a_reviewer_who_can_then_review(env, monkeypatch, db):
 def test_removed_person_is_locked_out_even_if_on_railway_list(env, monkeypatch, db):
     owner, _ = sign_in(monkeypatch, "owner@example.com")
     player, _ = sign_in(monkeypatch, "player@example.com")
-    assert player.get("/characters").status_code == 200
+    assert player.get("/party").status_code == 200
     owner.post("/admin/people/update", data={"email": "player@example.com", "level": "player", "remove": "1"})
-    assert player.get("/characters", follow_redirects=False).headers["location"] == "/login"
+    assert player.get("/party", follow_redirects=False).headers["location"] == "/login"
     _, r = sign_in(monkeypatch, "player@example.com")
     assert "not_allowed" in r.headers["location"]
 
@@ -105,3 +105,19 @@ def test_invite_from_the_list(env, monkeypatch, db):
     assert 'name="level"' in owner.get("/admin/people").text
     owner.post("/admin/people/update", data={"email": "mary@example.com", "level": "reviewer"})
     assert access.level("mary@example.com") == "reviewer" and access.is_dm("mary@example.com")
+
+
+def test_assign_character_on_people_page(env, monkeypatch, db):
+    from app.models import Character
+
+    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"},
+                       "entities": [{"kind": "pc", "name": "Cole", "character": {"player_name": "Brett"}}]})
+    cole = db.scalar(select(Character))
+    owner, _ = sign_in(monkeypatch, "owner@example.com")
+    assert "Plays Cole" in owner.get("/admin/people").text
+    owner.post("/admin/people/update", data={"email": "player@example.com", "level": "player", "character_id": str(cole.id)})
+    assert cole.owner.email == "player@example.com"
+    owner.post("/admin/people/update", data={"email": "owner@example.com", "character_id": str(cole.id)})
+    assert cole.owner.email == "owner@example.com" and access.level("owner@example.com") == "admin"
+    owner.post("/admin/people/update", data={"email": "owner@example.com", "character_id": "none"})
+    assert cole.owner_id is None
