@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.admin import _guard
 from app.db import get_db
 from app.extraction import session_label
-from app.models import CreditTopUp, ExtractionRun, GameSession
+from app.models import CreditTopUp, Entity, ExtractionRun, GameSession
 from app.templating import templates
 
 router = APIRouter(prefix="/admin")
@@ -47,8 +47,16 @@ def usage_page(request: Request, db: Session = Depends(get_db)):
     if denied:
         return denied
     runs = list(db.scalars(select(ExtractionRun).order_by(ExtractionRun.id.desc()).limit(100)))
-    sessions = {s.id: s for s in db.scalars(select(GameSession).where(GameSession.id.in_({r.session_id for r in runs})))}
-    rows = [{"r": r, "label": session_label(sessions[r.session_id]) if r.session_id in sessions else "—"} for r in runs]
+    sessions = {s.id: s for s in db.scalars(select(GameSession).where(GameSession.id.in_({r.session_id for r in runs if r.session_id})))}
+    ents = {e.id: e for e in db.scalars(select(Entity).where(Entity.id.in_({r.entity_id for r in runs if r.entity_id})))}
+    rows = []
+    for r in runs:
+        if r.session_id in sessions:
+            rows.append({"r": r, "label": session_label(sessions[r.session_id]), "href": f"/admin/sessions/{r.session_id}"})
+        elif r.entity_id in ents:
+            rows.append({"r": r, "label": ents[r.entity_id].name, "href": f"/campaign/{r.entity_id}"})
+        else:
+            rows.append({"r": r, "label": "—", "href": None})
     topups = list(db.scalars(select(CreditTopUp).order_by(CreditTopUp.added_on.desc())))
     return templates.TemplateResponse(
         request,

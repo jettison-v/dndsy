@@ -24,6 +24,7 @@ from app.models import (
     EntityKind,
     EventKind,
     ExtractionRun,
+    Fact,
     GameSession,
     GlossaryTerm,
     NoteImage,
@@ -229,6 +230,22 @@ def _known_world(db: Session, campaign: Campaign) -> str:
         aliases = ", ".join(a.alias for a in e.aliases)
         quest = "" if e.quest_open is None else (" (open)" if e.quest_open else " (done)")
         lines.append(f"- {e.name} [{e.kind.value}]{quest}: {e.summary}" + (f" Also: {aliases}" if aliases else ""))
+    facts: dict[int, list[str]] = {}
+    for f in db.scalars(
+        select(Fact).join(Entity).where(Entity.campaign_id == campaign.id, Fact.status == "merged").order_by(Fact.id)
+    ):
+        facts.setdefault(f.entity_id, []).append(f.text)
+    if facts:
+        names = {e.id: e.name for e in db.scalars(select(Entity).where(Entity.id.in_(facts)))}
+        lines.append("\nFacts added by people at the table (true; not yet in the summaries above):")
+        for eid, texts in sorted(facts.items(), key=lambda kv: names[kv[0]].casefold()):
+            lines.extend(f"- {names[eid]}: {t}" for t in texts)
+    from app.relations import describe
+
+    rels = describe(db, campaign.id)
+    if rels:
+        lines.append("\nKnown relationships:")
+        lines.extend(f"- {r}" for r in rels)
     lines.append("\nGlossary (correct spelling: description; often misheard as):")
     for g in db.scalars(select(GlossaryTerm).where(GlossaryTerm.campaign_id == campaign.id).order_by(GlossaryTerm.term)):
         heard = f"; misheard as {', '.join(g.misheard_as)}" if g.misheard_as else ""

@@ -9,7 +9,7 @@
     <h2>{{ title }}</h2>
     <div class="card-grid" style="margin-top:14px">
       {% for e in entries %}
-      <div class="entry"><b>{{ e.name }}</b>{% if e.kind.value == "quest" %} <span class="tag {{ 'draft' if e.quest_open else 'done' }}">{{ "Open" if e.quest_open else "Done" }}</span>{% endif %}
+      <div class="entry"><a class="entry-link" href="/campaign/{{ e.id }}"><b>{{ e.name }}</b></a>{% if e.kind.value == "quest" %} <span class="tag {{ 'draft' if e.quest_open else 'done' }}">{{ "Open" if e.quest_open else "Done" }}</span>{% endif %}
         {% if e.aliases %}<div class="note">also: {{ e.aliases | map(attribute="alias") | join(", ") }}</div>{% endif %}
         {% if e.summary %}<p>{{ e.summary }}</p>{% endif %}</div>
       {% endfor %}

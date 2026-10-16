@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}{{ e.name }} · askdnd{% endblock %}
+{% block content %}
+<main class="page narrow">
+  <div class="crumbs"><a href="/campaign">Campaign</a> › {{ e.name }}</div>
+  {% include "_entity_body.html" %}
+</main>
+{% endblock %}

@@ -194,6 +194,21 @@ table.list td a:hover { color: #fff; text-decoration: underline; }
 .card-grid .entry { background: var(--surface-2); border-radius: 10px; padding: 14px 16px; }
 .entry b { display: block; }
 .entry p { margin: 4px 0 0; color: var(--muted); font-size: .92rem; }
+.entry-link { color: var(--text); text-decoration: none; }
+.entry-link:hover b { text-decoration: underline; }
+.ev-text small a { color: var(--muted); text-decoration: none; }
+.ev-text small a:hover { color: var(--text); text-decoration: underline; }
+
+/* Entity pages */
+.rels, .facts { list-style: none; margin: 10px 0 0; padding: 0; }
+.rels li, .facts li { padding: 10px 0; }
+.rels li + li, .facts li + li { border-top: 1px solid var(--line); }
+.rels a { color: var(--text); font-weight: 500; }
+.facts li { font-family: var(--serif); color: var(--story-text); font-size: 1.05rem; }
+.facts small { display: block; font-family: var(--sans); color: var(--faint); font-size: .82rem; }
+.add-fact { margin-top: 18px; }
+.wait { display: none; margin-top: 10px; font-style: italic; }
+.wait.htmx-request { display: block; }
 
 /* Rendered documents (synced notes) */
 .doc { line-height: 1.6; }

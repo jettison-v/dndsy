@@ -5,10 +5,10 @@
   <div class="title-row"><h1>Sessions</h1></div>
   <p class="subtitle">Every published session, newest first.</p>
   {% for item in items %}
-  <details class="section" {% if loop.first %}open{% endif %}>
+  <details class="section" id="s{{ item.s.id }}" {% if loop.first %}open{% endif %}>
     <summary style="cursor:pointer"><b>{{ item.label }}</b>{% if item.s.title %} · {{ item.s.title }}{% endif %}</summary>
     <div class="story" style="margin-top:16px">{{ item.html | safe }}</div>
-    {% if item.events %}<ul class="events" style="margin-top:12px">{% for e in item.events %}<li class="ev"><span class="kind {{ e.kind.value }}">{{ e.kind.value }}</span><div class="ev-text">{{ e.text }}</div></li>{% endfor %}</ul>{% endif %}
+    {% if item.events %}<ul class="events" style="margin-top:12px">{% for e in item.events %}<li class="ev"><span class="kind {{ e.kind.value }}">{{ e.kind.value }}</span><div class="ev-text">{{ e.text }}{% if e.entities %}<small>{% for x in e.entities %}<a href="/campaign/{{ x.id }}">{{ x.name }}</a>{{ " · " if not loop.last }}{% endfor %}</small>{% endif %}</div></li>{% endfor %}</ul>{% endif %}
   </details>
   {% else %}
   <p class="muted">Nothing published yet.</p>

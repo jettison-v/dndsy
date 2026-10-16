@@ -1,0 +1,121 @@
+{# An entity page's content. Actions post with HTMX and swap this block in place. #}
+{% set hx = 'hx-target="#entity" hx-swap="outerHTML"' %}
+<div id="entity">
+  <div class="title-row">
+    <h1>{{ e.name }}</h1>
+    <span class="tag">{{ kind_label }}</span>
+    {% if e.kind.value == "quest" and e.quest_open is not none %}<span class="tag {{ 'draft' if e.quest_open else 'done' }}">{{ "Open" if e.quest_open else "Done" }}</span>{% endif %}
+    {% if e.status.value != "published" %}<span class="tag draft">Not published</span>{% endif %}
+  </div>
+  <p class="subtitle">{% if e.aliases %}Also known as {{ e.aliases | map(attribute="alias") | join(", ") }}{% else %}{{ kind_label }} in the campaign record{% endif %}</p>
+
+  <section class="section" id="about">
+    <div class="section-head"><h2>About</h2>
+      {% if is_reviewer and not e.draft_summary %}
+      <form class="inline" hx-post="/campaign/{{ e.id }}/description/regenerate" {{ hx | safe }} hx-indicator="#regen-wait" hx-disabled-elt="find button"><button class="btn link">Regenerate description</button></form>
+      {% endif %}
+    </div>
+    {% if e.summary %}<div class="story">{{ e.summary }}</div>{% else %}<p class="muted">No description yet.</p>{% endif %}
+    {% if is_reviewer %}
+    <p class="note htmx-indicator wait" id="regen-wait">Claude is reading the facts and key moments…</p>
+    {% if e.draft_summary %}
+    <div class="item" id="desc-view">
+      <p class="item-title">Claude's new description</p>
+      <div class="compare">
+        <div><span>Now</span>{{ e.summary or "(none)" }}</div>
+        <div class="after"><span>Proposed</span>{{ e.draft_summary }}</div>
+      </div>
+      <div class="row">
+        <form class="inline" hx-post="/campaign/{{ e.id }}/description/accept" {{ hx | safe }}><button class="btn primary">Accept</button></form>
+        <button type="button" class="btn" data-show="desc-form" data-hide="desc-view">Edit</button>
+        <form class="inline" hx-post="/campaign/{{ e.id }}/description/discard" {{ hx | safe }}><button class="btn link">Discard</button></form>
+      </div>
+    </div>
+    <form id="desc-form" class="stack" hidden hx-post="/campaign/{{ e.id }}/description/accept" {{ hx | safe }}>
+      <textarea name="summary" rows="5" required>{{ e.draft_summary }}</textarea>
+      <div class="row"><button class="btn primary">Save and use</button><button type="button" class="btn link" data-cancel="desc-form" data-restore="desc-view">Cancel</button></div>
+    </form>
+    {% elif e.previous_summary is not none %}
+    <div class="row" style="margin-top:12px"><span class="tag published">Description updated</span>
+      <form class="inline" hx-post="/campaign/{{ e.id }}/description/undo" {{ hx | safe }}><button class="btn link">Undo</button></form></div>
+    {% else %}
+    <p class="note" style="margin-top:12px">Regenerate asks Claude (about 1–2¢) to rewrite this from the facts and key moments below. You see it before anything changes.</p>
+    {% endif %}
+    {% endif %}
+  </section>
+
+  <section class="section" id="relationships">
+    <div class="section-head"><h2>Relationships</h2>{% if is_reviewer %}<button type="button" class="btn link" id="rel-add" data-show="rel-form" data-hide="rel-add">+ Add</button>{% endif %}</div>
+    {% if relations %}
+    <ul class="rels">
+      {% for r in relations %}
+      <li><span class="muted">{{ r.label | capitalize }}</span> <a href="/campaign/{{ r.other.id }}">{{ r.other.name }}</a>{% if r.note %} <span class="note">· {{ r.note }}</span>{% endif %}
+        {% if is_reviewer %}<form class="inline" hx-post="/campaign/{{ e.id }}/relationships/{{ r.id }}/delete" {{ hx | safe }} hx-confirm="Remove this relationship?"><button class="btn link danger" aria-label="Remove {{ r.label }} {{ r.other.name }}">Remove</button></form>{% endif %}</li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="muted">None recorded yet.</p>{% endif %}
+    {% if is_reviewer %}
+    <form id="rel-form" class="stack" hidden hx-post="/campaign/{{ e.id }}/relationships" {{ hx | safe }} style="margin-top:14px">
+      <div class="row">
+        <span>{{ e.name }} is</span>
+        <select name="type" aria-label="Relationship">{% for value, label in rel_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select>
+        <select name="other_id" aria-label="Related to" required><option value="">Choose…</option>{% for o in others %}<option value="{{ o.id }}">{{ o.name }}</option>{% endfor %}</select>
+      </div>
+      <input type="text" name="note" placeholder="Optional note (e.g. adopted, estranged)" aria-label="Note">
+      <div class="row"><button class="btn primary">Add relationship</button><button type="button" class="btn link" data-cancel="rel-form" data-restore="rel-add">Cancel</button></div>
+    </form>
+    {% endif %}
+  </section>
+
+  <section class="section" id="facts">
+    <div class="section-head"><h2>What the table knows</h2>{% if pending %}<span class="count">{{ pending | length }} to review</span>{% endif %}</div>
+    <p class="hint">Facts added by people at the table. They appear here as written once a reviewer merges them.</p>
+    {% if merged %}
+    <ul class="facts">{% for f in merged %}<li>{{ f.text }}<small>{{ f.author_name or "Someone" }} · {{ f.created_at.strftime("%b %-d, %Y") }}</small></li>{% endfor %}</ul>
+    {% else %}<p class="muted">No facts yet.</p>{% endif %}
+
+    {% for f in pending %}
+    <div class="item">
+      <p class="item-title">{{ f.text }}</p>
+      <p class="note" style="margin:-6px 0 10px">Added by {{ f.author_name or f.author_email or "someone" }} · {{ f.created_at.strftime("%b %-d") }}</p>
+      <div class="row">
+        <form class="inline" hx-post="/campaign/facts/{{ f.id }}/merge" {{ hx | safe }}><button class="btn primary">Merge</button></form>
+        <form class="inline" hx-post="/campaign/facts/{{ f.id }}/reject" {{ hx | safe }}><button class="btn link">Reject</button></form>
+      </div>
+    </div>
+    {% endfor %}
+    {% for f in mine_pending %}
+    <div class="item"><p class="item-title" style="margin-bottom:4px">{{ f.text }}</p><span class="tag draft">Waiting for a reviewer</span></div>
+    {% endfor %}
+
+    <form class="stack add-fact" hx-post="/campaign/{{ e.id }}/facts" {{ hx | safe }}>
+      <label class="field">Add a fact<textarea name="text" rows="2" required placeholder="Something the party learned about {{ e.name }}… (type @ to insert a name)"></textarea></label>
+      <div class="row"><button class="btn">Add fact</button><span class="note">{{ "Merge it below to show it on the page." if is_reviewer else "A reviewer adds it to the page." }}</span></div>
+    </form>
+
+    {% if done_facts %}
+    <details class="done"><summary>Done ({{ done_facts | length }})</summary>
+      {% for f in done_facts %}
+      <div class="item">
+        <p class="item-title" {% if f.status == "rejected" %}style="color:var(--muted)"{% endif %}>{{ f.text }}</p>
+        <div class="row"><span class="tag {{ 'published' if f.status == 'merged' else '' }}">{{ "Merged" if f.status == "merged" else "Rejected" }}</span>
+          <span class="note">{{ f.author_name or f.author_email }}</span>
+          <form class="inline" hx-post="/campaign/facts/{{ f.id }}/undo" {{ hx | safe }}><button class="btn link">Undo</button></form></div>
+      </div>
+      {% endfor %}
+    </details>
+    {% endif %}
+  </section>
+
+  <section class="section" id="moments">
+    <h2>Key moments</h2>
+    {% if moments %}
+    <ul class="events" style="margin-top:10px">
+      {% for m in moments %}
+      <li class="ev {{ 'theory' if m.e.kind.value == 'theory' }}"><span class="kind {{ m.e.kind.value }}">{{ m.e.kind.value }}</span>
+        <div class="ev-text">{{ m.e.text }}<small><a href="/sessions#s{{ m.e.session_id }}">{{ m.label }}</a></small></div></li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="muted" style="margin-top:8px">No published key moments mention {{ e.name }} yet.</p>{% endif %}
+  </section>
+</div>

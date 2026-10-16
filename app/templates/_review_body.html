@@ -130,7 +130,7 @@
           {% for ev in events %}
           <li class="ev {{ 'theory' if ev.kind.value == 'theory' }}" id="ev{{ ev.id }}-view">
             <span class="kind {{ ev.kind.value }}">{{ ev.kind.value }}</span>
-            <div class="ev-text">{{ ev.text }}{% if ev.entities %}<small>{{ ev.entities | map(attribute="name") | join(" · ") }}</small>{% endif %}</div>
+            <div class="ev-text">{{ ev.text }}{% if ev.entities %}<small>{% for x in ev.entities %}<a href="/campaign/{{ x.id }}">{{ x.name }}</a>{{ " · " if not loop.last }}{% endfor %}</small>{% endif %}</div>
             <button type="button" class="btn link" data-show="ev{{ ev.id }}-form" data-hide="ev{{ ev.id }}-view">Edit</button>
           </li>
           <li class="ev" id="ev{{ ev.id }}-form" hidden>

@@ -28,7 +28,7 @@ from app.extraction import (
     split_notes,
     timeline,
 )
-from app.models import Campaign, ExtractionRun, GameSession, Proposal
+from app.models import NON_DRAFTING_SOURCES, Campaign, ExtractionRun, GameSession, Proposal
 from app.render import markdown_to_html
 from app.templating import templates
 
@@ -38,10 +38,10 @@ _busy = threading.Lock()  # one drafting job at a time keeps costs and order pre
 
 
 def _running_ids(db: Session) -> set[int]:
-    """Sessions with a draft in progress (quick conversation checks don't count)."""
+    """Sessions with a draft in progress (conversation checks and entity runs don't count)."""
     return set(
         db.scalars(
-            select(ExtractionRun.session_id).where(ExtractionRun.status == "running", ExtractionRun.source != "conversation")
+            select(ExtractionRun.session_id).where(ExtractionRun.status == "running", ExtractionRun.source.notin_(NON_DRAFTING_SOURCES))
         )
     )
 
@@ -117,7 +117,7 @@ def sessions_page(request: Request, db: Session = Depends(get_db)):
     for s in reversed(sessions):  # newest first
         last_run = db.scalar(
             select(ExtractionRun)
-            .where(ExtractionRun.session_id == s.id, ExtractionRun.source != "conversation")
+            .where(ExtractionRun.session_id == s.id, ExtractionRun.source.notin_(NON_DRAFTING_SOURCES))
             .order_by(ExtractionRun.id.desc())
         )
         rows.append({

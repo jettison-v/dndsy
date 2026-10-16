@@ -16,6 +16,7 @@ from app.models import (
     EventKind,
     ExtractionRun,
     GameSession,
+    NON_DRAFTING_SOURCES,
     GlossaryTerm,
     Proposal,
     Recap,
@@ -68,8 +69,8 @@ def reopen_question(db: Session, session: GameSession, question: str) -> None:
 
 
 def _last_draft_run(db: Session, session: GameSession, status: str | None = "done") -> ExtractionRun | None:
-    """Most recent drafting run (Add Session conversation checks don't count)."""
-    q = select(ExtractionRun).where(ExtractionRun.session_id == session.id, ExtractionRun.source != "conversation")
+    """Most recent drafting run (conversation checks and entity runs don't count)."""
+    q = select(ExtractionRun).where(ExtractionRun.session_id == session.id, ExtractionRun.source.notin_(NON_DRAFTING_SOURCES))
     if status:
         q = q.where(ExtractionRun.status == status)
     return db.scalar(q.order_by(ExtractionRun.id.desc()))

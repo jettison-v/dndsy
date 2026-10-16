@@ -17,6 +17,7 @@ from app.admin_usage import router as admin_usage_router
 from app.api import router as api_router
 from app.auth import current_user, is_admin
 from app.auth import router as auth_router
+from app.entity_pages import router as entity_router
 from app.db import SessionLocal
 from app.db import engine as db_engine
 from app.models import ExtractionRun
@@ -60,6 +61,7 @@ app.include_router(admin_router)
 app.include_router(admin_notes_router)
 app.include_router(admin_sessions_router)
 app.include_router(story_router)
+app.include_router(entity_router)
 app.include_router(api_router)
 app.include_router(admin_usage_router)
 

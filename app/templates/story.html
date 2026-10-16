@@ -11,7 +11,7 @@
   {% if latest.events %}
   <section class="section" style="margin-top:24px">
     <h2>Key moments</h2>
-    <ul class="events" style="margin-top:10px">{% for e in latest.events %}<li class="ev"><span class="kind {{ e.kind.value }}">{{ e.kind.value }}</span><div class="ev-text">{{ e.text }}</div></li>{% endfor %}</ul>
+    <ul class="events" style="margin-top:10px">{% for e in latest.events %}<li class="ev"><span class="kind {{ e.kind.value }}">{{ e.kind.value }}</span><div class="ev-text">{{ e.text }}{% if e.entities %}<small>{% for x in e.entities %}<a href="/campaign/{{ x.id }}">{{ x.name }}</a>{{ " · " if not loop.last }}{% endfor %}</small>{% endif %}</div></li>{% endfor %}</ul>
   </section>
   {% endif %}
   {% if threads or quests %}

@@ -107,6 +107,10 @@ class Entity(Timestamped, Base):
     summary: Mapped[str] = mapped_column(Text, default="")
     quest_open: Mapped[bool | None] = mapped_column(Boolean, nullable=True)  # quests only
     status: Mapped[Status] = mapped_column(_enum(Status), default=Status.DRAFT)
+    # "Regenerate description": Claude's proposed rewrite awaiting a reviewer, and
+    # the summary it replaced once accepted (for Undo).
+    draft_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    previous_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     aliases: Mapped[list["EntityAlias"]] = relationship(cascade="all, delete-orphan")
 
 
@@ -119,6 +123,34 @@ class EntityAlias(Base):
     entity_id: Mapped[int] = mapped_column(ForeignKey("entities.id", ondelete="CASCADE"), index=True)
     alias: Mapped[str] = mapped_column(String(200))
     note: Mapped[str] = mapped_column(String(300), default="")  # e.g. "former name"
+
+
+class Fact(Timestamped, Base):
+    """Something anyone at the table adds to an entity page. A reviewer merges it
+    (shown on the page as written; the summary is not rewritten) or rejects it."""
+
+    __tablename__ = "facts"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    entity_id: Mapped[int] = mapped_column(ForeignKey("entities.id", ondelete="CASCADE"), index=True)
+    text: Mapped[str] = mapped_column(Text)
+    author_name: Mapped[str] = mapped_column(String(200), default="", server_default="")
+    author_email: Mapped[str] = mapped_column(String(320), default="", server_default="")
+    status: Mapped[str] = mapped_column(String(20), default="pending", server_default="pending")  # pending | merged | rejected
+
+
+class EntityRelation(Timestamped, Base):
+    """A typed link between two entities: "Aldric parent_of Kieran". Types and
+    their wording (incl. inverses) are in app/relations.py."""
+
+    __tablename__ = "relationships"
+    __table_args__ = (UniqueConstraint("from_entity_id", "type", "to_entity_id"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    from_entity_id: Mapped[int] = mapped_column(ForeignKey("entities.id", ondelete="CASCADE"), index=True)
+    type: Mapped[str] = mapped_column(String(30))
+    to_entity_id: Mapped[int] = mapped_column(ForeignKey("entities.id", ondelete="CASCADE"), index=True)
+    note: Mapped[str] = mapped_column(String(300), default="", server_default="")
+    from_entity: Mapped[Entity] = relationship(foreign_keys=[from_entity_id])
+    to_entity: Mapped[Entity] = relationship(foreign_keys=[to_entity_id])
 
 
 class Character(Timestamped, Base):
@@ -276,13 +308,20 @@ class NoteImage(Base):
     data: Mapped[bytes] = mapped_column(LargeBinary)
 
 
+# ExtractionRun sources that are not session drafts (they never hold Claude's questions).
+NON_DRAFTING_SOURCES = ("conversation", "entity")
+
+
 class ExtractionRun(Timestamped, Base):
-    """One call to Claude that drafted a session. Keeps cost visible."""
+    """One call to Claude. Keeps cost visible on the Usage page."""
 
     __tablename__ = "extraction_runs"
     id: Mapped[int] = mapped_column(primary_key=True)
-    session_id: Mapped[int] = mapped_column(ForeignKey("game_sessions.id", ondelete="CASCADE"), index=True)
-    source: Mapped[str] = mapped_column(String(20))  # "notes" or "transcript"
+    # Set for session work; entity runs ("Regenerate description") set entity_id instead.
+    session_id: Mapped[int | None] = mapped_column(ForeignKey("game_sessions.id", ondelete="CASCADE"), index=True, nullable=True)
+    entity_id: Mapped[int | None] = mapped_column(ForeignKey("entities.id", ondelete="SET NULL"), nullable=True)
+    # "notes", "transcript", "account" (drafts); "conversation" (Add Session check); "entity"
+    source: Mapped[str] = mapped_column(String(20))
     model: Mapped[str] = mapped_column(String(60), default="")
     status: Mapped[str] = mapped_column(String(20), default="running")  # running | done | error
     error: Mapped[str] = mapped_column(Text, default="")

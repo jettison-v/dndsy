@@ -15,21 +15,21 @@
 
   <div class="layout">
     <section class="section">
-      <h2>Recent drafting runs</h2>
+      <h2>Recent Claude calls</h2>
       {% if rows %}
       <table class="list" style="margin-top:12px">
-        <tr><th>When</th><th>Session</th><th>Source</th><th style="text-align:right">Tokens in / out</th><th style="text-align:right">Cost</th></tr>
+        <tr><th>When</th><th>Session or page</th><th>Source</th><th style="text-align:right">Tokens in / out</th><th style="text-align:right">Cost</th></tr>
         {% for row in rows %}{% set r = row.r %}
         <tr>
           <td class="note">{{ r.created_at.strftime("%b %-d, %-I:%M %p") }}</td>
-          <td><a href="/admin/sessions/{{ r.session_id }}">{{ row.label }}</a></td>
-          <td class="note">{{ r.source }}{% if r.status == "error" %} · <span class="tag error">failed</span>{% elif r.status == "running" %} · <span class="tag working">running</span>{% endif %}</td>
+          <td>{% if row.href %}<a href="{{ row.href }}">{{ row.label }}</a>{% else %}{{ row.label }}{% endif %}</td>
+          <td class="note">{{ {"entity": "description", "conversation": "Add Session check"}.get(r.source, r.source) }}{% if r.status == "error" %} · <span class="tag error">failed</span>{% elif r.status == "running" %} · <span class="tag working">running</span>{% endif %}</td>
           <td class="note" style="text-align:right">{{ "{:,}".format(r.input_tokens) }} / {{ "{:,}".format(r.output_tokens) }}</td>
           <td style="text-align:right">${{ "%.2f" | format(r.cost_usd) }}</td>
         </tr>
         {% endfor %}
       </table>
-      {% else %}<p class="muted">No drafting runs yet.</p>{% endif %}
+      {% else %}<p class="muted">No Claude calls yet.</p>{% endif %}
     </section>
 
     <aside>
