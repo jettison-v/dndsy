@@ -159,6 +159,12 @@ def test_party_page(player, db):
     assert player.get("/characters", follow_redirects=False).headers["location"] == "/party"
     brief = player.get(f"/characters/{char(db, 'Cole').id}/brief").text
     assert "<html" not in brief and "Advantage on saving throws against being charmed" in brief
+    # Pooled spells and items (and each carrier) open the side panel, like on Character
+    cid = char(db, "Cole").id
+    url = f"/characters/{cid}/detail?ref=spell%3AHealing%20Word"
+    assert page.count(f'data-panel-url="{url}"') == 2  # the row and Cole's chip
+    assert "Healing Word" in player.get(url).text
+    assert f'data-panel-url="/characters/{cid}/detail?ref=' in brief
 
 
 def test_character_page(player, db):

@@ -3,6 +3,7 @@ Character and Party pages show. Plain functions over the summary dicts, so
 they're easy to test without a browser."""
 
 import re
+from urllib.parse import quote
 
 COSTS = ["Action", "Bonus action", "Reaction", "Other"]
 COLUMN_LIMIT = 7  # options shown in a Battle column before "See all"
@@ -180,18 +181,23 @@ SPELL_GROUPS = [
 ]
 
 
+def _panel_url(character, key: str) -> str:
+    return f"/characters/{character.id}/detail?ref={quote(key, safe='')}"
+
+
 def pooled_spells(rows: list[dict]) -> list[tuple[str, list[dict]]]:
-    """Everyone's spells for planning: each spell once, with who can cast it."""
+    """Everyone's spells for planning: each spell once, with who can cast it.
+    `url` opens the first caster's side panel; each `who` opens that caster's."""
     spells: dict[str, dict] = {}
     for r in rows:
         if not r["sheet"]:
             continue
         who = r["c"].entity.name
         for sp in r["sheet"]["spells"]:
-            entry = spells.setdefault(sp["name"], {**sp, "who": []})
+            entry = spells.setdefault(sp["name"], {**sp, "who": [], "url": _panel_url(r["c"], sp["key"])})
             note = f"{sp['uses']['max']}/{sp['uses']['reset']}" if sp["uses"] and not sp["uses_slot"] else (
                 "item" if sp["sources"] == ["Item"] else "")
-            entry["who"].append(f"{who} ({note})" if note else who)
+            entry["who"].append({"label": f"{who} ({note})" if note else who, "url": _panel_url(r["c"], sp["key"])})
     groups, placed = [], set()
     for title, test in SPELL_GROUPS:
         found = [s for n, s in sorted(spells.items(), key=lambda kv: (kv[1]["level"], kv[0])) if n not in placed and test(s)]
@@ -227,11 +233,12 @@ def pooled_items(rows: list[dict]) -> list[tuple[str, list[dict]]]:
                 group = "Charges"
             else:
                 group = "Other magic items"
-            entry = items.setdefault((group, it["name"]), {"name": it["name"], "summary": it["summary"], "who": []})
+            entry = items.setdefault((group, it["name"]), {"name": it["name"], "summary": it["summary"], "who": [],
+                                                           "url": _panel_url(r["c"], it["key"])})
             label = who + (f" ×{it['quantity']}" if it["quantity"] > 1 else "")
             if ch and ch["reset"] != "Used up":
                 label += f" {ch['left']}/{ch['max']}"
-            entry["who"].append(label)
+            entry["who"].append({"label": label, "url": _panel_url(r["c"], it["key"])})
     order = ["Healing", "One use", "Charges", "Needs attunement", "Other magic items"]
     return [(g, sorted((v for (gg, _), v in items.items() if gg == g), key=lambda v: v["name"])) for g in order
             if any(gg == g for gg, _ in items)]

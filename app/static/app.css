@@ -635,3 +635,7 @@ details.faq[open] > summary::before { transform: rotate(90deg); }
 .faq-a b { color: var(--text); }
 .site-foot { text-align: center; color: var(--faint); font-size: .85rem; padding: 28px 16px 36px; }
 .site-foot a { color: var(--muted); }
+.poolrow[data-panel-url] { cursor: pointer; border-radius: 6px; }
+.poolrow[data-panel-url]:hover { background: var(--surface-2); }
+.poolrow .chip[data-panel-url] { cursor: pointer; }
+.poolrow .chip[data-panel-url]:hover { background: var(--line); color: var(--text); }

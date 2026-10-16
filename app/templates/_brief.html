@@ -11,10 +11,11 @@
   {{ vitals(s) }}
   <h3>Saves</h3>
   <p class="muted" style="margin:0">{% for sv in s.saves %}{{ sv.short }} {{ sv.label }}{% if sv.proficient %} ●{% endif %}{{ " · " if not loop.last }}{% endfor %}</p>
-  {% set helps = (s.spells | selectattr("healing") | map(attribute="name") | list) + (s.inventory | selectattr("battle") | map(attribute="name") | list) %}
+  {% set helps = (s.spells | selectattr("healing") | list) + (s.inventory | selectattr("battle") | list) %}
   {% set big = s.actions | selectattr("uses") | list %}
-  {% if big %}<h3>Resources</h3><ul class="plain">{% for a in big %}<li>{{ a.name }} <span class="muted">{{ a.uses.left }}/{{ a.uses.max }} · {{ a.uses.reset_phrase }}</span></li>{% endfor %}</ul>{% endif %}
-  {% if helps %}<h3>Healing and items</h3><p class="muted" style="margin:0">{{ helps | unique | join(", ") }}</p>{% endif %}
+  {% macro open(x) %}<a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/detail?ref={{ x.key | urlencode }}">{{ x.name }}</a>{% endmacro %}
+  {% if big %}<h3>Resources</h3><ul class="plain">{% for a in big %}<li>{{ open(a) }} <span class="muted">{{ a.uses.left }}/{{ a.uses.max }} · {{ a.uses.reset_phrase }}</span></li>{% endfor %}</ul>{% endif %}
+  {% if helps %}<h3>Healing and items</h3><p class="muted" style="margin:0">{% for x in helps | unique(attribute="name") %}{{ open(x) }}{{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
   {% if s.situational %}<h3>Situational</h3><ul class="plain">{% for x in s.situational %}<li>{{ x.text }}{% if x.source %} <span class="note">· {{ x.source }}</span>{% endif %}</li>{% endfor %}</ul>{% endif %}
   {% else %}<p class="muted">Not fetched from D&amp;D Beyond yet.</p>{% endif %}
 </div>

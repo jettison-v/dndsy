@@ -6,7 +6,7 @@
     {% if reviewer and rows | selectattr("c.ddb_id") | list %}
     <form method="post" action="/characters/refresh" class="inline" style="margin-left:auto" data-busy-note="refresh-note"><button class="btn" type="submit" data-busy="Refreshing from D&amp;D Beyond…">Refresh all from D&amp;D Beyond</button></form>
     {% endif %}</div>
-  <p class="subtitle">Everyone at a glance, then the party's spells and items pooled for planning.{% if oldest %} Oldest copy from D&amp;D Beyond: {{ oldest | ago }}.{% endif %}</p>
+  <p class="subtitle">Everyone at a glance, then the party's spells and items pooled for planning. Click a spell or item for details, or a name to see that character's.{% if oldest %} Oldest copy from D&amp;D Beyond: {{ oldest | ago }}.{% endif %}</p>
   <p class="busy-note" id="refresh-note" hidden>Fetching {{ rows | selectattr("c.ddb_id") | list | length }} characters from D&amp;D Beyond. This takes a few seconds each; the page reloads when it's done.</p>
   {% if pick %}<p class="flash warn">You aren't set as playing a character yet, so pick one below. (An admin can set who plays which character on Manage › People.)</p>{% endif %}
 
@@ -21,16 +21,16 @@
       <div class="sec-head"><h2>Party spells</h2><span class="note">prepared or known now</span></div>
       {% for title, list in spells %}
       <h3>{{ title }}</h3>
-      {% for sp in list %}<div class="poolrow"><span>{{ sp.name }} <span class="meta">{{ "cantrip" if not sp.level else "level " ~ sp.level }} · {{ sp.casting_time | lower }}{% if sp.concentration %} · Conc.{% endif %}{% if sp.healing %} · heals {{ sp.healing }}{% elif sp.damage %} · {{ sp.damage }}{% endif %}</span></span>
-        <span class="chips">{% for w in sp.who %}<span class="chip">{{ w }}</span>{% endfor %}</span></div>{% endfor %}
+      {% for sp in list %}<div class="poolrow" data-panel-url="{{ sp.url }}" tabindex="0" role="button"><span>{{ sp.name }} <span class="meta">{{ "cantrip" if not sp.level else "level " ~ sp.level }} · {{ sp.casting_time | lower }}{% if sp.concentration %} · Conc.{% endif %}{% if sp.healing %} · heals {{ sp.healing }}{% elif sp.damage %} · {{ sp.damage }}{% endif %}</span></span>
+        <span class="chips">{% for w in sp.who %}<span class="chip" data-panel-url="{{ w.url }}" tabindex="0" role="button" title="Open {{ w.label }}'s">{{ w.label }}</span>{% endfor %}</span></div>{% endfor %}
       {% else %}<p class="muted">No spells yet.</p>{% endfor %}
     </section>
     <section class="section">
       <div class="sec-head"><h2>Party items</h2><span class="note">magic items and consumables</span></div>
       {% for title, list in items %}
       <h3>{{ title }}</h3>
-      {% for it in list %}<div class="poolrow"><span>{{ it.name }}{% if it.summary %} <span class="meta">{{ it.summary[:90] }}{{ "…" if it.summary | length > 90 }}</span>{% endif %}</span>
-        <span class="chips">{% for w in it.who %}<span class="chip">{{ w }}</span>{% endfor %}</span></div>{% endfor %}
+      {% for it in list %}<div class="poolrow" data-panel-url="{{ it.url }}" tabindex="0" role="button"><span>{{ it.name }}{% if it.summary %} <span class="meta">{{ it.summary[:90] }}{{ "…" if it.summary | length > 90 }}</span>{% endif %}</span>
+        <span class="chips">{% for w in it.who %}<span class="chip" data-panel-url="{{ w.url }}" tabindex="0" role="button" title="Open {{ w.label }}'s">{{ w.label }}</span>{% endfor %}</span></div>{% endfor %}
       {% else %}<p class="muted">No magic items yet.</p>{% endfor %}
       {% if coins %}<p class="note" style="margin-top:12px">Coins: about {{ "{:,}".format(coins) }} gp across the party</p>{% endif %}
     </section>
