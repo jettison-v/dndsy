@@ -37,14 +37,15 @@
         <h2>Credit top-ups</h2>
         <p class="hint" style="margin-top:6px">Record what you buy in the Anthropic Console, for the balance estimate.</p>
         {% for t in topups %}
-        <div class="row" style="justify-content:space-between; padding:6px 0">
-          <span><b>${{ "%.2f" | format(t.amount_usd) }}</b> <span class="note">{{ t.added_on.strftime("%b %-d, %Y") }}{% if t.note %} · {{ t.note }}{% endif %}</span></span>
+        <div class="row" style="justify-content:space-between; padding:6px 0; flex-wrap:nowrap">
+          <span><b>${{ "%.2f" | format(t.amount_usd) }}</b><br><span class="note">{{ t.added_on.strftime("%b %-d, %Y") }}{% if t.note %} · {{ t.note }}{% endif %}</span></span>
           <form class="inline" method="post" action="/admin/usage/topups/{{ t.id }}/delete" onsubmit="return confirm('Remove this top-up?')"><button class="btn link danger">Remove</button></form>
         </div>
         {% endfor %}
         <form method="post" action="/admin/usage/topups" class="stack" style="margin-top:12px">
-          <div class="row"><input type="text" name="amount" inputmode="decimal" placeholder="Amount, e.g. 20" required style="flex:1"><input type="date" name="added_on" value="{{ today_iso }}" required style="flex:1"></div>
-          <input type="text" name="note" placeholder="Note (optional)">
+          <label class="field">Amount<input type="text" name="amount" inputmode="decimal" placeholder="$20.00" required></label>
+          <label class="field">Date bought<input type="date" name="added_on" value="{{ today_iso }}" required></label>
+          <label class="field">Note <span class="note">(optional)</span><input type="text" name="note" placeholder="e.g. Initial funding"></label>
           <div><button class="btn">Add top-up</button></div>
         </form>
       </section>

@@ -57,12 +57,23 @@ def usage_page(request: Request, db: Session = Depends(get_db)):
     )
 
 
+def parse_amount(text: str) -> float | None:
+    """'$20', '20.00', '$1,000.50', ' 20 ' -> float; anything else -> None."""
+    cleaned = text.strip().replace("$", "").replace(",", "").replace(" ", "")
+    try:
+        value = float(cleaned)
+    except ValueError:
+        return None
+    return round(value, 2) if value == value else None  # reject NaN
+
+
 @router.post("/usage/topups")
-def add_topup(request: Request, amount: float = Form(...), added_on: date = Form(...), note: str = Form(""), db: Session = Depends(get_db)):
+def add_topup(request: Request, amount: str = Form(...), added_on: date = Form(...), note: str = Form(""), db: Session = Depends(get_db)):
     user, denied = _guard(request)
     if denied:
         return denied
-    if amount <= 0 or amount > 10_000:
+    amount = parse_amount(amount)
+    if amount is None or amount <= 0 or amount > 10_000:
         request.session["toast"] = "Enter an amount between $0 and $10,000."
     else:
         db.add(CreditTopUp(amount_usd=round(amount, 2), added_on=added_on, note=note.strip()[:200]))

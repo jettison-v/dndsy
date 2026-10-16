@@ -53,8 +53,18 @@ def client(monkeypatch, db):
 
 def test_usage_page_and_topups(client, db):
     runs(db)
-    page = client.post("/admin/usage/topups", data={"amount": "20", "added_on": "2026-10-15", "note": "first"}).text
+    page = client.post("/admin/usage/topups", data={"amount": "$20.00", "added_on": "2026-10-15", "note": "first"}).text
     assert "$19.78" in page and "of $20.00 bought" in page
     t = db.scalar(select(CreditTopUp))
     client.post(f"/admin/usage/topups/{t.id}/delete")
     assert db.scalar(select(CreditTopUp)) is None
+
+
+def test_parse_amount():
+    from app.admin_usage import parse_amount
+
+    assert parse_amount("$20") == 20.0
+    assert parse_amount(" $1,000.50 ") == 1000.5
+    assert parse_amount("20.00") == 20.0
+    assert parse_amount("twenty") is None
+    assert parse_amount("nan") is None

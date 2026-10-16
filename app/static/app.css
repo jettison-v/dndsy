@@ -88,6 +88,7 @@ textarea, input[type=text], input[type=url], input[type=date], select { width: 1
 textarea:focus, input:focus, select:focus { border-color: var(--red); outline: none; }
 select { width: auto; padding: 7px 10px; }
 input[type=file] { color: var(--muted); }
+label.field { display: grid; gap: 4px; font-size: .88rem; color: var(--muted); }
 label.check { display: inline-flex; gap: 8px; align-items: center; color: var(--muted); font-size: .92rem; }
 input[type=checkbox] { accent-color: var(--red); width: 16px; height: 16px; }
 
