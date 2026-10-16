@@ -125,3 +125,13 @@ def test_duplicate_number_and_missing_account_rejected(client, db):
     assert "already exists" in r.text
     r = client.post("/admin/sessions/new", data={"played_on": "2026-05-01", "account": "   "})
     assert "Write what happened" in r.text
+
+
+def test_deleting_a_session_deletes_its_messages(db):
+    campaign_with_neighbors(db)
+    s = db.scalar(select(GameSession).where(GameSession.number == 29))
+    db.add(SessionMessage(session_id=s.id, role="reviewer", body="x"))
+    db.flush()
+    db.delete(s)
+    db.flush()
+    assert db.scalar(select(SessionMessage)) is None

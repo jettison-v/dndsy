@@ -154,9 +154,16 @@ class GameSession(Timestamped, Base):
     played_on: Mapped[date | None] = mapped_column(Date)
     title: Mapped[str] = mapped_column(String(200), default="")
     source: Mapped[str] = mapped_column(String(20))  # "notes", "transcript" or "account" (Add Session)
-    recaps: Mapped[list["Recap"]] = relationship(back_populates="session", order_by="Recap.version")
-    events: Mapped[list["StoryEvent"]] = relationship(back_populates="session", order_by="StoryEvent.position")
-    messages: Mapped[list["SessionMessage"]] = relationship(order_by="SessionMessage.id")
+    # Children are deleted with the session (the database cascades; passive_deletes lets it).
+    recaps: Mapped[list["Recap"]] = relationship(
+        back_populates="session", order_by="Recap.version", cascade="all, delete-orphan", passive_deletes=True
+    )
+    events: Mapped[list["StoryEvent"]] = relationship(
+        back_populates="session", order_by="StoryEvent.position", cascade="all, delete-orphan", passive_deletes=True
+    )
+    messages: Mapped[list["SessionMessage"]] = relationship(
+        order_by="SessionMessage.id", cascade="all, delete-orphan", passive_deletes=True
+    )
 
 
 class Recap(Timestamped, Base):
