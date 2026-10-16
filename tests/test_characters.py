@@ -205,7 +205,7 @@ def test_only_the_player_stars_and_reminds(player, admin, db):
     characters.refresh(db, cole)
     owned_by(db, cole, "player@example.com")
     page = player.get(f"/characters/{cole.id}").text
-    assert 'class="pick star' in page and ">Remind<" in page and "This is your character" in page
+    assert 'class="pick star' in page and 'class="pick remind' in page and "This is your character" in page
     r = player.post(f"/characters/{cole.id}/pick", data={"kind": "star", "ref": "spell:Heat Metal"})
     assert r.status_code == 200 and "★" in r.text and 'aria-pressed="true"' in r.text
     situ = cole.snapshot.summary["situational"][0]["key"]
@@ -304,8 +304,8 @@ def test_admin_links_a_character(admin, db):
     big_c = char(db, "Big C")
     admin.post(f"/characters/{big_c.id}/link", data={"ddb_link": "https://www.dndbeyond.com/characters/75423618"})
     assert big_c.ddb_id == "75423618" and big_c.snapshot.status == "ok"
-    admin.post(f"/characters/{big_c.id}/link", data={"ddb_link": "nope"})
-    assert "Paste the character" in admin.get(f"/characters/{big_c.id}").text and big_c.ddb_id == "75423618"
+    page = admin.post(f"/characters/{big_c.id}/link", data={"ddb_link": "nope"}).text  # back on Manage › Characters
+    assert "Paste the character" in page and big_c.ddb_id == "75423618"
 
 
 def test_refresh_buttons_show_that_they_are_working(dm, db):
@@ -389,23 +389,57 @@ def test_side_panel_for_everything_and_admin_regrouping(player, admin, db):
         assert r.status_code == 200 and "<html" not in r.text and 'class="mech"' in r.text, ref
     wild = player.get(f"/characters/{cole.id}/detail", params={"ref": "feature:Druid:Wild Shape"}).text
     assert "for 3 hours" in wild  # D&D Beyond's formula {{(classlevel/2)@rounddown}} filled in
-    assert "Admin: group this differently" not in wild
+    assert "Admin: regroup this" not in wild
     assert player.post(f"/characters/{cole.id}/override", data={"ref": "x", "oref": "x", "field": "battle", "value": "hide"}).status_code == 403
     admin.post(f"/characters/{cole.id}/override", data={"ref": "feature:Wood Elf:Fleet of Foot", "oref": "feature:Fleet of Foot",
                                                         "field": "feature_group", "value": "use"})
     features = player.get(f"/characters/{cole.id}").text.split('id="t-features"')[1].split('id="t-situ"')[0]
     assert features.index("Fleet of Foot") < features.index("Always on, already in your numbers")
-    assert "Admin: group this differently" in admin.get(f"/characters/{cole.id}/detail", params={"ref": "feature:Druid:Wild Shape"}).text
-    admin.post(f"/characters/{cole.id}/override", data={"ref": "attack:unarmed", "oref": "attack:unarmed", "field": "battle", "value": "hide"})
+    assert "Admin: regroup this" in admin.get(f"/characters/{cole.id}/detail", params={"ref": "feature:Druid:Wild Shape"}).text
+    admin.post(f"/characters/{cole.id}/override", data={"ref": "attack:unarmed", "oref": "attack:Unarmed Strike", "field": "battle", "value": "hide"})
     assert "Unarmed Strike" not in player.get(f"/characters/{cole.id}/battle").text.split("Bonus action")[0]
-    assert db.scalar(select(SheetOverride).where(SheetOverride.ref == "attack:unarmed")).set_by == "admin@example.com"
+    assert db.scalar(select(SheetOverride).where(SheetOverride.ref == "attack:Unarmed Strike")).set_by == "admin@example.com"
 
 
-def test_situational_folds_what_is_already_counted_and_circle_magic_is_one_entry(player, db):
+def test_situational_folds_what_is_already_counted_and_no_circle_magic(player, db):
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
     characters.refresh(db, cole)
     situ = player.get(f"/characters/{cole.id}").text.split('id="t-situ"')[1].split('id="t-skills"')[0]
     assert situ.index("charmed") < situ.index("Already in your numbers") < situ.index("+1 to saving throws")
     page = player.get(f"/characters/{cole.id}").text
-    assert "Circle Spell: Augment" not in page and page.count("Circle Magic: cast together with other casters") == 1
+    assert "Circle Spell" not in page and "Circle Magic" not in page  # Forgotten Realms rule: not our core books
+
+
+def test_universal_regrouping_and_admin_characters_page(player, admin, db):
+    from app.models import SheetOverride
+
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    panel = admin.get(f"/characters/{cole.id}/detail", params={"ref": cole.snapshot.summary["inventory"][-1]["key"]}).text
+    assert "Show in askdnd" in panel and "Inventory group" in panel  # gear is clickable and can be regrouped
+    admin.post(f"/characters/{cole.id}/override", data={"ref": "x", "oref": "item:Bag of Holding", "field": "item_group", "value": "Gear"})
+    items = player.get(f"/characters/{cole.id}").text.split('id="t-items"')[1].split('id="t-features"')[0]
+    assert items.index("Everything else") < items.index("Bag of Holding")  # no longer under Equipped
+    admin.post(f"/characters/{cole.id}/override", data={"ref": "x", "oref": "spell:Heat Metal", "field": "hide", "value": "hide"})
+    assert "Heat Metal" not in player.get(f"/characters/{cole.id}").text
+    admin.post(f"/characters/{cole.id}/override", data={"ref": "x", "oref": "spell:Healing Word", "field": "cost", "value": "Action"})
+    page = admin.get("/admin/characters").text
+    assert "Bag of Holding" in page and "Heat Metal" in page and "Undo" in page and "D&amp;D Beyond links" in page
+    o = db.scalar(select(SheetOverride).where(SheetOverride.ref == "spell:Heat Metal"))
+    admin.post(f"/admin/characters/overrides/{o.id}/delete")
+    assert "Heat Metal" in player.get(f"/characters/{cole.id}").text
+    assert player.get("/admin/characters").status_code == 403
+    assert player.post(f"/characters/{cole.id}/link", data={"ddb_link": "1"}).status_code == 403
+
+
+def test_inspiration_badge_and_core_only_spells(player, db):
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    page = player.get(f"/characters/{cole.id}").text
+    assert "Heroic Inspiration" in page and "Heroic Inspiration" in player.get(f"/characters/{cole.id}/battle").text
+    assert "Not core: Xanathar" in page  # Absorb Elements is on his sheet, from Xanathar's
+    assert "Beast Bond" not in page  # a Xanathar's spell he doesn't have isn't offered
+    assert "● proficient" not in page

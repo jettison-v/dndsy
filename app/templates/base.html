@@ -11,9 +11,9 @@
   <meta name="theme-color" content="#0f1113">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/app.css?v=18">
+  <link rel="stylesheet" href="/static/app.css?v=20">
   <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js" defer></script>
-  <script src="/static/app.js?v=13" defer></script>
+  <script src="/static/app.js?v=14" defer></script>
   {% block head %}{% endblock %}
 </head>
 <body data-toast="{{ toast or '' }}">
@@ -37,6 +37,7 @@
       <a href="/admin/sessions" class="{{ 'active' if path.startswith('/admin/sessions') }}">Review<small>Draft and publish sessions</small></a>
       {% if is_admin %}
       {% if can_see_notes %}<a href="/admin/notes" class="{{ 'active' if path.startswith('/admin/notes') }}">Notes sync<small>Pull the latest Google Docs</small></a>{% endif %}
+      <a href="/admin/characters" class="{{ 'active' if path.startswith('/admin/characters') }}">Characters<small>D&amp;D Beyond links and regrouping</small></a>
       <a href="/admin/people" class="{{ 'active' if path.startswith('/admin/people') }}">People<small>Who can sign in and what they can do</small></a>
       <a href="/admin/usage" class="{{ 'active' if path.startswith('/admin/usage') }}">Usage<small>Claude spending and balance</small></a>
       <a href="/admin/import" class="{{ 'active' if path.startswith('/admin/import') }}">Import<small>Load campaign data</small></a>
@@ -53,6 +54,11 @@
   </div>
   {% endif %}
 </div></header>
+{% if user %}<div class="gm-banner" id="gm-banner" role="status" hidden>
+  <span class="gm-dot" aria-hidden="true"></span><span class="gm-text"></span>
+  <a class="btn small gm-open" href="#">Open Battle</a>
+  <button class="btn small gm-off" type="button">Turn off</button>
+</div>{% endif %}
 {% block content %}{% endblock %}
 {% endblock %}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>

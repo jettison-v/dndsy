@@ -9,7 +9,7 @@
         <span class="gm-status" aria-live="polite">{% if failed %}<span class="quiet-warn">Couldn't reach D&amp;D Beyond; showing the copy from {{ fetched_at | ago }}</span>{% else %}Updated {{ fetched_at | ago }}{% endif %}</span>
         <button class="btn small gm-now" type="button" hx-post="/characters/{{ c.id }}/sync" hx-vals='{"now": "1"}' hx-target="#battle-body" hx-swap="outerHTML" hidden>Refresh now</button>
         <label class="gm-label"><span>Game Mode</span>
-          <button class="switch" type="button" role="switch" aria-checked="false" data-game-mode="{{ c.id }}" data-every="{{ game_mode_seconds }}"
+          <button class="switch" type="button" role="switch" aria-checked="false" data-game-mode="{{ c.id }}" data-name="{{ c.entity.name }}" data-every="{{ game_mode_seconds }}"
             aria-label="Game Mode: update from D&amp;D Beyond every 2 to 3 minutes while this page is open"></button></label>
       </div>
       {% endif %}

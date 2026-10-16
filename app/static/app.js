@@ -308,10 +308,46 @@
     const sw = e.target.closest('[data-game-mode]');
     if (!sw) return;
     const id = sw.dataset.gameMode, on = !gmIsOn(id);
-    try { localStorage.setItem(gmKey(id), on ? 'on' : 'off'); } catch (err) {}
+    try {
+      localStorage.setItem(gmKey(id), on ? 'on' : 'off');
+      if (sw.dataset.name) localStorage.setItem('askdnd.gameModeName.' + id, sw.dataset.name);
+    } catch (err) {}
     if (on && window.htmx) htmx.ajax('POST', '/characters/' + id + '/sync', { target: '#battle-body', swap: 'outerHTML' });
-    gmSetup();
+    gmSetup(); gmBanner();
   });
+
+  // Game Mode banner: on every page while Game Mode is on for any character, so it
+  // isn't forgotten. Away from that character's Battle page it keeps the copy fresh too.
+  let bannerTimer = null;
+  function gmOnIds() {
+    try { return Object.keys(localStorage).filter(k => k.startsWith('askdnd.gameMode.') && localStorage.getItem(k) === 'on').map(k => k.slice(16)); }
+    catch (e) { return []; }
+  }
+  function gmBanner() {
+    const banner = document.getElementById('gm-banner');
+    if (!banner) return;
+    const ids = gmOnIds();
+    clearInterval(bannerTimer); bannerTimer = null;
+    banner.hidden = !ids.length;
+    document.body.classList.toggle('gm-on', ids.length > 0);
+    if (!ids.length) return;
+    const id = ids[0];
+    let name = ''; try { name = localStorage.getItem('askdnd.gameModeName.' + id) || ''; } catch (e) {}
+    banner.querySelector('.gm-text').textContent = 'Game Mode is on' + (name ? ' for ' + name : '') + ': updating from D&D Beyond every 2–3 minutes.';
+    const open = banner.querySelector('.gm-open');
+    open.href = '/characters/' + id + '/battle';
+    open.hidden = location.pathname === open.getAttribute('href');
+    const onItsBattle = document.querySelector('[data-game-mode="' + id + '"]');
+    if (!onItsBattle) bannerTimer = setInterval(() => {
+      if (document.visibilityState === 'visible') ids.forEach(i => fetch('/characters/' + i + '/sync', { method: 'POST' }));
+    }, 150000);
+  }
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#gm-banner .gm-off')) return;
+    gmOnIds().forEach(id => { try { localStorage.setItem(gmKey(id), 'off'); } catch (err) {} });
+    gmSetup(); gmBanner();
+  });
+  gmBanner();
   document.body.addEventListener('htmx:afterSettle', e => { if (e.target.id === 'battle-body' || e.detail.target?.id === 'battle-body') { gmSetup(); sortSetup(); } });
   gmSetup();
 

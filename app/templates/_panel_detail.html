@@ -25,6 +25,7 @@
       {% if x.damage %}<dt>Damage</dt><dd>{{ x.damage }}</dd>{% endif %}{% if x.healing %}<dt>Healing</dt><dd>{{ x.healing }}</dd>{% endif %}
       {% if x.uses %}<dt>Free casts</dt><dd>{{ x.uses.left }} of {{ x.uses.max }} · {{ x.uses.reset_phrase }}{% if x.uses_slot %} (or with a slot){% endif %}</dd>{% endif %}
       {% if x.sources %}<dt>From</dt><dd>{{ x.sources | join(", ") }}</dd>{% endif %}
+      {% if x.book %}<dt>Book</dt><dd>{{ x.book }}{% if not x.core %} <span class="tag faint">not in the 2024 core rules</span>{% endif %}</dd>{% endif %}
     {% elif section in ("actions", "attacks") or (o and section != "inventory") %}
       {% if o %}<dt>Costs</dt><dd>{{ o.cost if o.cost != "Other" else (x.activation or "Special") }}</dd>{% endif %}
       {% if o and o.hit %}<dt>To hit / DC</dt><dd>{{ o.hit }}</dd>{% endif %}
@@ -54,16 +55,18 @@
 
   {% if admin %}
   <div class="admin-move">
-    <h3>Admin: group this differently</h3>
-    {% set fields = (["feature_group"] if section == "features" else []) + (["situ_group"] if section == "situational" else []) + (["battle"] if o and o.cost != "Other" else []) %}
+    <h3>Admin: regroup this (for every character)</h3>
     {% for field in fields %}{% set current = sheet._overrides.get(oref ~ "|" ~ field) %}
     <form class="row" hx-post="/characters/{{ c.id }}/override" hx-target="#peek" hx-swap="innerHTML">
       <input type="hidden" name="ref" value="{{ ref }}"><input type="hidden" name="oref" value="{{ oref }}"><input type="hidden" name="field" value="{{ field }}">
-      <select name="value" aria-label="Group">{% for v, label in choices[field] %}<option value="{{ v }}" {{ "selected" if current == v }}>{{ label }}</option>{% endfor %}<option value="default" {{ "selected" if not current }}>Automatic (askdnd decides)</option></select>
-      <button class="btn small" type="submit">Move</button>
+      <label class="field-label">{{ field_labels[field] }}</label>
+      <select name="value" aria-label="{{ field_labels[field] }}">
+        <option value="default" {{ "selected" if not current }}>{{ "Shown (automatic)" if field == "hide" else "Automatic (askdnd decides)" }}</option>
+        {% for v, label in choices[field] %}<option value="{{ v }}" {{ "selected" if current == v }}>{{ label }}</option>{% endfor %}</select>
+      <button class="btn small" type="submit">Save</button>
     </form>
-    {% else %}<p class="note">Nothing to regroup here.</p>{% endfor %}
-    <p class="note">Applies to every character with this name. Saved as feedback for improving askdnd.</p>
+    {% endfor %}
+    <p class="note">Saved under "{{ oref }}", so it applies to everything with this name on every character. Undo any time here or on <a href="/admin/characters" data-no-peek>Manage › Characters</a>.</p>
   </div>
   {% endif %}
 </div>

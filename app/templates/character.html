@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_char.html" import pips, pick_btn, ri, opt_row, spell_row %}
+{% from "_char.html" import pips, pick_btn, ri, opt_row, spell_row, bell %}
 {% block title %}{{ c.entity.name }} · Character · askdnd{% endblock %}
 {% block content %}
 {% set s = sheet %}
@@ -29,6 +29,7 @@
     <div><small>Proficiency</small><b>+{{ s.proficiency_bonus }}</b></div>
     <div><small>Passive Perception</small><b>{{ s.passive_perception }}</b></div>
     {% for sc in s.spellcasting[:1] %}<div><small>Spell DC / attack</small><b>{{ sc.save_dc }}</b><span class="note"> / {{ sc.attack }}</span></div>{% endfor %}
+    <div class="insp{{ ' on' if s.inspiration }}" title="Heroic Inspiration"><small>Heroic Inspiration</small><b>{{ "✦ Yes" if s.inspiration else "—" }}</b></div>
   </div>
 
   {# Row 2: abilities with their saves, and advantages shown on the save they change #}
@@ -40,12 +41,12 @@
         {% for n in sv.notes %}<span class="adv">{{ n }}</span>{% endfor %}</div>
       {% endfor %}
     </div>
-    <p class="note" style="margin:8px 0 0">● proficient{% for n in s.save_notes %} · <span class="adv-inline">{{ n }}</span>{% endfor %} · Hit dice {% for h in s.hit_points.hit_dice %}{{ h.total - h.used }}/{{ h.total }} {{ h.die }}{{ ", " if not loop.last }}{% endfor %}</p>
+    <p class="note" style="margin:8px 0 0">{% for n in s.save_notes %}<span class="adv-inline">{{ n }}</span> · {% endfor %}Hit dice {% for h in s.hit_points.hit_dice %}{{ h.total - h.used }}/{{ h.total }} {{ h.die }}{{ ", " if not loop.last }}{% endfor %}</p>
   </section>
 
   {# Row 3: everything else, in tabs #}
   <section class="section">
-    {% if can_pick %}<p class="hint" style="margin:0 0 10px">This is your character: <span class="pick star on static">★</span> puts something on your Battle page, and <b>Remind</b> adds it to Easy to forget. Only you can change these, and the DM can't see them.</p>{% endif %}
+    {% if can_pick %}<p class="hint" style="margin:0 0 10px">This is your character: <span class="pick star on static">★</span> puts something on your Battle page, and <span class="pick remind on static">{{ bell(true) }}</span> adds it to Easy to forget. Only you can change these, and the DM can't see them.</p>{% endif %}
     <div class="tabbar" role="tablist">
       <button role="tab" aria-selected="true" data-tab="t-actions">Actions</button>
       {% if s.spells or s.spellbook %}<button role="tab" aria-selected="false" data-tab="t-spells">Spells</button>{% endif %}
@@ -124,20 +125,17 @@
           what=it.summary, uses=it.charges if it.charges and it.charges.reset != "Used up" else None,
           mech=[it.type, it.rarity if it.magic else "", it.damage, ("AC " ~ it.armor_class) if it.armor_class else "", ("in " ~ it.in) if it.in else ""] | select | join(" · ")) }}{% endmacro %}
       {% if s.attuned %}<p class="hint" style="margin:0">Attuned: {{ s.attuned | join(", ") }} ({{ s.attuned | length }} of 3)</p>{% endif %}
-      {% set battle = s.inventory | selectattr("battle") | list %}
-      {% set worn = s.inventory | rejectattr("battle") | selectattr("equipped") | list %}
+      {% set battle = s.inventory | selectattr("group", "equalto", "battle") | list %}
+      {% set worn = s.inventory | selectattr("group", "equalto", "equipped") | list %}
       {% if battle %}<h3 class="divider">Usable in battle <span class="count">{{ battle | length }}</span></h3><div class="rows">{% for it in battle %}{{ item_row(it) }}{% endfor %}</div>{% endif %}
       {% if worn %}<h3 class="divider">Equipped <span class="count">{{ worn | length }}</span></h3><div class="rows">{% for it in worn %}{{ item_row(it) }}{% endfor %}</div>{% endif %}
-      {% set rest = s.inventory | rejectattr("battle") | rejectattr("equipped") | list %}
+      {% set rest = s.inventory | rejectattr("group", "in", ["battle", "equipped"]) | list %}
       {% if rest %}
       <details class="fold"><summary>Everything else ({{ rest | length }})</summary>
-        {% for title, cats in [("Weapons", ["Weapon"]), ("Armor", ["Armor"]), ("Magic items", ["Wondrous item", "Ring", "Rod", "Staff", "Wand"]), ("Potions and scrolls", ["Potion", "Scroll"])] %}
-        {% set list = rest | selectattr("category", "in", cats) | list %}
+        {% for title in ["Weapons", "Armor", "Magic items", "Potions and scrolls", "Gear"] %}
+        {% set list = rest | selectattr("group", "equalto", title) | list %}
         {% if list %}<h3 class="divider">{{ title }} <span class="count">{{ list | length }}</span></h3><div class="rows">{% for it in list %}{{ item_row(it) }}{% endfor %}</div>{% endif %}
         {% endfor %}
-        {% set gear = rest | rejectattr("category", "in", ["Weapon", "Armor", "Wondrous item", "Ring", "Rod", "Staff", "Wand", "Potion", "Scroll"]) | list %}
-        {% if gear %}<h3 class="divider">Gear <span class="count">{{ gear | length }}</span></h3>
-        <p class="muted">{% for it in gear %}{{ it.name }}{% if it.quantity > 1 %} ×{{ it.quantity }}{% endif %}{% if it.in %} <span class="note">({{ it.in }})</span>{% endif %}{{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
       </details>
       {% endif %}
       {% if s.currency %}<p class="note">Coins: {% for k, v in s.currency.items() %}{{ "{:,}".format(v) }} {{ k }}{{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
@@ -185,15 +183,6 @@
   {% if failed %}<p class="flash warn">{{ error }}</p>{% endif %}
   {% endif %}
 
-  {% if reviewer %}
-  <section class="section">
-    <h2>D&amp;D Beyond link</h2>
-    <p class="hint" style="margin-top:6px">{% if c.ddb_id %}Linked to character {{ c.ddb_id }}. {% endif %}Paste the character's D&amp;D Beyond link to {{ "change it" if c.ddb_id else "link it" }}. The character must be set to Public on D&amp;D Beyond. Only reviewers see this.</p>
-    <form method="post" action="/characters/{{ c.id }}/link" class="row">
-      <input type="text" name="ddb_link" aria-label="D&amp;D Beyond link" placeholder="https://www.dndbeyond.com/characters/12345678" style="flex:1;min-width:220px" required>
-      <button class="btn{{ ' primary' if not c.ddb_id }}" type="submit" data-busy="Fetching from D&amp;D Beyond…">{{ "Save link" if c.ddb_id else "Link and fetch" }}</button>
-    </form>
-  </section>
-  {% endif %}
+  {% if admin %}<p class="note">Admin: link this character to D&amp;D Beyond and review your regrouping on <a href="/admin/characters">Manage › Characters</a>.</p>{% endif %}
 </main>
 {% endblock %}
