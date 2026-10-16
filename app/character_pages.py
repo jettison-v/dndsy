@@ -143,6 +143,7 @@ def character_page(request: Request, character_id: int, db: Session = Depends(ge
         return stop
     ctx = _view(db, ch, user)
     if ctx["sheet"]:
+        ctx["granted_spells"] = views.granted_spells(ctx["sheet"])
         # Actions tab: everything except leveled spells (those are on the Spells tab), like D&D Beyond
         ctx["options"] = [o for o in views.options(ctx["sheet"], ctx["picks"]["star"])
                           if o["kind"] != "spell" or (o["tags"] and o["tags"][0] == "cantrip" and o["hit"])]

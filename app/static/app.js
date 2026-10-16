@@ -335,6 +335,49 @@
   // Star and Remind me buttons sit inside <summary>: don't open/close the row when pressed.
   document.addEventListener('click', e => { if (e.target.closest('summary .pick')) e.preventDefault(); }, true);
 
+  // Spell planner (Character › Spells): a view (ready / shortlist / all), filters that
+  // all have to match, and a search box. Rows carry data-* attributes from the server.
+  function plannerApply(root) {
+    const view = (root.querySelector('[data-view][aria-pressed=true]') || {}).dataset?.view || 'ready';
+    const filters = [...root.querySelectorAll('[data-filter][aria-pressed=true]')].map(b => b.dataset.filter);
+    const levels = filters.filter(f => f.startsWith('level:')).map(f => f.slice(6));
+    const q = (root.querySelector('[data-search]')?.value || '').trim().toLowerCase();
+    let shown = 0;
+    root.querySelectorAll('.spell-row').forEach(r => {
+      const d = r.dataset, tags = ' ' + d.tags + ' ';
+      let ok = view === 'all' || (view === 'ready' ? d.state === 'ready' : d.fav === '1');
+      if (levels.length && !levels.includes(d.level)) ok = false;
+      for (const f of filters) {
+        const [k, v] = f.split(':');
+        if (k === 'cast' && d.cast !== v) ok = false;
+        if (k === 'tag' && !tags.includes(' ' + v + ' ')) ok = false;
+        if (k === 'notag' && tags.includes(' ' + v + ' ')) ok = false;
+      }
+      if (q && !d.name.includes(q)) ok = false;
+      r.hidden = !ok;
+      if (ok) shown++;
+    });
+    root.querySelectorAll('.planner-level, .planner-group').forEach(g => { g.hidden = !g.querySelector('.spell-row:not([hidden])'); });
+    const label = root.querySelector('[data-shown]');
+    if (label) label.textContent = shown + ' spell' + (shown === 1 ? '' : 's') + ' shown.';
+    const empty = root.querySelector('.planner-empty'); if (empty) empty.hidden = shown > 0;
+  }
+  document.addEventListener('click', e => {
+    const root = e.target.closest('[data-planner]');
+    if (!root) return;
+    const v = e.target.closest('[data-view]'), f = e.target.closest('[data-filter]');
+    if (v) root.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', b === v ? 'true' : 'false'));
+    if (f) f.setAttribute('aria-pressed', f.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+    if (v || f) plannerApply(root);
+  });
+  document.addEventListener('input', e => { const root = e.target.closest('[data-planner]'); if (root && e.target.matches('[data-search]')) plannerApply(root); });
+  // A ♥ press updates the row's data so the Shortlist view is right without a reload.
+  document.addEventListener('click', e => {
+    const b = e.target.closest('.pick.fav:not(.static)'), row = b && b.closest('.spell-row');
+    if (row) row.dataset.fav = b.classList.contains('on') ? '0' : '1';  // the server toggles it the same way
+  }, true);
+  document.querySelectorAll('[data-planner]').forEach(plannerApply);
+
   // Flash message from a full page load
   const flash = document.body.dataset.toast;
   if (flash) toast(flash);

@@ -195,3 +195,10 @@ def pooled_items(rows: list[dict]) -> list[tuple[str, list[dict]]]:
 def party_coins(rows: list[dict]) -> int:
     rate = {"pp": 10, "gp": 1, "ep": 0.5, "sp": 0.1, "cp": 0.01}
     return int(sum(v * rate.get(k, 0) for r in rows if r["sheet"] for k, v in r["sheet"]["currency"].items()))
+
+
+def granted_spells(sheet: dict) -> list[dict]:
+    """Spells from species, feats, items and class features that aren't on a class's spell list."""
+    classes = {b["class"] for b in sheet.get("spellbook") or []}
+    in_books = {sp["name"] for b in sheet.get("spellbook") or [] for sp in b["spells"] if sp["state"] != "available"}
+    return [sp for sp in sheet.get("spells") or [] if not (set(sp["sources"]) & classes) and sp["name"] not in in_books]

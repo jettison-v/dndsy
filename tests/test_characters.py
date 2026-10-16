@@ -347,3 +347,28 @@ def test_drag_and_drop_order_is_saved_for_the_player_only(player, admin, db):
     assert action.index("Thorn Whip") < action.index("Unarmed Strike") < action.index("Starry Wisp")
     assert admin.post(f"/characters/{cole.id}/order", data={"column": "Action", "keys": keys}).status_code == 403
     assert "data-sort-column" not in admin.get(f"/characters/{cole.id}/battle").text
+
+
+def test_spell_planner_and_shortlist(player, db):
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    owned_by(db, cole, "player@example.com")
+    page = player.get(f"/characters/{cole.id}").text
+    assert "data-planner" in page and "Prepared 10 of 10" in page and "Cantrips 3 of 3" in page
+    assert "Barkskin" in page and "Not prepared" in page and 'data-view="fav"' in page
+    r = player.post(f"/characters/{cole.id}/pick", data={"kind": "fav", "ref": "spell:Barkskin"})
+    assert "♥" in r.text
+    assert 'data-fav="1"' in player.get(f"/characters/{cole.id}").text
+
+
+def test_inventory_and_feature_sections(player, db):
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    page = player.get(f"/characters/{cole.id}").text
+    items = page.split('id="t-items"')[1].split('id="t-features"')[0]
+    assert items.index("Usable in battle") < items.index("Equipped") < items.index("Everything else")
+    assert "Demon Armor" in items.split("Everything else")[1]  # not equipped: folded, under Armor
+    features = page.split('id="t-features"')[1].split('id="t-situ"')[0]
+    assert features.index("Wild Shape") < features.index("Always on, already in your numbers") < features.index("Fleet of Foot")

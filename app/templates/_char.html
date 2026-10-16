@@ -10,10 +10,11 @@
 {% macro pick_btn(c, kind, ref, on, can_pick) -%}
 {%- if can_pick -%}
 <button type="button" class="pick {{ kind }}{{ ' on' if on }}" hx-post="/characters/{{ c.id }}/pick" hx-vals='{{ {"kind": kind, "ref": ref} | tojson }}' hx-swap="outerHTML"
-  aria-pressed="{{ 'true' if on else 'false' }}" title="{{ ('Starred: shown on Battle' if on else 'Star: show on Battle') if kind == 'star' else ('In Easy to forget' if on else 'Add to Easy to forget') }}">
-  {%- if kind == "star" %}{{ "★" if on else "☆" }}{% else %}{{ "Reminder on" if on else "Remind me" }}{% endif -%}
+  aria-pressed="{{ 'true' if on else 'false' }}" title="{{ {'star': ('Starred: shown on Battle' if on else 'Star: show on Battle'), 'remind': ('In Easy to forget' if on else 'Add to Easy to forget'), 'fav': ('On your shortlist' if on else 'Add to your spell shortlist')}[kind] }}">
+  {%- if kind == "star" %}{{ "★" if on else "☆" }}{% elif kind == "fav" %}{{ "♥" if on else "♡" }}{% else %}{{ "Reminder on" if on else "Remind me" }}{% endif -%}
 </button>
 {%- elif on and kind == "star" -%}<span class="pick star on static" title="Starred by their player">★</span>
+{%- elif on and kind == "fav" -%}<span class="pick fav on static" title="On their shortlist">♥</span>
 {%- endif -%}
 {%- endmacro %}
 
@@ -46,4 +47,29 @@
   {% for sl in s.spell_slots.slots %}<span>{{ "Slots " if loop.first }}{{ sl.level }}{{ {1: "st", 2: "nd", 3: "rd"}.get(sl.level, "th") }} {{ pips({"max": sl.max, "left": sl.max - sl.used}) }}</span>{% endfor %}
   {% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}<span>Pact slots (level {{ p.level }}) {{ pips({"max": p.max, "left": p.max - p.used}) }}</span>{% endif %}
 </div>
+{%- endmacro %}
+
+{% set STATE_LABELS = {"always": ("Always prepared", "done"), "prepared": ("Prepared", "done"), "known": ("Known", "done"),
+                       "spellbook": ("In spellbook", ""), "available": ("Not prepared", ""), "granted": ("", "")} %}
+
+{% macro spell_row(c, sp, state, picks, can_pick, source="") -%}
+{%- set ready = state in ("always", "prepared", "known", "granted") -%}
+{%- set cast = {"Action": "action", "Bonus action": "bonus", "Reaction": "reaction"}.get(sp.casting_time, "other") -%}
+<details class="opt spell-row{{ ' not-ready' if not ready }}" data-state="{{ 'ready' if ready else state }}" data-fav="{{ '1' if sp.key in picks.fav else '0' }}"
+  data-level="{{ sp.level }}" data-cast="{{ cast }}" data-name="{{ sp.name | lower }}"
+  data-tags="{{ (sp.tags | map('lower') | list + (['concentration'] if sp.concentration else []) + (['ritual'] if sp.ritual else []) + (['healing'] if sp.healing else []) + (['damage'] if sp.damage else [])) | join(' ') }}">
+  <summary>
+    {{ pick_btn(c, "fav", sp.key, sp.key in picks.fav, can_pick) }}
+    {% if ready and cast != "other" %}{{ pick_btn(c, "star", sp.key, sp.key in picks.star, can_pick) }}{% endif %}
+    <span class="grow"><b>{{ sp.name }}</b>
+      {% set lab = STATE_LABELS[state] %}{% if lab[0] %} <span class="tag {{ lab[1] }}">{{ lab[0] }}</span>{% endif %}
+      {% if source %} <span class="tag">{{ source }}</span>{% endif %}
+      {% if sp.concentration %} <span class="tag">Conc.</span>{% endif %}{% if sp.ritual %} <span class="tag">Ritual</span>{% endif %}
+      {% if sp.uses %} <span class="tag">{{ sp.uses.max }} free / {{ sp.uses.reset }}</span>{% endif %}
+      <span class="meta">{{ sp.casting_time }}{% if sp.range %} · {{ sp.range }}{% endif %}{% if sp.duration %} · {{ sp.duration }}{% endif %}{% if sp.components %} · {{ sp.components | join(", ") }}{% endif %}{% if sp.damage %} · {{ sp.damage }}{% elif sp.healing %} · heals {{ sp.healing }}{% endif %}</span></span>
+    {% if sp.attack or sp.save %}<span class="hit">{{ sp.attack or sp.save }}</span>{% endif %}
+    {{ pick_btn(c, "remind", sp.key, sp.key in picks.remind, can_pick) }}
+  </summary>
+  <div class="opt-text">{{ sp.summary }}<p class="note">{{ sp.school }}{% if sp.material %} · material: {{ sp.material }}{% endif %}{% if sp.trigger %} · {{ sp.trigger }}{% endif %}</p></div>
+</details>
 {%- endmacro %}
