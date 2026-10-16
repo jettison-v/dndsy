@@ -20,6 +20,7 @@ from app.api import router as api_router
 from app.auth import current_user, is_admin
 from app.auth import router as auth_router
 from app.character_pages import router as character_router
+from app.help_pages import router as help_router
 from app.entity_pages import router as entity_router
 from app.db import SessionLocal
 from app.db import engine as db_engine
@@ -72,6 +73,7 @@ app.include_router(character_router)
 app.include_router(entity_router)
 app.include_router(api_router)
 app.include_router(admin_usage_router)
+app.include_router(help_router)
 
 LOGIN_ERRORS = {
     "not_allowed": "That Google account isn't on the list for this table.",

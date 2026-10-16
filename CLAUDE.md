@@ -37,5 +37,6 @@ Python (current stable) managed with **uv** · FastAPI serving server-rendered p
 
 ## Conventions
 - Small, focused commits with clear messages. Run tests before committing.
+- When a feature or a visibility rule changes, update the About and FAQ pages (`app/templates/about.html`, `faq.html`) to match.
 - Tests for core logic (extraction parsing, visibility rules, D&D Beyond parsing). Don't test against live paid APIs by default.
 - Secrets come from environment variables (Railway variables in production, `.env` locally). Document every variable in `.env.example`.

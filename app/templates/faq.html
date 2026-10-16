@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}FAQ · askdnd{% endblock %}
+{% macro q(question) %}<details class="faq"><summary>{{ question }}</summary><div class="faq-a">{{ caller() }}</div></details>{% endmacro %}
+{% block content %}
+<main class="page narrow help">
+  <div class="title-row"><h1>FAQ</h1></div>
+  <p class="subtitle">How askdnd's features work, so nothing comes as a surprise. The short version is on the <a href="/about">About</a> page.</p>
+
+  <section class="section">
+    <h2>The story</h2>
+    {% call q("Where do the recaps come from?") %}
+      <p>Sessions are recorded and transcribed. A filter on the admin's computer removes off-topic talk first, and only the game content goes to Claude, which drafts a recap with key moments. A reviewer reads, edits and publishes it. You only see published recaps, on <b>Previously on…</b> (latest) and <b>Sessions</b> (all of them).</p>
+    {% endcall %}
+    {% call q("Something in a recap or on a Campaign page is wrong. What do I do?") %}
+      <p>Use <b>Suggest a correction or addition</b> under the recap, on any person, place or other entry, or in a glossary term's panel. Write what's wrong or what to add. Every suggestion helps: corrections also teach future drafts.</p>
+    {% endcall %}
+    {% call q("Who sees my suggestion, and when does it change things?") %}
+      <p>It goes to the DM and the admins (and any reviewers) on <b>Manage › Suggestions</b>. Nothing changes until one of them accepts it. On a Campaign entry, an accepted fact appears on the page as you wrote it. On a session, it goes into that session's next redraft.</p>
+      <p><b>The DM's own suggestions skip this step</b>, because the DM controls the story. A DM fact goes straight onto the page, and a DM correction to a session shows under the recap as "From the DM" right away.</p>
+    {% endcall %}
+    {% call q("What are \"Questions for you\" on Previously on…?") %}
+      <p>When Claude isn't sure about something while drafting ("who told the party about the library?"), a reviewer can send the question to the person most likely to know. Your answer goes into the next draft. You can also tick that it should be used in every future draft, which helps with things like name spellings.</p>
+    {% endcall %}
+    {% call q("What's the glossary?") %}
+      <p>Campaign names and words with their correct spelling, plus how a transcript tends to mishear them. It keeps names consistent in recaps and links. The DM and reviewers can edit it directly; anyone can suggest a term.</p>
+    {% endcall %}
+  </section>
+
+  <section class="section">
+    <h2>Characters</h2>
+    {% call q("Where does my character come from?") %}
+      <p>From your character's page on D&amp;D Beyond. It has to be set to <b>Public</b> there (Character Settings › Character Privacy), and an admin links it on Manage › Characters. askdnd keeps the last good copy, so if D&amp;D Beyond is down you still see your character, with the time it was last updated.</p>
+      <p>D&amp;D Beyond doesn't officially offer this data, so if they change their format, refreshing may stop working for a while. The numbers have been checked against D&amp;D Beyond's own sheet; if one ever looks different, tell an admin.</p>
+    {% endcall %}
+    {% call q("How do I get the latest from D&D Beyond?") %}
+      <p>Turn on <b>Game Mode</b> on the Battle page: your character refreshes every {{ "%g" | format(game_mode_minutes) }} minutes while it's on, and a banner on every page reminds you it's on. Game Mode is remembered per browser. Reviewers can also press <b>Refresh from D&amp;D Beyond</b> at any time.</p>
+    {% endcall %}
+    {% call q("Can askdnd roll dice or change things on D&D Beyond?") %}
+      <p>No. It only reads your public character. D&amp;D Beyond's terms don't allow other apps to act on it, so rolls, HP and spell slots are still done in D&amp;D Beyond.</p>
+    {% endcall %}
+    {% call q("What are Battle, Character and Party?") %}
+      <ul>
+        <li><b>Battle</b>: what your character can do in a fight, grouped by action, bonus action and reaction, plus your starred things, your "Easy to forget" reminders and the party at a glance.</li>
+        <li><b>Character</b>: the full sheet in tabs: Actions, Spells (prepared and available, with a shortlist), Inventory, Features, Situational rules, Skills and Forms.</li>
+        <li><b>Party</b>: everyone's key numbers, plus the party's spells and items pooled together. Click a name for a short version of that character.</li>
+      </ul>
+      <p>Click any row to open the side panel with everything about it: costs, numbers, what it does, and the full text.</p>
+    {% endcall %}
+    {% call q("What do the star, the bell and the heart do?") %}
+      <p>★ puts something on your Battle page. The bell adds it to <b>Easy to forget</b> (for example, Advantage against being Charmed). ♥ adds a spell to your shortlist without preparing it. <b>Only your character's player can set these</b>; not admins, and the DM never sees them.</p>
+    {% endcall %}
+    {% call q("What are the dotted underlines in descriptions?") %}
+      <p>Rule terms such as <i>Unarmed Strike</i>, <i>Prone</i> or <i>Abyssal</i>. Rest the mouse on one, or tap it, for a short definition. Only the first mention in a panel is underlined, and terms everyone knows (Advantage, Long Rest…) aren't. The definitions are askdnd's own short summaries of the 2024 rules; the DM makes the call at the table.</p>
+    {% endcall %}
+    {% call q("What do the Custom, Changed and Note tags on items mean?") %}
+      <ul>
+        <li><b>Custom</b>: made on D&amp;D Beyond for this campaign, not from a book. Its description is whatever was typed there.</li>
+        <li><b>Changed</b>: someone renamed it, added a note, or changed details such as cost on D&amp;D Beyond. The side panel says what.</li>
+        <li><b>Note</b>: the player wrote a note on it. Open the item to read it.</li>
+      </ul>
+    {% endcall %}
+    {% call q("Why isn't some content from my D&D Beyond sheet here?") %}
+      <p>The table plays the 2024 core rules only, so options from other books (Forgotten Realms extras, for example) are left out, and anything non-core already on a sheet is labeled. An admin can also move or hide things that D&amp;D Beyond groups oddly, for every character at once.</p>
+    {% endcall %}
+  </section>
+
+  <section class="section">
+    <h2>People, pictures and privacy</h2>
+    {% call q("Who can see what?") %}
+      <ul>
+        <li>Everything for the table (recaps, Campaign, characters, item notes) is visible to everyone signed in, the DM included.</li>
+        <li><b>Character notes</b> (a player's notes on why they built their character this way) are <b>never shown to the DM</b>.</li>
+        <li><b>Stars and reminders</b> belong to the character's player and are hidden from the DM.</li>
+        <li>Pages that aren't published yet are only visible to reviewers.</li>
+      </ul>
+    {% endcall %}
+    {% call q("What can players, reviewers, admins and the DM do?") %}
+      <ul>
+        <li><b>Player</b>: read everything for the table and suggest corrections.</li>
+        <li><b>Reviewer</b>: also drafts, edits and publishes sessions, decides on suggestions, refreshes characters and adds pictures.</li>
+        <li><b>Admin</b>: also manages people, character links and regrouping, and sees usage and costs.</li>
+        <li><b>DM</b> (a tick on top of any level): their own corrections skip review, they decide on everyone else's suggestions, edit the glossary and add pictures. The DM never sees character notes, stars or reminders.</li>
+      </ul>
+    {% endcall %}
+    {% call q("Where do the pictures come from?") %}
+      <p>Player characters show their D&amp;D Beyond portrait. The DM, reviewers and admins can add a picture to any person, place, faction or other entry from its page (Add a picture). Uploads are shrunk, and hidden information such as a phone photo's location is removed.</p>
+    {% endcall %}
+    {% call q("Are session recordings or transcripts stored?") %}
+      <p>No. Transcripts are filtered on the admin's own computer, only game content is sent to Claude, and only the extracted story (recaps, key moments, the campaign record) is kept.</p>
+    {% endcall %}
+    {% call q("Does using askdnd cost anything?") %}
+      <p>Not for players. Claude is paid per use by the admin, with a monthly limit: drafting a recap costs a few cents, and regenerating a Campaign description about 1–2¢. Admins can see spending on Manage › Usage.</p>
+    {% endcall %}
+    {% call q("How do I get someone signed in?") %}
+      <p>An admin adds their Google email on Manage › People. While the Google sign-in is in testing, the admin also adds them as a test user in Google Cloud Console.</p>
+    {% endcall %}
+  </section>
+</main>
+{% endblock %}

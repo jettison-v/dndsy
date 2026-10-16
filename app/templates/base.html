@@ -11,7 +11,7 @@
   <meta name="theme-color" content="#0f1113">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/app.css?v=24">
+  <link rel="stylesheet" href="/static/app.css?v=25">
   <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js" defer></script>
   <script src="/static/app.js?v=17" defer></script>
   {% block head %}{% endblock %}
@@ -62,6 +62,7 @@
 </div>{% endif %}
 {% block content %}{% endblock %}
 {% endblock %}
+<footer class="site-foot"><a href="/about" data-no-peek>About</a> · <a href="/faq" data-no-peek>FAQ</a></footer>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>

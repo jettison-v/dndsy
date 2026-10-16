@@ -620,3 +620,18 @@ body.gm-on .battlebar { top: 106px; }
 .dm-notes { margin-top: 14px; border-left: 3px solid var(--amber); background: var(--amber-soft); border-radius: 0 10px 10px 0; padding: 10px 14px; }
 .dm-notes p { margin: 6px 0 0; }
 .detail-note { white-space: pre-line; border-left: 3px solid var(--line); padding: 4px 0 4px 12px; font-size: .95rem; }
+
+/* About and FAQ */
+.help .section ul { padding-left: 20px; margin: 10px 0 0; }
+.help .section li { margin: 6px 0; }
+details.faq { border-top: 1px solid var(--line); padding: 12px 0; }
+details.faq:first-of-type { margin-top: 12px; }
+details.faq > summary { cursor: pointer; font-weight: 600; list-style: none; display: flex; gap: 8px; }
+details.faq > summary::-webkit-details-marker { display: none; }
+details.faq > summary::before { content: "▸"; color: var(--muted); transition: transform .15s; }
+details.faq[open] > summary::before { transform: rotate(90deg); }
+.faq-a { color: var(--muted); padding: 4px 0 0 18px; }
+.faq-a p { margin: 8px 0 0; }
+.faq-a b { color: var(--text); }
+.site-foot { text-align: center; color: var(--faint); font-size: .85rem; padding: 28px 16px 36px; }
+.site-foot a { color: var(--muted); }
