@@ -37,7 +37,7 @@
       <a href="/suggestions" class="{{ 'active' if path.startswith('/suggestions') }}">Suggestions<small>Corrections and additions from the table</small></a>
       {% if is_reviewer %}<a href="/admin/sessions" class="{{ 'active' if path.startswith('/admin/sessions') }}">Review<small>Draft and publish sessions</small></a>{% endif %}
       {% if is_admin %}
-      <a href="/admin/notes" class="{{ 'active' if path.startswith('/admin/notes') }}">Notes sync<small>Pull the latest Google Docs</small></a>
+      {% if can_see_notes %}<a href="/admin/notes" class="{{ 'active' if path.startswith('/admin/notes') }}">Notes sync<small>Pull the latest Google Docs</small></a>{% endif %}
       <a href="/admin/characters" class="{{ 'active' if path.startswith('/admin/characters') }}">Characters<small>D&amp;D Beyond links and regrouping</small></a>
       <a href="/admin/people" class="{{ 'active' if path.startswith('/admin/people') }}">People<small>Who can sign in and what they can do</small></a>
       <a href="/admin/usage" class="{{ 'active' if path.startswith('/admin/usage') }}">Usage<small>Claude spending and balance</small></a>

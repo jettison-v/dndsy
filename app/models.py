@@ -75,7 +75,7 @@ class User(Timestamped, Base):
     # Set on Manage › People: player | reviewer | admin, or "removed" (can't sign in).
     # None = not set in the app (people imported but never invited); the Railway lists decide.
     access: Mapped[str | None] = mapped_column(String(20))
-    is_dm: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")  # suggestions skip review; never sees stars/reminders
+    is_dm: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")  # never sees character notes
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
@@ -242,7 +242,7 @@ class CharacterSnapshot(Timestamped, Base):
 class CharacterPick(Timestamped, Base):
     """A player's own marks on their character: a star (show it on Battle) or a
     reminder (list it under Easy to forget). Only the character's player can set
-    them; the DM never sees them (app/picks.py)."""
+    them; like character notes, the DM never sees them (app/picks.py)."""
 
     __tablename__ = "character_picks"
     __table_args__ = (UniqueConstraint("character_id", "kind", "ref"),)
@@ -268,7 +268,7 @@ class SheetOverride(Timestamped, Base):
 
 
 class CharacterNote(Timestamped, Base):
-    """Why a player built their character this way. Visible to the whole table, DM included."""
+    """Why a player built their character this way. Hidden from the DM (see visibility.py)."""
 
     __tablename__ = "character_notes"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -400,7 +400,7 @@ class NoteSource(Timestamped, Base):
     campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"))
     google_doc_id: Mapped[str] = mapped_column(String(100))
     title: Mapped[str] = mapped_column(String(300), default="")
-    # Set for a player's character notes; empty for campaign notes. Both are visible to the table.
+    # Character notes are hidden from the DM; campaign notes are not.
     character_id: Mapped[int | None] = mapped_column(ForeignKey("characters.id", ondelete="SET NULL"))
     last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     character: Mapped[Character | None] = relationship()

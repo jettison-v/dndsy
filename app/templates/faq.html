@@ -68,8 +68,9 @@
     <h2>People, pictures and privacy</h2>
     {% call q("Who can see what?") %}
       <ul>
-        <li>Everything for the table (recaps, Campaign, characters, <b>character notes</b> and item notes) is visible to everyone signed in, the DM included. It's all context for the campaign.</li>
-        <li>The exception: <b>stars and reminders</b> belong to the character's player and are hidden from the DM.</li>
+        <li>Everything for the table (recaps, Campaign, characters, item notes) is visible to everyone signed in, the DM included.</li>
+        <li><b>Character notes</b> (a player's notes on why they built their character this way) are <b>never shown to the DM</b>.</li>
+        <li><b>Stars and reminders</b> belong to the character's player and are hidden from the DM.</li>
         <li>Pages that aren't published yet are only visible to reviewers.</li>
       </ul>
     {% endcall %}
@@ -78,7 +79,7 @@
         <li><b>Player</b>: read everything for the table and suggest corrections.</li>
         <li><b>Reviewer</b>: also drafts, edits and publishes sessions, decides on suggestions, refreshes characters and adds pictures.</li>
         <li><b>Admin</b>: also manages people, character links and regrouping, and sees usage and costs.</li>
-        <li><b>DM</b> (a tick on top of any level): their own corrections skip review, they decide on everyone else's suggestions, edit the glossary and add pictures. The DM never sees players' stars or reminders.</li>
+        <li><b>DM</b> (a tick on top of any level): their own corrections skip review, they decide on everyone else's suggestions, edit the glossary and add pictures. The DM never sees character notes, stars or reminders.</li>
       </ul>
     {% endcall %}
     {% call q("Where do the pictures come from?") %}

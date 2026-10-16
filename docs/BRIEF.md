@@ -14,7 +14,7 @@ v1 (now at legacy.askdnd.ai) was a learning project about RAG and vector databas
 
 ## Users
 - **4 players + 1 DM** (the DM runs the NPCs). Private tool; not public.
-- The DM sees everything players see, including players' character notes (changed 2026-10-17; only stars and reminders are hidden from the DM). No DM-only features for now.
+- The DM sees everything players see, **except players' character notes** (see below). No DM-only features for now.
 - Each player has their own login, because character notes, chat memory and visibility rules depend on who's asking.
 - Used through a web page, mostly on a computer alongside Zoom and D&D Beyond, sometimes on a phone.
 
@@ -42,7 +42,7 @@ Before each session, every player gets:
   - Class features and resources (Focus Points, Wild Shape uses), and what a long rest restores
 - **Inform, don't advise.** It says what's possible and how it works, never "you should do X." The choices stay with the player.
 - Differentiator: a per-player chat that remembers *why* you built your character this way. Notes can be seeded from Brett's existing ones and added at each level-up.
-- **Visibility: character notes are visible to everyone at the table, the DM included** (changed 2026-10-17; originally hidden from the DM).
+- **Visibility: character notes are visible to all players but NOT the DM.**
 
 ### 4. Rules answers
 - Fast, analyzed answers to mechanics questions for the 2024 PHB, DMG and Monster Manual, citing the right book page and showing the page image.
@@ -74,7 +74,7 @@ Before each session, every player gets:
 ## Decisions log (scoping)
 - Transcripts: MacWhisper with speaker labels; only one session recorded so far. Speaker labels need mapping to real people.
 - Privacy: keep only the extracted story; filter locally (Ollama) first.
-- Character notes: visible to all players, hidden from the DM. *(Superseded 2026-10-17: visible to the DM too.)*
+- Character notes: visible to all players, hidden from the DM.
 - Tim's character is No Name, formerly Sarkas (his fey wife stole his name). Characters and NPCs need name aliases.
 - New campaign: unconfirmed; support multiple campaigns in the data model, but don't build UI for it yet.
 

@@ -4,8 +4,8 @@
 - A reminder lists it under "Easy to forget".
 
 Rules (Brett, 2026-10-16): only the character's player can set them (not
-admins, not the DM), and the DM never sees them. (Character notes used to share
-this rule; since 2026-10-17 everyone, the DM included, sees those.)
+admins, not the DM). Like character notes, they're visible to the players but
+never to the DM.
 """
 
 import json
@@ -13,7 +13,7 @@ import json
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.auth import is_dm
+from app.auth import can_see_character_notes
 from app.models import Character, CharacterPick, User
 
 KINDS = ("star", "remind", "fav")  # fav: a spell on the player's shortlist
@@ -36,7 +36,7 @@ def can_edit(db: Session, user: dict | None, character: Character) -> bool:
 
 
 def can_see(user: dict | None) -> bool:
-    return bool(user) and not is_dm(user)
+    return can_see_character_notes(user)
 
 
 def picks(db: Session, character: Character, user: dict | None) -> dict:

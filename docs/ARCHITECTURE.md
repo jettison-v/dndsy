@@ -60,7 +60,7 @@ DURING A SESSION (phase 2)
 - **Campaign** → has sessions, story entries (NPCs, places, quests, items), players and characters.
 - **Session** → date, approved recap, extracted events. Raw transcript is NOT stored.
 - **Character** → owner, D&D Beyond ID, latest snapshot, notes ("why I built it this way").
-- **Visibility rule**: everything, character notes included, is visible to everyone at the table (2026-10-17). Only a player's stars and reminders are hidden from the DM.
+- **Visibility rule**: character notes are visible to players, hidden from the DM. Everything else is visible to everyone.
 - **Book content** (phase 2) → sections with page numbers and page images.
 
 ## Build plan: 3 weeks to the first milestone
@@ -82,7 +82,7 @@ DURING A SESSION (phase 2)
 
 **Week 3 — Character briefing and launch to the table**
 - Done (2026-10-16): Battle · Character · Party pages, stars and reminders (only the character's player; hidden from the DM), Game Mode, Manage › People with access levels and who plays which character.
-- **To do: player notes on the Character page.** Bring each player's character notes ("why I built it this way", from Notes sync) into the Character view, visible to everyone at the table (the DM included, since 2026-10-17).
+- **To do: player notes on the Character page.** Bring each player's character notes ("why I built it this way", from Notes sync) into the Character view, visible to players and hidden from the DM, like stars and reminders.
 - Done (2026-10-16): D&D Beyond import (3a). Characters page with a card per character and a full readable sheet; reviewers link and refresh; last good copy kept in `character_snapshots`; `app.characters.character_summary()` is the input for briefings.
 - Pull the 5 characters from D&D Beyond; plain-language briefings (wild shapes, spells, features)
 - Seed notes from Brett's doc; enforce the visibility rule; phone polish
