@@ -467,3 +467,15 @@ a.who { color: var(--text); font-weight: 600; text-decoration: underline; text-d
 }
 .econ h2, .lower h2, .sec-head h2 { flex: none; }
 details.opt .meta, .move .meta, .situ .meta, .poolrow .meta { margin-top: 2px; }
+/* People rows: the same columns on every row (person · plays · access · DM · buttons) */
+.people-head, .people li { display: grid; grid-template-columns: minmax(0, 1fr) 150px 120px 64px 160px; gap: 8px 14px; align-items: center; }
+.people-head { color: var(--muted); font-size: .8rem; margin-top: 12px; }
+.person-form { display: contents; }
+.person-form select { width: 100%; }
+.person-actions { display: flex; gap: 4px; align-items: center; }
+@media (max-width: 900px) {
+  .people-head { display: none; }
+  .people li { grid-template-columns: 1fr 1fr; }
+  .people li .who { grid-column: 1 / -1; }
+}
+.people .who { min-width: 0; overflow-wrap: anywhere; }

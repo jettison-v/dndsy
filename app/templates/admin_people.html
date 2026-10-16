@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}People · askdnd{% endblock %}
 {% block content %}
-<main class="page narrow">
+<main class="page" style="max-width:1000px">
   <div class="crumbs">Manage › People</div>
   <div class="title-row"><h1>People</h1></div>
   <p class="subtitle">Who can sign in and what they can do. Only admins can see this page.</p>
@@ -19,35 +19,27 @@
 
   <section class="section">
     <h2>Everyone</h2>
+    <div class="people-head" aria-hidden="true"><span>Person</span><span>Plays</span><span>Access</span><span>DM</span><span></span></div>
     <ul class="people">
-      {% for p in people %}
+      {% for p in people %}{% set fixed = p.owner or p.email == me %}
       <li class="{{ 'removed' if not p.invited }}">
         <div class="who"><b>{{ p.name or p.email }}</b>{% if p.name %}<span class="note">{{ p.email }}</span>{% endif %}
           <span class="note">{% if p.owner %}Owner (set on Railway) · {% endif %}{% if p.removed %}Removed · {% elif not p.invited %}Not invited yet · {% elif p.from_railway and not p.owner %}From the Railway lists · {% endif %}{% if p.last_seen %}last signed in {{ p.last_seen | ago }}{% else %}hasn't signed in yet{% endif %}</span></div>
-        {% set pick %}<select name="character_id" aria-label="Character played by {{ p.email }}">
+        <form method="post" action="/admin/people/update" class="person-form">
+          <input type="hidden" name="email" value="{{ p.email }}">
+          <select name="character_id" aria-label="Character played by {{ p.email }}">
             <option value="none">No character</option>
-            {% for ch in characters %}<option value="{{ ch.id }}" {{ "selected" if p.character_id == ch.id }}>Plays {{ ch.entity.name }}</option>{% endfor %}
-          </select>{% endset %}
-        {% if p.owner or p.email == me %}
-        <form method="post" action="/admin/people/update" class="row">
-          <input type="hidden" name="email" value="{{ p.email }}">
-          {{ pick }}
-          <span class="tag published">Admin</span>{% if p.is_dm %}<span class="tag">DM</span>{% endif %}
-          <input type="hidden" name="is_dm" value="{{ '1' if p.is_dm }}">
-          <button class="btn" type="submit">Save</button>
-        </form>
-        {% else %}
-        <form method="post" action="/admin/people/update" class="row">
-          <input type="hidden" name="email" value="{{ p.email }}">
-          {{ pick }}
-          <select name="level" aria-label="Access for {{ p.email }}">
+            {% for ch in characters %}<option value="{{ ch.id }}" {{ "selected" if p.character_id == ch.id }}>{{ ch.entity.name }}</option>{% endfor %}
+          </select>
+          {% if fixed %}<span class="fixed-level"><span class="tag published">Admin</span></span>
+          <span class="dm-cell">{% if p.is_dm %}<span class="tag">DM</span>{% endif %}<input type="hidden" name="is_dm" value="{{ '1' if p.is_dm }}"></span>
+          {% else %}<select name="level" aria-label="Access for {{ p.email }}">
             {% for l in levels %}<option value="{{ l }}" {{ "selected" if p.level == l }}>{{ labels[l] }}</option>{% endfor %}
           </select>
-          <label class="check"><input type="checkbox" name="is_dm" value="1" {{ "checked" if p.is_dm }}> DM</label>
-          <button class="btn" type="submit">{{ "Invite" if not p.invited else "Save" }}</button>
-          {% if p.invited %}<button class="btn link danger" type="submit" name="remove" value="1">Remove</button>{% endif %}
+          <label class="check dm-cell"><input type="checkbox" name="is_dm" value="1" {{ "checked" if p.is_dm }}> DM</label>{% endif %}
+          <span class="person-actions"><button class="btn" type="submit">{{ "Invite" if not p.invited else "Save" }}</button>
+            {% if p.invited and not fixed %}<button class="btn link danger" type="submit" name="remove" value="1">Remove</button>{% endif %}</span>
         </form>
-        {% endif %}
       </li>
       {% endfor %}
     </ul>
