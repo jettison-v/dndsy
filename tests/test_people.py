@@ -114,7 +114,7 @@ def test_assign_character_on_people_page(env, monkeypatch, db):
                        "entities": [{"kind": "pc", "name": "Cole", "character": {"player_name": "Brett"}}]})
     cole = db.scalar(select(Character))
     owner, _ = sign_in(monkeypatch, "owner@example.com")
-    assert "Plays Cole" in owner.get("/admin/people").text
+    assert f'<option value="{cole.id}" >Cole</option>' in owner.get("/admin/people").text
     owner.post("/admin/people/update", data={"email": "player@example.com", "level": "player", "character_id": str(cole.id)})
     assert cole.owner.email == "player@example.com"
     owner.post("/admin/people/update", data={"email": "owner@example.com", "character_id": str(cole.id)})

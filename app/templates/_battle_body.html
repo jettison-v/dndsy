@@ -31,18 +31,19 @@
       </div>
       {% else %}<p class="muted">Nothing here yet.</p>{% endfor %}
       {% if cost == "Action" %}<div class="move static"><b>Attack, Dash, Disengage, Dodge, Help, Hide, Influence, Magic, Ready, Search, Study, Utilize</b><div class="meta">What anyone can do</div></div>{% endif %}
-      {% if col.count > col.shown | length %}<div class="seeall"><a href="/characters/{{ c.id }}#t-actions" data-panel-url="/characters/{{ c.id }}/all/{{ slug }}">See all {{ cost | lower }}s ({{ col.count }}) →</a></div>{% endif %}
+      {% if col.count > col.shown | length %}<div class="seeall"><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/{{ slug }}">See all {{ cost | lower }}s ({{ col.count }}) →</a></div>{% endif %}
     </div>
     {% endfor %}
   </div>
 
   <div class="lower">
     <div class="section">
-      <div class="sec-head"><h2>Easy to forget</h2>{% if can_pick %}<a href="/characters/{{ c.id }}#t-situ">Choose on Character →</a>{% endif %}</div>
+      <div class="sec-head"><h2>Easy to forget</h2>{% if can_pick %}<a href="/characters/{{ c.id }}">Choose on Character →</a>{% endif %}</div>
       {% if not show_picks %}
       <p class="muted">Reminders belong to each player and aren't shown to the DM.</p>
       {% elif reminders %}
-      <ul class="forget">{% for r in reminders %}<li>{{ r.text }}</li>{% endfor %}</ul>
+      <ul class="forget">{% for r in reminders %}<li><span>{{ r.text }}</span>{% if can_pick %}<button type="button" class="forget-x" aria-label="Remove this reminder" title="Remove"
+        hx-post="/characters/{{ c.id }}/pick" hx-vals='{{ {"kind": "remind", "ref": r.ref} | tojson }}' hx-target="closest li" hx-swap="delete">×</button>{% endif %}</li>{% endfor %}</ul>
       {% else %}
       <p class="muted">{% if can_pick %}Nothing yet. On your Character page, press <b>Remind me</b> on anything you tend to forget (for example, Advantage against being Charmed).{% else %}{{ c.entity.name }}'s player hasn't added any reminders yet.{% endif %}</p>
       {% endif %}

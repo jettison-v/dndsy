@@ -63,9 +63,17 @@ def _not_found(request: Request):
     )
 
 
-def _party_rows(db: Session) -> list[dict]:
+def _mine_first(db: Session, user: dict | None, characters: list[Character]) -> list[Character]:
+    """The signed-in player's own character first, then the rest by name."""
+    me = picks.user_row(db, user)
+    return sorted(characters, key=lambda ch: not (me and ch.owner_id == me.id))
+
+
+def _party_rows(db: Session, user: dict | None = None) -> list[dict]:
     campaign = _campaign(db)
-    return [views.party_row(ch, chars.character_summary(ch)) for ch in chars.campaign_characters(db, campaign.id)] if campaign else []
+    if not campaign:
+        return []
+    return [views.party_row(ch, chars.character_summary(ch)) for ch in _mine_first(db, user, chars.campaign_characters(db, campaign.id))]
 
 
 def _page(request: Request, name: str, ctx: dict):
@@ -103,7 +111,7 @@ def party_page(request: Request, pick: str = "", db: Session = Depends(get_db)):
     user = current_user(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
-    rows = _party_rows(db)
+    rows = _party_rows(db, user)
     return _page(request, "party.html", {
         "rows": rows,
         "spells": views.pooled_spells(rows),
@@ -138,14 +146,14 @@ def character_page(request: Request, character_id: int, db: Session = Depends(ge
         # Actions tab: everything except leveled spells (those are on the Spells tab), like D&D Beyond
         ctx["options"] = [o for o in views.options(ctx["sheet"], ctx["picks"]["star"])
                           if o["kind"] != "spell" or (o["tags"] and o["tags"][0] == "cantrip" and o["hit"])]
-    return _page(request, "character.html", {**ctx, "others": chars.campaign_characters(db, ch.entity.campaign_id)})
+    return _page(request, "character.html", {**ctx, "others": _mine_first(db, user, chars.campaign_characters(db, ch.entity.campaign_id))})
 
 
 def _battle_ctx(db: Session, ch: Character, user: dict) -> dict:
     ctx = _view(db, ch, user)
     if ctx["sheet"]:
         ctx["columns"] = views.battle_columns(ctx["sheet"], ctx["picks"]["star"])
-    ctx["party"] = _party_rows(db)
+    ctx["party"] = _party_rows(db, user)
     ctx["game_mode_seconds"] = GAME_MODE_SECONDS
     return ctx
 
@@ -155,7 +163,7 @@ def battle_page(request: Request, character_id: int, db: Session = Depends(get_d
     user, ch, stop = _load(request, db, character_id)
     if stop:
         return stop
-    return _page(request, "battle.html", {**_battle_ctx(db, ch, user), "others": chars.campaign_characters(db, ch.entity.campaign_id)})
+    return _page(request, "battle.html", {**_battle_ctx(db, ch, user), "others": _mine_first(db, user, chars.campaign_characters(db, ch.entity.campaign_id))})
 
 
 @router.post("/characters/{character_id:int}/sync")

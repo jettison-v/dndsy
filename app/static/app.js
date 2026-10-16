@@ -244,10 +244,7 @@
       x.setAttribute('aria-selected', x === b ? 'true' : 'false');
       const p = document.getElementById(x.dataset.tab); if (p) p.hidden = x !== b;
     });
-    try { history.replaceState(null, '', '#' + b.dataset.tab); } catch (err) {}
   });
-  const tabFromHash = location.hash && document.querySelector('[role=tab][data-tab="' + location.hash.slice(1) + '"]');
-  if (tabFromHash) tabFromHash.click();
 
   document.addEventListener('click', e => {
     const a = e.target.closest('a');

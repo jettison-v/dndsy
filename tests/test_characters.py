@@ -314,3 +314,20 @@ def test_refresh_buttons_show_that_they_are_working(dm, db):
     page = dm.get("/party").text
     assert 'data-busy="Refreshing from D&amp;D Beyond…"' in page and 'id="refresh-note" hidden' in page
     assert 'data-busy="Refreshing…"' in dm.get(f"/characters/{cole.id}").text
+
+
+def test_my_character_comes_first_and_reminders_can_be_removed(player, db):
+    import_bundle(db, BUNDLE)
+    trah, cole = char(db, "Trah"), char(db, "Cole")
+    characters.refresh(db, cole)
+    owned_by(db, trah, "player@example.com")
+    page = player.get(f"/characters/{cole.id}/battle").text
+    pills = page.split('class="char-nav"')[1].split("</div>")[0]
+    assert pills.index(">Trah<") < pills.index(">Big C<") < pills.index(">Cole<")  # mine, then by name
+    owned_by(db, cole, "player@example.com")
+    trah.owner_id = None
+    situ = cole.snapshot.summary["situational"][0]["key"]
+    player.post(f"/characters/{cole.id}/pick", data={"kind": "remind", "ref": situ})
+    battle = player.get(f"/characters/{cole.id}/battle").text
+    assert 'class="forget-x"' in battle and 'hx-swap="delete"' in battle
+    assert "#t-situ" not in battle  # links never jump to a tab
