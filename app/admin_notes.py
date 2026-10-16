@@ -12,7 +12,8 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import config
-from app.admin import _guard
+from app.admin import _guard as _admin_guard
+from app.auth import can_see_character_notes, is_admin
 from app.auth import oauth
 from app.db import get_db
 from app.gdocs import (
@@ -60,6 +61,11 @@ GOOGLE_ERROR_HELP = {
 class GoogleError(Exception):
     pass
 
+
+
+def _guard(request: Request):
+    """Admins only, and never the DM: these pages show players' character notes."""
+    return _admin_guard(request, allow=lambda u: is_admin(u) and can_see_character_notes(u))
 
 def explain_google_error(resp) -> str:
     """Turn a Drive API error response into a plain-English message."""

@@ -11,7 +11,7 @@
   <meta name="theme-color" content="#0f1113">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/app.css?v=10">
+  <link rel="stylesheet" href="/static/app.css?v=11">
   <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js" defer></script>
   <script src="/static/app.js?v=9" defer></script>
   {% block head %}{% endblock %}
@@ -34,7 +34,8 @@
     <div class="menu" id="manage-menu" hidden>
       <a href="/admin/sessions" class="{{ 'active' if path.startswith('/admin/sessions') }}">Review<small>Draft and publish sessions</small></a>
       {% if is_admin %}
-      <a href="/admin/notes" class="{{ 'active' if path.startswith('/admin/notes') }}">Notes sync<small>Pull the latest Google Docs</small></a>
+      {% if can_see_notes %}<a href="/admin/notes" class="{{ 'active' if path.startswith('/admin/notes') }}">Notes sync<small>Pull the latest Google Docs</small></a>{% endif %}
+      <a href="/admin/people" class="{{ 'active' if path.startswith('/admin/people') }}">People<small>Who can sign in and what they can do</small></a>
       <a href="/admin/usage" class="{{ 'active' if path.startswith('/admin/usage') }}">Usage<small>Claude spending and balance</small></a>
       <a href="/admin/import" class="{{ 'active' if path.startswith('/admin/import') }}">Import<small>Load campaign data</small></a>
       {% endif %}

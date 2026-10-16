@@ -71,7 +71,12 @@ class User(Timestamped, Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(320), unique=True)  # stored lowercase
     name: Mapped[str] = mapped_column(String(200))
-    is_admin: Mapped[bool] = mapped_column(Boolean, default=False)  # can review and publish
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False)  # old flag; access below decides (app/access.py)
+    # Set on Manage › People: player | reviewer | admin, or "removed" (can't sign in).
+    # None = not set in the app (people imported but never invited); the Railway lists decide.
+    access: Mapped[str | None] = mapped_column(String(20))
+    is_dm: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")  # never sees character notes
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class Campaign(Timestamped, Base):

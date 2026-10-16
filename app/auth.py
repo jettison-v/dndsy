@@ -1,10 +1,15 @@
 """Google sign-in limited to an email allowlist."""
 
 from authlib.integrations.starlette_client import OAuth, OAuthError
-from fastapi import APIRouter, Request
-from fastapi.responses import RedirectResponse
+from datetime import UTC, datetime
 
-from app import config
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import RedirectResponse
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app import access, config
+from app.db import get_db
 
 oauth = OAuth()
 oauth.register(
@@ -20,19 +25,24 @@ router = APIRouter()
 
 def current_user(request: Request) -> dict | None:
     user = request.session.get("user")
-    # Re-check on every request so removing someone from ALLOWED_EMAILS locks them out.
-    if user and config.is_allowed(user.get("email"), config.ALLOWED_EMAILS):
+    # Re-check on every request so removing someone (People page or ALLOWED_EMAILS) locks them out.
+    if user and access.level(user.get("email")):
         return user
     return None
 
 
 def is_admin(user: dict | None) -> bool:
-    return bool(user) and config.is_allowed(user.get("email"), config.ADMIN_EMAILS)
+    return bool(user) and access.level(user.get("email")) == access.ADMIN
 
 
 def is_reviewer(user: dict | None) -> bool:
-    """Admins plus anyone in REVIEWER_EMAILS (the DM)."""
-    return is_admin(user) or (bool(user) and config.is_allowed(user.get("email"), config.REVIEWER_EMAILS))
+    """Reviewers and admins (see app/access.py)."""
+    return bool(user) and access.level(user.get("email")) in (access.REVIEWER, access.ADMIN)
+
+
+def can_see_character_notes(user: dict | None) -> bool:
+    """Character notes are visible to players but never to the DM (CLAUDE.md)."""
+    return bool(user) and not access.is_dm(user.get("email"))
 
 
 @router.get("/auth/google")
@@ -44,7 +54,7 @@ async def login_with_google(request: Request):
 
 
 @router.get("/auth/callback", name="auth_callback")
-async def auth_callback(request: Request):
+async def auth_callback(request: Request, db: Session = Depends(get_db)):
     try:
         token = await oauth.google.authorize_access_token(request)
     except OAuthError:
@@ -52,7 +62,7 @@ async def auth_callback(request: Request):
 
     info = token.get("userinfo") or {}
     email = info.get("email")
-    if not info.get("email_verified") or not config.is_allowed(email, config.ALLOWED_EMAILS):
+    if not info.get("email_verified") or not access.level(email):
         request.session.clear()
         return RedirectResponse("/login?error=not_allowed", status_code=303)
 
@@ -61,7 +71,25 @@ async def auth_callback(request: Request):
         "name": info.get("name") or email,
         "picture": info.get("picture"),
     }
+    _record_sign_in(db, email.lower(), info.get("name") or "")
     return RedirectResponse("/", status_code=303)
+
+
+def _record_sign_in(db: Session, email: str, name: str) -> None:
+    """Remember the person's Google name and when they last signed in (People page)."""
+    from app.models import User
+
+    try:
+        u = db.scalar(select(User).where(User.email == email))
+        if u is None:
+            u = User(email=email, name=name or email)
+            db.add(u)
+        elif name and u.name in ("", u.email):
+            u.name = name
+        u.last_seen_at = datetime.now(UTC)
+        db.commit()
+    except Exception:
+        db.rollback()  # never block sign-in over this
 
 
 @router.get("/dev/login")

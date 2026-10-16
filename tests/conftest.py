@@ -27,11 +27,25 @@ def db_engine():
     engine.dispose()
 
 
+@pytest.fixture(autouse=True)
+def _access_rows(monkeypatch):
+    """Access checks (app/access.py) read people from the database. Tests never see
+    the local dev database: no rows unless the test uses `db`, and no caching."""
+    from app import access
+
+    monkeypatch.setattr(access, "loader", lambda: {})
+    monkeypatch.setattr(access, "CACHE_SECONDS", -1)
+    access.invalidate()
+
+
 @pytest.fixture
-def db(db_engine):
+def db(db_engine, monkeypatch):
     """A session whose changes are rolled back after each test."""
+    from app import access
+
     with db_engine.connect() as conn:
         trans = conn.begin()
         with Session(bind=conn, join_transaction_mode="create_savepoint") as session:
+            monkeypatch.setattr(access, "loader", lambda: access.rows_from(session))
             yield session
         trans.rollback()

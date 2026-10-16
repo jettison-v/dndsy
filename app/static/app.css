@@ -354,3 +354,10 @@ details.feat > summary:hover { color: #fff; }
   .profs { grid-template-columns: 1fr; gap: 0; }
   .profs dd { margin-bottom: 10px; }
 }
+
+/* People */
+.people { list-style: none; margin: 12px 0 0; padding: 0; }
+.people li { display: flex; justify-content: space-between; align-items: center; gap: 10px 20px; flex-wrap: wrap; padding: 14px 0; }
+.people li + li { border-top: 1px solid var(--line); }
+.people li.removed .who b { color: var(--muted); }
+.people .who { display: grid; }

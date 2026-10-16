@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}People · askdnd{% endblock %}
+{% block content %}
+<main class="page narrow">
+  <div class="crumbs">Manage › People</div>
+  <div class="title-row"><h1>People</h1></div>
+  <p class="subtitle">Who can sign in and what they can do. Only admins can see this page.</p>
+
+  <section class="section">
+    <h2>Access levels</h2>
+    <dl class="profs" style="margin-top:12px">
+      <dt>Player</dt><dd>Reads everything for the table and suggests corrections.</dd>
+      <dt>Reviewer</dt><dd>Also drafts, edits and publishes sessions, answers Claude's questions, merges suggestions, and refreshes characters.</dd>
+      <dt>Admin</dt><dd>Also Notes sync, Import, Usage and this page.</dd>
+      <dt>DM</dt><dd>Whoever is ticked as DM never sees players' character notes, whatever their access level.</dd>
+    </dl>
+  </section>
+
+  <section class="section">
+    <h2>Everyone</h2>
+    <ul class="people">
+      {% for p in people %}
+      <li class="{{ 'removed' if not p.invited }}">
+        <div class="who"><b>{{ p.name or p.email }}</b>{% if p.name %}<span class="note">{{ p.email }}</span>{% endif %}
+          <span class="note">{% if p.owner %}Owner (set on Railway) · {% endif %}{% if p.removed %}Removed · {% elif not p.invited %}Not invited yet · {% elif p.from_railway and not p.owner %}From the Railway lists · {% endif %}{% if p.last_seen %}last signed in {{ p.last_seen | ago }}{% else %}hasn't signed in yet{% endif %}</span></div>
+        {% if p.owner or p.email == me %}
+        <div class="row"><span class="tag published">Admin</span>{% if p.is_dm %}<span class="tag">DM</span>{% endif %}</div>
+        {% else %}
+        <form method="post" action="/admin/people/update" class="row">
+          <input type="hidden" name="email" value="{{ p.email }}">
+          <select name="level" aria-label="Access for {{ p.email }}">
+            {% for l in levels %}<option value="{{ l }}" {{ "selected" if p.level == l }}>{{ labels[l] }}</option>{% endfor %}
+          </select>
+          <label class="check"><input type="checkbox" name="is_dm" value="1" {{ "checked" if p.is_dm }}> DM</label>
+          <button class="btn" type="submit">{{ "Invite" if not p.invited else "Save" }}</button>
+          {% if p.invited %}<button class="btn link danger" type="submit" name="remove" value="1">Remove</button>{% endif %}
+        </form>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2>Add someone</h2>
+    <form method="post" action="/admin/people" class="stack" style="margin-top:12px">
+      <label class="field">Google email<input type="text" name="email" placeholder="name@gmail.com" required></label>
+      <label class="field">Name (optional)<input type="text" name="name"></label>
+      <div class="row">
+        <select name="level" aria-label="Access level">{% for l in levels %}<option value="{{ l }}">{{ labels[l] }}</option>{% endfor %}</select>
+        <label class="check"><input type="checkbox" name="is_dm" value="1"> DM</label>
+        <button class="btn primary" type="submit">Add</button>
+      </div>
+    </form>
+    <p class="hint" style="margin:16px 0 0">Google only lets people sign in to askdnd if they're on its test-user list (until the Google app is published). After adding someone here, also add their email in <a href="https://console.cloud.google.com/auth/audience" target="_blank" rel="noopener">Google Cloud Console → Google Auth Platform → Audience → Test users</a>.</p>
+  </section>
+</main>
+{% endblock %}
