@@ -240,6 +240,7 @@ def test_linker_links_names_case_sensitively_and_longest_first(db):
     ids = {e.name: e.id for e in db.scalars(select(Entity))}
     assert f'data-entity="{ids["Anger"]}">Anger</a> felt anger.' in out  # the word "anger" isn't linked
     assert f'data-entity="{ids["The Lich Queen\'s cult"]}">The Lich Queen&#39;s cult</a>' in out  # longest wins
+    assert f'data-entity="{ids["Anger"]}">Anger&#39;s</a> sword' in str(ln.text("Anger's sword"))  # possessive is part of the link
     assert f'the <a class="ent" href="/campaign/{ids["The Lich Queen"]}" data-entity="{ids["The Lich Queen"]}">Lich Queen</a>' in out
     assert "the queen." in out and out.count("<a ") == 3  # lowercase descriptive alias not linked
     html = str(ln.html('<p>Anger and <a href="/x">Anger</a></p>'))
@@ -254,3 +255,32 @@ def test_peek_fragment(player, db):
     frag = player.get(f"/campaign/{e.id}/peek").text
     assert "<html" not in frag and "Tiefling bard." in frag and "Open full page" in frag
     assert "The party met Lillippi." in frag or "Lillippi sang in" in frag
+
+
+def test_misspellings_hidden_but_still_matched(admin, db):
+    from app.extraction import _known_world
+    from app.linking import entity_linker
+
+    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "entities": [
+        {"kind": "npc", "name": "Bhal", "aliases": [{"alias": "Bhaal", "misspelling": True}, "Fire Lord"]}]})
+    e = db.scalar(select(Entity).where(Entity.name == "Bhal"))
+    assert [a.alias for a in e.display_aliases] == ["Fire Lord"]
+    page = admin.get(f"/campaign/{e.id}").text
+    assert "Also known as Fire Lord" in page and "Mark as other name" in page
+    cid = e.campaign_id
+    assert f'data-entity="{e.id}">Bhaal</a>' in str(entity_linker(db, cid).text("Bhaal returned."))
+    assert entities.mention_suggestions(db, cid, "bhaa")[0]["name"] == "Bhal"
+    world = _known_world(db, db.get(Campaign, cid))
+    assert "Also: Fire Lord." in world and "Often misspelled: Bhaal." in world
+
+    # Re-import flips the flag; reviewers can toggle and remove
+    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "entities": [
+        {"kind": "npc", "name": "Bhal", "aliases": [{"alias": "Fire Lord", "misspelling": True}]}]})
+    db.expire_all()
+    assert db.scalar(select(Entity).where(Entity.name == "Bhal")).display_aliases == []
+    alias = next(a for a in db.scalar(select(Entity).where(Entity.name == "Bhal")).aliases if a.alias == "Bhaal")
+    admin.post(f"/campaign/{e.id}/aliases/{alias.id}/toggle", headers={"HX-Request": "true"})
+    admin.post(f"/campaign/{e.id}/aliases", data={"alias": "Bael", "misspelling": "1"}, headers={"HX-Request": "true"})
+    db.expire_all()
+    e = db.get(Entity, e.id)
+    assert sorted((a.alias, a.misspelling) for a in e.aliases) == [("Bael", True), ("Bhaal", False), ("Fire Lord", True)]

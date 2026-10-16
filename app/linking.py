@@ -26,7 +26,7 @@ class Linker:
     targets: dict[str, int]  # matched text (normalized apostrophes) -> entity id
 
     def _replace(self, m: re.Match) -> str:
-        key = re.sub(APOSTROPHES, "'", m.group(0))
+        key = re.sub(APOSTROPHES, "'", m.group("name"))
         entity_id = self.targets.get(key)
         if entity_id is None:
             return m.group(0)
@@ -90,7 +90,8 @@ def entity_linker(db: Session, campaign_id: int, exclude_id: int | None = None, 
         parts = []
         for name in sorted(targets, key=len, reverse=True):
             parts.append(re.escape(name).replace("'", APOSTROPHES).replace("\\'", APOSTROPHES))
-        pattern = re.compile(r"(?<![\w&#])(?:" + "|".join(parts) + r")(?![\w])")
+        # Possessives are part of the link: "Cole's" links as one word.
+        pattern = re.compile(r"(?<![\w&#])(?P<name>" + "|".join(parts) + r")(?:" + APOSTROPHES + r"s)?(?![\w])")
         linker = Linker(pattern, targets)
     if len(_cache) > 50:
         _cache.clear()

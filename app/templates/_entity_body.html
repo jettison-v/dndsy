@@ -7,7 +7,26 @@
     {% if e.kind.value == "quest" and e.quest_open is not none %}<span class="tag {{ 'draft' if e.quest_open else 'done' }}">{{ "Open" if e.quest_open else "Done" }}</span>{% endif %}
     {% if e.status.value != "published" %}<span class="tag draft">Not published</span>{% endif %}
   </div>
-  <p class="subtitle">{% if e.aliases %}Also known as {{ e.aliases | map(attribute="alias") | join(", ") }}{% else %}{{ kind_label }} in the campaign record{% endif %}</p>
+  <p class="subtitle">{% if e.display_aliases %}Also known as {{ e.display_aliases | map(attribute="alias") | join(", ") }}{% else %}{{ kind_label }} in the campaign record{% endif %}</p>
+  {% if is_reviewer %}
+  <details class="section names">
+    <summary><b>Names and spellings</b> <span class="note">({{ e.aliases | length }}; reviewers only)</span></summary>
+    <p class="hint" style="margin-top:8px">Other names show as "also known as". Misspellings stay hidden but still help @-mentions, links and Claude recognize the name.</p>
+    <ul class="plain">
+      {% for a in e.aliases %}
+      <li class="row"><span style="flex:1">{{ a.alias }}{% if a.note %} <span class="note">· {{ a.note }}</span>{% endif %}</span>
+        <span class="tag {{ '' if a.misspelling else 'done' }}">{{ "Misspelling" if a.misspelling else "Other name" }}</span>
+        <form class="inline" hx-post="/campaign/{{ e.id }}/aliases/{{ a.id }}/toggle" {{ hx | safe }}><button class="btn link">{{ "Mark as other name" if a.misspelling else "Mark as misspelling" }}</button></form>
+        <form class="inline" hx-post="/campaign/{{ e.id }}/aliases/{{ a.id }}/delete" {{ hx | safe }} hx-confirm="Remove {{ a.alias }}?"><button class="btn link danger">Remove</button></form></li>
+      {% else %}<li class="muted">None yet.</li>{% endfor %}
+    </ul>
+    <form class="row" hx-post="/campaign/{{ e.id }}/aliases" {{ hx | safe }} style="margin-top:12px">
+      <input type="text" name="alias" placeholder="Add a name or spelling" required style="flex:1;min-width:180px">
+      <label class="check"><input type="checkbox" name="misspelling" value="1"> Misspelling</label>
+      <button class="btn">Add</button>
+    </form>
+  </details>
+  {% endif %}
 
   <section class="section" id="about">
     <div class="section-head"><h2>About</h2>

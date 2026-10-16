@@ -238,6 +238,13 @@ def _image_block(img: NoteImage, label: str) -> list[dict]:
     ]
 
 
+def _alias_text(e: Entity) -> str:
+    """" Also: X. Often misspelled: Y." (misspellings: use the name, never these)."""
+    names = [a.alias for a in e.aliases if not a.misspelling]
+    wrong = [a.alias for a in e.aliases if a.misspelling]
+    return (f" Also: {', '.join(names)}." if names else "") + (f" Often misspelled: {', '.join(wrong)}." if wrong else "")
+
+
 def _known_world(db: Session, campaign: Campaign) -> str:
     lines = [f"Campaign: {campaign.name}"]
     if campaign.dm_name:
@@ -245,15 +252,13 @@ def _known_world(db: Session, campaign: Campaign) -> str:
     lines.append("\nPlayer characters (character — player):")
     for ch in db.scalars(select(Character).join(Entity).where(Entity.campaign_id == campaign.id).order_by(Entity.name)):
         player = ch.player_name or (ch.owner.name if ch.owner else "unknown")
-        aliases = ", ".join(a.alias for a in ch.entity.aliases)
-        lines.append(f"- {ch.entity.name} — {player}" + (f" (also: {aliases})" if aliases else ""))
+        lines.append(f"- {ch.entity.name} — {player}{_alias_text(ch.entity)}")
     lines.append("\nKnown people, places and things (name [kind]: summary; aliases):")
     for e in db.scalars(
         select(Entity).where(Entity.campaign_id == campaign.id, Entity.kind != EntityKind.PC).order_by(Entity.kind, Entity.name)
     ):
-        aliases = ", ".join(a.alias for a in e.aliases)
         quest = "" if e.quest_open is None else (" (open)" if e.quest_open else " (done)")
-        lines.append(f"- {e.name} [{e.kind.value}]{quest}: {e.summary}" + (f" Also: {aliases}" if aliases else ""))
+        lines.append(f"- {e.name} [{e.kind.value}]{quest}: {e.summary}{_alias_text(e)}")
     facts: dict[int, list[str]] = {}
     for f in db.scalars(
         select(Fact).join(Entity).where(Entity.campaign_id == campaign.id, Fact.status == "merged").order_by(Fact.id)

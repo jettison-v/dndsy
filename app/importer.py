@@ -167,12 +167,18 @@ def import_bundle(db: Session, bundle: dict) -> Counter:
             entity.summary = item["summary"]
         if "quest_open" in item:
             entity.quest_open = item["quest_open"]
-        have = {_norm(a.alias) for a in entity.aliases}
+        have = {_norm(a.alias): a for a in entity.aliases}
         for alias in item.get("aliases", []):
             text, note = (alias, "") if isinstance(alias, str) else (alias["alias"], alias.get("note", ""))
-            if _norm(text) not in have and _norm(text) != _norm(entity.name):
-                entity.aliases.append(EntityAlias(alias=text.strip(), note=note))
-                have.add(_norm(text))
+            misspelling = isinstance(alias, dict) and bool(alias.get("misspelling"))
+            if _norm(text) in have:
+                if isinstance(alias, dict) and "misspelling" in alias and have[_norm(text)].misspelling != misspelling:
+                    have[_norm(text)].misspelling = misspelling
+                    counts["aliases updated"] += 1
+            elif _norm(text) != _norm(entity.name):
+                new = EntityAlias(alias=text.strip(), note=note, misspelling=misspelling)
+                entity.aliases.append(new)
+                have[_norm(text)] = new
                 counts["aliases added"] += 1
         db.flush()
         if "character" in item:

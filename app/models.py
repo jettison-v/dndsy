@@ -113,6 +113,11 @@ class Entity(Timestamped, Base):
     previous_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     aliases: Mapped[list["EntityAlias"]] = relationship(cascade="all, delete-orphan")
 
+    @property
+    def display_aliases(self) -> list["EntityAlias"]:
+        """Real other names only (nicknames, former names); misspellings hidden."""
+        return [a for a in self.aliases if not a.misspelling]
+
 
 class EntityAlias(Base):
     """Other names: renames (Sarkas -> No Name), nicknames, common mis-transcriptions."""
@@ -123,6 +128,9 @@ class EntityAlias(Base):
     entity_id: Mapped[int] = mapped_column(ForeignKey("entities.id", ondelete="CASCADE"), index=True)
     alias: Mapped[str] = mapped_column(String(200))
     note: Mapped[str] = mapped_column(String(300), default="")  # e.g. "former name"
+    # A misspelling (e.g. how a transcript mishears a name) is used for matching
+    # and linking but never shown as "also known as".
+    misspelling: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
 
 
 class Fact(Timestamped, Base):

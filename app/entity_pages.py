@@ -17,7 +17,7 @@ from app.auth import current_user, is_reviewer
 from app.db import get_db
 from app.extraction import ExtractionError
 from app.linking import entity_linker
-from app.models import Campaign, Entity, Fact, Status
+from app.models import Campaign, Entity, EntityAlias, Fact, Status
 from app.templating import templates
 
 router = APIRouter(prefix="/campaign")
@@ -182,6 +182,43 @@ def discard_description(request: Request, entity_id: int, db: Session = Depends(
 @router.post("/{entity_id:int}/description/undo")
 def undo_description(request: Request, entity_id: int, db: Session = Depends(get_db)):
     return _act(request, db, entity_id, lambda entity, user: entities.undo_description(entity) or "Restored the earlier description")
+
+
+@router.post("/{entity_id:int}/aliases")
+def add_alias(request: Request, entity_id: int, alias: str = Form(...), misspelling: str = Form(""), db: Session = Depends(get_db)):
+    def act(entity, user):
+        text = " ".join(alias.split())
+        if not text or text.casefold() == entity.name.casefold():
+            raise entities.EntityError("Enter a different name or spelling.")
+        if any(a.alias.casefold() == text.casefold() for a in entity.aliases):
+            raise entities.EntityError("That name is already listed.")
+        entity.aliases.append(EntityAlias(alias=text, misspelling=bool(misspelling)))
+        return "Added"
+
+    return _act(request, db, entity_id, act)
+
+
+@router.post("/{entity_id:int}/aliases/{alias_id:int}/toggle")
+def toggle_alias(request: Request, entity_id: int, alias_id: int, db: Session = Depends(get_db)):
+    def act(entity, user):
+        a = next((x for x in entity.aliases if x.id == alias_id), None)
+        if a is None:
+            raise entities.EntityError("That name is gone.")
+        a.misspelling = not a.misspelling
+        return "Marked as a misspelling" if a.misspelling else "Marked as another name"
+
+    return _act(request, db, entity_id, act)
+
+
+@router.post("/{entity_id:int}/aliases/{alias_id:int}/delete")
+def delete_alias(request: Request, entity_id: int, alias_id: int, db: Session = Depends(get_db)):
+    def act(entity, user):
+        a = next((x for x in entity.aliases if x.id == alias_id), None)
+        if a is not None:
+            entity.aliases.remove(a)
+        return "Removed"
+
+    return _act(request, db, entity_id, act)
 
 
 @router.post("/{entity_id:int}/relationships")

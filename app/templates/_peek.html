@@ -2,7 +2,7 @@
 <div class="peek-head">
   <div><div class="note">{{ kind_label }}{% if e.kind.value == "quest" %} · {{ "Open" if e.quest_open else "Done" }}{% endif %}</div>
     <h2 id="peek-title">{{ e.name }}</h2>
-    {% if e.aliases %}<div class="note">Also: {{ e.aliases | map(attribute="alias") | join(", ") }}</div>{% endif %}</div>
+    {% if e.display_aliases %}<div class="note">Also: {{ e.display_aliases | map(attribute="alias") | join(", ") }}</div>{% endif %}</div>
   <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
 </div>
 <div class="peek-body">
