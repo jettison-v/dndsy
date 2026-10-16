@@ -248,7 +248,8 @@ class Correction(Timestamped, Base):
 
     __tablename__ = "corrections"
     id: Mapped[int] = mapped_column(primary_key=True)
-    # "edit": Brett changed the recap (before/after); "answer": before=question, after=answer
+    # "edit": Brett changed the recap (before/after); "answer": before=question, after=answer;
+    # "skip": question skipped; "ask": question waiting on someone (asked_of), note = what the asker added
     kind: Mapped[str] = mapped_column(String(20), default="edit", server_default="edit")
     campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"), index=True)
     session_id: Mapped[int | None] = mapped_column(ForeignKey("game_sessions.id", ondelete="SET NULL"))
@@ -256,6 +257,10 @@ class Correction(Timestamped, Base):
     after: Mapped[str] = mapped_column(Text, default="")
     note: Mapped[str] = mapped_column(Text, default="")
     standing_instruction: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Deferred questions ("Ask…"): who was asked, who asked, who answered.
+    asked_of: Mapped[str] = mapped_column(String(200), default="", server_default="")
+    asked_by: Mapped[str] = mapped_column(String(200), default="", server_default="")
+    answered_by: Mapped[str] = mapped_column(String(200), default="", server_default="")
 
 
 class SpeakerLabel(Base):

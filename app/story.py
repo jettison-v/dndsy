@@ -1,14 +1,15 @@
 """Pages for the whole table: Previously on…, Sessions, Campaign, Characters."""
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import review
 from app.auth import current_user
 from app.db import get_db
 from app.extraction import session_label, timeline
-from app.models import Campaign, Character, Entity, EntityKind, EventKind, GameSession, GlossaryTerm, Status
+from app.models import Campaign, Character, Correction, Entity, EntityKind, EventKind, GameSession, GlossaryTerm, Status
 from app.relations import family_tree
 from app.render import markdown_to_html
 from app.templating import templates
@@ -76,12 +77,48 @@ def _signed_in(request: Request):
     return current_user(request)
 
 
+def questions_card(db: Session, user: dict) -> list[dict]:
+    """Claude's questions that a reviewer sent to this person ("Ask…")."""
+    items = []
+    for c in review.questions_for(db, user):
+        s = db.get(GameSession, c.session_id) if c.session_id else None
+        if s is not None:
+            items.append({"c": c, "label": session_label(s) + (f": {s.title}" if s.title else "")})
+    return items
+
+
 @router.get("/")
 @router.get("/story")
 def story(request: Request, db: Session = Depends(get_db)):
-    if not _signed_in(request):
+    user = _signed_in(request)
+    if not user:
         return RedirectResponse("/login", status_code=303)
-    return templates.TemplateResponse(request, "story.html", published_story(db))
+    return templates.TemplateResponse(
+        request,
+        "story.html",
+        {**published_story(db), "questions": questions_card(db, user), "toast": request.session.pop("toast", None)},
+    )
+
+
+@router.post("/questions/{correction_id:int}/answer")
+def answer_question(
+    request: Request, correction_id: int, answer: str = Form(""), remember: str = Form(""), db: Session = Depends(get_db)
+):
+    """The person a question was sent to answers it from Previously on…"""
+    user = _signed_in(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    c = db.get(Correction, correction_id)
+    try:
+        if c is None:
+            raise review.ReviewError("That question isn't waiting on you any more.")
+        review.answer_as_askee(db, c, user, answer, bool(remember))
+        db.commit()
+        request.session["toast"] = "Thanks! Your answer was sent to the reviewers."
+    except review.ReviewError as e:
+        db.rollback()
+        request.session["toast"] = str(e)
+    return RedirectResponse("/", status_code=303)
 
 
 @router.get("/sessions")

@@ -3,6 +3,25 @@
 {% block content %}
 <main class="page narrow">
   <div class="title-row"><h1>Previously on…</h1></div>
+  {% if questions %}
+  <section class="section ask-card" id="questions-for-you">
+    <div class="section-head"><h2>Questions for you</h2><span class="count">{{ questions | length }}</span></div>
+    <p class="hint">Claude wasn't sure about these while drafting a recap, and a reviewer thought you'd know. Your answer goes into the next draft.</p>
+    {% for item in questions %}{% set c = item.c %}{% set fid = "ask" ~ c.id %}
+    <div class="item">
+      <p class="note" style="margin:0 0 4px">{{ item.label }}</p>
+      <p class="item-title">{{ c.before }}</p>
+      {% if c.note %}<p class="note" style="margin:-6px 0 10px">{{ c.asked_by or "A reviewer" }} adds: {{ c.note }}</p>{% endif %}
+      <form method="post" action="/questions/{{ c.id }}/answer" class="stack">
+        <label class="field" for="{{ fid }}">Your answer</label>
+        <textarea id="{{ fid }}" name="answer" rows="2" required placeholder="What you remember… (type @ to insert a name)"></textarea>
+        <label class="check"><input type="checkbox" name="remember" value="1"> Use in every future draft (for lasting facts like name spellings)</label>
+        <div><button class="btn {{ 'primary' if questions | length == 1 }}">Send answer</button></div>
+      </form>
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
   {% if not latest %}
   <p class="subtitle">Nothing published yet. Recaps appear here once they're reviewed.</p>
   {% else %}

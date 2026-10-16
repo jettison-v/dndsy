@@ -109,6 +109,10 @@ details.done > summary::-webkit-details-marker { display: none; }
 details.done > summary::before { content: "▸"; transition: transform .15s; }
 details.done[open] > summary::before { transform: rotate(90deg); }
 .all-clear { color: var(--green); margin: 0; }
+.ask-card { border-left: 3px solid var(--amber); }
+.waiting { margin-top: 18px; }
+.waiting h3 { margin: 0 0 2px; color: var(--amber); }
+.waiting .count { font-weight: 400; }
 .callout { margin-top: 16px; padding: 16px; background: var(--amber-soft); border-radius: 10px; }
 
 /* Add Session conversation */

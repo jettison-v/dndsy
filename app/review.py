@@ -38,13 +38,18 @@ def _question_row(db: Session, session: GameSession, question: str) -> Correctio
     return db.scalar(
         select(Correction).where(
             Correction.session_id == session.id,
-            Correction.kind.in_(("answer", "skip")),
+            Correction.kind.in_(QUESTION_KINDS),
             Correction.before == question,
         )
     )
 
 
-def answer_question(db: Session, session: GameSession, question: str, answer: str, remember: bool) -> None:
+QUESTION_KINDS = ("answer", "skip", "ask")
+
+
+def answer_question(
+    db: Session, session: GameSession, question: str, answer: str, remember: bool, answered_by: str = ""
+) -> None:
     answer = answer.strip()
     if not answer:
         raise ReviewError("Type an answer, or use Skip.")
@@ -52,7 +57,78 @@ def answer_question(db: Session, session: GameSession, question: str, answer: st
         campaign_id=session.campaign_id, session_id=session.id, before=question
     )
     row.kind, row.after, row.standing_instruction, row.note = "answer", answer, remember, ""
+    row.answered_by = answered_by.strip()[:200]
     db.add(row)
+
+
+def ask_question(db: Session, session: GameSession, question: str, person: str, note: str, asked_by: str) -> None:
+    """Defer a question to someone at the table; it waits until they (or a reviewer) answer."""
+    person = " ".join(person.split())
+    if not person:
+        raise ReviewError("Choose who to ask.")
+    row = _question_row(db, session, question) or Correction(
+        campaign_id=session.campaign_id, session_id=session.id, before=question
+    )
+    row.kind, row.after, row.standing_instruction = "ask", "", False
+    row.asked_of, row.asked_by, row.note, row.answered_by = person[:200], asked_by[:200], note.strip(), ""
+    db.add(row)
+
+
+def ask_options(db: Session, campaign_id: int) -> list[tuple[str, str]]:
+    """People a question can be sent to: (name, hint) for the DM and each player."""
+    from app.models import Campaign, Character
+
+    campaign = db.get(Campaign, campaign_id)
+    options: dict[str, str] = {}
+    if campaign and campaign.dm_name:
+        options[campaign.dm_name] = "Dungeon Master"
+    chars = db.scalars(select(Character).join(Entity).where(Entity.campaign_id == campaign_id).order_by(Entity.name))
+    for ch in chars:
+        player = ch.player_name or (ch.owner.name if ch.owner else "")
+        if player and player not in options:
+            options[player] = f"plays {ch.entity.name}"
+    return list(options.items())
+
+
+def names_for(db: Session, user: dict) -> set[str]:
+    """Names a deferred question may use for this signed-in person (casefolded):
+    their email, Google name and first name, the player name on characters they
+    own, and the campaign's DM name if they're the DM."""
+    from app.models import Campaign, CampaignMember, Character, Role, User
+
+    email = (user.get("email") or "").strip().lower()
+    full = " ".join((user.get("name") or "").split())
+    names = {email, full.casefold()}
+    if full:
+        names.add(full.split()[0].casefold())
+    account = db.scalar(select(User).where(User.email == email)) if email else None
+    if account:
+        names.add(" ".join(account.name.split()).casefold())
+        for ch in db.scalars(select(Character).where(Character.owner_id == account.id)):
+            if ch.player_name:
+                names.add(" ".join(ch.player_name.split()).casefold())
+        for m in db.scalars(select(CampaignMember).where(CampaignMember.user_id == account.id, CampaignMember.role == Role.DM)):
+            campaign = db.get(Campaign, m.campaign_id)
+            if campaign.dm_name:
+                names.add(" ".join(campaign.dm_name.split()).casefold())
+    names.discard("")
+    return names
+
+
+def questions_for(db: Session, user: dict) -> list[Correction]:
+    """Questions waiting on this person, oldest first."""
+    names = names_for(db, user)
+    asks = db.scalars(select(Correction).where(Correction.kind == "ask").order_by(Correction.id))
+    return [c for c in asks if " ".join(c.asked_of.split()).casefold() in names]
+
+
+def answer_as_askee(db: Session, correction: Correction, user: dict, answer: str, remember: bool) -> GameSession:
+    """The asked person answers from Previously on…; it counts like a reviewer's answer."""
+    if correction.kind != "ask" or " ".join(correction.asked_of.split()).casefold() not in names_for(db, user):
+        raise ReviewError("That question isn't waiting on you any more.")
+    session = db.get(GameSession, correction.session_id)
+    answer_question(db, session, correction.before, answer, remember, answered_by=user.get("name") or user.get("email", ""))
+    return session
 
 
 def skip_question(db: Session, session: GameSession, question: str) -> None:
@@ -323,11 +399,16 @@ def review_context(db: Session, session: GameSession, drafting: bool) -> dict:
     rows = {
         c.before: c
         for c in db.scalars(
-            select(Correction).where(Correction.session_id == session.id, Correction.kind.in_(("answer", "skip")))
+            select(Correction).where(Correction.session_id == session.id, Correction.kind.in_(QUESTION_KINDS))
         )
     }
     open_questions = [q for q in questions if q not in rows]
-    done_questions = [rows[q] for q in questions if q in rows] + [c for q, c in rows.items() if q not in questions]
+    handled = [rows[q] for q in questions if q in rows] + [c for q, c in rows.items() if q not in questions]
+    waiting: dict[str, list[Correction]] = {}
+    for c in handled:
+        if c.kind == "ask":
+            waiting.setdefault(c.asked_of, []).append(c)
+    done_questions = [c for c in handled if c.kind != "ask"]
     proposals = list(db.scalars(select(Proposal).where(Proposal.session_id == session.id).order_by(Proposal.id)))
     open_proposals = [p for p in proposals if p.status == "pending"]
     done_proposals = sorted((p for p in proposals if p.status != "pending"), key=lambda p: p.updated_at, reverse=True)
@@ -341,6 +422,9 @@ def review_context(db: Session, session: GameSession, drafting: bool) -> dict:
         "event_kinds": [k.value for k in EventKind],
         "open_questions": open_questions,
         "done_questions": done_questions,
+        "waiting": sorted(waiting.items(), key=lambda kv: kv[0].casefold()),
+        "waiting_count": sum(len(v) for v in waiting.values()),
+        "ask_options": ask_options(db, session.campaign_id),
         "unused_answers": unused_answer_count(db, session),
         "open_proposals": open_proposals,
         "done_proposals": done_proposals,

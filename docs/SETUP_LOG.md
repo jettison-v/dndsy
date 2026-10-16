@@ -104,3 +104,17 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 2. Write the design rules down (colors, type, components) in the repo, so every future session follows them.
 3. Keep "what a button does" in a plain module with tests (app/review.py) and keep routes thin.
 4. A local-only sign-in shortcut (DEV_LOGIN_EMAIL) makes it possible to preview real pages without going through Google.
+
+## 2026-10-16 — The living campaign record and "Ask…"
+
+**What we set up**
+- **A page for every person, place, faction, quest and item** (click any name on the Campaign page or under a key moment). It shows the summary, other names, relationships, facts the table added, and every published key moment that mentions it.
+- **Facts from anyone at the table**, which a reviewer merges or rejects (with Undo). Merging never rewrites the summary; **Regenerate description** is a separate button where Claude proposes a rewrite you accept, edit or discard (and can undo).
+- **@-mentions**: type @ and a few letters in any text box to insert a name spelled correctly.
+- **Relationships and a family tree**, added by hand, by import, or suggested by Claude in drafts.
+- **Ask…** on Claude's questions: send one to the DM or a player; it waits under "Waiting on <name>" and shows up on their Previously on… page once they sign in.
+
+**Reuse this on a new project**
+1. Keep "who added what" (author, status, undo) on anything people at the table can contribute; review before it shows.
+2. When the app calls a paid API for something new, record the cost in the same place as the rest, so one Usage page tells the whole story.
+3. Use a separate local database with made-up data for previews, so real data on your machine is never touched by testing.

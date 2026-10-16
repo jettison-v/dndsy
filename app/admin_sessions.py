@@ -235,10 +235,28 @@ def _act(request: Request, db: Session, session_id: int, action: Callable[[GameS
 
 
 @router.post("/sessions/{session_id:int}/questions/answer")
-def answer(request: Request, session_id: int, q: str = Form(...), answer: str = Form(""), remember: str = Form(""), db: Session = Depends(get_db)):
+def answer(
+    request: Request,
+    session_id: int,
+    q: str = Form(...),
+    answer: str = Form(""),
+    remember: str = Form(""),
+    on_behalf_of: str = Form(""),
+    db: Session = Depends(get_db),
+):
     def act(s):
-        review.answer_question(db, s, q, answer, bool(remember))
-        return "Answer saved"
+        review.answer_question(db, s, q, answer, bool(remember), answered_by=on_behalf_of)
+        return f"Saved {on_behalf_of}'s answer" if on_behalf_of.strip() else "Answer saved"
+
+    return _act(request, db, session_id, act)
+
+
+@router.post("/sessions/{session_id:int}/questions/ask")
+def ask(request: Request, session_id: int, q: str = Form(...), person: str = Form(""), note: str = Form(""), db: Session = Depends(get_db)):
+    def act(s):
+        user = request.session.get("user") or {}
+        review.ask_question(db, s, q, person, note, asked_by=user.get("name") or user.get("email", ""))
+        return f"Waiting on {' '.join(person.split())}"
 
     return _act(request, db, session_id, act)
 

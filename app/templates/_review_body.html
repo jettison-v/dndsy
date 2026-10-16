@@ -58,8 +58,17 @@
           <p class="item-title">{{ q }}</p>
           <div class="row" id="{{ qid }}-buttons">
             <button type="button" class="btn" data-show="{{ qid }}-form" data-hide="{{ qid }}-buttons">Answer</button>
+            <button type="button" class="btn link" data-show="{{ qid }}-ask" data-hide="{{ qid }}-buttons">Ask…</button>
             <form class="inline" hx-post="/admin/sessions/{{ s.id }}/questions/skip" {{ hx | safe }}><input type="hidden" name="q" value="{{ q }}"><button class="btn link">Skip</button></form>
           </div>
+          <form id="{{ qid }}-ask" class="stack" hidden hx-post="/admin/sessions/{{ s.id }}/questions/ask" {{ hx | safe }}>
+            <input type="hidden" name="q" value="{{ q }}">
+            <label class="field">Who should answer?
+              <input type="text" name="person" list="ask-people" required autocomplete="off" placeholder="Pick or type a name"></label>
+            <label class="field">Note <span class="note">(optional)</span><textarea name="note" rows="2" placeholder="Anything that helps them answer…"></textarea></label>
+            <div class="row"><button class="btn primary">Ask</button><button type="button" class="btn link" data-cancel="{{ qid }}-ask" data-restore="{{ qid }}-buttons">Cancel</button>
+              <span class="note">They'll see it on Previously on… once they sign in. You can still publish meanwhile.</span></div>
+          </form>
           <form id="{{ qid }}-form" class="stack" hidden hx-post="/admin/sessions/{{ s.id }}/questions/answer" {{ hx | safe }}>
             <input type="hidden" name="q" value="{{ q }}">
             <textarea name="answer" rows="2" placeholder="Your answer…" required></textarea>
@@ -68,7 +77,31 @@
           </form>
         </div>
         {% else %}
-        <p class="all-clear">{% if done_questions %}✓ All questions handled.{% else %}No questions this time.{% endif %}</p>
+        <p class="all-clear">{% if waiting_count %}✓ Nothing left for you; {{ waiting_count }} waiting on others.{% elif done_questions %}✓ All questions handled.{% else %}No questions this time.{% endif %}</p>
+        {% endfor %}
+        <datalist id="ask-people">{% for name, hint in ask_options %}<option value="{{ name }}">{{ hint }}</option>{% endfor %}</datalist>
+
+        {% for person, asks in waiting %}
+        <div class="waiting">
+          <h3>Waiting on {{ person }} <span class="count">({{ asks | length }})</span></h3>
+          {% for c in asks %}{% set wid = "w" ~ c.id %}
+          <div class="item">
+            <p class="item-title">{{ c.before }}</p>
+            {% if c.note %}<p class="note" style="margin:-6px 0 10px">{{ c.asked_by or "You" }}: {{ c.note }}</p>{% endif %}
+            <div class="row" id="{{ wid }}-buttons">
+              <span class="tag draft">Waiting</span>
+              <button type="button" class="btn link" data-show="{{ wid }}-form" data-hide="{{ wid }}-buttons">Record their answer</button>
+              <form class="inline" hx-post="/admin/sessions/{{ s.id }}/questions/reopen" {{ hx | safe }}><input type="hidden" name="q" value="{{ c.before }}"><button class="btn link">Stop waiting</button></form>
+            </div>
+            <form id="{{ wid }}-form" class="stack" hidden hx-post="/admin/sessions/{{ s.id }}/questions/answer" {{ hx | safe }}>
+              <input type="hidden" name="q" value="{{ c.before }}"><input type="hidden" name="on_behalf_of" value="{{ c.asked_of }}">
+              <textarea name="answer" rows="2" placeholder="{{ c.asked_of }}'s answer…" required></textarea>
+              <label class="check"><input type="checkbox" name="remember" value="1"> Use in every future draft (for lasting facts like name spellings)</label>
+              <div class="row"><button class="btn primary">Save answer</button><button type="button" class="btn link" data-cancel="{{ wid }}-form" data-restore="{{ wid }}-buttons">Cancel</button></div>
+            </form>
+          </div>
+          {% endfor %}
+        </div>
         {% endfor %}
 
         {% if unused_answers and s.source == "notes" %}
@@ -90,6 +123,7 @@
             {% else %}
             <div id="{{ did }}-view">
               <p class="answer">{{ c.after }}</p>
+              {% if c.answered_by %}<p class="note" style="margin:-4px 0 8px">Answered by {{ c.answered_by }}</p>{% endif %}
               <div class="row">{% if c.standing_instruction %}<span class="tag">Used in every future draft</span>{% endif %}
                 <button type="button" class="btn link" data-show="{{ did }}-form" data-hide="{{ did }}-view">Edit</button>
                 <form class="inline" hx-post="/admin/sessions/{{ s.id }}/questions/reopen" {{ hx | safe }}><input type="hidden" name="q" value="{{ c.before }}"><button class="btn link danger">Remove answer</button></form></div>
@@ -225,7 +259,7 @@
       <div class="panel">
         <h3>Review</h3>
         <ul class="checklist">
-          <li><span class="tick {{ 'on' if not open_questions }}">{{ '✓' if not open_questions }}</span>Questions<small>{{ (open_questions | length ~ ' left') if open_questions else 'done' }}</small></li>
+          <li><span class="tick {{ 'on' if not open_questions }}">{{ '✓' if not open_questions }}</span>Questions<small>{{ (open_questions | length ~ ' left') if open_questions else 'done' }}{% if waiting_count %} · {{ waiting_count }} waiting{% endif %}</small></li>
           <li><span class="tick on">✓</span>Recap<small>v{{ latest.version }}</small></li>
           <li><span class="tick on">✓</span>Key moments<small>{{ events | length }}</small></li>
           <li><span class="tick {{ 'on' if not open_proposals }}">{{ '✓' if not open_proposals }}</span>Suggestions<small>{{ (open_proposals | length ~ ' left') if open_proposals else 'done' }}</small></li>
