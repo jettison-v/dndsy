@@ -157,6 +157,32 @@ def test_sanitize_drops_player_notes():
         data = load(name)
         assert "notes" not in data and "traits" not in data
         assert not [v for v in data["characterValues"] if v["typeId"] == 9]
+        assert not [c for c in data["customItems"] if "notes" in c]
+
+
+def test_sanitize_keeps_only_which_items_have_notes():
+    raw = {"name": "X", "characterValues": [{"typeId": 9, "valueId": 7, "value": "secret item note"}],
+           "customItems": [{"id": 1, "name": "Egg", "description": "Golden.", "notes": "secret custom note"}]}
+    clean = ddb.sanitize(raw)
+    assert "secret" not in json.dumps(clean) and clean["noteItemIds"] == ["7"] and clean["customItems"][0]["description"] == "Golden."
+
+
+def test_custom_and_changed_items_are_marked(cole):
+    items = {x["name"]: x for x in cole["inventory"]}
+    egg = items["Golden Dragon Egg"]
+    assert egg["custom"] and egg["key"].startswith("custom:") and egg["type"] == "Custom item" and not egg["changes"]
+    mask = items["Mind Control Mask"]
+    assert mask["text"].startswith("Took off a young woman") and "Trah analysized" not in json.dumps(cole)  # a custom item's note
+    flask = items["Flask (blessed water)"]
+    assert not flask["custom"] and flask["base_name"] == "Flask"
+    assert flask["changes"] == ["Renamed (the D&D Beyond item is Flask)", "Has a player note on D&D Beyond (not shown in askdnd)"]
+    assert items["Ruby"]["changes"] == ["Other details changed on D&D Beyond (such as cost or weight)"]
+    assert not items["Bag of Holding"]["changes"] and not items["Bag of Holding"]["custom"]
+
+
+def test_portrait_comes_from_d_and_d_beyond_only(cole):
+    assert cole["portrait"].startswith("https://www.dndbeyond.com/avatars/")
+    assert ddb.parse_character({**load("cole"), "decorations": {"avatarUrl": "https://evil.example/x.png"}})["portrait"] == ""
 
 
 def test_spell_lists_match_d_and_d_beyond(cole, no_name):

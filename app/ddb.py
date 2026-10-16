@@ -22,7 +22,7 @@ CHARACTER_URL = "https://character-service.dndbeyond.com/character/v5/character/
 SHEET_URL = "https://www.dndbeyond.com/characters/{id}"
 USER_AGENT = "askdnd/2 (private table companion; +https://beta.askdnd.ai)"
 TIMEOUT_SECONDS = 15
-PARSER_VERSION = 6  # bump when the summary shape changes; stored summaries are re-parsed
+PARSER_VERSION = 7  # bump when the summary shape changes; stored summaries are re-parsed
 
 
 class DdbError(Exception):
@@ -155,9 +155,11 @@ ITEM_NOTE_VALUE_TYPE = 9
 
 def sanitize(data: dict) -> dict:
     clean = {k: v for k, v in data.items() if k not in ("notes", "traits")}
-    clean["characterValues"] = [
-        v for v in data.get("characterValues") or [] if v.get("typeId") != ITEM_NOTE_VALUE_TYPE
-    ]
+    values = data.get("characterValues") or []
+    clean["characterValues"] = [v for v in values if v.get("typeId") != ITEM_NOTE_VALUE_TYPE]
+    # Only *that* an item has a note is kept (so askdnd can say "changed on D&D Beyond"), never the note.
+    clean["noteItemIds"] = sorted({str(v.get("valueId")) for v in values if v.get("typeId") == ITEM_NOTE_VALUE_TYPE})
+    clean["customItems"] = [{k: v for k, v in c.items() if k != "notes"} for c in data.get("customItems") or []]
     return clean
 
 
@@ -243,6 +245,12 @@ def render_template(text: str, values: dict) -> str:
 
 def _clip(text: str, limit: int) -> str:
     return text if len(text) <= limit else text[: limit - 1].rsplit(" ", 1)[0] + "…"
+
+
+def _portrait(data: dict) -> str:
+    """The character's picture on D&D Beyond (their image server), or ""."""
+    url = (data.get("decorations") or {}).get("avatarUrl") or ""
+    return url if re.match(r"https://(www\.)?dndbeyond\.com/avatars/", url) else ""
 
 
 def _first_paragraph(text: str, limit: int = 320) -> str:
@@ -935,6 +943,8 @@ class _Sheet:
 
     def inventory(self) -> list[dict]:
         names = {str(v.get("valueId")): v.get("value") for v in self.d.get("characterValues") or [] if v.get("typeId") == 8}
+        other_changes = {str(v.get("valueId")) for v in self.d.get("characterValues") or [] if v.get("typeId") not in (8, ITEM_NOTE_VALUE_TYPE)}
+        noted = set(self.d.get("noteItemIds") or [])
         containers = {i.get("id"): i for i in self.items}
         out = []
         for i in self.items:
@@ -947,10 +957,17 @@ class _Sheet:
             kind = df.get("subType") or df.get("filterType") or df.get("type") or ""
             active = i.get("equipped") and (i.get("isAttuned") or not df.get("canAttune"))
             usable = kind in ("Potion", "Scroll") or bool(charges and (active or charges["reset"] == "Used up") and charges["reset"] != "Other")
+            item_id = str(i.get("id"))
+            renamed = names.get(item_id) if names.get(item_id) and names.get(item_id) != df["name"] else ""
+            changes = ([f"Renamed (the D&D Beyond item is {df['name']})"] if renamed else []) + (
+                ["Has a player note on D&D Beyond (not shown in askdnd)"] if item_id in noted else []) + (
+                ["Other details changed on D&D Beyond (such as cost or weight)"] if item_id in other_changes else [])
             out.append({
                 "key": f"item:{i.get('id')}",
-                "name": names.get(str(i.get("id"))) or df["name"],
+                "name": renamed or df["name"],
                 "base_name": df["name"],
+                "custom": False,
+                "changes": changes,
                 "battle": bool(usable and df.get("filterType") != "Weapon"),
                 "category": df.get("filterType") or "Other Gear",
                 "type": df.get("subType") or df.get("filterType") or df.get("type") or "",
@@ -967,6 +984,17 @@ class _Sheet:
                 "armor_class": df.get("armorClass"),
                 "summary": _first_paragraph(html_to_text(df.get("description")), 280) if df.get("magic") else "",
                 "text": html_to_text(df.get("description")) if df.get("magic") or usable else "",
+            })
+        for c in self.d.get("customItems") or []:  # made up on D&D Beyond (by a player or the DM), not from a book
+            if not c.get("name"):
+                continue
+            text = html_to_text(c.get("description"))
+            out.append({
+                "key": f"custom:{c.get('id')}", "name": c["name"].strip(), "base_name": c["name"].strip(), "custom": True,
+                "changes": [], "battle": False, "category": "Other Gear", "type": "Custom item", "quantity": c.get("quantity") or 1,
+                "equipped": False, "magic": False, "rarity": "", "attunement": "", "attunement_note": "", "charges": None,
+                "in": "", "damage": "", "properties": [], "armor_class": None,
+                "summary": _first_paragraph(text, 280), "text": text,
             })
         out.sort(key=lambda x: (not x["equipped"], not x["magic"], bool(x["in"]), x["name"]))
         return out
@@ -1140,6 +1168,7 @@ def parse_character(data: dict) -> dict:
             "ddb_id": str(data.get("id") or ""),
             "sheet_url": SHEET_URL.format(id=data.get("id")) if data.get("id") else "",
             "name": data["name"].strip(),
+            "portrait": _portrait(data),
             "species": _d(data, "race", "fullName", default=""),
             "background": _d(data, "background", "definition", "name", default=""),
             "classes": [

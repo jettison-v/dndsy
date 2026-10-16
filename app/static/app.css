@@ -598,3 +598,4 @@ body.gm-on .battlebar { top: 106px; }
 .term-text { margin: 0; color: var(--text); white-space: pre-line; }
 .term-where { color: var(--faint); font-size: .78rem; margin-top: 8px; }
 .term-admin { display: flex; align-items: center; gap: 6px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); color: var(--muted); font-size: .8rem; }
+.tag.custom { background: rgba(176, 132, 232, .16); color: #c7a8f2; }

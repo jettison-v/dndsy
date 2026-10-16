@@ -467,7 +467,7 @@
   }
   document.addEventListener('mouseover', e => {
     const el = e.target.closest && e.target.closest('.term');
-    if (el && !termPinned) { clearTimeout(termTimer); termTimer = setTimeout(() => termShow(el, false), 250); }
+    if (el && !termPinned) { clearTimeout(termTimer); termTimer = setTimeout(() => termShow(el, false), 650); }
     else if (e.target.closest && e.target.closest('.term-tip')) clearTimeout(termTimer);
   });
   document.addEventListener('mouseout', e => {

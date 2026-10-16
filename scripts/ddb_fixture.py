@@ -15,7 +15,7 @@ from pathlib import Path
 from app import ddb
 
 OUT = Path(__file__).resolve().parent.parent / "tests" / "fixtures" / "ddb"
-DROP_KEYS = {"moreDetailsUrl", "decorations", "campaign", "userId", "username", "readonlyUrl",
+DROP_KEYS = {"moreDetailsUrl", "campaign", "userId", "username", "readonlyUrl",
              "providedFrom", "activeSourceCategories", "preferences", "configuration", "optionalOrigins",
              "optionalClassFeatures", "choiceDefinitions", "definitionKeyNameMap", "highlights", "classFantasy",
              "iconicGear", "equipmentDescription", "multiClassDescription", "infusionRules", "creatureRules",
@@ -40,7 +40,10 @@ def main(source: str, name: str) -> None:
         data = payload.get("data", payload)
     else:
         data = ddb.fetch_character(ddb.ddb_id_from(source))
-    data = trim(ddb.sanitize(data))
+    data = ddb.sanitize(data)
+    portrait = (data.get("decorations") or {}).get("avatarUrl")
+    data = trim(data)
+    data["decorations"] = {"avatarUrl": portrait}  # the only decoration the parser reads
     for c in data.get("classes") or []:  # the class's own copy of every feature, at every level
         for key in ("definition", "subclassDefinition"):
             if isinstance(c.get(key), dict):

@@ -33,6 +33,8 @@
       {% if x.uses %}<dt>Uses</dt><dd>{{ pips(x.uses) }} {{ x.uses.left }} of {{ x.uses.max }} · {{ x.uses.reset_phrase }}</dd>{% endif %}
     {% elif section == "inventory" %}
       <dt>Type</dt><dd>{{ x.type }}{% if x.magic and x.rarity %} · {{ x.rarity }}{% endif %}</dd>
+      {% if x.custom %}<dt>Custom</dt><dd><span class="tag custom">Custom</span> Made on D&amp;D Beyond for this campaign, not from a book. The description is whatever was typed there.</dd>{% endif %}
+      {% if x.changes %}<dt>Changed</dt><dd><span class="tag edited">Changed</span> {{ x.changes | join(". ") }}.</dd>{% endif %}
       {% if x.attunement %}<dt>Attunement</dt><dd>{{ "Attuned" if x.attunement == "attuned" else "Needs attunement" }}{% if x.attunement_note %} ({{ x.attunement_note }}){% endif %}</dd>{% endif %}
       {% if x.charges %}<dt>Charges</dt><dd>{{ x.charges.left }} of {{ x.charges.max }} · {{ x.charges.reset_note or x.charges.reset_phrase }}</dd>{% endif %}
       {% if x.damage %}<dt>Damage</dt><dd>{{ x.damage }}</dd>{% endif %}{% if x.armor_class %}<dt>AC</dt><dd>{{ x.armor_class }}</dd>{% endif %}
