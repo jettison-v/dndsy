@@ -210,3 +210,17 @@ def test_mentions_endpoint(player, db):
     import_bundle(db, BUNDLE)
     assert player.get("/campaign/mentions", params={"q": "salt"}).json()[0]["name"] == "Saltmarsh"
     assert TestClient(app).get("/campaign/mentions", params={"q": "salt"}).status_code == 401
+
+
+def test_mention_ranking_prefers_people_and_earlier_matches(db):
+    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "entities": [
+        {"kind": "quest", "name": "Stop the Lich Queen and save Cole's sons", "quest_open": True},
+        {"kind": "npc", "name": "The Lich Queen"},
+        {"kind": "faction", "name": "The Lich Queen's cult"},
+        {"kind": "npc", "name": "The Lich Queen's husband"},
+    ]})
+    cid = db.scalar(select(Campaign)).id
+    names = [x["name"] for x in entities.mention_suggestions(db, cid, "lich")]
+    assert names[0] == "The Lich Queen"
+    assert names[-1] == "Stop the Lich Queen and save Cole's sons"
+    assert entities.mention_suggestions(db, cid, "the lich")[0]["name"] == "The Lich Queen"

@@ -209,6 +209,18 @@ def undo_description(entity: Entity) -> None:
 
 # --- @-mentions ---------------------------------------------------------------------
 
+# People and places are what you usually mean; quests and items come last.
+MENTION_ORDER = {
+    EntityKind.PC: 0,
+    EntityKind.NPC: 1,
+    EntityKind.PLACE: 2,
+    EntityKind.FACTION: 3,
+    EntityKind.CREATURE: 4,
+    EntityKind.ITEM: 5,
+    EntityKind.OTHER: 6,
+    EntityKind.QUEST: 7,
+}
+
 
 def mention_suggestions(db: Session, campaign_id: int, q: str, include_drafts: bool = False, limit: int = 8) -> list[dict]:
     """Entity names (and glossary spellings) matching what follows an "@".
@@ -219,19 +231,24 @@ def mention_suggestions(db: Session, campaign_id: int, q: str, include_drafts: b
         return []
 
     def hit(text: str) -> int | None:
+        """0: the name starts with it (ignoring a leading "The"); 1: a later word
+        does; None: no match. Later words also count how far in they are."""
         t = _norm(text)
-        if t.startswith(q):
+        words = t.split()
+        if t.startswith(q) or (words[:1] == ["the"] and " ".join(words[1:]).startswith(q)):
             return 0
-        if any(w.startswith(q) for w in t.split()):
-            return 1
+        for i, w in enumerate(words):
+            if w.startswith(q):
+                return 1 + i / 100  # earlier word wins within the same tier
         return None
 
     found: dict[str, dict] = {}
 
-    def offer(name: str, kind: str, rank: int, via: str = ""):
+    def offer(name: str, kind: str, rank: float, via: str = "", order: int = 9):
         key = _norm(name)
-        if key not in found or rank < found[key]["rank"]:
-            found[key] = {"name": name, "kind": kind, "via": via, "rank": rank}
+        candidate = {"name": name, "kind": kind, "via": via, "rank": rank, "order": order}
+        if key not in found or (rank, order) < (found[key]["rank"], found[key]["order"]):
+            found[key] = candidate
 
     entities = list(db.scalars(select(Entity).where(Entity.campaign_id == campaign_id)))
     by_name = {}
@@ -239,27 +256,28 @@ def mention_suggestions(db: Session, campaign_id: int, q: str, include_drafts: b
         if e.status != Status.PUBLISHED and not include_drafts:
             continue
         by_name[_norm(e.name)] = e
-        kind = KIND_LABELS.get(e.kind, "")
+        kind, order = KIND_LABELS.get(e.kind, ""), MENTION_ORDER.get(e.kind, 9)
         r = hit(e.name)
         if r is not None:
-            offer(e.name, kind, r)
+            offer(e.name, kind, r, order=order)
         for a in e.aliases:
             r = hit(a.alias)
             if r is not None:
-                offer(e.name, kind, r + 2, via=a.alias)
+                offer(e.name, kind, r + 2, via=a.alias, order=order)
     for g in db.scalars(select(GlossaryTerm).where(GlossaryTerm.campaign_id == campaign_id)):
         target = by_name.get(_norm(g.term))
         kind = KIND_LABELS.get(target.kind, "") if target else "Glossary"
+        order = MENTION_ORDER.get(target.kind, 9) if target else 9
         r = hit(g.term)
         if r is not None:
-            offer(target.name if target else g.term, kind, r + 1)
+            offer(target.name if target else g.term, kind, r + 1, order=order)
         for m in g.misheard_as or []:
             r = hit(m)
             if r is not None:
-                offer(target.name if target else g.term, kind, r + 4, via=m)
+                offer(target.name if target else g.term, kind, r + 4, via=m, order=order)
                 if target is None:  # "Fennwood" -> "Fenwood" -> also "Aldric Fenwood"
                     for e in by_name.values():
                         if _norm(g.term) in _norm(e.name).split():
-                            offer(e.name, KIND_LABELS.get(e.kind, ""), r + 5, via=m)
-    ranked = sorted(found.values(), key=lambda d: (d["rank"], d["name"].casefold()))[:limit]
+                            offer(e.name, KIND_LABELS.get(e.kind, ""), r + 5, via=m, order=MENTION_ORDER.get(e.kind, 9))
+    ranked = sorted(found.values(), key=lambda d: (d["rank"], d["order"], len(d["name"]), d["name"].casefold()))[:limit]
     return [{k: d[k] for k in ("name", "kind", "via")} for d in ranked]
