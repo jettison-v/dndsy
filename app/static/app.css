@@ -645,3 +645,8 @@ details.faq[open] > summary::before { transform: rotate(90deg); }
 .traits-grid dd { margin: 0; }
 .story-block { margin: 8px 0 12px; }
 .story-block p { margin: 3px 0 0; white-space: pre-line; color: var(--muted); }
+/* Character page: the tabs and the current section heading stay in view while scrolling.
+   --stick-top (topbar + Game Mode banner) and --tabs-h are measured by app.js. */
+.sheet .tabbar { position: sticky; top: var(--stick-top, 62px); z-index: 4; background: var(--surface); margin: 0 -30px 12px; padding: 0 30px; }
+.sheet [id^=t-] h3.divider { position: sticky; top: calc(var(--stick-top, 62px) + var(--tabs-h, 41px)); z-index: 3; background: var(--surface); padding: 8px 0 6px; margin-bottom: 4px; }
+@media (max-width: 640px) { .sheet .tabbar { margin: 0 -18px 12px; padding: 0 18px; } }

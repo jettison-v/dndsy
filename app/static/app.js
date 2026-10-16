@@ -501,6 +501,18 @@
   // A file picker with data-autosubmit sends its form as soon as a file is chosen (entity pictures).
   document.addEventListener('change', e => { if (e.target.matches('input[type=file][data-autosubmit]') && e.target.files.length) e.target.form.requestSubmit(); });
 
+  // Sticky headings sit below the top bar (and the Game Mode banner when it shows).
+  function stickTop() {
+    const bar = $('.topbar'), banner = $('#gm-banner'), tabs = $('.sheet .tabbar');
+    const top = (bar ? bar.offsetHeight : 0) + (banner && !banner.hidden ? banner.offsetHeight : 0);
+    document.documentElement.style.setProperty('--stick-top', top + 'px');
+    if (tabs) document.documentElement.style.setProperty('--tabs-h', tabs.offsetHeight + 'px');
+  }
+  stickTop();
+  window.addEventListener('resize', stickTop);
+  const gmb = $('#gm-banner');
+  if (gmb) new MutationObserver(stickTop).observe(gmb, {attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true});
+
   // Flash message from a full page load
   const flash = document.body.dataset.toast;
   if (flash) toast(flash);
