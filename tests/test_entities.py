@@ -80,7 +80,7 @@ def test_entity_page_shows_moments_in_story_order(player, db):
     e = lillippi(db)
     page = player.get(f"/campaign/{e.id}").text
     assert "Tiefling bard." in page and "Also known as LL" in page
-    assert page.index("The party met Lillippi.") < page.index("Lillippi sang in Saltmarsh.")
+    assert page.index("The party met Lillippi.") < page.index("Lillippi sang in")
     assert f'href="/campaign/{e.id}"' in player.get("/campaign").text
     assert f'href="/campaign/{e.id}"' in player.get("/").text  # key-moment entity names link to the page
     assert "Regenerate description" not in page  # reviewers only
@@ -224,3 +224,33 @@ def test_mention_ranking_prefers_people_and_earlier_matches(db):
     assert names[0] == "The Lich Queen"
     assert names[-1] == "Stop the Lich Queen and save Cole's sons"
     assert entities.mention_suggestions(db, cid, "the lich")[0]["name"] == "The Lich Queen"
+
+
+def test_linker_links_names_case_sensitively_and_longest_first(db):
+    from app.linking import entity_linker
+
+    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "entities": [
+        {"kind": "npc", "name": "Anger"},
+        {"kind": "npc", "name": "The Lich Queen", "aliases": ["the queen"]},
+        {"kind": "faction", "name": "The Lich Queen's cult"},
+    ]})
+    cid = db.scalar(select(Campaign)).id
+    ln = entity_linker(db, cid)
+    out = str(ln.text("Anger felt anger. The Lich Queen's cult serves the Lich Queen, the queen."))
+    ids = {e.name: e.id for e in db.scalars(select(Entity))}
+    assert f'data-entity="{ids["Anger"]}">Anger</a> felt anger.' in out  # the word "anger" isn't linked
+    assert f'data-entity="{ids["The Lich Queen\'s cult"]}">The Lich Queen&#39;s cult</a>' in out  # longest wins
+    assert f'the <a class="ent" href="/campaign/{ids["The Lich Queen"]}" data-entity="{ids["The Lich Queen"]}">Lich Queen</a>' in out
+    assert "the queen." in out and out.count("<a ") == 3  # lowercase descriptive alias not linked
+    html = str(ln.html('<p>Anger and <a href="/x">Anger</a></p>'))
+    assert html.count("<a ") == 2  # no link nested inside an existing link
+    assert str(entity_linker(db, cid, exclude_id=ids["Anger"]).text("Anger")) == "Anger"
+
+
+def test_peek_fragment(player, db):
+    import_bundle(db, BUNDLE)
+    published_events(db)
+    e = lillippi(db)
+    frag = player.get(f"/campaign/{e.id}/peek").text
+    assert "<html" not in frag and "Tiefling bard." in frag and "Open full page" in frag
+    assert "The party met Lillippi." in frag or "Lillippi sang in" in frag

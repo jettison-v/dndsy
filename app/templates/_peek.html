@@ -1,0 +1,23 @@
+{# Peek panel content for one entity (loaded by app.js into #peek). #}
+<div class="peek-head">
+  <div><div class="note">{{ kind_label }}{% if e.kind.value == "quest" %} · {{ "Open" if e.quest_open else "Done" }}{% endif %}</div>
+    <h2 id="peek-title">{{ e.name }}</h2>
+    {% if e.aliases %}<div class="note">Also: {{ e.aliases | map(attribute="alias") | join(", ") }}</div>{% endif %}</div>
+  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
+</div>
+<div class="peek-body">
+  {% if e.summary %}<div class="story">{{ ln.text(e.summary) }}</div>{% else %}<p class="muted">No description yet.</p>{% endif %}
+  {% if relations %}
+  <h3>Relationships</h3>
+  <ul class="plain">{% for r in relations %}<li><span class="muted">{{ r.label | capitalize }}</span> <a class="ent" href="/campaign/{{ r.other.id }}" data-entity="{{ r.other.id }}">{{ r.other.name }}</a></li>{% endfor %}</ul>
+  {% endif %}
+  {% if facts %}
+  <h3>What the table knows</h3>
+  <ul class="plain">{% for f in facts %}<li>{{ ln.text(f.text) }}</li>{% endfor %}</ul>
+  {% endif %}
+  {% if moments %}
+  <h3>Recent key moments</h3>
+  <ul class="plain">{% for m in moments %}<li>{{ ln.text(m.e.text) }} <span class="note">· {{ m.label }}</span></li>{% endfor %}</ul>
+  {% endif %}
+</div>
+<div class="peek-foot"><a class="btn" href="/campaign/{{ e.id }}">Open full page</a></div>

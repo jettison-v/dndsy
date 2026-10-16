@@ -29,6 +29,7 @@ from app.extraction import (
     timeline,
 )
 from app.models import NON_DRAFTING_SOURCES, Campaign, ExtractionRun, GameSession, Proposal
+from app.linking import entity_linker
 from app.render import markdown_to_html
 from app.templating import templates
 
@@ -178,6 +179,7 @@ def _body_context(db: Session, s: GameSession) -> dict:
         label=session_label(s),
         recap_html=markdown_to_html(ctx["latest"].body, lambda n: None) if ctx["latest"] else "",
         next_session=_next_session(db, s),
+        ln=entity_linker(db, s.campaign_id, include_drafts=True),
         anything_drafting=bool(running),
     )
     return ctx

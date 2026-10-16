@@ -15,7 +15,7 @@
       <form class="inline" hx-post="/campaign/{{ e.id }}/description/regenerate" {{ hx | safe }} hx-indicator="#regen-wait" hx-disabled-elt="find button"><button class="btn link">Regenerate description</button></form>
       {% endif %}
     </div>
-    {% if e.summary %}<div class="story">{{ e.summary }}</div>{% else %}<p class="muted">No description yet.</p>{% endif %}
+    {% if e.summary %}<div class="story">{{ ln.text(e.summary) }}</div>{% else %}<p class="muted">No description yet.</p>{% endif %}
     {% if is_reviewer %}
     <p class="note htmx-indicator wait" id="regen-wait">Claude is reading the facts and key moments…</p>
     {% if e.draft_summary %}
@@ -71,7 +71,7 @@
     <div class="section-head"><h2>What the table knows</h2>{% if pending %}<span class="count">{{ pending | length }} to review</span>{% endif %}</div>
     <p class="hint">Facts added by people at the table. They appear here as written once a reviewer merges them.</p>
     {% if merged %}
-    <ul class="facts">{% for f in merged %}<li>{{ f.text }}<small>{{ f.author_name or "Someone" }} · {{ f.created_at.strftime("%b %-d, %Y") }}</small></li>{% endfor %}</ul>
+    <ul class="facts">{% for f in merged %}<li>{{ ln.text(f.text) }}<small>{{ f.author_name or "Someone" }} · {{ f.created_at.strftime("%b %-d, %Y") }}</small></li>{% endfor %}</ul>
     {% else %}<p class="muted">No facts yet.</p>{% endif %}
 
     {% for f in pending %}
@@ -113,7 +113,7 @@
     <ul class="events" style="margin-top:10px">
       {% for m in moments %}
       <li class="ev {{ 'theory' if m.e.kind.value == 'theory' }}"><span class="kind {{ m.e.kind.value }}">{{ m.e.kind.value }}</span>
-        <div class="ev-text">{{ m.e.text }}<small><a href="/sessions#s{{ m.e.session_id }}">{{ m.label }}</a></small></div></li>
+        <div class="ev-text">{{ ln.text(m.e.text) }}<small><a href="/sessions#s{{ m.e.session_id }}">{{ m.label }}</a></small></div></li>
       {% endfor %}
     </ul>
     {% else %}<p class="muted" style="margin-top:8px">No published key moments mention {{ e.name }} yet.</p>{% endif %}

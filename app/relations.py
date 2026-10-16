@@ -114,18 +114,48 @@ def describe(db: Session, campaign_id: int) -> list[str]:
 
 
 @dataclass
-class TreeNode:
-    """A person and their spouse(s), with their children's nodes beneath."""
+class FamilyUnit:
+    """One set of parents (married or not) and their children."""
 
-    person: Entity
-    spouses: list[Entity] = field(default_factory=list)
-    children: list["TreeNode"] = field(default_factory=list)
+    parents: list[int]
+    married: bool
+    children: list[int] = field(default_factory=list)
 
 
-def family_tree(db: Session, campaign_id: int, visible=lambda e: True) -> list[TreeNode]:
-    """Descendant trees from parent_of and married_to links. Each person's
-    children are listed once; someone who married into a family appears beside
-    their spouse and again (without their children) under their own parents."""
+@dataclass
+class FamilyGraph:
+    people: dict[int, Entity]
+    units: list[FamilyUnit]
+
+    def mermaid(self) -> str:
+        """Mermaid flowchart text: each person once; parents join at a dot
+        (red if married, grey if not) and the dot points to their children."""
+
+        def label(e: Entity) -> str:
+            return e.name.replace('"', "#quot;").replace("<", "#lt;").replace(">", "#gt;")
+
+        lines = ["flowchart TD"]
+        for pid, e in sorted(self.people.items(), key=lambda kv: kv[1].name.casefold()):
+            lines.append(f'  P{pid}["{label(e)}"]:::person')
+            lines.append(f'  click P{pid} href "/campaign/{pid}"')
+        for i, u in enumerate(self.units):
+            lines.append(f"  U{i}(( )):::{'married' if u.married else 'parents'}")
+            for pid in u.parents:
+                lines.append(f"  P{pid} --- U{i}")
+            for kid in u.children:
+                lines.append(f"  U{i} --> P{kid}")
+        lines += [
+            "  classDef person fill:#272b30,stroke:#4a4f57,color:#ebe7df,rx:8,ry:8",
+            "  classDef married fill:#d64545,stroke:#d64545",
+            "  classDef parents fill:#6f6b64,stroke:#6f6b64",
+        ]
+        return "\n".join(lines)
+
+
+def family_graph(db: Session, campaign_id: int, visible=lambda e: True) -> FamilyGraph:
+    """Everyone linked by parent_of or married_to, grouped into family units:
+    children are grouped by their exact set of parents; a married couple with
+    no shared children still forms a unit."""
     rels = [
         r
         for r in db.scalars(
@@ -136,43 +166,26 @@ def family_tree(db: Session, campaign_id: int, visible=lambda e: True) -> list[T
         if visible(r.from_entity) and visible(r.to_entity)
     ]
     people: dict[int, Entity] = {}
-    children: dict[int, list[int]] = {}
-    parents: dict[int, set[int]] = {}
-    spouses: dict[int, list[int]] = {}
+    parents_of: dict[int, set[int]] = {}
+    marriages: set[frozenset[int]] = set()
     for r in rels:
         people[r.from_entity_id], people[r.to_entity_id] = r.from_entity, r.to_entity
         if r.type == "parent_of":
-            children.setdefault(r.from_entity_id, []).append(r.to_entity_id)
-            parents.setdefault(r.to_entity_id, set()).add(r.from_entity_id)
-        else:
-            spouses.setdefault(r.from_entity_id, []).append(r.to_entity_id)
-            spouses.setdefault(r.to_entity_id, []).append(r.from_entity_id)
+            parents_of.setdefault(r.to_entity_id, set()).add(r.from_entity_id)
+        elif r.from_entity_id != r.to_entity_id:
+            marriages.add(frozenset((r.from_entity_id, r.to_entity_id)))
 
     def name(pid):
         return people[pid].name.casefold()
 
-    expanded: set[int] = set()
-
-    def couple_of(pid: int) -> list[int]:
-        return [pid] + sorted(set(s for s in spouses.get(pid, []) if s != pid), key=name)
-
-    def build(pid: int) -> TreeNode:
-        couple = couple_of(pid)
-        expanded.update(couple)
-        node = TreeNode(people[pid], [people[s] for s in couple[1:]])
-        for k in sorted({c for p in couple for c in children.get(p, [])}, key=name):
-            if k in expanded:  # already drawn elsewhere: show them here, without repeating their family
-                node.children.append(TreeNode(people[k], [people[s] for s in couple_of(k)[1:]]))
-            else:
-                node.children.append(build(k))
-        return node
-
-    roots: list[TreeNode] = []
-    # Start from people with no known parents whose spouses have none either;
-    # anyone left over (unusual links) starts a tree of their own.
-    candidates = sorted(people, key=name)
-    first = [p for p in candidates if not parents.get(p) and not any(parents.get(s) for s in spouses.get(p, []))]
-    for pid in first + candidates:
-        if pid not in expanded:
-            roots.append(build(pid))
-    return roots
+    units: dict[frozenset[int], FamilyUnit] = {}
+    for kid in sorted(parents_of, key=name):
+        key = frozenset(parents_of[kid])
+        unit = units.setdefault(key, FamilyUnit(sorted(key, key=name), key in marriages))
+        unit.children.append(kid)
+    for couple in sorted(marriages, key=lambda c: sorted(name(p) for p in c)):
+        if couple in units:
+            units[couple].married = True
+        else:
+            units[couple] = FamilyUnit(sorted(couple, key=name), True)
+    return FamilyGraph(people, list(units.values()))

@@ -9,8 +9,9 @@ from app import review
 from app.auth import current_user
 from app.db import get_db
 from app.extraction import session_label, timeline
+from app.linking import Linker, entity_linker
 from app.models import Campaign, Character, Correction, Entity, EntityKind, EventKind, GameSession, GlossaryTerm, Status
-from app.relations import family_tree
+from app.relations import family_graph
 from app.render import markdown_to_html
 from app.templating import templates
 
@@ -87,6 +88,11 @@ def questions_card(db: Session, user: dict) -> list[dict]:
     return items
 
 
+def _linker(db: Session) -> Linker:
+    campaign = _campaign(db)
+    return entity_linker(db, campaign.id) if campaign else Linker(None, {})
+
+
 @router.get("/")
 @router.get("/story")
 def story(request: Request, db: Session = Depends(get_db)):
@@ -96,7 +102,12 @@ def story(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(
         request,
         "story.html",
-        {**published_story(db), "questions": questions_card(db, user), "toast": request.session.pop("toast", None)},
+        {
+            **published_story(db),
+            "questions": questions_card(db, user),
+            "toast": request.session.pop("toast", None),
+            "ln": _linker(db),
+        },
     )
 
 
@@ -127,7 +138,7 @@ def sessions(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/login", status_code=303)
     campaign = _campaign(db)
     items = list(reversed(published_items(db, campaign))) if campaign else []
-    return templates.TemplateResponse(request, "sessions.html", {"items": items})
+    return templates.TemplateResponse(request, "sessions.html", {"items": items, "ln": _linker(db)})
 
 
 @router.get("/campaign")
@@ -151,9 +162,9 @@ def campaign_page(request: Request, db: Session = Depends(get_db)):
             if entries:
                 groups.append((title, entries))
         glossary = list(db.scalars(select(GlossaryTerm).where(GlossaryTerm.campaign_id == campaign.id).order_by(GlossaryTerm.term)))
-        tree = family_tree(db, campaign.id, visible=lambda e: e.status == Status.PUBLISHED)
+        graph = family_graph(db, campaign.id, visible=lambda e: e.status == Status.PUBLISHED)
     return templates.TemplateResponse(
-        request, "campaign.html", {"campaign": campaign, "groups": groups, "glossary": glossary, "tree": tree if campaign else []}
+        request, "campaign.html", {"campaign": campaign, "groups": groups, "glossary": glossary, "tree": graph.mermaid() if campaign and graph.people else ""}
     )
 
 

@@ -56,26 +56,34 @@ def test_lines_show_inverses(db):
     assert "Kiera member of Tidewardens" in _known_world(db, db.scalar(select(Campaign)))
 
 
-def test_family_tree(db):
-    family(db)
-    roots = relations.family_tree(db, db.scalar(select(Campaign)).id)
-
-    def flat(node, depth=0):
-        yield depth, node.person.name, [s.name for s in node.spouses]
-        for c in node.children:
-            yield from flat(c, depth + 1)
-
-    rows = [r for root in roots for r in flat(root)]
-    assert rows == [
-        (0, "Aldric", ["Mira"]),
-        (1, "Kiera", ["Orrin"]),
-        (2, "Pip", []),
-        (1, "Tomas", []),
-        (0, "Bram", []),
-        (1, "Orrin", ["Kiera"]),  # Orrin's own family shows him too; his children aren't repeated
+def test_family_graph(db):
+    E = family(db)
+    g = relations.family_graph(db, db.scalar(select(Campaign)).id)
+    names = {pid: e.name for pid, e in g.people.items()}
+    units = sorted(
+        ((tuple(names[p] for p in u.parents), u.married, tuple(sorted(names[c] for c in u.children))) for u in g.units)
+    )
+    assert units == [
+        (("Aldric",), False, ("Tomas",)),  # a child with one known parent
+        (("Aldric", "Mira"), True, ("Kiera",)),
+        (("Bram",), False, ("Orrin",)),
+        (("Kiera", "Orrin"), True, ("Pip",)),
     ]
-    names = [n for _, n, _ in rows]
-    assert names.count("Pip") == 1
+    assert len(g.people) == 7  # everyone once
+    text = g.mermaid()
+    assert text.startswith("flowchart TD") and text.count('["Kiera"]') == 1
+    assert f'click P{E["Pip"].id} href "/campaign/{E["Pip"].id}"' in text
+
+
+def test_family_graph_unmarried_coparents_and_quotes(db):
+    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "entities": [
+        {"kind": "npc", "name": 'Bhal "the Fire"'}, {"kind": "npc", "name": "Terra"}, {"kind": "pc", "name": "Big C"}]})
+    E = ents(db)
+    relations.add(db, E['Bhal "the Fire"'], "parent_of", E["Big C"])
+    relations.add(db, E["Terra"], "parent_of", E["Big C"])
+    g = relations.family_graph(db, db.scalar(select(Campaign)).id)
+    assert len(g.units) == 1 and not g.units[0].married and len(g.units[0].parents) == 2
+    assert "#quot;the Fire#quot;" in g.mermaid()
 
 
 def drafted(db, rels):
@@ -141,4 +149,4 @@ def test_entity_page_relationship_editing(admin, player, db):  # noqa: F811
     admin.post(f"/campaign/{E['Tomas'].id}/relationships/{rel.id}/delete", headers=HX)
     assert db.scalar(select(EntityRelation).where(EntityRelation.type == "member_of")) is None
     tree = admin.get("/campaign").text
-    assert "Family tree" in tree and "⚭" in tree
+    assert "Family tree" in tree and "class=\"mermaid\"" in tree and "flowchart TD" in tree

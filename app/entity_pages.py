@@ -16,6 +16,7 @@ from app import entities, relations
 from app.auth import current_user, is_reviewer
 from app.db import get_db
 from app.extraction import ExtractionError
+from app.linking import entity_linker
 from app.models import Campaign, Entity, Fact, Status
 from app.templating import templates
 
@@ -52,6 +53,7 @@ def entity_context(db: Session, entity: Entity, user: dict) -> dict:
         "rel_choices": relations.CHOICES,
         "others": others,
         "moments": entities.moments(db, entity),
+        "ln": entity_linker(db, entity.campaign_id, exclude_id=entity.id, include_drafts=reviewer),
     }
 
 
@@ -65,6 +67,31 @@ def entity_page(request: Request, entity_id: int, db: Session = Depends(get_db))
         return _not_found(request)
     return templates.TemplateResponse(
         request, "entity.html", {**entity_context(db, entity, user), "toast": request.session.pop("toast", None)}
+    )
+
+
+@router.get("/{entity_id:int}/peek")
+def entity_peek(request: Request, entity_id: int, db: Session = Depends(get_db)):
+    """A short summary for the peek panel (right pane on desktop, sheet on phones)."""
+    user = current_user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    entity = db.get(Entity, entity_id)
+    if not _visible(entity, user):
+        return _not_found(request)
+    reviewer = is_reviewer(user)
+    merged = list(db.scalars(select(Fact).where(Fact.entity_id == entity.id, Fact.status == "merged").order_by(Fact.id)))
+    return templates.TemplateResponse(
+        request,
+        "_peek.html",
+        {
+            "e": entity,
+            "kind_label": entities.KIND_LABELS.get(entity.kind, entity.kind.value),
+            "relations": relations.lines_for(db, entity),
+            "facts": merged[-3:],
+            "moments": entities.moments(db, entity)[-3:],
+            "ln": entity_linker(db, entity.campaign_id, exclude_id=entity.id, include_drafts=reviewer),
+        },
     )
 
 

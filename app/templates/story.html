@@ -26,17 +26,17 @@
   <p class="subtitle">Nothing published yet. Recaps appear here once they're reviewed.</p>
   {% else %}
   <p class="subtitle">{{ latest.label }}{% if latest.s.title %}: {{ latest.s.title }}{% endif %}</p>
-  <div class="story">{{ latest.html | safe }}</div>
+  <div class="story">{{ ln.html(latest.html) }}</div>
   {% if latest.events %}
   <section class="section" style="margin-top:24px">
     <h2>Key moments</h2>
-    <ul class="events" style="margin-top:10px">{% for e in latest.events %}<li class="ev"><span class="kind {{ e.kind.value }}">{{ e.kind.value }}</span><div class="ev-text">{{ e.text }}{% if e.entities %}<small>{% for x in e.entities %}<a href="/campaign/{{ x.id }}">{{ x.name }}</a>{{ " · " if not loop.last }}{% endfor %}</small>{% endif %}</div></li>{% endfor %}</ul>
+    <ul class="events" style="margin-top:10px">{% for e in latest.events %}<li class="ev"><span class="kind {{ e.kind.value }}">{{ e.kind.value }}</span><div class="ev-text">{{ ln.text(e.text) }}{% if e.entities %}<small>{% for x in e.entities %}<a href="/campaign/{{ x.id }}">{{ x.name }}</a>{{ " · " if not loop.last }}{% endfor %}</small>{% endif %}</div></li>{% endfor %}</ul>
   </section>
   {% endif %}
   {% if threads or quests %}
   <section class="section">
     <h2>Open threads</h2>
-    {% if quests %}<h3>Quests</h3><ul>{% for q in quests %}<li><b>{{ q.name }}</b>{% if q.summary %}: <span class="muted">{{ q.summary }}</span>{% endif %}</li>{% endfor %}</ul>{% endif %}
+    {% if quests %}<h3>Quests</h3><ul>{% for q in quests %}<li><b>{{ q.name }}</b>{% if q.summary %}: <span class="muted">{{ ln.text(q.summary) }}</span>{% endif %}</li>{% endfor %}</ul>{% endif %}
     {% if threads %}<h3>Theories</h3><ul>{% for t in threads %}<li><i>{{ t.text }}</i></li>{% endfor %}</ul>{% endif %}
   </section>
   {% endif %}

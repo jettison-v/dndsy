@@ -165,6 +165,66 @@
   window.addEventListener('resize', closeMention);
   document.body.addEventListener('htmx:beforeSwap', closeMention);
 
+  // Peek panel: clicking a name (any link to /campaign/<id>) opens a summary in a
+  // right-hand pane on desktop or a bottom sheet on phones. Cmd/Ctrl/Shift-click,
+  // or links marked data-no-peek, open the full page as usual.
+  const ENTITY_URL = /^\/campaign\/(\d+)$/;
+  let peek = null, lastFocus = null;
+
+  function peekPanel() {
+    if (peek) return peek;
+    const backdrop = document.createElement('div');
+    backdrop.className = 'peek-backdrop';
+    backdrop.hidden = true;
+    const panel = document.createElement('aside');
+    panel.className = 'peek';
+    panel.id = 'peek';
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-modal', 'false');
+    panel.setAttribute('aria-labelledby', 'peek-title');
+    panel.hidden = true;
+    backdrop.addEventListener('click', closePeek);
+    document.body.append(backdrop, panel);
+    peek = { panel, backdrop };
+    return peek;
+  }
+
+  function closePeek() {
+    if (!peek || peek.panel.hidden) return;
+    peek.panel.classList.remove('open');
+    peek.backdrop.hidden = true;
+    setTimeout(() => { peek.panel.hidden = true; }, 180);
+    if (lastFocus) lastFocus.focus();
+  }
+
+  function openPeek(id, opener) {
+    const { panel, backdrop } = peekPanel();
+    lastFocus = opener;
+    fetch('/campaign/' + id + '/peek', { headers: { 'HX-Request': 'true' } })
+      .then(r => (r.ok ? r.text() : Promise.reject(r.status)))
+      .then(html => {
+        panel.innerHTML = html;
+        panel.hidden = false;
+        backdrop.hidden = false;
+        void panel.offsetWidth; // let the browser place it off-screen first, then slide in
+        panel.classList.add('open');
+        panel.scrollTop = 0;
+        const close = panel.querySelector('.peek-close');
+        if (close) { close.addEventListener('click', closePeek); close.focus(); }
+      })
+      .catch(() => { location.href = '/campaign/' + id; });
+  }
+
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a');
+    if (!a || a.hasAttribute('data-no-peek') || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    const m = ENTITY_URL.exec(a.getAttribute('href') || a.getAttribute('xlink:href') || '');  // SVG links use xlink:href
+    if (!m) return;
+    e.preventDefault();
+    openPeek(m[1], a);
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closePeek(); });
+
   // Flash message from a full page load
   const flash = document.body.dataset.toast;
   if (flash) toast(flash);
