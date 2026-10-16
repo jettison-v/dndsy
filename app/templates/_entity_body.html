@@ -105,7 +105,7 @@
 
   <section class="section" id="facts">
     <div class="section-head"><h2>What the table knows</h2>{% if pending %}<span class="count">{{ pending | length }} to review</span>{% endif %}</div>
-    <p class="hint">Facts added by people at the table. They appear here as written once a reviewer merges them.</p>
+    <p class="hint">Facts added by people at the table. They appear here as written once the DM, an admin or a reviewer adds them.</p>
     {% if merged %}
     <ul class="facts">{% for f in merged %}<li>{% if f.kind == "correction" %}<span class="tag edited">Correction</span> {% endif %}{{ ln.text(f.text) }}<small>{{ f.author_name or "Someone" }} · {{ f.created_at.strftime("%b %-d, %Y") }}</small></li>{% endfor %}</ul>
     {% else %}<p class="muted">No facts yet.</p>{% endif %}
@@ -121,7 +121,7 @@
     </div>
     {% endfor %}
     {% for f in mine_pending %}
-    <div class="item"><p class="item-title" style="margin-bottom:4px">{{ f.text }}</p><span class="tag draft">Waiting for a reviewer</span></div>
+    <div class="item"><p class="item-title" style="margin-bottom:4px">{{ f.text }}</p><span class="tag draft">Waiting for the DM or an admin</span></div>
     {% endfor %}
 
     <form class="stack add-fact" hx-post="/campaign/{{ e.id }}/facts" {{ hx | safe }}>
@@ -131,7 +131,7 @@
         <label class="check"><input type="radio" name="kind" value="correction"> Something here is wrong</label>
       </div>
       <textarea name="text" rows="2" required placeholder="Something the party learned about {{ e.name }}, or what's wrong… (type @ to insert a name)"></textarea>
-      <div class="row"><button class="btn">{{ "Add to the page" if is_dm else "Send" }}</button><span class="note">{{ "You're the DM, so it goes straight onto the page." if is_dm else ("Merge it below to show it on the page." if is_reviewer else "A reviewer adds it to the page.") }}</span></div>
+      <div class="row"><button class="btn">{{ "Add to the page" if is_dm else "Send" }}</button><span class="note">{{ "You're the DM, so it goes straight onto the page." if is_dm else ("Merge it below to show it on the page." if can_moderate else "Goes to the DM and admins, who add it to the page.") }}</span></div>
     </form>
 
     {% if done_facts %}

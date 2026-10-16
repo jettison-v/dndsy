@@ -49,7 +49,7 @@ def test_entity_correction_becomes_labeled_fact(player, db):
     import_bundle(db, BUNDLE)
     e = db.scalar(select(Entity).where(Entity.name == "Kieran"))
     r = player.post(f"/campaign/{e.id}/suggest", data={"kind": "correction", "text": "He is Cole's father, not uncle."}, headers=HX)
-    assert "A reviewer will take a look" in r.text
+    assert "The DM or a reviewer will take a look" in r.text
     f = db.scalar(select(Fact))
     assert (f.kind, f.status, f.author_name) == ("correction", "pending", "Mark")
     f.status = "merged"
@@ -63,15 +63,16 @@ def test_session_suggestion_flows_to_review_and_redraft(player, admin, db):
     import_bundle(db, BUNDLE)
     s = db.scalar(select(GameSession))
     player.post(f"/sessions/{s.id}/suggest", data={"kind": "correction", "text": "Kieran, not Kiera."}, headers=HX)
-    page = admin.get("/admin/sessions").text
-    assert "From the table" in page and "Kieran, not Kiera." in page and "Use in next draft" in page
+    assert "1 suggestion from the table waiting" in admin.get("/admin/sessions").text
+    page = admin.get("/suggestions").text
+    assert "Kieran, not Kiera." in page and "Use in next draft" in page
     x = db.scalar(select(Suggestion))
     admin.post(f"/admin/suggestions/{x.id}/use")
     db.expire_all()
     assert db.get(Suggestion, x.id).status == "used"
     c = db.scalar(select(Correction).where(Correction.session_id == s.id))
     assert (c.kind, c.after) == ("answer", "Kieran, not Kiera.") and "Correction from" in c.before
-    assert "Kieran, not Kiera." not in admin.get("/admin/sessions").text  # handled, so gone from the list
+    assert "Kieran, not Kiera." not in admin.get("/suggestions").text  # handled, so gone from the list
 
 
 def test_glossary_panel_suggest_edit_delete(player, admin, db):
@@ -108,7 +109,7 @@ def test_the_dms_entries_skip_review(dm, player, db):
     import_bundle(db, BUNDLE)
     e = db.scalar(select(Entity).where(Entity.name == "Kieran"))
     assert "doesn't wait for a reviewer" in dm.get(f"/campaign/{e.id}/peek").text
-    assert "Send to a reviewer" in player.get(f"/campaign/{e.id}/peek").text
+    assert "Goes to the DM and admins" in player.get(f"/campaign/{e.id}/peek").text
     # People, places, factions…: straight onto the page, from the panel or the page
     assert "Added to the page" in dm.post(f"/campaign/{e.id}/suggest", data={"kind": "addition", "text": "He sails."}, headers=HX).text
     dm.post(f"/campaign/{e.id}/facts", data={"kind": "addition", "text": "He fishes."}, headers=HX)
@@ -140,3 +141,33 @@ def test_the_dms_entries_skip_review(dm, player, db):
     db.expire_all()
     assert db.get(GlossaryTerm, term.id).description == "Big C's father, a god"
     assert {t.term for t in db.scalars(select(GlossaryTerm))} == {"Bhaal", "Bhal", "Womford"}
+
+
+def test_suggestions_go_to_the_dm_and_admins(dm, player, db):
+    import_bundle(db, BUNDLE)
+    e = db.scalar(select(Entity).where(Entity.name == "Kieran"))
+    s = db.scalar(select(GameSession))
+    player.post(f"/campaign/{e.id}/suggest", data={"kind": "addition", "text": "He sails."}, headers=HX)
+    player.post(f"/sessions/{s.id}/suggest", data={"kind": "correction", "text": "Kieran, not Kiera."}, headers=HX)
+    assert player.get("/suggestions").status_code == 403 and "Manage" not in player.get("/").text
+    home = dm.get("/").text
+    assert "2 suggestions from the table are waiting" in home and 'href="/suggestions"' in home
+    page = dm.get("/suggestions").text
+    assert "He sails." in page and "Kieran, not Kiera." in page
+    fact = db.scalar(select(Fact))
+    dm.post(f"/suggestions/facts/{fact.id}/merge")
+    x = db.scalar(select(Suggestion))
+    dm.post(f"/admin/suggestions/{x.id}/use")
+    db.expire_all()
+    assert db.get(Fact, fact.id).status == "merged" and db.get(Suggestion, x.id).status == "used"
+    assert "Nothing waiting" in dm.get("/suggestions").text
+    # A player can't decide on suggestions
+    player.post(f"/campaign/{e.id}/suggest", data={"kind": "addition", "text": "He sings."}, headers=HX)
+    sings = db.scalar(select(Fact).where(Fact.text == "He sings."))
+    player.post(f"/suggestions/facts/{sings.id}/merge")
+    player.post(f"/campaign/facts/{sings.id}/merge", headers=HX)
+    db.expire_all()
+    assert db.get(Fact, sings.id).status == "pending"
+    dm.post(f"/campaign/facts/{sings.id}/reject", headers=HX)  # the DM can also decide on the entry's own page
+    db.expire_all()
+    assert db.get(Fact, sings.id).status == "rejected"

@@ -6,13 +6,14 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import pictures, review
-from app.auth import current_user
+from app.auth import can_moderate, current_user
 from app.db import get_db
 from app.extraction import session_label, timeline
 from app.linking import Linker, entity_linker
 from app.models import Campaign, Correction, Entity, EntityKind, EventKind, GameSession, GlossaryTerm, Status, Suggestion
 from app.relations import family_graph
 from app.render import markdown_to_html
+from app.suggestions import waiting_count
 from app.templating import templates
 
 router = APIRouter()
@@ -109,6 +110,7 @@ def story(request: Request, db: Session = Depends(get_db)):
         {
             **published_story(db),
             "questions": questions_card(db, user),
+            "waiting": waiting_count(db) if can_moderate(user) else 0,
             "toast": request.session.pop("toast", None),
             "ln": _linker(db),
         },

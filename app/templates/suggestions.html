@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Suggestions · askdnd{% endblock %}
+{% block content %}
+<main class="page narrow">
+  <div class="crumbs">Manage › Suggestions</div>
+  <div class="title-row"><h1>Suggestions</h1>{% set n = table.entries | length + table.facts | length %}{% if n %}<span class="count">{{ n }} waiting</span>{% endif %}</div>
+  <p class="subtitle">Corrections and additions from the table. They come to the DM, admins and reviewers, and anyone of you can decide. Nothing changes until someone does. The DM's own go straight in.</p>
+
+  {% if table.facts %}
+  <section class="section">
+    <h2>People, places and other entries</h2>
+    <p class="hint" style="margin-top:6px">Add puts it on the page exactly as written.</p>
+    {% for it in table.facts %}{% set f = it.f %}
+    <div class="item">
+      <p class="item-title"><a href="/campaign/{{ f.entity_id }}">{{ it.name }}</a> <span class="tag {{ 'edited' if f.kind == 'correction' else 'new' }}">{{ f.kind | capitalize }}</span>
+        <span class="note">from {{ f.author_name or f.author_email or "someone" }} · {{ f.created_at.strftime("%b %-d") }}</span></p>
+      <div class="answer">{{ f.text }}</div>
+      <div class="row">
+        <form class="inline" method="post" action="/suggestions/facts/{{ f.id }}/merge"><button class="btn primary">Add to the page</button></form>
+        <form class="inline" method="post" action="/suggestions/facts/{{ f.id }}/reject"><button class="btn link">Reject</button></form>
+      </div>
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  {% if table.entries %}
+  <section class="section">
+    <h2>Sessions and the glossary</h2>
+    <p class="hint" style="margin-top:6px">Session ones can go into that session's next redraft. For the glossary, fix the term (click it) and then mark it done.</p>
+    {% for it in table.entries %}{% set x = it.x %}
+    <div class="item">
+      <p class="item-title"><a href="{{ it.href }}">{{ it.label }}</a> <span class="tag {{ 'edited' if x.kind == 'correction' else 'new' }}">{{ x.kind | capitalize }}</span>
+        <span class="note">from {{ x.author_name or x.author_email }} · {{ x.created_at.strftime("%b %-d") }}</span></p>
+      <div class="answer">{{ x.text }}</div>
+      <div class="row">
+        {% if x.target_type == "session" %}<form class="inline" method="post" action="/admin/suggestions/{{ x.id }}/use"><button class="btn primary">Use in next draft</button></form>{% endif %}
+        <form class="inline" method="post" action="/admin/suggestions/{{ x.id }}/done"><button class="btn">{{ "I fixed it" if x.target_type == "glossary" else "Mark done" }}</button></form>
+        <form class="inline" method="post" action="/admin/suggestions/{{ x.id }}/dismiss"><button class="btn link">Dismiss</button></form>
+      </div>
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  {% if not table.entries and not table.facts %}<p class="all-clear">✓ Nothing waiting.</p>{% endif %}
+</main>
+{% endblock %}

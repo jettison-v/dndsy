@@ -14,7 +14,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import entities
-from app.auth import current_user, is_dm, is_reviewer
+from app.auth import can_moderate, current_user, is_dm, is_reviewer
 from app.db import get_db
 from app.extraction import session_label
 from app.models import Campaign, Correction, Entity, Fact, GameSession, GlossaryTerm, Status, Suggestion
@@ -25,7 +25,7 @@ router = APIRouter()
 MAX_TEXT = 4000
 
 
-def _thanks(message: str = "Thanks! A reviewer will take a look.") -> HTMLResponse:
+def _thanks(message: str = "Thanks! The DM or a reviewer will take a look.") -> HTMLResponse:
     return HTMLResponse(f'<p class="all-clear suggest-thanks" role="status">✓ {escape(message)}</p>')
 
 
@@ -182,7 +182,7 @@ def glossary_delete(request: Request, term_id: int, db: Session = Depends(get_db
     return _thanks("Removed from the glossary. Reload the page to update the list.")
 
 
-# --- Reviewer queue ("From the table" on Manage > Review) --------------------------
+# --- The inbox (Manage > Suggestions): admins, reviewers and the DM -----------------
 
 
 def from_the_table(db: Session, campaign_id: int) -> dict:
@@ -200,21 +200,52 @@ def from_the_table(db: Session, campaign_id: int) -> dict:
             t = terms.get(x.target_id)
             items.append({"x": x, "label": f"Glossary: {t.term}" if t else "Glossary: new term", "href": f"/campaign/glossary/{t.id}" if t else "/campaign#glossary"})
     facts = db.execute(
-        select(Entity.id, Entity.name, func.count(Fact.id))
-        .join(Fact, Fact.entity_id == Entity.id)
-        .where(Entity.campaign_id == campaign_id, Fact.status == "pending")
-        .group_by(Entity.id, Entity.name)
-        .order_by(Entity.name)
+        select(Fact, Entity.name).join(Entity, Fact.entity_id == Entity.id)
+        .where(Entity.campaign_id == campaign_id, Fact.status == "pending").order_by(Fact.id)
     ).all()
-    return {"entries": items, "facts": [{"id": i, "name": n, "count": c} for i, n, c in facts]}
+    return {"entries": items, "facts": [{"f": f, "name": n} for f, n in facts]}
+
+
+def waiting_count(db: Session) -> int:
+    campaign = db.scalar(select(Campaign).order_by(Campaign.id))
+    if campaign is None:
+        return 0
+    t = from_the_table(db, campaign.id)
+    return len(t["entries"]) + len(t["facts"])
+
+
+@router.get("/suggestions")
+def inbox(request: Request, db: Session = Depends(get_db)):
+    user = current_user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    if not can_moderate(user):
+        return templates.TemplateResponse(request, "message.html", {"title": "Not available",
+                                          "message": "Suggestions go to the DM, admins and reviewers."}, status_code=403)
+    campaign = db.scalar(select(Campaign).order_by(Campaign.id))
+    return templates.TemplateResponse(request, "suggestions.html", {
+        "table": from_the_table(db, campaign.id) if campaign else {"entries": [], "facts": []},
+        "toast": request.session.pop("toast", None),
+    })
+
+
+@router.post("/suggestions/facts/{fact_id:int}/{action}")
+def act_on_fact(request: Request, fact_id: int, action: str, db: Session = Depends(get_db)):
+    user = current_user(request)
+    fact = db.get(Fact, fact_id)
+    if can_moderate(user) and fact is not None and fact.status == "pending" and action in ("merge", "reject"):
+        (entities.merge_fact if action == "merge" else entities.reject_fact)(fact)
+        db.commit()
+        request.session["toast"] = "Added to the page" if action == "merge" else "Rejected"
+    return RedirectResponse("/suggestions", status_code=303)
 
 
 @router.post("/admin/suggestions/{suggestion_id:int}/{action}")
 def act_on_suggestion(request: Request, suggestion_id: int, action: str, db: Session = Depends(get_db)):
     user = current_user(request)
     x = db.get(Suggestion, suggestion_id)
-    if not is_reviewer(user) or x is None or action not in ("use", "done", "dismiss"):
-        return RedirectResponse("/admin/sessions", status_code=303)
+    if not can_moderate(user) or x is None or action not in ("use", "done", "dismiss"):
+        return RedirectResponse("/suggestions", status_code=303)
     if action == "use" and x.target_type == "session":
         db.add(_answer(x))
         x.status = "used"
@@ -223,4 +254,4 @@ def act_on_suggestion(request: Request, suggestion_id: int, action: str, db: Ses
         x.status = "done" if action == "done" else "dismissed"
         request.session["toast"] = "Marked done" if action == "done" else "Dismissed"
     db.commit()
-    return RedirectResponse("/admin/sessions#from-the-table", status_code=303)
+    return RedirectResponse("/suggestions", status_code=303)

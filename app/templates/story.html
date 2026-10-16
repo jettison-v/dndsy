@@ -4,6 +4,7 @@
 {% block content %}
 <main class="page narrow">
   <div class="title-row"><h1>Previously on…</h1></div>
+  {% if waiting %}<p class="flash">{{ waiting }} suggestion{{ "s" if waiting != 1 }} from the table {{ "are" if waiting != 1 else "is" }} waiting for you, the DM or a reviewer. <a href="/suggestions">Open Suggestions →</a></p>{% endif %}
   {% if questions %}
   <section class="section ask-card" id="questions-for-you">
     <div class="section-head"><h2>Questions for you</h2><span class="count">{{ questions | length }}</span></div>

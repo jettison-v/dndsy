@@ -45,6 +45,11 @@ def is_dm(user: dict | None) -> bool:
     return bool(user) and access.is_dm(user.get("email"))
 
 
+def can_moderate(user: dict | None) -> bool:
+    """Who gets the table's suggestions: admins, reviewers and the DM."""
+    return is_reviewer(user) or is_dm(user)
+
+
 def can_see_character_notes(user: dict | None) -> bool:
     """Character notes are visible to players but never to the DM (CLAUDE.md)."""
     return bool(user) and not access.is_dm(user.get("email"))

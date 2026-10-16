@@ -13,7 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import entities, pictures, relations
-from app.auth import current_user, is_dm, is_reviewer
+from app.auth import can_moderate, current_user, is_dm, is_reviewer
 from app.db import get_db
 from app.extraction import ExtractionError
 from app.linking import entity_linker
@@ -35,6 +35,7 @@ def _not_found(request: Request):
 
 def entity_context(db: Session, entity: Entity, user: dict) -> dict:
     reviewer = is_reviewer(user)
+    moderator = can_moderate(user)  # decides on facts from the table
     facts = list(db.scalars(select(Fact).where(Fact.entity_id == entity.id).order_by(Fact.id)))
     email = (user.get("email") or "").lower()
     others = [
@@ -46,9 +47,9 @@ def entity_context(db: Session, entity: Entity, user: dict) -> dict:
         "e": entity,
         "kind_label": entities.KIND_LABELS.get(entity.kind, entity.kind.value),
         "merged": [f for f in facts if f.status == "merged"],
-        "pending": [f for f in facts if f.status == "pending"] if reviewer else [],
-        "mine_pending": [f for f in facts if f.status == "pending" and f.author_email.lower() == email] if not reviewer else [],
-        "done_facts": sorted((f for f in facts if f.status != "pending"), key=lambda f: f.updated_at, reverse=True) if reviewer else [],
+        "pending": [f for f in facts if f.status == "pending"] if moderator else [],
+        "mine_pending": [f for f in facts if f.status == "pending" and f.author_email.lower() == email] if not moderator else [],
+        "done_facts": sorted((f for f in facts if f.status != "pending"), key=lambda f: f.updated_at, reverse=True) if moderator else [],
         "relations": relations.lines_for(db, entity),
         "rel_choices": relations.CHOICES,
         "others": others,
@@ -98,12 +99,13 @@ def entity_peek(request: Request, entity_id: int, db: Session = Depends(get_db))
     )
 
 
-def _act(request: Request, db: Session, entity_id: int, action: Callable[[Entity, dict], str], reviewer_only: bool = True):
+def _act(request: Request, db: Session, entity_id: int, action: Callable[[Entity, dict], str], reviewer_only: bool = True,
+         allowed: Callable[[dict], bool] = is_reviewer):
     """Run an entity-page action, commit, and answer with the updated body."""
     user = current_user(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
-    if reviewer_only and not is_reviewer(user):
+    if reviewer_only and not allowed(user):
         return templates.TemplateResponse(
             request, "message.html", {"title": "Not available", "message": "Only reviewers can do that."}, status_code=403
         )
@@ -134,7 +136,7 @@ def add_fact(request: Request, entity_id: int, text: str = Form(""), kind: str =
         entities.add_fact(db, entity, text, user, kind=kind, merged=is_dm(user))
         if is_dm(user):
             return "Added to the page"
-        return "Fact saved" if is_reviewer(user) else "Thanks! A reviewer will add it to the page."
+        return "Fact saved" if can_moderate(user) else "Thanks! The DM or a reviewer will add it to the page."
 
     return _act(request, db, entity_id, act, reviewer_only=False)
 
@@ -143,7 +145,7 @@ def _fact_action(request: Request, db: Session, fact_id: int, fn: Callable[[Fact
     fact = db.get(Fact, fact_id)
     if fact is None:
         return RedirectResponse("/campaign", status_code=303)
-    return _act(request, db, fact.entity_id, lambda entity, user: fn(fact))
+    return _act(request, db, fact.entity_id, lambda entity, user: fn(fact), allowed=can_moderate)
 
 
 # --- Pictures (the DM, reviewers and admins) ------------------------------------------

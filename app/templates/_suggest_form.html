@@ -12,7 +12,7 @@
     {% else %}<input type="hidden" name="kind" value="addition">{% endif %}
     <textarea name="text" rows="3" required placeholder="What should {{ about }} say? (type @ to insert a name)"></textarea>
     {% if is_dm %}<div class="row"><button class="btn primary">Save</button><span class="note">You're the DM, so this doesn't wait for a reviewer.</span></div>
-    {% else %}<div class="row"><button class="btn">Send to a reviewer</button><span class="note">Nothing changes until a reviewer accepts it.</span></div>{% endif %}
+    {% else %}<div class="row"><button class="btn">Send</button><span class="note">Goes to the DM and admins. Nothing changes until one of them accepts it.</span></div>{% endif %}
   </form>
 </details>
 {% endmacro %}

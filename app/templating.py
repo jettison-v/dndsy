@@ -6,10 +6,10 @@ from fastapi.templating import Jinja2Templates
 
 def _page_context(request: Request) -> dict:
     """Available in every template: who's signed in and where they are."""
-    from app.auth import can_see_character_notes, current_user, is_admin, is_dm, is_reviewer
+    from app.auth import can_moderate, can_see_character_notes, current_user, is_admin, is_dm, is_reviewer
 
     user = current_user(request)
-    return {"user": user, "is_admin": is_admin(user), "is_reviewer": is_reviewer(user), "is_dm": is_dm(user),
+    return {"user": user, "is_admin": is_admin(user), "is_reviewer": is_reviewer(user), "is_dm": is_dm(user), "can_moderate": can_moderate(user),
             "can_see_notes": can_see_character_notes(user), "path": request.url.path}
 
 

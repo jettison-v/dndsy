@@ -90,7 +90,7 @@ def test_fact_flow_merge_keeps_summary(player, db, monkeypatch):
     import_bundle(db, BUNDLE)
     e = lillippi(db)
     r = player.post(f"/campaign/{e.id}/facts", data={"text": "She owes Cole 10 gold."}, headers=HX)
-    assert "Waiting for a reviewer" in r.text
+    assert "Waiting for the DM or an admin" in r.text
     fact = db.scalar(select(Fact))
     assert fact.status == "pending" and fact.author_name == "Pat" and fact.author_email == "player@example.com"
     assert player.post(f"/campaign/facts/{fact.id}/merge", headers=HX).status_code == 403
