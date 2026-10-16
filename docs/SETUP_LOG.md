@@ -181,3 +181,15 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 **Reuse this on a new project**
 1. Optimize for the screen people actually use (here a laptop next to Zoom): dense lists, details on demand in a side panel.
 2. Give the admin an in-app "this is in the wrong group" control instead of collecting feedback by typing; save it as data you can learn from.
+
+## 2026-10-16 — Manage › Characters, Game Mode banner, core rules only
+
+**What changed**
+- **Manage › Characters** (admin): D&D Beyond links and Refresh all live here now, plus a list of every regrouping correction with Undo.
+- **Game Mode banner** on every page while it's on.
+- **Core rules only**: Forgotten Realms extras are gone; the spell planner offers only 2024 core spells.
+- Bell icon for reminders, Heroic Inspiration badge, gear is clickable and can be regrouped.
+
+**Reuse this on a new project**
+1. Keep admin-only setup (links, data sources) on an admin page, not on the pages everyone reads.
+2. When a mode changes what the app does in the background (like Game Mode), show it everywhere until it's turned off.
