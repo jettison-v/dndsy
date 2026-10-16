@@ -33,7 +33,7 @@ def set_ddb_link(db: Session, character: Character, value: str) -> None:
     db.flush()
 
 
-def refresh(db: Session, character: Character, fetch: Fetch = ddb.fetch_character_json) -> CharacterSnapshot:
+def refresh(db: Session, character: Character, fetch: Fetch = ddb.fetch_character) -> CharacterSnapshot:
     """Fetch and parse the character. On success the snapshot is replaced; on any
     failure only its status and error change, so the last good copy stays."""
     snap = character.snapshot
@@ -56,7 +56,7 @@ def refresh(db: Session, character: Character, fetch: Fetch = ddb.fetch_characte
     return snap
 
 
-def refresh_all(db: Session, campaign_id: int, fetch: Fetch = ddb.fetch_character_json) -> tuple[int, list[str]]:
+def refresh_all(db: Session, campaign_id: int, fetch: Fetch = ddb.fetch_character) -> tuple[int, list[str]]:
     """Refresh every linked character. Returns (how many worked, names that failed)."""
     ok, failed = 0, []
     for ch in campaign_characters(db, campaign_id):

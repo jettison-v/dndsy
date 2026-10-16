@@ -22,7 +22,7 @@ CHARACTER_URL = "https://character-service.dndbeyond.com/character/v5/character/
 SHEET_URL = "https://www.dndbeyond.com/characters/{id}"
 USER_AGENT = "askdnd/2 (private table companion; +https://beta.askdnd.ai)"
 TIMEOUT_SECONDS = 15
-PARSER_VERSION = 1  # bump when the summary shape changes; stored summaries are re-parsed
+PARSER_VERSION = 2  # bump when the summary shape changes; stored summaries are re-parsed
 
 
 class DdbError(Exception):
@@ -69,6 +69,42 @@ def fetch_character_json(ddb_id: str, timeout: float = TIMEOUT_SECONDS) -> dict:
     data = payload.get("data") if isinstance(payload, dict) else None
     if not isinstance(data, dict) or not payload.get("success", True) or not data.get("name"):
         raise DdbError("D&D Beyond sent something that isn't character data.")
+    return data
+
+
+ALWAYS_PREPARED_URL = (
+    "https://character-service.dndbeyond.com/character/v5/game-data/always-prepared-spells"
+    "?classId={class_id}&classLevel={level}&sharingSetting=2"
+)
+
+
+def _get_json(url: str, timeout: float) -> dict:
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read())
+
+
+def fetch_character(ddb_id: str, timeout: float = TIMEOUT_SECONDS) -> dict:
+    """The character plus the spells their class and subclass always have prepared
+    (e.g. Circle of the Moon spells). D&D Beyond's sheet loads those separately; we
+    store them under data["askdnd"]["alwaysPreparedSpells"]. If that extra call
+    fails the character still loads, just without them."""
+    data = fetch_character_json(ddb_id, timeout)
+    extra = {}
+    for c in data.get("classes") or []:
+        level = c.get("level") or 0
+        for key in ("definition", "subclassDefinition"):
+            class_id = _d(c, key, "id")
+            if not class_id:
+                continue
+            try:
+                payload = _get_json(ALWAYS_PREPARED_URL.format(class_id=class_id, level=level), timeout)
+            except (OSError, ValueError):
+                continue
+            spells = payload.get("data") if isinstance(payload, dict) else None
+            if isinstance(spells, list) and spells:
+                extra[str(class_id)] = spells
+    data["askdnd"] = {"alwaysPreparedSpells": extra}
     return data
 
 
@@ -164,6 +200,11 @@ RESET = {1: "Short or Long Rest", 2: "Long Rest", 3: "Dawn", 4: "Other"}
 COMPONENTS = {1: "V", 2: "S", 3: "M"}
 CR = {1: "0", 2: "1/8", 3: "1/4", 4: "1/2"}
 CREATURE_GROUPS = {13: "Wild Shape form"}
+SIMPLE_WEAPONS = {"Club", "Dagger", "Greatclub", "Handaxe", "Javelin", "Light Hammer", "Mace", "Quarterstaff",
+                  "Sickle", "Spear", "Dart", "Crossbow, Light", "Shortbow", "Sling"}
+MARTIAL_WEAPONS = {"Battleaxe", "Flail", "Glaive", "Greataxe", "Greatsword", "Halberd", "Lance", "Longsword", "Maul",
+                   "Morningstar", "Pike", "Rapier", "Scimitar", "Shortsword", "Trident", "Warhammer", "War Pick", "Whip",
+                   "Blowgun", "Crossbow, Hand", "Crossbow, Heavy", "Longbow", "Musket", "Pistol"}
 PROFICIENCY_GROUPS = {174869515: "armor", 660121713: "weapons", 1782728300: "weapons", 2103445194: "tools"}
 
 # Feature names that are only headings on D&D Beyond, not something you can do.
@@ -217,6 +258,9 @@ class _Sheet:
             for f in c.get("classFeatures") or []
         } if len(self.classes) > 1 else set()
         self.modifiers = [m for source, m in self._all_modifiers() if self._applies(source, m)]
+        self.background_asi = any(
+            (_d(f, "definition", "name") or "").endswith("Ability Score Improvements") for f in data.get("feats") or []
+        )
         self.scores = self._scores()
         self.mods = {k: _mod(v) for k, v in self.scores.items()}
 
@@ -266,15 +310,24 @@ class _Sheet:
                 out[key] = override[sid]
                 continue
             base = (stats.get(sid) or 10) + (bonus.get(sid) or 0)
-            base += sum(int(m.get("value") or 0) for m in self.mods_of(("bonus", "stacking-bonus"), f"{key}-score"))
+            base += sum(int(m.get("value") or 0) for m in self.mods_of("bonus", f"{key}-score") if not self._ignored_species_bonus(m))
             cap_raise = sum(
                 int(m.get("value") or 0) for m in self.mods_of("bonus", "ability-score-maximum") if m.get("statId") == sid
             )
             score = min(base, min(30, 20 + cap_raise))
             for m in self.mods_of("set", f"{key}-score"):  # e.g. Belt of Giant Strength
                 score = max(score, int(m.get("value") or 0))
-            out[key] = score
+            # stacking bonuses go on top of a set score (Hammer of Thunderbolts: Belt + 4)
+            score += sum(int(m.get("value") or 0) for m in self.mods_of("stacking-bonus", f"{key}-score"))
+            out[key] = min(score, 30)
         return out
+
+    def _ignored_species_bonus(self, m: dict) -> bool:
+        """2024 rules: ability increases come from the background. D&D Beyond ignores a
+        legacy (2014) species' increases when the background provides them."""
+        if not self.background_asi or not _d(self.d, "race", "isLegacy"):
+            return False
+        return any(m is x for x in (self.d.get("modifiers") or {}).get("race") or [])
 
     def proficient(self, sub: str) -> bool:
         return bool(self.mods_of("proficiency", sub))
@@ -370,7 +423,8 @@ class _Sheet:
         return out
 
     def initiative(self) -> int:
-        n = self.mods["dexterity"] + self.total_bonus("initiative") + self.total_bonus("ability-checks")
+        # an "initiative" bonus already covers items that also boost ability checks (Luckstone)
+        n = self.mods["dexterity"] + self.total_bonus("initiative")
         if self.proficient("initiative"):
             n += self.pb
         return n
@@ -379,7 +433,7 @@ class _Sheet:
 
     def proficiencies(self) -> dict:
         groups = {"armor": [], "weapons": [], "tools": [], "languages": []}
-        for m in self.mods_of(("proficiency", "language")):
+        for m in self.mods_of(("proficiency", "language", "monk-weapon")):
             name = (m.get("friendlySubtypeName") or m.get("subType") or "").strip()
             sub = m.get("subType") or ""
             if not name or sub.startswith("choose-") or sub.endswith("saving-throws"):
@@ -390,6 +444,10 @@ class _Sheet:
                 group = PROFICIENCY_GROUPS.get(m.get("entityTypeId"))
             if group and name not in groups[group]:
                 groups[group].append(name)
+        # like D&D Beyond, don't list a weapon that a category already covers
+        covered = (SIMPLE_WEAPONS if "Simple Weapons" in groups["weapons"] else set()) | (
+            MARTIAL_WEAPONS if "Martial Weapons" in groups["weapons"] else set())
+        groups["weapons"] = sorted(w for w in groups["weapons"] if w not in covered)
         senses = [
             f"{m.get('friendlySubtypeName') or m.get('subType')} {m.get('value')} ft"
             for m in self.mods_of(("set-base", "sense"))
@@ -578,10 +636,26 @@ class _Sheet:
 
     def spells(self) -> list[dict]:
         out: dict[str, dict] = {}
-        class_names = {c.get("id"): _d(c, "definition", "name") for c in self.classes}
-        lists = [(class_names.get(cs.get("characterClassId"), "Class"), cs.get("spells") or []) for cs in self.d.get("classSpells") or []]
+        classes = {c.get("id"): c for c in self.classes}
+        lists = []
+        for cs in self.d.get("classSpells") or []:
+            c = classes.get(cs.get("characterClassId")) or {}
+            spells = cs.get("spells") or []
+            if _d(c, "definition", "spellPrepareType") == 1:  # e.g. a wizard's spellbook: only what's prepared
+                spells = [s for s in spells if s.get("prepared") or s.get("alwaysPrepared") or not _d(s, "definition", "level")]
+            lists.append((_d(c, "definition", "name", default="Class"), spells))
+        by_class_id = {}
+        for c in self.classes:
+            for key in ("definition", "subclassDefinition"):
+                if _d(c, key, "id"):
+                    by_class_id[str(_d(c, key, "id"))] = _d(c, "definition", "name")
+        for class_id, spells in (_d(self.d, "askdnd", "alwaysPreparedSpells", default={}) or {}).items():
+            lists.append((by_class_id.get(class_id, "Class"), [{**s, "alwaysPrepared": True} for s in spells or []]))
         labels = {"race": _d(self.d, "race", "fullName", default="Species"), "class": "Class feature", "item": "Item", "feat": "Feat", "background": "Background"}
-        lists += [(labels.get(k, k.title()), v or []) for k, v in (self.d.get("spells") or {}).items()]
+        for k, v in (self.d.get("spells") or {}).items():
+            if k == "item":  # an item's spells only while it's equipped (and attuned if it needs it)
+                v = [s for s in v or [] if s.get("componentId") in self.active_item_defs]
+            lists.append((labels.get(k, k.title()), v or []))
         for source, spells in lists:
             for s in spells:
                 sp = self.spell(s, source)

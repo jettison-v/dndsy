@@ -37,7 +37,7 @@ def main(source: str, name: str) -> None:
         payload = json.loads(path.read_text())
         data = payload.get("data", payload)
     else:
-        data = ddb.fetch_character_json(ddb.ddb_id_from(source))
+        data = ddb.fetch_character(ddb.ddb_id_from(source))
     data = trim(ddb.sanitize(data))
     for c in data.get("classes") or []:  # the class's own copy of every feature, at every level
         for key in ("definition", "subclassDefinition"):

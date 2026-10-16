@@ -87,7 +87,7 @@ def test_refresh_stores_a_sanitized_copy_and_summary(db):
     assert snap.status == "ok" and snap.error == "" and snap.fetched_at is not None
     assert "notes" not in snap.raw and "PRIVATE BACKSTORY" not in json.dumps(snap.raw)
     summary = characters.character_summary(cole)
-    assert summary["name"] == "Cole Lockhard" and summary["armor_class"] == 18
+    assert summary["name"] == "Cole Lockhard" and summary["armor_class"] == 16
 
 
 def test_failed_refresh_keeps_the_last_good_copy(db):
