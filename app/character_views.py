@@ -13,6 +13,80 @@ def _cost(activation: str) -> str:
     return activation if activation in ("Action", "Bonus action", "Reaction") else "Other"
 
 
+ORDINAL = {1: "1st", 2: "2nd", 3: "3rd"}
+_NUMBERS = {"a": 1, "an": 1, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5}
+
+
+def ordinal(n: int) -> str:
+    return ORDINAL.get(n, f"{n}th")
+
+
+def _spend(resource: dict, amount: int | None) -> dict:
+    """One thing an option uses up, with what's left of it now."""
+    unit = resource["name"].split(":")[0].strip()
+    if amount is not None and unit.endswith("Points") and amount == 1:
+        unit = unit[:-1]
+    label = f"{amount} {unit}" if amount is not None and unit.endswith(("Point", "Points")) else (
+        f"{amount} use of {unit}" if amount == 1 else f"{amount} uses of {unit}" if amount else unit)
+    if resource["name"].startswith("Lay On Hands") and amount:
+        label = f"{amount} HP from the pool"
+    return {"label": label, "of": resource["name"], "uses": resource["uses"]}
+
+
+def resource_spends(sheet: dict, name: str, key: str, text: str) -> list[dict]:
+    """Which limited resources an option uses ("expend 1 Focus Point", or a
+    "Channel Divinity: …" option drawing on Channel Divinity), with how many are left."""
+    out = []
+    if "Regain" in name:  # e.g. Wild Resurgence: Regain Wild Shape gives a use back
+        return out
+    for r in sheet.get("actions") or []:
+        if not r.get("uses") or r.get("key") == key:
+            continue
+        base = r["name"].split(":")[0].strip()
+        forms = {re.escape(f) for f in (r["name"], base, base[:-1] if base.endswith("s") else base)}
+        alt = "|".join(sorted(forms, key=len, reverse=True))
+        m = re.search(rf"(?:expend|spend|use)s?\s+(\d+|an?|one|two|three|four|five)\s+(?:uses?\s+of\s+)?(?:your\s+)?(?:{alt})\b", text, re.I)
+        amount = None
+        if m:
+            amount = int(m.group(1)) if m.group(1).isdigit() else _NUMBERS[m.group(1).lower()]
+        elif base == "Lay On Hands" and name.startswith(base):
+            hp = re.search(r"expend\s+(\d+)\s+Hit Points?\s+from", text)
+            amount = int(hp.group(1)) if hp else None
+        # "Channel Divinity: Divine Sense" draws on Channel Divinity; "Lay On Hands: Heal" on its pool.
+        # (Siblings like "Wild Resurgence: Regain …" are separate abilities.)
+        same_family = name.split(":")[0].strip() == base and name != r["name"] and (r["name"] == base or "Pool" in r["name"])
+        if not (m or same_family or re.search(rf"(?:use|expend|spend)\s+(?:your\s+)?(?:{alt})\b", text, re.I)):
+            continue
+        if amount is None and same_family and base in ("Channel Divinity", "Wild Shape"):
+            amount = 1
+        out.append(_spend(r, amount))
+    return out
+
+
+def slot_spends(sheet: dict, sp: dict) -> list[dict]:
+    """Free casts first (from a feat, species or item), then a slot of the spell's
+    level (pact slots for Warlock spells) if a slot can be used."""
+    free = [{"label": "Free cast" if sp["uses"]["max"] == 1 else "Free casts", "of": "Free casts", "uses": sp["uses"]}] if sp.get("uses") else []
+    if not sp.get("level") or (sp.get("uses") and not sp.get("uses_slot")):
+        return free
+    return free + [{**x, "label": ("or " if free else "") + x["label"]} for x in _slot(sheet, sp)]
+
+
+def _slot(sheet: dict, sp: dict) -> list[dict]:
+    slots = sheet.get("spell_slots") or {}
+    pact = slots.get("pact")
+    regular = {s["level"]: s for s in slots.get("slots") or []}
+    if pact and pact["level"] >= sp["level"] and ("Warlock" in (sp.get("sources") or []) or not regular):
+        return [{"label": f"Pact slot ({ordinal(pact['level'])})", "of": "Pact Magic",
+                 "uses": {"left": pact["max"] - pact["used"], "max": pact["max"]}}]
+    s = regular.get(sp["level"])
+    if not s:
+        return []
+    return [{"label": f"{ordinal(sp['level'])}-level slot", "of": "Spell slots", "uses": {"left": s["max"] - s["used"], "max": s["max"]},
+             "higher": [{"level": ordinal(x["level"]), "left": x["max"] - x["used"], "max": x["max"]}
+                        for lvl, x in sorted(regular.items()) if lvl > sp["level"]]}]
+
+
 def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
     """Everything the character can do on a turn, as one list: attacks, spells,
     features and items, each with what it costs (action, bonus action…)."""
@@ -27,6 +101,7 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
         o.setdefault("meta", "")
         o.setdefault("text", "")
         o.setdefault("summary", "")
+        o.setdefault("spends", [])
         o["starred"] = o["key"] in starred
         o.setdefault("oref", o["key"])
         moved = (sheet.get("_overrides") or {}).get(f"{o['oref']}|cost")
@@ -44,8 +119,9 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
             continue
         level = "cantrip" if not sp["level"] else f"level {sp['level']}"
         effect = sp["damage"] or (f"heals {sp['healing']}" if sp["healing"] else "")
-        tags = [level] + (["Conc."] if sp["concentration"] else []) + ([f"{sp['uses']['max']} free"] if sp["uses"] else [])
+        tags = [level] + (["Conc."] if sp["concentration"] else [])
         add(key=sp["key"], kind="spell", cost=cost, name=sp["name"], hit=sp["attack"] or sp["save"], tags=tags,
+            spends=slot_spends(sheet, sp),
             meta=" · ".join(x for x in (sp["range"], effect, sp["trigger"] if cost == "Reaction" else "") if x),
             text=sp.get("text") or sp["summary"], summary=sp["summary"],
             common=cost == "Reaction" or (not sp["level"] and bool(sp["attack"] or sp["save"]) and bool(sp["damage"])))
@@ -58,6 +134,7 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
             u = attacks.get("Unarmed Strike") or {}
             hit, meta = u.get("to_hit", ""), u.get("damage", "")
         add(key=a["key"], kind="feature", cost=cost, name=a["name"], hit=hit, meta=meta, uses=a["uses"], text=a["text"],
+            spends=[] if a["uses"] else resource_spends(sheet, a["name"], a["key"], a["text"] or ""),
             summary=a.get("summary", ""),
             common=not a.get("rule") and (unarmed or cost == "Reaction" or bool(a["uses"] and a["source"] in ("class", "feat", "race"))))
     for it in sheet.get("inventory") or []:

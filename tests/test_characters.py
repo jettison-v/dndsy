@@ -507,3 +507,40 @@ def test_item_notes_are_stored_apart_and_everyone_sees_them(player, dm, db):
         assert "Player's note" in panel and "Blessed by Myna" in panel
     characters.refresh(db, cole, fetch=lambda _id: COLE)  # note deleted on D&D Beyond
     assert db.scalar(select(CharacterItemNote)) is None
+
+
+def test_options_show_what_they_spend():
+    from app import character_views as views
+
+    def spends(name, sheet):
+        o = next(o for o in views.options(sheet) if o["name"] == name)
+        return [(x["label"], x["uses"]["left"], x["uses"]["max"]) for x in o["spends"]]
+
+    cole = ddb.parse_character(COLE)
+    assert spends("Flurry of Blows", cole) == [("1 Focus Point", 2, 2)]
+    assert spends("Healing Word", cole) == [("1st-level slot", 4, 4)]
+    assert spends("Wild Shape: Circle Forms", cole) == [("1 use of Wild Shape", 3, 3)]
+    assert spends("Wild Resurgence: Regain Wild Shape", cole) == []  # it gives a use back
+    assert spends("Unarmed Strike", cole) == [] and spends("Thorn Whip", cole) == []
+    load = lambda n: json.loads((Path(__file__).parent / "fixtures" / "ddb" / f"{n}.json").read_text())["data"]  # noqa: E731
+    big_c, no_name = ddb.parse_character(load("big_c")), ddb.parse_character(load("no_name"))
+    assert spends("Channel Divinity: Divine Sense", big_c) == [("1 use of Channel Divinity", 2, 2)]
+    assert spends("Lay On Hands: Purify Poison", big_c) == [("5 HP from the pool", 30, 30)]
+    assert spends("Divine Smite", big_c) == [("Free cast", 0, 1), ("or 1st-level slot", 4, 4)]
+    assert spends("Stunning Strike", no_name) == [("1 Focus Point", 6, 6)]
+    assert spends("Tasha's Hideous Laughter", no_name) == [("Pact slot (1st)", 2, 2)]  # warlock
+    assert spends("Hunter's Mark", no_name) == [("Free cast", 1, 1)]  # from a feat, no slot
+
+
+def test_battle_shows_costs_and_slots_on_their_own_line(player, db):
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    page = player.get(f"/characters/{cole.id}/battle").text
+    assert '<span class="spend" title="Uses 1st-level slot: 4 of 4 left">1st-level slot' in page  # Absorb Elements
+    assert "1 Focus Point" in player.get(f"/characters/{cole.id}/all/bonus").text  # Flurry of Blows, in See all
+    assert '<div class="res-row slots"><span class="res-label">Spell slots</span>' in page
+    panel = player.get(f"/characters/{cole.id}/detail", params={"ref": "action:Flurry of Blows"}).text
+    assert "Spends" in panel and "1 Focus Point: <b>2 of 2 left</b>" in panel
+    spell = player.get(f"/characters/{cole.id}/detail", params={"ref": "spell:Healing Word"}).text
+    assert "1st-level slot: <b>4 of 4 left</b>" in spell and "Can also use a higher slot: 2nd 3/3 · 3rd 3/3" in spell

@@ -1,4 +1,4 @@
-{% from "_char.html" import pips, pick_btn, vitals, resource_row, portrait %}
+{% from "_char.html" import pips, pick_btn, vitals, resource_row, portrait, spends %}
 {% set s = sheet %}
 <div id="battle-body" data-character="{{ c.id }}" data-fetched="{{ fetched_at.isoformat() if fetched_at else '' }}">
   <div class="battlebar">
@@ -28,7 +28,7 @@
       {% for o in col.shown %}
       <div class="move" data-key="{{ o.key }}" data-panel-url="/characters/{{ c.id }}/detail?ref={{ o.key | urlencode }}" tabindex="0" role="button">
         {% if o.hit %}<span class="hit">{{ o.hit }}</span>{% endif %}
-        {% if o.starred and show_picks %}<span class="pick star on static" aria-label="starred">★</span>{% endif %}<b>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag">{{ t }}</span>{% endfor %}
+        {% if o.starred and show_picks %}<span class="pick star on static" aria-label="starred">★</span>{% endif %}<b>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag">{{ t }}</span>{% endfor %}{{ spends(o.spends) }}
         {% if o.meta %}<div class="meta">{{ o.meta }}</div>{% endif %}
       </div>
       {% else %}<p class="muted">Nothing here yet.</p>{% endfor %}

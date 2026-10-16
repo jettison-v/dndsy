@@ -16,6 +16,17 @@
 {%- endif -%}
 {%- endmacro %}
 
+{# What an option uses up (a Focus Point, a 1st-level slot…), with how many are left. #}
+{% macro spends(list) -%}
+{%- for x in list %} <span class="spend{{ ' none' if not x.uses.left }}" title="Uses {{ x.label | replace('or ', '') }}: {{ x.uses.left }} of {{ x.uses.max }} left">{{ x.label }} {{ pips(x.uses) }}</span>{% endfor -%}
+{%- endmacro %}
+
+{# The same, spelled out for the side panel. #}
+{% macro spends_detail(list) -%}
+{%- for x in list %}<div>{{ x.label[0] | upper }}{{ x.label[1:] }}: <b>{{ x.uses.left }} of {{ x.uses.max }} left</b>{% if x.uses.reset_phrase %} · {{ x.uses.reset_phrase }}{% endif %}
+  {%- if x.higher %}<div class="note">Can also use a higher slot: {% for h in x.higher %}{{ h.level }} {{ h.left }}/{{ h.max }}{{ " · " if not loop.last }}{% endfor %}</div>{% endif %}</div>{% endfor -%}
+{%- endmacro %}
+
 {% macro pick_btn(c, kind, ref, on, can_pick) -%}
 {%- if can_pick -%}
 <button type="button" class="pick {{ kind }}{{ ' on' if on }}" hx-post="/characters/{{ c.id }}/pick" hx-vals='{{ {"kind": kind, "ref": ref} | tojson }}' hx-swap="outerHTML"
@@ -38,22 +49,25 @@
 </div>
 {%- endmacro %}
 
+{# Limited resources on one line, spell slots on their own line; each item set apart. #}
 {% macro resource_row(s) -%}
-<div class="res-row">
-  {% for a in s.actions if a.uses and a.source in ("class", "feat", "race") %}<span>{{ a.name }} {{ pips(a.uses) }}</span>{% endfor %}
-  {% for sl in s.spell_slots.slots %}<span>{{ "Slots " if loop.first }}{{ sl.level }}{{ {1: "st", 2: "nd", 3: "rd"}.get(sl.level, "th") }} {{ pips({"max": sl.max, "left": sl.max - sl.used}) }}</span>{% endfor %}
-  {% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}<span>Pact slots (level {{ p.level }}) {{ pips({"max": p.max, "left": p.max - p.used}) }}</span>{% endif %}
-</div>
+{% set res = s.actions | selectattr("uses") | selectattr("source", "in", ["class", "feat", "race"]) | list %}
+{% if res %}<div class="res-row">{% for a in res %}<span class="res">{{ a.name }} {{ pips(a.uses) }}</span>{% endfor %}</div>{% endif %}
+{% if s.spell_slots.slots or s.spell_slots.pact %}<div class="res-row slots"><span class="res-label">Spell slots</span>
+  {% for sl in s.spell_slots.slots %}<span class="res">{{ sl.level }}{{ {1: "st", 2: "nd", 3: "rd"}.get(sl.level, "th") }} {{ pips({"max": sl.max, "left": sl.max - sl.used}) }}</span>{% endfor %}
+  {% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}<span class="res">Pact ({{ {1: "1st", 2: "2nd", 3: "3rd"}.get(p.level, p.level ~ "th") }}) {{ pips({"max": p.max, "left": p.max - p.used}) }}</span>{% endif %}
+</div>{% endif %}
 {%- endmacro %}
 
 {% set STATE_LABELS = {"always": ("Always prepared", "done"), "prepared": ("Prepared", "done"), "known": ("Known", "done"),
                        "spellbook": ("In spellbook", ""), "available": ("Not prepared", "faint"), "granted": ("", "")} %}
 
 {# One compact row; clicking it opens the side panel with everything about it. #}
-{% macro ri(c, key, name, picks, can_pick, star=False, fav=False, chips=(), what="", mech="", hit="", uses=None, cls="", attrs="") -%}
+{% macro ri(c, key, name, picks, can_pick, star=False, fav=False, chips=(), what="", mech="", hit="", uses=None, cls="", attrs="", spend=()) -%}
 <div class="ri {{ cls }}" data-panel-url="/characters/{{ c.id }}/detail?ref={{ key | urlencode }}" tabindex="0" role="button" {{ attrs | safe }}>
   <span class="ri-pk">{% if fav %}{{ pick_btn(c, "fav", key, key in picks.fav, can_pick) }}{% endif %}{% if star %}{{ pick_btn(c, "star", key, key in picks.star, can_pick) }}{% endif %}</span>
   <span class="ri-main"><span class="ri-line"><span class="ri-name">{{ name }}</span>{% if uses %} {{ pips(uses) }}{% endif %}{% for t in chips if t %} <span class="tag {{ '' if t is string else t[1] }}">{{ t if t is string else t[0] }}</span>{% endfor %}</span>
+    {% if spend %}<span class="ri-spend">{{ spends(spend) }}</span>{% endif %}
     {% if what %}<span class="ri-what">{{ what }}</span>{% endif %}</span>
   <span class="ri-mech">{{ mech }}</span>
   <span class="ri-hit">{{ hit }}</span>
@@ -79,7 +93,7 @@
 
 {% macro opt_row(c, o, picks, can_pick) -%}
 {{ ri(c, o.key, o.name, picks, can_pick, star=o.cost != "Other", chips=o.tags, what=o.summary or o.meta,
-      mech=o.meta if o.summary else "", hit=o.hit, uses=o.uses) }}
+      mech=o.meta if o.summary else "", hit=o.hit, uses=o.uses, spend=o.spends) }}
 {%- endmacro %}
 
 {# A character's picture from D&D Beyond (their image server). Hidden if it doesn't load. #}

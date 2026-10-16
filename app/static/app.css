@@ -422,7 +422,7 @@ details.fold > summary { cursor: pointer; color: var(--muted); font-size: .92rem
 .pip.used { background: transparent; border-color: var(--faint); }
 .res-row { display: flex; gap: 6px 16px; flex-wrap: wrap; font-size: .9rem; margin-top: 10px; }
 .res-row span { white-space: nowrap; }
-.battlebar { position: sticky; top: 62px; z-index: 4; background: rgba(21, 23, 26, .97); padding: 8px 0 12px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+.battlebar { position: sticky; top: var(--stick-top, 62px); z-index: 4; background: rgba(21, 23, 26, .97); padding: 8px 0 12px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
 .sec-head { display: flex; align-items: baseline; gap: 10px; justify-content: space-between; flex-wrap: wrap; margin-bottom: 8px; }
 .gm { display: inline-flex; align-items: center; gap: 10px; font-size: .88rem; color: var(--muted); flex-wrap: wrap; }
 .gm-label { display: inline-flex; gap: 8px; align-items: center; }
@@ -650,3 +650,16 @@ details.faq[open] > summary::before { transform: rotate(90deg); }
 .sheet .tabbar { position: sticky; top: var(--stick-top, 62px); z-index: 4; background: var(--surface); margin: 0 -30px 12px; padding: 0 30px; }
 .sheet [id^=t-] h3.divider { position: sticky; top: calc(var(--stick-top, 62px) + var(--tabs-h, 41px)); z-index: 3; background: var(--surface); padding: 8px 0 6px; margin-bottom: 4px; }
 @media (max-width: 640px) { .sheet .tabbar { margin: 0 -18px 12px; padding: 0 18px; } }
+/* Resources: one line for limited uses, one for spell slots, with dividers between items */
+.res-row { gap: 6px 0; align-items: center; }
+.res-row .res { padding: 0 14px; border-left: 1px solid var(--line); }
+.res-row .res:first-child, .res-row .res-label + .res { border-left: none; padding-left: 0; }
+.res-row.slots { margin-top: 6px; }
+.res-label { color: var(--faint); font-size: .74rem; text-transform: uppercase; letter-spacing: .05em; margin-right: 12px; }
+/* What an option uses up, next to it */
+.spend { display: inline-flex; align-items: center; gap: 5px; font-size: .74rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; margin-left: 4px; white-space: nowrap; vertical-align: middle; line-height: 1.6; }
+.spend .pips { margin: 0; }
+.spend.none { color: #f08a8a; border-color: rgba(240, 138, 138, .4); }
+.mech dd > div + div { margin-top: 4px; }
+.ri-spend { display: block; margin: 2px 0 1px; }
+.ri-spend .spend:first-child { margin-left: 0; }

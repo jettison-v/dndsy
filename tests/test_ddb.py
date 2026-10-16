@@ -340,3 +340,9 @@ def test_dndbeyond_formulas_are_filled_in():
     assert r("regain {{scalevalue}}{{classlevel#signed}} HP", v) == "regain 1d6+6 HP"
     assert r("{{modifier:cha@min:1#unsigned}}", v) == "(see D&D Beyond)"  # unknown value: say so, don't guess
     assert r("CR {{(classlevel/3)@rounddown}}", v) == "CR 2" and r("{{(classlevel/4)@roundup}}", v) == "2"
+
+
+def test_link_tags_with_a_display_name_show_only_that_name():
+    assert ddb.html_to_text("until you finish a [rules]short rest;Short[/rules] or Long Rest") == "until you finish a Short or Long Rest"
+    assert ddb.html_to_text("make two [rules]Unarmed Strike;Unarmed Strikes[/rules]") == "make two Unarmed Strikes"
+    assert ddb.html_to_text("the [condition]Prone[/condition] condition") == "the Prone condition"

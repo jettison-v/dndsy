@@ -1,5 +1,5 @@
 {# Side panel: everything about one thing on the sheet. Same layout for spells, actions, items, features. #}
-{% from "_char.html" import pips, pick_btn, spell_mech, STATE_LABELS %}
+{% from "_char.html" import pips, pick_btn, spell_mech, spends_detail, STATE_LABELS %}
 {% set o = opt %}
 <div class="peek-head">
   <div><div class="note">{{ c.entity.name }} · {{ {"spells": "Spell", "actions": "Action", "attacks": "Attack", "inventory": "Item", "features": "Feature", "situational": "Situational", "creatures": "Form"}.get(section, "") }}</div>
@@ -24,6 +24,8 @@
       {% if x.attack or x.save %}<dt>{{ "Attack" if x.attack else "Save" }}</dt><dd>{{ x.attack or x.save }}</dd>{% endif %}
       {% if x.damage %}<dt>Damage</dt><dd>{{ x.damage }}</dd>{% endif %}{% if x.healing %}<dt>Healing</dt><dd>{{ x.healing }}</dd>{% endif %}
       {% if x.uses %}<dt>Free casts</dt><dd>{{ x.uses.left }} of {{ x.uses.max }} · {{ x.uses.reset_phrase }}{% if x.uses_slot %} (or with a slot){% endif %}</dd>{% endif %}
+      {% set slot = (o.spends if o else []) | rejectattr("of", "equalto", "Free casts") | list %}
+      {% if slot %}<dt>Slots</dt><dd>{{ spends_detail(slot) }}</dd>{% endif %}
       {% if x.sources %}<dt>From</dt><dd>{{ x.sources | join(", ") }}</dd>{% endif %}
       {% if x.book %}<dt>Book</dt><dd>{{ x.book }}{% if not x.core %} <span class="tag faint">not in the 2024 core rules</span>{% endif %}</dd>{% endif %}
     {% elif section in ("actions", "attacks") or (o and section != "inventory") %}
@@ -31,6 +33,7 @@
       {% if o and o.hit %}<dt>To hit / DC</dt><dd>{{ o.hit }}</dd>{% endif %}
       {% if o and o.meta %}<dt>Details</dt><dd>{{ o.meta }}</dd>{% endif %}
       {% if x.uses %}<dt>Uses</dt><dd>{{ pips(x.uses) }} {{ x.uses.left }} of {{ x.uses.max }} · {{ x.uses.reset_phrase }}</dd>{% endif %}
+      {% if o and o.spends %}<dt>Spends</dt><dd>{{ spends_detail(o.spends) }}</dd>{% endif %}
     {% elif section == "inventory" %}
       <dt>Type</dt><dd>{{ x.type }}{% if x.magic and x.rarity %} · {{ x.rarity }}{% endif %}</dd>
       {% if x.custom %}<dt>Custom</dt><dd><span class="tag custom">Custom</span> Made on D&amp;D Beyond for this campaign, not from a book. The description is whatever was typed there.</dd>{% endif %}

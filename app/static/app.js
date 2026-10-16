@@ -244,6 +244,13 @@
       x.setAttribute('aria-selected', x === b ? 'true' : 'false');
       const p = document.getElementById(x.dataset.tab); if (p) p.hidden = x !== b;
     });
+    // If the tabs are stuck at the top (scrolled down), start the new tab from its top.
+    const panel = document.getElementById(b.dataset.tab);
+    const offset = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--stick-top')) || 0;
+    if (panel && list.getBoundingClientRect().top <= offset + 1) {
+      const top = panel.getBoundingClientRect().top + window.scrollY - offset - list.offsetHeight - 8;
+      if (top < window.scrollY) window.scrollTo({top});
+    }
   });
 
   document.addEventListener('click', e => {

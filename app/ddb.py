@@ -22,7 +22,7 @@ CHARACTER_URL = "https://character-service.dndbeyond.com/character/v5/character/
 SHEET_URL = "https://www.dndbeyond.com/characters/{id}"
 USER_AGENT = "askdnd/2 (private table companion; +https://beta.askdnd.ai)"
 TIMEOUT_SECONDS = 15
-PARSER_VERSION = 8  # bump when the summary shape changes; stored summaries are re-parsed
+PARSER_VERSION = 9  # bump when the summary shape changes; stored summaries are re-parsed
 
 
 class DdbError(Exception):
@@ -226,6 +226,7 @@ def html_to_text(html: str | None) -> str:
     p = _Text()
     p.feed(html)
     text = "".join(p.parts).replace("\xa0", " ")
+    text = re.sub(r"\[([a-z]+)\][^\[;]*;([^\[]*)\[/\1\]", r"\2", text)  # [rules]short rest;Short[/rules]: the text after ";" is shown
     text = re.sub(r"\[/?[a-z]+(?:[ =][^\]]*)?\]", "", text)  # D&D Beyond link tags: [rules]Unarmed Strike[/rules]
     text = re.sub(r"\{\{[^}]*\}\}", "(see D&D Beyond)", text)  # sheet formulas we don't evaluate
     lines = [re.sub(r"[ \t]+", " ", line).strip() for line in text.split("\n")]
