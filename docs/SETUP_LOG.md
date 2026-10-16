@@ -118,3 +118,15 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 1. Keep "who added what" (author, status, undo) on anything people at the table can contribute; review before it shows.
 2. When the app calls a paid API for something new, record the cost in the same place as the rest, so one Usage page tells the whole story.
 3. Use a separate local database with made-up data for previews, so real data on your machine is never touched by testing.
+
+## 2026-10-16 — Characters from D&D Beyond
+
+**What we set up**
+- **A Characters page** with a card per character (species, classes, HP, AC, speed, key resources like Wild Shape and Focus Points) and a full sheet per character: abilities and saves, resources and what restores them, actions / bonus actions / reactions, spells with casting time, range, concentration and ritual, Wild Shape forms, features, skills, and inventory with attunement and charges.
+- **Refresh from D&D Beyond** buttons (one character or all), for you and the DM. askdnd keeps the last copy that worked, so if D&D Beyond is down or changes, the page still shows the last good sheet with a quiet note.
+- **Linking**: paste a character's D&D Beyond link on its page. The character must be Public on D&D Beyond.
+
+**Reuse this on a new project**
+1. When you depend on an unofficial data source, store the last good copy and show its age; never let a failed fetch wipe it.
+2. Save real sample responses as test files, so tests run offline and catch format changes.
+3. Strip anything private before it's stored, not just before it's shown.

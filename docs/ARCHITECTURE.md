@@ -80,6 +80,7 @@ DURING A SESSION (phase 2)
 - To do: Brett drafts and publishes Sessions 17–29 from notes; wire **Send to askdnd** from the Processor for the Aug 29 transcript; **Usage** page (app-tracked costs and balance estimate); **Reviewer** role for the DM; **Add Session** for gaps (design to be discussed first; see DECISIONS.md).
 
 **Week 3 — Character briefing and launch to the table**
+- Done (2026-10-16): D&D Beyond import (3a). Characters page with a card per character and a full readable sheet; reviewers link and refresh; last good copy kept in `character_snapshots`; `app.characters.character_summary()` is the input for briefings.
 - Pull the 5 characters from D&D Beyond; plain-language briefings (wild shapes, spells, features)
 - Seed notes from Brett's doc; enforce the visibility rule; phone polish
 - Invite the table; dry run before the session
