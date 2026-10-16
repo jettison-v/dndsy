@@ -25,11 +25,13 @@ One top bar for everyone, plus a **Manage** menu that only the admin sees.
 |---|---|---|
 | **Previously on…** (home) | Everyone | The pre-session refresher: latest recap, key moments, open threads |
 | **Sessions** | Everyone | Every published session, newest first |
-| **Characters** | Everyone (character notes hidden from the DM) | Character briefings (Week 3) |
+| **Battle** | Everyone | Your character during play: options sorted into Action / Bonus action / Reaction (starred + common, "See all" side panel), resources as dots, Easy to forget, party table, Game Mode switch |
+| **Character** | Everyone | The full sheet: numbers strip, abilities and saves, then tabs (Actions, Spells, Inventory, Features, Situational, Skills, Forms). The player stars options and sets reminders on their own character |
+| **Party** | Everyone | Party table (names open a short character modal), pooled spells and items |
 | **Campaign** | Everyone | People, places, factions, items, quests and the glossary |
 | **Manage ▾** | Admin only | **Review** (sessions waiting for review, drafting costs), **Notes sync**, **Import** |
 
-Admin pages say so in their subtitle ("only you can see this page"). Breadcrumbs start at the top-level item (Manage › Review › Session 12). On phones the four main items move into a menu.
+Admin pages say so in their subtitle ("only you can see this page"). Breadcrumbs start at the top-level item (Manage › Review › Session 12). On phones the main items move into a menu. Stars, reminders (and, later, character notes) are never shown to the DM.
 
 ## Review workflow (admin)
 

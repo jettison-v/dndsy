@@ -143,3 +143,16 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 2. Separate "what you can do" (access level) from "who you are at the table" (DM), so one rule like "the DM never sees notes" can't be undone by giving someone more access.
 3. When you recompute someone else's numbers, test against what their own product shows, not against what you think the rules say.
 4. With Google sign-in in "testing" mode, every new person must also be added as a test user in Google Cloud.
+
+## 2026-10-16 — Battle, Character and Party
+
+**What we set up**
+- **Battle**: your character during play: what you can do, sorted into action, bonus action and reaction, with "See all" for the rest, resources as dots, your Easy-to-forget reminders and the party table. Flip **Game Mode** on to keep it in sync with D&D Beyond every couple of minutes.
+- **Character**: the full sheet, reorganized. Advantages show on the saves they change, a Situational tab gathers the "only when…" rules, and rarely needed details are folded away. On your own character, ★ puts things on Battle and **Remind me** adds them to Easy to forget.
+- **Party**: everyone side by side, plus the party's spells and magic items pooled for planning.
+- **Manage › People › Plays**: say who plays which character.
+
+**Reuse this on a new project**
+1. Mock up, get feedback, mock up again, then build: two rounds of mockups changed the design more than any code review would.
+2. Let people mark what matters to them (stars, reminders) instead of guessing a perfect default layout.
+3. When you poll someone else's service, throttle on the server per item, not per viewer, so more viewers don't mean more traffic.
