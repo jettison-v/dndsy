@@ -1,0 +1,16 @@
+{# Usage: {% from "_suggest_form.html" import suggest %}{{ suggest("/sessions/3/suggest", "this session") }} #}
+{% macro suggest(action, about, kinds=True, open=False) %}
+<details class="suggest" {% if open %}open{% endif %}>
+  <summary>Suggest a correction or addition</summary>
+  <form class="stack" hx-post="{{ action }}" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button">
+    {% if kinds %}
+    <div class="row">
+      <label class="check"><input type="radio" name="kind" value="correction" checked> Something here is wrong</label>
+      <label class="check"><input type="radio" name="kind" value="addition"> Add something</label>
+    </div>
+    {% else %}<input type="hidden" name="kind" value="addition">{% endif %}
+    <textarea name="text" rows="3" required placeholder="What should {{ about }} say? (type @ to insert a name)"></textarea>
+    <div class="row"><button class="btn">Send to a reviewer</button><span class="note">Nothing changes until a reviewer accepts it.</span></div>
+  </form>
+</details>
+{% endmacro %}

@@ -90,7 +90,7 @@
     <div class="section-head"><h2>What the table knows</h2>{% if pending %}<span class="count">{{ pending | length }} to review</span>{% endif %}</div>
     <p class="hint">Facts added by people at the table. They appear here as written once a reviewer merges them.</p>
     {% if merged %}
-    <ul class="facts">{% for f in merged %}<li>{{ ln.text(f.text) }}<small>{{ f.author_name or "Someone" }} · {{ f.created_at.strftime("%b %-d, %Y") }}</small></li>{% endfor %}</ul>
+    <ul class="facts">{% for f in merged %}<li>{% if f.kind == "correction" %}<span class="tag edited">Correction</span> {% endif %}{{ ln.text(f.text) }}<small>{{ f.author_name or "Someone" }} · {{ f.created_at.strftime("%b %-d, %Y") }}</small></li>{% endfor %}</ul>
     {% else %}<p class="muted">No facts yet.</p>{% endif %}
 
     {% for f in pending %}
@@ -108,8 +108,13 @@
     {% endfor %}
 
     <form class="stack add-fact" hx-post="/campaign/{{ e.id }}/facts" {{ hx | safe }}>
-      <label class="field">Add a fact<textarea name="text" rows="2" required placeholder="Something the party learned about {{ e.name }}… (type @ to insert a name)"></textarea></label>
-      <div class="row"><button class="btn">Add fact</button><span class="note">{{ "Merge it below to show it on the page." if is_reviewer else "A reviewer adds it to the page." }}</span></div>
+      <div class="field">Suggest a correction or addition</div>
+      <div class="row">
+        <label class="check"><input type="radio" name="kind" value="addition" checked> Add something</label>
+        <label class="check"><input type="radio" name="kind" value="correction"> Something here is wrong</label>
+      </div>
+      <textarea name="text" rows="2" required placeholder="Something the party learned about {{ e.name }}, or what's wrong… (type @ to insert a name)"></textarea>
+      <div class="row"><button class="btn">Send</button><span class="note">{{ "Merge it below to show it on the page." if is_reviewer else "A reviewer adds it to the page." }}</span></div>
     </form>
 
     {% if done_facts %}

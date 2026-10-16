@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_suggest_form.html" import suggest %}
 {% block title %}Sessions · askdnd{% endblock %}
 {% block content %}
 <main class="page narrow">
@@ -9,6 +10,7 @@
     <summary style="cursor:pointer"><b>{{ item.label }}</b>{% if item.s.title %} · {{ item.s.title }}{% endif %}</summary>
     <div class="story" style="margin-top:16px">{{ ln.html(item.html) }}</div>
     {% if item.events %}<ul class="events" style="margin-top:12px">{% for e in item.events %}<li class="ev"><span class="kind {{ e.kind.value }}">{{ e.kind.value }}</span><div class="ev-text">{{ ln.text(e.text) }}{% if e.entities %}<small>{% for x in e.entities %}<a href="/campaign/{{ x.id }}">{{ x.name }}</a>{{ " · " if not loop.last }}{% endfor %}</small>{% endif %}</div></li>{% endfor %}</ul>{% endif %}
+    {{ suggest("/sessions/" ~ item.s.id ~ "/suggest", "this session") }}
   </details>
   {% else %}
   <p class="muted">Nothing published yet.</p>

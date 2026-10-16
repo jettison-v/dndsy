@@ -21,6 +21,29 @@
   </section>
   {% endif %}
 
+  {% if table.entries or table.facts %}
+  <section class="section" id="from-the-table">
+    <h2>From the table</h2>
+    <p class="hint" style="margin-top:6px">Corrections and additions people sent. Session ones can go straight into that session's next redraft.</p>
+    {% for it in table.entries %}{% set x = it.x %}
+    <div class="item">
+      <p class="item-title"><a href="{{ it.href }}">{{ it.label }}</a> <span class="tag {{ 'edited' if x.kind == 'correction' else 'new' }}">{{ x.kind | capitalize }}</span>
+        <span class="note">from {{ x.author_name or x.author_email }} · {{ x.created_at.strftime("%b %-d") }}</span></p>
+      <div class="answer">{{ x.text }}</div>
+      <div class="row">
+        {% if x.target_type == "session" %}<form class="inline" method="post" action="/admin/suggestions/{{ x.id }}/use"><button class="btn primary">Use in next draft</button></form>{% endif %}
+        <form class="inline" method="post" action="/admin/suggestions/{{ x.id }}/done"><button class="btn">{{ "I fixed it" if x.target_type == "glossary" else "Mark done" }}</button></form>
+        <form class="inline" method="post" action="/admin/suggestions/{{ x.id }}/dismiss"><button class="btn link">Dismiss</button></form>
+      </div>
+    </div>
+    {% endfor %}
+    {% if table.facts %}
+    <div class="item"><p class="item-title">Waiting on entity pages</p>
+      <ul class="plain">{% for f in table.facts %}<li><a href="/campaign/{{ f.id }}" data-no-peek>{{ f.name }}</a> <span class="note">· {{ f.count }} to merge</span></li>{% endfor %}</ul></div>
+    {% endif %}
+  </section>
+  {% endif %}
+
   <section class="section">
     <table class="list">
       <tr><th>Session</th><th>Status</th><th>Last draft</th><th></th></tr>

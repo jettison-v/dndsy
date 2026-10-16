@@ -45,7 +45,7 @@ KIND_LABELS = {
 # --- Facts -----------------------------------------------------------------------
 
 
-def add_fact(db: Session, entity: Entity, text: str, user: dict) -> Fact:
+def add_fact(db: Session, entity: Entity, text: str, user: dict, kind: str = "addition") -> Fact:
     text = text.replace("\r\n", "\n").strip()
     if not text:
         raise EntityError("Write the fact first.")
@@ -53,6 +53,7 @@ def add_fact(db: Session, entity: Entity, text: str, user: dict) -> Fact:
         raise EntityError("That's a bit long for one fact (4,000 characters max).")
     fact = Fact(
         entity_id=entity.id,
+        kind="correction" if kind == "correction" else "addition",
         text=text,
         author_name=(user.get("name") or user.get("email") or "")[:200],
         author_email=(user.get("email") or "")[:320],
@@ -136,7 +137,7 @@ def build_describe_messages(db: Session, entity: Entity) -> list[dict]:
     parts.append("\nCurrent summary:\n" + (entity.summary or "(none yet)"))
     facts = merged_facts(db, entity.id)
     if facts:
-        parts.append("\nFacts from the table:\n" + "\n".join(f"- {f.text}" for f in facts))
+        parts.append("\nFacts from the table (corrections override the summary):\n" + "\n".join(f"- {f.labeled_text}" for f in facts))
     rels = lines_for(db, entity)
     if rels:
         parts.append("\nRelationships:\n" + "\n".join(f"- {l.label} {l.other.name}" + (f" ({l.note})" if l.note else "") for l in rels))

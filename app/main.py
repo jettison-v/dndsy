@@ -22,6 +22,7 @@ from app.db import SessionLocal
 from app.db import engine as db_engine
 from app.models import ExtractionRun
 from app.story import router as story_router
+from app.suggestions import router as suggestions_router
 from app.templating import templates
 
 @asynccontextmanager
@@ -60,6 +61,7 @@ app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(admin_notes_router)
 app.include_router(admin_sessions_router)
+app.include_router(suggestions_router)
 app.include_router(story_router)
 app.include_router(entity_router)
 app.include_router(api_router)

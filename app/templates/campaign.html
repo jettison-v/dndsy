@@ -11,6 +11,7 @@
   }));
 </script>{% endif %}{% endblock %}
 {% block content %}
+{% from "_suggest_form.html" import suggest %}
 <main class="page">
   <div class="title-row"><h1>{{ campaign.name if campaign else "Campaign" }}</h1></div>
   <p class="subtitle">People, places and things the party has met.{% if campaign and campaign.dm_name %} Dungeon Master: {{ campaign.dm_name }}.{% endif %}{% if tree %} <a href="#family-tree" data-no-peek>Family tree ↓</a>{% endif %}</p>
@@ -36,9 +37,10 @@
   </section>
   {% endif %}
   {% if glossary %}
-  <section class="section">
+  <section class="section" id="glossary">
     <h2>Glossary</h2>
-    <table class="list" style="margin-top:10px">{% for g in glossary %}<tr><td style="width:30%"><b>{{ g.term }}</b></td><td class="muted">{{ g.description }}</td></tr>{% endfor %}</table>
+    <table class="list" style="margin-top:10px">{% for g in glossary %}<tr><td style="width:30%"><a href="/campaign/glossary/{{ g.id }}"><b>{{ g.term }}</b></a></td><td class="muted">{{ g.description }}</td></tr>{% endfor %}</table>
+    <div style="margin-top:12px">{{ suggest("/campaign/glossary/suggest", "the new glossary entry", kinds=False) }}</div>
   </section>
   {% endif %}
 </main>

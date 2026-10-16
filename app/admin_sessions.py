@@ -30,6 +30,7 @@ from app.extraction import (
 )
 from app.models import NON_DRAFTING_SOURCES, Campaign, ExtractionRun, GameSession, Proposal
 from app.linking import entity_linker
+from app.suggestions import from_the_table
 from app.render import markdown_to_html
 from app.templating import templates
 
@@ -138,6 +139,7 @@ def sessions_page(request: Request, db: Session = Depends(get_db)):
             "spent": spent,
             "running": bool(running),
             "notes_synced": snap is not None,
+            "table": from_the_table(db, campaign.id) if campaign else {"entries": [], "facts": []},
             "toast": request.session.pop("toast", None),
         },
     )

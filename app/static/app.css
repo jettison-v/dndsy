@@ -298,3 +298,11 @@ ul.plain { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
 .family-graph svg { max-width: 100%; height: auto; }
 .family-graph .node rect { rx: 8; ry: 8; }
 .family-graph a { cursor: pointer; }
+
+/* Suggest a correction or addition */
+details.suggest { margin-top: 14px; }
+details.suggest > summary { cursor: pointer; color: var(--muted); font-size: .92rem; }
+details.suggest > summary:hover { color: var(--text); }
+details.suggest[open] > summary { margin-bottom: 10px; }
+.peek-suggest { padding: 0 22px 12px; }
+.suggest-thanks { margin: 10px 0; }

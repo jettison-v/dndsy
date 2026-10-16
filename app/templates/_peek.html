@@ -1,4 +1,5 @@
 {# Peek panel content for one entity (loaded by app.js into #peek). #}
+{% from "_suggest_form.html" import suggest %}
 <div class="peek-head">
   <div><div class="note">{{ kind_label }}{% if e.kind.value == "quest" %} · {{ "Open" if e.quest_open else "Done" }}{% endif %}</div>
     <h2 id="peek-title">{{ e.name }}</h2>
@@ -20,4 +21,5 @@
   <ul class="plain">{% for m in moments %}<li>{{ ln.text(m.e.text) }} <span class="note">· {{ m.label }}</span></li>{% endfor %}</ul>
   {% endif %}
 </div>
+<div class="peek-suggest">{{ suggest("/campaign/" ~ e.id ~ "/suggest", "the entry for " ~ e.name) }}</div>
 <div class="peek-foot"><a class="btn" href="/campaign/{{ e.id }}">Open full page</a></div>

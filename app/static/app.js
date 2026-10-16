@@ -168,7 +168,7 @@
   // Peek panel: clicking a name (any link to /campaign/<id>) opens a summary in a
   // right-hand pane on desktop or a bottom sheet on phones. Cmd/Ctrl/Shift-click,
   // or links marked data-no-peek, open the full page as usual.
-  const ENTITY_URL = /^\/campaign\/(\d+)$/;
+  const ENTITY_URL = /^\/campaign\/((?:glossary\/)?\d+)$/;  // people/places, or glossary terms
   let peek = null, lastFocus = null;
 
   function peekPanel() {
@@ -209,6 +209,7 @@
         void panel.offsetWidth; // let the browser place it off-screen first, then slide in
         panel.classList.add('open');
         panel.scrollTop = 0;
+        if (window.htmx) htmx.process(panel);  // forms inside the panel (suggestions, edits)
         const close = panel.querySelector('.peek-close');
         if (close) { close.addEventListener('click', closePeek); close.focus(); }
       })

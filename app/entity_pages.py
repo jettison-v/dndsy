@@ -126,9 +126,9 @@ def _act(request: Request, db: Session, entity_id: int, action: Callable[[Entity
 
 
 @router.post("/{entity_id:int}/facts")
-def add_fact(request: Request, entity_id: int, text: str = Form(""), db: Session = Depends(get_db)):
+def add_fact(request: Request, entity_id: int, text: str = Form(""), kind: str = Form("addition"), db: Session = Depends(get_db)):
     def act(entity, user):
-        entities.add_fact(db, entity, text, user)
+        entities.add_fact(db, entity, text, user, kind=kind)
         return "Fact saved" if is_reviewer(user) else "Thanks! A reviewer will add it to the page."
 
     return _act(request, db, entity_id, act, reviewer_only=False)

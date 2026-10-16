@@ -144,6 +144,28 @@ class Fact(Timestamped, Base):
     author_name: Mapped[str] = mapped_column(String(200), default="", server_default="")
     author_email: Mapped[str] = mapped_column(String(320), default="", server_default="")
     status: Mapped[str] = mapped_column(String(20), default="pending", server_default="pending")  # pending | merged | rejected
+    # "addition" (something new) or "correction" (something on the page is wrong)
+    kind: Mapped[str] = mapped_column(String(20), default="addition", server_default="addition")
+
+    @property
+    def labeled_text(self) -> str:
+        return f"Correction: {self.text}" if self.kind == "correction" else self.text
+
+
+class Suggestion(Timestamped, Base):
+    """A correction or addition from someone at the table about a session or the
+    glossary (entity suggestions are Facts). Reviewers act on these from Review."""
+
+    __tablename__ = "suggestions"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"), index=True)
+    target_type: Mapped[str] = mapped_column(String(20))  # "session" or "glossary"
+    target_id: Mapped[int | None] = mapped_column(Integer)  # session or glossary term id; None = new glossary term
+    kind: Mapped[str] = mapped_column(String(20), default="correction")  # correction | addition
+    text: Mapped[str] = mapped_column(Text)
+    author_name: Mapped[str] = mapped_column(String(200), default="", server_default="")
+    author_email: Mapped[str] = mapped_column(String(320), default="", server_default="")
+    status: Mapped[str] = mapped_column(String(20), default="pending", server_default="pending")  # pending | used | done | dismissed
 
 
 class EntityRelation(Timestamped, Base):

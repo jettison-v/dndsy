@@ -1,0 +1,24 @@
+{# Side panel for one glossary term (loaded into #peek, or shown on its own page). #}
+{% from "_suggest_form.html" import suggest %}
+<div class="peek-head">
+  <div><div class="note">Glossary</div><h2 id="peek-title">{{ g.term }}</h2></div>
+  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
+</div>
+<div class="peek-body" id="glossary-{{ g.id }}">
+  {% if saved %}<p class="all-clear" role="status">✓ Saved</p>{% endif %}
+  {% if g.description %}<div class="story">{{ g.description }}</div>{% else %}<p class="muted">No description.</p>{% endif %}
+  {% if g.misheard_as %}<p class="note">Often misheard as: {{ g.misheard_as | join(", ") }}</p>{% endif %}
+  {{ suggest("/campaign/glossary/" ~ g.id ~ "/suggest", "this entry") }}
+  {% if can_edit %}
+  <details class="suggest">
+    <summary>Edit (reviewers)</summary>
+    <form class="stack" hx-post="/campaign/glossary/{{ g.id }}/edit" hx-target="#peek .peek-body, #glossary-page" hx-select=".peek-body > *" hx-swap="innerHTML">
+      <label class="field">Correct spelling<input type="text" name="term" value="{{ g.term }}" required></label>
+      <label class="field">Description<input type="text" name="description" value="{{ g.description }}"></label>
+      <label class="field">Often misheard as <span class="note">(comma separated)</span><input type="text" name="misheard_as" value="{{ g.misheard_as | join(', ') }}"></label>
+      <div class="row"><button class="btn primary">Save</button></div>
+    </form>
+    <form hx-post="/campaign/glossary/{{ g.id }}/delete" hx-target="this" hx-swap="outerHTML" hx-confirm="Delete {{ g.term }} from the glossary?" style="margin-top:10px"><button class="btn link danger">Delete this term</button></form>
+  </details>
+  {% endif %}
+</div>

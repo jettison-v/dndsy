@@ -263,7 +263,7 @@ def _known_world(db: Session, campaign: Campaign) -> str:
     for f in db.scalars(
         select(Fact).join(Entity).where(Entity.campaign_id == campaign.id, Fact.status == "merged").order_by(Fact.id)
     ):
-        facts.setdefault(f.entity_id, []).append(f.text)
+        facts.setdefault(f.entity_id, []).append(f.labeled_text)
     if facts:
         names = {e.id: e.name for e in db.scalars(select(Entity).where(Entity.id.in_(facts)))}
         lines.append("\nFacts added by people at the table (true; not yet in the summaries above):")

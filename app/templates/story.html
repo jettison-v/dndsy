@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_suggest_form.html" import suggest %}
 {% block title %}Previously on… · askdnd{% endblock %}
 {% block content %}
 <main class="page narrow">
@@ -27,6 +28,7 @@
   {% else %}
   <p class="subtitle">{{ latest.label }}{% if latest.s.title %}: {{ latest.s.title }}{% endif %}</p>
   <div class="story">{{ ln.html(latest.html) }}</div>
+  <div style="margin-top:12px">{{ suggest("/sessions/" ~ latest.s.id ~ "/suggest", "this session") }}</div>
   {% if latest.events %}
   <section class="section" style="margin-top:24px">
     <h2>Key moments</h2>
