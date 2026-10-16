@@ -49,9 +49,10 @@
   </dl>
 
   {% set what = x.summary if section != "situational" else x.text %}
-  {% if what %}<h3>What it does</h3><div class="detail-what">{{ what }}</div>{% endif %}
+  {% set seen = [x.name or "", x.base_name or ""] %}{# underline each rule term once per panel, and never the thing's own name #}
+  {% if what %}<h3>What it does</h3><div class="detail-what">{{ what | terms(underline, seen) }}</div>{% endif %}
   {% set full = x.text if section != "situational" else (x.related.text if x.related else "") %}
-  {% if full and full != what %}<h3>{{ "Full description" if section in ("spells", "inventory") else "Full text and background" }}</h3><div class="detail-full">{{ full }}</div>{% endif %}
+  {% if full and full != what %}<h3>{{ "Full description" if section in ("spells", "inventory") else "Full text and background" }}</h3><div class="detail-full">{{ full | terms(underline, seen) }}</div>{% endif %}
 
   {% if admin %}
   <section class="admin-move" aria-label="Admin regrouping">

@@ -27,7 +27,7 @@
 
   <section class="section">
     <h2>Regrouping</h2>
-    <p class="hint" style="margin-top:6px">Corrections you made from a character's side panel (Admin: regroup this). Each applies to everything with that name on every character. Undo returns it to askdnd's automatic choice.</p>
+    <p class="hint" style="margin-top:6px">Corrections you made from a character's side panel (the Admin box, or an underlined rule term's pop-up). Each applies to everything with that name on every character. Undo returns it to askdnd's automatic choice.</p>
     {% if overrides %}
     <table class="list">
       <tr><th>Thing</th><th>Setting</th><th>Now</th><th>When</th><th></th></tr>
@@ -38,7 +38,7 @@
         <td><form method="post" action="/admin/characters/overrides/{{ o.id }}/delete" class="inline"><button class="btn link" type="submit">Undo</button></form></td></tr>
       {% endfor %}
     </table>
-    {% else %}<p class="muted">No corrections yet. Open any row on a Character page and use "Admin: regroup this" at the bottom of the side panel.</p>{% endif %}
+    {% else %}<p class="muted">No corrections yet. Open any row on a Character page and use the Admin box at the bottom of the side panel, or click an underlined rule term to underline it or not.</p>{% endif %}
   </section>
 </main>
 {% endblock %}

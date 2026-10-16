@@ -24,7 +24,7 @@ def characters_admin(request: Request, db: Session = Depends(get_db)):
     campaign = db.scalar(select(Campaign).order_by(Campaign.id))
     rows = chars.campaign_characters(db, campaign.id) if campaign else []
     overrides = list(db.scalars(select(SheetOverride).order_by(SheetOverride.updated_at.desc())))
-    labels = {f: dict(c) for f, c in views.OVERRIDE_CHOICES.items()}
+    labels = {f: dict(c) for f, c in {**views.OVERRIDE_CHOICES, **views.TERM_CHOICES}.items()}
     return templates.TemplateResponse(request, "admin_characters.html", {
         "rows": rows, "overrides": overrides, "labels": labels, "field_labels": views.FIELD_LABELS,
         "toast": request.session.pop("toast", None),

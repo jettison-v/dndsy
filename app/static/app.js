@@ -414,6 +414,90 @@
   }, true);
   document.querySelectorAll('[data-planner]').forEach(plannerApply);
 
+  // Rule terms: side-panel descriptions underline terms like "Unarmed Strike" (dotted, quiet).
+  // Hover shows a short definition; a click or tap (or Enter) pins it; Escape or a click
+  // elsewhere closes it. Definitions load once, on first use. Admins can turn a term's
+  // underline on or off for every description from the pop-up.
+  let termData = null, termTip = null, termFor = null, termPinned = false, termTimer = null;
+  function termsLoad() {
+    if (!termData) termData = fetch('/rules/terms.json', {credentials: 'same-origin'}).then(r => r.ok ? r.json() : {terms: {}});
+    return termData;
+  }
+  function termPlace() {
+    if (!termTip || !termFor) return;
+    const r = termFor.getBoundingClientRect(), w = Math.min(340, window.innerWidth - 16);
+    termTip.style.width = w + 'px';
+    termTip.style.left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) + 'px';
+    const h = termTip.offsetHeight, below = r.bottom + 6;
+    termTip.style.top = (below + h > window.innerHeight - 8 && r.top - h - 6 > 8 ? r.top - h - 6 : below) + 'px';
+  }
+  function termHide() {
+    clearTimeout(termTimer);
+    if (termTip) termTip.remove();
+    if (termFor) termFor.classList.remove('open');
+    termTip = termFor = null; termPinned = false;
+  }
+  async function termShow(el, pin) {
+    const data = await termsLoad(), t = data.terms && data.terms[el.dataset.term];
+    if (!t || !el.isConnected) return;
+    if (termFor !== el) {
+      termHide();
+      termTip = document.createElement('div');
+      termTip.className = 'term-tip'; termTip.setAttribute('role', 'dialog'); termTip.setAttribute('aria-label', t.name);
+      const add = (tag, cls, text) => { const n = document.createElement(tag); n.className = cls; n.textContent = text; termTip.appendChild(n); return n; };
+      add('div', 'term-kind', t.kind);
+      add('div', 'term-name', t.name);
+      add('p', 'term-text', t.text);
+      add('div', 'term-where', t.where + '. The DM makes the call at the table.');
+      if (data.admin) {
+        const row = add('div', 'term-admin', 'Admin · underline everywhere: ');
+        [['on', 'Yes'], ['off', 'No']].forEach(([v, label]) => {
+          const b = document.createElement('button');
+          b.type = 'button'; b.className = 'ov-opt' + ((data.on || []).includes(el.dataset.term) === (v === 'on') ? ' on' : '');
+          b.textContent = label; b.dataset.value = v;
+          row.appendChild(b);
+        });
+      }
+      termTip.dataset.slug = el.dataset.term;
+      document.body.appendChild(termTip);
+      termFor = el; el.classList.add('open');
+    }
+    if (pin) termPinned = true;
+    termPlace();
+  }
+  document.addEventListener('mouseover', e => {
+    const el = e.target.closest && e.target.closest('.term');
+    if (el && !termPinned) { clearTimeout(termTimer); termTimer = setTimeout(() => termShow(el, false), 250); }
+    else if (e.target.closest && e.target.closest('.term-tip')) clearTimeout(termTimer);
+  });
+  document.addEventListener('mouseout', e => {
+    const from = e.target.closest && e.target.closest('.term, .term-tip'), to = e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.term, .term-tip');
+    if (from && !to && !termPinned) { clearTimeout(termTimer); termTimer = setTimeout(termHide, 200); }
+  });
+  document.addEventListener('click', e => {
+    const el = e.target.closest('.term');
+    if (el) { e.preventDefault(); if (termFor === el && termPinned) termHide(); else termShow(el, true); return; }
+    const b = e.target.closest('.term-tip .term-admin button');
+    if (b) {
+      const slug = termTip.dataset.slug, body = new URLSearchParams({value: b.dataset.value});
+      fetch('/rules/terms/' + slug + '/underline', {method: 'POST', body, credentials: 'same-origin'}).then(r => r.json()).then(res => {
+        if (!('on' in res)) return toast(res.error || 'Not saved');
+        termsLoad().then(d => { d.on = (d.on || []).filter(x => x !== slug); if (res.on) d.on.push(slug); });
+        termTip.querySelectorAll('.term-admin button').forEach(x => x.classList.toggle('on', (x.dataset.value === 'on') === res.on));
+        toast(res.on ? 'Underlined in every description' : 'No longer underlined');
+      });
+      return;
+    }
+    if (termTip && !e.target.closest('.term-tip')) termHide();
+  });
+  document.addEventListener('keydown', e => {
+    const el = e.target.closest && e.target.closest('.term');
+    if (el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); el.click(); }
+    else if (e.key === 'Escape' && termTip) { e.stopImmediatePropagation(); const f = termFor; termHide(); if (f) f.focus(); }
+  }, true);
+  document.addEventListener('scroll', () => { if (termPinned) termPlace(); else if (termTip) termHide(); }, true);
+  window.addEventListener('resize', termPlace);
+
   // Flash message from a full page load
   const flash = document.body.dataset.toast;
   if (flash) toast(flash);

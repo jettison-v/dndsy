@@ -587,3 +587,14 @@ body.gm-on .battlebar { top: 106px; }
 .ov-opt.htmx-request { opacity: .6; }
 .ov-saved { grid-column: 2; color: var(--green); font-size: .78rem; min-height: 1em; }
 .admin-foot { margin: 8px 0 0; }
+
+/* Rule terms in descriptions: a quiet dotted underline; definition in a small pop-up */
+.term { text-decoration: underline dotted; text-decoration-color: var(--faint); text-underline-offset: 3px; text-decoration-thickness: 1px; cursor: help; border-radius: 3px; }
+.term:hover, .term.open { text-decoration-color: var(--amber); color: var(--text); }
+.term:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+.term-tip { position: fixed; z-index: 30; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; box-shadow: 0 10px 30px rgba(0,0,0,.45); font-size: .9rem; line-height: 1.45; }
+.term-kind { color: var(--faint); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; }
+.term-name { font-weight: 600; margin: 1px 0 6px; }
+.term-text { margin: 0; color: var(--text); white-space: pre-line; }
+.term-where { color: var(--faint); font-size: .78rem; margin-top: 8px; }
+.term-admin { display: flex; align-items: center; gap: 6px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); color: var(--muted); font-size: .8rem; }

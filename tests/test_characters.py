@@ -13,7 +13,7 @@ from app.config import parse_allowlist
 from app.db import get_db
 from app.importer import import_bundle
 from app.main import app
-from app.models import Character, CharacterNote, CharacterSnapshot
+from app.models import Character, CharacterNote, CharacterSnapshot, SheetOverride
 
 COLE = json.loads((Path(__file__).parent / "fixtures" / "ddb" / "cole.json").read_text())["data"]
 BUNDLE = {
@@ -455,3 +455,23 @@ def test_saving_a_regrouping_returns_only_that_setting(admin, db):
     assert "✓ Saved" in r.text and 'class="ov-opt on" aria-pressed="true"' in r.text and "Saved for every character" in r.headers["HX-Trigger"]
     panel = admin.get(f"/characters/{cole.id}/detail", params={"ref": "feature:Druid:Wild Shape"}).text
     assert panel.count('class="ov-field"') == 2  # Show in askdnd + Features group, each saved on its own
+
+
+def test_descriptions_underline_rule_terms_with_definitions(admin, player, db):
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    armor = next(x for x in characters.character_summary(cole)["inventory"] if "you know Abyssal" in (x.get("text") or ""))
+    panel = player.get(f"/characters/{cole.id}/detail", params={"ref": armor["key"]}).text
+    assert 'data-term="abyssal">Abyssal</span>' in panel and 'data-term="unarmed-strike">Unarmed Strikes</span>' in panel
+    assert panel.count('data-term="unarmed-strike"') == 1
+    data = player.get("/rules/terms.json").json()
+    assert data["terms"]["abyssal"]["kind"] == "Rare language" and data["admin"] is False and "abyssal" in data["on"]
+    assert player.post("/rules/terms/abyssal/underline", data={"value": "off"}).status_code == 403
+
+    assert admin.post("/rules/terms/abyssal/underline", data={"value": "off"}).json() == {"on": False}
+    panel = player.get(f"/characters/{cole.id}/detail", params={"ref": armor["key"]}).text
+    assert 'data-term="abyssal"' not in panel and 'data-term="unarmed-strike"' in panel
+    assert "Underlined in descriptions" in admin.get("/admin/characters").text
+    assert admin.post("/rules/terms/abyssal/underline", data={"value": "on"}).json() == {"on": True}
+    assert db.scalar(select(SheetOverride).where(SheetOverride.ref == "term:Abyssal")) is None  # back to the default

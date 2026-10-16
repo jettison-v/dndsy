@@ -54,3 +54,13 @@ def _ago(when) -> str:
 
 
 templates.env.filters["ago"] = _ago
+
+
+def _terms(text: str, on=None, seen=None):
+    """Underline rule terms (first mention) with a definition on hover; see rules_terms."""
+    from app.rules_terms import annotate
+
+    return annotate(text or "", on, seen)
+
+
+templates.env.filters["terms"] = _terms

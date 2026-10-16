@@ -13,13 +13,14 @@ import json
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import character_views as views
 from app import characters as chars
 from app import ddb, picks
+from app import rules_terms as terms
 from app.auth import current_user, is_admin, is_reviewer
 from app.db import get_db
 from app.models import Campaign, Character, SheetOverride
@@ -217,6 +218,7 @@ def detail_panel(request: Request, character_id: int, ref: str, db: Session = De
         return HTMLResponse("", status_code=404)
     oref = d["opt"]["oref"] if d["opt"] else views.override_ref({**d["x"], "key": ref}, d["section"])
     return templates.TemplateResponse(request, "_panel_detail.html", {**ctx, **d, "ref": ref, "oref": oref,
+                                      "underline": terms.underlined(_overrides(db)),
                                       "choices": views.OVERRIDE_CHOICES, "field_labels": views.FIELD_LABELS,
                                       "fields": views.fields_for(d["section"], d["opt"])})
 
@@ -337,3 +339,35 @@ def link(request: Request, character_id: int, ddb_link: str = Form(""), db: Sess
     request.session["toast"] = (f"{ch.entity.name}: linked and updated from D&D Beyond" if snap.status == "ok"
                                 else f"{ch.entity.name}: linked, but couldn't fetch it yet")
     return RedirectResponse("/admin/characters", status_code=303)
+
+
+@router.get("/rules/terms.json")
+def rule_terms(request: Request, db: Session = Depends(get_db)):
+    """Definitions for the underlined rule terms in side panels (loaded once, on first hover)."""
+    user = current_user(request)
+    if not user:
+        return JSONResponse({}, status_code=401)
+    return JSONResponse({"terms": terms.as_json(), "on": sorted(terms.underlined(_overrides(db))), "admin": is_admin(user)})
+
+
+@router.post("/rules/terms/{slug}/underline")
+def set_term_underline(request: Request, slug: str, value: str = Form(...), db: Session = Depends(get_db)):
+    """Admin: underline a rule term in every description, or stop underlining it.
+    "default" goes back to the built-in choice (terms everyone knows aren't underlined)."""
+    user = current_user(request)
+    if not is_admin(user):
+        return JSONResponse({"error": "Only an admin can change this."}, status_code=403)
+    t = terms.BY_SLUG.get(slug)
+    if t is None or value not in ("on", "off", "default"):
+        return JSONResponse({"error": "Unknown term or setting."}, status_code=400)
+    ref = f"term:{t.name}"
+    row = db.scalar(select(SheetOverride).where(SheetOverride.ref == ref, SheetOverride.field == "underline"))
+    if value == "default" or (value == "on") == (not t.basic):
+        if row:
+            db.delete(row)  # same as the built-in choice: nothing to store
+    elif row:
+        row.value, row.set_by = value, user["email"]
+    else:
+        db.add(SheetOverride(ref=ref, field="underline", value=value, set_by=user["email"]))
+    db.commit()
+    return JSONResponse({"on": t.slug in terms.underlined(_overrides(db))})

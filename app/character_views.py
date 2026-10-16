@@ -263,8 +263,11 @@ OVERRIDE_CHOICES = {
     "situ_group": [("situational", "Situational"), ("in_numbers", "Already in your numbers")],
     "item_group": ITEM_GROUPS,
 }
+# Rule-term underlines (set from the term's pop-up, not the regrouping box); here so Manage › Characters can label them.
+TERM_CHOICES = {"underline": [("on", "Underlined"), ("off", "Not underlined")]}
 FIELD_LABELS = {"hide": "Show in askdnd", "cost": "Section (what it costs)", "battle": "On the Battle page",
-                "feature_group": "Features group", "situ_group": "Situational group", "item_group": "Inventory group"}
+                "feature_group": "Features group", "situ_group": "Situational group", "item_group": "Inventory group",
+                "underline": "Underlined in descriptions"}
 CATEGORY_GROUPS = {"Weapon": "Weapons", "Armor": "Armor", "Wondrous item": "Magic items", "Ring": "Magic items", "Rod": "Magic items",
                    "Staff": "Magic items", "Wand": "Magic items", "Potion": "Potions and scrolls", "Scroll": "Potions and scrolls"}
 
