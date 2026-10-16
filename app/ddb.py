@@ -22,7 +22,7 @@ CHARACTER_URL = "https://character-service.dndbeyond.com/character/v5/character/
 SHEET_URL = "https://www.dndbeyond.com/characters/{id}"
 USER_AGENT = "askdnd/2 (private table companion; +https://beta.askdnd.ai)"
 TIMEOUT_SECONDS = 15
-PARSER_VERSION = 2  # bump when the summary shape changes; stored summaries are re-parsed
+PARSER_VERSION = 3  # bump when the summary shape changes; stored summaries are re-parsed
 
 
 class DdbError(Exception):
@@ -205,6 +205,8 @@ SIMPLE_WEAPONS = {"Club", "Dagger", "Greatclub", "Handaxe", "Javelin", "Light Ha
 MARTIAL_WEAPONS = {"Battleaxe", "Flail", "Glaive", "Greataxe", "Greatsword", "Halberd", "Lance", "Longsword", "Maul",
                    "Morningstar", "Pike", "Rapier", "Scimitar", "Shortsword", "Trident", "Warhammer", "War Pick", "Whip",
                    "Blowgun", "Crossbow, Hand", "Crossbow, Heavy", "Longbow", "Musket", "Pistol"}
+DAMAGE_TYPES = {"acid", "bludgeoning", "cold", "fire", "force", "lightning", "necrotic", "piercing", "poison",
+                "psychic", "radiant", "slashing", "thunder"}
 PROFICIENCY_GROUPS = {174869515: "armor", 660121713: "weapons", 1782728300: "weapons", 2103445194: "tools"}
 
 # Feature names that are only headings on D&D Beyond, not something you can do.
@@ -221,6 +223,12 @@ FULL_CASTER_SLOTS = [
     [4, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1, 1], [4, 3, 3, 3, 3, 1, 1, 1, 1],
     [4, 3, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 3, 2, 2, 1, 1],
 ]
+
+
+def _adv_note(m: dict) -> str:
+    """A short label for a save or skill: "Advantage", or "Adv. to maintain Concentration"."""
+    restriction = re.sub(r"^(saving throws|checks)( that you make)?\s*", "", (m.get("restriction") or "").strip().rstrip("."), flags=re.I)
+    return f"Adv. {restriction}" if restriction else "Advantage"
 
 
 def _d(obj, *path, default=None):
@@ -407,7 +415,9 @@ class _Sheet:
             prof = self.proficient(f"{key}-saving-throws")
             total = self.mods[key] + (self.pb if prof else 0) + general + self.total_bonus(f"{key}-saving-throws")
             adv = bool(self.mods_of("advantage", f"{key}-saving-throws"))
-            out.append({"ability": name, "short": short, "bonus": total, "label": _signed(total), "proficient": prof, "advantage": adv})
+            notes = [_adv_note(m) for m in self.mods_of("advantage", f"{key}-saving-throws")]
+            out.append({"ability": name, "short": short, "bonus": total, "label": _signed(total), "proficient": prof, "advantage": adv,
+                        "notes": notes})
         return out
 
     def skills(self) -> list[dict]:
@@ -419,7 +429,9 @@ class _Sheet:
             level = "expertise" if self.mods_of("expertise", sub) else "proficient" if self.proficient(sub) else ""
             prof = self.pb * 2 if level == "expertise" else self.pb if level else (self.pb // 2 if half else 0)
             total = self.mods[ability] + prof + checks + self.total_bonus(sub)
-            out.append({"name": name, "ability": ability[:3].title(), "bonus": total, "label": _signed(total), "proficiency": level})
+            notes = [_adv_note(m) for m in self.mods_of("advantage", sub)]
+            out.append({"name": name, "ability": ability[:3].title(), "bonus": total, "label": _signed(total), "proficiency": level,
+                        "notes": notes})
         return out
 
     def initiative(self) -> int:
@@ -499,6 +511,7 @@ class _Sheet:
                     continue
                 seen.add((name, kind))
                 out.append({
+                    "key": f"action:{name}",
                     "name": name,
                     "source": source,
                     "activation": ACTIVATION.get(kind, ""),
@@ -517,7 +530,8 @@ class _Sheet:
                 return
             seen.add((name, source))
             text = html_to_text(desc)
-            out.append({"name": name, "source": source, "level": required_level, "summary": _first_paragraph(text), "text": text})
+            out.append({"key": f"feature:{source}:{name}", "name": name, "source": source, "level": required_level,
+                        "summary": _first_paragraph(text), "text": text})
 
         for c in self.classes:
             cname = _d(c, "definition", "name")
@@ -594,10 +608,41 @@ class _Sheet:
             })
         return out
 
+    def _caster(self, s: dict, source: str) -> dict | None:
+        """The spellcasting numbers a spell uses: its class's, or (for species, feat
+        and item spells) the ability D&D Beyond names, or the first caster's."""
+        casters = {c["class"]: c for c in self.spellcasting()}
+        if source in casters:
+            return casters[source]
+        ability_id = s.get("spellCastingAbilityId")
+        if ability_id:
+            mod = self.mods[ABILITY_KEY.get(ability_id, "wisdom")]
+            return {"save_dc": 8 + self.pb + mod, "attack": _signed(self.pb + mod)}
+        return next(iter(casters.values()), None)
+
+    def _cantrip_dice(self, dice: str, name: str) -> str:
+        """Cantrip damage grows at character levels 5, 11 and 17 (not Eldritch Blast: it adds beams)."""
+        m = re.fullmatch(r"(\d+)d(\d+)(.*)", dice or "")
+        if not m or name == "Eldritch Blast":
+            return dice
+        tier = 1 + (self.level >= 5) + (self.level >= 11) + (self.level >= 17)
+        return f"{int(m.group(1)) * tier}d{m.group(2)}{m.group(3)}"
+
     def spell(self, s: dict, source: str) -> dict | None:
         df = s.get("definition") or {}
         if not df.get("name"):
             return None
+        caster = self._caster(s, source)
+        dmg = next((m for m in df.get("modifiers") or [] if m.get("type") == "damage" and _d(m, "die", "diceString")), None)
+        heal = next((m for m in df.get("modifiers") or [] if m.get("type") == "bonus" and m.get("subType") == "hit-points"
+                     and _d(m, "die", "diceString")), None)
+        damage = ""
+        if dmg:
+            dice = _d(dmg, "die", "diceString")
+            if not df.get("level") and df.get("scaleType") == "characterlevel":
+                dice = self._cantrip_dice(dice, df["name"])
+            damage = f"{dice} {(dmg.get('friendlySubtypeName') or dmg.get('subType') or '').lower()}".strip()
+        save = ABILITY_KEY.get(df.get("saveDcAbilityId"))
         rng = df.get("range") or {}
         origin, value = rng.get("origin") or "", rng.get("rangeValue")
         range_label = f"{value} ft" if origin == "Ranged" and value else origin
@@ -616,9 +661,16 @@ class _Sheet:
         duration = (f"Concentration, up to {span}" if span else "Concentration") if dtype == "Concentration" else (span or dtype)
         comps = [COMPONENTS[c] for c in df.get("components") or [] if c in COMPONENTS]
         return {
+            "key": f"spell:{df['name']}",
             "name": df["name"],
             "level": df.get("level") or 0,
             "school": df.get("school") or "",
+            "attack": caster["attack"] if caster and df.get("requiresAttackRoll") else "",
+            "save": f"{save[:3].title()} {caster['save_dc']}" if caster and save and df.get("requiresSavingThrow") else "",
+            "damage": damage,
+            "healing": (_d(heal, "die", "diceString") or "") if heal else "",
+            "tags": list(df.get("tags") or []),
+            "trigger": (df.get("castingTimeDescription") or "").strip(),
             "sources": [source],
             "prepared": bool(s.get("prepared")),
             "always_prepared": bool(s.get("alwaysPrepared")),
@@ -684,9 +736,15 @@ class _Sheet:
                 continue
             container = containers.get(i.get("containerEntityId"))
             dmg = _d(df, "damage", "diceString")
+            charges = self.limited_use(i.get("limitedUse"))
+            kind = df.get("subType") or df.get("filterType") or df.get("type") or ""
+            active = i.get("equipped") and (i.get("isAttuned") or not df.get("canAttune"))
+            usable = kind in ("Potion", "Scroll") or bool(charges and (active or charges["reset"] == "Used up") and charges["reset"] != "Other")
             out.append({
+                "key": f"item:{i.get('id')}",
                 "name": names.get(str(i.get("id"))) or df["name"],
                 "base_name": df["name"],
+                "battle": bool(usable and df.get("filterType") != "Weapon"),
                 "type": df.get("subType") or df.get("filterType") or df.get("type") or "",
                 "quantity": i.get("quantity") or 1,
                 "equipped": bool(i.get("equipped")),
@@ -694,7 +752,7 @@ class _Sheet:
                 "rarity": df.get("rarity") or "",
                 "attunement": "attuned" if i.get("isAttuned") else ("required" if df.get("canAttune") else ""),
                 "attunement_note": df.get("attunementDescription") or "",
-                "charges": self.limited_use(i.get("limitedUse")),
+                "charges": charges,
                 "in": _d(container, "definition", "name") if container else "",
                 "damage": f"{dmg} {df.get('damageType') or ''}".strip() if dmg else "",
                 "properties": [p.get("name") for p in df.get("properties") or [] if p.get("name")],
@@ -702,6 +760,126 @@ class _Sheet:
                 "summary": _first_paragraph(html_to_text(df.get("description")), 280) if df.get("magic") else "",
             })
         out.sort(key=lambda x: (not x["equipped"], not x["magic"], bool(x["in"]), x["name"]))
+        return out
+
+    # attacks ----------------------------------------------------------
+
+    def monk_level(self) -> int:
+        return sum(c.get("level") or 0 for c in self.classes if _d(c, "definition", "name") == "Monk")
+
+    def martial_arts_die(self) -> int:
+        lvl = self.monk_level()
+        return 0 if not lvl else 6 if lvl < 5 else 8 if lvl < 11 else 10 if lvl < 17 else 12
+
+    def weapon_proficient(self, df: dict) -> bool:
+        weapons = set(self.proficiencies()["weapons"])
+        category = {1: "Simple Weapons", 2: "Martial Weapons"}.get(df.get("categoryId"))
+        names = {m.get("friendlySubtypeName") for m in self.mods_of(("proficiency", "monk-weapon"))}
+        return bool(category in names or df.get("type") in names or df.get("name") in names or df.get("type") in weapons)
+
+    def attacks(self) -> list[dict]:
+        """Equipped weapons and the Unarmed Strike, with to-hit and damage as D&D Beyond shows them."""
+        out = []
+        str_mod, dex_mod = self.mods["strength"], self.mods["dexterity"]
+        die = self.martial_arts_die()
+        for i in self.items:
+            df = i.get("definition") or {}
+            if df.get("filterType") != "Weapon" or not i.get("equipped"):
+                continue
+            props = {p.get("name") for p in df.get("properties") or []}
+            ranged = df.get("attackType") == 2
+            monk_weapon = bool(die) and not ranged and (df.get("categoryId") == 1 or "Light" in props)
+            mod = dex_mod if ranged else max(str_mod, dex_mod) if ("Finesse" in props or monk_weapon) else str_mod
+            magic = sum(int(m.get("value") or 0) for m in self.mods_of("bonus", "magic") if m.get("componentId") == df.get("id"))
+            magic += sum(int(g.get("value") or 0) for g in df.get("grantedModifiers") or [] if g.get("subType") == "magic"
+                         and not any(m.get("componentId") == df.get("id") for m in self.mods_of("bonus", "magic")))
+            dice = _d(df, "damage", "diceString") or ""
+            m = re.fullmatch(r"(\d+)d(\d+)", dice)
+            if monk_weapon and m and int(m.group(1)) == 1 and int(m.group(2)) < die:
+                dice = f"1d{die}"
+            dmg_bonus = mod + magic
+            rng = f"{df.get('range')} ({df.get('longRange')}) ft" if df.get("longRange") and df.get("longRange") != df.get("range") else (
+                "5 ft" if not ranged else f"{df.get('range')} ft")
+            out.append({
+                "key": f"attack:{i.get('id')}",
+                "name": df.get("name"),
+                "to_hit": _signed(mod + magic + (self.pb if self.weapon_proficient(df) else 0)),
+                "damage": f"{dice}{'+' if dmg_bonus >= 0 else '−'}{abs(dmg_bonus)} {(df.get('damageType') or '').lower()}".strip() if dice else "",
+                "range": rng,
+                "properties": sorted(props),
+                "martial_arts": monk_weapon,
+            })
+        natural = sum(int(m.get("value") or 0) for m in self.mods_of("bonus", "natural-attacks"))
+        mod = max(str_mod, dex_mod) if die else str_mod
+        base = f"1d{die}{'+' if mod + natural >= 0 else '−'}{abs(mod + natural)}" if die else str(max(0, 1 + mod + natural))
+        out.append({"key": "attack:unarmed", "name": "Unarmed Strike", "to_hit": _signed(mod + self.pb + natural),
+                    "damage": f"{base} bludgeoning", "range": "5 ft", "properties": [], "martial_arts": bool(die)})
+        return out
+
+    # situational ------------------------------------------------------
+
+    def _component_names(self) -> dict:
+        names = {}
+        for c in self.classes:
+            for f in c.get("classFeatures") or []:
+                names[_d(f, "definition", "id")] = _d(f, "definition", "name")
+        for t in _d(self.d, "race", "racialTraits", default=[]):
+            names[_d(t, "definition", "id")] = _d(t, "definition", "name")
+        for f in self.d.get("feats") or []:
+            names[_d(f, "definition", "id")] = _d(f, "definition", "name")
+        for i in self.items:
+            names[_d(i, "definition", "id")] = _d(i, "definition", "name")
+        for group in (self.d.get("options") or {}).values():
+            for o in group or []:
+                names[o.get("componentId")] = names.get(o.get("componentId")) or _d(o, "definition", "name")
+        return names
+
+    def situational(self, spells: list[dict], actions: list[dict]) -> list[dict]:
+        """Rules that only matter in some situations: conditional advantages,
+        resistances and immunities, item bonuses already in the numbers, and the
+        reactions that protect you. The things the Defenses box doesn't show."""
+        names = self._component_names()
+        out, seen = [], set()
+
+        def add(kind, text, source, key=None):
+            key = key or f"situ:{kind}:{text}"
+            if key not in seen:
+                seen.add(key)
+                out.append({"key": key, "kind": kind, "text": text, "source": source or ""})
+
+        def what(m):
+            text = (m.get("friendlySubtypeName") or m.get("subType") or "").replace("-", " ").lower()
+            return re.sub(r"\b(strength|dexterity|constitution|intelligence|wisdom|charisma)\b", lambda x: x.group(1).title(), text)
+
+        def condition(word, m):
+            target, restriction = what(m), (m.get("restriction") or "").strip().rstrip(".")
+            head, _, rest = target.partition(" ")
+            if rest and restriction.lower().startswith(rest):  # "Constitution saving throws" + "saving throws that you make…"
+                return f"{word} on {head} {restriction}"
+            return f"{word} on {target}" + (f" {restriction}" if restriction else "")
+
+        for m in self.mods_of("advantage"):
+            add("advantage", condition("Advantage", m), names.get(m.get("componentId")))
+        for m in self.mods_of("disadvantage"):
+            add("disadvantage", condition("Disadvantage", m), names.get(m.get("componentId")))
+        for kind, word in (("immunity", "Immune to"), ("resistance", "Resistant to"), ("vulnerability", "Vulnerable to")):
+            for m in self.mods_of(kind):
+                target = what(m).lower()
+                damage = m.get("entityTypeId") == 349597128 or target in DAMAGE_TYPES
+                add(kind, f"{word} {target}{' damage' if damage else ''}", names.get(m.get("componentId")))
+        for sub, label in (("saving-throws", "saving throws"), ("ability-checks", "ability checks"), ("armor-class", "AC"),
+                           ("initiative", "initiative")):
+            for m in self.mods_of("bonus", sub):
+                n = self.bonus_value(m)
+                if n and not m.get("restriction"):
+                    add("bonus", f"{_signed(n)} to {label} (already in the numbers)", names.get(m.get("componentId")))
+        for a in actions:
+            if a["activation"] == "Reaction":
+                add("reaction", f"Reaction: {a['name']}", "", key=a["key"])
+        for sp in spells:
+            if sp["casting_time"] == "Reaction":
+                when = sp["trigger"] or ""
+                add("reaction", f"Reaction spell: {sp['name']}" + (f", {when}" if when else ""), ", ".join(sp["sources"]), key=sp["key"])
         return out
 
     def creatures(self) -> list[dict]:
@@ -716,6 +894,7 @@ class _Sheet:
                 for m in df.get("movements") or [] if m.get("speed")
             )
             out.append({
+                "key": f"form:{df['name']}",
                 "name": c.get("name") or df["name"],
                 "kind": df["name"],
                 "group": CREATURE_GROUPS.get(c.get("groupId"), "Creature"),
@@ -743,6 +922,10 @@ def parse_character(data: dict) -> dict:
         spells = sh.spells()
         items = sh.inventory()
         slots = sh.spell_slots()
+        general_save_notes = [
+            "Advantage on saving throws " + (m.get("restriction") or "").strip().rstrip(".")
+            for m in sh.mods_of("advantage", "saving-throws")
+        ]
         summary = {
             "parser_version": PARSER_VERSION,
             "ddb_id": str(data.get("id") or ""),
@@ -767,6 +950,9 @@ def parse_character(data: dict) -> dict:
             "passive_perception": 10 + perception["bonus"],
             "inspiration": bool(data.get("inspiration")),
             "saves": sh.saves(),
+            "save_notes": general_save_notes,
+            "attacks": sh.attacks(),
+            "situational": sh.situational(spells, actions),
             "skills": sh.skills(),
             "proficiencies": sh.proficiencies(),
             "spellcasting": sh.spellcasting(),

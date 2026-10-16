@@ -15,7 +15,7 @@ from pathlib import Path
 from app import ddb
 
 OUT = Path(__file__).resolve().parent.parent / "tests" / "fixtures" / "ddb"
-DROP_KEYS = {"sources", "moreDetailsUrl", "tags", "decorations", "campaign", "userId", "username", "readonlyUrl",
+DROP_KEYS = {"sources", "moreDetailsUrl", "decorations", "campaign", "userId", "username", "readonlyUrl",
              "providedFrom", "activeSourceCategories", "preferences", "configuration", "optionalOrigins",
              "optionalClassFeatures", "choiceDefinitions", "definitionKeyNameMap", "highlights", "classFantasy",
              "iconicGear", "equipmentDescription", "multiClassDescription", "infusionRules", "creatureRules",

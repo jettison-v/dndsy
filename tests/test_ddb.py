@@ -236,3 +236,42 @@ def test_fetch_character_adds_always_prepared_spells_and_tolerates_failure(monke
     monkeypatch.setattr(ddb, "_get_json", extra)
     data = ddb.fetch_character("1")
     assert data["askdnd"]["alwaysPreparedSpells"] == {"20": [{"definition": {"name": "Moonbeam", "level": 2}}]}
+
+
+def test_attacks_match_d_and_d_beyond(cole, no_name, big_c):
+    trah = ddb.parse_character(load("trah"))
+    got = {(s["name"], a["name"]): (a["to_hit"], a["damage"]) for s in (cole, no_name, big_c, trah) for a in s["attacks"]}
+    assert got[("Cole Lockhard", "Unarmed Strike")] == ("+6", "1d6+3 bludgeoning")  # Martial Arts die + Insignia of Claws
+    assert got[("NaN", "Vicious Quarterstaff")] == ("+7", "1d8+4 bludgeoning")  # Monk weapon uses the Martial Arts die
+    assert got[("NaN", "Dart")] == ("+7", "1d4+4 piercing")
+    assert got[("Cecilas Steiner", "Hammer of Thunderbolts (Maul)")] == ("+11", "2d6+8 bludgeoning")  # +1 weapon
+    assert got[("Cecilas Steiner", "Unarmed Strike")] == ("+10", "8 bludgeoning")
+    assert got[("Trah Belosity", "Shortsword")] == ("+5", "1d6+2 piercing")
+
+
+def test_spell_attacks_saves_and_cantrip_scaling(cole, no_name):
+    wisp = by_name(cole["spells"], "Starry Wisp")
+    assert wisp["attack"] == "+7" and wisp["damage"] == "2d8 radiant"  # cantrip at level 8: two dice
+    assert by_name(cole["spells"], "Moonbeam")["save"] == "Con 15"
+    assert by_name(cole["spells"], "Healing Word")["healing"] == "2d4"
+    assert by_name(no_name["spells"], "Eldritch Blast")["damage"] == "1d10 force"  # adds beams instead of dice
+    assert "Healing" in by_name(cole["spells"], "Healing Word")["tags"]
+
+
+def test_situational_rules_and_save_notes(cole):
+    texts = {x["text"]: x for x in cole["situational"]}
+    charmed = texts["Advantage on saving throws against being charmed"]
+    assert charmed["kind"] == "advantage" and charmed["source"] == "Fey Ancestry"
+    assert "Advantage on Constitution saving throws that you make to maintain Concentration" in texts
+    assert texts["Immune to magical sleep"]["kind"] == "immunity"
+    absorb = next(x for x in cole["situational"] if x["key"] == "spell:Absorb Elements")
+    assert absorb["kind"] == "reaction" and "acid, cold, fire" in absorb["text"]
+    assert cole["save_notes"] == ["Advantage on saving throws against being charmed"]
+    assert {s["short"]: s["notes"] for s in cole["saves"]}["Con"] == ["Adv. to maintain Concentration"]
+
+
+def test_items_usable_in_battle_and_keys(cole):
+    potion = by_name(cole["inventory"], "Potion of Healing")
+    assert potion["battle"] and potion["key"].startswith("item:")
+    assert not by_name(cole["inventory"], "Bag of Holding")["battle"]
+    assert all(x["key"] for x in cole["actions"] + cole["spells"] + cole["features"] + cole["creatures"])
