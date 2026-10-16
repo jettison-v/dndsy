@@ -22,7 +22,7 @@ CHARACTER_URL = "https://character-service.dndbeyond.com/character/v5/character/
 SHEET_URL = "https://www.dndbeyond.com/characters/{id}"
 USER_AGENT = "askdnd/2 (private table companion; +https://beta.askdnd.ai)"
 TIMEOUT_SECONDS = 15
-PARSER_VERSION = 4  # bump when the summary shape changes; stored summaries are re-parsed
+PARSER_VERSION = 5  # bump when the summary shape changes; stored summaries are re-parsed
 
 
 class DdbError(Exception):
@@ -197,6 +197,49 @@ def html_to_text(html: str | None) -> str:
     return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
 
 
+TEMPLATE = re.compile(r"\{\{([^}]*)\}\}")
+ABBR = {"str": "strength", "dex": "dexterity", "con": "constitution", "int": "intelligence", "wis": "wisdom", "cha": "charisma"}
+
+
+def render_template(text: str, values: dict) -> str:
+    """Fill in D&D Beyond's sheet formulas, e.g. "{{(classlevel/2)@rounddown}}" -> "3".
+
+    `values` holds numbers for classlevel, characterlevel, proficiency, maxhp,
+    modifier:<abbr>, savedc:<abbr>, spellattack:<abbr>, and scalevalue (a number
+    or dice like "1d6"). Anything we can't work out reads "(see D&D Beyond)"."""
+
+    def one(m):
+        expr = m.group(1).strip()
+        fmt, _, rest = expr.partition("#")
+        body, _, rounding = fmt.partition("@")
+        flags = [f.strip() for f in (rest or "").split(",") if f.strip()]
+        rules = [r.strip() for r in rounding.split(",") if r.strip()] + [f for f in flags if f.startswith(("min:", "max:"))]
+        scale = values.get("scalevalue")
+        if body.strip() == "scalevalue" and isinstance(scale, str):
+            return scale
+        def var(v):
+            v = v.group(0)
+            if v in values and not isinstance(values[v], str):
+                return str(values[v])
+            raise KeyError(v)
+        try:
+            arithmetic = re.sub(r"[a-z]+(?::[a-z]+)?", var, body.replace(" ", ""))
+            if not re.fullmatch(r"[\d+\-*/().]+", arithmetic):
+                raise ValueError(body)
+            n = eval(arithmetic, {"__builtins__": {}})  # digits and + - * / ( ) only (checked above)
+        except (KeyError, ValueError, SyntaxError, ZeroDivisionError):
+            return "(see D&D Beyond)"
+        n = int(-(-n // 1)) if "roundup" in rules else int(n // 1)
+        for r in rules:
+            if r.startswith("min:") and r[4:].lstrip("-").isdigit():
+                n = max(n, int(r[4:]))
+            if r.startswith("max:") and r[4:].lstrip("-").isdigit():
+                n = min(n, int(r[4:]))
+        return _signed(n).replace("−", "-") if "signed" in flags else str(abs(n) if "unsigned" in flags else n)
+
+    return TEMPLATE.sub(one, text or "")
+
+
 def _clip(text: str, limit: int) -> str:
     return text if len(text) <= limit else text[: limit - 1].rsplit(" ", 1)[0] + "…"
 
@@ -330,6 +373,25 @@ class _Sheet:
             return True
         active = self.active_item_defs if m.get("requiresAttunement") else self.equipped_item_defs
         return m.get("componentId") in active
+
+    def template_values(self, class_level: int | None = None, scale=None) -> dict:
+        v = {"classlevel": class_level or self.level, "characterlevel": self.level, "proficiency": self.pb}
+        if getattr(self, "mods", None):
+            for short, key in ABBR.items():
+                v[f"modifier:{short}"] = self.mods[key]
+                v[f"savedc:{short}"] = 8 + self.pb + self.mods[key]
+                v[f"spellattack:{short}"] = self.pb + self.mods[key]
+        if scale:
+            v["scalevalue"] = _d(scale, "dice", "diceString") or scale.get("fixedValue")
+        return v
+
+    def what_it_does(self, df: dict, class_level: int | None = None, scale=None) -> str:
+        """D&D Beyond's short mechanics text (snippet) with its formulas filled in;
+        falls back to the first paragraph of the full description."""
+        snippet = df.get("snippet") or ""
+        if snippet.strip():
+            return html_to_text(render_template(snippet, self.template_values(class_level, scale)))
+        return _first_paragraph(html_to_text(df.get("description")), 400)
 
     def mods_of(self, type_: str | tuple, sub: str | None = None) -> list[dict]:
         types = (type_,) if isinstance(type_, str) else type_
@@ -543,23 +605,40 @@ class _Sheet:
         return {"max": maximum, "used": used, "left": max(0, maximum - used), "reset": reset_label,
                 "reset_note": note, "reset_phrase": phrase}
 
+    def _feature_owners(self) -> dict:
+        """Feature id -> (class level, level scale), for filling in formulas."""
+        owners = {}
+        for c in self.classes:
+            for f in c.get("classFeatures") or []:
+                owners[_d(f, "definition", "id")] = (c.get("level"), f.get("levelScale"))
+        return owners
+
     def actions(self) -> list[dict]:
         out, seen = [], set()
+        owners = self._feature_owners()
+        circle = [a for g in (self.d.get("actions") or {}).values() for a in g or [] if (a.get("name") or "").startswith("Circle Spell:")]
         for source, group in (self.d.get("actions") or {}).items():
             for a in group or []:
                 name = (a.get("name") or "").strip()
                 kind = _d(a, "activation", "activationType")
-                if not name or (name, kind) in seen:
-                    continue
+                if not name or (name, kind) in seen or name.startswith("Circle Spell:"):
+                    continue  # Circle Magic's options are folded into one entry below
                 seen.add((name, kind))
+                class_level, scale = owners.get(a.get("componentId"), (None, None))
+                values = self.template_values(class_level, scale)
+                if name == "Initiate a Circle Spell":
+                    name = "Circle Magic: cast together with other casters"
+                    extra = "\n\nOptions: " + "; ".join(x["name"].removeprefix("Circle Spell: ") for x in circle) if circle else ""
+                    a = {**a, "description": (a.get("description") or "") + extra.replace("\n", "<br>"), "snippet": None}
                 out.append({
                     "key": f"action:{name}",
                     "name": name,
                     "source": source,
                     "activation": ACTIVATION.get(kind, ""),
                     "uses": self.limited_use(a.get("limitedUse")),
-                    # descriptions are prose; snippets hold sheet formulas like {{classlevel}}
-                    "text": _clip(html_to_text(a.get("description") or a.get("snippet")), 1500),
+                    "summary": self.what_it_does(a, class_level, scale),
+                    "text": html_to_text(render_template(a.get("description") or a.get("snippet") or "", values)),
+                    "rule": name.startswith("Circle Magic"),
                 })
         return out
 
@@ -574,14 +653,15 @@ class _Sheet:
             return bool(df.get("id") in acted or df.get("id") in casts or df.get("limitedUse")
                         or USABLE_NAME.search(name) or USABLE_TEXT.search(text))
 
-        def add(name, source, desc, required_level=None, df=None):
+        def add(name, source, desc, required_level=None, df=None, class_level=None, scale=None):
             name = (name or "").strip()
             if not name or SKIP_FEATURES.match(name) or (name, source) in seen:
                 return
             seen.add((name, source))
-            text = html_to_text(desc)
+            text = html_to_text(render_template(desc, self.template_values(class_level, scale)))
             out.append({"key": f"feature:{source}:{name}", "name": name, "source": source, "level": required_level,
-                        "summary": _first_paragraph(text), "text": text, "use": usable(df or {}, name, text)})
+                        "summary": self.what_it_does(df or {"description": desc}, class_level, scale), "text": text,
+                        "use": usable(df or {}, name, text)})
 
         for c in self.classes:
             cname = _d(c, "definition", "name")
@@ -593,7 +673,8 @@ class _Sheet:
                 if df.get("hideInSheet") or (df.get("requiredLevel") or 0) > (c.get("level") or 0):
                     continue
                 label = sub if sub and (df.get("isSubClassFeature") or (sub_id and df.get("classId") == sub_id)) else cname
-                add(df.get("name"), label, df.get("description"), df.get("requiredLevel"), df)
+                add(df.get("name"), label, df.get("description"), df.get("requiredLevel"), df,
+                    class_level=c.get("level"), scale=f.get("levelScale"))
         species = _d(self.d, "race", "fullName", default="Species")
         for t in _d(self.d, "race", "racialTraits", default=[]):
             df = t.get("definition") or {}
@@ -733,7 +814,8 @@ class _Sheet:
             "range": range_label,
             "casting_time": casting,
             "duration": duration,
-            "summary": _first_paragraph(html_to_text(df.get("description")), 280),
+            "summary": _first_paragraph(html_to_text(df.get("description")), 400),
+            "text": html_to_text(df.get("description")),
         }
 
     def spells(self) -> list[dict]:
@@ -872,6 +954,7 @@ class _Sheet:
                 "properties": [p.get("name") for p in df.get("properties") or [] if p.get("name")],
                 "armor_class": df.get("armorClass"),
                 "summary": _first_paragraph(html_to_text(df.get("description")), 280) if df.get("magic") else "",
+                "text": html_to_text(df.get("description")) if df.get("magic") or usable else "",
             })
         out.sort(key=lambda x: (not x["equipped"], not x["magic"], bool(x["in"]), x["name"]))
         return out

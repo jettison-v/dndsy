@@ -296,3 +296,14 @@ def test_features_split_into_usable_and_always_on(cole):
     use = {f["name"]: f["use"] for f in cole["features"]}
     assert use["Wild Shape"] and use["Mask of the Wild"] and use["War Caster"] and use["Circle of the Moon Spells"]
     assert not use["Fleet of Foot"] and not use["Keen Senses"] and not use["Unarmored Defense"]
+
+
+def test_dndbeyond_formulas_are_filled_in():
+    v = {"classlevel": 6, "proficiency": 3, "modifier:wis": 4, "modifier:dex": 2, "scalevalue": "1d6"}
+    r = ddb.render_template
+    assert r("for {{(classlevel/2)@rounddown}} hours", v) == "for 3 hours"
+    assert r("AC {{(13+modifier:wis)#unsigned}}", v) == "AC 17"
+    assert r("AC {{10+modifier:dex+modifier:wis#unsigned}}", v) == "AC 16"
+    assert r("regain {{scalevalue}}{{classlevel#signed}} HP", v) == "regain 1d6+6 HP"
+    assert r("{{modifier:cha@min:1#unsigned}}", v) == "(see D&D Beyond)"  # unknown value: say so, don't guess
+    assert r("CR {{(classlevel/3)@rounddown}}", v) == "CR 2" and r("{{(classlevel/4)@roundup}}", v) == "2"
