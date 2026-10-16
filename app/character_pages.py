@@ -224,7 +224,8 @@ def detail_panel(request: Request, character_id: int, ref: str, db: Session = De
 @router.post("/characters/{character_id:int}/override")
 def set_override(request: Request, character_id: int, ref: str = Form(...), oref: str = Form(...),
                  field: str = Form(...), value: str = Form(...), db: Session = Depends(get_db)):
-    """Admin: regroup something (for every character). Returns the updated panel."""
+    """Admin: regroup something (for every character). Returns just that setting's
+    row, so the side panel doesn't jump or lose the admin's other choices."""
     user = current_user(request)
     if not is_admin(user):
         return _forbidden(request, "Only an admin can regroup things.")
@@ -239,8 +240,10 @@ def set_override(request: Request, character_id: int, ref: str = Form(...), oref
     else:
         db.add(SheetOverride(ref=oref[:300], field=field, value=value, set_by=user["email"]))
     db.commit()
-    resp = detail_panel(request, character_id, ref, db)
-    resp.headers["HX-Trigger"] = json.dumps({"toast": "Moved for every character (reload to see it in place)"})
+    resp = templates.TemplateResponse(request, "_override_field.html", {
+        "c": {"id": character_id}, "ref": ref, "oref": oref, "field": field, "current": None if value == "default" else value,
+        "choices": views.OVERRIDE_CHOICES, "field_labels": views.FIELD_LABELS, "saved": True})
+    resp.headers["HX-Trigger"] = json.dumps({"toast": "Saved for every character"})
     return resp
 
 

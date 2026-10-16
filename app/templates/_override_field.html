@@ -1,0 +1,13 @@
+{# One admin regrouping setting: a row of options; clicking one saves it and re-renders only this row. #}
+<div class="ov-field">
+  <span class="ov-label">{{ field_labels[field] }}</span>
+  <span class="ov-options" role="group" aria-label="{{ field_labels[field] }}">
+    {% set opts = [("default", "Shown" if field == "hide" else "Auto")] + choices[field] %}
+    {% for v, label in opts %}
+    <button type="button" class="ov-opt{{ ' on' if (current or 'default') == v }}" aria-pressed="{{ 'true' if (current or 'default') == v else 'false' }}"
+      hx-post="/characters/{{ c.id }}/override" hx-vals='{{ {"ref": ref, "oref": oref, "field": field, "value": v} | tojson }}'
+      hx-target="closest .ov-field" hx-swap="outerHTML">{{ label }}</button>
+    {% endfor %}
+  </span>
+  <span class="ov-saved" aria-live="polite">{% if saved %}✓ Saved{% endif %}</span>
+</div>

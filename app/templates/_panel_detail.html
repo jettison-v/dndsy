@@ -54,20 +54,13 @@
   {% if full and full != what %}<h3>{{ "Full description" if section in ("spells", "inventory") else "Full text and background" }}</h3><div class="detail-full">{{ full }}</div>{% endif %}
 
   {% if admin %}
-  <div class="admin-move">
-    <h3>Admin: regroup this (for every character)</h3>
-    {% for field in fields %}{% set current = sheet._overrides.get(oref ~ "|" ~ field) %}
-    <form class="row" hx-post="/characters/{{ c.id }}/override" hx-target="#peek" hx-swap="innerHTML">
-      <input type="hidden" name="ref" value="{{ ref }}"><input type="hidden" name="oref" value="{{ oref }}"><input type="hidden" name="field" value="{{ field }}">
-      <label class="field-label">{{ field_labels[field] }}</label>
-      <select name="value" aria-label="{{ field_labels[field] }}">
-        <option value="default" {{ "selected" if not current }}>{{ "Shown (automatic)" if field == "hide" else "Automatic (askdnd decides)" }}</option>
-        {% for v, label in choices[field] %}<option value="{{ v }}" {{ "selected" if current == v }}>{{ label }}</option>{% endfor %}</select>
-      <button class="btn small" type="submit">Save</button>
-    </form>
+  <section class="admin-move" aria-label="Admin regrouping">
+    <div class="admin-head"><b>Admin</b> · regroup for every character <span class="note">saves as you click</span></div>
+    {% for field in fields %}{% set current = sheet._overrides.get(oref ~ "|" ~ field) %}{% set saved = false %}
+    {% include "_override_field.html" %}
     {% endfor %}
-    <p class="note">Saved under "{{ oref }}", so it applies to everything with this name on every character. Undo any time here or on <a href="/admin/characters" data-no-peek>Manage › Characters</a>.</p>
-  </div>
+    <p class="note admin-foot">Applies to everything named “{{ oref.split(":", 1)[-1] }}” on every character. The page behind updates when you reload it. All changes, with Undo: <a href="/admin/characters" data-no-peek>Manage › Characters</a>.</p>
+  </section>
   {% endif %}
 </div>
 <div class="peek-foot"><a class="btn" href="/characters/{{ c.id }}" data-no-peek>Full character</a></div>

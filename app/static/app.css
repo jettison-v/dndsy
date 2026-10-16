@@ -573,3 +573,17 @@ body.gm-on .battlebar { top: 106px; }
 .admin-move form.row { display: grid; grid-template-columns: 130px minmax(0, 1fr) auto; gap: 8px; align-items: center; flex-wrap: nowrap; }
 .admin-move form.row select { width: 100%; }
 .admin-move .field-label { min-width: 0; }
+/* Admin regrouping in the side panel: option buttons that save on click */
+.admin-move { margin-top: 20px; padding: 12px 14px; border: 1px dashed #4a4f57; border-radius: 10px; background: rgba(39, 43, 48, .5); }
+.admin-head { font-size: .9rem; margin-bottom: 8px; }
+.admin-head b { color: var(--amber); }
+.ov-field { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 4px 10px; align-items: start; padding: 7px 0; border-top: 1px solid var(--line); }
+.ov-field:first-of-type { border-top: none; }
+.ov-label { color: var(--muted); font-size: .84rem; padding-top: 4px; }
+.ov-options { display: flex; flex-wrap: wrap; gap: 4px; }
+.ov-opt { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 2px 10px; font-size: .8rem; min-height: 28px; }
+.ov-opt:hover { color: var(--text); border-color: #5a5f67; }
+.ov-opt.on { background: var(--amber-soft); border-color: var(--amber); color: var(--amber); font-weight: 600; }
+.ov-opt.htmx-request { opacity: .6; }
+.ov-saved { grid-column: 2; color: var(--green); font-size: .78rem; min-height: 1em; }
+.admin-foot { margin: 8px 0 0; }

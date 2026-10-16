@@ -389,13 +389,13 @@ def test_side_panel_for_everything_and_admin_regrouping(player, admin, db):
         assert r.status_code == 200 and "<html" not in r.text and 'class="mech"' in r.text, ref
     wild = player.get(f"/characters/{cole.id}/detail", params={"ref": "feature:Druid:Wild Shape"}).text
     assert "for 3 hours" in wild  # D&D Beyond's formula {{(classlevel/2)@rounddown}} filled in
-    assert "Admin: regroup this" not in wild
+    assert "regroup for every character" not in wild
     assert player.post(f"/characters/{cole.id}/override", data={"ref": "x", "oref": "x", "field": "battle", "value": "hide"}).status_code == 403
     admin.post(f"/characters/{cole.id}/override", data={"ref": "feature:Wood Elf:Fleet of Foot", "oref": "feature:Fleet of Foot",
                                                         "field": "feature_group", "value": "use"})
     features = player.get(f"/characters/{cole.id}").text.split('id="t-features"')[1].split('id="t-situ"')[0]
     assert features.index("Fleet of Foot") < features.index("Always on, already in your numbers")
-    assert "Admin: regroup this" in admin.get(f"/characters/{cole.id}/detail", params={"ref": "feature:Druid:Wild Shape"}).text
+    assert "regroup for every character" in admin.get(f"/characters/{cole.id}/detail", params={"ref": "feature:Druid:Wild Shape"}).text
     admin.post(f"/characters/{cole.id}/override", data={"ref": "attack:unarmed", "oref": "attack:Unarmed Strike", "field": "battle", "value": "hide"})
     assert "Unarmed Strike" not in player.get(f"/characters/{cole.id}/battle").text.split("Bonus action")[0]
     assert db.scalar(select(SheetOverride).where(SheetOverride.ref == "attack:Unarmed Strike")).set_by == "admin@example.com"
@@ -443,3 +443,15 @@ def test_inspiration_badge_and_core_only_spells(player, db):
     assert "Not core: Xanathar" in page  # Absorb Elements is on his sheet, from Xanathar's
     assert "Beast Bond" not in page  # a Xanathar's spell he doesn't have isn't offered
     assert "● proficient" not in page
+
+
+def test_saving_a_regrouping_returns_only_that_setting(admin, db):
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    r = admin.post(f"/characters/{cole.id}/override", data={"ref": "feature:Druid:Wild Shape", "oref": "feature:Wild Shape",
+                                                            "field": "feature_group", "value": "passive"})
+    assert r.status_code == 200 and r.text.strip().startswith('<div class="ov-field">') and "peek-head" not in r.text
+    assert "✓ Saved" in r.text and 'class="ov-opt on" aria-pressed="true"' in r.text and "Saved for every character" in r.headers["HX-Trigger"]
+    panel = admin.get(f"/characters/{cole.id}/detail", params={"ref": "feature:Druid:Wild Shape"}).text
+    assert panel.count('class="ov-field"') == 2  # Show in askdnd + Features group, each saved on its own
