@@ -13,3 +13,12 @@ def _page_context(request: Request) -> dict:
 
 
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates", context_processors=[_page_context])
+
+
+def _markdown(text: str) -> str:
+    from app.render import markdown_to_html
+
+    return markdown_to_html(text or "", lambda name: None)
+
+
+templates.env.filters["md"] = _markdown

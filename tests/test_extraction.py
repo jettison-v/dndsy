@@ -136,3 +136,19 @@ def test_story_so_far_uses_earlier_recaps(db):
     db.refresh(s28)
     text = extraction._story_so_far(db, session)
     assert "Session 28" in text and "They found a shipwreck." in text
+
+
+def test_timeline_orders_undated_numbered_and_added_sessions(db):
+    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "sessions": [
+        {"played_on": "2026-08-29", "title": "transcript"},
+        {"number": 21, "played_on": "2025-03-22"},
+        {"number": 18},
+        {"number": 29, "played_on": "2026-02-07"},
+        {"played_on": "2026-05-01", "title": "added gap"},
+        {"number": 17},
+    ]})
+    from app.extraction import timeline
+
+    campaign_id = db.scalar(select(GameSession)).campaign_id
+    labels = [s.title or str(s.number) for s in timeline(db, campaign_id)]
+    assert labels == ["17", "18", "21", "29", "added gap", "transcript"]

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import current_user
 from app.db import get_db
-from app.extraction import _order_key, session_label
+from app.extraction import session_label, timeline
 from app.models import Campaign, Character, Entity, EntityKind, EventKind, GameSession, GlossaryTerm, Status
 from app.render import markdown_to_html
 from app.templating import templates
@@ -32,7 +32,7 @@ def _campaign(db: Session) -> Campaign | None:
 def published_items(db: Session, campaign: Campaign) -> list[dict]:
     """Published sessions in story order, each with its recap HTML and events."""
     items = []
-    for s in sorted(db.scalars(select(GameSession).where(GameSession.campaign_id == campaign.id)), key=_order_key):
+    for s in timeline(db, campaign.id):
         recap = next((r for r in reversed(s.recaps) if r.status == Status.PUBLISHED), None)
         if recap:
             events = [e for e in s.events if e.status == Status.PUBLISHED]

@@ -111,6 +111,19 @@ details.done[open] > summary::before { transform: rotate(90deg); }
 .all-clear { color: var(--green); margin: 0; }
 .callout { margin-top: 16px; padding: 16px; background: var(--amber-soft); border-radius: 10px; }
 
+/* Add Session conversation */
+.messages { display: grid; gap: 12px; margin: 8px 0 16px; }
+.msg { border-radius: 10px; padding: 12px 16px; max-width: 92%; }
+.msg.reviewer { background: var(--surface-2); justify-self: end; }
+.msg.claude { background: var(--story-bg); border: 1px solid var(--story-line); }
+.msg-who { font-size: .8rem; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+.msg-body p { margin: 0 0 .6em; } .msg-body > :last-child { margin-bottom: 0; }
+.msg-body ul, .msg-body ol { margin: .2em 0 .6em; padding-left: 1.3em; }
+.msg.thinking { display: none; color: var(--muted); font-style: italic; }
+.msg.thinking.htmx-request { display: block; }
+details.conversation > summary { list-style: none; }
+details.conversation[open] > summary { margin-bottom: 12px; }
+
 /* Story text */
 .story { font-family: var(--serif); font-size: 1.12rem; line-height: 1.75; color: var(--story-text); background: var(--story-bg); border: 1px solid var(--story-line); border-radius: 10px; padding: 24px 28px; }
 .story p, .story li { max-width: 66ch; }

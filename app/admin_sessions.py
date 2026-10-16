@@ -21,12 +21,12 @@ from app.db import get_db
 from app.extraction import (
     ExtractionError,
     Source,
-    _order_key,
     extract_session,
     latest_campaign_notes,
     notes_source_for,
     session_label,
     split_notes,
+    timeline,
 )
 from app.models import Campaign, ExtractionRun, GameSession, Proposal
 from app.render import markdown_to_html
@@ -38,11 +38,27 @@ _busy = threading.Lock()  # one drafting job at a time keeps costs and order pre
 
 
 def _running_ids(db: Session) -> set[int]:
-    return set(db.scalars(select(ExtractionRun.session_id).where(ExtractionRun.status == "running")))
+    """Sessions with a draft in progress (quick conversation checks don't count)."""
+    return set(
+        db.scalars(
+            select(ExtractionRun.session_id).where(ExtractionRun.status == "running", ExtractionRun.source != "conversation")
+        )
+    )
+
+
+def source_for(db: Session, session: GameSession):
+    """(Source, background text, background images) for drafting this session."""
+    if session.source == "account":
+        from app.conversation import conversation_text
+
+        if not session.messages:
+            raise ExtractionError("Write what happened first.")
+        return Source("account", conversation_text(session)), "", []
+    return notes_source_for(db, session)
 
 
 def _draft_in_background(session_ids: list[int]) -> bool:
-    """Draft sessions one after another from the campaign notes, in a thread."""
+    """Draft sessions one after another (notes or written accounts), in a thread."""
     if not _busy.acquire(blocking=False):
         return False
 
@@ -52,9 +68,9 @@ def _draft_in_background(session_ids: list[int]) -> bool:
                 with dbmod.SessionLocal() as db:
                     session = db.get(GameSession, sid)
                     try:
-                        source, background, bg_images = notes_source_for(db, session)
+                        source, background, bg_images = source_for(db, session)
                     except ExtractionError as e:
-                        db.add(ExtractionRun(session_id=sid, source="notes", status="error", error=str(e)))
+                        db.add(ExtractionRun(session_id=sid, source=session.source, status="error", error=str(e)))
                         db.commit()
                         continue
                     extract_session(db, session, source, background=background, background_images=bg_images)
@@ -92,14 +108,18 @@ def sessions_page(request: Request, db: Session = Depends(get_db)):
     if denied:
         return denied
     campaign = db.scalar(select(Campaign).order_by(Campaign.id))
-    sessions = sorted(db.scalars(select(GameSession).where(GameSession.campaign_id == campaign.id)), key=_order_key) if campaign else []
+    sessions = timeline(db, campaign.id) if campaign else []
     running = _running_ids(db)
     snap = latest_campaign_notes(db, campaign.id) if campaign else None
     with_notes = set(split_notes(snap.text)[1]) if snap else set()
     spent = db.scalar(select(func.coalesce(func.sum(ExtractionRun.cost_usd), 0.0))) or 0.0
     rows = []
     for s in reversed(sessions):  # newest first
-        last_run = db.scalar(select(ExtractionRun).where(ExtractionRun.session_id == s.id).order_by(ExtractionRun.id.desc()))
+        last_run = db.scalar(
+            select(ExtractionRun)
+            .where(ExtractionRun.session_id == s.id, ExtractionRun.source != "conversation")
+            .order_by(ExtractionRun.id.desc())
+        )
         rows.append({
             "s": s,
             "label": session_label(s),
@@ -140,8 +160,8 @@ def draft(request: Request, session_ids: list[int] = Form(...)):
 
 def _next_session(db: Session, s: GameSession) -> dict | None:
     """The session after this one, and whether it can be drafted from notes."""
-    ordered = sorted(db.scalars(select(GameSession).where(GameSession.campaign_id == s.campaign_id)), key=_order_key)
-    later = [x for x in ordered if _order_key(x) > _order_key(s)]
+    ordered = timeline(db, s.campaign_id)
+    later = ordered[ordered.index(s) + 1 :]
     if not later:
         return None
     nxt = later[0]
@@ -163,7 +183,7 @@ def _body_context(db: Session, s: GameSession) -> dict:
     return ctx
 
 
-@router.get("/sessions/{session_id}")
+@router.get("/sessions/{session_id:int}")
 def review_page(request: Request, session_id: int, db: Session = Depends(get_db)):
     user, denied = _guard(request)
     if denied:
@@ -172,11 +192,13 @@ def review_page(request: Request, session_id: int, db: Session = Depends(get_db)
     if s is None:
         return RedirectResponse("/admin/sessions", status_code=303)
     return templates.TemplateResponse(
-        request, "admin_review.html", {**_body_context(db, s), "toast": request.session.pop("toast", None)}
+        request,
+        "admin_review.html",
+        {**_body_context(db, s), "toast": request.session.pop("toast", None), "auto_check": request.query_params.get("check") == "1"},
     )
 
 
-@router.get("/sessions/{session_id}/body")
+@router.get("/sessions/{session_id:int}/body")
 def review_body(request: Request, session_id: int, db: Session = Depends(get_db)):
     """Partial for polling while Claude drafts."""
     user, denied = _guard(request)
@@ -212,7 +234,7 @@ def _act(request: Request, db: Session, session_id: int, action: Callable[[GameS
     return RedirectResponse(f"/admin/sessions/{session_id}", status_code=303)
 
 
-@router.post("/sessions/{session_id}/questions/answer")
+@router.post("/sessions/{session_id:int}/questions/answer")
 def answer(request: Request, session_id: int, q: str = Form(...), answer: str = Form(""), remember: str = Form(""), db: Session = Depends(get_db)):
     def act(s):
         review.answer_question(db, s, q, answer, bool(remember))
@@ -221,7 +243,7 @@ def answer(request: Request, session_id: int, q: str = Form(...), answer: str = 
     return _act(request, db, session_id, act)
 
 
-@router.post("/sessions/{session_id}/questions/skip")
+@router.post("/sessions/{session_id:int}/questions/skip")
 def skip(request: Request, session_id: int, q: str = Form(...), db: Session = Depends(get_db)):
     def act(s):
         review.skip_question(db, s, q)
@@ -230,7 +252,7 @@ def skip(request: Request, session_id: int, q: str = Form(...), db: Session = De
     return _act(request, db, session_id, act)
 
 
-@router.post("/sessions/{session_id}/questions/reopen")
+@router.post("/sessions/{session_id:int}/questions/reopen")
 def reopen(request: Request, session_id: int, q: str = Form(...), db: Session = Depends(get_db)):
     def act(s):
         review.reopen_question(db, s, q)
@@ -239,10 +261,10 @@ def reopen(request: Request, session_id: int, q: str = Form(...), db: Session = 
     return _act(request, db, session_id, act)
 
 
-@router.post("/sessions/{session_id}/redraft")
+@router.post("/sessions/{session_id:int}/redraft")
 def redraft(request: Request, session_id: int, db: Session = Depends(get_db)):
     def act(s):
-        if s.source != "notes":
+        if s.source == "transcript":
             raise review.ReviewError("Transcript sessions are redrafted by sending them again from the Processor.")
         if not _draft_in_background([s.id]):
             raise review.ReviewError("Claude is busy; try again in a minute.")
@@ -251,7 +273,7 @@ def redraft(request: Request, session_id: int, db: Session = Depends(get_db)):
     return _act(request, db, session_id, act)
 
 
-@router.post("/sessions/{session_id}/recap")
+@router.post("/sessions/{session_id:int}/recap")
 def save_recap(request: Request, session_id: int, body: str = Form(...), note: str = Form(""), standing: str = Form(""), db: Session = Depends(get_db)):
     def act(s):
         review.save_recap(db, s, body, note, bool(standing))
@@ -260,7 +282,7 @@ def save_recap(request: Request, session_id: int, body: str = Form(...), note: s
     return _act(request, db, session_id, act)
 
 
-@router.post("/sessions/{session_id}/publish")
+@router.post("/sessions/{session_id:int}/publish")
 def publish(request: Request, session_id: int, db: Session = Depends(get_db)):
     def act(s):
         review.publish(db, s)
@@ -269,7 +291,7 @@ def publish(request: Request, session_id: int, db: Session = Depends(get_db)):
     return _act(request, db, session_id, act)
 
 
-@router.post("/sessions/{session_id}/events")
+@router.post("/sessions/{session_id:int}/events")
 def save_event(request: Request, session_id: int, kind: str = Form(...), text: str = Form(...), event_id: str = Form(""), db: Session = Depends(get_db)):
     def act(s):
         review.save_event(db, s, int(event_id) if event_id else None, kind, text)
@@ -278,7 +300,7 @@ def save_event(request: Request, session_id: int, kind: str = Form(...), text: s
     return _act(request, db, session_id, act)
 
 
-@router.post("/sessions/{session_id}/events/{event_id}/delete")
+@router.post("/sessions/{session_id:int}/events/{event_id}/delete")
 def delete_event(request: Request, session_id: int, event_id: int, db: Session = Depends(get_db)):
     def act(s):
         review.delete_event(db, s, event_id)
@@ -328,3 +350,96 @@ def edit_accepted(request: Request, proposal_id: int, summary: str = Form(...), 
         return "Updated"
 
     return _proposal_action(request, db, proposal_id, fn)
+
+
+# --- Add Session (written account + conversation with Claude) -------------------
+
+
+@router.get("/sessions/new")
+def new_session_form(request: Request, db: Session = Depends(get_db)):
+    user, denied = _guard(request)
+    if denied:
+        return denied
+    campaign = db.scalar(select(Campaign).order_by(Campaign.id))
+    sessions = timeline(db, campaign.id) if campaign else []
+    return templates.TemplateResponse(
+        request, "admin_session_new.html", {"sessions": [(x, session_label(x)) for x in sessions], "error": request.session.pop("toast", None)}
+    )
+
+
+@router.post("/sessions/new")
+def create_session(
+    request: Request,
+    played_on: str = Form(...),
+    number: str = Form(""),
+    title: str = Form(""),
+    account: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    user, denied = _guard(request)
+    if denied:
+        return denied
+    from datetime import date as date_type
+
+    from app.models import SessionMessage
+
+    campaign = db.scalar(select(Campaign).order_by(Campaign.id))
+    try:
+        played = date_type.fromisoformat(played_on)
+        num = int(number) if number.strip() else None
+    except ValueError:
+        request.session["toast"] = "Check the date and session number."
+        return RedirectResponse("/admin/sessions/new", status_code=303)
+    if not account.strip():
+        request.session["toast"] = "Write what happened first."
+        return RedirectResponse("/admin/sessions/new", status_code=303)
+    if num is not None and db.scalar(select(GameSession).where(GameSession.campaign_id == campaign.id, GameSession.number == num)):
+        request.session["toast"] = f"Session {num} already exists. Leave the number blank or pick another."
+        return RedirectResponse("/admin/sessions/new", status_code=303)
+    s = GameSession(campaign_id=campaign.id, played_on=played, number=num, title=title.strip(), source="account")
+    db.add(s)
+    db.flush()
+    db.add(SessionMessage(session_id=s.id, role="reviewer", author=user.get("name") or user["email"], body=account.strip()))
+    db.commit()
+    return RedirectResponse(f"/admin/sessions/{s.id}?check=1", status_code=303)
+
+
+def _run_check(db: Session, s: GameSession) -> str:
+    from app import conversation
+
+    try:
+        conversation.check(db, s)
+        return "Claude replied"
+    except ExtractionError as e:
+        raise review.ReviewError(f"Claude couldn't reply: {e}") from e
+
+
+@router.post("/sessions/{session_id:int}/check")
+def check(request: Request, session_id: int, db: Session = Depends(get_db)):
+    return _act(request, db, session_id, lambda s: _run_check(db, s))
+
+
+@router.post("/sessions/{session_id:int}/messages")
+def reply(request: Request, session_id: int, body: str = Form(...), db: Session = Depends(get_db)):
+    from app.models import SessionMessage
+
+    def act(s):
+        user = request.session.get("user") or {}
+        if not body.strip():
+            raise review.ReviewError("Write something first.")
+        db.add(SessionMessage(session_id=s.id, role="reviewer", author=user.get("name") or user.get("email", ""), body=body.strip()))
+        db.commit()
+        db.refresh(s)
+        return _run_check(db, s)
+
+    return _act(request, db, session_id, act)
+
+
+@router.post("/sessions/{session_id:int}/draft-account")
+def draft_account(request: Request, session_id: int, db: Session = Depends(get_db)):
+    def act(s):
+        if not _draft_in_background([s.id]):
+            raise review.ReviewError("Claude is busy; try again in a minute.")
+        return "Claude is drafting… about a minute"
+
+    return _act(request, db, session_id, act)

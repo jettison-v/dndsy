@@ -153,9 +153,10 @@ class GameSession(Timestamped, Base):
     number: Mapped[int | None] = mapped_column(Integer)  # unknown for sessions in the gap
     played_on: Mapped[date | None] = mapped_column(Date)
     title: Mapped[str] = mapped_column(String(200), default="")
-    source: Mapped[str] = mapped_column(String(20))  # "notes" or "transcript"
+    source: Mapped[str] = mapped_column(String(20))  # "notes", "transcript" or "account" (Add Session)
     recaps: Mapped[list["Recap"]] = relationship(back_populates="session", order_by="Recap.version")
     events: Mapped[list["StoryEvent"]] = relationship(back_populates="session", order_by="StoryEvent.position")
+    messages: Mapped[list["SessionMessage"]] = relationship(order_by="SessionMessage.id")
 
 
 class Recap(Timestamped, Base):
@@ -303,3 +304,16 @@ class CreditTopUp(Timestamped, Base):
     amount_usd: Mapped[float] = mapped_column()
     added_on: Mapped[date] = mapped_column(Date)
     note: Mapped[str] = mapped_column(String(200), default="", server_default="")
+
+
+class SessionMessage(Timestamped, Base):
+    """The Add Session conversation: the reviewer's written account and replies,
+    and Claude's questions. Written by people at the table, not a transcript."""
+
+    __tablename__ = "session_messages"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    session_id: Mapped[int] = mapped_column(ForeignKey("game_sessions.id", ondelete="CASCADE"), index=True)
+    role: Mapped[str] = mapped_column(String(20))  # "reviewer" or "claude"
+    author: Mapped[str] = mapped_column(String(200), default="", server_default="")  # reviewer's name
+    body: Mapped[str] = mapped_column(Text)
+    ready: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")  # Claude: enough to draft

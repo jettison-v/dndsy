@@ -6,16 +6,46 @@
     <span class="tag {{ {'draft': 'draft', 'published': 'published', 'edited': 'edited', 'drafting': 'working'}.get(status, '') }}">
       {{ {'draft': 'Draft', 'published': 'Published', 'edited': 'Edited since publishing', 'drafting': 'Claude is drafting…', 'no draft': 'No draft yet'}[status] }}</span>
   </div>
-  <p class="subtitle">{% if s.played_on %}Played {{ s.played_on.strftime("%b %-d, %Y") }} · {% endif %}{{ "from a transcript" if s.source == "transcript" else "from the campaign notes" }} · only reviewers can see this page</p>
+  <p class="subtitle">{% if s.played_on %}Played {{ s.played_on.strftime("%b %-d, %Y") }} · {% endif %}{{ {"transcript": "from a transcript", "account": "written up from memory"}.get(s.source, "from the campaign notes") }} · only reviewers can see this page</p>
 
   {% if last_run and last_run.status == "error" %}<div class="flash bad"><b>The last draft failed.</b> {{ last_run.error }}</div>{% endif %}
   {% if drafting %}<div class="flash warn">Claude is drafting this session. This page updates by itself in about a minute.</div>{% endif %}
 
+  {% if s.source == "account" %}
+  {% set last = s.messages[-1] if s.messages else none %}
+  <{{ "details" if latest else "section" }} class="section conversation" {% if latest %}id="conversation"{% endif %}>
+    {% if latest %}<summary style="cursor:pointer"><b>Conversation with Claude</b> <span class="note">({{ s.messages | length }} messages; used for the draft)</span></summary>
+    {% else %}<div class="section-head"><h2>Tell Claude what happened</h2></div>
+    <p class="hint">Claude checks your account against the sessions before and after, then asks about gaps. Answer, add details or change your mind; later messages win.</p>{% endif %}
+    <div class="messages">
+      {% for m in s.messages %}
+      <div class="msg {{ m.role }}"><div class="msg-who">{{ "Claude" if m.role == "claude" else (m.author or "You") }}</div>
+        <div class="msg-body">{{ m.body | md | safe }}</div></div>
+      {% endfor %}
+      <div class="msg claude thinking htmx-indicator" id="thinking"><div class="msg-who">Claude</div><div class="msg-body">Reading the sessions before and after…</div></div>
+    </div>
+    {% if auto_check and last and last.role == "reviewer" %}<div hx-post="/admin/sessions/{{ s.id }}/check" hx-trigger="load" {{ hx | safe }} hx-indicator="#thinking"></div>{% endif %}
+    <form class="stack" hx-post="/admin/sessions/{{ s.id }}/messages" {{ hx | safe }} hx-indicator="#thinking" hx-disabled-elt="find button">
+      <textarea name="body" rows="4" placeholder="Answer Claude's questions, add details, or correct anything…" required></textarea>
+      <div class="row"><button class="btn">Send</button>
+        {% if last and last.role == "reviewer" %}<button class="btn link" type="button" hx-post="/admin/sessions/{{ s.id }}/check" {{ hx | safe }} hx-indicator="#thinking">Ask Claude to check again</button>{% endif %}</div>
+    </form>
+    {% if not latest %}
+    <div class="callout" style="{{ 'background:var(--green-soft)' if last and last.ready }}"><div class="row">
+      <span style="flex:1;min-width:220px">{% if last and last.ready %}<b>Claude has enough to draft.</b>{% else %}<b>Ready when you are.</b> You can draft any time, even with questions open.{% endif %}</span>
+      <form class="inline" hx-post="/admin/sessions/{{ s.id }}/draft-account" {{ hx | safe }}><button class="btn primary" {% if drafting %}disabled{% endif %}>Draft this session</button></form>
+      <span class="note">≈ 12¢</span></div></div>
+    {% endif %}
+  </{{ "details" if latest else "section" }}>
+  {% endif %}
+
   {% if not latest %}
+  {% if s.source != "account" %}
   <section class="section">
     <h2>No draft yet</h2>
     <p class="hint" style="margin-top:8px">{% if s.source == "transcript" %}Send this session's transcript from the askdnd Processor on your Mac.{% else %}Go back to <a href="/admin/sessions">Review</a> and choose <i>Draft from notes</i>.{% endif %}</p>
   </section>
+  {% endif %}
   {% else %}
   <div class="layout">
     <div>
@@ -208,7 +238,7 @@
         </div>
         {% endif %}
       </div>
-      <p class="source">{{ "From a transcript" if s.source == "transcript" else "From the campaign notes" }}{% if s.source != "transcript" and is_admin %} · <a href="/admin/notes">notes</a>{% endif %}</p>
+      <p class="source">{{ {"transcript": "From a transcript", "account": "From a written account"}.get(s.source, "From the campaign notes") }}{% if s.source != "transcript" and is_admin %} · <a href="/admin/notes">notes</a>{% endif %}</p>
     </aside>
   </div>
   <div class="mobile-bar">

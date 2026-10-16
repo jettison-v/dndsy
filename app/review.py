@@ -67,22 +67,22 @@ def reopen_question(db: Session, session: GameSession, question: str) -> None:
         db.delete(row)
 
 
+def _last_draft_run(db: Session, session: GameSession, status: str | None = "done") -> ExtractionRun | None:
+    """Most recent drafting run (Add Session conversation checks don't count)."""
+    q = select(ExtractionRun).where(ExtractionRun.session_id == session.id, ExtractionRun.source != "conversation")
+    if status:
+        q = q.where(ExtractionRun.status == status)
+    return db.scalar(q.order_by(ExtractionRun.id.desc()))
+
+
 def latest_questions(db: Session, session: GameSession) -> list[str]:
-    run = db.scalar(
-        select(ExtractionRun)
-        .where(ExtractionRun.session_id == session.id, ExtractionRun.status == "done")
-        .order_by(ExtractionRun.id.desc())
-    )
+    run = _last_draft_run(db, session)
     return list(run.to_check) if run else []
 
 
 def unused_answer_count(db: Session, session: GameSession) -> int:
     """Answers saved after the latest successful draft (so a redraft would use them)."""
-    run = db.scalar(
-        select(ExtractionRun)
-        .where(ExtractionRun.session_id == session.id, ExtractionRun.status == "done")
-        .order_by(ExtractionRun.id.desc())
-    )
+    run = _last_draft_run(db, session)
     if run is None:
         return 0
     return (
@@ -302,12 +302,8 @@ def review_context(db: Session, session: GameSession, drafting: bool) -> dict:
     proposals = list(db.scalars(select(Proposal).where(Proposal.session_id == session.id).order_by(Proposal.id)))
     open_proposals = [p for p in proposals if p.status == "pending"]
     done_proposals = sorted((p for p in proposals if p.status != "pending"), key=lambda p: p.updated_at, reverse=True)
-    last_run = db.scalar(select(ExtractionRun).where(ExtractionRun.session_id == session.id).order_by(ExtractionRun.id.desc()))
-    last_done = db.scalar(
-        select(ExtractionRun)
-        .where(ExtractionRun.session_id == session.id, ExtractionRun.status == "done")
-        .order_by(ExtractionRun.id.desc())
-    )
+    last_run = _last_draft_run(db, session, status=None)
+    last_done = _last_draft_run(db, session)
     return {
         "status": review_status(session, drafting),
         "latest": latest_recap(session),

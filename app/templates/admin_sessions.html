@@ -3,7 +3,7 @@
 {% block content %}
 <main class="page" {% if running %}hx-get="/admin/sessions" hx-trigger="every 10s" hx-select="main" hx-swap="outerHTML"{% endif %}>
   <div class="crumbs">Manage › Review</div>
-  <div class="title-row"><h1>Review</h1></div>
+  <div class="title-row"><h1>Review</h1><a class="btn" href="/admin/sessions/new" style="margin-left:auto">+ Add session</a></div>
   <p class="subtitle">Claude drafts each session from your notes or a transcript. Nothing reaches the table until you open a session and publish it. Spent on drafting so far: <b>${{ "%.2f" | format(spent) }}</b>.</p>
 
   {% if not notes_synced %}<div class="flash warn">Sync your campaign notes first: <a href="/admin/notes">Notes sync</a>.</div>{% endif %}
@@ -33,7 +33,8 @@
           {% if r.has_notes and r.status == "no draft" and not running %}
           <form method="post" action="/admin/sessions/draft"><input type="hidden" name="session_ids" value="{{ r.s.id }}"><button class="btn">Draft from notes</button></form>
           {% elif r.status != "no draft" %}<a class="btn" href="/admin/sessions/{{ r.s.id }}">Review</a>
-          {% elif r.s.source == "transcript" %}<span class="note">Send from the Processor</span>{% endif %}
+          {% elif r.s.source == "transcript" %}<span class="note">Send from the Processor</span>
+          {% elif r.s.source == "account" %}<a class="btn" href="/admin/sessions/{{ r.s.id }}">Continue</a>{% endif %}
         </td>
       </tr>
       {% endfor %}

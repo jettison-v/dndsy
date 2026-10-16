@@ -8,6 +8,7 @@ transcript. The transcript text is used only for this call and never stored.
 import base64
 import json
 import re
+from datetime import date
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
@@ -247,24 +248,48 @@ def _known_world(db: Session, campaign: Campaign) -> str:
     return "\n".join(lines)
 
 
+def timeline(db: Session, campaign_id: int) -> list[GameSession]:
+    """Sessions in story order. Dated sessions sort by date; an undated session
+    (e.g. early notes without dates) takes the date of the next dated session
+    with a higher number, and ties break by number."""
+    sessions = list(db.scalars(select(GameSession).where(GameSession.campaign_id == campaign_id)))
+    dated_numbered = sorted((s for s in sessions if s.played_on and s.number is not None), key=lambda s: s.number)
+
+    def effective(s: GameSession):
+        if s.played_on:
+            return s.played_on
+        if s.number is not None:
+            later = next((d for d in dated_numbered if d.number > s.number), None)
+            if later:
+                return later.played_on
+        return date.max
+
+    return sorted(sessions, key=lambda s: (effective(s), s.number if s.number is not None else 10**6, s.id))
+
+
 def _story_so_far(db: Session, session: GameSession) -> str:
     """Latest recap of each earlier session (published if any, else draft)."""
-    earlier = [
-        s
-        for s in db.scalars(select(GameSession).where(GameSession.campaign_id == session.campaign_id))
-        if s.id != session.id and _order_key(s) < _order_key(session)
-    ]
+    order = timeline(db, session.campaign_id)
+    earlier = order[: order.index(session)]
     parts = []
-    for s in sorted(earlier, key=_order_key):
+    for s in earlier:
         recap = _best_recap(s)
         if recap:
             parts.append(f"### {session_label(s)}\n{recap.body}")
     return "\n\n".join(parts) or "(No earlier recaps yet.)"
 
 
-def _order_key(s: GameSession) -> tuple:
-    # Numbered sessions first by number; unnumbered (e.g. the transcript gap) by date after them.
-    return (0, s.number, "") if s.number is not None else (1, 0, s.played_on.isoformat() if s.played_on else "")
+def _story_after(db: Session, session: GameSession, count: int = 2) -> str:
+    """Recaps of the next few sessions, for checking a gap from both sides."""
+    order = timeline(db, session.campaign_id)
+    parts = []
+    for s in order[order.index(session) + 1 :]:
+        recap = _best_recap(s)
+        if recap:
+            parts.append(f"### {session_label(s)}\n{recap.body}")
+        if len(parts) == count:
+            break
+    return "\n\n".join(parts) or "(No later recaps yet.)"
 
 
 def _best_recap(s: GameSession) -> Recap | None:
@@ -296,6 +321,12 @@ def build_messages(db: Session, session: GameSession, source: Source, background
         intro = (
             "Below are Brett's notes for this session, written from Cole's point of view. "
             "Images referenced as [image: name] follow the notes."
+        )
+    elif source.kind == "account":
+        intro = (
+            "Below is a written account of this session by someone at the table (it has no notes "
+            "or recording), followed by a clarifying conversation with you. Later messages override "
+            "earlier ones; draft from the final version of events."
         )
     else:
         intro = (
