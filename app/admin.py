@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, File, Request, UploadFile
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
-from app.auth import current_user, is_admin
+from app.auth import current_user, is_admin, is_reviewer
 from app.db import get_db
 from app.importer import BundleError, import_bundle
 from app.templating import templates
@@ -16,13 +16,20 @@ router = APIRouter(prefix="/admin")
 MAX_UPLOAD_BYTES = 2_000_000
 
 
-def _guard(request: Request):
+def _guard(request: Request, allow=is_admin):
+    """(user, None) if allowed, else (None, a redirect or 403 page)."""
     user = current_user(request)
     if not user:
         return None, RedirectResponse("/login", status_code=303)
-    if not is_admin(user):
-        return None, templates.TemplateResponse(request, "message.html", {"title": "Admins only", "message": "This page is for the campaign admin."}, status_code=403)
+    if not allow(user):
+        return None, templates.TemplateResponse(
+            request, "message.html", {"title": "Not available", "message": "This page is for the campaign admin."}, status_code=403
+        )
     return user, None
+
+
+def _reviewer_guard(request: Request):
+    return _guard(request, allow=is_reviewer)
 
 
 @router.get("/import")

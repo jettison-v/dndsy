@@ -30,6 +30,11 @@ def is_admin(user: dict | None) -> bool:
     return bool(user) and config.is_allowed(user.get("email"), config.ADMIN_EMAILS)
 
 
+def is_reviewer(user: dict | None) -> bool:
+    """Admins plus anyone in REVIEWER_EMAILS (the DM)."""
+    return is_admin(user) or (bool(user) and config.is_allowed(user.get("email"), config.REVIEWER_EMAILS))
+
+
 @router.get("/auth/google")
 async def login_with_google(request: Request):
     if not config.GOOGLE_CONFIGURED:

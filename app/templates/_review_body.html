@@ -6,7 +6,7 @@
     <span class="tag {{ {'draft': 'draft', 'published': 'published', 'edited': 'edited', 'drafting': 'working'}.get(status, '') }}">
       {{ {'draft': 'Draft', 'published': 'Published', 'edited': 'Edited since publishing', 'drafting': 'Claude is drafting…', 'no draft': 'No draft yet'}[status] }}</span>
   </div>
-  <p class="subtitle">{% if s.played_on %}Played {{ s.played_on.strftime("%b %-d, %Y") }} · {% endif %}{{ "from a transcript" if s.source == "transcript" else "from your notes" }} · only you can see this page</p>
+  <p class="subtitle">{% if s.played_on %}Played {{ s.played_on.strftime("%b %-d, %Y") }} · {% endif %}{{ "from a transcript" if s.source == "transcript" else "from the campaign notes" }} · only reviewers can see this page</p>
 
   {% if last_run and last_run.status == "error" %}<div class="flash bad"><b>The last draft failed.</b> {{ last_run.error }}</div>{% endif %}
   {% if drafting %}<div class="flash warn">Claude is drafting this session. This page updates by itself in about a minute.</div>{% endif %}
@@ -208,7 +208,7 @@
         </div>
         {% endif %}
       </div>
-      <p class="source">{{ "From a transcript" if s.source == "transcript" else "From your campaign notes" }}{% if s.source != "transcript" %} · <a href="/admin/notes">notes</a>{% endif %}</p>
+      <p class="source">{{ "From a transcript" if s.source == "transcript" else "From the campaign notes" }}{% if s.source != "transcript" and is_admin %} · <a href="/admin/notes">notes</a>{% endif %}</p>
     </aside>
   </div>
   <div class="mobile-bar">

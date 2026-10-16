@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from app import db as dbmod
 from app import review
-from app.admin import _guard
+from app.admin import _reviewer_guard as _guard
 from app.db import get_db
 from app.extraction import (
     ExtractionError,
