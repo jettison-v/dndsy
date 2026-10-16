@@ -12,8 +12,9 @@ variables still work and act as a floor: ADMIN_EMAILS are owners who are always
 admin (so nobody can lock the owner out), REVIEWER_EMAILS are at least reviewers,
 ALLOWED_EMAILS can at least sign in.
 
-Separately, a person can be marked as the DM. The DM never sees character
-notes, whatever their access level (CLAUDE.md).
+Separately, a person can be marked as the DM. The DM's own suggestions skip
+review, and the DM never sees players' stars and reminders, whatever their
+access level (CLAUDE.md).
 
 Access is checked on every request, so the rows are cached in memory for a few
 seconds and reloaded after any change made on the People page.

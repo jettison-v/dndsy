@@ -6,7 +6,7 @@
   Game Mode on a Battle page, which re-fetches that character every 2–3 minutes
   while the page is open (throttled per character on the server).
 - Stars and reminders (app/picks.py): only the character's player sets them;
-  the DM never sees them. Character notes are never shown here.
+  the DM never sees them.
 """
 
 import json

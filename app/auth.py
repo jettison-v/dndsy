@@ -51,8 +51,8 @@ def can_moderate(user: dict | None) -> bool:
 
 
 def can_see_character_notes(user: dict | None) -> bool:
-    """Character notes are visible to players but never to the DM (CLAUDE.md)."""
-    return bool(user) and not access.is_dm(user.get("email"))
+    """Character notes are context for the whole table, the DM included (Brett, 2026-10-17)."""
+    return bool(user)
 
 
 @router.get("/auth/google")

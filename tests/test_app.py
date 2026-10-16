@@ -30,6 +30,6 @@ def test_about_and_faq_are_open_to_anyone():
 
     c = TestClient(app)
     about, faq = c.get("/about"), c.get("/faq")
-    assert about.status_code == 200 and "Ground rules" in about.text and "never shown to the DM" in about.text
+    assert about.status_code == 200 and "Ground rules" in about.text and "the DM never sees them" in about.text
     assert faq.status_code == 200 and "Who sees my suggestion" in faq.text and "every 2.5 minutes" in faq.text
     assert 'href="/faq"' in c.get("/login").text

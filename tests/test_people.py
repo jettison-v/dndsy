@@ -75,14 +75,15 @@ def test_imported_members_need_an_invite(env, monkeypatch, db):
     assert "Mary" in page and "Not invited yet" in page and "player@example.com" in page
 
 
-def test_dm_never_sees_character_notes_even_as_admin(env, monkeypatch, db):
+def test_a_dm_who_is_an_admin_can_use_notes_sync(env, monkeypatch, db):
+    # Character notes are context for the whole table, the DM included (2026-10-17)
     owner, _ = sign_in(monkeypatch, "owner@example.com")
     owner.post("/admin/people", data={"email": "dm@example.com", "level": "admin", "is_dm": "1"})
+    owner.post("/admin/people", data={"email": "rev@example.com", "level": "reviewer", "is_dm": "1"})
     dm, _ = sign_in(monkeypatch, "dm@example.com")
-    assert dm.get("/admin/usage").status_code == 200
-    assert dm.get("/admin/notes").status_code == 403
-    assert "/admin/notes" not in dm.get("/").text and "/admin/people" in dm.get("/").text
-    assert owner.get("/admin/notes").status_code == 200
+    assert dm.get("/admin/notes").status_code == 200 and "/admin/notes" in dm.get("/").text
+    reviewer_dm, _ = sign_in(monkeypatch, "rev@example.com")
+    assert reviewer_dm.get("/admin/notes").status_code == 403  # Notes sync is still admins only
 
 
 def test_players_cant_manage_people(env, monkeypatch, db):

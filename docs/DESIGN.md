@@ -31,7 +31,7 @@ One top bar for everyone, plus a **Manage** menu that only the admin sees.
 | **Campaign** | Everyone | People, places, factions, items, quests and the glossary |
 | **Manage ▾** | Admin only | **Review** (sessions waiting for review, drafting costs), **Notes sync**, **Import** |
 
-Admin pages say so in their subtitle ("only you can see this page"). Breadcrumbs start at the top-level item (Manage › Review › Session 12). On phones the main items move into a menu. Stars, reminders (and, later, character notes) are never shown to the DM.
+Admin pages say so in their subtitle ("only you can see this page"). Breadcrumbs start at the top-level item (Manage › Review › Session 12). On phones the main items move into a menu. Stars and reminders are never shown to the DM; everything else, character notes included, is shared with the whole table.
 
 ## Review workflow (admin)
 

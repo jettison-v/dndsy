@@ -25,9 +25,9 @@ def test_sqlalchemy_url_uses_psycopg():
     assert sqlalchemy_url(None) == ""
 
 
-def test_character_notes_hidden_from_dm():
+def test_character_notes_visible_to_the_whole_table():
     assert can_view_character_notes(Role.PLAYER)
-    assert not can_view_character_notes(Role.DM)
+    assert can_view_character_notes(Role.DM)
     assert not can_view_character_notes(None)
 
 
