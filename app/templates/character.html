@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}{{ c.entity.name }} · Characters · askdnd{% endblock %}
+{% block content %}
+{% set s = sheet %}
+<main class="page narrow sheet">
+  <div class="crumbs"><a href="/characters">Characters</a> › {{ c.entity.name }}</div>
+  <div class="title-row"><h1>{{ c.entity.name }}</h1>
+    {% if reviewer and c.ddb_id %}<form method="post" action="/characters/{{ c.id }}/refresh" class="inline" style="margin-left:auto"><button class="btn" type="submit">Refresh from D&amp;D Beyond</button></form>{% endif %}</div>
+  {% if s %}
+  <p class="subtitle" style="margin-bottom:8px">{{ s.species }} · {% for k in s.classes %}{{ k.name }} {{ k.level }}{% if k.subclass %} ({{ k.subclass }}){% endif %}{{ " / " if not loop.last }}{% endfor %} · level {{ s.level }}{% if s.background %} · {{ s.background }} background{% endif %}{% if c.player_name %} · played by {{ c.player_name }}{% endif %}</p>
+  <p class="note sheet-source">Last updated from D&amp;D Beyond {{ fetched_at | ago }}{% if s.sheet_url %} · <a href="{{ s.sheet_url }}" target="_blank" rel="noopener">Open on D&amp;D Beyond ↗</a>{% endif %}
+    {% if failed %}<br><span class="quiet-warn">The latest refresh didn't work, so this is the last good copy. {{ error }}</span>{% endif %}</p>
+
+  <section class="section">
+    <div class="sheet-nums">
+      <div><small>Hit points</small><b>{{ s.hit_points.max }}</b>{% if s.hit_points.current != s.hit_points.max or s.hit_points.temp %}<span class="note">{{ s.hit_points.current }} now{% if s.hit_points.temp %} + {{ s.hit_points.temp }} temp{% endif %}</span>{% endif %}</div>
+      <div><small>Armor class</small><b>{{ s.armor_class }}</b></div>
+      <div><small>Speed</small><b>{{ s.speed.walk }} ft</b>{% set extra = s.speed.items() | rejectattr(0, "equalto", "walk") | list %}{% if extra %}<span class="note">{% for k, v in extra %}{{ k }} {{ v }} ft{{ ", " if not loop.last }}{% endfor %}</span>{% endif %}</div>
+      <div><small>Initiative</small><b>{{ s.initiative }}</b></div>
+      <div><small>Proficiency</small><b>+{{ s.proficiency_bonus }}</b></div>
+      <div><small>Passive Perception</small><b>{{ s.passive_perception }}</b></div>
+    </div>
+    <div class="abilities">
+      {% for a in s.abilities %}{% set sv = s.saves[loop.index0] %}
+      <div class="ability"><small>{{ a.name }}</small><b>{{ a.label }}</b><span>{{ a.score }}</span>
+        <span class="note">Save {{ sv.label }}{% if sv.proficient %} ●{% endif %}</span></div>
+      {% endfor %}
+    </div>
+    <p class="note" style="margin:10px 0 0">● proficient in that saving throw. Hit dice: {% for h in s.hit_points.hit_dice %}{{ h.total - h.used }}/{{ h.total }} {{ h.die }} ({{ h.class }}){{ ", " if not loop.last }}{% endfor %}.</p>
+  </section>
+
+  {% if s.resources %}
+  <section class="section">
+    <h2>Resources</h2>
+    <p class="hint" style="margin-top:6px">Limited uses and what brings them back, as on D&amp;D Beyond right now.</p>
+    <ul class="res-list">
+      {% for a in s.actions if a.uses %}<li><b>{{ a.name }}</b><span>{{ a.uses.left }} of {{ a.uses.max }} left · {{ a.uses.reset_phrase }}</span></li>{% endfor %}
+      {% for sl in s.spell_slots.slots %}<li><b>Level {{ sl.level }} spell slots</b><span>{{ sl.max - sl.used }} of {{ sl.max }} left · back after a Long Rest</span></li>{% endfor %}
+      {% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}<li><b>Pact Magic slots (level {{ p.level }})</b><span>{{ p.max - p.used }} of {{ p.max }} left · back after a Short or Long Rest</span></li>{% endif %}
+      {% for sp in s.spells if sp.uses %}<li><b>{{ sp.name }}</b><span>{{ sp.uses.left }} of {{ sp.uses.max }} free {{ "cast" if sp.uses.max == 1 else "casts" }} · {{ sp.uses.reset_phrase }}{% if sp.uses_slot %} (or with a spell slot){% endif %}</span></li>{% endfor %}
+      {% for it in s.inventory if it.charges and it.charges.reset in ("Dawn", "Long Rest", "Short or Long Rest") %}<li><b>{{ it.name }}</b><span>{{ it.charges.left }} of {{ it.charges.max }} charges · {{ it.charges.reset_note or it.charges.reset_phrase }}</span></li>{% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {% set groups = [("Action", "Actions"), ("Bonus action", "Bonus actions"), ("Reaction", "Reactions")] %}
+  <section class="section">
+    <h2>On your turn</h2>
+    <p class="hint" style="margin-top:6px">Things D&amp;D Beyond lists as actions, bonus actions and reactions (spells are below). Tap one for the details.</p>
+    {% for key, title in groups %}{% set list = s.actions | selectattr("activation", "equalto", key) | list %}
+    {% if list %}<h3>{{ title }}</h3>
+    {% for a in list %}<details class="feat"><summary>{{ a.name }}{% if a.uses %} <span class="tag">{{ a.uses.max }} / {{ a.uses.reset }}</span>{% endif %}</summary>{% if a.text %}<div class="feat-text">{{ a.text }}</div>{% endif %}</details>{% endfor %}
+    {% endif %}{% endfor %}
+    {% set other = s.actions | rejectattr("activation", "in", ["Action", "Bonus action", "Reaction"]) | list %}
+    {% if other %}<h3>Other</h3>
+    {% for a in other %}<details class="feat"><summary>{{ a.name }}{% if a.uses %} <span class="tag">{{ a.uses.max }} / {{ a.uses.reset }}</span>{% endif %}{% if a.activation and a.activation != "Special" %} <span class="note">· {{ a.activation | lower }}</span>{% endif %}</summary>{% if a.text %}<div class="feat-text">{{ a.text }}</div>{% endif %}</details>{% endfor %}
+    {% endif %}
+  </section>
+
+  {% if s.spells %}
+  <section class="section">
+    <h2>Spells</h2>
+    {% for sc in s.spellcasting %}<p class="hint" style="margin:6px 0 0">{{ sc.class }}: {{ sc.ability }} · save DC {{ sc.save_dc }} · spell attack {{ sc.attack }}</p>{% endfor %}
+    {% for level, list in s.spells | groupby("level") %}
+    <h3>{{ "Cantrips" if level == 0 else "Level " ~ level }}{% if level and s.spell_slots.slots | selectattr("level", "equalto", level) | list %}{% set sl = (s.spell_slots.slots | selectattr("level", "equalto", level) | first) %} <span class="note">· {{ sl.max }} slot{{ "s" if sl.max != 1 }}</span>{% endif %}</h3>
+    {% for sp in list %}
+    <details class="feat spell"><summary>{{ sp.name }}
+      {% if sp.concentration %}<span class="tag">Concentration</span>{% endif %}{% if sp.ritual %}<span class="tag">Ritual</span>{% endif %}
+      {% if sp.always_prepared %}<span class="tag done">Always prepared</span>{% elif sp.prepared %}<span class="tag done">Prepared</span>{% endif %}
+      {% if sp.uses %}<span class="tag">{{ sp.uses.max }} free / {{ sp.uses.reset }}</span>{% endif %}
+      <span class="spell-meta">{{ sp.casting_time }}{% if sp.range %} · {{ sp.range }}{% endif %}{% if sp.duration %} · {{ sp.duration }}{% endif %}{% if sp.components %} · {{ sp.components | join(", ") }}{% endif %}</span></summary>
+      <div class="feat-text">{% if sp.summary %}{{ sp.summary }}{% endif %}
+        <p class="note">{{ sp.school }}{% if sp.school %} · {% endif %}from {{ sp.sources | join(" and ") }}{% if sp.material %} · material: {{ sp.material }}{% endif %}{% if sp.uses and not sp.uses_slot %} · cast without a spell slot{% endif %}</p></div>
+    </details>
+    {% endfor %}{% endfor %}
+  </section>
+  {% endif %}
+
+  {% if s.creatures %}
+  <section class="section">
+    <h2>Forms and companions</h2>
+    <ul class="res-list">{% for cr in s.creatures %}<li><b>{{ cr.name }}</b><span>{{ cr.group }}{% if cr.cr %} · CR {{ cr.cr }}{% endif %} · AC {{ cr.armor_class }} · {{ cr.hit_points }} HP{% if cr.speed %} · {{ cr.speed }}{% endif %}</span></li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+
+  <section class="section">
+    <h2>Features and traits</h2>
+    {% for source, list in s.features | groupby("source") %}
+    <h3>{{ source }}</h3>
+    {% for f in list %}<details class="feat"><summary>{{ f.name }}{% if f.level %} <span class="note">· level {{ f.level }}</span>{% endif %}</summary>{% if f.text %}<div class="feat-text">{{ f.text }}</div>{% endif %}</details>{% endfor %}
+    {% endfor %}
+  </section>
+
+  <section class="section">
+    <h2>Skills and proficiencies</h2>
+    <ul class="skills">{% for sk in s.skills %}<li class="{{ 'prof' if sk.proficiency }}"><span>{{ sk.name }} <span class="note">{{ sk.ability }}</span>{% if sk.proficiency == "expertise" %} <span class="tag">Expertise</span>{% endif %}</span><b>{{ sk.label }}</b></li>{% endfor %}</ul>
+    <p class="note">Highlighted skills are ones {{ c.entity.name }} is proficient in.</p>
+    {% set p = s.proficiencies %}
+    <dl class="profs">
+      {% for key, label in [("armor", "Armor"), ("weapons", "Weapons"), ("tools", "Tools"), ("languages", "Languages"), ("senses", "Senses")] %}{% if p[key] %}<dt>{{ label }}</dt><dd>{{ p[key] | join(", ") }}</dd>{% endif %}{% endfor %}
+      {% for label, names in p.defenses.items() %}<dt>{{ label }}</dt><dd>{{ names | join("; ") }}</dd>{% endfor %}
+    </dl>
+  </section>
+
+  <section class="section">
+    <h2>Inventory</h2>
+    {% set main = s.inventory | selectattr("magic") | list + (s.inventory | rejectattr("magic") | selectattr("equipped") | list) %}
+    {% if s.attuned %}<p class="hint" style="margin:6px 0 0">Attuned: {{ s.attuned | join(", ") }} ({{ s.attuned | length }} of 3).</p>{% endif %}
+    {% for it in main %}
+    <details class="feat"><summary>{{ it.name }}{% if it.quantity > 1 %} ×{{ it.quantity }}{% endif %}
+      {% if it.equipped %}<span class="tag">Equipped</span>{% endif %}{% if it.attunement == "attuned" %}<span class="tag done">Attuned</span>{% elif it.attunement == "required" %}<span class="tag">Needs attunement</span>{% endif %}
+      {% if it.charges %}<span class="tag">{% if it.charges.reset == "Used up" %}{{ it.charges.left }} use{{ "s" if it.charges.left != 1 }} left{% else %}{{ it.charges.left }}/{{ it.charges.max }} charges{% endif %}</span>{% endif %}
+      <span class="spell-meta">{{ it.type }}{% if it.rarity and it.magic %} · {{ it.rarity }}{% endif %}{% if it.damage %} · {{ it.damage }}{% endif %}{% if it.armor_class %} · AC {{ it.armor_class }}{% endif %}{% if it.properties %} · {{ it.properties | join(", ") }}{% endif %}{% if it.in %} · in {{ it.in }}{% endif %}</span></summary>
+      {% if it.summary or it.charges or it.attunement_note %}<div class="feat-text">{{ it.summary }}{% if it.charges and it.charges.reset_note %}<p class="note">{{ it.charges.reset_note }}</p>{% endif %}{% if it.attunement_note %}<p class="note">Attunement: {{ it.attunement_note }}</p>{% endif %}</div>{% endif %}
+    </details>
+    {% endfor %}
+    {% set rest = s.inventory | rejectattr("magic") | rejectattr("equipped") | list %}
+    {% if rest %}<details class="suggest" style="margin-top:16px"><summary>Other gear ({{ rest | length }})</summary>
+      <p class="muted" style="margin:0">{% for it in rest %}{{ it.name }}{% if it.quantity > 1 %} ×{{ it.quantity }}{% endif %}{{ ", " if not loop.last }}{% endfor %}</p></details>{% endif %}
+    {% if s.currency %}<p class="note" style="margin-top:14px">Coins: {% for k, v in s.currency.items() %}{{ "{:,}".format(v) }} {{ k }}{{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
+  </section>
+  {% else %}
+  <p class="subtitle">{% if c.player_name %}Played by {{ c.player_name }}. {% endif %}{% if c.ddb_id %}Not fetched from D&amp;D Beyond yet.{% else %}Not linked to D&amp;D Beyond yet.{% endif %}</p>
+  {% if failed %}<p class="flash warn">{{ error }}</p>{% endif %}
+  {% endif %}
+
+  {% if reviewer %}
+  <section class="section">
+    <h2>D&amp;D Beyond link</h2>
+    <p class="hint" style="margin-top:6px">{% if c.ddb_id %}Linked to character {{ c.ddb_id }}. {% endif %}Paste the character's D&amp;D Beyond link to {{ "change it" if c.ddb_id else "link it" }}. The character must be set to Public on D&amp;D Beyond. Only reviewers see this.</p>
+    <form method="post" action="/characters/{{ c.id }}/link" class="row">
+      <input type="text" name="ddb_link" aria-label="D&amp;D Beyond link" placeholder="https://www.dndbeyond.com/characters/12345678" style="flex:1;min-width:220px" required>
+      <button class="btn{{ ' primary' if not c.ddb_id }}" type="submit">{{ "Save link" if c.ddb_id else "Link and fetch" }}</button>
+    </form>
+  </section>
+  {% endif %}
+</main>
+{% endblock %}

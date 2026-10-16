@@ -194,6 +194,28 @@ class Character(Timestamped, Base):
     player_name: Mapped[str] = mapped_column(String(200), default="", server_default="")  # who plays it, before they have an account
     entity: Mapped[Entity] = relationship()
     owner: Mapped[User | None] = relationship()
+    snapshot: Mapped["CharacterSnapshot | None"] = relationship(back_populates="character", uselist=False, passive_deletes=True)
+
+
+class CharacterSnapshot(Timestamped, Base):
+    """The last good copy of a character from D&D Beyond (unofficial data; see app/ddb.py).
+
+    A failed refresh only updates status/error/attempted_at: raw, summary and
+    fetched_at always hold the last copy that worked, so the app keeps working
+    when D&D Beyond is down or changes its format. Player notes are stripped
+    before storing (ddb.sanitize).
+    """
+
+    __tablename__ = "character_snapshots"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), unique=True)
+    fetched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # when the good copy was fetched
+    raw: Mapped[dict | None] = mapped_column(JSONB)
+    summary: Mapped[dict | None] = mapped_column(JSONB)  # ddb.parse_character(raw)
+    status: Mapped[str] = mapped_column(String(20), default="ok", server_default="ok")  # result of the latest attempt
+    error: Mapped[str] = mapped_column(Text, default="", server_default="")
+    attempted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    character: Mapped[Character] = relationship(back_populates="snapshot")
 
 
 class CharacterNote(Timestamped, Base):

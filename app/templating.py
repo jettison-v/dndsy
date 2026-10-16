@@ -31,3 +31,25 @@ def _relation_label(type_: str) -> str:
 
 
 templates.env.filters["rel_label"] = _relation_label
+
+
+def _ago(when) -> str:
+    """'just now', '5 minutes ago', '3 hours ago', 'yesterday', or 'Oct 14' — no time zone needed."""
+    from datetime import UTC, datetime
+
+    if when is None:
+        return ""
+    seconds = (datetime.now(UTC) - when).total_seconds()
+    if seconds < 90:
+        return "just now"
+    if seconds < 3600:
+        return f"{round(seconds / 60)} minutes ago"
+    if seconds < 86400:
+        hours = round(seconds / 3600)
+        return f"{hours} hour{'s' if hours != 1 else ''} ago"
+    if seconds < 2 * 86400:
+        return "yesterday"
+    return when.strftime("%b %-d, %Y") if seconds > 300 * 86400 else when.strftime("%b %-d")
+
+
+templates.env.filters["ago"] = _ago

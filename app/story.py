@@ -1,4 +1,4 @@
-"""Pages for the whole table: Previously on…, Sessions, Campaign, Characters."""
+"""Pages for the whole table: Previously on…, Sessions, Campaign. Characters: app/character_pages.py."""
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
@@ -10,7 +10,7 @@ from app.auth import current_user
 from app.db import get_db
 from app.extraction import session_label, timeline
 from app.linking import Linker, entity_linker
-from app.models import Campaign, Character, Correction, Entity, EntityKind, EventKind, GameSession, GlossaryTerm, Status
+from app.models import Campaign, Correction, Entity, EntityKind, EventKind, GameSession, GlossaryTerm, Status
 from app.relations import family_graph
 from app.render import markdown_to_html
 from app.templating import templates
@@ -167,15 +167,3 @@ def campaign_page(request: Request, db: Session = Depends(get_db)):
         request, "campaign.html", {"campaign": campaign, "groups": groups, "glossary": glossary, "tree": graph.mermaid() if campaign and graph.people else ""}
     )
 
-
-@router.get("/characters")
-def characters(request: Request, db: Session = Depends(get_db)):
-    if not _signed_in(request):
-        return RedirectResponse("/login", status_code=303)
-    campaign = _campaign(db)
-    chars = (
-        list(db.scalars(select(Character).join(Entity).where(Entity.campaign_id == campaign.id).order_by(Entity.name)))
-        if campaign
-        else []
-    )
-    return templates.TemplateResponse(request, "characters.html", {"characters": chars})
