@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Characters · Manage · askdnd{% endblock %}
+{% block content %}
+<main class="page" style="max-width:1000px">
+  <div class="crumbs">Manage › Characters</div>
+  <div class="title-row"><h1>Characters</h1>
+    {% if rows | selectattr("ddb_id") | list %}<form method="post" action="/characters/refresh" class="inline" style="margin-left:auto" data-busy-note="refresh-note"><button class="btn" type="submit" data-busy="Refreshing from D&amp;D Beyond…">Refresh all from D&amp;D Beyond</button></form>{% endif %}</div>
+  <p class="subtitle">D&amp;D Beyond links and your regrouping corrections. Only admins can see this page.</p>
+  <p class="busy-note" id="refresh-note" hidden>Fetching from D&amp;D Beyond. This takes a few seconds per character; the page reloads when it's done.</p>
+
+  <section class="section">
+    <h2>D&amp;D Beyond links</h2>
+    <p class="hint" style="margin-top:6px">Paste each character's D&amp;D Beyond link. The character must be set to Public on D&amp;D Beyond.</p>
+    <ul class="people">
+      {% for c in rows %}{% set snap = c.snapshot %}
+      <li class="char-link-row">
+        <div class="who"><b><a href="/characters/{{ c.id }}">{{ c.entity.name }}</a></b>
+          <span class="note">{% if c.player_name %}{{ c.player_name }} · {% endif %}{% if not c.ddb_id %}not linked yet{% elif snap and snap.fetched_at %}updated {{ snap.fetched_at | ago }}{% else %}not fetched yet{% endif %}{% if snap and snap.status == "error" %} · <span class="quiet-warn">{{ snap.error }}</span>{% endif %}</span></div>
+        <form method="post" action="/characters/{{ c.id }}/link" class="row link-form">
+          <input type="text" name="ddb_link" aria-label="D&amp;D Beyond link for {{ c.entity.name }}" value="{{ 'https://www.dndbeyond.com/characters/' ~ c.ddb_id if c.ddb_id }}" placeholder="https://www.dndbeyond.com/characters/12345678" required>
+          <button class="btn{{ ' primary' if not c.ddb_id }}" type="submit" data-busy="Fetching…">{{ "Save and refresh" if c.ddb_id else "Link and fetch" }}</button>
+        </form>
+      </li>
+      {% else %}<li class="muted">No characters yet.</li>{% endfor %}
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2>Regrouping</h2>
+    <p class="hint" style="margin-top:6px">Corrections you made from a character's side panel (Admin: regroup this). Each applies to everything with that name on every character. Undo returns it to askdnd's automatic choice.</p>
+    {% if overrides %}
+    <table class="list">
+      <tr><th>Thing</th><th>Setting</th><th>Now</th><th>When</th><th></th></tr>
+      {% for o in overrides %}
+      <tr><td>{{ o.ref.split(":", 1)[1] if ":" in o.ref else o.ref }} <span class="note">{{ o.ref.split(":", 1)[0] if ":" in o.ref else "" }}</span></td>
+        <td class="note">{{ field_labels.get(o.field, o.field) }}</td><td>{{ labels.get(o.field, {}).get(o.value, o.value) }}</td>
+        <td class="note">{{ o.updated_at | ago }}</td>
+        <td><form method="post" action="/admin/characters/overrides/{{ o.id }}/delete" class="inline"><button class="btn link" type="submit">Undo</button></form></td></tr>
+      {% endfor %}
+    </table>
+    {% else %}<p class="muted">No corrections yet. Open any row on a Character page and use "Admin: regroup this" at the bottom of the side panel.</p>{% endif %}
+  </section>
+</main>
+{% endblock %}

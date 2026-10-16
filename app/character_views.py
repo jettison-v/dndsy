@@ -27,10 +27,14 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
         o.setdefault("text", "")
         o.setdefault("summary", "")
         o["starred"] = o["key"] in starred
+        o.setdefault("oref", o["key"])
+        moved = (sheet.get("_overrides") or {}).get(f"{o['oref']}|cost")
+        if moved:
+            o["cost"] = moved
         out.append(o)
 
     for a in sheet.get("attacks") or []:
-        add(key=a["key"], kind="attack", cost="Action", name=a["name"], hit=a["to_hit"],
+        add(key=a["key"], oref=f"attack:{a['name']}", kind="attack", cost="Action", name=a["name"], hit=a["to_hit"],
             meta=" · ".join(x for x in (a["range"], a["damage"], ", ".join(a["properties"])) if x),
             common=True)
     for sp in sheet.get("spells") or []:
@@ -60,14 +64,14 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
             continue
         uses = it["charges"] if it["charges"] and it["charges"]["reset"] != "Used up" else None
         first = re.split(r"(?<=[.!?])\s", it["summary"] or "", maxsplit=1)[0]
-        add(key=it["key"], kind="item", cost="Action", name=f"Use an item: {it['name']}", uses=uses,
+        add(key=it["key"], oref=f"item:{it['base_name']}", kind="item", cost="Action", name=f"Use an item: {it['name']}", uses=uses,
             tags=[f"×{it['quantity']}"] if it["quantity"] > 1 else [], meta=first if len(first) <= 120 else first[:119].rsplit(" ", 1)[0] + "…",
             text=it.get("text") or it["summary"], summary=it["summary"], common="healing" in it["name"].lower())
     return out
 
 
-def _battle_override(sheet: dict, key: str) -> str | None:
-    return (sheet.get("_overrides") or {}).get(f"{key}|battle")
+def _battle_override(sheet: dict, oref: str) -> str | None:
+    return (sheet.get("_overrides") or {}).get(f"{oref}|battle")
 
 
 def battle_columns(sheet: dict, starred: set[str], order: dict[str, list[str]] | None = None) -> dict:
@@ -77,7 +81,7 @@ def battle_columns(sheet: dict, starred: set[str], order: dict[str, list[str]] |
     for cost in ("Action", "Bonus action", "Reaction"):
         everything = []
         for o in options(sheet, starred):
-            v = _battle_override(sheet, o["key"])
+            v = _battle_override(sheet, o["oref"])
             if o["cost"] != cost or (v == "hide" and not o["starred"]):
                 continue
             everything.append({**o, "common": o["common"] if v is None else v == "common"})
@@ -246,36 +250,62 @@ def granted_spells(sheet: dict) -> list[dict]:
 
 
 # ------------------------------------------------------------------ admin regrouping
+# An admin can correct how askdnd groups anything from D&D Beyond. Corrections
+# are stored by name (sheet_overrides) so they apply to every character.
 
+ITEM_GROUPS = [("battle", "Usable in battle"), ("equipped", "Equipped"), ("Weapons", "Weapons"), ("Armor", "Armor"),
+               ("Magic items", "Magic items"), ("Potions and scrolls", "Potions and scrolls"), ("Gear", "Gear")]
 OVERRIDE_CHOICES = {
+    "hide": [("hide", "Hidden everywhere in askdnd")],
+    "cost": [("Action", "Action"), ("Bonus action", "Bonus action"), ("Reaction", "Reaction"), ("Other", "Other (not on your turn)")],
+    "battle": [("common", "Shown on Battle"), ("normal", "Only in See all"), ("hide", "Not on Battle")],
     "feature_group": [("use", "Things you can use"), ("passive", "Always on (in your numbers)")],
     "situ_group": [("situational", "Situational"), ("in_numbers", "Already in your numbers")],
-    "battle": [("common", "Show on Battle by default"), ("normal", "Only in See all"), ("hide", "Hide from Battle")],
+    "item_group": ITEM_GROUPS,
 }
+FIELD_LABELS = {"hide": "Show in askdnd", "cost": "Section (what it costs)", "battle": "On the Battle page",
+                "feature_group": "Features group", "situ_group": "Situational group", "item_group": "Inventory group"}
+CATEGORY_GROUPS = {"Weapon": "Weapons", "Armor": "Armor", "Wondrous item": "Magic items", "Ring": "Magic items", "Rod": "Magic items",
+                   "Staff": "Magic items", "Wand": "Magic items", "Potion": "Potions and scrolls", "Scroll": "Potions and scrolls"}
 
 
-def override_ref(x: dict) -> str:
-    """Overrides are by name, so one correction fixes it for every character."""
-    key = x.get("key", "")
-    if key.startswith("feature:"):
-        return "feature:" + x["name"]
-    return key
+def override_ref(x: dict, section: str | None = None) -> str:
+    """The name-based handle an override is stored under (same for every character)."""
+    section = section or x.get("section", "")
+    name = x.get("base_name") or x.get("name") or ""
+    prefix = {"features": "feature", "inventory": "item", "attacks": "attack", "spells": "spell", "actions": "action",
+              "creatures": "form"}.get(section)
+    return f"{prefix}:{name}" if prefix else x.get("key", "")
+
+
+def fields_for(section: str, opt: dict | None) -> list[str]:
+    """Which corrections make sense for one thing (every thing can be hidden)."""
+    fields = ["hide"]
+    if opt:
+        fields += ["cost", "battle"]
+    fields += {"features": ["feature_group"], "situational": ["situ_group"], "inventory": ["item_group"]}.get(section, [])
+    return fields
 
 
 def apply_overrides(sheet: dict, overrides: dict[tuple[str, str], str]) -> dict:
-    """Return the sheet with admin regrouping applied (features, Situational)."""
+    """Return the sheet with admin regrouping applied."""
     if not sheet:
         return sheet
     sheet = dict(sheet)
-    feats = []
-    for f in sheet.get("features") or []:
-        v = overrides.get((override_ref(f), "feature_group"))
-        feats.append({**f, "use": f["use"] if v is None else v == "use"})
-    sheet["features"] = feats
-    situ = []
-    for x in sheet.get("situational") or []:
-        v = overrides.get((x["key"], "situ_group"))
-        situ.append({**x, "in_numbers": (x["kind"] == "bonus") if v is None else v == "in_numbers"})
-    sheet["situational"] = situ
+    get = lambda x, section, field: overrides.get((override_ref(x, section), field))  # noqa: E731
+    for section in ("features", "situational", "inventory", "creatures", "attacks", "actions", "spells"):
+        sheet[section] = [x for x in sheet.get(section) or [] if get(x, section, "hide") != "hide"]
+    sheet["spellbook"] = [{**b, "spells": [x for x in b["spells"] if get(x, "spells", "hide") != "hide"]}
+                          for b in sheet.get("spellbook") or []]
+    sheet["features"] = [{**f, "use": f["use"] if get(f, "features", "feature_group") is None else get(f, "features", "feature_group") == "use"}
+                         for f in sheet["features"]]
+    sheet["situational"] = [{**x, "in_numbers": (x["kind"] == "bonus") if get(x, "situational", "situ_group") is None
+                             else get(x, "situational", "situ_group") == "in_numbers"} for x in sheet["situational"]]
+    items = []
+    for it in sheet["inventory"]:
+        group = get(it, "inventory", "item_group") or (
+            "battle" if it["battle"] else "equipped" if it["equipped"] else CATEGORY_GROUPS.get(it.get("category"), "Gear"))
+        items.append({**it, "group": group, "battle": group == "battle"})
+    sheet["inventory"] = items
     sheet["_overrides"] = {f"{r}|{fld}": v for (r, fld), v in overrides.items()}
     return sheet

@@ -215,8 +215,10 @@ def detail_panel(request: Request, character_id: int, ref: str, db: Session = De
     d = views.detail(ctx["sheet"] or {}, ref, ctx["picks"]["star"])
     if d is None:
         return HTMLResponse("", status_code=404)
-    return templates.TemplateResponse(request, "_panel_detail.html", {**ctx, **d, "ref": ref,
-                                      "choices": views.OVERRIDE_CHOICES, "oref": views.override_ref({**d["x"], "key": ref})})
+    oref = d["opt"]["oref"] if d["opt"] else views.override_ref({**d["x"], "key": ref}, d["section"])
+    return templates.TemplateResponse(request, "_panel_detail.html", {**ctx, **d, "ref": ref, "oref": oref,
+                                      "choices": views.OVERRIDE_CHOICES, "field_labels": views.FIELD_LABELS,
+                                      "fields": views.fields_for(d["section"], d["opt"])})
 
 
 @router.post("/characters/{character_id:int}/override")
@@ -316,18 +318,19 @@ def refresh_one(request: Request, character_id: int, db: Session = Depends(get_d
 
 @router.post("/characters/{character_id:int}/link")
 def link(request: Request, character_id: int, ddb_link: str = Form(""), db: Session = Depends(get_db)):
-    """Save the D&D Beyond link, then fetch the character straight away."""
-    if not is_reviewer(current_user(request)):
-        return _forbidden(request)
+    """Admin (Manage › Characters): save the D&D Beyond link, then fetch the character."""
+    if not is_admin(current_user(request)):
+        return _forbidden(request, "Only an admin can change D&D Beyond links.")
     ch = db.get(Character, character_id)
     if ch is None:
-        return RedirectResponse("/party", status_code=303)
+        return RedirectResponse("/admin/characters", status_code=303)
     try:
         chars.set_ddb_link(db, ch, ddb_link)
     except ddb.DdbError as e:
         request.session["toast"] = str(e)
-        return RedirectResponse(f"/characters/{ch.id}", status_code=303)
+        return RedirectResponse("/admin/characters", status_code=303)
     snap = chars.refresh(db, ch)
     db.commit()
-    request.session["toast"] = "Linked and updated from D&D Beyond" if snap.status == "ok" else "Linked, but couldn't fetch it yet"
-    return RedirectResponse(f"/characters/{ch.id}", status_code=303)
+    request.session["toast"] = (f"{ch.entity.name}: linked and updated from D&D Beyond" if snap.status == "ok"
+                                else f"{ch.entity.name}: linked, but couldn't fetch it yet")
+    return RedirectResponse("/admin/characters", status_code=303)

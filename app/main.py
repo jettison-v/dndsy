@@ -13,6 +13,7 @@ from app import config
 from app.admin import router as admin_router
 from app.admin_notes import router as admin_notes_router
 from app.admin_people import router as admin_people_router
+from app.admin_characters import router as admin_characters_router
 from app.admin_sessions import router as admin_sessions_router
 from app.admin_usage import router as admin_usage_router
 from app.api import router as api_router
@@ -63,6 +64,7 @@ app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(admin_notes_router)
 app.include_router(admin_people_router)
+app.include_router(admin_characters_router)
 app.include_router(admin_sessions_router)
 app.include_router(suggestions_router)
 app.include_router(story_router)
