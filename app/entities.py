@@ -257,5 +257,9 @@ def mention_suggestions(db: Session, campaign_id: int, q: str, include_drafts: b
             r = hit(m)
             if r is not None:
                 offer(target.name if target else g.term, kind, r + 4, via=m)
+                if target is None:  # "Fennwood" -> "Fenwood" -> also "Aldric Fenwood"
+                    for e in by_name.values():
+                        if _norm(g.term) in _norm(e.name).split():
+                            offer(e.name, KIND_LABELS.get(e.kind, ""), r + 5, via=m)
     ranked = sorted(found.values(), key=lambda d: (d["rank"], d["name"].casefold()))[:limit]
     return [{k: d[k] for k in ("name", "kind", "via")} for d in ranked]

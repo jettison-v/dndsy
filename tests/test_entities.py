@@ -200,7 +200,8 @@ def test_mention_suggestions(db):
     assert entities.mention_suggestions(db, cid, "lem")[0]["name"] == "Lillippi Lemon"  # any word
     assert entities.mention_suggestions(db, cid, "ll")[0] == {"name": "Lillippi Lemon", "kind": "Person", "via": "LL"}
     # misheard_as on the glossary term "Lillippi" -> the term itself (it isn't an entity name)
-    assert entities.mention_suggestions(db, cid, "lollip")[0]["name"] == "Lillippi"
+    names = [m["name"] for m in entities.mention_suggestions(db, cid, "lollip")]
+    assert names == ["Lillippi", "Lillippi Lemon"]  # the spelling, then full names using it
     assert entities.mention_suggestions(db, cid, "salt")[0]["kind"] == "Place"
     assert entities.mention_suggestions(db, cid, "zzz") == []
 
