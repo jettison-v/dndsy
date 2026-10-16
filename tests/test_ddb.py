@@ -275,3 +275,24 @@ def test_items_usable_in_battle_and_keys(cole):
     assert potion["battle"] and potion["key"].startswith("item:")
     assert not by_name(cole["inventory"], "Bag of Holding")["battle"]
     assert all(x["key"] for x in cole["actions"] + cole["spells"] + cole["features"] + cole["creatures"])
+
+
+def test_spellbook_for_the_planner(cole, big_c):
+    trah = ddb.parse_character(load("trah"))
+    druid = cole["spellbook"][0]
+    states = {sp["name"]: sp["state"] for sp in druid["spells"]}
+    assert states["Moonbeam"] == "always" and states["Heat Metal"] == "prepared" and states["Mending"] == "known"
+    assert states["Barkskin"] == "available"  # on the Druid list, not prepared
+    assert (druid["prepared_count"], druid["prepared_max"], druid["cantrips_count"], druid["cantrips_max"]) == (10, 10, 3, 3)
+    wizard = trah["spellbook"][0]
+    w = {sp["name"]: sp["state"] for sp in wizard["spells"]}
+    assert w["Fireball"] == "prepared" and w["Knock"] == "spellbook" and wizard["spellbook"]
+    paladin = big_c["spellbook"][0]
+    assert {sp["name"]: sp["state"] for sp in paladin["spells"]}["Command"] == "always"  # Oath Spells
+    assert (paladin["prepared_count"], paladin["prepared_max"]) == (4, 6)  # Oath Spells don't count toward the 6
+
+
+def test_features_split_into_usable_and_always_on(cole):
+    use = {f["name"]: f["use"] for f in cole["features"]}
+    assert use["Wild Shape"] and use["Mask of the Wild"] and use["War Caster"] and use["Circle of the Moon Spells"]
+    assert not use["Fleet of Foot"] and not use["Keen Senses"] and not use["Unarmored Defense"]

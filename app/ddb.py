@@ -22,7 +22,7 @@ CHARACTER_URL = "https://character-service.dndbeyond.com/character/v5/character/
 SHEET_URL = "https://www.dndbeyond.com/characters/{id}"
 USER_AGENT = "askdnd/2 (private table companion; +https://beta.askdnd.ai)"
 TIMEOUT_SECONDS = 15
-PARSER_VERSION = 3  # bump when the summary shape changes; stored summaries are re-parsed
+PARSER_VERSION = 4  # bump when the summary shape changes; stored summaries are re-parsed
 
 
 class DdbError(Exception):
@@ -84,27 +84,65 @@ def _get_json(url: str, timeout: float) -> dict:
         return json.loads(resp.read())
 
 
+CLASS_SPELLS_URLS = (  # what a class can prepare: leveled spells, then cantrips
+    "https://character-service.dndbeyond.com/character/v5/game-data/always-known-spells"
+    "?classId={class_id}&classLevel={level}&sharingSetting=2",
+    "https://character-service.dndbeyond.com/character/v5/game-data/spells"
+    "?classId={class_id}&classLevel={level}&sharingSetting=2",
+)
+SPELL_FIELDS = ("id", "name", "level", "school", "duration", "activation", "range", "concentration", "ritual",
+                "components", "componentsDescription", "saveDcAbilityId", "requiresAttackRoll", "requiresSavingThrow",
+                "modifiers", "tags", "scaleType", "castingTimeDescription", "description")
+
+
+def _slim_spell(s: dict) -> dict:
+    """Only what the parser reads, so a class's whole spell list stays small."""
+    df = s.get("definition") or {}
+    slim = {k: df.get(k) for k in SPELL_FIELDS if k in df}
+    slim["description"] = (df.get("description") or "")[:1500]
+    slim["modifiers"] = [{k: m.get(k) for k in ("type", "subType", "friendlySubtypeName", "die")} for m in df.get("modifiers") or []]
+    return {"definition": slim, "prepared": False, "alwaysPrepared": bool(s.get("alwaysPrepared"))}
+
+
+def _spell_list(url: str, timeout: float) -> list:
+    try:
+        payload = _get_json(url, timeout)
+    except (OSError, ValueError):
+        return []
+    spells = payload.get("data") if isinstance(payload, dict) else None
+    return spells if isinstance(spells, list) else []
+
+
 def fetch_character(ddb_id: str, timeout: float = TIMEOUT_SECONDS) -> dict:
-    """The character plus the spells their class and subclass always have prepared
-    (e.g. Circle of the Moon spells). D&D Beyond's sheet loads those separately; we
-    store them under data["askdnd"]["alwaysPreparedSpells"]. If that extra call
-    fails the character still loads, just without them."""
+    """The character, plus two things D&D Beyond's sheet loads separately:
+    - the spells each class and subclass always has prepared (e.g. Circle of the
+      Moon spells), under data["askdnd"]["alwaysPreparedSpells"];
+    - every spell each class could prepare at its level (for the spell planner),
+      under data["askdnd"]["availableSpells"].
+    If those extra calls fail, the character still loads, just without them."""
     data = fetch_character_json(ddb_id, timeout)
-    extra = {}
+    always, available = {}, {}
     for c in data.get("classes") or []:
         level = c.get("level") or 0
         for key in ("definition", "subclassDefinition"):
             class_id = _d(c, key, "id")
             if not class_id:
                 continue
-            try:
-                payload = _get_json(ALWAYS_PREPARED_URL.format(class_id=class_id, level=level), timeout)
-            except (OSError, ValueError):
-                continue
-            spells = payload.get("data") if isinstance(payload, dict) else None
-            if isinstance(spells, list) and spells:
-                extra[str(class_id)] = spells
-    data["askdnd"] = {"alwaysPreparedSpells": extra}
+            spells = _spell_list(ALWAYS_PREPARED_URL.format(class_id=class_id, level=level), timeout)
+            if spells:
+                always[str(class_id)] = spells
+        class_id = _d(c, "definition", "id")
+        if class_id and _d(c, "definition", "canCastSpells"):
+            seen, pool = set(), []
+            for url in CLASS_SPELLS_URLS:
+                for sp in _spell_list(url.format(class_id=class_id, level=level), timeout):
+                    name = _d(sp, "definition", "name")
+                    if name and name not in seen:
+                        seen.add(name)
+                        pool.append(_slim_spell(sp))
+            if pool:
+                available[str(class_id)] = pool
+    data["askdnd"] = {"alwaysPreparedSpells": always, "availableSpells": available}
     return data
 
 
@@ -208,6 +246,10 @@ MARTIAL_WEAPONS = {"Battleaxe", "Flail", "Glaive", "Greataxe", "Greatsword", "Ha
 DAMAGE_TYPES = {"acid", "bludgeoning", "cold", "fire", "force", "lightning", "necrotic", "piercing", "poison",
                 "psychic", "radiant", "slashing", "thunder"}
 PROFICIENCY_GROUPS = {174869515: "armor", 660121713: "weapons", 1782728300: "weapons", 2103445194: "tools"}
+
+USABLE_NAME = re.compile(r"(Spells|^Spellcasting|^Pact Magic|^Extra Attack|^Eldritch Invocations)$", re.I)
+USABLE_TEXT = re.compile(r"\b(as a bonus action|take a bonus action|as a reaction|use your reaction|take a magic action|"
+                         r"as a magic action|you can cast|you know the \w[\w' ]* cantrip)\b", re.I)
 
 # Feature names that are only headings on D&D Beyond, not something you can do.
 SKIP_FEATURES = re.compile(
@@ -523,15 +565,23 @@ class _Sheet:
 
     def features(self) -> list[dict]:
         out, seen = [], set()
+        acted = {a.get("componentId") for group in (self.d.get("actions") or {}).values() for a in group or []}
+        casts = {s.get("componentId") for group in (self.d.get("spells") or {}).values() for s in group or []}
 
-        def add(name, source, desc, required_level=None):
+        def usable(df: dict, name: str, text: str) -> bool:
+            """Something you do (an action, a resource, spells), as opposed to a rule
+            that's simply part of your numbers (Fleet of Foot, Keen Senses)."""
+            return bool(df.get("id") in acted or df.get("id") in casts or df.get("limitedUse")
+                        or USABLE_NAME.search(name) or USABLE_TEXT.search(text))
+
+        def add(name, source, desc, required_level=None, df=None):
             name = (name or "").strip()
             if not name or SKIP_FEATURES.match(name) or (name, source) in seen:
                 return
             seen.add((name, source))
             text = html_to_text(desc)
             out.append({"key": f"feature:{source}:{name}", "name": name, "source": source, "level": required_level,
-                        "summary": _first_paragraph(text), "text": text})
+                        "summary": _first_paragraph(text), "text": text, "use": usable(df or {}, name, text)})
 
         for c in self.classes:
             cname = _d(c, "definition", "name")
@@ -543,20 +593,20 @@ class _Sheet:
                 if df.get("hideInSheet") or (df.get("requiredLevel") or 0) > (c.get("level") or 0):
                     continue
                 label = sub if sub and (df.get("isSubClassFeature") or (sub_id and df.get("classId") == sub_id)) else cname
-                add(df.get("name"), label, df.get("description"), df.get("requiredLevel"))
+                add(df.get("name"), label, df.get("description"), df.get("requiredLevel"), df)
         species = _d(self.d, "race", "fullName", default="Species")
         for t in _d(self.d, "race", "racialTraits", default=[]):
             df = t.get("definition") or {}
             if not df.get("hideInSheet"):
-                add(df.get("name"), species, df.get("description"))
+                add(df.get("name"), species, df.get("description"), df=df)
         for f in self.d.get("feats") or []:
             df = f.get("definition") or {}
-            add(df.get("name"), "Feat", df.get("description"))
+            add(df.get("name"), "Feat", df.get("description"), df=df)
         for group in (self.d.get("options") or {}).values():
             for o in group or []:
                 df = o.get("definition") or {}
                 if not re.match(r"^(increase .*|strength|dexterity|constitution|intelligence|wisdom|charisma)$", df.get("name") or "", re.I):
-                    add(df.get("name"), "Choice", df.get("description"))
+                    add(df.get("name"), "Choice", df.get("description"), df={**df, "id": o.get("componentId")})
         return out
 
     def spell_slots(self) -> dict:
@@ -726,6 +776,69 @@ class _Sheet:
                     out[key] = sp
         return sorted(out.values(), key=lambda s: (s["level"], s["name"]))
 
+    def spellbook(self) -> list[dict]:
+        """For the spell planner: per spellcasting class, every spell it could have,
+        each with a state — "always" (always prepared), "prepared", "known"
+        (a cantrip you have), "spellbook" (a wizard's, not prepared today) or
+        "available" (on the class list, not on your sheet) — plus the counts."""
+        casters = {c["class"]: c for c in self.spellcasting()}
+        extra_always = _d(self.d, "askdnd", "alwaysPreparedSpells", default={}) or {}
+        extra_available = _d(self.d, "askdnd", "availableSpells", default={}) or {}
+        sheet_lists = {cs.get("characterClassId"): cs.get("spells") or [] for cs in self.d.get("classSpells") or []}
+        out = []
+        for c in self.classes:
+            df = c.get("definition") or {}
+            name, lvl = df.get("name"), c.get("level") or 0
+            if name not in casters:
+                continue
+            rules = df.get("spellRules") or {}
+
+            def at_level(key):
+                row = rules.get(key) or []
+                return row[lvl] if lvl < len(row) and row[lvl] else None
+
+            book = df.get("spellPrepareType") == 1 and df.get("spellCastingLearningStyle") == 2
+            # Classes that don't prepare from a list (D&D Beyond: spellPrepareType unset) simply
+            # know the spells on their sheet, so those count as prepared.
+            knows = df.get("spellPrepareType") != 1
+            entries: dict[str, dict] = {}
+
+            def put(raw, state):
+                sp = self.spell(raw, name)
+                if not sp:
+                    return
+                old = entries.get(sp["name"])
+                rank = {"always": 4, "prepared": 3, "known": 3, "spellbook": 2, "available": 1}
+                if old is None or rank[state] > rank[old["state"]]:
+                    entries[sp["name"]] = {**sp, "state": state}
+
+            for s in sheet_lists.get(c.get("id"), []):
+                level = _d(s, "definition", "level") or 0
+                state = ("always" if s.get("alwaysPrepared") else "known" if not level
+                         else "prepared" if s.get("prepared") or knows else "spellbook" if book else "available")
+                put(s, state)
+            for key in ("definition", "subclassDefinition"):
+                for s in extra_always.get(str(_d(c, key, "id")), []):
+                    put(s, "always")
+            own_features = {_d(f, "definition", "id") for f in c.get("classFeatures") or []}
+            for s in _d(self.d, "spells", "class", default=[]) or []:  # e.g. Oath Spells, granted by a feature
+                if s.get("alwaysPrepared") and s.get("componentId") in own_features:
+                    put(s, "always")
+            for s in extra_available.get(str(df.get("id")), []):
+                put(s, "available")
+            spells = sorted(entries.values(), key=lambda x: (x["level"], x["name"]))
+            out.append({
+                "class": name,
+                **casters[name],
+                "spellbook": book,
+                "prepared_count": sum(1 for x in spells if x["state"] == "prepared"),
+                "prepared_max": at_level("levelPreparedSpellMaxes") or at_level("levelSpellKnownMaxes"),
+                "cantrips_count": sum(1 for x in spells if x["state"] == "known" and not x["level"]),
+                "cantrips_max": at_level("levelCantripsKnownMaxes"),
+                "spells": spells,
+            })
+        return out
+
     def inventory(self) -> list[dict]:
         names = {str(v.get("valueId")): v.get("value") for v in self.d.get("characterValues") or [] if v.get("typeId") == 8}
         containers = {i.get("id"): i for i in self.items}
@@ -745,6 +858,7 @@ class _Sheet:
                 "name": names.get(str(i.get("id"))) or df["name"],
                 "base_name": df["name"],
                 "battle": bool(usable and df.get("filterType") != "Weapon"),
+                "category": df.get("filterType") or "Other Gear",
                 "type": df.get("subType") or df.get("filterType") or df.get("type") or "",
                 "quantity": i.get("quantity") or 1,
                 "equipped": bool(i.get("equipped")),
@@ -958,6 +1072,7 @@ def parse_character(data: dict) -> dict:
             "spellcasting": sh.spellcasting(),
             "spell_slots": slots,
             "spells": spells,
+            "spellbook": sh.spellbook(),
             "actions": actions,
             "features": sh.features(),
             "inventory": items,
