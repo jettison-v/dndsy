@@ -119,12 +119,27 @@ def draft(request: Request, session_ids: list[int] = Form(...)):
 # --- Review page ---------------------------------------------------------------
 
 
+def _next_session(db: Session, s: GameSession) -> dict | None:
+    """The session after this one, and whether it can be drafted from notes."""
+    ordered = sorted(db.scalars(select(GameSession).where(GameSession.campaign_id == s.campaign_id)), key=_order_key)
+    later = [x for x in ordered if _order_key(x) > _order_key(s)]
+    if not later:
+        return None
+    nxt = later[0]
+    snap = latest_campaign_notes(db, s.campaign_id)
+    has_notes = bool(snap) and nxt.number in split_notes(snap.text)[1]
+    return {"s": nxt, "label": session_label(nxt), "drafted": bool(nxt.recaps), "has_notes": has_notes}
+
+
 def _body_context(db: Session, s: GameSession) -> dict:
-    ctx = review.review_context(db, s, drafting=s.id in _running_ids(db))
+    running = _running_ids(db)
+    ctx = review.review_context(db, s, drafting=s.id in running)
     ctx.update(
         s=s,
         label=session_label(s),
         recap_html=markdown_to_html(ctx["latest"].body, lambda n: None) if ctx["latest"] else "",
+        next_session=_next_session(db, s),
+        anything_drafting=bool(running),
     )
     return ctx
 

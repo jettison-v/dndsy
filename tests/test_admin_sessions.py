@@ -207,3 +207,11 @@ def test_player_cannot_open_admin_review(monkeypatch, db):
     assert c.get("/admin/sessions").status_code == 403
     assert "Manage" not in c.get("/").text
     app.dependency_overrides.clear()
+
+
+def test_next_session_button(client, db):
+    s = drafted_session(db)
+    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "sessions": [{"number": 30}]})
+    page = client.get(f"/admin/sessions/{s.id}").text
+    assert "Next: Session 30" in page
+    assert "Draft next session" not in page  # no synced notes for session 30 in this test

@@ -157,6 +157,8 @@ details.done[open] > summary::before { transform: rotate(90deg); }
 .panel .btn.primary { width: 100%; min-height: 48px; font-size: 1.02rem; }
 .btn.primary.is-done, .btn.primary.is-done:hover { background: var(--green-soft); border-color: transparent; color: var(--green); cursor: default; }
 .panel .note { margin: 12px 0 0; }
+.next { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); display: grid; gap: 8px; }
+.next .btn { width: 100%; text-align: center; }
 .source { margin-top: 16px; padding: 0 22px; color: var(--muted); font-size: .9rem; }
 .mobile-bar { display: none; }
 

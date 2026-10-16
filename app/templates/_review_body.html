@@ -197,6 +197,16 @@
         </ul>
         <div class="publish-block">{% include "_publish_button.html" %}
           <p class="note">Shows on Previously on… You can edit and publish again any time.</p></div>
+        {% if next_session %}{% set n = next_session %}
+        <div class="next">
+          <span class="note">Next: {{ n.label }}</span>
+          {% if n.drafted %}<a class="btn" href="/admin/sessions/{{ n.s.id }}">Review next session</a>
+          {% elif n.has_notes %}<form method="post" action="/admin/sessions/draft"><input type="hidden" name="session_ids" value="{{ n.s.id }}">
+            <button class="btn" {% if anything_drafting %}disabled{% endif %}>Draft next session</button></form>
+            <span class="note">Publish this one first so the next draft learns from your changes.</span>
+          {% endif %}
+        </div>
+        {% endif %}
       </div>
       <p class="source">{{ "From a transcript" if s.source == "transcript" else "From your campaign notes" }}{% if s.source != "transcript" %} · <a href="/admin/notes">notes</a>{% endif %}</p>
     </aside>
