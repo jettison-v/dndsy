@@ -361,3 +361,13 @@ details.feat > summary:hover { color: #fff; }
 .people li + li { border-top: 1px solid var(--line); }
 .people li.removed .who b { color: var(--muted); }
 .people .who { display: grid; }
+
+/* Busy buttons (app.js): something is happening */
+@keyframes spin { to { transform: rotate(360deg); } }
+.btn.busy, form.htmx-request button[type=submit], .btn.htmx-request { cursor: progress; opacity: .85; }
+.btn.busy::before, form.htmx-request button[type=submit]::before, .btn.htmx-request::before {
+  content: ""; display: inline-block; width: 13px; height: 13px; margin: 0 8px -1px 0; border-radius: 50%;
+  border: 2px solid currentColor; border-right-color: transparent; animation: spin .7s linear infinite;
+}
+.btn.link.busy::before { margin-right: 6px; }
+.busy-note { margin: -18px 0 24px; color: var(--muted); font-size: .9rem; }

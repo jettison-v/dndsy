@@ -5,7 +5,7 @@
 <main class="page narrow sheet">
   <div class="crumbs"><a href="/characters">Characters</a> › {{ c.entity.name }}</div>
   <div class="title-row"><h1>{{ c.entity.name }}</h1>
-    {% if reviewer and c.ddb_id %}<form method="post" action="/characters/{{ c.id }}/refresh" class="inline" style="margin-left:auto"><button class="btn" type="submit">Refresh from D&amp;D Beyond</button></form>{% endif %}</div>
+    {% if reviewer and c.ddb_id %}<form method="post" action="/characters/{{ c.id }}/refresh" class="inline" style="margin-left:auto"><button class="btn" type="submit" data-busy="Refreshing…">Refresh from D&amp;D Beyond</button></form>{% endif %}</div>
   {% if s %}
   <p class="subtitle" style="margin-bottom:8px">{{ s.species }} · {% for k in s.classes %}{{ k.name }} {{ k.level }}{% if k.subclass %} ({{ k.subclass }}){% endif %}{{ " / " if not loop.last }}{% endfor %} · level {{ s.level }}{% if s.background %} · {{ s.background }} background{% endif %}{% if c.player_name %} · played by {{ c.player_name }}{% endif %}</p>
   <p class="note sheet-source">Last updated from D&amp;D Beyond {{ fetched_at | ago }}{% if s.sheet_url %} · <a href="{{ s.sheet_url }}" target="_blank" rel="noopener">Open on D&amp;D Beyond ↗</a>{% endif %}
@@ -130,7 +130,7 @@
     <p class="hint" style="margin-top:6px">{% if c.ddb_id %}Linked to character {{ c.ddb_id }}. {% endif %}Paste the character's D&amp;D Beyond link to {{ "change it" if c.ddb_id else "link it" }}. The character must be set to Public on D&amp;D Beyond. Only reviewers see this.</p>
     <form method="post" action="/characters/{{ c.id }}/link" class="row">
       <input type="text" name="ddb_link" aria-label="D&amp;D Beyond link" placeholder="https://www.dndbeyond.com/characters/12345678" style="flex:1;min-width:220px" required>
-      <button class="btn{{ ' primary' if not c.ddb_id }}" type="submit">{{ "Save link" if c.ddb_id else "Link and fetch" }}</button>
+      <button class="btn{{ ' primary' if not c.ddb_id }}" type="submit" data-busy="Fetching from D&amp;D Beyond…">{{ "Save link" if c.ddb_id else "Link and fetch" }}</button>
     </form>
   </section>
   {% endif %}

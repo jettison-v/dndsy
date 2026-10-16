@@ -15,7 +15,7 @@
         <div class="note">Drafted oldest first, so each one reads the recaps before it. About ${{ "%.2f" | format(missing | length * 0.13) }}.</div></div>
       <form method="post" action="/admin/sessions/draft">
         {% for id in missing %}<input type="hidden" name="session_ids" value="{{ id }}">{% endfor %}
-        <button class="btn primary">Draft all</button>
+        <button class="btn primary" data-busy="Starting drafts…">Draft all</button>
       </form>
     </div>
   </section>
@@ -54,7 +54,7 @@
         <td class="note">{% if r.last_run %}{% if r.last_run.status == "error" %}<span class="tag error">Failed</span>{% elif r.last_run.status == "done" %}{{ "%.0f" | format(r.last_run.cost_usd * 100) }}¢{% endif %}{% endif %}</td>
         <td style="text-align:right">
           {% if r.has_notes and r.status == "no draft" and not running %}
-          <form method="post" action="/admin/sessions/draft"><input type="hidden" name="session_ids" value="{{ r.s.id }}"><button class="btn">Draft from notes</button></form>
+          <form method="post" action="/admin/sessions/draft"><input type="hidden" name="session_ids" value="{{ r.s.id }}"><button class="btn" data-busy="Starting…">Draft from notes</button></form>
           {% elif r.status != "no draft" %}<a class="btn" href="/admin/sessions/{{ r.s.id }}">Review</a>
           {% elif r.s.source == "transcript" %}<span class="note">Send from the Processor</span>
           {% elif r.s.source == "account" %}<a class="btn" href="/admin/sessions/{{ r.s.id }}">Continue</a>{% endif %}

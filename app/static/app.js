@@ -226,6 +226,34 @@
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closePeek(); });
 
+  // Busy buttons: a normal (non-HTMX) form shows that it's working once submitted —
+  // its submit button is disabled, gets a spinner and, if it has data-busy, a new
+  // label ("Refreshing…"). This also stops double submits. HTMX requests get the
+  // same look from the htmx-request class (see app.css).
+  document.addEventListener('submit', e => {
+    const form = e.target;
+    if (e.defaultPrevented || form.hasAttribute('hx-post') || form.hasAttribute('hx-get') || form.method.toLowerCase() !== 'post') return;
+    const btn = e.submitter || form.querySelector('button[type=submit], button:not([type])');
+    if (!btn) return;
+    if (btn.name) {  // a disabled button isn't submitted, so keep its name/value
+      const keep = document.createElement('input');
+      keep.type = 'hidden'; keep.name = btn.name; keep.value = btn.value;
+      form.appendChild(keep);
+    }
+    setTimeout(() => {  // after the browser has collected the form data
+      btn.dataset.label = btn.textContent;
+      if (btn.dataset.busy) btn.textContent = btn.dataset.busy;
+      btn.classList.add('busy');
+      btn.disabled = true;
+      const note = form.dataset.busyNote && document.getElementById(form.dataset.busyNote);
+      if (note) note.hidden = false;
+    }, 0);
+  });
+  // Coming back with the browser's Back button shows the page as it was left: undo busy states.
+  window.addEventListener('pageshow', () => document.querySelectorAll('button.busy').forEach(b => {
+    b.classList.remove('busy'); b.disabled = false; if (b.dataset.label) b.textContent = b.dataset.label;
+  }));
+
   // Flash message from a full page load
   const flash = document.body.dataset.toast;
   if (flash) toast(flash);

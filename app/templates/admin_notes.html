@@ -15,7 +15,7 @@
   {% else %}
   <section class="section">
     <div class="section-head"><h2>Your docs</h2>
-      {% if sources %}<form method="post" action="/admin/notes/sync"><button class="btn primary">Sync now</button></form>{% endif %}</div>
+      {% if sources %}<form method="post" action="/admin/notes/sync"><button class="btn primary" data-busy="Opening Google…">Sync now</button></form>{% endif %}</div>
     {% if sources %}
     <table class="list" style="margin-top:12px">
       {% for s in sources %}{% set st = stats[s.id] %}

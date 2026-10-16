@@ -4,8 +4,9 @@
 <main class="page">
   <div class="title-row"><h1>Characters</h1>
     {% if reviewer and rows | selectattr("c.ddb_id") | list %}
-    <form method="post" action="/characters/refresh" class="inline" style="margin-left:auto"><button class="btn" type="submit">Refresh all from D&amp;D Beyond</button></form>
+    <form method="post" action="/characters/refresh" class="inline" style="margin-left:auto" data-busy-note="refresh-note"><button class="btn" type="submit" data-busy="Refreshing from D&amp;D Beyond…">Refresh all from D&amp;D Beyond</button></form>
     {% endif %}</div>
+  <p class="busy-note" id="refresh-note" hidden>Fetching {{ rows | selectattr("c.ddb_id") | list | length }} characters from D&amp;D Beyond. This takes a few seconds each; the page reloads when it's done.</p>
   <p class="subtitle">Each character as D&amp;D Beyond has them: what they have and how it works. Open one for the full sheet.</p>
   <div class="char-grid">
     {% for r in rows %}{% set s = r.sheet %}

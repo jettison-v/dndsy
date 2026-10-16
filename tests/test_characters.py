@@ -205,3 +205,11 @@ def test_admin_links_a_character(admin, db):
     assert big_c.ddb_id == "75423618" and big_c.snapshot.status == "ok"
     admin.post(f"/characters/{big_c.id}/link", data={"ddb_link": "nope"})
     assert "Paste the character" in admin.get(f"/characters/{big_c.id}").text and big_c.ddb_id == "75423618"
+
+
+def test_refresh_buttons_show_that_they_are_working(dm, db):
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    page = dm.get("/characters").text
+    assert 'data-busy="Refreshing from D&amp;D Beyond…"' in page and 'id="refresh-note" hidden' in page
+    assert 'data-busy="Refreshing…"' in dm.get(f"/characters/{cole.id}").text
