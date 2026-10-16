@@ -22,7 +22,7 @@ CHARACTER_URL = "https://character-service.dndbeyond.com/character/v5/character/
 SHEET_URL = "https://www.dndbeyond.com/characters/{id}"
 USER_AGENT = "askdnd/2 (private table companion; +https://beta.askdnd.ai)"
 TIMEOUT_SECONDS = 15
-PARSER_VERSION = 5  # bump when the summary shape changes; stored summaries are re-parsed
+PARSER_VERSION = 6  # bump when the summary shape changes; stored summaries are re-parsed
 
 
 class DdbError(Exception):
@@ -100,6 +100,7 @@ def _slim_spell(s: dict) -> dict:
     df = s.get("definition") or {}
     slim = {k: df.get(k) for k in SPELL_FIELDS if k in df}
     slim["description"] = (df.get("description") or "")[:1500]
+    slim["sources"] = [{"sourceId": i} for i in _source_ids(df)]
     slim["modifiers"] = [{k: m.get(k) for k in ("type", "subType", "friendlySubtypeName", "die")} for m in df.get("modifiers") or []]
     return {"definition": slim, "prepared": False, "alwaysPrepared": bool(s.get("alwaysPrepared"))}
 
@@ -289,6 +290,17 @@ MARTIAL_WEAPONS = {"Battleaxe", "Flail", "Glaive", "Greataxe", "Greatsword", "Ha
 DAMAGE_TYPES = {"acid", "bludgeoning", "cold", "fire", "force", "lightning", "necrotic", "piercing", "poison",
                 "psychic", "radiant", "slashing", "thunder"}
 PROFICIENCY_GROUPS = {174869515: "armor", 660121713: "weapons", 1782728300: "weapons", 2103445194: "tools"}
+
+# The table plays with the 2024 core rulebooks only (CLAUDE.md). D&D Beyond adds
+# some rules from other books to every character; those are left out.
+NON_CORE_RULES = re.compile(r"^(Initiate a Circle Spell|Circle Spell:)", re.I)
+CORE_SOURCES = {145, 146, 147}  # Player's Handbook (2024), Dungeon Master's Guide (2024), Monster Manual (2025)
+SOURCE_NAMES = {1: "PHB 2014", 2: "MM 2014", 3: "DMG 2014", 4: "Xanathar's", 145: "PHB 2024", 146: "DMG 2024", 147: "MM 2025"}
+
+
+def _source_ids(df: dict) -> list[int]:
+    return [s.get("sourceId") for s in df.get("sources") or [] if isinstance(s, dict) and s.get("sourceId")]
+
 
 USABLE_NAME = re.compile(r"(Spells|^Spellcasting|^Pact Magic|^Extra Attack|^Eldritch Invocations)$", re.I)
 USABLE_TEXT = re.compile(r"\b(as a bonus action|take a bonus action|as a reaction|use your reaction|take a magic action|"
@@ -616,20 +628,15 @@ class _Sheet:
     def actions(self) -> list[dict]:
         out, seen = [], set()
         owners = self._feature_owners()
-        circle = [a for g in (self.d.get("actions") or {}).values() for a in g or [] if (a.get("name") or "").startswith("Circle Spell:")]
         for source, group in (self.d.get("actions") or {}).items():
             for a in group or []:
                 name = (a.get("name") or "").strip()
                 kind = _d(a, "activation", "activationType")
-                if not name or (name, kind) in seen or name.startswith("Circle Spell:"):
-                    continue  # Circle Magic's options are folded into one entry below
+                if not name or (name, kind) in seen or NON_CORE_RULES.match(name):
+                    continue  # e.g. Circle Magic (Forgotten Realms): our table uses the 2024 core books only
                 seen.add((name, kind))
                 class_level, scale = owners.get(a.get("componentId"), (None, None))
                 values = self.template_values(class_level, scale)
-                if name == "Initiate a Circle Spell":
-                    name = "Circle Magic: cast together with other casters"
-                    extra = "\n\nOptions: " + "; ".join(x["name"].removeprefix("Circle Spell: ") for x in circle) if circle else ""
-                    a = {**a, "description": (a.get("description") or "") + extra.replace("\n", "<br>"), "snippet": None}
                 out.append({
                     "key": f"action:{name}",
                     "name": name,
@@ -638,7 +645,7 @@ class _Sheet:
                     "uses": self.limited_use(a.get("limitedUse")),
                     "summary": self.what_it_does(a, class_level, scale),
                     "text": html_to_text(render_template(a.get("description") or a.get("snippet") or "", values)),
-                    "rule": name.startswith("Circle Magic"),
+                    "rule": False,
                 })
         return out
 
@@ -791,8 +798,11 @@ class _Sheet:
         span = f"{n} {unit}{'s' if n != 1 else ''}" if n and unit else ""
         duration = (f"Concentration, up to {span}" if span else "Concentration") if dtype == "Concentration" else (span or dtype)
         comps = [COMPONENTS[c] for c in df.get("components") or [] if c in COMPONENTS]
+        ids = _source_ids(df)
         return {
             "key": f"spell:{df['name']}",
+            "core": not ids or bool(set(ids) & CORE_SOURCES),
+            "book": ", ".join(SOURCE_NAMES.get(i, "another book") for i in ids),
             "name": df["name"],
             "level": df.get("level") or 0,
             "school": df.get("school") or "",
@@ -907,7 +917,9 @@ class _Sheet:
                 if s.get("alwaysPrepared") and s.get("componentId") in own_features:
                     put(s, "always")
             for s in extra_available.get(str(df.get("id")), []):
-                put(s, "available")
+                ids = _source_ids(s.get("definition") or {})
+                if not ids or set(ids) & CORE_SOURCES:  # only offer 2024 core-rulebook spells to prepare
+                    put(s, "available")
             spells = sorted(entries.values(), key=lambda x: (x["level"], x["name"]))
             out.append({
                 "class": name,

@@ -15,7 +15,7 @@ from pathlib import Path
 from app import ddb
 
 OUT = Path(__file__).resolve().parent.parent / "tests" / "fixtures" / "ddb"
-DROP_KEYS = {"sources", "moreDetailsUrl", "decorations", "campaign", "userId", "username", "readonlyUrl",
+DROP_KEYS = {"moreDetailsUrl", "decorations", "campaign", "userId", "username", "readonlyUrl",
              "providedFrom", "activeSourceCategories", "preferences", "configuration", "optionalOrigins",
              "optionalClassFeatures", "choiceDefinitions", "definitionKeyNameMap", "highlights", "classFantasy",
              "iconicGear", "equipmentDescription", "multiClassDescription", "infusionRules", "creatureRules",
@@ -23,6 +23,8 @@ DROP_KEYS = {"sources", "moreDetailsUrl", "decorations", "campaign", "userId", "
 
 
 def trim(value):
+    if isinstance(value, dict) and isinstance(value.get("sources"), list):  # keep which book, drop the rest
+        value = {**value, "sources": [{"sourceId": x.get("sourceId")} for x in value["sources"] if isinstance(x, dict)]}
     if isinstance(value, dict):
         return {k: trim(v) for k, v in value.items()
                 if k not in DROP_KEYS and not k.lower().endswith(("avatarurl", "avatarid", "pageurl"))}
