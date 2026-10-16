@@ -169,3 +169,15 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 **Reuse this on a new project**
 1. Ship, use it, collect a list of small annoyances, then fix them in one focused round, small commits per item.
 2. When a third-party site loads data in pieces, look for the extra public calls it makes (here: class spell lists) rather than guessing.
+
+## 2026-10-16 — Denser Character page with a details panel
+
+**What changed**
+- Every tab is a dense list (two columns on a laptop). Each row says what the thing does, with its numbers at a glance; click it for the full details in the side panel.
+- "What it does" uses D&D Beyond's own short text, with formulas like "half your Druid level" worked out for you.
+- As admin, you can move things to a different group right from the side panel; it applies to everyone.
+- Easy to forget can be reordered; Situational folds what's already counted; Circle Magic noise is folded into one line.
+
+**Reuse this on a new project**
+1. Optimize for the screen people actually use (here a laptop next to Zoom): dense lists, details on demand in a side panel.
+2. Give the admin an in-app "this is in the wrong group" control instead of collecting feedback by typing; save it as data you can learn from.
