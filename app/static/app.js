@@ -321,10 +321,10 @@
     document.querySelectorAll('[data-sort-column]').forEach(list => {
       if (list._sortable) return;
       list._sortable = Sortable.create(list, {
-        draggable: '.move', animation: 150, delay: 180, delayOnTouchOnly: true, ghostClass: 'drag-ghost',
+        draggable: list.dataset.sortItem || '.move', animation: 150, delay: 180, delayOnTouchOnly: true, ghostClass: 'drag-ghost',
         onEnd: () => {
           const body = new URLSearchParams({ column: list.dataset.sortColumn });
-          list.querySelectorAll('.move[data-key]').forEach(m => body.append('keys', m.dataset.key));
+          list.querySelectorAll('[data-key]').forEach(m => body.append('keys', m.dataset.key));
           fetch(list.dataset.sortUrl, { method: 'POST', body }).then(r => { if (!r.ok) toast("Couldn't save the order"); });
         },
       });

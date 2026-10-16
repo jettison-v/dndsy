@@ -26,7 +26,7 @@
       <h2>{{ cost }}<small>{{ sub }}</small></h2>
       <div class="moves"{% if can_pick %} data-sort-column="{{ cost }}" data-sort-url="/characters/{{ c.id }}/order"{% endif %}>
       {% for o in col.shown %}
-      <div class="move" data-key="{{ o.key }}" data-panel-url="/characters/{{ c.id }}/option?ref={{ o.key | urlencode }}" tabindex="0" role="button">
+      <div class="move" data-key="{{ o.key }}" data-panel-url="/characters/{{ c.id }}/detail?ref={{ o.key | urlencode }}" tabindex="0" role="button">
         {% if o.hit %}<span class="hit">{{ o.hit }}</span>{% endif %}
         {% if o.starred and show_picks %}<span class="pick star on static" aria-label="starred">★</span>{% endif %}<b>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag">{{ t }}</span>{% endfor %}
         {% if o.meta %}<div class="meta">{{ o.meta }}</div>{% endif %}
@@ -45,10 +45,10 @@
       {% if not show_picks %}
       <p class="muted">Reminders belong to each player and aren't shown to the DM.</p>
       {% elif reminders %}
-      <ul class="forget">{% for r in reminders %}<li><span>{{ r.text }}</span>{% if can_pick %}<button type="button" class="forget-x" aria-label="Remove this reminder" title="Remove"
+      <ul class="forget"{% if can_pick %} data-sort-column="forget" data-sort-url="/characters/{{ c.id }}/order" data-sort-item="li"{% endif %}>{% for r in reminders %}<li data-key="{{ r.ref }}"><span>{{ r.text }}</span>{% if can_pick %}<button type="button" class="forget-x" aria-label="Remove this reminder" title="Remove"
         hx-post="/characters/{{ c.id }}/pick" hx-vals='{{ {"kind": "remind", "ref": r.ref} | tojson }}' hx-target="closest li" hx-swap="delete">×</button>{% endif %}</li>{% endfor %}</ul>
       {% else %}
-      <p class="muted">{% if can_pick %}Nothing yet. On your Character page, press <b>Remind me</b> on anything you tend to forget (for example, Advantage against being Charmed).{% else %}{{ c.entity.name }}'s player hasn't added any reminders yet.{% endif %}</p>
+      <p class="muted">{% if can_pick %}Nothing yet. On your Character page, press <b>Remind</b> on anything you tend to forget (for example, Advantage against being Charmed).{% else %}{{ c.entity.name }}'s player hasn't added any reminders yet.{% endif %}</p>
       {% endif %}
     </div>
     <div class="section">

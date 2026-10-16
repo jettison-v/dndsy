@@ -25,6 +25,7 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
         o.setdefault("hit", "")
         o.setdefault("meta", "")
         o.setdefault("text", "")
+        o.setdefault("summary", "")
         o["starred"] = o["key"] in starred
         out.append(o)
 
@@ -41,7 +42,7 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
         tags = [level] + (["Conc."] if sp["concentration"] else []) + ([f"{sp['uses']['max']} free"] if sp["uses"] else [])
         add(key=sp["key"], kind="spell", cost=cost, name=sp["name"], hit=sp["attack"] or sp["save"], tags=tags,
             meta=" · ".join(x for x in (sp["range"], effect, sp["trigger"] if cost == "Reaction" else "") if x),
-            text=sp["summary"],
+            text=sp.get("text") or sp["summary"], summary=sp["summary"],
             common=cost == "Reaction" or (not sp["level"] and bool(sp["attack"] or sp["save"]) and bool(sp["damage"])))
     for a in sheet.get("actions") or []:
         cost = _cost(a["activation"])
@@ -52,7 +53,8 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
             u = attacks.get("Unarmed Strike") or {}
             hit, meta = u.get("to_hit", ""), u.get("damage", "")
         add(key=a["key"], kind="feature", cost=cost, name=a["name"], hit=hit, meta=meta, uses=a["uses"], text=a["text"],
-            common=unarmed or cost == "Reaction" or bool(a["uses"] and a["source"] in ("class", "feat", "race")))
+            summary=a.get("summary", ""),
+            common=not a.get("rule") and (unarmed or cost == "Reaction" or bool(a["uses"] and a["source"] in ("class", "feat", "race"))))
     for it in sheet.get("inventory") or []:
         if not it["battle"]:
             continue
@@ -60,8 +62,12 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
         first = re.split(r"(?<=[.!?])\s", it["summary"] or "", maxsplit=1)[0]
         add(key=it["key"], kind="item", cost="Action", name=f"Use an item: {it['name']}", uses=uses,
             tags=[f"×{it['quantity']}"] if it["quantity"] > 1 else [], meta=first if len(first) <= 120 else first[:119].rsplit(" ", 1)[0] + "…",
-            text=it["summary"], common="healing" in it["name"].lower())
+            text=it.get("text") or it["summary"], summary=it["summary"], common="healing" in it["name"].lower())
     return out
+
+
+def _battle_override(sheet: dict, key: str) -> str | None:
+    return (sheet.get("_overrides") or {}).get(f"{key}|battle")
 
 
 def battle_columns(sheet: dict, starred: set[str], order: dict[str, list[str]] | None = None) -> dict:
@@ -69,7 +75,12 @@ def battle_columns(sheet: dict, starred: set[str], order: dict[str, list[str]] |
     options (or the player's own drag-and-drop order); the rest is behind "See all"."""
     cols, order = {}, order or {}
     for cost in ("Action", "Bonus action", "Reaction"):
-        everything = [o for o in options(sheet, starred) if o["cost"] == cost]
+        everything = []
+        for o in options(sheet, starred):
+            v = _battle_override(sheet, o["key"])
+            if o["cost"] != cost or (v == "hide" and not o["starred"]):
+                continue
+            everything.append({**o, "common": o["common"] if v is None else v == "common"})
         shown = [o for o in everything if o["starred"]] + [o for o in everything if o["common"] and not o["starred"]]
         if order.get(cost):
             rank = {k: i for i, k in enumerate(order[cost])}
@@ -84,7 +95,33 @@ def find(sheet: dict, ref: str) -> dict | None:
         for x in sheet.get(section) or []:
             if x.get("key") == ref:
                 return {**x, "section": section}
+    for book in sheet.get("spellbook") or []:  # spells you could prepare but don't have yet
+        for x in book["spells"]:
+            if x.get("key") == ref:
+                return {**x, "section": "spells", "class": book["class"]}
     return None
+
+
+def detail(sheet: dict, ref: str, starred: set[str] = frozenset()) -> dict | None:
+    """Everything the side panel shows for one thing: the thing itself, how it
+    works on a turn (if it's an option), and where it comes from."""
+    x = find(sheet, ref)
+    if x is None and not ref.startswith("attack:"):
+        return None
+    opt = next((o for o in options(sheet, set(starred)) if o["key"] == ref), None)
+    if x is None:
+        x = {"name": opt["name"], "section": "attacks"} if opt else None
+    if x is None:
+        return None
+    if x["section"] == "situational":  # point at the feature or spell it comes from
+        x["related"] = next((f for f in sheet.get("features") or [] if f["name"] == x.get("source")), None)
+    if x["section"] == "spells":
+        for book in sheet.get("spellbook") or []:
+            same = next((s for s in book["spells"] if s["name"] == x["name"]), None)
+            if same:
+                x.setdefault("state", same["state"])
+                x.setdefault("class", book["class"])
+    return {"x": x, "opt": opt, "section": x["section"]}
 
 
 def label_for(sheet: dict, ref: str) -> str:
@@ -99,10 +136,14 @@ def label_for(sheet: dict, ref: str) -> str:
     return f"{x['name']}: {detail}" if detail else x["name"]
 
 
-def reminders(sheet: dict, remind: dict[str, str]) -> list[dict]:
-    """Reminders in the order they were added, using today's sheet text when the
-    thing still exists and the saved label otherwise."""
-    return [{"ref": ref, "text": label_for(sheet, ref) or saved} for ref, saved in remind.items() if label_for(sheet, ref) or saved]
+def reminders(sheet: dict, remind: dict[str, str], order: list[str] | None = None) -> list[dict]:
+    """Reminders in the player's order (drag and drop), else the order they were
+    added; today's sheet text when the thing still exists, the saved label otherwise."""
+    out = [{"ref": ref, "text": label_for(sheet, ref) or saved} for ref, saved in remind.items() if label_for(sheet, ref) or saved]
+    if order:
+        rank = {k: i for i, k in enumerate(order)}
+        out.sort(key=lambda r: rank.get(r["ref"], len(rank)))
+    return out
 
 
 # ------------------------------------------------------------------ party
@@ -202,3 +243,39 @@ def granted_spells(sheet: dict) -> list[dict]:
     classes = {b["class"] for b in sheet.get("spellbook") or []}
     in_books = {sp["name"] for b in sheet.get("spellbook") or [] for sp in b["spells"] if sp["state"] != "available"}
     return [sp for sp in sheet.get("spells") or [] if not (set(sp["sources"]) & classes) and sp["name"] not in in_books]
+
+
+# ------------------------------------------------------------------ admin regrouping
+
+OVERRIDE_CHOICES = {
+    "feature_group": [("use", "Things you can use"), ("passive", "Always on (in your numbers)")],
+    "situ_group": [("situational", "Situational"), ("in_numbers", "Already in your numbers")],
+    "battle": [("common", "Show on Battle by default"), ("normal", "Only in See all"), ("hide", "Hide from Battle")],
+}
+
+
+def override_ref(x: dict) -> str:
+    """Overrides are by name, so one correction fixes it for every character."""
+    key = x.get("key", "")
+    if key.startswith("feature:"):
+        return "feature:" + x["name"]
+    return key
+
+
+def apply_overrides(sheet: dict, overrides: dict[tuple[str, str], str]) -> dict:
+    """Return the sheet with admin regrouping applied (features, Situational)."""
+    if not sheet:
+        return sheet
+    sheet = dict(sheet)
+    feats = []
+    for f in sheet.get("features") or []:
+        v = overrides.get((override_ref(f), "feature_group"))
+        feats.append({**f, "use": f["use"] if v is None else v == "use"})
+    sheet["features"] = feats
+    situ = []
+    for x in sheet.get("situational") or []:
+        v = overrides.get((x["key"], "situ_group"))
+        situ.append({**x, "in_numbers": (x["kind"] == "bonus") if v is None else v == "in_numbers"})
+    sheet["situational"] = situ
+    sheet["_overrides"] = {f"{r}|{fld}": v for (r, fld), v in overrides.items()}
+    return sheet

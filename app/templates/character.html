@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% from "_char.html" import pips, pick_btn, option_row, spell_row %}
+{% from "_char.html" import pips, pick_btn, ri, opt_row, spell_row %}
 {% block title %}{{ c.entity.name }} · Character · askdnd{% endblock %}
 {% block content %}
 {% set s = sheet %}
-<main class="page sheet">
+<main class="page sheet wide">
   <div class="char-nav">
     <span class="note">Character:</span>
     {% for o in others %}<a href="/characters/{{ o.id }}" class="{{ 'on' if o.id == c.id }}">{{ o.entity.name }}</a>{% endfor %}
@@ -45,7 +45,7 @@
 
   {# Row 3: everything else, in tabs #}
   <section class="section">
-    {% if can_pick %}<p class="hint" style="margin:0 0 10px">This is your character: <span class="pick star on static">★</span> puts something on your Battle page, and <b>Remind me</b> adds it to Easy to forget. Only you can change these, and the DM can't see them.</p>{% endif %}
+    {% if can_pick %}<p class="hint" style="margin:0 0 10px">This is your character: <span class="pick star on static">★</span> puts something on your Battle page, and <b>Remind</b> adds it to Easy to forget. Only you can change these, and the DM can't see them.</p>{% endif %}
     <div class="tabbar" role="tablist">
       <button role="tab" aria-selected="true" data-tab="t-actions">Actions</button>
       {% if s.spells or s.spellbook %}<button role="tab" aria-selected="false" data-tab="t-spells">Spells</button>{% endif %}
@@ -59,7 +59,8 @@
     <div id="t-actions">
       {% for cost, title in [("Action", "Actions"), ("Bonus action", "Bonus actions"), ("Reaction", "Reactions"), ("Other", "Other")] %}
       {% set list = options | selectattr("cost", "equalto", cost) | list %}
-      {% if list %}<h3>{{ title }}</h3>{% for o in list %}{{ option_row(o, c, picks, can_pick) }}{% endfor %}{% endif %}
+      {% if list %}<h3 class="divider">{{ title }} <span class="count">{{ list | length }}</span></h3>
+      <div class="rows">{% for o in list %}{{ opt_row(c, o, picks, can_pick) }}{% endfor %}</div>{% endif %}
       {% endfor %}
     </div>
 
@@ -80,7 +81,6 @@
           <div class="res-row" style="margin-top:4px">{% for sl in s.spell_slots.slots %}<span>{{ sl.level }}{{ {1: "st", 2: "nd", 3: "rd"}.get(sl.level, "th") }} {{ pips({"max": sl.max, "left": sl.max - sl.used}) }}</span>{% endfor %}
             {% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}<span>Pact, level {{ p.level }} {{ pips({"max": p.max, "left": p.max - p.used}) }}</span>{% endif %}</div></div>
       </div>
-
       <div class="planner-tools">
         <div class="seg" role="group" aria-label="Which spells">
           <button type="button" data-view="ready" aria-pressed="true">Ready to cast</button>
@@ -97,53 +97,46 @@
         <button type="button" data-filter="tag:concentration">Concentration</button><button type="button" data-filter="notag:concentration">No concentration</button><button type="button" data-filter="tag:ritual">Ritual</button>
         <button type="button" data-filter="tag:damage">Damage</button><button type="button" data-filter="tag:healing">Healing</button><button type="button" data-filter="tag:control">Control</button><button type="button" data-filter="tag:buff">Buff</button><button type="button" data-filter="tag:utility">Utility</button>
       </div>
-      <p class="note planner-note"><span data-shown></span>{% if can_pick %} ♥ shortlists a spell so you can compare before preparing it.{% endif %} askdnd can't change D&amp;D Beyond: prepare spells there{% if s.sheet_url %} (<a href="{{ s.sheet_url }}" target="_blank" rel="noopener">open ↗</a>){% endif %}, then refresh.</p>
-
+      <p class="note planner-note"><span data-shown></span>{% if can_pick %} ♥ shortlists a spell so you can compare before preparing it.{% endif %} askdnd can't change D&amp;D Beyond: prepare spells there{% if s.sheet_url %} (<a href="{{ s.sheet_url }}" target="_blank" rel="noopener">open ↗</a>){% endif %}, then refresh. Click a spell for its full description.</p>
+      <div class="spell-key" aria-hidden="true"><span></span><span>Spell · what it does</span><span>Casting time · range · duration · effect</span><span>Hit / DC</span><span></span></div>
       {% for b in s.spellbook %}
       <section class="planner-group">
-        {% if s.spellbook | length > 1 %}<h3 class="planner-class-title">{{ b.class }}</h3>{% endif %}
+        {% if s.spellbook | length > 1 %}<h3 class="divider big">{{ b.class }}</h3>{% endif %}
         {% for level, list in b.spells | groupby("level") %}
-        <div class="planner-level"><h3>{{ "Cantrips" if level == 0 else "Level " ~ level }}</h3>
-          {% for sp in list %}{{ spell_row(c, sp, sp.state, picks, can_pick) }}{% endfor %}</div>
+        <div class="planner-level"><h3 class="divider">{{ "Cantrips" if level == 0 else "Level " ~ level }}</h3>
+          <div class="rows">{% for sp in list %}{{ spell_row(c, sp, sp.state, picks, can_pick) }}{% endfor %}</div></div>
         {% endfor %}
       </section>
       {% endfor %}
       {% set others = granted_spells %}
       {% if others %}
-      <section class="planner-group"><h3 class="planner-class-title">From your species, feats and items</h3>
-        <div class="planner-level">{% for sp in others %}{{ spell_row(c, sp, "granted", picks, can_pick, sp.sources | join(", ")) }}{% endfor %}</div>
+      <section class="planner-group"><h3 class="divider big">From your species, feats and items</h3>
+        <div class="planner-level"><div class="rows">{% for sp in others %}{{ spell_row(c, sp, "granted", picks, can_pick, sp.sources | join(", ")) }}{% endfor %}</div></div>
       </section>{% endif %}
       <p class="muted planner-empty" hidden>No spells match. Try another view or clear a filter.</p>
     </div>
     {% endif %}
 
     <div id="t-items" hidden>
-      {% macro item_row(it) %}
-      <details class="opt"><summary>
-        {% if it.battle %}{{ pick_btn(c, "star", it.key, it.key in picks.star, can_pick) }}{% endif %}
-        <span class="grow"><b>{{ it.name }}</b>{% if it.quantity > 1 %} ×{{ it.quantity }}{% endif %}
-          {% if it.equipped %} <span class="tag">Equipped</span>{% endif %}{% if it.attunement == "attuned" %} <span class="tag done">Attuned</span>{% elif it.attunement == "required" %} <span class="tag">Needs attunement</span>{% endif %}
-          {% if it.charges %} {% if it.charges.reset == "Used up" %}<span class="tag">{{ it.charges.left }} use{{ "s" if it.charges.left != 1 }} left</span>{% else %}{{ pips(it.charges) }}{% endif %}{% endif %}
-          <span class="meta">{{ it.type }}{% if it.rarity and it.magic %} · {{ it.rarity }}{% endif %}{% if it.damage %} · {{ it.damage }}{% endif %}{% if it.armor_class %} · AC {{ it.armor_class }}{% endif %}{% if it.properties %} · {{ it.properties | join(", ") }}{% endif %}{% if it.in %} · in {{ it.in }}{% endif %}</span></span>
-        {{ pick_btn(c, "remind", it.key, it.key in picks.remind, can_pick) }}
-      </summary>
-        <div class="opt-text">{{ it.summary or "No description on D&D Beyond." }}{% if it.charges and it.charges.reset_note %}<p class="note">{{ it.charges.reset_note }}</p>{% endif %}{% if it.attunement_note %}<p class="note">Attunement: {{ it.attunement_note }}</p>{% endif %}</div>
-      </details>
-      {% endmacro %}
+      {% macro item_row(it) %}{{ ri(c, it.key, it.name ~ (" ×" ~ it.quantity if it.quantity > 1 else ""), picks, can_pick, star=it.battle,
+          chips=[("Attuned", "done") if it.attunement == "attuned" else (("Needs attunement", "") if it.attunement == "required" else None),
+                 (it.charges.left ~ " use" ~ ("s" if it.charges.left != 1 else "") ~ " left", "") if it.charges and it.charges.reset == "Used up" else None],
+          what=it.summary, uses=it.charges if it.charges and it.charges.reset != "Used up" else None,
+          mech=[it.type, it.rarity if it.magic else "", it.damage, ("AC " ~ it.armor_class) if it.armor_class else "", ("in " ~ it.in) if it.in else ""] | select | join(" · ")) }}{% endmacro %}
       {% if s.attuned %}<p class="hint" style="margin:0">Attuned: {{ s.attuned | join(", ") }} ({{ s.attuned | length }} of 3)</p>{% endif %}
       {% set battle = s.inventory | selectattr("battle") | list %}
       {% set worn = s.inventory | rejectattr("battle") | selectattr("equipped") | list %}
-      {% if battle %}<h3>Usable in battle</h3>{% for it in battle %}{{ item_row(it) }}{% endfor %}{% endif %}
-      {% if worn %}<h3>Equipped</h3>{% for it in worn %}{{ item_row(it) }}{% endfor %}{% endif %}
+      {% if battle %}<h3 class="divider">Usable in battle <span class="count">{{ battle | length }}</span></h3><div class="rows">{% for it in battle %}{{ item_row(it) }}{% endfor %}</div>{% endif %}
+      {% if worn %}<h3 class="divider">Equipped <span class="count">{{ worn | length }}</span></h3><div class="rows">{% for it in worn %}{{ item_row(it) }}{% endfor %}</div>{% endif %}
       {% set rest = s.inventory | rejectattr("battle") | rejectattr("equipped") | list %}
       {% if rest %}
       <details class="fold"><summary>Everything else ({{ rest | length }})</summary>
         {% for title, cats in [("Weapons", ["Weapon"]), ("Armor", ["Armor"]), ("Magic items", ["Wondrous item", "Ring", "Rod", "Staff", "Wand"]), ("Potions and scrolls", ["Potion", "Scroll"])] %}
         {% set list = rest | selectattr("category", "in", cats) | list %}
-        {% if list %}<h3>{{ title }}</h3>{% for it in list %}{{ item_row(it) }}{% endfor %}{% endif %}
+        {% if list %}<h3 class="divider">{{ title }} <span class="count">{{ list | length }}</span></h3><div class="rows">{% for it in list %}{{ item_row(it) }}{% endfor %}</div>{% endif %}
         {% endfor %}
         {% set gear = rest | rejectattr("category", "in", ["Weapon", "Armor", "Wondrous item", "Ring", "Rod", "Staff", "Wand", "Potion", "Scroll"]) | list %}
-        {% if gear %}<h3>Gear</h3>
+        {% if gear %}<h3 class="divider">Gear <span class="count">{{ gear | length }}</span></h3>
         <p class="muted">{% for it in gear %}{{ it.name }}{% if it.quantity > 1 %} ×{{ it.quantity }}{% endif %}{% if it.in %} <span class="note">({{ it.in }})</span>{% endif %}{{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
       </details>
       {% endif %}
@@ -151,25 +144,24 @@
     </div>
 
     <div id="t-features" hidden>
-      {% macro feature_row(f) %}<details class="opt"><summary><span class="grow"><b>{{ f.name }}</b>{% if f.level %} <span class="note">· level {{ f.level }}</span>{% endif %}<span class="meta">{{ f.summary }}</span></span>{{ pick_btn(c, "remind", f.key, f.key in picks.remind, can_pick) }}</summary>
-        {% if f.text %}<div class="opt-text">{{ f.text }}</div>{% endif %}</details>{% endmacro %}
+      {% macro feature_row(f) %}{{ ri(c, f.key, f.name, picks, can_pick, what=f.summary, mech=("level " ~ f.level) if f.level else "") }}{% endmacro %}
       {% set active = s.features | selectattr("use") | list %}
       {% set passive = s.features | rejectattr("use") | list %}
-      <p class="hint" style="margin:0 0 4px">Things you can use: actions, resources and spells. Rules that just change your numbers are folded below.</p>
-      {% for source, list in active | groupby("source") %}<h3>{{ source }}</h3>{% for f in list %}{{ feature_row(f) }}{% endfor %}{% endfor %}
+      <p class="hint" style="margin:0 0 4px">What each feature lets you do. Click one for the full text and where it comes from.</p>
+      {% for source, list in active | groupby("source") %}<h3 class="divider">{{ source }} <span class="count">{{ list | length }}</span></h3><div class="rows">{% for f in list %}{{ feature_row(f) }}{% endfor %}</div>{% endfor %}
       {% if passive %}
       <details class="fold"><summary>Always on, already in your numbers ({{ passive | length }})</summary>
-        {% for source, list in passive | groupby("source") %}<h3>{{ source }}</h3>{% for f in list %}{{ feature_row(f) }}{% endfor %}{% endfor %}
+        {% for source, list in passive | groupby("source") %}<h3 class="divider">{{ source }}</h3><div class="rows">{% for f in list %}{{ feature_row(f) }}{% endfor %}</div>{% endfor %}
       </details>{% endif %}
     </div>
 
     <div id="t-situ" hidden>
-      <p class="hint" style="margin:0 0 8px">Rules that only matter in some situations: advantages, immunities and resistances, bonuses already counted in your numbers, and reactions that protect you.</p>
-      {% for x in s.situational %}
-      <div class="situ"><span class="ic {{ x.kind }}" aria-hidden="true">{{ {"advantage": "A", "disadvantage": "D", "immunity": "I", "resistance": "R", "vulnerability": "V", "bonus": "+", "reaction": "↺"}.get(x.kind, "•") }}</span>
-        <span class="grow">{{ x.text }}{% if x.source %}<span class="meta">{{ x.source }}</span>{% endif %}</span>{{ pick_btn(c, "remind", x.key, x.key in picks.remind, can_pick) }}</div>
-      {% else %}<p class="muted">Nothing situational on this sheet.</p>{% endfor %}
-      <p class="note" style="margin-top:10px">A advantage · D disadvantage · I immunity · R resistance · + bonus · ↺ reaction</p>
+      {% macro situ_row(x) %}{{ ri(c, x.key, x.text, picks, can_pick, chips=[({"advantage": "Advantage", "disadvantage": "Disadvantage", "immunity": "Immunity", "resistance": "Resistance", "vulnerability": "Vulnerability", "bonus": "Bonus", "reaction": "Reaction"}.get(x.kind, x.kind), "kind-" ~ x.kind)], what=x.source) }}{% endmacro %}
+      {% set live = s.situational | rejectattr("in_numbers") | list %}
+      {% set counted = s.situational | selectattr("in_numbers") | list %}
+      <p class="hint" style="margin:0 0 4px">Rules that only matter in some situations: advantages, immunities and resistances, and reactions that protect you.</p>
+      {% if live %}<div class="rows">{% for x in live %}{{ situ_row(x) }}{% endfor %}</div>{% else %}<p class="muted">Nothing situational on this sheet.</p>{% endif %}
+      {% if counted %}<details class="fold"><summary>Already in your numbers ({{ counted | length }})</summary><div class="rows">{% for x in counted %}{{ situ_row(x) }}{% endfor %}</div></details>{% endif %}
     </div>
 
     <div id="t-skills" hidden>
@@ -184,7 +176,7 @@
 
     {% if s.creatures %}
     <div id="t-forms" hidden>
-      {% for cr in s.creatures %}<div class="situ"><span class="grow"><b>{{ cr.name }}</b><span class="meta">{{ cr.group }}{% if cr.cr %} · CR {{ cr.cr }}{% endif %} · AC {{ cr.armor_class }} · {{ cr.hit_points }} HP{% if cr.speed %} · {{ cr.speed }}{% endif %}</span></span>{{ pick_btn(c, "remind", cr.key, cr.key in picks.remind, can_pick) }}</div>{% endfor %}
+      <div class="rows">{% for cr in s.creatures %}{{ ri(c, cr.key, cr.name, picks, can_pick, chips=[(cr.group, "")], what=("CR " ~ cr.cr ~ " · AC " ~ cr.armor_class ~ " · " ~ cr.hit_points ~ " HP"), mech=cr.speed) }}{% endfor %}</div>
     </div>
     {% endif %}
   </section>

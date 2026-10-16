@@ -11,24 +11,11 @@
 {%- if can_pick -%}
 <button type="button" class="pick {{ kind }}{{ ' on' if on }}" hx-post="/characters/{{ c.id }}/pick" hx-vals='{{ {"kind": kind, "ref": ref} | tojson }}' hx-swap="outerHTML"
   aria-pressed="{{ 'true' if on else 'false' }}" title="{{ {'star': ('Starred: shown on Battle' if on else 'Star: show on Battle'), 'remind': ('In Easy to forget' if on else 'Add to Easy to forget'), 'fav': ('On your shortlist' if on else 'Add to your spell shortlist')}[kind] }}">
-  {%- if kind == "star" %}{{ "★" if on else "☆" }}{% elif kind == "fav" %}{{ "♥" if on else "♡" }}{% else %}{{ "Reminder on" if on else "Remind me" }}{% endif -%}
+  {%- if kind == "star" %}{{ "★" if on else "☆" }}{% elif kind == "fav" %}{{ "♥" if on else "♡" }}{% else %}{{ "✓ Remind" if on else "Remind" }}{% endif -%}
 </button>
 {%- elif on and kind == "star" -%}<span class="pick star on static" title="Starred by their player">★</span>
 {%- elif on and kind == "fav" -%}<span class="pick fav on static" title="On their shortlist">♥</span>
 {%- endif -%}
-{%- endmacro %}
-
-{% macro option_row(o, c, picks, can_pick, open=False) -%}
-<details class="opt"{{ " open" if open }}>
-  <summary>
-    {% if o.cost != "Other" %}{{ pick_btn(c, "star", o.key, o.key in picks.star, can_pick) }}{% endif %}
-    <span class="grow"><b>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag">{{ t }}</span>{% endfor %}
-      {% if o.meta %}<span class="meta">{{ o.meta }}</span>{% endif %}</span>
-    {% if o.hit %}<span class="hit">{{ o.hit }}</span>{% endif %}
-    {{ pick_btn(c, "remind", o.key, o.key in picks.remind, can_pick) }}
-  </summary>
-  {% if o.text %}<div class="opt-text">{{ o.text }}</div>{% else %}<div class="opt-text muted">No description on D&amp;D Beyond.</div>{% endif %}
-</details>
 {%- endmacro %}
 
 {% macro vitals(s) -%}
@@ -50,26 +37,36 @@
 {%- endmacro %}
 
 {% set STATE_LABELS = {"always": ("Always prepared", "done"), "prepared": ("Prepared", "done"), "known": ("Known", "done"),
-                       "spellbook": ("In spellbook", ""), "available": ("Not prepared", ""), "granted": ("", "")} %}
+                       "spellbook": ("In spellbook", ""), "available": ("Not prepared", "faint"), "granted": ("", "")} %}
+
+{# One compact row; clicking it opens the side panel with everything about it. #}
+{% macro ri(c, key, name, picks, can_pick, star=False, fav=False, chips=(), what="", mech="", hit="", uses=None, cls="", attrs="") -%}
+<div class="ri {{ cls }}" data-panel-url="/characters/{{ c.id }}/detail?ref={{ key | urlencode }}" tabindex="0" role="button" {{ attrs | safe }}>
+  <span class="ri-pk">{% if fav %}{{ pick_btn(c, "fav", key, key in picks.fav, can_pick) }}{% endif %}{% if star %}{{ pick_btn(c, "star", key, key in picks.star, can_pick) }}{% endif %}</span>
+  <span class="ri-main"><span class="ri-line"><span class="ri-name">{{ name }}</span>{% if uses %} {{ pips(uses) }}{% endif %}{% for t in chips if t %} <span class="tag {{ '' if t is string else t[1] }}">{{ t if t is string else t[0] }}</span>{% endfor %}</span>
+    {% if what %}<span class="ri-what">{{ what }}</span>{% endif %}</span>
+  <span class="ri-mech">{{ mech }}</span>
+  <span class="ri-hit">{{ hit }}</span>
+  <span class="ri-pk end">{{ pick_btn(c, "remind", key, key in picks.remind, can_pick) }}</span>
+</div>
+{%- endmacro %}
+
+{% macro spell_mech(sp) -%}
+{{ sp.casting_time }}{% if sp.range %} · {{ sp.range }}{% endif %}{% if sp.duration and sp.duration != "Instantaneous" %} · {{ sp.duration | replace("Concentration, up to ", "Conc. ") }}{% endif %}{% if sp.damage %} · {{ sp.damage }}{% elif sp.healing %} · heals {{ sp.healing }}{% endif %}
+{%- endmacro %}
 
 {% macro spell_row(c, sp, state, picks, can_pick, source="") -%}
 {%- set ready = state in ("always", "prepared", "known", "granted") -%}
 {%- set cast = {"Action": "action", "Bonus action": "bonus", "Reaction": "reaction"}.get(sp.casting_time, "other") -%}
-<details class="opt spell-row{{ ' not-ready' if not ready }}" data-state="{{ 'ready' if ready else state }}" data-fav="{{ '1' if sp.key in picks.fav else '0' }}"
-  data-level="{{ sp.level }}" data-cast="{{ cast }}" data-name="{{ sp.name | lower }}"
-  data-tags="{{ (sp.tags | map('lower') | list + (['concentration'] if sp.concentration else []) + (['ritual'] if sp.ritual else []) + (['healing'] if sp.healing else []) + (['damage'] if sp.damage else [])) | join(' ') }}">
-  <summary>
-    {{ pick_btn(c, "fav", sp.key, sp.key in picks.fav, can_pick) }}
-    {% if ready and cast != "other" %}{{ pick_btn(c, "star", sp.key, sp.key in picks.star, can_pick) }}{% endif %}
-    <span class="grow"><b>{{ sp.name }}</b>
-      {% set lab = STATE_LABELS[state] %}{% if lab[0] %} <span class="tag {{ lab[1] }}">{{ lab[0] }}</span>{% endif %}
-      {% if source %} <span class="tag">{{ source }}</span>{% endif %}
-      {% if sp.concentration %} <span class="tag">Conc.</span>{% endif %}{% if sp.ritual %} <span class="tag">Ritual</span>{% endif %}
-      {% if sp.uses %} <span class="tag">{{ sp.uses.max }} free / {{ sp.uses.reset }}</span>{% endif %}
-      <span class="meta">{{ sp.casting_time }}{% if sp.range %} · {{ sp.range }}{% endif %}{% if sp.duration %} · {{ sp.duration }}{% endif %}{% if sp.components %} · {{ sp.components | join(", ") }}{% endif %}{% if sp.damage %} · {{ sp.damage }}{% elif sp.healing %} · heals {{ sp.healing }}{% endif %}</span></span>
-    {% if sp.attack or sp.save %}<span class="hit">{{ sp.attack or sp.save }}</span>{% endif %}
-    {{ pick_btn(c, "remind", sp.key, sp.key in picks.remind, can_pick) }}
-  </summary>
-  <div class="opt-text">{{ sp.summary }}<p class="note">{{ sp.school }}{% if sp.material %} · material: {{ sp.material }}{% endif %}{% if sp.trigger %} · {{ sp.trigger }}{% endif %}</p></div>
-</details>
+{%- set lab = STATE_LABELS[state] -%}
+{%- set tags = (sp.tags | map('lower') | list + (['concentration'] if sp.concentration else []) + (['ritual'] if sp.ritual else []) + (['healing'] if sp.healing else []) + (['damage'] if sp.damage else [])) | join(' ') -%}
+{{ ri(c, sp.key, sp.name, picks, can_pick, star=ready and cast != "other", fav=True,
+      chips=[(lab[0], lab[1]) if lab[0] else None, (source, "") if source else None, ("Ritual", "") if sp.ritual else None],
+      what=sp.summary, mech=spell_mech(sp), hit=sp.attack or sp.save, uses=None, cls="spell-row" ~ ("" if ready else " not-ready"),
+      attrs='data-state="%s" data-fav="%s" data-level="%s" data-cast="%s" data-name="%s" data-tags="%s"' | format('ready' if ready else state, '1' if sp.key in picks.fav else '0', sp.level, cast, sp.name | lower | e, tags | e)) }}
+{%- endmacro %}
+
+{% macro opt_row(c, o, picks, can_pick) -%}
+{{ ri(c, o.key, o.name, picks, can_pick, star=o.cost != "Other", chips=o.tags, what=o.summary or o.meta,
+      mech=o.meta if o.summary else "", hit=o.hit, uses=o.uses) }}
 {%- endmacro %}

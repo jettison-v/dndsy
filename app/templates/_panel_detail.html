@@ -1,0 +1,70 @@
+{# Side panel: everything about one thing on the sheet. Same layout for spells, actions, items, features. #}
+{% from "_char.html" import pips, pick_btn, spell_mech, STATE_LABELS %}
+{% set o = opt %}
+<div class="peek-head">
+  <div><div class="note">{{ c.entity.name }} · {{ {"spells": "Spell", "actions": "Action", "attacks": "Attack", "inventory": "Item", "features": "Feature", "situational": "Situational", "creatures": "Form"}.get(section, "") }}</div>
+    <h2 id="peek-title">{{ x.name or x.text }}</h2></div>
+  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
+</div>
+<div class="peek-body detail">
+  {% if can_pick %}<div class="row detail-picks">
+    {% if section == "spells" %}{{ pick_btn(c, "fav", ref, ref in picks.fav, can_pick) }}<span class="note">shortlist</span>{% endif %}
+    {% if o and o.cost != "Other" %}{{ pick_btn(c, "star", ref, ref in picks.star, can_pick) }}<span class="note">on Battle</span>{% endif %}
+    {{ pick_btn(c, "remind", ref, ref in picks.remind, can_pick) }}
+  </div>{% endif %}
+
+  {# The mechanics, always in the same order #}
+  <dl class="mech">
+    {% if section == "spells" %}
+      <dt>Level</dt><dd>{{ "Cantrip" if not x.level else x.level }}{% if x.school %} · {{ x.school }}{% endif %}{% if x.state %} · {{ STATE_LABELS[x.state][0] or "" }}{% endif %}{% if x.class %} ({{ x.class }}){% endif %}</dd>
+      <dt>Casting time</dt><dd>{{ x.casting_time }}{% if x.ritual %} · Ritual{% endif %}{% if x.trigger %}, {{ x.trigger }}{% endif %}</dd>
+      <dt>Range / area</dt><dd>{{ x.range or "—" }}</dd>
+      <dt>Duration</dt><dd>{{ x.duration or "—" }}</dd>
+      <dt>Components</dt><dd>{{ x.components | join(", ") or "—" }}{% if x.material %} ({{ x.material }}){% endif %}</dd>
+      {% if x.attack or x.save %}<dt>{{ "Attack" if x.attack else "Save" }}</dt><dd>{{ x.attack or x.save }}</dd>{% endif %}
+      {% if x.damage %}<dt>Damage</dt><dd>{{ x.damage }}</dd>{% endif %}{% if x.healing %}<dt>Healing</dt><dd>{{ x.healing }}</dd>{% endif %}
+      {% if x.uses %}<dt>Free casts</dt><dd>{{ x.uses.left }} of {{ x.uses.max }} · {{ x.uses.reset_phrase }}{% if x.uses_slot %} (or with a slot){% endif %}</dd>{% endif %}
+      {% if x.sources %}<dt>From</dt><dd>{{ x.sources | join(", ") }}</dd>{% endif %}
+    {% elif section in ("actions", "attacks") or (o and section != "inventory") %}
+      {% if o %}<dt>Costs</dt><dd>{{ o.cost if o.cost != "Other" else (x.activation or "Special") }}</dd>{% endif %}
+      {% if o and o.hit %}<dt>To hit / DC</dt><dd>{{ o.hit }}</dd>{% endif %}
+      {% if o and o.meta %}<dt>Details</dt><dd>{{ o.meta }}</dd>{% endif %}
+      {% if x.uses %}<dt>Uses</dt><dd>{{ pips(x.uses) }} {{ x.uses.left }} of {{ x.uses.max }} · {{ x.uses.reset_phrase }}</dd>{% endif %}
+    {% elif section == "inventory" %}
+      <dt>Type</dt><dd>{{ x.type }}{% if x.magic and x.rarity %} · {{ x.rarity }}{% endif %}</dd>
+      {% if x.attunement %}<dt>Attunement</dt><dd>{{ "Attuned" if x.attunement == "attuned" else "Needs attunement" }}{% if x.attunement_note %} ({{ x.attunement_note }}){% endif %}</dd>{% endif %}
+      {% if x.charges %}<dt>Charges</dt><dd>{{ x.charges.left }} of {{ x.charges.max }} · {{ x.charges.reset_note or x.charges.reset_phrase }}</dd>{% endif %}
+      {% if x.damage %}<dt>Damage</dt><dd>{{ x.damage }}</dd>{% endif %}{% if x.armor_class %}<dt>AC</dt><dd>{{ x.armor_class }}</dd>{% endif %}
+      {% if x.properties %}<dt>Properties</dt><dd>{{ x.properties | join(", ") }}</dd>{% endif %}
+      <dt>Where</dt><dd>{{ ("Equipped" if x.equipped else "Carried") }}{% if x.in %}, in {{ x.in }}{% endif %}{% if x.quantity > 1 %} · ×{{ x.quantity }}{% endif %}</dd>
+    {% elif section == "features" %}
+      <dt>From</dt><dd>{{ x.source }}{% if x.level %}, level {{ x.level }}{% endif %}</dd>
+      <dt>Kind</dt><dd>{{ "Something you can use" if x.use else "Always on (already in your numbers)" }}</dd>
+    {% elif section == "situational" %}
+      <dt>Kind</dt><dd>{{ x.kind | capitalize }}</dd>{% if x.source %}<dt>From</dt><dd>{{ x.source }}</dd>{% endif %}
+    {% elif section == "creatures" %}
+      <dt>Form</dt><dd>{{ x.group }}{% if x.cr %} · CR {{ x.cr }}{% endif %}</dd><dt>AC / HP</dt><dd>{{ x.armor_class }} / {{ x.hit_points }}</dd><dt>Speed</dt><dd>{{ x.speed }}</dd>
+    {% endif %}
+  </dl>
+
+  {% set what = x.summary if section != "situational" else x.text %}
+  {% if what %}<h3>What it does</h3><div class="detail-what">{{ what }}</div>{% endif %}
+  {% set full = x.text if section != "situational" else (x.related.text if x.related else "") %}
+  {% if full and full != what %}<h3>{{ "Full description" if section in ("spells", "inventory") else "Full text and background" }}</h3><div class="detail-full">{{ full }}</div>{% endif %}
+
+  {% if admin %}
+  <div class="admin-move">
+    <h3>Admin: group this differently</h3>
+    {% set fields = (["feature_group"] if section == "features" else []) + (["situ_group"] if section == "situational" else []) + (["battle"] if o and o.cost != "Other" else []) %}
+    {% for field in fields %}{% set current = sheet._overrides.get(oref ~ "|" ~ field) %}
+    <form class="row" hx-post="/characters/{{ c.id }}/override" hx-target="#peek" hx-swap="innerHTML">
+      <input type="hidden" name="ref" value="{{ ref }}"><input type="hidden" name="oref" value="{{ oref }}"><input type="hidden" name="field" value="{{ field }}">
+      <select name="value" aria-label="Group">{% for v, label in choices[field] %}<option value="{{ v }}" {{ "selected" if current == v }}>{{ label }}</option>{% endfor %}<option value="default" {{ "selected" if not current }}>Automatic (askdnd decides)</option></select>
+      <button class="btn small" type="submit">Move</button>
+    </form>
+    {% else %}<p class="note">Nothing to regroup here.</p>{% endfor %}
+    <p class="note">Applies to every character with this name. Saved as feedback for improving askdnd.</p>
+  </div>
+  {% endif %}
+</div>
+<div class="peek-foot"><a class="btn" href="/characters/{{ c.id }}" data-no-peek>Full character</a></div>

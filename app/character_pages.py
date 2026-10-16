@@ -9,6 +9,7 @@
   the DM never sees them. Character notes are never shown here.
 """
 
+import json
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Form, Request
@@ -19,9 +20,9 @@ from sqlalchemy.orm import Session
 from app import character_views as views
 from app import characters as chars
 from app import ddb, picks
-from app.auth import current_user, is_reviewer
+from app.auth import current_user, is_admin, is_reviewer
 from app.db import get_db
-from app.models import Campaign, Character
+from app.models import Campaign, Character, SheetOverride
 from app.templating import templates
 
 router = APIRouter()
@@ -35,9 +36,13 @@ def _campaign(db: Session) -> Campaign | None:
     return db.scalar(select(Campaign).order_by(Campaign.id))
 
 
+def _overrides(db: Session) -> dict[tuple[str, str], str]:
+    return {(o.ref, o.field): o.value for o in db.scalars(select(SheetOverride))}
+
+
 def _view(db: Session, ch: Character, user: dict) -> dict:
     snap = ch.snapshot
-    sheet = chars.character_summary(ch)
+    sheet = views.apply_overrides(chars.character_summary(ch), _overrides(db))
     mine = picks.picks(db, ch, user)
     return {
         "c": ch,
@@ -48,8 +53,9 @@ def _view(db: Session, ch: Character, user: dict) -> dict:
         "picks": mine,
         "can_pick": picks.can_edit(db, user, ch),
         "show_picks": picks.can_see(user),
-        "reminders": views.reminders(sheet, mine["remind"]) if sheet else [],
+        "reminders": views.reminders(sheet, mine["remind"], mine["order"].get("forget")) if sheet else [],
         "reviewer": is_reviewer(user),
+        "admin": is_admin(user),
     }
 
 
@@ -111,7 +117,7 @@ def party_page(request: Request, pick: str = "", db: Session = Depends(get_db)):
     user = current_user(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
-    rows = _party_rows(db, user)
+    rows = [{**r, "sheet": views.apply_overrides(r["sheet"], _overrides(db))} for r in _party_rows(db, user)]
     return _page(request, "party.html", {
         "rows": rows,
         "spells": views.pooled_spells(rows),
@@ -198,17 +204,42 @@ def see_all(request: Request, character_id: int, cost: str, db: Session = Depend
     return templates.TemplateResponse(request, "_panel_options.html", {**ctx, "title": cost, "opts": everything})
 
 
+@router.get("/characters/{character_id:int}/detail")
 @router.get("/characters/{character_id:int}/option")
-def option_detail(request: Request, character_id: int, ref: str, db: Session = Depends(get_db)):
-    """Side panel: one option's details."""
+def detail_panel(request: Request, character_id: int, ref: str, db: Session = Depends(get_db)):
+    """Side panel: everything about one thing on the sheet (spell, action, item, feature…)."""
     user, ch, stop = _load(request, db, character_id)
     if stop:
         return stop
     ctx = _view(db, ch, user)
-    found = [o for o in views.options(ctx["sheet"] or {}, ctx["picks"]["star"]) if o["key"] == ref]
-    if not found:
+    d = views.detail(ctx["sheet"] or {}, ref, ctx["picks"]["star"])
+    if d is None:
         return HTMLResponse("", status_code=404)
-    return templates.TemplateResponse(request, "_panel_options.html", {**ctx, "title": found[0]["name"], "opts": found, "open": True})
+    return templates.TemplateResponse(request, "_panel_detail.html", {**ctx, **d, "ref": ref,
+                                      "choices": views.OVERRIDE_CHOICES, "oref": views.override_ref({**d["x"], "key": ref})})
+
+
+@router.post("/characters/{character_id:int}/override")
+def set_override(request: Request, character_id: int, ref: str = Form(...), oref: str = Form(...),
+                 field: str = Form(...), value: str = Form(...), db: Session = Depends(get_db)):
+    """Admin: regroup something (for every character). Returns the updated panel."""
+    user = current_user(request)
+    if not is_admin(user):
+        return _forbidden(request, "Only an admin can regroup things.")
+    if field not in views.OVERRIDE_CHOICES or value not in [v for v, _ in views.OVERRIDE_CHOICES[field]] + ["default"]:
+        return HTMLResponse("", status_code=400)
+    row = db.scalar(select(SheetOverride).where(SheetOverride.ref == oref[:300], SheetOverride.field == field))
+    if value == "default":
+        if row:
+            db.delete(row)
+    elif row:
+        row.value, row.set_by = value, user["email"]
+    else:
+        db.add(SheetOverride(ref=oref[:300], field=field, value=value, set_by=user["email"]))
+    db.commit()
+    resp = detail_panel(request, character_id, ref, db)
+    resp.headers["HX-Trigger"] = json.dumps({"toast": "Moved for every character (reload to see it in place)"})
+    return resp
 
 
 @router.get("/characters/{character_id:int}/brief")
@@ -248,7 +279,7 @@ async def save_order(request: Request, character_id: int, db: Session = Depends(
         return _forbidden(request, "Only this character's player can do that.")
     form = await request.form()
     column = form.get("column", "")
-    if column not in ("Action", "Bonus action", "Reaction"):
+    if column not in ("Action", "Bonus action", "Reaction", "forget"):
         return HTMLResponse("", status_code=400)
     picks.set_order(db, ch, column, [str(k) for k in form.getlist("keys")])
     db.commit()

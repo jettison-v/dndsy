@@ -185,8 +185,8 @@ def test_battle_page(player, db):
     assert 'data-game-mode="' in page and "See all actions" in page
     panel = player.get(f"/characters/{cole.id}/all/action").text
     assert "<html" not in panel and "Heat Metal" in panel and "Moonbeam" in panel
-    one = player.get(f"/characters/{cole.id}/option", params={"ref": "spell:Moonbeam"}).text
-    assert "Moonbeam" in one and " open" in one
+    one = player.get(f"/characters/{cole.id}/detail", params={"ref": "spell:Moonbeam"}).text
+    assert "Moonbeam" in one and "Casting time" in one and "Full description" in one
 
 
 def test_sheet_shows_quiet_note_when_latest_refresh_failed(player, db):
@@ -205,7 +205,7 @@ def test_only_the_player_stars_and_reminds(player, admin, db):
     characters.refresh(db, cole)
     owned_by(db, cole, "player@example.com")
     page = player.get(f"/characters/{cole.id}").text
-    assert 'class="pick star' in page and "Remind me" in page and "This is your character" in page
+    assert 'class="pick star' in page and ">Remind<" in page and "This is your character" in page
     r = player.post(f"/characters/{cole.id}/pick", data={"kind": "star", "ref": "spell:Heat Metal"})
     assert r.status_code == 200 and "★" in r.text and 'aria-pressed="true"' in r.text
     situ = cole.snapshot.summary["situational"][0]["key"]
@@ -372,3 +372,40 @@ def test_inventory_and_feature_sections(player, db):
     assert "Demon Armor" in items.split("Everything else")[1]  # not equipped: folded, under Armor
     features = page.split('id="t-features"')[1].split('id="t-situ"')[0]
     assert features.index("Wild Shape") < features.index("Always on, already in your numbers") < features.index("Fleet of Foot")
+
+
+def test_side_panel_for_everything_and_admin_regrouping(player, admin, db):
+    from app.models import SheetOverride
+
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    owned_by(db, cole, "player@example.com")
+    page = player.get(f"/characters/{cole.id}").text
+    assert "data-panel-url=\"/characters/%d/detail?ref=" % cole.id in page and "<details class=\"opt" not in page
+    for ref in ("spell:Barkskin", "feature:Druid:Wild Shape", "action:Wild Shape", "attack:unarmed",
+                cole.snapshot.summary["inventory"][0]["key"], cole.snapshot.summary["situational"][0]["key"], "form:Polar Bear"):
+        r = player.get(f"/characters/{cole.id}/detail", params={"ref": ref})
+        assert r.status_code == 200 and "<html" not in r.text and 'class="mech"' in r.text, ref
+    wild = player.get(f"/characters/{cole.id}/detail", params={"ref": "feature:Druid:Wild Shape"}).text
+    assert "for 3 hours" in wild  # D&D Beyond's formula {{(classlevel/2)@rounddown}} filled in
+    assert "Admin: group this differently" not in wild
+    assert player.post(f"/characters/{cole.id}/override", data={"ref": "x", "oref": "x", "field": "battle", "value": "hide"}).status_code == 403
+    admin.post(f"/characters/{cole.id}/override", data={"ref": "feature:Wood Elf:Fleet of Foot", "oref": "feature:Fleet of Foot",
+                                                        "field": "feature_group", "value": "use"})
+    features = player.get(f"/characters/{cole.id}").text.split('id="t-features"')[1].split('id="t-situ"')[0]
+    assert features.index("Fleet of Foot") < features.index("Always on, already in your numbers")
+    assert "Admin: group this differently" in admin.get(f"/characters/{cole.id}/detail", params={"ref": "feature:Druid:Wild Shape"}).text
+    admin.post(f"/characters/{cole.id}/override", data={"ref": "attack:unarmed", "oref": "attack:unarmed", "field": "battle", "value": "hide"})
+    assert "Unarmed Strike" not in player.get(f"/characters/{cole.id}/battle").text.split("Bonus action")[0]
+    assert db.scalar(select(SheetOverride).where(SheetOverride.ref == "attack:unarmed")).set_by == "admin@example.com"
+
+
+def test_situational_folds_what_is_already_counted_and_circle_magic_is_one_entry(player, db):
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    situ = player.get(f"/characters/{cole.id}").text.split('id="t-situ"')[1].split('id="t-skills"')[0]
+    assert situ.index("charmed") < situ.index("Already in your numbers") < situ.index("+1 to saving throws")
+    page = player.get(f"/characters/{cole.id}").text
+    assert "Circle Spell: Augment" not in page and page.count("Circle Magic: cast together with other casters") == 1
