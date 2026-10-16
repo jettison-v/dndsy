@@ -123,9 +123,9 @@ class TreeNode:
 
 
 def family_tree(db: Session, campaign_id: int, visible=lambda e: True) -> list[TreeNode]:
-    """Descendant trees from parent_of and married_to links. Each person is
-    expanded once; someone who married into a family appears beside their spouse
-    (and under their own parents, if known)."""
+    """Descendant trees from parent_of and married_to links. Each person's
+    children are listed once; someone who married into a family appears beside
+    their spouse and again (without their children) under their own parents."""
     rels = [
         r
         for r in db.scalars(
@@ -153,15 +153,18 @@ def family_tree(db: Session, campaign_id: int, visible=lambda e: True) -> list[T
 
     expanded: set[int] = set()
 
+    def couple_of(pid: int) -> list[int]:
+        return [pid] + sorted(set(s for s in spouses.get(pid, []) if s != pid), key=name)
+
     def build(pid: int) -> TreeNode:
-        couple = [pid] + sorted(set(s for s in spouses.get(pid, []) if s != pid), key=name)
+        couple = couple_of(pid)
         expanded.update(couple)
-        kids = sorted({c for p in couple for c in children.get(p, [])} - expanded, key=name)
-        expanded.update(kids)  # claim them so a sibling's subtree doesn't repeat them
         node = TreeNode(people[pid], [people[s] for s in couple[1:]])
-        for k in kids:
-            expanded.discard(k)
-            node.children.append(build(k))
+        for k in sorted({c for p in couple for c in children.get(p, [])}, key=name):
+            if k in expanded:  # already drawn elsewhere: show them here, without repeating their family
+                node.children.append(TreeNode(people[k], [people[s] for s in couple_of(k)[1:]]))
+            else:
+                node.children.append(build(k))
         return node
 
     roots: list[TreeNode] = []

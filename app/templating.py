@@ -22,3 +22,12 @@ def _markdown(text: str) -> str:
 
 
 templates.env.filters["md"] = _markdown
+
+
+def _relation_label(type_: str) -> str:
+    from app.relations import TYPES
+
+    return TYPES[type_].forward if type_ in TYPES else type_.replace("_", " ")
+
+
+templates.env.filters["rel_label"] = _relation_label

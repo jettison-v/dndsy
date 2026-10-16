@@ -222,6 +222,21 @@ table.list td a:hover { color: #fff; text-decoration: underline; }
 .doc th { background: var(--surface-2); }
 .doc img { display: block; margin: .6rem 0; border-radius: 6px; background: #fff; }
 
+/* Family tree: nested lists with connector lines */
+.tree, .tree ul { list-style: none; margin: 0; padding: 0; }
+.tree { overflow-x: auto; padding-bottom: 4px; }
+.tree > li { padding: 6px 0; }
+.tree > li + li { margin-top: 10px; padding-top: 16px; border-top: 1px solid var(--line); }
+.tree ul { margin-left: 14px; padding-left: 22px; }
+.tree ul > li { position: relative; padding: 5px 0; }
+.tree ul > li::before { content: ""; position: absolute; left: -22px; top: 0; bottom: 0; border-left: 2px solid #3f444b; }
+.tree ul > li:last-child::before { bottom: auto; height: 25px; }
+.tree ul > li::after { content: ""; position: absolute; left: -22px; top: 24px; width: 16px; border-top: 2px solid #3f444b; }
+.person { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; background: var(--surface-2); border-radius: 8px; padding: 7px 12px; min-height: 38px; }
+.person a { color: var(--text); text-decoration: none; font-weight: 500; }
+.person a:hover { text-decoration: underline; }
+.person .ring { color: var(--red); font-size: 1.05rem; line-height: 1; }
+
 /* @-mention suggestions */
 .mention-box { position: absolute; z-index: 20; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 4px; box-shadow: 0 10px 30px rgba(0, 0, 0, .45); max-width: calc(100vw - 32px); }
 .mention-opt { padding: 8px 10px; border-radius: 6px; cursor: pointer; min-height: 40px; color: var(--text); }

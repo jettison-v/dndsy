@@ -18,6 +18,18 @@
   {% else %}
   <p class="muted">Nothing here yet.</p>
   {% endfor %}
+  {% if tree %}
+  {% macro person(node) %}
+  <div class="person"><a href="/campaign/{{ node.person.id }}">{{ node.person.name }}</a>
+    {% for sp in node.spouses %}<span class="ring" title="married to" aria-label="married to">⚭</span><a href="/campaign/{{ sp.id }}">{{ sp.name }}</a>{% endfor %}</div>
+  {% if node.children %}<ul>{% for c in node.children %}<li>{{ person(c) }}</li>{% endfor %}</ul>{% endif %}
+  {% endmacro %}
+  <section class="section" id="family-tree">
+    <h2>Family tree</h2>
+    <p class="hint" style="margin-top:6px">From the parent and marriage links on each page. ⚭ means married; children are listed beneath their parents.</p>
+    <ul class="tree">{% for root in tree %}<li>{{ person(root) }}</li>{% endfor %}</ul>
+  </section>
+  {% endif %}
   {% if glossary %}
   <section class="section">
     <h2>Glossary</h2>

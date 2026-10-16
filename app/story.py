@@ -9,6 +9,7 @@ from app.auth import current_user
 from app.db import get_db
 from app.extraction import session_label, timeline
 from app.models import Campaign, Character, Entity, EntityKind, EventKind, GameSession, GlossaryTerm, Status
+from app.relations import family_tree
 from app.render import markdown_to_html
 from app.templating import templates
 
@@ -113,7 +114,10 @@ def campaign_page(request: Request, db: Session = Depends(get_db)):
             if entries:
                 groups.append((title, entries))
         glossary = list(db.scalars(select(GlossaryTerm).where(GlossaryTerm.campaign_id == campaign.id).order_by(GlossaryTerm.term)))
-    return templates.TemplateResponse(request, "campaign.html", {"campaign": campaign, "groups": groups, "glossary": glossary})
+        tree = family_tree(db, campaign.id, visible=lambda e: e.status == Status.PUBLISHED)
+    return templates.TemplateResponse(
+        request, "campaign.html", {"campaign": campaign, "groups": groups, "glossary": glossary, "tree": tree if campaign else []}
+    )
 
 
 @router.get("/characters")

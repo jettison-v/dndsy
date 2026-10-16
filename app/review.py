@@ -8,10 +8,12 @@ tested on its own.
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
+from app import relations
 from app.models import (
     Correction,
     Entity,
     EntityAlias,
+    EntityRelation,
     EntityKind,
     EventKind,
     ExtractionRun,
@@ -125,6 +127,19 @@ def accept_proposal(db: Session, p: Proposal, summary: str | None = None) -> Non
             data["undo"] = {"created_term_id": term.id}
         else:
             data["undo"] = {}
+    elif p.kind == "relationship":
+        ends = []
+        for side in ("from", "to"):
+            entity = _resolve_entity(db, session.campaign_id, data.get(f"{side}_id"), data[f"{side}_name"])
+            if entity is None:
+                raise ReviewError(f"Accept {data[f'{side}_name']} first; askdnd doesn't know them yet.")
+            ends.append(entity)
+        try:
+            rel, created = relations.add(db, ends[0], data["type"], ends[1], data.get("note", ""))
+        except relations.RelationError as e:
+            raise ReviewError(str(e)) from e
+        data["from_id"], data["to_id"] = ends[0].id, ends[1].id
+        data["undo"] = {"created_relation_id": rel.id} if created else {}
     else:
         if summary is not None and summary.strip():
             data["summary"] = summary.strip()
@@ -159,6 +174,15 @@ def accept_proposal(db: Session, p: Proposal, summary: str | None = None) -> Non
     p.status = "accepted"
 
 
+def _resolve_entity(db: Session, campaign_id: int, entity_id: int | None, name: str) -> Entity | None:
+    """The entity a relationship suggestion names: by id, else by name or alias
+    (it may have been created since, by accepting its own suggestion)."""
+    from app.extraction import _entity_index, _norm
+
+    entity = db.get(Entity, entity_id) if entity_id else None
+    return entity or _entity_index(db, campaign_id).get(_norm(name))
+
+
 def reject_proposal(db: Session, p: Proposal) -> None:
     if p.status != "pending":
         raise ReviewError("That suggestion was already decided.")
@@ -174,7 +198,11 @@ def undo_proposal(db: Session, p: Proposal) -> None:
         return
     data = dict(p.payload)
     undo = data.pop("undo", {}) or {}
-    if p.kind == "glossary":
+    if p.kind == "relationship":
+        rel = db.get(EntityRelation, undo["created_relation_id"]) if undo.get("created_relation_id") else None
+        if rel:
+            db.delete(rel)
+    elif p.kind == "glossary":
         term = db.get(GlossaryTerm, undo["created_term_id"]) if undo.get("created_term_id") else None
         if term:
             db.delete(term)

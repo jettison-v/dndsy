@@ -16,6 +16,8 @@ import anthropic
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
+from app.relations import TYPES as REL_TYPES
+from app.relations import find as find_relation
 from app.models import (
     Campaign,
     Character,
@@ -79,6 +81,13 @@ updated summary of 1-3 sentences that merges what was known with what's new. \
 For new ones, pick the kind and write a summary. Add aliases only for real \
 alternative names or spellings.
 
+Relationships: lasting links between people, factions and places that this \
+session reveals or changes and that aren't in the known relationships yet. \
+Types: parent_of, married_to, sibling_of, member_of (a person in a faction), \
+serves (a person serving another person or a faction), ally_of, enemy_of. \
+Use exact known names (or the names of new entities you list). Only state \
+what the source says, not guesses.
+
 Glossary: proper nouns that a transcription might mangle and that aren't \
 already in the glossary.
 
@@ -95,11 +104,12 @@ known world being ahead of this session — that's expected."""
 
 _ENTITY_KINDS = [k.value for k in EntityKind]
 _EVENT_KINDS = [k.value for k in EventKind]
+_REL_TYPES = list(REL_TYPES)
 
 SCHEMA = {
     "type": "object",
     "additionalProperties": False,
-    "required": ["title", "recap", "events", "entities", "glossary", "to_check"],
+    "required": ["title", "recap", "events", "entities", "relationships", "glossary", "to_check"],
     "properties": {
         "title": {"type": "string", "description": "Short session title, 2-6 words"},
         "recap": {"type": "string"},
@@ -128,6 +138,20 @@ SCHEMA = {
                     "summary": {"type": "string"},
                     "aliases": {"type": "array", "items": {"type": "string"}},
                     "quest_status": {"type": "string", "enum": ["open", "done", "not_a_quest"]},
+                },
+            },
+        },
+        "relationships": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["from", "type", "to", "note"],
+                "properties": {
+                    "from": {"type": "string"},
+                    "type": {"type": "string", "enum": _REL_TYPES},
+                    "to": {"type": "string"},
+                    "note": {"type": "string", "description": "Optional short detail, e.g. 'adopted'; empty if none"},
                 },
             },
         },
@@ -474,6 +498,32 @@ def store_result(db: Session, session: GameSession, run: ExtractionRun, data: di
                     "summary": item["summary"].strip(),
                     "new_aliases": new_aliases,
                     "quest_open": quest_open,
+                },
+            )
+        )
+    seen_rels = set()
+    for rel in data.get("relationships", []):
+        type_ = rel.get("type")
+        if type_ not in REL_TYPES or not rel.get("from", "").strip() or not rel.get("to", "").strip():
+            continue
+        a, b = index.get(_norm(rel["from"])), index.get(_norm(rel["to"]))
+        if a and b and (a.id == b.id or find_relation(db, a.id, type_, b.id)):
+            continue  # already known
+        key = (_norm(a.name if a else rel["from"]), type_, _norm(b.name if b else rel["to"]))
+        if key in seen_rels or (REL_TYPES[type_].symmetric and (key[2], type_, key[0]) in seen_rels):
+            continue
+        seen_rels.add(key)
+        db.add(
+            Proposal(
+                session_id=session.id,
+                kind="relationship",
+                payload={
+                    "from_id": a.id if a else None,
+                    "from_name": a.name if a else rel["from"].strip(),
+                    "type": type_,
+                    "to_id": b.id if b else None,
+                    "to_name": b.name if b else rel["to"].strip(),
+                    "note": (rel.get("note") or "").strip()[:300],
                 },
             )
         )

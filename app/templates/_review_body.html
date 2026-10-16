@@ -157,7 +157,7 @@
       {# 4. Suggested updates #}
       <section class="section" id="suggestions">
         <div class="section-head"><h2><span class="num">4</span>Suggested updates</h2><span class="count">{% if open_proposals %}{{ open_proposals | length }} to review{% endif %}</span></div>
-        <p class="hint">Changes to what askdnd knows about people, places and spellings.</p>
+        <p class="hint">Changes to what askdnd knows about people, places, relationships and spellings.</p>
         {% for p in open_proposals %}{% set d = p.payload %}
         <div class="item">
           {% include "_proposal_head.html" %}
@@ -177,6 +177,11 @@
             <textarea name="summary" rows="3" required>{{ d.summary }}</textarea>
             <div class="row"><button class="btn primary">Save and accept</button><button type="button" class="btn link" data-cancel="p{{ p.id }}-form" data-restore="p{{ p.id }}-view">Cancel</button></div>
           </form>
+          {% elif p.kind == "relationship" %}
+          <div class="row">
+            <form class="inline" hx-post="/admin/proposals/{{ p.id }}/accept" {{ hx | safe }}><button class="btn primary">Accept</button></form>
+            <form class="inline" hx-post="/admin/proposals/{{ p.id }}/reject" {{ hx | safe }}><button class="btn link">Reject</button></form>
+          </div>
           {% else %}
           <div class="row">
             <form class="inline" hx-post="/admin/proposals/{{ p.id }}/accept" {{ hx | safe }}><button class="btn primary">Add to glossary</button></form>

@@ -1,8 +1,15 @@
 <div class="sug-head">
+  {% if p.kind == "relationship" %}
+  <b>{{ d.from_name }}</b> <span class="muted">{{ d.type | rel_label }}</span> <b>{{ d.to_name }}</b>
+  <span class="tag">Relationship</span>
+  {% if not d.from_id or not d.to_id %}<span class="tag new">New name</span>{% endif %}
+  {% else %}
   <b>{{ d.name if p.kind == "entity" else d.term }}</b>
   <span class="tag">{{ (d.kind | upper if d.kind == "npc" else d.kind | capitalize) if p.kind == "entity" else "Glossary" }}</span>
+  {% endif %}
   {% if p.kind == "entity" and not d.entity_id %}<span class="tag new">New</span>{% endif %}
   {% if p.status == "accepted" %}<span class="tag published">Accepted</span>{% elif p.status == "rejected" %}<span class="tag">{{ "Skipped" if p.kind == "glossary" else "Rejected" }}</span>{% endif %}
+  {% if p.kind == "relationship" and d.note %}<span class="note">{{ d.note }}</span>{% endif %}
   {% if p.kind == "entity" and d.new_aliases %}<span class="note">also: {{ d.new_aliases | join(", ") }}</span>{% endif %}
   {% if p.kind == "entity" and d.quest_open is not none %}<span class="note">quest {{ "open" if d.quest_open else "done" }}</span>{% endif %}
   {% if p.kind == "glossary" %}<span class="note">{{ d.description }}{% if d.misheard_as %} · often misheard as {{ d.misheard_as | join(", ") }}{% endif %}</span>{% endif %}
