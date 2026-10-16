@@ -63,4 +63,11 @@ Railway applies migrations automatically on deploy (see `Procfile`).
 uv run pytest
 ```
 
+D&D Beyond parsing is tested against saved public character sheets in `tests/fixtures/ddb/`
+(tests never call D&D Beyond). To add or update one (player notes are stripped):
+
+```bash
+uv run python -m scripts.ddb_fixture 75423618 cole
+```
+
 The legacy (v1) app is on the `legacy` branch and the `v1-legacy` tag.

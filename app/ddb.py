@@ -1,0 +1,729 @@
+"""D&D Beyond character data: fetch, sanitize and parse.
+
+D&D Beyond has no official API. Its character sheet page loads public JSON from
+the character service, which we read the same way. It can change or break
+without notice, so callers keep the last good copy (app/characters.py) and the
+parser is defensive: a missing or renamed field leaves a blank, not a crash.
+
+Most numbers on a D&D Beyond sheet (ability scores, AC, spell slots…) are
+computed in the browser from "modifiers", so `parse_character` recomputes the
+common ones. It covers the rules our table's characters use; anything it
+can't work out is left out rather than guessed.
+"""
+
+import json
+import re
+import socket
+import urllib.error
+import urllib.request
+from html.parser import HTMLParser
+
+CHARACTER_URL = "https://character-service.dndbeyond.com/character/v5/character/{id}"
+SHEET_URL = "https://www.dndbeyond.com/characters/{id}"
+USER_AGENT = "askdnd/2 (private table companion; +https://beta.askdnd.ai)"
+TIMEOUT_SECONDS = 15
+PARSER_VERSION = 1  # bump when the summary shape changes; stored summaries are re-parsed
+
+
+class DdbError(Exception):
+    """A fetch or parse problem, worded for the person who clicked Refresh."""
+
+
+# ---------------------------------------------------------------- fetching
+
+
+def ddb_id_from(value: str | int | None) -> str | None:
+    """Accept a character id or any D&D Beyond character link; return the id."""
+    text = str(value or "").strip()
+    if text.isdigit():
+        return text
+    m = re.search(r"dndbeyond\.com/(?:profile/[^/]+/)?characters/(\d+)", text)
+    return m.group(1) if m else None
+
+
+def fetch_character_json(ddb_id: str, timeout: float = TIMEOUT_SECONDS) -> dict:
+    """The character's public JSON (the "data" object). Raises DdbError."""
+    req = urllib.request.Request(
+        CHARACTER_URL.format(id=ddb_id), headers={"User-Agent": USER_AGENT, "Accept": "application/json"}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            body = resp.read()
+    except urllib.error.HTTPError as e:
+        if e.code in (401, 403):
+            raise DdbError(
+                "D&D Beyond says this character is private. Its player can change Character Privacy "
+                "to Public in the character's settings on D&D Beyond."
+            ) from e
+        if e.code == 404:
+            raise DdbError("D&D Beyond has no character with that id.") from e
+        raise DdbError(f"D&D Beyond answered with an error ({e.code}). Try again later.") from e
+    except (TimeoutError, socket.timeout) as e:
+        raise DdbError("D&D Beyond took too long to answer. Try again later.") from e
+    except urllib.error.URLError as e:
+        raise DdbError("Couldn't reach D&D Beyond. Try again later.") from e
+    try:
+        payload = json.loads(body)
+    except ValueError as e:
+        raise DdbError("D&D Beyond sent something that isn't character data.") from e
+    data = payload.get("data") if isinstance(payload, dict) else None
+    if not isinstance(data, dict) or not payload.get("success", True) or not data.get("name"):
+        raise DdbError("D&D Beyond sent something that isn't character data.")
+    return data
+
+
+# Character-sheet notes (backstory, allies, personality, notes on items) are the
+# player's own writing. askdnd doesn't show them, and the DM must not see a
+# player's notes here (CLAUDE.md), so they are dropped before anything is stored.
+ITEM_NOTE_VALUE_TYPE = 9
+
+
+def sanitize(data: dict) -> dict:
+    clean = {k: v for k, v in data.items() if k not in ("notes", "traits")}
+    clean["characterValues"] = [
+        v for v in data.get("characterValues") or [] if v.get("typeId") != ITEM_NOTE_VALUE_TYPE
+    ]
+    return clean
+
+
+# ---------------------------------------------------------------- helpers
+
+
+class _Text(HTMLParser):
+    BLOCK = {"p", "div", "br", "li", "tr", "h1", "h2", "h3", "h4", "h5", "h6", "table", "ul", "ol"}
+
+    def __init__(self):
+        super().__init__()
+        self.parts: list[str] = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag in self.BLOCK:
+            self.parts.append("\n")
+        if tag == "li":
+            self.parts.append("• ")
+
+    def handle_endtag(self, tag):
+        if tag in self.BLOCK:
+            self.parts.append("\n")
+
+    def handle_data(self, data):
+        self.parts.append(data)
+
+
+def html_to_text(html: str | None) -> str:
+    """D&D Beyond descriptions are HTML; keep paragraphs, drop markup."""
+    if not html:
+        return ""
+    p = _Text()
+    p.feed(html)
+    text = "".join(p.parts).replace("\xa0", " ")
+    text = re.sub(r"\[/?[a-z]+(?:[ =][^\]]*)?\]", "", text)  # D&D Beyond link tags: [rules]Unarmed Strike[/rules]
+    text = re.sub(r"\{\{[^}]*\}\}", "(see D&D Beyond)", text)  # sheet formulas we don't evaluate
+    lines = [re.sub(r"[ \t]+", " ", line).strip() for line in text.split("\n")]
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
+
+
+def _clip(text: str, limit: int) -> str:
+    return text if len(text) <= limit else text[: limit - 1].rsplit(" ", 1)[0] + "…"
+
+
+def _first_paragraph(text: str, limit: int = 320) -> str:
+    para = next((p for p in text.split("\n") if p.strip()), "")
+    return para if len(para) <= limit else para[: limit - 1].rsplit(" ", 1)[0] + "…"
+
+
+def _mod(score: int) -> int:
+    return (score - 10) // 2
+
+
+def _signed(n: int) -> str:
+    return f"+{n}" if n >= 0 else f"−{-n}"
+
+
+ABILITIES = [
+    (1, "strength", "Strength", "Str"),
+    (2, "dexterity", "Dexterity", "Dex"),
+    (3, "constitution", "Constitution", "Con"),
+    (4, "intelligence", "Intelligence", "Int"),
+    (5, "wisdom", "Wisdom", "Wis"),
+    (6, "charisma", "Charisma", "Cha"),
+]
+ABILITY_KEY = {i: key for i, key, _, _ in ABILITIES}
+
+SKILLS = [
+    ("Acrobatics", "dexterity"), ("Animal Handling", "wisdom"), ("Arcana", "intelligence"),
+    ("Athletics", "strength"), ("Deception", "charisma"), ("History", "intelligence"),
+    ("Insight", "wisdom"), ("Intimidation", "charisma"), ("Investigation", "intelligence"),
+    ("Medicine", "wisdom"), ("Nature", "intelligence"), ("Perception", "wisdom"),
+    ("Performance", "charisma"), ("Persuasion", "charisma"), ("Religion", "intelligence"),
+    ("Sleight of Hand", "dexterity"), ("Stealth", "dexterity"), ("Survival", "wisdom"),
+]
+
+ACTIVATION = {1: "Action", 2: "No action", 3: "Bonus action", 4: "Reaction", 6: "Minute", 7: "Hour", 8: "Special"}
+RESET = {1: "Short or Long Rest", 2: "Long Rest", 3: "Dawn", 4: "Other"}
+COMPONENTS = {1: "V", 2: "S", 3: "M"}
+CR = {1: "0", 2: "1/8", 3: "1/4", 4: "1/2"}
+CREATURE_GROUPS = {13: "Wild Shape form"}
+PROFICIENCY_GROUPS = {174869515: "armor", 660121713: "weapons", 1782728300: "weapons", 2103445194: "tools"}
+
+# Feature names that are only headings on D&D Beyond, not something you can do.
+SKIP_FEATURES = re.compile(
+    r"^(core .* traits|.* subclass|(\d+: )?ability score improvements?|ability score increases?|hit points|"
+    r"proficiencies|equipment|age|size|speed|languages|creature type|alignment|epic boon)$",
+    re.I,
+)
+
+# Standard spell slots by caster level (multiclass table, 2024 PHB).
+FULL_CASTER_SLOTS = [
+    [], [2], [3], [4, 2], [4, 3], [4, 3, 2], [4, 3, 3], [4, 3, 3, 1], [4, 3, 3, 2], [4, 3, 3, 3, 1],
+    [4, 3, 3, 3, 2], [4, 3, 3, 3, 2, 1], [4, 3, 3, 3, 2, 1], [4, 3, 3, 3, 2, 1, 1], [4, 3, 3, 3, 2, 1, 1],
+    [4, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1, 1], [4, 3, 3, 3, 3, 1, 1, 1, 1],
+    [4, 3, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 3, 2, 2, 1, 1],
+]
+
+
+def _d(obj, *path, default=None):
+    """Safe nested lookup: _d(x, "a", "b") is x["a"]["b"] or default."""
+    for key in path:
+        if not isinstance(obj, dict):
+            return default
+        obj = obj.get(key)
+    return default if obj is None else obj
+
+
+# ---------------------------------------------------------------- parsing
+
+
+class _Sheet:
+    """One parse of one character. Methods build the sections of the summary."""
+
+    def __init__(self, data: dict):
+        self.d = data
+        self.classes = [c for c in data.get("classes") or [] if _d(c, "definition", "name")]
+        self.level = sum(c.get("level") or 0 for c in self.classes) or 1
+        self.pb = 2 + (self.level - 1) // 4
+        self.items = data.get("inventory") or []
+        self.active_item_defs = {
+            _d(i, "definition", "id")
+            for i in self.items
+            if i.get("equipped") and (i.get("isAttuned") or not _d(i, "definition", "canAttune"))
+        }
+        self.equipped_item_defs = {_d(i, "definition", "id") for i in self.items if i.get("equipped")}
+        # Features of a class you multiclassed into (e.g. its saving throws) don't all carry over.
+        self.multiclass_features = {
+            _d(f, "definition", "id")
+            for c in self.classes
+            if not c.get("isStartingClass")
+            for f in c.get("classFeatures") or []
+        } if len(self.classes) > 1 else set()
+        self.modifiers = [m for source, m in self._all_modifiers() if self._applies(source, m)]
+        self.scores = self._scores()
+        self.mods = {k: _mod(v) for k, v in self.scores.items()}
+
+    # modifiers ---------------------------------------------------------
+
+    def _all_modifiers(self):
+        for source, group in (self.d.get("modifiers") or {}).items():
+            for m in group or []:
+                yield source, m
+
+    def _applies(self, source: str, m: dict) -> bool:
+        """Item modifiers count only while the item is equipped (and attuned if it needs it);
+        some class modifiers count only for your first class."""
+        if source == "class":
+            return m.get("availableToMulticlass") is not False or m.get("componentId") not in self.multiclass_features
+        if source != "item":
+            return True
+        active = self.active_item_defs if m.get("requiresAttunement") else self.equipped_item_defs
+        return m.get("componentId") in active
+
+    def mods_of(self, type_: str | tuple, sub: str | None = None) -> list[dict]:
+        types = (type_,) if isinstance(type_, str) else type_
+        return [m for m in self.modifiers if m.get("type") in types and (sub is None or m.get("subType") == sub)]
+
+    def bonus_value(self, m: dict) -> int:
+        """A bonus is a fixed number, or an ability modifier (e.g. "add your Wisdom modifier")."""
+        if m.get("value") is not None:
+            return int(m["value"])
+        if m.get("fixedValue") is not None:
+            return int(m["fixedValue"])
+        if m.get("statId") and getattr(self, "mods", None):
+            return max(1, self.mods.get(ABILITY_KEY.get(m["statId"]), 0))
+        return 0
+
+    def total_bonus(self, sub: str) -> int:
+        return sum(self.bonus_value(m) for m in self.mods_of(("bonus", "stacking-bonus"), sub))
+
+    # numbers -----------------------------------------------------------
+
+    def _scores(self) -> dict:
+        stats = {s.get("id"): s.get("value") for s in self.d.get("stats") or []}
+        bonus = {s.get("id"): s.get("value") for s in self.d.get("bonusStats") or []}
+        override = {s.get("id"): s.get("value") for s in self.d.get("overrideStats") or []}
+        out = {}
+        for sid, key, _, _ in ABILITIES:
+            if override.get(sid):
+                out[key] = override[sid]
+                continue
+            base = (stats.get(sid) or 10) + (bonus.get(sid) or 0)
+            base += sum(int(m.get("value") or 0) for m in self.mods_of(("bonus", "stacking-bonus"), f"{key}-score"))
+            cap_raise = sum(
+                int(m.get("value") or 0) for m in self.mods_of("bonus", "ability-score-maximum") if m.get("statId") == sid
+            )
+            score = min(base, min(30, 20 + cap_raise))
+            for m in self.mods_of("set", f"{key}-score"):  # e.g. Belt of Giant Strength
+                score = max(score, int(m.get("value") or 0))
+            out[key] = score
+        return out
+
+    def proficient(self, sub: str) -> bool:
+        return bool(self.mods_of("proficiency", sub))
+
+    def armor(self) -> tuple[dict | None, dict | None]:
+        body = shield = None
+        for i in self.items:
+            df = i.get("definition") or {}
+            if not i.get("equipped") or df.get("armorClass") is None:
+                continue
+            if df.get("armorTypeId") == 4:
+                shield = df
+            elif df.get("armorTypeId") in (1, 2, 3):
+                body = df
+        return body, shield
+
+    def armor_class(self) -> int:
+        body, shield = self.armor()
+        dex = self.mods["dexterity"]
+        if body:
+            kind = body.get("armorTypeId")
+            ac = body["armorClass"] + (dex if kind == 1 else min(dex, 2) if kind == 2 else 0)
+            ac += self.total_bonus("armored-armor-class")
+        else:
+            ac = 10 + dex
+            extra = [self.mods.get(ABILITY_KEY.get(m.get("statId")), 0) for m in self.mods_of("set", "unarmored-armor-class") if m.get("statId")]
+            if extra:  # Unarmored Defense (Monk: Wis, Barbarian: Con) — the best one applies
+                ac += max(extra)
+            ac += self.total_bonus("unarmored-armor-class")
+        if shield:
+            ac += shield["armorClass"]
+        ac += self.total_bonus("armor-class")
+        for m in self.mods_of("set", "armor-class"):
+            ac = max(ac, int(m.get("value") or 0))
+        return ac
+
+    def hit_points(self) -> dict:
+        d = self.d
+        if d.get("overrideHitPoints"):
+            maximum = d["overrideHitPoints"]
+        else:
+            maximum = (d.get("baseHitPoints") or 0) + self.mods["constitution"] * self.level
+            maximum += self.total_bonus("hit-points-per-level") * self.level + (d.get("bonusHitPoints") or 0)
+        return {
+            "max": maximum,
+            "current": max(0, maximum - (d.get("removedHitPoints") or 0)),
+            "temp": d.get("temporaryHitPoints") or 0,
+            "hit_dice": [
+                {"class": _d(c, "definition", "name"), "die": f"d{_d(c, 'definition', 'hitDice', default=8)}",
+                 "total": c.get("level") or 0, "used": c.get("hitDiceUsed") or 0}
+                for c in self.classes
+            ],
+        }
+
+    def speeds(self) -> dict:
+        normal = _d(self.d, "race", "weightSpeeds", "normal", default={}) or {}
+        walk = normal.get("walk") or 30
+        for m in self.mods_of("set", "innate-speed-walking"):
+            walk = max(walk, int(m.get("value") or 0))
+        walk += self.total_bonus("speed") + self.total_bonus("speed-walking")
+        body, shield = self.armor()
+        if not body and not shield:
+            walk += self.total_bonus("unarmored-movement")
+        out = {"walk": walk}
+        for kind in ("fly", "swim", "climb", "burrow"):
+            v = normal.get(kind) or 0
+            for m in self.mods_of("set", f"innate-speed-{kind}"):
+                v = max(v, int(m.get("value") or 0) or walk)
+            if v:
+                out[kind] = v
+        return out
+
+    def saves(self) -> list[dict]:
+        out = []
+        general = self.total_bonus("saving-throws")
+        for _, key, name, short in ABILITIES:
+            prof = self.proficient(f"{key}-saving-throws")
+            total = self.mods[key] + (self.pb if prof else 0) + general + self.total_bonus(f"{key}-saving-throws")
+            adv = bool(self.mods_of("advantage", f"{key}-saving-throws"))
+            out.append({"ability": name, "short": short, "bonus": total, "label": _signed(total), "proficient": prof, "advantage": adv})
+        return out
+
+    def skills(self) -> list[dict]:
+        out = []
+        checks = self.total_bonus("ability-checks")
+        half = bool(self.mods_of("half-proficiency", "ability-checks"))
+        for name, ability in SKILLS:
+            sub = name.lower().replace(" ", "-")
+            level = "expertise" if self.mods_of("expertise", sub) else "proficient" if self.proficient(sub) else ""
+            prof = self.pb * 2 if level == "expertise" else self.pb if level else (self.pb // 2 if half else 0)
+            total = self.mods[ability] + prof + checks + self.total_bonus(sub)
+            out.append({"name": name, "ability": ability[:3].title(), "bonus": total, "label": _signed(total), "proficiency": level})
+        return out
+
+    def initiative(self) -> int:
+        n = self.mods["dexterity"] + self.total_bonus("initiative") + self.total_bonus("ability-checks")
+        if self.proficient("initiative"):
+            n += self.pb
+        return n
+
+    # lists -------------------------------------------------------------
+
+    def proficiencies(self) -> dict:
+        groups = {"armor": [], "weapons": [], "tools": [], "languages": []}
+        for m in self.mods_of(("proficiency", "language")):
+            name = (m.get("friendlySubtypeName") or m.get("subType") or "").strip()
+            sub = m.get("subType") or ""
+            if not name or sub.startswith("choose-") or sub.endswith("saving-throws"):
+                continue
+            if m["type"] == "language":
+                group = "languages"
+            else:
+                group = PROFICIENCY_GROUPS.get(m.get("entityTypeId"))
+            if group and name not in groups[group]:
+                groups[group].append(name)
+        senses = [
+            f"{m.get('friendlySubtypeName') or m.get('subType')} {m.get('value')} ft"
+            for m in self.mods_of(("set-base", "sense"))
+            if m.get("value")
+        ]
+        defenses = {}
+        for kind, label in (("resistance", "Resistances"), ("immunity", "Immunities"), ("vulnerability", "Vulnerabilities")):
+            names = sorted({m.get("friendlySubtypeName") or m.get("subType") for m in self.mods_of(kind)})
+            if names:
+                defenses[label] = names
+        adv = sorted({
+            (m.get("friendlySubtypeName") or m.get("subType")) + (f" ({m['restriction']})" if m.get("restriction") else "")
+            for m in self.mods_of("advantage")
+        })
+        if adv:
+            defenses["Advantage on"] = adv
+        return {**groups, "senses": sorted(set(senses)), "defenses": defenses}
+
+    def limited_use(self, lu: dict | None) -> dict | None:
+        """Uses per rest. D&D Beyond stores a base number, optionally plus an ability
+        modifier or the proficiency bonus."""
+        if not lu:
+            return None
+        maximum = lu.get("maxUses") or 0
+        if lu.get("useProficiencyBonus"):
+            maximum = maximum * self.pb if lu.get("proficiencyBonusOperator") == 2 and maximum else maximum + self.pb
+        if lu.get("statModifierUsesId"):
+            maximum += max(1, self.mods.get(ABILITY_KEY.get(lu["statModifierUsesId"]), 0))
+        if maximum <= 0:
+            return None
+        reset = lu.get("resetType")
+        reset_label = RESET.get(reset, reset) if isinstance(reset, int) else (reset or "")
+        if reset_label == "Consumable":
+            reset_label = "Used up"
+        used = lu.get("numberUsed") or 0
+        note = lu.get("resetTypeDescription") or ""
+        phrase = {"Dawn": "back at dawn", "Used up": "gone once used", "Other": note or "see the description"}.get(
+            reset_label, f"back after a {reset_label}" if reset_label else note)
+        return {"max": maximum, "used": used, "left": max(0, maximum - used), "reset": reset_label,
+                "reset_note": note, "reset_phrase": phrase}
+
+    def actions(self) -> list[dict]:
+        out, seen = [], set()
+        for source, group in (self.d.get("actions") or {}).items():
+            for a in group or []:
+                name = (a.get("name") or "").strip()
+                kind = _d(a, "activation", "activationType")
+                if not name or (name, kind) in seen:
+                    continue
+                seen.add((name, kind))
+                out.append({
+                    "name": name,
+                    "source": source,
+                    "activation": ACTIVATION.get(kind, ""),
+                    "uses": self.limited_use(a.get("limitedUse")),
+                    # descriptions are prose; snippets hold sheet formulas like {{classlevel}}
+                    "text": _clip(html_to_text(a.get("description") or a.get("snippet")), 1500),
+                })
+        return out
+
+    def features(self) -> list[dict]:
+        out, seen = [], set()
+
+        def add(name, source, desc, required_level=None):
+            name = (name or "").strip()
+            if not name or SKIP_FEATURES.match(name) or (name, source) in seen:
+                return
+            seen.add((name, source))
+            text = html_to_text(desc)
+            out.append({"name": name, "source": source, "level": required_level, "summary": _first_paragraph(text), "text": text})
+
+        for c in self.classes:
+            cname = _d(c, "definition", "name")
+            sub = _d(c, "subclassDefinition", "name")
+            sub_id = _d(c, "subclassDefinition", "id")
+            feats = sorted(c.get("classFeatures") or [], key=lambda f: _d(f, "definition", "requiredLevel", default=0))
+            for f in feats:
+                df = f.get("definition") or {}
+                if df.get("hideInSheet") or (df.get("requiredLevel") or 0) > (c.get("level") or 0):
+                    continue
+                label = sub if sub and (df.get("isSubClassFeature") or (sub_id and df.get("classId") == sub_id)) else cname
+                add(df.get("name"), label, df.get("description"), df.get("requiredLevel"))
+        species = _d(self.d, "race", "fullName", default="Species")
+        for t in _d(self.d, "race", "racialTraits", default=[]):
+            df = t.get("definition") or {}
+            if not df.get("hideInSheet"):
+                add(df.get("name"), species, df.get("description"))
+        for f in self.d.get("feats") or []:
+            df = f.get("definition") or {}
+            add(df.get("name"), "Feat", df.get("description"))
+        for group in (self.d.get("options") or {}).values():
+            for o in group or []:
+                df = o.get("definition") or {}
+                if not re.match(r"^(increase .*|strength|dexterity|constitution|intelligence|wisdom|charisma)$", df.get("name") or "", re.I):
+                    add(df.get("name"), "Choice", df.get("description"))
+        return out
+
+    def spell_slots(self) -> dict:
+        casters = [c for c in self.classes if _d(c, "definition", "canCastSpells") or _d(c, "subclassDefinition", "canCastSpells")]
+        pact = [c for c in casters if _d(c, "definition", "name") == "Warlock"]
+        regular = [c for c in casters if c not in pact]
+
+        def table_row(c):
+            rules = _d(c, "definition", "spellRules") or _d(c, "subclassDefinition", "spellRules") or {}
+            rows = rules.get("levelSpellSlots") or []
+            lvl = c.get("level") or 0
+            return [n for n in (rows[lvl] if lvl < len(rows) else [])]
+
+        slots: list[int] = []
+        if len(regular) == 1:
+            slots = table_row(regular[0])
+        elif regular:
+            caster_level = 0
+            for c in regular:
+                rules = _d(c, "definition", "spellRules") or _d(c, "subclassDefinition", "spellRules") or {}
+                div = rules.get("multiClassSpellSlotDivisor") or 1
+                lvl = c.get("level") or 0
+                caster_level += -(-lvl // div) if rules.get("multiClassSpellSlotRounding") == 2 else lvl // div
+            slots = FULL_CASTER_SLOTS[min(caster_level, 20)]
+        used = {s.get("level"): s.get("used") or 0 for s in self.d.get("spellSlots") or []}
+        out = {"slots": [{"level": i + 1, "max": n, "used": used.get(i + 1, 0)} for i, n in enumerate(slots) if n]}
+        if pact:
+            row = table_row(pact[0])
+            level = max((i + 1 for i, n in enumerate(row) if n), default=0)
+            if level:
+                pused = {s.get("level"): s.get("used") or 0 for s in self.d.get("pactMagic") or []}
+                out["pact"] = {"level": level, "max": row[level - 1], "used": pused.get(level, 0)}
+        return out
+
+    def spellcasting(self) -> list[dict]:
+        out = []
+        for c in self.classes:
+            df = c.get("definition") or {}
+            ability_id = df.get("spellCastingAbilityId") or _d(c, "subclassDefinition", "spellCastingAbilityId")
+            if not ability_id or not (df.get("canCastSpells") or _d(c, "subclassDefinition", "canCastSpells")):
+                continue
+            key = ABILITY_KEY.get(ability_id, "wisdom")
+            mod = self.mods[key]
+            out.append({
+                "class": df.get("name"),
+                "ability": key.title(),
+                "save_dc": 8 + self.pb + mod + self.total_bonus("spell-save-dc"),
+                "attack": _signed(self.pb + mod + self.total_bonus("spell-attacks")),
+            })
+        return out
+
+    def spell(self, s: dict, source: str) -> dict | None:
+        df = s.get("definition") or {}
+        if not df.get("name"):
+            return None
+        rng = df.get("range") or {}
+        origin, value = rng.get("origin") or "", rng.get("rangeValue")
+        range_label = f"{value} ft" if origin == "Ranged" and value else origin
+        if rng.get("aoeType") and rng.get("aoeValue"):
+            range_label = f"{range_label} ({rng['aoeValue']}-ft {rng['aoeType'].lower()})".strip()
+        act = df.get("activation") or {}
+        kind, amount = act.get("activationType"), act.get("activationTime") or 1
+        if kind in (6, 7):
+            unit = "minute" if kind == 6 else "hour"
+            casting = f"{amount} {unit}{'s' if amount != 1 else ''}"
+        else:
+            casting = ACTIVATION.get(kind, "")
+        dur = df.get("duration") or {}
+        dtype, n, unit = dur.get("durationType") or "", dur.get("durationInterval") or 0, (dur.get("durationUnit") or "").lower()
+        span = f"{n} {unit}{'s' if n != 1 else ''}" if n and unit else ""
+        duration = (f"Concentration, up to {span}" if span else "Concentration") if dtype == "Concentration" else (span or dtype)
+        comps = [COMPONENTS[c] for c in df.get("components") or [] if c in COMPONENTS]
+        return {
+            "name": df["name"],
+            "level": df.get("level") or 0,
+            "school": df.get("school") or "",
+            "sources": [source],
+            "prepared": bool(s.get("prepared")),
+            "always_prepared": bool(s.get("alwaysPrepared")),
+            "uses_slot": s.get("usesSpellSlot") is not False,
+            "uses": self.limited_use(s.get("limitedUse")),
+            "concentration": bool(df.get("concentration")),
+            "ritual": bool(df.get("ritual")),
+            "components": comps,
+            "material": (df.get("componentsDescription") or "").strip(),
+            "range": range_label,
+            "casting_time": casting,
+            "duration": duration,
+            "summary": _first_paragraph(html_to_text(df.get("description")), 280),
+        }
+
+    def spells(self) -> list[dict]:
+        out: dict[str, dict] = {}
+        class_names = {c.get("id"): _d(c, "definition", "name") for c in self.classes}
+        lists = [(class_names.get(cs.get("characterClassId"), "Class"), cs.get("spells") or []) for cs in self.d.get("classSpells") or []]
+        labels = {"race": _d(self.d, "race", "fullName", default="Species"), "class": "Class feature", "item": "Item", "feat": "Feat", "background": "Background"}
+        lists += [(labels.get(k, k.title()), v or []) for k, v in (self.d.get("spells") or {}).items()]
+        for source, spells in lists:
+            for s in spells:
+                sp = self.spell(s, source)
+                if not sp:
+                    continue
+                key = sp["name"]
+                if key in out:  # the same spell from two places, or once free (1/day) and once with a slot
+                    prev = out[key]
+                    if source not in prev["sources"]:
+                        prev["sources"].append(source)
+                    prev["uses"] = prev["uses"] or sp["uses"]
+                    prev["uses_slot"] = prev["uses_slot"] or sp["uses_slot"]
+                    prev["prepared"] |= sp["prepared"]
+                    prev["always_prepared"] |= sp["always_prepared"]
+                else:
+                    out[key] = sp
+        return sorted(out.values(), key=lambda s: (s["level"], s["name"]))
+
+    def inventory(self) -> list[dict]:
+        names = {str(v.get("valueId")): v.get("value") for v in self.d.get("characterValues") or [] if v.get("typeId") == 8}
+        containers = {i.get("id"): i for i in self.items}
+        out = []
+        for i in self.items:
+            df = i.get("definition") or {}
+            if not df.get("name"):
+                continue
+            container = containers.get(i.get("containerEntityId"))
+            dmg = _d(df, "damage", "diceString")
+            out.append({
+                "name": names.get(str(i.get("id"))) or df["name"],
+                "base_name": df["name"],
+                "type": df.get("subType") or df.get("filterType") or df.get("type") or "",
+                "quantity": i.get("quantity") or 1,
+                "equipped": bool(i.get("equipped")),
+                "magic": bool(df.get("magic")),
+                "rarity": df.get("rarity") or "",
+                "attunement": "attuned" if i.get("isAttuned") else ("required" if df.get("canAttune") else ""),
+                "attunement_note": df.get("attunementDescription") or "",
+                "charges": self.limited_use(i.get("limitedUse")),
+                "in": _d(container, "definition", "name") if container else "",
+                "damage": f"{dmg} {df.get('damageType') or ''}".strip() if dmg else "",
+                "properties": [p.get("name") for p in df.get("properties") or [] if p.get("name")],
+                "armor_class": df.get("armorClass"),
+                "summary": _first_paragraph(html_to_text(df.get("description")), 280) if df.get("magic") else "",
+            })
+        out.sort(key=lambda x: (not x["equipped"], not x["magic"], bool(x["in"]), x["name"]))
+        return out
+
+    def creatures(self) -> list[dict]:
+        out = []
+        for c in self.d.get("creatures") or []:
+            df = c.get("definition") or {}
+            if not df.get("name"):
+                continue
+            cr = df.get("challengeRatingId")
+            moves = ", ".join(
+                f"{'walk' if m.get('movementId') == 1 else {2: 'burrow', 3: 'climb', 4: 'fly', 5: 'swim'}.get(m.get('movementId'), '')} {m.get('speed')} ft".strip()
+                for m in df.get("movements") or [] if m.get("speed")
+            )
+            out.append({
+                "name": c.get("name") or df["name"],
+                "kind": df["name"],
+                "group": CREATURE_GROUPS.get(c.get("groupId"), "Creature"),
+                "cr": CR.get(cr, str(cr - 4) if isinstance(cr, int) and cr > 4 else ""),
+                "armor_class": df.get("armorClass"),
+                "hit_points": df.get("averageHitPoints"),
+                "speed": moves,
+            })
+        return out
+
+
+def parse_character(data: dict) -> dict:
+    """A readable summary of a D&D Beyond character (the `data` object).
+
+    This is the shape stored in character_snapshots.summary and passed to the
+    templates (and, later, to Claude for briefings). Raises DdbError if the
+    data is unusable.
+    """
+    if not isinstance(data, dict) or not data.get("name"):
+        raise DdbError("D&D Beyond's character data didn't have a name; the format may have changed.")
+    try:
+        sh = _Sheet(data)
+        perception = next(s for s in sh.skills() if s["name"] == "Perception")
+        actions = sh.actions()
+        spells = sh.spells()
+        items = sh.inventory()
+        slots = sh.spell_slots()
+        summary = {
+            "parser_version": PARSER_VERSION,
+            "ddb_id": str(data.get("id") or ""),
+            "sheet_url": SHEET_URL.format(id=data.get("id")) if data.get("id") else "",
+            "name": data["name"].strip(),
+            "species": _d(data, "race", "fullName", default=""),
+            "background": _d(data, "background", "definition", "name", default=""),
+            "classes": [
+                {"name": _d(c, "definition", "name"), "level": c.get("level") or 0, "subclass": _d(c, "subclassDefinition", "name", default="")}
+                for c in sorted(sh.classes, key=lambda c: (not c.get("isStartingClass"), -(c.get("level") or 0)))
+            ],
+            "level": sh.level,
+            "proficiency_bonus": sh.pb,
+            "abilities": [
+                {"key": key, "name": name, "short": short, "score": sh.scores[key], "modifier": sh.mods[key], "label": _signed(sh.mods[key])}
+                for _, key, name, short in ABILITIES
+            ],
+            "hit_points": sh.hit_points(),
+            "armor_class": sh.armor_class(),
+            "initiative": _signed(sh.initiative()),
+            "speed": sh.speeds(),
+            "passive_perception": 10 + perception["bonus"],
+            "inspiration": bool(data.get("inspiration")),
+            "saves": sh.saves(),
+            "skills": sh.skills(),
+            "proficiencies": sh.proficiencies(),
+            "spellcasting": sh.spellcasting(),
+            "spell_slots": slots,
+            "spells": spells,
+            "actions": actions,
+            "features": sh.features(),
+            "inventory": items,
+            "attuned": [i["name"] for i in items if i["attunement"] == "attuned"],
+            "currency": {k: v for k, v in (data.get("currencies") or {}).items() if v},
+            "creatures": sh.creatures(),
+        }
+    except DdbError:
+        raise
+    except Exception as e:  # an unexpected shape: keep the last good copy
+        raise DdbError(f"Couldn't read D&D Beyond's character data (the format may have changed): {type(e).__name__}.") from e
+    summary["resources"] = key_resources(summary)
+    return summary
+
+
+def key_resources(summary: dict) -> list[dict]:
+    """Limited-use things worth showing on a character card: class and feat
+    resources first, then spell slots."""
+    out = []
+    for a in summary["actions"]:
+        if a["uses"] and a["source"] in ("class", "feat", "race") and not any(r["name"] == a["name"] for r in out):
+            out.append({"name": a["name"], "max": a["uses"]["max"], "left": a["uses"]["left"], "reset": a["uses"]["reset"]})
+    slots = summary["spell_slots"].get("slots") or []
+    if slots:
+        out.append({"name": "Spell slots", "text": " · ".join(f"{s['level']}: {s['max']}" for s in slots)})
+    pact = summary["spell_slots"].get("pact")
+    if pact:
+        out.append({"name": "Pact slots", "text": f"{pact['max']} × level {pact['level']}"})
+    return out
