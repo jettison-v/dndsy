@@ -22,7 +22,7 @@ CHARACTER_URL = "https://character-service.dndbeyond.com/character/v5/character/
 SHEET_URL = "https://www.dndbeyond.com/characters/{id}"
 USER_AGENT = "askdnd/2 (private table companion; +https://beta.askdnd.ai)"
 TIMEOUT_SECONDS = 15
-PARSER_VERSION = 7  # bump when the summary shape changes; stored summaries are re-parsed
+PARSER_VERSION = 8  # bump when the summary shape changes; stored summaries are re-parsed
 
 
 class DdbError(Exception):
@@ -147,11 +147,18 @@ def fetch_character(ddb_id: str, timeout: float = TIMEOUT_SECONDS) -> dict:
     return data
 
 
-# Character-sheet notes (backstory, allies, personality, notes on items) are the
-# player's own writing. They are dropped from the stored D&D Beyond copy (and so
-# from test fixtures in git). Item notes are kept apart (item_notes ->
-# CharacterItemNote, in the database only) and shown to everyone at the table.
+# The player's own writing on D&D Beyond:
+# - Background tab (personality traits, ideals, bonds, flaws, appearance) and the
+#   backstory: kept and shown to everyone, the DM included (Brett, 2026-10-17).
+# - Item notes: kept apart (item_notes -> CharacterItemNote), shown to everyone.
+# - The rest of the Notes tab (allies, enemies, organizations, other notes):
+#   dropped, never stored.
+# None of it goes into test fixtures (scripts/ddb_fixture.py strips it), so none is in git.
 ITEM_NOTE_VALUE_TYPE = 9
+KEPT_NOTES = ("backstory",)
+ALIGNMENTS = {1: "Lawful Good", 2: "Neutral Good", 3: "Chaotic Good", 4: "Lawful Neutral", 5: "Neutral",
+              6: "Chaotic Neutral", 7: "Lawful Evil", 8: "Neutral Evil", 9: "Chaotic Evil"}
+SIZES = {1: "Tiny", 2: "Tiny", 3: "Small", 4: "Medium", 5: "Large", 6: "Huge", 7: "Gargantuan"}
 
 
 def item_notes(data: dict) -> list[dict]:
@@ -177,7 +184,9 @@ def item_notes(data: dict) -> list[dict]:
 
 
 def sanitize(data: dict) -> dict:
-    clean = {k: v for k, v in data.items() if k not in ("notes", "traits")}
+    clean = {k: v for k, v in data.items() if k != "notes"}
+    notes = data.get("notes") if isinstance(data.get("notes"), dict) else {}
+    clean["notes"] = {k: notes[k] for k in KEPT_NOTES if notes.get(k)}
     values = data.get("characterValues") or []
     clean["characterValues"] = [v for v in values if v.get("typeId") != ITEM_NOTE_VALUE_TYPE]
     # Only *which* items have a note stays in this copy, never the note (notes go to CharacterItemNote).
@@ -268,6 +277,27 @@ def render_template(text: str, values: dict) -> str:
 
 def _clip(text: str, limit: int) -> str:
     return text if len(text) <= limit else text[: limit - 1].rsplit(" ", 1)[0] + "…"
+
+
+def _story(data: dict) -> dict:
+    """The Background tab: who the character is, in the player's words."""
+    traits = data.get("traits") if isinstance(data.get("traits"), dict) else {}
+    notes = data.get("notes") if isinstance(data.get("notes"), dict) else {}
+    text = lambda v: html_to_text(v) if isinstance(v, str) else ""  # noqa: E731
+    looks = [("Alignment", ALIGNMENTS.get(data.get("alignmentId"), "")), ("Gender", data.get("gender")), ("Eyes", data.get("eyes")),
+             ("Size", SIZES.get(_d(data, "race", "sizeId"), "")), ("Height", data.get("height")), ("Faith", data.get("faith")),
+             ("Hair", data.get("hair")), ("Skin", data.get("skin")), ("Age", data.get("age")),
+             ("Weight", f"{data['weight']} lb." if data.get("weight") else "")]
+    bg = _d(data, "background", "definition") or {}
+    return {
+        "background": bg.get("name") or "",
+        "background_text": _first_paragraph(html_to_text(bg.get("shortDescription") or bg.get("description")), 400),
+        "characteristics": [(k, str(v).strip()) for k, v in looks if v not in (None, "") and str(v).strip()],
+        "traits": [(label, text(traits.get(key))) for key, label in (("personalityTraits", "Personality traits"), ("ideals", "Ideals"),
+                                                                     ("bonds", "Bonds"), ("flaws", "Flaws")) if text(traits.get(key))],
+        "appearance": text(traits.get("appearance")),
+        "backstory": text(notes.get("backstory")),
+    }
 
 
 def _portrait(data: dict) -> str:
@@ -1192,6 +1222,7 @@ def parse_character(data: dict) -> dict:
             "sheet_url": SHEET_URL.format(id=data.get("id")) if data.get("id") else "",
             "name": data["name"].strip(),
             "portrait": _portrait(data),
+            "story": _story(data),
             "species": _d(data, "race", "fullName", default=""),
             "background": _d(data, "background", "definition", "name", default=""),
             "classes": [

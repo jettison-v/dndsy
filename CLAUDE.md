@@ -25,7 +25,7 @@ Python (current stable) managed with **uv** · FastAPI serving server-rendered p
 ## Privacy and data rules (important)
 - **Raw transcripts never go to a cloud service or into the database.** They're filtered locally (Ollama) on Brett's Mac first; only the filtered game content is sent for extraction, and only the extracted story is stored.
 - **Never commit** `.env*`, transcripts, campaign notes, character notes, or exports. Campaign data lives in the database, not in git. Keep `.gitignore` strict (`transcripts/`, `private/`, `*.docx`, `.env*`).
-- Visibility: **character notes are visible to players but NOT the DM.** Everything else is visible to everyone at the table. Exception: players' **item notes on D&D Beyond** are visible to everyone, DM included (Brett, 2026-10-17); they live only in the database (`character_item_notes`), never in the stored D&D Beyond copy, fixtures or git.
+- Visibility: **character notes are visible to players but NOT the DM.** Everything else is visible to everyone at the table. Exceptions, visible to everyone including the DM (Brett, 2026-10-17): a character's **D&D Beyond Background tab and backstory** (personality traits, ideals, bonds, flaws, appearance, backstory) and players' **item notes on D&D Beyond**. The rest of D&D Beyond's Notes tab (allies, enemies, organizations, other notes) is never stored. None of the player's writing goes into test fixtures or git (item notes live only in `character_item_notes`; `scripts/ddb_fixture.py` strips traits and notes).
 - Set and respect a monthly spend limit on the Anthropic API.
 
 ## Product rules

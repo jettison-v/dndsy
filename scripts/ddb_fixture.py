@@ -3,8 +3,9 @@
     uv run python -m scripts.ddb_fixture 75423618 cole          # fetch from D&D Beyond
     uv run python -m scripts.ddb_fixture path/to/saved.json cole  # or use a saved response
 
-Writes tests/fixtures/ddb/<name>.json. Player notes are removed (app.ddb.sanitize)
-and so are fields the parser never reads (images, marketing copy, the campaign
+Writes tests/fixtures/ddb/<name>.json. The player's own writing is removed: notes
+(app.ddb.sanitize) and the background and backstory, which askdnd shows but git
+mustn't hold. So are fields the parser never reads (images, marketing copy, the campaign
 roster), so fixtures stay small. Tests never touch the network.
 """
 
@@ -41,6 +42,8 @@ def main(source: str, name: str) -> None:
     else:
         data = ddb.fetch_character(ddb.ddb_id_from(source))
     data = ddb.sanitize(data)
+    for key in ("traits", "notes"):  # the player's own writing stays out of git (the parser copes without it)
+        data.pop(key, None)
     portrait = (data.get("decorations") or {}).get("avatarUrl")
     data = trim(data)
     data["decorations"] = {"avatarUrl": portrait}  # the only decoration the parser reads

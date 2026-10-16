@@ -148,12 +148,14 @@ def test_proficiencies_and_skills(cole):
     assert by_name(cole["skills"], "Arcana")["label"] == "+5"  # Magician: + Wis modifier, + Luckstone
 
 
-def test_sanitize_drops_player_notes():
-    raw = {"name": "X", "notes": {"backstory": "secret"}, "traits": {"bonds": "secret"},
+def test_sanitize_drops_player_notes_but_keeps_the_backstory():
+    raw = {"name": "X", "notes": {"backstory": "Born at sea.", "allies": "secret", "otherNotes": "secret"},
+           "traits": {"bonds": "My ship."},
            "characterValues": [{"typeId": 9, "value": "secret item note"}, {"typeId": 8, "value": "Custom name"}]}
     clean = ddb.sanitize(raw)
     assert "secret" not in json.dumps(clean) and clean["characterValues"] == [{"typeId": 8, "value": "Custom name"}]
-    for name in ("cole", "no_name", "big_c"):  # fixtures were saved sanitized
+    assert clean["notes"] == {"backstory": "Born at sea."} and clean["traits"] == {"bonds": "My ship."}
+    for name in ("cole", "no_name", "big_c", "trah"):  # fixtures hold none of the player's writing (they're in git)
         data = load(name)
         assert "notes" not in data and "traits" not in data
         assert not [v for v in data["characterValues"] if v["typeId"] == 9]

@@ -28,7 +28,8 @@ BUNDLE = {
 
 def fake_fetch(ddb_id):
     if ddb_id == "75423618":
-        return {**COLE, "notes": {"backstory": "PRIVATE BACKSTORY"}}
+        return {**COLE, "notes": {"backstory": "Raised by wolves near Womford.", "allies": "PRIVATE ALLY NOTE"},
+                "traits": {"personalityTraits": "Slow to trust.", "ideals": "Charity.", "bonds": "", "flaws": "Greed.", "appearance": None}}
     raise ddb.DdbError("D&D Beyond says this character is private.")
 
 
@@ -85,9 +86,13 @@ def test_refresh_stores_a_sanitized_copy_and_summary(db):
     cole = char(db, "Cole")
     snap = characters.refresh(db, cole)
     assert snap.status == "ok" and snap.error == "" and snap.fetched_at is not None
-    assert "notes" not in snap.raw and "PRIVATE BACKSTORY" not in json.dumps(snap.raw)
+    assert snap.raw["notes"] == {"backstory": "Raised by wolves near Womford."} and "PRIVATE ALLY NOTE" not in json.dumps(snap.raw)
     summary = characters.character_summary(cole)
     assert summary["name"] == "Cole Lockhard" and summary["armor_class"] == 16
+    story = summary["story"]
+    assert story["backstory"] == "Raised by wolves near Womford." and story["background"] == "Wayfarer"
+    assert story["traits"] == [("Personality traits", "Slow to trust."), ("Ideals", "Charity."), ("Flaws", "Greed.")]
+    assert ("Alignment", "Chaotic Good") in story["characteristics"] and ("Size", "Medium") in story["characteristics"]
 
 
 def test_failed_refresh_keeps_the_last_good_copy(db):
@@ -274,14 +279,17 @@ def test_game_mode_sync_is_throttled(player, db, monkeypatch):
 
 
 def test_no_character_notes_on_character_pages(dm, db):
-    """Character notes are hidden from the DM (CLAUDE.md); these pages never show them."""
+    """Character notes are hidden from the DM (CLAUDE.md); these pages never show them. The
+    D&D Beyond background and backstory are for the whole table, the DM included."""
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
     db.add(CharacterNote(character_id=cole.id, body="SECRET PLAYER NOTE"))
     characters.refresh(db, cole)
     for path in ("/party", f"/characters/{cole.id}", f"/characters/{cole.id}/battle", f"/characters/{cole.id}/brief"):
         page = dm.get(path).text
-        assert "SECRET PLAYER NOTE" not in page and "PRIVATE BACKSTORY" not in page
+        assert "SECRET PLAYER NOTE" not in page and "PRIVATE ALLY NOTE" not in page
+    page = dm.get(f"/characters/{cole.id}").text
+    assert 'data-tab="t-story">Background' in page and "Raised by wolves near Womford." in page and "Slow to trust." in page
 
 
 def test_only_reviewers_can_refresh_or_link(player, db):

@@ -56,6 +56,7 @@
       <button role="tab" aria-selected="false" data-tab="t-situ">Situational <span class="count">{{ s.situational | length }}</span></button>
       <button role="tab" aria-selected="false" data-tab="t-skills">Skills</button>
       {% if s.creatures %}<button role="tab" aria-selected="false" data-tab="t-forms">Forms</button>{% endif %}
+      {% if s.story %}<button role="tab" aria-selected="false" data-tab="t-story">Background</button>{% endif %}
     </div>
 
     <div id="t-actions">
@@ -177,6 +178,19 @@
     {% if s.creatures %}
     <div id="t-forms" hidden>
       <div class="rows">{% for cr in s.creatures %}{{ ri(c, cr.key, cr.name, picks, can_pick, chips=[(cr.group, "")], what=("CR " ~ cr.cr ~ " · AC " ~ cr.armor_class ~ " · " ~ cr.hit_points ~ " HP"), mech=cr.speed) }}{% endfor %}</div>
+    </div>
+    {% endif %}
+    {% if s.story %}{% set st = s.story %}
+    <div id="t-story" class="story-tab" hidden>
+      <p class="hint" style="margin:0 0 4px">From the Background tab on D&amp;D Beyond, in the player's words. Everyone at the table can read it.</p>
+      {% if st.background %}<h3 class="divider">Background</h3><p><b>{{ st.background }}</b>{% if st.background_text %} <span class="muted">{{ st.background_text }}</span>{% endif %}</p>{% endif %}
+      {% if st.characteristics %}<h3 class="divider">Characteristics</h3>
+      <dl class="traits-grid">{% for k, v in st.characteristics %}<div><dt>{{ k }}</dt><dd>{{ v }}</dd></div>{% endfor %}</dl>{% endif %}
+      {% if st.traits %}<h3 class="divider">Personality</h3>
+      {% for label, text in st.traits %}<div class="story-block"><b>{{ label }}</b><p>{{ text }}</p></div>{% endfor %}{% endif %}
+      {% if st.appearance %}<h3 class="divider">Appearance</h3><div class="story-block"><p>{{ st.appearance }}</p></div>{% endif %}
+      {% if st.backstory %}<h3 class="divider">Backstory</h3><div class="story-block"><p>{{ st.backstory }}</p></div>{% endif %}
+      {% if not (st.traits or st.appearance or st.backstory) %}<p class="muted">Nothing written on D&amp;D Beyond's Background tab yet.</p>{% endif %}
     </div>
     {% endif %}
   </section>

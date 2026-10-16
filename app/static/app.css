@@ -639,3 +639,9 @@ details.faq[open] > summary::before { transform: rotate(90deg); }
 .poolrow[data-panel-url]:hover { background: var(--surface-2); }
 .poolrow .chip[data-panel-url] { cursor: pointer; }
 .poolrow .chip[data-panel-url]:hover { background: var(--line); color: var(--text); }
+/* Character › Background */
+.traits-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px 18px; margin: 8px 0 4px; }
+.traits-grid dt { color: var(--faint); font-size: .74rem; text-transform: uppercase; letter-spacing: .05em; }
+.traits-grid dd { margin: 0; }
+.story-block { margin: 8px 0 12px; }
+.story-block p { margin: 3px 0 0; white-space: pre-line; color: var(--muted); }
