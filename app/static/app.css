@@ -162,6 +162,14 @@ details.done[open] > summary::before { transform: rotate(90deg); }
 .source { margin-top: 16px; padding: 0 22px; color: var(--muted); font-size: .9rem; }
 .mobile-bar { display: none; }
 
+/* Stat tiles */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+.stat { background: var(--surface); border-radius: 12px; padding: 18px 20px; }
+.stat span { display: block; color: var(--muted); font-size: .88rem; }
+.stat b { display: block; font-size: 1.8rem; font-weight: 700; margin: 2px 0; }
+.stat small { color: var(--muted); }
+@media (max-width: 800px) { .stats { grid-template-columns: 1fr; } }
+
 /* Tables and lists */
 table.list { width: 100%; border-collapse: collapse; }
 table.list th { text-align: left; font-size: .82rem; font-weight: 600; color: var(--muted); padding: 0 10px 8px; }

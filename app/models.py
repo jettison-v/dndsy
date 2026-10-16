@@ -293,3 +293,13 @@ class Proposal(Timestamped, Base):
     kind: Mapped[str] = mapped_column(String(20))  # "entity" or "glossary"
     payload: Mapped[dict] = mapped_column(JSONB)
     status: Mapped[str] = mapped_column(String(20), default="pending")  # pending | accepted | rejected
+
+
+class CreditTopUp(Timestamped, Base):
+    """Anthropic credit Brett bought, for the balance estimate on the Usage page."""
+
+    __tablename__ = "credit_topups"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    amount_usd: Mapped[float] = mapped_column()
+    added_on: Mapped[date] = mapped_column(Date)
+    note: Mapped[str] = mapped_column(String(200), default="", server_default="")

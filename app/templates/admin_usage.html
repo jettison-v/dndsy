@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Usage · askdnd{% endblock %}
+{% block content %}
+<main class="page">
+  <div class="crumbs">Manage › Usage</div>
+  <div class="title-row"><h1>Usage</h1></div>
+  <p class="subtitle">What askdnd has spent on Claude, from the exact token counts of every call. The <a href="https://console.anthropic.com/settings/billing" target="_blank" rel="noopener">Anthropic Console</a> has the official balance.</p>
+
+  <div class="stats">
+    <div class="stat"><span>Estimated balance</span><b>{% if u.balance is not none %}${{ "%.2f" | format(u.balance) }}{% else %}—{% endif %}</b>
+      <small>{% if u.bought %}of ${{ "%.2f" | format(u.bought) }} bought{% else %}add a top-up below{% endif %}</small></div>
+    <div class="stat"><span>This month</span><b>${{ "%.2f" | format(u.month) }}</b><small>today ${{ "%.2f" | format(u.today) }}</small></div>
+    <div class="stat"><span>All time</span><b>${{ "%.2f" | format(u.total) }}</b><small>{{ u.drafts }} draft{{ "s" if u.drafts != 1 }}{% if u.average %} · about {{ "%.0f" | format(u.average * 100) }}¢ each{% endif %}</small></div>
+  </div>
+
+  <div class="layout">
+    <section class="section">
+      <h2>Recent drafting runs</h2>
+      {% if rows %}
+      <table class="list" style="margin-top:12px">
+        <tr><th>When</th><th>Session</th><th>Source</th><th style="text-align:right">Tokens in / out</th><th style="text-align:right">Cost</th></tr>
+        {% for row in rows %}{% set r = row.r %}
+        <tr>
+          <td class="note">{{ r.created_at.strftime("%b %-d, %-I:%M %p") }}</td>
+          <td><a href="/admin/sessions/{{ r.session_id }}">{{ row.label }}</a></td>
+          <td class="note">{{ r.source }}{% if r.status == "error" %} · <span class="tag error">failed</span>{% elif r.status == "running" %} · <span class="tag working">running</span>{% endif %}</td>
+          <td class="note" style="text-align:right">{{ "{:,}".format(r.input_tokens) }} / {{ "{:,}".format(r.output_tokens) }}</td>
+          <td style="text-align:right">${{ "%.2f" | format(r.cost_usd) }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+      {% else %}<p class="muted">No drafting runs yet.</p>{% endif %}
+    </section>
+
+    <aside>
+      <section class="section">
+        <h2>Credit top-ups</h2>
+        <p class="hint" style="margin-top:6px">Record what you buy in the Anthropic Console, for the balance estimate.</p>
+        {% for t in topups %}
+        <div class="row" style="justify-content:space-between; padding:6px 0">
+          <span><b>${{ "%.2f" | format(t.amount_usd) }}</b> <span class="note">{{ t.added_on.strftime("%b %-d, %Y") }}{% if t.note %} · {{ t.note }}{% endif %}</span></span>
+          <form class="inline" method="post" action="/admin/usage/topups/{{ t.id }}/delete" onsubmit="return confirm('Remove this top-up?')"><button class="btn link danger">Remove</button></form>
+        </div>
+        {% endfor %}
+        <form method="post" action="/admin/usage/topups" class="stack" style="margin-top:12px">
+          <div class="row"><input type="text" name="amount" inputmode="decimal" placeholder="Amount, e.g. 20" required style="flex:1"><input type="date" name="added_on" value="{{ today_iso }}" required style="flex:1"></div>
+          <input type="text" name="note" placeholder="Note (optional)">
+          <div><button class="btn">Add top-up</button></div>
+        </form>
+      </section>
+    </aside>
+  </div>
+</main>
+{% endblock %}
