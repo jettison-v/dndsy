@@ -237,6 +237,20 @@ class CharacterPick(Timestamped, Base):
     label: Mapped[str] = mapped_column(String(500), default="", server_default="")  # shown if the thing disappears from the sheet
 
 
+class SheetOverride(Timestamped, Base):
+    """An admin's correction to how askdnd groups something from D&D Beyond, e.g.
+    "Fleet of Foot is always on" or "hide Circle Magic from Battle". Applies to
+    every character, and is kept as feedback for improving the parser."""
+
+    __tablename__ = "sheet_overrides"
+    __table_args__ = (UniqueConstraint("ref", "field"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    ref: Mapped[str] = mapped_column(String(300))  # e.g. "feature:Fleet of Foot", "spell:Moonbeam", a Situational key
+    field: Mapped[str] = mapped_column(String(30))  # "feature_group" | "situ_group" | "battle"
+    value: Mapped[str] = mapped_column(String(30))
+    set_by: Mapped[str] = mapped_column(String(320), default="", server_default="")
+
+
 class CharacterNote(Timestamped, Base):
     """Why a player built their character this way. Hidden from the DM (see visibility.py)."""
 
