@@ -96,3 +96,34 @@ def test_other_websites_cannot_post(client):
 def test_bad_session_names_rejected(client):
     with pytest.raises(ValueError):
         web.paths("../../etc")
+
+
+def test_send_to_askdnd(client, tmp_path, monkeypatch):
+    add_session(client)
+    client.post("/sessions/2026-08-29/filter")
+    wait_for_job(client, "2026-08-29")
+    client.post("/sessions/2026-08-29/save")
+    sent = []
+    monkeypatch.setattr(web, "upload_settings", lambda: ("https://beta.example", "token"))
+    monkeypatch.setattr(web, "send_transcript", lambda stem, text: sent.append((stem, text)) or {"label": "Aug 29, 2026", "review_url": "https://beta.example/admin/sessions/7"})
+    client.post("/sessions/2026-08-29/send")
+    assert sent[0][0] == "2026-08-29"
+    assert "You enter the brig." in sent[0][1] and "How was work today?" not in sent[0][1]  # only game content
+    page = client.get("/sessions/2026-08-29").text
+    assert "Review on askdnd" in page and "https://beta.example/admin/sessions/7" in page
+    assert "sent to askdnd" in client.get("/").text
+
+
+def test_send_error_is_shown(client, monkeypatch):
+    add_session(client)
+    client.post("/sessions/2026-08-29/filter")
+    wait_for_job(client, "2026-08-29")
+    client.post("/sessions/2026-08-29/save")
+
+    def fail(stem, text):
+        raise RuntimeError("Claude is busy drafting another session. Try again in a minute.")
+
+    monkeypatch.setattr(web, "upload_settings", lambda: ("https://beta.example", "token"))
+    monkeypatch.setattr(web, "send_transcript", fail)
+    page = client.post("/sessions/2026-08-29/send").text  # follows the redirect to the session page
+    assert "Claude is busy" in page and "Review on askdnd" not in page

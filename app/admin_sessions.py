@@ -20,6 +20,7 @@ from app.admin import _guard
 from app.db import get_db
 from app.extraction import (
     ExtractionError,
+    Source,
     _order_key,
     extract_session,
     latest_campaign_notes,
@@ -57,6 +58,24 @@ def _draft_in_background(session_ids: list[int]) -> bool:
                         db.commit()
                         continue
                     extract_session(db, session, source, background=background, background_images=bg_images)
+        finally:
+            _busy.release()
+
+    threading.Thread(target=work, daemon=True).start()
+    return True
+
+
+def draft_transcript_in_background(session_id: int, text: str) -> bool:
+    """Draft one session from a filtered transcript. The text lives only in this
+    thread's memory for the Claude call; it is never written to the database."""
+    if not _busy.acquire(blocking=False):
+        return False
+
+    def work():
+        try:
+            with dbmod.SessionLocal() as db:
+                session = db.get(GameSession, session_id)
+                extract_session(db, session, Source("transcript", text))
         finally:
             _busy.release()
 

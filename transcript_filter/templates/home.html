@@ -29,7 +29,7 @@
 {% for s in sessions %}
   <tr>
     <td><a href="/sessions/{{ s.stem }}">{{ s.stem }}</a></td>
-    <td><span class="pill {{ s.status }}">{{ {"new": "not filtered", "filtering": "filtering…", "review": "ready to review", "saved": "saved"}[s.status] }}</span></td>
+    <td><span class="pill {{ s.status }}">{{ {"new": "not filtered", "filtering": "filtering…", "review": "ready to review", "saved": "saved", "sent": "sent to askdnd"}[s.status] }}</span></td>
   </tr>
 {% endfor %}
 </table>

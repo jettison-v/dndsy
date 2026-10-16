@@ -33,6 +33,9 @@ if not SESSION_SECRET:
 
 GOOGLE_CONFIGURED = bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET)
 
+# Shared secret the local Processor uses to send filtered transcripts to askdnd.
+UPLOAD_TOKEN = os.getenv("UPLOAD_TOKEN", "").strip()
+
 # Local development only: /dev/login signs in as this email without Google.
 # Ignored in production and for requests that don't come from this machine.
 DEV_LOGIN_EMAIL = "" if IS_PRODUCTION else os.getenv("DEV_LOGIN_EMAIL", "").strip().lower()

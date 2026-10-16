@@ -10,8 +10,12 @@ import re
 import subprocess
 import threading
 import time
-from datetime import date
+import urllib.error
+import urllib.request
+from datetime import date, datetime
 from pathlib import Path
+
+from dotenv import dotenv_values
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -35,9 +39,12 @@ RAW, WORK = ROOT / "raw", ROOT / "work"
 STEM = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 MAX_UPLOAD = 20_000_000
 
+ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
+
 app = FastAPI(title="askdnd Processor", docs_url=None, redoc_url=None)
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 jobs: dict[str, dict] = {}
+send_errors: dict[str, str] = {}
 
 
 @app.middleware("http")
@@ -59,7 +66,40 @@ def paths(stem: str) -> dict[str, Path]:
         "stats": work / "stats.json",
         "final_json": work / "final.json",
         "final_txt": work / "final.txt",
+        "sent": work / "sent.json",
     }
+
+
+def upload_settings() -> tuple[str, str]:
+    """(askdnd URL, upload token) from the repo's local .env, read fresh each time."""
+    env = dotenv_values(ENV_FILE) if ENV_FILE.exists() else {}
+    url = (env.get("ASKDND_URL") or os.getenv("ASKDND_URL") or "https://beta.askdnd.ai").rstrip("/")
+    token = env.get("UPLOAD_TOKEN") or os.getenv("UPLOAD_TOKEN") or ""
+    return url, token
+
+
+def send_transcript(stem: str, text: str) -> dict:
+    """POST the final transcript to askdnd. Returns the server's JSON reply."""
+    url, token = upload_settings()
+    if not token:
+        raise RuntimeError("No UPLOAD_TOKEN in your local .env yet.")
+    req = urllib.request.Request(
+        f"{url}/api/transcripts",
+        data=json.dumps({"played_on": stem, "text": text}).encode(),
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            return json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        try:
+            message = json.loads(e.read()).get("error", "")
+        except Exception:
+            message = ""
+        raise RuntimeError(message or f"askdnd answered {e.code}.") from None
+    except urllib.error.URLError as e:
+        raise RuntimeError(f"Couldn't reach askdnd ({e.reason}). Check your internet connection.") from None
 
 
 def ollama_status() -> dict:
@@ -75,6 +115,8 @@ def session_summary(stem: str) -> dict:
     job = jobs.get(stem, {})
     if job.get("status") == "running":
         status = "filtering"
+    elif p["sent"].exists() and p["final_json"].exists():
+        status = "sent"
     elif p["final_json"].exists():
         status = "saved"
     elif p["state"].exists():
@@ -122,7 +164,7 @@ async def upload(file: UploadFile = File(...), played_on: str = Form(...), repla
         return RedirectResponse(f"/?error=There's+already+a+session+for+{played_on}.+Tick+'Replace'+to+overwrite+it.", status_code=303)
     RAW.mkdir(parents=True, exist_ok=True)
     p["raw"].write_bytes(raw)
-    for key in ("state", "stats", "final_json", "final_txt"):
+    for key in ("state", "stats", "final_json", "final_txt", "sent"):
         p[key].unlink(missing_ok=True)
     return RedirectResponse(f"/sessions/{played_on}", status_code=303)
 
@@ -173,7 +215,16 @@ def session_page(request: Request, stem: str):
     if not p["raw"].exists():
         return RedirectResponse("/", status_code=303)
     summary = session_summary(stem)
-    context = {"s": summary, "ollama": ollama_status(), "fmt": format_time, "stretches": [], "stats": None}
+    context = {
+        "s": summary,
+        "ollama": ollama_status(),
+        "fmt": format_time,
+        "stretches": [],
+        "stats": None,
+        "sent": json.loads(p["sent"].read_text()) if p["sent"].exists() else None,
+        "send_error": send_errors.pop(stem, None),
+        "has_token": bool(upload_settings()[1]),
+    }
     if p["state"].exists() and summary["status"] != "filtering":
         segments = load_state(p["state"])
         stretches = []
@@ -207,6 +258,7 @@ def toggle_stretch(stem: str, first_index: int, keep: str = Form(...)):
                 seg.extra["keep"] = keep == "1"
     save_state(segments, p["state"])
     p["final_json"].unlink(missing_ok=True)  # a change means the saved copy is out of date
+    p["sent"].unlink(missing_ok=True)
     return RedirectResponse(f"/sessions/{stem}#s{first_index}", status_code=303)
 
 
@@ -219,6 +271,20 @@ def save_final(stem: str):
         indent=1, ensure_ascii=False,
     ))
     p["final_txt"].write_text("\n".join(f"[{format_time(x.start)}] {x.speaker or 'Unknown'}: {x.text}" for x in kept) + "\n")
+    return RedirectResponse(f"/sessions/{stem}#saved", status_code=303)
+
+
+@app.post("/sessions/{stem}/send")
+def send(stem: str):
+    """Send the saved transcript (game content only, Keep choices applied) to askdnd."""
+    p = paths(stem)
+    if not p["final_txt"].exists():
+        return RedirectResponse(f"/sessions/{stem}", status_code=303)
+    try:
+        reply = send_transcript(stem, p["final_txt"].read_text())
+        p["sent"].write_text(json.dumps({**reply, "sent_at": datetime.now().isoformat(timespec="minutes")}))
+    except RuntimeError as e:
+        send_errors[stem] = str(e)
     return RedirectResponse(f"/sessions/{stem}#saved", status_code=303)
 
 
