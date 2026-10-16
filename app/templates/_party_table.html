@@ -1,0 +1,13 @@
+<div class="tablewrap"><table class="party">
+  <tr><th>Character</th><th>HP</th><th>AC</th><th>Speed</th><th>Pass. Perc.</th><th class="wide">Best saves</th><th class="wide">Resources</th></tr>
+  {% for r in party %}
+  <tr>
+    <td><a class="who" href="/characters/{{ r.c.id }}" data-modal-url="/characters/{{ r.c.id }}/brief">{{ r.c.entity.name }}</a>{% if r.sheet %}<div class="note">{{ r.classes }}</div>{% endif %}</td>
+    {% if r.sheet %}{% set s = r.sheet %}
+    <td><b>{{ s.hit_points.current }}</b><span class="note">/{{ s.hit_points.max }}</span></td>
+    <td><b>{{ s.armor_class }}</b></td><td>{{ s.speed.walk }}</td><td>{{ s.passive_perception }}</td>
+    <td class="wide">{{ r.best_saves }}</td><td class="wide">{{ r.resources }}</td>
+    {% else %}<td colspan="6" class="muted">{{ "Not fetched from D&D Beyond yet" if r.c.ddb_id else "Not linked to D&D Beyond yet" }}</td>{% endif %}
+  </tr>
+  {% endfor %}
+</table></div>

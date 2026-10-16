@@ -133,27 +133,60 @@ def test_set_link_accepts_urls_and_clears_old_copy(db):
         characters.set_ddb_link(db, cole, "not a link")
 
 
-def test_characters_page_cards(player, db):
+def owned_by(db, character, email, **kw):
+    from app.models import User
+
+    u = db.scalar(select(User).where(User.email == email)) or User(email=email, name=email)
+    for k, v in kw.items():
+        setattr(u, k, v)
+    db.add(u)
+    db.flush()
+    character.owner_id = u.id
+    db.flush()
+    return u
+
+
+def test_party_page(player, db):
     import_bundle(db, BUNDLE)
     characters.refresh(db, char(db, "Cole"))
-    page = player.get("/characters").text
-    assert "Cole" in page and "Played by Brett" in page and "Wood Elf" in page and "Druid 6 / Monk 2" in page
-    assert "Wild Shape" in page and "Updated just now" in page
+    page = player.get("/party").text
+    assert "Party at a glance" in page and "Druid 6 / Monk 2" in page and "Wild Shape 3/3" in page
     assert "Not linked to D&amp;D Beyond yet" in page  # Big C
     assert "Refresh all" not in page  # players can't refresh
-    assert f'href="/characters/{char(db, "Cole").id}"' in page
+    assert f'data-modal-url="/characters/{char(db, "Cole").id}/brief"' in page
+    assert "Healing and recovery" in page and "Healing Word" in page  # pooled spells
+    assert "Potion of Healing" in page and "Cole ×2" in page  # pooled items
+    assert player.get("/characters", follow_redirects=False).headers["location"] == "/party"
+    brief = player.get(f"/characters/{char(db, 'Cole').id}/brief").text
+    assert "<html" not in brief and "Advantage on saving throws against being charmed" in brief
 
 
-def test_character_sheet_page(player, db):
+def test_character_page(player, db):
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
     characters.refresh(db, cole)
     page = player.get(f"/characters/{cole.id}").text
-    for text in ("Circle of the Moon", "Armor class", "Heat Metal", "Concentration", "Ring of Invisibility",
-                 "Attuned", "Polar Bear", "Wild Shape form", "Focus Points", "back after a Short or Long Rest",
-                 "Last updated from D&amp;D Beyond just now", "Bonus actions", "Reactions"):
+    for text in ("Circle of the Moon", "Armor class", "Heat Metal", "Conc.", "Ring of Invisibility", "Attuned",
+                 "Polar Bear", "Wild Shape form", "Focus Points", "Last updated from D&amp;D Beyond just now",
+                 "Bonus actions", "Reactions", "Situational", "Advantage on saving throws against being charmed",
+                 "Adv. to maintain Concentration", "Training: armor, weapons", "Starry Wisp", "+7"):
         assert text in page, text
     assert "Refresh from D&amp;D Beyond" not in page and "D&amp;D Beyond link" not in page
+    assert 'class="pick' not in page  # not this player's character: no stars or reminders
+
+
+def test_battle_page(player, db):
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    page = player.get(f"/characters/{cole.id}/battle").text
+    assert "Wild Shape" in page and "Unarmed Strike" in page and "+6" in page and "Absorb Elements" in page
+    assert "Use an item: Potion of Healing" in page and "Easy to forget" in page and "Party" in page
+    assert 'data-game-mode="' in page and "See all actions" in page
+    panel = player.get(f"/characters/{cole.id}/all/action").text
+    assert "<html" not in panel and "Heat Metal" in panel and "Moonbeam" in panel
+    one = player.get(f"/characters/{cole.id}/option", params={"ref": "spell:Moonbeam"}).text
+    assert "Moonbeam" in one and " open" in one
 
 
 def test_sheet_shows_quiet_note_when_latest_refresh_failed(player, db):
@@ -163,7 +196,75 @@ def test_sheet_shows_quiet_note_when_latest_refresh_failed(player, db):
     characters.refresh(db, cole, fetch=down)
     page = player.get(f"/characters/{cole.id}").text
     assert "Heat Metal" in page and "last good copy" in page
-    assert "showing the copy from" in player.get("/characters").text
+    assert "showing the copy from" in player.get(f"/characters/{cole.id}/battle").text
+
+
+def test_only_the_player_stars_and_reminds(player, admin, db):
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    owned_by(db, cole, "player@example.com")
+    page = player.get(f"/characters/{cole.id}").text
+    assert 'class="pick star' in page and "Remind me" in page and "This is your character" in page
+    r = player.post(f"/characters/{cole.id}/pick", data={"kind": "star", "ref": "spell:Heat Metal"})
+    assert r.status_code == 200 and "★" in r.text and 'aria-pressed="true"' in r.text
+    situ = cole.snapshot.summary["situational"][0]["key"]
+    player.post(f"/characters/{cole.id}/pick", data={"kind": "remind", "ref": situ})
+    battle = player.get(f"/characters/{cole.id}/battle").text
+    assert "Advantage on saving throws against being charmed (Fey Ancestry)" in battle  # Easy to forget
+    assert "Heat Metal" in battle.split("Bonus action")[0]  # starred: shown in the Action column
+    assert admin.post(f"/characters/{cole.id}/pick", data={"kind": "star", "ref": "spell:Moonbeam"}).status_code == 403
+    assert 'class="pick star"' not in admin.get(f"/characters/{cole.id}").text  # admins can't change them either
+    player.post(f"/characters/{cole.id}/pick", data={"kind": "star", "ref": "spell:Heat Metal"})  # toggles off
+    assert "Heat Metal" not in player.get(f"/characters/{cole.id}/battle").text.split("Bonus action")[0]
+
+
+def test_dm_never_sees_reminders(dm, db):
+    from app.models import CharacterPick
+
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    owned_by(db, cole, "player@example.com")
+    owned_by(db, char(db, "Trah"), "dm@example.com", is_dm=True)
+    db.add(CharacterPick(character_id=cole.id, kind="remind", ref="custom", label="SECRET REMINDER"))
+    db.add(CharacterPick(character_id=cole.id, kind="star", ref="spell:Heat Metal"))
+    db.flush()
+    battle = dm.get(f"/characters/{cole.id}/battle").text
+    assert "SECRET REMINDER" not in battle and "aren't shown to the DM" in battle
+    assert "★" not in dm.get(f"/characters/{cole.id}/all/action").text
+
+
+def test_my_battle_and_character_open_my_character(player, db):
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    assert player.get("/battle", follow_redirects=False).headers["location"] == "/party?pick=battle"
+    owned_by(db, cole, "player@example.com")
+    assert player.get("/battle", follow_redirects=False).headers["location"] == f"/characters/{cole.id}/battle"
+    assert player.get("/character", follow_redirects=False).headers["location"] == f"/characters/{cole.id}"
+
+
+def test_game_mode_sync_is_throttled(player, db, monkeypatch):
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    calls = []
+
+    def counting(ddb_id):
+        calls.append(ddb_id)
+        return fake_fetch(ddb_id)
+
+    monkeypatch.setattr(characters.refresh, "__defaults__", (counting,))
+    body = player.post(f"/characters/{cole.id}/sync").text
+    assert 'id="battle-body"' in body and "<html" not in body and len(calls) == 1
+    player.post(f"/characters/{cole.id}/sync")
+    assert len(calls) == 1  # a second viewer moments later doesn't fetch again
+    player.post(f"/characters/{cole.id}/sync", data={"now": "1"})
+    assert len(calls) == 1  # "Refresh now" also waits at least 20 seconds
+    from datetime import timedelta
+
+    cole.snapshot.attempted_at -= timedelta(minutes=3)
+    player.post(f"/characters/{cole.id}/sync")
+    assert len(calls) == 2
 
 
 def test_no_character_notes_on_character_pages(dm, db):
@@ -172,7 +273,7 @@ def test_no_character_notes_on_character_pages(dm, db):
     cole = char(db, "Cole")
     db.add(CharacterNote(character_id=cole.id, body="SECRET PLAYER NOTE"))
     characters.refresh(db, cole)
-    for path in ("/characters", f"/characters/{cole.id}"):
+    for path in ("/party", f"/characters/{cole.id}", f"/characters/{cole.id}/battle", f"/characters/{cole.id}/brief"):
         page = dm.get(path).text
         assert "SECRET PLAYER NOTE" not in page and "PRIVATE BACKSTORY" not in page
 
@@ -193,7 +294,7 @@ def test_dm_refreshes_one_and_all(dm, db):
     assert r.status_code == 303 and cole.snapshot.status == "ok"
     page = dm.get(f"/characters/{cole.id}").text
     assert "Updated from D&amp;D Beyond" in page and "Refresh from D&amp;D Beyond" in page
-    page = dm.post("/characters/refresh").text  # follows the redirect back to /characters
+    page = dm.post("/characters/refresh").text  # follows the redirect back to /party
     assert char(db, "Trah").snapshot.status == "error"
     assert "Updated 1 from D&amp;D Beyond; couldn&#39;t update Trah" in page
 
@@ -210,6 +311,6 @@ def test_admin_links_a_character(admin, db):
 def test_refresh_buttons_show_that_they_are_working(dm, db):
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
-    page = dm.get("/characters").text
+    page = dm.get("/party").text
     assert 'data-busy="Refreshing from D&amp;D Beyond…"' in page and 'id="refresh-note" hidden' in page
     assert 'data-busy="Refreshing…"' in dm.get(f"/characters/{cole.id}").text

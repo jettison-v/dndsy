@@ -197,10 +197,16 @@
     if (lastFocus) lastFocus.focus();
   }
 
-  function openPeek(id, opener) {
+  function openPeek(id, opener) { openPanel('/campaign/' + id + '/peek', opener, '/campaign/' + id); }
+
+  // Any element with data-panel-url opens that fragment in the same side panel
+  // (Battle: "See all", an option's details). data-modal-url opens a centered modal.
+  function openPanel(url, opener, fallback, modal) {
     const { panel, backdrop } = peekPanel();
     lastFocus = opener;
-    fetch('/campaign/' + id + '/peek', { headers: { 'HX-Request': 'true' } })
+    panel.classList.toggle('modal', !!modal);
+    backdrop.classList.toggle('dim', !!modal);
+    fetch(url, { headers: { 'HX-Request': 'true' } })
       .then(r => (r.ok ? r.text() : Promise.reject(r.status)))
       .then(html => {
         panel.innerHTML = html;
@@ -213,8 +219,35 @@
         const close = panel.querySelector('.peek-close');
         if (close) { close.addEventListener('click', closePeek); close.focus(); }
       })
-      .catch(() => { location.href = '/campaign/' + id; });
+      .catch(() => { if (fallback) location.href = fallback; });
   }
+  window.askdndPanel = openPanel;
+
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-panel-url], [data-modal-url]');
+    if (!t || e.target.closest('button[hx-post], form')) return;
+    e.preventDefault();
+    if (t.dataset.modalUrl) openPanel(t.dataset.modalUrl, t, t.getAttribute('href'), true);
+    else openPanel(t.dataset.panelUrl, t, t.getAttribute('href'));
+  });
+  document.addEventListener('keydown', e => {
+    const t = e.target.closest && e.target.closest('[data-panel-url][tabindex], [data-modal-url][tabindex]');
+    if (t && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); t.click(); }
+  });
+
+  // Tabs (Character page): buttons with data-tab show #id and hide their siblings' panels.
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[role=tab][data-tab]');
+    if (!b) return;
+    const list = b.closest('[role=tablist]');
+    list.querySelectorAll('[role=tab]').forEach(x => {
+      x.setAttribute('aria-selected', x === b ? 'true' : 'false');
+      const p = document.getElementById(x.dataset.tab); if (p) p.hidden = x !== b;
+    });
+    try { history.replaceState(null, '', '#' + b.dataset.tab); } catch (err) {}
+  });
+  const tabFromHash = location.hash && document.querySelector('[role=tab][data-tab="' + location.hash.slice(1) + '"]');
+  if (tabFromHash) tabFromHash.click();
 
   document.addEventListener('click', e => {
     const a = e.target.closest('a');
@@ -253,6 +286,40 @@
   window.addEventListener('pageshow', () => document.querySelectorAll('button.busy').forEach(b => {
     b.classList.remove('busy'); b.disabled = false; if (b.dataset.label) b.textContent = b.dataset.label;
   }));
+
+  // Game Mode (Battle page): a switch per character, off unless this browser turned
+  // it on. While on and the tab is visible, ask the server to sync with D&D Beyond
+  // every couple of minutes (the server throttles per character) and swap in the
+  // updated page body.
+  let gmTimer = null;
+  function gmKey(id) { return 'askdnd.gameMode.' + id; }
+  function gmIsOn(id) { try { return localStorage.getItem(gmKey(id)) === 'on'; } catch (e) { return false; } }
+  function gmSetup() {
+    const sw = document.querySelector('[data-game-mode]');
+    clearInterval(gmTimer); gmTimer = null;
+    if (!sw) return;
+    const id = sw.dataset.gameMode, on = gmIsOn(id), body = document.getElementById('battle-body');
+    sw.setAttribute('aria-checked', on ? 'true' : 'false');
+    const now = body && body.querySelector('.gm-now'); if (now) now.hidden = !on;
+    const status = body && body.querySelector('.gm-status');
+    if (on && status && !status.querySelector('.quiet-warn')) status.textContent = status.textContent.replace(/^Updated/, 'Game Mode on · synced');
+    if (on && window.htmx) gmTimer = setInterval(() => {
+      if (document.visibilityState === 'visible') htmx.ajax('POST', '/characters/' + id + '/sync', { target: '#battle-body', swap: 'outerHTML' });
+    }, (Number(sw.dataset.every) || 150) * 1000);
+  }
+  document.addEventListener('click', e => {
+    const sw = e.target.closest('[data-game-mode]');
+    if (!sw) return;
+    const id = sw.dataset.gameMode, on = !gmIsOn(id);
+    try { localStorage.setItem(gmKey(id), on ? 'on' : 'off'); } catch (err) {}
+    if (on && window.htmx) htmx.ajax('POST', '/characters/' + id + '/sync', { target: '#battle-body', swap: 'outerHTML' });
+    gmSetup();
+  });
+  document.body.addEventListener('htmx:afterSettle', e => { if (e.target.id === 'battle-body' || e.detail.target?.id === 'battle-body') gmSetup(); });
+  gmSetup();
+
+  // Star and Remind me buttons sit inside <summary>: don't open/close the row when pressed.
+  document.addEventListener('click', e => { if (e.target.closest('summary .pick')) e.preventDefault(); }, true);
 
   // Flash message from a full page load
   const flash = document.body.dataset.toast;

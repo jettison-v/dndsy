@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Party · askdnd{% endblock %}
+{% block content %}
+<main class="page">
+  <div class="title-row"><h1>Party</h1>
+    {% if reviewer and rows | selectattr("c.ddb_id") | list %}
+    <form method="post" action="/characters/refresh" class="inline" style="margin-left:auto" data-busy-note="refresh-note"><button class="btn" type="submit" data-busy="Refreshing from D&amp;D Beyond…">Refresh all from D&amp;D Beyond</button></form>
+    {% endif %}</div>
+  <p class="subtitle">Everyone at a glance, then the party's spells and items pooled for planning.{% if oldest %} Oldest copy from D&amp;D Beyond: {{ oldest | ago }}.{% endif %}</p>
+  <p class="busy-note" id="refresh-note" hidden>Fetching {{ rows | selectattr("c.ddb_id") | list | length }} characters from D&amp;D Beyond. This takes a few seconds each; the page reloads when it's done.</p>
+  {% if pick %}<p class="flash warn">You aren't set as playing a character yet, so pick one below. (An admin can set who plays which character on Manage › People.)</p>{% endif %}
+
+  <section class="section">
+    <h2>Party at a glance</h2>
+    {% set party = rows %}{% include "_party_table.html" %}
+    <p class="note" style="margin:10px 0 0">Click a name for a short version of that character.{% if pick %} Open their {% for r in rows %}<a href="/characters/{{ r.c.id }}{{ '/battle' if pick == 'battle' }}">{{ r.c.entity.name }}</a>{{ ", " if not loop.last }}{% endfor %}.{% endif %}</p>
+  </section>
+
+  <div class="pool">
+    <section class="section">
+      <div class="sec-head"><h2>Party spells</h2><span class="note">prepared or known now</span></div>
+      {% for title, list in spells %}
+      <h3>{{ title }}</h3>
+      {% for sp in list %}<div class="poolrow"><span>{{ sp.name }} <span class="meta">{{ "cantrip" if not sp.level else "level " ~ sp.level }} · {{ sp.casting_time | lower }}{% if sp.concentration %} · Conc.{% endif %}{% if sp.healing %} · heals {{ sp.healing }}{% elif sp.damage %} · {{ sp.damage }}{% endif %}</span></span>
+        <span class="chips">{% for w in sp.who %}<span class="chip">{{ w }}</span>{% endfor %}</span></div>{% endfor %}
+      {% else %}<p class="muted">No spells yet.</p>{% endfor %}
+    </section>
+    <section class="section">
+      <div class="sec-head"><h2>Party items</h2><span class="note">magic items and consumables</span></div>
+      {% for title, list in items %}
+      <h3>{{ title }}</h3>
+      {% for it in list %}<div class="poolrow"><span>{{ it.name }}{% if it.summary %} <span class="meta">{{ it.summary[:90] }}{{ "…" if it.summary | length > 90 }}</span>{% endif %}</span>
+        <span class="chips">{% for w in it.who %}<span class="chip">{{ w }}</span>{% endfor %}</span></div>{% endfor %}
+      {% else %}<p class="muted">No magic items yet.</p>{% endfor %}
+      {% if coins %}<p class="note" style="margin-top:12px">Coins: about {{ "{:,}".format(coins) }} gp across the party</p>{% endif %}
+    </section>
+  </div>
+</main>
+{% endblock %}

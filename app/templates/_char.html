@@ -1,0 +1,49 @@
+{# Shared pieces for the Battle, Character and Party pages. #}
+
+{% macro pips(u) -%}
+{%- if u -%}
+{%- if u.max <= 8 -%}<span class="pips" aria-label="{{ u.left }} of {{ u.max }} left">{% for i in range(u.max) %}<i class="pip{{ ' used' if i >= u.left }}"></i>{% endfor %}</span>
+{%- else %}<span class="tag">{{ u.left }}/{{ u.max }}</span>{%- endif -%}
+{%- endif -%}
+{%- endmacro %}
+
+{% macro pick_btn(c, kind, ref, on, can_pick) -%}
+{%- if can_pick -%}
+<button type="button" class="pick {{ kind }}{{ ' on' if on }}" hx-post="/characters/{{ c.id }}/pick" hx-vals='{{ {"kind": kind, "ref": ref} | tojson }}' hx-swap="outerHTML"
+  aria-pressed="{{ 'true' if on else 'false' }}" title="{{ ('Starred: shown on Battle' if on else 'Star: show on Battle') if kind == 'star' else ('In Easy to forget' if on else 'Add to Easy to forget') }}">
+  {%- if kind == "star" %}{{ "★" if on else "☆" }}{% else %}{{ "Reminder on" if on else "Remind me" }}{% endif -%}
+</button>
+{%- elif on and kind == "star" -%}<span class="pick star on static" title="Starred by their player">★</span>
+{%- endif -%}
+{%- endmacro %}
+
+{% macro option_row(o, c, picks, can_pick, open=False) -%}
+<details class="opt"{{ " open" if open }}>
+  <summary>
+    {% if o.cost != "Other" %}{{ pick_btn(c, "star", o.key, o.key in picks.star, can_pick) }}{% endif %}
+    <span class="grow"><b>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag">{{ t }}</span>{% endfor %}
+      {% if o.meta %}<span class="meta">{{ o.meta }}</span>{% endif %}</span>
+    {% if o.hit %}<span class="hit">{{ o.hit }}</span>{% endif %}
+    {{ pick_btn(c, "remind", o.key, o.key in picks.remind, can_pick) }}
+  </summary>
+  {% if o.text %}<div class="opt-text">{{ o.text }}</div>{% else %}<div class="opt-text muted">No description on D&amp;D Beyond.</div>{% endif %}
+</details>
+{%- endmacro %}
+
+{% macro vitals(s) -%}
+<div class="vitals">
+  <div class="vital"><small>HP</small><b>{{ s.hit_points.current }}</b>{% if s.hit_points.current != s.hit_points.max %}<span class="note"> / {{ s.hit_points.max }}</span>{% endif %}{% if s.hit_points.temp %}<span class="note"> +{{ s.hit_points.temp }} temp</span>{% endif %}</div>
+  <div class="vital"><small>AC</small><b>{{ s.armor_class }}</b></div>
+  <div class="vital"><small>Speed</small><b>{{ s.speed.walk }}</b><span class="note"> ft</span></div>
+  <div class="vital"><small>Initiative</small><b>{{ s.initiative }}</b></div>
+  {% for sc in s.spellcasting[:1] %}<div class="vital"><small>Spell DC / attack</small><b>{{ sc.save_dc }}</b><span class="note"> / {{ sc.attack }}</span></div>{% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro resource_row(s) -%}
+<div class="res-row">
+  {% for a in s.actions if a.uses and a.source in ("class", "feat", "race") %}<span>{{ a.name }} {{ pips(a.uses) }}</span>{% endfor %}
+  {% for sl in s.spell_slots.slots %}<span>{{ "Slots " if loop.first }}{{ sl.level }}{{ {1: "st", 2: "nd", 3: "rd"}.get(sl.level, "th") }} {{ pips({"max": sl.max, "left": sl.max - sl.used}) }}</span>{% endfor %}
+  {% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}<span>Pact slots (level {{ p.level }}) {{ pips({"max": p.max, "left": p.max - p.used}) }}</span>{% endif %}
+</div>
+{%- endmacro %}

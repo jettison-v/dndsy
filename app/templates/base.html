@@ -11,9 +11,9 @@
   <meta name="theme-color" content="#0f1113">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/app.css?v=12">
+  <link rel="stylesheet" href="/static/app.css?v=14">
   <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js" defer></script>
-  <script src="/static/app.js?v=10" defer></script>
+  <script src="/static/app.js?v=11" defer></script>
   {% block head %}{% endblock %}
 </head>
 <body data-toast="{{ toast or '' }}">
@@ -25,7 +25,9 @@
   <nav class="nav" id="nav">
     <a href="/" class="{{ 'active' if path in ('/', '/story') }}">Previously on…</a>
     <a href="/sessions" class="{{ 'active' if path.startswith('/sessions') }}">Sessions</a>
-    <a href="/characters" class="{{ 'active' if path.startswith('/characters') }}">Characters</a>
+    <a href="/battle" class="{{ 'active' if path == '/battle' or path.endswith('/battle') }}">Battle</a>
+    <a href="/character" class="{{ 'active' if path == '/character' or (path.startswith('/characters/') and not path.endswith('/battle')) }}">Character</a>
+    <a href="/party" class="{{ 'active' if path.startswith('/party') }}">Party</a>
     <a href="/campaign" class="{{ 'active' if path.startswith('/campaign') }}">Campaign</a>
   </nav>
   {% if is_reviewer %}

@@ -1,0 +1,21 @@
+{# Modal on the Party page: a short version of one character. #}
+{% from "_char.html" import vitals %}
+{% set s = sheet %}
+<div class="peek-head">
+  <div><h2 id="peek-title">{{ c.entity.name }}</h2>
+    {% if s %}<div class="note">{{ s.species }} · {% for k in s.classes %}{{ k.name }} {{ k.level }}{{ " / " if not loop.last }}{% endfor %}{% if c.player_name %} · {{ c.player_name }}{% endif %}</div>{% endif %}</div>
+  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
+</div>
+<div class="peek-body">
+  {% if s %}
+  {{ vitals(s) }}
+  <h3>Saves</h3>
+  <p class="muted" style="margin:0">{% for sv in s.saves %}{{ sv.short }} {{ sv.label }}{% if sv.proficient %} ●{% endif %}{{ " · " if not loop.last }}{% endfor %}</p>
+  {% set helps = (s.spells | selectattr("healing") | map(attribute="name") | list) + (s.inventory | selectattr("battle") | map(attribute="name") | list) %}
+  {% set big = s.actions | selectattr("uses") | list %}
+  {% if big %}<h3>Resources</h3><ul class="plain">{% for a in big %}<li>{{ a.name }} <span class="muted">{{ a.uses.left }}/{{ a.uses.max }} · {{ a.uses.reset_phrase }}</span></li>{% endfor %}</ul>{% endif %}
+  {% if helps %}<h3>Healing and items</h3><p class="muted" style="margin:0">{{ helps | unique | join(", ") }}</p>{% endif %}
+  {% if s.situational %}<h3>Situational</h3><ul class="plain">{% for x in s.situational %}<li>{{ x.text }}{% if x.source %} <span class="note">· {{ x.source }}</span>{% endif %}</li>{% endfor %}</ul>{% endif %}
+  {% else %}<p class="muted">Not fetched from D&amp;D Beyond yet.</p>{% endif %}
+</div>
+<div class="peek-foot row"><a class="btn" href="/characters/{{ c.id }}" data-no-peek>Full character</a><a class="btn" href="/characters/{{ c.id }}/battle" data-no-peek>Battle view</a></div>
