@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_char.html" import pips, pick_btn, ri, opt_row, spell_row, bell %}
+{% from "_char.html" import pips, pick_btn, ri, opt_row, spell_row, bell, portrait %}
 {% block title %}{{ c.entity.name }} · Character · askdnd{% endblock %}
 {% block content %}
 {% set s = sheet %}
@@ -10,7 +10,8 @@
     <a class="btn small" href="/characters/{{ c.id }}/battle" style="margin-left:auto">Battle view →</a>
   </div>
   <div class="char-head">
-    <div>
+    {{ portrait(s, "lg") }}
+    <div style="flex:1">
       <h1>{{ c.entity.name }}</h1>
       {% if s %}<div class="muted">{{ s.species }} · {% for k in s.classes %}{{ k.name }} {{ k.level }}{% if k.subclass %} ({{ k.subclass }}){% endif %}{{ " / " if not loop.last }}{% endfor %} · level {{ s.level }}{% if s.background %} · {{ s.background }}{% endif %}{% if c.player_name %} · played by {{ c.player_name }}{% endif %}</div>
       <div class="note">Last updated from D&amp;D Beyond {{ fetched_at | ago }}{% if s.sheet_url %} · <a href="{{ s.sheet_url }}" target="_blank" rel="noopener">Open on D&amp;D Beyond ↗</a>{% endif %}
@@ -124,7 +125,7 @@
                  ("Attuned", "done") if it.attunement == "attuned" else (("Needs attunement", "") if it.attunement == "required" else None),
                  (it.charges.left ~ " use" ~ ("s" if it.charges.left != 1 else "") ~ " left", "") if it.charges and it.charges.reset == "Used up" else None],
           what=it.summary, uses=it.charges if it.charges and it.charges.reset != "Used up" else None,
-          mech=[it.type, it.rarity if it.magic else "", it.damage, ("AC " ~ it.armor_class) if it.armor_class else "", ("in " ~ it.in) if it.in else ""] | select | join(" · ")) }}{% endmacro %}
+          mech=[it.type if not it.custom else "", it.rarity if it.magic else "", it.damage, ("AC " ~ it.armor_class) if it.armor_class else "", ("in " ~ it.in) if it.in else ""] | select | join(" · ")) }}{% endmacro %}
       {% if s.attuned %}<p class="hint" style="margin:0">Attuned: {{ s.attuned | join(", ") }} ({{ s.attuned | length }} of 3)</p>{% endif %}
       {% set battle = s.inventory | selectattr("group", "equalto", "battle") | list %}
       {% set worn = s.inventory | selectattr("group", "equalto", "equipped") | list %}

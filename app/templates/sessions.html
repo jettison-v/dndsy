@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_suggest_form.html" import suggest %}
+{% from "_suggest_form.html" import suggest with context %}
 {% block title %}Sessions · askdnd{% endblock %}
 {% block content %}
 <main class="page narrow">
@@ -9,6 +9,7 @@
   <details class="section" id="s{{ item.s.id }}" {% if loop.first %}open{% endif %}>
     <summary style="cursor:pointer"><b>{{ item.label }}</b>{% if item.s.title %} · {{ item.s.title }}{% endif %}</summary>
     <div class="story" style="margin-top:16px">{{ ln.html(item.html) }}</div>
+    {% if item.dm_notes %}<div class="dm-notes" role="note"><b>From the DM</b>{% for x in item.dm_notes %}<p>{% if x.kind == "correction" %}<span class="tag edited">Correction</span> {% endif %}{{ ln.text(x.text) }}</p>{% endfor %}</div>{% endif %}
     {% if item.events %}<ul class="events" style="margin-top:12px">{% for e in item.events %}<li class="ev"><span class="kind {{ e.kind.value }}">{{ e.kind.value }}</span><div class="ev-text">{{ ln.text(e.text) }}{% if e.entities %}<small>{% for x in e.entities %}<a href="/campaign/{{ x.id }}">{{ x.name }}</a>{{ " · " if not loop.last }}{% endfor %}</small>{% endif %}</div></li>{% endfor %}</ul>{% endif %}
     {{ suggest("/sessions/" ~ item.s.id ~ "/suggest", "this session") }}
   </details>

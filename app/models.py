@@ -124,6 +124,19 @@ class Entity(Timestamped, Base):
         return [a for a in self.aliases if not a.misspelling]
 
 
+class EntityPicture(Timestamped, Base):
+    """A picture on an entity page (portrait, map, banner), added by the DM or a reviewer.
+    Stored resized (app/pictures.py) in the database, like note images."""
+
+    __tablename__ = "entity_pictures"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    entity_id: Mapped[int] = mapped_column(ForeignKey("entities.id", ondelete="CASCADE"), unique=True)
+    content_type: Mapped[str] = mapped_column(String(100), default="image/webp", server_default="image/webp")
+    data: Mapped[bytes] = mapped_column(LargeBinary, deferred=True)  # up to 1200 px
+    thumb: Mapped[bytes] = mapped_column(LargeBinary, deferred=True)  # 320 px square crop
+    added_by: Mapped[str] = mapped_column(String(320), default="", server_default="")
+
+
 class EntityAlias(Base):
     """Other names: renames (Sarkas -> No Name), nicknames, common mis-transcriptions."""
 
@@ -171,6 +184,9 @@ class Suggestion(Timestamped, Base):
     author_name: Mapped[str] = mapped_column(String(200), default="", server_default="")
     author_email: Mapped[str] = mapped_column(String(320), default="", server_default="")
     status: Mapped[str] = mapped_column(String(20), default="pending", server_default="pending")  # pending | used | done | dismissed
+    # From the DM: skipped review, went straight into the session's answers, and shows
+    # under the recap until the session is redrafted and published again.
+    from_dm: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
 
 
 class EntityRelation(Timestamped, Base):

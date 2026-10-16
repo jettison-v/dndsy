@@ -1,4 +1,5 @@
 {# Usage: {% from "_suggest_form.html" import suggest %}{{ suggest("/sessions/3/suggest", "this session") }} #}
+{# Import it "with context": the DM's entries skip review, so they get different wording. #}
 {% macro suggest(action, about, kinds=True, open=False) %}
 <details class="suggest" {% if open %}open{% endif %}>
   <summary>Suggest a correction or addition</summary>
@@ -10,7 +11,8 @@
     </div>
     {% else %}<input type="hidden" name="kind" value="addition">{% endif %}
     <textarea name="text" rows="3" required placeholder="What should {{ about }} say? (type @ to insert a name)"></textarea>
-    <div class="row"><button class="btn">Send to a reviewer</button><span class="note">Nothing changes until a reviewer accepts it.</span></div>
+    {% if is_dm %}<div class="row"><button class="btn primary">Save</button><span class="note">You're the DM, so this doesn't wait for a reviewer.</span></div>
+    {% else %}<div class="row"><button class="btn">Send to a reviewer</button><span class="note">Nothing changes until a reviewer accepts it.</span></div>{% endif %}
   </form>
 </details>
 {% endmacro %}

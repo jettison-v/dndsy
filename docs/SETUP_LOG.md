@@ -193,3 +193,15 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 **Reuse this on a new project**
 1. Keep admin-only setup (links, data sources) on an admin page, not on the pages everyone reads.
 2. When a mode changes what the app does in the background (like Game Mode), show it everywhere until it's turned off.
+
+## 2026-10-17 — Pictures, custom items, the DM's own corrections
+
+**What changed**
+- **Pictures.** Characters show their D&D Beyond portrait. The DM (and reviewers) can add a picture to any person, place, faction, item or quest from its page; it shows on the page, in the side panel and on the Campaign list.
+- **Custom and changed items** are tagged in Inventory, with what changed in the side panel. Players' item notes still never leave D&D Beyond.
+- **The DM's corrections skip review**, because the DM controls the story.
+
+**Reuse this on a new project**
+1. For a handful of user-uploaded images, storing resized copies in the database is simpler than setting up file storage (S3). Move to S3 when there are many or they're large.
+2. Always re-encode uploaded images on the server (here with Pillow): it checks they're really images, shrinks them, and removes hidden location data from phone photos.
+3. Decide per role who needs review. Here the DM is trusted with the story; everyone else's suggestions wait for a reviewer.

@@ -1,5 +1,5 @@
 {# Peek panel content for one entity (loaded by app.js into #peek). #}
-{% from "_suggest_form.html" import suggest %}
+{% from "_suggest_form.html" import suggest with context %}
 <div class="peek-head">
   <div><div class="note">{{ kind_label }}{% if e.kind.value == "quest" %} · {{ "Open" if e.quest_open else "Done" }}{% endif %}</div>
     <h2 id="peek-title">{{ e.name }}</h2>
@@ -7,6 +7,7 @@
   <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
 </div>
 <div class="peek-body">
+  {% if picture %}<img class="peek-pic" src="{{ picture.full }}" alt="{{ e.name }}" referrerpolicy="no-referrer">{% endif %}
   {% if e.summary %}<div class="story">{{ ln.text(e.summary) }}</div>{% else %}<p class="muted">No description yet.</p>{% endif %}
   {% if relations %}
   <h3>Relationships</h3>

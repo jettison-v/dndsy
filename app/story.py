@@ -5,12 +5,12 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import review
+from app import pictures, review
 from app.auth import current_user
 from app.db import get_db
 from app.extraction import session_label, timeline
 from app.linking import Linker, entity_linker
-from app.models import Campaign, Correction, Entity, EntityKind, EventKind, GameSession, GlossaryTerm, Status
+from app.models import Campaign, Correction, Entity, EntityKind, EventKind, GameSession, GlossaryTerm, Status, Suggestion
 from app.relations import family_graph
 from app.render import markdown_to_html
 from app.templating import templates
@@ -33,8 +33,11 @@ def _campaign(db: Session) -> Campaign | None:
 
 
 def published_items(db: Session, campaign: Campaign) -> list[dict]:
-    """Published sessions in story order, each with its recap HTML and events."""
+    """Published sessions in story order, each with its recap HTML and events, plus the
+    DM's corrections that came in after that recap was published (no review needed)."""
     items = []
+    dm_notes = list(db.scalars(select(Suggestion).where(Suggestion.campaign_id == campaign.id, Suggestion.target_type == "session",
+                                                        Suggestion.from_dm.is_(True)).order_by(Suggestion.id)))
     for s in timeline(db, campaign.id):
         recap = next((r for r in reversed(s.recaps) if r.status == Status.PUBLISHED), None)
         if recap:
@@ -45,6 +48,7 @@ def published_items(db: Session, campaign: Campaign) -> list[dict]:
                 "html": markdown_to_html(recap.body, lambda n: None),
                 "events": [e for e in events if e.kind != EventKind.THEORY],
                 "theories": [e for e in events if e.kind == EventKind.THEORY],
+                "dm_notes": [x for x in dm_notes if x.target_id == s.id and x.created_at >= recap.updated_at],
             })
     return items
 
@@ -164,6 +168,7 @@ def campaign_page(request: Request, db: Session = Depends(get_db)):
         glossary = list(db.scalars(select(GlossaryTerm).where(GlossaryTerm.campaign_id == campaign.id).order_by(GlossaryTerm.term)))
         graph = family_graph(db, campaign.id, visible=lambda e: e.status == Status.PUBLISHED)
     return templates.TemplateResponse(
-        request, "campaign.html", {"campaign": campaign, "groups": groups, "glossary": glossary, "tree": graph.mermaid() if campaign and graph.people else ""}
+        request, "campaign.html", {"campaign": campaign, "groups": groups, "glossary": glossary, "tree": graph.mermaid() if campaign and graph.people else "",
+                                   "pics": pictures.urls(db, [e.id for _, entries in groups for e in entries])}
     )
 

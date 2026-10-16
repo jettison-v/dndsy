@@ -1,9 +1,9 @@
-{% from "_char.html" import pips, pick_btn, vitals, resource_row %}
+{% from "_char.html" import pips, pick_btn, vitals, resource_row, portrait %}
 {% set s = sheet %}
 <div id="battle-body" data-character="{{ c.id }}" data-fetched="{{ fetched_at.isoformat() if fetched_at else '' }}">
   <div class="battlebar">
     <div class="sec-head" style="margin:0">
-      <div><b style="font-size:1.3rem">{{ c.entity.name }}</b>{% if s %} <span class="note">{% for k in s.classes %}{{ k.name }} {{ k.level }}{{ " / " if not loop.last }}{% endfor %}</span>{% endif %}</div>
+      <div class="row" style="gap:10px">{{ portrait(s, "md") }}<b style="font-size:1.3rem">{{ c.entity.name }}</b>{% if s %} <span class="note">{% for k in s.classes %}{{ k.name }} {{ k.level }}{{ " / " if not loop.last }}{% endfor %}</span>{% endif %}</div>
       {% if c.ddb_id %}
       <div class="gm">
         <span class="gm-status" aria-live="polite">{% if failed %}<span class="quiet-warn">Couldn't reach D&amp;D Beyond; showing the copy from {{ fetched_at | ago }}</span>{% else %}Updated {{ fetched_at | ago }}{% endif %}</span>

@@ -14,7 +14,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import entities
-from app.auth import current_user, is_reviewer
+from app.auth import current_user, is_dm, is_reviewer
 from app.db import get_db
 from app.extraction import session_label
 from app.models import Campaign, Correction, Entity, Fact, GameSession, GlossaryTerm, Status, Suggestion
@@ -45,6 +45,13 @@ def _author(user: dict) -> dict:
     return {"author_name": (user.get("name") or user.get("email") or "")[:200], "author_email": (user.get("email") or "")[:320]}
 
 
+def _answer(x: Suggestion) -> Correction:
+    """Feed a session suggestion to the next redraft exactly like an answer to Claude's question."""
+    who = "the DM" if x.from_dm else (x.author_name or "someone at the table")
+    return Correction(campaign_id=x.campaign_id, session_id=x.target_id, kind="answer",
+                      before=f"{x.kind.capitalize()} from {who}", after=x.text)
+
+
 # --- Submitting ---------------------------------------------------------------
 
 
@@ -57,11 +64,11 @@ def suggest_entity(request: Request, entity_id: int, text: str = Form(""), kind:
     if entity is None or (entity.status != Status.PUBLISHED and not is_reviewer(user)):
         return _problem("That entry isn't in the campaign record.")
     try:
-        entities.add_fact(db, entity, text, user, kind=_kind(kind))
+        entities.add_fact(db, entity, text, user, kind=_kind(kind), merged=is_dm(user))
     except entities.EntityError as e:
         return _problem(str(e))
     db.commit()
-    return _thanks()
+    return _thanks("Added to the page. Reload to see it.") if is_dm(user) else _thanks()
 
 
 @router.post("/sessions/{session_id:int}/suggest")
@@ -72,7 +79,13 @@ def suggest_session(request: Request, session_id: int, text: str = Form(""), kin
     s = db.get(GameSession, session_id)
     if s is None or not _clean(text):
         return _problem("Write what should change first.")
-    db.add(Suggestion(campaign_id=s.campaign_id, target_type="session", target_id=s.id, kind=_kind(kind), text=_clean(text), **_author(user)))
+    x = Suggestion(campaign_id=s.campaign_id, target_type="session", target_id=s.id, kind=_kind(kind), text=_clean(text), **_author(user))
+    db.add(x)
+    if is_dm(user):  # no review: straight into the session's answers, and shown under the recap
+        x.status, x.from_dm = "used", True
+        db.add(_answer(x))
+        db.commit()
+        return _thanks("Saved. It shows under the recap now, and the next redraft of this session uses it.")
     db.commit()
     return _thanks()
 
@@ -103,7 +116,26 @@ def _glossary_context(request: Request, db: Session, term_id: int) -> dict | Non
     term = db.get(GlossaryTerm, term_id)
     if not user or term is None:
         return None
-    return {"g": term, "can_edit": is_reviewer(user)}
+    return {"g": term, "can_edit": _can_edit_glossary(user)}
+
+
+def _can_edit_glossary(user: dict | None) -> bool:
+    return is_reviewer(user) or is_dm(user)
+
+
+@router.post("/campaign/glossary/add")
+def glossary_add(request: Request, term: str = Form(""), description: str = Form(""), db: Session = Depends(get_db)):
+    """The DM (or a reviewer) adds a term directly, no review."""
+    user = current_user(request)
+    campaign = db.scalar(select(Campaign).order_by(Campaign.id))
+    new_term = " ".join(term.split())[:200]
+    if not _can_edit_glossary(user) or campaign is None:
+        return _problem("Only the DM and reviewers can add terms directly.")
+    if not new_term or db.scalar(select(GlossaryTerm).where(GlossaryTerm.campaign_id == campaign.id, GlossaryTerm.term == new_term)):
+        return _problem("That term is empty or already in the glossary.")
+    db.add(GlossaryTerm(campaign_id=campaign.id, term=new_term, description=description.strip()[:MAX_TEXT], misheard_as=[]))
+    db.commit()
+    return _thanks(f"Added {new_term} to the glossary. Reload the page to see it in the list.")
 
 
 @router.get("/campaign/glossary/{term_id:int}/peek")
@@ -128,7 +160,7 @@ def glossary_edit(
 ):
     user = current_user(request)
     g = db.get(GlossaryTerm, term_id)
-    if not is_reviewer(user) or g is None:
+    if not _can_edit_glossary(user) or g is None:
         return RedirectResponse("/campaign", status_code=303)
     new_term = " ".join(term.split())
     clash = db.scalar(select(GlossaryTerm).where(GlossaryTerm.campaign_id == g.campaign_id, GlossaryTerm.term == new_term, GlossaryTerm.id != g.id))
@@ -144,7 +176,7 @@ def glossary_edit(
 def glossary_delete(request: Request, term_id: int, db: Session = Depends(get_db)):
     user = current_user(request)
     g = db.get(GlossaryTerm, term_id)
-    if is_reviewer(user) and g is not None:
+    if _can_edit_glossary(user) and g is not None:
         db.delete(g)
         db.commit()
     return _thanks("Removed from the glossary. Reload the page to update the list.")
@@ -184,11 +216,7 @@ def act_on_suggestion(request: Request, suggestion_id: int, action: str, db: Ses
     if not is_reviewer(user) or x is None or action not in ("use", "done", "dismiss"):
         return RedirectResponse("/admin/sessions", status_code=303)
     if action == "use" and x.target_type == "session":
-        # Feed it to the next redraft exactly like an answer to Claude's question.
-        db.add(Correction(
-            campaign_id=x.campaign_id, session_id=x.target_id, kind="answer",
-            before=f"{x.kind.capitalize()} from {x.author_name or 'someone at the table'}", after=x.text,
-        ))
+        db.add(_answer(x))
         x.status = "used"
         request.session["toast"] = "Added to this session's answers; redraft to use it."
     else:

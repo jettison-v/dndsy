@@ -40,6 +40,11 @@ def is_reviewer(user: dict | None) -> bool:
     return bool(user) and access.level(user.get("email")) in (access.REVIEWER, access.ADMIN)
 
 
+def is_dm(user: dict | None) -> bool:
+    """The DM controls the story: their corrections and additions don't wait for a reviewer."""
+    return bool(user) and access.is_dm(user.get("email"))
+
+
 def can_see_character_notes(user: dict | None) -> bool:
     """Character notes are visible to players but never to the DM (CLAUDE.md)."""
     return bool(user) and not access.is_dm(user.get("email"))

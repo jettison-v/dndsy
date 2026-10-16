@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_suggest_form.html" import suggest %}
+{% from "_suggest_form.html" import suggest with context %}
 {% block title %}Previously on… · askdnd{% endblock %}
 {% block content %}
 <main class="page narrow">
@@ -28,6 +28,9 @@
   {% else %}
   <p class="subtitle">{{ latest.label }}{% if latest.s.title %}: {{ latest.s.title }}{% endif %}</p>
   <div class="story">{{ ln.html(latest.html) }}</div>
+  {% if latest.dm_notes %}
+  <div class="dm-notes" role="note"><b>From the DM</b>{% for x in latest.dm_notes %}<p>{% if x.kind == "correction" %}<span class="tag edited">Correction</span> {% endif %}{{ ln.text(x.text) }}</p>{% endfor %}</div>
+  {% endif %}
   <div style="margin-top:12px">{{ suggest("/sessions/" ~ latest.s.id ~ "/suggest", "this session") }}</div>
   {% if latest.events %}
   <section class="section" style="margin-top:24px">

@@ -7,17 +7,17 @@ entity body plus a toast; without HTMX they redirect back to the page.
 import json
 from collections.abc import Callable
 
-from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import entities, relations
-from app.auth import current_user, is_reviewer
+from app import entities, pictures, relations
+from app.auth import current_user, is_dm, is_reviewer
 from app.db import get_db
 from app.extraction import ExtractionError
 from app.linking import entity_linker
-from app.models import Campaign, Entity, EntityAlias, Fact, Status
+from app.models import Campaign, Entity, EntityAlias, EntityPicture, Fact, Status
 from app.templating import templates
 
 router = APIRouter(prefix="/campaign")
@@ -54,6 +54,8 @@ def entity_context(db: Session, entity: Entity, user: dict) -> dict:
         "others": others,
         "moments": entities.moments(db, entity),
         "ln": entity_linker(db, entity.campaign_id, exclude_id=entity.id, include_drafts=reviewer),
+        "picture": pictures.urls(db, [entity.id]).get(entity.id),
+        "can_picture": pictures.can_manage(user),
     }
 
 
@@ -89,6 +91,7 @@ def entity_peek(request: Request, entity_id: int, db: Session = Depends(get_db))
             "kind_label": entities.KIND_LABELS.get(entity.kind, entity.kind.value),
             "relations": relations.lines_for(db, entity),
             "facts": merged[-3:],
+            "picture": pictures.urls(db, [entity.id]).get(entity.id),
             "moments": entities.moments(db, entity)[-3:],
             "ln": entity_linker(db, entity.campaign_id, exclude_id=entity.id, include_drafts=reviewer),
         },
@@ -128,7 +131,9 @@ def _act(request: Request, db: Session, entity_id: int, action: Callable[[Entity
 @router.post("/{entity_id:int}/facts")
 def add_fact(request: Request, entity_id: int, text: str = Form(""), kind: str = Form("addition"), db: Session = Depends(get_db)):
     def act(entity, user):
-        entities.add_fact(db, entity, text, user, kind=kind)
+        entities.add_fact(db, entity, text, user, kind=kind, merged=is_dm(user))
+        if is_dm(user):
+            return "Added to the page"
         return "Fact saved" if is_reviewer(user) else "Thanks! A reviewer will add it to the page."
 
     return _act(request, db, entity_id, act, reviewer_only=False)
@@ -139,6 +144,44 @@ def _fact_action(request: Request, db: Session, fact_id: int, fn: Callable[[Fact
     if fact is None:
         return RedirectResponse("/campaign", status_code=303)
     return _act(request, db, fact.entity_id, lambda entity, user: fn(fact))
+
+
+# --- Pictures (the DM, reviewers and admins) ------------------------------------------
+
+
+@router.get("/{entity_id:int}/picture")
+def picture(request: Request, entity_id: int, size: str = "full", db: Session = Depends(get_db)):
+    user = current_user(request)
+    entity = db.get(Entity, entity_id)
+    pic = db.scalar(select(EntityPicture).where(EntityPicture.entity_id == entity_id)) if user and _visible(entity, user) else None
+    if pic is None:
+        return Response(status_code=404)
+    # URLs carry ?v=<updated time>, so a browser can keep a copy until the picture changes.
+    return Response(pic.thumb if size == "thumb" else pic.data, media_type=pic.content_type,
+                    headers={"Cache-Control": "private, max-age=31536000, immutable", "X-Content-Type-Options": "nosniff"})
+
+
+def _picture_action(request: Request, db: Session, entity_id: int, fn: Callable[[Entity, dict], str]):
+    def act(entity, user):  # refusals happen before anything is written, so there's nothing to roll back
+        if not pictures.can_manage(user):
+            return "Only the DM and reviewers can change pictures."
+        try:
+            return fn(entity, user)
+        except pictures.PictureError as e:
+            return str(e)
+
+    return _act(request, db, entity_id, act, reviewer_only=False)
+
+
+@router.post("/{entity_id:int}/picture")
+def upload_picture(request: Request, entity_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    raw = file.file.read(pictures.MAX_UPLOAD + 1)
+    return _picture_action(request, db, entity_id, lambda entity, user: pictures.save(db, entity, raw, user) and "Picture saved")
+
+
+@router.post("/{entity_id:int}/picture/delete")
+def delete_picture(request: Request, entity_id: int, db: Session = Depends(get_db)):
+    return _picture_action(request, db, entity_id, lambda entity, user: pictures.remove(db, entity) or "Picture removed")
 
 
 @router.post("/facts/{fact_id:int}/merge")

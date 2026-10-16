@@ -81,3 +81,8 @@
 {{ ri(c, o.key, o.name, picks, can_pick, star=o.cost != "Other", chips=o.tags, what=o.summary or o.meta,
       mech=o.meta if o.summary else "", hit=o.hit, uses=o.uses) }}
 {%- endmacro %}
+
+{# A character's picture from D&D Beyond (their image server). Hidden if it doesn't load. #}
+{% macro portrait(s, cls="") -%}
+{% if s and s.portrait %}<img class="portrait {{ cls }}" src="{{ s.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}
+{%- endmacro %}

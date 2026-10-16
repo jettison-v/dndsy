@@ -498,6 +498,9 @@
   document.addEventListener('scroll', () => { if (termPinned) termPlace(); else if (termTip) termHide(); }, true);
   window.addEventListener('resize', termPlace);
 
+  // A file picker with data-autosubmit sends its form as soon as a file is chosen (entity pictures).
+  document.addEventListener('change', e => { if (e.target.matches('input[type=file][data-autosubmit]') && e.target.files.length) e.target.form.requestSubmit(); });
+
   // Flash message from a full page load
   const flash = document.body.dataset.toast;
   if (flash) toast(flash);

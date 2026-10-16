@@ -45,7 +45,8 @@ KIND_LABELS = {
 # --- Facts -----------------------------------------------------------------------
 
 
-def add_fact(db: Session, entity: Entity, text: str, user: dict, kind: str = "addition") -> Fact:
+def add_fact(db: Session, entity: Entity, text: str, user: dict, kind: str = "addition", merged: bool = False) -> Fact:
+    """A fact from someone at the table; `merged` puts it straight on the page (the DM's)."""
     text = text.replace("\r\n", "\n").strip()
     if not text:
         raise EntityError("Write the fact first.")
@@ -57,6 +58,7 @@ def add_fact(db: Session, entity: Entity, text: str, user: dict, kind: str = "ad
         text=text,
         author_name=(user.get("name") or user.get("email") or "")[:200],
         author_email=(user.get("email") or "")[:320],
+        status="merged" if merged else "pending",
     )
     db.add(fact)
     return fact

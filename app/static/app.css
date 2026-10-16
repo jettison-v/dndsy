@@ -599,3 +599,23 @@ body.gm-on .battlebar { top: 106px; }
 .term-where { color: var(--faint); font-size: .78rem; margin-top: 8px; }
 .term-admin { display: flex; align-items: center; gap: 6px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); color: var(--muted); font-size: .8rem; }
 .tag.custom { background: rgba(176, 132, 232, .16); color: #c7a8f2; }
+
+/* Pictures: D&D Beyond portraits on character pages, uploaded pictures on campaign pages */
+.portrait { border-radius: 50%; object-fit: cover; background: var(--surface-2); flex: none; }
+.portrait.sm { width: 28px; height: 28px; vertical-align: middle; margin-right: 8px; }
+.portrait.md { width: 44px; height: 44px; }
+.portrait.lg { width: 72px; height: 72px; border: 2px solid var(--line); }
+.peek-head .portrait { margin-right: 12px; }
+.char-head { align-items: center; gap: 16px; }
+.entity-head { display: flex; gap: 24px; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+.entity-head-text { flex: 1; min-width: 0; }
+.entity-pic { width: 170px; flex: none; margin: 0; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.entity-pic img { width: 100%; max-height: 220px; object-fit: cover; border-radius: 12px; border: 1px solid var(--line); display: block; }
+.entity-pic figcaption { margin: 0; }
+.pic-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pic-form label.btn { cursor: pointer; white-space: nowrap; }
+.peek-pic { width: 100%; max-height: 240px; object-fit: cover; border-radius: 10px; margin-bottom: 12px; border: 1px solid var(--line); }
+.entry-pic { float: right; width: 56px; height: 56px; border-radius: 10px; object-fit: cover; margin: 0 0 6px 12px; border: 1px solid var(--line); }
+@media (max-width: 640px) { .entity-head { flex-direction: column-reverse; } .entity-pic { width: 100%; } .entity-pic img { max-height: 280px; } }
+.dm-notes { margin-top: 14px; border-left: 3px solid var(--amber); background: var(--amber-soft); border-radius: 0 10px 10px 0; padding: 10px 14px; }
+.dm-notes p { margin: 6px 0 0; }

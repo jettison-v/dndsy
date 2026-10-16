@@ -11,7 +11,7 @@
   }));
 </script>{% endif %}{% endblock %}
 {% block content %}
-{% from "_suggest_form.html" import suggest %}
+{% from "_suggest_form.html" import suggest with context %}
 <main class="page">
   <div class="title-row"><h1>{{ campaign.name if campaign else "Campaign" }}</h1></div>
   <p class="subtitle">People, places and things the party has met.{% if campaign and campaign.dm_name %} Dungeon Master: {{ campaign.dm_name }}.{% endif %}{% if tree %} <a href="#family-tree" data-no-peek>Family tree ↓</a>{% endif %}</p>
@@ -20,7 +20,7 @@
     <h2>{{ title }}</h2>
     <div class="card-grid" style="margin-top:14px">
       {% for e in entries %}
-      <div class="entry"><a class="entry-link" href="/campaign/{{ e.id }}"><b>{{ e.name }}</b></a>{% if e.kind.value == "quest" %} <span class="tag {{ 'draft' if e.quest_open else 'done' }}">{{ "Open" if e.quest_open else "Done" }}</span>{% endif %}
+      <div class="entry">{% set p = pics.get(e.id) %}{% if p %}<img class="entry-pic" src="{{ p.thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer">{% endif %}<a class="entry-link" href="/campaign/{{ e.id }}"><b>{{ e.name }}</b></a>{% if e.kind.value == "quest" %} <span class="tag {{ 'draft' if e.quest_open else 'done' }}">{{ "Open" if e.quest_open else "Done" }}</span>{% endif %}
         {% if e.display_aliases %}<div class="note">also: {{ e.display_aliases | map(attribute="alias") | join(", ") }}</div>{% endif %}
         {% if e.summary %}<p>{{ e.summary }}</p>{% endif %}</div>
       {% endfor %}
@@ -40,7 +40,15 @@
   <section class="section" id="glossary">
     <h2>Glossary</h2>
     <table class="list" style="margin-top:10px">{% for g in glossary %}<tr><td style="width:30%"><a href="/campaign/glossary/{{ g.id }}"><b>{{ g.term }}</b></a></td><td class="muted">{{ g.description }}</td></tr>{% endfor %}</table>
-    <div style="margin-top:12px">{{ suggest("/campaign/glossary/suggest", "the new glossary entry", kinds=False) }}</div>
+    {% if is_dm or is_reviewer %}
+    <details class="suggest"><summary>Add a term</summary>
+      <form class="stack" hx-post="/campaign/glossary/add" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button">
+        <label class="field">Term<input type="text" name="term" required></label>
+        <label class="field">What it means<input type="text" name="description"></label>
+        <div class="row"><button class="btn primary">Add</button><span class="note">Goes straight into the glossary.</span></div>
+      </form>
+    </details>
+    {% else %}<div style="margin-top:12px">{{ suggest("/campaign/glossary/suggest", "the new glossary entry", kinds=False) }}</div>{% endif %}
   </section>
   {% endif %}
 </main>
