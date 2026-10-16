@@ -18,18 +18,21 @@
   </div>
 
   {% if s %}
+  {% if can_pick %}<p class="note" style="margin:-6px 0 10px">Drag options to reorder a column. ★ on the Character page (or in "See all") adds more.</p>{% endif %}
   <div class="econ">
     {% for cost, sub, slug in [("Action", "One per turn", "action"), ("Bonus action", "One per turn", "bonus"), ("Reaction", "One per round, also on others' turns", "reaction")] %}
     {% set col = columns[cost] %}
     <div class="section">
       <h2>{{ cost }}<small>{{ sub }}</small></h2>
+      <div class="moves"{% if can_pick %} data-sort-column="{{ cost }}" data-sort-url="/characters/{{ c.id }}/order"{% endif %}>
       {% for o in col.shown %}
-      <div class="move" data-panel-url="/characters/{{ c.id }}/option?ref={{ o.key | urlencode }}" tabindex="0" role="button">
+      <div class="move" data-key="{{ o.key }}" data-panel-url="/characters/{{ c.id }}/option?ref={{ o.key | urlencode }}" tabindex="0" role="button">
         {% if o.hit %}<span class="hit">{{ o.hit }}</span>{% endif %}
         {% if o.starred and show_picks %}<span class="pick star on static" aria-label="starred">★</span>{% endif %}<b>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag">{{ t }}</span>{% endfor %}
         {% if o.meta %}<div class="meta">{{ o.meta }}</div>{% endif %}
       </div>
       {% else %}<p class="muted">Nothing here yet.</p>{% endfor %}
+      </div>
       {% if cost == "Action" %}<div class="move static"><b>Attack, Dash, Disengage, Dodge, Help, Hide, Influence, Magic, Ready, Search, Study, Utilize</b><div class="meta">What anyone can do</div></div>{% endif %}
       {% if col.count > col.shown | length %}<div class="seeall"><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/{{ slug }}">See all {{ cost | lower }}s ({{ col.count }}) →</a></div>{% endif %}
     </div>

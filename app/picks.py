@@ -8,13 +8,15 @@ admins, not the DM). Like character notes, they're visible to the players but
 never to the DM.
 """
 
+import json
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.auth import can_see_character_notes
 from app.models import Character, CharacterPick, User
 
-KINDS = ("star", "remind")
+KINDS = ("star", "remind", "fav")  # fav: a spell on the player's shortlist
 
 
 def user_row(db: Session, user: dict | None) -> User | None:
@@ -39,14 +41,19 @@ def can_see(user: dict | None) -> bool:
 
 def picks(db: Session, character: Character, user: dict | None) -> dict:
     """{"star": {ref,…}, "remind": {ref: label}} — empty for the DM."""
-    out = {"star": set(), "remind": {}}
+    out = {"star": set(), "remind": {}, "fav": set(), "order": {}}
     if not can_see(user):
         return out
     for p in db.scalars(select(CharacterPick).where(CharacterPick.character_id == character.id).order_by(CharacterPick.id)):
-        if p.kind == "star":
-            out["star"].add(p.ref)
+        if p.kind in ("star", "fav"):
+            out[p.kind].add(p.ref)
         elif p.kind == "remind":
             out["remind"][p.ref] = p.label
+        elif p.kind == "order":
+            try:
+                out["order"][p.ref.removeprefix("order:")] = json.loads(p.label)
+            except ValueError:
+                pass
     return out
 
 
@@ -63,3 +70,21 @@ def toggle(db: Session, character: Character, kind: str, ref: str, label: str = 
     db.add(CharacterPick(character_id=character.id, kind=kind, ref=ref[:300], label=label[:500]))
     db.flush()
     return True
+
+
+def set_order(db: Session, character: Character, column: str, keys: list[str]) -> None:
+    """The player's own order for a Battle column (drag and drop)."""
+    ref = f"order:{column}"
+    pick = db.scalar(select(CharacterPick).where(
+        CharacterPick.character_id == character.id, CharacterPick.kind == "order", CharacterPick.ref == ref))
+    label = json.dumps([k[:300] for k in keys][:60])
+    if len(label) > 500:  # keep within the column; the first options matter most
+        keys = keys[:]
+        while keys and len(json.dumps(keys)) > 500:
+            keys.pop()
+        label = json.dumps(keys)
+    if pick:
+        pick.label = label
+    else:
+        db.add(CharacterPick(character_id=character.id, kind="order", ref=ref, label=label))
+    db.flush()

@@ -331,3 +331,19 @@ def test_my_character_comes_first_and_reminders_can_be_removed(player, db):
     battle = player.get(f"/characters/{cole.id}/battle").text
     assert 'class="forget-x"' in battle and 'hx-swap="delete"' in battle
     assert "#t-situ" not in battle  # links never jump to a tab
+
+
+def test_drag_and_drop_order_is_saved_for_the_player_only(player, admin, db):
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    owned_by(db, cole, "player@example.com")
+    page = player.get(f"/characters/{cole.id}/battle").text
+    assert 'data-sort-column="Action"' in page and "sortablejs@1.15.2" in page
+    keys = ["spell:Thorn Whip", "attack:unarmed", "spell:Starry Wisp"]
+    r = player.post(f"/characters/{cole.id}/order", data={"column": "Action", "keys": keys})
+    assert r.status_code == 204
+    action = player.get(f"/characters/{cole.id}/battle").text.split("Bonus action")[0]
+    assert action.index("Thorn Whip") < action.index("Unarmed Strike") < action.index("Starry Wisp")
+    assert admin.post(f"/characters/{cole.id}/order", data={"column": "Action", "keys": keys}).status_code == 403
+    assert "data-sort-column" not in admin.get(f"/characters/{cole.id}/battle").text

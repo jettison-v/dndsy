@@ -152,7 +152,7 @@ def character_page(request: Request, character_id: int, db: Session = Depends(ge
 def _battle_ctx(db: Session, ch: Character, user: dict) -> dict:
     ctx = _view(db, ch, user)
     if ctx["sheet"]:
-        ctx["columns"] = views.battle_columns(ctx["sheet"], ctx["picks"]["star"])
+        ctx["columns"] = views.battle_columns(ctx["sheet"], ctx["picks"]["star"], ctx["picks"]["order"])
     ctx["party"] = _party_rows(db, user)
     ctx["game_mode_seconds"] = GAME_MODE_SECONDS
     return ctx
@@ -235,6 +235,23 @@ def toggle_pick(request: Request, character_id: int, kind: str = Form(...), ref:
         return HTMLResponse("", status_code=400)
     db.commit()
     return templates.TemplateResponse(request, "_pick.html", {"c": ch, "kind": kind, "ref": ref, "on": on, "can_pick": True})
+
+
+@router.post("/characters/{character_id:int}/order")
+async def save_order(request: Request, character_id: int, db: Session = Depends(get_db)):
+    """Drag and drop on Battle: the player's own order for one column."""
+    user, ch, stop = _load(request, db, character_id)
+    if stop:
+        return stop
+    if not picks.can_edit(db, user, ch):
+        return _forbidden(request, "Only this character's player can do that.")
+    form = await request.form()
+    column = form.get("column", "")
+    if column not in ("Action", "Bonus action", "Reaction"):
+        return HTMLResponse("", status_code=400)
+    picks.set_order(db, ch, column, [str(k) for k in form.getlist("keys")])
+    db.commit()
+    return HTMLResponse("", status_code=204)
 
 
 # ---------------------------------------------------------------- reviewers

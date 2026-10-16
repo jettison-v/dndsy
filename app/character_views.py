@@ -64,13 +64,16 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
     return out
 
 
-def battle_columns(sheet: dict, starred: set[str]) -> dict:
+def battle_columns(sheet: dict, starred: set[str], order: dict[str, list[str]] | None = None) -> dict:
     """Action / Bonus action / Reaction columns: starred first, then the common
-    options; everything else is behind "See all"."""
-    cols = {}
+    options (or the player's own drag-and-drop order); the rest is behind "See all"."""
+    cols, order = {}, order or {}
     for cost in ("Action", "Bonus action", "Reaction"):
         everything = [o for o in options(sheet, starred) if o["cost"] == cost]
         shown = [o for o in everything if o["starred"]] + [o for o in everything if o["common"] and not o["starred"]]
+        if order.get(cost):
+            rank = {k: i for i, k in enumerate(order[cost])}
+            shown.sort(key=lambda o: rank.get(o["key"], len(rank)))  # stable: new ones keep their place after
         cols[cost] = {"shown": shown[:COLUMN_LIMIT], "all": everything, "count": len(everything)}
     return cols
 

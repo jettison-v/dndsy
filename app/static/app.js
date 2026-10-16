@@ -312,8 +312,25 @@
     if (on && window.htmx) htmx.ajax('POST', '/characters/' + id + '/sync', { target: '#battle-body', swap: 'outerHTML' });
     gmSetup();
   });
-  document.body.addEventListener('htmx:afterSettle', e => { if (e.target.id === 'battle-body' || e.detail.target?.id === 'battle-body') gmSetup(); });
+  document.body.addEventListener('htmx:afterSettle', e => { if (e.target.id === 'battle-body' || e.detail.target?.id === 'battle-body') { gmSetup(); sortSetup(); } });
   gmSetup();
+
+  // Drag and drop to reorder a Battle column (the character's own player only).
+  function sortSetup() {
+    if (!window.Sortable) return;
+    document.querySelectorAll('[data-sort-column]').forEach(list => {
+      if (list._sortable) return;
+      list._sortable = Sortable.create(list, {
+        draggable: '.move', animation: 150, delay: 180, delayOnTouchOnly: true, ghostClass: 'drag-ghost',
+        onEnd: () => {
+          const body = new URLSearchParams({ column: list.dataset.sortColumn });
+          list.querySelectorAll('.move[data-key]').forEach(m => body.append('keys', m.dataset.key));
+          fetch(list.dataset.sortUrl, { method: 'POST', body }).then(r => { if (!r.ok) toast("Couldn't save the order"); });
+        },
+      });
+    });
+  }
+  window.addEventListener('load', sortSetup);
 
   // Star and Remind me buttons sit inside <summary>: don't open/close the row when pressed.
   document.addEventListener('click', e => { if (e.target.closest('summary .pick')) e.preventDefault(); }, true);
