@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup v2: Battle, Character, Party · askdnd</title>
+<!-- Design mockup with made-up content. See docs/DESIGN.md. Not served by the app. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e;
+    --text: #ebe7df; --muted: #a29d93; --faint: #6f6b64;
+    --story-bg: #221f1a; --story-line: #3b3428; --story-text: #f0e7d4;
+    --red: #d64545; --red-soft: rgba(214, 69, 69, .14);
+    --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+    --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15);
+    --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .15);
+    --lav: #b9a3e3; --lav-soft: rgba(185, 163, 227, .15);
+    --sans: Inter, system-ui, -apple-system, sans-serif; --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 var(--sans); }
+  button { font: inherit; cursor: pointer; color: inherit; }
+  :focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  .topbar { background: #0f1113; border-bottom: 2px solid var(--red); position: sticky; top: 0; z-index: 20; }
+  .topbar-inner { max-width: 1180px; margin: 0 auto; padding: 0 20px; height: 56px; display: flex; align-items: center; gap: 20px; }
+  .brand { font-family: var(--cond); font-weight: 700; font-size: 1.3rem; color: #fff; }
+  .nav { display: flex; gap: 4px; flex-wrap: wrap; }
+  .nav span { color: var(--muted); font-size: .95rem; padding: 6px 10px; border-radius: 6px; }
+  .nav button { background: none; border: none; color: var(--muted); font-size: .95rem; padding: 6px 10px; border-radius: 6px; }
+  .nav button[aria-pressed=true] { color: #fff; background: var(--surface); }
+  .page { max-width: 1180px; margin: 0 auto; padding: 22px 20px 120px; }
+  h1 { font-size: 1.8rem; margin: 0; line-height: 1.2; }
+  h2 { font-size: 1.15rem; font-weight: 600; margin: 0; }
+  h3 { font-size: .98rem; font-weight: 600; margin: 16px 0 6px; }
+  .muted { color: var(--muted); } .note { color: var(--muted); font-size: .85rem; }
+  .section { background: var(--surface); border-radius: 12px; padding: 20px 22px; margin-bottom: 16px; }
+  .sec-head { display: flex; align-items: baseline; gap: 10px; justify-content: space-between; flex-wrap: wrap; margin-bottom: 8px; }
+  .tag { display: inline-block; font-size: .74rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); white-space: nowrap; vertical-align: 1px; }
+  .tag.green { background: var(--green-soft); color: var(--green); } .tag.amber { background: var(--amber-soft); color: var(--amber); }
+  .tag.blue { background: var(--blue-soft); color: var(--blue); } .tag.lav { background: var(--lav-soft); color: var(--lav); }
+  .btn { border: 1px solid var(--line); background: var(--surface-2); border-radius: 8px; padding: 6px 14px; min-height: 38px; }
+  .btn.small { min-height: 30px; padding: 3px 10px; font-size: .88rem; }
+  .linkbtn { background: none; border: none; color: #f08a8a; padding: 0; font-size: .9rem; }
+  .linkbtn:hover { text-decoration: underline; }
+  .star { background: none; border: none; color: var(--faint); font-size: 1.05rem; padding: 0 4px; line-height: 1; }
+  .star.on { color: var(--amber); }
+  .remind { background: none; border: 1px solid var(--line); color: var(--muted); font-size: .74rem; border-radius: 999px; padding: 0 8px; }
+  .remind.on { border-color: var(--lav); color: var(--lav); background: var(--lav-soft); }
+  .explain { background: var(--surface-2); border-radius: 10px; padding: 12px 16px; margin: 0 0 16px; font-size: .9rem; color: var(--muted); }
+  .explain b { color: var(--text); }
+
+  /* vitals and pips */
+  .vitals { display: flex; gap: 8px; flex-wrap: wrap; }
+  .vital { background: var(--surface-2); border-radius: 10px; padding: 6px 12px; min-width: 80px; }
+  .vital small { display: block; color: var(--muted); font-size: .76rem; } .vital b { font-size: 1.3rem; }
+  .pips { display: inline-flex; gap: 3px; vertical-align: -1px; }
+  .pip { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--green); background: var(--green); display: inline-block; }
+  .pip.used { background: transparent; border-color: var(--faint); }
+  .res-row { display: flex; gap: 6px 16px; flex-wrap: wrap; font-size: .9rem; margin-top: 10px; }
+  .res-row span { white-space: nowrap; }
+
+  /* Battle */
+  .battlebar { position: sticky; top: 58px; z-index: 10; background: rgba(21,23,26,.97); padding: 10px 0 12px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+  .gm { display: inline-flex; align-items: center; gap: 10px; font-size: .88rem; color: var(--muted); }
+  .switch { position: relative; width: 40px; height: 22px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); padding: 0; }
+  .switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--muted); transition: left .15s; }
+  .switch[aria-checked=true] { background: var(--green-soft); border-color: var(--green); }
+  .switch[aria-checked=true]::after { left: 20px; background: var(--green); }
+  .econ { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .econ .section { margin: 0; padding: 16px 18px; display: flex; flex-direction: column; }
+  .econ h2 small { display: block; color: var(--muted); font-size: .82rem; font-weight: 400; }
+  .move { border-top: 1px solid var(--line); padding: 9px 0; cursor: pointer; }
+  .move:hover b { color: #fff; text-decoration: underline; text-decoration-color: var(--faint); }
+  .move b { font-weight: 600; } .move .meta { color: var(--muted); font-size: .84rem; }
+  .move .hit { float: right; font-weight: 700; }
+  .move .why { color: var(--amber); font-size: .78rem; }
+  .seeall { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line); }
+  .forget { list-style: none; margin: 6px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; }
+  .forget li { padding: 6px 0; border-bottom: 1px solid var(--line); font-size: .93rem; }
+  .forget li b { color: var(--lav); font-weight: 600; }
+  .lower { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+  .lower .section { margin: 0; }
+
+  /* party table */
+  .tablewrap { overflow-x: auto; }
+  table.party { width: 100%; border-collapse: collapse; font-size: .93rem; }
+  table.party th { text-align: left; color: var(--muted); font-weight: 500; font-size: .8rem; padding: 0 10px 6px; white-space: nowrap; }
+  table.party td { border-top: 1px solid var(--line); padding: 10px; vertical-align: top; }
+  table.party td b { font-size: 1.05rem; }
+  .who { background: none; border: none; padding: 0; color: var(--text); font-weight: 600; text-decoration: underline; text-decoration-color: rgba(214,69,69,.55); text-underline-offset: 3px; }
+
+  /* side panel */
+  .panel { position: fixed; top: 58px; right: 0; bottom: 0; width: 440px; max-width: 100%; background: var(--surface); border-left: 1px solid var(--line); box-shadow: -12px 0 30px rgba(0,0,0,.4); z-index: 30; display: flex; flex-direction: column; }
+  .panel-head { padding: 18px 20px 8px; display: flex; justify-content: space-between; gap: 10px; }
+  .panel-body { padding: 4px 20px 24px; overflow-y: auto; }
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 10px; }
+  .filters span { font-size: .82rem; border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; color: var(--muted); }
+  .filters span.on { border-color: var(--red); color: #fff; }
+  details.row { border-top: 1px solid var(--line); }
+  details.row > summary { list-style: none; cursor: pointer; padding: 9px 0; display: flex; gap: 8px; align-items: baseline; }
+  details.row > summary::-webkit-details-marker { display: none; }
+  details.row > summary .grow { flex: 1; }
+  details.row > summary .meta { display: block; color: var(--muted); font-size: .84rem; }
+  details.row p { margin: 0 0 12px; color: var(--muted); font-size: .92rem; }
+
+  /* modal */
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 40; display: grid; place-items: center; padding: 20px; }
+  .modal { background: var(--surface); border-radius: 14px; width: min(760px, 100%); max-height: 88vh; overflow-y: auto; padding: 22px 24px; border-top: 3px solid var(--red); }
+
+  /* Character */
+  .char-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+  .strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 16px; }
+  .strip > div { background: var(--surface); border-radius: 10px; padding: 8px 12px; }
+  .strip small { display: block; color: var(--muted); font-size: .76rem; } .strip b { font-size: 1.35rem; }
+  .cgrid { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 16px; align-items: start; }
+  .abil { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ab { background: var(--surface-2); border-radius: 10px; padding: 8px 10px; }
+  .ab .top { display: flex; justify-content: space-between; align-items: baseline; }
+  .ab small { color: var(--muted); font-size: .78rem; }
+  .ab b { font-size: 1.3rem; }
+  .ab .sv { font-size: .84rem; color: var(--muted); }
+  .ab .sv.prof { color: var(--text); } .ab .sv.prof::before { content: "● "; color: var(--green); font-size: .7rem; }
+  .ab .adv { display: block; color: var(--amber); font-size: .78rem; line-height: 1.35; margin-top: 2px; }
+  .sk { list-style: none; padding: 0; margin: 0; }
+  .sk li { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; color: var(--muted); font-size: .93rem; }
+  .sk li.p { color: var(--text); } .sk li.p b { color: var(--green); }
+  .sk li .adv { color: var(--amber); font-size: .78rem; }
+  .more { background: none; border: none; color: var(--muted); padding: 6px 0 0; font-size: .88rem; }
+  .more:hover { color: var(--text); }
+  .situ { display: grid; gap: 0; }
+  .situ > div { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: start; padding: 8px 0; border-top: 1px solid var(--line); font-size: .93rem; }
+  .situ .ic { font-weight: 700; text-align: center; }
+  .situ .ic.adv { color: var(--amber); } .situ .ic.res { color: var(--blue); } .situ .ic.rx { color: var(--lav); } .situ .ic.imm { color: var(--green); }
+  .tabbar { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin: -4px 0 12px; flex-wrap: wrap; }
+  .tabbar button { background: none; border: none; padding: 8px 12px; color: var(--muted); font-weight: 500; }
+  .tabbar button[aria-selected=true] { color: #fff; box-shadow: inset 0 -2px 0 var(--red); }
+  .training summary { cursor: pointer; color: var(--muted); font-size: .9rem; padding: 4px 0; }
+  .training dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 8px 0 0; font-size: .9rem; }
+  .training dt { color: var(--muted); } .training dd { margin: 0; }
+  .slots { display: flex; gap: 14px; flex-wrap: wrap; font-size: .9rem; margin-bottom: 6px; }
+
+  /* Party */
+  .pool { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .pool .section { margin: 0; }
+  .chips { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+  .chip { font-size: .74rem; border-radius: 999px; padding: 0 8px; background: var(--surface-2); color: var(--text); }
+  .poolrow { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); font-size: .93rem; align-items: baseline; }
+  .poolrow .meta { color: var(--muted); font-size: .82rem; }
+
+  @media (max-width: 900px) {
+    .econ, .lower, .cgrid, .pool { grid-template-columns: 1fr; }
+    .strip { grid-template-columns: repeat(4, 1fr); }
+    .forget { grid-template-columns: 1fr; }
+    .panel { top: auto; height: 80vh; width: 100%; border-left: none; border-top: 2px solid var(--red); border-radius: 14px 14px 0 0; }
+    .nav span { display: none; }
+  }
+</style>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <span class="brand">askdnd</span>
+  <nav class="nav" aria-label="Mockup views">
+    <span>Previously on…</span>
+    <button data-view="battle" aria-pressed="true">Battle</button>
+    <button data-view="char" aria-pressed="false">Character</button>
+    <button data-view="party" aria-pressed="false">Party</button>
+    <span>Campaign</span>
+  </nav>
+</div></header>
+
+<main class="page">
+
+<!-- ================================ BATTLE ================================ -->
+<section id="view-battle">
+  <p class="explain"><b>Battle</b> (working name). Option A plus your changes. Each column shows only your <b>starred</b> options and the common ones. "See all" opens a side panel with every option of that type, including <b>Use an item</b>. "Easy to forget" holds the reminders you choose on the Character page. Game Mode is a switch and stays off until you turn it on. Click any option to see its details. <i>Made-up characters.</i></p>
+  <div class="battlebar">
+    <div class="sec-head" style="margin:0">
+      <div><b style="font-size:1.25rem">Wren Ashgrove</b> <span class="note">Druid 6 / Monk 2 · <button class="linkbtn" data-goto="char">full character</button></span></div>
+      <div class="gm">
+        <span id="gm-status">Game Mode off · updated 2 hours ago</span>
+        <button class="btn small" id="gm-now" hidden>Refresh now</button>
+        <span>Game Mode</span><button class="switch" role="switch" aria-checked="false" aria-label="Game Mode: refresh from D&amp;D Beyond every 2 to 3 minutes" id="gm"></button>
+      </div>
+    </div>
+    <div class="vitals" style="margin-top:8px">
+      <div class="vital"><small>HP</small><b>38</b><span class="note"> / 51</span></div>
+      <div class="vital"><small>AC</small><b>16</b></div>
+      <div class="vital"><small>Speed</small><b>45</b><span class="note"> ft</span></div>
+      <div class="vital"><small>Initiative</small><b>+3</b></div>
+      <div class="vital"><small>Spell DC / attack</small><b>15</b><span class="note"> / +7</span></div>
+    </div>
+    <div class="res-row">
+      <span>Wild Shape <span class="pips"><i class="pip"></i><i class="pip"></i><i class="pip used"></i></span></span>
+      <span>Focus <span class="pips"><i class="pip"></i><i class="pip used"></i></span></span>
+      <span>Slots 1st <span class="pips"><i class="pip"></i><i class="pip"></i><i class="pip"></i><i class="pip used"></i></span></span>
+      <span>2nd <span class="pips"><i class="pip"></i><i class="pip"></i><i class="pip"></i></span></span>
+      <span>3rd <span class="pips"><i class="pip"></i><i class="pip used"></i><i class="pip used"></i></span></span>
+      <span>Luck <span class="pips"><i class="pip"></i><i class="pip"></i><i class="pip"></i></span></span>
+      <span class="tag amber">Concentrating: Moonbeam</span>
+    </div>
+  </div>
+
+  <div class="econ">
+    <div class="section">
+      <h2>Action<small>One per turn</small></h2>
+      <div class="move" data-detail="moonbeam"><span class="hit">DC 15</span><span class="star on" aria-hidden="true">★</span><b>Moonbeam</b> <span class="tag">2nd</span> <span class="tag">Conc.</span><div class="meta">120 ft · 2d10 radiant, Con save</div></div>
+      <div class="move" data-detail="wisp"><span class="hit">+7</span><span class="star on" aria-hidden="true">★</span><b>Starry Wisp</b> <span class="tag">cantrip</span><div class="meta">60 ft · 2d8 radiant</div></div>
+      <div class="move" data-detail="potion"><span class="star on" aria-hidden="true">★</span><b>Use an item: Potion of Healing</b> <span class="tag">×2</span><div class="meta">Drink or give one · 2d4+2 HP</div></div>
+      <div class="move" data-detail="common"><b>Attack, Dash, Dodge, Help, Hide…</b><div class="meta">What anyone can do</div></div>
+      <div class="seeall"><button class="linkbtn" data-panel="action">See all actions (24) →</button></div>
+    </div>
+    <div class="section">
+      <h2>Bonus action<small>One per turn</small></h2>
+      <div class="move" data-detail="wildshape"><span class="star on" aria-hidden="true">★</span><b>Wild Shape</b> <span class="pips"><i class="pip"></i><i class="pip"></i><i class="pip used"></i></span><div class="meta">6 forms · 6 temp HP · keeps Concentration</div></div>
+      <div class="move" data-detail="healingword"><span class="star on" aria-hidden="true">★</span><b>Healing Word</b> <span class="tag">1st</span><div class="meta">60 ft · 2d4+4</div></div>
+      <div class="move" data-detail="unarmed"><span class="hit">+6</span><b>Unarmed Strike</b><div class="meta">Martial Arts · 1d6+3</div></div>
+      <div class="seeall"><button class="linkbtn" data-panel="bonus">See all bonus actions (9) →</button></div>
+    </div>
+    <div class="section">
+      <h2>Reaction<small>One per round, also on others' turns</small></h2>
+      <div class="move" data-detail="absorb"><span class="star on" aria-hidden="true">★</span><b>Absorb Elements</b> <span class="tag">1st</span><div class="meta">When you take acid, cold, fire, lightning or thunder damage</div></div>
+      <div class="move" data-detail="deflect"><b>Deflect Attacks</b><div class="meta">When an attack hits you</div></div>
+      <div class="move" data-detail="warcaster"><b>Opportunity attack</b><div class="meta">War Caster: cast a spell instead</div></div>
+      <div class="seeall"><button class="linkbtn" data-panel="reaction">See all reactions (4) →</button></div>
+    </div>
+  </div>
+
+  <div class="lower">
+    <div class="section">
+      <div class="sec-head"><h2>Easy to forget</h2><button class="linkbtn" data-goto="char">Choose on Character →</button></div>
+      <ul class="forget" style="grid-template-columns:1fr">
+        <li><b>Advantage</b> on saves against being Charmed (Fey Ancestry)</li>
+        <li><b>Advantage</b> on Con saves to keep Concentration (War Caster)</li>
+        <li><b>Luckstone</b>: +1 to checks and saves, already included</li>
+        <li><b>Wild Resurgence</b>: once per turn, trade a spell slot for a Wild Shape use</li>
+        <li><b>Luck Points</b>: spend one to roll a d20 with Advantage (3 left)</li>
+      </ul>
+    </div>
+    <div class="section">
+      <div class="sec-head"><h2>Party</h2><button class="linkbtn" data-goto="party">Full party →</button></div>
+      <div class="tablewrap"><table class="party">
+        <tr><th>Who</th><th>HP</th><th>AC</th><th>Pass. Perc.</th><th>Concentrating</th></tr>
+        <tr><td><button class="who" data-modal="wren">Wren</button></td><td><b>38</b><span class="note">/51</span></td><td>16</td><td>18</td><td><span class="tag amber">Moonbeam</span></td></tr>
+        <tr><td><button class="who" data-modal="corvin">Corvin</button></td><td><b>72</b><span class="note">/72</span></td><td>19</td><td>9</td><td>—</td></tr>
+        <tr><td><button class="who" data-modal="pell">Pell</button></td><td><b>60</b><span class="note">/75</span></td><td>17</td><td>13</td><td>—</td></tr>
+        <tr><td><button class="who" data-modal="ysolde">Ysolde</button></td><td><b>44</b><span class="note">/44</span></td><td>15</td><td>12</td><td><span class="tag amber">Fly</span></td></tr>
+      </table></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== CHARACTER =============================== -->
+<section id="view-char" hidden>
+  <p class="explain"><b>Character</b> (working name). Same information as the D&amp;D Beyond sheet, arranged differently:
+    <b>(1)</b> Conditional rules show on the number they change ("Adv. vs Charmed" sits on the Wisdom save) and are collected under <b>Situational</b>, together with the reactions that protect you.
+    <b>(2)</b> Rarely needed details fold away: armor and weapon training, languages, tools, features' full text.
+    <b>(3)</b> Every action, spell, item and feature has a <span style="color:var(--amber)">★</span> star (adds it to Battle) and a <span style="color:var(--lav)">Remind me</span> chip (adds it to Easy to forget).
+    Only the character's player sees the stars and chips.</p>
+  <div class="char-head">
+    <div><h1>Wren Ashgrove</h1><div class="muted">Wood Elf · Druid 6 (Circle of the Moon) / Monk 2 · level 8 · Wayfarer</div>
+      <div class="note">Updated from D&amp;D Beyond 2 hours ago · <a href="#" style="color:#f08a8a">Open on D&amp;D Beyond ↗</a></div></div>
+    <button class="btn">Refresh from D&amp;D Beyond</button>
+  </div>
+  <div class="strip">
+    <div><small>HP</small><b>51</b></div><div><small>AC</small><b>16</b></div><div><small>Speed</small><b>45 ft</b></div>
+    <div><small>Initiative</small><b>+3</b></div><div><small>Proficiency</small><b>+3</b></div><div><small>Passive Perc.</small><b>18</b></div><div><small>Spell DC</small><b>15</b></div>
+  </div>
+
+  <div class="cgrid">
+    <div>
+      <div class="section">
+        <h2 style="margin-bottom:10px">Abilities and saves</h2>
+        <div class="abil">
+          <div class="ab"><div class="top"><small>Strength 8</small><b>−1</b></div><div class="sv">Save +0</div></div>
+          <div class="ab"><div class="top"><small>Dexterity 15</small><b>+2</b></div><div class="sv">Save +3</div></div>
+          <div class="ab"><div class="top"><small>Constitution 12</small><b>+1</b></div><div class="sv">Save +2</div><span class="adv">Adv. to keep Concentration</span></div>
+          <div class="ab"><div class="top"><small>Intelligence 10</small><b>+0</b></div><div class="sv prof">Save +4</div></div>
+          <div class="ab"><div class="top"><small>Wisdom 19</small><b>+4</b></div><div class="sv prof">Save +8</div><span class="adv">Adv. vs Charmed</span></div>
+          <div class="ab"><div class="top"><small>Charisma 14</small><b>+2</b></div><div class="sv">Save +3</div><span class="adv">Adv. vs Charmed</span></div>
+        </div>
+        <p class="note" style="margin:8px 0 0">● proficient · all saves include +1 from the Luckstone</p>
+      </div>
+
+      <div class="section">
+        <div class="sec-head"><h2>Situational</h2><span class="note">what changes when…</span></div>
+        <div class="situ">
+          <div><span class="ic adv">A</span><span>Advantage on saves against being <b>Charmed</b><br><span class="note">Fey Ancestry</span></span><button class="remind on">Remind me</button></div>
+          <div><span class="ic adv">A</span><span>Advantage on Con saves to keep <b>Concentration</b><br><span class="note">War Caster</span></span><button class="remind on">Remind me</button></div>
+          <div><span class="ic imm">I</span><span>Can't be put to sleep by magic<br><span class="note">Fey Ancestry</span></span><button class="remind">Remind me</button></div>
+          <div><span class="ic rx">R</span><span>Reaction when you take elemental damage: <b>Absorb Elements</b> halves it<br><span class="note">1st-level spell</span></span><button class="remind">Remind me</button></div>
+          <div><span class="ic rx">R</span><span>Reaction when an attack hits you: <b>Deflect Attacks</b> reduces the damage<br><span class="note">Monk 2</span></span><button class="remind">Remind me</button></div>
+          <div><span class="ic res">+</span><span>+1 to every ability check and saving throw<br><span class="note">Stone of Good Luck (attuned)</span></span><button class="remind on">Remind me</button></div>
+        </div>
+        <p class="note" style="margin:8px 0 0"><b style="color:var(--amber)">A</b> advantage · <b style="color:var(--green)">I</b> immunity · <b style="color:var(--blue)">+</b> bonus or resistance · <b style="color:var(--lav)">R</b> reaction</p>
+      </div>
+
+      <div class="section">
+        <h2 style="margin-bottom:6px">Skills</h2>
+        <ul class="sk">
+          <li class="p"><span>Insight <span class="note">Wis</span></span><b>+8</b></li>
+          <li class="p"><span>Nature <span class="note">Int</span></span><b>+8</b></li>
+          <li class="p"><span>Perception <span class="note">Wis</span></span><b>+8</b></li>
+          <li class="p"><span>Survival <span class="note">Wis</span></span><b>+8</b></li>
+          <li class="p"><span>Stealth <span class="note">Dex</span></span><b>+6</b></li>
+          <li><span>Animal Handling <span class="note">Wis</span></span><b>+5</b></li>
+          <li><span>Arcana <span class="note">Int</span> <span class="adv">+Wis (Magician)</span></span><b>+5</b></li>
+        </ul>
+        <button class="more">Show all 18 skills ▾</button>
+        <details class="training" style="margin-top:12px;border-top:1px solid var(--line);padding-top:8px">
+          <summary>Training: armor, weapons, tools, languages ▸</summary>
+          <dl><dt>Armor</dt><dd>Light, shields</dd><dt>Weapons</dt><dd>Simple, longbow, longsword, scimitar, shortsword</dd>
+            <dt>Tools</dt><dd>Herbalism kit, thieves' tools</dd><dt>Languages</dt><dd>Common, Druidic, Elvish</dd><dt>Senses</dt><dd>Darkvision 60 ft</dd></dl>
+        </details>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="tabbar" role="tablist">
+        <button role="tab" aria-selected="true" data-tab="t-actions">Actions</button>
+        <button role="tab" aria-selected="false" data-tab="t-spells">Spells</button>
+        <button role="tab" aria-selected="false" data-tab="t-items">Inventory</button>
+        <button role="tab" aria-selected="false" data-tab="t-features">Features</button>
+        <button role="tab" aria-selected="false" data-tab="t-forms">Wild Shape forms</button>
+      </div>
+      <div id="t-actions">
+        <div class="filters"><span class="on">All</span><span>Action</span><span>Bonus</span><span>Reaction</span><span>Limited use</span><span>★ Starred</span></div>
+        <h3>Bonus actions</h3>
+        <details class="row"><summary><button class="star on" aria-label="Starred">★</button><span class="grow"><b>Wild Shape</b> <span class="pips"><i class="pip"></i><i class="pip"></i><i class="pip used"></i></span><span class="meta">3 per Long Rest · regain one on a Short Rest</span></span><button class="remind">Remind me</button></summary><p>Shape-shift into a beast form you know for up to 3 hours. You gain 6 temporary HP, keep your personality and Concentration, and can leave the form early as a bonus action.</p></details>
+        <details class="row"><summary><button class="star" aria-label="Star">☆</button><span class="grow"><b>Flurry of Blows</b> <span class="tag">1 Focus</span><span class="meta">Two unarmed strikes</span></span><button class="remind">Remind me</button></summary><p>Spend 1 Focus Point to make two Unarmed Strikes as a bonus action.</p></details>
+        <h3>Reactions</h3>
+        <details class="row"><summary><button class="star" aria-label="Star">☆</button><span class="grow"><b>Deflect Attacks</b><span class="meta">When an attack hits you</span></span><button class="remind">Remind me</button></summary><p>Reduce the damage by 1d10 + Dex + Monk level.</p></details>
+        <h3>Limited use</h3>
+        <details class="row"><summary><button class="star" aria-label="Star">☆</button><span class="grow"><b>Luck Points</b> <span class="pips"><i class="pip"></i><i class="pip"></i><i class="pip"></i></span><span class="meta">3 per Long Rest</span></span><button class="remind on">Remind me</button></summary><p>Spend one to give yourself Advantage on a d20 test, or to impose Disadvantage on an attack against you.</p></details>
+      </div>
+      <div id="t-spells" hidden>
+        <div class="slots"><span>Druid · DC 15 · +7</span><span>1st <span class="pips"><i class="pip"></i><i class="pip"></i><i class="pip"></i><i class="pip used"></i></span></span><span>2nd <span class="pips"><i class="pip"></i><i class="pip"></i><i class="pip"></i></span></span><span>3rd <span class="pips"><i class="pip"></i><i class="pip used"></i><i class="pip used"></i></span></span></div>
+        <div class="filters"><span class="on">Prepared</span><span>Concentration</span><span>Ritual</span><span>Reaction</span><span>★ Starred</span></div>
+        <h3>2nd level</h3>
+        <details class="row"><summary><button class="star on" aria-label="Starred">★</button><span class="grow"><b>Moonbeam</b> <span class="tag">Conc.</span> <span class="tag green">Always prepared</span><span class="meta">Action · 120 ft · 1 minute · V, S, M</span></span><button class="remind">Remind me</button></summary><p>A 5-ft-radius beam: 2d10 radiant on a failed Con save (half on success). Move it 60 ft as a Magic action.</p></details>
+        <details class="row"><summary><button class="star" aria-label="Star">☆</button><span class="grow"><b>Heat Metal</b> <span class="tag">Conc.</span><span class="meta">Action · 60 ft · 1 minute · V, S, M</span></span><button class="remind">Remind me</button></summary><p>2d8 fire to whoever holds or wears the metal; repeat as a bonus action.</p></details>
+        <h3>1st level</h3>
+        <details class="row"><summary><button class="star on" aria-label="Starred">★</button><span class="grow"><b>Absorb Elements</b> <span class="tag lav">Reaction</span><span class="meta">Reaction · Self · 1 round · S</span></span><button class="remind">Remind me</button></summary><p>Resistance to the triggering damage; your next melee hit deals +1d6 of that type.</p></details>
+      </div>
+      <div id="t-items" hidden>
+        <div class="filters"><span class="on">Equipped &amp; magic</span><span>Usable in battle</span><span>Attuned (2/3)</span><span>Everything</span></div>
+        <details class="row"><summary><button class="star on" aria-label="Starred">★</button><span class="grow"><b>Potion of Healing</b> ×2 <span class="tag blue">Use in battle</span><span class="meta">Potion · Common · Action to drink</span></span><button class="remind">Remind me</button></summary><p>Regain 2d4 + 2 hit points.</p></details>
+        <details class="row"><summary><button class="star" aria-label="Star">☆</button><span class="grow"><b>Ring of Invisibility</b> <span class="tag green">Attuned</span> <span class="tag blue">Use in battle</span><span class="meta">Ring · Legendary</span></span><button class="remind">Remind me</button></summary><p>Turn invisible as a Magic action until you attack, cast a spell or take it off.</p></details>
+        <details class="row"><summary><button class="star" aria-label="Star">☆</button><span class="grow"><b>Stone of Good Luck</b> <span class="tag green">Attuned</span><span class="meta">Wondrous · Uncommon · +1 checks and saves (included)</span></span><button class="remind on">Remind me</button></summary><p>Already counted in your numbers.</p></details>
+        <p class="note" style="margin-top:10px">Other gear (41) ▸ · Coins: 654 gp, 68 sp, 92 cp</p>
+      </div>
+      <div id="t-features" hidden>
+        <div class="filters"><span class="on">All</span><span>Druid</span><span>Circle of the Moon</span><span>Monk</span><span>Wood Elf</span><span>Feats</span></div>
+        <details class="row"><summary><button class="star" aria-label="Star">☆</button><span class="grow"><b>Wild Resurgence</b><span class="meta">Druid 5 · once per turn, trade a slot for Wild Shape (or back, once per Long Rest)</span></span><button class="remind on">Remind me</button></summary><p>Full text from D&amp;D Beyond…</p></details>
+        <details class="row"><summary><button class="star" aria-label="Star">☆</button><span class="grow"><b>Fey Ancestry</b><span class="meta">Wood Elf · Advantage vs Charmed; magic can't put you to sleep</span></span><button class="remind on">Remind me</button></summary><p>Full text…</p></details>
+      </div>
+      <div id="t-forms" hidden>
+        <div class="poolrow"><span><b>Polar Bear</b> <span class="meta">CR 2 · AC 12 · 42 HP · walk 40, swim 40</span></span><button class="star on">★</button></div>
+        <div class="poolrow"><span><b>Giant Octopus</b> <span class="meta">CR 1 · AC 11 · 45 HP · swim 60</span></span><button class="star">☆</button></div>
+        <div class="poolrow"><span><b>Hunter Shark</b> <span class="meta">CR 2 · AC 12 · 45 HP · swim 40</span></span><button class="star">☆</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================ PARTY ================================= -->
+<section id="view-party" hidden>
+  <p class="explain"><b>Party</b> (working name). The party table (also shown on Battle), with each name opening a short version of that character's page. Below it, everyone's <b>spells</b> and <b>items</b> are pooled in one place for planning: who can cast what, who carries which potions and scrolls, and what's left.</p>
+  <div class="section">
+    <div class="sec-head"><h2>Party at a glance</h2><span class="note">updated from D&amp;D Beyond 2 hours ago</span></div>
+    <div class="tablewrap"><table class="party">
+      <tr><th>Character</th><th>HP</th><th>AC</th><th>Speed</th><th>Pass. Perc.</th><th>Best saves</th><th>Big resources</th><th>Concentrating</th></tr>
+      <tr><td><button class="who" data-modal="wren">Wren</button><div class="note">Druid 6 / Monk 2</div></td><td><b>38</b><span class="note">/51</span></td><td><b>16</b></td><td>45</td><td>18</td><td>Wis +8, Int +4</td><td>Wild Shape 2/3 · slots 3·3·1</td><td><span class="tag amber">Moonbeam</span></td></tr>
+      <tr><td><button class="who" data-modal="corvin">Corvin</button><div class="note">Paladin 6 / Sorcerer 2</div></td><td><b>72</b><span class="note">/72</span></td><td><b>19</b></td><td>30</td><td>9</td><td>Cha +10, Con +6</td><td>Lay on Hands 30 · Channel Divinity 2</td><td>—</td></tr>
+      <tr><td><button class="who" data-modal="pell">Pell</button><div class="note">Monk 6 / Warlock 2</div></td><td><b>60</b><span class="note">/75</span></td><td><b>17</b></td><td>45</td><td>13</td><td>Dex +7, Str +4</td><td>Focus 4/6 · pact slots 2</td><td>—</td></tr>
+      <tr><td><button class="who" data-modal="ysolde">Ysolde</button><div class="note">Wizard 7 / Fighter 1</div></td><td><b>44</b><span class="note">/44</span></td><td><b>15</b></td><td>30</td><td>12</td><td>Int +8, Con +5</td><td>Slots 4·3·3·1 · Arcane Recovery</td><td><span class="tag amber">Fly</span></td></tr>
+    </table></div>
+  </div>
+  <div class="pool">
+    <div class="section">
+      <div class="sec-head"><h2>Party spells</h2><span class="note">prepared or known today</span></div>
+      <div class="filters"><span class="on">All</span><span>Healing</span><span>Ritual (no slot)</span><span>Utility</span><span>Reaction</span></div>
+      <h3>Healing and recovery</h3>
+      <div class="poolrow"><span>Healing Word <span class="meta">bonus action · 60 ft</span></span><span class="chips"><span class="chip">Wren</span><span class="chip">Corvin</span></span></div>
+      <div class="poolrow"><span>Cure Wounds <span class="meta">action · touch</span></span><span class="chips"><span class="chip">Wren</span><span class="chip">Corvin (beads)</span></span></div>
+      <div class="poolrow"><span>Lesser Restoration <span class="meta">ends a condition</span></span><span class="chips"><span class="chip">Corvin (beads)</span></span></div>
+      <h3>Rituals (cast without a slot, +10 minutes)</h3>
+      <div class="poolrow"><span>Water Breathing <span class="meta">10 creatures · 24 hours</span></span><span class="chips"><span class="chip">Wren</span></span></div>
+      <div class="poolrow"><span>Leomund's Tiny Hut <span class="meta">safe long rest</span></span><span class="chips"><span class="chip">Ysolde</span></span></div>
+      <div class="poolrow"><span>Detect Magic</span><span class="chips"><span class="chip">Pell</span><span class="chip">Ysolde</span></span></div>
+      <h3>Getting around</h3>
+      <div class="poolrow"><span>Misty Step</span><span class="chips"><span class="chip">Pell (1/day)</span><span class="chip">Ysolde</span></span></div>
+      <div class="poolrow"><span>Fly <span class="meta">3rd · Conc.</span></span><span class="chips"><span class="chip">Ysolde</span></span></div>
+    </div>
+    <div class="section">
+      <div class="sec-head"><h2>Party items</h2><span class="note">magic items and consumables</span></div>
+      <div class="filters"><span class="on">All</span><span>Healing</span><span>One-use</span><span>Charges</span><span>Needs attunement</span></div>
+      <h3>Healing</h3>
+      <div class="poolrow"><span>Potion of Healing <span class="meta">2d4+2</span></span><span class="chips"><span class="chip">Wren ×2</span><span class="chip">Pell ×1</span></span></div>
+      <div class="poolrow"><span>Necklace of Prayer Beads <span class="meta">6 charges · dawn</span></span><span class="chips"><span class="chip">Corvin 6/6</span></span></div>
+      <h3>One-use</h3>
+      <div class="poolrow"><span>Elemental Gem (Red Corundum) <span class="meta">summons a fire elemental</span></span><span class="chips"><span class="chip">Pell ×2</span></span></div>
+      <div class="poolrow"><span>Feather Token (Tree, Anchor)</span><span class="chips"><span class="chip">Pell</span></span></div>
+      <div class="poolrow"><span>Potion of Water Breathing</span><span class="chips"><span class="chip">Pell</span><span class="chip">Corvin</span></span></div>
+      <h3>Not attuned yet</h3>
+      <div class="poolrow"><span>Demon Armor <span class="meta">in Wren's Bag of Holding</span></span><span class="chips"><span class="chip">Wren</span></span></div>
+      <div class="poolrow"><span>Shatterspike</span><span class="chips"><span class="chip">Corvin</span></span></div>
+      <p class="note" style="margin-top:10px">Coins: 16,190 gp across the party</p>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- side panel: See all -->
+<aside class="panel" id="panel" hidden role="dialog" aria-labelledby="panel-title">
+  <div class="panel-head"><div><div class="note">Wren · all options</div><h2 id="panel-title">Actions</h2></div><button class="btn small" id="panel-close" aria-label="Close">✕</button></div>
+  <div class="panel-body">
+    <div class="filters"><span class="on">All</span><span>Spells</span><span>Attacks</span><span>Items</span><span>Features</span><span>★ Starred</span></div>
+    <div id="panel-list"></div>
+  </div>
+</aside>
+
+<!-- modal: short character -->
+<div class="scrim" id="scrim" hidden>
+  <div class="modal" role="dialog" aria-labelledby="modal-title">
+    <div class="sec-head"><div><h2 id="modal-title" style="font-size:1.4rem">Corvin</h2><div class="note" id="modal-sub">Tiefling · Paladin 6 / Sorcerer 2</div></div><div><button class="btn small" data-goto="char">Open full page</button> <button class="btn small" id="modal-close" aria-label="Close">✕</button></div></div>
+    <div class="vitals" style="margin:10px 0 14px"><div class="vital"><small>HP</small><b>72</b></div><div class="vital"><small>AC</small><b>19</b></div><div class="vital"><small>Speed</small><b>30</b></div><div class="vital"><small>Pass. Perc.</small><b>9</b></div></div>
+    <h3>Saves</h3><p class="muted" style="margin:0">Str +10 · Dex +3 · Con +6 · Int +2 · Wis +5 ● · Cha +9 ● <span class="tag amber">+3 to allies within 10 ft (Aura)</span></p>
+    <h3>Can help the party with</h3>
+    <ul style="margin:0;padding-left:1.2em;color:var(--muted)"><li>Lay on Hands: 30 HP pool, bonus action</li><li>Healing Word, Shield of Faith, Command</li><li>Necklace of Prayer Beads: Bless, Cure Wounds, Lesser Restoration</li></ul>
+    <h3>Situational</h3><p class="muted" style="margin:0">Resistance to fire · immune to critical hits (Adamantine Plate) · Hellish Rebuke reaction once per Long Rest</p>
+  </div>
+</div>
+
+<script>
+  const $ = (s, el = document) => el.querySelector(s);
+  function show(view) {
+    document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === view));
+    ['battle', 'char', 'party'].forEach(v => $('#view-' + v).hidden = v !== view);
+    $('#panel').hidden = true; $('#scrim').hidden = true; window.scrollTo(0, 0);
+  }
+  document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => show(b.dataset.view)));
+  document.addEventListener('click', e => { const g = e.target.closest('[data-goto]'); if (g) { e.preventDefault(); show(g.dataset.goto); } });
+
+  // Game Mode switch
+  const gm = $('#gm');
+  gm.addEventListener('click', () => {
+    const on = gm.getAttribute('aria-checked') !== 'true';
+    gm.setAttribute('aria-checked', on);
+    $('#gm-status').textContent = on ? 'Game Mode on · synced just now · next in 2–3 min' : 'Game Mode off · updated just now';
+    $('#gm-now').hidden = !on;
+  });
+
+  // See all: side panel
+  const LISTS = {
+    action: ['Actions', [['Moonbeam', '2nd · Conc. · 120 ft · DC 15', 1], ['Starry Wisp', 'cantrip · 60 ft · +7', 1], ['Use an item: Potion of Healing', '×2 · 2d4+2', 1], ['Use an item: Ring of Invisibility', 'Magic action · until you attack or cast', 0], ['Heat Metal', '2nd · Conc. · 60 ft', 0], ['Dispel Magic', '3rd · 120 ft', 0], ['Conjure Animals', '3rd · Conc. · 60 ft', 0], ['Faerie Fire', '1st · Conc. · 20-ft cube', 0], ['Thorn Whip', 'cantrip · 30 ft · pulls 10 ft', 0], ['Moonlight Step… and 15 more', '', 0]]],
+    bonus: ['Bonus actions', [['Wild Shape', '3 per Long Rest', 1], ['Healing Word', '1st · 60 ft', 1], ['Unarmed Strike', '+6 · 1d6+3', 0], ['Flurry of Blows', '1 Focus · two strikes', 0], ['Patient Defense', 'Disengage, or 1 Focus to also Dodge', 0], ['Step of the Wind', 'Dash, or 1 Focus to also Disengage', 0], ['Leave Wild Shape', '', 0], ['Move Moonbeam', 'Magic action on later turns', 0], ['Heat Metal (repeat)', '', 0]]],
+    reaction: ['Reactions', [['Absorb Elements', '1st · elemental damage', 1], ['Deflect Attacks', 'when an attack hits you', 0], ['Opportunity attack (War Caster)', 'cast a spell instead', 0], ['Luck Points', 'impose Disadvantage on an attack against you', 0]]],
+  };
+  document.querySelectorAll('[data-panel]').forEach(b => b.addEventListener('click', () => {
+    const [title, items] = LISTS[b.dataset.panel];
+    $('#panel-title').textContent = title;
+    $('#panel-list').innerHTML = items.map(([n, m, s]) =>
+      `<details class="row"><summary><span class="star ${s ? 'on' : ''}">${s ? '★' : '☆'}</span><span class="grow"><b>${n}</b><span class="meta">${m}</span></span><span class="remind">Remind me</span></summary><p>Full description, range, duration and what it costs.</p></details>`).join('');
+    $('#panel').hidden = false;
+  }));
+  $('#panel-close').addEventListener('click', () => $('#panel').hidden = true);
+
+  // Click a move: side panel with its details
+  document.querySelectorAll('.move').forEach(m => m.addEventListener('click', () => {
+    $('#panel-title').textContent = m.querySelector('b').textContent;
+    $('#panel-list').innerHTML = `<p class="muted">${m.querySelector('.meta')?.textContent || ''}</p><p>The full rules text, what it costs, and any related options (for example, the forms you can take with Wild Shape), without leaving the battle view.</p>`;
+    $('#panel').hidden = false;
+  }));
+
+  // Character tabs
+  document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-tab]').forEach(x => { x.setAttribute('aria-selected', x === b); $('#' + x.dataset.tab).hidden = x !== b; });
+  }));
+  // Stars and Remind me toggle (mockup only)
+  document.addEventListener('click', e => {
+    const s = e.target.closest('button.star'); if (s) { e.preventDefault(); s.classList.toggle('on'); s.textContent = s.classList.contains('on') ? '★' : '☆'; }
+    const r = e.target.closest('button.remind'); if (r) { e.preventDefault(); r.classList.toggle('on'); }
+  });
+
+  // Party member modal
+  const PEOPLE = { wren: ['Wren', 'Wood Elf · Druid 6 / Monk 2'], corvin: ['Corvin', 'Tiefling · Paladin 6 / Sorcerer 2'], pell: ['Pell', 'Human · Monk 6 / Warlock 2'], ysolde: ['Ysolde', 'Gnome · Wizard 7 / Fighter 1'] };
+  document.querySelectorAll('[data-modal]').forEach(b => b.addEventListener('click', () => {
+    const [n, sub] = PEOPLE[b.dataset.modal]; $('#modal-title').textContent = n; $('#modal-sub').textContent = sub; $('#scrim').hidden = false;
+  }));
+  $('#modal-close').addEventListener('click', () => $('#scrim').hidden = true);
+  $('#scrim').addEventListener('click', e => { if (e.target.id === 'scrim') $('#scrim').hidden = true; });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('#panel').hidden = true; $('#scrim').hidden = true; } });
+</script>
+</body>
+</html>
