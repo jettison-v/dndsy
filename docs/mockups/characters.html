@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup: Character page options · askdnd</title>
+<!-- Design mockup with made-up content. See docs/DESIGN.md. Not served by the app. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e;
+    --text: #ebe7df; --muted: #a29d93; --faint: #6f6b64;
+    --story-bg: #221f1a; --story-line: #3b3428; --story-text: #f0e7d4;
+    --red: #d64545; --red-soft: rgba(214, 69, 69, .14);
+    --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+    --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15);
+    --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .15);
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: Inter, system-ui, -apple-system, sans-serif;
+    --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--sans); }
+  button { font: inherit; cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  .topbar { background: #0f1113; border-bottom: 2px solid var(--red); position: sticky; top: 0; z-index: 5; }
+  .topbar-inner { max-width: 1120px; margin: 0 auto; padding: 0 20px; height: 56px; display: flex; align-items: center; gap: 20px; }
+  .brand { font-family: var(--cond); font-weight: 700; font-size: 1.3rem; color: #fff; }
+  .nav { color: var(--muted); font-size: .95rem; display: flex; gap: 18px; }
+  .nav b { color: #fff; font-weight: 500; }
+  .page { max-width: 1120px; margin: 0 auto; padding: 24px 20px 120px; }
+  .narrow { max-width: 780px; margin: 0 auto; }
+  h1 { font-size: 1.9rem; margin: 0; line-height: 1.25; }
+  h2 { font-size: 1.2rem; font-weight: 600; margin: 0 0 4px; }
+  h3 { font-size: 1rem; font-weight: 600; margin: 18px 0 8px; }
+  .muted { color: var(--muted); } .note { color: var(--muted); font-size: .86rem; }
+  .section { background: var(--surface); border-radius: 12px; padding: 22px 24px; margin-bottom: 18px; }
+  .tag { display: inline-block; font-size: .76rem; font-weight: 600; padding: 1px 9px; border-radius: 999px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+  .tag.green { background: var(--green-soft); color: var(--green); } .tag.amber { background: var(--amber-soft); color: var(--amber); } .tag.blue { background: var(--blue-soft); color: var(--blue); }
+  .btn { border: 1px solid var(--line); background: var(--surface-2); color: var(--text); border-radius: 8px; padding: 7px 14px; min-height: 40px; }
+  .btn.primary { background: var(--red); border-color: var(--red); color: #fff; font-weight: 600; }
+
+  /* Option switcher (mockup only) */
+  .switch { background: var(--surface); border: 1px dashed #4a4f57; border-radius: 12px; padding: 14px 16px; margin-bottom: 22px; }
+  .switch p { margin: 0 0 10px; color: var(--muted); font-size: .9rem; }
+  .switch .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .switch button { border: 1px solid var(--line); background: var(--surface-2); color: var(--text); border-radius: 999px; padding: 6px 14px; }
+  .switch button[aria-pressed=true] { background: var(--red); border-color: var(--red); color: #fff; }
+  .why { background: var(--surface-2); border-radius: 10px; padding: 12px 16px; margin: 0 0 18px; font-size: .92rem; color: var(--muted); }
+  .why b { color: var(--text); }
+
+  /* Shared pieces */
+  .pips { display: inline-flex; gap: 4px; vertical-align: middle; }
+  .pip { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--green); background: var(--green); }
+  .pip.used { background: transparent; border-color: var(--faint); }
+  .vitals { display: flex; gap: 10px; flex-wrap: wrap; }
+  .vital { background: var(--surface-2); border-radius: 10px; padding: 8px 14px; min-width: 88px; }
+  .vital small { display: block; color: var(--muted); font-size: .78rem; }
+  .vital b { font-size: 1.35rem; }
+  .story { background: var(--story-bg); border: 1px solid var(--story-line); color: var(--story-text); font-family: var(--serif); font-size: 1.08rem; line-height: 1.7; border-radius: 10px; padding: 16px 20px; }
+  details.item { border-top: 1px solid var(--line); }
+  details.item > summary { cursor: pointer; padding: 10px 0; font-weight: 500; }
+  details.item > summary .meta { display: block; color: var(--muted); font-size: .85rem; font-weight: 400; }
+  details.item p { margin: 0 0 12px; color: var(--muted); font-size: .93rem; }
+
+  /* Option A: My turn */
+  .turnbar { position: sticky; top: 58px; z-index: 4; background: rgba(21,23,26,.96); padding: 10px 0 12px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+  .res-row { display: flex; gap: 8px 18px; flex-wrap: wrap; margin-top: 10px; font-size: .9rem; }
+  .res-row span { white-space: nowrap; }
+  .live { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--green); }
+  .live::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+  .econ { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .econ .section { margin: 0; padding: 18px 20px; }
+  .econ h2 small { color: var(--muted); font-weight: 400; font-size: .85rem; display: block; }
+  .move { border-top: 1px solid var(--line); padding: 10px 0; }
+  .move b { font-weight: 600; }
+  .move .meta { color: var(--muted); font-size: .85rem; }
+  .move .hit { float: right; font-weight: 700; }
+  .tabs-phone { display: none; }
+
+  /* Option B: Sheet */
+  .sheet { display: grid; grid-template-columns: 300px 1fr; gap: 18px; align-items: start; }
+  .abil { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .abil div { background: var(--surface-2); border-radius: 8px; text-align: center; padding: 8px 4px; }
+  .abil small { display: block; color: var(--muted); font-size: .75rem; } .abil b { font-size: 1.3rem; }
+  .kv { display: flex; justify-content: space-between; padding: 4px 0; color: var(--muted); font-size: .93rem; }
+  .kv.on { color: var(--text); } .kv.on b { color: var(--green); }
+  .tabbar { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 12px; flex-wrap: wrap; }
+  .tabbar span { padding: 8px 12px; color: var(--muted); font-weight: 500; }
+  .tabbar span.on { color: #fff; box-shadow: inset 0 -2px 0 var(--red); }
+  table.t { width: 100%; border-collapse: collapse; font-size: .93rem; }
+  table.t th { text-align: left; color: var(--muted); font-weight: 500; font-size: .8rem; padding: 0 8px 6px; }
+  table.t td { border-top: 1px solid var(--line); padding: 9px 8px; }
+
+  /* Option C: Briefing */
+  .tonight { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 24px; }
+  .tonight div { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--line); padding: 8px 0; }
+  .forget li { margin-bottom: 8px; }
+
+  /* Party strip */
+  table.party { width: 100%; border-collapse: collapse; }
+  table.party th { text-align: left; color: var(--muted); font-weight: 500; font-size: .82rem; padding: 0 10px 8px; }
+  table.party td { border-top: 1px solid var(--line); padding: 12px 10px; }
+  table.party td b { font-size: 1.1rem; }
+
+  @media (max-width: 800px) {
+    .econ { grid-template-columns: 1fr; }
+    .tabs-phone { display: flex; gap: 6px; margin-bottom: 12px; }
+    .tabs-phone span { flex: 1; text-align: center; background: var(--surface-2); border-radius: 8px; padding: 8px 4px; font-size: .9rem; }
+    .tabs-phone span.on { background: var(--red); color: #fff; }
+    .econ .section:not(:first-child) { display: none; }
+    .sheet { grid-template-columns: 1fr; }
+    .tonight { grid-template-columns: 1fr; }
+    .party-wrap { overflow-x: auto; }
+    .vital { min-width: 72px; padding: 6px 10px; }
+  }
+</style>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner"><span class="brand">askdnd</span><nav class="nav"><span>Previously on…</span><span>Sessions</span><b>Characters</b><span>Campaign</span></nav></div></header>
+<main class="page">
+
+  <div class="switch">
+    <p>Mockup with a made-up character. Pick a layout to compare (they're not exclusive; see the recommendation in the chat):</p>
+    <div class="row" role="group" aria-label="Layout options">
+      <button data-opt="a" aria-pressed="true">A · My turn (game mode)</button>
+      <button data-opt="b" aria-pressed="false">B · Full sheet</button>
+      <button data-opt="c" aria-pressed="false">C · Briefing</button>
+      <button data-opt="d" aria-pressed="false">Add-on · Party at a glance</button>
+    </div>
+  </div>
+
+  <!-- ===================== A: MY TURN ===================== -->
+  <section id="opt-a">
+    <p class="why"><b>A · My turn.</b> Built for the table, during play. Everything you can do is sorted by what it costs on your turn (action, bonus action, reaction). Spells, attacks and features sit together, so nothing gets forgotten. Resources stay pinned at the top as pips. Like D&amp;D Beyond's Actions tab, but it also includes spells and leaves out everything else. <b>Game Mode</b> keeps it in sync with D&amp;D Beyond while it's open.</p>
+    <div class="turnbar">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div><b style="font-size:1.3rem">Wren Ashgrove</b> <span class="note">Druid 6 / Monk 2</span></div>
+        <span class="live">Game Mode · synced 40 s ago</span>
+      </div>
+      <div class="vitals" style="margin-top:8px">
+        <div class="vital"><small>HP</small><b>38</b><span class="note"> / 51</span></div>
+        <div class="vital"><small>AC</small><b>16</b></div>
+        <div class="vital"><small>Speed</small><b>45</b><span class="note"> ft</span></div>
+        <div class="vital"><small>Initiative</small><b>+3</b></div>
+        <div class="vital"><small>Spell DC</small><b>15</b></div>
+      </div>
+      <div class="res-row">
+        <span>Wild Shape <span class="pips"><i class="pip"></i><i class="pip"></i><i class="pip used"></i></span></span>
+        <span>Focus <span class="pips"><i class="pip"></i><i class="pip used"></i></span></span>
+        <span>Slots 1st <span class="pips"><i class="pip"></i><i class="pip"></i><i class="pip"></i><i class="pip used"></i></span></span>
+        <span>2nd <span class="pips"><i class="pip"></i><i class="pip"></i><i class="pip"></i></span></span>
+        <span>3rd <span class="pips"><i class="pip"></i><i class="pip used"></i><i class="pip used"></i></span></span>
+        <span class="tag amber">Concentrating: Moonbeam</span>
+      </div>
+    </div>
+    <div class="tabs-phone"><span class="on">Action</span><span>Bonus</span><span>Reaction</span></div>
+    <div class="econ">
+      <div class="section">
+        <h2>Action<small>One per turn</small></h2>
+        <div class="move"><span class="hit">+7</span><b>Starry Wisp</b> <span class="tag">cantrip</span><div class="meta">60 ft · 2d8 radiant</div></div>
+        <div class="move"><span class="hit">DC 15</span><b>Moonbeam</b> <span class="tag">2nd</span> <span class="tag">Conc.</span><div class="meta">120 ft · 2d10 radiant, Con save</div></div>
+        <div class="move"><span class="hit">DC 15</span><b>Heat Metal</b> <span class="tag">2nd</span> <span class="tag">Conc.</span><div class="meta">60 ft · 2d8 fire, then bonus action to repeat</div></div>
+        <div class="move"><b>Dispel Magic</b> <span class="tag">3rd</span><div class="meta">120 ft · ends a spell</div></div>
+        <div class="move"><b>Dash, Dodge, Help, Hide…</b><div class="meta">Actions anyone can take</div></div>
+      </div>
+      <div class="section">
+        <h2>Bonus action<small>One per turn</small></h2>
+        <div class="move"><b>Wild Shape</b> <span class="pips"><i class="pip"></i><i class="pip"></i><i class="pip used"></i></span><div class="meta">Polar Bear, Giant Octopus, Hunter Shark… · gain 6 temp HP</div></div>
+        <div class="move"><span class="hit">+6</span><b>Unarmed Strike</b><div class="meta">Martial Arts · 1d6+3</div></div>
+        <div class="move"><b>Flurry of Blows</b> <span class="tag">1 Focus</span><div class="meta">Two unarmed strikes</div></div>
+        <div class="move"><b>Healing Word</b> <span class="tag">1st</span><div class="meta">60 ft · 2d4+4</div></div>
+      </div>
+      <div class="section">
+        <h2>Reaction<small>One per round, on someone else's turn too</small></h2>
+        <div class="move"><b>Absorb Elements</b> <span class="tag">1st</span><div class="meta">When you take acid, cold, fire, lightning or thunder damage</div></div>
+        <div class="move"><b>Deflect Attacks</b><div class="meta">When an attack hits you</div></div>
+        <div class="move"><b>Opportunity attack, War Caster</b><div class="meta">Cast a spell instead of the attack</div></div>
+        <h3>Free / no action</h3>
+        <div class="move"><b>Wild Resurgence</b><div class="meta">Swap a spell slot for a Wild Shape use</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== B: FULL SHEET ===================== -->
+  <section id="opt-b" hidden>
+    <p class="why"><b>B · Full sheet.</b> The familiar two-column character sheet, the way D&amp;D Beyond and Roll20 lay it out. Stats sit on the left and tabs on the right. It's dense and complete, and players already know where things are. It mostly repeats D&amp;D Beyond, though, so it adds the least.</p>
+    <div class="sheet">
+      <div>
+        <div class="section">
+          <b style="font-size:1.2rem">Wren Ashgrove</b><div class="note">Wood Elf · Druid 6 / Monk 2</div>
+          <div class="vitals" style="margin:12px 0"><div class="vital"><small>HP</small><b>51</b></div><div class="vital"><small>AC</small><b>16</b></div><div class="vital"><small>Speed</small><b>45</b></div></div>
+          <div class="abil"><div><small>Str</small><b>−1</b><div class="note">8</div></div><div><small>Dex</small><b>+2</b><div class="note">15</div></div><div><small>Con</small><b>+1</b><div class="note">12</div></div><div><small>Int</small><b>+0</b><div class="note">10</div></div><div><small>Wis</small><b>+4</b><div class="note">19</div></div><div><small>Cha</small><b>+2</b><div class="note">14</div></div></div>
+          <h3>Saving throws</h3>
+          <div class="kv on"><span>Wisdom ●</span><b>+8</b></div><div class="kv on"><span>Intelligence ●</span><b>+4</b></div><div class="kv"><span>Dexterity</span><b>+3</b></div>
+          <h3>Skills</h3>
+          <div class="kv on"><span>Perception</span><b>+8</b></div><div class="kv on"><span>Insight</span><b>+8</b></div><div class="kv on"><span>Survival</span><b>+8</b></div><div class="kv"><span>Athletics</span><b>+0</b></div><div class="note">…14 more</div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="tabbar"><span class="on">Actions</span><span>Spells</span><span>Inventory</span><span>Features</span><span>Forms</span></div>
+        <table class="t"><tr><th>Name</th><th>Range</th><th>Hit / DC</th><th>Effect</th></tr>
+          <tr><td>Starry Wisp</td><td>60 ft</td><td>+7</td><td>2d8</td></tr>
+          <tr><td>Unarmed Strike</td><td>5 ft</td><td>+6</td><td>1d6+3</td></tr>
+          <tr><td>Moonbeam</td><td>120 ft</td><td>Con 15</td><td>2d10</td></tr>
+          <tr><td>Heat Metal</td><td>60 ft</td><td>Con 15</td><td>2d8</td></tr>
+        </table>
+        <h3>Limited use</h3>
+        <div class="kv on"><span>Wild Shape</span><span class="pips"><i class="pip"></i><i class="pip"></i><i class="pip used"></i></span></div>
+        <div class="kv on"><span>Focus Points</span><span class="pips"><i class="pip"></i><i class="pip used"></i></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== C: BRIEFING ===================== -->
+  <section id="opt-c" class="narrow" hidden>
+    <p class="why"><b>C · Briefing.</b> Read before the session, like the recap on Previously on…. Plain language first: who you are right now, what you have tonight, your main options, and things players tend to forget (reactions, once-a-day items, attunement). The full sheet is folded underneath. Next session's Claude briefing fills the top part. It only explains what you have and never tells you what to do.</p>
+    <h1>Wren Ashgrove</h1>
+    <p class="muted" style="margin:4px 0 18px">Wood Elf · Druid 6 (Circle of the Moon) / Monk 2 · level 8 · updated from D&amp;D Beyond 2 hours ago</p>
+    <div class="section">
+      <h2>In short</h2>
+      <div class="story" style="margin-top:10px">Wren is a Moon Druid who fights up close in beast form and, as a person, casts from range. Wild Shape is a bonus action, and in beast form Wren keeps Concentration on a spell like Moonbeam. Two levels of Monk give Unarmored Defense (AC 16 out of armor) and a bonus-action unarmed strike.</div>
+    </div>
+    <div class="section">
+      <h2>What you have tonight</h2>
+      <div class="tonight" style="margin-top:8px">
+        <div><span>Wild Shape</span><span>3 · regain one on a Short Rest</span></div>
+        <div><span>Focus Points</span><span>2 · Short or Long Rest</span></div>
+        <div><span>Spell slots</span><span>4 · 3 · 3</span></div>
+        <div><span>Luck Points</span><span>3 · Long Rest</span></div>
+        <div><span>Uncanny Metabolism</span><span>1 · Long Rest</span></div>
+        <div><span>Potion of Healing</span><span>×2</span></div>
+      </div>
+    </div>
+    <div class="section">
+      <h2>Your main options</h2>
+      <details class="item" open><summary>Bonus action: Wild Shape<span class="meta">3 uses · forms: Polar Bear (42 HP), Giant Octopus, Hunter Shark, Giant Constrictor Snake…</span></summary><p>You keep your mental stats and Concentration. You gain 6 temporary HP. Leaving the form early is a bonus action too.</p></details>
+      <details class="item"><summary>Action: Moonbeam (2nd level, Concentration)<span class="meta">120 ft · 5-ft cylinder · 2d10 radiant, Con save DC 15</span></summary><p>You can move the beam 60 ft as a Magic action on later turns.</p></details>
+      <details class="item"><summary>Reaction: Absorb Elements<span class="meta">When you take elemental damage · halves it, then adds 1d6 to your next melee hit</span></summary><p>It's a 1st-level spell, so it uses a slot.</p></details>
+    </div>
+    <div class="section">
+      <h2>Easy to forget</h2>
+      <ul class="forget" style="margin:10px 0 0;padding-left:1.2em">
+        <li><b>War Caster</b>: when a creature leaves your reach, you can cast a spell at it instead of making an opportunity attack.</li>
+        <li><b>Luckstone</b> (attuned): +1 to ability checks and saving throws, already included in the numbers.</li>
+        <li><b>Ring of Invisibility</b> (attuned): turn invisible as a Magic action.</li>
+        <li><b>Wild Resurgence</b>: once per turn, swap a spell slot for a Wild Shape use.</li>
+      </ul>
+    </div>
+    <details class="section"><summary style="cursor:pointer;font-weight:600">Full sheet ▸</summary><p class="muted">Abilities, saves, skills, every spell, features and inventory, as on the current page.</p></details>
+  </section>
+
+  <!-- ===================== D: PARTY ===================== -->
+  <section id="opt-d" hidden>
+    <p class="why"><b>Add-on · Party at a glance.</b> One table for the DM and anyone else, with every character's defenses, passives and big resources side by side. D&amp;D Beyond has no desktop party view (players keep asking for one on its forums), so this adds the most beyond what D&amp;D Beyond already offers.</p>
+    <div class="section party-wrap">
+      <table class="party">
+        <tr><th>Character</th><th>HP</th><th>AC</th><th>Passive Perception</th><th>Best saves</th><th>Big resources</th><th>Concentration</th></tr>
+        <tr><td><b>Wren</b><div class="note">Druid 6 / Monk 2</div></td><td><b>38</b><span class="note">/51</span></td><td><b>16</b></td><td>18</td><td>Wis +8, Int +4</td><td>Wild Shape 2/3 · slots 3·3·1</td><td><span class="tag amber">Moonbeam</span></td></tr>
+        <tr><td><b>Corvin</b><div class="note">Paladin 6 / Sorcerer 2</div></td><td><b>72</b><span class="note">/72</span></td><td><b>19</b></td><td>9</td><td>Cha +10, Wis +5</td><td>Lay on Hands 30 · Channel Divinity 2</td><td>—</td></tr>
+        <tr><td><b>Pell</b><div class="note">Monk 6 / Warlock 2</div></td><td><b>60</b><span class="note">/75</span></td><td><b>17</b></td><td>13</td><td>Dex +7, Str +4</td><td>Focus 4/6 · pact slots 2</td><td>—</td></tr>
+        <tr><td><b>Ysolde</b><div class="note">Wizard 7 / Fighter 1</div></td><td><b>44</b><span class="note">/44</span></td><td><b>15</b></td><td>12</td><td>Int +8, Wis +4</td><td>Slots 4·3·3·1 · Arcane Recovery</td><td><span class="tag amber">Fly</span></td></tr>
+      </table>
+    </div>
+  </section>
+</main>
+<script>
+  document.querySelectorAll('[data-opt]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-opt]').forEach(x => x.setAttribute('aria-pressed', x === b));
+    ['a', 'b', 'c', 'd'].forEach(k => document.getElementById('opt-' + k).hidden = k !== b.dataset.opt);
+  }));
+</script>
+</body>
+</html>

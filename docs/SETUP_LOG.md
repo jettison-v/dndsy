@@ -130,3 +130,16 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 1. When you depend on an unofficial data source, store the last good copy and show its age; never let a failed fetch wipe it.
 2. Save real sample responses as test files, so tests run offline and catch format changes.
 3. Strip anything private before it's stored, not just before it's shown.
+
+## 2026-10-16 — People and access levels
+
+**What we set up**
+- **Manage › People**: add someone by Google email and choose Player, Reviewer or Admin; tick DM for whoever runs the game. Remove someone and they're signed out on their next click.
+- The Railway variables still work as a safety net. You're an "owner" through ADMIN_EMAILS, so nobody (including you) can accidentally lock you out from the app.
+- **Character numbers double-checked** against D&D Beyond's own sheet, value by value, for all four characters.
+
+**Reuse this on a new project**
+1. Start with an allowlist in environment variables (simple, safe), then move day-to-day access into the app once more people need managing, keeping the env list as the owner's backstop.
+2. Separate "what you can do" (access level) from "who you are at the table" (DM), so one rule like "the DM never sees notes" can't be undone by giving someone more access.
+3. When you recompute someone else's numbers, test against what their own product shows, not against what you think the rules say.
+4. With Google sign-in in "testing" mode, every new person must also be added as a test user in Google Cloud.
