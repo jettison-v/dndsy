@@ -75,6 +75,10 @@ DURING A SESSION (phase 2)
 - **Transcript processor GUI** (Brett's request: as much GUI as possible, no Terminal): a local page on Brett's Mac, opened by a double-click launcher. Drag in the MacWhisper JSON → Filter (progress bar) → review cuts with Keep/Cut toggles → "Send to askdnd" uploads only the filtered text to beta. It runs locally because Ollama and the raw transcript stay on the Mac.
 - Extraction, a review/edit screen for Brett, the campaign record, the "Previously on…" page
 
+**Next up (as of 2026-10-15, Week 2 status)**
+- Done: database and migrations, campaign import, Google Docs notes sync, local transcript Processor GUI, Claude extraction, review page (questions, recap, key moments, suggestions with undo), new design and navigation, Previously on… / Sessions / Campaign pages.
+- To do: Brett drafts and publishes Sessions 17–29 from notes; wire **Send to askdnd** from the Processor for the Aug 29 transcript; **Usage** page (app-tracked costs and balance estimate); **Reviewer** role for the DM; **Add Session** for gaps (design to be discussed first; see DECISIONS.md).
+
 **Week 3 — Character briefing and launch to the table**
 - Pull the 5 characters from D&D Beyond; plain-language briefings (wild shapes, spells, features)
 - Seed notes from Brett's doc; enforce the visibility rule; phone polish
