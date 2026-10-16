@@ -156,3 +156,16 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 1. Mock up, get feedback, mock up again, then build: two rounds of mockups changed the design more than any code review would.
 2. Let people mark what matters to them (stars, reminders) instead of guessing a perfect default layout.
 3. When you poll someone else's service, throttle on the server per item, not per viewer, so more viewers don't mean more traffic.
+
+## 2026-10-16 — Feedback round: spells, features, inventory, drag and drop
+
+**What changed**
+- **Spells tab is now a spell planner**: see what's prepared vs. everything your class could prepare, shortlist spells with ♥, filter and search, and see "Prepared 10 of 10" at a glance.
+- **Features**: what you can use is on top; rules that just change your numbers are folded away.
+- **Inventory**: battle items and equipped gear on top; everything else folded and sorted by type.
+- **Battle**: drag options to reorder a column; remove reminders with ×.
+- **People**: tidy columns.
+
+**Reuse this on a new project**
+1. Ship, use it, collect a list of small annoyances, then fix them in one focused round, small commits per item.
+2. When a third-party site loads data in pieces, look for the extra public calls it makes (here: class spell lists) rather than guessing.
