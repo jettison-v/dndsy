@@ -255,6 +255,8 @@ def test_peek_fragment(player, db):
     frag = player.get(f"/campaign/{e.id}/peek").text
     assert "<html" not in frag and "Tiefling bard." in frag and "Open full page" in frag
     assert "The party met Lillippi." in frag or "Lillippi sang in" in frag
+    # app.js opens the panel for every /campaign/<id> link; the full-page button must opt out
+    assert f'href="/campaign/{e.id}" data-no-peek>Open full page</a>' in frag
 
 
 def test_misspellings_hidden_but_still_matched(admin, db):

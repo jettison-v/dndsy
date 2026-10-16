@@ -22,4 +22,4 @@
   {% endif %}
 </div>
 <div class="peek-suggest">{{ suggest("/campaign/" ~ e.id ~ "/suggest", "the entry for " ~ e.name) }}</div>
-<div class="peek-foot"><a class="btn" href="/campaign/{{ e.id }}">Open full page</a></div>
+<div class="peek-foot"><a class="btn" href="/campaign/{{ e.id }}" data-no-peek>Open full page</a></div>

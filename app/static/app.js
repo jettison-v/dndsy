@@ -167,7 +167,7 @@
 
   // Peek panel: clicking a name (any link to /campaign/<id>) opens a summary in a
   // right-hand pane on desktop or a bottom sheet on phones. Cmd/Ctrl/Shift-click,
-  // or links marked data-no-peek, open the full page as usual.
+  // links marked data-no-peek and links in the panel's footer open the full page as usual.
   const ENTITY_URL = /^\/campaign\/((?:glossary\/)?\d+)$/;  // people/places, or glossary terms
   let peek = null, lastFocus = null;
 
@@ -218,7 +218,7 @@
 
   document.addEventListener('click', e => {
     const a = e.target.closest('a');
-    if (!a || a.hasAttribute('data-no-peek') || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    if (!a || a.hasAttribute('data-no-peek') || a.closest('.peek-foot') || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
     const m = ENTITY_URL.exec(a.getAttribute('href') || a.getAttribute('xlink:href') || '');  // SVG links use xlink:href
     if (!m) return;
     e.preventDefault();
