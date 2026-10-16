@@ -148,17 +148,40 @@ def fetch_character(ddb_id: str, timeout: float = TIMEOUT_SECONDS) -> dict:
 
 
 # Character-sheet notes (backstory, allies, personality, notes on items) are the
-# player's own writing. askdnd doesn't show them, and the DM must not see a
-# player's notes here (CLAUDE.md), so they are dropped before anything is stored.
+# player's own writing. They are dropped from the stored D&D Beyond copy (and so
+# from test fixtures in git). Item notes are kept apart (item_notes ->
+# CharacterItemNote, in the database only) and shown to everyone at the table.
 ITEM_NOTE_VALUE_TYPE = 9
+
+
+def item_notes(data: dict) -> list[dict]:
+    """Players' notes on items, from the raw D&D Beyond data (before sanitize drops them):
+    [{"ref": "item:<id>" | "custom:<id>", "name", "note"}]. Stored apart (CharacterItemNote)."""
+    rows = lambda key: [x for x in data.get(key) or [] if isinstance(x, dict)]  # noqa: E731 (odd data: skip, don't fail)
+    inventory = {str(i.get("id")): _d(i, "definition", "name", default="") for i in rows("inventory")}
+    custom = {str(c.get("id")): c for c in rows("customItems")}
+    out: dict[str, dict] = {}
+    for v in rows("characterValues"):
+        note, vid = (v.get("value") or "").strip() if isinstance(v.get("value"), str) else "", str(v.get("valueId"))
+        if v.get("typeId") != ITEM_NOTE_VALUE_TYPE or not note:
+            continue
+        if vid in inventory:
+            out[f"item:{vid}"] = {"ref": f"item:{vid}", "name": inventory[vid], "note": note}
+        elif vid in custom:
+            out[f"custom:{vid}"] = {"ref": f"custom:{vid}", "name": custom[vid].get("name") or "", "note": note}
+    for cid, c in custom.items():
+        note = (c.get("notes") or "").strip()
+        if note and f"custom:{cid}" not in out:
+            out[f"custom:{cid}"] = {"ref": f"custom:{cid}", "name": c.get("name") or "", "note": note}
+    return list(out.values())
 
 
 def sanitize(data: dict) -> dict:
     clean = {k: v for k, v in data.items() if k not in ("notes", "traits")}
     values = data.get("characterValues") or []
     clean["characterValues"] = [v for v in values if v.get("typeId") != ITEM_NOTE_VALUE_TYPE]
-    # Only *that* an item has a note is kept (so askdnd can say "changed on D&D Beyond"), never the note.
-    clean["noteItemIds"] = sorted({str(v.get("valueId")) for v in values if v.get("typeId") == ITEM_NOTE_VALUE_TYPE})
+    # Only *which* items have a note stays in this copy, never the note (notes go to CharacterItemNote).
+    clean["noteItemIds"] = sorted({n["ref"] for n in item_notes(data)})
     clean["customItems"] = [{k: v for k, v in c.items() if k != "notes"} for c in data.get("customItems") or []]
     return clean
 
@@ -944,7 +967,7 @@ class _Sheet:
     def inventory(self) -> list[dict]:
         names = {str(v.get("valueId")): v.get("value") for v in self.d.get("characterValues") or [] if v.get("typeId") == 8}
         other_changes = {str(v.get("valueId")) for v in self.d.get("characterValues") or [] if v.get("typeId") not in (8, ITEM_NOTE_VALUE_TYPE)}
-        noted = set(self.d.get("noteItemIds") or [])
+        noted = {x if ":" in x else f"item:{x}" for x in self.d.get("noteItemIds") or []}  # older copies kept bare ids
         containers = {i.get("id"): i for i in self.items}
         out = []
         for i in self.items:
@@ -960,7 +983,7 @@ class _Sheet:
             item_id = str(i.get("id"))
             renamed = names.get(item_id) if names.get(item_id) and names.get(item_id) != df["name"] else ""
             changes = ([f"Renamed (the D&D Beyond item is {df['name']})"] if renamed else []) + (
-                ["Has a player note on D&D Beyond (not shown in askdnd)"] if item_id in noted else []) + (
+                ["Has a note from the player (below)"] if f"item:{item_id}" in noted else []) + (
                 ["Other details changed on D&D Beyond (such as cost or weight)"] if item_id in other_changes else [])
             out.append({
                 "key": f"item:{i.get('id')}",
@@ -991,7 +1014,7 @@ class _Sheet:
             text = html_to_text(c.get("description"))
             out.append({
                 "key": f"custom:{c.get('id')}", "name": c["name"].strip(), "base_name": c["name"].strip(), "custom": True,
-                "changes": [], "battle": False, "category": "Other Gear", "type": "Custom item", "quantity": c.get("quantity") or 1,
+                "changes": ["Has a note from the player (below)"] if f"custom:{c.get('id')}" in noted else [], "battle": False, "category": "Other Gear", "type": "Custom item", "quantity": c.get("quantity") or 1,
                 "equipped": False, "magic": False, "rarity": "", "attunement": "", "attunement_note": "", "charges": None,
                 "in": "", "damage": "", "properties": [], "armor_class": None,
                 "summary": _first_paragraph(text, 280), "text": text,

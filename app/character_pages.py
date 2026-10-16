@@ -57,6 +57,7 @@ def _view(db: Session, ch: Character, user: dict) -> dict:
         "reminders": views.reminders(sheet, mine["remind"], mine["order"].get("forget")) if sheet else [],
         "reviewer": is_reviewer(user),
         "admin": is_admin(user),
+        "item_notes": chars.item_notes(db, ch),
     }
 
 

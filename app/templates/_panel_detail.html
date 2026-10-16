@@ -50,6 +50,7 @@
     {% endif %}
   </dl>
 
+  {% if section == "inventory" and item_notes.get(x.key) %}<h3>Player's note</h3><div class="detail-note">{{ item_notes[x.key] }}</div>{% endif %}
   {% set what = x.summary if section != "situational" else x.text %}
   {% set seen = [x.name or "", x.base_name or ""] %}{# underline each rule term once per panel, and never the thing's own name #}
   {% if what %}<h3>What it does</h3><div class="detail-what">{{ what | terms(underline, seen) }}</div>{% endif %}

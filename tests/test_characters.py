@@ -475,3 +475,21 @@ def test_descriptions_underline_rule_terms_with_definitions(admin, player, db):
     assert "Underlined in descriptions" in admin.get("/admin/characters").text
     assert admin.post("/rules/terms/abyssal/underline", data={"value": "on"}).json() == {"on": True}
     assert db.scalar(select(SheetOverride).where(SheetOverride.ref == "term:Abyssal")) is None  # back to the default
+
+
+def test_item_notes_are_stored_apart_and_everyone_sees_them(player, dm, db):
+    from app.models import CharacterItemNote
+
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    owned_by(db, char(db, "Trah"), "dm@example.com", is_dm=True)
+    flask = next(i for i in COLE["inventory"] if i["definition"]["name"] == "Flask")
+    with_note = {**COLE, "characterValues": COLE["characterValues"] + [{"typeId": 9, "valueId": str(flask["id"]), "value": "Blessed by Myna"}]}
+    characters.refresh(db, cole, fetch=lambda _id: with_note)
+    assert "Blessed by Myna" not in json.dumps(cole.snapshot.raw) and "Blessed by Myna" not in json.dumps(cole.snapshot.summary)
+    assert db.scalar(select(CharacterItemNote)).note == "Blessed by Myna"
+    for who in (player, dm):  # the DM sees item notes too
+        panel = who.get(f"/characters/{cole.id}/detail", params={"ref": f"item:{flask['id']}"}).text
+        assert "Player's note" in panel and "Blessed by Myna" in panel
+    characters.refresh(db, cole, fetch=lambda _id: COLE)  # note deleted on D&D Beyond
+    assert db.scalar(select(CharacterItemNote)) is None

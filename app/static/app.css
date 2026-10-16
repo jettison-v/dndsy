@@ -619,3 +619,4 @@ body.gm-on .battlebar { top: 106px; }
 @media (max-width: 640px) { .entity-head { flex-direction: column-reverse; } .entity-pic { width: 100%; } .entity-pic img { max-height: 280px; } }
 .dm-notes { margin-top: 14px; border-left: 3px solid var(--amber); background: var(--amber-soft); border-radius: 0 10px 10px 0; padding: 10px 14px; }
 .dm-notes p { margin: 6px 0 0; }
+.detail-note { white-space: pre-line; border-left: 3px solid var(--line); padding: 4px 0 4px 12px; font-size: .95rem; }

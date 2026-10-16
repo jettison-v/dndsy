@@ -121,7 +121,7 @@
 
     <div id="t-items" hidden>
       {% macro item_row(it) %}{{ ri(c, it.key, it.name ~ (" ×" ~ it.quantity if it.quantity > 1 else ""), picks, can_pick, star=it.battle,
-          chips=[("Custom", "custom") if it.custom else None, ("Changed", "edited") if it.changes else None,
+          chips=[("Custom", "custom") if it.custom else None, ("Changed", "edited") if it.changes else None, ("Note", "") if item_notes.get(it.key) else None,
                  ("Attuned", "done") if it.attunement == "attuned" else (("Needs attunement", "") if it.attunement == "required" else None),
                  (it.charges.left ~ " use" ~ ("s" if it.charges.left != 1 else "") ~ " left", "") if it.charges and it.charges.reset == "Used up" else None],
           what=it.summary, uses=it.charges if it.charges and it.charges.reset != "Used up" else None,

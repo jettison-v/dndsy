@@ -161,10 +161,15 @@ def test_sanitize_drops_player_notes():
 
 
 def test_sanitize_keeps_only_which_items_have_notes():
-    raw = {"name": "X", "characterValues": [{"typeId": 9, "valueId": 7, "value": "secret item note"}],
+    raw = {"name": "X", "inventory": [{"id": 7, "definition": {"name": "Flask"}}],
+           "characterValues": [{"typeId": 9, "valueId": 7, "value": "secret item note"}],
            "customItems": [{"id": 1, "name": "Egg", "description": "Golden.", "notes": "secret custom note"}]}
     clean = ddb.sanitize(raw)
-    assert "secret" not in json.dumps(clean) and clean["noteItemIds"] == ["7"] and clean["customItems"][0]["description"] == "Golden."
+    assert "secret" not in json.dumps(clean) and clean["customItems"][0]["description"] == "Golden."
+    assert clean["noteItemIds"] == ["custom:1", "item:7"]
+    # The notes themselves are taken out separately (stored in character_item_notes, never in git)
+    assert ddb.item_notes(raw) == [{"ref": "item:7", "name": "Flask", "note": "secret item note"},
+                                   {"ref": "custom:1", "name": "Egg", "note": "secret custom note"}]
 
 
 def test_custom_and_changed_items_are_marked(cole):
@@ -175,7 +180,7 @@ def test_custom_and_changed_items_are_marked(cole):
     assert mask["text"].startswith("Took off a young woman") and "Trah analysized" not in json.dumps(cole)  # a custom item's note
     flask = items["Flask (blessed water)"]
     assert not flask["custom"] and flask["base_name"] == "Flask"
-    assert flask["changes"] == ["Renamed (the D&D Beyond item is Flask)", "Has a player note on D&D Beyond (not shown in askdnd)"]
+    assert flask["changes"] == ["Renamed (the D&D Beyond item is Flask)", "Has a note from the player (below)"]
     assert items["Ruby"]["changes"] == ["Other details changed on D&D Beyond (such as cost or weight)"]
     assert not items["Bag of Holding"]["changes"] and not items["Bag of Holding"]["custom"]
 

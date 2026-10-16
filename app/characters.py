@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import ddb
-from app.models import Character, CharacterSnapshot, Entity
+from app.models import Character, CharacterItemNote, CharacterSnapshot, Entity
 
 Fetch = Callable[[str], dict]
 
@@ -45,15 +45,34 @@ def refresh(db: Session, character: Character, fetch: Fetch = ddb.fetch_characte
     try:
         if not character.ddb_id:
             raise ddb.DdbError("No D&D Beyond link yet.")
-        raw = ddb.sanitize(fetch(character.ddb_id))
+        data = fetch(character.ddb_id)
+        notes = ddb.item_notes(data)
+        raw = ddb.sanitize(data)
         summary = ddb.parse_character(raw)
     except ddb.DdbError as e:
         snap.status, snap.error = "error", str(e)
     else:
         snap.raw, snap.summary, snap.fetched_at = raw, summary, now
         snap.status, snap.error = "ok", ""
+        _store_item_notes(db, character, notes)
     db.flush()
     return snap
+
+
+def _store_item_notes(db: Session, character: Character, notes: list[dict]) -> None:
+    """Make the stored item notes match D&D Beyond's (added, changed and deleted)."""
+    have = {n.item_ref: n for n in db.scalars(select(CharacterItemNote).where(CharacterItemNote.character_id == character.id))}
+    for n in notes:
+        row = have.pop(n["ref"], None) or CharacterItemNote(character_id=character.id, item_ref=n["ref"][:80])
+        row.item_name, row.note = n["name"][:200], n["note"]
+        db.add(row)
+    for gone in have.values():
+        db.delete(gone)
+
+
+def item_notes(db: Session, character: Character) -> dict[str, str]:
+    """{item key: note}: players' notes on their items (everyone at the table sees them)."""
+    return {n.item_ref: n.note for n in db.scalars(select(CharacterItemNote).where(CharacterItemNote.character_id == character.id))}
 
 
 def refresh_all(db: Session, campaign_id: int, fetch: Fetch = ddb.fetch_character) -> tuple[int, list[str]]:

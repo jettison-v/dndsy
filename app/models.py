@@ -277,6 +277,22 @@ class CharacterNote(Timestamped, Base):
     body: Mapped[str] = mapped_column(Text)
 
 
+class CharacterItemNote(Timestamped, Base):
+    """A player's note on an item on D&D Beyond ("Filled with holy water from Oakhurst").
+    Everyone at the table can read these, the DM included. They're kept apart from the
+    D&D Beyond copy so that copy (and the test fixtures made from it, which are in git)
+    never holds a player's writing. Replaced on every successful refresh, so a note
+    deleted on D&D Beyond goes too."""
+
+    __tablename__ = "character_item_notes"
+    __table_args__ = (UniqueConstraint("character_id", "item_ref"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+    item_ref: Mapped[str] = mapped_column(String(80))  # the item's key on the sheet: "item:<id>" or "custom:<id>"
+    item_name: Mapped[str] = mapped_column(String(200), default="", server_default="")
+    note: Mapped[str] = mapped_column(Text)
+
+
 class GameSession(Timestamped, Base):
     """One night of play."""
 
