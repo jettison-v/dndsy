@@ -760,3 +760,7 @@ h2.econ-title { color: var(--k); }
 h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 8px; }
 /* side panel subheadings (What it does, How it adds up…) in the same quiet caps */
 .peek-body h3:not(.divider), .peek-body.detail h3:not(.divider) { font-size: .74rem; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); margin: 20px 0 6px; }
+/* Sessions: recap on the left, key moments and DM notes on the right (wide screens) */
+.session-body { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+.session-side h3.divider { margin-top: 18px; }
+@media (max-width: 1000px) { .session-body { grid-template-columns: 1fr; gap: 0; } }

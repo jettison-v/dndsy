@@ -270,8 +270,9 @@
       x.setAttribute('aria-selected', x === b ? 'true' : 'false');
       const p = document.getElementById(x.dataset.tab); if (p) p.hidden = x !== b;
     });
-    // If the tabs are stuck at the top (scrolled down), start the new tab from its top.
     const panel = document.getElementById(b.dataset.tab);
+    if (panel) panel.dispatchEvent(new CustomEvent('tab:shown', { bubbles: true }));
+    // If the tabs are stuck at the top (scrolled down), start the new tab from its top.
     const offset = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--stick-top')) || 0;
     if (panel && list.getBoundingClientRect().top <= offset + 1) {
       const top = panel.getBoundingClientRect().top + window.scrollY - offset - list.offsetHeight - 8;
@@ -545,6 +546,12 @@
   window.addEventListener('resize', stickTop);
   const gmb = $('#gm-banner');
   if (gmb) new MutationObserver(stickTop).observe(gmb, {attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true});
+
+  // A link like /campaign#glossary opens that tab (only on arrival; tabs don't change the address).
+  if (location.hash) {
+    const t = document.querySelector('[role=tab][data-tab="t-' + CSS.escape(location.hash.slice(1)) + '"]');
+    if (t) t.click();
+  }
 
   // Flash message from a full page load
   const flash = document.body.dataset.toast;

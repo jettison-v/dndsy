@@ -3,53 +3,66 @@
 {% block head %}{% if tree %}
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
 <script>
-  document.addEventListener('DOMContentLoaded', () => mermaid.initialize({
-    startOnLoad: true, securityLevel: 'strict', theme: 'base',
-    themeVariables: { background: '#1f2226', primaryColor: '#272b30', primaryTextColor: '#ebe7df', primaryBorderColor: '#4a4f57',
-                      lineColor: '#8a857b', fontFamily: 'Inter, system-ui, sans-serif', fontSize: '15px' },
-    flowchart: { curve: 'basis', nodeSpacing: 28, rankSpacing: 46, htmlLabels: false }
-  }));
+  // The family tree lives in a tab, and Mermaid can't size a hidden diagram: draw it the first time its tab opens.
+  document.addEventListener('DOMContentLoaded', () => {
+    mermaid.initialize({
+      startOnLoad: false, securityLevel: 'strict', theme: 'base',
+      themeVariables: { background: '#1f2226', primaryColor: '#272b30', primaryTextColor: '#ebe7df', primaryBorderColor: '#4a4f57',
+                        lineColor: '#8a857b', fontFamily: 'Inter, system-ui, sans-serif', fontSize: '15px' },
+      flowchart: { curve: 'basis', nodeSpacing: 28, rankSpacing: 46, htmlLabels: false }
+    });
+    const draw = () => { const el = document.querySelector('#t-family-tree .mermaid:not([data-processed])'); if (el && !el.closest('[hidden]')) mermaid.run({ nodes: [el] }); };
+    document.addEventListener('tab:shown', draw);
+    draw();
+  });
 </script>{% endif %}{% endblock %}
 {% block content %}
 {% from "_suggest_form.html" import suggest with context %}
-<main class="page">
+<main class="page sheet wide">
   <div class="title-row"><h1>{{ campaign.name if campaign else "Campaign" }}</h1></div>
-  <p class="subtitle">People, places and things the party has met.{% if campaign and campaign.dm_name %} Dungeon Master: {{ campaign.dm_name }}.{% endif %}{% if tree %} <a href="#family-tree" data-no-peek>Family tree ↓</a>{% endif %}</p>
-  {% for title, entries in groups %}
+  <p class="subtitle">People, places and things the party has met.{% if campaign and campaign.dm_name %} Dungeon Master: {{ campaign.dm_name }}.{% endif %}</p>
+  {% if groups or tree or glossary %}
   <section class="section">
-    <h2>{{ title }}</h2>
-    <div class="card-grid" style="margin-top:14px">
-      {% for e in entries %}
-      <div class="entry">{% set p = pics.get(e.id) %}{% if p %}<img class="entry-pic" src="{{ p.thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer">{% endif %}<a class="entry-link" href="/campaign/{{ e.id }}"><b>{{ e.name }}</b></a>{% if e.kind.value == "quest" %} <span class="tag {{ 'draft' if e.quest_open else 'done' }}">{{ "Open" if e.quest_open else "Done" }}</span>{% endif %}
-        {% if e.display_aliases %}<div class="note">also: {{ e.display_aliases | map(attribute="alias") | join(", ") }}</div>{% endif %}
-        {% if e.summary %}<p>{{ e.summary }}</p>{% endif %}</div>
-      {% endfor %}
+    <div class="tabbar" role="tablist">
+      {% for title, entries in groups %}<button role="tab" aria-selected="{{ 'true' if loop.first else 'false' }}" data-tab="t-{{ title | lower | replace(' ', '-') }}">{{ title }} <span class="count">{{ entries | length }}</span></button>{% endfor %}
+      {% if tree %}<button role="tab" aria-selected="{{ 'false' if groups else 'true' }}" data-tab="t-family-tree">Family tree</button>{% endif %}
+      {% if glossary %}<button role="tab" aria-selected="{{ 'false' if groups or tree else 'true' }}" data-tab="t-glossary">Glossary <span class="count">{{ glossary | length }}</span></button>{% endif %}
     </div>
+    {% for title, entries in groups %}
+    <div id="t-{{ title | lower | replace(' ', '-') }}"{% if not loop.first %} hidden{% endif %}>
+      <div class="card-grid">
+        {% for e in entries %}
+        <div class="entry">{% set p = pics.get(e.id) %}{% if p %}<img class="entry-pic" src="{{ p.thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer">{% endif %}<a class="entry-link" href="/campaign/{{ e.id }}"><b>{{ e.name }}</b></a>{% if e.kind.value == "quest" %} <span class="tag {{ 'draft' if e.quest_open else 'done' }}">{{ "Open" if e.quest_open else "Done" }}</span>{% endif %}
+          {% if e.display_aliases %}<div class="note">also: {{ e.display_aliases | map(attribute="alias") | join(", ") }}</div>{% endif %}
+          {% if e.summary %}<p>{{ e.summary }}</p>{% endif %}</div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+    {% if tree %}
+    <div id="t-family-tree"{% if groups %} hidden{% endif %}>
+      <p class="hint" style="margin:0 0 8px">From the parent and marriage links on each page. A red dot joins married parents, a grey dot parents who aren't married; arrows point to their children. Click anyone to see more.</p>
+      <div class="family-graph"><pre class="mermaid">{{ tree }}</pre></div>
+    </div>
+    {% endif %}
+    {% if glossary %}
+    <div id="t-glossary"{% if groups or tree %} hidden{% endif %}>
+      <p class="hint" style="margin:0 0 8px">Campaign names and words with their correct spelling. Click one for more, or to suggest a fix.</p>
+      <table class="list">{% for g in glossary %}<tr><td style="width:30%"><a href="/campaign/glossary/{{ g.id }}"><b>{{ g.term }}</b></a></td><td class="muted">{{ g.description }}</td></tr>{% endfor %}</table>
+      {% if is_dm or is_reviewer %}
+      <details class="suggest"><summary>Add a term</summary>
+        <form class="stack" hx-post="/campaign/glossary/add" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button">
+          <label class="field">Term<input type="text" name="term" required></label>
+          <label class="field">What it means<input type="text" name="description"></label>
+          <div class="row"><button class="btn primary">Add</button><span class="note">Goes straight into the glossary.</span></div>
+        </form>
+      </details>
+      {% else %}<div style="margin-top:12px">{{ suggest("/campaign/glossary/suggest", "the new glossary entry", kinds=False) }}</div>{% endif %}
+    </div>
+    {% endif %}
   </section>
   {% else %}
   <p class="muted">Nothing here yet.</p>
-  {% endfor %}
-  {% if tree %}
-  <section class="section" id="family-tree">
-    <h2>Family tree</h2>
-    <p class="hint" style="margin-top:6px">From the parent and marriage links on each page. A red dot joins married parents, a grey dot parents who aren't married; arrows point to their children. Click anyone to see more.</p>
-    <div class="family-graph"><pre class="mermaid">{{ tree }}</pre></div>
-  </section>
-  {% endif %}
-  {% if glossary %}
-  <section class="section" id="glossary">
-    <h2>Glossary</h2>
-    <table class="list" style="margin-top:10px">{% for g in glossary %}<tr><td style="width:30%"><a href="/campaign/glossary/{{ g.id }}"><b>{{ g.term }}</b></a></td><td class="muted">{{ g.description }}</td></tr>{% endfor %}</table>
-    {% if is_dm or is_reviewer %}
-    <details class="suggest"><summary>Add a term</summary>
-      <form class="stack" hx-post="/campaign/glossary/add" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button">
-        <label class="field">Term<input type="text" name="term" required></label>
-        <label class="field">What it means<input type="text" name="description"></label>
-        <div class="row"><button class="btn primary">Add</button><span class="note">Goes straight into the glossary.</span></div>
-      </form>
-    </details>
-    {% else %}<div style="margin-top:12px">{{ suggest("/campaign/glossary/suggest", "the new glossary entry", kinds=False) }}</div>{% endif %}
-  </section>
   {% endif %}
 </main>
 {% endblock %}
