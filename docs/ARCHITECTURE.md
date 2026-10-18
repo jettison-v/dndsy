@@ -22,6 +22,7 @@ _Last updated 2026-10-14 · Pairs with [BRIEF.md](BRIEF.md)_
 | Database | **Postgres on Railway** (with pgvector for rules search later) | Replaces Qdrant. Users, campaigns, story, characters and notes all live in one place. |
 | Files | Existing S3 bucket, new `v2/` prefix | Page images. Kept separate from legacy's data. |
 | Campaign pictures | Postgres (`entity_pictures`) | Portraits, maps and banners on campaign pages, resized to WebP (≤1200 px + a 320 px thumbnail). Small and few, so no S3 setup needed. Player characters fall back to their D&D Beyond portrait. |
+| Campaign map | AideDD's Sword Coast atlas, embedded | The Map tab shows aidedd.org in a frame; place pages link to its markers. We store only marker names, never the map image. |
 | AI (cloud) | **Claude via the Anthropic API** | Tool use, web search, citations, PDF reading. |
 | AI (local) | **Ollama on Brett's Mac** (~30B-class model; test 2–3 on a real transcript) | The banter filter. Raw transcripts never leave the Mac. |
 | Sign-in | **Google sign-in, limited to 5 approved emails** | No passwords to manage. A good setup skill to reuse. |

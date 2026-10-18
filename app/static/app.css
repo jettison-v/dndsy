@@ -764,3 +764,9 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .session-body { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 32px; align-items: start; }
 .session-side h3.divider { margin-top: 18px; }
 @media (max-width: 1000px) { .session-body { grid-template-columns: 1fr; gap: 0; } }
+
+/* Map tab: AideDD's Sword Coast atlas in a frame */
+.map-page .title-row .map-open { margin-left: auto; }
+.map-page .hint { margin-bottom: 12px; }
+.map-frame { display: block; width: 100%; height: calc(100vh - 230px); min-height: 420px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+@media (max-width: 700px) { .map-frame { height: calc(100vh - 200px); } }

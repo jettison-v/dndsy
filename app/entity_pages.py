@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse, RedirectResponse, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import entities, pictures, relations
+from app import atlas, entities, pictures, relations
 from app.auth import can_moderate, current_user, is_dm, is_reviewer
 from app.db import get_db
 from app.extraction import ExtractionError
@@ -57,6 +57,7 @@ def entity_context(db: Session, entity: Entity, user: dict) -> dict:
         "ln": entity_linker(db, entity.campaign_id, exclude_id=entity.id, include_drafts=reviewer),
         "picture": pictures.urls(db, [entity.id]).get(entity.id),
         "can_picture": pictures.can_manage(user),
+        "map_marker": atlas.entity_marker(entity),
     }
 
 
@@ -95,6 +96,7 @@ def entity_peek(request: Request, entity_id: int, db: Session = Depends(get_db))
             "picture": pictures.urls(db, [entity.id]).get(entity.id),
             "moments": entities.moments(db, entity)[-3:],
             "ln": entity_linker(db, entity.campaign_id, exclude_id=entity.id, include_drafts=reviewer),
+            "map_marker": atlas.entity_marker(entity),
         },
     )
 

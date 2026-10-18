@@ -17,6 +17,7 @@ from app.admin_characters import router as admin_characters_router
 from app.admin_sessions import router as admin_sessions_router
 from app.admin_usage import router as admin_usage_router
 from app.api import router as api_router
+from app.atlas import router as atlas_router
 from app.auth import current_user, is_admin
 from app.auth import router as auth_router
 from app.character_pages import router as character_router
@@ -74,6 +75,7 @@ app.include_router(entity_router)
 app.include_router(api_router)
 app.include_router(admin_usage_router)
 app.include_router(help_router)
+app.include_router(atlas_router)
 
 LOGIN_ERRORS = {
     "not_allowed": "That Google account isn't on the list for this table.",

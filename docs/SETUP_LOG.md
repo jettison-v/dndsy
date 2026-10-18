@@ -216,3 +216,14 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 1. Treat GitHub as the hand-off point: push before switching machines or sessions, pull after. Never keep work only in one place.
 2. After pulling, always run the same three steps: install packages (`uv sync`), apply database changes (`alembic upgrade head`), run the tests. That covers almost every "it worked over there" problem.
 3. Keep local and production data separate; a local database is for trying things, not a copy of the real one.
+
+## 2026-10-18 — Campaign map
+
+**What changed**
+- A **Map** tab shows AideDD's interactive Sword Coast map inside askdnd, with a button to open it full screen.
+- Places in the campaign record that are on the map (Waterdeep, Star Mounts, Oakhurst…) have **Show on map**, which opens the Map tab centered on that place.
+
+**Reuse this on a new project**
+1. Before copying someone else's content into your app, check whether you can **embed or link** it instead. Embedding keeps their features and avoids hosting copyrighted images.
+2. Check that a site allows embedding (no `X-Frame-Options` or `frame-ancestors` block) and whether it has **deep links** (here `…/sword-coast@Waterdeep`). Those two facts decide how tight the integration can be.
+3. Keep a small local list of the outside site's names (here, map markers) with a script to refresh it, so your pages don't depend on that site being up to render.

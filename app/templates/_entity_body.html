@@ -10,6 +10,7 @@
         {% if e.status.value != "published" %}<span class="tag draft">Not published</span>{% endif %}
       </div>
       <p class="subtitle">{% if e.display_aliases %}Also known as {{ e.display_aliases | map(attribute="alias") | join(", ") }}{% else %}{{ kind_label }} in the campaign record{% endif %}</p>
+      {% if map_marker %}<a class="btn small" href="/map?at={{ map_marker | urlencode }}" data-no-peek>Show on map</a>{% endif %}
     </div>
     {% if picture or can_picture %}
     <figure class="entity-pic">

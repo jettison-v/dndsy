@@ -15,6 +15,7 @@ notes/
 *.pdf
 *.txt
 !requirements*.txt
+!app/data/sword_coast_places.txt
 *.srt
 *.vtt
 *.m4a
