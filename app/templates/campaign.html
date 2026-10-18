@@ -34,7 +34,8 @@
         {% for e in entries %}
         <div class="entry">{% set p = pics.get(e.id) %}{% if p %}<img class="entry-pic" src="{{ p.thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer">{% endif %}<a class="entry-link" href="/campaign/{{ e.id }}"><b>{{ e.name }}</b></a>{% if e.kind.value == "quest" %} <span class="tag {{ 'draft' if e.quest_open else 'done' }}">{{ "Open" if e.quest_open else "Done" }}</span>{% endif %}
           {% if e.display_aliases %}<div class="note">also: {{ e.display_aliases | map(attribute="alias") | join(", ") }}</div>{% endif %}
-          {% if e.summary %}<p>{{ e.summary }}</p>{% endif %}</div>
+          {% if e.summary %}<p>{{ e.summary }}</p>{% endif %}
+          {% if markers.get(e.id) %}<a class="entry-map" href="/map?at={{ markers[e.id] | urlencode }}" data-no-peek>Show on map</a>{% endif %}</div>
         {% endfor %}
       </div>
     </div>

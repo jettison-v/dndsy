@@ -5,7 +5,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import pictures, review
+from app import atlas, pictures, review
 from app.auth import can_moderate, current_user
 from app.db import get_db
 from app.extraction import session_label, timeline
@@ -171,6 +171,7 @@ def campaign_page(request: Request, db: Session = Depends(get_db)):
         graph = family_graph(db, campaign.id, visible=lambda e: e.status == Status.PUBLISHED)
     return templates.TemplateResponse(
         request, "campaign.html", {"campaign": campaign, "groups": groups, "glossary": glossary, "tree": graph.mermaid() if campaign and graph.people else "",
-                                   "pics": pictures.urls(db, [e.id for _, entries in groups for e in entries])}
+                                   "pics": pictures.urls(db, [e.id for _, entries in groups for e in entries]),
+                                   "markers": {e.id: m for _, entries in groups for e in entries if (m := atlas.entity_marker(e))}}
     )
 

@@ -57,3 +57,9 @@ def test_map_tab_centers_on_real_markers_only(player):
     r = player.get("/map?at=https://evil.example")
     assert 'src="https://www.aidedd.org/atlas/sword-coast"' in r.text
     assert TestClient(app).get("/map", follow_redirects=False).headers["location"] == "/login"
+
+
+def test_place_cards_on_the_campaign_page_link_to_the_map(player):
+    text = player.get("/campaign").text
+    assert 'class="entry-map" href="/map?at=Star%20Mounts"' in text and 'href="/map?at=Waterdeep"' in text
+    assert text.count('class="entry-map"') == 2
