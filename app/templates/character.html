@@ -232,7 +232,7 @@
       <section class="planner-group"><div class="planner-level"><div class="rows">
       {% for fm in forms %}
         {% set tags = (fm.moves + [fm.size | lower] + (["locked"] if fm.why_not else [])) | join(" ") %}
-        {{ ri(c, fm.key, fm.name, picks, can_pick, fav=True, url="/characters/" ~ c.id ~ "/form?name=" ~ (fm.name | urlencode), image=fm.image,
+        {{ ri(c, fm.key, fm.name, picks, can_pick, fav=True, url="/characters/" ~ c.id ~ "/form?name=" ~ (fm.name | urlencode), image=fm.image, modal=True,
               chips=[("Known", "done") if fm.known else None, (fm.why_not, "faint") if fm.why_not else None],
               what=fm.summary, mech="CR " ~ fm.cr_label ~ " · " ~ fm.size ~ " · " ~ fm.speed, hit="AC " ~ fm.ac,
               cls="spell-row form-row" ~ ("" if fm.known else " not-ready"),

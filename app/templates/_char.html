@@ -93,9 +93,9 @@
                        "spellbook": ("In spellbook", ""), "available": ("Not prepared", "faint"), "granted": ("", "")} %}
 
 {# One compact row; clicking it opens the side panel with everything about it. #}
-{% macro ri(c, key, name, picks, can_pick, star=False, fav=False, chips=(), what="", mech="", hit="", uses=None, cls="", attrs="", spend=(), url="", image="") -%}
+{% macro ri(c, key, name, picks, can_pick, star=False, fav=False, chips=(), what="", mech="", hit="", uses=None, cls="", attrs="", spend=(), url="", image="", modal=False) -%}
 {%- set notes = [picks.notes.get("fav|" ~ key), picks.notes.get("remind|" ~ key)] | select | list if picks.notes else [] -%}
-<div class="ri {{ cls }}{{ ' has-pic' if image }}" data-panel-url="{{ url or ('/characters/' ~ c.id ~ '/detail?ref=' ~ (key | urlencode)) }}" data-ref="{{ key }}" tabindex="0" role="button" {{ attrs | safe }}>
+<div class="ri {{ cls }}{{ ' has-pic' if image }}" {% if modal %}data-modal-url="{{ url }}" data-modal-size="large"{% else %}data-panel-url="{{ url or ('/characters/' ~ c.id ~ '/detail?ref=' ~ (key | urlencode)) }}"{% endif %} data-ref="{{ key }}" tabindex="0" role="button" {{ attrs | safe }}>
   <span class="ri-pk">{% if image %}<img class="ri-pic" src="{{ image }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{% if fav %}{{ pick_btn(c, "fav", key, key in picks.fav, can_pick) }}{% endif %}{% if star %}{{ pick_btn(c, "star", key, key in picks.star, can_pick) }}{% endif %}</span>
   <span class="ri-main"><span class="ri-line"><span class="ri-name">{{ name }}</span>{% if uses %} {{ pips(uses) }}{% endif %}{% for t in chips if t %} <span class="tag {{ '' if t is string else t[1] }}">{{ t if t is string else t[0] }}</span>{% endfor %}</span>
     {% if spend %}<span class="ri-spend">{{ spends(spend) }}</span>{% endif %}

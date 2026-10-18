@@ -201,7 +201,8 @@
   function openPeek(id, opener) { openPanel('/campaign/' + id + '/peek', opener, '/campaign/' + id); }
 
   // Any element with data-panel-url opens that fragment in the same side panel
-  // (Battle: "See all", an option's details). data-modal-url opens a centered modal.
+  // (Battle: "See all", an option's details). data-modal-url opens a centered modal;
+  // add data-modal-size="large" for a wide one (a Wild Shape form).
   // Opening something from inside the panel (a row in "See all", a link in a short
   // character view) remembers what was there, so "← Back" can return to it.
   let panelHistory = [];
@@ -211,11 +212,12 @@
     if (back) { /* returning: the history entry was already taken off */ }
     else if (inside && panel.dataset.url) {
       const title = panel.querySelector('#peek-title');
-      panelHistory.push({ url: panel.dataset.url, modal: panel.classList.contains('modal'), scroll: (panel.querySelector('.peek-body') || {}).scrollTop || 0,
+      panelHistory.push({ url: panel.dataset.url, modal: panel.classList.contains('large') ? 'large' : panel.classList.contains('modal'), scroll: (panel.querySelector('.peek-body') || {}).scrollTop || 0,
                           title: title ? title.textContent.trim() : '' });
     } else panelHistory = [];
     if (!inside && !back) lastFocus = opener;
     panel.classList.toggle('modal', !!modal);
+    panel.classList.toggle('large', modal === 'large');
     backdrop.classList.toggle('dim', !!modal);
     fetch(url, { headers: { 'HX-Request': 'true' } })
       .then(r => (r.ok ? r.text() : Promise.reject(r.status)))
@@ -253,7 +255,7 @@
     const t = e.target.closest('[data-panel-url], [data-modal-url]');
     if (!t || e.target.closest('button[hx-post], form')) return;
     e.preventDefault();
-    if (t.dataset.modalUrl) openPanel(t.dataset.modalUrl, t, t.getAttribute('href'), true);
+    if (t.dataset.modalUrl) openPanel(t.dataset.modalUrl, t, t.getAttribute('href'), t.dataset.modalSize === 'large' ? 'large' : true);
     else openPanel(t.dataset.panelUrl, t, t.getAttribute('href'));
   });
   document.addEventListener('keydown', e => {

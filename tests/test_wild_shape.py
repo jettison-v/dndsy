@@ -86,6 +86,7 @@ def cole(db, player):
 def test_wild_shape_tab_panel_and_battle_switch(db, cole, player, dm):
     page = player.get(f"/characters/{cole.id}").text
     assert ">Wild Shape</button>" in page and "Known 6 of 6" in page and "form?name=Polar%20Bear" in page
+    assert 'data-modal-url="/characters/%d/form?name=Polar%%20Bear" data-modal-size="large"' % cole.id in page  # opens in the large modal
     panel = player.get(f"/characters/{cole.id}/form?name=Polar Bear").text
     assert "Circle Forms" in panel and "Shift into it on Battle" in panel and "dndbeyond.com/avatars" in panel
     assert player.get(f"/characters/{cole.id}/form?name=Unicorn").status_code == 404
@@ -94,6 +95,7 @@ def test_wild_shape_tab_panel_and_battle_switch(db, cole, player, dm):
     assert player.post(f"/characters/{cole.id}/wild-shape", data={"form": "Tiger"}, headers=HX).status_code == 400  # not known
     r = player.post(f"/characters/{cole.id}/wild-shape", data={"form": "polar bear"}, headers=HX)
     assert "In Wild Shape: Polar Bear" in r.text and "Wild Shape: Polar Bear" in r.headers["HX-Trigger"]
+    assert 'data-modal-size="large"' in r.text
     db.refresh(cole)
     assert cole.wild_shape == "Polar Bear"
     assert "In Wild Shape: Polar Bear" in dm.get(f"/characters/{cole.id}/battle").text  # the whole table sees it

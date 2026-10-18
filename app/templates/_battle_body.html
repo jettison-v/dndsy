@@ -25,7 +25,7 @@
     </div>
     {% endif %}
     {% if form %}{% set fb = form.beast %}
-    <div class="ws-form" data-panel-url="/characters/{{ c.id }}/form?name={{ fb.name | urlencode }}" tabindex="0" role="button">
+    <div class="ws-form" data-modal-url="/characters/{{ c.id }}/form?name={{ fb.name | urlencode }}" data-modal-size="large" tabindex="0" role="button">
       {% if fb.image %}<img class="ws-pic" src="{{ fb.image }}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}
       <div class="ws-form-main"><b>In Wild Shape: {{ fb.name }}</b> <span class="note">CR {{ fb.cr_label }} · {{ fb.size }}</span>
         <div class="vitals">
@@ -49,7 +49,7 @@
       <h2 class="econ-head k-{{ slug }}">{{ cost }}<small>{{ sub }}</small></h2>
       <div class="moves"{% if can_pick and not form %} data-sort-column="{{ cost }}" data-sort-url="/characters/{{ c.id }}/order"{% endif %}>
       {% for o in col.shown %}
-      <div class="move{{ ' yours' if o.source == 'yours' }}" data-key="{{ o.key }}" data-panel-url="{{ ('/characters/' ~ c.id ~ '/form?name=' ~ (form.beast.name | urlencode)) if form and o.source in ('form', 'rule') else ('/characters/' ~ c.id ~ '/detail?ref=' ~ (o.key | urlencode)) }}" tabindex="0" role="button">
+      <div class="move{{ ' yours' if o.source == 'yours' }}" data-key="{{ o.key }}" {% if form and o.source in ('form', 'rule') %}data-modal-url="/characters/{{ c.id }}/form?name={{ form.beast.name | urlencode }}" data-modal-size="large"{% else %}data-panel-url="/characters/{{ c.id }}/detail?ref={{ o.key | urlencode }}"{% endif %} tabindex="0" role="button">
         {% if o.hit %}<span class="hit">{{ o.hit }}</span>{% endif %}
         {% if o.starred and show_picks %}<span class="pick star on static" aria-label="starred">★</span>{% endif %}<b>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag">{{ t }}</span>{% endfor %}{{ spends(o.spends) }}
         {% if o.meta %}<div class="meta">{{ o.meta }}</div>{% endif %}
