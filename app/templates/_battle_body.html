@@ -35,7 +35,7 @@
           <div class="vital"><small>Initiative</small><b>{{ form.initiative }}</b></div>
           <div class="vital"><small>Saves</small><b class="small">{% for sv in form.saves %}{{ sv.short }} {{ sv.label }}{{ " " if not loop.last }}{% endfor %}</b></div>
         </div>
-        <span class="note">Your stats carried over. No spellcasting in this form. Click for the full form, skills and rules.</span></div>
+        <span class="note">Your stats carried over. {% if form.castable %}Spells: only {{ form.castable | join(", ") }}.{% else %}No spellcasting in this form.{% endif %} Click for the full form, skills and rules.</span></div>
     </div>
     {% elif s %}<div style="margin-top:8px">{{ vitals(s, c) }}</div>{{ resource_row(s) }}{% endif %}
   </div>
@@ -56,7 +56,7 @@
       </div>
       {% else %}<p class="muted">Nothing here yet.</p>{% endfor %}
       </div>
-      {% if cost == "Action" and form %}<div class="move static"><b>Dash, Disengage, Dodge, Help, Hide, Influence, Search, Study, Utilize</b><div class="meta">What anyone can do (no Magic action: no spells in a form)</div></div>
+      {% if cost == "Action" and form %}<div class="move static"><b>Dash, Disengage, Dodge, Help, Hide, Influence, Magic, Search, Study, Utilize</b><div class="meta">What anyone can do. Magic covers features like Land's Aid; spells only {{ "as listed above" if form.castable else "if a feature allows it" }}.</div></div>
       {% elif cost == "Action" %}<div class="move static"><b>Attack, Dash, Disengage, Dodge, Help, Hide, Influence, Magic, Ready, Search, Study, Utilize</b><div class="meta">What anyone can do</div></div>{% endif %}
       {% if col.count > col.shown | length %}<div class="seeall"><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/{{ slug }}">See all {{ cost | lower }}s ({{ col.count }}) →</a></div>{% endif %}
     </div>

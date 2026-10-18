@@ -158,6 +158,7 @@ def character_page(request: Request, character_id: int, db: Session = Depends(ge
         ctx["options"] = [o for o in views.options(ctx["sheet"], ctx["picks"]["star"])
                           if o["kind"] != "spell" or (o["tags"] and o["tags"][0] == "cantrip" and o["hit"])]
         ctx["forms"] = ws.forms(ctx["sheet"], ctx["picks"]["fav"])
+        ctx["ws_other_uses"] = ws.other_uses(ctx["sheet"]) if ctx["druid"] else []
     return _page(request, "character.html", {**ctx, "others": _mine_first(db, user, chars.campaign_characters(db, ch.entity.campaign_id))})
 
 

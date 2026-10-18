@@ -27,6 +27,8 @@ SKILL_ABILITY = {"Acrobatics": "dex", "Animal Handling": "wis", "Arcana": "int",
                  "Nature": "int", "Perception": "wis", "Performance": "cha", "Persuasion": "cha", "Religion": "int",
                  "Sleight of Hand": "dex", "Stealth": "dex", "Survival": "wis"}
 CR_LABELS = {0.0: "0", 0.125: "1/8", 0.25: "1/4", 0.5: "1/2"}
+MOON_SPELLS = ((3, ("Cure Wounds", "Moonbeam", "Starry Wisp")), (5, ("Conjure Animals",)), (7, ("Fount of Moonlight",)), (9, ("Mass Cure Wounds",)))
+COSTLY = re.compile(r"worth|\bGP\b|consume", re.I)  # Beast Spells: no costly or consumed Material components
 ATTACK = re.compile(r"(Melee or Ranged|Melee|Ranged) Attack Roll:\s*([+−-]\d+)")
 DAMAGE = re.compile(r"(\d+) \((\d+d\d+(?:\s*[+−-]\s*\d+)?)\) (\w+) damage")
 SAVE = re.compile(r"(Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) Saving Throw:\s*DC (\d+)")
@@ -75,12 +77,33 @@ def druid(sheet: dict | None) -> dict | None:
     if moon:
         max_cr = max(max_cr, float(level // 3))
     ws = next((a for a in sheet.get("actions") or [] if a["name"] == "Wild Shape"), None)
+    names = " | ".join(feats | {a["name"] for a in sheet.get("actions") or []})
+    fury = "Primal Strike" if "Primal Strike" in names else "Potent Spellcasting" if "Potent Spellcasting" in names else ""
     return {
-        "level": level, "moon": moon, "known": known, "max_cr": max_cr, "max_cr_label": cr_label(max_cr),
-        "table_cr": table_cr, "fly": fly, "uses": ws["uses"] if ws else None, "hours": level // 2,
-        "temp_hp": level * (3 if moon else 1),
+        "level": level, "moon": moon, "circle": k.get("subclass") or "", "known": known, "max_cr": max_cr,
+        "max_cr_label": cr_label(max_cr), "table_cr": table_cr, "fly": fly, "uses": ws["uses"] if ws else None,
+        "hours": level // 2, "temp_hp": level * (3 if moon else 1),
         "lunar_radiance": "Improved Circle Forms" in feats, "toughness": "Improved Circle Forms" in feats,
+        "lunar_form": moon and level >= 14,
+        # Circle of the Moon Spells can be cast in a form; Beast Spells (level 18) opens up the rest
+        "moon_spells": [n for lvl, ns in MOON_SPELLS for n in ns if moon and level >= lvl],
+        "beast_spells": level >= 18,
+        # Elemental Fury (level 7): which option, if the sheet says ("" = not chosen yet or not shown)
+        "elemental_fury": level >= 7, "fury": fury, "primal_strike": ("2d8" if level >= 15 else "1d8") if level >= 7 else "",
     }
+
+
+def other_uses(sheet: dict) -> list[dict]:
+    """Features that spend Wild Shape on something else (Wild Companion, Wild Resurgence,
+    Land's Aid, Starry Form…), read from the sheet so every Circle is covered."""
+    out, seen = [], set()
+    for f in list(sheet.get("actions") or []) + list(sheet.get("features") or []):
+        text = f.get("text") or ""
+        if f["name"].startswith("Wild Shape") or any(n.startswith(f["name"]) for n in seen) or not re.search(r"uses? of (your )?Wild Shape", text):
+            continue
+        seen.add(f["name"])
+        out.append({"name": f["name"], "key": f.get("key", ""), "summary": f.get("summary") or _clip(text, 160)})
+    return out
 
 
 def why_not(d: dict, beast: dict) -> str:
@@ -163,7 +186,11 @@ def _entry(e: dict, cost: str, d: dict) -> dict:
         meta.append(reach.group(1).rstrip("."))
     if dmg:
         kinds = " + ".join(f"{a} ({b}) {c}" for a, b, c in dmg)
-        meta.append(kinds + (" (or Radiant)" if d["lunar_radiance"] and att else ""))
+        meta.append(kinds + (" (or Radiant)" if d.get("lunar_radiance") and att else ""))
+    if att and d.get("lunar_form"):
+        meta.append("+2d10 Radiant once per turn")
+    if att and d.get("fury") == "Primal Strike":
+        meta.append(f"+{d['primal_strike']} Cold/Fire/Lightning/Thunder once per turn")
     hit = att.group(2).replace("-", "−") if att else (f"DC {save.group(2)} {save.group(1)[:3]}" if save else "")
     return {"key": f"beast:{e['name']}", "name": e["name"], "cost": cost, "hit": hit, "meta": " · ".join(meta) or _clip(text),
             "text": text, "tags": ["Form"], "uses": None, "spends": [], "starred": False, "source": "form"}
@@ -238,9 +265,26 @@ def shaped(sheet: dict, beast: dict) -> dict:
         cols["Bonus action"].append({"key": "wild-shape:again", "name": "Wild Shape into another known form", "cost": "Bonus action",
                                      "hit": "", "tags": [], "meta": "Uses Wild Shape again", "uses": d["uses"], "spends": [],
                                      "starred": False, "source": "rule"})
-    # Class features and feats you keep (no spells: you can't cast in a form; no weapons or items)
+    # Spells you can still cast: Circle of the Moon Spells, or (Beast Spells, level 18) any
+    # spell without a costly or consumed Material component
+    castable = []
     for o in views.options(sheet):
-        if o["kind"] != "feature" or o["cost"] not in cols or o["name"].startswith(("Wild Shape", "Unarmed Strike")) or "Spell" in o["name"]:
+        if o["kind"] != "spell" or o["cost"] not in cols:
+            continue
+        sp = next((x for x in sheet.get("spells") or [] if x["key"] == o["key"]), {})
+        if o["name"] in d.get("moon_spells", []):
+            tag = "Circle spell"
+        elif d.get("beast_spells") and not COSTLY.search(sp.get("material") or ""):
+            tag = "Beast Spells"
+        else:
+            continue
+        castable.append(o["name"])
+        cols[o["cost"]].append({**o, "tags": [tag] + o["tags"], "source": "spell", "starred": False})
+    # Class features and feats you keep (no weapons or items; nothing that casts a spell unless you can cast in a form)
+    for o in views.options(sheet):
+        if o["kind"] != "feature" or o["cost"] not in cols or o["name"].startswith(("Wild Shape", "Unarmed Strike")):
+            continue
+        if not d.get("beast_spells") and ("Spell" in o["name"] or o["name"].startswith("Wild Companion")):
             continue
         cols[o["cost"]].append({**o, "tags": ["Yours"], "source": "yours", "starred": False})
 
@@ -248,7 +292,11 @@ def shaped(sheet: dict, beast: dict) -> dict:
         f"You keep your Hit Points ({hp.get('current', '?')} of {hp.get('max', '?')}) and gain {d['temp_hp']} Temporary Hit Points"
         + (" (three times your Druid level, Circle Forms)." if d["moon"] else " (your Druid level)."),
         f"Lasts up to {d['hours']} hour{'s' if d['hours'] != 1 else ''}, until you use Wild Shape again, have the Incapacitated condition, or die.",
-        "You can't cast spells, but shape-shifting doesn't break Concentration on a spell you already cast.",
+        ("Beast Spells: you can cast your spells in this form, except any with a Material component that has a cost or is consumed."
+         if d.get("beast_spells") else
+         f"You can't cast spells, except your Circle of the Moon Spells ({', '.join(d['moon_spells'])}): those you can cast in a form."
+         if d.get("moon_spells") else "You can't cast spells.")
+        + " Shape-shifting doesn't break Concentration on a spell you already cast.",
         "Strength, Dexterity and Constitution are the form's; Intelligence, Wisdom and Charisma stay yours. You keep your skill and "
         "saving throw proficiencies (with your Proficiency Bonus) and use the form's modifier where it's higher.",
         "Your equipment falls, merges into the form (no effect) or is worn by it, your choice; the DM decides what the form can wear.",
@@ -257,6 +305,15 @@ def shaped(sheet: dict, beast: dict) -> dict:
         notes.append("Lunar Radiance: each of your attacks in this form can deal its normal damage type or Radiant damage, chosen on each hit.")
     if d["toughness"]:
         notes.append("Increased Toughness: your Wisdom modifier is added to Constitution saving throws (included above).")
+    if d.get("lunar_form"):
+        notes.append("Lunar Form: once per turn, a target you hit with this form's attack takes an extra 2d10 Radiant damage (shown on the attacks).")
+    if d.get("elemental_fury"):
+        if d["fury"] == "Primal Strike":
+            notes.append(f"Primal Strike: once on each of your turns when you hit with this form's attack, add {d['primal_strike']} Cold, "
+                         "Fire, Lightning or Thunder damage (choose on the hit).")
+        elif not d["fury"]:
+            notes.append(f"Elemental Fury: if you chose Primal Strike, this form's attacks can add {d['primal_strike']} Cold, Fire, "
+                         "Lightning or Thunder damage once on each of your turns. (Potent Spellcasting only affects cantrips.)")
     notes.append("Your other class features and feats stay with you (marked Yours). Whether one works in this body is the DM's call.")
 
     return {
@@ -264,5 +321,6 @@ def shaped(sheet: dict, beast: dict) -> dict:
         "speed": _speed_text(beast.get("speed") or {}), "abilities": abilities, "saves": saves, "skills": skills,
         "passive_perception": 10 + perception, "initiative": _signed(_mod(scores["dex"])),
         "columns": {k: {"shown": v, "all": v, "count": len(v)} for k, v in cols.items()},
-        "traits": beast.get("traits") or [], "notes": notes,
+        "traits": beast.get("traits") or [], "notes": notes, "castable": castable,
+        "magic_action": bool(castable) or d.get("beast_spells", False),
     }

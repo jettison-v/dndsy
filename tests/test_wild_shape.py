@@ -117,3 +117,42 @@ def test_notes_on_shortlist_and_reminders_are_the_players_and_hidden_from_the_dm
     assert "✎ Pounce when I hit 9" in page and "✎ Only at night" in page
     assert "Tiger (Wild Shape, CR 1)" in player.get(f"{url}/battle").text  # reminder text for a form they don't know yet
     assert "Pounce" not in dm.get(url).text and "Only at night" not in dm.get(f"{url}/battle").text
+
+
+def _names(f, cost="Action"):
+    return [o["name"] for o in f["columns"][cost]["shown"]]
+
+
+def test_circle_of_the_moon_spells_can_be_cast_in_a_form_and_nothing_else():
+    sheet = cole_sheet(level=6)
+    f = ws.shaped(sheet, ws.beast_for(sheet, "Polar Bear"))
+    assert {"Starry Wisp", "Cure Wounds", "Moonbeam", "Conjure Animals"} <= set(_names(f))  # levels 3 and 5
+    assert f["castable"] and all(n in ws.druid(sheet)["moon_spells"] for n in f["castable"])
+    assert "Cure Wounds" in ws.druid(cole_sheet(level=3))["moon_spells"] and "Conjure Animals" not in ws.druid(cole_sheet(level=3))["moon_spells"]
+    other = ws.shaped(cole_sheet(level=6, moon=False), ws.catalog_beast("Wolf"))
+    assert other["castable"] == [] and not other["magic_action"]
+
+
+def test_beast_spells_at_18_skip_costly_or_consumed_materials():
+    sheet = cole_sheet(level=18, moon=False)
+    base = next(s for s in sheet["spells"] if s["name"] == "Cure Wounds")
+    sheet["spells"].append({**base, "key": "spell:Pricey", "name": "Pricey", "material": "a diamond worth 300+ GP, which the spell consumes"})
+    f = ws.shaped(sheet, ws.catalog_beast("Brown Bear"))
+    assert "Cure Wounds" in _names(f) and "Pricey" not in _names(f)
+    assert any(o["tags"][0] == "Beast Spells" for o in f["columns"]["Action"]["shown"] if o["name"] == "Cure Wounds")
+
+
+def test_primal_strike_and_lunar_form_add_damage_to_form_attacks():
+    sheet = cole_sheet(level=15)
+    sheet["features"].append({"key": "feature:Druid:Primal Strike", "name": "Elemental Fury: Primal Strike", "source": "Druid", "summary": "", "text": "", "level": 7, "use": False})
+    rend = next(o for o in ws.shaped(sheet, ws.catalog_beast("Polar Bear"))["columns"]["Action"]["shown"] if o["name"] == "Rend")
+    assert "+2d8 Cold/Fire/Lightning/Thunder once per turn" in rend["meta"] and "+2d10 Radiant once per turn" in rend["meta"]
+    d = ws.druid(cole_sheet(level=7))
+    assert d["fury"] == "" and d["primal_strike"] == "1d8"  # option not on the sheet: the panel explains both
+    assert not ws.druid(cole_sheet(level=13))["lunar_form"]
+
+
+def test_other_uses_of_wild_shape_come_from_the_sheet():
+    names = [u["name"] for u in ws.other_uses(cole_sheet())]
+    assert "Wild Companion" in names and any(n.startswith("Wild Resurgence") for n in names)
+    assert len([n for n in names if n.startswith("Wild Resurgence")]) == 2  # the two actions, not the feature again
