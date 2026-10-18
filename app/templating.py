@@ -64,3 +64,13 @@ def _terms(text: str, on=None, seen=None):
 
 
 templates.env.filters["terms"] = _terms
+
+
+def _ordinal(n) -> str:
+    """1 -> "1st", 2 -> "2nd" (spell levels)."""
+    from app.character_views import ordinal
+
+    return ordinal(int(n)) if str(n).isdigit() else str(n)
+
+
+templates.env.filters["ordinal"] = _ordinal

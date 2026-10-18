@@ -193,6 +193,7 @@
     if (!peek || peek.panel.hidden) return;
     peek.panel.classList.remove('open');
     peek.backdrop.hidden = true;
+    panelHistory = [];
     setTimeout(() => { peek.panel.hidden = true; }, 180);
     if (lastFocus) lastFocus.focus();
   }
@@ -201,20 +202,45 @@
 
   // Any element with data-panel-url opens that fragment in the same side panel
   // (Battle: "See all", an option's details). data-modal-url opens a centered modal.
-  function openPanel(url, opener, fallback, modal) {
+  // Opening something from inside the panel (a row in "See all", a link in a short
+  // character view) remembers what was there, so "← Back" can return to it.
+  let panelHistory = [];
+  function openPanel(url, opener, fallback, modal, back) {
     const { panel, backdrop } = peekPanel();
-    lastFocus = opener;
+    const inside = panel.classList.contains('open') && opener && panel.contains(opener);
+    if (back) { /* returning: the history entry was already taken off */ }
+    else if (inside && panel.dataset.url) {
+      const title = panel.querySelector('#peek-title');
+      panelHistory.push({ url: panel.dataset.url, modal: panel.classList.contains('modal'), scroll: (panel.querySelector('.peek-body') || {}).scrollTop || 0,
+                          title: title ? title.textContent.trim() : '' });
+    } else panelHistory = [];
+    if (!inside && !back) lastFocus = opener;
     panel.classList.toggle('modal', !!modal);
     backdrop.classList.toggle('dim', !!modal);
     fetch(url, { headers: { 'HX-Request': 'true' } })
       .then(r => (r.ok ? r.text() : Promise.reject(r.status)))
       .then(html => {
         panel.innerHTML = html;
+        panel.dataset.url = url;
+        const prev = panelHistory[panelHistory.length - 1];
+        if (prev) {
+          const head = panel.querySelector('.peek-head > div');
+          const b = document.createElement('button');
+          b.type = 'button'; b.className = 'btn link peek-back';
+          b.textContent = '← Back' + (prev.title ? ' to ' + prev.title : '');
+          b.addEventListener('click', () => {
+            const p = panelHistory.pop();
+            openPanel(p.url, null, null, p.modal, p);
+          });
+          if (head) head.prepend(b);
+        }
         panel.hidden = false;
         backdrop.hidden = false;
         void panel.offsetWidth; // let the browser place it off-screen first, then slide in
         panel.classList.add('open');
         panel.scrollTop = 0;
+        const body = panel.querySelector('.peek-body');
+        if (body) body.scrollTop = back ? back.scroll : 0;
         if (window.htmx) htmx.process(panel);  // forms inside the panel (suggestions, edits)
         const close = panel.querySelector('.peek-close');
         if (close) { close.addEventListener('click', closePeek); close.focus(); }

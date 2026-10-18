@@ -117,7 +117,7 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
         cost = sp["casting_time"] if sp["casting_time"] in ("Action", "Bonus action", "Reaction") else None
         if not cost:
             continue
-        level = "cantrip" if not sp["level"] else f"level {sp['level']}"
+        level = "cantrip" if not sp["level"] else ordinal(sp["level"])
         effect = sp["damage"] or (f"heals {sp['healing']}" if sp["healing"] else "")
         tags = [level] + (["Conc."] if sp["concentration"] else [])
         add(key=sp["key"], kind="spell", cost=cost, name=sp["name"], hit=sp["attack"] or sp["save"], tags=tags,

@@ -673,3 +673,16 @@ table.calc td.num { text-align: right; color: var(--text); font-variant-numeric:
 table.calc tr.total td { border-bottom: none; border-top: 2px solid #4a4f57; color: var(--text); font-weight: 700; }
 .calc-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 @media (max-width: 640px) { .calc-pair { grid-template-columns: 1fr; } }
+/* Rows inside the side panel: narrow, so stack details under the name instead of clipping */
+.peek .ri { grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "pk main hit end" "pk mech mech end"; align-items: start; row-gap: 0; }
+.peek .ri > .ri-pk:first-child { grid-area: pk; padding-top: 2px; }
+.peek .ri > .ri-main { grid-area: main; }
+.peek .ri > .ri-mech { grid-area: mech; text-align: left; white-space: normal; max-width: none; overflow: visible; }
+.peek .ri > .ri-hit { grid-area: hit; padding-top: 1px; }
+.peek .ri > .ri-pk.end { grid-area: end; padding-top: 2px; }
+.peek .ri-line { white-space: normal; }
+.peek .ri-what { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.peek .ri-mech:empty { display: none; }
+/* Back, in the side panel, to what was open before */
+.peek-back { display: inline-flex; align-items: center; gap: 4px; font-size: .88rem; color: var(--muted); padding: 0; margin: 0 0 6px; min-height: 0; }
+.peek-back:hover { color: var(--text); }

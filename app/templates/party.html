@@ -21,7 +21,7 @@
       <div class="sec-head"><h2>Party spells</h2><span class="note">prepared or known now</span></div>
       {% for title, list in spells %}
       <h3>{{ title }}</h3>
-      {% for sp in list %}<div class="poolrow" data-panel-url="{{ sp.url }}" tabindex="0" role="button"><span>{{ sp.name }} <span class="meta">{{ "cantrip" if not sp.level else "level " ~ sp.level }} · {{ sp.casting_time | lower }}{% if sp.concentration %} · Conc.{% endif %}{% if sp.healing %} · heals {{ sp.healing }}{% elif sp.damage %} · {{ sp.damage }}{% endif %}</span></span>
+      {% for sp in list %}<div class="poolrow" data-panel-url="{{ sp.url }}" tabindex="0" role="button"><span>{{ sp.name }} <span class="meta">{{ "cantrip" if not sp.level else sp.level | ordinal }} · {{ sp.casting_time | lower }}{% if sp.concentration %} · Conc.{% endif %}{% if sp.healing %} · heals {{ sp.healing }}{% elif sp.damage %} · {{ sp.damage }}{% endif %}</span></span>
         <span class="chips">{% for w in sp.who %}<span class="chip" data-panel-url="{{ w.url }}" tabindex="0" role="button" title="Open {{ w.label }}'s">{{ w.label }}</span>{% endfor %}</span></div>{% endfor %}
       {% else %}<p class="muted">No spells yet.</p>{% endfor %}
     </section>

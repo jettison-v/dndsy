@@ -519,6 +519,7 @@ def test_options_show_what_they_spend():
     cole = ddb.parse_character(COLE)
     assert spends("Flurry of Blows", cole) == [("1 Focus Point", 2, 2)]
     assert spends("Healing Word", cole) == [("1st-level slot", 4, 4)]
+    assert next(o for o in views.options(cole) if o["name"] == "Moonbeam")["tags"][0] == "2nd"  # level pills read 1st, 2nd…
     assert spends("Wild Shape: Circle Forms", cole) == [("1 use of Wild Shape", 3, 3)]
     assert spends("Wild Resurgence: Regain Wild Shape", cole) == []  # it gives a use back
     assert spends("Unarmed Strike", cole) == [] and spends("Thorn Whip", cole) == []
