@@ -215,15 +215,20 @@ def label_for(sheet: dict, ref: str) -> str:
         return ""
     if x["section"] == "situational":
         return x["text"] + (f" ({x['source']})" if x["source"] else "")
+    if x["section"] == "creatures":
+        return f"{x['name']} ({x.get('group') or 'form'}, CR {x.get('cr')})"
     detail = x.get("summary") or x.get("text") or ""
     detail = re.split(r"(?<=[.!?])\s", detail, maxsplit=1)[0]
     return f"{x['name']}: {detail}" if detail else x["name"]
 
 
-def reminders(sheet: dict, remind: dict[str, str], order: list[str] | None = None) -> list[dict]:
+def reminders(sheet: dict, remind: dict[str, str], order: list[str] | None = None, notes: dict[str, str] | None = None) -> list[dict]:
     """Reminders in the player's order (drag and drop), else the order they were
-    added; today's sheet text when the thing still exists, the saved label otherwise."""
-    out = [{"ref": ref, "text": label_for(sheet, ref) or saved} for ref, saved in remind.items() if label_for(sheet, ref) or saved]
+    added; today's sheet text when the thing still exists, the saved label otherwise,
+    with the player's note on why."""
+    notes = notes or {}
+    out = [{"ref": ref, "text": label_for(sheet, ref) or saved, "note": notes.get(f"remind|{ref}", "")}
+           for ref, saved in remind.items() if label_for(sheet, ref) or saved]
     if order:
         rank = {k: i for i, k in enumerate(order)}
         out.sort(key=lambda r: rank.get(r["ref"], len(rank)))

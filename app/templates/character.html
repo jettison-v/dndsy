@@ -55,7 +55,7 @@
       <button role="tab" aria-selected="false" data-tab="t-features">Features</button>
       <button role="tab" aria-selected="false" data-tab="t-situ">Situational <span class="count">{{ s.situational | length }}</span></button>
       <button role="tab" aria-selected="false" data-tab="t-skills">Skills</button>
-      {% if s.creatures %}<button role="tab" aria-selected="false" data-tab="t-forms">Forms</button>{% endif %}
+      {% if druid %}<button role="tab" aria-selected="false" data-tab="t-forms">Wild Shape</button>{% elif s.creatures %}<button role="tab" aria-selected="false" data-tab="t-forms">Forms</button>{% endif %}
       {% if s.story %}<button role="tab" aria-selected="false" data-tab="t-story">Background</button>{% endif %}
     </div>
 
@@ -193,7 +193,51 @@
         </dl></details>
     </div>
 
-    {% if s.creatures %}
+    {% if druid %}{% set d = druid %}
+    <div id="t-forms" hidden data-planner data-noun="form">
+      <div class="planner-classes">
+        <div class="planner-class"><b>Wild Shape</b> <span class="muted">Druid {{ d.level }}{% if d.moon %} · Circle of the Moon{% endif %}</span>
+          <div class="row" style="gap:6px;margin-top:4px">
+            {% set known_n = forms | selectattr("known") | list | length %}
+            <span class="tag {{ 'done' if known_n == d.known else 'draft' }}">Known {{ known_n }} of {{ d.known }}</span>
+            <span class="tag">Max CR {{ d.max_cr_label }}{% if d.moon and d.max_cr > d.table_cr %} (Circle Forms){% endif %}</span>
+            <span class="tag {{ '' if d.fly else 'faint' }}">{{ "Fly Speed allowed" if d.fly else "No Fly Speed until Druid 8" }}</span>
+          </div></div>
+        <div class="planner-class"><b>In a form</b>
+          <div class="row" style="gap:6px;margin-top:4px">{% if d.uses %}<span class="res">Uses {{ pips(d.uses) }}</span>{% endif %}
+            <span class="tag">+{{ d.temp_hp }} temp HP</span>{% if d.moon %}<span class="tag">AC at least {{ 13 + ((s.abilities | selectattr("key", "equalto", "wisdom") | first).modifier) }}</span>{% endif %}
+            <span class="tag">Up to {{ d.hours }} h</span></div></div>
+      </div>
+      <div class="planner-tools">
+        <div class="seg" role="group" aria-label="Which forms">
+          <button type="button" data-view="ready" aria-pressed="true">Known</button>
+          <button type="button" data-view="fav" aria-pressed="false">♥ Shortlist</button>
+          <button type="button" data-view="all" aria-pressed="false">All you can learn</button>
+        </div>
+        <input type="search" data-search placeholder="Search beasts" aria-label="Search beasts">
+      </div>
+      <div class="filters" role="group" aria-label="Filter forms">
+        {% for cr in forms | sort(attribute="cr") | map(attribute="cr_label") | unique %}<button type="button" data-filter="level:{{ cr }}">CR {{ cr }}</button>{% endfor %}
+        <span class="sep"></span>
+        {% for m in ["swim", "climb", "burrow", "fly"] %}<button type="button" data-filter="tag:{{ m }}">{{ m | capitalize }}</button>{% endfor %}
+        <span class="sep"></span>
+        {% for z in ["tiny", "small", "medium", "large", "huge"] %}{% if forms | selectattr("size", "equalto", z | capitalize) | list %}<button type="button" data-filter="tag:{{ z }}">{{ z | capitalize }}</button>{% endif %}{% endfor %}
+      </div>
+      <p class="note planner-note"><span data-shown></span>{% if can_pick %} ♥ shortlists a form so you can compare before learning it.{% endif %} Learn forms on D&amp;D Beyond{% if s.sheet_url %} (<a href="{{ s.sheet_url }}" target="_blank" rel="noopener">open ↗</a>){% endif %}: you can swap one known form after each Long Rest. Click a form to see it with your stats carried over.</p>
+      <section class="planner-group"><div class="planner-level"><div class="rows">
+      {% for fm in forms %}
+        {% set tags = (fm.moves + [fm.size | lower] + (["locked"] if fm.why_not else [])) | join(" ") %}
+        {{ ri(c, fm.key, fm.name, picks, can_pick, fav=True, url="/characters/" ~ c.id ~ "/form?name=" ~ (fm.name | urlencode), image=fm.image,
+              chips=[("Known", "done") if fm.known else None, (fm.why_not, "faint") if fm.why_not else None],
+              what=fm.summary, mech="CR " ~ fm.cr_label ~ " · " ~ fm.size ~ " · " ~ fm.speed, hit="AC " ~ fm.ac,
+              cls="spell-row form-row" ~ ("" if fm.known else " not-ready"),
+              attrs='data-state="%s" data-fav="%s" data-level="%s" data-cast="other" data-name="%s" data-tags="%s"' | format('ready' if fm.known else 'learn', '1' if fm.key in picks.fav else '0', fm.cr_label, fm.name | lower | e, tags)) }}
+      {% endfor %}
+      </div></div></section>
+      <p class="muted planner-empty" hidden>No forms match. Try another view or clear a filter.</p>
+      <p class="note">Beast stat blocks: System Reference Document 5.2 (Wizards of the Coast, CC-BY-4.0). Pictures from D&amp;D Beyond.</p>
+    </div>
+    {% elif s.creatures %}
     <div id="t-forms" hidden>
       <div class="rows">{% for cr in s.creatures %}{{ ri(c, cr.key, cr.name, picks, can_pick, chips=[(cr.group, "")], what=("CR " ~ cr.cr ~ " · AC " ~ cr.armor_class ~ " · " ~ cr.hit_points ~ " HP"), mech=cr.speed) }}{% endfor %}</div>
     </div>

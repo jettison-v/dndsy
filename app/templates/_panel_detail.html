@@ -1,5 +1,5 @@
 {# Side panel: everything about one thing on the sheet. Same layout for spells, actions, items, features. #}
-{% from "_char.html" import pips, pick_btn, spell_mech, spends_detail, STATE_LABELS %}
+{% from "_char.html" import pips, pick_btn, pick_note, spell_mech, spends_detail, STATE_LABELS %}
 {% set o = opt %}
 <div class="peek-head">
   <div><div class="note">{{ c.entity.name }} · {{ {"spells": "Spell", "actions": "Action", "attacks": "Attack", "inventory": "Item", "features": "Feature", "situational": "Situational", "creatures": "Form"}.get(section, "") }}</div>
@@ -7,10 +7,10 @@
   <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
 </div>
 <div class="peek-body detail">
-  {% if can_pick %}<div class="row detail-picks">
-    {% if section == "spells" %}{{ pick_btn(c, "fav", ref, ref in picks.fav, can_pick) }}<span class="note">shortlist</span>{% endif %}
-    {% if o and o.cost != "Other" %}{{ pick_btn(c, "star", ref, ref in picks.star, can_pick) }}<span class="note">on Battle</span>{% endif %}
-    {{ pick_btn(c, "remind", ref, ref in picks.remind, can_pick) }}
+  {% if can_pick or picks.notes %}<div class="detail-picks">
+    {% if can_pick and o and o.cost != "Other" %}<div class="row">{{ pick_btn(c, "star", ref, ref in picks.star, can_pick) }}<span class="note">on Battle</span></div>{% endif %}
+    {% if section == "spells" %}{{ pick_note(c, "fav", ref, ref in picks.fav, picks.notes.get("fav|" ~ ref, ""), can_pick) }}{% endif %}
+    {{ pick_note(c, "remind", ref, ref in picks.remind, picks.notes.get("remind|" ~ ref, ""), can_pick) }}
   </div>{% endif %}
 
   {# The mechanics, always in the same order #}

@@ -22,7 +22,7 @@ CHARACTER_URL = "https://character-service.dndbeyond.com/character/v5/character/
 SHEET_URL = "https://www.dndbeyond.com/characters/{id}"
 USER_AGENT = "askdnd/2 (private table companion; +https://beta.askdnd.ai)"
 TIMEOUT_SECONDS = 15
-PARSER_VERSION = 11  # bump when the summary shape changes; stored summaries are re-parsed
+PARSER_VERSION = 12  # bump when the summary shape changes; stored summaries are re-parsed
 
 
 class DdbError(Exception):
@@ -1246,8 +1246,55 @@ class _Sheet:
                 "armor_class": df.get("armorClass"),
                 "hit_points": df.get("averageHitPoints"),
                 "speed": moves,
+                "block": _creature_block(df),
             })
         return out
+
+
+MOVES = {1: "walk", 2: "burrow", 3: "climb", 4: "fly", 5: "swim"}
+SENSE_NAMES = {1: "Blindsight", 2: "Darkvision", 3: "Tremorsense", 4: "Truesight"}
+
+
+def _stat_entries(html: str | None) -> list[dict]:
+    """"Rend. Melee Attack Roll: +7…" paragraphs as [{"name": "Rend", "text": "Melee Attack Roll…"}]."""
+    out = []
+    for para in (p.strip() for p in html_to_text(html).split("\n") if p.strip()):
+        m = re.match(r"([^.]{1,60}?(?:\([^)]*\))?)\.\s+(.*)", para, re.S)
+        if m:
+            out.append({"name": m.group(1).strip(), "text": m.group(2).strip()})
+        elif out:
+            out[-1]["text"] += "\n" + para
+    return out
+
+
+def _creature_block(df: dict) -> dict:
+    """A Wild Shape form's stat block from D&D Beyond, in the same shape as
+    app/data/beasts_2024.json (used when the form isn't in that list)."""
+    cr = df.get("challengeRatingId")
+    label = CR.get(cr, str(cr - 4) if isinstance(cr, int) and cr > 4 else "")
+    value = {"0": 0.0, "1/8": 0.125, "1/4": 0.25, "1/2": 0.5}.get(label)
+    abilities = {ABILITY_KEY[x["statId"]][:3]: x.get("value") or 10 for x in df.get("stats") or [] if x.get("statId") in ABILITY_KEY}
+    return {
+        "name": df.get("name", ""),
+        "cr": value if value is not None else float(label or 0),
+        "cr_label": label,
+        "size": {2: "Tiny", 3: "Small", 4: "Medium", 5: "Large", 6: "Huge", 7: "Gargantuan"}.get(df.get("sizeId"), ""),
+        "ac": df.get("armorClass"),
+        "ac_note": df.get("armorClassDescription") or "",
+        "hp": df.get("averageHitPoints"),
+        "hit_dice": (df.get("hitPointDice") or {}).get("diceString", ""),
+        "speed": {MOVES[m["movementId"]]: m["speed"] for m in df.get("movements") or [] if m.get("movementId") in MOVES and m.get("speed")},
+        "abilities": abilities,
+        "saves": {},
+        "skills": {},
+        "senses": ", ".join(f"{SENSE_NAMES[x['senseId']]} {x.get('notes') or ''}".strip() for x in df.get("senses") or [] if x.get("senseId") in SENSE_NAMES),
+        "passive_perception": df.get("passivePerception"),
+        "traits": _stat_entries(df.get("specialTraitsDescription")),
+        "actions": _stat_entries(df.get("actionsDescription")),
+        "bonus_actions": _stat_entries(df.get("bonusActionsDescription")),
+        "reactions": _stat_entries(df.get("reactionsDescription")),
+        "source": "D&D Beyond",
+    }
 
 
 def parse_character(data: dict) -> dict:

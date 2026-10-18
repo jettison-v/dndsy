@@ -1,0 +1,5356 @@
+{
+ "credit": "Beast stat blocks from the System Reference Document 5.2 by Wizards of the Coast LLC, licensed under CC-BY-4.0 (https://creativecommons.org/licenses/by/4.0/). Pictures link to D&D Beyond.",
+ "beasts": [
+  {
+   "name": "Baboon",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Small",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 3,
+   "hit_dice": "1d6",
+   "speed": {
+    "walk": 30,
+    "climb": 30,
+    "swim": 15
+   },
+   "hover": false,
+   "abilities": {
+    "str": 8,
+    "dex": 14,
+    "con": 11,
+    "int": 4,
+    "wis": 12,
+    "cha": 6
+   },
+   "saves": {
+    "str": -1,
+    "dex": 2,
+    "con": 0,
+    "int": -3,
+    "wis": 1,
+    "cha": -2
+   },
+   "skills": {},
+   "senses": "",
+   "passive_perception": 11,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Pack Tactics",
+     "text": "The baboon has Advantage on an attack roll against a creature if at least one of the baboon's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +1, reach 5 ft. 1 (1d4 - 1) Piercing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47144/596/638742154065775180.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5194910-baboon",
+   "ddb_id": 5194910
+  },
+  {
+   "name": "Badger",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Small",
+   "ac": 11,
+   "ac_note": "natural armor",
+   "hp": 5,
+   "hit_dice": "1d4 + 3",
+   "speed": {
+    "walk": 20,
+    "burrow": 5,
+    "climb": 10,
+    "swim": 10
+   },
+   "hover": false,
+   "abilities": {
+    "str": 10,
+    "dex": 11,
+    "con": 16,
+    "int": 2,
+    "wis": 12,
+    "cha": 5
+   },
+   "saves": {
+    "str": 0,
+    "dex": 0,
+    "con": 3,
+    "int": -4,
+    "wis": 1,
+    "cha": -3
+   },
+   "skills": {
+    "Perception": 3
+   },
+   "senses": "Darkvision 30 ft.",
+   "passive_perception": 13,
+   "resist": "poison",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +2, reach 5 ft. 1 Piercing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43938/901/638607409155512331.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775802-badger",
+   "ddb_id": 4775802
+  },
+  {
+   "name": "Bat",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Small",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 1,
+   "hit_dice": "1d4 - 1",
+   "speed": {
+    "walk": 5,
+    "fly": 30,
+    "climb": 2,
+    "swim": 2
+   },
+   "hover": false,
+   "abilities": {
+    "str": 2,
+    "dex": 15,
+    "con": 8,
+    "int": 2,
+    "wis": 12,
+    "cha": 4
+   },
+   "saves": {
+    "str": -4,
+    "dex": 2,
+    "con": -1,
+    "int": -4,
+    "wis": 1,
+    "cha": -3
+   },
+   "skills": {},
+   "senses": "Blindsight 60 ft.",
+   "passive_perception": 11,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +4 to hit, reach 5 ft. 1 Piercing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43938/917/638607409598192740.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775803-bat",
+   "ddb_id": 4775803
+  },
+  {
+   "name": "Cat",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Small",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 2,
+   "hit_dice": "1d4",
+   "speed": {
+    "walk": 40,
+    "climb": 40,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 3,
+    "dex": 15,
+    "con": 10,
+    "int": 3,
+    "wis": 12,
+    "cha": 7
+   },
+   "saves": {
+    "str": -4,
+    "dex": 4,
+    "con": 0,
+    "int": -4,
+    "wis": 1,
+    "cha": -2
+   },
+   "skills": {
+    "Perception": 3,
+    "Stealth": 4
+   },
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 13,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Jumper",
+     "text": "The cat's jump distance is determined using its Dexterity rather than its Strength."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Scratch",
+     "text": "Melee Attack Roll: +4, reach 5 ft. 1 Slashing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43939/80/638607414146520300.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775808-cat",
+   "ddb_id": 4775808
+  },
+  {
+   "name": "Crab",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Small",
+   "ac": 11,
+   "ac_note": "natural armor",
+   "hp": 3,
+   "hit_dice": "1d4 + 1",
+   "speed": {
+    "walk": 20,
+    "climb": 10,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 6,
+    "dex": 11,
+    "con": 12,
+    "int": 1,
+    "wis": 8,
+    "cha": 2
+   },
+   "saves": {
+    "str": -2,
+    "dex": 0,
+    "con": 1,
+    "int": -5,
+    "wis": -1,
+    "cha": -4
+   },
+   "skills": {
+    "Stealth": 2
+   },
+   "senses": "Blindsight 30 ft.",
+   "passive_perception": 9,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Amphibious",
+     "text": "The crab can breathe air and water."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Claw",
+     "text": "Melee Attack Roll: +2, reach 5 ft. 1 Bludgeoning damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/58416/245/639226684526660187.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775810-crab",
+   "ddb_id": 4775810
+  },
+  {
+   "name": "Deer",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Medium",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 4,
+   "hit_dice": "1d8",
+   "speed": {
+    "walk": 50,
+    "climb": 25,
+    "swim": 25
+   },
+   "hover": false,
+   "abilities": {
+    "str": 11,
+    "dex": 16,
+    "con": 11,
+    "int": 2,
+    "wis": 14,
+    "cha": 5
+   },
+   "saves": {
+    "str": 0,
+    "dex": 3,
+    "con": 0,
+    "int": -4,
+    "wis": 2,
+    "cha": -3
+   },
+   "skills": {
+    "Perception": 4
+   },
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 14,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Agile",
+     "text": "The deer doesn't provoke an Opportunity Attack when it moves out of an enemy's reach."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Ram",
+     "text": "Melee Attack Roll: +2, reach 5 ft. 2 (1d4) Bludgeoning damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47138/754/638741963967346077.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5194966-deer",
+   "ddb_id": 5194966
+  },
+  {
+   "name": "Eagle",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Small",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 4,
+   "hit_dice": "1d6 + 1",
+   "speed": {
+    "walk": 10,
+    "fly": 60,
+    "climb": 5,
+    "swim": 5
+   },
+   "hover": false,
+   "abilities": {
+    "str": 6,
+    "dex": 15,
+    "con": 12,
+    "int": 2,
+    "wis": 14,
+    "cha": 7
+   },
+   "saves": {
+    "str": -2,
+    "dex": 2,
+    "con": 1,
+    "int": -4,
+    "wis": 2,
+    "cha": -2
+   },
+   "skills": {
+    "Perception": 6
+   },
+   "senses": "",
+   "passive_perception": 16,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Talons",
+     "text": "Melee Attack Roll: +4, reach 5 feet. 4 (1d4 + 2) Slashing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47138/781/638741964002529266.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5194979-eagle",
+   "ddb_id": 5194979
+  },
+  {
+   "name": "Frog",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Small",
+   "ac": 11,
+   "ac_note": "natural armor",
+   "hp": 1,
+   "hit_dice": "1d4 - 1",
+   "speed": {
+    "walk": 20,
+    "climb": 10,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 1,
+    "dex": 13,
+    "con": 8,
+    "int": 1,
+    "wis": 8,
+    "cha": 3
+   },
+   "saves": {
+    "str": -5,
+    "dex": 1,
+    "con": -1,
+    "int": -5,
+    "wis": -1,
+    "cha": -4
+   },
+   "skills": {
+    "Perception": 1,
+    "Stealth": 3
+   },
+   "senses": "Darkvision 30 ft.",
+   "passive_perception": 11,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Amphibious",
+     "text": "The frog can breathe air and water."
+    },
+    {
+     "name": "Standing Leap",
+     "text": "The frog's Long Jump is up to 10 feet and its High Jump is up to 5 feet with or without a running start."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +3, reach 5 ft. 1 Piercing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43939/207/638607417426081315.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775816-frog",
+   "ddb_id": 4775816
+  },
+  {
+   "name": "Giant Fire Beetle",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Small",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 4,
+   "hit_dice": "1d6 + 1",
+   "speed": {
+    "walk": 30,
+    "climb": 30,
+    "swim": 15
+   },
+   "hover": false,
+   "abilities": {
+    "str": 8,
+    "dex": 10,
+    "con": 12,
+    "int": 1,
+    "wis": 7,
+    "cha": 3
+   },
+   "saves": {
+    "str": -1,
+    "dex": 0,
+    "con": 1,
+    "int": -5,
+    "wis": -2,
+    "cha": -4
+   },
+   "skills": {},
+   "senses": "Blindsight 30 ft.",
+   "passive_perception": 8,
+   "resist": "fire",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Illumination",
+     "text": "The beetle sheds Bright Light in a 10-foot radius and Dim Light for an additional 10 feet."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +1, reach 5 ft. 1 Fire damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47138/863/638741964114019332.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195019-giant-fire-beetle",
+   "ddb_id": 5195019
+  },
+  {
+   "name": "Giant Fly",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Large",
+   "ac": 11,
+   "ac_note": "natural armor",
+   "hp": 19,
+   "hit_dice": "3d10 + 3",
+   "speed": {
+    "walk": 30,
+    "fly": 60,
+    "climb": 15,
+    "swim": 15
+   },
+   "hover": false,
+   "abilities": {
+    "str": 14,
+    "dex": 13,
+    "con": 13,
+    "int": 2,
+    "wis": 10,
+    "cha": 3
+   },
+   "saves": {
+    "str": 2,
+    "dex": 1,
+    "con": 1,
+    "int": -4,
+    "wis": 0,
+    "cha": -4
+   },
+   "skills": {},
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 10,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2"
+  },
+  {
+   "name": "Goat",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Medium",
+   "ac": 10,
+   "ac_note": "natural armor",
+   "hp": 4,
+   "hit_dice": "1d8",
+   "speed": {
+    "walk": 40,
+    "climb": 30,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 11,
+    "dex": 10,
+    "con": 11,
+    "int": 2,
+    "wis": 10,
+    "cha": 5
+   },
+   "saves": {
+    "str": 2,
+    "dex": 0,
+    "con": 0,
+    "int": -4,
+    "wis": 0,
+    "cha": -3
+   },
+   "skills": {
+    "Perception": 2
+   },
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 12,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Ram",
+     "text": "Melee Attack Roll: +2, reach 5 ft. 1 Bludgeoning damage, or 2 (1d4) Bludgeoning damage if the goat moved 20+ feet straight toward the target immediately before the hit."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47158/903/638742835857217408.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775823-goat",
+   "ddb_id": 4775823
+  },
+  {
+   "name": "Hawk",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Small",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 1,
+   "hit_dice": "1d4 - 1",
+   "speed": {
+    "walk": 10,
+    "fly": 60,
+    "climb": 5,
+    "swim": 5
+   },
+   "hover": false,
+   "abilities": {
+    "str": 5,
+    "dex": 16,
+    "con": 8,
+    "int": 2,
+    "wis": 14,
+    "cha": 6
+   },
+   "saves": {
+    "str": -3,
+    "dex": 3,
+    "con": -1,
+    "int": -4,
+    "wis": 2,
+    "cha": -2
+   },
+   "skills": {
+    "Perception": 6
+   },
+   "senses": "",
+   "passive_perception": 16,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Talons",
+     "text": "Melee Attack Roll: +5, reach 5 ft. 1 Slashing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43939/626/638607427375996839.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775824-hawk",
+   "ddb_id": 4775824
+  },
+  {
+   "name": "Hyena",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Medium",
+   "ac": 11,
+   "ac_note": "natural armor",
+   "hp": 5,
+   "hit_dice": "1d8 + 1",
+   "speed": {
+    "walk": 50,
+    "climb": 25,
+    "swim": 25
+   },
+   "hover": false,
+   "abilities": {
+    "str": 11,
+    "dex": 13,
+    "con": 12,
+    "int": 2,
+    "wis": 12,
+    "cha": 5
+   },
+   "saves": {
+    "str": 0,
+    "dex": 1,
+    "con": 1,
+    "int": -4,
+    "wis": 1,
+    "cha": -3
+   },
+   "skills": {
+    "Perception": 3
+   },
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 13,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Pack Tactics",
+     "text": "The hyena has Advantage on an attack roll against a creature if at least one of the hyena's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +2, reach 5 ft. 3 (1d6) Piercing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/58416/991/639226710164858261.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195085-hyena",
+   "ddb_id": 5195085
+  },
+  {
+   "name": "Jackal",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Small",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 3,
+   "hit_dice": "1d6",
+   "speed": {
+    "walk": 40,
+    "climb": 20,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 8,
+    "dex": 15,
+    "con": 11,
+    "int": 3,
+    "wis": 12,
+    "cha": 6
+   },
+   "saves": {
+    "str": -1,
+    "dex": 2,
+    "con": 0,
+    "int": -4,
+    "wis": 1,
+    "cha": -2
+   },
+   "skills": {
+    "Perception": 5,
+    "Stealth": 4
+   },
+   "senses": "Darkvision 90 ft.",
+   "passive_perception": 15,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +1, reach 5 ft. 1 (1d4 - 1) Piercing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47139/9/638741964320110052.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195091-jackal",
+   "ddb_id": 5195091
+  },
+  {
+   "name": "Lizard",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Small",
+   "ac": 10,
+   "ac_note": "natural armor",
+   "hp": 2,
+   "hit_dice": "1d4",
+   "speed": {
+    "walk": 20,
+    "climb": 20,
+    "swim": 10
+   },
+   "hover": false,
+   "abilities": {
+    "str": 2,
+    "dex": 11,
+    "con": 10,
+    "int": 1,
+    "wis": 8,
+    "cha": 3
+   },
+   "saves": {
+    "str": -4,
+    "dex": 0,
+    "con": 0,
+    "int": -5,
+    "wis": -1,
+    "cha": -4
+   },
+   "skills": {},
+   "senses": "Darkvision 30 ft.",
+   "passive_perception": 9,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Spider Climb",
+     "text": "The lizard can climb difficult surfaces, including along ceilings, without needing to make an ability check."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +2, reach 5 ft. 1 Piercing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/58415/744/639226667170988945.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775827-lizard",
+   "ddb_id": 4775827
+  },
+  {
+   "name": "Octopus",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Small",
+   "ac": 12,
+   "ac_note": "",
+   "hp": 3,
+   "hit_dice": "1d6",
+   "speed": {
+    "walk": 5,
+    "climb": 2,
+    "swim": 30
+   },
+   "hover": false,
+   "abilities": {
+    "str": 4,
+    "dex": 15,
+    "con": 0,
+    "int": 3,
+    "wis": 10,
+    "cha": -3
+   },
+   "saves": {
+    "str": -3,
+    "dex": 2,
+    "con": 30,
+    "int": -4,
+    "wis": 0,
+    "cha": -3
+   },
+   "skills": {
+    "Perception": 2,
+    "Stealth": 6
+   },
+   "senses": "Darkvision 30 ft.",
+   "passive_perception": 12,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Compression",
+     "text": "The octopus can move through a space as narrow as 1 inch without expending extra movement to do so."
+    },
+    {
+     "name": "Water Breathing",
+     "text": "The octopus can breathe only underwater."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Tentacles",
+     "text": "Melee Attack Roll: +4, reach 5 ft. Hit: 1 Bludgeoning damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [
+    {
+     "name": "Ink Cloud (1/Day)",
+     "text": "Trigger: A creature ends its turn within 5 feet of the octopus while underwater. Response: The octopus releases ink that fills a 5-foot Cube centered on itself, and the octopus moves up to its Swim Speed. The Cube is Heavily Obscured for 1 minute or until a strong current or similar effect disperses the ink."
+    }
+   ],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47158/936/638742837128618852.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775830-octopus",
+   "ddb_id": 4775830
+  },
+  {
+   "name": "Owl",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Small",
+   "ac": 11,
+   "ac_note": "natural armor",
+   "hp": 1,
+   "hit_dice": "1d4 - 1",
+   "speed": {
+    "walk": 5,
+    "fly": 60,
+    "climb": 2,
+    "swim": 2
+   },
+   "hover": false,
+   "abilities": {
+    "str": 3,
+    "dex": 13,
+    "con": 8,
+    "int": 2,
+    "wis": 12,
+    "cha": 7
+   },
+   "saves": {
+    "str": -4,
+    "dex": 1,
+    "con": -1,
+    "int": -4,
+    "wis": 1,
+    "cha": -2
+   },
+   "skills": {
+    "Perception": 5,
+    "Stealth": 5
+   },
+   "senses": "Darkvision 120 ft.",
+   "passive_perception": 15,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Flyby",
+     "text": "The owl doesn't provoke Opportunity Attacks when it flies out of an enemy's reach."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Talons",
+     "text": "Melee Attack Roll: +3, reach 5 ft. 1 Slashing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47158/950/638742837729688628.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775831-owl",
+   "ddb_id": 4775831
+  },
+  {
+   "name": "Piranha",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Small",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 1,
+   "hit_dice": "1d4 - 1",
+   "speed": {
+    "walk": 5,
+    "climb": 2,
+    "swim": 40
+   },
+   "hover": false,
+   "abilities": {
+    "str": 2,
+    "dex": 16,
+    "con": 9,
+    "int": 1,
+    "wis": 7,
+    "cha": 2
+   },
+   "saves": {
+    "str": -4,
+    "dex": 3,
+    "con": -1,
+    "int": -5,
+    "wis": -2,
+    "cha": -4
+   },
+   "skills": {},
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 8,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Water Breathing",
+     "text": "The piranha can breathe only underwater."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +5 (with Advantage if the target doesn't have all its Hit Points), reach 5 ft. 1 Piercing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47139/153/638741964514881866.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195160-piranha",
+   "ddb_id": 5195160
+  },
+  {
+   "name": "Rat",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Small",
+   "ac": 10,
+   "ac_note": "natural armor",
+   "hp": 1,
+   "hit_dice": "1d4 - 1",
+   "speed": {
+    "walk": 20,
+    "climb": 20,
+    "swim": 10
+   },
+   "hover": false,
+   "abilities": {
+    "str": 2,
+    "dex": 11,
+    "con": 9,
+    "int": 2,
+    "wis": 10,
+    "cha": 4
+   },
+   "saves": {
+    "str": -4,
+    "dex": 0,
+    "con": -1,
+    "int": -4,
+    "wis": 0,
+    "cha": -3
+   },
+   "skills": {
+    "Perception": 2
+   },
+   "senses": "Darkvision 30 ft.",
+   "passive_perception": 12,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Agile",
+     "text": "The rat doesn't provoke Opportunity Attacks when it moves out of an enemy's reach."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +2, reach 5 ft. 1 Piercing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47158/969/638742838302908263.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775836-rat",
+   "ddb_id": 4775836
+  },
+  {
+   "name": "Raven",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Small",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 2,
+   "hit_dice": "1d4",
+   "speed": {
+    "walk": 10,
+    "fly": 50,
+    "climb": 5,
+    "swim": 5
+   },
+   "hover": false,
+   "abilities": {
+    "str": 2,
+    "dex": 14,
+    "con": 10,
+    "int": 5,
+    "wis": 13,
+    "cha": 6
+   },
+   "saves": {
+    "str": -4,
+    "dex": 2,
+    "con": 0,
+    "int": -3,
+    "wis": 1,
+    "cha": -2
+   },
+   "skills": {
+    "Perception": 3
+   },
+   "senses": "",
+   "passive_perception": 13,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Mimicry",
+     "text": "The raven can mimic simple sounds it has heard, such as a whisper or chitter. A hearer can discern the sounds are imitations with a successful DC 10 Wisdom (Insight) check."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Beak",
+     "text": "Melee Attack Roll: +4, reach 5 ft. 1 Piercing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47158/984/638742838862827460.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775837-raven",
+   "ddb_id": 4775837
+  },
+  {
+   "name": "Scorpion",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Small",
+   "ac": 11,
+   "ac_note": "natural armor",
+   "hp": 1,
+   "hit_dice": "1d4 - 1",
+   "speed": {
+    "walk": 10,
+    "climb": 5,
+    "swim": 5
+   },
+   "hover": false,
+   "abilities": {
+    "str": 2,
+    "dex": 11,
+    "con": 8,
+    "int": 1,
+    "wis": 8,
+    "cha": 2
+   },
+   "saves": {
+    "str": -4,
+    "dex": 0,
+    "con": -1,
+    "int": -5,
+    "wis": -1,
+    "cha": -4
+   },
+   "skills": {},
+   "senses": "Blindsight 10 ft.",
+   "passive_perception": 9,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Sting",
+     "text": "Melee Attack Roll: +2, reach 5 ft. 1 Piercing damage plus 3 (1d6) Poison damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43939/815/638607431887331936.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775840-scorpion",
+   "ddb_id": 4775840
+  },
+  {
+   "name": "Seahorse",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Small",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 1,
+   "hit_dice": "1d4 - 1",
+   "speed": {
+    "walk": 5,
+    "climb": 2,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 1,
+    "dex": 12,
+    "con": 8,
+    "int": 1,
+    "wis": 10,
+    "cha": 2
+   },
+   "saves": {
+    "str": -5,
+    "dex": 1,
+    "con": -1,
+    "int": -5,
+    "wis": 0,
+    "cha": -4
+   },
+   "skills": {
+    "Perception": 2,
+    "Stealth": 5
+   },
+   "senses": "",
+   "passive_perception": 12,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Water Breathing",
+     "text": "The seahorse can breathe only underwater."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bubble Dash",
+     "text": "While underwater, the seahorse moves up to its Swim Speed without provoking Opportunity Attacks."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/58416/470/639226691459844727.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195199-seahorse",
+   "ddb_id": 5195199
+  },
+  {
+   "name": "Spider",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Small",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 1,
+   "hit_dice": "1d4 - 1",
+   "speed": {
+    "walk": 20,
+    "climb": 20,
+    "swim": 10
+   },
+   "hover": false,
+   "abilities": {
+    "str": 2,
+    "dex": 14,
+    "con": 8,
+    "int": 1,
+    "wis": 10,
+    "cha": 2
+   },
+   "saves": {
+    "str": -4,
+    "dex": 2,
+    "con": -1,
+    "int": -5,
+    "wis": 0,
+    "cha": -4
+   },
+   "skills": {
+    "Stealth": 4
+   },
+   "senses": "Darkvision 30 ft.",
+   "passive_perception": 10,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Spider Climb",
+     "text": "The spider can climb difficult surfaces, including along ceilings, without needing to make an ability check."
+    },
+    {
+     "name": "Web Walker",
+     "text": "The spider ignores movement restrictions caused by webs, and the spider knows the location of any other creature in contact with the same web."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +4, reach 5 ft. 1 Piercing damage plus 2 (1d4) Poison damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43939/861/638607433376132965.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775844-spider",
+   "ddb_id": 4775844
+  },
+  {
+   "name": "Vulture",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Medium",
+   "ac": 10,
+   "ac_note": "natural armor",
+   "hp": 5,
+   "hit_dice": "1d8 + 1",
+   "speed": {
+    "walk": 10,
+    "fly": 50,
+    "climb": 5,
+    "swim": 5
+   },
+   "hover": false,
+   "abilities": {
+    "str": 7,
+    "dex": 10,
+    "con": 13,
+    "int": 2,
+    "wis": 12,
+    "cha": 4
+   },
+   "saves": {
+    "str": -2,
+    "dex": 0,
+    "con": 1,
+    "int": -4,
+    "wis": 1,
+    "cha": -3
+   },
+   "skills": {
+    "Perception": 3
+   },
+   "senses": "",
+   "passive_perception": 13,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Pack Tactics",
+     "text": "The vulture has Advantage on an attack roll against a creature if at least one of the vulture's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Beak",
+     "text": "Melee Attack Roll: +2, reach 5 ft. 2 (1d4) Piercing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47139/349/638741964788173651.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195256-vulture",
+   "ddb_id": 5195256
+  },
+  {
+   "name": "Weasel",
+   "cr": 0.0,
+   "cr_label": "0",
+   "size": "Small",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 1,
+   "hit_dice": "1d4 - 1",
+   "speed": {
+    "walk": 30,
+    "climb": 30,
+    "swim": 15
+   },
+   "hover": false,
+   "abilities": {
+    "str": 3,
+    "dex": 16,
+    "con": 8,
+    "int": 2,
+    "wis": 12,
+    "cha": 3
+   },
+   "saves": {
+    "str": -4,
+    "dex": 3,
+    "con": -1,
+    "int": -4,
+    "wis": 1,
+    "cha": -4
+   },
+   "skills": {
+    "Acrobatics": 5,
+    "Perception": 3,
+    "Stealth": 5
+   },
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 13,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +5, reach 5 ft. 1 Piercing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/58416/835/639226704577624798.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775849-weasel",
+   "ddb_id": 4775849
+  },
+  {
+   "name": "Blood Hawk",
+   "cr": 0.125,
+   "cr_label": "1/8",
+   "size": "Small",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 7,
+   "hit_dice": "2d6",
+   "speed": {
+    "walk": 10,
+    "fly": 60,
+    "climb": 5,
+    "swim": 5
+   },
+   "hover": false,
+   "abilities": {
+    "str": 6,
+    "dex": 14,
+    "con": 10,
+    "int": 3,
+    "wis": 14,
+    "cha": 5
+   },
+   "saves": {
+    "str": -2,
+    "dex": 2,
+    "con": 0,
+    "int": -4,
+    "wis": 2,
+    "cha": -3
+   },
+   "skills": {
+    "Perception": 6
+   },
+   "senses": "",
+   "passive_perception": 16,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Pack Tactics",
+     "text": "The hawk has Advantage on an attack roll against a creature if at least one of the hawk's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Beak",
+     "text": "Melee Attack Roll: +4, reach 5 ft. 4 (1d4 + 2) Piercing damage, or 6 (1d8 + 2) Piercing damage if the target is Bloodied."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47144/684/638742156672357007.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5194927-blood-hawk",
+   "ddb_id": 5194927
+  },
+  {
+   "name": "Camel",
+   "cr": 0.125,
+   "cr_label": "1/8",
+   "size": "Large",
+   "ac": 10,
+   "ac_note": "natural armor",
+   "hp": 17,
+   "hit_dice": "2d10 + 6",
+   "speed": {
+    "walk": 50,
+    "climb": 25,
+    "swim": 25
+   },
+   "hover": false,
+   "abilities": {
+    "str": 15,
+    "dex": 8,
+    "con": 17,
+    "int": 2,
+    "wis": 11,
+    "cha": 5
+   },
+   "saves": {
+    "str": 2,
+    "dex": -1,
+    "con": 5,
+    "int": -4,
+    "wis": 0,
+    "cha": -3
+   },
+   "skills": {},
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 10,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +4, reach 5 ft. 4 (1d4 + 2) Bludgeoning damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43939/72/638607413886651586.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775807-camel",
+   "ddb_id": 4775807
+  },
+  {
+   "name": "Giant Crab",
+   "cr": 0.125,
+   "cr_label": "1/8",
+   "size": "Medium",
+   "ac": 15,
+   "ac_note": "natural armor",
+   "hp": 13,
+   "hit_dice": "3d8",
+   "speed": {
+    "walk": 30,
+    "climb": 15,
+    "swim": 30
+   },
+   "hover": false,
+   "abilities": {
+    "str": 13,
+    "dex": 13,
+    "con": 11,
+    "int": 1,
+    "wis": 9,
+    "cha": 3
+   },
+   "saves": {
+    "str": 1,
+    "dex": 1,
+    "con": 0,
+    "int": -5,
+    "wis": -1,
+    "cha": -4
+   },
+   "skills": {
+    "Stealth": 3
+   },
+   "senses": "Blindsight 30 ft.",
+   "passive_perception": 9,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Amphibious",
+     "text": "The crab can breathe air and water."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Claw",
+     "text": "Melee Attack Roll: +3, reach 5 ft. 4 (1d6 + 1) Bludgeoning damage. If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 11) from one of two claws."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43939/239/638607418420731717.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775818-giant-crab",
+   "ddb_id": 4775818
+  },
+  {
+   "name": "Giant Rat",
+   "cr": 0.125,
+   "cr_label": "1/8",
+   "size": "Small",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 7,
+   "hit_dice": "2d6",
+   "speed": {
+    "walk": 30,
+    "climb": 30,
+    "swim": 15
+   },
+   "hover": false,
+   "abilities": {
+    "str": 7,
+    "dex": 16,
+    "con": 11,
+    "int": 2,
+    "wis": 10,
+    "cha": 4
+   },
+   "saves": {
+    "str": -2,
+    "dex": 5,
+    "con": 0,
+    "int": -4,
+    "wis": 0,
+    "cha": -3
+   },
+   "skills": {
+    "Perception": 2
+   },
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 12,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Pack Tactics",
+     "text": "The rat has Advantage on an attack roll against a creature if at least one of the rat's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +5, reach 5 feet. 5 (1d4 + 3) Piercing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47138/875/638741964132622849.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195025-giant-rat",
+   "ddb_id": 5195025
+  },
+  {
+   "name": "Giant Weasel",
+   "cr": 0.125,
+   "cr_label": "1/8",
+   "size": "Medium",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 9,
+   "hit_dice": "2d8",
+   "speed": {
+    "walk": 40,
+    "climb": 30,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 11,
+    "dex": 17,
+    "con": 10,
+    "int": 4,
+    "wis": 12,
+    "cha": 5
+   },
+   "saves": {
+    "str": 0,
+    "dex": 3,
+    "con": 0,
+    "int": -3,
+    "wis": 1,
+    "cha": -3
+   },
+   "skills": {
+    "Acrobatics": 5,
+    "Perception": 3,
+    "Stealth": 5
+   },
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 13,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +5, reach 5 ft. 5 (1d4 + 3) Piercing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43939/589/638607426812885808.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775822-giant-weasel",
+   "ddb_id": 4775822
+  },
+  {
+   "name": "Mastiff",
+   "cr": 0.125,
+   "cr_label": "1/8",
+   "size": "Medium",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 5,
+   "hit_dice": "1d8 + 1",
+   "speed": {
+    "walk": 40,
+    "climb": 20,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 13,
+    "dex": 14,
+    "con": 12,
+    "int": 3,
+    "wis": 12,
+    "cha": 7
+   },
+   "saves": {
+    "str": 1,
+    "dex": 2,
+    "con": 1,
+    "int": -4,
+    "wis": 1,
+    "cha": -2
+   },
+   "skills": {
+    "Perception": 5
+   },
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 15,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +3, reach 5 ft. 4 (1d6 + 1) Piercing damage. If the target is a Medium or smaller creature, it has the Prone condition."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43939/692/638607428415948051.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775828-mastiff",
+   "ddb_id": 4775828
+  },
+  {
+   "name": "Mule",
+   "cr": 0.125,
+   "cr_label": "1/8",
+   "size": "Medium",
+   "ac": 10,
+   "ac_note": "natural armor",
+   "hp": 11,
+   "hit_dice": "2d8 + 2",
+   "speed": {
+    "walk": 40,
+    "climb": 20,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 14,
+    "dex": 10,
+    "con": 13,
+    "int": 2,
+    "wis": 10,
+    "cha": 5
+   },
+   "saves": {
+    "str": 4,
+    "dex": 0,
+    "con": 1,
+    "int": -4,
+    "wis": 0,
+    "cha": -3
+   },
+   "skills": {},
+   "senses": "",
+   "passive_perception": 10,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Beast of Burden",
+     "text": "The mule counts as one size larger for the purpose of determining its carrying capacity."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Hooves",
+     "text": "Melee Attack Roll: +4, reach 5 ft. 4 (1d4 + 2) Bludgeoning damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43939/703/638607428703028777.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775829-mule",
+   "ddb_id": 4775829
+  },
+  {
+   "name": "Pony",
+   "cr": 0.125,
+   "cr_label": "1/8",
+   "size": "Medium",
+   "ac": 10,
+   "ac_note": "natural armor",
+   "hp": 11,
+   "hit_dice": "2d8 + 2",
+   "speed": {
+    "walk": 40,
+    "climb": 20,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 15,
+    "dex": 10,
+    "con": 13,
+    "int": 2,
+    "wis": 11,
+    "cha": 7
+   },
+   "saves": {
+    "str": 4,
+    "dex": 0,
+    "con": 1,
+    "int": -4,
+    "wis": 0,
+    "cha": -2
+   },
+   "skills": {},
+   "senses": "",
+   "passive_perception": 10,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Hooves",
+     "text": "Melee Attack Roll: +4, reach 5 ft. 4 (1d4 + 2) Bludgeoning damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43939/741/638607429634189821.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775833-pony",
+   "ddb_id": 4775833
+  },
+  {
+   "name": "Venomous Snake",
+   "cr": 0.125,
+   "cr_label": "1/8",
+   "size": "Small",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 5,
+   "hit_dice": "2d4",
+   "speed": {
+    "walk": 30,
+    "climb": 15,
+    "swim": 30
+   },
+   "hover": false,
+   "abilities": {
+    "str": 2,
+    "dex": 15,
+    "con": 11,
+    "int": 1,
+    "wis": 10,
+    "cha": 3
+   },
+   "saves": {
+    "str": -4,
+    "dex": 2,
+    "con": 0,
+    "int": -5,
+    "wis": 0,
+    "cha": -4
+   },
+   "skills": {},
+   "senses": "Blindsight 10 ft.",
+   "passive_perception": 10,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +4, reach 5 ft. 4 (1d4 + 2) Piercing damage plus 3 (1d6) Poison damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/58416/781/639226703389754100.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775847-venomous-snake",
+   "ddb_id": 4775847
+  },
+  {
+   "name": "Boar",
+   "cr": 0.25,
+   "cr_label": "1/4",
+   "size": "Medium",
+   "ac": 11,
+   "ac_note": "natural armor",
+   "hp": 13,
+   "hit_dice": "2d8 + 4",
+   "speed": {
+    "walk": 40,
+    "climb": 20,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 13,
+    "dex": 11,
+    "con": 14,
+    "int": 2,
+    "wis": 9,
+    "cha": 5
+   },
+   "saves": {
+    "str": 1,
+    "dex": 0,
+    "con": 2,
+    "int": -4,
+    "wis": -1,
+    "cha": -3
+   },
+   "skills": {},
+   "senses": "",
+   "passive_perception": 9,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Bloodied Fury",
+     "text": "While Bloodied, the boar has Advantage on attack rolls."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Gore",
+     "text": "Melee Attack Roll: +3, reach 5 ft. 4 (1d6 + 1) Piercing damage. If the target is a Medium or smaller creature and the boar moved 20+ feet straight toward it immediately before the hit, the target takes an extra 3 (1d6) Piercing damage and has the Prone condition."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/58415/682/639226665173293120.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775805-boar",
+   "ddb_id": 4775805
+  },
+  {
+   "name": "Constrictor Snake",
+   "cr": 0.25,
+   "cr_label": "1/4",
+   "size": "Large",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 13,
+   "hit_dice": "2d10 + 2",
+   "speed": {
+    "walk": 30,
+    "climb": 15,
+    "swim": 30
+   },
+   "hover": false,
+   "abilities": {
+    "str": 15,
+    "dex": 14,
+    "con": 12,
+    "int": 1,
+    "wis": 10,
+    "cha": 3
+   },
+   "saves": {
+    "str": 2,
+    "dex": 2,
+    "con": 1,
+    "int": -5,
+    "wis": 0,
+    "cha": -4
+   },
+   "skills": {
+    "Perception": 2,
+    "Stealth": 4
+   },
+   "senses": "Blindsight 10 ft.",
+   "passive_perception": 12,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +4, reach 5 ft. 6 (1d8 + 2) Piercing damage."
+    },
+    {
+     "name": "Constrict",
+     "text": "Strength Saving Throw: DC 12, one Medium or smaller creature the snake can see within 5 feet. Failure: 7 (3d4) Bludgeoning damage, and the target has the Grappled condition (escape DC 12)."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47158/791/638742830746745538.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775809-constrictor-snake",
+   "ddb_id": 4775809
+  },
+  {
+   "name": "Draft Horse",
+   "cr": 0.25,
+   "cr_label": "1/4",
+   "size": "Large",
+   "ac": 10,
+   "ac_note": "natural armor",
+   "hp": 15,
+   "hit_dice": "2d10 + 4",
+   "speed": {
+    "walk": 40,
+    "climb": 20,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 18,
+    "dex": 10,
+    "con": 15,
+    "int": 2,
+    "wis": 11,
+    "cha": 7
+   },
+   "saves": {
+    "str": 4,
+    "dex": 0,
+    "con": 2,
+    "int": -4,
+    "wis": 0,
+    "cha": -2
+   },
+   "skills": {},
+   "senses": "",
+   "passive_perception": 10,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Hooves",
+     "text": "Melee Attack Roll: +6, reach 5 ft. 6 (1d4 + 4) Bludgeoning damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43939/171/638607416540430468.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775813-draft-horse",
+   "ddb_id": 4775813
+  },
+  {
+   "name": "Elk",
+   "cr": 0.25,
+   "cr_label": "1/4",
+   "size": "Large",
+   "ac": 10,
+   "ac_note": "natural armor",
+   "hp": 11,
+   "hit_dice": "2d10",
+   "speed": {
+    "walk": 50,
+    "climb": 25,
+    "swim": 25
+   },
+   "hover": false,
+   "abilities": {
+    "str": 16,
+    "dex": 10,
+    "con": 11,
+    "int": 2,
+    "wis": 10,
+    "cha": 6
+   },
+   "saves": {
+    "str": 3,
+    "dex": 0,
+    "con": 0,
+    "int": -4,
+    "wis": 0,
+    "cha": -2
+   },
+   "skills": {
+    "Perception": 2
+   },
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 12,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Ram",
+     "text": "Melee Attack Roll: +5, reach 5 ft. 6 (1d6 + 3) Bludgeoning damage. If the target is a Large or smaller creature and the elk moved 20+ feet straight toward it immediately before the hit, the target takes an extra 3 (1d6) Bludgeoning damage and has the Prone condition."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47158/815/638742831953623664.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775815-elk",
+   "ddb_id": 4775815
+  },
+  {
+   "name": "Giant Badger",
+   "cr": 0.25,
+   "cr_label": "1/4",
+   "size": "Medium",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 15,
+   "hit_dice": "2d8 + 6",
+   "speed": {
+    "walk": 30,
+    "burrow": 10,
+    "climb": 15,
+    "swim": 15
+   },
+   "hover": false,
+   "abilities": {
+    "str": 13,
+    "dex": 10,
+    "con": 17,
+    "int": 2,
+    "wis": 12,
+    "cha": 5
+   },
+   "saves": {
+    "str": 1,
+    "dex": 0,
+    "con": 3,
+    "int": -4,
+    "wis": 1,
+    "cha": -3
+   },
+   "skills": {
+    "Perception": 3
+   },
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 13,
+   "resist": "poison",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +3, reach 5 ft. 6 (2d4 + 1) Piercing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/58417/79/639226713415789129.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775817-giant-badger",
+   "ddb_id": 4775817
+  },
+  {
+   "name": "Giant Bat",
+   "cr": 0.25,
+   "cr_label": "1/4",
+   "size": "Large",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 22,
+   "hit_dice": "4d10",
+   "speed": {
+    "walk": 10,
+    "fly": 60,
+    "climb": 5,
+    "swim": 5
+   },
+   "hover": false,
+   "abilities": {
+    "str": 15,
+    "dex": 16,
+    "con": 11,
+    "int": 2,
+    "wis": 12,
+    "cha": 6
+   },
+   "saves": {
+    "str": 2,
+    "dex": 3,
+    "con": 0,
+    "int": -4,
+    "wis": 1,
+    "cha": -2
+   },
+   "skills": {},
+   "senses": "Blindsight 120 ft.",
+   "passive_perception": 11,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +5, reach 5 ft. 6 (1d6 + 3) Piercing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47138/847/638741964094408428.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195012-giant-bat",
+   "ddb_id": 5195012
+  },
+  {
+   "name": "Giant Centipede",
+   "cr": 0.25,
+   "cr_label": "1/4",
+   "size": "Small",
+   "ac": 14,
+   "ac_note": "natural armor",
+   "hp": 9,
+   "hit_dice": "2d6 + 2",
+   "speed": {
+    "walk": 30,
+    "climb": 30,
+    "swim": 15
+   },
+   "hover": false,
+   "abilities": {
+    "str": 5,
+    "dex": 14,
+    "con": 12,
+    "int": 1,
+    "wis": 7,
+    "cha": 3
+   },
+   "saves": {
+    "str": -3,
+    "dex": 2,
+    "con": 1,
+    "int": -5,
+    "wis": -2,
+    "cha": -4
+   },
+   "skills": {},
+   "senses": "Blindsight 30 ft.",
+   "passive_perception": 8,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +4, reach 5 ft. 4 (1d4 + 2) Piercing damage, and the target has the Poisoned condition until the start of the centipede's next turn."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47138/853/638741964100543394.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195014-giant-centipede",
+   "ddb_id": 5195014
+  },
+  {
+   "name": "Giant Frog",
+   "cr": 0.25,
+   "cr_label": "1/4",
+   "size": "Medium",
+   "ac": 11,
+   "ac_note": "natural armor",
+   "hp": 18,
+   "hit_dice": "4d8",
+   "speed": {
+    "walk": 30,
+    "climb": 15,
+    "swim": 30
+   },
+   "hover": false,
+   "abilities": {
+    "str": 12,
+    "dex": 13,
+    "con": 11,
+    "int": 2,
+    "wis": 10,
+    "cha": 3
+   },
+   "saves": {
+    "str": 1,
+    "dex": 1,
+    "con": 0,
+    "int": -4,
+    "wis": 0,
+    "cha": -4
+   },
+   "skills": {
+    "Perception": 2,
+    "Stealth": 4
+   },
+   "senses": "Darkvision 30 ft.",
+   "passive_perception": 12,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Amphibious",
+     "text": "The frog can breathe air and water."
+    },
+    {
+     "name": "Standing Leap",
+     "text": "The frog's Long Jump is up to 20 feet and its High Jump is up to 10 feet with or without a running start."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +3, reach 5 ft. 5 (1d6 + 2) Piercing damage. If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 11)."
+    },
+    {
+     "name": "Swallow",
+     "text": "The frog swallows a Small or smaller target it is grappling. While swallowed, the target isn't Grappled but has the Blinded and Restrained conditions, and it has Cover|XPHB|Total Cover against attacks and other effects outside the frog. While swallowing the target, the frog can't use Bite, and if the frog dies, the swallowed target is no longer Restrained and can escape from the corpse using 5 feet of movement, exiting with the Prone condition. At the end of the frog's next turn, the swallowed target takes 5 (2d4) Acid damage. If that damage doesn't kill it, the frog disgorges it, causing it to exit Prone."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/58417/100/639226714222029707.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195020-giant-frog",
+   "ddb_id": 5195020
+  },
+  {
+   "name": "Giant Lizard",
+   "cr": 0.25,
+   "cr_label": "1/4",
+   "size": "Large",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 19,
+   "hit_dice": "3d10 + 3",
+   "speed": {
+    "walk": 40,
+    "climb": 40,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 15,
+    "dex": 12,
+    "con": 13,
+    "int": 2,
+    "wis": 10,
+    "cha": 5
+   },
+   "saves": {
+    "str": 2,
+    "dex": 3,
+    "con": 1,
+    "int": -4,
+    "wis": 0,
+    "cha": -3
+   },
+   "skills": {},
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 10,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Spider Climb",
+     "text": "The lizard can climb difficult surfaces, including along ceilings, without needing to make an ability check."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +4, reach 5 ft. 6 (1d8 + 2) Piercing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47138/869/638741964123576361.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195022-giant-lizard",
+   "ddb_id": 5195022
+  },
+  {
+   "name": "Giant Venomous Snake",
+   "cr": 0.25,
+   "cr_label": "1/4",
+   "size": "Medium",
+   "ac": 14,
+   "ac_note": "natural armor",
+   "hp": 11,
+   "hit_dice": "2d8 + 2",
+   "speed": {
+    "walk": 40,
+    "climb": 20,
+    "swim": 40
+   },
+   "hover": false,
+   "abilities": {
+    "str": 10,
+    "dex": 18,
+    "con": 13,
+    "int": 2,
+    "wis": 10,
+    "cha": 3
+   },
+   "saves": {
+    "str": 0,
+    "dex": 4,
+    "con": 1,
+    "int": -4,
+    "wis": 0,
+    "cha": -4
+   },
+   "skills": {
+    "Perception": 2
+   },
+   "senses": "Blindsight 10 ft.",
+   "passive_perception": 12,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +6, reach 10 ft. 6 (1d4 + 4) Piercing damage plus 4 (1d8) Poison damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/58416/927/639226707690077622.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195030-giant-venomous-snake",
+   "ddb_id": 5195030
+  },
+  {
+   "name": "Giant Wolf Spider",
+   "cr": 0.25,
+   "cr_label": "1/4",
+   "size": "Medium",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 11,
+   "hit_dice": "2d8 + 2",
+   "speed": {
+    "walk": 40,
+    "climb": 40,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 12,
+    "dex": 16,
+    "con": 13,
+    "int": 3,
+    "wis": 12,
+    "cha": 4
+   },
+   "saves": {
+    "str": 1,
+    "dex": 3,
+    "con": 1,
+    "int": -4,
+    "wis": 1,
+    "cha": -3
+   },
+   "skills": {
+    "Perception": 3,
+    "Stealth": 7
+   },
+   "senses": "Blindsight 10 ft., Darkvision 60 ft.",
+   "passive_perception": 13,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Spider Climb",
+     "text": "The spider can climb difficult surfaces, including along ceilings, without needing to make an ability check."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +5, reach 5 ft. 5 (1d4 + 3) Piercing damage plus 5 (2d4) Poison damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47138/891/638741964156568682.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195033-giant-wolf-spider",
+   "ddb_id": 5195033
+  },
+  {
+   "name": "Panther",
+   "cr": 0.25,
+   "cr_label": "1/4",
+   "size": "Medium",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 13,
+   "hit_dice": "3d8",
+   "speed": {
+    "walk": 50,
+    "climb": 40,
+    "swim": 25
+   },
+   "hover": false,
+   "abilities": {
+    "str": 14,
+    "dex": 16,
+    "con": 10,
+    "int": 3,
+    "wis": 14,
+    "cha": 7
+   },
+   "saves": {
+    "str": 2,
+    "dex": 3,
+    "con": 0,
+    "int": -4,
+    "wis": 2,
+    "cha": -2
+   },
+   "skills": {
+    "Perception": 4,
+    "Stealth": 6
+   },
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 14,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Rend",
+     "text": "Melee Attack Roll: +5, reach 5 ft. 6 (1d6 + 3) Slashing damage."
+    }
+   ],
+   "bonus_actions": [
+    {
+     "name": "Nimble Escape",
+     "text": "The panther takes the Disengage or Hide action."
+    }
+   ],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/58415/950/639226674869669547.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775832-panther",
+   "ddb_id": 4775832
+  },
+  {
+   "name": "Pteranodon",
+   "cr": 0.25,
+   "cr_label": "1/4",
+   "size": "Medium",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 13,
+   "hit_dice": "3d8",
+   "speed": {
+    "walk": 10,
+    "fly": 60,
+    "climb": 5,
+    "swim": 5
+   },
+   "hover": false,
+   "abilities": {
+    "str": 12,
+    "dex": 15,
+    "con": 10,
+    "int": 2,
+    "wis": 9,
+    "cha": 5
+   },
+   "saves": {
+    "str": 1,
+    "dex": 2,
+    "con": 0,
+    "int": -4,
+    "wis": -1,
+    "cha": -3
+   },
+   "skills": {
+    "Perception": 1
+   },
+   "senses": "",
+   "passive_perception": 11,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Flyby",
+     "text": "The pteranodon doesn't provoke an Opportunity Attack when it flies out of an enemy's reach."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +4, reach 5 ft. 6 (1d8 + 2) Piercing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47139/179/638741964550977965.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195173-pteranodon",
+   "ddb_id": 5195173
+  },
+  {
+   "name": "Riding Horse",
+   "cr": 0.25,
+   "cr_label": "1/4",
+   "size": "Large",
+   "ac": 11,
+   "ac_note": "natural armor",
+   "hp": 13,
+   "hit_dice": "2d10 + 2",
+   "speed": {
+    "walk": 60,
+    "climb": 30,
+    "swim": 30
+   },
+   "hover": false,
+   "abilities": {
+    "str": 16,
+    "dex": 13,
+    "con": 12,
+    "int": 2,
+    "wis": 11,
+    "cha": 7
+   },
+   "saves": {
+    "str": 3,
+    "dex": 1,
+    "con": 1,
+    "int": -4,
+    "wis": 0,
+    "cha": -2
+   },
+   "skills": {},
+   "senses": "",
+   "passive_perception": 10,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Hooves",
+     "text": "Melee Attack Roll: +5, reach 5 ft. 7 (1d8 + 3) Bludgeoning damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43939/798/638607431384220950.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775839-riding-horse",
+   "ddb_id": 4775839
+  },
+  {
+   "name": "Swarm of Bats",
+   "cr": 0.25,
+   "cr_label": "1/4",
+   "size": "Large",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 11,
+   "hit_dice": "2d10",
+   "speed": {
+    "walk": 5,
+    "fly": 30,
+    "climb": 2,
+    "swim": 2
+   },
+   "hover": false,
+   "abilities": {
+    "str": 5,
+    "dex": 15,
+    "con": 10,
+    "int": 2,
+    "wis": 12,
+    "cha": 4
+   },
+   "saves": {
+    "str": -3,
+    "dex": 2,
+    "con": 0,
+    "int": -4,
+    "wis": 1,
+    "cha": -3
+   },
+   "skills": {},
+   "senses": "Blindsight 60 ft.",
+   "passive_perception": 11,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Swarm",
+     "text": "The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny bat. The swarm can't regain Hit Points or gain Temporary Hit Points."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bites",
+     "text": "Melee Attack Roll: +4, reach 5 ft. 5 (2d4) Piercing damage, or 2 (1d4) Piercing damage if the swarm is Bloodied."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47139/278/638741964690510112.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195222-swarm-of-bats",
+   "ddb_id": 5195222
+  },
+  {
+   "name": "Swarm of Rats",
+   "cr": 0.25,
+   "cr_label": "1/4",
+   "size": "Medium",
+   "ac": 10,
+   "ac_note": "natural armor",
+   "hp": 14,
+   "hit_dice": "4d8 - 4",
+   "speed": {
+    "walk": 30,
+    "climb": 30,
+    "swim": 15
+   },
+   "hover": false,
+   "abilities": {
+    "str": 9,
+    "dex": 11,
+    "con": 9,
+    "int": 2,
+    "wis": 10,
+    "cha": 3
+   },
+   "saves": {
+    "str": -1,
+    "dex": 0,
+    "con": -1,
+    "int": -4,
+    "wis": 0,
+    "cha": -4
+   },
+   "skills": {},
+   "senses": "Darkvision 30 ft.",
+   "passive_perception": 10,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Swarm",
+     "text": "The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny rat. The swarm can't regain Hit Points or gain Temporary Hit Points."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bites",
+     "text": "Melee Attack Roll: +2, reach 5 ft. 5 (2d4) Piercing damage, or 2 (1d4) Piercing damage if the swarm is Bloodied."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47139/290/638741964708043285.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195228-swarm-of-rats",
+   "ddb_id": 5195228
+  },
+  {
+   "name": "Swarm of Ravens",
+   "cr": 0.25,
+   "cr_label": "1/4",
+   "size": "Medium",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 11,
+   "hit_dice": "2d8 + 2",
+   "speed": {
+    "walk": 10,
+    "fly": 50,
+    "climb": 5,
+    "swim": 5
+   },
+   "hover": false,
+   "abilities": {
+    "str": 6,
+    "dex": 14,
+    "con": 12,
+    "int": 5,
+    "wis": 12,
+    "cha": 6
+   },
+   "saves": {
+    "str": -2,
+    "dex": 2,
+    "con": 1,
+    "int": -3,
+    "wis": 1,
+    "cha": -2
+   },
+   "skills": {
+    "Perception": 5
+   },
+   "senses": "",
+   "passive_perception": 15,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Swarm",
+     "text": "The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny raven. The swarm can't regain Hit Points or gain Temporary Hit Points."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Beaks",
+     "text": "Melee Attack Roll: +4, reach 5 ft. 5 (1d6 + 2) Piercing damage, or 2 (1d4) Piercing damage if the swarm is Bloodied."
+    },
+    {
+     "name": "Cacophony (Recharge 6–6)",
+     "text": "Wisdom Saving Throw: DC 10, one creature in the swarm's space. Failure: The target has the Deafened condition until the start of the swarm's next turn. While Deafened, the target also has Disadvantage on ability checks and attack rolls."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47139/292/638741964712252487.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195229-swarm-of-ravens",
+   "ddb_id": 5195229
+  },
+  {
+   "name": "Wolf",
+   "cr": 0.25,
+   "cr_label": "1/4",
+   "size": "Medium",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 11,
+   "hit_dice": "2d8 + 2",
+   "speed": {
+    "walk": 40,
+    "climb": 20,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 14,
+    "dex": 15,
+    "con": 12,
+    "int": 3,
+    "wis": 12,
+    "cha": 6
+   },
+   "saves": {
+    "str": 2,
+    "dex": 2,
+    "con": 1,
+    "int": -4,
+    "wis": 1,
+    "cha": -2
+   },
+   "skills": {
+    "Perception": 5,
+    "Stealth": 4
+   },
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 15,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Pack Tactics",
+     "text": "The wolf has Advantage on attack rolls against a creature if at least one of the wolf's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +4, reach 5 ft. 5 (1d6 + 2) Piercing damage. If the target is a Medium or smaller creature, it has the Prone condition."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43939/947/638607435567745183.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775850-wolf",
+   "ddb_id": 4775850
+  },
+  {
+   "name": "Ape",
+   "cr": 0.5,
+   "cr_label": "1/2",
+   "size": "Medium",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 19,
+   "hit_dice": "3d8 + 6",
+   "speed": {
+    "walk": 30,
+    "climb": 30,
+    "swim": 15
+   },
+   "hover": false,
+   "abilities": {
+    "str": 16,
+    "dex": 14,
+    "con": 14,
+    "int": 6,
+    "wis": 12,
+    "cha": 7
+   },
+   "saves": {
+    "str": 3,
+    "dex": 2,
+    "con": 2,
+    "int": -2,
+    "wis": 1,
+    "cha": -2
+   },
+   "skills": {
+    "Athletics": 5,
+    "Perception": 3
+   },
+   "senses": "",
+   "passive_perception": 13,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Fist",
+     "text": "Melee Attack Roll: +5, reach 5 ft. 5 (1d4 + 3) Bludgeoning damage."
+    },
+    {
+     "name": "Multiattack",
+     "text": "The ape makes two Fist attacks."
+    },
+    {
+     "name": "Rock (Recharge 6–6)",
+     "text": "Ranged Attack Roll: +5, range 25/50 ft. 10 (2d6 + 3) Bludgeoning damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43938/888/638607408671951647.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775801-ape",
+   "ddb_id": 4775801
+  },
+  {
+   "name": "Black Bear",
+   "cr": 0.5,
+   "cr_label": "1/2",
+   "size": "Medium",
+   "ac": 11,
+   "ac_note": "natural armor",
+   "hp": 19,
+   "hit_dice": "3d8 + 6",
+   "speed": {
+    "walk": 30,
+    "climb": 30,
+    "swim": 30
+   },
+   "hover": false,
+   "abilities": {
+    "str": 15,
+    "dex": 12,
+    "con": 14,
+    "int": 2,
+    "wis": 12,
+    "cha": 7
+   },
+   "saves": {
+    "str": 2,
+    "dex": 1,
+    "con": 2,
+    "int": -4,
+    "wis": 1,
+    "cha": -2
+   },
+   "skills": {
+    "Perception": 5
+   },
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 15,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Multiattack",
+     "text": "The bear makes two Rend attacks."
+    },
+    {
+     "name": "Rend",
+     "text": "Melee Attack Roll: +4, reach 5 ft. 5 (1d6 + 2) Slashing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43938/929/638607409966263242.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775804-black-bear",
+   "ddb_id": 4775804
+  },
+  {
+   "name": "Crocodile",
+   "cr": 0.5,
+   "cr_label": "1/2",
+   "size": "Large",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 13,
+   "hit_dice": "2d10 + 2",
+   "speed": {
+    "walk": 20,
+    "climb": 10,
+    "swim": 30
+   },
+   "hover": false,
+   "abilities": {
+    "str": 15,
+    "dex": 10,
+    "con": 13,
+    "int": 2,
+    "wis": 10,
+    "cha": 5
+   },
+   "saves": {
+    "str": 2,
+    "dex": 0,
+    "con": 3,
+    "int": -4,
+    "wis": 0,
+    "cha": -3
+   },
+   "skills": {
+    "Stealth": 2
+   },
+   "senses": "",
+   "passive_perception": 10,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Hold Breath",
+     "text": "The crocodile can hold its breath for 1 hour."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +4, reach 5 ft. 6 (1d8 + 2) Piercing damage. If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12). While Grappled, the target has the Restrained condition."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43939/130/638607415523410034.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775811-crocodile",
+   "ddb_id": 4775811
+  },
+  {
+   "name": "Giant Goat",
+   "cr": 0.5,
+   "cr_label": "1/2",
+   "size": "Large",
+   "ac": 11,
+   "ac_note": "natural armor",
+   "hp": 19,
+   "hit_dice": "3d10 + 3",
+   "speed": {
+    "walk": 40,
+    "climb": 30,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 17,
+    "dex": 13,
+    "con": 12,
+    "int": 3,
+    "wis": 12,
+    "cha": 6
+   },
+   "saves": {
+    "str": 5,
+    "dex": 1,
+    "con": 1,
+    "int": -4,
+    "wis": 1,
+    "cha": -2
+   },
+   "skills": {
+    "Perception": 3
+   },
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 13,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Ram",
+     "text": "Melee Attack Roll: +5, reach 5 ft. 6 (1d6 + 3) Bludgeoning damage. If the target is a Large or smaller creature and the goat moved 20+ feet straight toward it immediately before the hit, the target takes an extra 5 (2d4) Bludgeoning damage and has the Prone condition."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47158/876/638742834565228980.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775819-giant-goat",
+   "ddb_id": 4775819
+  },
+  {
+   "name": "Giant Seahorse",
+   "cr": 0.5,
+   "cr_label": "1/2",
+   "size": "Large",
+   "ac": 14,
+   "ac_note": "natural armor",
+   "hp": 16,
+   "hit_dice": "3d10",
+   "speed": {
+    "walk": 5,
+    "climb": 2,
+    "swim": 40
+   },
+   "hover": false,
+   "abilities": {
+    "str": 15,
+    "dex": 12,
+    "con": 11,
+    "int": 2,
+    "wis": 12,
+    "cha": 5
+   },
+   "saves": {
+    "str": 2,
+    "dex": 1,
+    "con": 0,
+    "int": -4,
+    "wis": 1,
+    "cha": -3
+   },
+   "skills": {},
+   "senses": "",
+   "passive_perception": 11,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Water Breathing",
+     "text": "The seahorse can breathe only underwater."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Ram",
+     "text": "Melee Attack Roll: +4, reach 5 ft. 9 (2d6 + 2) Bludgeoning damage, or 11 (2d8 + 2) Bludgeoning damage if the seahorse moved 20+ feet straight toward the target immediately before the hit."
+    }
+   ],
+   "bonus_actions": [
+    {
+     "name": "Bubble Dash",
+     "text": "While underwater, the seahorse moves up to half its Swim Speed without provoking Opportunity Attacks."
+    }
+   ],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43939/258/638607418888752666.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775820-giant-seahorse",
+   "ddb_id": 4775820
+  },
+  {
+   "name": "Giant Wasp",
+   "cr": 0.5,
+   "cr_label": "1/2",
+   "size": "Medium",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 22,
+   "hit_dice": "5d8",
+   "speed": {
+    "walk": 10,
+    "fly": 50,
+    "climb": 5,
+    "swim": 5
+   },
+   "hover": false,
+   "abilities": {
+    "str": 10,
+    "dex": 14,
+    "con": 10,
+    "int": 1,
+    "wis": 10,
+    "cha": 3
+   },
+   "saves": {
+    "str": 0,
+    "dex": 2,
+    "con": 0,
+    "int": -5,
+    "wis": 0,
+    "cha": -4
+   },
+   "skills": {},
+   "senses": "",
+   "passive_perception": 10,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Flyby",
+     "text": "The wasp doesn't provoke an Opportunity Attack when it flies out of an enemy's reach."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Sting",
+     "text": "Melee Attack Roll: +4, reach 5 ft. 5 (1d6 + 2) Piercing damage plus 5 (2d4) Poison damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47138/889/638741964154679528.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195032-giant-wasp",
+   "ddb_id": 5195032
+  },
+  {
+   "name": "Reef Shark",
+   "cr": 0.5,
+   "cr_label": "1/2",
+   "size": "Medium",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 22,
+   "hit_dice": "4d8 + 4",
+   "speed": {
+    "walk": 5,
+    "climb": 2,
+    "swim": 30
+   },
+   "hover": false,
+   "abilities": {
+    "str": 14,
+    "dex": 15,
+    "con": 13,
+    "int": 1,
+    "wis": 10,
+    "cha": 4
+   },
+   "saves": {
+    "str": 2,
+    "dex": 2,
+    "con": 1,
+    "int": -5,
+    "wis": 0,
+    "cha": -3
+   },
+   "skills": {
+    "Perception": 2
+   },
+   "senses": "Blindsight 30 ft.",
+   "passive_perception": 12,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Pack Tactics",
+     "text": "The shark has Advantage on an attack roll against a creature if at least one of the shark's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition."
+    },
+    {
+     "name": "Water Breathing",
+     "text": "The shark can breathe only underwater."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +4, reach 5 ft. 7 (2d4 + 2) Piercing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43939/786/638607431062581096.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775838-reef-shark",
+   "ddb_id": 4775838
+  },
+  {
+   "name": "Swarm of Insects",
+   "cr": 0.5,
+   "cr_label": "1/2",
+   "size": "Medium",
+   "ac": 11,
+   "ac_note": "natural armor",
+   "hp": 19,
+   "hit_dice": "3d8 + 6",
+   "speed": {
+    "walk": 20,
+    "fly": 20,
+    "climb": 10,
+    "swim": 10
+   },
+   "hover": false,
+   "abilities": {
+    "str": 3,
+    "dex": 13,
+    "con": 14,
+    "int": 1,
+    "wis": 7,
+    "cha": 1
+   },
+   "saves": {
+    "str": -4,
+    "dex": 1,
+    "con": 2,
+    "int": -5,
+    "wis": -2,
+    "cha": -5
+   },
+   "skills": {},
+   "senses": "Blindsight 30 ft.",
+   "passive_perception": 8,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Spider Climb",
+     "text": "If the swarm has a Climb Speed, the swarm can climb difficult surfaces, including along ceilings, without needing to make an ability check."
+    },
+    {
+     "name": "Swarm",
+     "text": "The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny insect. The swarm can't regain Hit Points or gain Temporary Hit Points."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bites",
+     "text": "Melee Attack Roll: +3, reach 5 ft. 6 (2d4 + 1) Poison damage, or 3 (1d4 + 1) Poison damage if the swarm is Bloodied."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47139/282/638741964695991712.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195224-swarm-of-insects",
+   "ddb_id": 5195224
+  },
+  {
+   "name": "Warhorse",
+   "cr": 0.5,
+   "cr_label": "1/2",
+   "size": "Large",
+   "ac": 11,
+   "ac_note": "natural armor",
+   "hp": 19,
+   "hit_dice": "3d10 + 3",
+   "speed": {
+    "walk": 60,
+    "climb": 30,
+    "swim": 30
+   },
+   "hover": false,
+   "abilities": {
+    "str": 18,
+    "dex": 12,
+    "con": 13,
+    "int": 2,
+    "wis": 12,
+    "cha": 7
+   },
+   "saves": {
+    "str": 4,
+    "dex": 1,
+    "con": 1,
+    "int": -4,
+    "wis": 3,
+    "cha": -2
+   },
+   "skills": {},
+   "senses": "",
+   "passive_perception": 11,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Hooves",
+     "text": "Melee Attack Roll: +6, reach 5 ft. 9 (2d4 + 4) Bludgeoning damage. If the target is a Large or smaller creature and the horse moved 20+ feet straight toward it immediately before the hit, the target takes an extra 5 (2d4) Bludgeoning damage and has the Prone condition."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43939/914/638607434778564331.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775848-warhorse",
+   "ddb_id": 4775848
+  },
+  {
+   "name": "Brown Bear",
+   "cr": 1.0,
+   "cr_label": "1",
+   "size": "Large",
+   "ac": 11,
+   "ac_note": "natural armor",
+   "hp": 22,
+   "hit_dice": "3d10 + 6",
+   "speed": {
+    "walk": 40,
+    "climb": 30,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 17,
+    "dex": 12,
+    "con": 15,
+    "int": 2,
+    "wis": 13,
+    "cha": 7
+   },
+   "saves": {
+    "str": 3,
+    "dex": 1,
+    "con": 2,
+    "int": -4,
+    "wis": 1,
+    "cha": -2
+   },
+   "skills": {
+    "Perception": 3
+   },
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 13,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +5, reach 5 ft. 7 (1d8 + 3) Piercing damage."
+    },
+    {
+     "name": "Claw",
+     "text": "Melee Attack Roll: +5, reach 5 ft. 5 (1d4 + 3) Slashing damage. If the target is a Large or smaller creature, it has the Prone condition."
+    },
+    {
+     "name": "Multiattack",
+     "text": "The bear makes one Bite attack and one Claw attack."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43939/59/638607413476883184.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775806-brown-bear",
+   "ddb_id": 4775806
+  },
+  {
+   "name": "Dire Wolf",
+   "cr": 1.0,
+   "cr_label": "1",
+   "size": "Large",
+   "ac": 14,
+   "ac_note": "natural armor",
+   "hp": 22,
+   "hit_dice": "3d10 + 6",
+   "speed": {
+    "walk": 50,
+    "climb": 25,
+    "swim": 25
+   },
+   "hover": false,
+   "abilities": {
+    "str": 17,
+    "dex": 15,
+    "con": 15,
+    "int": 3,
+    "wis": 12,
+    "cha": 7
+   },
+   "saves": {
+    "str": 3,
+    "dex": 2,
+    "con": 2,
+    "int": -4,
+    "wis": 1,
+    "cha": -2
+   },
+   "skills": {
+    "Perception": 5,
+    "Stealth": 4
+   },
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 15,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Pack Tactics",
+     "text": "The wolf has Advantage on an attack roll against a creature if at least one of the wolf's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +5, reach 5 ft. 8 (1d10 + 3) Piercing damage. If the target is a Large or smaller creature, it has the Prone condition."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47158/803/638742831345964759.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775812-dire-wolf",
+   "ddb_id": 4775812
+  },
+  {
+   "name": "Giant Hyena",
+   "cr": 1.0,
+   "cr_label": "1",
+   "size": "Large",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 45,
+   "hit_dice": "6d10 + 12",
+   "speed": {
+    "walk": 50,
+    "climb": 25,
+    "swim": 25
+   },
+   "hover": false,
+   "abilities": {
+    "str": 16,
+    "dex": 14,
+    "con": 14,
+    "int": 2,
+    "wis": 12,
+    "cha": 7
+   },
+   "saves": {
+    "str": 3,
+    "dex": 2,
+    "con": 2,
+    "int": -4,
+    "wis": 1,
+    "cha": -2
+   },
+   "skills": {
+    "Perception": 3
+   },
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 13,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +5, reach 5 ft. 10 (2d6 + 3) Piercing damage."
+    }
+   ],
+   "bonus_actions": [
+    {
+     "name": "Rampage (1/Day)",
+     "text": "Immediately after dealing damage to a creature that was already Bloodied, the hyena can move up to half its Speed, and it makes one Bite attack."
+    }
+   ],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/58417/105/639226714458279789.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195021-giant-hyena",
+   "ddb_id": 5195021
+  },
+  {
+   "name": "Giant Octopus",
+   "cr": 1.0,
+   "cr_label": "1",
+   "size": "Large",
+   "ac": 11,
+   "ac_note": "natural armor",
+   "hp": 45,
+   "hit_dice": "7d10 + 7",
+   "speed": {
+    "walk": 10,
+    "climb": 5,
+    "swim": 60
+   },
+   "hover": false,
+   "abilities": {
+    "str": 17,
+    "dex": 13,
+    "con": 13,
+    "int": 5,
+    "wis": 10,
+    "cha": 4
+   },
+   "saves": {
+    "str": 3,
+    "dex": 1,
+    "con": 1,
+    "int": -3,
+    "wis": 0,
+    "cha": -3
+   },
+   "skills": {
+    "Perception": 4,
+    "Stealth": 5
+   },
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 14,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Water Breathing",
+     "text": "The octopus can breathe only underwater. It can hold its breath for 1 hour outside water."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Tentacles",
+     "text": "Melee Attack Roll: +5, reach 10 ft. 10 (2d6 + 3) Bludgeoning damage. If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 13) from all eight tentacles. While Grappled, the target has the Restrained condition."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [
+    {
+     "name": "Ink Cloud (1/Day)",
+     "text": "Trigger: The octopus takes damage while underwater. Response: The octopus releases ink that fills a 10-foot Cube centered on itself, and the octopus moves up to its Swim Speed. The Cube is Heavily Obscured for 1 minute or until a strong current or similar effect disperses the ink."
+    }
+   ],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47138/871/638741964126227949.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195023-giant-octopus",
+   "ddb_id": 5195023
+  },
+  {
+   "name": "Giant Spider",
+   "cr": 1.0,
+   "cr_label": "1",
+   "size": "Large",
+   "ac": 14,
+   "ac_note": "natural armor",
+   "hp": 26,
+   "hit_dice": "4d10 + 4",
+   "speed": {
+    "walk": 30,
+    "climb": 30,
+    "swim": 15
+   },
+   "hover": false,
+   "abilities": {
+    "str": 14,
+    "dex": 16,
+    "con": 12,
+    "int": 2,
+    "wis": 11,
+    "cha": 4
+   },
+   "saves": {
+    "str": 2,
+    "dex": 3,
+    "con": 1,
+    "int": -4,
+    "wis": 0,
+    "cha": -3
+   },
+   "skills": {
+    "Perception": 4,
+    "Stealth": 7
+   },
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 14,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Spider Climb",
+     "text": "The spider can climb difficult surfaces, including along ceilings, without needing to make an ability check."
+    },
+    {
+     "name": "Web Walker",
+     "text": "The spider ignores movement restrictions caused by webs, and it knows the location of any other creature in contact with the same web."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +5, reach 5 ft. 7 (1d8 + 3) Piercing damage plus 7 (2d6) Poison damage."
+    },
+    {
+     "name": "Web (Recharge 5–6)",
+     "text": "Dexterity Saving Throw: DC 13, one creature the spider can see within 60 feet. Failure: The target has the Restrained condition until the web is destroyed (AC 10; HP 5; Vulnerability to Fire damage; Immunity to Poison and Psychic damage)."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43939/569/638607426458975567.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775821-giant-spider",
+   "ddb_id": 4775821
+  },
+  {
+   "name": "Giant Toad",
+   "cr": 1.0,
+   "cr_label": "1",
+   "size": "Large",
+   "ac": 11,
+   "ac_note": "natural armor",
+   "hp": 39,
+   "hit_dice": "6d10 + 6",
+   "speed": {
+    "walk": 30,
+    "climb": 15,
+    "swim": 30
+   },
+   "hover": false,
+   "abilities": {
+    "str": 15,
+    "dex": 13,
+    "con": 13,
+    "int": 2,
+    "wis": 10,
+    "cha": 3
+   },
+   "saves": {
+    "str": 2,
+    "dex": 1,
+    "con": 1,
+    "int": -4,
+    "wis": 0,
+    "cha": -4
+   },
+   "skills": {},
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 10,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Amphibious",
+     "text": "The toad can breathe air and water."
+    },
+    {
+     "name": "Standing Leap",
+     "text": "The toad's Long Jump is up to 20 feet and its High Jump is up to 10 feet with or without a running start."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +4, reach 5 ft. 5 (1d6 + 2) Piercing damage plus 5 (2d4) Poison damage. If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12)."
+    },
+    {
+     "name": "Swallow",
+     "text": "The toad swallows a Medium or smaller target it is grappling. While swallowed, the target isn't Grappled but has the Blinded and Restrained conditions, and it has Cover|XPHB|Total Cover against attacks and other effects outside the toad. In addition, the target takes 10 (3d6) Acid damage at the end of each of the toad's turns. The toad can have only one target swallowed at a time, and it can't use Bite while it has a swallowed target. If the toad dies, a swallowed creature is no longer Restrained and can escape from the corpse using 5 feet of movement, exiting with the Prone condition."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/58417/133/639226715205880356.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195029-giant-toad",
+   "ddb_id": 5195029
+  },
+  {
+   "name": "Lion",
+   "cr": 1.0,
+   "cr_label": "1",
+   "size": "Large",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 22,
+   "hit_dice": "4d10",
+   "speed": {
+    "walk": 50,
+    "climb": 25,
+    "swim": 25
+   },
+   "hover": false,
+   "abilities": {
+    "str": 17,
+    "dex": 15,
+    "con": 11,
+    "int": 3,
+    "wis": 12,
+    "cha": 8
+   },
+   "saves": {
+    "str": 3,
+    "dex": 2,
+    "con": 0,
+    "int": -4,
+    "wis": 1,
+    "cha": -1
+   },
+   "skills": {
+    "Perception": 3,
+    "Stealth": 4
+   },
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 13,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Pack Tactics",
+     "text": "The lion has Advantage on an attack roll against a creature if at least one of the lion's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition."
+    },
+    {
+     "name": "Running Leap",
+     "text": "With a 10-foot running start, the lion can Long Jump up to 25 feet."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Multiattack",
+     "text": "The lion makes two Rend attacks. It can replace one attack with a use of Roar."
+    },
+    {
+     "name": "Rend",
+     "text": "Melee Attack Roll: +5, reach 5 ft. 7 (1d8 + 3) Slashing damage."
+    },
+    {
+     "name": "Roar",
+     "text": "Wisdom Saving Throw: DC 11, one creature within 15 feet. Failure: The target has the Frightened condition until the start of the lion's next turn."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43939/665/638607428015267243.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775826-lion",
+   "ddb_id": 4775826
+  },
+  {
+   "name": "Swarm of Piranhas",
+   "cr": 1.0,
+   "cr_label": "1",
+   "size": "Medium",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 28,
+   "hit_dice": "8d8 - 8",
+   "speed": {
+    "walk": 5,
+    "climb": 2,
+    "swim": 40
+   },
+   "hover": false,
+   "abilities": {
+    "str": 13,
+    "dex": 16,
+    "con": 9,
+    "int": 1,
+    "wis": 7,
+    "cha": 2
+   },
+   "saves": {
+    "str": 1,
+    "dex": 3,
+    "con": -1,
+    "int": -5,
+    "wis": -2,
+    "cha": -4
+   },
+   "skills": {},
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 8,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Swarm",
+     "text": "The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny piranha. The swarm can't regain Hit Points or gain Temporary Hit Points."
+    },
+    {
+     "name": "Water Breathing",
+     "text": "The swarm can breathe only underwater."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bites",
+     "text": "Melee Attack Roll: +5 (with Advantage if the target doesn't have all its Hit Points), reach 5 ft. 8 (2d4 + 3) Piercing damage, or 5 (1d4 + 3) Piercing damage if the swarm is Bloodied."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47139/288/638741964704765770.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195227-swarm-of-piranhas",
+   "ddb_id": 5195227
+  },
+  {
+   "name": "Tiger",
+   "cr": 1.0,
+   "cr_label": "1",
+   "size": "Large",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 30,
+   "hit_dice": "4d10 + 8",
+   "speed": {
+    "walk": 40,
+    "climb": 20,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 17,
+    "dex": 16,
+    "con": 14,
+    "int": 3,
+    "wis": 12,
+    "cha": 8
+   },
+   "saves": {
+    "str": 3,
+    "dex": 3,
+    "con": 2,
+    "int": -4,
+    "wis": 1,
+    "cha": -1
+   },
+   "skills": {
+    "Perception": 3,
+    "Stealth": 7
+   },
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 13,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Rend",
+     "text": "Melee Attack Roll: +5, reach 5 ft. 10 (2d6 + 3) Slashing damage. If the target is a Large or smaller creature, it has the Prone condition."
+    }
+   ],
+   "bonus_actions": [
+    {
+     "name": "Nimble Escape",
+     "text": "The tiger takes the Disengage or Hide action."
+    }
+   ],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43939/898/638607434270663754.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775846-tiger",
+   "ddb_id": 4775846
+  },
+  {
+   "name": "Allosaurus",
+   "cr": 2.0,
+   "cr_label": "2",
+   "size": "Large",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 51,
+   "hit_dice": "6d10 + 18",
+   "speed": {
+    "walk": 60,
+    "climb": 30,
+    "swim": 30
+   },
+   "hover": false,
+   "abilities": {
+    "str": 19,
+    "dex": 13,
+    "con": 17,
+    "int": 2,
+    "wis": 12,
+    "cha": 5
+   },
+   "saves": {
+    "str": 4,
+    "dex": 1,
+    "con": 3,
+    "int": -4,
+    "wis": 1,
+    "cha": -3
+   },
+   "skills": {
+    "Perception": 5
+   },
+   "senses": "",
+   "passive_perception": 15,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +6, reach 5 ft. 15 (2d10 + 4) Piercing damage."
+    },
+    {
+     "name": "Claws",
+     "text": "Melee Attack Roll: +6, reach 5 ft. 8 (1d8 + 4) Slashing damage. If the target is a Large or smaller creature and the allosaurus moved 30+ feet straight toward it immediately before the hit, the target has the Prone condition, and the allosaurus can make one Bite attack against it."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47138/575/638741963717916049.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5194879-allosaurus",
+   "ddb_id": 5194879
+  },
+  {
+   "name": "Giant Boar",
+   "cr": 2.0,
+   "cr_label": "2",
+   "size": "Large",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 42,
+   "hit_dice": "5d10 + 15",
+   "speed": {
+    "walk": 40,
+    "climb": 20,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 17,
+    "dex": 10,
+    "con": 16,
+    "int": 2,
+    "wis": 7,
+    "cha": 5
+   },
+   "saves": {
+    "str": 5,
+    "dex": 0,
+    "con": 3,
+    "int": -4,
+    "wis": -2,
+    "cha": -3
+   },
+   "skills": {},
+   "senses": "",
+   "passive_perception": 8,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Bloodied Fury",
+     "text": "The boar has Advantage on melee attack rolls while it is Bloodied."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Gore",
+     "text": "Melee Attack Roll: +5, reach 5 ft. 10 (2d6 + 3) Piercing damage. If the target is a Large or smaller creature and the boar moved 20+ feet straight toward it immediately before the hit, the target takes an extra 7 (2d6) Piercing damage and has the Prone condition."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47138/851/638741964097222858.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195013-giant-boar",
+   "ddb_id": 5195013
+  },
+  {
+   "name": "Giant Constrictor Snake",
+   "cr": 2.0,
+   "cr_label": "2",
+   "size": "Huge",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 60,
+   "hit_dice": "8d12 + 8",
+   "speed": {
+    "walk": 30,
+    "climb": 15,
+    "swim": 30
+   },
+   "hover": false,
+   "abilities": {
+    "str": 19,
+    "dex": 14,
+    "con": 12,
+    "int": 1,
+    "wis": 10,
+    "cha": 3
+   },
+   "saves": {
+    "str": 4,
+    "dex": 2,
+    "con": 1,
+    "int": -5,
+    "wis": 0,
+    "cha": -4
+   },
+   "skills": {
+    "Perception": 2
+   },
+   "senses": "Blindsight 10 ft.",
+   "passive_perception": 12,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +6, reach 10 ft. 11 (2d6 + 4) Piercing damage."
+    },
+    {
+     "name": "Constrict",
+     "text": "Strength Saving Throw: DC 14, one Large or smaller creature the snake can see within 10 feet. Failure: 13 (2d8 + 4) Bludgeoning damage, and the target has the Grappled condition (escape DC 14)."
+    },
+    {
+     "name": "Multiattack",
+     "text": "The snake makes one Bite attack and uses Constrict."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47138/855/638741964102900581.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195015-giant-constrictor-snake",
+   "ddb_id": 5195015
+  },
+  {
+   "name": "Hunter Shark",
+   "cr": 2.0,
+   "cr_label": "2",
+   "size": "Large",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 45,
+   "hit_dice": "6d10 + 12",
+   "speed": {
+    "walk": 5,
+    "climb": 2,
+    "swim": 40
+   },
+   "hover": false,
+   "abilities": {
+    "str": 18,
+    "dex": 14,
+    "con": 15,
+    "int": 1,
+    "wis": 10,
+    "cha": 4
+   },
+   "saves": {
+    "str": 4,
+    "dex": 2,
+    "con": 2,
+    "int": -5,
+    "wis": 0,
+    "cha": -3
+   },
+   "skills": {
+    "Perception": 2
+   },
+   "senses": "Blindsight 60 ft.",
+   "passive_perception": 12,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Water Breathing",
+     "text": "The shark can breathe only underwater."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +6 (with Advantage if the target doesn't have all its Hit Points), reach 5 ft. 14 (3d6 + 4) Piercing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47138/993/638741964297895187.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195083-hunter-shark",
+   "ddb_id": 5195083
+  },
+  {
+   "name": "Plesiosaurus",
+   "cr": 2.0,
+   "cr_label": "2",
+   "size": "Large",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 68,
+   "hit_dice": "8d10 + 24",
+   "speed": {
+    "walk": 20,
+    "climb": 10,
+    "swim": 40
+   },
+   "hover": false,
+   "abilities": {
+    "str": 18,
+    "dex": 15,
+    "con": 16,
+    "int": 2,
+    "wis": 12,
+    "cha": 5
+   },
+   "saves": {
+    "str": 4,
+    "dex": 2,
+    "con": 3,
+    "int": -4,
+    "wis": 1,
+    "cha": -3
+   },
+   "skills": {
+    "Perception": 3,
+    "Stealth": 4
+   },
+   "senses": "",
+   "passive_perception": 13,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Hold Breath",
+     "text": "The plesiosaurus can hold its breath for 1 hour."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +6, reach 10 ft. 11 (2d6 + 4) Piercing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47139/165/638741964533176362.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195166-plesiosaurus",
+   "ddb_id": 5195166
+  },
+  {
+   "name": "Polar Bear",
+   "cr": 2.0,
+   "cr_label": "2",
+   "size": "Large",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 42,
+   "hit_dice": "5d10 + 15",
+   "speed": {
+    "walk": 40,
+    "climb": 20,
+    "swim": 40
+   },
+   "hover": false,
+   "abilities": {
+    "str": 20,
+    "dex": 14,
+    "con": 16,
+    "int": 2,
+    "wis": 13,
+    "cha": 7
+   },
+   "saves": {
+    "str": 5,
+    "dex": 2,
+    "con": 3,
+    "int": -4,
+    "wis": 1,
+    "cha": -2
+   },
+   "skills": {
+    "Perception": 5,
+    "Stealth": 4
+   },
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 15,
+   "resist": "cold",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Multiattack",
+     "text": "The bear makes two Rend attacks."
+    },
+    {
+     "name": "Rend",
+     "text": "Melee Attack Roll: +7, reach 5 ft. 9 (1d8 + 5) Slashing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47139/167/638741964536449881.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195167-polar-bear",
+   "ddb_id": 5195167
+  },
+  {
+   "name": "Rhinoceros",
+   "cr": 2.0,
+   "cr_label": "2",
+   "size": "Large",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 45,
+   "hit_dice": "6d10 + 12",
+   "speed": {
+    "walk": 40,
+    "climb": 20,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 21,
+    "dex": 8,
+    "con": 15,
+    "int": 2,
+    "wis": 12,
+    "cha": 6
+   },
+   "saves": {
+    "str": 5,
+    "dex": -1,
+    "con": 2,
+    "int": -4,
+    "wis": 1,
+    "cha": -2
+   },
+   "skills": {},
+   "senses": "",
+   "passive_perception": 11,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Gore",
+     "text": "Melee Attack Roll: +7, reach 5 ft. 14 (2d8 + 5) Piercing damage. If target is a Large or smaller creature and the rhinoceros moved 20+ feet straight toward it immediately before the hit, the target takes an extra 9 (2d8) Piercing damage and has the Prone condition."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47139/199/638741964578412102.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195183-rhinoceros",
+   "ddb_id": 5195183
+  },
+  {
+   "name": "Saber-Toothed Tiger",
+   "cr": 2.0,
+   "cr_label": "2",
+   "size": "Large",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 52,
+   "hit_dice": "7d10 + 14",
+   "speed": {
+    "walk": 40,
+    "climb": 20,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 18,
+    "dex": 17,
+    "con": 15,
+    "int": 3,
+    "wis": 12,
+    "cha": 8
+   },
+   "saves": {
+    "str": 6,
+    "dex": 5,
+    "con": 2,
+    "int": -4,
+    "wis": 1,
+    "cha": -1
+   },
+   "skills": {
+    "Perception": 5,
+    "Stealth": 7
+   },
+   "senses": "Darkvision 60 ft.",
+   "passive_perception": 15,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Running Leap",
+     "text": "With a 10-foot running start, the tiger can Long Jump up to 25 feet."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Multiattack",
+     "text": "The tiger makes two Rend attacks."
+    },
+    {
+     "name": "Rend",
+     "text": "Melee Attack Roll: +6, reach 5 ft. 11 (2d6 + 4) Slashing damage."
+    }
+   ],
+   "bonus_actions": [
+    {
+     "name": "Nimble Escape",
+     "text": "The tiger takes the Disengage or Hide action."
+    }
+   ],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47139/207/638741964591244625.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195187-saber-toothed-tiger",
+   "ddb_id": 5195187
+  },
+  {
+   "name": "Swarm of Venomous Snakes",
+   "cr": 2.0,
+   "cr_label": "2",
+   "size": "Medium",
+   "ac": 14,
+   "ac_note": "natural armor",
+   "hp": 36,
+   "hit_dice": "8d8",
+   "speed": {
+    "walk": 30,
+    "climb": 15,
+    "swim": 30
+   },
+   "hover": false,
+   "abilities": {
+    "str": 8,
+    "dex": 18,
+    "con": 11,
+    "int": 1,
+    "wis": 10,
+    "cha": 3
+   },
+   "saves": {
+    "str": -1,
+    "dex": 4,
+    "con": 0,
+    "int": -5,
+    "wis": 0,
+    "cha": -4
+   },
+   "skills": {},
+   "senses": "Blindsight 10 ft.",
+   "passive_perception": 10,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Swarm",
+     "text": "The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny snake. The swarm can't regain Hit Points or gain Temporary Hit Points."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bites",
+     "text": "Melee Attack Roll: +6, reach 5 ft. 8 (1d8 + 4) Piercing damage—or 6 (1d4 + 4) Piercing damage if the swarm is Bloodied—plus 10 (3d6) Poison damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47139/296/638741964718648534.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195231-swarm-of-venomous-snakes",
+   "ddb_id": 5195231
+  },
+  {
+   "name": "Ankylosaurus",
+   "cr": 3.0,
+   "cr_label": "3",
+   "size": "Huge",
+   "ac": 15,
+   "ac_note": "natural armor",
+   "hp": 68,
+   "hit_dice": "8d12 + 16",
+   "speed": {
+    "walk": 30,
+    "climb": 15,
+    "swim": 15
+   },
+   "hover": false,
+   "abilities": {
+    "str": 19,
+    "dex": 11,
+    "con": 15,
+    "int": 2,
+    "wis": 12,
+    "cha": 5
+   },
+   "saves": {
+    "str": 6,
+    "dex": 0,
+    "con": 2,
+    "int": -4,
+    "wis": 1,
+    "cha": -3
+   },
+   "skills": {},
+   "senses": "",
+   "passive_perception": 11,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Multiattack",
+     "text": "The ankylosaurus makes two Tail attacks."
+    },
+    {
+     "name": "Tail",
+     "text": "Melee Attack Roll: +6, reach 10 ft. 9 (1d10 + 4) Bludgeoning damage. If the target is a Huge or smaller creature, it has the Prone condition."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47144/532/638742152318979105.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5194898-ankylosaurus",
+   "ddb_id": 5194898
+  },
+  {
+   "name": "Giant Scorpion",
+   "cr": 3.0,
+   "cr_label": "3",
+   "size": "Large",
+   "ac": 15,
+   "ac_note": "natural armor",
+   "hp": 52,
+   "hit_dice": "7d10 + 14",
+   "speed": {
+    "walk": 40,
+    "climb": 20,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 16,
+    "dex": 13,
+    "con": 15,
+    "int": 1,
+    "wis": 9,
+    "cha": 3
+   },
+   "saves": {
+    "str": 3,
+    "dex": 1,
+    "con": 2,
+    "int": -5,
+    "wis": -1,
+    "cha": -4
+   },
+   "skills": {},
+   "senses": "Blindsight 60 ft.",
+   "passive_perception": 9,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Claw",
+     "text": "Melee Attack Roll: +5, reach 5 ft. 6 (1d6 + 3) Bludgeoning damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13) from one of two claws."
+    },
+    {
+     "name": "Multiattack",
+     "text": "The scorpion makes two Claw attacks and one Sting attack."
+    },
+    {
+     "name": "Sting",
+     "text": "Melee Attack Roll: +5, reach 5 ft. 7 (1d8 + 3) Piercing damage plus 11 (2d10) Poison damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/58417/122/639226714850570064.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195026-giant-scorpion",
+   "ddb_id": 5195026
+  },
+  {
+   "name": "Killer Whale",
+   "cr": 3.0,
+   "cr_label": "3",
+   "size": "Huge",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 90,
+   "hit_dice": "12d12 + 12",
+   "speed": {
+    "walk": 5,
+    "climb": 2,
+    "swim": 60
+   },
+   "hover": false,
+   "abilities": {
+    "str": 19,
+    "dex": 14,
+    "con": 13,
+    "int": 3,
+    "wis": 12,
+    "cha": 7
+   },
+   "saves": {
+    "str": 4,
+    "dex": 2,
+    "con": 1,
+    "int": -4,
+    "wis": 1,
+    "cha": -2
+   },
+   "skills": {
+    "Perception": 3,
+    "Stealth": 4
+   },
+   "senses": "Blindsight 120 ft.",
+   "passive_perception": 13,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Hold Breath",
+     "text": "The whale can hold its breath for 30 minutes."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +6, reach 5 ft. 21 (5d6 + 4) Piercing damage."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47139/18/638741964331361137.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195095-killer-whale",
+   "ddb_id": 5195095
+  },
+  {
+   "name": "Archelon",
+   "cr": 4.0,
+   "cr_label": "4",
+   "size": "Huge",
+   "ac": 17,
+   "ac_note": "natural armor",
+   "hp": 90,
+   "hit_dice": "12d12 + 12",
+   "speed": {
+    "walk": 20,
+    "climb": 10,
+    "swim": 80
+   },
+   "hover": false,
+   "abilities": {
+    "str": 18,
+    "dex": 16,
+    "con": 13,
+    "int": 4,
+    "wis": 14,
+    "cha": 6
+   },
+   "saves": {
+    "str": 4,
+    "dex": 3,
+    "con": 1,
+    "int": -3,
+    "wis": 2,
+    "cha": -2
+   },
+   "skills": {
+    "Stealth": 5
+   },
+   "senses": "",
+   "passive_perception": 12,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Amphibious",
+     "text": "The archelon can breathe air and water."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +6, reach 5 ft. 14 (3d6 + 4) Piercing damage."
+    },
+    {
+     "name": "Multiattack",
+     "text": "The archelon makes two Bite attacks."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47144/568/638742153406085942.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5194901-archelon",
+   "ddb_id": 5194901
+  },
+  {
+   "name": "Elephant",
+   "cr": 4.0,
+   "cr_label": "4",
+   "size": "Huge",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 76,
+   "hit_dice": "8d12 + 24",
+   "speed": {
+    "walk": 40,
+    "climb": 20,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 22,
+    "dex": 9,
+    "con": 17,
+    "int": 3,
+    "wis": 11,
+    "cha": 6
+   },
+   "saves": {
+    "str": 6,
+    "dex": -1,
+    "con": 3,
+    "int": -4,
+    "wis": 0,
+    "cha": -2
+   },
+   "skills": {},
+   "senses": "",
+   "passive_perception": 10,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Gore",
+     "text": "Melee Attack Roll: +8, reach 5 ft. 15 (2d8 + 6) Piercing damage. If the target is a Huge or smaller creature and the elephant moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition."
+    },
+    {
+     "name": "Multiattack",
+     "text": "The elephant makes two Gore attacks."
+    }
+   ],
+   "bonus_actions": [
+    {
+     "name": "Trample",
+     "text": "Dexterity Saving Throw: DC 16, one creature within 5 feet that has the Prone condition. Failure: 17 (2d10 + 6) Bludgeoning damage. Success: Half damage."
+    }
+   ],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/43939/192/638607417002130871.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775814-elephant",
+   "ddb_id": 4775814
+  },
+  {
+   "name": "Hippopotamus",
+   "cr": 4.0,
+   "cr_label": "4",
+   "size": "Large",
+   "ac": 14,
+   "ac_note": "natural armor",
+   "hp": 82,
+   "hit_dice": "11d10 + 22",
+   "speed": {
+    "walk": 30,
+    "climb": 15,
+    "swim": 30
+   },
+   "hover": false,
+   "abilities": {
+    "str": 21,
+    "dex": 7,
+    "con": 15,
+    "int": 2,
+    "wis": 12,
+    "cha": 4
+   },
+   "saves": {
+    "str": 7,
+    "dex": -2,
+    "con": 2,
+    "int": -4,
+    "wis": 1,
+    "cha": -3
+   },
+   "skills": {
+    "Perception": 3
+   },
+   "senses": "",
+   "passive_perception": 13,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Hold Breath",
+     "text": "The hippopotamus can hold its breath for 10 minutes."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +7, reach 5 ft. 16 (2d10 + 5) Piercing damage."
+    },
+    {
+     "name": "Multiattack",
+     "text": "The hippopotamus makes two Bite attacks."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47138/978/638741964277308105.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195076-hippopotamus",
+   "ddb_id": 5195076
+  },
+  {
+   "name": "Giant Crocodile",
+   "cr": 5.0,
+   "cr_label": "5",
+   "size": "Huge",
+   "ac": 14,
+   "ac_note": "natural armor",
+   "hp": 85,
+   "hit_dice": "9d12 + 27",
+   "speed": {
+    "walk": 30,
+    "climb": 15,
+    "swim": 50
+   },
+   "hover": false,
+   "abilities": {
+    "str": 21,
+    "dex": 9,
+    "con": 17,
+    "int": 2,
+    "wis": 10,
+    "cha": 7
+   },
+   "saves": {
+    "str": 5,
+    "dex": -1,
+    "con": 3,
+    "int": -4,
+    "wis": 0,
+    "cha": -2
+   },
+   "skills": {
+    "Stealth": 5
+   },
+   "senses": "",
+   "passive_perception": 10,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Hold Breath",
+     "text": "The crocodile can hold its breath for 1 hour."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +8, reach 5 ft. 21 (3d10 + 5) Piercing damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 15). While Grappled, the target has the Restrained condition and can't be targeted by the crocodile's Tail."
+    },
+    {
+     "name": "Multiattack",
+     "text": "The crocodile makes one Bite attack and one Tail attack."
+    },
+    {
+     "name": "Tail",
+     "text": "Melee Attack Roll: +8, reach 10 ft. 18 (3d8 + 5) Bludgeoning damage. If the target is a Large or smaller creature, it has the Prone condition."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47138/857/638741964105864539.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195016-giant-crocodile",
+   "ddb_id": 5195016
+  },
+  {
+   "name": "Giant Shark",
+   "cr": 5.0,
+   "cr_label": "5",
+   "size": "Huge",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 92,
+   "hit_dice": "8d12 + 40",
+   "speed": {
+    "walk": 5,
+    "climb": 2,
+    "swim": 60
+   },
+   "hover": false,
+   "abilities": {
+    "str": 23,
+    "dex": 11,
+    "con": 21,
+    "int": 1,
+    "wis": 10,
+    "cha": 5
+   },
+   "saves": {
+    "str": 6,
+    "dex": 0,
+    "con": 5,
+    "int": -5,
+    "wis": 0,
+    "cha": -3
+   },
+   "skills": {
+    "Perception": 3
+   },
+   "senses": "Blindsight 60 ft.",
+   "passive_perception": 13,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [
+    {
+     "name": "Water Breathing",
+     "text": "The shark can breathe only underwater."
+    }
+   ],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +9 (with Advantage if the target doesn't have all its Hit Points), reach 5 ft. 22 (3d10 + 6) Piercing damage."
+    },
+    {
+     "name": "Multiattack",
+     "text": "The shark makes two Bite attacks."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/58417/129/639226715028380172.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195027-giant-shark",
+   "ddb_id": 5195027
+  },
+  {
+   "name": "Triceratops",
+   "cr": 5.0,
+   "cr_label": "5",
+   "size": "Huge",
+   "ac": 14,
+   "ac_note": "natural armor",
+   "hp": 114,
+   "hit_dice": "12d12 + 36",
+   "speed": {
+    "walk": 50,
+    "climb": 25,
+    "swim": 25
+   },
+   "hover": false,
+   "abilities": {
+    "str": 22,
+    "dex": 9,
+    "con": 17,
+    "int": 2,
+    "wis": 11,
+    "cha": 5
+   },
+   "saves": {
+    "str": 6,
+    "dex": -1,
+    "con": 3,
+    "int": -4,
+    "wis": 0,
+    "cha": -3
+   },
+   "skills": {},
+   "senses": "",
+   "passive_perception": 10,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Gore",
+     "text": "Melee Attack Roll: +9, reach 5 ft. 19 (2d12 + 6) Piercing damage. If the target is Huge or smaller and the triceratops moved 20+ feet straight toward it immediately before the hit, the target takes an extra 9 (2d8) Piercing damage and has the Prone condition."
+    },
+    {
+     "name": "Multiattack",
+     "text": "The triceratops makes two Gore attacks."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47139/310/638741964736650195.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195238-triceratops",
+   "ddb_id": 5195238
+  },
+  {
+   "name": "Mammoth",
+   "cr": 6.0,
+   "cr_label": "6",
+   "size": "Huge",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 126,
+   "hit_dice": "11d12 + 55",
+   "speed": {
+    "walk": 50,
+    "climb": 25,
+    "swim": 25
+   },
+   "hover": false,
+   "abilities": {
+    "str": 24,
+    "dex": 9,
+    "con": 21,
+    "int": 3,
+    "wis": 11,
+    "cha": 6
+   },
+   "saves": {
+    "str": 10,
+    "dex": -1,
+    "con": 8,
+    "int": -4,
+    "wis": 0,
+    "cha": -2
+   },
+   "skills": {},
+   "senses": "",
+   "passive_perception": 10,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Gore",
+     "text": "Melee Attack Roll: +10, reach 10 ft. 18 (2d10 + 7) Piercing damage. If the target is a Huge or smaller creature and the mammoth moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition."
+    },
+    {
+     "name": "Multiattack",
+     "text": "The mammoth makes two Gore attacks."
+    }
+   ],
+   "bonus_actions": [
+    {
+     "name": "Trample",
+     "text": "Dexterity Saving Throw: DC 18, one creature within 5 feet that has the Prone condition. Failure: 29 (4d10 + 7) Bludgeoning damage. Success: Half damage."
+    }
+   ],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47139/52/638741964376303354.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195112-mammoth",
+   "ddb_id": 5195112
+  },
+  {
+   "name": "Giant Ape",
+   "cr": 7.0,
+   "cr_label": "7",
+   "size": "Huge",
+   "ac": 12,
+   "ac_note": "natural armor",
+   "hp": 168,
+   "hit_dice": "16d12 + 64",
+   "speed": {
+    "walk": 40,
+    "climb": 40,
+    "swim": 20
+   },
+   "hover": false,
+   "abilities": {
+    "str": 23,
+    "dex": 14,
+    "con": 18,
+    "int": 5,
+    "wis": 12,
+    "cha": 7
+   },
+   "saves": {
+    "str": 6,
+    "dex": 2,
+    "con": 4,
+    "int": -3,
+    "wis": 1,
+    "cha": -2
+   },
+   "skills": {
+    "Athletics": 9,
+    "Perception": 4,
+    "Survival": 4
+   },
+   "senses": "",
+   "passive_perception": 14,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Boulder Toss (Recharge 6–6)",
+     "text": "The ape hurls a boulder at a point it can see within 90 feet. Dexterity Saving Throw: DC 17, each creature in a 5-foot-radius Sphere [Area of Effect]|XPHB|Sphere centered on that point. Failure: 24 (7d6) Bludgeoning damage. If the target is a Large or smaller creature, it has the Prone condition. Success: Half damage only."
+    },
+    {
+     "name": "Fist",
+     "text": "Melee Attack Roll: +9, reach 10 ft. 22 (3d10 + 6) Bludgeoning damage."
+    },
+    {
+     "name": "Multiattack",
+     "text": "The ape makes two Fist attacks."
+    }
+   ],
+   "bonus_actions": [
+    {
+     "name": "Leap",
+     "text": "The ape jumps up to 30 feet by spending 10 feet of movement."
+    }
+   ],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47138/843/638741964090199887.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195010-giant-ape",
+   "ddb_id": 5195010
+  },
+  {
+   "name": "Tyrannosaurus Rex",
+   "cr": 8.0,
+   "cr_label": "8",
+   "size": "Huge",
+   "ac": 13,
+   "ac_note": "natural armor",
+   "hp": 136,
+   "hit_dice": "13d12 + 52",
+   "speed": {
+    "walk": 50,
+    "climb": 25,
+    "swim": 25
+   },
+   "hover": false,
+   "abilities": {
+    "str": 25,
+    "dex": 10,
+    "con": 19,
+    "int": 2,
+    "wis": 12,
+    "cha": 9
+   },
+   "saves": {
+    "str": 10,
+    "dex": 0,
+    "con": 4,
+    "int": -4,
+    "wis": 4,
+    "cha": -1
+   },
+   "skills": {
+    "Perception": 4
+   },
+   "senses": "",
+   "passive_perception": 14,
+   "resist": "",
+   "immune": "",
+   "vulnerable": "",
+   "condition_immune": "",
+   "traits": [],
+   "actions": [
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +10, reach 10 ft. 33 (4d12 + 7) Piercing damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 17). While Grappled, the target has the Restrained condition and can't be targeted by the tyrannosaurus's Tail."
+    },
+    {
+     "name": "Multiattack",
+     "text": "The tyrannosaurus makes one Bite attack and one Tail attack."
+    },
+    {
+     "name": "Tail",
+     "text": "Melee Attack Roll: +10, reach 15 ft. 25 (4d8 + 7) Bludgeoning damage. If the target is a Huge or smaller creature, it has the Prone condition."
+    }
+   ],
+   "bonus_actions": [],
+   "reactions": [],
+   "source": "SRD 5.2",
+   "image": "https://www.dndbeyond.com/avatars/47139/320/638741964750280660.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195243-tyrannosaurus-rex",
+   "ddb_id": 5195243
+  }
+ ]
+}

@@ -41,6 +41,33 @@
 {%- endif -%}
 {%- endmacro %}
 
+{# A shortlist (♥) or Remind me button with the player's note on why, for the side panel.
+   The whole block swaps when the button is pressed, so the note box appears with it. #}
+{% macro pick_note(c, kind, ref, on, note, can_pick) -%}
+{%- set title = {"fav": "shortlist", "remind": "Easy to forget"}[kind] -%}
+{%- if can_pick or on -%}
+<div class="pick-note{{ ' on' if on }}">
+  <div class="row pick-note-head">
+  {%- if can_pick -%}
+  <button type="button" class="pick {{ kind }}{{ ' on' if on }}" hx-post="/characters/{{ c.id }}/pick" hx-vals='{{ {"kind": kind, "ref": ref, "wrap": "1"} | tojson }}'
+    hx-target="closest .pick-note" hx-swap="outerHTML" aria-pressed="{{ 'true' if on else 'false' }}"
+    title="{{ ('On your ' ~ title ~ ' (click to remove)') if on else ('Add to your ' ~ title) }}" aria-label="{{ 'Shortlist' if kind == 'fav' else 'Remind me' }}">
+    {%- if kind == "fav" %}{{ "♥" if on else "♡" }}{% else %}{{ bell(on) }}{% endif -%}
+  </button>
+  {%- elif on -%}<span class="pick {{ kind }} on static">{% if kind == "fav" %}♥{% else %}{{ bell(true) }}{% endif %}</span>{%- endif -%}
+  <span class="note">{{ ("On the shortlist" if kind == "fav" else "In Easy to forget") if on else ("Shortlist" if kind == "fav" else "Remind me") }}</span>
+  </div>
+  {% if on and can_pick %}
+  <form class="pick-note-form" hx-post="/characters/{{ c.id }}/pick/note" hx-trigger="input changed delay:700ms from:find textarea, submit" hx-target="find .pick-note-saved" hx-swap="innerHTML">
+    <input type="hidden" name="kind" value="{{ kind }}"><input type="hidden" name="ref" value="{{ ref }}">
+    <textarea name="note" rows="2" maxlength="500" placeholder="{{ 'Why is it on your shortlist?' if kind == 'fav' else 'Why remind you? (e.g. when it matters)' }}">{{ note }}</textarea>
+    <span class="pick-note-saved" aria-live="polite"></span>
+  </form>
+  {% elif on and note %}<p class="pick-note-text">{{ note }}</p>{% endif %}
+</div>
+{%- endif -%}
+{%- endmacro %}
+
 {% macro vitals(s, c) -%}
 <div class="vitals">
   <div class="vital" {{ tile(c, "hp") }}><small>HP</small><b>{{ s.hit_points.current }}</b>{% if s.hit_points.current != s.hit_points.max %}<span class="note"> / {{ s.hit_points.max }}</span>{% endif %}{% if s.hit_points.temp %}<span class="note"> +{{ s.hit_points.temp }} temp</span>{% endif %}</div>
@@ -66,12 +93,14 @@
                        "spellbook": ("In spellbook", ""), "available": ("Not prepared", "faint"), "granted": ("", "")} %}
 
 {# One compact row; clicking it opens the side panel with everything about it. #}
-{% macro ri(c, key, name, picks, can_pick, star=False, fav=False, chips=(), what="", mech="", hit="", uses=None, cls="", attrs="", spend=()) -%}
-<div class="ri {{ cls }}" data-panel-url="/characters/{{ c.id }}/detail?ref={{ key | urlencode }}" tabindex="0" role="button" {{ attrs | safe }}>
-  <span class="ri-pk">{% if fav %}{{ pick_btn(c, "fav", key, key in picks.fav, can_pick) }}{% endif %}{% if star %}{{ pick_btn(c, "star", key, key in picks.star, can_pick) }}{% endif %}</span>
+{% macro ri(c, key, name, picks, can_pick, star=False, fav=False, chips=(), what="", mech="", hit="", uses=None, cls="", attrs="", spend=(), url="", image="") -%}
+{%- set notes = [picks.notes.get("fav|" ~ key), picks.notes.get("remind|" ~ key)] | select | list if picks.notes else [] -%}
+<div class="ri {{ cls }}{{ ' has-pic' if image }}" data-panel-url="{{ url or ('/characters/' ~ c.id ~ '/detail?ref=' ~ (key | urlencode)) }}" data-ref="{{ key }}" tabindex="0" role="button" {{ attrs | safe }}>
+  <span class="ri-pk">{% if image %}<img class="ri-pic" src="{{ image }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{% if fav %}{{ pick_btn(c, "fav", key, key in picks.fav, can_pick) }}{% endif %}{% if star %}{{ pick_btn(c, "star", key, key in picks.star, can_pick) }}{% endif %}</span>
   <span class="ri-main"><span class="ri-line"><span class="ri-name">{{ name }}</span>{% if uses %} {{ pips(uses) }}{% endif %}{% for t in chips if t %} <span class="tag {{ '' if t is string else t[1] }}">{{ t if t is string else t[0] }}</span>{% endfor %}</span>
     {% if spend %}<span class="ri-spend">{{ spends(spend) }}</span>{% endif %}
-    {% if what %}<span class="ri-what">{{ what }}</span>{% endif %}</span>
+    {% if what %}<span class="ri-what">{{ what }}</span>{% endif %}
+    {% for n in notes %}<span class="ri-note" title="Your note">✎ {{ n }}</span>{% endfor %}</span>
   <span class="ri-mech">{{ mech }}</span>
   <span class="ri-hit">{{ hit }}</span>
   <span class="ri-pk end">{{ pick_btn(c, "remind", key, key in picks.remind, can_pick) }}</span>

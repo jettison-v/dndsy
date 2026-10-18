@@ -429,7 +429,8 @@
     });
     root.querySelectorAll('.planner-level, .planner-group').forEach(g => { g.hidden = !g.querySelector('.spell-row:not([hidden])'); });
     const label = root.querySelector('[data-shown]');
-    if (label) label.textContent = shown + ' spell' + (shown === 1 ? '' : 's') + ' shown.';
+    const noun = root.dataset.noun || 'spell';
+    if (label) label.textContent = shown + ' ' + noun + (shown === 1 ? '' : 's') + ' shown.';
     const empty = root.querySelector('.planner-empty'); if (empty) empty.hidden = shown > 0;
   }
   document.addEventListener('click', e => {
@@ -445,6 +446,16 @@
   document.addEventListener('click', e => {
     const b = e.target.closest('.pick.fav:not(.static)'), row = b && b.closest('.spell-row');
     if (row) row.dataset.fav = b.classList.contains('on') ? '0' : '1';  // the server toggles it the same way
+    // ♥ in the side panel: keep the matching row on the page in step
+    if (b && b.closest('.pick-note')) {
+      const on = !b.classList.contains('on'), ref = JSON.parse(b.getAttribute('hx-vals') || '{}').ref;
+      document.querySelectorAll('.spell-row[data-ref]').forEach(r => {
+        if (r.dataset.ref !== ref) return;
+        r.dataset.fav = on ? '1' : '0';
+        const h = r.querySelector('.pick.fav');
+        if (h) { h.classList.toggle('on', on); h.textContent = on ? '♥' : '♡'; h.setAttribute('aria-pressed', on); }
+      });
+    }
   }, true);
   document.querySelectorAll('[data-planner]').forEach(plannerApply);
 

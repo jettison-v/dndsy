@@ -14,26 +14,50 @@
       </div>
       {% endif %}
     </div>
-    {% if s %}<div style="margin-top:8px">{{ vitals(s, c) }}</div>{{ resource_row(s) }}{% endif %}
+    {% if s and known_forms %}
+    <div class="ws-bar" aria-label="Wild Shape">
+      <span class="ws-label">Wild Shape{% if druid.uses %} {{ pips(druid.uses) }}{% endif %}</span>
+      {% if can_pick %}
+      <button type="button" class="ws-chip{{ ' on' if not form }}" hx-post="/characters/{{ c.id }}/wild-shape" hx-vals='{"form": ""}' hx-target="#battle-body" hx-swap="outerHTML" aria-pressed="{{ 'false' if form else 'true' }}">Normal</button>
+      {% for kf in known_forms %}<button type="button" class="ws-chip{{ ' on' if form and form.beast.name == kf.name }}" hx-post="/characters/{{ c.id }}/wild-shape" hx-vals='{{ {"form": kf.name} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML"
+        aria-pressed="{{ 'true' if form and form.beast.name == kf.name else 'false' }}" title="CR {{ kf.cr }}">{% if kf.image %}<img src="{{ kf.image }}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ kf.name }}</button>{% endfor %}
+      {% elif form %}<span class="ws-chip on">{{ form.beast.name }}</span>{% else %}<span class="note">Normal form</span>{% endif %}
+    </div>
+    {% endif %}
+    {% if form %}{% set fb = form.beast %}
+    <div class="ws-form" data-panel-url="/characters/{{ c.id }}/form?name={{ fb.name | urlencode }}" tabindex="0" role="button">
+      {% if fb.image %}<img class="ws-pic" src="{{ fb.image }}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}
+      <div class="ws-form-main"><b>In Wild Shape: {{ fb.name }}</b> <span class="note">CR {{ fb.cr_label }} · {{ fb.size }}</span>
+        <div class="vitals">
+          <div class="vital"><small>AC</small><b>{{ form.ac }}</b></div>
+          <div class="vital"><small>HP</small><b>{{ s.hit_points.current }}</b><span class="note"> +{{ form.temp_hp }} temp on shifting</span></div>
+          <div class="vital"><small>Speed</small><b class="small">{{ form.speed }}</b></div>
+          <div class="vital"><small>Initiative</small><b>{{ form.initiative }}</b></div>
+          <div class="vital"><small>Saves</small><b class="small">{% for sv in form.saves %}{{ sv.short }} {{ sv.label }}{{ " " if not loop.last }}{% endfor %}</b></div>
+        </div>
+        <span class="note">Your stats carried over. No spellcasting in this form. Click for the full form, skills and rules.</span></div>
+    </div>
+    {% elif s %}<div style="margin-top:8px">{{ vitals(s, c) }}</div>{{ resource_row(s) }}{% endif %}
   </div>
 
   {% if s %}
-  {% if can_pick %}<p class="note" style="margin:-6px 0 10px">Drag options to reorder a column. ★ on the Character page (or in "See all") adds more.</p>{% endif %}
+  {% if can_pick and not form %}<p class="note" style="margin:-6px 0 10px">Drag options to reorder a column. ★ on the Character page (or in "See all") adds more.</p>{% endif %}
   <div class="econ">
     {% for cost, sub, slug in [("Action", "One per turn", "action"), ("Bonus action", "One per turn", "bonus"), ("Reaction", "One per round, also on others' turns", "reaction")] %}
     {% set col = columns[cost] %}
     <div class="section">
       <h2 class="econ-head k-{{ slug }}">{{ cost }}<small>{{ sub }}</small></h2>
-      <div class="moves"{% if can_pick %} data-sort-column="{{ cost }}" data-sort-url="/characters/{{ c.id }}/order"{% endif %}>
+      <div class="moves"{% if can_pick and not form %} data-sort-column="{{ cost }}" data-sort-url="/characters/{{ c.id }}/order"{% endif %}>
       {% for o in col.shown %}
-      <div class="move" data-key="{{ o.key }}" data-panel-url="/characters/{{ c.id }}/detail?ref={{ o.key | urlencode }}" tabindex="0" role="button">
+      <div class="move{{ ' yours' if o.source == 'yours' }}" data-key="{{ o.key }}" data-panel-url="{{ ('/characters/' ~ c.id ~ '/form?name=' ~ (form.beast.name | urlencode)) if form and o.source in ('form', 'rule') else ('/characters/' ~ c.id ~ '/detail?ref=' ~ (o.key | urlencode)) }}" tabindex="0" role="button">
         {% if o.hit %}<span class="hit">{{ o.hit }}</span>{% endif %}
         {% if o.starred and show_picks %}<span class="pick star on static" aria-label="starred">★</span>{% endif %}<b>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag">{{ t }}</span>{% endfor %}{{ spends(o.spends) }}
         {% if o.meta %}<div class="meta">{{ o.meta }}</div>{% endif %}
       </div>
       {% else %}<p class="muted">Nothing here yet.</p>{% endfor %}
       </div>
-      {% if cost == "Action" %}<div class="move static"><b>Attack, Dash, Disengage, Dodge, Help, Hide, Influence, Magic, Ready, Search, Study, Utilize</b><div class="meta">What anyone can do</div></div>{% endif %}
+      {% if cost == "Action" and form %}<div class="move static"><b>Dash, Disengage, Dodge, Help, Hide, Influence, Search, Study, Utilize</b><div class="meta">What anyone can do (no Magic action: no spells in a form)</div></div>
+      {% elif cost == "Action" %}<div class="move static"><b>Attack, Dash, Disengage, Dodge, Help, Hide, Influence, Magic, Ready, Search, Study, Utilize</b><div class="meta">What anyone can do</div></div>{% endif %}
       {% if col.count > col.shown | length %}<div class="seeall"><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/{{ slug }}">See all {{ cost | lower }}s ({{ col.count }}) →</a></div>{% endif %}
     </div>
     {% endfor %}
@@ -45,7 +69,7 @@
       {% if not show_picks %}
       <p class="muted">Reminders belong to each player and aren't shown to the DM.</p>
       {% elif reminders %}
-      <ul class="forget"{% if can_pick %} data-sort-column="forget" data-sort-url="/characters/{{ c.id }}/order" data-sort-item="li"{% endif %}>{% for r in reminders %}<li data-key="{{ r.ref }}"><span>{{ r.text }}</span>{% if can_pick %}<button type="button" class="forget-x" aria-label="Remove this reminder" title="Remove"
+      <ul class="forget"{% if can_pick %} data-sort-column="forget" data-sort-url="/characters/{{ c.id }}/order" data-sort-item="li"{% endif %}>{% for r in reminders %}<li data-key="{{ r.ref }}"><span>{{ r.text }}{% if r.note %}<span class="forget-note">✎ {{ r.note }}</span>{% endif %}</span>{% if can_pick %}<button type="button" class="forget-x" aria-label="Remove this reminder" title="Remove"
         hx-post="/characters/{{ c.id }}/pick" hx-vals='{{ {"kind": "remind", "ref": r.ref} | tojson }}' hx-target="closest li" hx-swap="delete">×</button>{% endif %}</li>{% endfor %}</ul>
       {% else %}
       <p class="muted">{% if can_pick %}Nothing yet. On your Character page, press <b>Remind</b> on anything you tend to forget (for example, Advantage against being Charmed).{% else %}{{ c.entity.name }}'s player hasn't added any reminders yet.{% endif %}</p>

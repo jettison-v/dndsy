@@ -213,6 +213,7 @@ class Character(Timestamped, Base):
     owner_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     ddb_id: Mapped[str | None] = mapped_column(String(40))  # D&D Beyond character id
     player_name: Mapped[str] = mapped_column(String(200), default="", server_default="")  # who plays it, before they have an account
+    wild_shape: Mapped[str | None] = mapped_column(String(200), nullable=True)  # the form they're in on Battle (app/wild_shape.py), set by their player
     entity: Mapped[Entity] = relationship()
     owner: Mapped[User | None] = relationship()
     snapshot: Mapped["CharacterSnapshot | None"] = relationship(back_populates="character", uselist=False, passive_deletes=True)
@@ -248,9 +249,10 @@ class CharacterPick(Timestamped, Base):
     __table_args__ = (UniqueConstraint("character_id", "kind", "ref"),)
     id: Mapped[int] = mapped_column(primary_key=True)
     character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), index=True)
-    kind: Mapped[str] = mapped_column(String(10))  # "star" | "remind"
+    kind: Mapped[str] = mapped_column(String(10))  # "star" | "remind" | "fav" (shortlist) | "order"
     ref: Mapped[str] = mapped_column(String(300))  # a key from the parsed sheet, e.g. "spell:Moonbeam"
     label: Mapped[str] = mapped_column(String(500), default="", server_default="")  # shown if the thing disappears from the sheet
+    note: Mapped[str] = mapped_column(Text, default="", server_default="")  # the player's own why, on a shortlist pick or reminder
 
 
 class SheetOverride(Timestamped, Base):

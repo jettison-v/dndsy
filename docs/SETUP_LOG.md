@@ -227,3 +227,17 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 1. Before copying someone else's content into your app, check whether you can **embed or link** it instead. Embedding keeps their features and avoids hosting copyrighted images.
 2. Check that a site allows embedding (no `X-Frame-Options` or `frame-ancestors` block) and whether it has **deep links** (here `…/sword-coast@Waterdeep`). Those two facts decide how tight the integration can be.
 3. Keep a small local list of the outside site's names (here, map markers) with a script to refresh it, so your pages don't depend on that site being up to render.
+
+## 2026-10-18 — Wild Shape planner and notes
+
+**What changed**
+- Character › **Wild Shape** (druids): the Beasts you can learn now, your known forms, and a ♥ shortlist, with pictures. Clicking a form shows it with your own stats carried over, as battle cards.
+- **Battle** has Wild Shape buttons: pick a known form and the page shows that form's options and numbers; Normal switches back.
+- Shortlisted spells and forms, and reminders, can have a short **note** saying why.
+- Place cards on Campaign › Places have **Show on map**.
+- One database change (notes, and which form a character is in). Beta applies it automatically when it deploys.
+
+**Reuse this on a new project**
+1. Look for openly licensed data before copying from a book. The 2024 rules have a free version (the SRD, CC-BY-4.0) that can be stored in your repo as long as you credit it.
+2. Store **links** to pictures hosted elsewhere rather than copies, and hide them gracefully if they stop loading.
+3. Keep rules logic in one plain module with its own tests (here `app/wild_shape.py`), so the pages stay simple and the rules can be checked without a browser.

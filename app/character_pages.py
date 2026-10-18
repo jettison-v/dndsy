@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from app import character_views as views
 from app import characters as chars
 from app import ddb, picks
+from app import wild_shape as ws
 from app import rules_terms as terms
 from app.auth import current_user, is_admin, is_reviewer
 from app.db import get_db
@@ -54,7 +55,8 @@ def _view(db: Session, ch: Character, user: dict) -> dict:
         "picks": mine,
         "can_pick": picks.can_edit(db, user, ch),
         "show_picks": picks.can_see(user),
-        "reminders": views.reminders(sheet, mine["remind"], mine["order"].get("forget")) if sheet else [],
+        "reminders": views.reminders(sheet, mine["remind"], mine["order"].get("forget"), mine["notes"]) if sheet else [],
+        "druid": ws.druid(sheet),
         "reviewer": is_reviewer(user),
         "admin": is_admin(user),
         "item_notes": chars.item_notes(db, ch),
@@ -155,13 +157,30 @@ def character_page(request: Request, character_id: int, db: Session = Depends(ge
         # Actions tab: everything except leveled spells (those are on the Spells tab), like D&D Beyond
         ctx["options"] = [o for o in views.options(ctx["sheet"], ctx["picks"]["star"])
                           if o["kind"] != "spell" or (o["tags"] and o["tags"][0] == "cantrip" and o["hit"])]
+        ctx["forms"] = ws.forms(ctx["sheet"], ctx["picks"]["fav"])
     return _page(request, "character.html", {**ctx, "others": _mine_first(db, user, chars.campaign_characters(db, ch.entity.campaign_id))})
+
+
+def _known_forms(sheet: dict | None) -> list[dict]:
+    """The forms a druid can shift into right now (known on D&D Beyond), with pictures."""
+    out = []
+    for c in (sheet or {}).get("creatures") or []:
+        if c.get("group") == "Wild Shape form":
+            b = ws.catalog_beast(c["kind"]) or {}
+            out.append({"name": c["kind"], "cr": c["cr"], "image": b.get("image", "")})
+    return out
 
 
 def _battle_ctx(db: Session, ch: Character, user: dict) -> dict:
     ctx = _view(db, ch, user)
+    ctx["form"] = None
     if ctx["sheet"]:
         ctx["columns"] = views.battle_columns(ctx["sheet"], ctx["picks"]["star"], ctx["picks"]["order"])
+        ctx["known_forms"] = _known_forms(ctx["sheet"]) if ctx["druid"] else []
+        beast = ws.beast_for(ctx["sheet"], ch.wild_shape) if ch.wild_shape and ctx["druid"] else None
+        if beast:
+            ctx["form"] = ws.shaped(ctx["sheet"], beast)
+            ctx["columns"] = ctx["form"]["columns"]
     ctx["party"] = _party_rows(db, user)
     ctx["game_mode_seconds"] = GAME_MODE_SECONDS
     return ctx
@@ -283,7 +302,7 @@ def vital_panel(request: Request, character_id: int, kind: str, db: Session = De
 
 
 @router.post("/characters/{character_id:int}/pick")
-def toggle_pick(request: Request, character_id: int, kind: str = Form(...), ref: str = Form(...),
+def toggle_pick(request: Request, character_id: int, kind: str = Form(...), ref: str = Form(...), wrap: str = Form(""),
                 db: Session = Depends(get_db)):
     """Star or remind, from the character's own player only. Returns the button."""
     user, ch, stop = _load(request, db, character_id)
@@ -293,11 +312,69 @@ def toggle_pick(request: Request, character_id: int, kind: str = Form(...), ref:
         return _forbidden(request, "Only this character's player can do that.")
     sheet = chars.character_summary(ch) or {}
     try:
-        on = picks.toggle(db, ch, kind, ref, views.label_for(sheet, ref))
+        on = picks.toggle(db, ch, kind, ref, views.label_for(sheet, ref) or ws.label_for(ref))
     except ValueError:
         return HTMLResponse("", status_code=400)
     db.commit()
-    return templates.TemplateResponse(request, "_pick.html", {"c": ch, "kind": kind, "ref": ref, "on": on, "can_pick": True})
+    page = "_pick_note.html" if wrap and kind in picks.NOTE_KINDS else "_pick.html"
+    return templates.TemplateResponse(request, page, {"c": ch, "kind": kind, "ref": ref, "on": on, "can_pick": True, "note": ""})
+
+
+@router.post("/characters/{character_id:int}/pick/note")
+def save_pick_note(request: Request, character_id: int, kind: str = Form(...), ref: str = Form(...), note: str = Form(""),
+                   db: Session = Depends(get_db)):
+    """The player's note on a shortlist pick or reminder (saved as they type)."""
+    user, ch, stop = _load(request, db, character_id)
+    if stop:
+        return stop
+    if not picks.can_edit(db, user, ch):
+        return _forbidden(request, "Only this character's player can do that.")
+    try:
+        saved = picks.set_note(db, ch, kind, ref, note)
+    except ValueError:
+        return HTMLResponse("", status_code=400)
+    if not saved:
+        return HTMLResponse("", status_code=404)
+    db.commit()
+    return HTMLResponse('<span class="note">Saved</span>')
+
+
+@router.get("/characters/{character_id:int}/form")
+def form_panel(request: Request, character_id: int, name: str, db: Session = Depends(get_db)):
+    """Side panel: a Wild Shape form with this druid's stats carried over, as battle cards."""
+    user, ch, stop = _load(request, db, character_id)
+    if stop:
+        return stop
+    ctx = _view(db, ch, user)
+    beast = ws.beast_for(ctx["sheet"] or {}, name) if ctx["druid"] else None
+    if beast is None:
+        return HTMLResponse("", status_code=404)
+    known = any(f["name"].lower() == beast["name"].lower() for f in _known_forms(ctx["sheet"]))
+    return templates.TemplateResponse(request, "_panel_form.html", {
+        **ctx, "f": ws.shaped(ctx["sheet"], beast), "ref": f"form:{beast['name']}", "known": known,
+        "why_not": ws.why_not(ctx["druid"], beast), "credit": ws.credit() if beast.get("source") == "SRD 5.2" else "",
+        "current": (ch.wild_shape or "").lower() == beast["name"].lower()})
+
+
+@router.post("/characters/{character_id:int}/wild-shape")
+def set_wild_shape(request: Request, character_id: int, form: str = Form(""), db: Session = Depends(get_db)):
+    """Battle's Wild Shape switch (the character's player): show a known form's
+    battle cards, or go back to normal. Everyone at the table sees it."""
+    user, ch, stop = _load(request, db, character_id)
+    if stop:
+        return stop
+    if not picks.can_edit(db, user, ch):
+        return _forbidden(request, "Only this character's player can do that.")
+    known = {f["name"].lower(): f["name"] for f in _known_forms(chars.character_summary(ch))}
+    if form and form.lower() not in known:
+        return HTMLResponse("", status_code=400)
+    ch.wild_shape = known[form.lower()] if form else None
+    db.commit()
+    if request.headers.get("HX-Request"):
+        resp = templates.TemplateResponse(request, "_battle_body.html", _battle_ctx(db, ch, user))
+        resp.headers["HX-Trigger"] = json.dumps({"toast": f"Wild Shape: {ch.wild_shape}" if ch.wild_shape else "Back to normal form"})
+        return resp
+    return RedirectResponse(f"/characters/{ch.id}/battle", status_code=303)
 
 
 @router.post("/characters/{character_id:int}/order")

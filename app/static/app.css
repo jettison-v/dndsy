@@ -770,3 +770,47 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .map-page .hint { margin-bottom: 12px; }
 .map-frame { display: block; width: 100%; height: calc(100vh - 230px); min-height: 420px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 @media (max-width: 700px) { .map-frame { height: calc(100vh - 200px); } }
+.entry-map { display: inline-block; margin-top: 8px; font-size: .85rem; font-weight: 500; color: var(--blue); text-decoration: none; }
+.entry-map::before { content: "⌖ "; }
+.entry-map:hover { text-decoration: underline; }
+
+/* Notes on shortlist picks and reminders */
+.detail-picks { display: grid; gap: 8px; margin: 0 0 14px; }
+.pick-note-head { gap: 6px; }
+.pick-note-form { display: grid; gap: 2px; margin: 4px 0 0 26px; }
+.pick-note-form textarea { width: 100%; font: inherit; font-size: .9rem; background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; resize: vertical; }
+.pick-note-saved { min-height: 1em; font-size: .78rem; color: var(--faint); }
+.pick-note-text { margin: 2px 0 0 26px; color: var(--muted); font-size: .9rem; }
+.ri-note { display: block; color: #c9b8ea; font-size: .82rem; line-height: 1.35; white-space: normal; overflow-wrap: anywhere; }
+.forget-note { display: block; color: #c9b8ea; font-size: .82rem; margin-top: 2px; }
+
+/* Wild Shape: planner rows, side panel and Battle switch */
+.ri-pic { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; vertical-align: middle; margin-right: 6px; border: 1px solid var(--line); background: var(--surface-2); }
+.form-row.not-ready .ri-name { color: var(--muted); }
+.form-panel .form-pic { float: right; width: 120px; height: 120px; object-fit: cover; border-radius: 12px; margin: 0 0 10px 12px; border: 1px solid var(--line); }
+.form-vitals .vital b.small, .ws-form .vital b.small { font-size: .95rem; }
+.form-ac { margin: 6px 0 10px; }
+.form-abilities { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; margin: 10px 0; }
+.fab { background: var(--surface-2); border-radius: 10px; padding: 6px 4px; text-align: center; border: 1px solid transparent; }
+.fab.yours { border-color: rgba(126, 166, 224, .45); }
+.fab small { display: block; color: var(--muted); font-size: .72rem; } .fab b { display: block; font-size: 1.1rem; }
+.fab span { display: block; color: var(--faint); font-size: .75rem; } .fab em { display: block; font-style: normal; font-size: .68rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.fab.yours em { color: var(--blue); }
+.fsave sup { color: var(--blue); font-size: .6rem; }
+.form-econ { display: grid; gap: 12px; }
+.form-econ h4 { margin: 6px 0 2px; }
+.move.yours b { color: var(--muted); }
+.move-more summary { cursor: pointer; color: var(--faint); font-size: .8rem; }
+.move-more p { margin: 4px 0 0; color: var(--muted); font-size: .88rem; }
+.form-notes { margin: 6px 0 10px; padding-left: 18px; color: var(--muted); font-size: .9rem; }
+.form-notes li { margin: 3px 0; }
+.ws-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
+.ws-label { font-family: var(--cond); text-transform: uppercase; letter-spacing: .06em; font-size: .78rem; color: var(--amber); margin-right: 4px; }
+.ws-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface-2); border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 3px 12px 3px 4px; font-size: .85rem; min-height: 32px; }
+.ws-chip:first-of-type { padding-left: 12px; }
+.ws-chip img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+.ws-chip.on { border-color: var(--green); color: var(--text); background: var(--green-soft); }
+.ws-form { display: flex; gap: 14px; align-items: flex-start; margin-top: 10px; padding: 10px; border: 1px solid var(--green); border-radius: 12px; background: var(--green-soft); cursor: pointer; }
+.ws-pic { width: 84px; height: 84px; border-radius: 10px; object-fit: cover; flex: none; }
+.ws-form-main { min-width: 0; } .ws-form .vitals { margin: 6px 0; }
+@media (max-width: 600px) { .ws-pic { width: 56px; height: 56px; } .form-abilities { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
