@@ -364,3 +364,10 @@ def test_vitals_explain_how_they_add_up(cole):
         assert sum(v for _, v in s["hit_points"]["parts"]) == s["hit_points"]["max"]
         assert sum(v for _, v in s["speed"]["parts"]) == s["speed"]["walk"]
         assert sum(v for _, v in s["armor_parts"]["parts"]) == s["armor_class"] or s["armor_parts"]["notes"]
+
+
+def test_skills_explain_how_they_add_up(cole):
+    perception = by_name(cole["skills"], "Perception")
+    assert perception["parts"] == [("Wisdom modifier", 4), ("Proficiency Bonus", 3), ("Stone of Good Luck (Luckstone)", 1)]
+    for sk in cole["skills"]:
+        assert sum(v for _, v in sk["parts"]) == sk["bonus"]

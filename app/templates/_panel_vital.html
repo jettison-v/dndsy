@@ -55,6 +55,13 @@
     <h3>What it means</h3>
     {{ explain("When you have Heroic Inspiration, you can spend it to reroll any one die right after rolling it, and you must use the new roll. You can have only one at a time. The DM can award it, and some features give it to you.") }}
     {% if gives %}<h3>Your features that give it</h3><ul class="plain">{% for f in gives %}<li><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/detail?ref={{ f.key | urlencode }}">{{ f.name }}</a> <span class="note">· {{ f.source }}</span></li>{% endfor %}</ul>{% endif %}
+  {% elif kind == "skill" %}{% set sk = skill %}
+    <h3>How it adds up</h3>
+    {{ sum(sk.parts or [("Bonus", sk.bonus)], sk.label) }}
+    {% if sk.notes %}<p class="note">{{ sk.notes | join("; ") }}.</p>{% endif %}
+    <dl class="mech"><dt>Passive</dt><dd>{{ 10 + sk.bonus }} (10 + the bonus): used when the DM checks without you rolling</dd></dl>
+    <h3>What it means</h3>
+    {{ explain("For a " ~ sk.name ~ " check, roll a d20 and add this bonus. The DM sets the DC and decides which skill fits; with Advantage roll two d20s and use the higher.") }}
   {% elif kind == "proficiency" %}
     <dl class="mech"><dt>Bonus</dt><dd>+{{ s.proficiency_bonus }} at character level {{ s.level }}</dd></dl>
     <h3>What it means</h3>

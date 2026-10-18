@@ -570,3 +570,14 @@ def test_number_tiles_open_an_explanation(player, db):
     assert "Stone of Good Luck" in player.get(f"/characters/{cole.id}/vital/initiative").text
     assert "Constitution modifier (+1) × 8 levels" in player.get(f"/characters/{cole.id}/vital/hp").text
     assert player.get(f"/characters/{cole.id}/vital/nope").status_code == 404
+
+
+def test_skills_tab_groups_by_ability_and_explains(player, db):
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    page = player.get(f"/characters/{cole.id}").text
+    assert '<div class="skill-head"><span>Wisdom</span><b>+4</b></div>' in page and "Passive <span>Insight" in page
+    assert f'data-panel-url="/characters/{cole.id}/vital/skill-sleight-of-hand"' in page
+    panel = player.get(f"/characters/{cole.id}/vital/skill-perception").text
+    assert "Perception (Wis)" in panel and "Stone of Good Luck" in panel and '<td class="num">+8</td>' in panel

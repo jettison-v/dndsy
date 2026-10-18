@@ -166,8 +166,26 @@
     </div>
 
     <div id="t-skills" hidden>
-      <ul class="skills">{% for sk in s.skills %}<li class="{{ 'prof' if sk.proficiency }}"><span>{{ sk.name }} <span class="note">{{ sk.ability }}</span>{% if sk.proficiency == "expertise" %} <span class="tag">Expertise</span>{% endif %}{% for n in sk.notes %} <span class="adv">{{ n }}</span>{% endfor %}</span><b>{{ sk.label }}</b></li>{% endfor %}</ul>
-      <p class="note">Highlighted: proficient. Passive Perception {{ s.passive_perception }}.</p>
+      {% set by = {} %}{% for sk in s.skills %}{% set _ = by.setdefault(sk.ability, []).append(sk) %}{% endfor %}
+      {% set passive = s.skills | selectattr("name", "in", ["Perception", "Insight", "Investigation"]) | list %}
+      <div class="skills-top">
+        <span class="legend"><span class="pm prof">●</span> Proficient <span class="pm expertise">◆</span> Expertise{% if s.skills | selectattr("proficiency", "equalto", "half") | list %} <span class="pm half">◐</span> Half (Jack of All Trades){% endif %} · click a skill to see how it adds up</span>
+        <span class="passives">Passive {% for sk in passive %}<span>{{ sk.name }} <b>{{ 10 + sk.bonus }}</b></span>{% endfor %}</span>
+      </div>
+      <div class="skill-groups">
+        {% for a in s.abilities if by.get(a.short) %}
+        <div class="skill-group">
+          <div class="skill-head"><span>{{ a.name }}</span><b>{{ a.label }}</b></div>
+          {% for sk in by[a.short] %}
+          <div class="skill {{ sk.proficiency }}" data-panel-url="/characters/{{ c.id }}/vital/skill-{{ sk.name | lower | replace(' ', '-') }}" tabindex="0" role="button">
+            <span class="pm {{ sk.proficiency }}" aria-label="{{ sk.proficiency or 'not proficient' }}">{{ {"proficient": "●", "expertise": "◆", "half": "◐"}.get(sk.proficiency, "○") }}</span>
+            <span class="skill-name">{{ sk.name }}{% for n in sk.notes %} <span class="adv">{{ n }}</span>{% endfor %}</span>
+            <b class="skill-bonus">{{ sk.label }}</b>
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
       {% set p = s.proficiencies %}
       <details class="fold"><summary>Training: armor, weapons, tools, languages, senses</summary>
         <dl class="profs">

@@ -22,7 +22,7 @@ CHARACTER_URL = "https://character-service.dndbeyond.com/character/v5/character/
 SHEET_URL = "https://www.dndbeyond.com/characters/{id}"
 USER_AGENT = "askdnd/2 (private table companion; +https://beta.askdnd.ai)"
 TIMEOUT_SECONDS = 15
-PARSER_VERSION = 10  # bump when the summary shape changes; stored summaries are re-parsed
+PARSER_VERSION = 11  # bump when the summary shape changes; stored summaries are re-parsed
 
 
 class DdbError(Exception):
@@ -645,10 +645,15 @@ class _Sheet:
             sub = name.lower().replace(" ", "-")
             level = "expertise" if self.mods_of("expertise", sub) else "proficient" if self.proficient(sub) else ""
             prof = self.pb * 2 if level == "expertise" else self.pb if level else (self.pb // 2 if half else 0)
-            total = self.mods[ability] + prof + checks + self.total_bonus(sub)
+            parts = [(f"{ability.title()} modifier", self.mods[ability])]
+            if prof:
+                parts.append(("Expertise (twice your Proficiency Bonus)" if level == "expertise" else "Proficiency Bonus" if level
+                              else "Half your Proficiency Bonus (Jack of All Trades)", prof))
+            parts += self.bonus_parts("ability-checks") + self.bonus_parts(sub)
+            total = sum(v for _, v in parts)
             notes = [_adv_note(m) for m in self.mods_of("advantage", sub)]
-            out.append({"name": name, "ability": ability[:3].title(), "bonus": total, "label": _signed(total), "proficiency": level,
-                        "notes": notes})
+            out.append({"name": name, "ability": ability[:3].title(), "bonus": total, "label": _signed(total), "proficiency": level or ("half" if half else ""),
+                        "notes": notes, "parts": parts})
         return out
 
     def initiative(self) -> int:

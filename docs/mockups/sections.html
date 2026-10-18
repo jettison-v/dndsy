@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Section headings · mockups</title>
+<style>
+  :root {
+    --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e;
+    --text: #ebe7df; --muted: #a29d93; --faint: #6f6b64;
+    --red: #e05252; --amber: #e8b34b; --blue: #6fa8ff; --green: #5bbf7f; --violet: #b48ae8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 Inter, system-ui, -apple-system, sans-serif; }
+  main { max-width: 1240px; margin: 0 auto; padding: 32px 24px 80px; }
+  h1 { font-size: 1.8rem; margin: 0 0 6px; }
+  .intro { color: var(--muted); max-width: 820px; margin: 0 0 28px; }
+  .option { background: var(--surface); border-radius: 14px; padding: 26px 30px 30px; margin-bottom: 30px; }
+  .option > header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+  .option > header h2 { margin: 0; font-size: 1.35rem; }
+  .option > header .badge { background: var(--surface-2); border-radius: 999px; padding: 2px 12px; font-size: .8rem; color: var(--muted); }
+  .option > header p { margin: 0; color: var(--muted); flex-basis: 100%; }
+  .grid { display: grid; grid-template-columns: 1.35fr 1fr; gap: 28px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .label { color: var(--faint); font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; margin: 0 0 8px; }
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin-bottom: 6px; }
+  .tabs span { padding: 8px 12px; color: var(--muted); font-weight: 500; }
+  .tabs span.on { color: #fff; box-shadow: inset 0 -2px 0 var(--red); }
+  .rows { display: grid; grid-template-columns: 1fr 1fr; column-gap: 24px; }
+  .row { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 8px 4px; border-bottom: 1px solid var(--line); }
+  .row b { font-weight: 600; }
+  .row .what { color: var(--muted); font-size: .84rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; grid-column: 1 / -1; }
+  .row .hit { font-weight: 700; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; font-size: .72rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 7px; margin-left: 4px; }
+  .dots i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--green); margin-left: 2px; }
+  .count { color: var(--faint); font-weight: 500; font-size: .82rem; }
+  .col { background: var(--surface-2); border-radius: 12px; padding: 14px 16px; }
+  .col .row:last-child { border-bottom: none; }
+  .note { color: var(--faint); font-size: .82rem; margin-top: 10px; }
+
+  /* ---------- Option A: caps label with a colored rule ---------- */
+  .A h3 { display: flex; align-items: center; gap: 10px; margin: 22px 0 6px; font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); }
+  .A h3::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(232,179,75,.55), rgba(232,179,75,0)); }
+  .A h3 .count { color: rgba(232,179,75,.7); letter-spacing: 0; }
+  .A .col h4 { margin: 0 0 4px; font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); }
+  .A .col h4 small { display: block; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--muted); font-size: .8rem; }
+
+  /* ---------- Option B: tinted band, color by action type ---------- */
+  .B h3 { display: flex; align-items: center; gap: 10px; margin: 20px 0 4px; padding: 7px 12px; border-radius: 8px; background: var(--surface-2);
+          border-left: 4px solid var(--k, var(--faint)); font-size: .95rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+  .B h3 .glyph { color: var(--k); font-size: .9rem; }
+  .B h3 .sub { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--muted); font-size: .82rem; }
+  .B .k-action { --k: var(--red); } .B .k-bonus { --k: var(--amber); } .B .k-reaction { --k: var(--blue); } .B .k-other { --k: var(--violet); } .B .k-items { --k: var(--green); }
+  .B .col { border-top: 4px solid var(--k); }
+  .B .col h4 { margin: 0 0 4px; font-size: .95rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; display: flex; gap: 8px; align-items: center; }
+  .B .col h4 .glyph { color: var(--k); }
+  .B .col h4 small { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--muted); font-size: .8rem; }
+
+  /* ---------- Option C: each section is its own card ---------- */
+  .C .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px; }
+  @media (max-width: 700px) { .C .cards { grid-template-columns: 1fr; } }
+  .C .card { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .C .card > h3 { margin: 0; padding: 9px 14px; background: #2f343a; font-size: .8rem; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; display: flex; align-items: center; gap: 8px; box-shadow: inset 0 3px 0 var(--k, var(--faint)); }
+  .C .card > h3 .count { margin-left: auto; letter-spacing: 0; }
+  .C .card .row { padding: 8px 14px; }
+  .C .card .row:last-child { border-bottom: none; }
+  .C .k-action { --k: var(--red); } .C .k-bonus { --k: var(--amber); } .C .k-reaction { --k: var(--blue); } .C .k-other { --k: var(--violet); } .C .k-items { --k: var(--green); }
+  .C .col { background: transparent; padding: 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Section headings: three options</h1>
+  <p class="intro">The same content in each: Cole's <b>Actions</b> tab on the Character page (left), a <b>Battle</b> column and an <b>Inventory</b> group (right). Pick one, or mix: for example A's all-caps labels with B's color per action type. Whichever you choose would apply everywhere (Character, Battle, Party, side panel).</p>
+
+  <!-- ===================== A ===================== -->
+  <section class="option A">
+    <header><h2>A · Caps label</h2><span class="badge">smallest change</span>
+      <p>All-caps, letter-spaced section names in amber with a fading rule. Quiet but unmistakable; doesn't add boxes or color-coding.</p></header>
+    <div class="grid">
+      <div>
+        <div class="label">Character › Actions</div>
+        <div class="tabs"><span class="on">Actions</span><span>Spells</span><span>Inventory</span><span>Features</span><span>Skills</span></div>
+        <h3>Actions <span class="count">5</span></h3>
+        <div class="rows">
+          <div class="row"><b>Starry Wisp <span class="chip">cantrip</span></b><span class="hit">+7</span><span class="what">60 ft · 2d8 radiant</span></div>
+          <div class="row"><b>Unarmed Strike</b><span class="hit">+6</span><span class="what">5 ft · 1d6+3 bludgeoning</span></div>
+          <div class="row"><b>Thorn Whip <span class="chip">cantrip</span></b><span class="hit">+7</span><span class="what">30 ft · 2d6 piercing</span></div>
+          <div class="row"><b>Moonbeam <span class="chip">2nd-level slot <span class="dots"><i></i><i></i><i></i></span></span></b><span class="hit">Con 15</span><span class="what">120 ft · 2d10 radiant</span></div>
+        </div>
+        <h3>Bonus actions <span class="count">6</span></h3>
+        <div class="rows">
+          <div class="row"><b>Flurry of Blows <span class="chip">1 Focus Point <span class="dots"><i></i><i></i></span></span></b><span></span><span class="what">Two Unarmed Strikes as a Bonus Action</span></div>
+          <div class="row"><b>Wild Shape <span class="dots"><i></i><i></i><i></i></span></b><span></span><span class="what">Shape-shift into a Beast form you know</span></div>
+        </div>
+        <h3>Reactions <span class="count">1</span></h3>
+        <div class="rows">
+          <div class="row"><b>Absorb Elements <span class="chip">1st-level slot <span class="dots"><i></i><i></i><i></i><i></i></span></span></b><span></span><span class="what">When you take acid, cold, fire, lightning or thunder damage</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="label">Battle column</div>
+        <div class="col"><h4>Bonus action<small>One per turn</small></h4>
+          <div class="row"><b>Flurry of Blows <span class="chip">1 Focus Point <span class="dots"><i></i><i></i></span></span></b><span></span></div>
+          <div class="row"><b>Healing Word <span class="chip">1st-level slot <span class="dots"><i></i><i></i><i></i><i></i></span></span></b><span></span><span class="what">60 ft · heals 2d4</span></div>
+        </div>
+        <div class="label" style="margin-top:20px">Inventory</div>
+        <h3 style="margin-top:0">Usable in battle <span class="count">2</span></h3>
+        <div class="row"><b>Potion of Healing ×2</b><span class="what">Potion · Common</span></div>
+        <div class="row"><b>Soul Coin <span class="chip">3 uses left</span></b><span class="what">Wondrous item · Uncommon</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== B ===================== -->
+  <section class="option B">
+    <header><h2>B · Color band by action type</h2><span class="badge">recommended</span>
+      <p>Each section gets a tinted header band with a colored edge and symbol: <span style="color:var(--red)">◆ Action</span>, <span style="color:var(--amber)">▲ Bonus action</span>, <span style="color:var(--blue)">↺ Reaction</span>, <span style="color:var(--violet)">● Other</span>, <span style="color:var(--green)">■ Items</span>. The same colors on Battle and Character teach you the action economy at a glance.</p></header>
+    <div class="grid">
+      <div>
+        <div class="label">Character › Actions</div>
+        <div class="tabs"><span class="on">Actions</span><span>Spells</span><span>Inventory</span><span>Features</span><span>Skills</span></div>
+        <h3 class="k-action"><span class="glyph">◆</span>Actions <span class="count">5</span><span class="sub">one per turn</span></h3>
+        <div class="rows">
+          <div class="row"><b>Starry Wisp <span class="chip">cantrip</span></b><span class="hit">+7</span><span class="what">60 ft · 2d8 radiant</span></div>
+          <div class="row"><b>Unarmed Strike</b><span class="hit">+6</span><span class="what">5 ft · 1d6+3 bludgeoning</span></div>
+          <div class="row"><b>Thorn Whip <span class="chip">cantrip</span></b><span class="hit">+7</span><span class="what">30 ft · 2d6 piercing</span></div>
+          <div class="row"><b>Moonbeam <span class="chip">2nd-level slot <span class="dots"><i></i><i></i><i></i></span></span></b><span class="hit">Con 15</span><span class="what">120 ft · 2d10 radiant</span></div>
+        </div>
+        <h3 class="k-bonus"><span class="glyph">▲</span>Bonus actions <span class="count">6</span><span class="sub">one per turn</span></h3>
+        <div class="rows">
+          <div class="row"><b>Flurry of Blows <span class="chip">1 Focus Point <span class="dots"><i></i><i></i></span></span></b><span></span><span class="what">Two Unarmed Strikes as a Bonus Action</span></div>
+          <div class="row"><b>Wild Shape <span class="dots"><i></i><i></i><i></i></span></b><span></span><span class="what">Shape-shift into a Beast form you know</span></div>
+        </div>
+        <h3 class="k-reaction"><span class="glyph">↺</span>Reactions <span class="count">1</span><span class="sub">one per round, also on others' turns</span></h3>
+        <div class="rows">
+          <div class="row"><b>Absorb Elements <span class="chip">1st-level slot <span class="dots"><i></i><i></i><i></i><i></i></span></span></b><span></span><span class="what">When you take acid, cold, fire, lightning or thunder damage</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="label">Battle column</div>
+        <div class="col k-bonus"><h4><span class="glyph">▲</span>Bonus action<small>One per turn</small></h4>
+          <div class="row"><b>Flurry of Blows <span class="chip">1 Focus Point <span class="dots"><i></i><i></i></span></span></b><span></span></div>
+          <div class="row"><b>Healing Word <span class="chip">1st-level slot <span class="dots"><i></i><i></i><i></i><i></i></span></span></b><span></span><span class="what">60 ft · heals 2d4</span></div>
+        </div>
+        <div class="label" style="margin-top:20px">Inventory</div>
+        <h3 class="k-items" style="margin-top:0"><span class="glyph">■</span>Usable in battle <span class="count">2</span></h3>
+        <div class="row"><b>Potion of Healing ×2</b><span class="what">Potion · Common</span></div>
+        <div class="row"><b>Soul Coin <span class="chip">3 uses left</span></b><span class="what">Wondrous item · Uncommon</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== C ===================== -->
+  <section class="option C">
+    <header><h2>C · A card per section</h2><span class="badge">strongest separation</span>
+      <p>Every section becomes its own card with a caps header strip and a colored top edge. Very clear boundaries; takes a little more space and looks busier on long tabs.</p></header>
+    <div class="grid">
+      <div>
+        <div class="label">Character › Actions</div>
+        <div class="tabs"><span class="on">Actions</span><span>Spells</span><span>Inventory</span><span>Features</span><span>Skills</span></div>
+        <div class="cards">
+          <div class="card k-action"><h3>Actions <span class="count">5</span></h3>
+            <div class="row"><b>Starry Wisp <span class="chip">cantrip</span></b><span class="hit">+7</span><span class="what">60 ft · 2d8 radiant</span></div>
+            <div class="row"><b>Unarmed Strike</b><span class="hit">+6</span><span class="what">5 ft · 1d6+3 bludgeoning</span></div>
+            <div class="row"><b>Moonbeam <span class="chip">2nd-level slot <span class="dots"><i></i><i></i><i></i></span></span></b><span class="hit">Con 15</span><span class="what">120 ft · 2d10 radiant</span></div>
+          </div>
+          <div class="card k-bonus"><h3>Bonus actions <span class="count">6</span></h3>
+            <div class="row"><b>Flurry of Blows <span class="chip">1 Focus Point <span class="dots"><i></i><i></i></span></span></b><span></span><span class="what">Two Unarmed Strikes</span></div>
+            <div class="row"><b>Wild Shape <span class="dots"><i></i><i></i><i></i></span></b><span></span><span class="what">Shape-shift into a Beast form</span></div>
+          </div>
+          <div class="card k-reaction"><h3>Reactions <span class="count">1</span></h3>
+            <div class="row"><b>Absorb Elements <span class="chip">1st-level slot <span class="dots"><i></i><i></i><i></i><i></i></span></span></b><span></span><span class="what">When you take elemental damage</span></div>
+          </div>
+          <div class="card k-other"><h3>Other <span class="count">7</span></h3>
+            <div class="row"><b>Mask of the Wild</b><span></span><span class="what">Hide when only lightly obscured</span></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="label">Battle column</div>
+        <div class="col"><div class="card k-bonus"><h3>Bonus action <span class="count">one per turn</span></h3>
+          <div class="row"><b>Flurry of Blows <span class="chip">1 Focus Point <span class="dots"><i></i><i></i></span></span></b><span></span></div>
+          <div class="row"><b>Healing Word <span class="chip">1st-level slot <span class="dots"><i></i><i></i><i></i><i></i></span></span></b><span></span><span class="what">60 ft · heals 2d4</span></div>
+        </div></div>
+        <div class="label" style="margin-top:20px">Inventory</div>
+        <div class="card k-items"><h3>Usable in battle <span class="count">2</span></h3>
+          <div class="row"><b>Potion of Healing ×2</b><span class="what">Potion · Common</span></div>
+          <div class="row"><b>Soul Coin <span class="chip">3 uses left</span></b><span class="what">Wondrous item · Uncommon</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <p class="note">Mockup only: nothing here is wired up. Tell Claude which option (or mix) to apply across askdnd.</p>
+</main>
+</body>
+</html>

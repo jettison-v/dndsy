@@ -270,13 +270,15 @@ def vital_panel(request: Request, character_id: int, kind: str, db: Session = De
     if stop:
         return stop
     ctx = _view(db, ch, user)
-    if kind not in VITALS or not ctx["sheet"]:
-        return HTMLResponse("", status_code=404)
     s = ctx["sheet"]
+    skill = next((k for k in (s or {}).get("skills") or [] if kind == "skill-" + k["name"].lower().replace(" ", "-")), None)
+    if (kind not in VITALS and not skill) or not s:
+        return HTMLResponse("", status_code=404)
     gives = [f for f in s.get("features") or [] if "Heroic Inspiration" in (f.get("text") or "")] if kind == "inspiration" else []
     perception = next((k for k in s.get("skills") or [] if k["name"] == "Perception"), None)
     return templates.TemplateResponse(request, "_panel_vital.html", {
-        **ctx, "kind": kind, "title": VITALS[kind], "gives": gives, "perception": perception,
+        **ctx, "kind": "skill" if skill else kind, "title": f"{skill['name']} ({skill['ability']})" if skill else VITALS[kind],
+        "skill": skill, "gives": gives, "perception": perception,
         "underline": terms.underlined(_overrides(db))})
 
 

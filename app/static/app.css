@@ -722,3 +722,23 @@ table.calc tr.total td { border-bottom: none; border-top: 2px solid #4a4f57; col
 .brief-list li { padding: 5px 0 5px 12px; border-left: 2px solid var(--line); margin: 3px 0; }
 .brief-counted { margin-top: 8px; }
 @media (max-width: 640px) { .brief-saves { grid-template-columns: repeat(3, 1fr); } }
+/* Character › Skills: grouped by ability */
+.skills-top { display: flex; justify-content: space-between; gap: 10px 24px; flex-wrap: wrap; align-items: baseline; margin: 2px 0 12px; font-size: .86rem; color: var(--muted); }
+.skills-top .passives { display: inline-flex; gap: 16px; }
+.skills-top .passives b { color: var(--text); }
+.skill-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 14px; align-items: start; }
+.skill-group { background: var(--surface-2); border-radius: 10px; padding: 4px 12px 8px; }
+.skill-head { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0 6px; border-bottom: 1px solid var(--line); margin-bottom: 2px; }
+.skill-head span { text-transform: uppercase; letter-spacing: .06em; font-size: .76rem; font-weight: 700; color: var(--muted); }
+.skill-head b { font-size: .95rem; color: var(--muted); }
+.skill { display: grid; grid-template-columns: 18px 1fr auto; gap: 8px; align-items: center; padding: 6px 4px; border-radius: 6px; cursor: pointer; }
+.skill:hover { background: var(--line); }
+.skill-name { color: var(--muted); }
+.skill.proficient .skill-name, .skill.expertise .skill-name { color: var(--text); font-weight: 600; }
+.skill-bonus { font-variant-numeric: tabular-nums; font-size: 1.02rem; }
+.skill.proficient .skill-bonus, .skill.expertise .skill-bonus { color: var(--green); }
+.pm { font-size: .8rem; color: var(--faint); text-align: center; }
+.pm.proficient, .pm.prof { color: var(--green); }
+.pm.expertise { color: var(--amber); }
+.pm.half { color: var(--muted); }
+.skill .adv { font-size: .72rem; margin-left: 4px; }
