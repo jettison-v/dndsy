@@ -33,7 +33,23 @@ scripts/set-secret.sh NAME
 
 Then open http://localhost:8000 (health check at `/health`).
 
-## Transcript processor (Brett's Mac only)
+## Switching between cloud sessions and this Mac
+
+Work done in a Claude cloud session is pushed to `main` on GitHub (which also deploys beta). Before working
+locally again, bring your copy up to date:
+
+```bash
+git checkout main && git pull       # get the latest code
+uv sync                             # install any new packages
+uv run alembic upgrade head         # apply new database changes to askdnd_dev
+uv run pytest -q                    # check everything passes
+```
+
+Your local database (`askdnd_dev`) is separate from beta's, so it has its own people, characters and story.
+Character data added by newer versions (item notes, the Background tab, portraits) appears after
+**Manage › Characters › Refresh all** locally. Before going back to the cloud, commit and push from here.
+
+
 
 Install the double-click app once (re-run after moving the repo):
 

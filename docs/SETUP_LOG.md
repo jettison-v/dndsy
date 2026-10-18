@@ -205,3 +205,14 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 1. For a handful of user-uploaded images, storing resized copies in the database is simpler than setting up file storage (S3). Move to S3 when there are many or they're large.
 2. Always re-encode uploaded images on the server (here with Pillow): it checks they're really images, shrinks them, and removes hidden location data from phone photos.
 3. Decide per role who needs review. Here the DM is trusted with the story; everyone else's suggestions wait for a reviewer.
+
+## 2026-10-18 — Back to local development
+
+**What changed**
+- All the cloud-session work (characters, Battle, Party, Campaign tabs, pictures, suggestions inbox, About/FAQ) is on `main` and deployed to beta.
+- The README has a "Switching between cloud sessions and this Mac" section with the four commands to catch a local copy up.
+
+**Reuse this on a new project**
+1. Treat GitHub as the hand-off point: push before switching machines or sessions, pull after. Never keep work only in one place.
+2. After pulling, always run the same three steps: install packages (`uv sync`), apply database changes (`alembic upgrade head`), run the tests. That covers almost every "it worked over there" problem.
+3. Keep local and production data separate; a local database is for trying things, not a copy of the real one.
