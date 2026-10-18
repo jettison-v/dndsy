@@ -155,7 +155,10 @@ def test_party_page(player, db):
     import_bundle(db, BUNDLE)
     characters.refresh(db, char(db, "Cole"))
     page = player.get("/party").text
-    assert "Party at a glance" in page and "Druid 6 / Monk 2" in page and "Wild Shape 3/3" in page
+    assert "Party at a glance" in page and "Druid 6 / Monk 2" in page and 'Wild Shape <span class="pips" aria-label="3 of 3 left">' in page
+    assert "Pass. Perc." not in page and '<span class="res-label">Slots</span><span class="res-item">1st' in page
+    assert 'data-tab="t-pool-spells">Party spells' in page and 'data-tab="t-pool-items">Party items' in page
+    assert '<nav class="jump"' in page and 'id="t-pool-spells-1">Healing and recovery' in page
     assert "Not linked to D&amp;D Beyond yet" in page  # Big C
     assert "Refresh all" not in page  # players can't refresh
     assert f'data-modal-url="/characters/{char(db, "Cole").id}/brief"' in page
@@ -164,6 +167,7 @@ def test_party_page(player, db):
     assert player.get("/characters", follow_redirects=False).headers["location"] == "/party"
     brief = player.get(f"/characters/{char(db, 'Cole').id}/brief").text
     assert "<html" not in brief and "Advantage on saving throws against being charmed" in brief
+    assert '<div class="brief-group-title">Advantages</div>' in brief and "Already in the numbers above: +1 to saving throws" in brief
     # Pooled spells and items (and each carrier) open the side panel, like on Character
     cid = char(db, "Cole").id
     url = f"/characters/{cid}/detail?ref=spell%3AHealing%20Word"
@@ -519,12 +523,13 @@ def test_options_show_what_they_spend():
     cole = ddb.parse_character(COLE)
     assert spends("Flurry of Blows", cole) == [("1 Focus Point", 2, 2)]
     assert spends("Healing Word", cole) == [("1st-level slot", 4, 4)]
-    assert next(o for o in views.options(cole) if o["name"] == "Moonbeam")["tags"][0] == "2nd"  # level pills read 1st, 2nd…
+    assert next(o for o in views.options(cole) if o["name"] == "Moonbeam")["tags"] == ["Conc."]  # its "2nd-level slot" chip gives the level
     assert spends("Wild Shape: Circle Forms", cole) == [("1 use of Wild Shape", 3, 3)]
     assert spends("Wild Resurgence: Regain Wild Shape", cole) == []  # it gives a use back
     assert spends("Unarmed Strike", cole) == [] and spends("Thorn Whip", cole) == []
     load = lambda n: json.loads((Path(__file__).parent / "fixtures" / "ddb" / f"{n}.json").read_text())["data"]  # noqa: E731
     big_c, no_name = ddb.parse_character(load("big_c")), ddb.parse_character(load("no_name"))
+    assert next(o for o in views.options(no_name) if o["name"] == "Hunter's Mark")["tags"][0] == "1st"  # free cast only: level pill stays
     assert spends("Channel Divinity: Divine Sense", big_c) == [("1 use of Channel Divinity", 2, 2)]
     assert spends("Lay On Hands: Purify Poison", big_c) == [("5 HP from the pool", 30, 30)]
     assert spends("Divine Smite", big_c) == [("Free cast", 0, 1), ("or 1st-level slot", 4, 4)]

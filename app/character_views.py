@@ -119,9 +119,11 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
             continue
         level = "cantrip" if not sp["level"] else ordinal(sp["level"])
         effect = sp["damage"] or (f"heals {sp['healing']}" if sp["healing"] else "")
-        tags = [level] + (["Conc."] if sp["concentration"] else [])
+        spends = slot_spends(sheet, sp)
+        says_level = any(x["of"] == "Spell slots" for x in spends)  # "1st-level slot" already gives the level
+        tags = ([] if says_level else [level]) + (["Conc."] if sp["concentration"] else [])
         add(key=sp["key"], kind="spell", cost=cost, name=sp["name"], hit=sp["attack"] or sp["save"], tags=tags,
-            spends=slot_spends(sheet, sp),
+            spends=spends,
             meta=" · ".join(x for x in (sp["range"], effect, sp["trigger"] if cost == "Reaction" else "") if x),
             text=sp.get("text") or sp["summary"], summary=sp["summary"],
             common=cost == "Reaction" or (not sp["level"] and bool(sp["attack"] or sp["save"]) and bool(sp["damage"])))
@@ -235,14 +237,20 @@ def party_row(character, sheet: dict | None) -> dict:
     if not sheet:
         return {"c": character, "sheet": None}
     saves = sorted(sheet["saves"], key=lambda s: -s["bonus"])[:2]
-    big = [r for r in sheet.get("resources") or [] if not r.get("text")][:2]
-    slots = next((r["text"] for r in sheet.get("resources") or [] if r.get("text")), "")
+    ss = sheet.get("spell_slots") or {}
+    slots = [{"label": ordinal(s["level"]), "uses": {"left": s["max"] - s["used"], "max": s["max"]}} for s in ss.get("slots") or []]
+    if ss.get("pact"):
+        p = ss["pact"]
+        slots.append({"label": f"Pact ({ordinal(p['level'])})", "uses": {"left": p["max"] - p["used"], "max": p["max"]}})
     return {
         "c": character,
         "sheet": sheet,
         "classes": " / ".join(f"{k['name']} {k['level']}" for k in sheet["classes"]),
         "best_saves": ", ".join(f"{s['short']} {s['label']}" for s in saves),
-        "resources": " · ".join([f"{r['name']} {r['left']}/{r['max']}" for r in big] + ([slots] if slots else [])),
+        # limited uses (Wild Shape, Focus Points…) and spell slots, each with dots for what's left
+        "resources": [{"name": a["name"], "uses": a["uses"]} for a in sheet.get("actions") or []
+                      if a.get("uses") and a.get("source") in ("class", "feat", "race")],
+        "slots": slots,
     }
 
 

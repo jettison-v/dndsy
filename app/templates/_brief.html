@@ -1,5 +1,5 @@
 {# Modal on the Party page: a short version of one character. #}
-{% from "_char.html" import vitals, portrait %}
+{% from "_char.html" import vitals, portrait, pips %}
 {% set s = sheet %}
 <div class="peek-head">
   {{ portrait(s, "md") }}<div style="flex:1"><h2 id="peek-title">{{ c.entity.name }}</h2>
@@ -9,14 +9,30 @@
 <div class="peek-body">
   {% if s %}
   {{ vitals(s, c) }}
-  <h3>Saves</h3>
-  <p class="muted" style="margin:0">{% for sv in s.saves %}{{ sv.short }} {{ sv.label }}{% if sv.proficient %} ●{% endif %}{{ " · " if not loop.last }}{% endfor %}</p>
-  {% set helps = (s.spells | selectattr("healing") | list) + (s.inventory | selectattr("battle") | list) %}
-  {% set big = s.actions | selectattr("uses") | list %}
   {% macro open(x) %}<a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/detail?ref={{ x.key | urlencode }}">{{ x.name }}</a>{% endmacro %}
-  {% if big %}<h3>Resources</h3><ul class="plain">{% for a in big %}<li>{{ open(a) }} <span class="muted">{{ a.uses.left }}/{{ a.uses.max }} · {{ a.uses.reset_phrase }}</span></li>{% endfor %}</ul>{% endif %}
-  {% if helps %}<h3>Healing and items</h3><p class="muted" style="margin:0">{% for x in helps | unique(attribute="name") %}{{ open(x) }}{{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
-  {% if s.situational %}<h3>Situational</h3><ul class="plain">{% for x in s.situational %}<li>{{ x.text }}{% if x.source %} <span class="note">· {{ x.source }}</span>{% endif %}</li>{% endfor %}</ul>{% endif %}
+  <h3 class="divider">Saving throws</h3>
+  <div class="brief-saves">{% for sv in s.saves %}<div class="{{ 'prof' if sv.proficient }}"><small>{{ sv.short }}</small><b>{{ sv.label }}</b></div>{% endfor %}</div>
+  <p class="note" style="margin:4px 0 0">Highlighted: proficient.</p>
+  {% set big = s.actions | selectattr("uses") | list %}
+  {% if big or s.spell_slots.slots or s.spell_slots.pact %}<h3 class="divider">Resources</h3>
+  <div class="brief-res">
+    {% for a in big %}<div>{{ open(a) }} {{ pips(a.uses) }}<span class="note">{{ a.uses.reset_phrase }}</span></div>{% endfor %}
+    {% if s.spell_slots.slots or s.spell_slots.pact %}<div><span>Spell slots</span> <span class="slots-inline">{% for sl in s.spell_slots.slots %}<span>{{ sl.level | ordinal }} {{ pips({"max": sl.max, "left": sl.max - sl.used}) }}</span>{% endfor %}{% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}<span>Pact ({{ p.level | ordinal }}) {{ pips({"max": p.max, "left": p.max - p.used}) }}</span>{% endif %}</span></div>{% endif %}
+  </div>{% endif %}
+  {% set helps = (s.spells | selectattr("healing") | list) + (s.inventory | selectattr("battle") | list) %}
+  {% if helps %}<h3 class="divider">Healing and items to use</h3>
+  <div class="brief-chips">{% for x in helps | unique(attribute="name") %}<a class="chip" href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/detail?ref={{ x.key | urlencode }}">{{ x.name }}</a>{% endfor %}</div>{% endif %}
+  {% if s.situational %}<h3 class="divider">Situational</h3>
+  {% set groups = [("Advantages", ["advantage"]), ("Resistances and immunities", ["resistance", "immunity", "vulnerability"]), ("Reactions", ["reaction"])] %}
+  {% for title, kinds in groups %}{% set list = s.situational | selectattr("kind", "in", kinds) | list %}
+  {% if list %}<div class="brief-group"><div class="brief-group-title">{{ title }}</div>
+    <ul class="brief-list">{% for x in list %}<li>{{ x.text | replace("Reaction: ", "") | replace("Reaction spell: ", "") }}{% if x.source %}<span class="note"> · {{ x.source }}</span>{% endif %}</li>{% endfor %}</ul></div>{% endif %}
+  {% endfor %}
+  {% set other = s.situational | rejectattr("kind", "in", ["advantage", "resistance", "immunity", "vulnerability", "reaction"]) | list %}
+  {% set counted = other | selectattr("in_numbers") | list %}{% set rest = other | rejectattr("in_numbers") | list %}
+  {% if rest %}<div class="brief-group"><div class="brief-group-title">Other</div><ul class="brief-list">{% for x in rest %}<li>{{ x.text }}{% if x.source %}<span class="note"> · {{ x.source }}</span>{% endif %}</li>{% endfor %}</ul></div>{% endif %}
+  {% if counted %}<p class="note brief-counted">Already in the numbers above: {% for x in counted %}{{ x.text | replace(" (already in the numbers)", "") }}{% if x.source %} ({{ x.source }}){% endif %}{{ "; " if not loop.last }}{% endfor %}.</p>{% endif %}
+  {% endif %}
   {% else %}<p class="muted">Not fetched from D&amp;D Beyond yet.</p>{% endif %}
 </div>
 <div class="peek-foot row"><a class="btn" href="/characters/{{ c.id }}" data-no-peek>Full character</a><a class="btn" href="/characters/{{ c.id }}/battle" data-no-peek>Battle view</a></div>
