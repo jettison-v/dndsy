@@ -82,3 +82,6 @@ Status colors are used as text on a 14–15% tint of the same color.
 - One shared stylesheet with the tokens above as CSS variables; pages don't define their own colors.
 - Every interactive element has a visible focus style and an accessible label.
 - Mockups in `docs/mockups/` use made-up content only.
+
+## Section headings (2026-10-18)
+Section headings are all-caps, letter-spaced labels in amber with a fading rule (`h3.divider`). Only the action economy is color-coded, the same everywhere: ◆ red **Action**, ▲ amber **Bonus action**, ↺ blue **Reaction**, ● violet **Other** (classes `k-action`, `k-bonus`, `k-reaction`, `k-other`). Don't add more colors for other kinds of sections; the point is that color means "what it costs on your turn".

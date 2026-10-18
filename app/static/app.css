@@ -742,3 +742,21 @@ table.calc tr.total td { border-bottom: none; border-top: 2px solid #4a4f57; col
 .pm.expertise { color: var(--amber); }
 .pm.half { color: var(--muted); }
 .skill .adv { font-size: .72rem; margin-left: 4px; }
+/* Section headings (Brett, 2026-10-18: option A, modified): quiet all-caps labels with a fading
+   rule everywhere; only action-economy headings take a color and symbol, the same on Battle,
+   Character and the side panel: ◆ Action, ▲ Bonus action, ↺ Reaction, ● Other. */
+:root { --k-action: #ef6b6b; --k-bonus: var(--amber); --k-reaction: #6fa8ff; --k-other: #b48ae8; }
+.k-action { --k: var(--k-action); --k-glyph: "◆"; } .k-bonus { --k: var(--k-bonus); --k-glyph: "▲"; }
+.k-reaction { --k: var(--k-reaction); --k-glyph: "↺"; } .k-other { --k: var(--k-other); --k-glyph: "●"; }
+h3.divider { font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--k, var(--amber)); margin: 26px 0 8px; }
+h3.divider::after { background: linear-gradient(90deg, color-mix(in srgb, var(--k, var(--amber)) 50%, transparent), transparent); }
+h3.divider .count { color: color-mix(in srgb, var(--k, var(--amber)) 70%, transparent); letter-spacing: 0; font-weight: 600; font-size: .8rem; }
+h3.divider[class*="k-"]::before { content: var(--k-glyph); font-size: .8rem; letter-spacing: 0; margin-right: -2px; }
+h3.divider.big { font-size: .86rem; color: var(--k, var(--amber)); }
+.econ h2.econ-head { font-size: .86rem; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--k); }
+.econ h2.econ-head::before { content: var(--k-glyph); margin-right: 8px; letter-spacing: 0; }
+.econ h2.econ-head small { text-transform: none; letter-spacing: 0; font-weight: 400; margin-top: 2px; }
+h2.econ-title { color: var(--k); }
+h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 8px; }
+/* side panel subheadings (What it does, How it adds up…) in the same quiet caps */
+.peek-body h3:not(.divider), .peek-body.detail h3:not(.divider) { font-size: .74rem; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); margin: 20px 0 6px; }

@@ -62,7 +62,7 @@
     <div id="t-actions">
       {% for cost, title in [("Action", "Actions"), ("Bonus action", "Bonus actions"), ("Reaction", "Reactions"), ("Other", "Other")] %}
       {% set list = options | selectattr("cost", "equalto", cost) | list %}
-      {% if list %}<h3 class="divider">{{ title }} <span class="count">{{ list | length }}</span></h3>
+      {% if list %}<h3 class="divider k-{{ {"Action": "action", "Bonus action": "bonus", "Reaction": "reaction"}.get(cost, "other") }}">{{ title }} <span class="count">{{ list | length }}</span></h3>
       <div class="rows">{% for o in list %}{{ opt_row(c, o, picks, can_pick) }}{% endfor %}</div>{% endif %}
       {% endfor %}
     </div>

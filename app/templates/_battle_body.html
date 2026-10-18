@@ -23,7 +23,7 @@
     {% for cost, sub, slug in [("Action", "One per turn", "action"), ("Bonus action", "One per turn", "bonus"), ("Reaction", "One per round, also on others' turns", "reaction")] %}
     {% set col = columns[cost] %}
     <div class="section">
-      <h2>{{ cost }}<small>{{ sub }}</small></h2>
+      <h2 class="econ-head k-{{ slug }}">{{ cost }}<small>{{ sub }}</small></h2>
       <div class="moves"{% if can_pick %} data-sort-column="{{ cost }}" data-sort-url="/characters/{{ c.id }}/order"{% endif %}>
       {% for o in col.shown %}
       <div class="move" data-key="{{ o.key }}" data-panel-url="/characters/{{ c.id }}/detail?ref={{ o.key | urlencode }}" tabindex="0" role="button">
