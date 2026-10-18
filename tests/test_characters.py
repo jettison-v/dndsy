@@ -544,3 +544,23 @@ def test_battle_shows_costs_and_slots_on_their_own_line(player, db):
     assert "Spends" in panel and "1 Focus Point: <b>2 of 2 left</b>" in panel
     spell = player.get(f"/characters/{cole.id}/detail", params={"ref": "spell:Healing Word"}).text
     assert "1st-level slot: <b>4 of 4 left</b>" in spell and "Can also use a higher slot: 2nd 3/3 · 3rd 3/3" in spell
+
+
+def test_number_tiles_open_an_explanation(player, db):
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    battle = player.get(f"/characters/{cole.id}/battle").text
+    sheet = player.get(f"/characters/{cole.id}").text
+    for kind in ("hp", "ac", "speed", "initiative", "spell", "inspiration"):
+        assert f'data-panel-url="/characters/{cole.id}/vital/{kind}"' in battle and f"/vital/{kind}" in sheet
+    assert f"/vital/proficiency" in sheet and f"/vital/perception" in sheet
+    ac = player.get(f"/characters/{cole.id}/vital/ac").text
+    assert "Unarmored Defense (Wisdom modifier)" in ac and '<tr class="total"><td>Total</td><td class="num">16</td>' in ac
+    speed = player.get(f"/characters/{cole.id}/vital/speed").text
+    assert "Fleet of Foot (sets your base speed)" in speed and "Unarmored Movement" in speed and "45 ft" in speed
+    spell = player.get(f"/characters/{cole.id}/vital/spell").text
+    assert "Spell save DC" in spell and "Wisdom modifier" in spell and "+7" in spell
+    assert "Stone of Good Luck" in player.get(f"/characters/{cole.id}/vital/initiative").text
+    assert "Constitution modifier (+1) × 8 levels" in player.get(f"/characters/{cole.id}/vital/hp").text
+    assert player.get(f"/characters/{cole.id}/vital/nope").status_code == 404

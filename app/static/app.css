@@ -663,3 +663,13 @@ details.faq[open] > summary::before { transform: rotate(90deg); }
 .mech dd > div + div { margin-top: 4px; }
 .ri-spend { display: block; margin: 2px 0 1px; }
 .ri-spend .spend:first-child { margin-left: 0; }
+/* Number tiles open a panel explaining them */
+.vital[data-panel-url], .strip > div[data-panel-url] { cursor: pointer; transition: border-color .12s, background .12s; }
+.vital[data-panel-url]:hover { background: #30353b; }
+.strip > div[data-panel-url]:hover { background: var(--surface-2); }
+table.calc { width: 100%; border-collapse: collapse; font-size: .93rem; margin: 4px 0 6px; }
+table.calc td { padding: 5px 0; border-bottom: 1px solid var(--line); color: var(--muted); }
+table.calc td.num { text-align: right; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 12px; }
+table.calc tr.total td { border-bottom: none; border-top: 2px solid #4a4f57; color: var(--text); font-weight: 700; }
+.calc-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 640px) { .calc-pair { grid-template-columns: 1fr; } }

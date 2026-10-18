@@ -1,0 +1,70 @@
+{# Side panel for one number at the top of Battle / Character: what it means and how it adds up. #}
+{% set s = sheet %}
+{% macro sum(parts, total, unit="", signed=true) -%}
+<table class="calc">
+  {% for label, v in parts %}<tr><td>{{ label }}</td><td class="num">{{ ("+" if v >= 0 else "−") ~ (v | abs) if (signed and not loop.first) else v }}{{ unit }}</td></tr>{% endfor %}
+  <tr class="total"><td>Total</td><td class="num">{{ total }}{{ unit }}</td></tr>
+</table>
+{%- endmacro %}
+{% macro explain(text) %}<p class="detail-what">{{ text | terms(underline, []) }}</p>{% endmacro %}
+<div class="peek-head">
+  <div><div class="note">{{ c.entity.name }}</div><h2 id="peek-title">{{ title }}</h2></div>
+  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
+</div>
+<div class="peek-body detail">
+  {% if kind == "hp" %}{% set hp = s.hit_points %}
+    <dl class="mech">
+      <dt>Now</dt><dd><b>{{ hp.current }}</b> of {{ hp.max }}{% if hp.damage %} ({{ hp.damage }} damage taken){% endif %}</dd>
+      {% if hp.temp %}<dt>Temporary</dt><dd>+{{ hp.temp }} Temporary Hit Points, lost first</dd>{% endif %}
+      <dt>Hit Point Dice</dt><dd>{% for h in hp.hit_dice %}{{ h.total - h.used }} of {{ h.total }} {{ h.die }} ({{ h.class }}){{ " · " if not loop.last }}{% endfor %}</dd>
+    </dl>
+    <h3>How the maximum adds up</h3>
+    {% if hp.parts %}{{ sum(hp.parts, hp.max) }}{% endif %}{% for n in hp.notes %}<p class="note">{{ n }}</p>{% endfor %}
+    <h3>What it means</h3>
+    {{ explain("Damage lowers your Hit Points; healing raises them, up to the maximum. Temporary Hit Points are lost first and don't add up. At 0 Hit Points you fall Unconscious and make Death Saving Throws. During a Short Rest you can spend Hit Point Dice to heal; a Long Rest restores all Hit Points and Hit Point Dice.") }}
+  {% elif kind == "ac" %}{% set ac = s.armor_parts %}
+    <h3>How it adds up</h3>
+    {{ sum(ac.parts, s.armor_class) }}{% for n in ac.notes %}<p class="note">{{ n }}</p>{% endfor %}
+    <h3>What it means</h3>
+    {{ explain("An attack roll that equals or beats your Armor Class hits you. Half Cover gives +2 and Three-Quarters Cover +5. Spells and features can change it for a while (for example the Shield spell); those aren't included here.") }}
+  {% elif kind == "speed" %}{% set sp = s.speed %}
+    <h3>How walking speed adds up</h3>
+    {{ sum(sp.parts or [("Walking", sp.walk)], sp.walk, " ft") }}{% for n in sp.notes or [] %}<p class="note">{{ n }}</p>{% endfor %}
+    {% set extra = sp.items() | rejectattr(0, "in", ["walk", "parts", "notes"]) | list %}
+    {% if extra %}<h3>Other speeds</h3><dl class="mech">{% for k, v in extra %}<dt>{{ k | capitalize }}</dt><dd>{{ v }} ft</dd>{% endfor %}</dl>{% endif %}
+    <h3>What it means</h3>
+    {{ explain("How far you can move on your turn, and you can split it up around your action. The Dash action gives you extra movement equal to your Speed. Difficult Terrain costs 1 extra foot per foot, and being Grappled or Restrained makes it 0.") }}
+  {% elif kind == "initiative" %}
+    <h3>How it adds up</h3>
+    {{ sum(s.initiative_parts or [("Initiative", s.initiative | int)], s.initiative) }}
+    <h3>What it means</h3>
+    {{ explain("When combat starts, everyone rolls a d20 and adds this; turns go from highest to lowest. Being Surprised gives Disadvantage on the roll, and being Invisible gives Advantage.") }}
+  {% elif kind == "spell" %}
+    {% for sc in s.spellcasting %}
+    <h3>{{ sc.class }} (casts with {{ sc.ability }})</h3>
+    <div class="calc-pair">
+      <div><div class="note">Spell save DC</div>{{ sum(sc.dc_parts or [], sc.save_dc) }}</div>
+      <div><div class="note">Spell attack bonus</div>{{ sum(sc.attack_parts or [], sc.attack) }}</div>
+    </div>
+    {% endfor %}
+    <h3>What it means</h3>
+    {{ explain("Spell save DC: when one of your spells makes a creature roll a saving throw, it must equal or beat this number to resist. Spell attack: when a spell has you make an attack roll, roll a d20 and add this bonus; you hit if the total equals or beats the target's Armor Class.") }}
+    {% if s.spellcasting | length > 1 %}<p class="note">Each spellcasting class uses its own ability. The tile shows the first one.</p>{% endif %}
+  {% elif kind == "inspiration" %}
+    <dl class="mech"><dt>Now</dt><dd>{{ "You have it" if s.inspiration else "You don't have it right now" }}</dd></dl>
+    <h3>What it means</h3>
+    {{ explain("When you have Heroic Inspiration, you can spend it to reroll any one die right after rolling it, and you must use the new roll. You can have only one at a time. The DM can award it, and some features give it to you.") }}
+    {% if gives %}<h3>Your features that give it</h3><ul class="plain">{% for f in gives %}<li><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/detail?ref={{ f.key | urlencode }}">{{ f.name }}</a> <span class="note">· {{ f.source }}</span></li>{% endfor %}</ul>{% endif %}
+  {% elif kind == "proficiency" %}
+    <dl class="mech"><dt>Bonus</dt><dd>+{{ s.proficiency_bonus }} at character level {{ s.level }}</dd></dl>
+    <h3>What it means</h3>
+    {{ explain("You add it to attack rolls with weapons and spells you're proficient with, to saving throws and skills you're proficient in, and to your spell save DC. It goes up with your total character level: +2 at levels 1–4, +3 at 5–8, +4 at 9–12, +5 at 13–16 and +6 at 17–20.") }}
+  {% elif kind == "perception" %}
+    <h3>How it adds up</h3>
+    {{ sum([("Base", 10), ("Perception skill", perception.bonus if perception else s.passive_perception - 10)], s.passive_perception) }}
+    {% if perception and perception.notes %}<p class="note">{{ perception.notes | join("; ") }} (on checks you roll; the DM decides whether it changes the passive score).</p>{% endif %}
+    <h3>What it means</h3>
+    {{ explain("What you notice without trying: the DM compares it to a creature's Stealth or a hidden thing's DC, without you rolling.") }}
+  {% endif %}
+</div>
+<div class="peek-foot"><a class="btn" href="/characters/{{ c.id }}" data-no-peek>Full character</a></div>

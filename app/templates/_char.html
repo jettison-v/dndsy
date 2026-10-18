@@ -5,8 +5,11 @@
 <svg class="bell" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 3a6 6 0 0 0-6 6v3.6l-1.6 2.7A1 1 0 0 0 5.3 17h13.4a1 1 0 0 0 .9-1.7L18 12.6V9a6 6 0 0 0-6-6Zm-2.5 15.5a2.5 2.5 0 0 0 5 0" fill="{{ 'currentColor' if on else 'none' }}" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
 {%- endmacro %}
 
-{% macro inspiration(s) -%}
-<div class="vital insp{{ ' on' if s.inspiration }}" title="Heroic Inspiration{{ ': you have it' if s.inspiration else ': not right now' }}"><small>Heroic Inspiration</small><b>{{ "✦ Yes" if s.inspiration else "—" }}</b></div>
+{# Every number tile opens a side panel explaining it (character_pages.vital_panel). #}
+{% macro tile(c, kind) %}data-panel-url="/characters/{{ c.id }}/vital/{{ kind }}" tabindex="0" role="button"{% endmacro %}
+
+{% macro inspiration(s, c) -%}
+<div class="vital insp{{ ' on' if s.inspiration }}" {{ tile(c, "inspiration") }} title="Heroic Inspiration{{ ': you have it' if s.inspiration else ': not right now' }}"><small>Heroic Inspiration</small><b>{{ "✦ Yes" if s.inspiration else "—" }}</b></div>
 {%- endmacro %}
 
 {% macro pips(u) -%}
@@ -38,14 +41,14 @@
 {%- endif -%}
 {%- endmacro %}
 
-{% macro vitals(s) -%}
+{% macro vitals(s, c) -%}
 <div class="vitals">
-  <div class="vital"><small>HP</small><b>{{ s.hit_points.current }}</b>{% if s.hit_points.current != s.hit_points.max %}<span class="note"> / {{ s.hit_points.max }}</span>{% endif %}{% if s.hit_points.temp %}<span class="note"> +{{ s.hit_points.temp }} temp</span>{% endif %}</div>
-  <div class="vital"><small>AC</small><b>{{ s.armor_class }}</b></div>
-  <div class="vital"><small>Speed</small><b>{{ s.speed.walk }}</b><span class="note"> ft</span></div>
-  <div class="vital"><small>Initiative</small><b>{{ s.initiative }}</b></div>
-  {% for sc in s.spellcasting[:1] %}<div class="vital"><small>Spell DC / attack</small><b>{{ sc.save_dc }}</b><span class="note"> / {{ sc.attack }}</span></div>{% endfor %}
-  {{ inspiration(s) }}
+  <div class="vital" {{ tile(c, "hp") }}><small>HP</small><b>{{ s.hit_points.current }}</b>{% if s.hit_points.current != s.hit_points.max %}<span class="note"> / {{ s.hit_points.max }}</span>{% endif %}{% if s.hit_points.temp %}<span class="note"> +{{ s.hit_points.temp }} temp</span>{% endif %}</div>
+  <div class="vital" {{ tile(c, "ac") }}><small>AC</small><b>{{ s.armor_class }}</b></div>
+  <div class="vital" {{ tile(c, "speed") }}><small>Speed</small><b>{{ s.speed.walk }}</b><span class="note"> ft</span></div>
+  <div class="vital" {{ tile(c, "initiative") }}><small>Initiative</small><b>{{ s.initiative }}</b></div>
+  {% for sc in s.spellcasting[:1] %}<div class="vital" {{ tile(c, "spell") }}><small>Spell DC / attack</small><b>{{ sc.save_dc }}</b><span class="note"> / {{ sc.attack }}</span></div>{% endfor %}
+  {{ inspiration(s, c) }}
 </div>
 {%- endmacro %}
 

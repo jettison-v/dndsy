@@ -22,7 +22,7 @@ CHARACTER_URL = "https://character-service.dndbeyond.com/character/v5/character/
 SHEET_URL = "https://www.dndbeyond.com/characters/{id}"
 USER_AGENT = "askdnd/2 (private table companion; +https://beta.askdnd.ai)"
 TIMEOUT_SECONDS = 15
-PARSER_VERSION = 9  # bump when the summary shape changes; stored summaries are re-parsed
+PARSER_VERSION = 10  # bump when the summary shape changes; stored summaries are re-parsed
 
 
 class DdbError(Exception):
@@ -425,6 +425,7 @@ class _Sheet:
             for f in c.get("classFeatures") or []
         } if len(self.classes) > 1 else set()
         self.modifiers = [m for source, m in self._all_modifiers() if self._applies(source, m)]
+        self.names = self._component_names()
         self.background_asi = any(
             (_d(f, "definition", "name") or "").endswith("Ability Score Improvements") for f in data.get("feats") or []
         )
@@ -432,6 +433,14 @@ class _Sheet:
         self.mods = {k: _mod(v) for k, v in self.scores.items()}
 
     # modifiers ---------------------------------------------------------
+
+    def source_name(self, m: dict) -> str:
+        """Where a modifier comes from ("Unarmored Defense", "Stone of Good Luck")."""
+        return self.names.get(m.get("componentId")) or "a feature"
+
+    def bonus_parts(self, sub: str) -> list[tuple[str, int]]:
+        """[(where it comes from, amount)] for the bonuses to one number."""
+        return [(self.source_name(m), self.bonus_value(m)) for m in self.mods_of(("bonus", "stacking-bonus"), sub) if self.bonus_value(m)]
 
     def _all_modifiers(self):
         for source, group in (self.d.get("modifiers") or {}).items():
@@ -531,33 +540,58 @@ class _Sheet:
         return body, shield
 
     def armor_class(self) -> int:
+        return self.armor_class_parts()["total"]
+
+    def armor_class_parts(self) -> dict:
+        """AC and how it adds up: [(what, amount)], plus notes."""
         body, shield = self.armor()
         dex = self.mods["dexterity"]
+        parts, notes = [], []
         if body:
             kind = body.get("armorTypeId")
-            ac = body["armorClass"] + (dex if kind == 1 else min(dex, 2) if kind == 2 else 0)
-            ac += self.total_bonus("armored-armor-class")
+            parts.append((f"{body['name']} ({ {1: 'light', 2: 'medium', 3: 'heavy'}.get(kind, '') } armor)", body["armorClass"]))
+            if kind == 1:
+                parts.append(("Dexterity modifier", dex))
+            elif kind == 2:
+                parts.append(("Dexterity modifier (medium armor: at most +2)", min(dex, 2)))
+            else:
+                notes.append("Heavy armor: no Dexterity modifier.")
+            parts += self.bonus_parts("armored-armor-class")
         else:
-            ac = 10 + dex
-            extra = [self.mods.get(ABILITY_KEY.get(m.get("statId")), 0) for m in self.mods_of("set", "unarmored-armor-class") if m.get("statId")]
+            parts += [("No armor", 10), ("Dexterity modifier", dex)]
+            extra = [(self.source_name(m), ABILITY_KEY.get(m.get("statId"))) for m in self.mods_of("set", "unarmored-armor-class") if m.get("statId")]
             if extra:  # Unarmored Defense (Monk: Wis, Barbarian: Con) — the best one applies
-                ac += max(extra)
-            ac += self.total_bonus("unarmored-armor-class")
+                name, key = max(extra, key=lambda e: self.mods.get(e[1], 0))
+                parts.append((f"{name} ({key.title()} modifier)", self.mods.get(key, 0)))
+            parts += self.bonus_parts("unarmored-armor-class")
         if shield:
-            ac += shield["armorClass"]
-        ac += self.total_bonus("armor-class")
+            parts.append((shield["name"], shield["armorClass"]))
+        parts += self.bonus_parts("armor-class")
+        total = sum(v for _, v in parts)
         for m in self.mods_of("set", "armor-class"):
-            ac = max(ac, int(m.get("value") or 0))
-        return ac
+            if int(m.get("value") or 0) > total:
+                total = int(m["value"])
+                notes.append(f"{self.source_name(m)} sets your AC to {total}.")
+        return {"total": total, "parts": parts, "notes": notes}
 
     def hit_points(self) -> dict:
         d = self.d
+        parts, notes = [], []
         if d.get("overrideHitPoints"):
             maximum = d["overrideHitPoints"]
+            notes.append("The maximum is set by hand on D&D Beyond.")
         else:
-            maximum = (d.get("baseHitPoints") or 0) + self.mods["constitution"] * self.level
-            maximum += self.total_bonus("hit-points-per-level") * self.level + (d.get("bonusHitPoints") or 0)
+            con = self.mods["constitution"]
+            parts.append(("Hit dice: the full first die, then the fixed or rolled amount each level", d.get("baseHitPoints") or 0))
+            parts.append((f"Constitution modifier ({_signed(con)}) × {self.level} levels", con * self.level))
+            parts += [(f"{name} ({_signed(v)} per level × {self.level})", v * self.level) for name, v in self.bonus_parts("hit-points-per-level")]
+            if d.get("bonusHitPoints"):
+                parts.append(("Bonus set on D&D Beyond", d["bonusHitPoints"]))
+            maximum = sum(v for _, v in parts)
         return {
+            "parts": parts,
+            "notes": notes,
+            "damage": d.get("removedHitPoints") or 0,
             "max": maximum,
             "current": max(0, maximum - (d.get("removedHitPoints") or 0)),
             "temp": d.get("temporaryHitPoints") or 0,
@@ -570,14 +604,19 @@ class _Sheet:
 
     def speeds(self) -> dict:
         normal = _d(self.d, "race", "weightSpeeds", "normal", default={}) or {}
-        walk = normal.get("walk") or 30
+        base = (f"{_d(self.d, 'race', 'fullName', default='Species')} base speed", normal.get("walk") or 30)
         for m in self.mods_of("set", "innate-speed-walking"):
-            walk = max(walk, int(m.get("value") or 0))
-        walk += self.total_bonus("speed") + self.total_bonus("speed-walking")
+            if int(m.get("value") or 0) > base[1]:
+                base = (f"{self.source_name(m)} (sets your base speed)", int(m["value"]))
+        parts = [base] + self.bonus_parts("speed") + self.bonus_parts("speed-walking")
         body, shield = self.armor()
+        notes = []
         if not body and not shield:
-            walk += self.total_bonus("unarmored-movement")
-        out = {"walk": walk}
+            parts += self.bonus_parts("unarmored-movement")
+        elif self.bonus_parts("unarmored-movement"):
+            notes.append("Unarmored Movement doesn't count while you wear armor or carry a shield.")
+        walk = sum(v for _, v in parts)
+        out = {"walk": walk, "parts": parts, "notes": notes}
         for kind in ("fly", "swim", "climb", "burrow"):
             v = normal.get(kind) or 0
             for m in self.mods_of("set", f"innate-speed-{kind}"):
@@ -613,11 +652,15 @@ class _Sheet:
         return out
 
     def initiative(self) -> int:
+        return sum(v for _, v in self.initiative_parts())
+
+    def initiative_parts(self) -> list[tuple[str, int]]:
         # an "initiative" bonus already covers items that also boost ability checks (Luckstone)
-        n = self.mods["dexterity"] + self.total_bonus("initiative")
-        if self.proficient("initiative"):
-            n += self.pb
-        return n
+        parts = [("Dexterity modifier", self.mods["dexterity"])] + self.bonus_parts("initiative")
+        prof = self.mods_of("proficiency", "initiative")
+        if prof:
+            parts.append((f"Proficiency Bonus ({self.source_name(prof[0])})", self.pb))
+        return parts
 
     # lists -------------------------------------------------------------
 
@@ -800,11 +843,16 @@ class _Sheet:
                 continue
             key = ABILITY_KEY.get(ability_id, "wisdom")
             mod = self.mods[key]
+            common = [("Proficiency Bonus", self.pb), (f"{key.title()} modifier", mod)]
+            dc_parts = [("Base", 8)] + common + self.bonus_parts("spell-save-dc")
+            attack_parts = common + self.bonus_parts("spell-attacks")
             out.append({
                 "class": df.get("name"),
                 "ability": key.title(),
-                "save_dc": 8 + self.pb + mod + self.total_bonus("spell-save-dc"),
-                "attack": _signed(self.pb + mod + self.total_bonus("spell-attacks")),
+                "save_dc": sum(v for _, v in dc_parts),
+                "attack": _signed(sum(v for _, v in attack_parts)),
+                "dc_parts": dc_parts,
+                "attack_parts": attack_parts,
             })
         return out
 
@@ -1238,6 +1286,8 @@ def parse_character(data: dict) -> dict:
             ],
             "hit_points": sh.hit_points(),
             "armor_class": sh.armor_class(),
+            "armor_parts": sh.armor_class_parts(),
+            "initiative_parts": sh.initiative_parts(),
             "initiative": _signed(sh.initiative()),
             "speed": sh.speeds(),
             "passive_perception": 10 + perception["bonus"],

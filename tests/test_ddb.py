@@ -83,7 +83,9 @@ def test_spell_slots_single_multiclass_and_pact(cole, no_name, big_c):
     assert [(s["level"], s["max"]) for s in cole["spell_slots"]["slots"]] == [(1, 4), (2, 3), (3, 3)]
     assert big_c["spell_slots"]["slots"][2] == {"level": 3, "max": 2, "used": 0}  # Paladin 6 + Sorcerer 2 = caster level 5
     assert no_name["spell_slots"]["slots"] == [] and no_name["spell_slots"]["pact"] == {"level": 1, "max": 2, "used": 0}
-    assert cole["spellcasting"] == [{"class": "Druid", "ability": "Wisdom", "save_dc": 15, "attack": "+7"}]
+    assert [{k: c[k] for k in ("class", "ability", "save_dc", "attack")} for c in cole["spellcasting"]] == [
+        {"class": "Druid", "ability": "Wisdom", "save_dc": 15, "attack": "+7"}]
+    assert cole["spellcasting"][0]["dc_parts"] == [("Base", 8), ("Proficiency Bonus", 3), ("Wisdom modifier", 4)]
 
 
 def test_spells_detail(cole, big_c):
@@ -346,3 +348,19 @@ def test_link_tags_with_a_display_name_show_only_that_name():
     assert ddb.html_to_text("until you finish a [rules]short rest;Short[/rules] or Long Rest") == "until you finish a Short or Long Rest"
     assert ddb.html_to_text("make two [rules]Unarmed Strike;Unarmed Strikes[/rules]") == "make two Unarmed Strikes"
     assert ddb.html_to_text("the [condition]Prone[/condition] condition") == "the Prone condition"
+
+
+def test_vitals_explain_how_they_add_up(cole):
+    sh = ddb._Sheet(load("cole"))
+    ac = sh.armor_class_parts()
+    assert ac["parts"] == [("No armor", 10), ("Dexterity modifier", 2), ("Unarmored Defense (Wisdom modifier)", 4)] and ac["total"] == 16
+    speed = sh.speeds()
+    assert speed["parts"] == [("Fleet of Foot (sets your base speed)", 35), ("Unarmored Movement", 10)] and speed["walk"] == 45
+    assert sh.initiative_parts() == [("Dexterity modifier", 2), ("Stone of Good Luck (Luckstone)", 1)]
+    hp = cole["hit_points"]
+    assert sum(v for _, v in hp["parts"]) == hp["max"] == 51 and hp["parts"][1] == ("Constitution modifier (+1) × 8 levels", 8)
+    for name in ("big_c", "no_name", "trah"):  # the parts always add up to the number shown
+        s = ddb.parse_character(load(name))
+        assert sum(v for _, v in s["hit_points"]["parts"]) == s["hit_points"]["max"]
+        assert sum(v for _, v in s["speed"]["parts"]) == s["speed"]["walk"]
+        assert sum(v for _, v in s["armor_parts"]["parts"]) == s["armor_class"] or s["armor_parts"]["notes"]

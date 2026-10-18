@@ -8,7 +8,7 @@
 </div>
 <div class="peek-body">
   {% if s %}
-  {{ vitals(s) }}
+  {{ vitals(s, c) }}
   <h3>Saves</h3>
   <p class="muted" style="margin:0">{% for sv in s.saves %}{{ sv.short }} {{ sv.label }}{% if sv.proficient %} ●{% endif %}{{ " · " if not loop.last }}{% endfor %}</p>
   {% set helps = (s.spells | selectattr("healing") | list) + (s.inventory | selectattr("battle") | list) %}

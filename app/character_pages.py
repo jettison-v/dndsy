@@ -259,6 +259,27 @@ def brief(request: Request, character_id: int, db: Session = Depends(get_db)):
     return templates.TemplateResponse(request, "_brief.html", _view(db, ch, user))
 
 
+VITALS = {"hp": "Hit Points", "ac": "Armor Class", "speed": "Speed", "initiative": "Initiative", "spell": "Spell save DC and attack",
+          "inspiration": "Heroic Inspiration", "proficiency": "Proficiency Bonus", "perception": "Passive Perception"}
+
+
+@router.get("/characters/{character_id:int}/vital/{kind}")
+def vital_panel(request: Request, character_id: int, kind: str, db: Session = Depends(get_db)):
+    """Side panel for one number at the top (HP, AC, Speed…): what it means and how it adds up."""
+    user, ch, stop = _load(request, db, character_id)
+    if stop:
+        return stop
+    ctx = _view(db, ch, user)
+    if kind not in VITALS or not ctx["sheet"]:
+        return HTMLResponse("", status_code=404)
+    s = ctx["sheet"]
+    gives = [f for f in s.get("features") or [] if "Heroic Inspiration" in (f.get("text") or "")] if kind == "inspiration" else []
+    perception = next((k for k in s.get("skills") or [] if k["name"] == "Perception"), None)
+    return templates.TemplateResponse(request, "_panel_vital.html", {
+        **ctx, "kind": kind, "title": VITALS[kind], "gives": gives, "perception": perception,
+        "underline": terms.underlined(_overrides(db))})
+
+
 @router.post("/characters/{character_id:int}/pick")
 def toggle_pick(request: Request, character_id: int, kind: str = Form(...), ref: str = Form(...),
                 db: Session = Depends(get_db)):
