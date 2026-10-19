@@ -460,6 +460,18 @@
     }
   }, true);
   document.querySelectorAll('[data-planner]').forEach(plannerApply);
+  // Wild Shape cards: sort by what matters for choosing (damage, attack bonus, speed, CR).
+  document.addEventListener('change', e => {
+    const sel = e.target.closest('[data-card-sort]');
+    if (!sel) return;
+    const root = sel.closest('[data-planner]'), box = root && root.querySelector('[data-sortable-cards]');
+    if (!box) return;
+    const key = sel.value, attr = 'sort' + key[0].toUpperCase() + key.slice(1);
+    const cards = [...box.children];
+    cards.sort((a, b) => key === 'default' ? a.dataset.sortDefault - b.dataset.sortDefault
+                                           : (parseFloat(b.dataset[attr]) || 0) - (parseFloat(a.dataset[attr]) || 0));
+    cards.forEach(c => box.appendChild(c));
+  });
 
   // Rule terms: side-panel descriptions underline terms like "Unarmed Strike" (dotted, quiet).
   // Hover shows a short definition; a click or tap (or Enter) pins it; Escape or a click

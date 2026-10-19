@@ -219,6 +219,9 @@
           <button type="button" data-view="fav" aria-pressed="false">♥ Shortlist</button>
           <button type="button" data-view="all" aria-pressed="false">All you can learn</button>
         </div>
+        <label class="fc-sort note">Sort <select data-card-sort aria-label="Sort forms">
+          <option value="default">Known first, then CR</option><option value="damage">Damage per turn</option>
+          <option value="hit">Attack bonus</option><option value="speed">Fastest</option><option value="cr">CR (highest)</option></select></label>
         <input type="search" data-search placeholder="Search beasts" aria-label="Search beasts">
       </div>
       <div class="filters" role="group" aria-label="Filter forms">
@@ -229,14 +232,39 @@
         {% for z in ["tiny", "small", "medium", "large", "huge"] %}{% if forms | selectattr("size", "equalto", z | capitalize) | list %}<button type="button" data-filter="tag:{{ z }}">{{ z | capitalize }}</button>{% endif %}{% endfor %}
       </div>
       <p class="note planner-note"><span data-shown></span>{% if can_pick %} ♥ shortlists a form so you can compare before learning it.{% endif %} Learn forms on D&amp;D Beyond{% if s.sheet_url %} (<a href="{{ s.sheet_url }}" target="_blank" rel="noopener">open ↗</a>){% endif %}: you can swap one known form after each Long Rest. Click a form to see it with your stats carried over.</p>
-      <section class="planner-group"><div class="planner-level"><div class="rows">
-      {% for fm in forms %}
+      <section class="planner-group"><div class="planner-level"><div class="form-cards" data-sortable-cards>
+      {% for fm in forms %}{% set k = fm.card %}
         {% set tags = (fm.moves + [fm.size | lower] + (["locked"] if fm.why_not else [])) | join(" ") %}
-        {{ ri(c, fm.key, fm.name, picks, can_pick, fav=True, url="/characters/" ~ c.id ~ "/form?name=" ~ (fm.name | urlencode), image=fm.image, modal=True,
-              chips=[("Known", "done") if fm.known else None, (fm.why_not, "faint") if fm.why_not else None],
-              what=fm.summary, mech="CR " ~ fm.cr_label ~ " · " ~ fm.size ~ " · " ~ fm.speed, hit="AC " ~ fm.ac,
-              cls="spell-row form-row" ~ ("" if fm.known else " not-ready"),
-              attrs='data-state="%s" data-fav="%s" data-level="%s" data-cast="other" data-name="%s" data-tags="%s"' | format('ready' if fm.known else 'learn', '1' if fm.key in picks.fav else '0', fm.cr_label, fm.name | lower | e, tags)) }}
+        {% set notes = [picks.notes.get("fav|" ~ fm.key), picks.notes.get("remind|" ~ fm.key)] | select | list if picks.notes else [] %}
+        <article class="spell-row form-card{{ ' known' if fm.known }}{{ ' not-ready' if fm.why_not }}" data-modal-url="/characters/{{ c.id }}/form?name={{ fm.name | urlencode }}" data-modal-size="large"
+          data-ref="{{ fm.key }}" tabindex="0" role="button" data-state="{{ 'ready' if fm.known else 'learn' }}" data-fav="{{ '1' if fm.key in picks.fav else '0' }}"
+          data-level="{{ fm.cr_label }}" data-cast="other" data-name="{{ fm.name | lower }}" data-tags="{{ tags }}"
+          data-sort-default="{{ loop.index }}" data-sort-damage="{{ k.per_turn }}" data-sort-hit="{{ k.hit_value }}" data-sort-speed="{{ k.fastest }}" data-sort-cr="{{ fm.cr }}">
+          <div class="fc-head">
+            {% if fm.image %}<img class="fc-pic" src="{{ fm.image }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}
+            <div class="fc-title"><b>{{ fm.name }}</b>
+              <div class="fc-chips"><span class="tag">CR {{ fm.cr_label }}</span><span class="tag">{{ fm.size }}</span>
+                {% if fm.known %}<span class="tag done">Known</span>{% endif %}{% if fm.why_not %}<span class="tag faint">{{ fm.why_not }}</span>{% endif %}</div></div>
+            <span class="fc-picks">{{ pick_btn(c, "fav", fm.key, fm.key in picks.fav, can_pick) }}{{ pick_btn(c, "remind", fm.key, fm.key in picks.remind, can_pick) }}</span>
+          </div>
+          <div class="fc-stats">
+            <div title="{{ 'Circle Forms: 13 + your Wisdom modifier' if k.ac_moon else 'The form\'s AC' }}"><small>AC</small><b>{{ k.ac }}</b></div>
+            <div title="Your Hit Points plus Temporary Hit Points when you shift"><small>Temp HP</small><b>+{{ k.temp_hp }}</b></div>
+            <div title="Best attack bonus"><small>To hit</small><b>{{ k.hit or "—" }}</b></div>
+            <div title="Average damage from the Attack action (Multiattack) if every attack hits"><small>Dmg / turn</small><b>{{ k.per_turn or "—" }}</b></div>
+            <div><small>Fastest</small><b>{{ k.fastest }}<span class="note"> ft</span></b></div>
+          </div>
+          <div class="fc-line"><span class="fc-k">Attack</span><span>{{ k.attack or "No attack" }}{% if k.radiant and k.attack %} <span class="muted">· can deal Radiant</span>{% endif %}{% for x in k.extra %} <span class="muted">· {{ x }}</span>{% endfor %}</span></div>
+          <div class="fc-line"><span class="fc-k">Moves</span><span>{{ k.speed }}{% if k.senses %} <span class="muted">· {{ k.senses }}</span>{% endif %}{% if k.resist %} <span class="muted">· Resists {{ k.resist }}</span>{% endif %}</span></div>
+          <div class="fc-line"><span class="fc-k">You</span><span>{% for sv in k.saves %}{{ sv.short }} save {{ sv.label }}{{ " · " if not loop.last }}{% endfor %}{% for sk in k.skills %} · {{ sk.name }} {{ sk.label }}{% endfor %}</span></div>
+          {% if k.traits or k.bonus or k.reactions or k.effects %}<div class="fc-tags">
+            {% for t in k.effects %}<span class="tag eff">{{ t }}</span>{% endfor %}
+            {% for t in k.bonus %}<span class="tag k-bonus">Bonus: {{ t }}</span>{% endfor %}
+            {% for t in k.reactions %}<span class="tag k-reaction">Reaction: {{ t }}</span>{% endfor %}
+            {% for t in k.traits %}<span class="tag">{{ t }}</span>{% endfor %}
+          </div>{% endif %}
+          {% for n in notes %}<div class="ri-note">✎ {{ n }}</div>{% endfor %}
+        </article>
       {% endfor %}
       </div></div></section>
       <p class="muted planner-empty" hidden>No forms match. Try another view or clear a filter.</p>

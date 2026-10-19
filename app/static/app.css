@@ -851,3 +851,28 @@ sup.prof { color: var(--blue); font-size: .6rem; }
 .fm-col h4.econ-head { font-size: .8rem; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--k); }
 .fm-col h4.econ-head::before { content: var(--k-glyph); margin-right: 8px; letter-spacing: 0; }
 .fm-col h4.econ-head small { display: block; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--faint); font-size: .76rem; }
+
+/* Wild Shape cards (Character › Wild Shape): the druid's own numbers for each form */
+.form-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); gap: 12px; }
+.form-card { background: var(--surface-2); border: 1px solid transparent; border-radius: 12px; padding: 12px 14px; cursor: pointer; display: grid; gap: 7px; align-content: start; transition: border-color .12s; }
+.form-card:hover { border-color: var(--line); }
+.form-card.known { border-color: rgba(91, 191, 127, .45); }
+.form-card.not-ready { opacity: .72; }
+.form-card[hidden] { display: none; }
+.fc-head { display: flex; gap: 12px; align-items: center; }
+.fc-pic { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; border: 1px solid var(--line); flex: none; }
+.fc-title { flex: 1; min-width: 0; } .fc-title b { font-size: 1.08rem; }
+.fc-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.fc-picks { display: flex; gap: 4px; align-items: center; flex: none; }
+.fc-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.fc-stats > div { background: var(--surface); border-radius: 8px; padding: 4px 8px; }
+.fc-stats small { display: block; color: var(--muted); font-size: .7rem; white-space: nowrap; } .fc-stats b { font-size: 1.05rem; }
+.fc-line { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 8px; font-size: .88rem; line-height: 1.4; }
+.fc-k { color: var(--faint); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; padding-top: 2px; }
+.fc-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.fc-tags .tag { font-size: .72rem; }
+.fc-tags .tag.eff { color: #f0a96b; background: rgba(240, 169, 107, .12); }
+.fc-tags .tag[class*="k-"] { color: var(--k); }
+.fc-sort { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+.fc-sort select { background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; font: inherit; font-size: .88rem; }
+@media (max-width: 600px) { .fc-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

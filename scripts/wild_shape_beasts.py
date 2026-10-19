@@ -57,7 +57,8 @@ def ddb_art(name: str) -> dict:
 
 def beast(c: dict) -> dict:
     cr = float(c["challenge_rating"])
-    speed = {k: v for k, v in (c.get("speed_all") or {}).items() if k in ("walk", "burrow", "climb", "fly", "swim") and v}
+    # "speed" is the stat block's own line; "speed_all" fills in default half-speed climb/swim for everything
+    speed = {k: v for k, v in (c.get("speed") or {}).items() if k in ("walk", "burrow", "climb", "fly", "swim") and v}
     ri = c.get("resistances_and_immunities") or {}
     senses = ", ".join(f"{s.title()} {c[s + '_range']} ft." for s in SENSES if c.get(s + "_range"))
     acts = c.get("actions") or []
@@ -71,7 +72,7 @@ def beast(c: dict) -> dict:
         "hp": c["hit_points"],
         "hit_dice": c.get("hit_dice") or "",
         "speed": speed,
-        "hover": bool((c.get("speed_all") or {}).get("hover")),
+        "hover": bool((c.get("speed") or {}).get("hover")),
         "abilities": {ABBR[k]: v for k, v in c["ability_scores"].items()},
         "saves": {ABBR[k]: v for k, v in (c.get("saving_throws") or {}).items()},
         "skills": {k.replace("_", " ").title().replace("Of", "of"): v for k, v in (c.get("skill_bonuses") or {}).items()},

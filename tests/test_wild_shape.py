@@ -158,3 +158,21 @@ def test_other_uses_of_wild_shape_come_from_the_sheet():
     names = [u["name"] for u in ws.other_uses(cole_sheet())]
     assert "Wild Companion" in names and any(n.startswith("Wild Resurgence") for n in names)
     assert len([n for n in names if n.startswith("Wild Resurgence")]) == 2  # the two actions, not the feature again
+
+
+def test_cards_show_the_druids_numbers_for_each_form():
+    sheet = cole_sheet()
+    rows = {r["name"]: r["card"] for r in ws.forms(sheet, set())}
+    bear = rows["Polar Bear"]
+    assert (bear["ac"], bear["temp_hp"], bear["hit"], bear["per_turn"]) == (17, 18, "+7", 18)
+    assert bear["attack"] == "2 × Rend (+7, 9 Slashing)" and bear["radiant"]
+    assert [s["label"] for s in bear["saves"]] == ["+5", "+2", "+7"]
+    assert rows["Rhinoceros"]["per_turn"] == 14 and "+9 Piercing if…" in rows["Rhinoceros"]["attack"]  # charge damage kept apart
+    assert rows["Swarm of Venomous Snakes"]["per_turn"] == 18  # the Bloodied alternative isn't added
+    assert rows["Badger"]["per_turn"] == 1  # flat damage, no dice
+    assert "Grappled" in rows["Giant Octopus"]["effects"] and rows["Giant Octopus"]["reactions"] == ["Ink Cloud (1/Day)"]
+
+
+def test_beast_speeds_are_the_stat_blocks_own():
+    assert ws.catalog_beast("Polar Bear")["speed"] == {"walk": 40, "swim": 40}
+    assert ws.catalog_beast("Wolf")["speed"] == {"walk": 40}

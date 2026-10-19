@@ -12,8 +12,7 @@
    "hit_dice": "1d6",
    "speed": {
     "walk": 30,
-    "climb": 30,
-    "swim": 15
+    "climb": 30
    },
    "hover": false,
    "abilities": {
@@ -69,9 +68,7 @@
    "hit_dice": "1d4 + 3",
    "speed": {
     "walk": 20,
-    "burrow": 5,
-    "climb": 10,
-    "swim": 10
+    "burrow": 5
    },
    "hover": false,
    "abilities": {
@@ -124,9 +121,7 @@
    "hit_dice": "1d4 - 1",
    "speed": {
     "walk": 5,
-    "fly": 30,
-    "climb": 2,
-    "swim": 2
+    "fly": 30
    },
    "hover": false,
    "abilities": {
@@ -177,8 +172,7 @@
    "hit_dice": "1d4",
    "speed": {
     "walk": 40,
-    "climb": 40,
-    "swim": 20
+    "climb": 40
    },
    "hover": false,
    "abilities": {
@@ -237,7 +231,6 @@
    "hit_dice": "1d4 + 1",
    "speed": {
     "walk": 20,
-    "climb": 10,
     "swim": 20
    },
    "hover": false,
@@ -295,9 +288,7 @@
    "hp": 4,
    "hit_dice": "1d8",
    "speed": {
-    "walk": 50,
-    "climb": 25,
-    "swim": 25
+    "walk": 50
    },
    "hover": false,
    "abilities": {
@@ -355,9 +346,7 @@
    "hit_dice": "1d6 + 1",
    "speed": {
     "walk": 10,
-    "fly": 60,
-    "climb": 5,
-    "swim": 5
+    "fly": 60
    },
    "hover": false,
    "abilities": {
@@ -410,7 +399,6 @@
    "hit_dice": "1d4 - 1",
    "speed": {
     "walk": 20,
-    "climb": 10,
     "swim": 20
    },
    "hover": false,
@@ -474,8 +462,7 @@
    "hit_dice": "1d6 + 1",
    "speed": {
     "walk": 30,
-    "climb": 30,
-    "swim": 15
+    "climb": 30
    },
    "hover": false,
    "abilities": {
@@ -531,9 +518,7 @@
    "hit_dice": "3d10 + 3",
    "speed": {
     "walk": 30,
-    "fly": 60,
-    "climb": 15,
-    "swim": 15
+    "fly": 60
    },
    "hover": false,
    "abilities": {
@@ -576,8 +561,7 @@
    "hit_dice": "1d8",
    "speed": {
     "walk": 40,
-    "climb": 30,
-    "swim": 20
+    "climb": 30
    },
    "hover": false,
    "abilities": {
@@ -630,9 +614,7 @@
    "hit_dice": "1d4 - 1",
    "speed": {
     "walk": 10,
-    "fly": 60,
-    "climb": 5,
-    "swim": 5
+    "fly": 60
    },
    "hover": false,
    "abilities": {
@@ -684,9 +666,7 @@
    "hp": 5,
    "hit_dice": "1d8 + 1",
    "speed": {
-    "walk": 50,
-    "climb": 25,
-    "swim": 25
+    "walk": 50
    },
    "hover": false,
    "abilities": {
@@ -743,9 +723,7 @@
    "hp": 3,
    "hit_dice": "1d6",
    "speed": {
-    "walk": 40,
-    "climb": 20,
-    "swim": 20
+    "walk": 40
    },
    "hover": false,
    "abilities": {
@@ -799,8 +777,7 @@
    "hit_dice": "1d4",
    "speed": {
     "walk": 20,
-    "climb": 20,
-    "swim": 10
+    "climb": 20
    },
    "hover": false,
    "abilities": {
@@ -856,7 +833,6 @@
    "hit_dice": "1d6",
    "speed": {
     "walk": 5,
-    "climb": 2,
     "swim": 30
    },
    "hover": false,
@@ -925,9 +901,7 @@
    "hit_dice": "1d4 - 1",
    "speed": {
     "walk": 5,
-    "fly": 60,
-    "climb": 2,
-    "swim": 2
+    "fly": 60
    },
    "hover": false,
    "abilities": {
@@ -986,7 +960,6 @@
    "hit_dice": "1d4 - 1",
    "speed": {
     "walk": 5,
-    "climb": 2,
     "swim": 40
    },
    "hover": false,
@@ -1043,8 +1016,7 @@
    "hit_dice": "1d4 - 1",
    "speed": {
     "walk": 20,
-    "climb": 20,
-    "swim": 10
+    "climb": 20
    },
    "hover": false,
    "abilities": {
@@ -1102,9 +1074,7 @@
    "hit_dice": "1d4",
    "speed": {
     "walk": 10,
-    "fly": 50,
-    "climb": 5,
-    "swim": 5
+    "fly": 50
    },
    "hover": false,
    "abilities": {
@@ -1161,9 +1131,7 @@
    "hp": 1,
    "hit_dice": "1d4 - 1",
    "speed": {
-    "walk": 10,
-    "climb": 5,
-    "swim": 5
+    "walk": 10
    },
    "hover": false,
    "abilities": {
@@ -1214,7 +1182,6 @@
    "hit_dice": "1d4 - 1",
    "speed": {
     "walk": 5,
-    "climb": 2,
     "swim": 20
    },
    "hover": false,
@@ -1274,8 +1241,7 @@
    "hit_dice": "1d4 - 1",
    "speed": {
     "walk": 20,
-    "climb": 20,
-    "swim": 10
+    "climb": 20
    },
    "hover": false,
    "abilities": {
@@ -1337,9 +1303,7 @@
    "hit_dice": "1d8 + 1",
    "speed": {
     "walk": 10,
-    "fly": 50,
-    "climb": 5,
-    "swim": 5
+    "fly": 50
    },
    "hover": false,
    "abilities": {
@@ -1397,8 +1361,7 @@
    "hit_dice": "1d4 - 1",
    "speed": {
     "walk": 30,
-    "climb": 30,
-    "swim": 15
+    "climb": 30
    },
    "hover": false,
    "abilities": {
@@ -1453,9 +1416,7 @@
    "hit_dice": "2d6",
    "speed": {
     "walk": 10,
-    "fly": 60,
-    "climb": 5,
-    "swim": 5
+    "fly": 60
    },
    "hover": false,
    "abilities": {
@@ -1512,9 +1473,7 @@
    "hp": 17,
    "hit_dice": "2d10 + 6",
    "speed": {
-    "walk": 50,
-    "climb": 25,
-    "swim": 25
+    "walk": 50
    },
    "hover": false,
    "abilities": {
@@ -1565,7 +1524,6 @@
    "hit_dice": "3d8",
    "speed": {
     "walk": 30,
-    "climb": 15,
     "swim": 30
    },
    "hover": false,
@@ -1624,8 +1582,7 @@
    "hit_dice": "2d6",
    "speed": {
     "walk": 30,
-    "climb": 30,
-    "swim": 15
+    "climb": 30
    },
    "hover": false,
    "abilities": {
@@ -1683,8 +1640,7 @@
    "hit_dice": "2d8",
    "speed": {
     "walk": 40,
-    "climb": 30,
-    "swim": 20
+    "climb": 30
    },
    "hover": false,
    "abilities": {
@@ -1738,9 +1694,7 @@
    "hp": 5,
    "hit_dice": "1d8 + 1",
    "speed": {
-    "walk": 40,
-    "climb": 20,
-    "swim": 20
+    "walk": 40
    },
    "hover": false,
    "abilities": {
@@ -1792,9 +1746,7 @@
    "hp": 11,
    "hit_dice": "2d8 + 2",
    "speed": {
-    "walk": 40,
-    "climb": 20,
-    "swim": 20
+    "walk": 40
    },
    "hover": false,
    "abilities": {
@@ -1849,9 +1801,7 @@
    "hp": 11,
    "hit_dice": "2d8 + 2",
    "speed": {
-    "walk": 40,
-    "climb": 20,
-    "swim": 20
+    "walk": 40
    },
    "hover": false,
    "abilities": {
@@ -1902,7 +1852,6 @@
    "hit_dice": "2d4",
    "speed": {
     "walk": 30,
-    "climb": 15,
     "swim": 30
    },
    "hover": false,
@@ -1953,9 +1902,7 @@
    "hp": 13,
    "hit_dice": "2d8 + 4",
    "speed": {
-    "walk": 40,
-    "climb": 20,
-    "swim": 20
+    "walk": 40
    },
    "hover": false,
    "abilities": {
@@ -2011,7 +1958,6 @@
    "hit_dice": "2d10 + 2",
    "speed": {
     "walk": 30,
-    "climb": 15,
     "swim": 30
    },
    "hover": false,
@@ -2069,9 +2015,7 @@
    "hp": 15,
    "hit_dice": "2d10 + 4",
    "speed": {
-    "walk": 40,
-    "climb": 20,
-    "swim": 20
+    "walk": 40
    },
    "hover": false,
    "abilities": {
@@ -2121,9 +2065,7 @@
    "hp": 11,
    "hit_dice": "2d10",
    "speed": {
-    "walk": 50,
-    "climb": 25,
-    "swim": 25
+    "walk": 50
    },
    "hover": false,
    "abilities": {
@@ -2176,9 +2118,7 @@
    "hit_dice": "2d8 + 6",
    "speed": {
     "walk": 30,
-    "burrow": 10,
-    "climb": 15,
-    "swim": 15
+    "burrow": 10
    },
    "hover": false,
    "abilities": {
@@ -2231,9 +2171,7 @@
    "hit_dice": "4d10",
    "speed": {
     "walk": 10,
-    "fly": 60,
-    "climb": 5,
-    "swim": 5
+    "fly": 60
    },
    "hover": false,
    "abilities": {
@@ -2284,8 +2222,7 @@
    "hit_dice": "2d6 + 2",
    "speed": {
     "walk": 30,
-    "climb": 30,
-    "swim": 15
+    "climb": 30
    },
    "hover": false,
    "abilities": {
@@ -2336,7 +2273,6 @@
    "hit_dice": "4d8",
    "speed": {
     "walk": 30,
-    "climb": 15,
     "swim": 30
    },
    "hover": false,
@@ -2404,8 +2340,7 @@
    "hit_dice": "3d10 + 3",
    "speed": {
     "walk": 40,
-    "climb": 40,
-    "swim": 20
+    "climb": 40
    },
    "hover": false,
    "abilities": {
@@ -2461,7 +2396,6 @@
    "hit_dice": "2d8 + 2",
    "speed": {
     "walk": 40,
-    "climb": 20,
     "swim": 40
    },
    "hover": false,
@@ -2515,8 +2449,7 @@
    "hit_dice": "2d8 + 2",
    "speed": {
     "walk": 40,
-    "climb": 40,
-    "swim": 20
+    "climb": 40
    },
    "hover": false,
    "abilities": {
@@ -2575,8 +2508,7 @@
    "hit_dice": "3d8",
    "speed": {
     "walk": 50,
-    "climb": 40,
-    "swim": 25
+    "climb": 40
    },
    "hover": false,
    "abilities": {
@@ -2635,9 +2567,7 @@
    "hit_dice": "3d8",
    "speed": {
     "walk": 10,
-    "fly": 60,
-    "climb": 5,
-    "swim": 5
+    "fly": 60
    },
    "hover": false,
    "abilities": {
@@ -2694,9 +2624,7 @@
    "hp": 13,
    "hit_dice": "2d10 + 2",
    "speed": {
-    "walk": 60,
-    "climb": 30,
-    "swim": 30
+    "walk": 60
    },
    "hover": false,
    "abilities": {
@@ -2747,9 +2675,7 @@
    "hit_dice": "2d10",
    "speed": {
     "walk": 5,
-    "fly": 30,
-    "climb": 2,
-    "swim": 2
+    "fly": 30
    },
    "hover": false,
    "abilities": {
@@ -2805,8 +2731,7 @@
    "hit_dice": "4d8 - 4",
    "speed": {
     "walk": 30,
-    "climb": 30,
-    "swim": 15
+    "climb": 30
    },
    "hover": false,
    "abilities": {
@@ -2862,9 +2787,7 @@
    "hit_dice": "2d8 + 2",
    "speed": {
     "walk": 10,
-    "fly": 50,
-    "climb": 5,
-    "swim": 5
+    "fly": 50
    },
    "hover": false,
    "abilities": {
@@ -2925,9 +2848,7 @@
    "hp": 11,
    "hit_dice": "2d8 + 2",
    "speed": {
-    "walk": 40,
-    "climb": 20,
-    "swim": 20
+    "walk": 40
    },
    "hover": false,
    "abilities": {
@@ -2986,8 +2907,7 @@
    "hit_dice": "3d8 + 6",
    "speed": {
     "walk": 30,
-    "climb": 30,
-    "swim": 15
+    "climb": 30
    },
    "hover": false,
    "abilities": {
@@ -3107,7 +3027,6 @@
    "hit_dice": "2d10 + 2",
    "speed": {
     "walk": 20,
-    "climb": 10,
     "swim": 30
    },
    "hover": false,
@@ -3166,8 +3085,7 @@
    "hit_dice": "3d10 + 3",
    "speed": {
     "walk": 40,
-    "climb": 30,
-    "swim": 20
+    "climb": 30
    },
    "hover": false,
    "abilities": {
@@ -3220,7 +3138,6 @@
    "hit_dice": "3d10",
    "speed": {
     "walk": 5,
-    "climb": 2,
     "swim": 40
    },
    "hover": false,
@@ -3282,9 +3199,7 @@
    "hit_dice": "5d8",
    "speed": {
     "walk": 10,
-    "fly": 50,
-    "climb": 5,
-    "swim": 5
+    "fly": 50
    },
    "hover": false,
    "abilities": {
@@ -3340,7 +3255,6 @@
    "hit_dice": "4d8 + 4",
    "speed": {
     "walk": 5,
-    "climb": 2,
     "swim": 30
    },
    "hover": false,
@@ -3403,9 +3317,7 @@
    "hit_dice": "3d8 + 6",
    "speed": {
     "walk": 20,
-    "fly": 20,
-    "climb": 10,
-    "swim": 10
+    "fly": 20
    },
    "hover": false,
    "abilities": {
@@ -3464,9 +3376,7 @@
    "hp": 19,
    "hit_dice": "3d10 + 3",
    "speed": {
-    "walk": 60,
-    "climb": 30,
-    "swim": 30
+    "walk": 60
    },
    "hover": false,
    "abilities": {
@@ -3517,8 +3427,7 @@
    "hit_dice": "3d10 + 6",
    "speed": {
     "walk": 40,
-    "climb": 30,
-    "swim": 20
+    "climb": 30
    },
    "hover": false,
    "abilities": {
@@ -3578,9 +3487,7 @@
    "hp": 22,
    "hit_dice": "3d10 + 6",
    "speed": {
-    "walk": 50,
-    "climb": 25,
-    "swim": 25
+    "walk": 50
    },
    "hover": false,
    "abilities": {
@@ -3638,9 +3545,7 @@
    "hp": 45,
    "hit_dice": "6d10 + 12",
    "speed": {
-    "walk": 50,
-    "climb": 25,
-    "swim": 25
+    "walk": 50
    },
    "hover": false,
    "abilities": {
@@ -3698,7 +3603,6 @@
    "hit_dice": "7d10 + 7",
    "speed": {
     "walk": 10,
-    "climb": 5,
     "swim": 60
    },
    "hover": false,
@@ -3763,8 +3667,7 @@
    "hit_dice": "4d10 + 4",
    "speed": {
     "walk": 30,
-    "climb": 30,
-    "swim": 15
+    "climb": 30
    },
    "hover": false,
    "abilities": {
@@ -3831,7 +3734,6 @@
    "hit_dice": "6d10 + 6",
    "speed": {
     "walk": 30,
-    "climb": 15,
     "swim": 30
    },
    "hover": false,
@@ -3895,9 +3797,7 @@
    "hp": 22,
    "hit_dice": "4d10",
    "speed": {
-    "walk": 50,
-    "climb": 25,
-    "swim": 25
+    "walk": 50
    },
    "hover": false,
    "abilities": {
@@ -3968,7 +3868,6 @@
    "hit_dice": "8d8 - 8",
    "speed": {
     "walk": 5,
-    "climb": 2,
     "swim": 40
    },
    "hover": false,
@@ -4028,9 +3927,7 @@
    "hp": 30,
    "hit_dice": "4d10 + 8",
    "speed": {
-    "walk": 40,
-    "climb": 20,
-    "swim": 20
+    "walk": 40
    },
    "hover": false,
    "abilities": {
@@ -4088,9 +3985,7 @@
    "hp": 51,
    "hit_dice": "6d10 + 18",
    "speed": {
-    "walk": 60,
-    "climb": 30,
-    "swim": 30
+    "walk": 60
    },
    "hover": false,
    "abilities": {
@@ -4146,9 +4041,7 @@
    "hp": 42,
    "hit_dice": "5d10 + 15",
    "speed": {
-    "walk": 40,
-    "climb": 20,
-    "swim": 20
+    "walk": 40
    },
    "hover": false,
    "abilities": {
@@ -4204,7 +4097,6 @@
    "hit_dice": "8d12 + 8",
    "speed": {
     "walk": 30,
-    "climb": 15,
     "swim": 30
    },
    "hover": false,
@@ -4266,7 +4158,6 @@
    "hit_dice": "6d10 + 12",
    "speed": {
     "walk": 5,
-    "climb": 2,
     "swim": 40
    },
    "hover": false,
@@ -4325,7 +4216,6 @@
    "hit_dice": "8d10 + 24",
    "speed": {
     "walk": 20,
-    "climb": 10,
     "swim": 40
    },
    "hover": false,
@@ -4385,7 +4275,6 @@
    "hit_dice": "5d10 + 15",
    "speed": {
     "walk": 40,
-    "climb": 20,
     "swim": 40
    },
    "hover": false,
@@ -4443,9 +4332,7 @@
    "hp": 45,
    "hit_dice": "6d10 + 12",
    "speed": {
-    "walk": 40,
-    "climb": 20,
-    "swim": 20
+    "walk": 40
    },
    "hover": false,
    "abilities": {
@@ -4495,9 +4382,7 @@
    "hp": 52,
    "hit_dice": "7d10 + 14",
    "speed": {
-    "walk": 40,
-    "climb": 20,
-    "swim": 20
+    "walk": 40
    },
    "hover": false,
    "abilities": {
@@ -4565,7 +4450,6 @@
    "hit_dice": "8d8",
    "speed": {
     "walk": 30,
-    "climb": 15,
     "swim": 30
    },
    "hover": false,
@@ -4621,9 +4505,7 @@
    "hp": 68,
    "hit_dice": "8d12 + 16",
    "speed": {
-    "walk": 30,
-    "climb": 15,
-    "swim": 15
+    "walk": 30
    },
    "hover": false,
    "abilities": {
@@ -4677,9 +4559,7 @@
    "hp": 52,
    "hit_dice": "7d10 + 14",
    "speed": {
-    "walk": 40,
-    "climb": 20,
-    "swim": 20
+    "walk": 40
    },
    "hover": false,
    "abilities": {
@@ -4738,7 +4618,6 @@
    "hit_dice": "12d12 + 12",
    "speed": {
     "walk": 5,
-    "climb": 2,
     "swim": 60
    },
    "hover": false,
@@ -4798,7 +4677,6 @@
    "hit_dice": "12d12 + 12",
    "speed": {
     "walk": 20,
-    "climb": 10,
     "swim": 80
    },
    "hover": false,
@@ -4860,9 +4738,7 @@
    "hp": 76,
    "hit_dice": "8d12 + 24",
    "speed": {
-    "walk": 40,
-    "climb": 20,
-    "swim": 20
+    "walk": 40
    },
    "hover": false,
    "abilities": {
@@ -4922,7 +4798,6 @@
    "hit_dice": "11d10 + 22",
    "speed": {
     "walk": 30,
-    "climb": 15,
     "swim": 30
    },
    "hover": false,
@@ -4985,7 +4860,6 @@
    "hit_dice": "9d12 + 27",
    "speed": {
     "walk": 30,
-    "climb": 15,
     "swim": 50
    },
    "hover": false,
@@ -5052,7 +4926,6 @@
    "hit_dice": "8d12 + 40",
    "speed": {
     "walk": 5,
-    "climb": 2,
     "swim": 60
    },
    "hover": false,
@@ -5114,9 +4987,7 @@
    "hp": 114,
    "hit_dice": "12d12 + 36",
    "speed": {
-    "walk": 50,
-    "climb": 25,
-    "swim": 25
+    "walk": 50
    },
    "hover": false,
    "abilities": {
@@ -5170,9 +5041,7 @@
    "hp": 126,
    "hit_dice": "11d12 + 55",
    "speed": {
-    "walk": 50,
-    "climb": 25,
-    "swim": 25
+    "walk": 50
    },
    "hover": false,
    "abilities": {
@@ -5232,8 +5101,7 @@
    "hit_dice": "16d12 + 64",
    "speed": {
     "walk": 40,
-    "climb": 40,
-    "swim": 20
+    "climb": 40
    },
    "hover": false,
    "abilities": {
@@ -5300,9 +5168,7 @@
    "hp": 136,
    "hit_dice": "13d12 + 52",
    "speed": {
-    "walk": 50,
-    "climb": 25,
-    "swim": 25
+    "walk": 50
    },
    "hover": false,
    "abilities": {

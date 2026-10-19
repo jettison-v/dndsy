@@ -30,7 +30,7 @@ CR_LABELS = {0.0: "0", 0.125: "1/8", 0.25: "1/4", 0.5: "1/2"}
 MOON_SPELLS = ((3, ("Cure Wounds", "Moonbeam", "Starry Wisp")), (5, ("Conjure Animals",)), (7, ("Fount of Moonlight",)), (9, ("Mass Cure Wounds",)))
 COSTLY = re.compile(r"worth|\bGP\b|consume", re.I)  # Beast Spells: no costly or consumed Material components
 ATTACK = re.compile(r"(Melee or Ranged|Melee|Ranged) Attack Roll:\s*([+−-]\d+)")
-DAMAGE = re.compile(r"(\d+) \((\d+d\d+(?:\s*[+−-]\s*\d+)?)\) (\w+) damage")
+DAMAGE = re.compile(r"(\d+)(?: \((\d+d\d+(?:\s*[+−-]\s*\d+)?)\))? (\w+) damage")
 SAVE = re.compile(r"(Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) Saving Throw:\s*DC (\d+)")
 
 
@@ -128,7 +128,7 @@ def _first_attack(beast: dict) -> str:
     for a in acts:
         m = DAMAGE.search(a["text"])
         if m:
-            return f"{a['name']}: {m.group(1)} ({m.group(2)}) {m.group(3)}"
+            return f"{a['name']}: {m.group(1)}" + (f" ({m.group(2)})" if m.group(2) else "") + f" {m.group(3)}"
     return acts[0]["name"] if acts else ""
 
 
@@ -152,6 +152,7 @@ def forms(sheet: dict, fav: set[str]) -> list[dict]:
             "key": key, "name": b["name"], "cr": b["cr"], "cr_label": b["cr_label"], "size": b.get("size", ""),
             "ac": b["ac"], "speed": _speed_text(b.get("speed") or {}), "moves": sorted(k for k in b.get("speed") or {} if k != "walk"),
             "image": b.get("image", ""), "known": is_known, "why_not": reason, "summary": _first_attack(b),
+            "card": card(sheet, b),
         })
     rows.sort(key=lambda r: (not r["known"], r["cr"], r["name"]))
     return rows
@@ -179,13 +180,13 @@ def label_for(ref: str) -> str:
 def _entry(e: dict, cost: str, d: dict) -> dict:
     """A stat block action as a Battle option."""
     text = e["text"]
-    att, dmg, save = ATTACK.search(text), DAMAGE.findall(text), SAVE.search(text)
+    att, dmg, save = ATTACK.search(text), _damages(text), SAVE.search(text)
     reach = re.search(r"(reach \d+ ft\.|range [\d/]+ ft\.)", text)
     meta = []
     if reach:
         meta.append(reach.group(1).rstrip("."))
     if dmg:
-        kinds = " + ".join(f"{a} ({b}) {c}" for a, b, c in dmg)
+        kinds = " + ".join(f"{a} ({b}) {c}" if b else f"{a} {c}" for a, b, c in dmg)
         meta.append(kinds + (" (or Radiant)" if d.get("lunar_radiance") and att else ""))
     if att and d.get("lunar_form"):
         meta.append("+2d10 Radiant once per turn")
@@ -201,7 +202,95 @@ def _clip(text: str, n: int = 110) -> str:
     return first if len(first) <= n else first[: n - 1].rsplit(" ", 1)[0] + "…"
 
 
-def shaped(sheet: dict, beast: dict) -> dict:
+NUMBERS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5}
+CONDITIONS = ("Grappled", "Restrained", "Prone", "Poisoned", "Blinded", "Frightened", "Stunned", "Paralyzed", "Incapacitated", "Charmed", "Deafened")
+
+
+def _damages(text: str) -> list[tuple[str, str, str]]:
+    """Each "9 (1d8 + 5) Slashing damage" in an attack, leaving out alternatives
+    ("…, or 6 (2d4) Piercing damage if the swarm is Bloodied")."""
+    return [m.groups() for m in DAMAGE.finditer(text) if not text[max(0, m.start() - 3):m.start()].endswith("or ")]
+
+
+def _hit_sentence(text: str) -> tuple[str, str]:
+    """The sentence with an attack's normal damage, and the rest (extra damage that
+    needs something more, like the Rhinoceros's charge, is in the rest)."""
+    m = DAMAGE.search(text)
+    if not m:
+        return text, ""
+    end = re.search(r"\.(\s|$)", text[m.end():])
+    cut = m.end() + (end.end() if end else len(text) - m.end())
+    return text[:cut], text[cut:]
+
+
+def _avg(text: str) -> int:
+    """Average damage of one hit, all damage types added up (not conditional extras)."""
+    return sum(int(a) for a, _, _ in _damages(_hit_sentence(text)[0]))
+
+
+def turn_attacks(beast: dict) -> dict:
+    """What the form does with its Attack action: Multiattack spelled out, average damage
+    if everything hits, and the best attack bonus."""
+    acts = [a for a in beast.get("actions") or [] if not a["name"].startswith("Multiattack")]
+    attacks = [a for a in acts if ATTACK.search(a["text"])]
+    best = max(attacks, key=lambda a: _avg(a["text"]), default=None)
+    multi = next((a for a in beast.get("actions") or [] if a["name"].startswith("Multiattack")), None)
+    parts = []
+    if multi:
+        first = re.split(r"(?<=\.)\s", multi["text"], maxsplit=1)[0]
+        for n, name in re.findall(r"\b(one|two|three|four|five) ([A-Z][\w' -]*?) attacks?\b", first):
+            a = next((x for x in acts if x["name"].lower().startswith(name.lower())), None)
+            if a:
+                parts.append((NUMBERS[n], a))
+        m = re.search(r"\bmakes (one|two|three|four|five) attacks\b", first)
+        if not parts and m and best:
+            parts.append((NUMBERS[m.group(1)], best))
+    if not parts and best:
+        parts.append((1, best))
+
+    def one(a):
+        base, rest = _hit_sentence(a["text"])
+        att, dmg, more = ATTACK.search(a["text"]), _damages(base), _damages(rest)
+        hit = att.group(2).replace("-", "−") if att else ""
+        dmg_text = " + ".join(f"{x} {k}" for x, _, k in dmg) + "".join(f"; +{x} {k} if…" for x, _, k in more)
+        return f"{a['name']} ({hit}{', ' + dmg_text if dmg_text else ''})"
+
+    return {
+        "text": ", ".join(f"{n} × {one(a)}" if n > 1 else one(a) for n, a in parts),
+        "per_turn": sum(n * _avg(a["text"]) for n, a in parts),
+        "hit": (ATTACK.search(best["text"]).group(2).replace("-", "−") if best else ""),
+        "hit_value": int(ATTACK.search(best["text"]).group(2).replace("−", "-")) if best else -99,
+    }
+
+
+def card(sheet: dict, beast: dict) -> dict:
+    """Everything the Wild Shape list shows for one form, with this druid's numbers."""
+    f = shaped(sheet, beast, lite=True)
+    d = f["druid"]
+    t = turn_attacks(beast)
+    extra = []
+    if d.get("lunar_form"):
+        extra.append("+2d10 Radiant once per turn")
+    if d.get("fury") == "Primal Strike":
+        extra.append(f"+{d['primal_strike']} elemental once per turn")
+    texts = " ".join(e["text"] for k in ("actions", "bonus_actions", "reactions") for e in beast.get(k) or [])
+    effects = [c for c in CONDITIONS if re.search(rf"\b{c}\b", texts)]
+    saves = {s["key"]: s for s in f["saves"]}
+    skills = [s for s in f["skills"] if s["name"] in ("Perception", "Stealth", "Athletics", "Acrobatics", "Survival")]
+    speed = beast.get("speed") or {}
+    return {
+        "ac": f["ac"], "ac_moon": d.get("moon") and f["ac"] > beast["ac"], "temp_hp": f["temp_hp"],
+        "attack": t["text"], "hit": t["hit"], "hit_value": t["hit_value"], "per_turn": t["per_turn"], "radiant": d.get("lunar_radiance", False), "extra": extra,
+        "speed": _speed_text(speed), "fastest": max(speed.values(), default=0), "senses": beast.get("senses", ""),
+        "resist": ", ".join(x for x in (beast.get("resist"), beast.get("immune")) if x),
+        "saves": [saves[k] for k in ("str", "dex", "con")], "skills": skills,
+        "traits": [x["name"] for x in beast.get("traits") or []],
+        "bonus": [x["name"] for x in beast.get("bonus_actions") or []], "reactions": [x["name"] for x in beast.get("reactions") or []],
+        "effects": effects,
+    }
+
+
+def shaped(sheet: dict, beast: dict, lite: bool = False) -> dict:
     """The druid in this form: the Beast's stat block with what Wild Shape keeps
     (Hit Points, Int/Wis/Cha, proficiencies, class features) and Circle of the Moon's
     changes. Each number says where it comes from."""
@@ -268,7 +357,8 @@ def shaped(sheet: dict, beast: dict) -> dict:
     # Spells you can still cast: Circle of the Moon Spells, or (Beast Spells, level 18) any
     # spell without a costly or consumed Material component
     castable = []
-    for o in views.options(sheet):
+    options = [] if lite else views.options(sheet)  # lite: the form's own numbers only (the list of forms)
+    for o in options:
         if o["kind"] != "spell" or o["cost"] not in cols:
             continue
         sp = next((x for x in sheet.get("spells") or [] if x["key"] == o["key"]), {})
@@ -281,7 +371,7 @@ def shaped(sheet: dict, beast: dict) -> dict:
         castable.append(o["name"])
         cols[o["cost"]].append({**o, "tags": [tag] + o["tags"], "source": "spell", "starred": False})
     # Class features and feats you keep (no weapons or items; nothing that casts a spell unless you can cast in a form)
-    for o in views.options(sheet):
+    for o in options:
         if o["kind"] != "feature" or o["cost"] not in cols or o["name"].startswith(("Wild Shape", "Unarmed Strike")):
             continue
         if not d.get("beast_spells") and ("Spell" in o["name"] or o["name"].startswith("Wild Companion")):
