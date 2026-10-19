@@ -13,6 +13,7 @@ import anthropic
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import spending
 from app.extraction import MODEL, ExtractionError, _cost, _norm, session_label, timeline
 from app.models import (
     Entity,
@@ -156,6 +157,7 @@ def regenerate(db: Session, entity: Entity, client_factory: Callable[[], anthrop
     db.add(run)
     db.commit()
     try:
+        spending.check(db)  # the monthly limit set on Manage › Usage
         client = (client_factory or anthropic.Anthropic)()
         with client.beta.messages.stream(
             model=MODEL,

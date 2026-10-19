@@ -7,6 +7,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app import spending, web
 from app.admin import _guard
 from app.db import get_db
 from app.extraction import session_label
@@ -30,9 +31,14 @@ def usage_summary(db: Session, now: datetime | None = None) -> dict:
     bought = float(db.scalar(select(func.coalesce(func.sum(CreditTopUp.amount_usd), 0.0))) or 0.0)
     total = _spent(db)
     done = db.scalar(select(func.count()).select_from(ExtractionRun).where(ExtractionRun.status == "done")) or 0
+    month_spent = _spent(db, month)
+    cap = spending.limit(db)
     return {
         "today": _spent(db, today),
-        "month": _spent(db, month),
+        "month": month_spent,
+        "limit": cap,
+        "limit_left": max(cap - month_spent, 0.0) if cap is not None else None,
+        "limit_reached": cap is not None and month_spent >= cap,
         "total": total,
         "bought": bought,
         "balance": bought - total if bought else None,
@@ -87,6 +93,24 @@ def add_topup(request: Request, amount: str = Form(...), added_on: date = Form(.
         db.add(CreditTopUp(amount_usd=round(amount, 2), added_on=added_on, note=note.strip()[:200]))
         db.commit()
         request.session["toast"] = f"Added ${amount:,.2f}"
+    return RedirectResponse("/admin/usage", status_code=303)
+
+
+@router.post("/usage/limit")
+def set_limit(request: Request, amount: str = Form(""), db: Session = Depends(get_db)):
+    user, denied = _guard(request)
+    if denied:
+        return denied
+    campaign = web.campaign(db)
+    value = parse_amount(amount) if amount.strip() else None
+    if campaign is None:
+        request.session["toast"] = "Import the campaign first."
+    elif amount.strip() and (value is None or value <= 0 or value > 10_000):
+        request.session["toast"] = "Enter a monthly limit between $0 and $10,000, or leave it blank for none."
+    else:
+        campaign.monthly_limit_usd = value
+        db.commit()
+        request.session["toast"] = f"Monthly limit set to ${value:,.2f}" if value is not None else "Monthly limit removed"
     return RedirectResponse("/admin/usage", status_code=303)
 
 

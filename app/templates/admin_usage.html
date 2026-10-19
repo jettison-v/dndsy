@@ -9,7 +9,7 @@
   <div class="stats">
     <div class="stat"><span>Estimated balance</span><b>{% if u.balance is not none %}${{ "%.2f" | format(u.balance) }}{% else %}—{% endif %}</b>
       <small>{% if u.bought %}of ${{ "%.2f" | format(u.bought) }} bought{% else %}add a top-up below{% endif %}</small></div>
-    <div class="stat"><span>This month</span><b>${{ "%.2f" | format(u.month) }}</b><small>today ${{ "%.2f" | format(u.today) }}</small></div>
+    <div class="stat{% if u.limit_reached %} attention{% endif %}"><span>This month</span><b>${{ "%.2f" | format(u.month) }}</b><small>{% if u.limit is not none %}{% if u.limit_reached %}limit of ${{ "%.2f" | format(u.limit) }} reached{% else %}${{ "%.2f" | format(u.limit_left) }} left of ${{ "%.2f" | format(u.limit) }}{% endif %} · {% endif %}today ${{ "%.2f" | format(u.today) }}</small></div>
     <div class="stat"><span>All time</span><b>${{ "%.2f" | format(u.total) }}</b><small>{{ u.drafts }} draft{{ "s" if u.drafts != 1 }}{% if u.average %} · about {{ "%.0f" | format(u.average * 100) }}¢ each{% endif %}</small></div>
   </div>
 
@@ -33,6 +33,15 @@
     </section>
 
     <aside>
+      <section class="section">
+        <h2>Monthly limit</h2>
+        <p class="hint" style="margin-top:6px">Once this month's spending reaches the limit, askdnd stops calling Claude (drafts, account checks, descriptions) and says why. It resets on the 1st. The Anthropic Console's own limit still applies.</p>
+        {% if u.limit_reached %}<div class="flash warn" style="margin-top:8px">Reached: new drafts are paused until the 1st or until you raise the limit.</div>{% endif %}
+        <form method="post" action="/admin/usage/limit" class="stack" style="margin-top:12px">
+          <label class="field">Limit per month <span class="note">(blank for none)</span><input type="text" name="amount" inputmode="decimal" placeholder="$10.00" value="{% if u.limit is not none %}{{ "%.2f" | format(u.limit) }}{% endif %}"></label>
+          <div><button class="btn">Save limit</button></div>
+        </form>
+      </section>
       <section class="section">
         <h2>Credit top-ups</h2>
         <p class="hint" style="margin-top:6px">Record what you buy in the Anthropic Console, for the balance estimate.</p>

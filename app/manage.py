@@ -108,8 +108,15 @@ def _status(db: Session, user: dict, keys: set[str]) -> dict[str, dict]:
                              "sub": "Refresh all, or check the D&D Beyond links" if failed or stale else ""}
     if "usage" in keys:
         u = usage_summary(db)
-        out["usage"] = {"text": f"${u['month']:.2f} this month", "attention": u["balance"] is not None and u["balance"] < 5,
-                        "sub": f"About ${u['balance']:.2f} left" if u["balance"] is not None else "Add a top-up to track the balance"}
+        low = u["balance"] is not None and u["balance"] < 5
+        if u["limit_reached"]:
+            sub = f"Monthly limit of ${u['limit']:.2f} reached: drafting is paused"
+        elif u["balance"] is not None:
+            sub = f"About ${u['balance']:.2f} left"
+        else:
+            sub = "Add a top-up to track the balance"
+        month = f"${u['month']:.2f} of ${u['limit']:.2f} this month" if u["limit"] is not None else f"${u['month']:.2f} this month"
+        out["usage"] = {"text": month, "attention": low or u["limit_reached"], "sub": sub}
     if "history" in keys:
         from app.models import Revision
 

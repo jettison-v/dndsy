@@ -84,6 +84,7 @@ class Campaign(Timestamped, Base):
     name: Mapped[str] = mapped_column(String(200))
     slug: Mapped[str] = mapped_column(String(100), unique=True)
     dm_name: Mapped[str] = mapped_column(String(200), default="", server_default="")
+    monthly_limit_usd: Mapped[float | None] = mapped_column(nullable=True)  # Claude spending cap (app/spending.py); blank = none
     members: Mapped[list["CampaignMember"]] = relationship(back_populates="campaign")
 
 

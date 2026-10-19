@@ -8,6 +8,7 @@ from collections.abc import Callable
 import anthropic
 from sqlalchemy.orm import Session
 
+from app import spending
 from app.extraction import (
     MODEL,
     ExtractionError,
@@ -94,6 +95,7 @@ def check(
     db.add(run)
     db.commit()
     try:
+        spending.check(db)  # the monthly limit set on Manage › Usage
         client = (client_factory or anthropic.Anthropic)()
         with client.beta.messages.stream(
             model=MODEL,

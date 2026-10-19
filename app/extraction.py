@@ -16,6 +16,7 @@ import anthropic
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
+from app import spending
 from app.relations import TYPES as REL_TYPES
 from app.relations import find as find_relation
 from app.models import (
@@ -556,6 +557,7 @@ def extract_session(
     db.add(run)
     db.commit()
     try:
+        spending.check(db)  # the monthly limit set on Manage › Usage
         messages = build_messages(db, session, source, background, background_images)
         data, response = call_claude(client_factory(), messages)
         run.input_tokens = (response.usage.input_tokens or 0) + (response.usage.cache_read_input_tokens or 0) + (

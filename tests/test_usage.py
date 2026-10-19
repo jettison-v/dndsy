@@ -68,3 +68,35 @@ def test_parse_amount():
     assert parse_amount("20.00") == 20.0
     assert parse_amount("twenty") is None
     assert parse_amount("nan") is None
+
+
+def test_monthly_limit_blocks_new_claude_calls(db):
+    from app import spending
+    from app.extraction import Source, extract_session
+    from app.models import Campaign
+    from tests.test_extraction import fake_client
+
+    runs(db)  # $0.12 this month
+    assert spending.reached(db) is None  # no limit set
+    db.scalar(select(Campaign)).monthly_limit_usd = 0.50
+    db.flush()
+    assert spending.reached(db) is None and usage_summary(db)["limit_left"] == pytest.approx(0.38)
+    db.scalar(select(Campaign)).monthly_limit_usd = 0.10
+    db.flush()
+    assert "reached the $0.10 monthly limit" in spending.reached(db)
+    assert usage_summary(db)["limit_reached"]
+    seen = []
+    run = extract_session(db, db.scalar(select(GameSession)), Source("notes", "x"), fake_client(seen=seen))
+    assert run.status == "error" and "monthly limit" in run.error and not seen  # Claude was never called
+
+
+def test_usage_page_sets_and_clears_the_limit(client, db):
+    from app.models import Campaign
+
+    runs(db)
+    page = client.post("/admin/usage/limit", data={"amount": "$0.10"}).text
+    assert "Monthly limit set to $0.10" in page and "limit of $0.10 reached" in page
+    assert db.scalar(select(Campaign)).monthly_limit_usd == 0.10
+    assert "Enter a monthly limit" in client.post("/admin/usage/limit", data={"amount": "lots"}).text
+    assert "Monthly limit removed" in client.post("/admin/usage/limit", data={"amount": ""}).text
+    assert db.scalar(select(Campaign)).monthly_limit_usd is None

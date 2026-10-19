@@ -186,6 +186,8 @@ details.conversation[open] > summary { margin-bottom: 12px; }
 .stat span { display: block; color: var(--muted); font-size: .88rem; }
 .stat b { display: block; font-size: 1.8rem; font-weight: 700; margin: 2px 0; }
 .stat small { color: var(--muted); }
+.stat.attention { box-shadow: inset 3px 0 0 var(--red); }
+.stat.attention small { color: var(--red); }
 @media (max-width: 800px) { .stats { grid-template-columns: 1fr; } }
 
 /* Tables and lists */
