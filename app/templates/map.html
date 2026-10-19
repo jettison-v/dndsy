@@ -3,9 +3,10 @@
 {% block content %}
 <main class="page wide map-page">
   <div class="title-row"><h1>Map</h1>{% if marker %}<span class="tag">{{ marker }}</span>{% endif %}
+    <button type="button" class="btn small map-menu-toggle" data-map-menu aria-pressed="false">Show map menu</button>
     <a class="btn small map-open" href="{{ src }}" target="_blank" rel="noopener" data-no-peek>Open full screen ↗</a></div>
-  <p class="hint">Search, zoom and click a marker for its lore. Places in the campaign record have a <b>Show on map</b> button that brings you here.</p>
-  <iframe class="map-frame" src="{{ src }}" title="Sword Coast interactive map"></iframe>
+  <p class="hint">Drag to move, scroll or pinch to zoom, click a marker for its lore. <b>Show map menu</b> brings back AideDD's search and info panel. Places in the campaign record have a <b>Show on map</b> button that brings you here.</p>
+  <div class="map-wrap" data-map-wrap><iframe class="map-frame" src="{{ src }}" title="Sword Coast interactive map"></iframe></div>
   <p class="note">{{ credit }} (<a href="https://www.aidedd.org/atlas/" target="_blank" rel="noopener" data-no-peek>aidedd.org</a>). Custom markers you add there are saved in your own browser only.</p>
 </main>
 {% endblock %}

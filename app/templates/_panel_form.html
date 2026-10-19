@@ -39,6 +39,21 @@
         {{ pick_note(c, "fav", ref, ref in picks.fav, picks.notes.get("fav|" ~ ref, ""), can_pick) }}
         {{ pick_note(c, "remind", ref, ref in picks.remind, picks.notes.get("remind|" ~ ref, ""), can_pick) }}
       </div>{% endif %}
+      {% if keep_options %}
+      <section class="keep-box">
+        <h3>Kept in Wild Shape</h3>
+        <p class="note">Your DM's rulings: what still works in a form. Saved for {{ c.entity.name }}, so it applies to every form until you change it.</p>
+        {% if can_pick %}
+        <form hx-post="/characters/{{ c.id }}/wild-shape/keep" hx-trigger="change" hx-target="#peek" hx-swap="innerHTML">
+          <input type="hidden" name="name" value="{{ beast_name }}">
+          {% for o in keep_options %}<label class="check keep-opt"><input type="checkbox" name="keep" value="{{ o.key }}"{{ ' checked' if o.on }}>
+            <span><b>{{ o.name }}</b> <span class="tag">{{ o.kind }}</span><br><span class="note">{{ o.what }}</span></span></label>{% endfor %}
+        </form>
+        {% else %}
+        <ul class="plain">{% for o in keep_options if o.on %}<li><b>{{ o.name }}</b> <span class="note">{{ o.what }}</span></li>{% else %}<li class="muted">Nothing kept.</li>{% endfor %}</ul>
+        {% endif %}
+      </section>
+      {% endif %}
       {% if can_pick and not known and not why_not %}<p class="note">To shift into it, learn it on D&amp;D Beyond first (you can swap one known form after each Long Rest), then refresh.</p>{% endif %}
 
       <h3>Abilities</h3>
@@ -58,7 +73,7 @@
         {% if b.immune %}<dt>Immunities</dt><dd>{{ b.immune | capitalize }}</dd>{% endif %}
         {% if b.condition_immune %}<dt>Condition immunities</dt><dd>{{ b.condition_immune | capitalize }}</dd>{% endif %}
       </dl>
-      <p class="note"><sup class="prof">●</sup> your proficiency, kept in Wild Shape. Item bonuses (like a Luckstone) aren't included: they depend on whether your gear merges into the form.</p>
+      <p class="note"><sup class="prof">●</sup> your proficiency, kept in Wild Shape. Worn items count only when ticked under Kept in Wild Shape.</p>
     </aside>
 
     <div class="fm-main">

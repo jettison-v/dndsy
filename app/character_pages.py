@@ -158,7 +158,7 @@ def character_page(request: Request, character_id: int, db: Session = Depends(ge
         # Actions tab: everything except leveled spells (those are on the Spells tab), like D&D Beyond
         ctx["options"] = [o for o in views.options(ctx["sheet"], ctx["picks"]["star"])
                           if o["kind"] != "spell" or (o["tags"] and o["tags"][0] == "cantrip" and o["hit"])]
-        ctx["forms"] = ws.forms(ctx["sheet"], ctx["picks"]["fav"])
+        ctx["forms"] = ws.forms(ctx["sheet"], ctx["picks"]["fav"], ch.wild_shape_keep)
         ctx["ws_other_uses"] = ws.other_uses(ctx["sheet"]) if ctx["druid"] else []
     ctx |= player_notes.page_context(db, ch, user, ctx["sheet"])
     return _page(request, "character.html", {**ctx, "others": _mine_first(db, user, chars.campaign_characters(db, ch.entity.campaign_id))})
@@ -182,7 +182,7 @@ def _battle_ctx(db: Session, ch: Character, user: dict) -> dict:
         ctx["known_forms"] = _known_forms(ctx["sheet"]) if ctx["druid"] else []
         beast = ws.beast_for(ctx["sheet"], ch.wild_shape) if ch.wild_shape and ctx["druid"] else None
         if beast:
-            ctx["form"] = ws.shaped(ctx["sheet"], beast)
+            ctx["form"] = ws.shaped(ctx["sheet"], beast, keep=ch.wild_shape_keep)
             ctx["columns"] = ctx["form"]["columns"]
     ctx["party"] = _party_rows(db, user)
     ctx["game_mode_seconds"] = GAME_MODE_SECONDS
@@ -355,9 +355,28 @@ def form_panel(request: Request, character_id: int, name: str, db: Session = Dep
         return HTMLResponse("", status_code=404)
     known = any(f["name"].lower() == beast["name"].lower() for f in _known_forms(ctx["sheet"]))
     return templates.TemplateResponse(request, "_panel_form.html", {
-        **ctx, "f": ws.shaped(ctx["sheet"], beast), "ref": f"form:{beast['name']}", "known": known,
+        **ctx, "f": ws.shaped(ctx["sheet"], beast, keep=ch.wild_shape_keep), "ref": f"form:{beast['name']}", "known": known,
+        "keep_options": ws.options_for(ctx["sheet"] or {}, ch.wild_shape_keep), "beast_name": beast["name"],
         "why_not": ws.why_not(ctx["druid"], beast), "credit": ws.credit() if beast.get("source") == "SRD 5.2" else "",
         "current": (ch.wild_shape or "").lower() == beast["name"].lower()})
+
+
+@router.post("/characters/{character_id:int}/wild-shape/keep")
+async def set_wild_shape_keep(request: Request, character_id: int, db: Session = Depends(get_db)):
+    """The character's player records what the DM lets them keep in Wild Shape (items, class
+    features). Saved on the character, so it applies to every form until changed. Returns
+    the form's modal again with the new numbers."""
+    user, ch, stop = _load(request, db, character_id)
+    if stop:
+        return stop
+    if not picks.can_edit(db, user, ch):
+        return _forbidden(request, "Only this character's player can do that.")
+    form = await request.form()
+    sheet = chars.character_summary(ch) or {}
+    allowed = {o["key"] for o in ws.options_for(sheet, [])}
+    ch.wild_shape_keep = sorted(k for k in form.getlist("keep") if k in allowed)
+    db.commit()
+    return form_panel(request, character_id, str(form.get("name", "")), db)
 
 
 @router.post("/characters/{character_id:int}/wild-shape")

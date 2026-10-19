@@ -56,6 +56,7 @@
     {% endcall %}
     {% call q("How does the Wild Shape tab work?") %}
       <p>For druids, it lists the Beasts you could learn now (from the free 2024 rules, with D&amp;D Beyond's pictures), filtered by your Druid level: the Challenge Rating limit (higher with Circle of the Moon), and no Fly Speed before level 8. <b>Known</b> shows the forms you've picked on D&amp;D Beyond; ♥ <b>Shortlist</b> is for comparing. Click a form to see it as <i>you</i>: the Beast's Strength, Dexterity, Constitution and attacks with your Hit Points, Intelligence, Wisdom, Charisma and proficiencies, plus Circle of the Moon's AC, Temporary Hit Points and Radiant option, laid out as battle cards.</p>
+      <p>Your DM may let you keep some things in a form, such as Unarmored Defense, Unarmored Movement, or a worn Luckstone or Insignia of Claws. Tick them under <b>Kept in Wild Shape</b> in any form's window: the numbers update for every form, and the choice is saved until you change it.</p>
       <p>On <b>Battle</b>, the Wild Shape buttons switch the page to a known form until you press Normal. Everyone at the table sees which form you're in. askdnd informs; the DM makes the rulings (for example, which of your other features work in a form).</p>
     {% endcall %}
     {% call q("What are the dotted underlines in descriptions?") %}
@@ -96,6 +97,13 @@
     {% endcall %}
     {% call q("Are session recordings or transcripts stored?") %}
       <p>No. Transcripts are filtered on the admin's own computer, only game content is sent to Claude, and only the extracted story (recaps, key moments, the campaign record) is kept.</p>
+    {% endcall %}
+    {% call q("What if something gets changed or deleted by mistake?") %}
+      <p>askdnd keeps a <b>history of every change</b> to the campaign record, the glossary, sessions, characters, people and players' notes: what it was, what it became, who changed it and how. Reviewers and admins can open <b>Manage › History</b> and press <b>Restore</b> to put an earlier version back (deleted notes and glossary terms can be brought back too). Each entry also links to its own history. Players' notes stay hidden from the DM there as well.</p>
+      <p>Imports on <b>Manage › Data</b> show a preview before anything is saved, and a whole import can be undone afterwards.</p>
+    {% endcall %}
+    {% call q("Is askdnd backed up?") %}
+      <p>Yes. Every night (3 am Pacific) the whole database is copied to a private Amazon S3 storage bucket, and the last 30 days of copies are kept. That copy lives outside Railway, where askdnd runs, so even a problem there wouldn't lose the campaign. The backup job has its own key that can only reach its backups folder. Restoring one is a deliberate step the admin takes with the restore script; it's been tested.</p>
     {% endcall %}
     {% call q("Does using askdnd cost anything?") %}
       <p>Not for players. Claude is paid per use by the admin, with a monthly limit: drafting a recap costs a few cents, and regenerating a Campaign description about 1–2¢. Admins can see spending on Manage › Usage.</p>

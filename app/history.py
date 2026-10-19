@@ -35,7 +35,7 @@ TRACKED = {
     Entity: ("name", "summary", "quest_open", "status"),
     GlossaryTerm: ("term", "description"),
     GameSession: ("title", "played_on"),
-    Character: ("ddb_id", "player_name", "owner_id"),
+    Character: ("ddb_id", "player_name", "owner_id", "wild_shape_keep"),
     PlayerNote: ("title", "status", "data"),
     CharacterPick: ("note",),
     Campaign: ("name", "dm_name"),
@@ -47,7 +47,8 @@ SOURCES = {"edit": "Edited", "import": "Import", "claude": "Claude rewrite accep
 FIELD_LABELS = {"summary": "Description", "quest_open": "Quest", "status": "Published", "name": "Name", "term": "Term",
                 "description": "Description", "title": "Title", "played_on": "Date played", "ddb_id": "D&D Beyond link",
                 "player_name": "Player name", "owner_id": "Played by", "data": "Content", "note": "Note",
-                "dm_name": "DM name", "access": "Access", "is_dm": "DM", "deleted": "Deleted"}
+                "dm_name": "DM name", "access": "Access", "is_dm": "DM", "deleted": "Deleted",
+                "wild_shape_keep": "Kept in Wild Shape"}
 
 _actor: contextvars.ContextVar[str] = contextvars.ContextVar("history_actor", default="")
 _source: contextvars.ContextVar[tuple[str, str | None]] = contextvars.ContextVar("history_source", default=("edit", None))

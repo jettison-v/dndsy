@@ -132,7 +132,7 @@ def _first_attack(beast: dict) -> str:
     return acts[0]["name"] if acts else ""
 
 
-def forms(sheet: dict, fav: set[str]) -> list[dict]:
+def forms(sheet: dict, fav: set[str], keep=None) -> list[dict]:
     """Every Beast the druid could learn now, plus anything they know or shortlisted."""
     d = druid(sheet)
     if not d:
@@ -152,7 +152,7 @@ def forms(sheet: dict, fav: set[str]) -> list[dict]:
             "key": key, "name": b["name"], "cr": b["cr"], "cr_label": b["cr_label"], "size": b.get("size", ""),
             "ac": b["ac"], "speed": _speed_text(b.get("speed") or {}), "moves": sorted(k for k in b.get("speed") or {} if k != "walk"),
             "image": b.get("image", ""), "known": is_known, "why_not": reason, "summary": _first_attack(b),
-            "card": card(sheet, b),
+            "card": card(sheet, b, keep),
         })
     rows.sort(key=lambda r: (not r["known"], r["cr"], r["name"]))
     return rows
@@ -192,7 +192,10 @@ def _entry(e: dict, cost: str, d: dict) -> dict:
         meta.append("+2d10 Radiant once per turn")
     if att and d.get("fury") == "Primal Strike":
         meta.append(f"+{d['primal_strike']} Cold/Fire/Lightning/Thunder once per turn")
-    hit = att.group(2).replace("-", "−") if att else (f"DC {save.group(2)} {save.group(1)[:3]}" if save else "")
+    if att and d.get("damage_bonus") and dmg:
+        meta.append(f"{_signed(d['damage_bonus'])} damage (worn item)")
+    hit = _signed(int(att.group(2).replace("−", "-")) + d.get("attack_bonus", 0)) if att else (
+        f"DC {save.group(2)} {save.group(1)[:3]}" if save else "")
     return {"key": f"beast:{e['name']}", "name": e["name"], "cost": cost, "hit": hit, "meta": " · ".join(meta) or _clip(text),
             "text": text, "tags": ["Form"], "uses": None, "spends": [], "starred": False, "source": "form"}
 
@@ -228,9 +231,9 @@ def _avg(text: str) -> int:
     return sum(int(a) for a, _, _ in _damages(_hit_sentence(text)[0]))
 
 
-def turn_attacks(beast: dict) -> dict:
+def turn_attacks(beast: dict, atk: int = 0, dmg_bonus: int = 0) -> dict:
     """What the form does with its Attack action: Multiattack spelled out, average damage
-    if everything hits, and the best attack bonus."""
+    if everything hits, and the best attack bonus (with any kept item's bonus)."""
     acts = [a for a in beast.get("actions") or [] if not a["name"].startswith("Multiattack")]
     attacks = [a for a in acts if ATTACK.search(a["text"])]
     best = max(attacks, key=lambda a: _avg(a["text"]), default=None)
@@ -251,23 +254,24 @@ def turn_attacks(beast: dict) -> dict:
     def one(a):
         base, rest = _hit_sentence(a["text"])
         att, dmg, more = ATTACK.search(a["text"]), _damages(base), _damages(rest)
-        hit = att.group(2).replace("-", "−") if att else ""
-        dmg_text = " + ".join(f"{x} {k}" for x, _, k in dmg) + "".join(f"; +{x} {k} if…" for x, _, k in more)
+        hit = _signed(int(att.group(2).replace("−", "-")) + atk) if att else ""
+        dmg_text = " + ".join(f"{int(x) + (dmg_bonus if i == 0 else 0)} {k}" for i, (x, _, k) in enumerate(dmg)) + \
+            "".join(f"; +{x} {k} if…" for x, _, k in more)
         return f"{a['name']} ({hit}{', ' + dmg_text if dmg_text else ''})"
 
     return {
         "text": ", ".join(f"{n} × {one(a)}" if n > 1 else one(a) for n, a in parts),
-        "per_turn": sum(n * _avg(a["text"]) for n, a in parts),
-        "hit": (ATTACK.search(best["text"]).group(2).replace("-", "−") if best else ""),
-        "hit_value": int(ATTACK.search(best["text"]).group(2).replace("−", "-")) if best else -99,
+        "per_turn": sum(n * (_avg(a["text"]) + (dmg_bonus if _damages(a["text"]) else 0)) for n, a in parts),
+        "hit": _signed(int(ATTACK.search(best["text"]).group(2).replace("−", "-")) + atk) if best else "",
+        "hit_value": int(ATTACK.search(best["text"]).group(2).replace("−", "-")) + atk if best else -99,
     }
 
 
-def card(sheet: dict, beast: dict) -> dict:
+def card(sheet: dict, beast: dict, keep=None) -> dict:
     """Everything the Wild Shape list shows for one form, with this druid's numbers."""
-    f = shaped(sheet, beast, lite=True)
+    f = shaped(sheet, beast, lite=True, keep=keep)
     d = f["druid"]
-    t = turn_attacks(beast)
+    t = turn_attacks(beast, d.get("attack_bonus", 0), d.get("damage_bonus", 0))
     extra = []
     if d.get("lunar_form"):
         extra.append("+2d10 Radiant once per turn")
@@ -277,7 +281,7 @@ def card(sheet: dict, beast: dict) -> dict:
     effects = [c for c in CONDITIONS if re.search(rf"\b{c}\b", texts)]
     saves = {s["key"]: s for s in f["saves"]}
     skills = [s for s in f["skills"] if s["name"] in ("Perception", "Stealth", "Athletics", "Acrobatics", "Survival")]
-    speed = beast.get("speed") or {}
+    speed = f["speed_dict"]
     return {
         "ac": f["ac"], "ac_moon": d.get("moon") and f["ac"] > beast["ac"], "temp_hp": f["temp_hp"],
         "attack": t["text"], "hit": t["hit"], "hit_value": t["hit_value"], "per_turn": t["per_turn"], "radiant": d.get("lunar_radiance", False), "extra": extra,
@@ -290,11 +294,38 @@ def card(sheet: dict, beast: dict) -> dict:
     }
 
 
-def shaped(sheet: dict, beast: dict, lite: bool = False) -> dict:
+def kept(sheet: dict, keep) -> dict:
+    """What the player keeps in Wild Shape (the DM's ruling, saved per character):
+    totals of worn items' bonuses, and class features that change the numbers."""
+    opts = sheet.get("form_options") or {"items": [], "features": []}
+    keep = set(keep or [])
+    items = [i for i in opts["items"] if i["key"] in keep]
+    total = {k: sum(i["effects"].get(k, 0) for i in items) for k in ("saves", "checks", "initiative", "ac", "attack", "damage", "speed")}
+    by = {k: [(i["name"], i["effects"][k]) for i in items if i["effects"].get(k)] for k in total}
+    feats = {f["key"]: f for f in opts["features"] if f["key"] in keep}
+    return {"total": total, "by": by, "features": feats, "items": items,
+            "names": [i["name"] for i in items] + [f["name"] for f in feats.values()]}
+
+
+def options_for(sheet: dict, keep) -> list[dict]:
+    """The toggles to show: each item or feature, what it does in a form, and whether it's kept."""
+    keep = set(keep or [])
+    labels = {"saves": "saves", "checks": "ability checks", "initiative": "Initiative", "ac": "AC",
+              "attack": "to hit with natural weapons", "damage": "damage with natural weapons", "speed": "speed"}
+    opts = sheet.get("form_options") or {"items": [], "features": []}
+    out = [{"key": f["key"], "name": f["name"], "what": f["text"], "kind": "Class feature", "on": f["key"] in keep} for f in opts["features"]]
+    out += [{"key": i["key"], "name": i["name"], "kind": "Worn item", "on": i["key"] in keep,
+             "what": ", ".join(f"{_signed(v)} {labels[k]}" for k, v in i["effects"].items())} for i in opts["items"]]
+    return out
+
+
+def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
     """The druid in this form: the Beast's stat block with what Wild Shape keeps
     (Hit Points, Int/Wis/Cha, proficiencies, class features) and Circle of the Moon's
     changes. Each number says where it comes from."""
     d = druid(sheet) or {"level": 0, "moon": False, "temp_hp": 0, "lunar_radiance": False, "toughness": False, "uses": None, "hours": 0}
+    kp = kept(sheet, keep)
+    d = {**d, "attack_bonus": kp["total"]["attack"], "damage_bonus": kp["total"]["damage"]}
     pb = sheet.get("proficiency_bonus") or 2
     mine = {a["key"][:3]: a["score"] for a in sheet.get("abilities") or []}
     scores = {k: (mine.get(k, 10) if k in KEPT else (beast.get("abilities") or {}).get(k, 10)) for k, _, _ in ABILITIES}
@@ -312,6 +343,7 @@ def shaped(sheet: dict, beast: dict, lite: bool = False) -> dict:
             parts.append(("Your Proficiency Bonus", pb))
         if k == "con" and d["toughness"]:
             parts.append(("Increased Toughness (Wisdom modifier)", wis))
+        parts += kp["by"]["saves"]
         yours = sum(v for _, v in parts)
         stat = (beast.get("saves") or {}).get(k)
         use_form = stat is not None and stat > yours
@@ -323,14 +355,14 @@ def shaped(sheet: dict, beast: dict, lite: bool = False) -> dict:
     for name, ab in SKILL_ABILITY.items():
         level = (my_skills.get(name) or {}).get("proficiency", "")
         prof = pb * 2 if level == "expertise" else pb if level == "proficient" else 0
-        yours = _mod(scores[ab]) + prof
+        yours = _mod(scores[ab]) + prof + kp["total"]["checks"]
         stat = (beast.get("skills") or {}).get(name)
         if not prof and stat is None:
             continue
         use_form = stat is not None and stat > yours
         skills.append({"name": name, "bonus": stat if use_form else yours, "label": _signed(stat if use_form else yours),
                        "from": "form" if use_form else ("your expertise" if level == "expertise" else "your proficiency")})
-    perception = next((s["bonus"] for s in skills if s["name"] == "Perception"), _mod(scores["wis"]))
+    perception = next((s["bonus"] for s in skills if s["name"] == "Perception"), _mod(scores["wis"]) + kp["total"]["checks"])
 
     ac_parts = [(f"The {beast['name']}'s AC" + (f" ({beast['ac_note']})" if beast.get("ac_note") else ""), beast["ac"])]
     ac = beast["ac"]
@@ -338,6 +370,20 @@ def shaped(sheet: dict, beast: dict, lite: bool = False) -> dict:
         moon_ac = 13 + wis
         ac_parts.append((f"Circle Forms: 13 + your Wisdom modifier ({_signed(wis)}) = {moon_ac}", moon_ac))
         ac = max(ac, moon_ac)
+    ud = kp["features"].get("unarmored-defense")
+    if ud:
+        extra = _mod(scores.get(ud.get("ability", "wis"), 10))
+        ud_ac = 10 + _mod(scores["dex"]) + extra
+        ac_parts.append((f"Unarmored Defense (kept): 10 + the form's Dexterity ({_signed(_mod(scores['dex']))}) + "
+                         f"{ud.get('ability', 'wis').title()} ({_signed(extra)}) = {ud_ac}", ud_ac))
+        ac = max(ac, ud_ac)
+    for name, v in kp["by"]["ac"]:
+        ac_parts.append((f"{name} (worn): {_signed(v)}", v))
+        ac += v
+    speed = dict(beast.get("speed") or {})
+    um = kp["features"].get("unarmored-movement")
+    for k in speed:
+        speed[k] += (um.get("bonus", 0) if um else 0) + kp["total"]["speed"]
 
     hp = sheet.get("hit_points") or {}
     cols = {"Action": [], "Bonus action": [], "Reaction": []}
@@ -404,12 +450,15 @@ def shaped(sheet: dict, beast: dict, lite: bool = False) -> dict:
         elif not d["fury"]:
             notes.append(f"Elemental Fury: if you chose Primal Strike, this form's attacks can add {d['primal_strike']} Cold, Fire, "
                          "Lightning or Thunder damage once on each of your turns. (Potent Spellcasting only affects cantrips.)")
+    if kp["names"]:
+        notes.append(f"Kept by your DM's ruling (and included above): {', '.join(kp['names'])}.")
     notes.append("Your other class features and feats stay with you (marked Yours). Whether one works in this body is the DM's call.")
 
     return {
         "beast": beast, "druid": d, "ac": ac, "ac_parts": ac_parts, "temp_hp": d["temp_hp"], "hp": hp,
-        "speed": _speed_text(beast.get("speed") or {}), "abilities": abilities, "saves": saves, "skills": skills,
-        "passive_perception": 10 + perception, "initiative": _signed(_mod(scores["dex"])),
+        "speed": _speed_text(speed), "speed_dict": speed, "abilities": abilities, "saves": saves, "skills": skills,
+        "passive_perception": 10 + perception, "initiative": _signed(_mod(scores["dex"]) + kp["total"]["initiative"]),
+        "kept": kp,
         "columns": {k: {"shown": v, "all": v, "count": len(v)} for k, v in cols.items()},
         "traits": beast.get("traits") or [], "notes": notes, "castable": castable,
         "magic_action": bool(castable) or d.get("beast_spells", False),

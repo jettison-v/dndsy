@@ -176,3 +176,33 @@ def test_cards_show_the_druids_numbers_for_each_form():
 def test_beast_speeds_are_the_stat_blocks_own():
     assert ws.catalog_beast("Polar Bear")["speed"] == {"walk": 40, "swim": 40}
     assert ws.catalog_beast("Wolf")["speed"] == {"walk": 40}
+
+
+def test_kept_items_and_features_change_the_numbers():
+    sheet = cole_sheet(level=4, moon=False)  # no Circle Forms AC, so Unarmored Defense can win
+    opts = {o["key"]: o for o in ws.options_for(sheet, [])}
+    assert {"unarmored-defense", "unarmored-movement"} <= set(opts)
+    luck = next(k for k, o in opts.items() if "Luckstone" in o["name"])
+    claws = next(k for k, o in opts.items() if o["name"] == "Insignia of Claws")
+    wolf = ws.catalog_beast("Wolf")
+    plain = ws.shaped(sheet, wolf, lite=True)
+    kept = ws.shaped(sheet, wolf, lite=True, keep=["unarmored-defense", "unarmored-movement", luck, claws])
+    assert plain["ac"] == wolf["ac"] and kept["ac"] == 10 + 2 + 4  # 10 + the wolf's Dex +2 + Cole's Wis +4
+    assert kept["speed_dict"]["walk"] == wolf["speed"]["walk"] + 10
+    assert [s["bonus"] - p["bonus"] for s, p in zip(kept["saves"], plain["saves"], strict=True)].count(1) >= 4  # Luckstone +1 (unless the form's own is higher)
+    assert kept["initiative"] == "+3" and plain["initiative"] == "+2"
+    bite = next(o for o in kept["columns"]["Action"]["shown"] if o["name"] == "Bite")
+    assert bite["hit"] == "+5" and "+1 damage (worn item)" in bite["meta"]  # wolf +4, Insignia of Claws +1
+    bear = ws.card(sheet, ws.catalog_beast("Black Bear"), keep=[claws])
+    assert bear["per_turn"] == ws.card(sheet, ws.catalog_beast("Black Bear"))["per_turn"] + 2  # two attacks, +1 each
+
+
+def test_keep_choices_are_saved_by_the_player_and_shown_to_others(db, cole, player, dm, admin):
+    url = f"/characters/{cole.id}"
+    r = player.post(f"{url}/wild-shape/keep", data={"name": "Polar Bear", "keep": ["unarmored-movement", "not-a-thing"]})
+    assert r.status_code == 200 and "Kept in Wild Shape" in r.text
+    db.refresh(cole)
+    assert cole.wild_shape_keep == ["unarmored-movement"]  # unknown keys are dropped
+    assert "50 ft." in player.get(f"{url}/form?name=Polar Bear").text  # 40 + 10
+    assert 'name="keep"' not in admin.get(f"{url}/form?name=Polar Bear").text  # others see, can't change
+    assert dm.post(f"{url}/wild-shape/keep", data={"name": "Polar Bear", "keep": []}).status_code == 403

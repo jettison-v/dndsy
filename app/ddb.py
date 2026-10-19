@@ -22,7 +22,7 @@ CHARACTER_URL = "https://character-service.dndbeyond.com/character/v5/character/
 SHEET_URL = "https://www.dndbeyond.com/characters/{id}"
 USER_AGENT = "askdnd/2 (private table companion; +https://beta.askdnd.ai)"
 TIMEOUT_SECONDS = 15
-PARSER_VERSION = 12  # bump when the summary shape changes; stored summaries are re-parsed
+PARSER_VERSION = 13  # bump when the summary shape changes; stored summaries are re-parsed
 
 
 class DdbError(Exception):
@@ -1226,6 +1226,43 @@ class _Sheet:
                 add("reaction", f"Reaction spell: {sp['name']}" + (f", {when}" if when else ""), ", ".join(sp["sources"]), key=sp["key"])
         return out
 
+    # What a druid might keep in Wild Shape, if the DM allows it (app/wild_shape.py):
+    # worn magic items that change numbers a form uses, and class features that do.
+    FORM_ITEM_EFFECTS = {
+        ("bonus", "saving-throws"): "saves", ("bonus", "ability-checks"): "checks", ("bonus", "initiative"): "initiative",
+        ("bonus", "armor-class"): "ac", ("bonus", "natural-attacks"): "attack", ("damage", "natural-attacks"): "damage",
+        ("bonus", "speed"): "speed", ("bonus", "speed-walking"): "speed",
+    }
+
+    def form_options(self) -> dict:
+        by_def = {}
+        for i in self.items:
+            df = i.get("definition") or {}
+            if df.get("id") and i.get("equipped") and (i.get("isAttuned") or not df.get("canAttune")):
+                by_def[df["id"]] = i
+        items: dict[str, dict] = {}
+        for m in (self.d.get("modifiers") or {}).get("item") or []:
+            what = self.FORM_ITEM_EFFECTS.get((m.get("type"), m.get("subType")))
+            i = by_def.get(m.get("componentId"))
+            value = m.get("fixedValue") if m.get("fixedValue") is not None else m.get("value")
+            if not what or i is None or not isinstance(value, int) or (m.get("restriction") or "").strip():
+                continue
+            entry = items.setdefault(f"item:{i.get('id')}", {"key": f"item:{i.get('id')}", "name": i["definition"]["name"], "effects": {}})
+            entry["effects"][what] = entry["effects"].get(what, 0) + value
+        features = []
+        class_mods = (self.d.get("modifiers") or {}).get("class") or []
+        ud = next((m for m in class_mods if m.get("type") == "set" and m.get("subType") == "unarmored-armor-class"), None)
+        if ud:
+            ability = ABILITY_KEY.get(ud.get("statId"), "wisdom")[:3]
+            features.append({"key": "unarmored-defense", "name": "Unarmored Defense", "ability": ability,
+                             "text": f"AC = 10 + the form's Dexterity + {'your' if ability in ('int', 'wis', 'cha') else 'the form' + chr(39) + 's'} "
+                                     f"{ {'wis': 'Wisdom', 'con': 'Constitution', 'cha': 'Charisma'}.get(ability, ability.title())} modifier"})
+        moves = [m.get("value") or 0 for m in class_mods if m.get("subType") == "unarmored-movement"]
+        if moves and max(moves):
+            features.append({"key": "unarmored-movement", "name": "Unarmored Movement", "bonus": max(moves),
+                             "text": f"+{max(moves)} ft to the form's speeds"})
+        return {"items": list(items.values()), "features": features}
+
     def creatures(self) -> list[dict]:
         out = []
         for c in self.d.get("creatures") or []:
@@ -1360,6 +1397,7 @@ def parse_character(data: dict) -> dict:
             "attuned": [i["name"] for i in items if i["attunement"] == "attuned"],
             "currency": {k: v for k, v in (data.get("currencies") or {}).items() if v},
             "creatures": sh.creatures(),
+            "form_options": sh.form_options(),
         }
     except DdbError:
         raise
