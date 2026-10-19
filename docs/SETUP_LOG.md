@@ -288,3 +288,15 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 2. Scheduled work (backups, reports) can be its own small service on a cron schedule, built from the same code, so it never slows the website.
 3. A backup only counts once you've restored it. Do a test restore right after setting it up, and again now and then.
 4. Never paste keys into chat or files that get committed; use a helper that reads them hidden and stores them straight into the host's settings.
+
+## 2026-10-19 — Tests before every deploy (CI) and job alerts
+
+**What was set up**
+- **GitHub Actions** (`.github/workflows/tests.yml`): every push to `main` runs the full test suite on GitHub's computers, with its own throwaway Postgres. You can see each run on the repo's **Actions** tab.
+- **Railway "Wait for CI"**: Railway waits for that test run and only deploys beta if it passes. (A setting on each Railway service; see below.)
+- **Job alerts**: the nightly backup records each run; the Manage overview turns red if one fails or a night is missed, and also when D&D Beyond copies fail or get stale.
+
+**Reuse this on a new project**
+1. Set up CI (tests on every push) early, and make the host wait for it. It's the cheapest protection against shipping a broken change.
+2. Make CI fail loudly when something it needs is missing (here, the database), so "all skipped" can never look like "all passed".
+3. Any scheduled job should leave a trace (a row with time and result) and something should look at it. A job nobody checks can be broken for weeks.

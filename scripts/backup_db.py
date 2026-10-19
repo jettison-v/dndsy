@@ -25,8 +25,30 @@ def engine_url() -> str:
     return config.DATABASE_URL  # DATABASE_URL on Railway; the local database otherwise
 
 
+def record(engine, started, status: str, detail: str) -> None:
+    """Note the run in the database, for the Manage overview (it says when backups last worked)."""
+    from app.models import JobRun
+
+    try:
+        with engine.begin() as conn:
+            conn.execute(JobRun.__table__.insert().values(name="backup", status=status, detail=detail[:2000], started_at=started))
+    except Exception as e:  # noqa: BLE001 - the backup itself matters more than the note
+        print(f"Couldn't record the run: {e}")
+
+
 def main() -> None:
     engine = create_engine(engine_url())
+    started = datetime.now(UTC)
+    try:
+        detail = run(engine)
+    except Exception as e:
+        record(engine, started, "error", f"{type(e).__name__}: {e}")
+        raise
+    if "--out" not in sys.argv:
+        record(engine, started, "ok", detail)
+
+
+def run(engine) -> str:
     with engine.connect() as conn:
         data = backup.dump(conn)
     raw = backup.to_bytes(data)
@@ -36,7 +58,7 @@ def main() -> None:
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_bytes(raw)
         print(f"Wrote {out} ({len(raw):,} bytes, {rows:,} rows)")
-        return
+        return str(out)
     import boto3
 
     bucket = os.environ["AWS_S3_BUCKET_NAME"]
@@ -50,6 +72,7 @@ def main() -> None:
     for old in backup.old_keys([o["Key"] for o in listed], today):
         s3.delete_object(Bucket=bucket, Key=old)
         print(f"Removed old backup {old}")
+    return f"{key} · {len(raw) / 1e6:.1f} MB · {rows:,} rows"
 
 
 if __name__ == "__main__":

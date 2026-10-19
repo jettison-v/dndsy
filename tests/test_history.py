@@ -80,3 +80,37 @@ def test_import_page_lists_imports_with_undo(db, admin):
     assert "Recent imports" in page and f'value="{batch}"' in page
     admin.post("/admin/history/undo-import", data={"batch": batch})
     assert entity(db, "Star Mounts").summary == "Changed."
+
+
+def test_key_moments_names_and_relationships_are_kept_when_deleted(db):
+    from app import relations, review
+    from app.models import EntityAlias, EntityRelation, EventKind, GameSession, StoryEvent
+
+    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"},
+                       "entities": [{"kind": "npc", "name": "Myna", "aliases": ["Mina"]}, {"kind": "pc", "name": "Trah"}],
+                       "sessions": [{"number": 19, "title": "Journey"}]})
+    myna, trah = entity(db, "Myna"), entity(db, "Trah")
+    gs = db.scalar(select(GameSession))
+    ev = StoryEvent(session_id=gs.id, position=1, kind=EventKind("reveal") if "reveal" in EventKind._value2member_map_ else list(EventKind)[0],
+                    text="Trah's holy water frees Myna.")
+    ev.entities = [myna, trah]
+    db.add(ev)
+    relations.add(db, trah, "allied_with" if "allied_with" in relations.TYPES else list(relations.TYPES)[0], myna, "")
+    db.flush()
+
+    ev.text = "Trah's holy water frees Myna from the cult."
+    db.flush()
+    assert db.scalar(select(Revision).where(Revision.table == "story_events", Revision.field == "text")).old == "Trah's holy water frees Myna."
+    review.delete_event(db, gs, ev.id)
+    db.delete(db.scalar(select(EntityAlias)))
+    db.delete(db.scalar(select(EntityRelation)))
+    db.flush()
+    gone = {r.table: r for r in db.scalars(select(Revision).where(Revision.field == "deleted"))}
+    assert {"story_events", "entity_aliases", "relationships"} <= set(gone)
+    assert gone["story_events"].label == "Key moment, Session 19" and gone["entity_aliases"].label == "Other name of Myna"
+    for table in ("story_events", "entity_aliases", "relationships"):
+        assert history.can_restore(db, gone[table])
+        history.restore(db, gone[table])
+    back = db.scalar(select(StoryEvent))
+    assert back.text == "Trah's holy water frees Myna from the cult." and {e.name for e in back.entities} == {"Myna", "Trah"}
+    assert db.scalar(select(EntityAlias)).alias == "Mina" and db.scalar(select(EntityRelation)) is not None

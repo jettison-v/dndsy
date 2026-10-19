@@ -391,7 +391,9 @@ def save_event(db: Session, session: GameSession, event_id: int | None, kind: st
 
 
 def delete_event(db: Session, session: GameSession, event_id: int) -> None:
-    db.execute(delete(StoryEvent).where(StoryEvent.id == event_id, StoryEvent.session_id == session.id))
+    ev = db.get(StoryEvent, event_id)
+    if ev is not None and ev.session_id == session.id:
+        db.delete(ev)  # one at a time, so version history keeps it
 
 
 # --- Everything the review page needs ------------------------------------------

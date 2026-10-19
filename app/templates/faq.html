@@ -99,11 +99,11 @@
       <p>No. Transcripts are filtered on the admin's own computer, only game content is sent to Claude, and only the extracted story (recaps, key moments, the campaign record) is kept.</p>
     {% endcall %}
     {% call q("What if something gets changed or deleted by mistake?") %}
-      <p>askdnd keeps a <b>history of every change</b> to the campaign record, the glossary, sessions, characters, people and players' notes: what it was, what it became, who changed it and how. Reviewers and admins can open <b>Manage › History</b> and press <b>Restore</b> to put an earlier version back (deleted notes and glossary terms can be brought back too). Each entry also links to its own history. Players' notes stay hidden from the DM there as well.</p>
+      <p>askdnd keeps a <b>history of every change</b> to the campaign record (entries, other names, relationships, facts and key moments), the glossary, sessions, characters, people and players' notes: what it was, what it became, who changed it and how. Reviewers and admins can open <b>Manage › History</b> and press <b>Restore</b> to put an earlier version back (deleted notes and glossary terms can be brought back too). Each entry also links to its own history. Players' notes stay hidden from the DM there as well.</p>
       <p>Imports on <b>Manage › Data</b> show a preview before anything is saved, and a whole import can be undone afterwards.</p>
     {% endcall %}
     {% call q("Is askdnd backed up?") %}
-      <p>Yes. Every night (3 am Pacific) the whole database is copied to a private Amazon S3 storage bucket, and the last 30 days of copies are kept. That copy lives outside Railway, where askdnd runs, so even a problem there wouldn't lose the campaign. The backup job has its own key that can only reach its backups folder. Restoring one is a deliberate step the admin takes with the restore script; it's been tested.</p>
+      <p>Yes. Every night (3 am Pacific) the whole database is copied to a private Amazon S3 storage bucket, and the last 30 days of copies are kept. That copy lives outside Railway, where askdnd runs, so even a problem there wouldn't lose the campaign. The backup job has its own key that can only reach its backups folder. Restoring one is a deliberate step the admin takes with the restore script; it's been tested. If a night's backup fails or doesn't run, the Data card on the Manage overview turns red.</p>
     {% endcall %}
     {% call q("Does using askdnd cost anything?") %}
       <p>Not for players. Claude is paid per use by the admin, with a monthly limit: drafting a recap costs a few cents, and regenerating a Campaign description about 1–2¢. Admins can see spending on Manage › Usage.</p>

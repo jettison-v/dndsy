@@ -4,6 +4,7 @@ import json
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import RedirectResponse
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import import_preview
@@ -40,8 +41,13 @@ def import_form(request: Request, db: Session = Depends(get_db)):
         return denied
     from app.history_pages import recent_imports
 
+    from app.manage import backup_status
+    from app.models import JobRun
+
+    runs = list(db.scalars(select(JobRun).where(JobRun.name == "backup").order_by(JobRun.id.desc()).limit(10)))
     return templates.TemplateResponse(request, "admin_import.html", {"user": user, "toast": request.session.pop("toast", None),
-                                                                     "imports": recent_imports(db)})
+                                                                     "imports": recent_imports(db), "backups": runs,
+                                                                     "backup": backup_status(db)})
 
 
 @router.post("/import")

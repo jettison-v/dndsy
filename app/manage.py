@@ -5,7 +5,7 @@ Who sees what: Suggestions go to the DM, reviewers and admins; Recaps to reviewe
 and admins; everything else to admins only.
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
@@ -28,7 +28,7 @@ PAGES = (
     ("people", "People", "/admin/people", "Who can sign in, their access and character", "Party", is_admin, ()),
     ("characters", "Characters", "/admin/characters", "D&D Beyond links and regrouping", "Party", is_admin, ()),
     ("usage", "Usage", "/admin/usage", "Claude spending and balance", "Admin", is_admin, ()),
-    ("data", "Data", "/admin/import", "Import campaign data", "Admin", is_admin, ()),
+    ("data", "Data", "/admin/import", "Imports and nightly backups", "Admin", is_admin, ()),
 )
 GROUPS = ("Table", "Party", "Admin")
 
@@ -46,8 +46,32 @@ def pages_for(user: dict | None, path: str = "") -> list[dict]:
 def _ago(when: datetime | None) -> str:
     if when is None:
         return "never"
-    days = (datetime.now(UTC) - when).days
-    return "today" if days < 1 else "yesterday" if days == 1 else f"{days} days ago"
+    delta = datetime.now(UTC) - when
+    hours = int(delta.total_seconds() // 3600)
+    if hours < 1:
+        return "less than an hour ago"
+    if hours < 24:
+        return f"{hours} hour{'s' if hours != 1 else ''} ago"
+    return "yesterday" if delta.days == 1 else f"{delta.days} days ago"
+
+
+STALE_CHARACTERS = timedelta(days=7)
+BACKUP_DUE = timedelta(hours=30)  # nightly, with slack
+
+
+def backup_status(db: Session) -> dict:
+    """When the nightly backup last worked, and whether that needs attention."""
+    from app.models import JobRun
+
+    last = db.scalar(select(JobRun).where(JobRun.name == "backup").order_by(JobRun.id.desc()))
+    good = db.scalar(select(JobRun).where(JobRun.name == "backup", JobRun.status == "ok").order_by(JobRun.id.desc()))
+    if last is None:
+        return {"text": "No backup recorded yet", "attention": True, "last": None, "good": None}
+    if last.status != "ok":
+        return {"text": f"Last backup failed ({_ago(last.finished_at)})", "attention": True, "last": last, "good": good}
+    overdue = datetime.now(UTC) - last.finished_at > BACKUP_DUE
+    return {"text": f"Last backup {_ago(last.finished_at)}" + (" (overdue)" if overdue else ""),
+            "attention": overdue, "last": last, "good": good}
 
 
 def _status(db: Session, user: dict, keys: set[str]) -> dict[str, dict]:
@@ -77,8 +101,10 @@ def _status(db: Session, user: dict, keys: set[str]) -> dict[str, dict]:
         snaps = list(db.scalars(select(CharacterSnapshot)))
         failed = sum(1 for s in snaps if s.status == "error")
         oldest = min((s.fetched_at for s in snaps if s.fetched_at), default=None)
-        out["characters"] = {"text": f"{failed} couldn't refresh" if failed else f"Oldest copy from {_ago(oldest)}",
-                             "attention": bool(failed)}
+        stale = oldest is not None and datetime.now(UTC) - oldest > STALE_CHARACTERS
+        out["characters"] = {"text": f"{failed} couldn't refresh from D&D Beyond" if failed else f"Oldest copy from {_ago(oldest)}",
+                             "attention": bool(failed) or stale,
+                             "sub": "Refresh all, or check the D&D Beyond links" if failed or stale else ""}
     if "usage" in keys:
         u = usage_summary(db)
         out["usage"] = {"text": f"${u['month']:.2f} this month", "attention": u["balance"] is not None and u["balance"] < 5,
@@ -89,7 +115,8 @@ def _status(db: Session, user: dict, keys: set[str]) -> dict[str, dict]:
         n = db.scalar(select(func.count()).select_from(Revision).where(Revision.created_at > datetime.now(UTC).replace(hour=0, minute=0, second=0)))
         out["history"] = {"text": f"{n} change{'s' if n != 1 else ''} today" if n else "No changes today", "attention": False}
     if "data" in keys:
-        out["data"] = {"text": "Import a campaign bundle (.json)", "attention": False}
+        b = backup_status(db)
+        out["data"] = {"text": b["text"], "attention": b["attention"], "sub": "Import a campaign bundle (.json)"}
     return out
 
 

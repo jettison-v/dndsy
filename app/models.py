@@ -474,6 +474,19 @@ class ExtractionRun(Timestamped, Base):
     to_check: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list)  # things Brett should verify
 
 
+class JobRun(Base):
+    """One run of a background job (the nightly backup), so the Manage overview can
+    say when it last worked and flag a failure or a missed night."""
+
+    __tablename__ = "job_runs"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(40), index=True)  # "backup"
+    status: Mapped[str] = mapped_column(String(10))  # "ok" | "error"
+    detail: Mapped[str] = mapped_column(Text, default="", server_default="")
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class Revision(Base):
     """One change to a tracked field, kept so nothing edited in place is lost
     (app/history.py). Stored in the app's Postgres database on Railway. Holds

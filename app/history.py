@@ -23,6 +23,11 @@ from app.models import (
     Character,
     CharacterPick,
     Entity,
+    EntityAlias,
+    EntityRelation,
+    EventKind,
+    Fact,
+    StoryEvent,
     GameSession,
     GlossaryTerm,
     PlayerNote,
@@ -40,15 +45,32 @@ TRACKED = {
     CharacterPick: ("note",),
     Campaign: ("name", "dm_name"),
     User: ("name", "access", "is_dm"),
+    StoryEvent: ("text", "kind", "status"),
+    EntityAlias: ("alias", "misspelling", "note"),
+    EntityRelation: ("type", "note"),
+    Fact: ("text", "status"),
 }
-KEEP_ON_DELETE = (PlayerNote, GlossaryTerm)  # their whole content goes into history when deleted
+# Their whole content goes into history when deleted, so it can be brought back
+KEEP_ON_DELETE = (PlayerNote, GlossaryTerm, StoryEvent, EntityAlias, EntityRelation, Fact, Entity)
+# Everything needed to recreate a deleted row (besides its tracked fields)
+DELETE_CONTEXT = {
+    PlayerNote: ("kind", "character_id", "position"),
+    GlossaryTerm: ("campaign_id", "misheard_as"),
+    StoryEvent: ("session_id", "position"),
+    EntityAlias: ("entity_id",),
+    EntityRelation: ("from_entity_id", "to_entity_id"),
+    Fact: ("entity_id", "author_name", "author_email", "kind"),
+    Entity: ("campaign_id", "kind"),
+}
+BRING_BACK = ("player_notes", "glossary_terms", "story_events", "entity_aliases", "relationships", "facts")
 SOURCES = {"edit": "Edited", "import": "Import", "claude": "Claude rewrite accepted", "recap": "From a recap",
            "restore": "Restored", "undo-import": "Import undone"}
 FIELD_LABELS = {"summary": "Description", "quest_open": "Quest", "status": "Published", "name": "Name", "term": "Term",
                 "description": "Description", "title": "Title", "played_on": "Date played", "ddb_id": "D&D Beyond link",
                 "player_name": "Player name", "owner_id": "Played by", "data": "Content", "note": "Note",
                 "dm_name": "DM name", "access": "Access", "is_dm": "DM", "deleted": "Deleted",
-                "wild_shape_keep": "Kept in Wild Shape"}
+                "wild_shape_keep": "Kept in Wild Shape", "text": "Text", "kind": "Kind", "alias": "Name",
+                "misspelling": "Misspelling", "type": "Relationship"}
 
 _actor: contextvars.ContextVar[str] = contextvars.ContextVar("history_actor", default="")
 _source: contextvars.ContextVar[tuple[str, str | None]] = contextvars.ContextVar("history_source", default=("edit", None))
@@ -85,7 +107,23 @@ def _json(v):
     return v
 
 
+def _entity_name(obj, entity_id) -> str:
+    from sqlalchemy.orm import object_session
+
+    e = object_session(obj).get(Entity, entity_id) if entity_id and object_session(obj) else None
+    return e.name if e else "an entry"
+
+
 def label(obj) -> str:
+    if isinstance(obj, StoryEvent):
+        gs = obj.session
+        return f"Key moment, {'Session ' + str(gs.number) if gs and gs.number else 'a session'}"
+    if isinstance(obj, EntityAlias):
+        return f"Other name of {_entity_name(obj, obj.entity_id)}"
+    if isinstance(obj, EntityRelation):
+        return f"Relationship: {_entity_name(obj, obj.from_entity_id)} {obj.type.replace('_', ' ')} {_entity_name(obj, obj.to_entity_id)}"
+    if isinstance(obj, Fact):
+        return f"Fact on {_entity_name(obj, obj.entity_id)}"
     if isinstance(obj, Entity):
         return f"{obj.name} ({obj.kind.value if obj.kind else ''})"
     if isinstance(obj, GlossaryTerm):
@@ -132,10 +170,9 @@ def _record(session: Session, flush_context, instances) -> None:
     for obj in list(session.deleted):
         if isinstance(obj, KEEP_ON_DELETE):
             content = {f: _json(getattr(obj, f)) for f in TRACKED[type(obj)]}
-            if isinstance(obj, PlayerNote):
-                content |= {"kind": obj.kind, "character_id": obj.character_id, "position": obj.position}
-            if isinstance(obj, GlossaryTerm):
-                content |= {"campaign_id": obj.campaign_id, "misheard_as": obj.misheard_as}
+            content |= {f: _json(getattr(obj, f)) for f in DELETE_CONTEXT[type(obj)]}
+            if isinstance(obj, StoryEvent):
+                content["entity_ids"] = [e.id for e in obj.entities]
             session.add(Revision(table=type(obj).__tablename__, row_id=obj.id, label=label(obj)[:300], field="deleted",
                                  old=content, new=None, actor=actor, source=src, batch=batch,
                                  character_id=_character_id(obj)))
@@ -151,6 +188,10 @@ def _value(model, field: str, v):
         return Status(v) if v is not None else Status.DRAFT
     if model is GameSession and field == "played_on":
         return date.fromisoformat(v) if v else None
+    if model is StoryEvent and field == "status":
+        return Status(v) if v is not None else Status.DRAFT
+    if model is StoryEvent and field == "kind":
+        return EventKind(v)
     return v
 
 
@@ -161,7 +202,7 @@ def target(db: Session, rev: Revision):
 
 def can_restore(db: Session, rev: Revision) -> bool:
     if rev.field == "deleted":
-        return rev.table in ("player_notes", "glossary_terms") and target(db, rev) is None
+        return rev.table in BRING_BACK and target(db, rev) is None
     obj = target(db, rev)
     return obj is not None and rev.field in TRACKED.get(type(obj), ())
 
@@ -174,9 +215,23 @@ def restore(db: Session, rev: Revision) -> str:
             if rev.table == "player_notes":
                 db.add(PlayerNote(character_id=c["character_id"], kind=c["kind"], title=c.get("title", ""),
                                   status=c.get("status", ""), data=c.get("data") or {}, position=c.get("position", 0)))
-            else:
+            elif rev.table == "glossary_terms":
                 db.add(GlossaryTerm(campaign_id=c["campaign_id"], term=c.get("term", ""), description=c.get("description", ""),
                                     misheard_as=c.get("misheard_as") or []))
+            elif rev.table == "story_events":
+                ev = StoryEvent(session_id=c["session_id"], position=c.get("position", 0), kind=EventKind(c["kind"]),
+                                text=c.get("text", ""), status=Status(c.get("status") or Status.DRAFT.value))
+                ev.entities = [e for e in (db.get(Entity, i) for i in c.get("entity_ids") or []) if e]
+                db.add(ev)
+            elif rev.table == "entity_aliases":
+                db.add(EntityAlias(entity_id=c["entity_id"], alias=c.get("alias", ""), note=c.get("note", ""),
+                                   misspelling=bool(c.get("misspelling"))))
+            elif rev.table == "relationships":
+                db.add(EntityRelation(from_entity_id=c["from_entity_id"], to_entity_id=c["to_entity_id"], type=c.get("type", ""),
+                                      note=c.get("note", "")))
+            elif rev.table == "facts":
+                db.add(Fact(entity_id=c["entity_id"], text=c.get("text", ""), status=c.get("status", "merged"),
+                            author_name=c.get("author_name", ""), author_email=c.get("author_email", ""), kind=c.get("kind", "addition")))
             db.flush()
             return f"Brought back {rev.label}"
         obj = target(db, rev)

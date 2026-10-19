@@ -36,3 +36,23 @@ def test_cleanup_only_touches_old_backups_in_v2():
             "pdfs/players-handbook.pdf", "backups/askdnd-2026-01-01.json.gz", "v2/backups/notes.txt"]
     assert backup.old_keys(keys, date(2026, 10, 19)) == ["v2/backups/askdnd-2026-08-01.json.gz"]
     assert backup.key_for(date(2026, 10, 19)) == "v2/backups/askdnd-2026-10-19.json.gz"
+
+
+def test_overview_flags_missing_failed_and_overdue_backups(db):
+    from datetime import UTC, datetime, timedelta
+
+    from app.manage import backup_status
+    from app.models import JobRun
+
+    assert backup_status(db)["attention"] and backup_status(db)["text"] == "No backup recorded yet"
+    now = datetime.now(UTC)
+    db.add(JobRun(name="backup", status="ok", detail="v2/backups/x", started_at=now, finished_at=now - timedelta(hours=3)))
+    db.flush()
+    st = backup_status(db)
+    assert not st["attention"] and st["text"] == "Last backup 3 hours ago"
+    db.add(JobRun(name="backup", status="ok", detail="", started_at=now, finished_at=now - timedelta(hours=40)))
+    db.flush()  # newest by id is now the 40-hour-old one: a missed night
+    assert backup_status(db)["attention"] and "(overdue)" in backup_status(db)["text"]
+    db.add(JobRun(name="backup", status="error", detail="AccessDenied", started_at=now, finished_at=now))
+    db.flush()
+    assert backup_status(db)["text"].startswith("Last backup failed")

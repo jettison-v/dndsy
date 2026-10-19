@@ -61,6 +61,16 @@
     </form>
   </section>
   {% endif %}
+  {% if backup is defined %}
+  <section class="section" id="backups">
+    <div class="section-head"><h2>Nightly backups</h2><span class="tag {{ 'draft' if backup.attention else 'done' }}">{{ backup.text }}</span></div>
+    <p class="hint" style="margin-top:6px">Every night at 10:00 UTC (3 am Pacific) the whole database is copied to S3 (<code>askdnd-ai/v2/backups/</code>), keeping 30 days. A failed or missed night turns this card red on the Manage overview.</p>
+    {% if backups %}<table class="list">{% for b in backups %}
+      <tr><td><b>{{ b.finished_at.strftime("%-d %b %Y, %-I:%M %p") }} UTC</b><div class="note">{{ b.detail }}</div></td>
+        <td style="text-align:right"><span class="tag {{ 'done' if b.status == 'ok' else 'draft' }}">{{ "Worked" if b.status == "ok" else "Failed" }}</span></td></tr>
+    {% endfor %}</table>{% else %}<p class="muted">No runs recorded yet. The next one is tonight.</p>{% endif %}
+  </section>
+  {% endif %}
   {% if imports %}
   <section class="section">
     <h2>Recent imports</h2>

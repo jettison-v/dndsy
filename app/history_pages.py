@@ -21,10 +21,11 @@ from app.templating import templates
 
 router = APIRouter(prefix="/admin/history")
 
-STORY = ("entities", "glossary_terms", "game_sessions", "campaigns")
+STORY = ("entities", "glossary_terms", "game_sessions", "campaigns", "story_events", "entity_aliases", "relationships", "facts")
 ADMIN_ONLY = ("characters", "users")
 NOTES = ("player_notes", "character_picks")
-FILTERS = {"": ("Everything", None), "entries": ("Entries", ("entities",)), "glossary": ("Glossary", ("glossary_terms",)),
+FILTERS = {"": ("Everything", None), "entries": ("Entries", ("entities", "entity_aliases", "relationships", "facts")),
+           "moments": ("Key moments", ("story_events",)), "glossary": ("Glossary", ("glossary_terms",)),
            "sessions": ("Sessions", ("game_sessions",)), "characters": ("Characters", ("characters",)),
            "notes": ("Player notes", NOTES), "people": ("People", ("users",)), "campaign": ("Campaign", ("campaigns",))}
 

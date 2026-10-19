@@ -472,7 +472,8 @@ def store_result(db: Session, session: GameSession, run: ExtractionRun, data: di
     db.add(Recap(session_id=session.id, version=version, body=data["recap"].strip(), author="ai", status=Status.DRAFT))
 
     index = _entity_index(db, session.campaign_id)
-    db.execute(delete(StoryEvent).where(StoryEvent.session_id == session.id, StoryEvent.status == Status.DRAFT))
+    for old_event in db.scalars(select(StoryEvent).where(StoryEvent.session_id == session.id, StoryEvent.status == Status.DRAFT)):
+        db.delete(old_event)  # one at a time, so version history keeps the replaced draft moments
     for pos, ev in enumerate(data.get("events", []), start=1):
         event = StoryEvent(session_id=session.id, position=pos, kind=EventKind(ev["kind"]), text=ev["text"].strip())
         linked = {index[_norm(n)].id: index[_norm(n)] for n in ev.get("entities", []) if _norm(n) in index}
