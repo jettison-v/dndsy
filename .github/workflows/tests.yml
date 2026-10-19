@@ -1,0 +1,36 @@
+# Runs the test suite on every push and pull request. Railway's "Wait for CI"
+# setting holds the beta deploy until this passes, so a failing test never ships.
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: askdnd
+          POSTGRES_PASSWORD: askdnd
+          POSTGRES_DB: askdnd_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U askdnd"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      CI: "1"
+      TEST_DATABASE_URL: postgresql+psycopg://askdnd:askdnd@localhost:5432/askdnd_test
+      APP_ENV: development
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv python install
+      - run: uv sync --frozen
+      - run: uv run pytest -q

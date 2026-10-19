@@ -19,6 +19,8 @@ def db_engine():
         with engine.connect() as conn:
             conn.execute(text("select 1"))
     except OperationalError:
+        if os.getenv("CI"):  # on GitHub a missing database must fail the run, not skip every test
+            raise
         pytest.skip("local test database not available (brew services start postgresql@18)")
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
