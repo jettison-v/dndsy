@@ -18,6 +18,8 @@ Cole's live sheet. The repo is public, so this stays a summary in our own words,
 
 ## Audit: what carries into Wild Shape (2026-10-19)
 
+Rulings from Brett at the table: you can speak in Wild Shape (2024 rule), and Unarmored Movement adds to every movement type (walk, fly, swim, climb, burrow), in a form and out of it.
+
 Brett's belief table checked against the summary above (from the PHB read on 2026-10-18) and the code.
 
 | Belief | Rule (our summary) | Verdict | In askdnd now |
@@ -29,12 +31,11 @@ Brett's belief table checked against the summary above (from the PHB read on 202
 | HP and Hit Dice: kept, plus temp HP = 3 × Druid level | HP and Hit Point Dice kept. Temp HP = Druid level; Circle Forms makes it 3 × | Partly: 3 × is Circle of the Moon only | Already right (Cole, Moon Druid 6: 18; other Circles get their Druid level) |
 | Int/Wis/Cha kept; Str/Dex/Con are the Beast's | Same | Correct | Already right |
 | Skills and saves: your proficiencies with your PB, plus the Beast's; use the higher | Same: keep skill and save proficiencies with your PB, gain the Beast's, and use the stat block's modifier where it's higher | Correct | Already right; the hover now shows both numbers when the form's is used |
-| Languages and speech: kept, and you can speak | Languages are kept. This summary records no rule about speaking, either way | Languages correct; speech **not confirmed** | Says you keep your languages; says nothing about speaking |
+| Languages and speech: kept, and you can speak | Languages are kept, and you can speak in a form: new in 2024 (confirmed by Brett, 2026-10-19; this summary hadn't recorded it) | Correct | The form's notes say you keep your languages and can speak |
 
 Feats in a form, the nuance: **War Caster** gives Advantage on Constitution saving throws *to maintain Concentration*, not on every Constitution save. D&D Beyond's modifier carries that condition, and askdnd marks it that way (a dashed Adv badge on Con, with the condition on hover). Cole's Lucky (Luck Points) also stays; it doesn't change a number.
 
 To check in the book (Brett, private/books on the Mac):
-- Whether the 2024 Wild Shape text says anything about speaking in a form.
 - That a feat's Speed bonus (e.g. Mobile) applies to a form's walking Speed only, as askdnd does, and not its swim/climb/fly speeds (otherwise the DM's call).
 
 

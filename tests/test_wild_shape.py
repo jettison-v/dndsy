@@ -206,7 +206,7 @@ def test_keep_choices_are_saved_by_the_player_and_shown_to_others(db, cole, play
     assert r.status_code == 200 and "Kept in Wild Shape" in r.text
     db.refresh(cole)
     assert cole.wild_shape_keep == ["unarmored-movement"]  # unknown keys are dropped
-    assert "50 ft." in player.get(f"{url}/form?name=Polar Bear").text  # 40 + 10
+    assert "50 ft., swim 50 ft." in player.get(f"{url}/form?name=Polar Bear").text  # 40 + 10 on every speed
     assert 'name="keep"' not in admin.get(f"{url}/form?name=Polar Bear").text  # others see, can't change
     assert dm.post(f"{url}/wild-shape/keep", data={"name": "Polar Bear", "keep": []}).status_code == 403
 
@@ -268,6 +268,7 @@ def test_feats_carry_into_the_form_war_caster_only_for_concentration():
     assert "Your feats stay with you: Lucky, War Caster." in notes and "Wayfarer" not in notes
     assert "War Caster: Advantage on Constitution saving throws to maintain Concentration only, not on other Constitution saving throws" in notes
     assert "species traits don't carry" in notes and "Fey Ancestry" in notes
+    assert "you can speak in a form" in notes  # a 2024 change (Brett)
     names = [o["name"] for col in f["columns"].values() for o in col["all"]]
     assert "Mask of the Wild" not in names  # a species trait: not kept
     assert "Flurry of Blows" in names  # a multiclass (Monk) feature: kept, marked Yours

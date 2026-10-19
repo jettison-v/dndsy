@@ -399,3 +399,14 @@ def test_bonuses_from_class_features_and_feats_are_kept_apart(cole):
     assert ("Magician", 4) in [tuple(p) for p in skills["Nature"]["parts"]]  # was "a feature"
     assert skills["Perception"]["kept_parts"] == []
     assert cole["initiative_kept"] == [] and cole["speed_kept"] == []  # Luckstone and Fleet of Foot don't carry
+
+
+def test_unarmored_movement_adds_to_every_speed():
+    """Brett's ruling: Unarmored Movement applies to all movement types, not just walking."""
+    data = load("cole")
+    data["modifiers"]["race"] = data["modifiers"]["race"] + [
+        {"type": "set", "subType": "innate-speed-climb", "value": 30, "componentId": 0, "restriction": ""},
+        {"type": "set", "subType": "innate-speed-swim", "value": None, "componentId": 0, "restriction": ""}]
+    speed = ddb.parse_character(data)["speed"]
+    assert speed["walk"] == 45 and speed["climb"] == 30 + 10  # a fixed climb speed gets the +10 too
+    assert speed["swim"] == 45  # "equal to your Speed" already includes it, so not added twice

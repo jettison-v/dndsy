@@ -392,17 +392,19 @@ class _Sheet:
                 base = (f"{self.source_name(m)} (sets your base speed)", int(m["value"]))
         parts = [base] + self.bonus_parts("speed") + self.bonus_parts("speed-walking")
         body, shield = self.armor()
-        notes = []
+        notes, unarmored = [], 0
         if not body and not shield:
             parts += self.bonus_parts("unarmored-movement")
+            unarmored = sum(v for _, v in self.bonus_parts("unarmored-movement"))
         elif self.bonus_parts("unarmored-movement"):
             notes.append("Unarmored Movement doesn't count while you wear armor or carry a shield.")
         walk = sum(v for _, v in parts)
         out = {"walk": walk, "parts": parts, "notes": notes}
         for kind in ("fly", "swim", "climb", "burrow"):
-            v = normal.get(kind) or 0
-            for m in self.mods_of("set", f"innate-speed-{kind}"):
-                v = max(v, int(m.get("value") or 0) or walk)
+            sets = [int(m.get("value") or 0) for m in self.mods_of("set", f"innate-speed-{kind}")]
+            fixed = max([normal.get(kind) or 0] + sets)
+            # Unarmored Movement adds to every speed (Brett's table, 2026-10-19); "equal to your Speed" already has it
+            v = max(fixed + unarmored if fixed else 0, walk if 0 in sets else 0)
             if v:
                 out[kind] = v
         return out
@@ -1057,7 +1059,7 @@ class _Sheet:
         moves = [m.get("value") or 0 for m in class_mods if m.get("subType") == "unarmored-movement"]
         if moves and max(moves):
             features.append({"key": "unarmored-movement", "name": "Unarmored Movement", "bonus": max(moves),
-                             "text": f"+{max(moves)} ft to the form's speeds"})
+                             "text": f"+{max(moves)} ft to every one of the form's speeds (walk, swim, climb, fly, burrow)"})
         return {"items": list(items.values()), "features": features}
 
     def creatures(self) -> list[dict]:

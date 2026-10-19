@@ -539,7 +539,7 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
     if lost:
         notes.append(f"Your species traits don't carry into a form ({', '.join(lost)}), so their Advantage and senses don't apply; "
                      "use the form's senses. Skill proficiencies they gave you stay, like every proficiency.")
-    notes.append("You keep your creature type, Hit Point Dice and languages.")
+    notes.append("You keep your creature type, Hit Point Dice and languages, and you can speak in a form (a 2024 change).")
     notes.append("Your other class features (from every class you have) stay with you (marked Yours). Whether one works in this body is the DM's call.")
 
     return {
