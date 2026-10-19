@@ -71,7 +71,6 @@ class User(Timestamped, Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(320), unique=True)  # stored lowercase
     name: Mapped[str] = mapped_column(String(200))
-    is_admin: Mapped[bool] = mapped_column(Boolean, default=False)  # old flag; access below decides (app/access.py)
     # Set on Manage › People: player | reviewer | admin, or "removed" (can't sign in).
     # None = not set in the app (people imported but never invited); the Railway lists decide.
     access: Mapped[str | None] = mapped_column(String(20))
@@ -269,16 +268,6 @@ class SheetOverride(Timestamped, Base):
     field: Mapped[str] = mapped_column(String(30))  # "feature_group" | "situ_group" | "battle"
     value: Mapped[str] = mapped_column(String(30))
     set_by: Mapped[str] = mapped_column(String(320), default="", server_default="")
-
-
-class CharacterNote(Timestamped, Base):
-    """Why a player built their character this way. Hidden from the DM (see visibility.py)."""
-
-    __tablename__ = "character_notes"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), index=True)
-    author_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
-    body: Mapped[str] = mapped_column(Text)
 
 
 class PlayerNote(Timestamped, Base):

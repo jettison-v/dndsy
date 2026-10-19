@@ -8,7 +8,7 @@ Relationship types are listed in app/relations.py.
 Bundle shape (all sections optional except campaign):
 {
   "campaign": {"slug": "...", "name": "..."},
-  "members": [{"email": "...", "name": "...", "role": "dm|player", "is_admin": false}],
+  "members": [{"email": "...", "name": "...", "role": "dm|player"}],
   "entities": [{"kind": "npc", "name": "...", "summary": "...", "aliases": ["..."],
                 "quest_open": null,
                 "character": {"owner_email": "...", "ddb_id": "..."}}],   # PCs only
@@ -135,8 +135,6 @@ def _import_bundle(db: Session, bundle: dict, keep_text: bool = False) -> Counte
             counts["users created"] += 1
         if "name" in m:
             user.name = m["name"]
-        if "is_admin" in m:
-            user.is_admin = bool(m["is_admin"])
         users[email] = user
         role = Role(m["role"])
         member = db.scalar(

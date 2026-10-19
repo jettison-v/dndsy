@@ -36,7 +36,7 @@ def test_import_creates_everything(db):
     ch = db.scalar(select(Character))
     assert ch.ddb_id == "123"
     assert ch.owner.email == "owner@example.com"
-    assert db.scalar(select(User).where(User.email == "owner@example.com")).is_admin
+    assert db.scalar(select(User).where(User.email == "owner@example.com")).name == "Owner"
 
 
 def test_import_twice_does_not_duplicate(db):

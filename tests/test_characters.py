@@ -13,7 +13,7 @@ from app.config import parse_allowlist
 from app.db import get_db
 from app.importer import import_bundle
 from app.main import app
-from app.models import Character, CharacterNote, CharacterSnapshot, SheetOverride
+from app.models import Character, CharacterSnapshot, PlayerNote, SheetOverride
 
 COLE = json.loads((Path(__file__).parent / "fixtures" / "ddb" / "cole.json").read_text())["data"]
 BUNDLE = {
@@ -287,7 +287,8 @@ def test_no_character_notes_on_character_pages(dm, db):
     D&D Beyond background and backstory are for the whole table, the DM included."""
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
-    db.add(CharacterNote(character_id=cole.id, body="SECRET PLAYER NOTE"))
+    owned_by(db, char(db, "Trah"), "dm@example.com", is_dm=True)
+    db.add(PlayerNote(character_id=cole.id, kind="general", title="Mine", data={"body": "SECRET PLAYER NOTE"}))
     characters.refresh(db, cole)
     for path in ("/party", f"/characters/{cole.id}", f"/characters/{cole.id}/battle", f"/characters/{cole.id}/brief"):
         page = dm.get(path).text
