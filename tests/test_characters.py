@@ -184,7 +184,8 @@ def test_character_page(player, db):
     for text in ("Circle of the Moon", "Armor class", "Heat Metal", "Conc.", "Ring of Invisibility", "Attuned",
                  "Polar Bear", "Wild Shape form", "Focus Points", "Last updated from D&amp;D Beyond just now",
                  "Bonus actions", "Reactions", "Situational", "Advantage on saving throws against being charmed",
-                 "Adv. to maintain Concentration", "Training: armor, weapons", "Starry Wisp", "+7"):
+                 "Advantage on Constitution saving throws to maintain Concentration · War Caster",
+                 "adv-badge cond", "Training: armor, weapons", "Starry Wisp", "+7"):
         assert text in page, text
     assert "Refresh from D&amp;D Beyond" not in page and "D&amp;D Beyond link" not in page
     assert 'class="pick' not in page  # not this player's character: no stars or reminders

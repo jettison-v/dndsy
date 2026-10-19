@@ -1,4 +1,4 @@
-{% from "_char.html" import portrait, pips %}
+{% from "_char.html" import portrait, pips, adv %}
 <div class="tablewrap"><table class="party">
   <tr><th>Character</th><th>HP</th><th>AC</th><th>Speed</th><th class="wide">Best saves</th><th class="wide">Resources</th></tr>
   {% for r in party %}
@@ -7,7 +7,7 @@
     {% if r.sheet %}{% set s = r.sheet %}
     <td><b>{{ s.hit_points.current }}</b><span class="note">/{{ s.hit_points.max }}</span></td>
     <td><b>{{ s.armor_class }}</b></td><td>{{ s.speed.walk }}</td>
-    <td class="wide">{{ r.best_saves }}</td>
+    <td class="wide">{% for sv in r.top_saves %}{{ sv.short }} {{ sv.label }}{% if sv.adv %} {{ adv(sv.adv) }}{% endif %}{{ ", " if not loop.last }}{% endfor %}</td>
     <td class="wide res-cell">{% if r.resources %}<div class="res-list">{% for x in r.resources %}<span class="res-item">{{ x.name }} {{ pips(x.uses) }}</span>{% endfor %}</div>{% endif %}
       {% if r.slots %}<div class="res-list slots"><span class="res-label">Slots</span>{% for x in r.slots %}<span class="res-item">{{ x.label }} {{ pips(x.uses) }}</span>{% endfor %}</div>{% endif %}</td>
     {% else %}<td colspan="5" class="muted">{{ "Not fetched from D&D Beyond yet" if r.c.ddb_id else "Not linked to D&D Beyond yet" }}</td>{% endif %}

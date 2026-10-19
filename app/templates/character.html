@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_char.html" import pips, pick_btn, ri, opt_row, spell_row, bell, portrait, tile %}
+{% from "_char.html" import pips, pick_btn, ri, opt_row, spell_row, bell, portrait, tile, adv %}
 {% block title %}{{ c.entity.name }} · Character · askdnd{% endblock %}
 {% block content %}
 {% set s = sheet %}
@@ -26,7 +26,7 @@
     <div {{ tile(c, "hp") }}><small>Hit points</small><b>{{ s.hit_points.current }}</b>{% if s.hit_points.current != s.hit_points.max %}<span class="note"> / {{ s.hit_points.max }}</span>{% endif %}{% if s.hit_points.temp %}<span class="note"> +{{ s.hit_points.temp }} temp</span>{% endif %}</div>
     <div {{ tile(c, "ac") }}><small>Armor class</small><b>{{ s.armor_class }}</b></div>
     <div {{ tile(c, "speed") }}><small>Speed</small><b>{{ s.speed.walk }} ft</b>{% set extra = s.speed.items() | rejectattr(0, "in", ["walk", "parts", "notes"]) | list %}{% if extra %}<span class="note"> {% for k, v in extra %}{{ k }} {{ v }}{{ ", " if not loop.last }}{% endfor %}</span>{% endif %}</div>
-    <div {{ tile(c, "initiative") }}><small>Initiative</small><b>{{ s.initiative }}</b></div>
+    <div {{ tile(c, "initiative") }}><small>Initiative</small><b>{{ s.initiative }}</b>{{ adv(s.initiative_adv) }}</div>
     <div {{ tile(c, "proficiency") }}><small>Proficiency</small><b>+{{ s.proficiency_bonus }}</b></div>
     <div {{ tile(c, "perception") }}><small>Passive Perception</small><b>{{ s.passive_perception }}</b></div>
     {% for sc in s.spellcasting[:1] %}<div {{ tile(c, "spell") }}><small>Spell DC / attack</small><b>{{ sc.save_dc }}</b><span class="note"> / {{ sc.attack }}</span></div>{% endfor %}
@@ -38,11 +38,10 @@
     <div class="abil6">
       {% for a in s.abilities %}{% set sv = s.saves[loop.index0] %}
       <div class="ab"><div class="top"><small>{{ a.name }} {{ a.score }}</small><b>{{ a.label }}</b></div>
-        <div class="sv{{ ' prof' if sv.proficient }}">Save {{ sv.label }}</div>
-        {% for n in sv.notes %}<span class="adv">{{ n }}</span>{% endfor %}</div>
+        <div class="sv{{ ' prof' if sv.proficient }}">Save {{ sv.label }} {{ adv(sv.adv) }}</div></div>
       {% endfor %}
     </div>
-    <p class="note" style="margin:8px 0 0">{% for n in s.save_notes %}<span class="adv-inline">{{ n }}</span> · {% endfor %}Hit dice {% for h in s.hit_points.hit_dice %}{{ h.total - h.used }}/{{ h.total }} {{ h.die }}{{ ", " if not loop.last }}{% endfor %}</p>
+    <p class="note" style="margin:8px 0 0">{% if s.save_adv_all %}{{ adv(s.save_adv_all) }} on every save {% for a in s.save_adv_all %}{{ a.when }} ({{ a.source }}){{ "; " if not loop.last }}{% endfor %} · {% endif %}Hit dice {% for h in s.hit_points.hit_dice %}{{ h.total - h.used }}/{{ h.total }} {{ h.die }}{{ ", " if not loop.last }}{% endfor %}</p>
   </section>
 
   {# Row 3: everything else, in tabs #}
@@ -180,7 +179,7 @@
           {% for sk in by[a.short] %}
           <div class="skill {{ sk.proficiency }}" data-panel-url="/characters/{{ c.id }}/vital/skill-{{ sk.name | lower | replace(' ', '-') }}" tabindex="0" role="button">
             <span class="pm {{ sk.proficiency }}" aria-label="{{ sk.proficiency or 'not proficient' }}">{{ {"proficient": "●", "expertise": "◆", "half": "◐"}.get(sk.proficiency, "○") }}</span>
-            <span class="skill-name">{{ sk.name }}{% for n in sk.notes %} <span class="adv">{{ n }}</span>{% endfor %}</span>
+            <span class="skill-name">{{ sk.name }} {{ adv(sk.adv) }}</span>
             <b class="skill-bonus">{{ sk.label }}</b>
           </div>
           {% endfor %}
@@ -256,9 +255,9 @@
             <div title="Average damage from the Attack action (Multiattack) if every attack hits"><small>Dmg / turn</small><b>{{ k.per_turn or "—" }}</b></div>
             <div><small>Fastest</small><b>{{ k.fastest }}<span class="note"> ft</span></b></div>
           </div>
-          <div class="fc-line"><span class="fc-k">Attack</span><span>{{ k.attack or "No attack" }}{% if k.radiant and k.attack %} <span class="muted">· can deal Radiant</span>{% endif %}{% for x in k.extra %} <span class="muted">· {{ x }}</span>{% endfor %}</span></div>
+          <div class="fc-line"><span class="fc-k">Attack</span><span>{{ k.attack or "No attack" }}{% if k.attack_adv %} {{ adv(k.attack_adv) }}{% endif %}{% if k.radiant and k.attack %} <span class="muted">· can deal Radiant</span>{% endif %}{% for x in k.extra %} <span class="muted">· {{ x }}</span>{% endfor %}</span></div>
           <div class="fc-line"><span class="fc-k">Moves</span><span>{{ k.speed }}{% if k.senses %} <span class="muted">· {{ k.senses }}</span>{% endif %}{% if k.resist %} <span class="muted">· Resists {{ k.resist }}</span>{% endif %}</span></div>
-          <div class="fc-line"><span class="fc-k">You</span><span>{% for sv in k.saves %}{{ sv.short }} save {{ sv.label }}{{ " · " if not loop.last }}{% endfor %}{% for sk in k.skills %} · {{ sk.name }} {{ sk.label }}{% endfor %}</span></div>
+          <div class="fc-line"><span class="fc-k">You</span><span>{% for sv in k.saves %}{{ sv.short }} save {{ sv.label }}{% if sv.adv %} {{ adv(sv.adv) }}{% endif %}{{ " · " if not loop.last }}{% endfor %}{% for sk in k.skills %} · {{ sk.name }} {{ sk.label }}{% if sk.adv %} {{ adv(sk.adv) }}{% endif %}{% endfor %}</span></div>
           {% if k.traits or k.bonus or k.reactions or k.effects %}<div class="fc-tags">
             {% for t in k.effects %}<span class="tag eff">{{ t }}</span>{% endfor %}
             {% for t in k.bonus %}<span class="tag k-bonus">Bonus: {{ t }}</span>{% endfor %}

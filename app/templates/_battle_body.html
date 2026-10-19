@@ -1,4 +1,4 @@
-{% from "_char.html" import pips, pick_btn, vitals, resource_row, portrait, spends %}
+{% from "_char.html" import pips, pick_btn, vitals, resource_row, portrait, spends, adv, saves_block %}
 {% from "_notes_macros.html" import combo_body %}
 {% set s = sheet %}
 <div id="battle-body" data-character="{{ c.id }}" data-fetched="{{ fetched_at.isoformat() if fetched_at else '' }}">
@@ -33,12 +33,14 @@
           <div class="vital"><small>AC</small><b>{{ form.ac }}</b></div>
           <div class="vital"><small>HP</small><b>{{ s.hit_points.current }}</b><span class="note"> +{{ form.temp_hp }} temp on shifting</span></div>
           <div class="vital"><small>Speed</small><b class="small">{{ form.speed }}</b></div>
-          <div class="vital"><small>Initiative</small><b>{{ form.initiative }}</b></div>
-          <div class="vital"><small>Saves</small><b class="small">{% for sv in form.saves %}{{ sv.short }} {{ sv.label }}{{ " " if not loop.last }}{% endfor %}</b></div>
+          <div class="vital"><small>Initiative</small><b>{{ form.initiative }}</b>{{ adv(form.initiative_adv) }}</div>
         </div>
+        <div class="battle-saves"><span class="battle-saves-label">Saves in this form</span>{{ saves_block(form.saves, form.save_adv_all, "six") }}</div>
         <span class="note">Your stats carried over. {% if form.castable %}Spells: only {{ form.castable | join(", ") }}.{% else %}No spellcasting in this form.{% endif %} Click for the full form, skills and rules.</span></div>
     </div>
-    {% elif s %}<div style="margin-top:8px">{{ vitals(s, c) }}</div>{{ resource_row(s) }}{% endif %}
+    {% elif s %}<div style="margin-top:8px">{{ vitals(s, c) }}</div>
+    <div class="battle-saves"><span class="battle-saves-label">Saves</span>{{ saves_block(s.saves, s.save_adv_all, "six") }}</div>
+    {{ resource_row(s) }}{% endif %}
   </div>
 
   {% if s %}
@@ -51,7 +53,7 @@
       <div class="moves"{% if can_pick and not form %} data-sort-column="{{ cost }}" data-sort-url="/characters/{{ c.id }}/order"{% endif %}>
       {% for o in col.shown %}
       <div class="move{{ ' yours' if o.source == 'yours' }}" data-key="{{ o.key }}" {% if form and o.source in ('form', 'rule') %}data-modal-url="/characters/{{ c.id }}/form?name={{ form.beast.name | urlencode }}" data-modal-size="large"{% else %}data-panel-url="/characters/{{ c.id }}/detail?ref={{ o.key | urlencode }}"{% endif %} tabindex="0" role="button">
-        {% if o.hit %}<span class="hit">{{ o.hit }}</span>{% endif %}
+        {% if o.hit %}<span class="hit">{{ o.hit }}{% if o.adv %} {{ adv(o.adv) }}{% endif %}</span>{% endif %}
         {% if o.starred and show_picks %}<span class="pick star on static" aria-label="starred">★</span>{% endif %}<b>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag">{{ t }}</span>{% endfor %}{{ spends(o.spends) }}
         {% if o.meta %}<div class="meta">{{ o.meta }}</div>{% endif %}
       </div>
