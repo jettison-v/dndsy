@@ -76,3 +76,24 @@ def _ordinal(n) -> str:
 
 
 templates.env.filters["ordinal"] = _ordinal
+
+
+_STATIC = Path(__file__).parent / "static"
+_hashes: dict[tuple[str, float], str] = {}
+
+
+def _static(name: str) -> str:
+    """/static/<name>?v=<content hash>: browsers fetch the new file whenever it changes (no hand-edited numbers)."""
+    import hashlib
+
+    path = _STATIC / name
+    try:
+        key = (name, path.stat().st_mtime)
+    except OSError:
+        return f"/static/{name}"
+    if key not in _hashes:
+        _hashes[key] = hashlib.sha256(path.read_bytes()).hexdigest()[:10]
+    return f"/static/{name}?v={_hashes[key]}"
+
+
+templates.env.globals["static"] = _static
