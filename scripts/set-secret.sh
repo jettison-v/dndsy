@@ -5,18 +5,22 @@
 #   scripts/set-secret.sh ANTHROPIC_API_KEY            # prompts (hidden input)
 #   scripts/set-secret.sh ANTHROPIC_API_KEY --clipboard  # reads from clipboard
 #   scripts/set-secret.sh ANTHROPIC_API_KEY --local-only
+#   scripts/set-secret.sh AWS_SECRET_ACCESS_KEY --service askdnd-backup   # another Railway service
 set -euo pipefail
 
 name="${1:?usage: scripts/set-secret.sh NAME [--clipboard] [--local-only]}"
 shift
 from_clipboard=false
 local_only=false
-for arg in "$@"; do
-  case "$arg" in
+service=askdnd-v2
+while [ $# -gt 0 ]; do
+  case "$1" in
     --clipboard) from_clipboard=true ;;
     --local-only) local_only=true ;;
-    *) echo "unknown option: $arg" >&2; exit 1 ;;
+    --service) shift; service="${1:?--service needs a name}" ;;
+    *) echo "unknown option: $1" >&2; exit 1 ;;
   esac
+  shift
 done
 
 if $from_clipboard; then
@@ -41,10 +45,10 @@ chmod 600 .env
 echo "✓ $name saved to local .env"
 
 if ! $local_only; then
-  if ! out="$(printf '%s' "$value" | railway variable set "$name" --stdin --service askdnd-v2 --environment production --skip-deploys 2>&1)"; then
+  if ! out="$(printf '%s' "$value" | railway variable set "$name" --stdin --service "$service" --environment production --skip-deploys 2>&1)"; then
     echo "✗ Railway update failed:" >&2
     echo "$out" >&2
     exit 1
   fi
-  echo "✓ $name saved to Railway (askdnd-v2, production) — takes effect on next deploy"
+  echo "✓ $name saved to Railway ($service, production) — takes effect on next deploy"
 fi
