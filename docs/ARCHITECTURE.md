@@ -25,6 +25,7 @@ _Last updated 2026-10-14 · Pairs with [BRIEF.md](BRIEF.md)_
 | Campaign map | AideDD's Sword Coast atlas, embedded | The Map tab shows aidedd.org in a frame; place pages link to its markers. We store only marker names, never the map image. |
 | Wild Shape Beasts | `app/data/beasts_2024.json` | SRD 5.2 stat blocks (CC-BY-4.0) for the 91 Beasts, with links to D&D Beyond's pictures; refreshed by `scripts/wild_shape_beasts.py`. Known forms' stat blocks come with the D&D Beyond sheet. |
 | Version history | Postgres (`revisions`) | Every change to entries, glossary, sessions, characters, people and players' notes (old value, new value, who, how). Manage › History restores; Manage › Data undoes a whole import. Players' notes stay hidden from the DM there too. |
+| Database backups | S3 `askdnd-ai/v2/backups/` | Nightly at 10:00 UTC, the `askdnd-backup` Railway cron service runs `scripts/backup_db.py`: every table in one gzipped JSON, 30 days kept. Its AWS key can only use `v2/backups/`. `scripts/restore_db.py` loads one into an empty database. |
 | AI (cloud) | **Claude via the Anthropic API** | Tool use, web search, citations, PDF reading. |
 | AI (local) | **Ollama on Brett's Mac** (~30B-class model; test 2–3 on a real transcript) | The banter filter. Raw transcripts never leave the Mac. |
 | Sign-in | **Google sign-in, limited to 5 approved emails** | No passwords to manage. A good setup skill to reuse. |

@@ -274,3 +274,17 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 1. Decide early what must never be lost, and record changes to it automatically at the database level (a hook on every save), not page by page, so new pages are covered without anyone remembering.
 2. Keep two layers: in-app history for "undo that one change", and whole-database backups for "something went badly wrong". Turn backups on from day one; they can't recover what happened before they existed.
 3. Make bulk operations (imports) undoable as a unit.
+
+## 2026-10-19 — Nightly backups to S3
+
+**What was set up**
+- A second Railway service, **askdnd-backup**, built from the same GitHub repo. Instead of running the website, its start command is `python scripts/backup_db.py`, and a **cron schedule** (`0 10 * * *`, daily at 10:00 UTC) runs it once a night. It copies the whole database into one compressed file in S3 (`askdnd-ai/v2/backups/askdnd-YYYY-MM-DD.json.gz`) and deletes copies older than 30 days.
+- A new AWS user, **askdnd-v2-backups**, whose key can only read and write `v2/backups/` in the bucket (checked: listing the whole bucket is refused). Its keys were set with `scripts/set-secret.sh … --service askdnd-backup`, so they never appeared on screen.
+- The first backup (45 MB, 480 rows) was downloaded and restored into a scratch database to prove it works.
+- Railway's own Postgres "point-in-time recovery" exists (`railway postgres pitr`) but is off; it needs Railway storage and may cost extra. Optional later.
+
+**Reuse this on a new project**
+1. Give each job its own cloud key with the narrowest permission that works ("least privilege"), and test that it's refused outside its area.
+2. Scheduled work (backups, reports) can be its own small service on a cron schedule, built from the same code, so it never slows the website.
+3. A backup only counts once you've restored it. Do a test restore right after setting it up, and again now and then.
+4. Never paste keys into chat or files that get committed; use a helper that reads them hidden and stores them straight into the host's settings.
