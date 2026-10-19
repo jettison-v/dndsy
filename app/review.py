@@ -5,7 +5,7 @@ Routes live in admin_sessions.py; this module holds the behavior so it can be
 tested on its own.
 """
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import relations

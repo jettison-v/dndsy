@@ -26,8 +26,17 @@ dependencies = [
 dev = [
     "httpx2>=2.13.1",
     "pytest>=9.1.1",
+    "ruff>=0.17.1",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.ruff]
+line-length = 140
+
+[tool.ruff.lint]
+# Catch leftovers: unused imports and variables, redefinitions, undefined names
+select = ["F"]
+per-file-ignores = { "tests/*" = ["F401", "F811"] }  # pytest fixtures are shared by importing them

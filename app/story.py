@@ -5,6 +5,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import web
 from app import atlas, pictures, review
 from app.auth import can_moderate, current_user
 from app.db import get_db
@@ -29,10 +30,6 @@ GROUPS = [
 ]
 
 
-def _campaign(db: Session) -> Campaign | None:
-    return db.scalar(select(Campaign).order_by(Campaign.id))
-
-
 def published_items(db: Session, campaign: Campaign) -> list[dict]:
     """Published sessions in story order, each with its recap HTML and events, plus the
     DM's corrections that came in after that recap was published (no review needed)."""
@@ -55,7 +52,7 @@ def published_items(db: Session, campaign: Campaign) -> list[dict]:
 
 
 def published_story(db: Session) -> dict:
-    campaign = _campaign(db)
+    campaign = web.campaign(db)
     if campaign is None:
         return {"latest": None, "earlier": [], "threads": [], "quests": []}
     items = published_items(db, campaign)
@@ -79,10 +76,6 @@ def published_story(db: Session) -> dict:
     }
 
 
-def _signed_in(request: Request):
-    return current_user(request)
-
-
 def questions_card(db: Session, user: dict) -> list[dict]:
     """Claude's questions that a reviewer sent to this person ("Ask…")."""
     items = []
@@ -94,14 +87,14 @@ def questions_card(db: Session, user: dict) -> list[dict]:
 
 
 def _linker(db: Session) -> Linker:
-    campaign = _campaign(db)
+    campaign = web.campaign(db)
     return entity_linker(db, campaign.id) if campaign else Linker(None, {})
 
 
 @router.get("/")
 @router.get("/story")
 def story(request: Request, db: Session = Depends(get_db)):
-    user = _signed_in(request)
+    user = current_user(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
     return templates.TemplateResponse(
@@ -122,7 +115,7 @@ def answer_question(
     request: Request, correction_id: int, answer: str = Form(""), remember: str = Form(""), db: Session = Depends(get_db)
 ):
     """The person a question was sent to answers it from Previously on…"""
-    user = _signed_in(request)
+    user = current_user(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
     c = db.get(Correction, correction_id)
@@ -140,18 +133,18 @@ def answer_question(
 
 @router.get("/sessions")
 def sessions(request: Request, db: Session = Depends(get_db)):
-    if not _signed_in(request):
+    if not current_user(request):
         return RedirectResponse("/login", status_code=303)
-    campaign = _campaign(db)
+    campaign = web.campaign(db)
     items = list(reversed(published_items(db, campaign))) if campaign else []
     return templates.TemplateResponse(request, "sessions.html", {"items": items, "ln": _linker(db)})
 
 
 @router.get("/campaign")
 def campaign_page(request: Request, db: Session = Depends(get_db)):
-    if not _signed_in(request):
+    if not current_user(request):
         return RedirectResponse("/login", status_code=303)
-    campaign = _campaign(db)
+    campaign = web.campaign(db)
     groups, glossary = [], []
     if campaign:
         entities = list(

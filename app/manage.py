@@ -12,10 +12,11 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app import web
 from app import review
 from app.auth import can_moderate, current_user, is_admin, is_reviewer
 from app.db import get_db
-from app.models import Campaign, CharacterSnapshot, User
+from app.models import CharacterSnapshot, User
 from app.templating import templates
 
 router = APIRouter()
@@ -80,7 +81,7 @@ def _status(db: Session, user: dict, keys: set[str]) -> dict[str, dict]:
     from app.extraction import latest_campaign_notes, timeline
     from app.suggestions import waiting_count
 
-    campaign = db.scalar(select(Campaign).order_by(Campaign.id))
+    campaign = web.campaign(db)
     out: dict[str, dict] = {}
     if "suggestions" in keys:
         n = waiting_count(db)
@@ -127,8 +128,7 @@ def manage_home(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/login", status_code=303)
     pages = pages_for(user)
     if not pages:
-        return templates.TemplateResponse(request, "message.html", {"title": "Not available", "message": "Manage is for the DM, reviewers and admins."},
-                                          status_code=403)
+        return web.forbidden(request, "Manage is for the DM, reviewers and admins.")
     status = _status(db, user, {p["key"] for p in pages})
     groups = [(g, [p for p in pages if p["group"] == g]) for g in GROUPS]
     return templates.TemplateResponse(request, "manage.html", {"groups": [(g, ps) for g, ps in groups if ps], "status": status})

@@ -16,6 +16,7 @@ from fastapi.responses import RedirectResponse, Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app import web
 from app import config
 from app.admin import _guard as _admin_guard
 from app.auth import can_see_character_notes, is_admin
@@ -32,7 +33,7 @@ from app.gdocs import (
     parse_export,
     shrink_image,
 )
-from app.models import Campaign, NoteImage, NoteSnapshot, NoteSource
+from app.models import NoteImage, NoteSnapshot, NoteSource
 from app.notes_sync import sync_sources
 from app.render import markdown_to_html
 from app.templating import templates
@@ -91,16 +92,12 @@ def explain_google_error(resp) -> str:
     return f"Google said {resp.status_code}: {err.get('message') or 'unknown error'}"
 
 
-def _campaign(db: Session) -> Campaign | None:
-    return db.scalar(select(Campaign).order_by(Campaign.id))
-
-
 @router.get("")
 def notes_page(request: Request, db: Session = Depends(get_db), result: str | None = None):
     user, denied = _guard(request)
     if denied:
         return denied
-    campaign = _campaign(db)
+    campaign = web.campaign(db)
     every = [s for s in db.scalars(select(NoteSource).order_by(NoteSource.id)) if _visible(s, user)] if campaign else []
     sources = [s for s in every if s.character_id is None]
     retired = [s for s in every if s.character_id is not None]
@@ -131,7 +128,7 @@ def add_source(request: Request, url: str = Form(...), db: Session = Depends(get
     user, denied = _guard(request)
     if denied:
         return denied
-    campaign = _campaign(db)
+    campaign = web.campaign(db)
     doc_id = doc_id_from_url(url)
     if campaign is None:
         request.session["notes_error"] = "Import the campaign first."

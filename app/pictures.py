@@ -15,7 +15,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, load_only
 
 from app import access
-from app.auth import is_reviewer
 from app.models import Character, Entity, EntityPicture
 
 MAX_UPLOAD = 15 * 1024 * 1024

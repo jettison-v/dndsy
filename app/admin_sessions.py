@@ -14,6 +14,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app import web
 from app import db as dbmod
 from app import review
 from app.admin import _reviewer_guard as _guard
@@ -28,7 +29,7 @@ from app.extraction import (
     split_notes,
     timeline,
 )
-from app.models import NON_DRAFTING_SOURCES, Campaign, ExtractionRun, GameSession, Proposal
+from app.models import NON_DRAFTING_SOURCES, ExtractionRun, GameSession, Proposal
 from app.linking import entity_linker
 from app.suggestions import from_the_table
 from app.render import markdown_to_html
@@ -109,7 +110,7 @@ def sessions_page(request: Request, db: Session = Depends(get_db)):
     user, denied = _guard(request)
     if denied:
         return denied
-    campaign = db.scalar(select(Campaign).order_by(Campaign.id))
+    campaign = web.campaign(db)
     sessions = timeline(db, campaign.id) if campaign else []
     running = _running_ids(db)
     snap = latest_campaign_notes(db, campaign.id) if campaign else None
@@ -382,7 +383,7 @@ def new_session_form(request: Request, db: Session = Depends(get_db)):
     user, denied = _guard(request)
     if denied:
         return denied
-    campaign = db.scalar(select(Campaign).order_by(Campaign.id))
+    campaign = web.campaign(db)
     sessions = timeline(db, campaign.id) if campaign else []
     return templates.TemplateResponse(
         request, "admin_session_new.html", {"sessions": [(x, session_label(x)) for x in sessions], "error": request.session.pop("toast", None)}
@@ -405,7 +406,7 @@ def create_session(
 
     from app.models import SessionMessage
 
-    campaign = db.scalar(select(Campaign).order_by(Campaign.id))
+    campaign = web.campaign(db)
     try:
         played = date_type.fromisoformat(played_on)
         num = int(number) if number.strip() else None

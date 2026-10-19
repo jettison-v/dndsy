@@ -12,12 +12,13 @@ from fastapi.responses import JSONResponse, RedirectResponse, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import web
 from app import atlas, entities, pictures, relations
 from app.auth import can_moderate, current_user, is_dm, is_reviewer
 from app.db import get_db
 from app.extraction import ExtractionError
 from app.linking import entity_linker
-from app.models import Campaign, Entity, EntityAlias, EntityPicture, Fact, Status
+from app.models import Entity, EntityAlias, EntityPicture, Fact, Status
 from app.templating import templates
 
 router = APIRouter(prefix="/campaign")
@@ -28,9 +29,7 @@ def _visible(entity: Entity | None, user: dict | None) -> bool:
 
 
 def _not_found(request: Request):
-    return templates.TemplateResponse(
-        request, "message.html", {"title": "Not found", "message": "That page isn't in the campaign record."}, status_code=404
-    )
+    return web.not_found(request, "That page isn't in the campaign record.")
 
 
 def entity_context(db: Session, entity: Entity, user: dict) -> dict:
@@ -108,9 +107,7 @@ def _act(request: Request, db: Session, entity_id: int, action: Callable[[Entity
     if not user:
         return RedirectResponse("/login", status_code=303)
     if reviewer_only and not allowed(user):
-        return templates.TemplateResponse(
-            request, "message.html", {"title": "Not available", "message": "Only reviewers can do that."}, status_code=403
-        )
+        return web.forbidden(request, "Only reviewers can do that.")
     entity = db.get(Entity, entity_id)
     if not _visible(entity, user):
         return _not_found(request)
@@ -301,7 +298,7 @@ def mentions(request: Request, q: str = "", db: Session = Depends(get_db)):
     user = current_user(request)
     if not user:
         return JSONResponse([], status_code=401)
-    campaign = db.scalar(select(Campaign).order_by(Campaign.id))
+    campaign = web.campaign(db)
     if campaign is None:
         return JSONResponse([])
     return JSONResponse(entities.mention_suggestions(db, campaign.id, q[:60], include_drafts=is_reviewer(user)))

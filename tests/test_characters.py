@@ -560,7 +560,7 @@ def test_number_tiles_open_an_explanation(player, db):
     sheet = player.get(f"/characters/{cole.id}").text
     for kind in ("hp", "ac", "speed", "initiative", "spell", "inspiration"):
         assert f'data-panel-url="/characters/{cole.id}/vital/{kind}"' in battle and f"/vital/{kind}" in sheet
-    assert f"/vital/proficiency" in sheet and f"/vital/perception" in sheet
+    assert "/vital/proficiency" in sheet and "/vital/perception" in sheet
     ac = player.get(f"/characters/{cole.id}/vital/ac").text
     assert "Unarmored Defense (Wisdom modifier)" in ac and '<tr class="total"><td>Total</td><td class="num">16</td>' in ac
     speed = player.get(f"/characters/{cole.id}/vital/speed").text

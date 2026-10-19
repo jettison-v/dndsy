@@ -7,8 +7,9 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import web
 from app import import_preview
-from app.auth import current_user, is_admin, is_reviewer
+from app.auth import is_admin, is_reviewer
 from app.db import get_db
 from app.importer import BundleError, import_bundle
 from app.templating import templates
@@ -19,15 +20,8 @@ MAX_UPLOAD_BYTES = 2_000_000
 
 
 def _guard(request: Request, allow=is_admin):
-    """(user, None) if allowed, else (None, a redirect or 403 page)."""
-    user = current_user(request)
-    if not user:
-        return None, RedirectResponse("/login", status_code=303)
-    if not allow(user):
-        return None, templates.TemplateResponse(
-            request, "message.html", {"title": "Not available", "message": "This page is for the campaign admin."}, status_code=403
-        )
-    return user, None
+    """(user, None) if allowed, else (None, a redirect or 403 page). Admins by default."""
+    return web.require(request, allow)
 
 
 def _reviewer_guard(request: Request):

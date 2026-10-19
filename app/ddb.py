@@ -639,7 +639,6 @@ class _Sheet:
 
     def skills(self) -> list[dict]:
         out = []
-        checks = self.total_bonus("ability-checks")
         half = bool(self.mods_of("half-proficiency", "ability-checks"))
         for name, ability in SKILLS:
             sub = name.lower().replace(" ", "-")

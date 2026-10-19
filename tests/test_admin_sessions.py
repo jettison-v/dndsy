@@ -130,7 +130,7 @@ def test_key_moments_edit_add_delete(client, db):
 
 
 def test_accept_edit_and_undo_existing_entity(client, db):
-    s = drafted_session(db)
+    drafted_session(db)
     p = proposal(db, "Lillippi Lemon")
     r = client.post(f"/admin/proposals/{p.id}/accept", headers=HX)
     assert "Now in askdnd" in r.text
@@ -149,7 +149,7 @@ def test_accept_edit_and_undo_existing_entity(client, db):
 
 
 def test_accept_with_edit_then_undo_new_entity_and_glossary(client, db):
-    s = drafted_session(db)
+    drafted_session(db)
     devil, hound = proposal(db, "Horn Devil"), proposal(db, "Hellhound")
     client.post(f"/admin/proposals/{devil.id}/accept", data={"summary": "Stunned by No Name."}, headers=HX)
     client.post(f"/admin/proposals/{hound.id}/accept", headers=HX)
@@ -164,7 +164,7 @@ def test_accept_with_edit_then_undo_new_entity_and_glossary(client, db):
 
 
 def test_reject_and_undo(client, db):
-    s = drafted_session(db)
+    drafted_session(db)
     p = proposal(db, "Horn Devil")
     r = client.post(f"/admin/proposals/{p.id}/reject", headers=HX)
     assert "Rejected" in r.text and "1 rejected" in r.text
@@ -174,7 +174,7 @@ def test_reject_and_undo(client, db):
 
 
 def test_double_accept_is_refused(client, db):
-    s = drafted_session(db)
+    drafted_session(db)
     p = proposal(db, "Horn Devil")
     client.post(f"/admin/proposals/{p.id}/accept", headers=HX)
     r = client.post(f"/admin/proposals/{p.id}/accept", headers=HX)

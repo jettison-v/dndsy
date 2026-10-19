@@ -9,10 +9,11 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import web
 from app import admin_sessions, config
 from app.db import get_db
 from app.extraction import session_label
-from app.models import Campaign, GameSession
+from app.models import GameSession
 
 router = APIRouter(prefix="/api")
 
@@ -43,7 +44,7 @@ def upload_transcript(
         return JSONResponse({"error": "Uploads aren't set up on the server (UPLOAD_TOKEN)."}, status_code=503)
     if not _authorized(authorization):
         return JSONResponse({"error": "Wrong or missing upload token."}, status_code=401)
-    campaign = db.scalar(select(Campaign).order_by(Campaign.id))
+    campaign = web.campaign(db)
     if campaign is None:
         return JSONResponse({"error": "Import the campaign first."}, status_code=409)
     session = db.scalar(

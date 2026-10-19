@@ -16,7 +16,7 @@ from markupsafe import Markup, escape
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import picks
+from app import picks, web
 from app import wild_shape as ws
 from app.auth import can_see_character_notes, current_user
 from app.db import get_db
@@ -156,8 +156,7 @@ def _load(request: Request, db: Session, character_id: int, edit: bool = False):
     if ch is None:
         return user, None, HTMLResponse("Not found", status_code=404)
     if not can_see_character_notes(user) or (edit and not picks.can_edit(db, user, ch)):
-        return user, None, templates.TemplateResponse(
-            request, "message.html", {"title": "Not available", "message": "Only this character's player can do that."}, status_code=403)
+        return user, None, web.forbidden(request, "Only this character's player can do that.")
     return user, ch, None
 
 

@@ -33,4 +33,6 @@ jobs:
           enable-cache: true
       - run: uv python install
       - run: uv sync --frozen
+      - name: Lint (unused imports, undefined names)
+        run: uv run ruff check app scripts tests
       - run: uv run pytest -q

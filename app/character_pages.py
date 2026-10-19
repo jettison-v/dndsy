@@ -17,6 +17,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import web
 from app import character_views as views
 from app import characters as chars
 from app import ddb, picks
@@ -25,7 +26,7 @@ from app import wild_shape as ws
 from app import rules_terms as terms
 from app.auth import current_user, is_admin, is_reviewer
 from app.db import get_db
-from app.models import Campaign, Character, SheetOverride
+from app.models import Character, SheetOverride
 from app.templating import templates
 
 router = APIRouter()
@@ -33,10 +34,6 @@ router = APIRouter()
 GAME_MODE_SECONDS = 150  # the page asks every 2.5 minutes…
 AUTO_MIN_AGE = timedelta(seconds=110)  # …and the server fetches at most this often per character
 MANUAL_MIN_AGE = timedelta(seconds=20)  # "Refresh now"
-
-
-def _campaign(db: Session) -> Campaign | None:
-    return db.scalar(select(Campaign).order_by(Campaign.id))
 
 
 def _overrides(db: Session) -> dict[tuple[str, str], str]:
@@ -64,14 +61,11 @@ def _view(db: Session, ch: Character, user: dict) -> dict:
     }
 
 
-def _forbidden(request: Request, message: str = "Only the admin and the DM can do that."):
-    return templates.TemplateResponse(request, "message.html", {"title": "Not available", "message": message}, status_code=403)
+_forbidden = web.forbidden
 
 
 def _not_found(request: Request):
-    return templates.TemplateResponse(
-        request, "message.html", {"title": "Not found", "message": "That character isn't in the campaign."}, status_code=404
-    )
+    return web.not_found(request, "That character isn't in the campaign.")
 
 
 def _mine_first(db: Session, user: dict | None, characters: list[Character]) -> list[Character]:
@@ -81,7 +75,7 @@ def _mine_first(db: Session, user: dict | None, characters: list[Character]) -> 
 
 
 def _party_rows(db: Session, user: dict | None = None) -> list[dict]:
-    campaign = _campaign(db)
+    campaign = web.campaign(db)
     if not campaign:
         return []
     return [views.party_row(ch, chars.character_summary(ch)) for ch in _mine_first(db, user, chars.campaign_characters(db, campaign.id))]
@@ -424,7 +418,7 @@ async def save_order(request: Request, character_id: int, db: Session = Depends(
 def refresh_all(request: Request, db: Session = Depends(get_db)):
     if not is_reviewer(current_user(request)):
         return _forbidden(request)
-    campaign = _campaign(db)
+    campaign = web.campaign(db)
     ok, failed = chars.refresh_all(db, campaign.id) if campaign else (0, [])
     db.commit()
     msg = f"Updated {ok} from D&D Beyond"

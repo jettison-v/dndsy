@@ -10,15 +10,16 @@ Glossary terms also get a side panel, with editing for reviewers.
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from markupsafe import escape
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import web
 from app import entities
 from app import access
 from app.auth import can_moderate, current_user, is_dm, is_reviewer
 from app.db import get_db
 from app.extraction import session_label
-from app.models import Campaign, Correction, Entity, Fact, GameSession, GlossaryTerm, Status, Suggestion
+from app.models import Correction, Entity, Fact, GameSession, GlossaryTerm, Status, Suggestion
 from app.templating import templates
 
 router = APIRouter()
@@ -97,7 +98,7 @@ def suggest_glossary(request: Request, term_id: int | None = None, text: str = F
     user = current_user(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
-    campaign = db.scalar(select(Campaign).order_by(Campaign.id))
+    campaign = web.campaign(db)
     term = db.get(GlossaryTerm, term_id) if term_id else None
     if campaign is None or (term_id and term is None) or not _clean(text):
         return _problem("Write what should change first.")
@@ -128,7 +129,7 @@ def _can_edit_glossary(user: dict | None) -> bool:
 def glossary_add(request: Request, term: str = Form(""), description: str = Form(""), db: Session = Depends(get_db)):
     """The DM (or a reviewer) adds a term directly, no review."""
     user = current_user(request)
-    campaign = db.scalar(select(Campaign).order_by(Campaign.id))
+    campaign = web.campaign(db)
     new_term = " ".join(term.split())[:200]
     if not _can_edit_glossary(user) or campaign is None:
         return _problem("Only the DM and reviewers can add terms directly.")
@@ -208,7 +209,7 @@ def from_the_table(db: Session, campaign_id: int) -> dict:
 
 
 def waiting_count(db: Session) -> int:
-    campaign = db.scalar(select(Campaign).order_by(Campaign.id))
+    campaign = web.campaign(db)
     if campaign is None:
         return 0
     t = from_the_table(db, campaign.id)
@@ -221,9 +222,8 @@ def inbox(request: Request, db: Session = Depends(get_db)):
     if not user:
         return RedirectResponse("/login", status_code=303)
     if not can_moderate(user):
-        return templates.TemplateResponse(request, "message.html", {"title": "Not available",
-                                          "message": "Suggestions go to the DM, admins and reviewers."}, status_code=403)
-    campaign = db.scalar(select(Campaign).order_by(Campaign.id))
+        return web.forbidden(request, "Suggestions go to the DM, admins and reviewers.")
+    campaign = web.campaign(db)
     return templates.TemplateResponse(request, "suggestions.html", {
         "table": from_the_table(db, campaign.id) if campaign else {"entries": [], "facts": []},
         "toast": request.session.pop("toast", None),

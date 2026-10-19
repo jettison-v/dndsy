@@ -18,7 +18,7 @@ from app.admin_sessions import router as admin_sessions_router
 from app.admin_usage import router as admin_usage_router
 from app.api import router as api_router
 from app.atlas import router as atlas_router
-from app.auth import current_user, is_admin
+from app.auth import current_user
 from app.auth import router as auth_router
 from app.character_pages import router as character_router
 from app.help_pages import router as help_router
