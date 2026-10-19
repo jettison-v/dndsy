@@ -1,6 +1,6 @@
 # askdnd v2 — Architecture (DRAFT)
 
-_Last updated 2026-10-14 · Pairs with [BRIEF.md](BRIEF.md)_
+_Last updated 2026-10-19 · Pairs with [BRIEF.md](BRIEF.md)_
 
 ## What changed since v1 (early 2025), and why it matters here
 
@@ -24,15 +24,18 @@ _Last updated 2026-10-14 · Pairs with [BRIEF.md](BRIEF.md)_
 | Campaign pictures | Postgres (`entity_pictures`) | Portraits, maps and banners on campaign pages, resized to WebP (≤1200 px + a 320 px thumbnail). Small and few, so no S3 setup needed. Player characters fall back to their D&D Beyond portrait. |
 | Campaign map | AideDD's Sword Coast atlas, embedded | The Map tab shows aidedd.org in a frame; place pages link to its markers. We store only marker names, never the map image. |
 | Wild Shape Beasts | `app/data/beasts_2024.json` | SRD 5.2 stat blocks (CC-BY-4.0) for the 91 Beasts, with links to D&D Beyond's pictures; refreshed by `scripts/wild_shape_beasts.py`. Known forms' stat blocks come with the D&D Beyond sheet. |
-| Version history | Postgres (`revisions`) | Every change to entries, glossary, sessions, characters, people and players' notes (old value, new value, who, how). Manage › History restores; Manage › Data undoes a whole import. Players' notes stay hidden from the DM there too. |
+| Version history | Postgres (`revisions`) | Every change to entries, glossary, sessions, key moments, other names, relationships, facts, characters, people and players' notes (old value, new value, who, how). Manage › History restores; Manage › Data undoes a whole import. Players' notes stay hidden from the DM there too. |
 | Database backups | S3 `askdnd-ai/v2/backups/` | Nightly at 10:00 UTC, the `askdnd-backup` Railway cron service runs `scripts/backup_db.py`: every table in one gzipped JSON, 30 days kept. Its AWS key can only use `v2/backups/`. `scripts/restore_db.py` loads one into an empty database. |
 | AI (cloud) | **Claude via the Anthropic API** | Tool use, web search, citations, PDF reading. |
+| Spending limit | Anthropic Console limit + askdnd's own monthly limit (`campaigns.monthly_limit_usd`) | Set on Manage › Usage; once a month's spending reaches it, askdnd stops calling Claude and says why (`app/spending.py`). |
+| Rule books | `private/books/` (gitignored) | Offline copies of the 2024 PHB, DMG and MM, saved from Brett's D&D Beyond sign-in for reference while building. The repo is public: only summaries (`docs/rules/`) and SRD data are committed. |
+| Tests and deploys | GitHub Actions + Railway "Wait for CI" | Every push runs ruff (lint) and pytest with a throwaway Postgres; Railway deploys beta only when they pass. |
 | AI (local) | **Ollama on Brett's Mac** (~30B-class model; test 2–3 on a real transcript) | The banter filter. Raw transcripts never leave the Mac. |
 | Sign-in | **Google sign-in, limited to 5 approved emails** | No passwords to manage. A good setup skill to reuse. |
 | Characters | D&D Beyond public character data (unofficial) | Could break without notice. Keep the last good copy so a failure doesn't break the app. |
 | Hosting | **New Railway service** at `beta.askdnd.ai` | Legacy is untouched. Switch askdnd.ai over when v2 is ready. |
 
-Note: API usage is **billed separately** from a Claude Pro/Max subscription (Anthropic Console, pay-as-you-go). For 5 users it should be modest; we'll set a monthly spend limit.
+Note: API usage is **billed separately** from a Claude Pro/Max subscription (Anthropic Console, pay-as-you-go). For 5 users it should be modest; the monthly limit is set both in the Anthropic Console and on Manage › Usage.
 
 ## How the pieces fit
 
@@ -63,8 +66,8 @@ DURING A SESSION (phase 2)
 ## Data (in plain terms)
 - **Campaign** → has sessions, story entries (NPCs, places, quests, items), players and characters.
 - **Session** → date, approved recap, extracted events. Raw transcript is NOT stored.
-- **Character** → owner, D&D Beyond ID, latest snapshot, notes ("why I built it this way").
-- **Visibility rule**: character notes are visible to players, hidden from the DM. Everything else is visible to everyone.
+- **Character** → owner, D&D Beyond ID, latest good D&D Beyond copy, Wild Shape choices, and the player's structured notes (battle combos, leveling strategy, personal quest, general notes).
+- **Visibility rule**: players' notes, stars and reminders are visible to players, hidden from the DM. Everything else is visible to everyone.
 - **Book content** (phase 2) → sections with page numbers and page images.
 
 ## Build plan: 3 weeks to the first milestone
@@ -86,11 +89,15 @@ DURING A SESSION (phase 2)
 
 **Week 3 — Character briefing and launch to the table**
 - Done (2026-10-16): Battle · Character · Party pages, stars and reminders (only the character's player; hidden from the DM), Game Mode, Manage › People with access levels and who plays which character.
-- **To do: player notes on the Character page.** Bring each player's character notes ("why I built it this way", from Notes sync) into the Character view, visible to players and hidden from the DM, like stars and reminders.
+- Done (2026-10-18): structured player notes on the Character page (Battle combos over several turns, Leveling strategy, Personal quest, General notes), replacing Notes sync of character Google Docs; visible to players, hidden from the DM.
 - Done (2026-10-16): D&D Beyond import (3a). Characters page with a card per character and a full readable sheet; reviewers link and refresh; last good copy kept in `character_snapshots`; `app.characters.character_summary()` is the input for briefings.
 - Pull the 5 characters from D&D Beyond; plain-language briefings (wild shapes, spells, features)
 - Seed notes from Brett's doc; enforce the visibility rule; phone polish
 - Invite the table; dry run before the session
+
+**Status (2026-10-19)**
+- Done since: Map tab; Wild Shape planner (forms adjusted for the druid's stats, Moon rules, kept items and traits); Manage regrouped with an access chart; import preview and undo; version history; nightly S3 backups with alerts; tests and lint before every deploy; monthly spending limit.
+- Next: Brett drafts and publishes the remaining recaps; plan rules answers (the third core feature) in the planning chat; navigation simplification and D&D Beyond campaign auto-discovery need Brett's input (see `docs/reviews/2026-10-19-app-review.md`).
 
 **Phase 2 (after the session)**
 - Rules companion (book conversion, tool-using search, Sage Advice and community input, page images)

@@ -19,6 +19,14 @@ A companion app for one D&D 2024 table (4 players + DM, playing on Zoom with D&D
 - v2 deploys to a **new Railway service** (in the existing `askdnd` Railway project) at `beta.askdnd.ai`. DNS is in Cloudflare (proxied records). askdnd.ai moves to v2 only when Brett says so.
 - Pushing to `main` deploys to beta. That's fine, but keep `main` working.
 
+## Where things are (as of 2026-10-19)
+- **Manage** (`/manage`, app/manage.py): one overview of admin and reviewer pages (People with the access chart, Characters, Recaps, Suggestions, History, Usage, Data). Access rules live only in `app/access.py` (`allows()`).
+- **Version history** (app/history.py): records edits automatically; Manage › History restores; imports are previewed and can be undone.
+- **Backups**: the `askdnd-backup` Railway cron service dumps the database to S3 `v2/backups/` nightly; `scripts/restore_db.py` restores into an empty database.
+- **Spending limit**: Manage › Usage (app/spending.py); every Claude call checks it first.
+- **Rule books**: offline copies in `private/books/` (gitignored). **The repo is public**: never commit book text or Monster Manual stat blocks; summaries go in `docs/rules/`, SRD data in `app/data/`.
+- Shared page helpers (the campaign, sign-in checks, message pages): app/web.py. D&D Beyond: app/ddb.py (fetching and cleaning) and app/ddb_sheet.py (parsing the sheet).
+
 ## Stack
 Python (current stable) managed with **uv** · FastAPI serving server-rendered pages (Jinja + HTMX) and the API · Postgres on Railway (pgvector later) · Claude via the Anthropic API · Ollama on Brett's Mac (M4 Pro, 48 GB) for the local transcript filter · Google sign-in limited to an email allowlist · D&D Beyond public character data (unofficial: cache the last good copy and fail gracefully) · S3 `v2/` prefix for page images.
 
@@ -36,7 +44,7 @@ Python (current stable) managed with **uv** · FastAPI serving server-rendered p
 - AI-drafted recaps are reviewed by Brett before the table sees them; his corrections feed future extractions (glossary + correction log).
 
 ## Conventions
-- Small, focused commits with clear messages. Run tests before committing.
+- Small, focused commits with clear messages. Run `uv run ruff check app scripts tests` and `uv run pytest -q` before committing. GitHub Actions runs both on every push, and Railway waits for them before deploying beta.
 - When a feature or a visibility rule changes, update the About and FAQ pages (`app/templates/about.html`, `faq.html`) to match.
 - Tests for core logic (extraction parsing, visibility rules, D&D Beyond parsing). Don't test against live paid APIs by default.
 - Secrets come from environment variables (Railway variables in production, `.env` locally). Document every variable in `.env.example`.

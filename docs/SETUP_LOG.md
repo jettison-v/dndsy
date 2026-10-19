@@ -300,3 +300,17 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 1. Set up CI (tests on every push) early, and make the host wait for it. It's the cheapest protection against shipping a broken change.
 2. Make CI fail loudly when something it needs is missing (here, the database), so "all skipped" can never look like "all passed".
 3. Any scheduled job should leave a trace (a row with time and result) and something should look at it. A job nobody checks can be broken for weeks.
+
+## 2026-10-19 — Tidy-ups: lint, automatic cache-busting, spending limit
+
+**What was set up**
+- **Lint in CI**: `ruff` checks for unused and undefined names on every push, next to the tests. It caught a real mistake while the D&D Beyond file was being split.
+- **Automatic cache-busting**: the CSS and JS links end in a fingerprint of the file's contents, so browsers fetch the new version after each deploy. No more hand-edited `?v=51` numbers.
+- **Leftovers removed with a safe migration**: an old unused table and flag were dropped, with any old rows copied to their replacement first.
+- **Monthly spending limit inside the app**: Manage › Usage. It sits on top of the Anthropic Console's limit and explains itself instead of failing mid-draft.
+
+**Reuse this on a new project**
+1. Add a linter to CI from day one. It's free and catches mistakes tests miss.
+2. Let the build fingerprint static files (a hash in the URL) rather than numbering them by hand; stale-cache bugs disappear.
+3. When removing a database table, write the migration so it moves any remaining data first. You can't always check production by hand.
+4. Put spending caps in two places: the provider's hard limit, and a friendlier one in your app that says what happened and how to change it.

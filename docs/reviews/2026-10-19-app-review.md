@@ -32,13 +32,13 @@ askdnd was built feature by feature over about a week. This review steps back an
 
 ### Medium priority
 
-6. **Tidy the code built in layers** (M, me). Same behaviour, easier to change:
+6. ✅ *Done 2026-10-19* (CSS grouping by page left as is). **Tidy the code built in layers** (M, me). Same behaviour, easier to change:
    - One shared helper for "the campaign" (three copies today) and one for "sign in and check permission" (eleven small variants).
    - Split the largest files: `ddb.py` (1,400 lines: fetching, cleaning and parsing together) and `character_pages.py` (Battle, Character, Party and Wild Shape routes together).
    - Group `app.css` by page (it grew by appending) and make the browser pick up new CSS and JS automatically instead of the hand-edited `?v=50` numbers.
    - Remove leftovers: the unused `character_notes` table and the old `is_admin` flag on people.
-7. **Bring the docs up to date** (S, me). `ARCHITECTURE.md`'s build plan still lists "player notes" and "Notes sync" as to-dos; CLAUDE.md doesn't mention Manage, History or backups. Future sessions read these first, so stale docs cost time.
-8. **An app-level spending cap** (S). CLAUDE.md asks for a monthly limit. The Anthropic workspace limit exists; askdnd could also refuse new drafts past a monthly amount you set on the Usage page and say why, instead of failing mid-draft.
+7. ✅ *Done 2026-10-19.* **Bring the docs up to date** (S, me). `ARCHITECTURE.md`'s build plan still lists "player notes" and "Notes sync" as to-dos; CLAUDE.md doesn't mention Manage, History or backups. Future sessions read these first, so stale docs cost time.
+8. ✅ *Done 2026-10-19.* **An app-level spending cap** (S). CLAUDE.md asks for a monthly limit. The Anthropic workspace limit exists; askdnd could also refuse new drafts past a monthly amount you set on the Usage page and say why, instead of failing mid-draft.
 9. **Simplify navigation** (M, with Brett). The top bar has seven items and the Character page nine tabs. Ideas: fold Party into Battle and Character as a switcher; group Character's tabs (Play: Actions, Spells, Wild Shape · Sheet: Inventory, Features, Skills, Situational · About: Background, Notes); a phone pass after.
 10. **Use more of the D&D Beyond campaign** (S–M). See below.
 
