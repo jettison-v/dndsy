@@ -2,10 +2,11 @@
 
 import json
 
-from fastapi import APIRouter, Depends, File, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
+from app import import_preview
 from app.auth import current_user, is_admin, is_reviewer
 from app.db import get_db
 from app.importer import BundleError, import_bundle
@@ -37,11 +38,12 @@ def import_form(request: Request):
     user, denied = _guard(request)
     if denied:
         return denied
-    return templates.TemplateResponse(request, "admin_import.html", {"user": user})
+    return templates.TemplateResponse(request, "admin_import.html", {"user": user, "toast": request.session.pop("toast", None)})
 
 
 @router.post("/import")
 async def import_upload(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    """Step 1: read the file and show what it would change. Nothing is written yet."""
     user, denied = _guard(request)
     if denied:
         return denied
@@ -51,13 +53,44 @@ async def import_upload(request: Request, file: UploadFile = File(...), db: Sess
         context["error"] = "That file is too large (2 MB max)."
     else:
         try:
-            counts = import_bundle(db, json.loads(raw))
-            db.commit()
-            context["counts"] = dict(counts) or {"nothing new": 0}
+            bundle = json.loads(raw)
+            context["preview"] = import_preview.preview(db, bundle)
+            context["token"] = import_preview.hold(bundle, file.filename or "bundle.json", user["email"])
         except json.JSONDecodeError as e:
-            db.rollback()
             context["error"] = f"That isn't valid JSON (line {e.lineno}): {e.msg}"
-        except (BundleError, KeyError, ValueError, TypeError) as e:
+        except (BundleError, KeyError, ValueError, TypeError, AttributeError) as e:
             db.rollback()
             context["error"] = f"Nothing was imported. Problem: {e}"
     return templates.TemplateResponse(request, "admin_import.html", context)
+
+
+@router.post("/import/apply")
+def import_apply(request: Request, token: str = Form(""), keep_text: str = Form(""), db: Session = Depends(get_db)):
+    """Step 2: the admin looked at the preview and pressed Import."""
+    user, denied = _guard(request)
+    if denied:
+        return denied
+    pending = import_preview.take(token, user["email"])
+    if pending is None:
+        return templates.TemplateResponse(request, "admin_import.html", {
+            "user": user, "error": "That upload expired or was already imported. Choose the file again."})
+    context = {"user": user, "filename": pending["filename"]}
+    try:
+        counts = import_bundle(db, pending["bundle"], keep_text=keep_text == "1")
+        db.commit()
+        context["counts"] = dict(counts) or {"nothing new": 0}
+        context["kept"] = keep_text == "1"
+    except (BundleError, KeyError, ValueError, TypeError, AttributeError) as e:
+        db.rollback()
+        context["error"] = f"Nothing was imported. Problem: {e}"
+    return templates.TemplateResponse(request, "admin_import.html", context)
+
+
+@router.post("/import/cancel")
+def import_cancel(request: Request, token: str = Form("")):
+    user, denied = _guard(request)
+    if denied:
+        return denied
+    import_preview.take(token, user["email"])
+    request.session["toast"] = "Import cancelled. Nothing changed."
+    return RedirectResponse("/admin/import", status_code=303)

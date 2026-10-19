@@ -92,8 +92,11 @@ def _import_relationships(db: Session, campaign: Campaign, items: list, counts: 
             counts["relationships added"] += 1
 
 
-def import_bundle(db: Session, bundle: dict) -> Counter:
-    """Apply `bundle` inside the caller's transaction. Returns created/updated counts."""
+def import_bundle(db: Session, bundle: dict, keep_text: bool = False) -> Counter:
+    """Apply `bundle` inside the caller's transaction. Returns created/updated counts.
+
+    keep_text: leave existing entries' description, quest status and published state
+    as they are here (new entries, names, aliases and everything else still import)."""
     counts: Counter = Counter()
     try:
         c = bundle["campaign"]
@@ -159,18 +162,20 @@ def import_bundle(db: Session, bundle: dict) -> Counter:
                 if _norm(old_name) not in {_norm(a.alias) for a in entity.aliases}:
                     entity.aliases.append(EntityAlias(alias=old_name, note="former name"))
                 counts["entities renamed"] += 1
-        if entity is None:
+        is_new = entity is None
+        if is_new:
             entity = Entity(campaign_id=campaign.id, kind=kind, name=item["name"].strip())
             db.add(entity)
             existing[key] = entity
             counts["entities created"] += 1
         else:
             counts["entities updated"] += 1
-        entity.status = Status.PUBLISHED  # an admin import is a deliberate, reviewed change
-        if "summary" in item:
-            entity.summary = item["summary"]
-        if "quest_open" in item:
-            entity.quest_open = item["quest_open"]
+        if is_new or not keep_text:
+            entity.status = Status.PUBLISHED  # an admin import is a deliberate, reviewed change
+            if "summary" in item:
+                entity.summary = item["summary"]
+            if "quest_open" in item:
+                entity.quest_open = item["quest_open"]
         have = {_norm(a.alias): a for a in entity.aliases}
         for alias in item.get("aliases", []):
             text, note = (alias, "") if isinstance(alias, str) else (alias["alias"], alias.get("note", ""))

@@ -253,3 +253,13 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 1. Admin pages pile up as you build. Every so often, list them, group them by who uses them and how often, and give them one shared header. An overview page that says "what needs me?" saves opening each one.
 2. Syncing outside documents is handy to start, but structured forms inside the app scale better: everyone writes in the same shape, and the app can link and reuse what they write.
 3. Move existing content over with an import file kept out of git (`private/`), so you can review it locally before loading it into production.
+
+## 2026-10-18 — Safer imports and a clear access chart
+
+**What changed**
+- **Manage › Data** now shows a preview of every import: what's new, what would change (old and new side by side) and what's already the same. Nothing is saved until you press **Import these changes**; **Cancel** throws it away. You can keep the current descriptions and import only what's new.
+- **Manage › People** has a chart of what Player, Reviewer and Admin can do, what ticking DM changes, and what askdnd doesn't do for anyone. Each person's row says in one line what their access allows.
+
+**Reuse this on a new project**
+1. Any upload that overwrites data should show a preview first. The easy way to build one: run the real import inside a database transaction, compare before and after, then roll it back.
+2. Keep permission rules in one function that both the app and its help text use, so the explanation can never disagree with what actually happens.

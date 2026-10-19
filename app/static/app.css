@@ -939,3 +939,15 @@ a.sheet-ref { text-decoration-style: dotted; }
 .access-chart .dm-col { border-left: 1px solid var(--line); font-size: .82rem; }
 .ac-dm-gains { color: var(--green); } .ac-dm-never { color: var(--red); } .ac-dm-same { color: var(--faint); }
 .people li .access-summary { grid-column: 1 / -1; order: 10; margin-top: -4px; }
+
+/* Manage › Data: import preview */
+.import-summary { margin: 10px 0; padding-left: 18px; }
+.warn-text { color: var(--amber); }
+.import-change { border-top: 1px solid var(--line); padding: 10px 0; display: grid; gap: 6px; }
+.import-change .row { gap: 8px; }
+.import-diff { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.import-diff > div { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; }
+.import-diff small { color: var(--muted); font-size: .75rem; }
+.import-diff p { margin: 4px 0 0; font-size: .9rem; }
+.import-confirm { display: grid; gap: 10px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+@media (max-width: 700px) { .import-diff { grid-template-columns: 1fr; } }

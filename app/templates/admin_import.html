@@ -1,17 +1,65 @@
 {% extends "base.html" %}
 {% block title %}Data · Manage · askdnd{% endblock %}
 {% block content %}
-<main class="page narrow">
+<main class="page" style="max-width:1000px">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Import campaign data</h1></div>
-  <p class="subtitle">Upload a campaign bundle (.json). Importing again is safe: matching records are updated, not duplicated.</p>
-  {% if error %}<div class="flash bad"><b>{{ filename }}</b>: {{ error }}</div>{% endif %}
-  {% if counts %}<div class="flash"><b>Imported {{ filename }}.</b><ul>{% for k, v in counts.items() %}<li>{{ k }}: {{ v }}</li>{% endfor %}</ul></div>{% endif %}
+  <p class="subtitle">Upload a campaign bundle (.json). You'll see exactly what it would change before anything is saved. Importing the same file again updates matching records; it never duplicates them.</p>
+  {% if error %}<div class="flash bad">{% if filename %}<b>{{ filename }}</b>: {% endif %}{{ error }}</div>{% endif %}
+  {% if counts %}<div class="flash"><b>Imported {{ filename }}.</b>{% if kept %} Existing descriptions were kept.{% endif %}<ul>{% for k, v in counts.items() %}<li>{{ k }}: {{ v }}</li>{% endfor %}</ul></div>{% endif %}
+
+  {% if preview %}{% set pv = preview %}
+  <section class="section import-preview">
+    <div class="section-head"><h2>Preview: {{ filename }}</h2><span class="tag draft">Nothing saved yet</span></div>
+    {% if pv.nothing %}
+    <p class="muted" style="margin-top:8px">Nothing would change: everything in this file is already here{% if pv.unchanged %} ({{ pv.unchanged }} entries the same){% endif %}.</p>
+    {% else %}
+    <ul class="import-summary">
+      {% if pv.created %}<li><b>{{ pv.created | length }}</b> new {{ "entry" if pv.created | length == 1 else "entries" }}</li>{% endif %}
+      {% if pv.changed %}<li class="warn-text"><b>{{ pv.changed | length }}</b> existing {{ "entry" if pv.changed | length == 1 else "entries" }} would change</li>{% endif %}
+      {% if pv.unchanged %}<li class="muted">{{ pv.unchanged }} already the same</li>{% endif %}
+      {% for k, v in pv.other.items() %}<li>{{ k | capitalize }}: <b>{{ v }}</b></li>{% endfor %}
+    </ul>
+
+    {% if pv.changed %}
+    <h3 class="divider">Existing entries that would change</h3>
+    <p class="hint">The left side is what's here now; the right side is what the file has. Check these: a file made earlier can undo edits made here since.</p>
+    {% for c in pv.changed %}
+    <div class="import-change">
+      <div class="row"><b>{{ c.name }}</b><span class="tag">{{ c.kind }}</span>{% if c.rewritten %}<span class="tag edited" title="This description was rewritten with Claude and accepted here">Rewritten here</span>{% endif %}</div>
+      {% for field, (old, new) in c.diffs.items() %}
+        {% if field == "summary" %}
+        <div class="import-diff"><div><small>Description now</small><p>{{ old or "—" }}</p></div><div><small>Description in the file</small><p>{{ new or "—" }}</p></div></div>
+        {% else %}
+        <p class="note">{{ {"name": "Name", "quest": "Quest", "status": "Status"}[field] }}: {{ old }} → <b>{{ new }}</b></p>
+        {% endif %}
+      {% endfor %}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if pv.created %}
+    <h3 class="divider">New entries</h3>
+    <p>{% for c in pv.created %}<span class="chip">{{ c.name }} <span class="muted">· {{ c.kind }}</span></span> {% endfor %}</p>
+    {% endif %}
+    {% endif %}
+
+    <form method="post" action="/admin/import/apply" class="import-confirm">
+      <input type="hidden" name="token" value="{{ token }}">
+      {% if pv.text_changes %}<label class="check"><input type="checkbox" name="keep_text" value="1"> Keep the current descriptions, quest status and published state of existing entries (import only what's new)</label>{% endif %}
+      <div class="row">
+        <button class="btn primary" data-busy="Importing…" {% if pv.nothing %}disabled{% endif %}>Import these changes</button>
+        <button class="btn" type="submit" formaction="/admin/import/cancel">Cancel</button>
+      </div>
+    </form>
+  </section>
+  {% else %}
   <section class="section">
     <form method="post" action="/admin/import" enctype="multipart/form-data" class="stack">
       <input type="file" name="file" accept=".json,application/json" required>
-      <div><button class="btn primary" data-busy="Importing…">Import</button></div>
+      <div><button class="btn primary" data-busy="Reading…">Preview import</button></div>
     </form>
   </section>
+  {% endif %}
 </main>
 {% endblock %}

@@ -43,12 +43,64 @@ def test_import_requires_admin(client, monkeypatch):
     assert upload(client, {"campaign": {"slug": "x", "name": "X"}}).status_code == 403
 
 
-def test_admin_can_import(client, monkeypatch):
+def token_in(page: str) -> str:
+    import re
+
+    return re.search(r'name="token" value="([^"]+)"', page).group(1)
+
+
+def test_admin_can_import(client, monkeypatch, db):
+    from sqlalchemy import select
+
+    from app.models import Entity
+
     sign_in(client, monkeypatch, "admin@example.com")
     page = client.get("/")
     assert "Manage" in page.text and "/admin/import" in page.text
     r = upload(client, {"campaign": {"slug": "x", "name": "X"}, "entities": [{"kind": "npc", "name": "Uni"}]})
-    assert "entities created: 1" in r.text
+    assert "Preview: bundle.json" in r.text and "Nothing saved yet" in r.text and "Uni" in r.text
+    assert db.scalar(select(Entity)) is None  # nothing written by the preview
+    r = client.post("/admin/import/apply", data={"token": token_in(r.text)})
+    assert "entities created: 1" in r.text and db.scalar(select(Entity)).name == "Uni"
+    assert "expired or was already imported" in client.post("/admin/import/apply", data={"token": "not-a-real-one"}).text
+
+
+def test_preview_shows_what_would_change_and_can_keep_descriptions(client, monkeypatch, db):
+    from sqlalchemy import select
+
+    from app.importer import import_bundle
+    from app.models import Entity
+
+    bundle = {"campaign": {"slug": "x", "name": "X"}, "entities": [{"kind": "npc", "name": "Uni", "summary": "Old text."}]}
+    import_bundle(db, bundle)
+    uni = db.scalar(select(Entity))
+    uni.summary = "Edited here since."
+    db.flush()
+    sign_in(client, monkeypatch, "admin@example.com")
+
+    same = upload(client, {"campaign": {"slug": "x", "name": "X"}, "entities": [{"kind": "npc", "name": "Uni", "summary": "Edited here since."}]})
+    assert "Nothing would change" in same.text
+
+    r = upload(client, bundle)  # the old file again
+    assert "1</b> existing entry would change" in r.text and "Edited here since." in r.text and "Old text." in r.text
+    assert "Keep the current descriptions" in r.text
+    db.refresh(uni)
+    assert uni.summary == "Edited here since."  # previewing changed nothing
+    client.post("/admin/import/apply", data={"token": token_in(r.text), "keep_text": "1"})
+    db.refresh(uni)
+    assert uni.summary == "Edited here since."  # kept
+    r = upload(client, bundle)
+    client.post("/admin/import/apply", data={"token": token_in(r.text)})
+    db.refresh(uni)
+    assert uni.summary == "Old text."  # replaced only when confirmed without keeping
+
+
+def test_cancel_discards_the_upload(client, monkeypatch, db):
+    sign_in(client, monkeypatch, "admin@example.com")
+    r = upload(client, {"campaign": {"slug": "x", "name": "X"}, "entities": [{"kind": "npc", "name": "Uni"}]})
+    token = token_in(r.text)
+    assert "Nothing changed" in client.post("/admin/import/cancel", data={"token": token}, follow_redirects=True).text
+    assert "expired or was already imported" in client.post("/admin/import/apply", data={"token": token}).text
 
 
 def test_bad_file_shows_error(client, monkeypatch):
