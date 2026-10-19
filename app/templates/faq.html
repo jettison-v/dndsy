@@ -106,7 +106,7 @@
       <p>Yes. Every night (3 am Pacific) the whole database is copied to a private Amazon S3 storage bucket, and the last 30 days of copies are kept. That copy lives outside Railway, where askdnd runs, so even a problem there wouldn't lose the campaign. The backup job has its own key that can only reach its backups folder. Restoring one is a deliberate step the admin takes with the restore script; it's been tested. If a night's backup fails or doesn't run, the Data card on the Manage overview turns red.</p>
     {% endcall %}
     {% call q("Does using askdnd cost anything?") %}
-      <p>Not for players. Claude is paid per use by the admin, with a monthly limit: drafting a recap costs a few cents, and regenerating a Campaign description about 1–2¢. Admins can see spending on Manage › Usage.</p>
+      <p>Not for players. Claude is paid per use by the admin, with a monthly limit: drafting a recap costs a few cents, and regenerating a Campaign description about 1–2¢. Admins see spending on Manage › Usage and can set askdnd's own monthly limit there: once a month's spending reaches it, askdnd pauses drafts and description rewrites until the 1st (or until the limit is raised) and says so.</p>
     {% endcall %}
     {% call q("How do I get someone signed in?") %}
       <p>An admin adds their Google email on Manage › People. While the Google sign-in is in testing, the admin also adds them as a test user in Google Cloud Console.</p>
