@@ -1,0 +1,89 @@
+{# Large modal: add or edit a player note. Repeating rows (turns, levels, steps) use [data-repeat] in app.js. #}
+{% set d = data %}
+<div class="peek-head fm-head">
+  <div class="fm-title"><div class="note">{{ c.entity.name }} · {{ meta.label }}</div>
+    <h2 id="peek-title">{{ n.title if n else meta.new }}</h2>
+    <div class="note">{{ meta.about }}</div></div>
+  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
+</div>
+<form class="peek-body note-form" method="post" action="/characters/{{ c.id }}/notes">
+  {% if n %}<input type="hidden" name="note_id" value="{{ n.id }}">{% else %}<input type="hidden" name="kind" value="{{ kind }}">{% endif %}
+  <label class="field"><span>Title</span><input type="text" name="title" maxlength="200" value="{{ n.title if n else '' }}"
+    placeholder="{{ {'combo': 'e.g. Grapple, then Moonbeam', 'leveling': 'e.g. Moon Druid with a Monk dip', 'quest': 'e.g. Find out what happened to my father', 'general': 'e.g. Things the DM told me'}[kind] }}" autofocus></label>
+
+  {% if kind == "combo" %}
+  <div class="form-2">
+    <label class="field"><span>When to use it</span><textarea name="when" rows="2" placeholder="e.g. A big melee enemy, allies nearby">{{ d.when }}</textarea></label>
+    <label class="field"><span>What it needs</span><textarea name="needs" rows="2" placeholder="Resources, position, conditions: e.g. a 2nd-level slot, Wild Shape use, enemy within 5 ft">{{ d.needs }}</textarea></label>
+  </div>
+  <h3>Turns</h3>
+  <p class="note">Most combos need a setup turn and a payoff turn. Fill in only what you use each turn.</p>
+  <div class="repeat" data-repeat>
+    {% set turns = d.turns or [{"label": "Turn 1 · Setup"}, {"label": "Turn 2 · Payoff"}] %}
+    {% macro turn_row(t) %}<fieldset class="repeat-row combo-edit">
+      <div class="row"><input type="text" name="turn_label" value="{{ t.label }}" placeholder="Turn 1 · Setup" class="turn-label">
+        <button type="button" class="btn link danger small" data-repeat-remove>Remove turn</button></div>
+      <div class="form-2">
+        <label class="field k-action"><span>Action</span><textarea name="turn_action" rows="2">{{ t.action }}</textarea></label>
+        <label class="field k-bonus"><span>Bonus action</span><textarea name="turn_bonus" rows="2">{{ t.bonus }}</textarea></label>
+        <label class="field k-reaction"><span>Reaction</span><textarea name="turn_reaction" rows="2">{{ t.reaction }}</textarea></label>
+        <label class="field"><span>Movement</span><textarea name="turn_move" rows="2">{{ t.move }}</textarea></label>
+      </div>
+      <label class="field"><span>Notes</span><input type="text" name="turn_notes" value="{{ t.notes }}" placeholder="e.g. Only if the Grapple worked"></label>
+    </fieldset>{% endmacro %}
+    {% for t in turns %}{{ turn_row(t) }}{% endfor %}
+    <template>{{ turn_row({"label": ""}) }}</template>
+    <button type="button" class="btn small" data-repeat-add>+ Add a turn</button>
+  </div>
+  <div class="form-2">
+    <label class="field"><span>Payoff</span><textarea name="payoff" rows="2" placeholder="What it achieves">{{ d.payoff }}</textarea></label>
+    <label class="field"><span>Risks</span><textarea name="risks" rows="2" placeholder="What can go wrong">{{ d.risks }}</textarea></label>
+  </div>
+
+  {% elif kind == "leveling" %}
+  <label class="field"><span>Where you're heading</span><textarea name="goal" rows="2" placeholder="e.g. A Moon Druid who fights in Wild Shape, with two Monk levels for Bonus-action strikes">{{ d.goal }}</textarea></label>
+  <h3>Level by level</h3>
+  <div class="repeat" data-repeat>
+    {% macro step_row(st) %}<fieldset class="repeat-row level-edit">
+      <input type="text" name="step_level" value="{{ st.level }}" placeholder="Lvl" aria-label="Character level" class="lvl">
+      <input type="text" name="step_class" value="{{ st['class'] }}" placeholder="Class" aria-label="Class">
+      <input type="text" name="step_take" value="{{ st.take }}" placeholder="What you'll take" aria-label="What you'll take">
+      <input type="text" name="step_why" value="{{ st.why }}" placeholder="Why" aria-label="Why">
+      <select name="step_done" aria-label="Status"><option value="">Planned</option><option value="1"{{ ' selected' if st.done }}>Done</option></select>
+      <button type="button" class="btn link danger small" data-repeat-remove aria-label="Remove">✕</button>
+    </fieldset>{% endmacro %}
+    {% for st in d.steps or [{}] %}{{ step_row(st) }}{% endfor %}
+    <template>{{ step_row({}) }}</template>
+    <button type="button" class="btn small" data-repeat-add>+ Add a level</button>
+  </div>
+
+  {% elif kind == "quest" %}
+  <label class="field"><span>Goal</span><textarea name="goal" rows="2">{{ d.goal }}</textarea></label>
+  <div class="form-2">
+    <label class="field"><span>Why it matters</span><textarea name="why" rows="2">{{ d.why }}</textarea></label>
+    <label class="field"><span>Who and where</span><textarea name="who" rows="2" placeholder="People and places from the campaign become links">{{ d.who }}</textarea></label>
+  </div>
+  <h3>Steps and leads</h3>
+  <div class="repeat" data-repeat>
+    {% macro qstep(st) %}<fieldset class="repeat-row quest-edit">
+      <input type="text" name="step_text" value="{{ st.text }}" placeholder="A lead, a clue, a next step" aria-label="Step">
+      <select name="step_done" aria-label="Status"><option value="">Open</option><option value="1"{{ ' selected' if st.done }}>Done</option></select>
+      <button type="button" class="btn link danger small" data-repeat-remove aria-label="Remove">✕</button>
+    </fieldset>{% endmacro %}
+    {% for st in d.steps or [{}] %}{{ qstep(st) }}{% endfor %}
+    <template>{{ qstep({}) }}</template>
+    <button type="button" class="btn small" data-repeat-add>+ Add a step</button>
+  </div>
+  <label class="field" style="max-width:220px"><span>Status</span><select name="status">{% for k, v in statuses.items() %}<option value="{{ k }}"{{ ' selected' if status == k }}>{{ v }}</option>{% endfor %}</select></label>
+
+  {% else %}
+  <label class="field"><span>Note</span><textarea name="body" rows="14" placeholder="Write anything. Markdown works: **bold**, - lists, # headings.">{{ d.body }}</textarea></label>
+  {% endif %}
+
+  <div class="row note-form-foot">
+    <button class="btn primary" type="submit">Save</button>
+    <span class="note">Every player can read this; the DM can't.</span>
+    {% if n %}<button class="btn link danger" type="submit" formaction="/characters/{{ c.id }}/notes/{{ n.id }}/delete" formnovalidate
+      onclick="return confirm('Delete this note?')" style="margin-left:auto">Delete</button>{% endif %}
+  </div>
+</form>

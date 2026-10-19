@@ -57,6 +57,7 @@
       <button role="tab" aria-selected="false" data-tab="t-skills">Skills</button>
       {% if druid %}<button role="tab" aria-selected="false" data-tab="t-forms">Wild Shape</button>{% elif s.creatures %}<button role="tab" aria-selected="false" data-tab="t-forms">Forms</button>{% endif %}
       {% if s.story %}<button role="tab" aria-selected="false" data-tab="t-story">Background</button>{% endif %}
+      {% if can_see_notes %}<button role="tab" aria-selected="false" data-tab="t-notes">Notes{% if note_count %} <span class="count">{{ note_count }}</span>{% endif %}</button>{% endif %}
     </div>
 
     <div id="t-actions">
@@ -275,6 +276,7 @@
       <div class="rows">{% for cr in s.creatures %}{{ ri(c, cr.key, cr.name, picks, can_pick, chips=[(cr.group, "")], what=("CR " ~ cr.cr ~ " · AC " ~ cr.armor_class ~ " · " ~ cr.hit_points ~ " HP"), mech=cr.speed) }}{% endfor %}</div>
     </div>
     {% endif %}
+    {% if can_see_notes %}<div id="t-notes" hidden>{% include "_notes_tab.html" %}</div>{% endif %}
     {% if s.story %}{% set st = s.story %}
     <div id="t-story" class="story-tab" hidden>
       <p class="hint" style="margin:0 0 4px">From the Background tab on D&amp;D Beyond, in the player's words. Everyone at the table can read it.</p>

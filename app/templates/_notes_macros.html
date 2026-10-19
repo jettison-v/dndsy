@@ -1,0 +1,35 @@
+{# Player notes, shown on the Character page (Notes tab) and Battle (combos). #}
+{% macro combo_body(n, nl) %}{% set d = n.data %}
+  {% if d.when or d.needs %}<dl class="mech note-mech">
+    {% if d.when %}<dt>When</dt><dd>{{ nl.text(d.when) }}</dd>{% endif %}
+    {% if d.needs %}<dt>Needs</dt><dd>{{ nl.text(d.needs) }}</dd>{% endif %}
+  </dl>{% endif %}
+  {% if d.turns %}<div class="combo-turns">
+    {% for t in d.turns %}<div class="combo-turn">
+      <div class="combo-turn-label">{{ t.label }}</div>
+      {% for key, label, slug in [("action", "Action", "action"), ("bonus", "Bonus action", "bonus"), ("reaction", "Reaction", "reaction"), ("move", "Movement", "other"), ("notes", "Notes", "")] %}
+      {% if t[key] %}<div class="combo-step{{ ' k-' ~ slug if slug }}"><span class="combo-k">{{ label }}</span><span>{{ nl.text(t[key]) }}</span></div>{% endif %}
+      {% endfor %}
+    </div>{% endfor %}
+  </div>{% endif %}
+  {% if d.payoff %}<p class="combo-payoff"><b>Payoff</b> {{ nl.text(d.payoff) }}</p>{% endif %}
+  {% if d.risks %}<p class="combo-risks"><b>Risks</b> {{ nl.text(d.risks) }}</p>{% endif %}
+{% endmacro %}
+
+{% macro note_body(n, nl, quest_status) %}{% set d = n.data %}
+  {% if n.kind == "combo" %}{{ combo_body(n, nl) }}
+  {% elif n.kind == "leveling" %}
+    {% if d.goal %}<p>{{ nl.text(d.goal) }}</p>{% endif %}
+    {% if d.steps %}<table class="list level-plan"><thead><tr><th>Level</th><th>Class</th><th>Take</th><th>Why</th><th></th></tr></thead><tbody>
+      {% for st in d.steps %}<tr class="{{ 'done' if st.done }}"><td><b>{{ st.level }}</b></td><td>{{ st["class"] }}</td><td>{{ nl.text(st.take) }}</td><td class="muted">{{ nl.text(st.why) }}</td>
+        <td>{% if st.done %}<span class="tag done">Done</span>{% else %}<span class="tag">Planned</span>{% endif %}</td></tr>{% endfor %}
+    </tbody></table>{% endif %}
+  {% elif n.kind == "quest" %}
+    <dl class="mech note-mech">
+      {% if d.goal %}<dt>Goal</dt><dd>{{ nl.text(d.goal) }}</dd>{% endif %}
+      {% if d.why %}<dt>Why</dt><dd>{{ nl.text(d.why) }}</dd>{% endif %}
+      {% if d.who %}<dt>Who and where</dt><dd>{{ nl.text(d.who) }}</dd>{% endif %}
+    </dl>
+    {% if d.steps %}<ul class="quest-steps">{% for st in d.steps %}<li class="{{ 'done' if st.done }}">{{ "☑" if st.done else "☐" }} {{ nl.text(st.text) }}</li>{% endfor %}</ul>{% endif %}
+  {% else %}<div class="note-body story-md">{{ nl.md(d.body) }}</div>{% endif %}
+{% endmacro %}

@@ -460,6 +460,22 @@
     }
   }, true);
   document.querySelectorAll('[data-planner]').forEach(plannerApply);
+  // Repeating rows in forms (a combo's turns, a level plan's levels): [data-repeat] holds
+  // the rows, a <template> for a new one, and add/remove buttons.
+  document.addEventListener('click', e => {
+    const add = e.target.closest('[data-repeat-add]'), rm = e.target.closest('[data-repeat-remove]');
+    if (add) {
+      const box = add.closest('[data-repeat]'), tpl = box.querySelector(':scope > template');
+      const row = tpl.content.firstElementChild.cloneNode(true);
+      box.insertBefore(row, tpl);
+      const first = row.querySelector('input, textarea'); if (first) first.focus();
+    } else if (rm) {
+      const box = rm.closest('[data-repeat]'), rows = box.querySelectorAll(':scope > .repeat-row');
+      const row = rm.closest('.repeat-row');
+      if (rows.length > 1) row.remove(); else row.querySelectorAll('input, textarea').forEach(i => { i.value = ''; });
+    }
+  });
+
   // Wild Shape cards: sort by what matters for choosing (damage, attack bonus, speed, CR).
   document.addEventListener('change', e => {
     const sel = e.target.closest('[data-card-sort]');

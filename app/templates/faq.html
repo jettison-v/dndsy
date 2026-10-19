@@ -41,7 +41,7 @@
     {% call q("What are Battle, Character and Party?") %}
       <ul>
         <li><b>Battle</b>: what your character can do in a fight, grouped by action, bonus action and reaction, plus your starred things, your "Easy to forget" reminders and the party at a glance. Anything that uses something up says what and how many are left: "1 Focus Point ●●", "1st-level slot ●●●●", "Free cast ●". Spell slots have their own line at the top.</li>
-        <li><b>Character</b>: the full sheet in tabs: Actions, Spells (prepared and available, with a shortlist), Inventory, Features, Situational rules, Skills, Wild Shape (for druids) and Background (personality, ideals, bonds, flaws, appearance and backstory, from D&amp;D Beyond).</li>
+        <li><b>Character</b>: the full sheet in tabs: Actions, Spells (prepared and available, with a shortlist), Inventory, Features, Situational rules, Skills, Wild Shape (for druids), Background and Notes (personality, ideals, bonds, flaws, appearance and backstory, from D&amp;D Beyond).</li>
         <li><b>Party</b>: everyone's key numbers and resources, then the party's spells and items pooled together in two tabs, grouped by what they do (jump to a group from the links at the top). Click a name for a short version of that character.</li>
       </ul>
       <p>Click any row to open the side panel with everything about it: costs, numbers, what it does, and the full text. From a list in the panel (like "See all"), <b>← Back</b> returns to the list.</p>
@@ -49,6 +49,10 @@
     {% endcall %}
     {% call q("What do the star, the bell and the heart do?") %}
       <p>★ puts something on your Battle page. The bell adds it to <b>Easy to forget</b> (for example, Advantage against being Charmed). ♥ adds a spell or Wild Shape form to your shortlist without preparing or learning it. In the side panel, a shortlisted thing or a reminder gets a note box for <i>why</i> ("save for the sea leg", "only when concentrating"); notes show under the row and in Easy to forget. <b>Only your character's player can set these</b>; not admins, and the DM never sees them.</p>
+    {% endcall %}
+    {% call q("What are player notes?") %}
+      <p>The <b>Notes</b> tab on the Character page holds your own plans: <b>Battle combos</b> (a setup turn and a payoff turn, each split into action, bonus action, reaction and movement), a <b>Leveling strategy</b> (level by level, with what you'll take and why), <b>Personal quests</b> (goal, why, who's involved and the leads) and free-form <b>General notes</b>. Spells, features, items, Wild Shape forms, people and places you mention become links. Your combos also show on Battle.</p>
+      <p>Only your character's player can write them. Every player can read them; the DM never sees them.</p>
     {% endcall %}
     {% call q("How does the Wild Shape tab work?") %}
       <p>For druids, it lists the Beasts you could learn now (from the free 2024 rules, with D&amp;D Beyond's pictures), filtered by your Druid level: the Challenge Rating limit (higher with Circle of the Moon), and no Fly Speed before level 8. <b>Known</b> shows the forms you've picked on D&amp;D Beyond; ♥ <b>Shortlist</b> is for comparing. Click a form to see it as <i>you</i>: the Beast's Strength, Dexterity, Constitution and attacks with your Hit Points, Intelligence, Wisdom, Charisma and proficiencies, plus Circle of the Moon's AC, Temporary Hit Points and Radiant option, laid out as battle cards.</p>

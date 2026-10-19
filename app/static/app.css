@@ -891,3 +891,39 @@ sup.prof { color: var(--blue); font-size: .6rem; }
 .manage-card.attention { border-left-color: var(--red); }
 .manage-card b { font-size: 1.05rem; } .manage-card .muted { font-size: .88rem; }
 .manage-stat { font-weight: 600; margin-top: 4px; }
+
+/* Player notes (Character › Notes, Battle combos, and the note form) */
+.notes-group { margin-bottom: 10px; }
+.notes-group .sec-head { display: flex; align-items: center; gap: 12px; }
+.notes-group .sec-head h3 { flex: 1; }
+.note-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 12px; }
+.note-cards.wide { grid-template-columns: 1fr; }
+.note-card { background: var(--surface-2); border-radius: 12px; padding: 12px 16px; }
+.note-card-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.note-card-head b { font-size: 1.05rem; } .note-card-head .btn { margin-left: auto; }
+.note-mech { margin: 4px 0 8px; }
+.combo-turns { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 10px; margin: 6px 0; }
+.combo-turn { background: var(--surface); border-radius: 10px; padding: 8px 12px; }
+.combo-turn-label { font-weight: 700; margin-bottom: 4px; }
+.combo-step { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 8px; padding: 3px 0; border-top: 1px solid var(--line); font-size: .92rem; }
+.combo-k { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--k, var(--muted)); padding-top: 2px; }
+.combo-k::before { content: var(--k-glyph, ""); margin-right: 4px; }
+.combo-payoff, .combo-risks { margin: 6px 0 0; } .combo-payoff b, .combo-risks b { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; margin-right: 6px; }
+.combo-fold { border-top: 1px solid var(--line); padding: 8px 0; } .combo-fold summary { cursor: pointer; }
+.level-plan td, .level-plan th { padding: 6px 8px; vertical-align: top; } .level-plan tr.done td { color: var(--muted); }
+.quest-steps { list-style: none; padding: 0; margin: 6px 0; } .quest-steps li.done { color: var(--muted); text-decoration: line-through; }
+.note-body p:first-child { margin-top: 0; }
+a.sheet-ref { text-decoration-style: dotted; }
+.note-form { display: grid; gap: 12px; padding: 16px 22px 22px; }
+.note-form .field { display: grid; gap: 4px; } .note-form .field > span { font-size: .8rem; color: var(--muted); font-weight: 600; }
+.note-form .field.k-action > span, .note-form .field.k-bonus > span, .note-form .field.k-reaction > span { color: var(--k); }
+.note-form input[type=text], .note-form textarea, .note-form select { width: 100%; font: inherit; color: var(--text); background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; }
+.note-form h3 { margin: 6px 0 0; }
+.form-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.repeat { display: grid; gap: 10px; }
+.repeat-row { border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin: 0; display: grid; gap: 8px; }
+.combo-edit .turn-label { font-weight: 700; flex: 1; }
+.level-edit { grid-template-columns: 60px 120px minmax(0, 1fr) minmax(0, 1fr) 110px auto; align-items: center; }
+.quest-edit { grid-template-columns: minmax(0, 1fr) 110px auto; align-items: center; }
+.note-form-foot { gap: 12px; align-items: center; position: sticky; bottom: -22px; background: var(--surface); padding: 10px 0; }
+@media (max-width: 700px) { .form-2 { grid-template-columns: 1fr; } .level-edit { grid-template-columns: 60px minmax(0, 1fr) auto; } .level-edit input[name=step_take], .level-edit input[name=step_why] { grid-column: 1 / -1; } }

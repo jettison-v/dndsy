@@ -1,4 +1,5 @@
 {% from "_char.html" import pips, pick_btn, vitals, resource_row, portrait, spends %}
+{% from "_notes_macros.html" import combo_body %}
 {% set s = sheet %}
 <div id="battle-body" data-character="{{ c.id }}" data-fetched="{{ fetched_at.isoformat() if fetched_at else '' }}">
   <div class="battlebar">
@@ -75,6 +76,14 @@
       <p class="muted">{% if can_pick %}Nothing yet. On your Character page, press <b>Remind</b> on anything you tend to forget (for example, Advantage against being Charmed).{% else %}{{ c.entity.name }}'s player hasn't added any reminders yet.{% endif %}</p>
       {% endif %}
     </div>
+    {% if show_picks and (combos or can_pick) %}
+    <div class="section">
+      <div class="sec-head"><h2>Battle combos</h2>{% if can_pick %}<a href="#" data-modal-url="/characters/{{ c.id }}/notes/new?kind=combo" data-modal-size="large">+ Add</a>{% endif %}</div>
+      {% for n in combos %}
+      <details class="combo-fold"><summary><b>{{ n.title }}</b>{% if n.data.when %} <span class="muted">· {{ n.data.when }}</span>{% endif %}</summary>{{ combo_body(n, nl) }}</details>
+      {% else %}<p class="muted">Plans that take a setup turn and a payoff turn. Add one here or on the Character page's Notes tab.</p>{% endfor %}
+    </div>
+    {% endif %}
     <div class="section">
       <div class="sec-head"><h2>Party</h2><a href="/party">Full party →</a></div>
       {% include "_party_table.html" %}

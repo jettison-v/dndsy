@@ -14,8 +14,12 @@ Bundle shape (all sections optional except campaign):
                 "character": {"owner_email": "...", "ddb_id": "..."}}],   # PCs only
   "relationships": [{"from": "name or alias", "type": "parent_of", "to": "...", "note": ""}],
   "glossary": [{"term": "...", "description": "...", "misheard_as": ["..."]}],
-  "sessions": [{"number": 17, "played_on": "2025-03-22", "title": "...", "source": "notes"}]
+  "sessions": [{"number": 17, "played_on": "2025-03-22", "title": "...", "source": "notes"}],
+  "player_notes": [{"character": "Cole", "kind": "combo|leveling|quest|general", "title": "...",
+                    "status": "", "data": {...}}],                 # see app/player_notes.py; matched on title
+  "form_notes": [{"character": "Cole", "form": "Polar Bear", "note": "..."}]   # Wild Shape shortlist notes
 }
+Player notes hold a player's own writing: keep such bundles out of git (private/).
 """
 
 from collections import Counter
@@ -234,4 +238,46 @@ def import_bundle(db: Session, bundle: dict) -> Counter:
         gs.title = s.get("title", gs.title or "")
 
     db.flush()
+    if bundle.get("player_notes") or bundle.get("form_notes"):
+        _import_notes(db, campaign, bundle, counts)
     return counts
+
+
+def _character(db: Session, campaign: Campaign, name: str) -> Character:
+    ch = db.scalar(select(Character).join(Entity).where(Entity.campaign_id == campaign.id, Entity.name == name))
+    if ch is None:
+        raise BundleError(f"no character named {name!r}")
+    return ch
+
+
+def _import_notes(db: Session, campaign: Campaign, bundle: dict, counts: Counter) -> None:
+    from app.models import CharacterPick, PlayerNote
+    from app.player_notes import KINDS, QUEST_STATUS
+    from app.wild_shape import label_for
+
+    for item in bundle.get("player_notes") or []:
+        kind, title = item.get("kind"), (item.get("title") or "").strip()[:200]
+        if kind not in KINDS or not title or not isinstance(item.get("data"), dict):
+            raise BundleError("each player note needs a kind (combo, leveling, quest, general), a title and data")
+        ch = _character(db, campaign, item.get("character", ""))
+        note = db.scalar(select(PlayerNote).where(PlayerNote.character_id == ch.id, PlayerNote.kind == kind, PlayerNote.title == title))
+        if note is None:
+            position = len(list(db.scalars(select(PlayerNote.id).where(PlayerNote.character_id == ch.id)))) + 1
+            note = PlayerNote(character_id=ch.id, kind=kind, title=title, position=position)
+            db.add(note)
+            counts["player notes created"] += 1
+        else:
+            counts["player notes updated"] += 1
+        note.data = item["data"]
+        note.status = item.get("status") if item.get("status") in QUEST_STATUS else ("open" if kind == "quest" else "")
+    for item in bundle.get("form_notes") or []:
+        ch = _character(db, campaign, item.get("character", ""))
+        ref = f"form:{item.get('form', '').strip()}"
+        pick = db.scalar(select(CharacterPick).where(CharacterPick.character_id == ch.id, CharacterPick.kind == "fav", CharacterPick.ref == ref))
+        if pick is None:
+            pick = CharacterPick(character_id=ch.id, kind="fav", ref=ref, label=label_for(ref))
+            db.add(pick)
+            counts["shortlisted forms added"] += 1
+        pick.note = (item.get("note") or "").strip()[:500]
+        counts["form notes set"] += 1
+    db.flush()

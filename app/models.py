@@ -279,6 +279,23 @@ class CharacterNote(Timestamped, Base):
     body: Mapped[str] = mapped_column(Text)
 
 
+class PlayerNote(Timestamped, Base):
+    """A player's own structured note on their character (app/player_notes.py): a battle
+    combo, a leveling strategy, a personal quest or a general note. Replaces syncing
+    character Google Docs. Only the character's player writes them; every player can
+    read them; the DM never sees them."""
+
+    __tablename__ = "player_notes"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+    author_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    kind: Mapped[str] = mapped_column(String(12))  # "combo" | "leveling" | "quest" | "general"
+    title: Mapped[str] = mapped_column(String(200), default="", server_default="")
+    status: Mapped[str] = mapped_column(String(12), default="", server_default="")  # quests: open | done | abandoned
+    data: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")  # the kind's fields (see player_notes.KINDS)
+    position: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+
+
 class CharacterItemNote(Timestamped, Base):
     """A player's note on an item on D&D Beyond ("Filled with holy water from Oakhurst").
     Everyone at the table can read these, the DM included. They're kept apart from the

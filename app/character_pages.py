@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from app import character_views as views
 from app import characters as chars
 from app import ddb, picks
+from app import player_notes
 from app import wild_shape as ws
 from app import rules_terms as terms
 from app.auth import current_user, is_admin, is_reviewer
@@ -159,6 +160,7 @@ def character_page(request: Request, character_id: int, db: Session = Depends(ge
                           if o["kind"] != "spell" or (o["tags"] and o["tags"][0] == "cantrip" and o["hit"])]
         ctx["forms"] = ws.forms(ctx["sheet"], ctx["picks"]["fav"])
         ctx["ws_other_uses"] = ws.other_uses(ctx["sheet"]) if ctx["druid"] else []
+    ctx |= player_notes.page_context(db, ch, user, ctx["sheet"])
     return _page(request, "character.html", {**ctx, "others": _mine_first(db, user, chars.campaign_characters(db, ch.entity.campaign_id))})
 
 
@@ -184,6 +186,7 @@ def _battle_ctx(db: Session, ch: Character, user: dict) -> dict:
             ctx["columns"] = ctx["form"]["columns"]
     ctx["party"] = _party_rows(db, user)
     ctx["game_mode_seconds"] = GAME_MODE_SECONDS
+    ctx |= player_notes.page_context(db, ch, user, ctx["sheet"])
     return ctx
 
 
