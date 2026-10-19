@@ -11,6 +11,15 @@ summaries and openly licensed data, never the books' text.
 | System Reference Document 5.2 (CC-BY-4.0) via Open5e | Public | `app/data/beasts_2024.json` (Wild Shape stat blocks), stored in the repo with credit |
 | D&D Beyond character data | Public character sheets | Each character's features, spells and known forms, with full feature text |
 
+## Offline copy (Brett's Mac only)
+
+So work can continue if the D&D Beyond sign-in in the in-app browser stops working, the three books are saved as
+Markdown (one file per chapter) plus the Monster Manual's stat blocks as data in `private/books/`, which is
+git-ignored. They never go to GitHub, Railway or the database. To refresh them: run
+`uv run python scripts/book_receiver.py`, then from a signed-in D&D Beyond tab in the in-app browser send pages to
+`http://127.0.0.1:8799/save?z=…` (gzipped JSON in the address, since the browser only lets a website reach this Mac by
+opening an address). See the script's docstring.
+
 ## Checks done
 
 - 2026-10-18: all 90 rule terms in `app/rules_terms.py` compared with the PHB Rules Glossary, weapon properties and the
