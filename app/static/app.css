@@ -749,6 +749,16 @@ h3.divider.big { font-size: .86rem; color: var(--k, var(--amber)); }
 .econ h2.econ-head { font-size: .86rem; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--k); }
 .econ h2.econ-head::before { content: var(--k-glyph); margin-right: 8px; letter-spacing: 0; }
 .econ h2.econ-head small { text-transform: none; letter-spacing: 0; font-weight: 400; margin-top: 2px; }
+.k-hit { --k: var(--k-other); --k-glyph: "✦"; }
+.riders { margin-top: 14px; }
+.riders h2.econ-head { font-size: .86rem; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--k); }
+.riders h2.econ-head::before { content: var(--k-glyph); margin-right: 8px; letter-spacing: 0; }
+.riders h2.econ-head small { display: block; text-transform: none; letter-spacing: 0; font-weight: 400; margin-top: 2px; color: var(--muted); }
+.rider-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px 18px; margin-top: 10px; }
+.rider { padding: 8px 0; border-top: 1px solid var(--line); }
+.rider .meta { color: var(--muted); font-size: .9rem; margin-top: 2px; }
+.rider-when { color: var(--text); }
+.econ-note { font-size: .82rem; color: var(--muted); margin: 4px 0 0; padding-left: 10px; border-left: 2px solid var(--k); }
 h2.econ-title { color: var(--k); }
 h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 8px; }
 /* side panel subheadings (What it does, How it adds up…) in the same quiet caps */
@@ -795,6 +805,7 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .form-notes { margin: 6px 0 10px; padding-left: 18px; color: var(--muted); font-size: .9rem; }
 .form-notes li { margin: 3px 0; }
 .ws-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
+.ws-row { margin: -4px 0 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
 .ws-label { font-family: var(--cond); text-transform: uppercase; letter-spacing: .06em; font-size: .78rem; color: var(--amber); margin-right: 4px; }
 .ws-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface-2); border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 3px 12px 3px 4px; font-size: .85rem; min-height: 32px; }
 .ws-chip:first-of-type { padding-left: 12px; }

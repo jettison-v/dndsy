@@ -15,16 +15,6 @@
       </div>
       {% endif %}
     </div>
-    {% if s and known_forms %}
-    <div class="ws-bar" aria-label="Wild Shape">
-      <span class="ws-label">Wild Shape{% if druid.uses %} {{ pips(druid.uses) }}{% endif %}</span>
-      {% if can_pick %}
-      <button type="button" class="ws-chip{{ ' on' if not form }}" hx-post="/characters/{{ c.id }}/wild-shape" hx-vals='{"form": ""}' hx-target="#battle-body" hx-swap="outerHTML" aria-pressed="{{ 'false' if form else 'true' }}">Normal</button>
-      {% for kf in known_forms %}<button type="button" class="ws-chip{{ ' on' if form and form.beast.name == kf.name }}" hx-post="/characters/{{ c.id }}/wild-shape" hx-vals='{{ {"form": kf.name} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML"
-        aria-pressed="{{ 'true' if form and form.beast.name == kf.name else 'false' }}" title="CR {{ kf.cr }}">{% if kf.image %}<img src="{{ kf.image }}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ kf.name }}</button>{% endfor %}
-      {% elif form %}<span class="ws-chip on">{{ form.beast.name }}</span>{% else %}<span class="note">Normal form</span>{% endif %}
-    </div>
-    {% endif %}
     {% if form %}{% set fb = form.beast %}
     <div class="ws-form" data-modal-url="/characters/{{ c.id }}/form?name={{ fb.name | urlencode }}" data-modal-size="large" tabindex="0" role="button">
       {% if fb.image %}<img class="ws-pic" src="{{ fb.image }}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}
@@ -42,6 +32,16 @@
     <div class="battle-saves"><span class="battle-saves-label">Saves</span>{{ saves_block(s.saves, s.save_adv_all, "six") }}</div>
     {{ resource_row(s) }}{% endif %}
   </div>
+  {% if s and known_forms %}
+  <div class="ws-bar ws-row" aria-label="Wild Shape">
+    <span class="ws-label">Wild Shape{% if druid.uses %} {{ pips(druid.uses) }}{% endif %}</span>
+    {% if can_pick %}
+    <button type="button" class="ws-chip{{ ' on' if not form }}" hx-post="/characters/{{ c.id }}/wild-shape" hx-vals='{"form": ""}' hx-target="#battle-body" hx-swap="outerHTML" aria-pressed="{{ 'false' if form else 'true' }}">Normal</button>
+    {% for kf in known_forms %}<button type="button" class="ws-chip{{ ' on' if form and form.beast.name == kf.name }}" hx-post="/characters/{{ c.id }}/wild-shape" hx-vals='{{ {"form": kf.name} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML"
+      aria-pressed="{{ 'true' if form and form.beast.name == kf.name else 'false' }}" title="CR {{ kf.cr }}">{% if kf.image %}<img src="{{ kf.image }}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ kf.name }}</button>{% endfor %}
+    {% elif form %}<span class="ws-chip on">{{ form.beast.name }}</span>{% else %}<span class="note">Normal form</span>{% endif %}
+  </div>
+  {% endif %}
 
   {% if s %}
   {% if can_pick and not form %}<p class="note" style="margin:-6px 0 10px">Drag options to reorder a column. ★ on the Character page (or in "See all") adds more.</p>{% endif %}
@@ -49,7 +49,8 @@
     {% for cost, sub, slug in [("Action", "One per turn", "action"), ("Bonus action", "One per turn", "bonus"), ("Reaction", "One per round, also on others' turns", "reaction")] %}
     {% set col = columns[cost] %}
     <div class="section">
-      <h2 class="econ-head k-{{ slug }}">{{ cost }}<small>{{ sub }}</small></h2>
+      <h2 class="econ-head k-{{ slug }}">{{ cost }}<small>{{ col.sub or sub }}</small></h2>
+      {% for n in col.notes or [] %}<p class="econ-note">{{ n }}</p>{% endfor %}
       <div class="moves"{% if can_pick and not form %} data-sort-column="{{ cost }}" data-sort-url="/characters/{{ c.id }}/order"{% endif %}>
       {% for o in col.shown %}
       <div class="move{{ ' yours' if o.source == 'yours' }}" data-key="{{ o.key }}" {% if form and o.source in ('form', 'rule') %}data-modal-url="/characters/{{ c.id }}/form?name={{ form.beast.name | urlencode }}" data-modal-size="large"{% else %}data-panel-url="/characters/{{ c.id }}/detail?ref={{ o.key | urlencode }}"{% endif %} tabindex="0" role="button">
@@ -65,6 +66,17 @@
     </div>
     {% endfor %}
   </div>
+  {% if riders and not form %}
+  <div class="section riders">
+    <h2 class="econ-head k-hit">On a hit<small>Extras you can add when an attack hits (or misses). No action needed unless it says so.</small></h2>
+    <div class="rider-grid">
+    {% for r in riders %}
+      <div class="rider"><b>{{ r.name }}</b>{% if r.cost %} <span class="tag">{{ r.cost }}</span>{% endif %} <span class="tag faint">{{ r.source }}</span>
+        <div class="meta"><span class="rider-when">{{ r.when }}:</span> {{ r.effect }}</div></div>
+    {% endfor %}
+    </div>
+  </div>
+  {% endif %}
 
   <div class="lower">
     <div class="section">
