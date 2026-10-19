@@ -22,7 +22,7 @@ CHARACTER_URL = "https://character-service.dndbeyond.com/character/v5/character/
 SHEET_URL = "https://www.dndbeyond.com/characters/{id}"
 USER_AGENT = "askdnd/2 (private table companion; +https://beta.askdnd.ai)"
 TIMEOUT_SECONDS = 15
-PARSER_VERSION = 13  # bump when the summary shape changes; stored summaries are re-parsed
+PARSER_VERSION = 14  # bump when the summary shape changes; stored summaries are re-parsed
 
 
 class DdbError(Exception):
@@ -1232,6 +1232,9 @@ class _Sheet:
         ("bonus", "saving-throws"): "saves", ("bonus", "ability-checks"): "checks", ("bonus", "initiative"): "initiative",
         ("bonus", "armor-class"): "ac", ("bonus", "natural-attacks"): "attack", ("damage", "natural-attacks"): "damage",
         ("bonus", "speed"): "speed", ("bonus", "speed-walking"): "speed",
+        # A form's Str/Dex/Con replace yours, so a learned book or a belt only counts if kept
+        ("bonus", "strength-score"): "str_score", ("bonus", "dexterity-score"): "dex_score",
+        ("bonus", "constitution-score"): "con_score",
     }
 
     def form_options(self) -> dict:

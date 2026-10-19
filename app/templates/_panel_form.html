@@ -58,7 +58,7 @@
 
       <h3>Abilities</h3>
       <div class="form-abilities">{% for a in f.abilities %}
-        <div class="fab {{ a.from }}" title="{{ 'Your score (Wild Shape keeps it)' if a.from == 'yours' else 'The form\'s score' }}"><small>{{ a.short }}</small><b>{{ a.label }}</b><span>{{ a.score }}</span><em>{{ a.from }}</em></div>
+        <div class="fab {{ a.from.split(' ')[0] }}" title="{{ 'Your score (Wild Shape keeps it)' if a.from == 'yours' else 'The form\'s score' }}"><small>{{ a.short }}</small><b>{{ a.label }}</b><span>{{ a.score }}</span><em>{{ a.from }}</em></div>
       {% endfor %}</div>
 
       <h3>Saving throws</h3>

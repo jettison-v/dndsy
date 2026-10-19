@@ -300,7 +300,8 @@ def kept(sheet: dict, keep) -> dict:
     opts = sheet.get("form_options") or {"items": [], "features": []}
     keep = set(keep or [])
     items = [i for i in opts["items"] if i["key"] in keep]
-    total = {k: sum(i["effects"].get(k, 0) for i in items) for k in ("saves", "checks", "initiative", "ac", "attack", "damage", "speed")}
+    total = {k: sum(i["effects"].get(k, 0) for i in items)
+             for k in ("saves", "checks", "initiative", "ac", "attack", "damage", "speed", "str_score", "dex_score", "con_score")}
     by = {k: [(i["name"], i["effects"][k]) for i in items if i["effects"].get(k)] for k in total}
     feats = {f["key"]: f for f in opts["features"] if f["key"] in keep}
     return {"total": total, "by": by, "features": feats, "items": items,
@@ -311,7 +312,9 @@ def options_for(sheet: dict, keep) -> list[dict]:
     """The toggles to show: each item or feature, what it does in a form, and whether it's kept."""
     keep = set(keep or [])
     labels = {"saves": "saves", "checks": "ability checks", "initiative": "Initiative", "ac": "AC",
-              "attack": "to hit with natural weapons", "damage": "damage with natural weapons", "speed": "speed"}
+              "attack": "to hit with natural weapons", "damage": "damage with natural weapons", "speed": "speed",
+              "str_score": "to the form's Strength score", "dex_score": "to the form's Dexterity score",
+              "con_score": "to the form's Constitution score"}
     opts = sheet.get("form_options") or {"items": [], "features": []}
     out = [{"key": f["key"], "name": f["name"], "what": f["text"], "kind": "Class feature", "on": f["key"] in keep} for f in opts["features"]]
     out += [{"key": i["key"], "name": i["name"], "kind": "Worn item", "on": i["key"] in keep,
@@ -329,9 +332,12 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
     pb = sheet.get("proficiency_bonus") or 2
     mine = {a["key"][:3]: a["score"] for a in sheet.get("abilities") or []}
     scores = {k: (mine.get(k, 10) if k in KEPT else (beast.get("abilities") or {}).get(k, 10)) for k, _, _ in ABILITIES}
+    for k in ("str", "dex", "con"):  # kept score items (e.g. a learned Manual of Quickness) raise the form's score
+        scores[k] = min(30, scores[k] + kp["total"][f"{k}_score"])
     wis = _mod(scores["wis"])
 
-    abilities = [{"key": k, "short": short, "score": scores[k], "label": _signed(_mod(scores[k])), "from": "yours" if k in KEPT else "form"}
+    abilities = [{"key": k, "short": short, "score": scores[k], "label": _signed(_mod(scores[k])),
+                  "from": "yours" if k in KEPT else ("form + kept" if kp["total"].get(f"{k}_score") else "form")}
                  for k, _, short in ABILITIES]
 
     my_saves = {s["short"].lower(): s for s in sheet.get("saves") or []}

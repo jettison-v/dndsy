@@ -206,3 +206,16 @@ def test_keep_choices_are_saved_by_the_player_and_shown_to_others(db, cole, play
     assert "50 ft." in player.get(f"{url}/form?name=Polar Bear").text  # 40 + 10
     assert 'name="keep"' not in admin.get(f"{url}/form?name=Polar Bear").text  # others see, can't change
     assert dm.post(f"{url}/wild-shape/keep", data={"name": "Polar Bear", "keep": []}).status_code == 403
+
+
+def test_a_learned_manual_raises_the_forms_dexterity_when_kept():
+    sheet = cole_sheet()
+    manual = next(o for o in ws.options_for(sheet, []) if o["name"] == "Manual of Quickness of Action")
+    assert manual["what"] == "+2 to the form's Dexterity score"
+    bear = ws.catalog_beast("Polar Bear")
+    plain = ws.shaped(sheet, bear, lite=True)
+    kept = ws.shaped(sheet, bear, lite=True, keep=[manual["key"]])
+    dex = {a["key"]: a for a in kept["abilities"]}["dex"]
+    assert (dex["score"], dex["from"]) == (16, "form + kept")  # the bear's 14 + 2
+    assert kept["initiative"] == "+3" and plain["initiative"] == "+2"
+    assert {s["key"]: s["bonus"] for s in kept["saves"]}["dex"] == {s["key"]: s["bonus"] for s in plain["saves"]}["dex"] + 1
