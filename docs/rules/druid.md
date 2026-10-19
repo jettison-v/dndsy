@@ -1,9 +1,8 @@
 # Druid rules that askdnd models (2024 Player's Handbook)
 
 Our own short summary for building features. It isn't the book's text and doesn't replace it; the DM makes every ruling.
-Sources read on 2026-10-18: the Druid and Circle of the Moon feature text on D&D Beyond (Cole's live sheet, all levels)
-and the D&D Beyond Basic Rules (Druid class and Circle of the Land). **Circle of the Sea and Circle of the Stars are still
-to be checked against the Player's Handbook** (not in the free rules).
+Sources read on 2026-10-18: the Druid class and all four Circles in the Player's Handbook (2024) on D&D Beyond, plus
+Cole's live sheet. The repo is public, so this stays a summary in our own words, never the book's text.
 
 ## Wild Shape (Druid 2+), and what `app/wild_shape.py` does with it
 
@@ -42,6 +41,26 @@ to be checked against the Player's Handbook** (not in the free rules).
 - **Nature's Ward (10):** immune to Poisoned; Resistance by land (Fire, Cold, Lightning, Poison).
 - **Nature's Sanctuary (14):** Magic action, spend a Wild Shape use: 15-ft Cube within 120 ft for 1 minute; you and allies get Half Cover there, allies get your Nature's Ward Resistance; Bonus Action to move it 60 ft.
 
-## Circle of the Sea, Circle of the Stars
+## Circle of the Sea
 
-To check against the Player's Handbook. Both spend Wild Shape uses on something other than a Beast form (Sea: Wrath of the Sea; Stars: Starry Form), which askdnd lists under "Other ways to use Wild Shape" from the sheet's own text.
+- **Circle of the Sea Spells (3):** always prepared: Fog Cloud, Gust of Wind, Ray of Frost, Shatter, Thunderwave (3); Lightning Bolt, Water Breathing (5); Control Water, Ice Storm (7); Conjure Elemental, Hold Monster (9). Not castable in a Beast form.
+- **Wrath of the Sea (3):** Bonus Action, spend a Wild Shape use: a 5-ft Emanation of ocean spray around you for 10 minutes (ends if dismissed, used again, or Incapacitated). When it appears, and as a Bonus Action on later turns, one creature you can see in it makes a Con save vs your spell DC or takes Cold damage (d6s equal to your Wis modifier, min 1) and, if Large or smaller, is pushed up to 15 ft.
+- **Aquatic Affinity (6):** the Emanation becomes 10 ft; you gain a Swim Speed equal to your Speed.
+- **Stormborn (10):** while Wrath of the Sea is active: Fly Speed equal to your Speed, and Resistance to Cold, Lightning and Thunder.
+- **Oceanic Gift (14):** put the Emanation on a willing creature within 60 ft instead (it uses your DC and Wis); or spend two uses to have it on both of you.
+
+## Circle of the Stars
+
+- **Star Map (3):** a Tiny star chart, usable as a Spellcasting Focus. While holding it: Guidance and Guiding Bolt prepared, and free Guiding Bolt casts equal to your Wis modifier (min 1) per Long Rest. A lost map is remade in a 1-hour ceremony during a rest.
+- **Starry Form (3):** Bonus Action, spend a Wild Shape use to take a starry form *instead of* shape-shifting. You keep your own game statistics; you shed Bright Light 10 ft and Dim Light 10 ft more; it lasts 10 minutes (ends if dismissed, Incapacitated, or used again). Choose a constellation each time:
+  - *Archer:* on activation and as a Bonus Action later, a ranged spell attack at a creature within 60 ft for 1d8 + Wis Radiant.
+  - *Chalice:* when a slot-cast spell restores HP, you or a creature within 30 ft also regains 1d8 + Wis.
+  - *Dragon:* on Int or Wis checks and Con saves to keep Concentration, treat a d20 roll of 9 or lower as 10.
+- **Cosmic Omen (6):** after each Long Rest roll a die: even (Weal) lets you use a Reaction to add 1d6 to a D20 Test of a creature you can see within 30 ft; odd (Woe) subtracts 1d6. Uses equal to Wis modifier (min 1) per Long Rest.
+- **Twinkling Constellations (10):** Archer and Chalice become 2d8; Dragon also gives a 20-ft Fly Speed with hover; you can switch constellation at the start of each of your turns.
+- **Full of Stars (14):** in Starry Form, Resistance to Bludgeoning, Piercing and Slashing damage.
+
+## What this means for askdnd
+
+- Only Circle of the Moon changes Beast forms (CR, AC, temp HP, spells in a form, extra damage). Land, Sea and Stars spend Wild Shape uses on other things (Land's Aid, Nature's Sanctuary, Wrath of the Sea, Starry Form); the Wild Shape tab lists those from the character's own sheet under "Other ways to use Wild Shape", open by default for those Circles.
+- Beasts: the 2024 Monster Manual has 91 Beasts. The SRD 5.2 list we store has 90 of them with matching AC, HP, CR and attacks (checked 2026-10-18); only the Giant Squid (CR 6) is missing, and the SRD adds the Giant Fly. One difference: the SRD gives the Swarm of Insects a 20-ft Fly Speed that D&D Beyond's Monster Manual entry doesn't list.

@@ -2827,7 +2827,7 @@
      "text": "Melee Attack Roll: +4, reach 5 ft. 5 (1d6 + 2) Piercing damage, or 2 (1d4) Piercing damage if the swarm is Bloodied."
     },
     {
-     "name": "Cacophony (Recharge 6–6)",
+     "name": "Cacophony (Recharge 6)",
      "text": "Wisdom Saving Throw: DC 10, one creature in the swarm's space. Failure: The target has the Deafened condition until the start of the swarm's next turn. While Deafened, the target also has Disadvantage on ability checks and attack rolls."
     }
    ],
@@ -2939,15 +2939,15 @@
    "traits": [],
    "actions": [
     {
-     "name": "Fist",
-     "text": "Melee Attack Roll: +5, reach 5 ft. 5 (1d4 + 3) Bludgeoning damage."
-    },
-    {
      "name": "Multiattack",
      "text": "The ape makes two Fist attacks."
     },
     {
-     "name": "Rock (Recharge 6–6)",
+     "name": "Fist",
+     "text": "Melee Attack Roll: +5, reach 5 ft. 5 (1d4 + 3) Bludgeoning damage."
+    },
+    {
+     "name": "Rock (Recharge 6)",
      "text": "Ranged Attack Roll: +5, range 25/50 ft. 10 (2d6 + 3) Bludgeoning damage."
     }
    ],
@@ -3458,16 +3458,16 @@
    "traits": [],
    "actions": [
     {
+     "name": "Multiattack",
+     "text": "The bear makes one Bite attack and one Claw attack."
+    },
+    {
      "name": "Bite",
      "text": "Melee Attack Roll: +5, reach 5 ft. 7 (1d8 + 3) Piercing damage."
     },
     {
      "name": "Claw",
      "text": "Melee Attack Roll: +5, reach 5 ft. 5 (1d4 + 3) Slashing damage. If the target is a Large or smaller creature, it has the Prone condition."
-    },
-    {
-     "name": "Multiattack",
-     "text": "The bear makes one Bite attack and one Claw attack."
     }
    ],
    "bonus_actions": [],
@@ -4128,16 +4128,16 @@
    "traits": [],
    "actions": [
     {
+     "name": "Multiattack",
+     "text": "The snake makes one Bite attack and uses Constrict."
+    },
+    {
      "name": "Bite",
      "text": "Melee Attack Roll: +6, reach 10 ft. 11 (2d6 + 4) Piercing damage."
     },
     {
      "name": "Constrict",
      "text": "Strength Saving Throw: DC 14, one Large or smaller creature the snake can see within 10 feet. Failure: 13 (2d8 + 4) Bludgeoning damage, and the target has the Grappled condition (escape DC 14)."
-    },
-    {
-     "name": "Multiattack",
-     "text": "The snake makes one Bite attack and uses Constrict."
     }
    ],
    "bonus_actions": [],
@@ -4588,12 +4588,12 @@
    "traits": [],
    "actions": [
     {
-     "name": "Claw",
-     "text": "Melee Attack Roll: +5, reach 5 ft. 6 (1d6 + 3) Bludgeoning damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13) from one of two claws."
-    },
-    {
      "name": "Multiattack",
      "text": "The scorpion makes two Claw attacks and one Sting attack."
+    },
+    {
+     "name": "Claw",
+     "text": "Melee Attack Roll: +5, reach 5 ft. 6 (1d6 + 3) Bludgeoning damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13) from one of two claws."
     },
     {
      "name": "Sting",
@@ -4713,12 +4713,12 @@
    ],
    "actions": [
     {
-     "name": "Bite",
-     "text": "Melee Attack Roll: +6, reach 5 ft. 14 (3d6 + 4) Piercing damage."
-    },
-    {
      "name": "Multiattack",
      "text": "The archelon makes two Bite attacks."
+    },
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +6, reach 5 ft. 14 (3d6 + 4) Piercing damage."
     }
    ],
    "bonus_actions": [],
@@ -4767,12 +4767,12 @@
    "traits": [],
    "actions": [
     {
-     "name": "Gore",
-     "text": "Melee Attack Roll: +8, reach 5 ft. 15 (2d8 + 6) Piercing damage. If the target is a Huge or smaller creature and the elephant moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition."
-    },
-    {
      "name": "Multiattack",
      "text": "The elephant makes two Gore attacks."
+    },
+    {
+     "name": "Gore",
+     "text": "Melee Attack Roll: +8, reach 5 ft. 15 (2d8 + 6) Piercing damage. If the target is a Huge or smaller creature and the elephant moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition."
     }
    ],
    "bonus_actions": [
@@ -4834,12 +4834,12 @@
    ],
    "actions": [
     {
-     "name": "Bite",
-     "text": "Melee Attack Roll: +7, reach 5 ft. 16 (2d10 + 5) Piercing damage."
-    },
-    {
      "name": "Multiattack",
      "text": "The hippopotamus makes two Bite attacks."
+    },
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +7, reach 5 ft. 16 (2d10 + 5) Piercing damage."
     }
    ],
    "bonus_actions": [],
@@ -4896,12 +4896,12 @@
    ],
    "actions": [
     {
-     "name": "Bite",
-     "text": "Melee Attack Roll: +8, reach 5 ft. 21 (3d10 + 5) Piercing damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 15). While Grappled, the target has the Restrained condition and can't be targeted by the crocodile's Tail."
-    },
-    {
      "name": "Multiattack",
      "text": "The crocodile makes one Bite attack and one Tail attack."
+    },
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +8, reach 5 ft. 21 (3d10 + 5) Piercing damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 15). While Grappled, the target has the Restrained condition and can't be targeted by the crocodile's Tail."
     },
     {
      "name": "Tail",
@@ -4962,12 +4962,12 @@
    ],
    "actions": [
     {
-     "name": "Bite",
-     "text": "Melee Attack Roll: +9 (with Advantage if the target doesn't have all its Hit Points), reach 5 ft. 22 (3d10 + 6) Piercing damage."
-    },
-    {
      "name": "Multiattack",
      "text": "The shark makes two Bite attacks."
+    },
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +9 (with Advantage if the target doesn't have all its Hit Points), reach 5 ft. 22 (3d10 + 6) Piercing damage."
     }
    ],
    "bonus_actions": [],
@@ -5016,12 +5016,12 @@
    "traits": [],
    "actions": [
     {
-     "name": "Gore",
-     "text": "Melee Attack Roll: +9, reach 5 ft. 19 (2d12 + 6) Piercing damage. If the target is Huge or smaller and the triceratops moved 20+ feet straight toward it immediately before the hit, the target takes an extra 9 (2d8) Piercing damage and has the Prone condition."
-    },
-    {
      "name": "Multiattack",
      "text": "The triceratops makes two Gore attacks."
+    },
+    {
+     "name": "Gore",
+     "text": "Melee Attack Roll: +9, reach 5 ft. 19 (2d12 + 6) Piercing damage. If the target is Huge or smaller and the triceratops moved 20+ feet straight toward it immediately before the hit, the target takes an extra 9 (2d8) Piercing damage and has the Prone condition."
     }
    ],
    "bonus_actions": [],
@@ -5070,12 +5070,12 @@
    "traits": [],
    "actions": [
     {
-     "name": "Gore",
-     "text": "Melee Attack Roll: +10, reach 10 ft. 18 (2d10 + 7) Piercing damage. If the target is a Huge or smaller creature and the mammoth moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition."
-    },
-    {
      "name": "Multiattack",
      "text": "The mammoth makes two Gore attacks."
+    },
+    {
+     "name": "Gore",
+     "text": "Melee Attack Roll: +10, reach 10 ft. 18 (2d10 + 7) Piercing damage. If the target is a Huge or smaller creature and the mammoth moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition."
     }
    ],
    "bonus_actions": [
@@ -5134,16 +5134,16 @@
    "traits": [],
    "actions": [
     {
-     "name": "Boulder Toss (Recharge 6–6)",
-     "text": "The ape hurls a boulder at a point it can see within 90 feet. Dexterity Saving Throw: DC 17, each creature in a 5-foot-radius Sphere [Area of Effect]|XPHB|Sphere centered on that point. Failure: 24 (7d6) Bludgeoning damage. If the target is a Large or smaller creature, it has the Prone condition. Success: Half damage only."
+     "name": "Multiattack",
+     "text": "The ape makes two Fist attacks."
     },
     {
      "name": "Fist",
      "text": "Melee Attack Roll: +9, reach 10 ft. 22 (3d10 + 6) Bludgeoning damage."
     },
     {
-     "name": "Multiattack",
-     "text": "The ape makes two Fist attacks."
+     "name": "Boulder Toss (Recharge 6)",
+     "text": "The ape hurls a boulder at a point it can see within 90 feet. Dexterity Saving Throw: DC 17, each creature in a 5-foot-radius Sphere [Area of Effect]|XPHB|Sphere centered on that point. Failure: 24 (7d6) Bludgeoning damage. If the target is a Large or smaller creature, it has the Prone condition. Success: Half damage only."
     }
    ],
    "bonus_actions": [
@@ -5199,12 +5199,12 @@
    "traits": [],
    "actions": [
     {
-     "name": "Bite",
-     "text": "Melee Attack Roll: +10, reach 10 ft. 33 (4d12 + 7) Piercing damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 17). While Grappled, the target has the Restrained condition and can't be targeted by the tyrannosaurus's Tail."
-    },
-    {
      "name": "Multiattack",
      "text": "The tyrannosaurus makes one Bite attack and one Tail attack."
+    },
+    {
+     "name": "Bite",
+     "text": "Melee Attack Roll: +10, reach 10 ft. 33 (4d12 + 7) Piercing damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 17). While Grappled, the target has the Restrained condition and can't be targeted by the tyrannosaurus's Tail."
     },
     {
      "name": "Tail",

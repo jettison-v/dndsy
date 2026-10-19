@@ -211,7 +211,7 @@
             {% if d.elemental_fury %}{% if d.fury == "Primal Strike" %} Primal Strike: +{{ d.primal_strike }} once per turn.{% elif not d.fury %} Elemental Fury: Primal Strike would add {{ d.primal_strike }} to a form's attacks.{% endif %}{% endif %}
             {% if d.lunar_form %} Lunar Form: +2d10 Radiant once per turn.{% endif %}</div></div>
       </div>
-      {% if ws_other_uses %}<details class="fold ws-other"><summary>Other ways to use Wild Shape ({{ ws_other_uses | length }})</summary>
+      {% if ws_other_uses %}<details class="fold ws-other"{% if not d.moon and d.level >= 3 %} open{% endif %}><summary>Other ways to use Wild Shape ({{ ws_other_uses | length }})</summary>
         <ul class="plain">{% for u in ws_other_uses %}<li><b>{{ u.name }}</b> <span class="muted">{{ u.summary }}</span></li>{% endfor %}</ul></details>{% endif %}
       <div class="planner-tools">
         <div class="seg" role="group" aria-label="Which forms">

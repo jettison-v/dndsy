@@ -37,7 +37,8 @@ def limit(a: dict) -> str:
     if u.get("type") == "PER_DAY":
         return f"{u.get('param')}/Day"
     if u.get("type") == "RECHARGE_ON_ROLL":
-        return f"Recharge {u.get('param')}–6"
+        p = u.get("param")
+        return "Recharge 6" if p == 6 else f"Recharge {p}–6"
     return ""
 
 
@@ -61,7 +62,8 @@ def beast(c: dict) -> dict:
     speed = {k: v for k, v in (c.get("speed") or {}).items() if k in ("walk", "burrow", "climb", "fly", "swim") and v}
     ri = c.get("resistances_and_immunities") or {}
     senses = ", ".join(f"{s.title()} {c[s + '_range']} ft." for s in SENSES if c.get(s + "_range"))
-    acts = c.get("actions") or []
+    # Open5e doesn't keep the stat block's order; Multiattack leads, as in the book
+    acts = sorted(c.get("actions") or [], key=lambda a: (not a["name"].startswith("Multiattack"), a.get("order_in_statblock") or 0))
     return {
         "name": c["name"],
         "cr": cr,
