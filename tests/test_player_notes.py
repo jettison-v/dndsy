@@ -26,7 +26,24 @@ def test_combos_keep_turns_in_order_and_drop_empty_ones():
         turn_reaction=["", "", ""], turn_move=["", "", ""], turn_notes=["", "", ""]))
     assert title == "Grapple then Moonbeam" and status == ""
     assert [t["label"] for t in data["turns"]] == ["Setup", "Turn 2"]  # the empty third turn is dropped
-    assert data["turns"][0]["bonus"] == "Wild Shape" and data["when"] == "Big melee enemy"
+    assert data["turns"][0]["steps"] == [{"kind": "action", "text": "Moonbeam"}, {"kind": "bonus", "text": "Wild Shape"}]  # older form
+    assert data["when"] == "Big melee enemy"
+
+
+def test_combo_steps_keep_the_players_order():
+    """A Bonus action can come before the Action (Brett): steps stay in page order, per turn."""
+    _, _, data = pn.parse("combo", FormData([
+        ("title", "Bear then beam"),
+        ("turn_label", "Setup"), ("step_kind", "bonus"), ("step_text", "Wild Shape into Polar Bear"),
+        ("step_kind", "move"), ("step_text", "Close to 5 ft"), ("step_kind", "action"), ("step_text", "Rend twice"),
+        ("turn_notes", "Only if it's in reach"),
+        ("turn_label", ""), ("step_kind", "action"), ("step_text", ""),  # an empty turn is dropped
+        ("turn_label", "Payoff"), ("step_kind", "action"), ("step_text", "Moonbeam"), ("turn_notes", ""),
+    ]))
+    assert [t["label"] for t in data["turns"]] == ["Setup", "Payoff"]
+    assert [s["kind"] for s in data["turns"][0]["steps"]] == ["bonus", "move", "action"]
+    assert data["turns"][0]["notes"] == "Only if it's in reach"
+    assert pn.combo_steps({"action": "Rend", "bonus": "Wild Shape"}) == [{"kind": "action", "text": "Rend"}, {"kind": "bonus", "text": "Wild Shape"}]
 
 
 def test_leveling_quest_and_general_structures():

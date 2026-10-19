@@ -17,17 +17,21 @@
     <label class="field"><span>What it needs</span><textarea name="needs" rows="2" placeholder="Resources, position, conditions: e.g. a 2nd-level slot, Wild Shape use, enemy within 5 ft">{{ d.needs }}</textarea></label>
   </div>
   <h3>Turns</h3>
-  <p class="note">Most combos need a setup turn and a payoff turn. Fill in only what you use each turn.</p>
+  <p class="note">Most combos need a setup turn and a payoff turn. List each turn's steps in the order you take them: a Bonus action can come before or after your Action, and you can move between them.</p>
   <div class="repeat" data-repeat>
-    {% set turns = d.turns or [{"label": "Turn 1 · Setup"}, {"label": "Turn 2 · Payoff"}] %}
+    {% set turns = d.turns or [{"label": "Turn 1 · Setup", "steps": [{"kind": "bonus"}, {"kind": "action"}]}, {"label": "Turn 2 · Payoff", "steps": [{"kind": "action"}, {"kind": "bonus"}]}] %}
+    {% macro step_row(st) %}<div class="repeat-row combo-step-edit">
+      <select name="step_kind" aria-label="Kind of step">{% for k, label in STEP_KINDS.items() %}<option value="{{ k }}"{{ ' selected' if st.kind == k }}>{{ label }}</option>{% endfor %}</select>
+      <input type="text" name="step_text" value="{{ st.text }}" placeholder="e.g. Wild Shape into Polar Bear" aria-label="What you do">
+      <button type="button" class="btn link danger small" data-repeat-remove aria-label="Remove this step">✕</button>
+    </div>{% endmacro %}
     {% macro turn_row(t) %}<fieldset class="repeat-row combo-edit">
       <div class="row"><input type="text" name="turn_label" value="{{ t.label }}" placeholder="Turn 1 · Setup" class="turn-label">
         <button type="button" class="btn link danger small" data-repeat-remove>Remove turn</button></div>
-      <div class="form-2">
-        <label class="field k-action"><span>Action</span><textarea name="turn_action" rows="2">{{ t.action }}</textarea></label>
-        <label class="field k-bonus"><span>Bonus action</span><textarea name="turn_bonus" rows="2">{{ t.bonus }}</textarea></label>
-        <label class="field k-reaction"><span>Reaction</span><textarea name="turn_reaction" rows="2">{{ t.reaction }}</textarea></label>
-        <label class="field"><span>Movement</span><textarea name="turn_move" rows="2">{{ t.move }}</textarea></label>
+      <div class="combo-steps-edit" data-repeat>
+        {% for st in (t | combo_steps) or [{"kind": "action"}] %}{{ step_row(st) }}{% endfor %}
+        <template>{{ step_row({"kind": "action"}) }}</template>
+        <button type="button" class="btn small" data-repeat-add>+ Add a step</button>
       </div>
       <label class="field"><span>Notes</span><input type="text" name="turn_notes" value="{{ t.notes }}" placeholder="e.g. Only if the Grapple worked"></label>
     </fieldset>{% endmacro %}

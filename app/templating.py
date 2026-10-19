@@ -113,3 +113,13 @@ def _dice(text: str) -> str:
 
 
 templates.env.filters["dice"] = _dice
+
+
+def _combo_steps(turn: dict) -> list[dict]:
+    from app.player_notes import combo_steps
+
+    return combo_steps(turn or {})
+
+
+templates.env.filters["combo_steps"] = _combo_steps
+templates.env.globals["STEP_KINDS"] = {"bonus": "Bonus action", "action": "Action", "reaction": "Reaction", "move": "Movement", "free": "Free"}

@@ -70,7 +70,7 @@
     <div class="fm-main">
       <h3>Battle cards</h3>
       <div class="fm-econ">
-        {% for cost, slug, sub in [("Action", "action", "One per turn"), ("Bonus action", "bonus", "One per turn")] %}
+        {% for cost, slug, sub in [("Action", "action", "One per turn"), ("Bonus action", "bonus", "One per turn, before or after your Action")] %}
         <section class="fm-col">
           <h4 class="econ-head k-{{ slug }}">{{ cost }}<small>{{ sub }}</small></h4>
           {% for o in f.columns[cost].shown %}{{ card(o) }}{% else %}<p class="muted">None.</p>{% endfor %}

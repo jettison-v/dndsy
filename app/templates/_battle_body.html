@@ -45,7 +45,7 @@
   {% if s %}
   {% if can_pick and not form %}<p class="note" style="margin:-6px 0 10px">Drag options to reorder a column. ★ on the Character page (or in "See all") adds more.</p>{% endif %}
   <div class="econ">
-    {% for cost, sub, slug in [("Action", "One per turn", "action"), ("Bonus action", "One per turn", "bonus"), ("Reaction", "One per round, also on others' turns", "reaction")] %}
+    {% for cost, sub, slug in [("Action", "One per turn", "action"), ("Bonus action", "One per turn, before or after your Action", "bonus"), ("Reaction", "One per round, also on others' turns", "reaction")] %}
     {% set col = columns[cost] %}
     <div class="section">
       <h2 class="econ-head k-{{ slug }}">{{ cost }}<small>{{ col.sub or sub }}</small></h2>

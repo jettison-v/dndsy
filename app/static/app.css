@@ -1071,3 +1071,8 @@ a.sheet-ref { text-decoration-style: dotted; }
 .roll-history li { display: flex; justify-content: space-between; font-size: .85rem; color: var(--muted); padding: 2px 0; }
 .roll-history li b { color: var(--text); }
 @media (max-width: 520px) { .roll-tray { right: 8px; bottom: 8px; width: calc(100vw - 16px); } .roll-result b { font-size: 1.4rem; } }
+/* Combo turns as ordered steps (a Bonus action can come first) */
+.combo-steps-edit { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+.combo-step-edit { display: grid; grid-template-columns: 140px minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+@media (max-width: 520px) { .combo-step-edit { grid-template-columns: 1fr auto; } .combo-step-edit input { grid-column: 1 / -1; grid-row: 2; } }
+.combo-step.k-bonus .combo-k { color: var(--k-bonus); } .combo-step.k-action .combo-k { color: var(--k-action); } .combo-step.k-reaction .combo-k { color: var(--k-reaction); }

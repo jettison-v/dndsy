@@ -39,7 +39,39 @@ KINDS = {
 }
 QUEST_STATUS = {"open": "Open", "done": "Done", "abandoned": "Abandoned"}
 MAX_TEXT, MAX_BODY, MAX_ROWS = 2000, 20000, 20
-TURN_FIELDS = ("label", "action", "bonus", "reaction", "move", "notes")
+TURN_FIELDS = ("label", "action", "bonus", "reaction", "move", "notes")  # the older fixed-box shape
+STEP_KINDS = {"bonus": "Bonus action", "action": "Action", "reaction": "Reaction", "move": "Movement", "free": "Free"}
+
+
+def combo_steps(turn: dict) -> list[dict]:
+    """A combo turn's steps in the order the player plays them. Older combos had one
+    box per kind (action, bonus, reaction, move); those read in that order."""
+    if "steps" in turn:
+        return turn["steps"]
+    return [{"kind": k, "text": turn[k]} for k in ("action", "bonus", "reaction", "move") if turn.get(k)]
+
+
+def _combo_turns(form) -> list[dict]:
+    """Turns from the form, walking its fields in page order: a turn_label starts a
+    turn, each step_kind / step_text pair adds a step to it, turn_notes ends it. So a
+    Bonus action can come before the Action, as it can at the table."""
+    if form.getlist("turn_action"):  # the older form (one box per kind)
+        rows = zip(*(form.getlist(f"turn_{f}") for f in TURN_FIELDS), strict=False)
+        turns = [dict(zip(TURN_FIELDS, (_clean(v) for v in r), strict=True)) for r in rows]
+        return [{"label": x["label"], "steps": combo_steps(x), "notes": x["notes"]} for x in turns]
+    turns, kind = [], "action"
+    for key, value in form.multi_items():
+        if key == "turn_label":
+            turns.append({"label": _clean(value, 200), "steps": [], "notes": ""})
+        elif not turns:
+            continue
+        elif key == "step_kind":
+            kind = value if value in STEP_KINDS else "action"
+        elif key == "step_text" and _clean(value):
+            turns[-1]["steps"].append({"kind": kind, "text": _clean(value)})
+        elif key == "turn_notes":
+            turns[-1]["notes"] = _clean(value)
+    return turns
 
 
 def _clean(value, limit: int = MAX_TEXT) -> str:
@@ -53,9 +85,7 @@ def parse(kind: str, form) -> tuple[str, str, dict]:
     title = _clean(form.get("title"), 200)
     status = ""
     if kind == "combo":
-        rows = zip(*(form.getlist(f"turn_{f}") for f in TURN_FIELDS), strict=False)
-        turns = [dict(zip(TURN_FIELDS, (_clean(v) for v in r), strict=True)) for r in rows]
-        turns = [t for t in turns if any(t[f] for f in TURN_FIELDS[1:])][:MAX_ROWS]
+        turns = [t for t in _combo_turns(form) if t["steps"] or t["notes"]][:MAX_ROWS]
         for i, t in enumerate(turns):
             t["label"] = t["label"] or f"Turn {i + 1}"
         data = {k: _clean(form.get(k)) for k in ("when", "needs", "payoff", "risks")} | {"turns": turns}

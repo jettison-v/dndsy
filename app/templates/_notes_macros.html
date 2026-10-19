@@ -7,9 +7,10 @@
   {% if d.turns %}<div class="combo-turns">
     {% for t in d.turns %}<div class="combo-turn">
       <div class="combo-turn-label">{{ t.label }}</div>
-      {% for key, label, slug in [("action", "Action", "action"), ("bonus", "Bonus action", "bonus"), ("reaction", "Reaction", "reaction"), ("move", "Movement", "other"), ("notes", "Notes", "")] %}
-      {% if t[key] %}<div class="combo-step{{ ' k-' ~ slug if slug }}"><span class="combo-k">{{ label }}</span><span>{{ nl.text(t[key]) }}</span></div>{% endif %}
+      {% for st in t | combo_steps %}
+      <div class="combo-step k-{{ {'move': 'other', 'free': 'other'}.get(st.kind, st.kind) }}"><span class="combo-k">{{ STEP_KINDS.get(st.kind, "Action") }}</span><span>{{ nl.text(st.text) }}</span></div>
       {% endfor %}
+      {% if t.notes %}<div class="combo-step"><span class="combo-k">Notes</span><span>{{ nl.text(t.notes) }}</span></div>{% endif %}
     </div>{% endfor %}
   </div>{% endif %}
   {% if d.payoff %}<p class="combo-payoff"><b>Payoff</b> {{ nl.text(d.payoff) }}</p>{% endif %}
