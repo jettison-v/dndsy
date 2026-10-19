@@ -2,7 +2,7 @@
 {% block title %}Characters · Manage · askdnd{% endblock %}
 {% block content %}
 <main class="page" style="max-width:1000px">
-  <div class="crumbs">Manage › Characters</div>
+  {% include "_manage_head.html" %}
   <div class="title-row"><h1>Characters</h1>
     {% if rows | selectattr("ddb_id") | list %}<form method="post" action="/characters/refresh" class="inline" style="margin-left:auto" data-busy-note="refresh-note"><button class="btn" type="submit" data-busy="Refreshing from D&amp;D Beyond…">Refresh all from D&amp;D Beyond</button></form>{% endif %}</div>
   <p class="subtitle">D&amp;D Beyond links and your regrouping corrections. Only admins can see this page.</p>

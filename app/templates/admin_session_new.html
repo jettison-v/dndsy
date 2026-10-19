@@ -2,7 +2,8 @@
 {% block title %}Add session · askdnd{% endblock %}
 {% block content %}
 <main class="page narrow">
-  <div class="crumbs"><a href="/admin/sessions">Manage › Review</a> › Add session</div>
+  {% include "_manage_head.html" %}
+  <div class="crumbs"><a href="/admin/sessions">Recaps</a> › Add session</div>
   <div class="title-row"><h1>Add a session</h1></div>
   <p class="subtitle">For a session with no notes or recording. Write what happened from memory; Claude then checks it against the sessions before and after and asks about anything missing.</p>
   {% if error %}<div class="flash bad">{{ error }}</div>{% endif %}

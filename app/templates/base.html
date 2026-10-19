@@ -11,7 +11,7 @@
   <meta name="theme-color" content="#0f1113">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/app.css?v=42">
+  <link rel="stylesheet" href="/static/app.css?v=43">
   <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js" defer></script>
   <script src="/static/app.js?v=25" defer></script>
   {% block head %}{% endblock %}
@@ -31,23 +31,19 @@
     <a href="/campaign" class="{{ 'active' if path.startswith('/campaign') }}">Campaign</a>
     <a href="/map" class="{{ 'active' if path == '/map' }}">Map</a>
   </nav>
-  {% if can_moderate %}
+  {% if manage_pages %}
   <div class="manage">
-    <button class="{{ 'active' if path.startswith('/admin') or path.startswith('/suggestions') }}" data-menu="manage-menu" aria-haspopup="true">Manage ▾</button>
+    <button class="{{ 'active' if path == '/manage' or manage_pages | selectattr('here') | list }}" data-menu="manage-menu" aria-haspopup="true">Manage ▾</button>
     <div class="menu" id="manage-menu" hidden>
-      <a href="/suggestions" class="{{ 'active' if path.startswith('/suggestions') }}">Suggestions<small>Corrections and additions from the table</small></a>
-      {% if is_reviewer %}<a href="/admin/sessions" class="{{ 'active' if path.startswith('/admin/sessions') }}">Review<small>Draft and publish sessions</small></a>{% endif %}
-      {% if is_admin %}
-      {% if can_see_notes %}<a href="/admin/notes" class="{{ 'active' if path.startswith('/admin/notes') }}">Notes sync<small>Pull the latest Google Docs</small></a>{% endif %}
-      <a href="/admin/characters" class="{{ 'active' if path.startswith('/admin/characters') }}">Characters<small>D&amp;D Beyond links and regrouping</small></a>
-      <a href="/admin/people" class="{{ 'active' if path.startswith('/admin/people') }}">People<small>Who can sign in and what they can do</small></a>
-      <a href="/admin/usage" class="{{ 'active' if path.startswith('/admin/usage') }}">Usage<small>Claude spending and balance</small></a>
-      <a href="/admin/import" class="{{ 'active' if path.startswith('/admin/import') }}">Import<small>Load campaign data</small></a>
-      {% endif %}
+      <a href="/manage" class="menu-home{{ ' active' if path == '/manage' }}">Overview<small>What needs attention</small></a>
+      {% for group in ["Table", "Party", "Admin"] %}{% set pages = manage_pages | selectattr("group", "equalto", group) | list %}{% if pages %}
+      <div class="menu-group">{{ group }}</div>
+      {% for p in pages %}<a href="{{ p.href }}" class="{{ 'active' if p.here }}">{{ p.label }}<small>{{ p.about }}</small></a>{% endfor %}
+      {% endif %}{% endfor %}
     </div>
   </div>
   {% endif %}
-  <div class="account" {% if not can_moderate %}style="margin-left:auto"{% endif %}>
+  <div class="account" {% if not manage_pages %}style="margin-left:auto"{% endif %}>
     <button class="avatar" data-menu="account-menu" aria-label="Account">{% if user.picture %}<img src="{{ user.picture }}" alt="" referrerpolicy="no-referrer">{% else %}{{ (user.name or user.email)[:1] | upper }}{% endif %}</button>
     <div class="menu" id="account-menu" hidden>
       <a href="#" style="pointer-events:none">{{ user.name }}<small>{{ user.email }}</small></a>

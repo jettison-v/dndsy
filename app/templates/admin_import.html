@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Import · askdnd{% endblock %}
+{% block title %}Data · Manage · askdnd{% endblock %}
 {% block content %}
 <main class="page narrow">
-  <div class="crumbs">Manage › Import</div>
+  {% include "_manage_head.html" %}
   <div class="title-row"><h1>Import campaign data</h1></div>
   <p class="subtitle">Upload a campaign bundle (.json). Importing again is safe: matching records are updated, not duplicated.</p>
   {% if error %}<div class="flash bad"><b>{{ filename }}</b>: {{ error }}</div>{% endif %}

@@ -23,8 +23,8 @@ GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 ALLOWED_EMAILS = parse_allowlist(os.getenv("ALLOWED_EMAILS"))
 # Admins can import data and review/publish recaps. Must also be in ALLOWED_EMAILS.
 ADMIN_EMAILS = parse_allowlist(os.getenv("ADMIN_EMAILS"))
-# Reviewers (e.g. the DM) can draft, review and publish sessions, but not see
-# Notes sync (character notes are hidden from the DM), Import or Usage.
+# Reviewers (e.g. the DM) can draft, review and publish recaps, but not open
+# People, Characters, Usage, Data or the campaign doc.
 REVIEWER_EMAILS = parse_allowlist(os.getenv("REVIEWER_EMAILS"))
 
 SESSION_SECRET = os.getenv("SESSION_SECRET", "")

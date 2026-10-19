@@ -1,4 +1,9 @@
-"""Admin: Google Docs note sources and the Sync button.
+"""Admin: the campaign doc (a Google Doc of session notes that recap drafts come
+from), under Manage › Recaps, and its Sync button.
+
+Players' character docs used to sync here too; structured player notes on the
+Character page replace them (2026-10-18). Old character-doc sources are no longer
+synced; they're listed only so an admin who isn't the DM can remove them.
 
 Sync asks Google for read-only Drive access each time and keeps no token:
 in Testing mode Google expires stored refresh tokens after 7 days anyway.
@@ -27,7 +32,7 @@ from app.gdocs import (
     parse_export,
     shrink_image,
 )
-from app.models import Campaign, Character, NoteImage, NoteSnapshot, NoteSource
+from app.models import Campaign, NoteImage, NoteSnapshot, NoteSource
 from app.notes_sync import sync_sources
 from app.render import markdown_to_html
 from app.templating import templates
@@ -64,8 +69,13 @@ class GoogleError(Exception):
 
 
 def _guard(request: Request):
-    """Admins only, and never the DM: these pages show players' character notes."""
-    return _admin_guard(request, allow=lambda u: is_admin(u) and can_see_character_notes(u))
+    """Admins (the campaign doc is for the whole table)."""
+    return _admin_guard(request, allow=is_admin)
+
+
+def _visible(source: NoteSource, user: dict) -> bool:
+    """Old character docs stay hidden from the DM."""
+    return source.character_id is None or can_see_character_notes(user)
 
 def explain_google_error(resp) -> str:
     """Turn a Drive API error response into a plain-English message."""
@@ -91,10 +101,11 @@ def notes_page(request: Request, db: Session = Depends(get_db), result: str | No
     if denied:
         return denied
     campaign = _campaign(db)
-    sources = list(db.scalars(select(NoteSource).order_by(NoteSource.id))) if campaign else []
-    characters = list(db.scalars(select(Character))) if campaign else []
+    every = [s for s in db.scalars(select(NoteSource).order_by(NoteSource.id)) if _visible(s, user)] if campaign else []
+    sources = [s for s in every if s.character_id is None]
+    retired = [s for s in every if s.character_id is not None]
     stats = {}
-    for s in sources:
+    for s in every:
         latest = s.snapshots[-1] if s.snapshots else None
         n_images = db.scalar(select(func.count()).where(NoteImage.snapshot_id == latest.id)) if latest else 0
         stats[s.id] = {"latest": latest, "words": len(latest.text.split()) if latest else 0, "images": n_images}
@@ -106,7 +117,7 @@ def notes_page(request: Request, db: Session = Depends(get_db), result: str | No
             "user": user,
             "campaign": campaign,
             "sources": sources,
-            "characters": characters,
+            "retired": retired,
             "stats": stats,
             "results": results,
             "failed_count": sum(1 for v in (results or {}).values() if v.startswith("failed")),
@@ -116,7 +127,7 @@ def notes_page(request: Request, db: Session = Depends(get_db), result: str | No
 
 
 @router.post("/sources")
-def add_source(request: Request, url: str = Form(...), character_id: str = Form(""), db: Session = Depends(get_db)):
+def add_source(request: Request, url: str = Form(...), db: Session = Depends(get_db)):
     user, denied = _guard(request)
     if denied:
         return denied
@@ -129,7 +140,7 @@ def add_source(request: Request, url: str = Form(...), character_id: str = Form(
     elif db.scalar(select(NoteSource).where(NoteSource.google_doc_id == doc_id)):
         request.session["notes_error"] = "That doc is already on the list."
     else:
-        db.add(NoteSource(campaign_id=campaign.id, google_doc_id=doc_id, character_id=int(character_id) if character_id else None))
+        db.add(NoteSource(campaign_id=campaign.id, google_doc_id=doc_id))
         db.commit()
     return RedirectResponse("/admin/notes", status_code=303)
 
@@ -140,7 +151,7 @@ def delete_source(request: Request, source_id: int, db: Session = Depends(get_db
     if denied:
         return denied
     source = db.get(NoteSource, source_id)
-    if source:
+    if source and _visible(source, user):
         db.delete(source)
         db.commit()
     return RedirectResponse("/admin/notes", status_code=303)
@@ -172,7 +183,7 @@ async def sync_callback(request: Request, db: Session = Depends(get_db)):
         request.session["notes_error"] = "Sign in with your own account and allow read-only Drive access."
         return RedirectResponse("/admin/notes", status_code=303)
 
-    sources = list(db.scalars(select(NoteSource).order_by(NoteSource.id)))
+    sources = list(db.scalars(select(NoteSource).where(NoteSource.character_id.is_(None)).order_by(NoteSource.id)))
     fetched: dict[str, object] = {}
     for s in sources:
         try:
@@ -230,7 +241,7 @@ def view_snapshot(request: Request, snapshot_id: int, db: Session = Depends(get_
     if denied:
         return denied
     snap = db.get(NoteSnapshot, snapshot_id)
-    if snap is None:
+    if snap is None or not _visible(snap.source, user):
         return RedirectResponse("/admin/notes", status_code=303)
     ids = {img.name: img.id for img in snap.images}
     body = markdown_to_html(snap.text, lambda name: f"/admin/notes/images/{ids[name]}" if name in ids else None)
@@ -243,6 +254,6 @@ def image(request: Request, image_id: int, db: Session = Depends(get_db)):
     if denied:
         return denied
     img = db.get(NoteImage, image_id)
-    if img is None:
+    if img is None or not _visible(db.get(NoteSnapshot, img.snapshot_id).source, user):
         return Response(status_code=404)
     return Response(img.data, media_type=img.content_type, headers={"Cache-Control": "private, max-age=3600"})

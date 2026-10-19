@@ -2,7 +2,8 @@
 {% block title %}{{ snap.source.title or "Notes" }} · askdnd{% endblock %}
 {% block content %}
 <main class="page narrow">
-  <div class="crumbs"><a href="/admin/notes">Manage › Notes sync</a> › {{ snap.source.title or "Notes" }}</div>
+  {% include "_manage_head.html" %}
+  <div class="crumbs"><a href="/admin/sessions">Recaps</a> › <a href="/admin/notes">Campaign doc</a> › {{ snap.source.title or "Notes" }}</div>
   <div class="title-row"><h1>{{ snap.source.title or "Notes" }}</h1></div>
   <p class="subtitle">Synced copy from {{ snap.created_at.strftime("%b %-d, %Y %-I:%M %p") }} UTC.</p>
   <section class="section doc">{{ body | safe }}</section>

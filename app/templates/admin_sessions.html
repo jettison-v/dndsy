@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Review · askdnd{% endblock %}
+{% block title %}Recaps · Manage · askdnd{% endblock %}
 {% block content %}
 <main class="page" {% if running %}hx-get="/admin/sessions" hx-trigger="every 10s" hx-select="main" hx-swap="outerHTML"{% endif %}>
-  <div class="crumbs">Manage › Review</div>
-  <div class="title-row"><h1>Review</h1><a class="btn" href="/admin/sessions/new" style="margin-left:auto">+ Add session</a></div>
-  <p class="subtitle">Claude drafts each session from your notes or a transcript. Nothing reaches the table until you open a session and publish it. Spent on drafting so far: <b>${{ "%.2f" | format(spent) }}</b>.</p>
+  {% include "_manage_head.html" %}
+  <div class="title-row"><h1>Recaps</h1><a class="btn" href="/admin/sessions/new" style="margin-left:auto">+ Add session</a></div>
+  <p class="subtitle">Claude drafts each session's recap from the campaign doc or a transcript. Nothing reaches the table until you open a session and publish it. Spent on drafting so far: <b>${{ "%.2f" | format(spent) }}</b>.</p>
 
-  {% if not notes_synced %}<div class="flash warn">Sync your campaign notes first: <a href="/admin/notes">Notes sync</a>.</div>{% endif %}
+  {% if not notes_synced %}<div class="flash warn">Sync the campaign doc first: <a href="/admin/notes">Campaign doc</a>.</div>{% elif is_admin %}<p class="note"><a href="/admin/notes">Campaign doc</a>: the Google Doc of session notes that drafts come from.</p>{% endif %}
   {% if running %}<div class="flash warn">Claude is drafting… this page updates by itself. Each session takes about a minute.</div>{% endif %}
   {% if missing and not running %}
   <section class="section">

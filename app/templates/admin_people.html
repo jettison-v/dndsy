@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}People · askdnd{% endblock %}
+{% block title %}People · Manage · askdnd{% endblock %}
 {% block content %}
 <main class="page" style="max-width:1000px">
-  <div class="crumbs">Manage › People</div>
+  {% include "_manage_head.html" %}
   <div class="title-row"><h1>People</h1></div>
   <p class="subtitle">Who can sign in and what they can do. Only admins can see this page.</p>
 
@@ -11,7 +11,7 @@
     <dl class="profs" style="margin-top:12px">
       <dt>Player</dt><dd>Reads everything for the table and suggests corrections.</dd>
       <dt>Reviewer</dt><dd>Also drafts, edits and publishes sessions, answers Claude's questions, merges suggestions, and refreshes characters.</dd>
-      <dt>Admin</dt><dd>Also Notes sync, Import, Usage and this page.</dd>
+      <dt>Admin</dt><dd>Also People, Characters, Usage, Data and the campaign doc.</dd>
       <dt>DM</dt><dd>Whoever is ticked as DM never sees players' character notes, stars or reminders, whatever their access level.</dd>
       <dt>Plays</dt><dd>The character a person plays. Only they can star things and set reminders on it, and Battle and Character open on it for them.</dd>
     </dl>

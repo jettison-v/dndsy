@@ -1,27 +1,28 @@
 {% extends "base.html" %}
-{% block title %}Notes sync · askdnd{% endblock %}
+{% block title %}Campaign doc · Recaps · askdnd{% endblock %}
 {% block content %}
 <main class="page narrow">
-  <div class="crumbs">Manage › Notes sync</div>
-  <div class="title-row"><h1>Notes sync</h1></div>
-  <p class="subtitle">Pull your Google Docs into askdnd. Google asks for <b>read-only</b> access each time; nothing is kept afterwards.</p>
+  {% include "_manage_head.html" %}
+  <div class="crumbs"><a href="/admin/sessions">Recaps</a> › Campaign doc</div>
+  <div class="title-row"><h1>Campaign doc</h1></div>
+  <p class="subtitle">The Google Doc of session notes that recap drafts come from. Everyone at the table may see what's drafted from it. Sync asks Google for <b>read-only</b> access each time; nothing is kept afterwards. Players' own notes now live on each Character page.</p>
   {% if error %}<div class="flash bad">{{ error }}</div>{% endif %}
   {% if results %}
   <div class="flash {{ 'bad' if failed_count else '' }}"><b>{% if not failed_count %}Sync finished.{% elif failed_count == results | length %}Sync failed.{% else %}Sync finished with problems.{% endif %}</b>
     <ul>{% for title, status in results.items() %}<li><b>{{ title }}</b>: {{ status }}</li>{% endfor %}</ul></div>
   {% endif %}
   {% if not campaign %}
-  <div class="flash warn">Import the campaign first: <a href="/admin/import">Import</a>.</div>
+  <div class="flash warn">Import the campaign first: <a href="/admin/import">Data</a>.</div>
   {% else %}
   <section class="section">
-    <div class="section-head"><h2>Your docs</h2>
+    <div class="section-head"><h2>Synced doc</h2>
       {% if sources %}<form method="post" action="/admin/notes/sync"><button class="btn primary" data-busy="Opening Google…">Sync now</button></form>{% endif %}</div>
     {% if sources %}
     <table class="list" style="margin-top:12px">
       {% for s in sources %}{% set st = stats[s.id] %}
       <tr>
         <td><b>{{ s.title or s.google_doc_id }}</b>
-          <div class="note">{% if s.character %}{{ s.character.entity.name }}'s character notes · hidden from the DM{% else %}Campaign notes · visible to the table{% endif %}</div></td>
+          <div class="note">Campaign notes · visible to the table</div></td>
         <td class="note">{% if st.latest %}Synced {{ s.last_synced_at.strftime("%b %-d, %-I:%M %p") }} UTC<br>{{ "{:,}".format(st.words) }} words · {{ st.images }} images{% else %}Not synced yet{% endif %}</td>
         <td style="text-align:right;white-space:nowrap">{% if st.latest %}<a class="btn" href="/admin/notes/snapshots/{{ st.latest.id }}">View</a>{% endif %}
           <form class="inline" method="post" action="/admin/notes/sources/{{ s.id }}/delete" onsubmit="return confirm('Remove this doc? Its synced copies are deleted too.')"><button class="btn link danger">Remove</button></form></td>
@@ -32,15 +33,24 @@
   </section>
   <section class="section">
     <h2>Add a doc</h2>
-    <form method="post" action="/admin/notes/sources" class="stack" style="margin-top:12px">
-      <input type="url" name="url" placeholder="Paste a Google Docs link" required>
-      <div class="row"><select name="character_id">
-          <option value="">Campaign notes (visible to the table)</option>
-          {% for c in characters %}<option value="{{ c.id }}">{{ c.entity.name }}'s character notes (hidden from the DM)</option>{% endfor %}
-        </select>
-        <button class="btn">Add</button></div>
+    <form method="post" action="/admin/notes/sources" class="row" style="margin-top:12px">
+      <input type="url" name="url" placeholder="Paste a Google Docs link" required style="flex:1;min-width:220px">
+      <button class="btn">Add</button>
     </form>
   </section>
+  {% if retired %}
+  <section class="section">
+    <h2>Old character docs</h2>
+    <p class="hint" style="margin-top:6px">These no longer sync: player notes on each Character page replace them. Their last copy is kept until you remove it. Hidden from the DM.</p>
+    <table class="list">
+      {% for s in retired %}{% set st = stats[s.id] %}
+      <tr><td><b>{{ s.title or s.google_doc_id }}</b><div class="note">{{ s.character.entity.name if s.character else "A character" }}'s notes</div></td>
+        <td style="text-align:right;white-space:nowrap">{% if st.latest %}<a class="btn" href="/admin/notes/snapshots/{{ st.latest.id }}">View last copy</a>{% endif %}
+          <form class="inline" method="post" action="/admin/notes/sources/{{ s.id }}/delete" onsubmit="return confirm('Remove this doc and its saved copies?')"><button class="btn link danger">Remove</button></form></td></tr>
+      {% endfor %}
+    </table>
+  </section>
+  {% endif %}
   {% endif %}
 </main>
 {% endblock %}

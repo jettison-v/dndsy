@@ -4,7 +4,7 @@ Access levels: player < reviewer < admin.
 - Player: reads everything for the table and suggests corrections.
 - Reviewer: also drafts, edits and publishes sessions and the campaign record,
   and refreshes characters.
-- Admin: also Notes sync, Import, Usage and People.
+- Admin: also People, Characters, Usage, Data (import) and the campaign doc.
 
 Admins set people's access on Manage › People (users.access; blank means "not
 set here", e.g. someone imported but not invited yet). The Railway

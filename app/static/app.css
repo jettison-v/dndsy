@@ -876,3 +876,18 @@ sup.prof { color: var(--blue); font-size: .6rem; }
 .fc-sort { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
 .fc-sort select { background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; font: inherit; font-size: .88rem; }
 @media (max-width: 600px) { .fc-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* Manage: grouped menu, tabs on every Manage page, and the overview cards */
+.menu .menu-group { padding: 8px 12px 2px; font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); }
+.menu .menu-home { border-bottom: 1px solid var(--line); }
+.manage-tabs { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 0 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--line); font-size: .9rem; }
+.manage-tabs a { color: var(--muted); text-decoration: none; padding: 4px 10px; border-radius: 999px; }
+.manage-tabs a:hover { color: var(--text); background: var(--surface); }
+.manage-tabs a.on { color: var(--text); background: var(--surface-2); font-weight: 600; }
+.manage-tabs .manage-home { color: var(--faint); padding-left: 0; } .manage-tabs .manage-home::after { content: " ›"; }
+.manage-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.manage-card { display: grid; gap: 4px; padding: 14px 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--line); color: var(--text); text-decoration: none; }
+.manage-card:hover { border-color: var(--faint); }
+.manage-card.attention { border-left-color: var(--red); }
+.manage-card b { font-size: 1.05rem; } .manage-card .muted { font-size: .88rem; }
+.manage-stat { font-weight: 600; margin-top: 4px; }

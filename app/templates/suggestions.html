@@ -2,7 +2,7 @@
 {% block title %}Suggestions · askdnd{% endblock %}
 {% block content %}
 <main class="page narrow">
-  <div class="crumbs">Manage › Suggestions</div>
+  {% include "_manage_head.html" %}
   <div class="title-row"><h1>Suggestions</h1>{% set n = table.entries | length + table.facts | length %}{% if n %}<span class="count">{{ n }} waiting</span>{% endif %}</div>
   <p class="subtitle">Corrections and additions from the table. They come to the DM, admins and reviewers, and any of them can decide. Nothing changes until one of them does. The DM's own go straight in.</p>
 

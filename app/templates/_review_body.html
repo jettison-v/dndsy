@@ -43,7 +43,7 @@
   {% if s.source != "account" %}
   <section class="section">
     <h2>No draft yet</h2>
-    <p class="hint" style="margin-top:8px">{% if s.source == "transcript" %}Send this session's transcript from the askdnd Processor on your Mac.{% else %}Go back to <a href="/admin/sessions">Review</a> and choose <i>Draft from notes</i>.{% endif %}</p>
+    <p class="hint" style="margin-top:8px">{% if s.source == "transcript" %}Send this session's transcript from the askdnd Processor on your Mac.{% else %}Go back to <a href="/admin/sessions">Recaps</a> and choose <i>Draft from notes</i>.{% endif %}</p>
   </section>
   {% endif %}
   {% else %}
@@ -277,7 +277,7 @@
         </div>
         {% endif %}
       </div>
-      <p class="source">{{ {"transcript": "From a transcript", "account": "From a written account"}.get(s.source, "From the campaign notes") }}{% if s.source != "transcript" and is_admin %} · <a href="/admin/notes">notes</a>{% endif %}</p>
+      <p class="source">{{ {"transcript": "From a transcript", "account": "From a written account"}.get(s.source, "From the campaign notes") }}{% if s.source != "transcript" and is_admin %} · <a href="/admin/notes">campaign doc</a>{% endif %}</p>
     </aside>
   </div>
   <div class="mobile-bar">

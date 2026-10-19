@@ -76,13 +76,26 @@ def test_imported_members_need_an_invite(env, monkeypatch, db):
 
 
 def test_dm_never_sees_character_notes_even_as_admin(env, monkeypatch, db):
+    from app.models import Campaign, Character, NoteSnapshot, NoteSource
+
     owner, _ = sign_in(monkeypatch, "owner@example.com")
     owner.post("/admin/people", data={"email": "dm@example.com", "level": "admin", "is_dm": "1"})
     dm, _ = sign_in(monkeypatch, "dm@example.com")
     assert dm.get("/admin/usage").status_code == 200
-    assert dm.get("/admin/notes").status_code == 403
-    assert "/admin/notes" not in dm.get("/").text and "/admin/people" in dm.get("/").text
-    assert owner.get("/admin/notes").status_code == 200
+    assert "/admin/people" in dm.get("/").text
+    # The campaign doc is for the whole table; an old character doc stays hidden from the DM
+    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"},
+                       "entities": [{"kind": "pc", "name": "Cole", "character": {"player_name": "Brett"}}]})
+    campaign = db.scalar(select(Campaign))
+    char = db.scalar(select(Character))
+    if True:
+        src = NoteSource(campaign_id=campaign.id, google_doc_id="c" * 30, title="Secret Cole doc", character_id=char.id)
+        src.snapshots.append(NoteSnapshot(content_hash="h", text="secret plan"))
+        db.add(src)
+        db.flush()
+        assert "Secret Cole doc" not in dm.get("/admin/notes").text and "Secret Cole doc" in owner.get("/admin/notes").text
+        assert "secret plan" not in dm.get(f"/admin/notes/snapshots/{src.snapshots[0].id}", follow_redirects=False).text
+    assert dm.get("/admin/notes").status_code == 200 and owner.get("/admin/notes").status_code == 200
 
 
 def test_players_cant_manage_people(env, monkeypatch, db):

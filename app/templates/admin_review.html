@@ -2,7 +2,8 @@
 {% block title %}Review {{ label }} · askdnd{% endblock %}
 {% block content %}
 <main class="page">
-  <div class="crumbs"><a href="/admin/sessions">Manage</a> › <a href="/admin/sessions">Review</a> › {{ label }}</div>
+  {% include "_manage_head.html" %}
+  <div class="crumbs"><a href="/admin/sessions">Recaps</a> › {{ label }}</div>
   {% include "_review_body.html" %}
 </main>
 {% endblock %}

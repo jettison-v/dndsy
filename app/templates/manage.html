@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Manage · askdnd{% endblock %}
+{% block content %}
+<main class="page">
+  {% include "_manage_head.html" %}
+  <div class="title-row"><h1>Manage</h1></div>
+  <p class="subtitle">Keeping askdnd running for the table. Cards with a red edge need something from you.</p>
+  {% for group, pages in groups %}
+  <h3 class="divider">{{ group }}</h3>
+  <div class="manage-cards">
+    {% for p in pages %}{% set st = status.get(p.key, {}) %}
+    <a class="manage-card{{ ' attention' if st.attention }}" href="{{ p.href }}">
+      <b>{{ p.label }}</b>
+      <span class="muted">{{ p.about }}</span>
+      {% if st.text %}<span class="manage-stat">{{ st.text }}</span>{% endif %}
+      {% if st.sub %}<span class="note">{{ st.sub }}</span>{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</main>
+{% endblock %}
