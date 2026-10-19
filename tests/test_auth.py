@@ -29,9 +29,13 @@ def fake_google(userinfo):
 
 
 @pytest.fixture
-def client(monkeypatch):
+def client(monkeypatch, db):
+    from app.db import get_db
+
     monkeypatch.setattr(config, "ALLOWED_EMAILS", parse_allowlist("player@example.com"))
-    return TestClient(app)
+    app.dependency_overrides[get_db] = lambda: db
+    yield TestClient(app)
+    app.dependency_overrides.clear()
 
 
 def test_allowed_user_signs_in(client, monkeypatch):

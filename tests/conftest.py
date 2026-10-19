@@ -6,6 +6,9 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "postgresql+psycopg://localhost/askdnd_test")
+# The app's own database connection (app.db) also points at the test database, so no test
+# ever touches a development or production database (set before the app is imported).
+os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 
 
 @pytest.fixture(scope="session")
