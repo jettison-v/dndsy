@@ -5,7 +5,7 @@ they're easy to test without a browser."""
 import re
 from urllib.parse import quote
 
-from app import advantage
+from app import advantage, class_rules
 
 COSTS = ["Action", "Bonus action", "Reaction", "Other"]
 COLUMN_LIMIT = 7  # options shown in a Battle column before "See all"
@@ -95,6 +95,9 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
     starred = starred or set()
     attacks = {a["name"]: a for a in sheet.get("attacks") or []}
     advs = sheet.get("attack_adv") or []
+    rules = class_rules.turn(sheet)
+    mastered = class_rules.masteries(sheet)
+    action_names = {a["name"] for a in sheet.get("actions") or []}
     out = []
 
     def add(**o):
@@ -114,9 +117,13 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
         out.append(o)
 
     for a in sheet.get("attacks") or []:
-        add(key=a["key"], oref=f"attack:{a['name']}", kind="attack", cost="Action", name=a["name"], hit=a["to_hit"],
+        mastery = _mastery(a, mastered)
+        props = [p for p in a["properties"] if p not in class_rules.MASTERIES]  # a mastery only counts if you've mastered the weapon
+        tags = ([f"×{rules['attacks']} per Attack action"] if rules["attacks"] > 1 else []) + ([f"Mastery: {mastery}"] if mastery else [])
+        add(key=a["key"], oref=f"attack:{a['name']}", kind="attack", cost="Action", name=a["name"], hit=a["to_hit"], tags=tags,
             adv=advantage.for_attack(advs, melee="/" not in (a.get("range") or "")),
-            meta=" · ".join(x for x in (a["range"], a["damage"], ", ".join(a["properties"])) if x),
+            meta=" · ".join(x for x in (a["range"], a["damage"], ", ".join(props)) if x),
+            text=f"{mastery}: {class_rules.MASTERIES[mastery]}." if mastery else "",
             common=True)
     for sp in sheet.get("spells") or []:
         cost = sp["casting_time"] if sp["casting_time"] in ("Action", "Bonus action", "Reaction") else None
@@ -135,6 +142,8 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
             common=cost == "Reaction" or (not sp["level"] and bool(sp["attack"] or sp["save"]) and bool(sp["damage"])))
     for a in sheet.get("actions") or []:
         cost = _cost(a["activation"])
+        if _not_an_action(a, cost, rules, action_names):
+            continue
         hit, meta, unarmed = "", "", a["name"].startswith("Unarmed Strike")
         if unarmed:
             if a["name"] != "Unarmed Strike" or cost == "Action":
@@ -145,6 +154,12 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
             spends=[] if a["uses"] else resource_spends(sheet, a["name"], a["key"], a["text"] or ""),
             summary=a.get("summary", ""),
             common=not a.get("rule") and (unarmed or cost == "Reaction" or bool(a["uses"] and a["source"] in ("class", "feat", "race"))))
+    have = {class_rules._norm(o["name"]) for o in out}
+    for r in rules["options"]:
+        if class_rules._norm(r["name"]) not in have:
+            add(key=f"rule:{r['name']}", kind="feature", cost=r["cost"], name=r["name"], meta=r["meta"], text=r["meta"],
+                tags=[r["source"]], common=True)
+    _general_options(sheet, add, mastered, have)
     for it in sheet.get("inventory") or []:
         if not it["battle"]:
             continue
@@ -154,6 +169,50 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
             tags=[f"×{it['quantity']}"] if it["quantity"] > 1 else [], meta=first if len(first) <= 120 else first[:119].rsplit(" ", 1)[0] + "…",
             text=it.get("text") or it["summary"], summary=it["summary"], common="healing" in it["name"].lower())
     return out
+
+
+def _mastery(attack: dict, mastered: dict[str, str]) -> str | None:
+    """The mastery property this character can use with this weapon, if any."""
+    kind = (attack.get("base") or "").lower()
+    name = attack["name"].lower()
+    for weapon, mastery in mastered.items():
+        if weapon == kind or re.search(rf"\b{re.escape(weapon)}\b", name):
+            return mastery
+    return None
+
+
+def _not_an_action(a: dict, cost: str, rules: dict, action_names: set[str]) -> bool:
+    """D&D Beyond actions that aren't options on a turn: weapon masteries ("Vex
+    (Dart)", shown on the weapon), riders on a hit (Stunning Strike, shown under
+    "On a hit"), resource pools (Sorcery Points) and the bare Channel Divinity pool
+    when its options are listed separately."""
+    name = a["name"]
+    if class_rules.is_mastery_action(name) or name in rules["replaced"]:
+        return True
+    if cost in ("Action", "Bonus action") and (name in class_rules.RESOURCE_ACTIONS or name.endswith(": Healing Pool")):
+        return True
+    return name == "Channel Divinity" and any(n.startswith("Channel Divinity:") for n in action_names)
+
+
+def _general_options(sheet: dict, add, mastered: dict[str, str], have: set[str]) -> None:
+    """Options every character has from the core rules: the Opportunity Attack and
+    the Light weapon's extra attack."""
+    attacks = sheet.get("attacks") or []
+    melee = [a for a in attacks if "/" not in (a.get("range") or "") and "(" not in (a.get("range") or "")]
+    best = max(melee, key=lambda a: int(a["to_hit"].replace("−", "-") or 0), default=None)
+    if "opportunity attack" not in have and best:
+        add(key="rule:Opportunity Attack", kind="feature", cost="Reaction", name="Opportunity Attack", hit=best["to_hit"],
+            meta=f"When a creature you can see leaves your reach: one melee attack ({best['name']})",
+            text="When a creature you can see leaves your reach (using its action, Bonus Action, Reaction or movement), "
+                 "you can take a Reaction to make one melee attack with a weapon or an Unarmed Strike against it, right before it leaves.",
+            common=True)
+    light = [a for a in melee if "Light" in a["properties"]]
+    if len(light) >= 2:
+        nick = any(_mastery(a, mastered) == "Nick" for a in light)
+        add(key="rule:Light weapon extra attack", kind="feature", cost="Action" if nick else "Bonus action", name="Light weapon extra attack",
+            meta=("Part of the Attack action (Nick), once per turn: " if nick else "After attacking with a Light weapon in the Attack action: ")
+            + "one attack with your other Light weapon; no ability modifier to its damage unless negative",
+            common=True)
 
 
 def _battle_override(sheet: dict, oref: str) -> str | None:
@@ -176,6 +235,12 @@ def battle_columns(sheet: dict, starred: set[str], order: dict[str, list[str]] |
             rank = {k: i for i, k in enumerate(order[cost])}
             shown.sort(key=lambda o: rank.get(o["key"], len(rank)))  # stable: new ones keep their place after
         cols[cost] = {"shown": shown[:COLUMN_LIMIT], "all": everything, "count": len(everything)}
+    rules = class_rules.turn(sheet)
+    for cost, col in cols.items():
+        col["notes"] = rules["notes"][cost]
+    if rules["attacks"] > 1:
+        cols["Action"]["sub"] = f"One per turn · the Attack action makes {rules['attacks']} attacks"
+        cols["Action"]["notes"].insert(0, f"From {rules['attacks_from']}")
     return cols
 
 
@@ -196,11 +261,11 @@ def detail(sheet: dict, ref: str, starred: set[str] = frozenset()) -> dict | Non
     """Everything the side panel shows for one thing: the thing itself, how it
     works on a turn (if it's an option), and where it comes from."""
     x = find(sheet, ref)
-    if x is None and not ref.startswith("attack:"):
+    if x is None and not ref.startswith(("attack:", "rule:")):
         return None
     opt = next((o for o in options(sheet, set(starred)) if o["key"] == ref), None)
     if x is None:
-        x = {"name": opt["name"], "section": "attacks"} if opt else None
+        x = {"name": opt["name"], "section": "attacks", "text": opt.get("text", "")} if opt else None
     if x is None:
         return None
     if x["section"] == "situational":  # point at the feature or spell it comes from

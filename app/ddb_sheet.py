@@ -945,6 +945,7 @@ class _Sheet:
                 "damage": f"{dice}{'+' if dmg_bonus >= 0 else '−'}{abs(dmg_bonus)} {(df.get('damageType') or '').lower()}".strip() if dice else "",
                 "range": rng,
                 "properties": sorted(props),
+                "base": df.get("type") or "",
                 "martial_arts": monk_weapon,
             })
         natural = sum(int(m.get("value") or 0) for m in self.mods_of("bonus", "natural-attacks"))

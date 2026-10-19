@@ -32,3 +32,5 @@ opening an address). See the script's docstring.
   touching the item, nonmagical benefits only until attuned, no two copies, prerequisites, and ending it yourself.
 - 2026-10-18: SRD Beasts compared with the Monster Manual: AC, HP, CR and attacks match. Giant Squid is MM-only;
   Giant Fly is SRD-only; the SRD's Swarm of Insects has a Fly Speed D&D Beyond's MM entry doesn't list.
+- 2026-10-19: every class and subclass in the PHB, plus battle feats and weapon masteries, checked for what they change
+  about a turn; the Battle page now follows `app/class_rules.py`. See `battle-actions.md`.

@@ -21,7 +21,7 @@ from app import web
 from app import character_views as views
 from app import characters as chars
 from app import ddb, picks
-from app import player_notes
+from app import class_rules, player_notes
 from app import wild_shape as ws
 from app import rules_terms as terms
 from app.auth import current_user, is_admin, is_reviewer
@@ -173,6 +173,7 @@ def _battle_ctx(db: Session, ch: Character, user: dict) -> dict:
     ctx["form"] = None
     if ctx["sheet"]:
         ctx["columns"] = views.battle_columns(ctx["sheet"], ctx["picks"]["star"], ctx["picks"]["order"])
+        ctx["riders"] = class_rules.turn(ctx["sheet"])["riders"]
         ctx["known_forms"] = _known_forms(ctx["sheet"]) if ctx["druid"] else []
         beast = ws.beast_for(ctx["sheet"], ch.wild_shape) if ch.wild_shape and ctx["druid"] else None
         if beast:

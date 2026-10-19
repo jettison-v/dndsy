@@ -526,7 +526,7 @@ def test_options_show_what_they_spend():
     assert spends("Flurry of Blows", cole) == [("1 Focus Point", 2, 2)]
     assert spends("Healing Word", cole) == [("1st-level slot", 4, 4)]
     assert next(o for o in views.options(cole) if o["name"] == "Moonbeam")["tags"] == ["Conc."]  # its "2nd-level slot" chip gives the level
-    assert spends("Wild Shape: Circle Forms", cole) == [("1 use of Wild Shape", 3, 3)]
+    assert not any(o["name"] == "Wild Shape: Circle Forms" for o in views.options(cole))  # part of Wild Shape, not its own action
     assert spends("Wild Resurgence: Regain Wild Shape", cole) == []  # it gives a use back
     assert spends("Unarmed Strike", cole) == [] and spends("Thorn Whip", cole) == []
     load = lambda n: json.loads((Path(__file__).parent / "fixtures" / "ddb" / f"{n}.json").read_text())["data"]  # noqa: E731
@@ -535,7 +535,7 @@ def test_options_show_what_they_spend():
     assert spends("Channel Divinity: Divine Sense", big_c) == [("1 use of Channel Divinity", 2, 2)]
     assert spends("Lay On Hands: Purify Poison", big_c) == [("5 HP from the pool", 30, 30)]
     assert spends("Divine Smite", big_c) == [("Free cast", 0, 1), ("or 1st-level slot", 4, 4)]
-    assert spends("Stunning Strike", no_name) == [("1 Focus Point", 6, 6)]
+    assert not any(o["name"] == "Stunning Strike" for o in views.options(no_name))  # a rider on a hit, under "On a hit"
     assert spends("Tasha's Hideous Laughter", no_name) == [("Pact slot (1st)", 2, 2)]  # warlock
     assert spends("Hunter's Mark", no_name) == [("Free cast", 1, 1)]  # from a feat, no slot
 
