@@ -9,6 +9,8 @@ is left out rather than guessed.
 
 import re
 
+from app.advantage import ABILITY as ABILITY_WORDS
+from app.advantage import KEPT_SOURCES
 from app.ddb import (
     ABBR, ALIGNMENTS, ITEM_NOTE_VALUE_TYPE, PARSER_VERSION, SHEET_URL, SIZES, DdbError, _d, _signed, _source_ids, html_to_text,
     render_template,
@@ -124,6 +126,37 @@ def _adv_note(m: dict) -> str:
     return f"Adv. {restriction}" if restriction else "Advantage"
 
 
+def _adv_target(sub: str, friendly: str) -> tuple[str, str, str]:
+    """What an advantage modifier applies to: ("save", "con"), ("save", "all"),
+    ("check", "Perception"), ("check", "str"), ("initiative", ""), ("attack", "melee")…
+    plus the words for it ("Constitution saving throws")."""
+    first = sub.split("-")[0]
+    if sub == "saving-throws":
+        return "save", "all", "saving throws"
+    if sub.endswith("-saving-throws") and first in ABILITY_WORDS:
+        return "save", ABILITY_WORDS[first], f"{first.title()} saving throws"
+    if sub == "ability-checks":
+        return "check", "all", "ability checks"
+    if sub.endswith("-ability-checks") and first in ABILITY_WORDS:
+        return "check", ABILITY_WORDS[first], f"{first.title()} checks"
+    skill = next((name for name, _ in SKILLS if name.lower().replace(" ", "-") == sub), None)
+    if skill:
+        return "check", skill, f"{skill} checks"
+    if sub == "initiative":
+        return "initiative", "", "Initiative"
+    if "attack" in sub:
+        kind = "melee" if "melee" in sub else "ranged" if "ranged" in sub else "spell" if "spell" in sub else "all"
+        return "attack", kind, (friendly or sub.replace("-", " ")).lower().replace("attacks", "attack rolls")
+    return "other", sub, (friendly or sub.replace("-", " ")).lower()
+
+
+def _adv_when(restriction: str) -> str:
+    """D&D Beyond's restriction text as a condition: "saving throws that you make to
+    maintain Concentration." becomes "to maintain Concentration"."""
+    text = re.sub(r"^(saving throws|checks|rolls)( that you make)?\s*", "", restriction.strip().rstrip("."), flags=re.I)
+    return text.strip()
+
+
 
 
 # ---------------------------------------------------------------- parsing
@@ -151,7 +184,9 @@ class _Sheet:
             if not c.get("isStartingClass")
             for f in c.get("classFeatures") or []
         } if len(self.classes) > 1 else set()
-        self.modifiers = [m for source, m in self._all_modifiers() if self._applies(source, m)]
+        self.sourced = [(source, m) for source, m in self._all_modifiers() if self._applies(source, m)]
+        self.modifiers = [m for _, m in self.sourced]
+        self.kind_of = {id(m): source for source, m in self.sourced}  # "race", "class", "feat", "item", "background"…
         self.names = self._component_names()
         self.background_asi = any(
             (_d(f, "definition", "name") or "").endswith("Ability Score Improvements") for f in data.get("feats") or []
@@ -168,6 +203,26 @@ class _Sheet:
     def bonus_parts(self, sub: str) -> list[tuple[str, int]]:
         """[(where it comes from, amount)] for the bonuses to one number."""
         return [(self.source_name(m), self.bonus_value(m)) for m in self.mods_of(("bonus", "stacking-bonus"), sub) if self.bonus_value(m)]
+
+    def kept_parts(self, sub: str) -> list[tuple[str, int]]:
+        """The bonuses to one number that come from class features and feats: the ones
+        Wild Shape keeps (species traits and items don't carry into a form)."""
+        return [(self.source_name(m), self.bonus_value(m)) for m in self.mods_of(("bonus", "stacking-bonus"), sub)
+                if self.kind_of.get(id(m)) in KEPT_SOURCES and self.bonus_value(m)]
+
+    def advantages(self) -> list[dict]:
+        """Every "advantage" modifier, with what it applies to, when (its restriction
+        text) and where it comes from. Shown with one Adv badge everywhere (app/advantage.py)."""
+        out = []
+        for source, m in self.sourced:
+            if m.get("type") != "advantage":
+                continue
+            on, target, what = _adv_target(m.get("subType") or "", m.get("friendlySubtypeName") or "")
+            when = _adv_when(m.get("restriction") or "")
+            name = self.source_name(m)
+            out.append({"on": on, "target": target, "when": when, "source": name, "from": source,
+                        "text": f"Advantage on {what}{' ' + when if when else ''} · {name}"})
+        return out
 
     def _all_modifiers(self):
         for source, group in (self.d.get("modifiers") or {}).items():
@@ -353,7 +408,7 @@ class _Sheet:
         return out
 
     def saves(self) -> list[dict]:
-        out = []
+        out, advs = [], self.advantages()
         general = self.total_bonus("saving-throws")
         for _, key, name, short in ABILITIES:
             prof = self.proficient(f"{key}-saving-throws")
@@ -361,11 +416,12 @@ class _Sheet:
             adv = bool(self.mods_of("advantage", f"{key}-saving-throws"))
             notes = [_adv_note(m) for m in self.mods_of("advantage", f"{key}-saving-throws")]
             out.append({"ability": name, "short": short, "bonus": total, "label": _signed(total), "proficient": prof, "advantage": adv,
-                        "notes": notes})
+                        "notes": notes, "adv": [a for a in advs if a["on"] == "save" and a["target"] == short.lower()],
+                        "kept_parts": self.kept_parts("saving-throws") + self.kept_parts(f"{key}-saving-throws")})
         return out
 
     def skills(self) -> list[dict]:
-        out = []
+        out, advs = [], self.advantages()
         half = bool(self.mods_of("half-proficiency", "ability-checks"))
         for name, ability in SKILLS:
             sub = name.lower().replace(" ", "-")
@@ -378,8 +434,9 @@ class _Sheet:
             parts += self.bonus_parts("ability-checks") + self.bonus_parts(sub)
             total = sum(v for _, v in parts)
             notes = [_adv_note(m) for m in self.mods_of("advantage", sub)]
+            adv = [a for a in advs if a["on"] == "check" and a["target"] in (name, ability[:3], "all")]
             out.append({"name": name, "ability": ability[:3].title(), "bonus": total, "label": _signed(total), "proficiency": level or ("half" if half else ""),
-                        "notes": notes, "parts": parts})
+                        "notes": notes, "parts": parts, "adv": adv, "kept_parts": self.kept_parts("ability-checks") + self.kept_parts(sub)})
         return out
 
     def initiative(self) -> int:
@@ -389,6 +446,15 @@ class _Sheet:
         # an "initiative" bonus already covers items that also boost ability checks (Luckstone)
         parts = [("Dexterity modifier", self.mods["dexterity"])] + self.bonus_parts("initiative")
         prof = self.mods_of("proficiency", "initiative")
+        if prof:
+            parts.append((f"Proficiency Bonus ({self.source_name(prof[0])})", self.pb))
+        return parts
+
+    def initiative_kept(self) -> list[tuple[str, int]]:
+        """Initiative bonuses from class features and feats (Alert's Proficiency Bonus):
+        the ones that stay in Wild Shape."""
+        parts = self.kept_parts("initiative")
+        prof = [m for m in self.mods_of("proficiency", "initiative") if self.kind_of.get(id(m)) in KEPT_SOURCES]
         if prof:
             parts.append((f"Proficiency Bonus ({self.source_name(prof[0])})", self.pb))
         return parts
@@ -902,6 +968,8 @@ class _Sheet:
         for group in (self.d.get("options") or {}).values():
             for o in group or []:
                 names[o.get("componentId")] = names.get(o.get("componentId")) or _d(o, "definition", "name")
+                # a choice's own modifiers point at the option (Primal Order's Magician: + Wis to Arcana)
+                names.setdefault(_d(o, "definition", "id"), _d(o, "definition", "name"))
         return names
 
     def situational(self, spells: list[dict], actions: list[dict]) -> list[dict]:
@@ -1079,6 +1147,7 @@ def parse_character(data: dict) -> dict:
         spells = sh.spells()
         items = sh.inventory()
         slots = sh.spell_slots()
+        advs = sh.advantages()
         general_save_notes = [
             "Advantage on saving throws " + (m.get("restriction") or "").strip().rstrip(".")
             for m in sh.mods_of("advantage", "saving-throws")
@@ -1107,6 +1176,12 @@ def parse_character(data: dict) -> dict:
             "armor_parts": sh.armor_class_parts(),
             "initiative_parts": sh.initiative_parts(),
             "initiative": _signed(sh.initiative()),
+            "initiative_kept": sh.initiative_kept(),
+            "speed_kept": sh.kept_parts("speed") + sh.kept_parts("speed-walking"),
+            "advantages": advs,
+            "save_adv_all": [a for a in advs if a["on"] == "save" and a["target"] == "all"],
+            "initiative_adv": [a for a in advs if a["on"] == "initiative"],
+            "attack_adv": [a for a in advs if a["on"] == "attack"],
             "speed": sh.speeds(),
             "passive_perception": 10 + perception["bonus"],
             "inspiration": bool(data.get("inspiration")),
