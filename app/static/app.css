@@ -1009,3 +1009,29 @@ a.sheet-ref { text-decoration-style: dotted; }
 @media (max-width: 520px) { .saves-block.six .saves-list, .saves-block.three .saves-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .battle-saves { margin-top: 10px; }
 .battle-saves-label { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 2px; }
+
+/* Battle header (Brett, 2026-10-19): the Character page's number strip and ability-card look, kept
+   tight because the bar is sticky. Saves are one row of six tiles the same width as the strip. */
+.battle-head { margin-top: 8px; }
+.strip.compact { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); margin-bottom: 8px; }
+.strip.compact > div { padding: 6px 12px; }
+.strip.compact b { font-size: 1.25rem; }
+.save-tiles { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.st { background: var(--surface-2); border-radius: 10px; padding: 5px 12px; display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.st small { color: var(--muted); font-size: .78rem; white-space: nowrap; }
+.st.prof small { color: var(--text); }
+.st.prof small::before { content: "● "; color: var(--green); font-size: .7rem; }
+.st b { font-size: 1.1rem; font-variant-numeric: tabular-nums; margin-left: auto; }
+.st .adv-badge { align-self: center; }
+.save-tiles .save-all { grid-column: 1 / -1; margin: 0; }
+.ws-form .save-tiles { margin-top: 8px; }
+@media (max-width: 700px) { .save-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 520px) {
+  .strip.compact { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .strip.compact > div { padding: 5px 8px; }
+  .strip.compact small { font-size: .7rem; }
+  .strip.compact b { font-size: 1.1rem; }
+  .save-tiles { gap: 6px; }
+  .st { padding: 5px 8px; gap: 4px; }
+  .st-word { display: none; }
+}

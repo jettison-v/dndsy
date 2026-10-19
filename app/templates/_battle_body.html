@@ -1,4 +1,4 @@
-{% from "_char.html" import pips, pick_btn, vitals, resource_row, portrait, spends, adv, saves_block %}
+{% from "_char.html" import pips, pick_btn, battle_strip, save_tiles, resource_row, portrait, spends, adv %}
 {% from "_notes_macros.html" import combo_body %}
 {% set s = sheet %}
 <div id="battle-body" data-character="{{ c.id }}" data-fetched="{{ fetched_at.isoformat() if fetched_at else '' }}">
@@ -25,11 +25,10 @@
           <div class="vital"><small>Speed</small><b class="small">{{ form.speed }}</b></div>
           <div class="vital"><small>Initiative</small><b>{{ form.initiative }}</b>{{ adv(form.initiative_adv) }}</div>
         </div>
-        <div class="battle-saves"><span class="battle-saves-label">Saves in this form</span>{{ saves_block(form.saves, form.save_adv_all, "six") }}</div>
+        {{ save_tiles(form.saves, form.save_adv_all) }}
         <span class="note">Your stats carried over. {% if form.castable %}Spells: only {{ form.castable | join(", ") }}.{% else %}No spellcasting in this form.{% endif %} Click for the full form, skills and rules.</span></div>
     </div>
-    {% elif s %}<div style="margin-top:8px">{{ vitals(s, c) }}</div>
-    <div class="battle-saves"><span class="battle-saves-label">Saves</span>{{ saves_block(s.saves, s.save_adv_all, "six") }}</div>
+    {% elif s %}<div class="battle-head">{{ battle_strip(s, c) }}{{ save_tiles(s.saves, s.save_adv_all) }}</div>
     {{ resource_row(s) }}{% endif %}
   </div>
   {% if s and known_forms %}

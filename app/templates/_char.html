@@ -100,6 +100,27 @@
 </div>
 {%- endmacro %}
 
+{# Battle's header: the Character page's number strip, with the labels and tiles it uses, tighter. #}
+{% macro battle_strip(s, c) -%}
+<div class="strip compact">
+  <div {{ tile(c, "hp") }}><small>Hit points</small><b>{{ s.hit_points.current }}</b>{% if s.hit_points.current != s.hit_points.max %}<span class="note"> / {{ s.hit_points.max }}</span>{% endif %}{% if s.hit_points.temp %}<span class="note"> +{{ s.hit_points.temp }} temp</span>{% endif %}</div>
+  <div {{ tile(c, "ac") }}><small>Armor class</small><b>{{ s.armor_class }}</b></div>
+  <div {{ tile(c, "speed") }}><small>Speed</small><b>{{ s.speed.walk }} ft</b>{% set extra = s.speed.items() | rejectattr(0, "in", ["walk", "parts", "notes"]) | list %}{% if extra %}<span class="note"> {% for k, v in extra %}{{ k }} {{ v }}{{ ", " if not loop.last }}{% endfor %}</span>{% endif %}</div>
+  <div {{ tile(c, "initiative") }}><small>Initiative</small><b>{{ s.initiative }}</b>{{ adv(s.initiative_adv) }}</div>
+  {% for sc in s.spellcasting[:1] %}<div {{ tile(c, "spell") }}><small>Spell DC / attack</small><b>{{ sc.save_dc }}</b><span class="note"> / {{ sc.attack }}</span></div>{% endfor %}
+  <div class="insp{{ ' on' if s.inspiration }}" {{ tile(c, "inspiration") }} title="Heroic Inspiration"><small>Heroic Inspiration</small><b>{{ "✦ Yes" if s.inspiration else "—" }}</b></div>
+</div>
+{%- endmacro %}
+
+{# The six saves as one row of tiles, styled like the Character page's ability cards: green ● when
+   proficient, Adv when something gives Advantage. Advantage on every save is said once after the row. #}
+{% macro save_tiles(saves, adv_all=()) -%}
+<div class="save-tiles" role="list" aria-label="Saving throws">{% for sv in saves %}
+  <div class="st{{ ' prof' if sv.proficient }}" role="listitem"{% if sv.from %} title="{{ sv.from }}"{% endif %}><small>{{ sv.short }}<span class="st-word"> save</span></small><b>{{ sv.label }}</b>{{ adv(sv.adv) }}</div>{% endfor %}
+  {% if adv_all %}<p class="note save-all">{{ adv(adv_all) }} on every save {% for a in adv_all %}{{ a.when }} ({{ a.source }}){{ "; " if not loop.last }}{% endfor %}</p>{% endif %}
+</div>
+{%- endmacro %}
+
 {# Limited resources on one line, spell slots on their own line; each item set apart. #}
 {% macro resource_row(s) -%}
 {% set res = s.actions | selectattr("uses") | selectattr("source", "in", ["class", "feat", "race"]) | list %}
