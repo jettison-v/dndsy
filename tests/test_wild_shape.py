@@ -64,7 +64,10 @@ def test_a_form_keeps_the_druids_mind_and_proficiencies():
     assert rend["hit"] == "+7" and "9 (1d8 + 5) Slashing (or Radiant)" in rend["meta"]
     bonus = [o["name"] for o in f["columns"]["Bonus action"]["shown"]]
     assert "Leave the form" in bonus and "Flurry of Blows" in bonus
-    assert not any("Spell" in o["name"] for col in f["columns"].values() for o in col["shown"])  # no spellcasting
+    names = [o["name"] for col in f["columns"].values() for o in col["shown"]]
+    assert "Reactive Spell" in names  # War Caster, but only with the Circle spells castable in a form
+    reactive = next(o for o in f["columns"]["Reaction"]["shown"] if o["name"] == "Reactive Spell")
+    assert "Starry Wisp" in reactive["meta"]
 
 
 def test_without_circle_of_the_moon_the_beasts_ac_and_level_temp_hp_apply():
@@ -219,3 +222,20 @@ def test_a_learned_manual_raises_the_forms_dexterity_when_kept():
     assert (dex["score"], dex["from"]) == (16, "form + kept")  # the bear's 14 + 2
     assert kept["initiative"] == "+3" and plain["initiative"] == "+2"
     assert {s["key"]: s["bonus"] for s in kept["saves"]}["dex"] == {s["key"]: s["bonus"] for s in plain["saves"]}["dex"] + 1
+
+
+def test_unarmed_strike_uses_the_forms_body_and_martial_arts():
+    sheet = cole_sheet()  # Monk 2 via the fixture's sheet, with Martial Arts
+    sheet["classes"].append({"name": "Monk", "level": 2, "subclass": ""})
+    f = ws.shaped(sheet, ws.catalog_beast("Polar Bear"))
+    act = next(o for o in f["columns"]["Action"]["shown"] if o["name"] == "Unarmed Strike")
+    assert act["hit"] == "+8" and "1d6 + 5 Bludgeoning (or Radiant)" in act["meta"]  # Str 20 (+5) + PB 3; Martial Arts die
+    assert "DC 16" in act["meta"]  # 8 + 5 + 3
+    assert any(o["name"] == "Unarmed Strike (Martial Arts)" for o in f["columns"]["Bonus action"]["shown"])
+    assert any(o["name"] == "Opportunity Attack" for o in f["columns"]["Reaction"]["shown"])
+    plain = cole_sheet(level=4, moon=False)
+    plain["features"] = [x for x in plain["features"] if x["name"] != "Martial Arts"]
+    wolf = ws.shaped(plain, ws.catalog_beast("Wolf"))
+    w = next(o for o in wolf["columns"]["Action"]["shown"] if o["name"] == "Unarmed Strike")
+    assert w["hit"] == "+5" and "3 Bludgeoning" in w["meta"]  # no Martial Arts: 1 + Str (+2), Str + PB 3
+    assert not any("Martial Arts" in o["name"] for o in wolf["columns"]["Bonus action"]["shown"])

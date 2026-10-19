@@ -312,7 +312,8 @@ def options_for(sheet: dict, keep) -> list[dict]:
     """The toggles to show: each item or feature, what it does in a form, and whether it's kept."""
     keep = set(keep or [])
     labels = {"saves": "saves", "checks": "ability checks", "initiative": "Initiative", "ac": "AC",
-              "attack": "to hit with natural weapons", "damage": "damage with natural weapons", "speed": "speed",
+              "attack": "to hit with natural weapons and unarmed strikes", "damage": "damage with natural weapons and unarmed strikes",
+              "speed": "speed",
               "str_score": "to the form's Strength score", "dex_score": "to the form's Dexterity score",
               "con_score": "to the form's Constitution score"}
     opts = sheet.get("form_options") or {"items": [], "features": []}
@@ -399,6 +400,32 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
         cols["Bonus action"].append(_entry(e, "Bonus action", d))
     for e in beast.get("reactions") or []:
         cols["Reaction"].append(_entry(e, "Reaction", d))
+    # Unarmed Strike: anyone has it, in any body (the form's Strength; a Monk may use Dexterity
+    # and the Martial Arts die, and with Martial Arts makes one as a Bonus Action)
+    feats = {f["name"] for f in sheet.get("features") or []}
+    monk = next((c["level"] for c in sheet.get("classes") or [] if c["name"] == "Monk"), 0)
+    martial = "Martial Arts" in feats and monk
+    str_m, dex_m = _mod(scores["str"]), _mod(scores["dex"])
+    um = max(str_m, dex_m) if martial else str_m
+    die = 12 if monk >= 17 else 10 if monk >= 11 else 8 if monk >= 5 else 6
+    u_hit = _signed(um + pb + d["attack_bonus"])
+    bonus_n = um + d["damage_bonus"]
+    u_dmg = (f"1d{die} {'+' if bonus_n >= 0 else '−'} {abs(bonus_n)}" if martial else str(max(1, 1 + bonus_n))) + " Bludgeoning"
+    if d.get("lunar_radiance"):
+        u_dmg += " (or Radiant)"
+    u_dc = 8 + um + pb
+    unarmed = {"name": "Unarmed Strike", "hit": u_hit, "tags": ["Yours"], "uses": None, "spends": [], "starred": False, "source": "unarmed",
+               "meta": f"reach 5 ft · {u_dmg} · or Grapple / Shove (DC {u_dc} Str or Dex save)",
+               "text": "A punch, kick, head-butt or similar with the form's body. Choose Damage, Grapple or Shove each time."
+                       + (" Martial Arts lets you use Dexterity and your Martial Arts die." if martial else "")}
+    cols["Action"].insert(len(beast.get("actions") or []), {**unarmed, "key": "wild-shape:unarmed", "cost": "Action"})
+    if martial:
+        cols["Bonus action"].append({**unarmed, "key": "wild-shape:unarmed-bonus", "cost": "Bonus action",
+                                     "name": "Unarmed Strike (Martial Arts)",
+                                     "meta": unarmed["meta"] + " · Martial Arts needs no armor or shield; the DM decides in a form"})
+    cols["Reaction"].append({"key": "wild-shape:opportunity", "name": "Opportunity Attack", "cost": "Reaction", "hit": "", "tags": [],
+                             "uses": None, "spends": [], "starred": False, "source": "rule",
+                             "meta": "When a creature you can see leaves your reach: one melee attack (a form's attack or an Unarmed Strike)"})
     cols["Bonus action"].append({"key": "wild-shape:leave", "name": "Leave the form", "cost": "Bonus action", "hit": "", "tags": [],
                                  "meta": "Back to your normal form; also if you're Incapacitated or die", "uses": None, "spends": [],
                                  "starred": False, "source": "rule"})
@@ -425,6 +452,10 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
     # Class features and feats you keep (no weapons or items; nothing that casts a spell unless you can cast in a form)
     for o in options:
         if o["kind"] != "feature" or o["cost"] not in cols or o["name"].startswith(("Wild Shape", "Unarmed Strike")):
+            continue
+        if o["name"] == "Reactive Spell" and castable and not d.get("beast_spells"):
+            cols[o["cost"]].append({**o, "tags": ["Yours"], "source": "yours", "starred": False,
+                                    "meta": f"Cast a spell instead of an Opportunity Attack: only one you can cast in this form ({', '.join(castable[:3])})"})
             continue
         if not d.get("beast_spells") and ("Spell" in o["name"] or o["name"].startswith("Wild Companion")):
             continue

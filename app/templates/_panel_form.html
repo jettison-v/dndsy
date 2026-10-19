@@ -1,6 +1,11 @@
 {# Large modal: a Wild Shape form with this druid's stats carried over (app/wild_shape.py), as battle cards. #}
 {% from "_char.html" import pips, pick_note, spends %}
 {% set b = f.beast %}
+{% macro card(o) %}<div class="move static{{ ' yours' if o.source == 'yours' }}">
+  {% if o.hit %}<span class="hit">{{ o.hit }}</span>{% endif %}<b>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag{{ ' faint' if t == 'Yours' }}">{{ t }}</span>{% endfor %}{{ spends(o.spends) }}
+  {% if o.meta %}<div class="meta">{{ o.meta }}</div>{% endif %}
+  {% if o.source == "form" and o.text and o.text != o.meta %}<details class="move-more"><summary>Full text</summary><p>{{ o.text }}</p></details>{% endif %}
+</div>{% endmacro %}
 <div class="peek-head fm-head">
   {% if b.image %}<img class="fm-pic" src="{{ b.image }}" alt="{{ b.name }}" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}
   <div class="fm-title">
@@ -33,74 +38,73 @@
     {% if f.druid.uses %}<div class="vital"><small>Wild Shape</small><b class="small">{{ pips(f.druid.uses) }}</b><span class="note"> up to {{ f.druid.hours }} h</span></div>{% endif %}
   </div>
 
+  {# The player's own strategy for this form comes first: it's what they'll want at the table #}
+  {% if can_pick or picks.notes.get("fav|" ~ ref) or picks.notes.get("remind|" ~ ref) %}
+  <section class="fm-plan">
+    <h3>Your plan for this form</h3>
+    <div class="fm-plan-grid">
+      {{ pick_note(c, "fav", ref, ref in picks.fav, picks.notes.get("fav|" ~ ref, ""), can_pick) }}
+      {{ pick_note(c, "remind", ref, ref in picks.remind, picks.notes.get("remind|" ~ ref, ""), can_pick) }}
+    </div>
+    {% if can_pick and not known and not why_not %}<p class="note">To shift into it, learn it on D&amp;D Beyond first (you can swap one known form after each Long Rest), then refresh.</p>{% endif %}
+  </section>
+  {% endif %}
+
   <div class="fm-grid">
     <aside class="fm-side">
-      {% if can_pick or picks.notes %}<div class="detail-picks">
-        {{ pick_note(c, "fav", ref, ref in picks.fav, picks.notes.get("fav|" ~ ref, ""), can_pick) }}
-        {{ pick_note(c, "remind", ref, ref in picks.remind, picks.notes.get("remind|" ~ ref, ""), can_pick) }}
-      </div>{% endif %}
-      {% if keep_options %}
-      <section class="keep-box">
-        <h3>Kept in Wild Shape</h3>
-        <p class="note">Your DM's rulings: what still works in a form. Saved for {{ c.entity.name }}, so it applies to every form until you change it.</p>
-        {% if can_pick %}
-        <form hx-post="/characters/{{ c.id }}/wild-shape/keep" hx-trigger="change" hx-target="#peek" hx-swap="innerHTML">
-          <input type="hidden" name="name" value="{{ beast_name }}">
-          {% for o in keep_options %}<label class="check keep-opt"><input type="checkbox" name="keep" value="{{ o.key }}"{{ ' checked' if o.on }}>
-            <span><b>{{ o.name }}</b> <span class="tag">{{ o.kind }}</span><br><span class="note">{{ o.what }}</span></span></label>{% endfor %}
-        </form>
-        {% else %}
-        <ul class="plain">{% for o in keep_options if o.on %}<li><b>{{ o.name }}</b> <span class="note">{{ o.what }}</span></li>{% else %}<li class="muted">Nothing kept.</li>{% endfor %}</ul>
-        {% endif %}
-      </section>
-      {% endif %}
-      {% if can_pick and not known and not why_not %}<p class="note">To shift into it, learn it on D&amp;D Beyond first (you can swap one known form after each Long Rest), then refresh.</p>{% endif %}
-
       <h3>Abilities</h3>
       <div class="form-abilities">{% for a in f.abilities %}
         <div class="fab {{ a.from.split(' ')[0] }}" title="{{ 'Your score (Wild Shape keeps it)' if a.from == 'yours' else 'The form\'s score' }}"><small>{{ a.short }}</small><b>{{ a.label }}</b><span>{{ a.score }}</span><em>{{ a.from }}</em></div>
       {% endfor %}</div>
-
-      <h3>Saving throws</h3>
-      <ul class="fm-list">{% for sv in f.saves %}<li><span>{{ sv.short }}{% if sv.proficient %} <sup class="prof">●</sup>{% endif %}</span><b>{{ sv.label }}</b><small>{{ sv.from }}</small></li>{% endfor %}</ul>
+      <h3>Saves</h3>
+      <div class="fm-saves">{% for sv in f.saves %}<span title="{{ sv.from }}">{{ sv.short }} <b>{{ sv.label }}</b>{% if sv.proficient %}<sup class="prof">●</sup>{% endif %}</span>{% endfor %}</div>
       {% if f.skills %}<h3>Skills</h3>
-      <ul class="fm-list">{% for sk in f.skills %}<li><span>{{ sk.name }}</span><b>{{ sk.label }}</b><small>{{ sk.from }}</small></li>{% endfor %}</ul>{% endif %}
-
-      <dl class="mech">
-        <dt>AC</dt><dd>{% for n, v in f.ac_parts %}<div>{{ n }}{% if loop.length > 1 and v == f.ac %} <span class="tag done">used</span>{% endif %}</div>{% endfor %}</dd>
-        {% if b.senses %}<dt>Senses</dt><dd>{{ b.senses }}</dd>{% endif %}
-        {% if b.resist %}<dt>Resistances</dt><dd>{{ b.resist | capitalize }}</dd>{% endif %}
-        {% if b.immune %}<dt>Immunities</dt><dd>{{ b.immune | capitalize }}</dd>{% endif %}
-        {% if b.condition_immune %}<dt>Condition immunities</dt><dd>{{ b.condition_immune | capitalize }}</dd>{% endif %}
-      </dl>
-      <p class="note"><sup class="prof">●</sup> your proficiency, kept in Wild Shape. Worn items count only when ticked under Kept in Wild Shape.</p>
+      <div class="fm-saves">{% for sk in f.skills %}<span title="{{ sk.from }}">{{ sk.name }} <b>{{ sk.label }}</b></span>{% endfor %}</div>{% endif %}
+      <p class="note fm-small">{% if b.senses %}{{ b.senses }}. {% endif %}{% if b.resist %}Resists {{ b.resist }}. {% endif %}{% if b.immune %}Immune to {{ b.immune }}. {% endif %}{% if b.condition_immune %}Can't be {{ b.condition_immune }}. {% endif %}<sup class="prof">●</sup> your proficiency. Hover a number for where it comes from.</p>
     </aside>
 
     <div class="fm-main">
       <h3>Battle cards</h3>
       <div class="fm-econ">
-        {% for cost, slug, sub in [("Action", "action", "One per turn"), ("Bonus action", "bonus", "One per turn"), ("Reaction", "reaction", "One per round")] %}
+        {% for cost, slug, sub in [("Action", "action", "One per turn"), ("Bonus action", "bonus", "One per turn")] %}
         <section class="fm-col">
           <h4 class="econ-head k-{{ slug }}">{{ cost }}<small>{{ sub }}</small></h4>
-          {% for o in f.columns[cost].shown %}
-          <div class="move static{{ ' yours' if o.source == 'yours' }}">
-            {% if o.hit %}<span class="hit">{{ o.hit }}</span>{% endif %}<b>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag{{ ' faint' if t == 'Yours' }}">{{ t }}</span>{% endfor %}{{ spends(o.spends) }}
-            {% if o.meta %}<div class="meta">{{ o.meta }}</div>{% endif %}
-            {% if o.source == "form" and o.text and o.text != o.meta %}<details class="move-more"><summary>Full text</summary><p>{{ o.text }}</p></details>{% endif %}
-          </div>
-          {% else %}<p class="muted">None.</p>{% endfor %}
+          {% for o in f.columns[cost].shown %}{{ card(o) }}{% else %}<p class="muted">None.</p>{% endfor %}
           {% if cost == "Action" %}<div class="move static"><b class="muted">Dash, Disengage, Dodge, Help, Hide, Influence, Magic, Search, Study, Utilize</b>
             <div class="meta">What anyone can do{% if not f.castable %}; no spells in this form{% endif %}</div></div>{% endif %}
         </section>
         {% endfor %}
       </div>
+      <section class="fm-col fm-reactions">
+        <h4 class="econ-head k-reaction">Reaction<small>One per round, also on others' turns</small></h4>
+        <div class="fm-reaction-list">{% for o in f.columns["Reaction"].shown %}{{ card(o) }}{% else %}<p class="muted">None.</p>{% endfor %}</div>
+      </section>
 
       {% if f.traits %}<h3>Traits</h3>
       <div class="fm-traits">{% for t in f.traits %}<p><b>{{ t.name }}.</b> {{ t.text }}</p>{% endfor %}</div>{% endif %}
-
-      <h3>How Wild Shape works for you</h3>
-      <ul class="form-notes">{% for n in f.notes %}<li>{{ n }}</li>{% endfor %}</ul>
-      <p class="note">This informs; the DM makes every ruling.{% if credit %} {{ credit }}{% endif %}</p>
     </div>
   </div>
+
+  {% if keep_options %}
+  <section class="keep-box">
+    <h3>Kept in Wild Shape</h3>
+    <p class="note">Your DM's rulings: what still works in a form. Saved for {{ c.entity.name }}, so it applies to every form until you change it.</p>
+    {% if can_pick %}
+    <form class="keep-grid" hx-post="/characters/{{ c.id }}/wild-shape/keep" hx-trigger="change" hx-target="#peek" hx-swap="innerHTML">
+      <input type="hidden" name="name" value="{{ beast_name }}">
+      {% for o in keep_options %}<label class="check keep-opt"><input type="checkbox" name="keep" value="{{ o.key }}"{{ ' checked' if o.on }}>
+        <span><b>{{ o.name }}</b> <span class="tag">{{ o.kind }}</span><br><span class="note">{{ o.what }}</span></span></label>{% endfor %}
+    </form>
+    {% else %}
+    <ul class="plain">{% for o in keep_options if o.on %}<li><b>{{ o.name }}</b> <span class="note">{{ o.what }}</span></li>{% else %}<li class="muted">Nothing kept.</li>{% endfor %}</ul>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  <details class="fold fm-rules">
+    <summary>How Wild Shape works for you</summary>
+    <ul class="form-notes">{% for n in f.notes %}<li>{{ n }}</li>{% endfor %}</ul>
+    <p class="note">AC: {% for n, v in f.ac_parts %}{{ n }}{{ "; " if not loop.last }}{% endfor %}.</p>
+    <p class="note">This informs; the DM makes every ruling.{% if credit %} {{ credit }}{% endif %}</p>
+  </details>
 </div>

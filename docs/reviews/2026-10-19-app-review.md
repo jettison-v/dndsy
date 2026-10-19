@@ -56,7 +56,7 @@ Checked on 2026-10-19 with Brett's sign-in (campaign "The Adventure Begins", DM 
 | What | Available to askdnd? | Possible use |
 |---|---|---|
 | Campaign name, DM's username, the four characters and their D&D Beyond IDs | Yes, in each character's public data | Find and link every character automatically from the campaign (no pasting links); notice when someone joins or leaves |
-| **Lillippi** (level 10 Tiefling Bard, an unassigned character Mary made) | No: her sheet is private | If Mary makes it public, askdnd can show her like a party member (Battle, Character) |
+| **Lillippi** (level 10 Tiefling Bard, an unassigned character Mary made) | No: her sheet is private, and Mary wants to keep it so (she plays her) | Not pursued |
 | Characters' Notes tab (allies, enemies, organizations, other notes) | Yes, but askdnd deliberately hides it today | Could seed the new player notes, or suggest people and places for the campaign record, with each player's agreement |
 | **Game Log** (every roll: who, which check or attack, result, time) | Only when signed in; askdnd's server can't read it without storing a D&D Beyond login, which it shouldn't | Session timelines that line up with transcripts, "roll of the night", attendance. Possible later through the Mac (like the Processor) |
 | Campaign description and public notes | Yes, but empty | Mary could write there and askdnd would show it |
