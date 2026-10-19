@@ -927,3 +927,15 @@ a.sheet-ref { text-decoration-style: dotted; }
 .quest-edit { grid-template-columns: minmax(0, 1fr) 110px auto; align-items: center; }
 .note-form-foot { gap: 12px; align-items: center; position: sticky; bottom: -22px; background: var(--surface); padding: 10px 0; }
 @media (max-width: 700px) { .form-2 { grid-template-columns: 1fr; } .level-edit { grid-template-columns: 60px minmax(0, 1fr) auto; } .level-edit input[name=step_take], .level-edit input[name=step_why] { grid-column: 1 / -1; } }
+
+/* Manage › People: the access chart, and a line under each person saying what their access allows */
+.access-chart-wrap { overflow-x: auto; margin-top: 10px; }
+.access-chart { width: 100%; border-collapse: collapse; font-size: .9rem; min-width: 620px; }
+.access-chart th, .access-chart td { padding: 7px 10px; border-top: 1px solid var(--line); text-align: center; }
+.access-chart thead th { border-top: none; color: var(--muted); font-size: .8rem; font-weight: 600; }
+.access-chart tbody th[scope=row] { text-align: left; font-weight: 400; }
+.access-chart .access-group th { text-align: left; font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); padding-top: 14px; border-top: none; }
+.ac-yes { color: var(--green); font-weight: 700; } .ac-no { color: var(--faint); } .ac-own { color: #c9b8ea; font-size: .82rem; }
+.access-chart .dm-col { border-left: 1px solid var(--line); font-size: .82rem; }
+.ac-dm-gains { color: var(--green); } .ac-dm-never { color: var(--red); } .ac-dm-same { color: var(--faint); }
+.people li .access-summary { grid-column: 1 / -1; order: 10; margin-top: -4px; }

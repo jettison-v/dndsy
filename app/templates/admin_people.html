@@ -7,14 +7,21 @@
   <p class="subtitle">Who can sign in and what they can do. Only admins can see this page.</p>
 
   <section class="section">
-    <h2>Access levels</h2>
-    <dl class="profs" style="margin-top:12px">
-      <dt>Player</dt><dd>Reads everything for the table and suggests corrections.</dd>
-      <dt>Reviewer</dt><dd>Also drafts, edits and publishes sessions, answers Claude's questions, merges suggestions, and refreshes characters.</dd>
-      <dt>Admin</dt><dd>Also People, Characters, Usage, Data and the campaign doc.</dd>
-      <dt>DM</dt><dd>Whoever is ticked as DM never sees players' character notes, stars or reminders, whatever their access level.</dd>
-      <dt>Plays</dt><dd>The character a person plays. Only they can star things and set reminders on it, and Battle and Character open on it for them.</dd>
-    </dl>
+    <div class="section-head"><h2>What each access level can do</h2></div>
+    <p class="hint" style="margin-top:6px">Pick an access level for each person below. Ticking <b>DM</b> changes a few things on top of any level, shown in the last column. <b>Plays</b> links a person to their character.</p>
+    <div class="access-chart-wrap"><table class="access-chart">
+      <thead><tr><th></th>{% for l in chart.levels %}<th>{{ l }}</th>{% endfor %}<th class="dm-col">If ticked DM</th></tr></thead>
+      <tbody>
+      {% for group, rows in chart.groups %}
+        <tr class="access-group"><th colspan="{{ chart.levels | length + 2 }}">{{ group }}</th></tr>
+        {% for r in rows %}<tr><th scope="row">{{ r.what }}</th>
+          {% for c in r.cells %}<td class="ac ac-{{ c }}">{{ {"yes": "✓", "no": "✗", "own": "Own character"}[c] }}</td>{% endfor %}
+          <td class="dm-col ac-dm-{{ r.dm }}">{{ {"gains": "Yes, even as Player", "never": "Never, even as Admin", "same": "As their level"}[r.dm] }}</td></tr>{% endfor %}
+      {% endfor %}
+      </tbody></table></div>
+    <details class="fold" style="margin-top:12px"><summary>Not included for anyone</summary>
+      <ul>{% for x in chart.not_included %}<li>{{ x }}</li>{% endfor %}</ul></details>
+    <p class="note" style="margin-top:8px">The owner (set on Railway) is always Admin and can't be removed. The DM's own corrections skip review.</p>
   </section>
 
   <section class="section">
@@ -37,6 +44,7 @@
             {% for l in levels %}<option value="{{ l }}" {{ "selected" if p.level == l }}>{{ labels[l] }}</option>{% endfor %}
           </select>
           <label class="check dm-cell"><input type="checkbox" name="is_dm" value="1" {{ "checked" if p.is_dm }}> DM</label>{% endif %}
+          <span class="access-summary note" data-summaries='{{ summaries | tojson }}'>{{ summaries.get((p.level or 'player') ~ '|' ~ (1 if p.is_dm else 0), '') }}</span>
           <span class="person-actions"><button class="btn" type="submit">{{ "Invite" if not p.invited else "Save" }}</button>
             {% if p.invited and not fixed %}<button class="btn link danger" type="submit" name="remove" value="1">Remove</button>{% endif %}</span>
         </form>

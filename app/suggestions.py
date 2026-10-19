@@ -14,6 +14,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import entities
+from app import access
 from app.auth import can_moderate, current_user, is_dm, is_reviewer
 from app.db import get_db
 from app.extraction import session_label
@@ -120,7 +121,7 @@ def _glossary_context(request: Request, db: Session, term_id: int) -> dict | Non
 
 
 def _can_edit_glossary(user: dict | None) -> bool:
-    return is_reviewer(user) or is_dm(user)
+    return bool(user) and access.allows("story_extras", access.level(user.get("email")), access.is_dm(user.get("email")))
 
 
 @router.post("/campaign/glossary/add")

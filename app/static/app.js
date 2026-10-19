@@ -460,6 +460,16 @@
     }
   }, true);
   document.querySelectorAll('[data-planner]').forEach(plannerApply);
+  // Manage › People: the line under each person says what their access will let them do, as you change it.
+  document.addEventListener('change', e => {
+    const form = e.target.closest('.person-form'); if (!form) return;
+    const out = form.querySelector('.access-summary'); if (!out) return;
+    const lvl = (form.querySelector('select[name=level]') || {}).value || 'admin';
+    const dmBox = form.querySelector('input[type=checkbox][name=is_dm]'), dmHidden = form.querySelector('input[type=hidden][name=is_dm]');
+    const dm = dmBox ? dmBox.checked : !!(dmHidden && dmHidden.value);
+    out.textContent = JSON.parse(out.dataset.summaries)[lvl + '|' + (dm ? 1 : 0)] || '';
+  });
+
   // Repeating rows in forms (a combo's turns, a level plan's levels): [data-repeat] holds
   // the rows, a <template> for a new one, and add/remove buttons.
   document.addEventListener('click', e => {

@@ -134,3 +134,28 @@ def test_assign_character_on_people_page(env, monkeypatch, db):
     assert cole.owner.email == "owner@example.com" and access.level("owner@example.com") == "admin"
     owner.post("/admin/people/update", data={"email": "owner@example.com", "character_id": "none"})
     assert cole.owner_id is None
+
+
+def test_access_chart_is_drawn_from_the_rules_the_app_uses():
+    from app import access
+
+    rows = {r["what"]: r for r in access.chart()["rows"]}
+    assert access.chart()["levels"] == ["Player", "Reviewer", "Admin"]
+    decide = rows["Decide on the table's suggestions"]
+    assert decide["cells"] == ["no", "yes", "yes"] and decide["dm"] == "gains"  # the DM decides even as a Player
+    notes = rows["Players' notes, stars, reminders and shortlists"]
+    assert notes["cells"] == ["yes", "yes", "yes"] and notes["dm"] == "never"  # never the DM, even as Admin
+    assert rows["People: invite, access, DM tick, who plays which character"]["cells"] == ["no", "no", "yes"]
+    assert rows["Notes, stars, reminders, shortlists and the Wild Shape switch"]["cells"] == ["own"] * 3
+    for r in access.CHART:  # every rule in the chart is one the app checks
+        if r[2] != "own":
+            access.allows(r[2], access.PLAYER)
+    assert "Never, even as Admin" in access.summary(access.ADMIN, True) or "never sees" in access.summary(access.ADMIN, True)
+
+
+def test_people_page_shows_the_chart_and_each_persons_summary(env, monkeypatch, db):
+    owner, _ = sign_in(monkeypatch, "owner@example.com")
+    owner.post("/admin/people", data={"email": "dm@example.com", "level": "player", "is_dm": "1"})
+    page = owner.get("/admin/people").text
+    assert "What each access level can do" in page and "Yes, even as Player" in page and "Not included for anyone" in page
+    assert "as DM, decides on suggestions" in page  # the DM's own row explains what the tick adds

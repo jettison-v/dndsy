@@ -54,6 +54,8 @@ def people_page(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(
         request, "admin_people.html",
         {"people": people(db), "characters": list(db.scalars(select(Character).order_by(Character.id))), "levels": access.LEVELS, "labels": access.LABELS, "me": user["email"],
+         "chart": access.chart(),
+         "summaries": {f"{lv}|{int(dm)}": access.summary(lv, dm) for lv in access.LEVELS for dm in (False, True)},
          "toast": request.session.pop("toast", None)},
     )
 

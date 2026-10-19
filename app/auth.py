@@ -31,13 +31,21 @@ def current_user(request: Request) -> dict | None:
     return None
 
 
+def _allows(user: dict | None, rule: str) -> bool:
+    """Ask the shared rules in app/access.py (the People page's chart is drawn from them)."""
+    if not user:
+        return False
+    email = user.get("email")
+    return access.allows(rule, access.level(email), access.is_dm(email))
+
+
 def is_admin(user: dict | None) -> bool:
-    return bool(user) and access.level(user.get("email")) == access.ADMIN
+    return _allows(user, "admin")
 
 
 def is_reviewer(user: dict | None) -> bool:
     """Reviewers and admins (see app/access.py)."""
-    return bool(user) and access.level(user.get("email")) in (access.REVIEWER, access.ADMIN)
+    return _allows(user, "review")
 
 
 def is_dm(user: dict | None) -> bool:
@@ -47,12 +55,12 @@ def is_dm(user: dict | None) -> bool:
 
 def can_moderate(user: dict | None) -> bool:
     """Who gets the table's suggestions: admins, reviewers and the DM."""
-    return is_reviewer(user) or is_dm(user)
+    return _allows(user, "moderate")
 
 
 def can_see_character_notes(user: dict | None) -> bool:
     """Character notes are visible to players but never to the DM (CLAUDE.md)."""
-    return bool(user) and not access.is_dm(user.get("email"))
+    return _allows(user, "player_notes")
 
 
 @router.get("/auth/google")
