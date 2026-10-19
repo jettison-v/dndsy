@@ -97,3 +97,19 @@ def _static(name: str) -> str:
 
 
 templates.env.globals["static"] = _static
+
+
+_DICE = None
+
+
+def _dice(text: str) -> str:
+    """The first dice expression in a line ("5 ft · 1d6+3 bludgeoning" -> "1d6+3"), for roll buttons."""
+    import re
+
+    global _DICE
+    _DICE = _DICE or re.compile(r"(\d+d\d+(?:\s*[+−-]\s*\d+)?)")
+    m = _DICE.search(text or "")
+    return re.sub(r"\s+", "", m.group(1)).replace("−", "-") if m else ""
+
+
+templates.env.filters["dice"] = _dice

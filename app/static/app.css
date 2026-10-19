@@ -1013,7 +1013,9 @@ a.sheet-ref { text-decoration-style: dotted; }
 /* Battle header (Brett, 2026-10-19): the Character page's number strip and ability-card look, kept
    tight because the bar is sticky. Saves are one row of six tiles the same width as the strip. */
 .battle-head { margin-top: 8px; }
-.strip.compact { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); margin-bottom: 8px; }
+.strip.compact { grid-template-columns: repeat(6, minmax(0, 1fr)); margin-bottom: 10px; }
+.strip.compact small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 700px) { .strip.compact { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .strip.compact > div { padding: 6px 12px; }
 .strip.compact b { font-size: 1.25rem; }
 .save-tiles { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
@@ -1022,7 +1024,8 @@ a.sheet-ref { text-decoration-style: dotted; }
 .st.prof small { color: var(--text); }
 .st.prof small::before { content: "● "; color: var(--green); font-size: .7rem; }
 .st b { font-size: 1.1rem; font-variant-numeric: tabular-nums; margin-left: auto; }
-.st .adv-badge { align-self: center; }
+.st { position: relative; }
+.st .adv-badge { position: absolute; top: -7px; right: 8px; font-size: .62rem; padding: 0 4px; line-height: 1.35; background: var(--bg); }
 .save-tiles .save-all { grid-column: 1 / -1; margin: 0; }
 .ws-form .save-tiles { margin-top: 8px; }
 @media (max-width: 700px) { .save-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
@@ -1035,3 +1038,36 @@ a.sheet-ref { text-decoration-style: dotted; }
   .st { padding: 5px 8px; gap: 4px; }
   .st-word { display: none; }
 }
+
+/* Rolls (app.js): private dice rolls. Roll buttons look like the numbers they roll. */
+.roll-hit { font: inherit; font-weight: 700; color: inherit; background: none; border: 0; padding: 0 4px; margin: 0 -4px; border-radius: 6px; cursor: pointer; }
+.roll-hit:hover, .roll-hit:focus-visible { background: var(--surface-2); color: var(--amber); }
+.roll-chip { font: inherit; font-size: .72rem; font-weight: 600; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; margin-left: 4px; cursor: pointer; vertical-align: middle; }
+.roll-chip:hover, .roll-chip:focus-visible { color: var(--amber); border-color: var(--amber); }
+.tile-roll { float: right; margin-top: 4px; }
+.st[data-roll], .save-row[data-roll] { cursor: pointer; }
+.st[data-roll]:hover { box-shadow: inset 0 0 0 1px var(--amber); }
+.save-row[data-roll]:hover b { color: var(--amber); }
+.roll-tray { position: fixed; right: 16px; bottom: 16px; z-index: 30; width: min(340px, calc(100vw - 32px)); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 28px rgba(0, 0, 0, .45); padding: 10px 12px; }
+.roll-tray.bump { animation: roll-bump .25s ease-out; }
+@keyframes roll-bump { from { transform: translateY(6px); } to { transform: none; } }
+.roll-head { display: flex; align-items: center; gap: 8px; }
+.roll-title { font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; color: var(--amber); flex: 1; }
+.roll-title .roll-sub { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.roll-sub { color: var(--muted); font-size: .82rem; }
+.roll-modes { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.roll-modes button { font: inherit; font-size: .72rem; background: none; border: 0; color: var(--muted); padding: 2px 8px; cursor: pointer; }
+.roll-modes button[aria-pressed="true"] { background: var(--surface-2); color: var(--text); }
+.roll-fold { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: .9rem; }
+.roll-tray.open .roll-fold { transform: rotate(180deg); }
+.roll-last { margin-top: 6px; }
+.roll-label { font-size: .82rem; color: var(--muted); }
+.roll-result b { font-size: 1.8rem; margin-right: 6px; font-variant-numeric: tabular-nums; }
+.roll-result u { text-decoration: none; color: var(--text); font-weight: 700; }
+.roll-crit { color: var(--green); } .roll-fumble { color: var(--red); }
+.roll-dmg-btn { margin-top: 6px; }
+.roll-history { display: none; list-style: none; margin: 8px 0 0; padding: 6px 0 0; border-top: 1px solid var(--line); max-height: 180px; overflow: auto; }
+.roll-tray.open .roll-history { display: block; }
+.roll-history li { display: flex; justify-content: space-between; font-size: .85rem; color: var(--muted); padding: 2px 0; }
+.roll-history li b { color: var(--text); }
+@media (max-width: 520px) { .roll-tray { right: 8px; bottom: 8px; width: calc(100vw - 16px); } .roll-result b { font-size: 1.4rem; } }

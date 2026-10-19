@@ -253,12 +253,13 @@
 
   document.addEventListener('click', e => {
     const t = e.target.closest('[data-panel-url], [data-modal-url]');
-    if (!t || e.target.closest('button[hx-post], form')) return;
+    if (!t || e.target.closest('button[hx-post], form, [data-roll]')) return;
     e.preventDefault();
     if (t.dataset.modalUrl) openPanel(t.dataset.modalUrl, t, t.getAttribute('href'), t.dataset.modalSize === 'large' ? 'large' : true);
     else openPanel(t.dataset.panelUrl, t, t.getAttribute('href'));
   });
   document.addEventListener('keydown', e => {
+    if (e.target.closest && e.target.closest('[data-roll]')) return;
     const t = e.target.closest && e.target.closest('[data-panel-url][tabindex], [data-modal-url][tabindex]');
     if (t && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); t.click(); }
   });
@@ -607,4 +608,130 @@
   // Flash message from a full page load
   const flash = document.body.dataset.toast;
   if (flash) toast(flash);
+})();
+
+// Rolls: private dice rolls in this browser (Battle, Wild Shape). Anything with data-roll
+// rolls when clicked: data-mod is the bonus, data-dmg the damage dice, data-adv="1" when
+// Advantage always applies. Nobody else sees these rolls; "Table rolls" (shared) will send
+// the same data to the server later. The last rolls are kept in this browser only.
+(function () {
+  const KEY = 'askdnd.rolls';
+  let mode = 'normal';  // the next d20 roll: normal, adv or dis (back to normal after rolling)
+  let tray = null;
+
+  function die(sides) {
+    const a = new Uint32Array(1);
+    crypto.getRandomValues(a);
+    return (a[0] % sides) + 1;
+  }
+  const num = s => parseInt(String(s || '0').replace('\u2212', '-'), 10) || 0;
+  const signed = n => (n >= 0 ? '+' : '\u2212') + Math.abs(n);
+  function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+  function parseDice(expr) {
+    const m = /(\d+)d(\d+)(?:([+-])(\d+))?/.exec(expr || '');
+    if (!m) return null;
+    return { count: +m[1], sides: +m[2], bonus: m[3] ? (m[3] === '-' ? -1 : 1) * +m[4] : 0 };
+  }
+
+  function history() {
+    try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; }
+  }
+  function remember(entry) {
+    const list = [entry, ...history()].slice(0, 30);
+    try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) { /* private window: keep going */ }
+    return list;
+  }
+
+  function who() {
+    const b = document.getElementById('battle-body');
+    return b ? b.dataset.name || '' : '';
+  }
+
+  function d20(el) {
+    const mod = num(el.dataset.mod);
+    const use = mode !== 'normal' ? mode : (el.dataset.adv ? 'adv' : 'normal');
+    const dice = use === 'normal' ? [die(20)] : [die(20), die(20)];
+    const kept = use === 'adv' ? Math.max(...dice) : use === 'dis' ? Math.min(...dice) : dice[0];
+    const attack = el.dataset.roll === 'attack';
+    const r = { kind: el.dataset.roll, label: el.dataset.label, who: who(), mode: use, dice, kept, mod, total: kept + mod,
+                crit: attack && kept === 20, miss: attack && kept === 1, dmg: el.dataset.dmg || '', at: Date.now() };
+    mode = 'normal';
+    return r;
+  }
+
+  function damage(label, expr, crit) {
+    const d = parseDice(expr);
+    if (!d) return null;
+    const n = crit ? d.count * 2 : d.count;
+    const dice = Array.from({ length: n }, () => die(d.sides));
+    const total = dice.reduce((a, b) => a + b, 0) + d.bonus;
+    return { kind: 'damage', label, who: who(), expr: (crit ? n + 'd' + d.sides + (d.bonus ? signed(d.bonus) : '') : expr),
+             dice, mod: d.bonus, total: Math.max(total, 0), crit: !!crit, at: Date.now() };
+  }
+
+  function line(r) {
+    if (r.kind === 'damage') {
+      return '<b>' + r.total + '</b> <span class="roll-sub">' + esc(r.expr) + ': ' + r.dice.join(' + ') + (r.mod ? ' ' + signed(r.mod) : '') + (r.crit ? ' · critical' : '') + '</span>';
+    }
+    const dice = r.dice.length > 1 ? r.dice.map(x => x === r.kept ? '<u>' + x + '</u>' : x).join(' / ') : String(r.dice[0]);
+    const tag = r.mode === 'adv' ? ' · Advantage' : r.mode === 'dis' ? ' · Disadvantage' : '';
+    const flag = r.crit ? ' · <span class="roll-crit">natural 20: critical hit</span>' : r.miss ? ' · <span class="roll-fumble">natural 1: miss</span>' : '';
+    return '<b>' + r.total + '</b> <span class="roll-sub">d20 ' + dice + ' ' + signed(r.mod) + tag + flag + '</span>';
+  }
+
+  function render(latest) {
+    if (!tray) return;
+    const list = history();
+    const top = latest || list[0];
+    tray.querySelector('.roll-last').innerHTML = top
+      ? '<div class="roll-label">' + esc(top.label) + (top.kind === 'damage' ? ' · damage' : top.kind === 'attack' ? ' · to hit' : '') + '</div><div class="roll-result">' + line(top) + '</div>'
+        + (top.kind === 'attack' && top.dmg ? '<button type="button" class="btn small roll-dmg-btn">Roll ' + (top.crit ? 'critical ' : '') + 'damage (' + esc(top.dmg) + ')</button>' : '')
+      : '<div class="roll-sub">Click a save, Initiative or an attack bonus to roll. Only you see these rolls.</div>';
+    const btn = tray.querySelector('.roll-dmg-btn');
+    if (btn) btn.onclick = () => { const r = damage(top.label, top.dmg, top.crit); if (r) { remember(r); render(r); } };
+    tray.querySelector('.roll-history').innerHTML = list.slice(top ? 1 : 0, 9).map(r =>
+      '<li><span>' + esc(r.label) + (r.kind === 'damage' ? ' dmg' : '') + '</span><b>' + r.total + '</b></li>').join('');
+    tray.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === mode ? 'true' : 'false'));
+  }
+
+  function ensureTray() {
+    if (!document.querySelector('[data-roll]')) { if (tray) tray.hidden = true; return; }
+    if (!tray) {
+      tray = document.createElement('aside');
+      tray.className = 'roll-tray';
+      tray.setAttribute('aria-label', 'Your dice rolls');
+      tray.innerHTML = '<div class="roll-head" title="Private: only you see these rolls"><span class="roll-title">Your rolls</span>'
+        + '<span class="roll-modes" role="group" aria-label="Next d20 roll">'
+        + '<button type="button" data-mode="normal">Normal</button><button type="button" data-mode="adv">Adv</button><button type="button" data-mode="dis">Dis</button></span>'
+        + '<button type="button" class="roll-fold" aria-label="Show or hide past rolls" title="Past rolls">▾</button></div>'
+        + '<div class="roll-last" aria-live="polite"></div><ol class="roll-history"></ol>';
+      document.body.appendChild(tray);
+      tray.addEventListener('click', e => {
+        const m = e.target.closest('[data-mode]');
+        if (m) { mode = m.dataset.mode; render(); }
+        if (e.target.closest('.roll-fold')) tray.classList.toggle('open');
+      });
+      render();
+    }
+    tray.hidden = false;
+  }
+
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-roll]');
+    if (!el || el.closest('.roll-tray')) return;
+    e.preventDefault();
+    const r = el.dataset.roll === 'damage' ? damage(el.dataset.label, el.dataset.dmg, false) : d20(el);
+    if (!r) return;
+    ensureTray();
+    remember(r);
+    render(r);
+    tray.classList.remove('bump'); void tray.offsetWidth; tray.classList.add('bump');
+  });
+  document.addEventListener('keydown', e => {
+    const el = e.target.closest && e.target.closest('[data-roll][tabindex]');
+    if (el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); el.click(); }
+  });
+  ensureTray();
+  document.body.addEventListener('htmx:afterSwap', ensureTray);
 })();

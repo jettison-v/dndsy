@@ -1,8 +1,8 @@
 {# Large modal: a Wild Shape form with this druid's stats carried over (app/wild_shape.py), as battle cards. #}
-{% from "_char.html" import pips, pick_note, spends, adv, saves_block %}
+{% from "_char.html" import pips, pick_note, spends, adv, saves_block, hit %}
 {% set b = f.beast %}
 {% macro card(o) %}<div class="move static{{ ' yours' if o.source == 'yours' }}">
-  {% if o.hit %}<span class="hit">{{ o.hit }}{% if o.adv %} {{ adv(o.adv) }}{% endif %}</span>{% endif %}<b>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag{{ ' faint' if t == 'Yours' }}">{{ t }}</span>{% endfor %}{{ spends(o.spends) }}
+  {{ hit(o) }}<b>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag{{ ' faint' if t == 'Yours' }}">{{ t }}</span>{% endfor %}{{ spends(o.spends) }}
   {% if o.meta %}<div class="meta">{{ o.meta }}</div>{% endif %}
   {% if o.source == "form" and o.text and o.text != o.meta %}<details class="move-more"><summary>Full text</summary><p>{{ o.text }}</p></details>{% endif %}
 </div>{% endmacro %}
