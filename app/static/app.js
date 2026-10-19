@@ -460,20 +460,6 @@
     }
   }, true);
   document.querySelectorAll('[data-planner]').forEach(plannerApply);
-  // Map: AideDD's info panel starts hidden (the frame is shifted); the button shows it, remembered per device.
-  (function () {
-    const wrap = document.querySelector('[data-map-wrap]'), btn = document.querySelector('[data-map-menu]');
-    if (!wrap || !btn) return;
-    const set = open => {
-      wrap.classList.toggle('menu-open', open); btn.setAttribute('aria-pressed', open);
-      btn.textContent = open ? 'Hide map menu' : 'Show map menu';
-      try { localStorage.setItem('askdnd-map-menu', open ? '1' : '0'); } catch (e) { /* private window */ }
-    };
-    let saved = '0'; try { saved = localStorage.getItem('askdnd-map-menu') || '0'; } catch (e) { /* ignore */ }
-    set(saved === '1');
-    btn.addEventListener('click', () => set(!wrap.classList.contains('menu-open')));
-  })();
-
   // Manage › People: the line under each person says what their access will let them do, as you change it.
   document.addEventListener('change', e => {
     const form = e.target.closest('.person-form'); if (!form) return;

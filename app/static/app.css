@@ -766,14 +766,10 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 @media (max-width: 1000px) { .session-body { grid-template-columns: 1fr; gap: 0; } }
 
 /* Map tab: AideDD's Sword Coast atlas in a frame */
-.map-page .title-row .map-menu-toggle { margin-left: auto; }
+.map-page .title-row .map-open { margin-left: auto; }
 .map-page .hint { margin-bottom: 12px; }
-/* AideDD's map can't be told to start with its info panel closed, so by default the frame is
-   shifted left to keep the panel out of view; "Show map menu" brings it back (remembered per device). */
-.map-wrap { overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); height: calc(100vh - 230px); min-height: 420px; }
-.map-frame { display: block; border: 0; height: 100%; width: calc(100% + 280px); margin-left: -280px; transition: margin .2s ease, width .2s ease; }
-.map-wrap.menu-open .map-frame { width: 100%; margin-left: 0; }
-@media (max-width: 700px) { .map-wrap { height: calc(100vh - 200px); } .map-frame { width: 100%; margin-left: 0; } .map-menu-toggle { display: none; } }
+.map-frame { display: block; width: 100%; height: calc(100vh - 230px); min-height: 420px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+@media (max-width: 700px) { .map-frame { height: calc(100vh - 200px); } }
 .entry-map { display: inline-block; margin-top: 8px; font-size: .85rem; font-weight: 500; color: var(--blue); text-decoration: none; }
 .entry-map::before { content: "⌖ "; }
 .entry-map:hover { text-decoration: underline; }
