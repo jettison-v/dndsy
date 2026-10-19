@@ -206,7 +206,7 @@ def test_keep_choices_are_saved_by_the_player_and_shown_to_others(db, cole, play
     assert r.status_code == 200 and "Kept in Wild Shape" in r.text
     db.refresh(cole)
     assert cole.wild_shape_keep == ["unarmored-movement"]  # unknown keys are dropped
-    assert "50 ft." in player.get(f"{url}/form?name=Polar Bear").text  # 40 + 10
+    assert "50 ft., swim 50 ft." in player.get(f"{url}/form?name=Polar Bear").text  # 40 + 10 on every speed
     assert 'name="keep"' not in admin.get(f"{url}/form?name=Polar Bear").text  # others see, can't change
     assert dm.post(f"{url}/wild-shape/keep", data={"name": "Polar Bear", "keep": []}).status_code == 403
 
@@ -239,3 +239,105 @@ def test_unarmed_strike_uses_the_forms_body_and_martial_arts():
     w = next(o for o in wolf["columns"]["Action"]["shown"] if o["name"] == "Unarmed Strike")
     assert w["hit"] == "+5" and "3 Bludgeoning" in w["meta"]  # no Martial Arts: 1 + Str (+2), Str + PB 3
     assert not any("Martial Arts" in o["name"] for o in wolf["columns"]["Bonus action"]["shown"])
+
+
+def cole_with_feat(name: str, *modifiers: dict) -> dict:
+    """Cole's sheet with one more feat (and its D&D Beyond modifiers), Druid 6 Moon as above."""
+    from app import ddb
+
+    data = copy.deepcopy(COLE)
+    data = data.get("data", data)
+    fid = 990001
+    data["feats"].append({"componentId": fid, "definition": {"id": fid, "name": name, "description": f"<p>{name}.</p>"}})
+    data["modifiers"]["feat"] += [{"componentId": fid, "restriction": "", "value": None, "fixedValue": None, **m} for m in modifiers]
+    sheet = ddb.parse_character(data)
+    sheet["classes"] = [{"name": "Druid", "level": 6, "subclass": "Circle of the Moon"}]
+    return sheet
+
+
+def test_feats_carry_into_the_form_war_caster_only_for_concentration():
+    sheet = cole_sheet()
+    f = ws.shaped(sheet, ws.catalog_beast("Polar Bear"))
+    saves = {s["key"]: s for s in f["saves"]}
+    con = [a["text"] for a in saves["con"]["adv"]]
+    assert con == ["Advantage on Constitution saving throws to maintain Concentration · War Caster"]  # not blanket Con advantage
+    assert saves["con"]["adv"][0]["when"] == "to maintain Concentration"
+    assert all(not s["adv"] for k, s in saves.items() if k != "con")
+    assert f["save_adv_all"] == []  # Fey Ancestry (species) doesn't carry into a form
+    notes = " ".join(f["notes"])
+    assert "Your feats stay with you: Lucky, War Caster." in notes and "Wayfarer" not in notes
+    assert "War Caster: Advantage on Constitution saving throws to maintain Concentration only, not on other Constitution saving throws" in notes
+    assert "species traits don't carry" in notes and "Fey Ancestry" in notes
+    assert "you can speak in a form" in notes  # a 2024 change (Brett)
+    names = [o["name"] for col in f["columns"].values() for o in col["all"]]
+    assert "Mask of the Wild" not in names  # a species trait: not kept
+    assert "Flurry of Blows" in names  # a multiclass (Monk) feature: kept, marked Yours
+
+
+def test_alert_and_mobile_change_the_forms_numbers_with_their_source():
+    sheet = cole_with_feat("Alert", {"type": "proficiency", "subType": "initiative"})
+    assert sheet["initiative"] == "+6"  # Dex +2, Luckstone +1, Alert +3
+    f = ws.shaped(sheet, ws.catalog_beast("Polar Bear"))
+    assert f["initiative"] == "+5" and ("Proficiency Bonus (Alert)", 3) in f["initiative_parts"]  # the bear's Dex +2, Alert +3
+    mobile = cole_with_feat("Mobile", {"type": "bonus", "subType": "speed", "value": 10, "fixedValue": 10})
+    m = ws.shaped(mobile, ws.catalog_beast("Polar Bear"))
+    assert m["speed_dict"] == {"walk": 50, "swim": 40} and ("Mobile (walking)", 10) in m["speed_parts"]
+
+
+def test_class_feature_bonuses_stay_in_a_form_species_ones_dont():
+    sheet = cole_sheet()
+    f = ws.shaped(sheet, ws.catalog_beast("Polar Bear"))
+    skills = {s["name"]: s for s in f["skills"]}
+    assert skills["Arcana"]["bonus"] == 4 and "Magician +4" in skills["Arcana"]["from"]  # Primal Order, a class feature
+    assert skills["Nature"]["bonus"] == 0 + 3 + 4 and skills["Nature"]["level"] == "proficient"
+    assert skills["Stealth"]["from"].startswith("Dex modifier (form) +2")
+
+
+def test_form_traits_mark_advantage_on_attacks():
+    sheet = cole_sheet()
+    wolf = ws.shaped(sheet, ws.catalog_beast("Wolf"))
+    bite = next(o for o in wolf["columns"]["Action"]["all"] if o["name"] == "Bite")
+    assert [a["source"] for a in bite["adv"]] == ["Pack Tactics"] and "allies is within 5 feet" in bite["adv"][0]["when"]
+    assert ws.card(sheet, ws.catalog_beast("Wolf"))["attack_adv"][0]["source"] == "Pack Tactics"
+    shark = ws.shaped(sheet, ws.catalog_beast("Hunter Shark"))
+    shark_bite = next(o for o in shark["columns"]["Action"]["all"] if o["name"] == "Bite")
+    assert shark_bite["adv"][0]["when"] == "if the target doesn't have all its Hit Points"
+    boar = ws.shaped(sheet, ws.catalog_beast("Boar"))
+    assert next(o for o in boar["columns"]["Action"]["all"] if o["source"] == "form" and o["adv"])["adv"][0]["when"] == "while Bloodied"
+    bear = ws.shaped(sheet, ws.catalog_beast("Polar Bear"))
+    assert all(not o.get("adv") for o in bear["columns"]["Action"]["all"])  # nothing gives the bear Advantage
+
+
+def test_kept_options_split_into_traits_and_equipment(db, cole, player):
+    opts = ws.options_for(cole_sheet(), [])
+    assert {o["key"] for o in opts if o["group"] == "traits"} == {"unarmored-defense", "unarmored-movement"}
+    assert {o["name"] for o in opts if o["group"] == "equipment"} >= {"Insignia of Claws", "Manual of Quickness of Action"}
+    url = f"/characters/{cole.id}"
+    claws = next(o["key"] for o in opts if o["name"] == "Insignia of Claws")
+    r = player.post(f"{url}/wild-shape/keep", data={"name": "Polar Bear", "keep": ["unarmored-defense", claws]})
+    keep = r.text[r.text.index('class="keep-form"'):]
+    assert keep.index("<legend>Traits") < keep.index("Unarmored Defense") < keep.index("<legend>Equipment") < keep.index("Insignia of Claws")
+    db.refresh(cole)
+    assert cole.wild_shape_keep == sorted(["unarmored-defense", claws])  # saved the same way as before
+
+
+def test_form_window_layout_saves_and_plan(db, cole, player):
+    panel = player.get(f"/characters/{cole.id}/form?name=Polar Bear").text
+    assert "your proficiency. Hover" not in panel and "sup class=\"prof\"" not in panel  # no help callout, no stray dots
+    assert panel.count('class="save-row prof"') >= 2  # Int and Wis saves, proficient
+    assert 'title="Int modifier (yours) +0 + Your Proficiency Bonus +3' in panel  # hover still says where it comes from
+    assert "to maintain Concentration · War Caster" in panel and "adv-badge cond" in panel
+    assert 'class="fm-plan-stack"' in panel and "fm-plan-grid" not in panel
+
+
+def test_battle_shows_saves_for_the_normal_form_and_in_wild_shape(db, cole, player, dm):
+    page = dm.get(f"/characters/{cole.id}/battle").text
+    block = page[page.index('class="battle-saves"'):page.index('class="econ"')]
+    assert block.count('class="save-row') == 6 and block.count('class="save-row prof"') == 2  # Int and Wis
+    assert "Con</span><b>+2</b>" in block and "to maintain Concentration · War Caster" in block
+    assert "on every save against being charmed (Fey Ancestry)" in block
+    player.post(f"/characters/{cole.id}/wild-shape", data={"form": "Polar Bear"}, headers=HX)
+    page = dm.get(f"/characters/{cole.id}/battle").text
+    block = page[page.index("Saves in this form"):page.index('class="econ"')]
+    assert block.count('class="save-row') == 6 and "Con</span><b>+7</b>" in block  # bear's Con +3, Increased Toughness +4
+    assert "War Caster" in block and "Fey Ancestry" not in block

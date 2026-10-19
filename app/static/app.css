@@ -390,8 +390,6 @@ details.feat > summary:hover { color: #fff; }
 .ab small { color: var(--muted); font-size: .78rem; } .ab b { font-size: 1.3rem; }
 .ab .sv { font-size: .86rem; color: var(--muted); } .ab .sv.prof { color: var(--text); }
 .ab .sv.prof::before { content: "● "; color: var(--green); font-size: .7rem; }
-.adv, .adv-inline { color: var(--amber); }
-.ab .adv { display: block; font-size: .78rem; line-height: 1.35; margin-top: 2px; }
 .tabbar { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin: 0 0 12px; overflow-x: auto; scrollbar-width: none; }
 .tabbar button { background: none; border: none; padding: 9px 13px; color: var(--muted); font-weight: 500; white-space: nowrap; min-height: 40px; }
 .tabbar button[aria-selected=true] { color: #fff; box-shadow: inset 0 -2px 0 var(--red); }
@@ -704,11 +702,6 @@ table.calc tr.total td { border-bottom: none; border-top: 2px solid #4a4f57; col
 @media (max-width: 900px) { .pool-grid { grid-template-columns: 1fr; } }
 /* Character quick view (Party › name) */
 .peek-body h3.divider { margin: 20px 0 8px; }
-.brief-saves { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
-.brief-saves > div { background: var(--surface-2); border-radius: 8px; padding: 4px 8px; text-align: center; }
-.brief-saves small { display: block; color: var(--muted); font-size: .72rem; }
-.brief-saves b { font-size: 1.05rem; }
-.brief-saves .prof { box-shadow: inset 0 0 0 1px var(--green); }
 .brief-res > div { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 5px 0; border-bottom: 1px solid var(--line); }
 .brief-res > div:last-child { border-bottom: none; }
 .brief-res .note { margin-left: auto; }
@@ -723,7 +716,6 @@ table.calc tr.total td { border-bottom: none; border-top: 2px solid #4a4f57; col
 .brief-list { list-style: none; margin: 0; padding: 0; }
 .brief-list li { padding: 5px 0 5px 12px; border-left: 2px solid var(--line); margin: 3px 0; }
 .brief-counted { margin-top: 8px; }
-@media (max-width: 640px) { .brief-saves { grid-template-columns: repeat(3, 1fr); } }
 /* Character › Skills: grouped by ability */
 .skills-top { display: flex; justify-content: space-between; gap: 10px 24px; flex-wrap: wrap; align-items: baseline; margin: 2px 0 12px; font-size: .86rem; color: var(--muted); }
 .skills-top .passives { display: inline-flex; gap: 16px; }
@@ -743,7 +735,6 @@ table.calc tr.total td { border-bottom: none; border-top: 2px solid #4a4f57; col
 .pm.proficient, .pm.prof { color: var(--green); }
 .pm.expertise { color: var(--amber); }
 .pm.half { color: var(--muted); }
-.skill .adv { font-size: .72rem; margin-left: 4px; }
 /* Section headings (Brett, 2026-10-18: option A, modified): quiet all-caps labels with a fading
    rule everywhere; only action-economy headings take a color and symbol, the same on Battle,
    Character and the side panel: ◆ Action, ▲ Bonus action, ↺ Reaction, ● Other. */
@@ -796,7 +787,6 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .fab small { display: block; color: var(--muted); font-size: .72rem; } .fab b { display: block; font-size: 1.1rem; }
 .fab span { display: block; color: var(--faint); font-size: .75rem; } .fab em { display: block; font-style: normal; font-size: .68rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
 .fab.yours em { color: var(--blue); }
-.fsave sup { color: var(--blue); font-size: .6rem; }
 .form-econ { display: grid; gap: 12px; }
 .form-econ h4 { margin: 6px 0 2px; }
 .move.yours b { color: var(--muted); }
@@ -831,7 +821,6 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .fm-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; padding: 4px 0; border-top: 1px solid var(--line); }
 .fm-list li b { text-align: right; }
 .fm-list li small { grid-column: 1 / -1; color: var(--faint); font-size: .74rem; line-height: 1.3; }
-sup.prof { color: var(--blue); font-size: .6rem; }
 .fm-econ { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; }
 .fm-col { background: var(--surface-2); border-radius: 12px; padding: 10px 14px 6px; }
 .fm-col h4 { margin: 0 0 4px; }
@@ -966,18 +955,46 @@ a.sheet-ref { text-decoration-style: dotted; }
 
 /* Wild Shape window: plan first, Action and Bonus action side by side, Reactions as a row */
 .fm-plan { margin: 10px 0 4px; }
-.fm-plan-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.fm-plan-grid .pick-note-form { margin-left: 0; }
-.fm-plan-grid textarea { min-height: 64px; }
+/* Your plan for this form: the shortlist note full width, Remind me as a compact row under it */
+.fm-plan-stack { display: grid; gap: 8px; }
+.fm-plan-stack .pick-note-form, .fm-plan-stack .pick-note-text { margin-left: 0; }
+.fm-plan-stack .pick-note-fav textarea { min-height: 64px; }
+.fm-plan-stack .pick-note-remind { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px 12px; }
+.fm-plan-stack .pick-note-remind .pick-note-head { flex: none; padding-top: 5px; }
+.fm-plan-stack .pick-note-remind .pick-note-form, .fm-plan-stack .pick-note-remind .pick-note-text { flex: 1 1 260px; margin: 0; }
+.fm-plan-stack .pick-note-remind textarea { min-height: 0; height: 2.3em; }
 .fm-grid { grid-template-columns: 250px minmax(0, 1fr); }
 .fm-econ { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .fm-reactions { margin-top: 14px; }
 .fm-reaction-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); column-gap: 18px; }
 .fm-reaction-list .move:first-child, .fm-reaction-list .move:nth-child(2) { border-top: none; }
-.fm-saves { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 12px; font-size: .9rem; }
-.fm-saves span { display: flex; justify-content: space-between; gap: 6px; border-bottom: 1px solid var(--line); padding: 3px 0; }
+.fm-skills { grid-template-columns: 1fr; }
 .fm-small { margin-top: 10px; }
 .keep-box { border-top: 1px solid var(--line); padding-top: 4px; }
 .keep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); column-gap: 18px; }
+.keep-group { border: 0; margin: 10px 0 0; padding: 0; min-width: 0; }
+.keep-group legend, .keep-legend { font-size: .76rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); padding: 0; margin: 0 0 2px; }
+.keep-group legend small { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--faint); margin-left: 8px; font-size: .8rem; }
 .fm-rules { margin-top: 14px; }
-@media (max-width: 1000px) { .fm-plan-grid { grid-template-columns: 1fr; } }
+
+/* Advantage, the same badge everywhere (the adv macro in _char.html); outlined when it needs a condition */
+.adv-badge { display: inline-block; font-size: .64rem; font-weight: 700; letter-spacing: .03em; line-height: 1; padding: 2px 5px 3px;
+  border-radius: 5px; background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber); vertical-align: middle; cursor: help; white-space: nowrap; }
+.adv-badge.cond { background: transparent; border-style: dashed; }
+
+/* Saving throws (and Wild Shape skills) in aligned rows: marker, name, number, Adv */
+.saves-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.4rem, 1fr)); gap: 0 14px; }
+.save-row { display: grid; grid-template-columns: 1em minmax(0, 1fr) auto 2.3em; align-items: center; gap: 6px; padding: 3px 0; border-bottom: 1px solid var(--line); font-size: .92rem; }
+.save-row .pm { font-size: .7rem; }
+.save-row .save-name { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.save-row.prof .save-name { color: var(--text); }
+.save-row b { text-align: right; font-variant-numeric: tabular-nums; }
+.pm.form { color: var(--muted); }
+.save-all { margin: 6px 0 0; }
+.saves-block.six .saves-list { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.saves-block.three .saves-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.saves-block.six .save-row, .saves-block.three .save-row { grid-template-columns: .9em 2.1em 2.3em minmax(0, 1fr); }
+@media (max-width: 700px) { .saves-block.six .saves-list { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .saves-block.six .saves-list, .saves-block.three .saves-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.battle-saves { margin-top: 10px; }
+.battle-saves-label { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 2px; }

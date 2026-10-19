@@ -1,5 +1,5 @@
 {# Modal on the Party page: a short version of one character. #}
-{% from "_char.html" import vitals, portrait, pips %}
+{% from "_char.html" import vitals, portrait, pips, saves_block %}
 {% set s = sheet %}
 <div class="peek-head">
   {{ portrait(s, "md") }}<div style="flex:1"><h2 id="peek-title">{{ c.entity.name }}</h2>
@@ -11,8 +11,7 @@
   {{ vitals(s, c) }}
   {% macro open(x) %}<a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/detail?ref={{ x.key | urlencode }}">{{ x.name }}</a>{% endmacro %}
   <h3 class="divider">Saving throws</h3>
-  <div class="brief-saves">{% for sv in s.saves %}<div class="{{ 'prof' if sv.proficient }}"><small>{{ sv.short }}</small><b>{{ sv.label }}</b></div>{% endfor %}</div>
-  <p class="note" style="margin:4px 0 0">Highlighted: proficient.</p>
+  {{ saves_block(s.saves, s.save_adv_all, "three") }}
   {% set big = s.actions | selectattr("uses") | list %}
   {% if big or s.spell_slots.slots or s.spell_slots.pact %}<h3 class="divider">Resources</h3>
   <div class="brief-res">

@@ -11,10 +11,33 @@ Cole's live sheet. The repo is public, so this stays a summary in our own words,
 | Uses | 2 (level 2), 3 (6), 4 (17). One back on a Short Rest, all on a Long Rest | Read from D&D Beyond |
 | Action / duration | Bonus Action to shift; lasts half Druid level in hours; ends on another Wild Shape, Incapacitated or death; leave early as a Bonus Action | Battle cards and notes |
 | Known forms / max CR / fly | 4 / 1/4 / no (level 2); 6 / 1/2 / no (4); 8 / 1 / yes (8). Swap one known form per Long Rest | Planner limits |
-| Temporary HP | Druid level when you shift | Shown |
-| Game statistics | Beast's stat block, but you keep creature type, HP, Hit Dice, Int/Wis/Cha, class features, languages, feats, and skill/save proficiencies (your PB); use the Beast's modifier if higher | Computed per form |
+| Temporary HP | Druid level when you shift (3 × with Circle Forms, below) | Shown |
+| Game statistics | Beast's stat block, but you keep creature type, HP, Hit Dice, Int/Wis/Cha, class features, languages, feats, and skill/save proficiencies (your PB); use the Beast's modifier if higher | Computed per form: feats' and class features' bonuses and Advantage included; species traits left out |
 | Spells | Can't cast, but Concentration isn't broken | Except as below |
-| Equipment | Falls, merges (no effect) or is worn; DM decides what fits | Note; item bonuses left out |
+| Equipment | Falls, merges (no effect) or is worn; DM decides what fits | Note; item bonuses only when ticked under Kept in Wild Shape › Equipment |
+
+## Audit: what carries into Wild Shape (2026-10-19)
+
+Rulings from Brett at the table: you can speak in Wild Shape (2024 rule), and Unarmored Movement adds to every movement type (walk, fly, swim, climb, burrow), in a form and out of it.
+
+Brett's belief table checked against the summary above (from the PHB read on 2026-10-18) and the code.
+
+| Belief | Rule (our summary) | Verdict | In askdnd now |
+|---|---|---|---|
+| Feats: kept (all) | Feats are on the list of what you keep | Correct | Feat numbers apply in a form (e.g. Alert's Proficiency Bonus on Initiative, a feat's Speed bonus) and feat Advantage is marked. Was missing; fixed. Background/level Ability Score Improvements aren't listed as feats |
+| Class and subclass features: kept, including multiclass | "Class features" are kept, with no limit to Druid ones | Correct. Whether one works in the Beast's body is the DM's call | Monk features show as "Yours". Class-feature bonuses now carry (Primal Order's Magician +Wis to Arcana and Nature was missing; fixed). Unarmored Defense / Movement stay DM toggles (Brett, 2026-10-19) |
+| Species traits: lost | Not on the keep list, so the Beast's stat block replaces them | Correct. Nuance: a skill proficiency your species gave you is still a skill proficiency, which you keep | Fixed: species actions (Mask of the Wild) no longer show as "Yours"; species Advantage (Fey Ancestry) isn't marked in a form; the form's senses replace Darkvision. The form's notes list the lost traits |
+| Creature type: kept | On the keep list | Correct | Said in the form's notes |
+| HP and Hit Dice: kept, plus temp HP = 3 × Druid level | HP and Hit Point Dice kept. Temp HP = Druid level; Circle Forms makes it 3 × | Partly: 3 × is Circle of the Moon only | Already right (Cole, Moon Druid 6: 18; other Circles get their Druid level) |
+| Int/Wis/Cha kept; Str/Dex/Con are the Beast's | Same | Correct | Already right |
+| Skills and saves: your proficiencies with your PB, plus the Beast's; use the higher | Same: keep skill and save proficiencies with your PB, gain the Beast's, and use the stat block's modifier where it's higher | Correct | Already right; the hover now shows both numbers when the form's is used |
+| Languages and speech: kept, and you can speak | Languages are kept, and you can speak in a form: new in 2024 (confirmed by Brett, 2026-10-19; this summary hadn't recorded it) | Correct | The form's notes say you keep your languages and can speak |
+
+Feats in a form, the nuance: **War Caster** gives Advantage on Constitution saving throws *to maintain Concentration*, not on every Constitution save. D&D Beyond's modifier carries that condition, and askdnd marks it that way (a dashed Adv badge on Con, with the condition on hover). Cole's Lucky (Luck Points) also stays; it doesn't change a number.
+
+To check in the book (Brett, private/books on the Mac):
+- That a feat's Speed bonus (e.g. Mobile) applies to a form's walking Speed only, as askdnd does, and not its swim/climb/fly speeds (otherwise the DM's call).
+
 
 ## Other Druid features that touch Wild Shape
 

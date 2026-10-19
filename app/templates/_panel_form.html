@@ -1,8 +1,8 @@
 {# Large modal: a Wild Shape form with this druid's stats carried over (app/wild_shape.py), as battle cards. #}
-{% from "_char.html" import pips, pick_note, spends %}
+{% from "_char.html" import pips, pick_note, spends, adv, saves_block %}
 {% set b = f.beast %}
 {% macro card(o) %}<div class="move static{{ ' yours' if o.source == 'yours' }}">
-  {% if o.hit %}<span class="hit">{{ o.hit }}</span>{% endif %}<b>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag{{ ' faint' if t == 'Yours' }}">{{ t }}</span>{% endfor %}{{ spends(o.spends) }}
+  {% if o.hit %}<span class="hit">{{ o.hit }}{% if o.adv %} {{ adv(o.adv) }}{% endif %}</span>{% endif %}<b>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag{{ ' faint' if t == 'Yours' }}">{{ t }}</span>{% endfor %}{{ spends(o.spends) }}
   {% if o.meta %}<div class="meta">{{ o.meta }}</div>{% endif %}
   {% if o.source == "form" and o.text and o.text != o.meta %}<details class="move-more"><summary>Full text</summary><p>{{ o.text }}</p></details>{% endif %}
 </div>{% endmacro %}
@@ -32,8 +32,8 @@
   <div class="vitals fm-vitals">
     <div class="vital" title="{% for n, v in f.ac_parts %}{{ n }}{{ '; ' if not loop.last }}{% endfor %}"><small>AC</small><b>{{ f.ac }}</b>{% if f.druid.moon and f.ac > b.ac %}<span class="note"> Circle Forms</span>{% endif %}</div>
     <div class="vital"><small>HP (yours)</small><b>{{ f.hp.current }}</b><span class="note"> / {{ f.hp.max }} +{{ f.temp_hp }} temp</span></div>
-    <div class="vital"><small>Speed</small><b class="small">{{ f.speed }}</b></div>
-    <div class="vital"><small>Initiative</small><b>{{ f.initiative }}</b></div>
+    <div class="vital" title="{% for n, v in f.speed_parts %}{{ n }}{% if v %} +{{ v }} ft{% endif %}{{ '; ' if not loop.last }}{% endfor %}"><small>Speed</small><b class="small">{{ f.speed }}</b></div>
+    <div class="vital" title="{% for n, v in f.initiative_parts %}{{ n }} {{ '%+d' | format(v) }}{{ '; ' if not loop.last }}{% endfor %}"><small>Initiative</small><b>{{ f.initiative }}</b>{{ adv(f.initiative_adv) }}</div>
     <div class="vital"><small>Passive Perception</small><b>{{ f.passive_perception }}</b></div>
     {% if f.druid.uses %}<div class="vital"><small>Wild Shape</small><b class="small">{{ pips(f.druid.uses) }}</b><span class="note"> up to {{ f.druid.hours }} h</span></div>{% endif %}
   </div>
@@ -42,7 +42,7 @@
   {% if can_pick or picks.notes.get("fav|" ~ ref) or picks.notes.get("remind|" ~ ref) %}
   <section class="fm-plan">
     <h3>Your plan for this form</h3>
-    <div class="fm-plan-grid">
+    <div class="fm-plan-stack">
       {{ pick_note(c, "fav", ref, ref in picks.fav, picks.notes.get("fav|" ~ ref, ""), can_pick) }}
       {{ pick_note(c, "remind", ref, ref in picks.remind, picks.notes.get("remind|" ~ ref, ""), can_pick) }}
     </div>
@@ -57,10 +57,14 @@
         <div class="fab {{ a.from.split(' ')[0] }}" title="{{ 'Your score (Wild Shape keeps it)' if a.from == 'yours' else 'The form\'s score' }}"><small>{{ a.short }}</small><b>{{ a.label }}</b><span>{{ a.score }}</span><em>{{ a.from }}</em></div>
       {% endfor %}</div>
       <h3>Saves</h3>
-      <div class="fm-saves">{% for sv in f.saves %}<span title="{{ sv.from }}">{{ sv.short }} <b>{{ sv.label }}</b>{% if sv.proficient %}<sup class="prof">●</sup>{% endif %}</span>{% endfor %}</div>
+      {{ saves_block(f.saves, f.save_adv_all, "fm-saves") }}
       {% if f.skills %}<h3>Skills</h3>
-      <div class="fm-saves">{% for sk in f.skills %}<span title="{{ sk.from }}">{{ sk.name }} <b>{{ sk.label }}</b></span>{% endfor %}</div>{% endif %}
-      <p class="note fm-small">{% if b.senses %}{{ b.senses }}. {% endif %}{% if b.resist %}Resists {{ b.resist }}. {% endif %}{% if b.immune %}Immune to {{ b.immune }}. {% endif %}{% if b.condition_immune %}Can't be {{ b.condition_immune }}. {% endif %}<sup class="prof">●</sup> your proficiency. Hover a number for where it comes from.</p>
+      <div class="saves-list fm-skills">{% for sk in f.skills %}
+        <div class="save-row" title="{{ sk.from }}">
+          <span class="pm {{ sk.level }}" aria-label="{{ {'proficient': 'proficient', 'expertise': 'expertise', 'form': 'the form is proficient'}.get(sk.level, 'not proficient') }}">{{ {"proficient": "●", "expertise": "◆", "form": "●"}.get(sk.level, "○") }}</span>
+          <span class="save-name">{{ sk.name }}</span><b>{{ sk.label }}</b><span class="save-adv">{{ adv(sk.adv) }}</span>
+        </div>{% endfor %}</div>{% endif %}
+      {% if b.senses or b.resist or b.immune or b.condition_immune %}<p class="note fm-small">{% if b.senses %}{{ b.senses.rstrip(".") }}. {% endif %}{% if b.resist %}Resists {{ b.resist }}. {% endif %}{% if b.immune %}Immune to {{ b.immune }}. {% endif %}{% if b.condition_immune %}Can't be {{ b.condition_immune }}.{% endif %}</p>{% endif %}
     </aside>
 
     <div class="fm-main">
@@ -89,14 +93,20 @@
   <section class="keep-box">
     <h3>Kept in Wild Shape</h3>
     <p class="note">Your DM's rulings: what still works in a form. Saved for {{ c.entity.name }}, so it applies to every form until you change it.</p>
+    {% set groups = [("Traits", "traits", "Class traits that change the form's numbers"), ("Equipment", "equipment", "Worn and attuned items the form could keep")] %}
     {% if can_pick %}
-    <form class="keep-grid" hx-post="/characters/{{ c.id }}/wild-shape/keep" hx-trigger="change" hx-target="#peek" hx-swap="innerHTML">
+    <form class="keep-form" hx-post="/characters/{{ c.id }}/wild-shape/keep" hx-trigger="change" hx-target="#peek" hx-swap="innerHTML">
       <input type="hidden" name="name" value="{{ beast_name }}">
-      {% for o in keep_options %}<label class="check keep-opt"><input type="checkbox" name="keep" value="{{ o.key }}"{{ ' checked' if o.on }}>
-        <span><b>{{ o.name }}</b> <span class="tag">{{ o.kind }}</span><br><span class="note">{{ o.what }}</span></span></label>{% endfor %}
+      {% for title, group, sub in groups %}{% set list = keep_options | selectattr("group", "equalto", group) | list %}{% if list %}
+      <fieldset class="keep-group"><legend>{{ title }} <small>{{ sub }}</small></legend>
+        <div class="keep-grid">{% for o in list %}<label class="check keep-opt"><input type="checkbox" name="keep" value="{{ o.key }}"{{ ' checked' if o.on }}>
+          <span><b>{{ o.name }}</b><br><span class="note">{{ o.what }}</span></span></label>{% endfor %}</div>
+      </fieldset>{% endif %}{% endfor %}
     </form>
     {% else %}
-    <ul class="plain">{% for o in keep_options if o.on %}<li><b>{{ o.name }}</b> <span class="note">{{ o.what }}</span></li>{% else %}<li class="muted">Nothing kept.</li>{% endfor %}</ul>
+    {% for title, group, sub in groups %}{% set list = keep_options | selectattr("group", "equalto", group) | list %}{% if list %}
+    <div class="keep-group"><h4 class="keep-legend">{{ title }}</h4>
+      <ul class="plain">{% for o in list if o.on %}<li><b>{{ o.name }}</b> <span class="note">{{ o.what }}</span></li>{% else %}<li class="muted">Nothing kept.</li>{% endfor %}</ul></div>{% endif %}{% endfor %}
     {% endif %}
   </section>
   {% endif %}

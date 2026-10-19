@@ -16,11 +16,13 @@ import re
 from functools import cache
 from pathlib import Path
 
+from app import advantage
 from app import character_views as views
 
 DATA = Path(__file__).parent / "data" / "beasts_2024.json"
 ABILITIES = (("str", "Strength", "Str"), ("dex", "Dexterity", "Dex"), ("con", "Constitution", "Con"),
              ("int", "Intelligence", "Int"), ("wis", "Wisdom", "Wis"), ("cha", "Charisma", "Cha"))
+ABILITY_NAMES = {k: name for k, name, _ in ABILITIES}
 KEPT = ("int", "wis", "cha")  # Wild Shape keeps your Intelligence, Wisdom and Charisma
 SKILL_ABILITY = {"Acrobatics": "dex", "Animal Handling": "wis", "Arcana": "int", "Athletics": "str", "Deception": "cha",
                  "History": "int", "Insight": "wis", "Intimidation": "cha", "Investigation": "int", "Medicine": "wis",
@@ -28,6 +30,7 @@ SKILL_ABILITY = {"Acrobatics": "dex", "Animal Handling": "wis", "Arcana": "int",
                  "Sleight of Hand": "dex", "Stealth": "dex", "Survival": "wis"}
 CR_LABELS = {0.0: "0", 0.125: "1/8", 0.25: "1/4", 0.5: "1/2"}
 MOON_SPELLS = ((3, ("Cure Wounds", "Moonbeam", "Starry Wisp")), (5, ("Conjure Animals",)), (7, ("Fount of Moonlight",)), (9, ("Mass Cure Wounds",)))
+ASI = re.compile(r"Ability Score (Improvement|Increase)s?$", re.I)  # background and level ASIs are listed as feats
 COSTLY = re.compile(r"worth|\bGP\b|consume", re.I)  # Beast Spells: no costly or consumed Material components
 ATTACK = re.compile(r"(Melee or Ranged|Melee|Ranged) Attack Roll:\s*([+−-]\d+)")
 DAMAGE = re.compile(r"(\d+)(?: \((\d+d\d+(?:\s*[+−-]\s*\d+)?)\))? (\w+) damage")
@@ -196,8 +199,9 @@ def _entry(e: dict, cost: str, d: dict) -> dict:
         meta.append(f"{_signed(d['damage_bonus'])} damage (worn item)")
     hit = _signed(int(att.group(2).replace("−", "-")) + d.get("attack_bonus", 0)) if att else (
         f"DC {save.group(2)} {save.group(1)[:3]}" if save else "")
+    adv = (advantage.for_attack(d.get("advs") or [], melee=att.group(1).startswith("Melee")) + advantage.in_attack(e["name"], text)) if att else []
     return {"key": f"beast:{e['name']}", "name": e["name"], "cost": cost, "hit": hit, "meta": " · ".join(meta) or _clip(text),
-            "text": text, "tags": ["Form"], "uses": None, "spends": [], "starred": False, "source": "form"}
+            "text": text, "tags": ["Form"], "uses": None, "spends": [], "starred": False, "source": "form", "adv": adv}
 
 
 def _clip(text: str, n: int = 110) -> str:
@@ -281,6 +285,9 @@ def card(sheet: dict, beast: dict, keep=None) -> dict:
     effects = [c for c in CONDITIONS if re.search(rf"\b{c}\b", texts)]
     saves = {s["key"]: s for s in f["saves"]}
     skills = [s for s in f["skills"] if s["name"] in ("Perception", "Stealth", "Athletics", "Acrobatics", "Survival")]
+    attack_adv = []
+    for o in f["columns"]["Action"]["all"]:
+        attack_adv += [a for a in o.get("adv") or [] if o["source"] == "form" and a not in attack_adv]
     speed = f["speed_dict"]
     return {
         "ac": f["ac"], "ac_moon": d.get("moon") and f["ac"] > beast["ac"], "temp_hp": f["temp_hp"],
@@ -290,7 +297,7 @@ def card(sheet: dict, beast: dict, keep=None) -> dict:
         "saves": [saves[k] for k in ("str", "dex", "con")], "skills": skills,
         "traits": [x["name"] for x in beast.get("traits") or []],
         "bonus": [x["name"] for x in beast.get("bonus_actions") or []], "reactions": [x["name"] for x in beast.get("reactions") or []],
-        "effects": effects,
+        "effects": effects, "attack_adv": attack_adv, "save_adv_all": f["save_adv_all"],
     }
 
 
@@ -309,7 +316,8 @@ def kept(sheet: dict, keep) -> dict:
 
 
 def options_for(sheet: dict, keep) -> list[dict]:
-    """The toggles to show: each item or feature, what it does in a form, and whether it's kept."""
+    """The toggles to show, in two groups: Traits (class features) and Equipment (worn items),
+    each with what it does in a form and whether it's kept. Keys are the saved choices."""
     keep = set(keep or [])
     labels = {"saves": "saves", "checks": "ability checks", "initiative": "Initiative", "ac": "AC",
               "attack": "to hit with natural weapons and unarmed strikes", "damage": "damage with natural weapons and unarmed strikes",
@@ -317,8 +325,9 @@ def options_for(sheet: dict, keep) -> list[dict]:
               "str_score": "to the form's Strength score", "dex_score": "to the form's Dexterity score",
               "con_score": "to the form's Constitution score"}
     opts = sheet.get("form_options") or {"items": [], "features": []}
-    out = [{"key": f["key"], "name": f["name"], "what": f["text"], "kind": "Class feature", "on": f["key"] in keep} for f in opts["features"]]
-    out += [{"key": i["key"], "name": i["name"], "kind": "Worn item", "on": i["key"] in keep,
+    out = [{"key": f["key"], "name": f["name"], "what": f["text"], "kind": "Class feature", "group": "traits", "on": f["key"] in keep}
+           for f in opts["features"]]
+    out += [{"key": i["key"], "name": i["name"], "kind": "Worn item", "group": "equipment", "on": i["key"] in keep,
              "what": ", ".join(f"{_signed(v)} {labels[k]}" for k, v in i["effects"].items())} for i in opts["items"]]
     return out
 
@@ -341,35 +350,55 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
                   "from": "yours" if k in KEPT else ("form + kept" if kp["total"].get(f"{k}_score") else "form")}
                  for k, _, short in ABILITIES]
 
+    # Advantage that carries over (class features, feats, kept items; not species traits), and the form's own
+    mine_adv = sheet.get("advantages") or []
+    advs = advantage.carried(mine_adv, [i["name"] for i in kp["items"]]) + advantage.from_beast(beast)
+    d["advs"] = advs
+
+    def says(parts):
+        return " + ".join(f"{n} {_signed(v)}" for n, v in parts)
+
     my_saves = {s["short"].lower(): s for s in sheet.get("saves") or []}
     saves = []
     for k, name, short in ABILITIES:
-        prof = bool((my_saves.get(k) or {}).get("proficient"))
+        mine_sv = my_saves.get(k) or {}
+        prof = bool(mine_sv.get("proficient"))
         parts = [(f"{short} modifier ({'yours' if k in KEPT else 'form'})", _mod(scores[k]))]
         if prof:
             parts.append(("Your Proficiency Bonus", pb))
         if k == "con" and d["toughness"]:
             parts.append(("Increased Toughness (Wisdom modifier)", wis))
-        parts += kp["by"]["saves"]
+        parts += [(n, v) for n, v in mine_sv.get("kept_parts") or []]  # class features and feats stay
+        parts += [(f"{n} (kept)", v) for n, v in kp["by"]["saves"]]
         yours = sum(v for _, v in parts)
         stat = (beast.get("saves") or {}).get(k)
         use_form = stat is not None and stat > yours
         saves.append({"key": k, "short": short, "bonus": stat if use_form else yours, "label": _signed(stat if use_form else yours),
-                      "proficient": prof, "from": "form's stat block (higher)" if use_form else " + ".join(f"{n} {_signed(v)}" for n, v in parts)})
+                      "proficient": prof, "adv": advantage.for_save(advs, k),
+                      "from": f"The form's stat block {_signed(stat)} (higher than yours: {says(parts)})" if use_form else says(parts)})
 
     my_skills = {s["name"]: s for s in sheet.get("skills") or []}
     skills = []
     for name, ab in SKILL_ABILITY.items():
-        level = (my_skills.get(name) or {}).get("proficiency", "")
+        mine_sk = my_skills.get(name) or {}
+        level = mine_sk.get("proficiency", "") if mine_sk.get("proficiency") in ("proficient", "expertise") else ""
         prof = pb * 2 if level == "expertise" else pb if level == "proficient" else 0
-        yours = _mod(scores[ab]) + prof + kp["total"]["checks"]
+        parts = [(f"{ab.title()} modifier ({'yours' if ab in KEPT else 'form'})", _mod(scores[ab]))]
+        if prof:
+            parts.append(("Expertise (twice your Proficiency Bonus)" if level == "expertise" else "Your Proficiency Bonus", prof))
+        kept_parts = [(n, v) for n, v in mine_sk.get("kept_parts") or []]  # e.g. Primal Order (Magician): + Wis to Arcana
+        parts += kept_parts + [(f"{n} (kept)", v) for n, v in kp["by"]["checks"]]
+        yours = sum(v for _, v in parts)
         stat = (beast.get("skills") or {}).get(name)
-        if not prof and stat is None:
+        if not prof and not kept_parts and stat is None:
             continue
         use_form = stat is not None and stat > yours
         skills.append({"name": name, "bonus": stat if use_form else yours, "label": _signed(stat if use_form else yours),
-                       "from": "form" if use_form else ("your expertise" if level == "expertise" else "your proficiency")})
+                       "level": level or ("form" if stat is not None else ""), "adv": advantage.for_check(advs, name, ab),
+                       "from": f"The form's stat block {_signed(stat)} (higher than yours: {says(parts)})" if use_form else says(parts)})
     perception = next((s["bonus"] for s in skills if s["name"] == "Perception"), _mod(scores["wis"]) + kp["total"]["checks"])
+    init_parts = ([("Dexterity modifier (form)", _mod(scores["dex"]))] + [(n, v) for n, v in sheet.get("initiative_kept") or []]
+                  + [(f"{n} (kept)", v) for n, v in kp["by"]["initiative"]])
 
     ac_parts = [(f"The {beast['name']}'s AC" + (f" ({beast['ac_note']})" if beast.get("ac_note") else ""), beast["ac"])]
     ac = beast["ac"]
@@ -391,6 +420,11 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
     um = kp["features"].get("unarmored-movement")
     for k in speed:
         speed[k] += (um.get("bonus", 0) if um else 0) + kp["total"]["speed"]
+    feat_speed = [(n, v) for n, v in sheet.get("speed_kept") or []]  # e.g. Mobile: your Speed (walking) +10 ft
+    if "walk" in speed:
+        speed["walk"] += sum(v for _, v in feat_speed)
+    speed_parts = ([(f"The {beast['name']}'s speeds", 0)] + ([("Unarmored Movement (kept)", um.get("bonus", 0))] if um else [])
+                   + [(f"{n} (kept)", v) for n, v in kp["by"]["speed"]] + [(f"{n} (walking)", v) for n, v in feat_speed])
 
     hp = sheet.get("hit_points") or {}
     cols = {"Action": [], "Bonus action": [], "Reaction": []}
@@ -415,6 +449,7 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
         u_dmg += " (or Radiant)"
     u_dc = 8 + um + pb
     unarmed = {"name": "Unarmed Strike", "hit": u_hit, "tags": ["Yours"], "uses": None, "spends": [], "starred": False, "source": "unarmed",
+               "adv": advantage.for_attack(advs, melee=True),
                "meta": f"reach 5 ft · {u_dmg} · or Grapple / Shove (DC {u_dc} Str or Dex save)",
                "text": "A punch, kick, head-butt or similar with the form's body. Choose Damage, Grapple or Shove each time."
                        + (" Martial Arts lets you use Dexterity and your Martial Arts die." if martial else "")}
@@ -448,10 +483,13 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
         else:
             continue
         castable.append(o["name"])
-        cols[o["cost"]].append({**o, "tags": [tag] + o["tags"], "source": "spell", "starred": False})
-    # Class features and feats you keep (no weapons or items; nothing that casts a spell unless you can cast in a form)
+        cols[o["cost"]].append({**o, "tags": [tag] + o["tags"], "source": "spell", "starred": False,
+                                "adv": advantage.for_attack(advs, spell=True) if sp.get("attack") else []})
+    # Class features and feats you keep (no weapons or items, no species traits; nothing that casts a spell
+    # unless you can cast in a form)
+    species_keys = {a["key"] for a in sheet.get("actions") or [] if a.get("source") == "race"}
     for o in options:
-        if o["kind"] != "feature" or o["cost"] not in cols or o["name"].startswith(("Wild Shape", "Unarmed Strike")):
+        if o["kind"] != "feature" or o["cost"] not in cols or o["name"].startswith(("Wild Shape", "Unarmed Strike")) or o["key"] in species_keys:
             continue
         if o["name"] == "Reactive Spell" and castable and not d.get("beast_spells"):
             cols[o["cost"]].append({**o, "tags": ["Yours"], "source": "yours", "starred": False,
@@ -459,7 +497,7 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
             continue
         if not d.get("beast_spells") and ("Spell" in o["name"] or o["name"].startswith("Wild Companion")):
             continue
-        cols[o["cost"]].append({**o, "tags": ["Yours"], "source": "yours", "starred": False})
+        cols[o["cost"]].append({**o, "tags": ["Yours"], "source": "yours", "starred": False, "adv": []})
 
     notes = [
         f"You keep your Hit Points ({hp.get('current', '?')} of {hp.get('max', '?')}) and gain {d['temp_hp']} Temporary Hit Points"
@@ -489,12 +527,26 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
                          "Lightning or Thunder damage once on each of your turns. (Potent Spellcasting only affects cantrips.)")
     if kp["names"]:
         notes.append(f"Kept by your DM's ruling (and included above): {', '.join(kp['names'])}.")
-    notes.append("Your other class features and feats stay with you (marked Yours). Whether one works in this body is the DM's call.")
+    feats = [f["name"] for f in sheet.get("features") or [] if f.get("source") == "Feat" and not ASI.search(f["name"])]
+    if feats:
+        notes.append(f"Your feats stay with you: {', '.join(feats)}. Their numbers are included above (hover a number for its parts).")
+    for a in advantage.carried(mine_adv, [i["name"] for i in kp["items"]]):
+        if a["when"]:  # e.g. War Caster: only Constitution saves to keep Concentration, not every Constitution save
+            other = f"other {ABILITY_NAMES[a['target']]} saving throws" if a["on"] == "save" and a["target"] in ABILITY_NAMES else "every roll of that kind"
+            notes.append(f"{a['source']}: {a['text'].split(' · ')[0]} only, not on {other} (marked Adv; hover it for when).")
+    species = sheet.get("species") or ""
+    lost = [f["name"] for f in sheet.get("features") or [] if species and f.get("source") == species]
+    if lost:
+        notes.append(f"Your species traits don't carry into a form ({', '.join(lost)}), so their Advantage and senses don't apply; "
+                     "use the form's senses. Skill proficiencies they gave you stay, like every proficiency.")
+    notes.append("You keep your creature type, Hit Point Dice and languages, and you can speak in a form (a 2024 change).")
+    notes.append("Your other class features (from every class you have) stay with you (marked Yours). Whether one works in this body is the DM's call.")
 
     return {
         "beast": beast, "druid": d, "ac": ac, "ac_parts": ac_parts, "temp_hp": d["temp_hp"], "hp": hp,
         "speed": _speed_text(speed), "speed_dict": speed, "abilities": abilities, "saves": saves, "skills": skills,
-        "passive_perception": 10 + perception, "initiative": _signed(_mod(scores["dex"]) + kp["total"]["initiative"]),
+        "passive_perception": 10 + perception, "initiative": _signed(sum(v for _, v in init_parts)), "initiative_parts": init_parts,
+        "initiative_adv": advantage.initiative(advs), "save_adv_all": advantage.all_saves(advs), "speed_parts": speed_parts,
         "kept": kp,
         "columns": {k: {"shown": v, "all": v, "count": len(v)} for k, v in cols.items()},
         "traits": beast.get("traits") or [], "notes": notes, "castable": castable,

@@ -8,6 +8,27 @@
 {# Every number tile opens a side panel explaining it (character_pages.vital_panel). #}
 {% macro tile(c, kind) %}data-panel-url="/characters/{{ c.id }}/vital/{{ kind }}" tabindex="0" role="button"{% endmacro %}
 
+{# Advantage, marked the same way everywhere (app/advantage.py): a small "Adv" badge, with when it
+   applies and where it comes from on hover. Outlined when every source needs a condition. #}
+{% macro adv(list) -%}
+{%- if list -%}{%- set cond = list | rejectattr("when") | list | length == 0 -%}
+<span class="adv-badge{{ ' cond' if cond }}" title="{% for a in list %}{{ a.text }}{% if not loop.last %}&#10;{% endif %}{% endfor %}" aria-label="Advantage: {% for a in list %}{{ a.text }}{{ '; ' if not loop.last }}{% endfor %}">Adv</span>
+{%- endif -%}
+{%- endmacro %}
+
+{# The six saving throws in aligned rows: ● proficient, the modifier, Adv. Advantage on every save
+   (e.g. "against being Charmed") is said once underneath. Hover a save for how it adds up, when known. #}
+{% macro saves_block(saves, adv_all=(), cls="") -%}
+<div class="saves-block {{ cls }}">
+  <div class="saves-list">{% for sv in saves %}
+    <div class="save-row{{ ' prof' if sv.proficient }}"{% if sv.from %} title="{{ sv.from }}"{% endif %}>
+      <span class="pm{{ ' prof' if sv.proficient }}" aria-label="{{ 'proficient' if sv.proficient else 'not proficient' }}">{{ "●" if sv.proficient else "○" }}</span>
+      <span class="save-name">{{ sv.short }}</span><b>{{ sv.label }}</b><span class="save-adv">{{ adv(sv.adv) }}</span>
+    </div>{% endfor %}</div>
+  {% if adv_all %}<p class="note save-all">{{ adv(adv_all) }} on every save {% for a in adv_all %}{{ a.when }} ({{ a.source }}){{ "; " if not loop.last }}{% endfor %}</p>{% endif %}
+</div>
+{%- endmacro %}
+
 {% macro inspiration(s, c) -%}
 <div class="vital insp{{ ' on' if s.inspiration }}" {{ tile(c, "inspiration") }} title="Heroic Inspiration{{ ': you have it' if s.inspiration else ': not right now' }}"><small>Heroic Inspiration</small><b>{{ "✦ Yes" if s.inspiration else "—" }}</b></div>
 {%- endmacro %}
@@ -46,7 +67,7 @@
 {% macro pick_note(c, kind, ref, on, note, can_pick) -%}
 {%- set title = {"fav": "shortlist", "remind": "Easy to forget"}[kind] -%}
 {%- if can_pick or on -%}
-<div class="pick-note{{ ' on' if on }}">
+<div class="pick-note pick-note-{{ kind }}{{ ' on' if on }}">
   <div class="row pick-note-head">
   {%- if can_pick -%}
   <button type="button" class="pick {{ kind }}{{ ' on' if on }}" hx-post="/characters/{{ c.id }}/pick" hx-vals='{{ {"kind": kind, "ref": ref, "wrap": "1"} | tojson }}'
@@ -73,7 +94,7 @@
   <div class="vital" {{ tile(c, "hp") }}><small>HP</small><b>{{ s.hit_points.current }}</b>{% if s.hit_points.current != s.hit_points.max %}<span class="note"> / {{ s.hit_points.max }}</span>{% endif %}{% if s.hit_points.temp %}<span class="note"> +{{ s.hit_points.temp }} temp</span>{% endif %}</div>
   <div class="vital" {{ tile(c, "ac") }}><small>AC</small><b>{{ s.armor_class }}</b></div>
   <div class="vital" {{ tile(c, "speed") }}><small>Speed</small><b>{{ s.speed.walk }}</b><span class="note"> ft</span></div>
-  <div class="vital" {{ tile(c, "initiative") }}><small>Initiative</small><b>{{ s.initiative }}</b></div>
+  <div class="vital" {{ tile(c, "initiative") }}><small>Initiative</small><b>{{ s.initiative }}</b>{{ adv(s.initiative_adv) }}</div>
   {% for sc in s.spellcasting[:1] %}<div class="vital" {{ tile(c, "spell") }}><small>Spell DC / attack</small><b>{{ sc.save_dc }}</b><span class="note"> / {{ sc.attack }}</span></div>{% endfor %}
   {{ inspiration(s, c) }}
 </div>
@@ -93,7 +114,7 @@
                        "spellbook": ("In spellbook", ""), "available": ("Not prepared", "faint"), "granted": ("", "")} %}
 
 {# One compact row; clicking it opens the side panel with everything about it. #}
-{% macro ri(c, key, name, picks, can_pick, star=False, fav=False, chips=(), what="", mech="", hit="", uses=None, cls="", attrs="", spend=(), url="", image="", modal=False) -%}
+{% macro ri(c, key, name, picks, can_pick, star=False, fav=False, chips=(), what="", mech="", hit="", uses=None, cls="", attrs="", spend=(), url="", image="", modal=False, hit_adv=()) -%}
 {%- set notes = [picks.notes.get("fav|" ~ key), picks.notes.get("remind|" ~ key)] | select | list if picks.notes else [] -%}
 <div class="ri {{ cls }}{{ ' has-pic' if image }}" {% if modal %}data-modal-url="{{ url }}" data-modal-size="large"{% else %}data-panel-url="{{ url or ('/characters/' ~ c.id ~ '/detail?ref=' ~ (key | urlencode)) }}"{% endif %} data-ref="{{ key }}" tabindex="0" role="button" {{ attrs | safe }}>
   <span class="ri-pk">{% if image %}<img class="ri-pic" src="{{ image }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{% if fav %}{{ pick_btn(c, "fav", key, key in picks.fav, can_pick) }}{% endif %}{% if star %}{{ pick_btn(c, "star", key, key in picks.star, can_pick) }}{% endif %}</span>
@@ -102,7 +123,7 @@
     {% if what %}<span class="ri-what">{{ what }}</span>{% endif %}
     {% for n in notes %}<span class="ri-note" title="Your note">✎ {{ n }}</span>{% endfor %}</span>
   <span class="ri-mech">{{ mech }}</span>
-  <span class="ri-hit">{{ hit }}</span>
+  <span class="ri-hit">{{ hit }}{% if hit_adv %} {{ adv(hit_adv) }}{% endif %}</span>
   <span class="ri-pk end">{{ pick_btn(c, "remind", key, key in picks.remind, can_pick) }}</span>
 </div>
 {%- endmacro %}
@@ -125,7 +146,7 @@
 
 {% macro opt_row(c, o, picks, can_pick) -%}
 {{ ri(c, o.key, o.name, picks, can_pick, star=o.cost != "Other", chips=o.tags, what=o.summary or o.meta,
-      mech=o.meta if o.summary else "", hit=o.hit, uses=o.uses, spend=o.spends) }}
+      mech=o.meta if o.summary else "", hit=o.hit, uses=o.uses, spend=o.spends, hit_adv=o.adv) }}
 {%- endmacro %}
 
 {# A character's picture from D&D Beyond (their image server). Hidden if it doesn't load. #}

@@ -371,3 +371,42 @@ def test_skills_explain_how_they_add_up(cole):
     assert perception["parts"] == [("Wisdom modifier", 4), ("Proficiency Bonus", 3), ("Stone of Good Luck (Luckstone)", 1)]
     for sk in cole["skills"]:
         assert sum(v for _, v in sk["parts"]) == sk["bonus"]
+
+
+def test_advantages_carry_their_condition_and_source(cole):
+    """D&D Beyond "advantage" modifiers become one list, each with what it's on, when, and where from."""
+    by = {a["source"]: a for a in cole["advantages"]}
+    war = by["War Caster"]
+    assert (war["on"], war["target"], war["when"], war["from"]) == ("save", "con", "to maintain Concentration", "feat")
+    assert war["text"] == "Advantage on Constitution saving throws to maintain Concentration · War Caster"
+    fey = by["Fey Ancestry"]
+    assert (fey["on"], fey["target"], fey["when"], fey["from"]) == ("save", "all", "against being charmed", "race")
+    saves = {s["short"]: s for s in cole["saves"]}
+    assert [a["source"] for a in saves["Con"]["adv"]] == ["War Caster"]  # only the Con save, not every save
+    assert all(not s["adv"] for k, s in saves.items() if k != "Con")
+    assert [a["source"] for a in cole["save_adv_all"]] == ["Fey Ancestry"]  # said once, for every save
+    trah = ddb.parse_character(load("trah"))
+    gnome = {s["short"]: [a["when"] for a in s["adv"]] for s in trah["saves"]}
+    assert gnome["Int"] == gnome["Wis"] == gnome["Cha"] == [""] and gnome["Str"] == []  # Gnomish Cunning, always
+    assert [(a["on"], a["from"]) for a in trah["initiative_adv"]] == [("initiative", "item")]
+
+
+def test_bonuses_from_class_features_and_feats_are_kept_apart(cole):
+    """What Wild Shape keeps: Primal Order (Magician) adds Wis to Arcana and Nature, named;
+    the Luckstone (an item) and species traits aren't in kept_parts."""
+    skills = {s["name"]: s for s in cole["skills"]}
+    assert skills["Arcana"]["kept_parts"] == [("Magician", 4)]
+    assert ("Magician", 4) in [tuple(p) for p in skills["Nature"]["parts"]]  # was "a feature"
+    assert skills["Perception"]["kept_parts"] == []
+    assert cole["initiative_kept"] == [] and cole["speed_kept"] == []  # Luckstone and Fleet of Foot don't carry
+
+
+def test_unarmored_movement_adds_to_every_speed():
+    """Brett's ruling: Unarmored Movement applies to all movement types, not just walking."""
+    data = load("cole")
+    data["modifiers"]["race"] = data["modifiers"]["race"] + [
+        {"type": "set", "subType": "innate-speed-climb", "value": 30, "componentId": 0, "restriction": ""},
+        {"type": "set", "subType": "innate-speed-swim", "value": None, "componentId": 0, "restriction": ""}]
+    speed = ddb.parse_character(data)["speed"]
+    assert speed["walk"] == 45 and speed["climb"] == 30 + 10  # a fixed climb speed gets the +10 too
+    assert speed["swim"] == 45  # "equal to your Speed" already includes it, so not added twice

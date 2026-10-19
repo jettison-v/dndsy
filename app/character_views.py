@@ -5,6 +5,8 @@ they're easy to test without a browser."""
 import re
 from urllib.parse import quote
 
+from app import advantage
+
 COSTS = ["Action", "Bonus action", "Reaction", "Other"]
 COLUMN_LIMIT = 7  # options shown in a Battle column before "See all"
 
@@ -92,6 +94,7 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
     features and items, each with what it costs (action, bonus action…)."""
     starred = starred or set()
     attacks = {a["name"]: a for a in sheet.get("attacks") or []}
+    advs = sheet.get("attack_adv") or []
     out = []
 
     def add(**o):
@@ -102,6 +105,7 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
         o.setdefault("text", "")
         o.setdefault("summary", "")
         o.setdefault("spends", [])
+        o.setdefault("adv", [])
         o["starred"] = o["key"] in starred
         o.setdefault("oref", o["key"])
         moved = (sheet.get("_overrides") or {}).get(f"{o['oref']}|cost")
@@ -111,6 +115,7 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
 
     for a in sheet.get("attacks") or []:
         add(key=a["key"], oref=f"attack:{a['name']}", kind="attack", cost="Action", name=a["name"], hit=a["to_hit"],
+            adv=advantage.for_attack(advs, melee="/" not in (a.get("range") or "")),
             meta=" · ".join(x for x in (a["range"], a["damage"], ", ".join(a["properties"])) if x),
             common=True)
     for sp in sheet.get("spells") or []:
@@ -123,6 +128,7 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
         says_level = any(x["of"] == "Spell slots" for x in spends)  # "1st-level slot" already gives the level
         tags = ([] if says_level else [level]) + (["Conc."] if sp["concentration"] else [])
         add(key=sp["key"], kind="spell", cost=cost, name=sp["name"], hit=sp["attack"] or sp["save"], tags=tags,
+            adv=advantage.for_attack(advs, spell=True) if sp["attack"] else [],
             spends=spends,
             meta=" · ".join(x for x in (sp["range"], effect, sp["trigger"] if cost == "Reaction" else "") if x),
             text=sp.get("text") or sp["summary"], summary=sp["summary"],
@@ -252,6 +258,7 @@ def party_row(character, sheet: dict | None) -> dict:
         "sheet": sheet,
         "classes": " / ".join(f"{k['name']} {k['level']}" for k in sheet["classes"]),
         "best_saves": ", ".join(f"{s['short']} {s['label']}" for s in saves),
+        "top_saves": saves,
         # limited uses (Wild Shape, Focus Points…) and spell slots, each with dots for what's left
         "resources": [{"name": a["name"], "uses": a["uses"]} for a in sheet.get("actions") or []
                       if a.get("uses") and a.get("source") in ("class", "feat", "race")],
