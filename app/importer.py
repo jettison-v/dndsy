@@ -92,7 +92,16 @@ def _import_relationships(db: Session, campaign: Campaign, items: list, counts: 
             counts["relationships added"] += 1
 
 
-def import_bundle(db: Session, bundle: dict, keep_text: bool = False) -> Counter:
+def import_bundle(db: Session, bundle: dict, keep_text: bool = False, batch: str | None = None) -> Counter:
+    """Apply `bundle`, with every change it makes recorded in version history as one
+    import (`batch`), so the whole import can be undone (app/history.py)."""
+    from app import history
+
+    with history.source("import", batch=batch or history.new_batch()):
+        return _import_bundle(db, bundle, keep_text)
+
+
+def _import_bundle(db: Session, bundle: dict, keep_text: bool = False) -> Counter:
     """Apply `bundle` inside the caller's transaction. Returns created/updated counts.
 
     keep_text: leave existing entries' description, quest status and published state
@@ -245,6 +254,7 @@ def import_bundle(db: Session, bundle: dict, keep_text: bool = False) -> Counter
     db.flush()
     if bundle.get("player_notes") or bundle.get("form_notes"):
         _import_notes(db, campaign, bundle, counts)
+    db.flush()  # inside the import's history source, so its changes are recorded as this import
     return counts
 
 

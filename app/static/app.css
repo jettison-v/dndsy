@@ -951,3 +951,10 @@ a.sheet-ref { text-decoration-style: dotted; }
 .import-diff p { margin: 4px 0 0; font-size: .9rem; }
 .import-confirm { display: grid; gap: 10px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
 @media (max-width: 700px) { .import-diff { grid-template-columns: 1fr; } }
+
+/* Manage › History */
+.hist-row { border-top: 1px solid var(--line); padding: 10px 0; display: grid; gap: 6px; }
+.hist-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.hist-head .hist-restore { margin-left: auto; }
+.hist-short { margin: 0; }
+.import-diff.one { grid-template-columns: 1fr; }

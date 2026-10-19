@@ -185,6 +185,9 @@ def accept_proposal(db: Session, p: Proposal, summary: str | None = None) -> Non
     """Apply a suggestion and remember what it replaced, so Undo can restore it."""
     if p.status != "pending":
         raise ReviewError("That suggestion was already decided.")
+    from app.history import mark
+
+    mark("recap")  # version history: these changes came from a recap's suggestions
     session = db.get(GameSession, p.session_id)
     data = dict(p.payload)
     if p.kind == "glossary":

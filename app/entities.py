@@ -195,6 +195,9 @@ def accept_description(entity: Entity, text: str | None = None) -> None:
     new = (text if text is not None else entity.draft_summary or "").replace("\r\n", "\n").strip()
     if not new:
         raise EntityError("There's no new description to use.")
+    from app.history import mark
+
+    mark("claude")  # version history: this description came from Claude
     entity.previous_summary = entity.summary or ""
     entity.summary = new
     entity.draft_summary = None

@@ -27,6 +27,9 @@ def current_user(request: Request) -> dict | None:
     user = request.session.get("user")
     # Re-check on every request so removing someone (People page or ALLOWED_EMAILS) locks them out.
     if user and access.level(user.get("email")):
+        from app.history import set_actor
+
+        set_actor(user.get("email", ""))  # version history records who changed what
         return user
     return None
 

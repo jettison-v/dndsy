@@ -24,6 +24,7 @@ router = APIRouter()
 PAGES = (
     ("suggestions", "Suggestions", "/suggestions", "Corrections and additions from the table", "Table", can_moderate, ()),
     ("recaps", "Recaps", "/admin/sessions", "Draft, review and publish session recaps", "Table", is_reviewer, ("/admin/notes",)),
+    ("history", "History", "/admin/history", "Every change, with Restore", "Table", is_reviewer, ()),
     ("people", "People", "/admin/people", "Who can sign in, their access and character", "Party", is_admin, ()),
     ("characters", "Characters", "/admin/characters", "D&D Beyond links and regrouping", "Party", is_admin, ()),
     ("usage", "Usage", "/admin/usage", "Claude spending and balance", "Admin", is_admin, ()),
@@ -82,6 +83,11 @@ def _status(db: Session, user: dict, keys: set[str]) -> dict[str, dict]:
         u = usage_summary(db)
         out["usage"] = {"text": f"${u['month']:.2f} this month", "attention": u["balance"] is not None and u["balance"] < 5,
                         "sub": f"About ${u['balance']:.2f} left" if u["balance"] is not None else "Add a top-up to track the balance"}
+    if "history" in keys:
+        from app.models import Revision
+
+        n = db.scalar(select(func.count()).select_from(Revision).where(Revision.created_at > datetime.now(UTC).replace(hour=0, minute=0, second=0)))
+        out["history"] = {"text": f"{n} change{'s' if n != 1 else ''} today" if n else "No changes today", "attention": False}
     if "data" in keys:
         out["data"] = {"text": "Import a campaign bundle (.json)", "attention": False}
     return out

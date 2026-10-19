@@ -472,6 +472,27 @@ class ExtractionRun(Timestamped, Base):
     to_check: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list)  # things Brett should verify
 
 
+class Revision(Base):
+    """One change to a tracked field, kept so nothing edited in place is lost
+    (app/history.py). Stored in the app's Postgres database on Railway. Holds
+    the old and new value, who changed it and how (edit, import, Claude rewrite,
+    recap, restore). A deleted player note keeps its whole content here."""
+
+    __tablename__ = "revisions"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    table: Mapped[str] = mapped_column(String(40), index=True)
+    row_id: Mapped[int] = mapped_column(Integer, index=True)
+    label: Mapped[str] = mapped_column(String(300), default="", server_default="")  # e.g. "Star Mounts (Place)"
+    field: Mapped[str] = mapped_column(String(40))  # a column, or "deleted" with the row's content in old
+    old: Mapped[object | None] = mapped_column(JSONB, nullable=True)
+    new: Mapped[object | None] = mapped_column(JSONB, nullable=True)
+    actor: Mapped[str] = mapped_column(String(320), default="", server_default="")  # email, or "" for the system
+    source: Mapped[str] = mapped_column(String(40), default="edit", server_default="edit")
+    batch: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)  # one import, for Undo
+    character_id: Mapped[int | None] = mapped_column(Integer, nullable=True)  # set for players' notes (privacy)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
 class Proposal(Timestamped, Base):
     """A suggested change from extraction (entity or glossary) awaiting Brett's OK."""
 
@@ -504,3 +525,7 @@ class SessionMessage(Timestamped, Base):
     author: Mapped[str] = mapped_column(String(200), default="", server_default="")  # reviewer's name
     body: Mapped[str] = mapped_column(Text)
     ready: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")  # Claude: enough to draft
+
+
+# Record changes to tracked fields as Revisions on every flush (app/history.py).
+from app import history  # noqa: E402,F401

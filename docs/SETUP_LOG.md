@@ -263,3 +263,14 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 **Reuse this on a new project**
 1. Any upload that overwrites data should show a preview first. The easy way to build one: run the real import inside a database transaction, compare before and after, then roll it back.
 2. Keep permission rules in one function that both the app and its help text use, so the explanation can never disagree with what actually happens.
+
+## 2026-10-19 — Version history and backups
+
+**What changed**
+- askdnd now keeps a **history of every change** to the campaign record, characters, people and players' notes: the old value, the new value, who changed it and how. It's stored in the app's database on Railway (in the cloud), and **Manage › History** can restore any earlier version. **Manage › Data** can undo a whole import.
+- History only covers changes from 2026-10-19 on. For anything older, the safety net is Railway's own database backups (see below).
+
+**Reuse this on a new project**
+1. Decide early what must never be lost, and record changes to it automatically at the database level (a hook on every save), not page by page, so new pages are covered without anyone remembering.
+2. Keep two layers: in-app history for "undo that one change", and whole-database backups for "something went badly wrong". Turn backups on from day one; they can't recover what happened before they existed.
+3. Make bulk operations (imports) undoable as a unit.

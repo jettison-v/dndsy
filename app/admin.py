@@ -34,11 +34,14 @@ def _reviewer_guard(request: Request):
 
 
 @router.get("/import")
-def import_form(request: Request):
+def import_form(request: Request, db: Session = Depends(get_db)):
     user, denied = _guard(request)
     if denied:
         return denied
-    return templates.TemplateResponse(request, "admin_import.html", {"user": user, "toast": request.session.pop("toast", None)})
+    from app.history_pages import recent_imports
+
+    return templates.TemplateResponse(request, "admin_import.html", {"user": user, "toast": request.session.pop("toast", None),
+                                                                     "imports": recent_imports(db)})
 
 
 @router.post("/import")
