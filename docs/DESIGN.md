@@ -19,19 +19,20 @@ askdnd is read before a session and reviewed after one. People open it on a lapt
 
 ## Navigation
 
-One top bar for everyone, plus a **Manage** menu that only the admin sees.
+One top bar for everyone (Brett, 2026-10-19, Option 1): story pages on the left, then your table, then Live, **Manage ▾** (for those who can manage) and the account menu.
 
 | Item | Audience | What it is |
 |---|---|---|
-| **Previously on…** (home) | Everyone | The pre-session refresher: latest recap, key moments, open threads |
+| **Recap** (home) | Everyone | The pre-session refresher ("Previously on…"): latest recap, key moments, open threads |
 | **Sessions** | Everyone | Every published session, newest first |
-| **Battle** | Everyone | Your character during play: options sorted into Action / Bonus action / Reaction (starred + common, "See all" side panel), resources as dots, Easy to forget, party table, Game Mode switch |
-| **Character** | Everyone | The full sheet: numbers strip, abilities and saves, then tabs (Actions, Spells, Inventory, Features, Situational, Skills, Forms). The player stars options and sets reminders on their own character |
-| **Party** | Everyone | Party table (names open a short character modal), pooled spells and items |
 | **Campaign** | Everyone | People, places, factions, items, quests and the glossary |
-| **Manage ▾** | Admin only | **Review** (sessions waiting for review, drafting costs), **Notes sync**, **Import** |
+| **Map** | Everyone | The Sword Coast, with places marked |
+| **Cole ▾** (your character) | Everyone | Switches characters; opens one Character page in the same mode. Modes, switched at the page's top right: **Play** (`/characters/{id}/battle`: options by Action / Bonus action / Reaction, saves, Wild Shape row, On a hit, rolls, Easy to forget, Battle combos, party table), **Sheet** (`/characters/{id}`: numbers strip, abilities and saves, tabs Actions, Spells, Wild Shape, Inventory, Features, Skills & situational, Background) and **Plan** (`/characters/{id}/plan`: notes, Easy to forget, spell and Wild Shape shortlists; never the DM) |
+| **Party** | Everyone | Party table (names open a short character modal), pooled spells and items |
+| **Live** pill | Everyone | When the D&D Beyond copy was last updated; green while Game Mode is on (per browser). Its popover: Game Mode, each character's last refresh and failures, Refresh now, and Refresh everyone (reviewers) |
+| **Manage ▾** | Admin and reviewers | Overview and the admin and reviewer pages |
 
-Admin pages say so in their subtitle ("only you can see this page"). Breadcrumbs start at the top-level item (Manage › Review › Session 12). On phones the main items move into a menu. Stars, reminders (and, later, character notes) are never shown to the DM.
+Admin pages say so in their subtitle ("only you can see this page"). Breadcrumbs start at the top-level item (Manage › Review › Session 12). On phones a bottom bar holds Recap, Campaign, Play, Party and More (Sessions, Map, Manage, About, FAQ, sign out), and Play's three columns become Action / Bonus / Reaction tabs. Stars, reminders, shortlists, combos and character notes are never shown to the DM.
 
 ## Review workflow (admin)
 
