@@ -81,10 +81,6 @@
       {% else %}<p class="muted">Plans that take a setup turn and a payoff turn. Add one here or on Plan.</p>{% endfor %}
     </div>
     {% endif %}
-    <div class="section">
-      <div class="sec-head"><h2>Party</h2><a href="/party">Full party →</a></div>
-      {% include "_party_table.html" %}
-    </div>
   </div>
   {% else %}
   <p class="subtitle">{% if c.ddb_id %}Not fetched from D&amp;D Beyond yet.{% else %}Not linked to D&amp;D Beyond yet.{% endif %}{% if failed %} {{ error }}{% endif %}</p>

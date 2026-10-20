@@ -1,5 +1,6 @@
-{# Easy to forget: the player's reminders, in their order. On Play (where they're used) and Plan (where they're made). #}
-<div class="section">
+{# Easy to forget: the player's reminders, in their order. On Play (where they're used) and Plan (where they're
+   made, as a tab: set `bare` to leave out the box). #}
+<div class="{{ 'forget-tab' if bare else 'section' }}">
   <div class="sec-head"><h2>Easy to forget</h2>{% if can_pick %}<a href="/characters/{{ c.id }}">Choose on Sheet →</a>{% endif %}</div>
   {% if not show_picks %}
   <p class="muted">Reminders belong to each player and aren't shown to the DM.</p>

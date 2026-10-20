@@ -21,7 +21,10 @@ def test_three_modes_share_one_header(player, db):
     play, sheet, plan = (player.get(url + m).text for m in ("/battle", "", "/plan"))
     assert 'id="battle-body"' in play and 'class="econ-tabs"' in play and 'role="tablist"' in play  # phones: tabs
     assert 'data-tab="t-spells"' in sheet and 'id="battle-body"' not in sheet
-    assert "Spell shortlist" in plan and "Battle combos" in plan and "Easy to forget" in plan
+    assert '<table class="party">' not in play and "Full party" not in play  # the party is on Party, not Play
+    plan_tabs = re.findall(r'data-tab="t-[a-z-]+">([^<]+)', plan)
+    assert [t.strip() for t in plan_tabs] == ["Battle combos", "Leveling strategy", "Personal quests", "General notes",
+                                              "Easy to forget", "Spell shortlist", "Wild Shape shortlist"]
     for page, mode in ((play, "Play"), (sheet, "Sheet"), (plan, "Plan")):
         assert f"Cole · {mode} · askdnd" in page and re.search(rf'aria-current="page">{mode}</a>', page)
     assert modes_nav(play) == modes_nav(sheet) == modes_nav(plan)  # the same switch in every mode

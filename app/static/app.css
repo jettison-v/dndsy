@@ -481,7 +481,6 @@ details.fold > summary { cursor: pointer; color: var(--muted); font-size: .92rem
 table.party { width: 100%; border-collapse: collapse; font-size: .93rem; }
 table.party th { text-align: left; color: var(--muted); font-weight: 500; font-size: .8rem; padding: 0 10px 6px; white-space: nowrap; }
 table.party td { border-top: 1px solid var(--line); padding: 10px; vertical-align: top; }
-.lower table.party .wide { display: none; }
 a.who { color: var(--text); font-weight: 600; text-decoration: underline; text-decoration-color: rgba(214, 69, 69, .55); text-underline-offset: 3px; }
 .pool { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
 .pool .section { margin: 0; }
@@ -1116,7 +1115,8 @@ a.sheet-ref { text-decoration-style: dotted; }
 .modes a { color: var(--muted); text-decoration: none; padding: 6px 16px; border-radius: 8px; font-weight: 500; }
 .modes a:hover { color: var(--text); }
 .modes a[aria-current=page] { background: var(--red); color: #fff; font-weight: 600; }
-.plan-notes { padding-top: 16px; }
+.forget-tab .sec-head h2 { display: none; }  /* Plan's tab already says Easy to forget */
+.forget-tab .sec-head { justify-content: flex-end; }
 .econ-tabs { display: none; }
 @media (max-width: 640px) {
   .char-page .char-head { flex-wrap: wrap; gap: 10px; }

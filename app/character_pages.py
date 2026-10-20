@@ -162,7 +162,6 @@ def _battle_ctx(db: Session, ch: Character, user: dict) -> dict:
         if beast:
             ctx["form"] = ws.shaped(ctx["sheet"], beast, keep=ch.wild_shape_keep)
             ctx["columns"] = ctx["form"]["columns"]
-    ctx["party"] = _party_rows(db, user)
     ctx |= player_notes.page_context(db, ch, user, ctx["sheet"])
     return ctx
 
