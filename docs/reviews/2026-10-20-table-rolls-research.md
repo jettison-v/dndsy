@@ -44,8 +44,8 @@ not surveys.
 4. **Who sees it** is chosen per roll, defaulting to the table: Table, DM only, Just me. A DM-only roll tells
    the table "Cole rolled for the DM" without the number.
 5. **Reliable first**: a roll shows "sending…" until the server has it, and never silently disappears.
-6. **Where it shows** (the open question): only on Play; on the whole Character page; or everywhere while the
-   Live control's Game Mode is on (rolls keep arriving while you look something up on Campaign or Recap).
+6. **Where it shows**: decided 2026-10-20 (Brett): everywhere while the Live control's Game Mode is on, open on
+   Play and collapsed to the rail elsewhere. (The other options were Play only, or the whole Character page.)
 
 ## Sources
 
