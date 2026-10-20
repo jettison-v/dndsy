@@ -156,3 +156,24 @@ def test_game_mode_on_play_swaps_the_body_and_the_pill(player, db):
     cole = char(db, "Cole")
     body = player.post(f"/characters/{cole.id}/sync").text
     assert 'id="battle-body"' in body and 'id="live-pill"' in body and 'hx-swap-oob="true"' in body and "<html" not in body
+
+
+def test_plan_shortlists_filter_like_sheet(player, db):
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    owned_by(db, cole, "player@example.com")
+    url = f"/characters/{cole.id}"
+    for ref in ("spell:Barkskin", "form:Polar Bear"):
+        player.post(f"{url}/pick", data={"kind": "fav", "ref": ref})
+    sheet, plan = player.get(url).text, player.get(f"{url}/plan").text
+    part = lambda page, start, end: page.split(f'id="{start}"')[1].split(f'id="{end}"')[0] if end else page.split(f'id="{start}"')[1]  # noqa: E731
+    filters = lambda html: re.findall(r'data-filter="([^"]+)"', html)  # noqa: E731
+    spells = part(plan, "t-spell-list", "t-form-list")
+    assert "data-planner" in plan.split('id="t-spell-list"')[1][:40] and "data-search" in spells and "Barkskin" in spells
+    assert filters(spells) == filters(part(sheet, "t-spells", "t-forms"))  # the same spell filters as Sheet
+    assert re.findall(r'data-view="(\w+)"', spells) == ["all", "ready"]  # the whole shortlist first
+    forms = part(plan, "t-form-list", None)
+    assert "data-card-sort" in forms and "data-sortable-cards" in forms and "Polar Bear" in forms
+    assert [f for f in filters(forms) if f.startswith("level:")] == ["level:2"]  # CR filters: only what's shortlisted
+    assert [f for f in filters(forms) if f.startswith("tag:")][:4] == ["tag:swim", "tag:climb", "tag:burrow", "tag:fly"]

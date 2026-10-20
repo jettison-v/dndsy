@@ -230,3 +230,45 @@ data-roll="{{ kind }}" data-label="{{ label }}"{% if mod %} data-mod="{{ mod | r
           {% for n in notes %}<div class="ri-note">✎ {{ n }}</div>{% endfor %}
         </article>
 {%- endmacro %}
+
+
+{# The Spells planner's tools (Sheet › Spells, Plan's spell shortlist): which spells (`views`, the
+   first one chosen), search, and filters that all have to match. app.js plannerApply does the work
+   on the [data-planner] around them. #}
+{% macro spell_tools(s, views) -%}
+<div class="planner-tools">
+  <div class="seg" role="group" aria-label="Which spells">
+    {% for v, label in views %}<button type="button" data-view="{{ v }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">{{ label }}</button>{% endfor %}
+  </div>
+  <input type="search" data-search placeholder="Search spells" aria-label="Search spells">
+</div>
+<div class="filters" role="group" aria-label="Filter spells">
+  <button type="button" data-filter="level:0">Cantrips</button>
+  {% for l in range(1, 10) %}{% if s.spell_slots.slots | selectattr("level", "equalto", l) | list or (s.spell_slots.pact and s.spell_slots.pact.level >= l) %}<button type="button" data-filter="level:{{ l }}">Level {{ l }}</button>{% endif %}{% endfor %}
+  <span class="sep"></span>
+  <button type="button" data-filter="cast:bonus">Bonus action</button><button type="button" data-filter="cast:reaction">Reaction</button>
+  <button type="button" data-filter="tag:concentration">Concentration</button><button type="button" data-filter="notag:concentration">No concentration</button><button type="button" data-filter="tag:ritual">Ritual</button>
+  <button type="button" data-filter="tag:damage">Damage</button><button type="button" data-filter="tag:healing">Healing</button><button type="button" data-filter="tag:control">Control</button><button type="button" data-filter="tag:buff">Buff</button><button type="button" data-filter="tag:utility">Utility</button>
+</div>
+{%- endmacro %}
+
+{# The same for Wild Shape cards (Sheet › Wild Shape, Plan's Wild Shape shortlist), plus sorting.
+   CR and size filters only offer what's in `forms`. #}
+{% macro form_tools(forms, views) -%}
+<div class="planner-tools">
+  <div class="seg" role="group" aria-label="Which forms">
+    {% for v, label in views %}<button type="button" data-view="{{ v }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">{{ label }}</button>{% endfor %}
+  </div>
+  <label class="fc-sort note">Sort <select data-card-sort aria-label="Sort forms">
+    <option value="default">Known first, then CR</option><option value="damage">Damage per turn</option>
+    <option value="hit">Attack bonus</option><option value="speed">Fastest</option><option value="cr">CR (highest)</option></select></label>
+  <input type="search" data-search placeholder="Search beasts" aria-label="Search beasts">
+</div>
+<div class="filters" role="group" aria-label="Filter forms">
+  {% for cr in forms | sort(attribute="cr") | map(attribute="cr_label") | unique %}<button type="button" data-filter="level:{{ cr }}">CR {{ cr }}</button>{% endfor %}
+  <span class="sep"></span>
+  {% for m in ["swim", "climb", "burrow", "fly"] %}<button type="button" data-filter="tag:{{ m }}">{{ m | capitalize }}</button>{% endfor %}
+  <span class="sep"></span>
+  {% for z in ["tiny", "small", "medium", "large", "huge"] %}{% if forms | selectattr("size", "equalto", z | capitalize) | list %}<button type="button" data-filter="tag:{{ z }}">{{ z | capitalize }}</button>{% endif %}{% endfor %}
+</div>
+{%- endmacro %}

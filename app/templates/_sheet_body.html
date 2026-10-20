@@ -1,5 +1,5 @@
 {# Character › Sheet: the full sheet in tabs (character_pages._sheet_ctx). #}
-{% from "_char.html" import pips, pick_btn, ri, opt_row, spell_row, bell, tile, adv, form_card %}
+{% from "_char.html" import pips, pick_btn, ri, opt_row, spell_row, bell, tile, adv, form_card, spell_tools, form_tools %}
 {% set s = sheet %}
 {% if s %}
 {# Row 1: the numbers you look up most #}
@@ -63,21 +63,7 @@
         <div class="res-row" style="margin-top:4px">{% for sl in s.spell_slots.slots %}<span>{{ sl.level }}{{ {1: "st", 2: "nd", 3: "rd"}.get(sl.level, "th") }} {{ pips({"max": sl.max, "left": sl.max - sl.used}) }}</span>{% endfor %}
           {% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}<span>Pact, level {{ p.level }} {{ pips({"max": p.max, "left": p.max - p.used}) }}</span>{% endif %}</div></div>
     </div>
-    <div class="planner-tools">
-      <div class="seg" role="group" aria-label="Which spells">
-        <button type="button" data-view="ready" aria-pressed="true">Ready to cast</button>
-        <button type="button" data-view="all" aria-pressed="false">All you could prepare</button>
-      </div>
-      <input type="search" data-search placeholder="Search spells" aria-label="Search spells">
-    </div>
-    <div class="filters" role="group" aria-label="Filter spells">
-      <button type="button" data-filter="level:0">Cantrips</button>
-      {% for l in range(1, 10) %}{% if s.spell_slots.slots | selectattr("level", "equalto", l) | list or (s.spell_slots.pact and s.spell_slots.pact.level >= l) %}<button type="button" data-filter="level:{{ l }}">Level {{ l }}</button>{% endif %}{% endfor %}
-      <span class="sep"></span>
-      <button type="button" data-filter="cast:bonus">Bonus action</button><button type="button" data-filter="cast:reaction">Reaction</button>
-      <button type="button" data-filter="tag:concentration">Concentration</button><button type="button" data-filter="notag:concentration">No concentration</button><button type="button" data-filter="tag:ritual">Ritual</button>
-      <button type="button" data-filter="tag:damage">Damage</button><button type="button" data-filter="tag:healing">Healing</button><button type="button" data-filter="tag:control">Control</button><button type="button" data-filter="tag:buff">Buff</button><button type="button" data-filter="tag:utility">Utility</button>
-    </div>
+    {{ spell_tools(s, [("ready", "Ready to cast"), ("all", "All you could prepare")]) }}
     <p class="note planner-note"><span data-shown></span>{% if can_pick %} ♥ adds a spell to your shortlist on Plan, to compare before preparing it.{% endif %} askdnd can't change D&amp;D Beyond: prepare spells there{% if s.sheet_url %} (<a href="{{ s.sheet_url }}" target="_blank" rel="noopener">open ↗</a>){% endif %}, then refresh. Click a spell for its full description.</p>
     <div class="spell-key" aria-hidden="true"><span></span><span>Spell · what it does</span><span>Casting time · range · duration · effect</span><span>Hit / DC</span><span></span></div>
     {% for b in s.spellbook %}
@@ -190,23 +176,7 @@
     </div>
     {% if ws_other_uses %}<details class="fold ws-other"{% if not d.moon and d.level >= 3 %} open{% endif %}><summary>Other ways to use Wild Shape ({{ ws_other_uses | length }})</summary>
       <ul class="plain">{% for u in ws_other_uses %}<li><b>{{ u.name }}</b> <span class="muted">{{ u.summary }}</span></li>{% endfor %}</ul></details>{% endif %}
-    <div class="planner-tools">
-      <div class="seg" role="group" aria-label="Which forms">
-        <button type="button" data-view="ready" aria-pressed="true">Known</button>
-        <button type="button" data-view="all" aria-pressed="false">All you can learn</button>
-      </div>
-      <label class="fc-sort note">Sort <select data-card-sort aria-label="Sort forms">
-        <option value="default">Known first, then CR</option><option value="damage">Damage per turn</option>
-        <option value="hit">Attack bonus</option><option value="speed">Fastest</option><option value="cr">CR (highest)</option></select></label>
-      <input type="search" data-search placeholder="Search beasts" aria-label="Search beasts">
-    </div>
-    <div class="filters" role="group" aria-label="Filter forms">
-      {% for cr in forms | sort(attribute="cr") | map(attribute="cr_label") | unique %}<button type="button" data-filter="level:{{ cr }}">CR {{ cr }}</button>{% endfor %}
-      <span class="sep"></span>
-      {% for m in ["swim", "climb", "burrow", "fly"] %}<button type="button" data-filter="tag:{{ m }}">{{ m | capitalize }}</button>{% endfor %}
-      <span class="sep"></span>
-      {% for z in ["tiny", "small", "medium", "large", "huge"] %}{% if forms | selectattr("size", "equalto", z | capitalize) | list %}<button type="button" data-filter="tag:{{ z }}">{{ z | capitalize }}</button>{% endif %}{% endfor %}
-    </div>
+    {{ form_tools(forms, [("ready", "Known"), ("all", "All you can learn")]) }}
     <p class="note planner-note"><span data-shown></span>{% if can_pick %} ♥ adds a form to your shortlist on Plan, to compare before learning it.{% endif %} Learn forms on D&amp;D Beyond{% if s.sheet_url %} (<a href="{{ s.sheet_url }}" target="_blank" rel="noopener">open ↗</a>){% endif %}: you can swap one known form after each Long Rest. Click a form to see it with your stats carried over.</p>
     <section class="planner-group"><div class="planner-level"><div class="form-cards" data-sortable-cards>
     {% for fm in forms %}{{ form_card(c, fm, picks, can_pick, loop.index) }}{% endfor %}
