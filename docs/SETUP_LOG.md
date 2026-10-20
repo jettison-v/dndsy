@@ -314,3 +314,18 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 2. Let the build fingerprint static files (a hash in the URL) rather than numbering them by hand; stale-cache bugs disappear.
 3. When removing a database table, write the migration so it moves any remaining data first. You can't always check production by hand.
 4. Put spending caps in two places: the provider's hard limit, and a friendlier one in your app that says what happened and how to change it.
+
+## 2026-10-20 — Shared table rolls (a new table, live updates by polling)
+
+**What was set up**
+- **A new database table** (`table_rolls`), added with an Alembic migration like every other change to the database. Railway runs migrations when it deploys, so beta gets the table automatically.
+- **Rolls made on the server**: the browser only says "Cole rolled a Wis save"; askdnd's server rolls the dice and decides who may see the result. Hidden numbers never leave the server for people who shouldn't see them.
+- **Live updates by polling**: while Game Mode is on, each open page asks "anything new since roll #42?" every 3 seconds. Nothing new costs almost nothing (an empty answer).
+- **Previewing as two people locally**: `/dev/login?as=<email>` signs in as another allowed person on your own Mac only. Browsers keep cookies per address, so one tab on `localhost:8000` and another on `127.0.0.1:8000` can be two different people.
+
+**Reuse this on a new project**
+1. Anything that must be fair or private (dice, scores, secrets) belongs on the server. The browser is the user's: whatever it computes or receives, they can see or change.
+2. Decide visibility in one function and test it for each kind of viewer; send each person only what they may see, not everything with some of it hidden on screen.
+3. Polling every few seconds is a fine first version of "live" for a handful of users. Reach for WebSockets only when polling is visibly too slow or too heavy.
+4. For testing "two people at once" on one computer, use two addresses for the same local server (localhost and 127.0.0.1): each gets its own sign-in.
+
