@@ -103,20 +103,22 @@
 {# Dice rolls (app.js "Rolls"): anything with data-roll rolls when clicked. data-mod is the bonus ("+7"),
    data-dmg the damage dice, data-adv="1" when Advantage always applies. With Game Mode on, your own
    character's rolls go to the server as Table rolls (app/table_rolls.py); otherwise they stay in this browser. #}
-{% macro roll_attrs(kind, label, mod="", dmg="", advs=()) -%}
-data-roll="{{ kind }}" data-label="{{ label }}"{% if mod %} data-mod="{{ mod | replace('−', '-') }}"{% endif %}{% if dmg %} data-dmg="{{ dmg }}"{% endif %}{% if advs and advs | rejectattr("when") | list %} data-adv="1"{% endif %}
+{% macro roll_attrs(kind, label, mod="", dmg="", advs=(), note="") -%}
+data-roll="{{ kind }}" data-label="{{ label }}"{% if mod %} data-mod="{{ mod | replace('−', '-') }}"{% endif %}{% if dmg %} data-dmg="{{ dmg }}"{% endif %}{% if advs and advs | rejectattr("when") | list %} data-adv="1"{% endif %}{% if advs %} data-adv-why="{% for a in advs %}{{ a.text }}{% if not loop.last %}&#10;{% endif %}{% endfor %}"{% endif %}{% if note %} data-note="{{ note }}"{% endif %}
 {%- endmacro %}
 
 {# An option's to-hit number as a roll button (attacks), or a small Roll button for damage or healing
    when the option has dice but no attack roll (save spells, Healing Word). #}
 {% macro hit(o) -%}
 {%- set dmg = o.meta | dice -%}
+{%- set heal = "heals " in o.meta or "healing" in o.name | lower -%}
+{%- set k = "heal" if heal else "damage" -%}
 {%- if o.hit and o.hit[0] in "+-−" -%}
 <span class="hit"><button type="button" class="roll-hit" {{ roll_attrs("attack", o.name, o.hit, dmg, o.adv) }} title="Roll to hit{{ ' (then damage)' if dmg }}">{{ o.hit }}</button>{% if o.adv %} {{ adv(o.adv) }}{% endif %}</span>
 {%- elif o.hit -%}
-<span class="hit">{{ o.hit }}{% if dmg %} <button type="button" class="roll-chip" {{ roll_attrs("damage", o.name, "", dmg) }} title="Roll {{ dmg }}">Roll</button>{% endif %}</span>
+<span class="hit">{{ o.hit }}{% if dmg %} <button type="button" class="roll-chip" {{ roll_attrs(k, o.name, "", dmg, note="Each target makes a " ~ o.hit ~ " save; the spell says what a success does.") }} title="Roll {{ dmg }}">{{ "Heal" if heal else "Roll" }}</button>{% endif %}</span>
 {%- elif dmg -%}
-<span class="hit"><button type="button" class="roll-chip" {{ roll_attrs("damage", o.name, "", dmg) }} title="Roll {{ dmg }}">Roll</button></span>
+<span class="hit"><button type="button" class="roll-chip" {{ roll_attrs(k, o.name, "", dmg) }} title="Roll {{ dmg }}">{{ "Heal" if heal else "Roll" }}</button></span>
 {%- endif -%}
 {%- endmacro %}
 

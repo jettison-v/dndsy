@@ -580,7 +580,8 @@ def test_skills_tab_groups_by_ability_and_explains(player, db):
     cole = char(db, "Cole")
     characters.refresh(db, cole)
     page = player.get(f"/characters/{cole.id}").text
-    assert '<div class="skill-head"><span>Wisdom</span><b>+4</b></div>' in page and "Passive <span>Insight" in page
+    assert '<div class="skill-head"><span>Wisdom</span><button type="button" class="roll-hit" data-roll="check" data-label="Wisdom check" data-mod="+4"' in page
+    assert "Passive <span>Insight" in page and 'data-label="Perception check"' in page  # skills and abilities roll
     assert f'data-panel-url="/characters/{cole.id}/vital/skill-sleight-of-hand"' in page
     panel = player.get(f"/characters/{cole.id}/vital/skill-perception").text
     assert "Perception (Wis)" in panel and "Stone of Good Luck" in panel and '<td class="num">+8</td>' in panel

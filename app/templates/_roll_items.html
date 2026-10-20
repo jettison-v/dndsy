@@ -1,20 +1,36 @@
-{# Table rolls (app/table_rolls.py): one <li> per roll, newest first. A hidden roll (DM only, seen
-   by someone else) carries only who and when: no label, dice or total reach this browser. #}
+{# Table rolls (app/table_rolls.py): one <li> per roll with its follow-ups (damage, reroll, added
+   die), newest activity first. data-seq is the newest row in it, so polling knows where it is.
+   A hidden roll (DM only, seen by someone else) carries only who and when: no label, dice or
+   total reach this browser. #}
+{% macro dline(p, d20) -%}
+{%- if d20 -%}d20 {% for d in p.dice %}{% if loop.index0 == p.kept_at %}<u>{{ d }}</u>{% else %}{{ d }}{% endif %}{{ " / " if not loop.last }}{% endfor %} {{ "+" if p.modifier >= 0 else "−" }}{{ p.modifier | abs }}{{ " · Adv" if p.mode == "adv" }}{{ " · Dis" if p.mode == "dis" }}
+{%- else -%}{{ p.formula }}: {{ p.dice | join(" ") }}{% if p.modifier %} {{ "+" if p.modifier > 0 else "−" }}{{ p.modifier | abs }}{% endif %}{%- endif -%}
+{%- for x in p.extras %} · {{ x.label }} {{ "+" if x.total >= 0 else "−" }}{{ x.total | abs }}{% if x.dice %} <span class="roll-x">({{ x.formula }})</span>{% endif %}{% endfor -%}
+{%- endmacro %}
+{% set D20 = ("save", "check", "attack", "death") %}
 {% for r in rolls %}
-<li class="roll-item hue{{ r.hue }}{{ ' mine' if r.mine }}{{ ' hidden-roll' if r.hidden }}{{ ' nat20' if r.nat == 20 }}{{ ' nat1' if r.nat == 1 }}" data-id="{{ r.id }}"{% if r.mine %} data-mine="1"{% endif %}>
+<li class="roll-item hue{{ r.hue }}{{ ' mine' if r.mine }}{{ ' hidden-roll' if r.hidden }}{{ ' nat20' if r.nat == 20 }}{{ ' nat1' if r.nat == 1 }} kind-{{ r.kind }}" data-id="{{ r.id }}" data-seq="{{ r.seq }}"{% if r.mine %} data-mine="1"{% endif %}>
   <span class="roll-av" aria-hidden="true">{{ r.initial }}{% if r.portrait %}<img src="{{ r.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>
   <span class="roll-main">
     <span class="roll-who"><b>{{ r.name }}</b> <time datetime="{{ r.at }}" data-at="{{ r.at }}">{{ r.ago }}</time>{% if r.to == "dm" and not r.hidden %} <span class="roll-to">DM only</span>{% elif r.to == "self" %} <span class="roll-to">just you</span>{% endif %}</span>
-    {% if r.hidden %}<span class="roll-what">Rolled for the DM</span>
-    {% else %}<span class="roll-what">{{ r.label }}{% if r.kind == "attack" %} <span class="roll-sub">to hit</span>{% elif r.kind == "damage" %} <span class="roll-sub">{{ "critical damage" if r.crit else "damage" }}</span>{% endif %}</span>
-    <span class="roll-dice">{% if r.kind == "damage" %}{{ r.formula }}: {{ r.dice | join(" ") }}{% if r.modifier %} {{ "+" if r.modifier > 0 else "−" }}{{ r.modifier | abs }}{% endif %}{% else %}d20 {% for d in r.dice %}{% if loop.index0 == r.kept_at %}<u>{{ d }}</u>{% else %}{{ d }}{% endif %}{{ " / " if not loop.last }}{% endfor %} {{ "+" if r.modifier >= 0 else "−" }}{{ r.modifier | abs }}{{ " · Adv" if r.mode == "adv" }}{{ " · Dis" if r.mode == "dis" }}{% endif %}</span>
-    {% if r.nat == 20 %}<span class="roll-flag">natural 20{{ ": critical hit" if r.kind == "attack" }}</span>{% elif r.nat == 1 %}<span class="roll-flag">natural 1{{ ": miss" if r.kind == "attack" }}</span>{% endif %}
-    {% if r.damage %}<button type="button" class="btn small roll-dmg" data-after="{{ r.id }}">Roll {{ "critical " if r.nat == 20 }}damage ({{ r.damage }})</button>{% endif %}
+    {% if r.hidden %}<span class="roll-what">{{ r.hidden_text }}</span>
+    {% else %}
+    <span class="roll-what">{{ r.label }}{% if r.kind == "attack" %} <span class="roll-sub">to hit</span>{% elif r.kind == "damage" %} <span class="roll-sub">damage</span>{% elif r.kind == "heal" %} <span class="roll-sub">healing</span>{% elif r.kind == "death" %} <span class="roll-sub">{{ r.outcome }}</span>{% endif %}</span>
+    <span class="roll-dice">{{ dline(r.main, r.kind in D20) }}</span>
+    {% if r.rerolled %}<span class="roll-dice roll-old">Rerolled ({{ r.rerolled.reason }}): was <s>{{ r.rerolled.total }}</s> · {{ dline(r.rerolled, True) }}</span>{% endif %}
+    {% if r.bonus %}<span class="roll-dice">+ {{ r.bonus.label }} {{ r.bonus.total }} <span class="roll-x">({{ r.bonus.formula }})</span></span>{% endif %}
+    {% if r.nat and r.kind != "death" %}<span class="roll-flag">natural {{ r.nat }}{% if r.kind == "attack" %}{{ ": critical hit" if r.nat == 20 else ": miss" }}{% endif %}</span>{% endif %}
+    {% if r.damage %}<span class="roll-dmg-line"><span><span class="roll-sub">{{ "Critical damage" if r.damage.crit else "Damage" }}</span> {{ dline(r.damage, False) }}</span><b>{{ r.damage.total }}</b></span>{% endif %}
+    {% if r.can.damage or r.can.reroll or r.can.bonus %}<span class="roll-acts">
+      {% if r.can.damage %}<button type="button" class="btn small roll-follow" data-follow="damage" data-parent="{{ r.id }}" data-dmg="{{ r.can.damage }}" data-label="{{ r.label }}" data-crit="{{ '1' if r.nat == 20 }}">Roll {{ "critical " if r.nat == 20 }}damage</button>{% endif %}
+      {% if r.can.reroll %}<button type="button" class="btn small roll-follow" data-follow="reroll" data-parent="{{ r.id }}" data-reason="{{ r.can.reroll }}">Reroll ({{ r.can.reroll }})</button>{% endif %}
+      {% if r.can.bonus %}<button type="button" class="btn small link roll-follow" data-follow="bonus" data-parent="{{ r.id }}">+ Add a die</button>{% endif %}
+    </span>{% endif %}
     {% endif %}
   </span>
   {% if r.hidden %}<span class="roll-lock" role="img" aria-label="Hidden from the table"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
   {% else %}<b class="roll-total">{{ r.total }}</b><span class="roll-short" aria-hidden="true">{{ r.short }}</span>{% endif %}
 </li>
 {% else %}
-<li class="roll-empty">No rolls yet. With Game Mode on, your saves, Initiative and attacks on Play roll here for the table.</li>
+<li class="roll-empty">No rolls yet. With Game Mode on, your saves, checks, attacks and the dice below roll here for the table.</li>
 {% endfor %}

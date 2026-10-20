@@ -1,5 +1,5 @@
 {# Character › Sheet: the full sheet in tabs (character_pages._sheet_ctx). #}
-{% from "_char.html" import pips, pick_btn, ri, opt_row, spell_row, bell, tile, adv, form_card, spell_tools, form_tools %}
+{% from "_char.html" import pips, pick_btn, ri, opt_row, spell_row, bell, tile, adv, form_card, spell_tools, form_tools, roll_attrs %}
 {% set s = sheet %}
 {% if s %}
 {# Row 1: the numbers you look up most #}
@@ -124,18 +124,18 @@
     {% set by = {} %}{% for sk in s.skills %}{% set _ = by.setdefault(sk.ability, []).append(sk) %}{% endfor %}
     {% set passive = s.skills | selectattr("name", "in", ["Perception", "Insight", "Investigation"]) | list %}
     <div class="skills-top">
-      <span class="legend"><span class="pm prof">●</span> Proficient <span class="pm expertise">◆</span> Expertise{% if s.skills | selectattr("proficiency", "equalto", "half") | list %} <span class="pm half">◐</span> Half (Jack of All Trades){% endif %} · click a skill to see how it adds up</span>
+      <span class="legend"><span class="pm prof">●</span> Proficient <span class="pm expertise">◆</span> Expertise{% if s.skills | selectattr("proficiency", "equalto", "half") | list %} <span class="pm half">◐</span> Half (Jack of All Trades){% endif %} · click a skill to see how it adds up, or its bonus to roll it</span>
       <span class="passives">Passive {% for sk in passive %}<span>{{ sk.name }} <b>{{ 10 + sk.bonus }}</b></span>{% endfor %}</span>
     </div>
     <div class="skill-groups">
       {% for a in s.abilities if by.get(a.short) %}
       <div class="skill-group">
-        <div class="skill-head"><span>{{ a.name }}</span><b>{{ a.label }}</b></div>
+        <div class="skill-head"><span>{{ a.name }}</span><button type="button" class="roll-hit" {{ roll_attrs("check", a.name ~ " check", a.label) }} title="Roll a {{ a.name }} check">{{ a.label }}</button></div>
         {% for sk in by[a.short] %}
         <div class="skill {{ sk.proficiency }}" data-panel-url="/characters/{{ c.id }}/vital/skill-{{ sk.name | lower | replace(' ', '-') }}" tabindex="0" role="button">
           <span class="pm {{ sk.proficiency }}" aria-label="{{ sk.proficiency or 'not proficient' }}">{{ {"proficient": "●", "expertise": "◆", "half": "◐"}.get(sk.proficiency, "○") }}</span>
           <span class="skill-name">{{ sk.name }} {{ adv(sk.adv) }}</span>
-          <b class="skill-bonus">{{ sk.label }}</b>
+          <button type="button" class="roll-hit skill-bonus" {{ roll_attrs("check", sk.name ~ " check", sk.label, "", sk.adv) }} title="Roll {{ sk.name }}">{{ sk.label }}</button>
         </div>
         {% endfor %}
       </div>

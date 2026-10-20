@@ -35,6 +35,13 @@ def test_damage_doubles_the_dice_on_a_critical_hit_but_not_the_bonus():
     assert tr.roll_damage("lots") is None and tr.roll_damage("99d6") is None and tr.roll_damage("1d1") is None
 
 
+def test_formulas_mix_dice():
+    assert tr.parse_formula("2d6 + 1d8 - 1") == ([(2, 6), (1, 8)], -1)
+    assert tr.parse_formula("d6") is None and tr.parse_formula("5") is None and tr.parse_formula("1d6-1d4") is None
+    assert tr.parse_extras(["Bless:+1d4", "Other: -2"]) == [("Bless", 1, 1, 4), ("Other", -1, 2, 0)]
+    assert tr.parse_extras(["Bless:1d4"]) is None
+
+
 def test_real_dice_stay_in_range():
     for _ in range(300):
         r = tr.roll_d20(0, "adv")
@@ -103,7 +110,7 @@ def test_a_player_rolls_for_their_own_character_on_the_server(table, db, monkeyp
     r = post(table["player"], character=cole.id, kind="save", label="Wis save", mod="+8", mode="normal", to="table")
     assert r.status_code == 200
     body = r.json()
-    assert body["roll"]["total"] == 23 and body["roll"]["dice"] == [15] and body["roll"]["to"] == "table"
+    assert body["roll"]["total"] == 23 and body["roll"]["main"]["dice"] == [15] and body["roll"]["to"] == "table"
     assert 'data-mine="1"' in body["html"] and "Wis save" in body["html"]
     row = db.scalar(select(TableRoll))
     assert (row.character_id, row.kind, row.label, row.kept, row.modifier, row.total, row.mode, row.visibility) == \
@@ -131,37 +138,104 @@ def test_bad_rolls_are_refused(table, db):
     cid = char(db, "Cole").id
     for bad in ({"kind": "nonsense", "label": "x"}, {"kind": "save", "label": ""}, {"kind": "save", "label": "x", "mod": "+999"},
                 {"kind": "save", "label": "x", "to": "everyone"}, {"kind": "save", "label": "x", "mode": "triple"},
-                {"kind": "damage", "label": "x", "dmg": "a lot"}):
+                {"kind": "damage", "label": "x", "dmg": "a lot"}, {"kind": "save", "label": "x", "extra": "Bless:+1d4; drop table"},
+                {"kind": "dice", "dmg": "99d6"}, {"kind": "save", "label": "x", "extra": ["Bless:+1d4"] * 7}):
         assert post(table["player"], character=cid, **bad).status_code == 400, bad
 
 
 def test_advantage_that_always_applies_rolls_two_dice(table, db):
     r = post(table["player"], character=char(db, "Cole").id, kind="save", label="Wis save", mod="8", adv="1").json()["roll"]
-    assert r["mode"] == "adv" and len(r["dice"]) == 2 and r["kept"] == max(r["dice"])
+    assert r["main"]["mode"] == "adv" and len(r["main"]["dice"]) == 2 and r["main"]["dice"][r["main"]["kept_at"]] == max(r["main"]["dice"])
     r = post(table["player"], character=char(db, "Cole").id, kind="save", label="Wis save", mod="8", adv="1", mode="dis").json()["roll"]
-    assert r["mode"] == "dis" and r["kept"] == min(r["dice"])  # the chosen Disadvantage wins
+    assert r["main"]["mode"] == "dis" and r["main"]["dice"][r["main"]["kept_at"]] == min(r["main"]["dice"])  # the chosen Disadvantage wins
 
 
-def test_damage_after_an_attack_comes_from_the_attack_and_doubles_on_a_natural_20(table, db, monkeypatch):
+def test_situational_bonuses_are_rolled_and_added(table, db, monkeypatch):
+    monkeypatch.setattr(tr, "die", lambda sides: {20: 10, 4: 3}[sides])
+    r = post(table["player"], character=char(db, "Cole").id, kind="save", label="Wis save", mod="8",
+             extra=["Bless:+1d4", "Bane:-1d4", "Other:+2", "Exhaustion 2:-4"]).json()
+    assert r["roll"]["total"] == 10 + 8 + 3 - 3 + 2 - 4
+    assert [x["label"] for x in r["roll"]["main"]["extras"]] == ["Bless", "Bane", "Other", "Exhaustion 2"]
+    assert "Bless +3" in r["html"] and "Exhaustion 2 −4" in r["html"]
+
+
+def test_damage_belongs_to_its_attack_and_doubles_on_a_natural_20(table, db, monkeypatch):
     cid = char(db, "Cole").id
     monkeypatch.setattr(tr, "die", lambda sides: 20 if sides == 20 else 3)
     attack = post(table["player"], character=cid, kind="attack", label="Rend", mod="6", dmg="2d6+4", to="dm").json()["roll"]
-    assert attack["nat"] == 20 and attack["damage"] == "2d6+4"
-    assert "Roll critical damage (2d6+4)" in table["player"].get("/rolls").text
-    assert "roll-dmg" not in table["dm"].get("/rolls").text  # only the roller gets the button
-    dmg = post(table["player"], after=attack["id"]).json()["roll"]
-    assert dmg["kind"] == "damage" and dmg["crit"] and dmg["formula"] == "4d6+4" and dmg["total"] == 16
-    assert dmg["label"] == "Rend" and dmg["to"] == "dm"  # same audience as the attack
-    # nobody else rolls damage for someone's attack
-    assert post(table["other"], after=attack["id"]).status_code == 403
-    # once something newer is rolled, the old attack no longer offers damage
-    assert "roll-dmg" not in table["player"].get("/rolls").text
+    assert attack["nat"] == 20 and attack["can"]["damage"] == "2d6+4"
+    assert 'data-follow="damage"' in table["player"].get("/rolls").text
+    assert "roll-follow" not in table["dm"].get("/rolls").text  # only the roller gets the button
+    r = post(table["player"], parent=attack["id"], action="damage", extra="Hunter's Mark:+1d6").json()["roll"]
+    assert r["id"] == attack["id"] and r["total"] == 26  # still the attack, now with its damage
+    d = r["damage"]
+    assert d["crit"] and d["formula"] == "4d6+4" and d["total"] == 4 * 3 + 4 + 2 * 3  # Hunter's Mark doubled too
+    row = db.scalar(select(TableRoll).where(TableRoll.parent_id == attack["id"]))
+    assert row.kind == "damage" and row.visibility == "dm" and row.label == "Rend"  # same audience as the attack
+    assert post(table["player"], parent=attack["id"], action="damage").status_code == 409  # once
+    assert post(table["other"], parent=attack["id"], action="damage").status_code == 403  # nobody else's
+    log = table["player"].get("/rolls").text
+    assert log.count('class="roll-item') == 1 and "Critical damage" in log and "roll-follow" not in log
 
 
-def test_no_damage_button_after_a_natural_1(table, db, monkeypatch):
+def test_no_damage_after_a_natural_1(table, db, monkeypatch):
     monkeypatch.setattr(tr, "die", lambda sides: 1)
     r = post(table["player"], character=char(db, "Cole").id, kind="attack", label="Rend", mod="6", dmg="2d6+4").json()
-    assert r["roll"]["nat"] == 1 and r["roll"]["damage"] == "" and "roll-dmg" not in r["html"]
+    assert r["roll"]["nat"] == 1 and r["roll"]["can"]["damage"] == "" and 'data-follow="damage"' not in r["html"]
+    assert post(table["player"], parent=r["roll"]["id"], action="damage").status_code == 409
+
+
+def test_healing_is_its_own_kind(table, db, monkeypatch):
+    monkeypatch.setattr(tr, "die", lambda sides: 4)
+    r = post(table["player"], character=char(db, "Cole").id, kind="heal", label="Healing Word", dmg="2d4", extra="Other:+4").json()
+    assert r["roll"]["kind"] == "heal" and r["roll"]["total"] == 12 and "healing" in r["html"] and "damage" not in r["html"]
+
+
+def test_a_reroll_replaces_the_result_and_shows_the_old_one(table, db, monkeypatch):
+    rolls = iter([3, 17])
+    monkeypatch.setattr(tr, "die", lambda sides: next(rolls))
+    first = post(table["player"], character=char(db, "Cole").id, kind="check", label="Stealth check", mod="6").json()["roll"]
+    assert first["total"] == 9
+    assert post(table["player"], parent=first["id"], action="reroll", label="Anything").status_code == 409  # a known reason only
+    r = post(table["player"], parent=first["id"], action="reroll", label="Heroic Inspiration").json()
+    assert r["roll"]["total"] == 23 and r["roll"]["rerolled"]["total"] == 9 and "was <s>9</s>" in r["html"]
+    assert post(table["player"], parent=first["id"], action="reroll", label="Luck").status_code == 409  # once
+
+
+def test_an_added_die_counts_toward_the_total(table, db, monkeypatch):
+    monkeypatch.setattr(tr, "die", lambda sides: {20: 8, 8: 5}[sides])
+    first = post(table["player"], character=char(db, "Cole").id, kind="save", label="Con save", mod="2").json()["roll"]
+    r = post(table["player"], parent=first["id"], action="bonus", die="8").json()["roll"]
+    assert r["total"] == 15 and r["bonus"] == {"label": "Bardic Inspiration", "formula": "1d8", "dice": [5], "total": 5}
+    assert post(table["player"], parent=first["id"], action="bonus", die="7").status_code == 409
+
+
+def test_death_saves_say_what_happened(table, db, monkeypatch):
+    cid = char(db, "Cole").id
+    for value, outcome in ((20, "regain 1 Hit Point"), (1, "two failures"), (12, "success"), (9, "failure")):
+        monkeypatch.setattr(tr, "die", lambda sides, v=value: v)
+        r = post(table["player"], character=cid, kind="death", label="Death save", mod="+5").json()["roll"]
+        assert outcome in r["outcome"] and r["main"]["modifier"] == 0  # no bonus sneaks in
+
+
+def test_plain_dice_for_anyone_and_the_dms_behind_the_screen(table, db, monkeypatch):
+    monkeypatch.setattr(tr, "die", lambda sides: 2)
+    r = post(table["player"], kind="dice", label="", dmg="2d6+1d8+3", character=char(db, "Cole").id).json()["roll"]
+    assert r["label"] == "Dice" and r["total"] == 9 and r["name"] == "Cole"
+    dm = post(table["dm"], kind="dice", label="Ambush", dmg="1d20", to="dm").json()["roll"]
+    assert dm["name"] == "DM" and dm["total"] == 2
+    other = table["other"].get("/rolls").text
+    assert "Rolled behind the screen" in other and "Ambush" not in other
+    assert post(table["dm"], kind="save", label="x", mod="1").status_code == 404  # the DM has no character
+
+
+def test_quick_checks_for_your_character(table, db):
+    from app import characters
+
+    characters.refresh(db, char(db, "Cole"))
+    page = table["player"].get("/rolls/checks").text
+    assert 'data-roll="check" data-label="Perception check"' in page and 'data-roll="death"' in page and 'data-label="Hit Die"' in page
+    assert "data-roll" not in table["dm"].get("/rolls/checks").text
 
 
 def test_the_log_shows_each_viewer_only_what_they_may_see(table, db, monkeypatch):
@@ -187,6 +261,14 @@ def test_the_log_shows_each_viewer_only_what_they_may_see(table, db, monkeypatch
     assert 'data-mine="1"' not in other
 
 
+def test_a_hidden_roll_stays_hidden_with_its_damage(table, db, monkeypatch):
+    monkeypatch.setattr(tr, "die", lambda sides: 12)
+    attack = post(table["player"], character=char(db, "Cole").id, kind="attack", label="Rend", mod="6", dmg="2d6+4", to="dm").json()["roll"]
+    post(table["player"], parent=attack["id"], action="damage")
+    other = table["other"].get("/rolls").text
+    assert "Rolled for the DM" in other and "Rend" not in other and "Damage" not in other and "roll-total" not in other
+
+
 def test_polling_returns_only_new_rolls_and_nothing_when_quiet(table, db):
     cid = char(db, "Cole").id
     first = post(table["player"], character=cid, kind="save", label="Str save", mod="0").json()["roll"]["id"]
@@ -197,6 +279,10 @@ def test_polling_returns_only_new_rolls_and_nothing_when_quiet(table, db):
     # a just-me roll isn't news to anyone else
     post(table["player"], character=cid, kind="save", label="Int save", mod="0", to="self")
     assert table["other"].get(f"/rolls?since={second}").status_code == 204
+    # a follow-up brings its roll back, whole, with the newest row as its place in the log
+    bonus = post(table["player"], parent=second, action="bonus", die="6").json()["roll"]
+    again = table["other"].get(f"/rolls?since={second + 1}")
+    assert again.status_code == 200 and f'data-id="{second}"' in again.text and f'data-seq="{bonus["seq"]}"' in again.text
 
 
 def test_an_empty_log_says_so(table):
@@ -227,3 +313,4 @@ def test_the_sidebar_is_on_every_page_and_knows_your_character(table, db):
     assert 'data-play="1"' in table["player"].get(f"/characters/{cole.id}/battle").text
     assert 'data-play=""' in table["player"].get("/party").text
     assert 'data-mine=""' in table["dm"].get("/party").text  # the DM has no character to roll for
+    assert "rs-checks" not in table["dm"].get("/party").text and "data-add-die" in table["dm"].get("/party").text

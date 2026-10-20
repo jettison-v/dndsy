@@ -542,8 +542,12 @@ class TableRoll(Base):
     campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"), index=True)
     character_id: Mapped[int | None] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"))
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
-    label: Mapped[str] = mapped_column(String(120))  # "Wis save", "Initiative", "Rend"
-    kind: Mapped[str] = mapped_column(String(10))  # save | check | attack | damage
+    # A follow-up (damage, reroll, bonus) points at the roll it belongs to, and shares its audience
+    parent_id: Mapped[int | None] = mapped_column(ForeignKey("table_rolls.id", ondelete="CASCADE"), index=True)
+    who: Mapped[str] = mapped_column(String(80), default="", server_default="")  # shown when there's no character ("DM")
+    label: Mapped[str] = mapped_column(String(120))  # "Wis save", "Initiative", "Rend"; a reroll's reason
+    # save | check | attack | death | damage | heal | dice; follow-ups: damage | reroll | bonus
+    kind: Mapped[str] = mapped_column(String(10))
     formula: Mapped[str] = mapped_column(String(40))  # what was rolled: "d20+7", "4d6+3"
     dice: Mapped[list] = mapped_column(JSONB)  # every die, in order: [14, 6] on Advantage
     kept: Mapped[int | None] = mapped_column(Integer)  # the d20 that counted (d20 rolls only)
@@ -553,6 +557,8 @@ class TableRoll(Base):
     visibility: Mapped[str] = mapped_column(String(10), default="table")  # table | dm | self
     damage: Mapped[str] = mapped_column(String(40), default="", server_default="")  # an attack's damage dice, rolled next
     crit: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")  # damage doubled for a critical hit
+    # Situational bonuses, each rolled: [{"label": "Bless", "formula": "+1d4", "dice": [3], "total": 3}]
+    extras: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     character: Mapped[Character | None] = relationship()
 

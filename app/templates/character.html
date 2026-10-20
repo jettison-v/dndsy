@@ -5,7 +5,7 @@
 {% block head %}{% if mode != "sheet" %}<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js" defer></script>{% endif %}{% endblock %}
 {% block content %}
 {% set s = sheet %}
-<main class="page wide char-page mode-{{ mode }}{{ ' sheet' if mode in ('sheet', 'plan') }}" data-character="{{ c.id }}">
+<main class="page wide char-page mode-{{ mode }}{{ ' sheet' if mode in ('sheet', 'plan') }}" data-character="{{ c.id }}" data-roll-ctx="{{ roll_context(s) }}">
   {# The same header in every mode: who this is, and the mode switch. Switch characters from the menu bar. #}
   <div class="char-head">
     {{ portrait(s, "md") }}

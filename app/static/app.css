@@ -307,7 +307,6 @@ table.list td a:hover { color: #fff; text-decoration: underline; }
   .live-ago { display: none; }
   .live-word { display: inline; }
   .live .menu.live-menu { position: fixed; top: 64px; right: 12px; }
-  .roll-tray { bottom: calc(68px + env(safe-area-inset-bottom)); }
   .topbar-inner { gap: 10px; padding: 0 16px; }
   .page { padding: 24px 16px 120px; }
   .section { padding: 22px 18px; }
@@ -1076,57 +1075,81 @@ a.sheet-ref { text-decoration-style: dotted; }
 .st[data-roll], .save-row[data-roll] { cursor: pointer; }
 .st[data-roll]:hover { box-shadow: inset 0 0 0 1px var(--amber); }
 .save-row[data-roll]:hover b { color: var(--amber); }
-.roll-tray { position: fixed; right: 16px; bottom: 16px; z-index: 30; width: min(340px, calc(100vw - 32px)); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 28px rgba(0, 0, 0, .45); padding: 10px 12px; }
-.roll-tray.bump { animation: roll-bump .25s ease-out; }
-@keyframes roll-bump { from { transform: translateY(6px); } to { transform: none; } }
-.roll-head { display: flex; align-items: center; gap: 8px; }
-.roll-title { font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; color: var(--amber); flex: 1; }
-.roll-title .roll-sub { text-transform: none; letter-spacing: 0; font-weight: 400; }
-.roll-sub { color: var(--muted); font-size: .82rem; }
+.rc[data-roll], .skill .roll-hit { cursor: pointer; }
 .roll-modes { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
 .roll-modes button { font: inherit; font-size: .72rem; background: none; border: 0; color: var(--muted); padding: 2px 8px; cursor: pointer; }
 .roll-modes button[aria-pressed="true"] { background: var(--surface-2); color: var(--text); }
-.roll-fold { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: .9rem; }
-.roll-tray.open .roll-fold { transform: rotate(180deg); }
-.roll-last { margin-top: 6px; }
-.roll-label { font-size: .82rem; color: var(--muted); }
-.roll-result b { font-size: 1.8rem; margin-right: 6px; font-variant-numeric: tabular-nums; }
-.roll-result u { text-decoration: none; color: var(--text); font-weight: 700; }
-.roll-crit { color: var(--green); } .roll-fumble { color: var(--red); }
-.roll-dmg-btn { margin-top: 6px; }
-.roll-history { display: none; list-style: none; margin: 8px 0 0; padding: 6px 0 0; border-top: 1px solid var(--line); max-height: 180px; overflow: auto; }
-.roll-tray.open .roll-history { display: block; }
-.roll-history li { display: flex; justify-content: space-between; font-size: .85rem; color: var(--muted); padding: 2px 0; }
-.roll-history li b { color: var(--text); }
-@media (max-width: 520px) { .roll-tray { right: 8px; bottom: calc(68px + env(safe-area-inset-bottom)); width: calc(100vw - 16px); } .roll-result b { font-size: 1.4rem; } }
-/* "Your rolls" never covers a side panel or window (their buttons); rolls made there pop up instead. */
-body:has(.peek.open) .roll-tray { display: none; }
+.skill-head .roll-hit { font-size: inherit; }
+
+/* The roll window (app.js): opens next to the roll button with Normal / Adv / Dis, situational
+   bonuses and who sees it, then turns into the result in place. Above side panels and windows. */
+.roll-win { position: fixed; z-index: 20; width: min(360px, calc(100vw - 16px)); max-height: calc(100vh - 16px); overflow-y: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; box-shadow: 0 14px 40px rgba(0, 0, 0, .55); font-size: .88rem; animation: roll-pop .14s ease-out; }
+.roll-win.nat20 { border-color: var(--green); } .roll-win.nat1, .roll-win.failed { border-color: var(--red); }
+.rw-title { font-weight: 700; font-size: 1rem; padding-right: 24px; margin-bottom: 8px; }
+.rw-title .roll-sub { font-weight: 400; }
+.rw-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin: 8px 0; }
+.rw-label { width: 70px; flex: none; color: var(--muted); font-size: .8rem; }
+.rw-mode .roll-modes { display: flex; width: 100%; }
+.rw-mode .roll-modes button { flex: 1; padding: 6px 4px; font-size: .85rem; }
+.roll-win .roll-modes button { font-size: .8rem; padding: 4px 10px; }
+.rw-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.rw-chips .chip { font: inherit; font-size: .8rem; background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
+.rw-chips .chip[aria-pressed="true"] { color: var(--text); border-color: var(--amber); background: var(--amber-soft); }
+.roll-win input.rw-text { width: auto; }
+.rw-text { font: inherit; font-size: .85rem; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; min-width: 0; flex: 1; }
+.roll-win input.rw-other { flex: none; width: 104px; }
+.rw-text.bad { border-color: var(--red); }
+.rw-exh { color: var(--muted); font-size: .8rem; display: inline-flex; gap: 6px; align-items: center; }
+.rw-exh select { padding: 2px 6px;  font: inherit; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; }
+.rw-notes { list-style: none; margin: 6px 0; padding: 8px 10px; background: var(--bg); border-radius: 8px; font-size: .8rem; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
+.rw-notes b { color: var(--amber); font-weight: 600; margin-right: 4px; }
+.rw-why { font-size: .8rem; color: var(--muted); margin: 6px 0; }
+.rw-why summary { cursor: pointer; }
+.rw-why p { margin: 6px 0 0; line-height: 1.45; }
+.rw-note { font-size: .8rem; color: var(--muted); margin: 6px 0; }
+.rw-go { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.rw-go .note { font-size: .75rem; }
+.rw-result { display: flex; gap: 14px; align-items: flex-start; }
+.rp-x { position: absolute; top: 8px; right: 10px; background: none; border: 0; color: var(--muted); font-size: 1.2rem; line-height: 1; padding: 4px; }
+.rp-die { width: 56px; height: 56px; flex: none; fill: var(--surface-2); stroke: var(--amber); stroke-width: 1.5; }
+.nat20 .rp-die { stroke: var(--green); } .nat1 .rp-die { stroke: var(--red); }
+.rp-die text { fill: var(--text); stroke: none; font: 700 9px var(--sans); }
+.rp-die.tumble { animation: roll-tumble .55s ease-out; }
+.rp-body { min-width: 0; flex: 1; padding-right: 18px; }
+.rp-label { color: var(--muted); font-size: .8rem; }
+.rp-res b { font-size: 2.2rem; margin-right: 6px; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.rp-res u, .rp-line u, .roll-dice u { text-decoration: none; color: var(--text); font-weight: 700; }
+.rp-line { font-size: .82rem; color: var(--muted); margin-top: 2px; }
+.rp-line b { color: var(--text); }
+.rp-flag { font-size: .85rem; color: var(--amber); margin-top: 2px; } .nat20 .rp-flag { color: var(--green); } .nat1 .rp-flag { color: #f08a8a; }
+.rp-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.roll-x { color: var(--faint); }
 
 /* Table rolls (app.js, _table_rolls.html): a left sidebar while Game Mode is on. Open, it pushes
    the page over (wide windows) or lies over it (narrower); collapsed, it's a 64 px rail.
    Phones: a bottom sheet above the bottom bar. Under the side panel and windows (z-index 4). */
 .rolls-side { display: none; }
-body.gm-on .rolls-side { display: flex; flex-direction: column; position: fixed; z-index: 4; left: 0; top: var(--stick-top, 62px); bottom: 0; width: 300px; background: #111315; border-right: 1px solid var(--line); }
+body.gm-on .rolls-side { display: flex; flex-direction: column; position: fixed; z-index: 4; left: 0; top: var(--stick-top, 62px); bottom: 0; width: 340px; background: #111315; border-right: 1px solid var(--line); }
 body.gm-on.rolls-rail .rolls-side { width: 64px; }
 body.gm-on.rolls-rail { --rolls-w: 64px; }
-body.gm-on.rolls-open { --rolls-w: 300px; }
+body.gm-on.rolls-open { --rolls-w: 340px; }
 body.gm-on.rolls-over { --rolls-w: 64px; }
 body.gm-on.rolls-over .rolls-side { box-shadow: 12px 0 30px rgba(0, 0, 0, .45); }
 body.gm-on { padding-left: var(--rolls-w, 0); }
 body.gm-on .topbar { margin-left: calc(-1 * var(--rolls-w, 0px)); }
-.rs-head { display: flex; align-items: center; gap: 8px; padding: 12px 12px 10px 14px; color: var(--amber); }
+.rs-head { display: flex; align-items: center; gap: 8px; padding: 12px 12px 10px 16px; color: var(--amber); }
 .rs-grip { display: none; }
 .rs-icon { flex: none; display: none; }
-.rs-title { flex: 1; font-size: .75rem; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; }
+.rs-title { flex: 1; font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; }
 .rs-toggle { flex: none; width: 30px; height: 30px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); border-radius: 6px; line-height: 1; }
 .rs-toggle:hover { color: var(--text); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.rs-log { list-style: none; margin: 0; padding: 0 10px 10px; display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto; overscroll-behavior: contain; }
-.roll-item { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; background: var(--surface); border: 1px solid transparent; border-radius: 10px; padding: 8px 10px; font-size: .85rem; line-height: 1.35; }
+.rs-log { list-style: none; margin: 0; padding: 0 12px 12px; display: flex; flex-direction: column; gap: 8px; flex: 1; overflow-y: auto; overscroll-behavior: contain; }
+.roll-item { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 4px 12px; align-items: start; background: var(--surface); border: 1px solid transparent; border-radius: 12px; padding: 12px 14px; font-size: .9rem; line-height: 1.4; }
 .roll-item.mine { border-color: var(--line); }
 .roll-item.fresh { animation: roll-fresh 1.6s ease-out; }
 @keyframes roll-fresh { from { border-color: var(--amber); background: var(--surface-2); } }
-.roll-av { position: relative; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; overflow: hidden; flex: none; }
+.roll-av { position: relative; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; overflow: hidden; flex: none; }
 .roll-av img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .hue0 .roll-av, .roll-av.hue0 { background: #3a3226; color: var(--amber); }
 .hue1 .roll-av, .roll-av.hue1 { background: #2c2f3a; color: var(--blue); }
@@ -1134,77 +1157,82 @@ body.gm-on .topbar { margin-left: calc(-1 * var(--rolls-w, 0px)); }
 .hue3 .roll-av, .roll-av.hue3 { background: #332a33; color: #c4a0f0; }
 .hue4 .roll-av, .roll-av.hue4 { background: #3a2828; color: #f08a8a; }
 .hue5 .roll-av, .roll-av.hue5 { background: #283536; color: #7fd0cf; }
-.roll-main { min-width: 0; display: flex; flex-direction: column; }
+.hue6 .roll-av, .roll-av.hue6 { background: var(--red-soft); color: #f08a8a; }
+.roll-main { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.roll-who { font-size: .82rem; }
 .roll-who time, .roll-to { color: var(--muted); font-size: .75rem; }
 .roll-to { border: 1px solid var(--line); border-radius: 999px; padding: 0 6px; }
-.roll-what .roll-sub, .roll-dice { color: var(--muted); font-size: .78rem; }
-.roll-dice u { text-decoration: none; color: var(--text); font-weight: 700; }
-.roll-flag { font-size: .78rem; }
-.nat20 .roll-flag, .roll-total.nat20, .nat20 > .roll-total, b.nat20 { color: var(--green); }
+.roll-what { font-weight: 600; font-size: .95rem; }
+.roll-what .roll-sub { font-weight: 400; }
+.roll-what .roll-sub, .roll-dice { color: var(--muted); font-size: .8rem; }
+.roll-sub { color: var(--muted); }
+.roll-old s { color: var(--faint); }
+.roll-flag { font-size: .8rem; color: var(--amber); }
+.nat20 .roll-flag, .nat20 > .roll-total, b.nat20 { color: var(--green); }
 .nat1 .roll-flag, .nat1 > .roll-total, b.nat1 { color: #f08a8a; }
-.roll-total { font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.kind-heal > .roll-total { color: var(--green); }
+.roll-total { font-size: 1.9rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .roll-short { display: none; }
-.roll-lock { color: var(--muted); display: grid; place-items: center; }
-.hidden-roll .roll-what { color: var(--muted); }
-.roll-item .roll-dmg { justify-self: start; margin-top: 6px; }
-.roll-pending { border: 1px dashed var(--line); border-radius: 10px; padding: 8px 10px; color: var(--muted); font-size: .8rem; }
-.roll-pending.failed { border-color: var(--red); color: var(--text); }
+.roll-lock { color: var(--muted); display: grid; place-items: center; padding-top: 8px; }
+.hidden-roll .roll-what { color: var(--muted); font-weight: 400; }
+.roll-dmg-line { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); font-size: .8rem; color: var(--muted); }
+.roll-dmg-line b { font-size: 1.3rem; color: var(--text); font-variant-numeric: tabular-nums; }
+.roll-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.roll-pending { border: 1px dashed var(--line); border-radius: 12px; padding: 10px 14px; color: var(--muted); font-size: .85rem; }
 .roll-empty { color: var(--muted); font-size: .85rem; padding: 6px 4px; }
-.rs-controls { border-top: 1px solid var(--line); padding: 10px 12px 14px; display: flex; flex-direction: column; gap: 8px; font-size: .78rem; color: var(--muted); }
+.rs-controls { border-top: 1px solid var(--line); padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 10px; font-size: .8rem; color: var(--muted); max-height: 50%; overflow-y: auto; }
 .rs-row { display: flex; align-items: center; gap: 8px; }
-.rs-label { width: 74px; flex: none; }
+.rs-label { font-weight: 600; color: var(--text); }
+.rs-label .note { font-weight: 400; }
+.rs-dice { display: flex; flex-direction: column; gap: 6px; }
+.rs-dice-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.rs-die { font: inherit; font-size: .78rem; font-weight: 600; min-width: 38px; padding: 5px 0; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 8px; }
+.rs-die:hover { border-color: var(--amber); color: var(--amber); }
+.rs-formula { flex: 1; min-width: 80px; font-weight: 700; color: var(--text); font-size: .9rem; }
+.rs-dice input.rs-mod { width: 60px; flex: none; }
+.rs-mod { font: inherit; font-size: .85rem; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 4px 6px; }
+.rs-checks summary { cursor: pointer; color: var(--text); font-weight: 600; }
+.rc-group { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.rc-head { flex-basis: 100%; font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--faint); }
+.rc { font: inherit; font-size: .76rem; background: var(--surface); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; }
+.rc b { color: var(--text); margin-left: 2px; }
+.rc.prof { border-color: rgba(91, 191, 127, .45); }
+.rc:hover { border-color: var(--amber); color: var(--text); }
 .rs-anim { cursor: pointer; }
 .rs-anim .note { font-size: .72rem; }
-.rs-cycle { display: none; }
-/* The rail: portraits with each roll's total; the next-roll choices as one button each */
+/* The rail: portraits with each roll's total */
 body.rolls-rail .rs-head { flex-direction: column; padding: 12px 0 10px; }
-body.rolls-rail .rs-title, body.rolls-rail .rs-row, body.rolls-rail .roll-main, body.rolls-rail .roll-empty, body.rolls-rail .roll-pending { display: none; }
+body.rolls-rail .rs-title, body.rolls-rail .roll-main, body.rolls-rail .roll-empty, body.rolls-rail .roll-pending, body.rolls-rail .rs-controls { display: none; }
 body.rolls-rail .rs-icon { display: block; order: 2; }
 body.rolls-rail .rs-toggle span[aria-hidden] { display: inline-block; transform: scaleX(-1); }
 body.rolls-rail .rs-log { padding: 0 6px; gap: 12px; scrollbar-width: none; }
 body.rolls-rail .roll-item { grid-template-columns: 1fr; justify-items: center; gap: 2px; padding: 0; background: none; border: 0; }
+body.rolls-rail .roll-av { width: 36px; height: 36px; }
 body.rolls-rail .roll-total { font-size: .95rem; }
 body.rolls-rail .roll-short { display: block; font-size: .65rem; color: var(--muted); }
-body.rolls-rail .rs-controls { padding: 8px 6px 12px; align-items: center; }
-body.rolls-rail .rs-cycle { display: block; width: 50px; font-size: .7rem; font-weight: 600; background: var(--surface); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 3px 0; }
-body.rolls-rail .rs-cycle.on { color: var(--amber); border-color: var(--amber); }
+body.rolls-rail .roll-lock { padding: 0; }
 @media (max-width: 1099px) and (min-width: 801px) { body.gm-on.rolls-open:not(.rolls-over) { --rolls-w: 64px; } }
 
-/* Your roll's pop-up (near the bottom left, or inside a window above its buttons) and others'
-   rolls as small notices that fade. */
+/* Others' rolls as small notices that fade, near the bottom left */
 .roll-pops { position: fixed; left: calc(var(--rolls-w, 0px) + 16px); bottom: 16px; z-index: 9; display: flex; flex-direction: column-reverse; align-items: flex-start; gap: 8px; pointer-events: none; }
 body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .roll-pops > * { pointer-events: auto; }
-.roll-pop { position: relative; width: 310px; max-width: calc(100vw - 32px); display: flex; gap: 14px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 36px 14px 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, .5); animation: roll-pop .18s ease-out; cursor: default; }
-.peek > .roll-pop { position: absolute; left: 16px; z-index: 2; }
-.roll-pop.gone, .roll-note.gone { opacity: 0; transition: opacity .2s; }
-.roll-pop.nat20 { border-color: var(--green); } .roll-pop.nat1, .roll-pop.failed { border-color: var(--red); }
-.rp-die { width: 52px; height: 52px; flex: none; fill: var(--surface-2); stroke: var(--amber); stroke-width: 1.5; }
-.nat20 .rp-die { stroke: var(--green); } .nat1 .rp-die { stroke: var(--red); }
-.rp-die text { fill: var(--text); stroke: none; font: 700 9px var(--sans); }
-.rp-die.tumble { animation: roll-tumble .55s ease-out; }
-.rp-body { min-width: 0; }
-.rp-label { color: var(--muted); font-size: .78rem; }
-.rp-res b { font-size: 1.9rem; margin-right: 4px; font-variant-numeric: tabular-nums; }
-.rp-res u { text-decoration: none; color: var(--text); font-weight: 700; }
-.rp-flag { font-size: .8rem; color: var(--green); } .nat1 .rp-flag { color: #f08a8a; }
-.roll-pop .roll-dmg { margin-top: 6px; }
-.rp-x { position: absolute; top: 6px; right: 8px; background: none; border: 0; color: var(--muted); font-size: 1.1rem; line-height: 1; padding: 4px; }
+.roll-note.gone { opacity: 0; transition: opacity .2s; }
 .roll-note { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px 6px 6px; font-size: .85rem; box-shadow: 0 6px 20px rgba(0, 0, 0, .4); animation: roll-note .25s ease-out; }
 .roll-note .roll-av { width: 26px; height: 26px; font-size: .75rem; }
-@keyframes roll-pop { from { transform: translateY(16px); opacity: 0; } }
+@keyframes roll-pop { from { transform: translateY(8px); opacity: 0; } }
 @keyframes roll-note { from { transform: translateX(-12px); opacity: 0; } }
 @keyframes roll-tumble { 0% { transform: translateY(-40px) rotate(0) scale(.6); opacity: 0; } 40% { opacity: 1; } 70% { transform: translateY(6px) rotate(540deg) scale(1.05); } 100% { transform: none; } }
-@media (prefers-reduced-motion: reduce) { .rp-die.tumble, .roll-pop, .roll-note, .roll-item.fresh { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .roll-win, .roll-note, .roll-item.fresh { animation: none; } }
 
 /* Phones: the log is a bottom sheet over the bottom bar: the newest rolls, its bar alone
-   (collapsed), or every roll (tap or swipe up). Pop-ups and notices show under the menu bar. */
+   (collapsed), or every roll with the dice (tap or swipe up). Notices show under the menu bar. */
 @media (max-width: 800px) {
   body.gm-on { padding-left: 0; --rolls-w: 0px; }
   body.gm-on .topbar { margin-left: 0; }
-  body.gm-on .rolls-side, body.gm-on.rolls-rail .rolls-side { top: auto; bottom: calc(60px + env(safe-area-inset-bottom)); width: auto; right: 0; max-height: 196px; border-right: 0; border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; box-shadow: 0 -10px 30px rgba(0, 0, 0, .45); }
-  body.gm-on.rolls-full .rolls-side { max-height: 72vh; }
-  body.gm-on.rolls-open { padding-bottom: calc(256px + env(safe-area-inset-bottom)); }
+  body.gm-on .rolls-side, body.gm-on.rolls-rail .rolls-side { top: auto; bottom: calc(60px + env(safe-area-inset-bottom)); width: auto; right: 0; max-height: 210px; border-right: 0; border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; box-shadow: 0 -10px 30px rgba(0, 0, 0, .45); }
+  body.gm-on.rolls-full .rolls-side { max-height: 80vh; }
+  body.gm-on.rolls-open { padding-bottom: calc(270px + env(safe-area-inset-bottom)); }
   body.gm-on.rolls-rail { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
   .rs-head, body.rolls-rail .rs-head { position: relative; flex-direction: row; padding: 14px 14px 6px; cursor: pointer; }
   .rs-grip { display: block; position: absolute; top: 6px; left: calc(50% - 20px); width: 40px; height: 4px; border-radius: 2px; background: var(--line); }
@@ -1212,16 +1240,16 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
   body.rolls-rail .rs-icon { display: none; }
   .rs-toggle span[aria-hidden] { display: inline-block; transform: rotate(-90deg); }
   body.rolls-rail .rs-toggle span[aria-hidden] { transform: rotate(90deg); }
-  body.rolls-rail .rs-log, body.rolls-rail .rs-controls { display: none; }
+  body.rolls-rail .rs-log { display: none; }
   body.gm-on.rolls-open:not(.rolls-full) .rs-controls { display: none; }
-  .roll-item { grid-template-columns: 28px minmax(0, 1fr) auto; padding: 6px 8px; }
-  body.gm-on.rolls-open:not(.rolls-full) .roll-item { background: none; border: 0; padding: 2px 0; }
-  body.gm-on.rolls-open:not(.rolls-full) .roll-dice, body.gm-on.rolls-open:not(.rolls-full) .roll-flag, body.gm-on.rolls-open:not(.rolls-full) .roll-item .roll-dmg { display: none; }
-  .roll-av { width: 28px; height: 28px; font-size: .8rem; }
-  .roll-total { font-size: 1.2rem; }
+  .rs-controls { max-height: none; }
+  .roll-item { grid-template-columns: 32px minmax(0, 1fr) auto; padding: 8px 10px; }
+  body.gm-on.rolls-open:not(.rolls-full) .roll-item { background: none; border: 0; padding: 3px 0; align-items: center; }
+  body.gm-on.rolls-open:not(.rolls-full) :is(.roll-dice, .roll-flag, .roll-dmg-line, .roll-acts, .roll-who time) { display: none; }
+  .roll-av { width: 32px; height: 32px; font-size: .8rem; }
+  .roll-total { font-size: 1.4rem; }
   .roll-pops { left: 8px; right: 8px; top: calc(var(--stick-top, 56px) + 8px); bottom: auto; flex-direction: column; align-items: stretch; }
-  .roll-pop { width: auto; max-width: none; }
-  .peek > .roll-pop { right: 16px; }
+  .roll-win { width: calc(100vw - 16px); max-height: 85vh; box-shadow: 0 -10px 40px rgba(0, 0, 0, .6); }
 }
 /* Combo turns as ordered steps (a Bonus action can come first) */
 .combo-steps-edit { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }

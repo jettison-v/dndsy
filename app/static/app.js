@@ -612,15 +612,20 @@
 })();
 
 
-// Rolls. Anything with data-roll rolls when clicked: data-label names it, data-mod is the bonus,
-// data-dmg the damage dice, data-adv="1" when Advantage always applies.
-// - Game Mode on and it's your own character: the server rolls (app/table_rolls.py) and the
-//   table sees it in the Table rolls sidebar (_table_rolls.html), or in a pop-up near the bottom
-//   left when the sidebar isn't open. Others' rolls arrive by polling, as small notices then.
-// - Otherwise: a private roll in this browser only (crypto random), kept in "Your rolls".
+// Rolls. Anything with data-roll opens the roll window next to it: data-roll is the kind (save,
+// check, attack, death, damage, heal, dice), data-label names it, data-mod is the bonus, data-dmg
+// the dice, data-adv="1" when Advantage always applies, data-adv-why the reasons, data-note a line
+// to show. The window offers Normal / Adv / Dis, who sees it and situational bonuses, then turns
+// into the result in place (with a short d20 tumble), with the follow-ups: damage after an attack,
+// a reroll, an added die. Shift-click rolls straight away.
+// - Game Mode on and it's your own character (or plain dice): the server rolls (app/table_rolls.py)
+//   and the table sees it in the Table rolls sidebar; others' rolls arrive by polling, and as
+//   small notices while the sidebar is collapsed.
+// - Otherwise: a private roll in this browser only (crypto random).
 (function () {
-  const KEY = 'askdnd.rolls', SIDE = 'askdnd.rollsSide.', ANIM = 'askdnd.rollsAnim', TO = 'askdnd.rollsTo';
+  const SIDE = 'askdnd.rollsSide.', ANIM = 'askdnd.rollsAnim', TO = 'askdnd.rollsTo';
   const WIDE = 1100;  // narrower than this, the sidebar collapses to its rail
+  const D20 = ['save', 'check', 'attack', 'death'];
   const phone = matchMedia('(max-width: 800px)'), calm = matchMedia('(prefers-reduced-motion: reduce)');
   const side = document.getElementById('table-rolls'), log = document.getElementById('roll-log');
   const pops = document.querySelector('.roll-pops');
@@ -628,116 +633,415 @@
     get: (k, s) => { try { return (s ? sessionStorage : localStorage).getItem(k); } catch (e) { return null; } },
     set: (k, v, s) => { try { (s ? sessionStorage : localStorage).setItem(k, v); } catch (e) { /* private window */ } },
   };
-  let mode = 'normal';  // the next d20 roll: normal, adv or dis (back to normal after rolling)
   let to = store.get(TO, true) || 'table';  // who sees your rolls; kept for this tab only, so it starts at Table
-  let tray = null, lastId = 0, loaded = false, overlay = false, myPop = null;
+  let lastId = 0, loaded = false, overlay = false, win = null;
 
+  const num = s => parseInt(String(s || '0').replace('−', '-'), 10) || 0;
+  const signed = n => (n >= 0 ? '+' : '−') + Math.abs(n);
+  function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+  const gmOn = () => document.body.classList.contains('gm-on');
+  // The animation switch: on or off as chosen on this device; until then, off only if the device asks for less motion
+  const animate = () => { const v = store.get(ANIM); return v ? v === 'on' : !calm.matches; };
+  const TO_WORDS = { table: 'to the table', dm: 'DM only', self: 'just you', private: 'only in this browser' };
+
+  // ---------------------------------------------------------------- dice (private rolls; the server rolls table rolls the same way)
   function die(sides) {
     const a = new Uint32Array(1);
     crypto.getRandomValues(a);
     return (a[0] % sides) + 1;
   }
-  const num = s => parseInt(String(s || '0').replace('−', '-'), 10) || 0;
-  const signed = n => (n >= 0 ? '+' : '−') + Math.abs(n);
-  function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
-  const gmOn = () => document.body.classList.contains('gm-on');
-  const animate = () => !calm.matches && store.get(ANIM) !== 'off';
-  const TO_WORDS = { table: 'to the table', dm: 'DM only', self: 'just you' };
-  const MODE_WORDS = { normal: 'Normal', adv: 'Adv', dis: 'Dis' };
-  const TO_SHORT = { table: 'Table', dm: 'DM', self: 'Me' };
+  function parseFormula(expr) {
+    let s = String(expr || '').replace(/\s/g, '').replace(/−/g, '-').toLowerCase();
+    if (!s) return null;
+    if (!'+-'.includes(s[0])) s = '+' + s;
+    const re = /([+-])(?:(\d{1,2})d(\d{1,3})|(\d{1,3}))/g;
+    const terms = []; let flat = 0, pos = 0, m;
+    while ((m = re.exec(s))) {
+      if (m.index !== pos) return null;
+      pos = re.lastIndex;
+      if (m[2]) { if (m[1] === '-' || +m[2] < 1 || +m[2] > 20 || +m[3] < 2 || +m[3] > 100) return null; terms.push([+m[2], +m[3]]); }
+      else flat += (m[1] === '-' ? -1 : 1) * +m[4];
+    }
+    if (pos !== s.length || !terms.length || terms.reduce((a, t) => a + t[0], 0) > 40) return null;
+    return { terms, flat };
+  }
+  const formulaText = (terms, flat) => terms.map(t => t[0] + 'd' + t[1]).join('+') + (flat ? signed(flat).replace('−', '-') : '');
+  function keptOf(dice, mode) { return mode === 'adv' ? Math.max(...dice) : mode === 'dis' ? Math.min(...dice) : dice[0]; }
+  function part(p) { return { extras: [], crit: false, ...p, kept_at: p.kept != null && p.dice.length > 1 ? p.dice.indexOf(p.kept) : -1 }; }
+  function rollD20(mod, mode) {
+    const dice = mode === 'normal' ? [die(20)] : [die(20), die(20)], kept = keptOf(dice, mode);
+    return part({ dice, kept, modifier: mod, mode, formula: 'd20' + signed(mod), total: kept + mod });
+  }
+  function rollFormula(expr, crit, floor) {
+    const f = parseFormula(expr);
+    if (!f) return null;
+    const terms = crit ? f.terms.map(t => [t[0] * 2, t[1]]) : f.terms;
+    const dice = terms.flatMap(t => Array.from({ length: t[0] }, () => die(t[1])));
+    const total = dice.reduce((a, b) => a + b, 0) + f.flat;
+    return part({ dice, kept: null, modifier: f.flat, mode: 'normal', formula: formulaText(terms, f.flat), total: floor ? Math.max(total, 0) : total, crit: !!crit });
+  }
+  function rollExtras(list, crit) {
+    return list.map(x => {
+      const m = /^(.+):([+-])(?:(\d+)d(\d+)|(\d+))$/.exec(x);
+      if (!m) return null;
+      const sign = m[2] === '-' ? -1 : 1;
+      if (!m[3]) return { label: m[1], formula: signed(sign * +m[5]), dice: [], total: sign * +m[5] };
+      const n = crit ? +m[3] * 2 : +m[3], dice = Array.from({ length: n }, () => die(+m[4]));
+      return { label: m[1], formula: m[2] + n + 'd' + m[4], dice, total: sign * dice.reduce((a, b) => a + b, 0) };
+    }).filter(Boolean);
+  }
+  const sum = xs => xs.reduce((a, x) => a + x.total, 0);
+  // A private roll, in the same shape the server sends for table rolls
+  function privateRoll(spec) {
+    let main;
+    if (D20.includes(spec.kind)) {
+      main = rollD20(spec.kind === 'death' ? 0 : num(spec.mod), spec.mode);
+      main.extras = rollExtras(spec.extras);
+      main.total += sum(main.extras);
+    } else {
+      main = rollFormula(spec.dmg, false, spec.kind !== 'dice');
+      if (!main) return null;
+      main.extras = rollExtras(spec.extras);
+      main.total += sum(main.extras);
+      if (spec.kind !== 'dice') main.total = Math.max(main.total, 0);
+    }
+    const e = { id: 0, label: spec.label, kind: spec.kind, to: 'private', main, rerolled: null, bonus: null, damage: null, dmg: spec.kind === 'attack' ? spec.dmg : '' };
+    return settle(e, spec.ctx || {});
+  }
+  function settle(e, ctx) {
+    const eff = e.main;
+    e.nat = D20.includes(e.kind) && (eff.kept === 20 || eff.kept === 1) ? eff.kept : null;
+    e.total = eff.total + (e.bonus ? e.bonus.total : 0);
+    e.outcome = e.kind === 'death' ? deathOutcome(e.total, e.nat) : '';
+    const d20 = D20.includes(e.kind);
+    e.can = {
+      damage: e.kind === 'attack' && e.dmg && !e.damage && e.nat !== 1 ? e.dmg : '',
+      reroll: e.rerolled || e.damage || !d20 ? '' : ctx.halfling && eff.kept === 1 ? 'Luck' : ctx.inspiration ? 'Heroic Inspiration' : '',
+      bonus: d20 && !e.bonus && !e.damage,
+    };
+    return e;
+  }
+  function privateFollow(e, action, opts) {
+    if (action === 'damage') {
+      const crit = e.nat === 20, d = rollFormula(e.dmg, crit, true);
+      if (!d) return e;
+      d.extras = rollExtras(opts.extras || [], crit);
+      d.total = Math.max(d.total + sum(d.extras), 0);
+      e.damage = d;
+    } else if (action === 'reroll') {
+      const old = e.main, dice = old.dice.slice();
+      dice[dice.indexOf(old.kept)] = die(20);
+      const kept = keptOf(dice, old.mode);
+      e.rerolled = { ...old, reason: opts.reason };
+      e.main = part({ ...old, dice, kept, total: kept + old.modifier + sum(old.extras) });
+    } else if (action === 'bonus') {
+      const n = die(opts.die);
+      e.bonus = { label: opts.label || 'Bardic Inspiration', formula: '1d' + opts.die, dice: [n], total: n };
+    }
+    return settle(e, opts.ctx || {});
+  }
+  function deathOutcome(total, nat) {
+    return nat === 20 ? 'natural 20: you regain 1 Hit Point' : nat === 1 ? 'natural 1: two failures' : total >= 10 ? 'success' : 'failure';
+  }
 
-  // ---------------------------------------------------------------- private rolls (this browser)
-  function parseDice(expr) {
-    const m = /(\d+)d(\d+)(?:([+-])(\d+))?/.exec(expr || '');
-    if (!m) return null;
-    return { count: +m[1], sides: +m[2], bonus: m[3] ? (m[3] === '-' ? -1 : 1) * +m[4] : 0 };
+  // ---------------------------------------------------------------- showing a result
+  function dline(p, d20) {
+    let s = d20 ? 'd20 ' + p.dice.map((d, i) => (i === p.kept_at ? '<u>' + d + '</u>' : d)).join(' / ') + ' ' + signed(p.modifier) + (p.mode === 'adv' ? ' · Adv' : p.mode === 'dis' ? ' · Dis' : '')
+                : esc(p.formula) + ': ' + p.dice.join(' ') + (p.modifier ? ' ' + signed(p.modifier) : '');
+    (p.extras || []).forEach(x => { s += ' · ' + esc(x.label) + ' ' + signed(x.total) + (x.dice.length ? ' <span class="roll-x">(' + esc(x.formula) + ')</span>' : ''); });
+    return s;
   }
-  function history() {
-    try { return JSON.parse(store.get(KEY) || '[]'); } catch (e) { return []; }
-  }
-  function remember(entry) {
-    const list = [entry, ...history()].slice(0, 30);
-    store.set(KEY, JSON.stringify(list));
-    return list;
-  }
-  function who() {
-    const b = document.getElementById('battle-body');
-    return b ? b.dataset.name || '' : '';
-  }
-  function d20(el) {
-    const mod = num(el.dataset.mod);
-    const use = mode !== 'normal' ? mode : (el.dataset.adv ? 'adv' : 'normal');
-    const dice = use === 'normal' ? [die(20)] : [die(20), die(20)];
-    const kept = use === 'adv' ? Math.max(...dice) : use === 'dis' ? Math.min(...dice) : dice[0];
-    const attack = el.dataset.roll === 'attack';
-    return { kind: el.dataset.roll, label: el.dataset.label, who: who(), mode: use, dice, kept, mod, total: kept + mod,
-             crit: attack && kept === 20, miss: attack && kept === 1, dmg: el.dataset.dmg || '', at: Date.now() };
-  }
-  function damage(label, expr, crit) {
-    const d = parseDice(expr);
-    if (!d) return null;
-    const n = crit ? d.count * 2 : d.count;
-    const dice = Array.from({ length: n }, () => die(d.sides));
-    const total = dice.reduce((a, b) => a + b, 0) + d.bonus;
-    return { kind: 'damage', label, who: who(), expr: (crit ? n + 'd' + d.sides + (d.bonus ? signed(d.bonus) : '') : expr),
-             dice, mod: d.bonus, total: Math.max(total, 0), crit: !!crit, at: Date.now() };
-  }
-  // The same shape the server sends, so the pop-up shows both alike
-  function asShared(r) {
-    const nat = r.kind !== 'damage' && (r.kept === 20 || r.kept === 1) ? r.kept : null;
-    return { label: r.label, kind: r.kind, total: r.total, dice: r.dice, kept: r.kept ?? null, modifier: r.mod, mode: r.mode || 'normal',
-             formula: r.expr || '', crit: !!(r.kind === 'damage' && r.crit), nat, to: 'private',
-             kept_at: r.dice.length > 1 ? r.dice.indexOf(r.kept) : -1, damage: r.kind === 'attack' && r.dmg && !r.miss ? r.dmg : '', local: r };
-  }
-  function line(r) {
-    if (r.kind === 'damage') {
-      return '<b>' + r.total + '</b> <span class="roll-sub">' + esc(r.expr) + ': ' + r.dice.join(' + ') + (r.mod ? ' ' + signed(r.mod) : '') + (r.crit ? ' · critical' : '') + '</span>';
+  const KIND_WORDS = { attack: ' to hit', damage: ' damage', heal: ' healing' };
+  function resultHTML(e, focus) {
+    const d20 = D20.includes(e.kind), dmgFirst = focus === 'damage' && e.damage;
+    const big = dmgFirst ? e.damage.total : e.total;
+    const what = dmgFirst ? ' ' + (e.damage.crit ? 'critical damage' : 'damage') : (KIND_WORDS[e.kind] || '');
+    const flag = e.kind === 'death' ? e.outcome : e.nat ? 'Natural ' + e.nat + (e.kind === 'attack' ? (e.nat === 20 ? ': critical hit' : ': miss') : '') : '';
+    let h = '<div class="rp-label">' + esc(e.label) + what + ' · ' + TO_WORDS[e.to] + '</div>'
+      + '<div class="rp-res"><b>' + big + '</b> <span class="roll-sub">' + (dmgFirst ? dline(e.damage, false) : dline(e.main, d20)) + '</span></div>';
+    if (dmgFirst) h += '<div class="rp-line">To hit <b>' + e.total + '</b> · ' + dline(e.main, true) + '</div>';
+    if (e.rerolled) h += '<div class="rp-line">Rerolled (' + esc(e.rerolled.reason) + '): was <s>' + e.rerolled.total + '</s></div>';
+    if (e.bonus) h += '<div class="rp-line">+ ' + esc(e.bonus.label) + ' ' + e.bonus.total + ' <span class="roll-x">(' + esc(e.bonus.formula) + ')</span></div>';
+    if (flag) h += '<div class="rp-flag">' + esc(flag) + '</div>';
+    if (e.damage && !dmgFirst) h += '<div class="rp-line">' + (e.damage.crit ? 'Critical damage' : 'Damage') + ' <b>' + e.damage.total + '</b> · ' + dline(e.damage, false) + '</div>';
+    const c = e.can || {};
+    if (c.damage || c.reroll || c.bonus) {
+      h += '<div class="rp-acts">'
+        + (c.damage ? '<button type="button" class="btn small primary" data-act="damage">Roll ' + (e.nat === 20 ? 'critical ' : '') + 'damage (' + esc(c.damage) + ')</button>' : '')
+        + (c.reroll ? '<button type="button" class="btn small" data-act="reroll">Reroll (' + esc(c.reroll) + ')</button>' : '')
+        + (c.bonus ? '<button type="button" class="btn small link" data-act="bonus">+ Add a die</button>' : '') + '</div>';
     }
-    const dice = r.dice.length > 1 ? r.dice.map(x => x === r.kept ? '<u>' + x + '</u>' : x).join(' / ') : String(r.dice[0]);
-    const tag = r.mode === 'adv' ? ' · Advantage' : r.mode === 'dis' ? ' · Disadvantage' : '';
-    const flag = r.crit ? ' · <span class="roll-crit">natural 20: critical hit</span>' : r.miss ? ' · <span class="roll-fumble">natural 1: miss</span>' : '';
-    return '<b>' + r.total + '</b> <span class="roll-sub">d20 ' + dice + ' ' + signed(r.mod) + tag + flag + '</span>';
+    return h;
   }
-  function renderTray(latest) {
-    if (!tray) return;
-    const list = history();
-    const top = latest || list[0];
-    tray.querySelector('.roll-last').innerHTML = top
-      ? '<div class="roll-label">' + esc(top.label) + (top.kind === 'damage' ? ' · damage' : top.kind === 'attack' ? ' · to hit' : '') + '</div><div class="roll-result">' + line(top) + '</div>'
-        + (top.kind === 'attack' && top.dmg ? '<button type="button" class="btn small roll-dmg-btn">Roll ' + (top.crit ? 'critical ' : '') + 'damage (' + esc(top.dmg) + ')</button>' : '')
-      : '<div class="roll-sub">Click a save, Initiative or an attack bonus to roll. Only you see these rolls.</div>';
-    const btn = tray.querySelector('.roll-dmg-btn');
-    if (btn) btn.onclick = () => { const r = damage(top.label, top.dmg, top.crit); if (r) { remember(r); renderTray(r); } };
-    tray.querySelector('.roll-history').innerHTML = list.slice(top ? 1 : 0, 9).map(r =>
-      '<li><span>' + esc(r.label) + (r.kind === 'damage' ? ' dmg' : '') + '</span><b>' + r.total + '</b></li>').join('');
-    renderModes();
+
+  // ---------------------------------------------------------------- the roll window
+  const REASONS = {
+    attack: 'Disadvantage: you\'re Blinded, Poisoned, Prone or Restrained, Frightened with the source in sight; long range; a ranged attack with an enemy within 5 ft. Advantage: you\'re Invisible or unseen; the target is Blinded, Paralyzed, Petrified, Restrained, Stunned or Unconscious, or Prone within 5 ft; an ally Helps. Both at once cancel out.',
+    save: 'Dex saves: Advantage while Dodging, Disadvantage while Restrained. Str and Dex saves fail automatically while Paralyzed, Petrified, Stunned or Unconscious. Both at once cancel out.',
+    check: 'Disadvantage: you\'re Poisoned, or Frightened with the source in sight. A check that needs sight fails while Blinded. Advantage: an ally Helps with this skill. Both at once cancel out.',
+    death: '10 or higher succeeds. Three successes and you\'re Stable; three failures and you die. A 20 brings you back with 1 Hit Point; a 1 counts as two failures. Damage at 0 HP is a failure (two on a critical hit).',
+  };
+  const BONUSES = {
+    attack: [['Bless', '+1d4'], ['Bane', '-1d4']], save: [['Bless', '+1d4'], ['Bane', '-1d4']],
+    check: [['Guidance', '+1d4']], death: [['Bless', '+1d4']],
+    damage: [["Hunter's Mark", '+1d6'], ['Hex', '+1d6']],
+  };
+  function ctxFor(cid) {
+    const el = cid && document.querySelector('[data-roll-char="' + cid + '"], [data-character="' + cid + '"][data-roll-ctx]');
+    try { return el ? JSON.parse(el.dataset.rollCtx) : {}; } catch (e) { return {}; }
   }
-  // "Your rolls" shows while Game Mode is off on pages with roll buttons (with it on, rolls show
-  // in the sidebar or a pop-up). It hides while a side panel or window is open, so it never
-  // covers their buttons; rolls made in one show as a pop-up instead.
-  function ensureTray() {
-    if (!document.querySelector('[data-roll]') || gmOn()) { if (tray) tray.hidden = true; return; }
-    if (!tray) {
-      tray = document.createElement('aside');
-      tray.className = 'roll-tray';
-      tray.setAttribute('aria-label', 'Your dice rolls');
-      tray.innerHTML = '<div class="roll-head" title="Private: only you see these rolls"><span class="roll-title">Your rolls</span>'
-        + '<span class="roll-modes" role="group" aria-label="Next d20 roll">'
-        + '<button type="button" data-mode="normal">Normal</button><button type="button" data-mode="adv">Adv</button><button type="button" data-mode="dis">Dis</button></span>'
-        + '<button type="button" class="roll-fold" aria-label="Show or hide past rolls" title="Past rolls">▾</button></div>'
-        + '<div class="roll-last" aria-live="polite"></div><ol class="roll-history"></ol>';
-      document.body.appendChild(tray);
-      tray.addEventListener('click', e => { if (e.target.closest('.roll-fold')) tray.classList.toggle('open'); });
-      renderTray();
+  function characterOf(el) {
+    const holder = el.closest('[data-roll-char]') || el.closest('[data-character]');
+    if (holder) return holder.dataset.rollChar || holder.dataset.character;
+    const panel = el.closest('.peek');
+    const m = panel && /^\/characters\/(\d+)/.exec(panel.dataset.url || '');
+    return m ? m[1] : '';
+  }
+  function seg(name, opts, value) {
+    return '<span class="roll-modes" role="group" aria-label="' + name + '">' + opts.map(([v, t]) =>
+      '<button type="button" data-' + name.toLowerCase().replace(/\W+/g, '-') + '="' + v + '" aria-pressed="' + (v === value) + '">' + t + '</button>').join('') + '</span>';
+  }
+  function closeWin() { if (win) { win.remove(); win = null; } }
+  function place(w, anchor) {
+    const r = anchor && anchor.isConnected ? anchor.getBoundingClientRect() : w._r;
+    if (!r && !phone.matches) return;
+    w._r = r;
+    const pw = w.offsetWidth, ph = w.offsetHeight, m = 8;
+    if (phone.matches) {  // phones: at the bottom, over the bottom bar, within thumb reach
+      w.style.left = m + 'px'; w.style.top = Math.max(m, innerHeight - ph - m) + 'px';
+      return;
     }
-    tray.hidden = false;
+    let left = Math.min(Math.max(r.left, m), innerWidth - pw - m), top = r.bottom + 6;
+    if (top + ph > innerHeight - m) top = r.top - ph - 6;
+    if (top < m) top = Math.max(m, innerHeight - ph - m);
+    w.style.left = left + 'px'; w.style.top = top + 'px';
   }
-  const panelOpen = () => document.querySelector('.peek.open');
+  function openWin(anchor) {
+    const prev = win && anchor && win.contains(anchor) ? win.getBoundingClientRect() : null;  // a follow-up takes the result's place
+    closeWin();
+    win = document.createElement('div');
+    if (prev) win._r = { left: prev.left, top: prev.top, bottom: prev.top - 6 };
+    win.className = 'roll-win';
+    win.setAttribute('role', 'dialog');
+    win.setAttribute('aria-label', 'Roll');
+    document.body.appendChild(win);
+    win._anchor = anchor;
+    win.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.target.matches('button')) { e.preventDefault(); const go = win.querySelector('[data-go]'); if (go) go.click(); }
+    });
+    return win;
+  }
+
+  // spec: what to roll. {kind, label, mod, dmg, adv, advWhy, note, cid, shared, follow, parent, entry}
+  function chooser(anchor, spec) {
+    const w = openWin(anchor), d20 = D20.includes(spec.kind) && !spec.follow, ctx = ctxFor(spec.cid);
+    let mode = spec.adv ? 'adv' : 'normal';
+    const title = spec.follow === 'damage' ? esc(spec.label) + ' · ' + (spec.crit ? 'critical damage' : 'damage') + ' <span class="roll-sub">' + esc(spec.dmg) + (spec.crit ? ', dice doubled' : '') + '</span>'
+      : spec.follow === 'bonus' ? 'Add a die to ' + esc(spec.label)
+      : esc(spec.label || 'Dice') + ' <span class="roll-sub">' + (d20 ? 'd20' + (spec.kind === 'death' ? '' : ' ' + signed(num(spec.mod))) : esc(spec.dmg)) + '</span>';
+    let h = '<button type="button" class="rp-x" aria-label="Close">×</button><div class="rw-title">' + title + '</div>';
+    if (d20) {
+      h += '<div class="rw-row rw-mode">' + seg('Mode', [['normal', 'Normal'], ['adv', 'Advantage'], ['dis', 'Disadvantage']], mode) + '</div>';
+      const notes = [];
+      (spec.advWhy || '').split('\n').filter(Boolean).forEach(t => notes.push(/^advantage\b/i.test(t) ? '<b>Advantage</b>' + esc(t.slice(9)) : '<b>Advantage</b> ' + esc(t)));
+      if (ctx.luck) notes.push('<b>Lucky</b> you can spend a Luck Point (' + ctx.luck + ' left) for Advantage');
+      if (ctx.inspiration) notes.push('<b>Heroic Inspiration</b> you have it: you can reroll after you see the roll');
+      if (ctx.halfling) notes.push('<b>Luck</b> (Halfling) you can reroll a 1');
+      if (/^Con save/.test(spec.label)) notes.push('<b>Concentration</b> after damage: DC 10 or half the damage, whichever is higher (up to 30)');
+      if (spec.label === 'Initiative') notes.push('<b>Initiative</b> Disadvantage if you\'re Surprised, Advantage if you\'re Invisible');
+      if (notes.length) h += '<ul class="rw-notes">' + notes.map(n => '<li>' + n + '</li>').join('') + '</ul>';
+      if (REASONS[spec.kind]) h += '<details class="rw-why"><summary>Common reasons for Advantage or Disadvantage</summary><p>' + REASONS[spec.kind] + '</p></details>';
+    }
+    if (spec.note) h += '<p class="rw-note">' + esc(spec.note) + '</p>';
+    if (spec.follow === 'damage' && spec.crit) h += '<p class="rw-note">Critical hit: every damage die is rolled twice, extra dice too.</p>';
+    const bonusKind = spec.follow === 'damage' ? 'damage' : d20 ? spec.kind : '';
+    if (spec.follow === 'bonus') {
+      h += '<div class="rw-row"><span class="rw-label">Die</span>' + seg('Die', [[4, 'd4'], [6, 'd6'], [8, 'd8'], [10, 'd10'], [12, 'd12']], 6) + '</div>'
+        + '<div class="rw-row"><span class="rw-label">From</span><input type="text" class="rw-text" data-bonus-label value="Bardic Inspiration" maxlength="40"></div>'
+        + '<p class="rw-note">Bardic Inspiration adds its die after you see a d20 roll fail.</p>';
+    } else if (spec.follow !== 'reroll') {
+      const chips = BONUSES[bonusKind] || [];
+      if (chips.length) h += '<div class="rw-row"><span class="rw-label">Add</span><span class="rw-chips">' + chips.map(([l, f]) =>
+        '<button type="button" class="chip" data-extra="' + esc(l) + ':' + f + '" aria-pressed="false">' + esc(l) + ' ' + f.replace('-', '−') + '</button>').join('') + '</span></div>';
+      let other = '';
+      if (spec.kind === 'heal' && !spec.follow && spec.label !== 'Hit Die' && !/potion/i.test(spec.label) && ctx.spell_mod != null) other = signed(ctx.spell_mod).replace('−', '-');
+      h += '<div class="rw-row"><span class="rw-label">Other</span><input type="text" class="rw-text rw-other" placeholder="+2, \u22121 or +1d4" value="' + other + '"' + (other ? ' data-name="Spellcasting modifier" data-was="' + other + '"' : '') + ' aria-label="Other bonus" size="7">'
+        + (d20 ? '<label class="rw-exh">Exhaustion <select data-exh aria-label="Exhaustion level"><option value="0">0</option>' + [1, 2, 3, 4, 5].map(n => '<option value="' + n + '">' + n + '</option>').join('') + '</select></label>' : '') + '</div>';
+      if (other) h += '<p class="rw-note">Most healing spells add your spellcasting modifier (filled in); change it if this one doesn\'t.</p>';
+      if (spec.kind === 'dice') h += '<div class="rw-row"><span class="rw-label">For</span><input type="text" class="rw-text" data-for placeholder="What the DM asked for (optional)" maxlength="60"></div>';
+    }
+    if (spec.shared && !spec.follow) h += '<div class="rw-row"><span class="rw-label">Who sees</span>' + seg('To', [['table', 'Table'], ['dm', 'DM only'], ['self', 'Just me']], to) + '</div>';
+    else if (!spec.shared) h += '<p class="rw-note">' + (gmOn() ? 'You don\'t play this character, so only you see this roll.' : 'Only you see this roll (Game Mode is off).') + '</p>';
+    h += '<div class="rw-go"><button type="button" class="btn primary" data-go>Roll</button><span class="note">Enter rolls · Esc closes</span></div>';
+    w.innerHTML = h;
+    place(w, anchor);
+    w.addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      if (b.classList.contains('rp-x')) return closeWin();
+      if (b.dataset.mode) { mode = b.dataset.mode; w.querySelectorAll('[data-mode]').forEach(x => x.setAttribute('aria-pressed', x === b)); }
+      if (b.dataset.to) { to = b.dataset.to; store.set(TO, to, true); w.querySelectorAll('[data-to]').forEach(x => x.setAttribute('aria-pressed', x === b)); }
+      if (b.dataset.die) w.querySelectorAll('[data-die]').forEach(x => x.setAttribute('aria-pressed', x === b));
+      if (b.dataset.extra) b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true');
+      if (b.hasAttribute('data-go')) {
+        const extras = [...w.querySelectorAll('[data-extra][aria-pressed=true]')].map(x => x.dataset.extra);
+        const otherIn = w.querySelector('.rw-other') || {}, other = otherIn.value || '';
+        const o = other.replace(/\s/g, '').replace(/−/g, '-');
+        if (o) {
+          if (!/^[+-]?(\d{1,2}d\d{1,3}|\d{1,2})$/.test(o)) { w.querySelector('.rw-other').classList.add('bad'); w.querySelector('.rw-other').focus(); return; }
+          extras.push((other === (otherIn.dataset || {}).was ? otherIn.dataset.name : 'Other') + ':' + (/^[+-]/.test(o) ? o : '+' + o));
+        }
+        const exh = +((w.querySelector('[data-exh]') || {}).value || 0);
+        if (exh) extras.push('Exhaustion ' + exh + ':-' + 2 * exh);
+        const forText = ((w.querySelector('[data-for]') || {}).value || '').trim();
+        const go = { ...spec, mode, extras, label: spec.kind === 'dice' ? (forText || 'Dice') : spec.label, ctx,
+                     die: +((w.querySelector('[data-die][aria-pressed=true]') || {}).dataset || {}).die || 6,
+                     bonusLabel: ((w.querySelector('[data-bonus-label]') || {}).value || '').trim() };
+        roll(w, go);
+      }
+    });
+    (w.querySelector('[data-go]') || w).focus();
+  }
+
+  // ---------------------------------------------------------------- rolling
+  const D20SVG = '<svg class="rp-die" viewBox="0 0 30 30" aria-hidden="true"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9"/><text x="15" y="18.5" text-anchor="middle"></text></svg>';
+  // Turn the window into the result: a short tumble (click to skip), then the numbers.
+  function showRolling(w) {
+    w.classList.add('result');
+    w.innerHTML = '<button type="button" class="rp-x" aria-label="Close">×</button><div class="rw-result">' + D20SVG + '<div class="rp-body"><div class="rp-res">Rolling…</div></div></div>';
+    const spin = animate();
+    if (spin) w.querySelector('.rp-die').classList.add('tumble');
+    w._ready = new Promise(res => { w._skip = res; setTimeout(res, spin ? 550 : 0); });
+    place(w, w._anchor);
+  }
+  function showResult(w, e, focus) {
+    w._ready.then(() => {
+      if (!w.isConnected) return;
+      w._entry = e;
+      const dieEl = w.querySelector('.rp-die');
+      dieEl.classList.remove('tumble');
+      dieEl.querySelector('text').textContent = focus === 'damage' && e.damage ? e.damage.total : D20.includes(e.kind) ? e.main.kept : e.total;
+      w.classList.toggle('nat20', e.nat === 20);
+      w.classList.toggle('nat1', e.nat === 1);
+      w.querySelector('.rp-body').innerHTML = resultHTML(e, focus);
+      place(w, w._anchor);
+      const first = w.querySelector('.rp-acts button');
+      if (first) first.focus();
+    });
+  }
+  function showFailure(w, text, retry) {
+    w._ready.then(() => {
+      if (!w.isConnected) return;
+      w.querySelector('.rp-die').classList.remove('tumble');
+      w.classList.add('failed');
+      w.querySelector('.rp-body').innerHTML = '<div class="rp-res">' + esc(text) + '</div><div class="rp-acts"><button type="button" class="btn small" data-retry>Try again</button></div>';
+      w.querySelector('[data-retry]').onclick = retry;
+      place(w, w._anchor);
+    });
+  }
+  function payload(go) {
+    const p = new URLSearchParams();
+    if (go.follow) {
+      p.set('parent', go.parent); p.set('action', go.follow);
+      if (go.follow === 'reroll') p.set('label', go.reason);
+      if (go.follow === 'bonus') { p.set('die', go.die); p.set('label', go.bonusLabel || 'Bardic Inspiration'); }
+    } else {
+      Object.entries({ character: go.cid || '', kind: go.kind, label: go.label, mod: go.mod || '', dmg: go.dmg || '', mode: go.mode, to }).forEach(([k, v]) => p.set(k, v));
+    }
+    (go.extras || []).forEach(x => p.append('extra', x));
+    return p;
+  }
+  function roll(w, go) {
+    showRolling(w);
+    w._go = go;
+    if (!go.shared) {
+      const e = go.follow ? privateFollow(go.entry, go.follow, { extras: go.extras, reason: go.reason, die: go.die, label: go.bonusLabel, ctx: go.ctx })
+                          : privateRoll(go);
+      if (!e) return showFailure(w, "Those dice don't look right.", () => chooser(w._anchor, go));
+      return showResult(w, e, go.follow);
+    }
+    const pending = !go.follow && logShown() && log ? placeholder(go.label) : null;
+    fetch('/rolls', { method: 'POST', body: payload(go), headers: { 'X-Requested-With': 'fetch' } })
+      .then(r => r.json().catch(() => ({})).then(j => { if (!r.ok) throw Object.assign(new Error(j.error || "askdnd couldn't roll that"), { said: true }); return j; }))
+      .then(j => {
+        if (pending) pending.remove();
+        addToLog(j.html, j.roll.id);
+        showResult(w, j.roll, go.follow);
+      })
+      .catch(err => {
+        if (pending) pending.remove();
+        showFailure(w, (err.said ? err.message : "Couldn't reach askdnd") + ': not rolled.', () => roll(w, go));
+      });
+  }
+  // A follow-up from the result or the log: damage and an added die ask first; a reroll just rolls.
+  function follow(anchor, action, e, shared, cid) {
+    const base = { follow: action, parent: e.id, label: e.label, entry: e, shared, cid, kind: action === 'damage' ? 'damage' : e.kind };
+    if (action === 'damage') chooser(anchor, { ...base, dmg: e.can.damage, crit: e.nat === 20 });
+    else if (action === 'bonus') chooser(anchor, base);
+    else { const w = win && win.contains(anchor) ? win : openWin(anchor); roll(w, { ...base, reason: e.can.reroll, ctx: ctxFor(cid), extras: [] }); }
+  }
+  function specFrom(el) {
+    const cid = characterOf(el), kind = el.dataset.roll;
+    const shared = gmOn() && !!side && (kind === 'dice' || (!!cid && side.dataset.mine === cid));
+    return { kind, label: el.dataset.label || '', mod: el.dataset.mod || '', dmg: el.dataset.dmg || '', adv: !!el.dataset.adv,
+             advWhy: el.dataset.advWhy || '', note: el.dataset.note || '', cid: kind === 'dice' && side ? side.dataset.mine : cid, shared };
+  }
+
+  document.addEventListener('click', e => {
+    if (!e.target.isConnected) return;  // the window replaced what was clicked (Roll, a follow-up): not a click outside
+    if (win && win.contains(e.target)) {
+      if (e.target.closest('.rp-x')) { closeWin(); return; }
+      const act = e.target.closest('[data-act]');
+      if (act && win._entry) { const g = win._go || {}; follow(act, act.dataset.act, win._entry, g.shared, g.cid); return; }
+      if (win._skip && win.classList.contains('result')) { win._skip(); }
+      return;
+    }
+    const f = e.target.closest('.roll-follow');
+    if (f) {
+      e.preventDefault();
+      const li = f.closest('.roll-item');
+      const entry = { id: +f.dataset.parent, label: f.dataset.label || li.querySelector('.roll-what').firstChild.textContent.trim(), kind: li.className.match(/kind-(\w+)/)[1],
+                      nat: f.dataset.crit ? 20 : null, can: { damage: f.dataset.dmg || '', reroll: f.dataset.reason || '' } };
+      follow(f, f.dataset.follow, entry, true, side ? side.dataset.mine : '');
+      return;
+    }
+    const el = e.target.closest('[data-roll]');
+    if (!el) { if (win && !e.target.closest('.rs-dice')) closeWin(); return; }
+    e.preventDefault();
+    const spec = specFrom(el);
+    if (e.shiftKey) { const w = openWin(el); roll(w, { ...spec, mode: spec.adv ? 'adv' : 'normal', extras: [], ctx: ctxFor(spec.cid) }); }
+    else chooser(el, spec);
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && win) { closeWin(); return; }
+    const el = e.target.closest && e.target.closest('[data-roll][tabindex]');
+    if (el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); el.click(); }
+  });
+  addEventListener('resize', () => { if (win) place(win, win._anchor); });
+  document.addEventListener('scroll', e => { if (win && !win.contains(e.target)) place(win, win._anchor); }, true);
+
+  // ---------------------------------------------------------------- the sidebar's dice tray
+  if (side) {
+    const tray = side.querySelector('.rs-dice'), counts = {};
+    const out = tray.querySelector('.rs-formula'), modIn = tray.querySelector('.rs-mod'), go = tray.querySelector('[data-dice-roll]');
+    const formula = () => {
+      const f = Object.keys(counts).sort((a, b) => b - a).map(s => counts[s] + 'd' + s).join('+'), m = num(modIn.value);
+      return f ? f + (m ? (m > 0 ? '+' : '-') + Math.abs(m) : '') : '';
+    };
+    const show = () => { const f = formula(); out.textContent = f ? f.replace(/\+/g, ' + ').replace(/-/g, ' − ') : 'Pick dice'; go.disabled = !f; };
+    tray.addEventListener('click', e => {
+      const d = e.target.closest('[data-add-die]');
+      if (d) { counts[d.dataset.addDie] = Math.min((counts[d.dataset.addDie] || 0) + 1, 20); show(); }
+      if (e.target.closest('[data-dice-clear]')) { Object.keys(counts).forEach(k => delete counts[k]); modIn.value = ''; show(); }
+      if (e.target.closest('[data-dice-roll]') && formula()) chooser(go, { kind: 'dice', label: '', dmg: formula(), cid: side.dataset.mine, shared: gmOn() });
+    });
+    modIn.addEventListener('input', show);
+  }
 
   // ---------------------------------------------------------------- the sidebar's state
   // Desktop: "open" or "rail", remembered per device for Play and for everywhere else; below
   // WIDE it starts as the rail and opening it lays it over the page. Phones: a bottom sheet
-  // ("open" shows the newest rolls, "rail" just its bar, "full" the whole log).
+  // ("open" shows the newest rolls, "rail" just its bar, "full" the whole log and the dice).
   const where = () => (side && side.dataset.play ? 'play' : 'other');
   function pref() { return store.get(SIDE + where()) || (where() === 'play' ? 'open' : 'rail'); }
   function setState(state, remember) {
@@ -752,14 +1056,10 @@
     if (remember && state !== 'full') store.set(SIDE + where(), state);
   }
   function current() { const b = document.body.classList; return b.contains('rolls-full') ? 'full' : b.contains('rolls-open') ? 'open' : 'rail'; }
-  function layout() {
-    overlay = false;
-    setState(!phone.matches && innerWidth < WIDE ? 'rail' : pref());
-  }
+  function layout() { overlay = false; setState(!phone.matches && innerWidth < WIDE ? 'rail' : pref()); }
   // The log's first fetch: htmx's "load" trigger on a page that opens with Game Mode on, this
   // when it's turned on later.
   function loadLog() { if (gmOn() && !loaded && log && window.htmx) htmx.trigger(log, 'rolls:load'); }
-  // Is the log on screen? (Then your roll shows there; otherwise a pop-up.)
   const logShown = () => gmOn() && side && (phone.matches ? current() === 'full' : current() === 'open');
   // Others' rolls are in view on a phone's sheet too, unless it's down to its bar.
   const othersShown = () => gmOn() && side && current() !== 'rail';
@@ -772,7 +1072,7 @@
       else if (innerWidth < WIDE) { overlay = now === 'rail'; setState(overlay ? 'open' : 'rail'); }
       else setState(now === 'rail' ? 'open' : 'rail', true);
     });
-    // Phones: tap the sheet's bar to see every roll (or back), or swipe it up and down.
+    // Phones: tap the sheet's bar to see every roll and the dice (or back), or swipe it up and down.
     const head = side.querySelector('.rs-head');
     head.addEventListener('click', () => { if (phone.matches) setState(current() === 'full' ? 'open' : 'full'); });
     let y0 = null;
@@ -788,41 +1088,17 @@
     });
     // Clicking outside an over-the-page sidebar closes it
     document.addEventListener('click', e => {
-      if (overlay && current() === 'open' && !side.contains(e.target) && !e.target.closest('[data-roll], .roll-pop')) { overlay = false; setState('rail'); }
+      if (overlay && current() === 'open' && e.target.isConnected && !side.contains(e.target) && !e.target.closest('[data-roll], .roll-win')) { overlay = false; setState('rail'); }
     });
     let wasWide = innerWidth >= WIDE;
     addEventListener('resize', () => { const wide = innerWidth >= WIDE; if (wide !== wasWide) { wasWide = wide; layout(); } });
     phone.addEventListener('change', layout);
-    document.addEventListener('askdnd:gamemode', () => { layout(); loadLog(); ensureTray(); });
+    document.addEventListener('askdnd:gamemode', () => { layout(); loadLog(); });
     const anim = side.querySelector('[data-roll-anim]');
-    anim.checked = store.get(ANIM) !== 'off';
+    anim.checked = animate();
     anim.addEventListener('change', () => store.set(ANIM, anim.checked ? 'on' : 'off'));
     layout();
   }
-
-  // ---------------------------------------------------------------- Normal / Adv / Dis and who sees it
-  function renderModes() {
-    document.querySelectorAll('.roll-tray [data-mode], .rolls-side [data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === mode ? 'true' : 'false'));
-    document.querySelectorAll('.rolls-side [data-to]').forEach(b => b.setAttribute('aria-pressed', b.dataset.to === to ? 'true' : 'false'));
-    if (!side) return;
-    const m = side.querySelector('[data-cycle=mode]'), t = side.querySelector('[data-cycle=to]');
-    m.textContent = MODE_WORDS[mode]; m.classList.toggle('on', mode !== 'normal');
-    t.textContent = TO_SHORT[to]; t.classList.toggle('on', to !== 'table');
-    m.setAttribute('aria-label', 'Next d20 roll: ' + MODE_WORDS[mode]);
-    t.setAttribute('aria-label', 'Who sees your rolls: ' + TO_WORDS[to]);
-  }
-  document.addEventListener('click', e => {
-    const m = e.target.closest('.roll-tray [data-mode], .rolls-side [data-mode]');
-    const t = e.target.closest('.rolls-side [data-to]');
-    const c = e.target.closest('.rolls-side [data-cycle]');
-    if (m) mode = m.dataset.mode;
-    else if (t) { to = t.dataset.to; store.set(TO, to, true); }
-    else if (c && c.dataset.cycle === 'mode') mode = { normal: 'adv', adv: 'dis', dis: 'normal' }[mode];
-    else if (c) { to = { table: 'dm', dm: 'self', self: 'table' }[to]; store.set(TO, to, true); }
-    else return;
-    renderModes();
-  });
-  renderModes();
 
   // ---------------------------------------------------------------- the log
   function ago(iso) {
@@ -830,6 +1106,7 @@
     if (isNaN(s)) return '';
     return s < 10 ? 'now' : s < 60 ? Math.floor(s) + ' s' : s < 3600 ? Math.floor(s / 60) + ' min' : s < 86400 ? Math.floor(s / 3600) + ' h' : new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }
+  // A roll comes again whole when it gets a follow-up: keep the newest copy (at the top).
   function tidy() {
     if (!log) return;
     const seen = new Set();
@@ -837,6 +1114,22 @@
     if (log.querySelector('.roll-item')) log.querySelectorAll('.roll-empty').forEach(li => li.remove());
     [...log.querySelectorAll('.roll-item')].slice(50).forEach(li => li.remove());
     log.querySelectorAll('time[data-at]').forEach(t => { t.textContent = ago(t.dataset.at); });
+  }
+  function addToLog(html, id) {
+    if (!log) return;
+    log.querySelectorAll('.roll-follow').forEach(b => b.remove());  // follow-ups go with your newest roll only
+    log.querySelectorAll('.roll-item[data-id="' + id + '"]').forEach(li => li.remove());
+    log.insertAdjacentHTML('afterbegin', html);
+    tidy();
+    const li = log.firstElementChild;
+    if (li) { li.classList.remove('fresh'); void li.offsetWidth; li.classList.add('fresh'); }
+  }
+  function placeholder(label) {
+    const li = document.createElement('li');
+    li.className = 'roll-pending';
+    li.textContent = label + ' · sending…';
+    log.prepend(li);
+    return li;
   }
   window.askdndRolls = {
     wanted: () => gmOn() && !loaded,
@@ -847,96 +1140,20 @@
   let before = 0;
   if (log) log.addEventListener('htmx:beforeSwap', e => {
     before = lastId;
-    for (const m of (e.detail.serverResponse || '').matchAll(/data-id="(\d+)"/g)) lastId = Math.max(lastId, +m[1]);
+    for (const m of (e.detail.serverResponse || '').matchAll(/data-seq="(\d+)"/g)) lastId = Math.max(lastId, +m[1]);
   });
   if (log) log.addEventListener('htmx:afterSwap', () => {
     const first = !loaded;
     tidy();
     loaded = true;
     if (first) return;
-    [...log.querySelectorAll('.roll-item[data-id]')].reverse().forEach(li => {
-      if (+li.dataset.id > before && !li.dataset.mine) {
+    [...log.querySelectorAll('.roll-item[data-seq]')].reverse().forEach(li => {
+      if (+li.dataset.seq > before && !li.dataset.mine) {
         if (!othersShown()) notice(li);
-        li.classList.add('fresh');
+        li.classList.remove('fresh'); void li.offsetWidth; li.classList.add('fresh');
       }
     });
   });
-
-  // ---------------------------------------------------------------- pop-ups and notices
-  const D20 = '<svg class="rp-die" viewBox="0 0 30 30" aria-hidden="true"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9"/><text x="15" y="18.5" text-anchor="middle"></text></svg>';
-  // Rolls made inside a window show in that window, above its buttons; otherwise near the bottom left.
-  function popHost(pop) {
-    const modal = document.querySelector('.peek.open.modal');
-    if (modal) {
-      const foot = modal.querySelector('.peek-foot');
-      pop.style.bottom = ((foot ? foot.offsetHeight : 0) + 12) + 'px';
-      modal.appendChild(pop);
-    } else { pop.style.bottom = ''; pops.appendChild(pop); }
-  }
-  function closePop(pop) {
-    if (!pop || !pop.isConnected) return;
-    clearTimeout(pop._t);
-    pop.classList.add('gone');
-    setTimeout(() => pop.remove(), 200);
-    if (myPop === pop) myPop = null;
-  }
-  function popStart(label) {
-    closePop(myPop);
-    const pop = document.createElement('div');
-    pop.className = 'roll-pop';
-    pop.setAttribute('role', 'status');
-    pop.innerHTML = D20 + '<div class="rp-body"><div class="rp-label">' + esc(label) + '</div><div class="rp-res">Rolling…</div></div><button type="button" class="rp-x" aria-label="Close">×</button>';
-    const spin = animate();
-    if (spin) pop.querySelector('.rp-die').classList.add('tumble');
-    pop.ready = new Promise(res => { pop._skip = res; setTimeout(res, spin ? 550 : 0); });
-    pop.addEventListener('click', e => {
-      if (e.target.closest('.rp-x')) return closePop(pop);
-      pop._skip(); pop.querySelector('.rp-die').classList.remove('tumble');  // a click skips the tumble
-    });
-    pop.addEventListener('mouseenter', () => clearTimeout(pop._t));
-    pop.addEventListener('mouseleave', () => { if (pop._done) pop._t = setTimeout(() => closePop(pop), 3000); });
-    myPop = pop;
-    popHost(pop);
-    return pop;
-  }
-  function diceText(r) {
-    if (r.kind === 'damage') return esc(r.formula) + ': ' + r.dice.join(' ') + (r.modifier ? ' ' + signed(r.modifier) : '');
-    const dice = r.dice.map((d, i) => (i === r.kept_at ? '<u>' + d + '</u>' : d)).join(' / ');
-    return 'd20 ' + dice + ' ' + signed(r.modifier) + (r.mode === 'adv' ? ' · Adv' : r.mode === 'dis' ? ' · Dis' : '');
-  }
-  function popResult(pop, r) {
-    pop.ready.then(() => {
-      if (!pop.isConnected) return;
-      const die = pop.querySelector('.rp-die');
-      die.classList.remove('tumble');
-      die.querySelector('text').textContent = r.kind === 'damage' ? r.total : r.kept;
-      pop.classList.toggle('nat20', r.nat === 20);
-      pop.classList.toggle('nat1', r.nat === 1);
-      const what = r.kind === 'attack' ? ' to hit' : r.kind === 'damage' ? (r.crit ? ' critical damage' : ' damage') : '';
-      const whom = r.to === 'private' ? 'only in this browser' : TO_WORDS[r.to];
-      const flag = r.nat === 20 ? 'Natural 20' + (r.kind === 'attack' ? ': critical hit' : '') : r.nat === 1 ? 'Natural 1' + (r.kind === 'attack' ? ': miss' : '') : '';
-      pop.querySelector('.rp-label').innerHTML = esc(r.label) + what + ' · ' + whom;
-      pop.querySelector('.rp-res').innerHTML = '<b>' + r.total + '</b> <span class="roll-sub">' + diceText(r) + '</span>' + (flag ? '<div class="rp-flag">' + flag + '</div>' : '');
-      if (r.damage) {
-        const b = document.createElement('button');
-        b.type = 'button'; b.className = 'btn small roll-dmg';
-        b.textContent = 'Roll ' + (r.nat === 20 ? 'critical ' : '') + 'damage (' + r.damage + ')';
-        if (r.id) b.dataset.after = r.id;
-        else b.addEventListener('click', e => { e.stopPropagation(); const d = damage(r.label, r.damage, r.nat === 20); if (d) { remember(d); closePop(pop); popResult(popStart(d.label), asShared(d)); } });
-        pop.querySelector('.rp-body').appendChild(b);
-      }
-      pop._done = true;
-      pop._t = setTimeout(() => closePop(pop), r.damage ? 10000 : 6000);
-    });
-  }
-  function popFail(pop, text) {
-    pop.ready.then(() => {
-      pop.querySelector('.rp-die').classList.remove('tumble');
-      pop.classList.add('failed');
-      pop.querySelector('.rp-res').textContent = text;
-      pop._done = true;
-    });
-  }
   function notice(li) {
     if (!pops) return;
     const n = document.createElement('div');
@@ -947,9 +1164,11 @@
     av.className = 'roll-av ' + [...li.classList].filter(c => c.startsWith('hue')).join(' ');
     n.append(av);
     const what = li.querySelector('.roll-what').textContent.trim().replace(/\s+/g, ' ');
+    const dmg = li.querySelector('.roll-dmg-line b');
     const t = document.createElement('span');
-    t.innerHTML = total ? '<b>' + esc(name) + '</b> rolled <b class="' + (li.classList.contains('nat20') ? 'nat20' : li.classList.contains('nat1') ? 'nat1' : '') + '">' + esc(total.textContent) + '</b> · ' + esc(what)
-                        : '<b>' + esc(name) + '</b> rolled for the DM';
+    t.innerHTML = !total ? '<b>' + esc(name) + '</b> ' + esc(what.charAt(0).toLowerCase() + what.slice(1))
+      : dmg && +li.dataset.seq !== +li.dataset.id ? '<b>' + esc(name) + '</b> rolled <b>' + esc(dmg.textContent) + '</b> damage · ' + esc(what.replace(/ to hit$/, ''))
+      : '<b>' + esc(name) + '</b> rolled <b class="' + (li.classList.contains('nat20') ? 'nat20' : li.classList.contains('nat1') ? 'nat1' : '') + '">' + esc(total.textContent) + '</b> · ' + esc(what);
     n.append(t);
     pops.appendChild(n);
     const notes = pops.querySelectorAll('.roll-note');
@@ -957,91 +1176,4 @@
     setTimeout(() => n.classList.add('gone'), 4000);
     setTimeout(() => n.remove(), 4400);
   }
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && myPop) closePop(myPop); });
-
-  // ---------------------------------------------------------------- rolling
-  function characterOf(el) {
-    const holder = el.closest('[data-character]');
-    if (holder) return holder.dataset.character;
-    const panel = el.closest('.peek');
-    const m = panel && /^\/characters\/(\d+)/.exec(panel.dataset.url || '');
-    return m ? m[1] : '';
-  }
-  function placeholder(label) {
-    if (!log || !logShown()) return null;
-    const li = document.createElement('li');
-    li.className = 'roll-pending';
-    li.textContent = label + ' · sending…';
-    log.prepend(li);
-    return li;
-  }
-  function send(data, label) {
-    const pending = placeholder(label);
-    const pop = logShown() ? null : popStart(label);
-    fetch('/rolls', { method: 'POST', body: new URLSearchParams(data), headers: { 'X-Requested-With': 'fetch' } })
-      .then(r => r.json().catch(() => ({})).then(j => { if (!r.ok) throw Object.assign(new Error(j.error || "askdnd couldn't roll that"), { said: true }); return j; }))
-      .then(j => {
-        if (log) log.querySelectorAll('.roll-dmg').forEach(b => b.remove());  // damage follows only your newest roll
-        if (pending) pending.outerHTML = j.html; else if (log) log.insertAdjacentHTML('afterbegin', j.html);
-        tidy();
-        const li = log && log.querySelector('.roll-item[data-id="' + j.roll.id + '"]');
-        if (li) { li.classList.remove('fresh'); void li.offsetWidth; li.classList.add('fresh'); if (pop) li.querySelector('.roll-dmg')?.remove(); }
-        if (pop) popResult(pop, j.roll);
-      })
-      .catch(err => {
-        const text = (err.said ? err.message : "Couldn't reach askdnd") + ': not rolled.';
-        if (pop) popFail(pop, text);
-        if (pending) {
-          pending.className = 'roll-pending failed';
-          pending.textContent = label + ' · ' + text + ' ';
-          const b = document.createElement('button');
-          b.type = 'button'; b.className = 'btn small'; b.textContent = 'Try again';
-          b.addEventListener('click', () => { pending.remove(); send(data, label); });
-          pending.appendChild(b);
-        }
-      });
-  }
-  function rollPrivately(el) {
-    const r = el.dataset.roll === 'damage' ? damage(el.dataset.label, el.dataset.dmg, false) : d20(el);
-    if (!r) return;
-    mode = 'normal';
-    remember(r);
-    ensureTray();
-    if (tray && !tray.hidden && !panelOpen()) {
-      renderTray(r);
-      tray.classList.remove('bump'); void tray.offsetWidth; tray.classList.add('bump');
-    } else {
-      renderModes();
-      popResult(popStart(r.label), asShared(r));
-    }
-  }
-
-  document.addEventListener('click', e => {
-    const dmg = e.target.closest('.roll-dmg[data-after]');
-    if (dmg) {
-      e.stopPropagation();
-      const item = dmg.closest('.roll-item, .roll-pop');
-      const label = (item.querySelector('.roll-what, .rp-label').textContent.split(' to hit')[0] || '').trim() + ' damage';
-      document.querySelectorAll('.roll-dmg[data-after="' + dmg.dataset.after + '"]').forEach(b => b.remove());
-      if (item.classList.contains('roll-pop')) closePop(item);
-      send({ after: dmg.dataset.after }, label);
-      return;
-    }
-    const el = e.target.closest('[data-roll]');
-    if (!el || el.closest('.roll-tray')) return;
-    e.preventDefault();
-    const cid = characterOf(el);
-    if (!(gmOn() && side && cid && side.dataset.mine === cid)) return rollPrivately(el);
-    const data = { character: cid, kind: el.dataset.roll, label: el.dataset.label || '', mod: el.dataset.mod || '', dmg: el.dataset.dmg || '',
-                   adv: el.dataset.adv || '', mode, to };
-    mode = 'normal';
-    renderModes();
-    send(data, data.label + (data.kind === 'attack' ? ' to hit' : data.kind === 'damage' ? ' damage' : ''));
-  });
-  document.addEventListener('keydown', e => {
-    const el = e.target.closest && e.target.closest('[data-roll][tabindex]');
-    if (el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); el.click(); }
-  });
-  ensureTray();
-  document.body.addEventListener('htmx:afterSwap', ensureTray);
 })();

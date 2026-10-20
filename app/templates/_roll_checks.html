@@ -1,0 +1,23 @@
+{# The sidebar's quick rolls for your own character (app/table_rolls.checks): each button is an
+   ordinary roll button, so it opens the same roll window. #}
+{% from "_char.html" import roll_attrs %}
+{% if s %}
+<div data-roll-char="{{ c.id }}" data-roll-ctx='{{ ctx | tojson }}'>
+<div class="rc-group"><span class="rc-head">Checks</span>
+  {% for a in s.abilities %}<button type="button" class="rc" {{ roll_attrs("check", a.name ~ " check", a.label) }}>{{ a.short }} <b>{{ a.label }}</b></button>{% endfor %}
+</div>
+<div class="rc-group"><span class="rc-head">Skills</span>
+  {% for sk in s.skills %}<button type="button" class="rc{{ ' prof' if sk.proficiency }}" {{ roll_attrs("check", sk.name ~ " check", sk.label, "", sk.adv) }}>{{ sk.name }} <b>{{ sk.label }}</b></button>{% endfor %}
+</div>
+<div class="rc-group"><span class="rc-head">Saves</span>
+  {% for sv in s.saves %}<button type="button" class="rc{{ ' prof' if sv.proficient }}" {{ roll_attrs("save", sv.short ~ " save", sv.label, "", sv.adv) }}>{{ sv.short }} <b>{{ sv.label }}</b></button>{% endfor %}
+  <button type="button" class="rc" {{ roll_attrs("check", "Initiative", s.initiative, "", s.initiative_adv) }}>Initiative <b>{{ s.initiative }}</b></button>
+</div>
+<div class="rc-group"><span class="rc-head">At 0 HP and resting</span>
+  <button type="button" class="rc" data-roll="death" data-label="Death save" title="10 or higher succeeds; a 20 brings you back with 1 Hit Point; a 1 counts as two failures">Death save</button>
+  {% for d in ctx.hit_dice %}<button type="button" class="rc" data-roll="heal" data-label="Hit Die" data-dmg="1{{ d }}{{ '%+d' % ctx.con if ctx.con }}" title="Spend a Hit Die on a Short Rest: roll it and add your Constitution modifier">Hit Die <b>{{ d }}{{ "%+d" % ctx.con if ctx.con }}</b></button>{% endfor %}
+</div>
+</div>
+{% else %}
+<p class="note">{{ "Ask an admin to link your character to see its checks here." if not c else "Your character's sheet isn't loaded yet." }}</p>
+{% endif %}
