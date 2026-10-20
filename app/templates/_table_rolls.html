@@ -1,0 +1,24 @@
+{# The Table rolls sidebar (app/table_rolls.py, app.js "Rolls"). Shown only while Game Mode is on
+   (body.gm-on): open on Play and a rail elsewhere, remembered per device; a bottom sheet on phones.
+   The log loads and then polls for new rolls only while it's shown. #}
+<aside id="table-rolls" class="rolls-side" aria-label="Table rolls" data-mine="{{ tn.mine.id if tn and tn.mine else '' }}" data-play="{{ '1' if tn and tn.mode == 'play' }}">
+  <div class="rs-head">
+    <span class="rs-grip" aria-hidden="true"></span>
+    <svg class="rs-icon" width="22" height="22" viewBox="0 0 30 30" aria-hidden="true"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="15,8 21,19 9,19" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+    <span class="rs-title">Table rolls</span>
+    <button type="button" class="rs-toggle" aria-expanded="true" aria-controls="roll-log" title="Collapse or open the rolls"><span aria-hidden="true">«</span><span class="sr">Collapse or open the rolls</span></button>
+  </div>
+  <ol id="roll-log" class="rs-log" aria-live="polite" hx-get="/rolls" hx-swap="afterbegin"
+      hx-trigger="load[window.askdndRolls && askdndRolls.wanted()], rolls:load, every 3s[window.askdndRolls && askdndRolls.poll()]" hx-vals="js:{since: askdndRolls.since()}"></ol>
+  <div class="rs-controls">
+    <div class="rs-row"><span class="rs-label">Next roll</span>
+      <span class="roll-modes" role="group" aria-label="Next d20 roll"><button type="button" data-mode="normal">Normal</button><button type="button" data-mode="adv">Adv</button><button type="button" data-mode="dis">Dis</button></span></div>
+    <div class="rs-row"><span class="rs-label">Who sees it</span>
+      <span class="roll-modes" role="group" aria-label="Who sees your rolls"><button type="button" data-to="table">Table</button><button type="button" data-to="dm">DM only</button><button type="button" data-to="self">Just me</button></span></div>
+    <label class="rs-row rs-anim"><input type="checkbox" data-roll-anim> Dice animation <span class="note">(this device)</span></label>
+    {# Rail: one button each that steps through the choices #}
+    <button type="button" class="rs-cycle" data-cycle="mode" title="Next d20 roll (click to change)"></button>
+    <button type="button" class="rs-cycle" data-cycle="to" title="Who sees your rolls (click to change)"></button>
+  </div>
+</aside>
+<div class="roll-pops" aria-live="polite"></div>

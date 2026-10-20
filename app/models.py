@@ -532,5 +532,30 @@ class SessionMessage(Timestamped, Base):
     ready: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")  # Claude: enough to draft
 
 
+class TableRoll(Base):
+    """A dice roll made on the server while Game Mode is on (app/table_rolls.py): who rolled
+    what, and who may see it. "table": everyone; "dm": the roller and the DM see the number,
+    everyone else only that a roll happened; "self": the roller only."""
+
+    __tablename__ = "table_rolls"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"), index=True)
+    character_id: Mapped[int | None] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"))
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    label: Mapped[str] = mapped_column(String(120))  # "Wis save", "Initiative", "Rend"
+    kind: Mapped[str] = mapped_column(String(10))  # save | check | attack | damage
+    formula: Mapped[str] = mapped_column(String(40))  # what was rolled: "d20+7", "4d6+3"
+    dice: Mapped[list] = mapped_column(JSONB)  # every die, in order: [14, 6] on Advantage
+    kept: Mapped[int | None] = mapped_column(Integer)  # the d20 that counted (d20 rolls only)
+    modifier: Mapped[int] = mapped_column(Integer, default=0)
+    total: Mapped[int] = mapped_column(Integer)
+    mode: Mapped[str] = mapped_column(String(10), default="normal")  # normal | adv | dis
+    visibility: Mapped[str] = mapped_column(String(10), default="table")  # table | dm | self
+    damage: Mapped[str] = mapped_column(String(40), default="", server_default="")  # an attack's damage dice, rolled next
+    crit: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")  # damage doubled for a critical hit
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    character: Mapped[Character | None] = relationship()
+
+
 # Record changes to tracked fields as Revisions on every flush (app/history.py).
 from app import history  # noqa: E402,F401

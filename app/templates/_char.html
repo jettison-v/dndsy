@@ -100,9 +100,9 @@
 </div>
 {%- endmacro %}
 
-{# Private dice rolls (app.js "Rolls"): anything with data-roll rolls in this browser only.
-   data-mod is the bonus ("+7"), data-dmg the damage dice, data-adv="1" when Advantage always applies.
-   Table rolls (shared with everyone) will send the same data to the server later. #}
+{# Dice rolls (app.js "Rolls"): anything with data-roll rolls when clicked. data-mod is the bonus ("+7"),
+   data-dmg the damage dice, data-adv="1" when Advantage always applies. With Game Mode on, your own
+   character's rolls go to the server as Table rolls (app/table_rolls.py); otherwise they stay in this browser. #}
 {% macro roll_attrs(kind, label, mod="", dmg="", advs=()) -%}
 data-roll="{{ kind }}" data-label="{{ label }}"{% if mod %} data-mod="{{ mod | replace('−', '-') }}"{% endif %}{% if dmg %} data-dmg="{{ dmg }}"{% endif %}{% if advs and advs | rejectattr("when") | list %} data-adv="1"{% endif %}
 {%- endmacro %}

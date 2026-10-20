@@ -146,7 +146,7 @@ def test_access_chart_is_drawn_from_the_rules_the_app_uses():
     notes = rows["Players' notes, stars, reminders and shortlists"]
     assert notes["cells"] == ["yes", "yes", "yes"] and notes["dm"] == "never"  # never the DM, even as Admin
     assert rows["People: invite, access, DM tick, who plays which character"]["cells"] == ["no", "no", "yes"]
-    assert rows["Notes, stars, reminders, shortlists and the Wild Shape switch"]["cells"] == ["own"] * 3
+    assert rows["Notes, stars, reminders, shortlists, the Wild Shape switch and table rolls"]["cells"] == ["own"] * 3
     for r in access.CHART:  # every rule in the chart is one the app checks
         if r[2] != "own":
             access.allows(r[2], access.PLAYER)

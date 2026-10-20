@@ -1,0 +1,20 @@
+{# Table rolls (app/table_rolls.py): one <li> per roll, newest first. A hidden roll (DM only, seen
+   by someone else) carries only who and when: no label, dice or total reach this browser. #}
+{% for r in rolls %}
+<li class="roll-item hue{{ r.hue }}{{ ' mine' if r.mine }}{{ ' hidden-roll' if r.hidden }}{{ ' nat20' if r.nat == 20 }}{{ ' nat1' if r.nat == 1 }}" data-id="{{ r.id }}"{% if r.mine %} data-mine="1"{% endif %}>
+  <span class="roll-av" aria-hidden="true">{{ r.initial }}{% if r.portrait %}<img src="{{ r.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>
+  <span class="roll-main">
+    <span class="roll-who"><b>{{ r.name }}</b> <time datetime="{{ r.at }}" data-at="{{ r.at }}">{{ r.ago }}</time>{% if r.to == "dm" and not r.hidden %} <span class="roll-to">DM only</span>{% elif r.to == "self" %} <span class="roll-to">just you</span>{% endif %}</span>
+    {% if r.hidden %}<span class="roll-what">Rolled for the DM</span>
+    {% else %}<span class="roll-what">{{ r.label }}{% if r.kind == "attack" %} <span class="roll-sub">to hit</span>{% elif r.kind == "damage" %} <span class="roll-sub">{{ "critical damage" if r.crit else "damage" }}</span>{% endif %}</span>
+    <span class="roll-dice">{% if r.kind == "damage" %}{{ r.formula }}: {{ r.dice | join(" ") }}{% if r.modifier %} {{ "+" if r.modifier > 0 else "−" }}{{ r.modifier | abs }}{% endif %}{% else %}d20 {% for d in r.dice %}{% if loop.index0 == r.kept_at %}<u>{{ d }}</u>{% else %}{{ d }}{% endif %}{{ " / " if not loop.last }}{% endfor %} {{ "+" if r.modifier >= 0 else "−" }}{{ r.modifier | abs }}{{ " · Adv" if r.mode == "adv" }}{{ " · Dis" if r.mode == "dis" }}{% endif %}</span>
+    {% if r.nat == 20 %}<span class="roll-flag">natural 20{{ ": critical hit" if r.kind == "attack" }}</span>{% elif r.nat == 1 %}<span class="roll-flag">natural 1{{ ": miss" if r.kind == "attack" }}</span>{% endif %}
+    {% if r.damage %}<button type="button" class="btn small roll-dmg" data-after="{{ r.id }}">Roll {{ "critical " if r.nat == 20 }}damage ({{ r.damage }})</button>{% endif %}
+    {% endif %}
+  </span>
+  {% if r.hidden %}<span class="roll-lock" role="img" aria-label="Hidden from the table"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
+  {% else %}<b class="roll-total">{{ r.total }}</b><span class="roll-short" aria-hidden="true">{{ r.short }}</span>{% endif %}
+</li>
+{% else %}
+<li class="roll-empty">No rolls yet. With Game Mode on, your saves, Initiative and attacks on Play roll here for the table.</li>
+{% endfor %}

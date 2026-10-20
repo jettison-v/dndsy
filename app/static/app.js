@@ -350,6 +350,7 @@
     document.querySelectorAll('[data-game-mode]').forEach(sw => sw.setAttribute('aria-checked', on ? 'true' : 'false'));
     clearInterval(gmTimer); gmTimer = null;
     if (on && pill) gmTimer = setInterval(() => { if (document.visibilityState === 'visible') gmTick(); }, (Number(pill.dataset.every) || 150) * 1000);
+    document.dispatchEvent(new CustomEvent('askdnd:gamemode', { detail: { on } }));  // Table rolls follow it
   }
   document.addEventListener('click', e => {
     const sw = e.target.closest('[data-game-mode]');
@@ -610,56 +611,68 @@
   if (flash) toast(flash);
 })();
 
-// Rolls: private dice rolls in this browser (Battle, Wild Shape). Anything with data-roll
-// rolls when clicked: data-mod is the bonus, data-dmg the damage dice, data-adv="1" when
-// Advantage always applies. Nobody else sees these rolls; "Table rolls" (shared) will send
-// the same data to the server later. The last rolls are kept in this browser only.
+
+// Rolls. Anything with data-roll rolls when clicked: data-label names it, data-mod is the bonus,
+// data-dmg the damage dice, data-adv="1" when Advantage always applies.
+// - Game Mode on and it's your own character: the server rolls (app/table_rolls.py) and the
+//   table sees it in the Table rolls sidebar (_table_rolls.html), or in a pop-up near the bottom
+//   left when the sidebar isn't open. Others' rolls arrive by polling, as small notices then.
+// - Otherwise: a private roll in this browser only (crypto random), kept in "Your rolls".
 (function () {
-  const KEY = 'askdnd.rolls';
+  const KEY = 'askdnd.rolls', SIDE = 'askdnd.rollsSide.', ANIM = 'askdnd.rollsAnim', TO = 'askdnd.rollsTo';
+  const WIDE = 1100;  // narrower than this, the sidebar collapses to its rail
+  const phone = matchMedia('(max-width: 800px)'), calm = matchMedia('(prefers-reduced-motion: reduce)');
+  const side = document.getElementById('table-rolls'), log = document.getElementById('roll-log');
+  const pops = document.querySelector('.roll-pops');
+  const store = {
+    get: (k, s) => { try { return (s ? sessionStorage : localStorage).getItem(k); } catch (e) { return null; } },
+    set: (k, v, s) => { try { (s ? sessionStorage : localStorage).setItem(k, v); } catch (e) { /* private window */ } },
+  };
   let mode = 'normal';  // the next d20 roll: normal, adv or dis (back to normal after rolling)
-  let tray = null;
+  let to = store.get(TO, true) || 'table';  // who sees your rolls; kept for this tab only, so it starts at Table
+  let tray = null, lastId = 0, loaded = false, overlay = false, myPop = null;
 
   function die(sides) {
     const a = new Uint32Array(1);
     crypto.getRandomValues(a);
     return (a[0] % sides) + 1;
   }
-  const num = s => parseInt(String(s || '0').replace('\u2212', '-'), 10) || 0;
-  const signed = n => (n >= 0 ? '+' : '\u2212') + Math.abs(n);
-  function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+  const num = s => parseInt(String(s || '0').replace('−', '-'), 10) || 0;
+  const signed = n => (n >= 0 ? '+' : '−') + Math.abs(n);
+  function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+  const gmOn = () => document.body.classList.contains('gm-on');
+  const animate = () => !calm.matches && store.get(ANIM) !== 'off';
+  const TO_WORDS = { table: 'to the table', dm: 'DM only', self: 'just you' };
+  const MODE_WORDS = { normal: 'Normal', adv: 'Adv', dis: 'Dis' };
+  const TO_SHORT = { table: 'Table', dm: 'DM', self: 'Me' };
 
+  // ---------------------------------------------------------------- private rolls (this browser)
   function parseDice(expr) {
     const m = /(\d+)d(\d+)(?:([+-])(\d+))?/.exec(expr || '');
     if (!m) return null;
     return { count: +m[1], sides: +m[2], bonus: m[3] ? (m[3] === '-' ? -1 : 1) * +m[4] : 0 };
   }
-
   function history() {
-    try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; }
+    try { return JSON.parse(store.get(KEY) || '[]'); } catch (e) { return []; }
   }
   function remember(entry) {
     const list = [entry, ...history()].slice(0, 30);
-    try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) { /* private window: keep going */ }
+    store.set(KEY, JSON.stringify(list));
     return list;
   }
-
   function who() {
     const b = document.getElementById('battle-body');
     return b ? b.dataset.name || '' : '';
   }
-
   function d20(el) {
     const mod = num(el.dataset.mod);
     const use = mode !== 'normal' ? mode : (el.dataset.adv ? 'adv' : 'normal');
     const dice = use === 'normal' ? [die(20)] : [die(20), die(20)];
     const kept = use === 'adv' ? Math.max(...dice) : use === 'dis' ? Math.min(...dice) : dice[0];
     const attack = el.dataset.roll === 'attack';
-    const r = { kind: el.dataset.roll, label: el.dataset.label, who: who(), mode: use, dice, kept, mod, total: kept + mod,
-                crit: attack && kept === 20, miss: attack && kept === 1, dmg: el.dataset.dmg || '', at: Date.now() };
-    mode = 'normal';
-    return r;
+    return { kind: el.dataset.roll, label: el.dataset.label, who: who(), mode: use, dice, kept, mod, total: kept + mod,
+             crit: attack && kept === 20, miss: attack && kept === 1, dmg: el.dataset.dmg || '', at: Date.now() };
   }
-
   function damage(label, expr, crit) {
     const d = parseDice(expr);
     if (!d) return null;
@@ -669,7 +682,13 @@
     return { kind: 'damage', label, who: who(), expr: (crit ? n + 'd' + d.sides + (d.bonus ? signed(d.bonus) : '') : expr),
              dice, mod: d.bonus, total: Math.max(total, 0), crit: !!crit, at: Date.now() };
   }
-
+  // The same shape the server sends, so the pop-up shows both alike
+  function asShared(r) {
+    const nat = r.kind !== 'damage' && (r.kept === 20 || r.kept === 1) ? r.kept : null;
+    return { label: r.label, kind: r.kind, total: r.total, dice: r.dice, kept: r.kept ?? null, modifier: r.mod, mode: r.mode || 'normal',
+             formula: r.expr || '', crit: !!(r.kind === 'damage' && r.crit), nat, to: 'private',
+             kept_at: r.dice.length > 1 ? r.dice.indexOf(r.kept) : -1, damage: r.kind === 'attack' && r.dmg && !r.miss ? r.dmg : '', local: r };
+  }
   function line(r) {
     if (r.kind === 'damage') {
       return '<b>' + r.total + '</b> <span class="roll-sub">' + esc(r.expr) + ': ' + r.dice.join(' + ') + (r.mod ? ' ' + signed(r.mod) : '') + (r.crit ? ' · critical' : '') + '</span>';
@@ -679,8 +698,7 @@
     const flag = r.crit ? ' · <span class="roll-crit">natural 20: critical hit</span>' : r.miss ? ' · <span class="roll-fumble">natural 1: miss</span>' : '';
     return '<b>' + r.total + '</b> <span class="roll-sub">d20 ' + dice + ' ' + signed(r.mod) + tag + flag + '</span>';
   }
-
-  function render(latest) {
+  function renderTray(latest) {
     if (!tray) return;
     const list = history();
     const top = latest || list[0];
@@ -689,14 +707,16 @@
         + (top.kind === 'attack' && top.dmg ? '<button type="button" class="btn small roll-dmg-btn">Roll ' + (top.crit ? 'critical ' : '') + 'damage (' + esc(top.dmg) + ')</button>' : '')
       : '<div class="roll-sub">Click a save, Initiative or an attack bonus to roll. Only you see these rolls.</div>';
     const btn = tray.querySelector('.roll-dmg-btn');
-    if (btn) btn.onclick = () => { const r = damage(top.label, top.dmg, top.crit); if (r) { remember(r); render(r); } };
+    if (btn) btn.onclick = () => { const r = damage(top.label, top.dmg, top.crit); if (r) { remember(r); renderTray(r); } };
     tray.querySelector('.roll-history').innerHTML = list.slice(top ? 1 : 0, 9).map(r =>
       '<li><span>' + esc(r.label) + (r.kind === 'damage' ? ' dmg' : '') + '</span><b>' + r.total + '</b></li>').join('');
-    tray.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === mode ? 'true' : 'false'));
+    renderModes();
   }
-
+  // "Your rolls" shows while Game Mode is off on pages with roll buttons (with it on, rolls show
+  // in the sidebar or a pop-up). It hides while a side panel or window is open, so it never
+  // covers their buttons; rolls made in one show as a pop-up instead.
   function ensureTray() {
-    if (!document.querySelector('[data-roll]')) { if (tray) tray.hidden = true; return; }
+    if (!document.querySelector('[data-roll]') || gmOn()) { if (tray) tray.hidden = true; return; }
     if (!tray) {
       tray = document.createElement('aside');
       tray.className = 'roll-tray';
@@ -707,26 +727,316 @@
         + '<button type="button" class="roll-fold" aria-label="Show or hide past rolls" title="Past rolls">▾</button></div>'
         + '<div class="roll-last" aria-live="polite"></div><ol class="roll-history"></ol>';
       document.body.appendChild(tray);
-      tray.addEventListener('click', e => {
-        const m = e.target.closest('[data-mode]');
-        if (m) { mode = m.dataset.mode; render(); }
-        if (e.target.closest('.roll-fold')) tray.classList.toggle('open');
-      });
-      render();
+      tray.addEventListener('click', e => { if (e.target.closest('.roll-fold')) tray.classList.toggle('open'); });
+      renderTray();
     }
     tray.hidden = false;
   }
+  const panelOpen = () => document.querySelector('.peek.open');
+
+  // ---------------------------------------------------------------- the sidebar's state
+  // Desktop: "open" or "rail", remembered per device for Play and for everywhere else; below
+  // WIDE it starts as the rail and opening it lays it over the page. Phones: a bottom sheet
+  // ("open" shows the newest rolls, "rail" just its bar, "full" the whole log).
+  const where = () => (side && side.dataset.play ? 'play' : 'other');
+  function pref() { return store.get(SIDE + where()) || (where() === 'play' ? 'open' : 'rail'); }
+  function setState(state, remember) {
+    if (!side) return;
+    const b = document.body.classList;
+    b.toggle('rolls-on', gmOn());
+    b.toggle('rolls-open', state === 'open' || state === 'full');
+    b.toggle('rolls-rail', state === 'rail');
+    b.toggle('rolls-full', state === 'full');
+    b.toggle('rolls-over', overlay && state === 'open');
+    side.querySelector('.rs-toggle').setAttribute('aria-expanded', state === 'rail' ? 'false' : 'true');
+    if (remember && state !== 'full') store.set(SIDE + where(), state);
+  }
+  function current() { const b = document.body.classList; return b.contains('rolls-full') ? 'full' : b.contains('rolls-open') ? 'open' : 'rail'; }
+  function layout() {
+    overlay = false;
+    setState(!phone.matches && innerWidth < WIDE ? 'rail' : pref());
+  }
+  // The log's first fetch: htmx's "load" trigger on a page that opens with Game Mode on, this
+  // when it's turned on later.
+  function loadLog() { if (gmOn() && !loaded && log && window.htmx) htmx.trigger(log, 'rolls:load'); }
+  // Is the log on screen? (Then your roll shows there; otherwise a pop-up.)
+  const logShown = () => gmOn() && side && (phone.matches ? current() === 'full' : current() === 'open');
+  // Others' rolls are in view on a phone's sheet too, unless it's down to its bar.
+  const othersShown = () => gmOn() && side && current() !== 'rail';
+
+  if (side) {
+    side.querySelector('.rs-toggle').addEventListener('click', e => {
+      e.stopPropagation();
+      const now = current();
+      if (phone.matches) setState(now === 'rail' ? 'open' : 'rail', true);
+      else if (innerWidth < WIDE) { overlay = now === 'rail'; setState(overlay ? 'open' : 'rail'); }
+      else setState(now === 'rail' ? 'open' : 'rail', true);
+    });
+    // Phones: tap the sheet's bar to see every roll (or back), or swipe it up and down.
+    const head = side.querySelector('.rs-head');
+    head.addEventListener('click', () => { if (phone.matches) setState(current() === 'full' ? 'open' : 'full'); });
+    let y0 = null;
+    head.addEventListener('touchstart', e => { y0 = e.touches[0].clientY; }, { passive: true });
+    head.addEventListener('touchend', e => {
+      if (y0 === null) return;
+      const dy = e.changedTouches[0].clientY - y0, now = current();
+      y0 = null;
+      if (Math.abs(dy) < 30) return;
+      e.preventDefault();  // not a tap
+      if (dy < 0) setState(now === 'rail' ? 'open' : 'full', now === 'rail');
+      else setState(now === 'full' ? 'open' : 'rail', now !== 'full');
+    });
+    // Clicking outside an over-the-page sidebar closes it
+    document.addEventListener('click', e => {
+      if (overlay && current() === 'open' && !side.contains(e.target) && !e.target.closest('[data-roll], .roll-pop')) { overlay = false; setState('rail'); }
+    });
+    let wasWide = innerWidth >= WIDE;
+    addEventListener('resize', () => { const wide = innerWidth >= WIDE; if (wide !== wasWide) { wasWide = wide; layout(); } });
+    phone.addEventListener('change', layout);
+    document.addEventListener('askdnd:gamemode', () => { layout(); loadLog(); ensureTray(); });
+    const anim = side.querySelector('[data-roll-anim]');
+    anim.checked = store.get(ANIM) !== 'off';
+    anim.addEventListener('change', () => store.set(ANIM, anim.checked ? 'on' : 'off'));
+    layout();
+  }
+
+  // ---------------------------------------------------------------- Normal / Adv / Dis and who sees it
+  function renderModes() {
+    document.querySelectorAll('.roll-tray [data-mode], .rolls-side [data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === mode ? 'true' : 'false'));
+    document.querySelectorAll('.rolls-side [data-to]').forEach(b => b.setAttribute('aria-pressed', b.dataset.to === to ? 'true' : 'false'));
+    if (!side) return;
+    const m = side.querySelector('[data-cycle=mode]'), t = side.querySelector('[data-cycle=to]');
+    m.textContent = MODE_WORDS[mode]; m.classList.toggle('on', mode !== 'normal');
+    t.textContent = TO_SHORT[to]; t.classList.toggle('on', to !== 'table');
+    m.setAttribute('aria-label', 'Next d20 roll: ' + MODE_WORDS[mode]);
+    t.setAttribute('aria-label', 'Who sees your rolls: ' + TO_WORDS[to]);
+  }
+  document.addEventListener('click', e => {
+    const m = e.target.closest('.roll-tray [data-mode], .rolls-side [data-mode]');
+    const t = e.target.closest('.rolls-side [data-to]');
+    const c = e.target.closest('.rolls-side [data-cycle]');
+    if (m) mode = m.dataset.mode;
+    else if (t) { to = t.dataset.to; store.set(TO, to, true); }
+    else if (c && c.dataset.cycle === 'mode') mode = { normal: 'adv', adv: 'dis', dis: 'normal' }[mode];
+    else if (c) { to = { table: 'dm', dm: 'self', self: 'table' }[to]; store.set(TO, to, true); }
+    else return;
+    renderModes();
+  });
+  renderModes();
+
+  // ---------------------------------------------------------------- the log
+  function ago(iso) {
+    const s = Math.max((Date.now() - Date.parse(iso)) / 1000, 0);
+    if (isNaN(s)) return '';
+    return s < 10 ? 'now' : s < 60 ? Math.floor(s) + ' s' : s < 3600 ? Math.floor(s / 60) + ' min' : s < 86400 ? Math.floor(s / 3600) + ' h' : new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+  function tidy() {
+    if (!log) return;
+    const seen = new Set();
+    log.querySelectorAll('.roll-item[data-id]').forEach(li => { if (seen.has(li.dataset.id)) li.remove(); else seen.add(li.dataset.id); });
+    if (log.querySelector('.roll-item')) log.querySelectorAll('.roll-empty').forEach(li => li.remove());
+    [...log.querySelectorAll('.roll-item')].slice(50).forEach(li => li.remove());
+    log.querySelectorAll('time[data-at]').forEach(t => { t.textContent = ago(t.dataset.at); });
+  }
+  window.askdndRolls = {
+    wanted: () => gmOn() && !loaded,
+    poll: () => gmOn() && loaded && document.visibilityState === 'visible',
+    since: () => (loaded ? lastId : -1),  // -1: the whole recent log
+  };
+  // Only polled rows move `lastId` on: your own roll can land before someone else's earlier one.
+  let before = 0;
+  if (log) log.addEventListener('htmx:beforeSwap', e => {
+    before = lastId;
+    for (const m of (e.detail.serverResponse || '').matchAll(/data-id="(\d+)"/g)) lastId = Math.max(lastId, +m[1]);
+  });
+  if (log) log.addEventListener('htmx:afterSwap', () => {
+    const first = !loaded;
+    tidy();
+    loaded = true;
+    if (first) return;
+    [...log.querySelectorAll('.roll-item[data-id]')].reverse().forEach(li => {
+      if (+li.dataset.id > before && !li.dataset.mine) {
+        if (!othersShown()) notice(li);
+        li.classList.add('fresh');
+      }
+    });
+  });
+
+  // ---------------------------------------------------------------- pop-ups and notices
+  const D20 = '<svg class="rp-die" viewBox="0 0 30 30" aria-hidden="true"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9"/><text x="15" y="18.5" text-anchor="middle"></text></svg>';
+  // Rolls made inside a window show in that window, above its buttons; otherwise near the bottom left.
+  function popHost(pop) {
+    const modal = document.querySelector('.peek.open.modal');
+    if (modal) {
+      const foot = modal.querySelector('.peek-foot');
+      pop.style.bottom = ((foot ? foot.offsetHeight : 0) + 12) + 'px';
+      modal.appendChild(pop);
+    } else { pop.style.bottom = ''; pops.appendChild(pop); }
+  }
+  function closePop(pop) {
+    if (!pop || !pop.isConnected) return;
+    clearTimeout(pop._t);
+    pop.classList.add('gone');
+    setTimeout(() => pop.remove(), 200);
+    if (myPop === pop) myPop = null;
+  }
+  function popStart(label) {
+    closePop(myPop);
+    const pop = document.createElement('div');
+    pop.className = 'roll-pop';
+    pop.setAttribute('role', 'status');
+    pop.innerHTML = D20 + '<div class="rp-body"><div class="rp-label">' + esc(label) + '</div><div class="rp-res">Rolling…</div></div><button type="button" class="rp-x" aria-label="Close">×</button>';
+    const spin = animate();
+    if (spin) pop.querySelector('.rp-die').classList.add('tumble');
+    pop.ready = new Promise(res => { pop._skip = res; setTimeout(res, spin ? 550 : 0); });
+    pop.addEventListener('click', e => {
+      if (e.target.closest('.rp-x')) return closePop(pop);
+      pop._skip(); pop.querySelector('.rp-die').classList.remove('tumble');  // a click skips the tumble
+    });
+    pop.addEventListener('mouseenter', () => clearTimeout(pop._t));
+    pop.addEventListener('mouseleave', () => { if (pop._done) pop._t = setTimeout(() => closePop(pop), 3000); });
+    myPop = pop;
+    popHost(pop);
+    return pop;
+  }
+  function diceText(r) {
+    if (r.kind === 'damage') return esc(r.formula) + ': ' + r.dice.join(' ') + (r.modifier ? ' ' + signed(r.modifier) : '');
+    const dice = r.dice.map((d, i) => (i === r.kept_at ? '<u>' + d + '</u>' : d)).join(' / ');
+    return 'd20 ' + dice + ' ' + signed(r.modifier) + (r.mode === 'adv' ? ' · Adv' : r.mode === 'dis' ? ' · Dis' : '');
+  }
+  function popResult(pop, r) {
+    pop.ready.then(() => {
+      if (!pop.isConnected) return;
+      const die = pop.querySelector('.rp-die');
+      die.classList.remove('tumble');
+      die.querySelector('text').textContent = r.kind === 'damage' ? r.total : r.kept;
+      pop.classList.toggle('nat20', r.nat === 20);
+      pop.classList.toggle('nat1', r.nat === 1);
+      const what = r.kind === 'attack' ? ' to hit' : r.kind === 'damage' ? (r.crit ? ' critical damage' : ' damage') : '';
+      const whom = r.to === 'private' ? 'only in this browser' : TO_WORDS[r.to];
+      const flag = r.nat === 20 ? 'Natural 20' + (r.kind === 'attack' ? ': critical hit' : '') : r.nat === 1 ? 'Natural 1' + (r.kind === 'attack' ? ': miss' : '') : '';
+      pop.querySelector('.rp-label').innerHTML = esc(r.label) + what + ' · ' + whom;
+      pop.querySelector('.rp-res').innerHTML = '<b>' + r.total + '</b> <span class="roll-sub">' + diceText(r) + '</span>' + (flag ? '<div class="rp-flag">' + flag + '</div>' : '');
+      if (r.damage) {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'btn small roll-dmg';
+        b.textContent = 'Roll ' + (r.nat === 20 ? 'critical ' : '') + 'damage (' + r.damage + ')';
+        if (r.id) b.dataset.after = r.id;
+        else b.addEventListener('click', e => { e.stopPropagation(); const d = damage(r.label, r.damage, r.nat === 20); if (d) { remember(d); closePop(pop); popResult(popStart(d.label), asShared(d)); } });
+        pop.querySelector('.rp-body').appendChild(b);
+      }
+      pop._done = true;
+      pop._t = setTimeout(() => closePop(pop), r.damage ? 10000 : 6000);
+    });
+  }
+  function popFail(pop, text) {
+    pop.ready.then(() => {
+      pop.querySelector('.rp-die').classList.remove('tumble');
+      pop.classList.add('failed');
+      pop.querySelector('.rp-res').textContent = text;
+      pop._done = true;
+    });
+  }
+  function notice(li) {
+    if (!pops) return;
+    const n = document.createElement('div');
+    n.className = 'roll-note';
+    n.setAttribute('role', 'status');
+    const name = li.querySelector('.roll-who b').textContent, total = li.querySelector('.roll-total');
+    const av = li.querySelector('.roll-av').cloneNode(true);
+    av.className = 'roll-av ' + [...li.classList].filter(c => c.startsWith('hue')).join(' ');
+    n.append(av);
+    const what = li.querySelector('.roll-what').textContent.trim().replace(/\s+/g, ' ');
+    const t = document.createElement('span');
+    t.innerHTML = total ? '<b>' + esc(name) + '</b> rolled <b class="' + (li.classList.contains('nat20') ? 'nat20' : li.classList.contains('nat1') ? 'nat1' : '') + '">' + esc(total.textContent) + '</b> · ' + esc(what)
+                        : '<b>' + esc(name) + '</b> rolled for the DM';
+    n.append(t);
+    pops.appendChild(n);
+    const notes = pops.querySelectorAll('.roll-note');
+    if (notes.length > 3) notes[0].remove();
+    setTimeout(() => n.classList.add('gone'), 4000);
+    setTimeout(() => n.remove(), 4400);
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && myPop) closePop(myPop); });
+
+  // ---------------------------------------------------------------- rolling
+  function characterOf(el) {
+    const holder = el.closest('[data-character]');
+    if (holder) return holder.dataset.character;
+    const panel = el.closest('.peek');
+    const m = panel && /^\/characters\/(\d+)/.exec(panel.dataset.url || '');
+    return m ? m[1] : '';
+  }
+  function placeholder(label) {
+    if (!log || !logShown()) return null;
+    const li = document.createElement('li');
+    li.className = 'roll-pending';
+    li.textContent = label + ' · sending…';
+    log.prepend(li);
+    return li;
+  }
+  function send(data, label) {
+    const pending = placeholder(label);
+    const pop = logShown() ? null : popStart(label);
+    fetch('/rolls', { method: 'POST', body: new URLSearchParams(data), headers: { 'X-Requested-With': 'fetch' } })
+      .then(r => r.json().catch(() => ({})).then(j => { if (!r.ok) throw Object.assign(new Error(j.error || "askdnd couldn't roll that"), { said: true }); return j; }))
+      .then(j => {
+        if (log) log.querySelectorAll('.roll-dmg').forEach(b => b.remove());  // damage follows only your newest roll
+        if (pending) pending.outerHTML = j.html; else if (log) log.insertAdjacentHTML('afterbegin', j.html);
+        tidy();
+        const li = log && log.querySelector('.roll-item[data-id="' + j.roll.id + '"]');
+        if (li) { li.classList.remove('fresh'); void li.offsetWidth; li.classList.add('fresh'); if (pop) li.querySelector('.roll-dmg')?.remove(); }
+        if (pop) popResult(pop, j.roll);
+      })
+      .catch(err => {
+        const text = (err.said ? err.message : "Couldn't reach askdnd") + ': not rolled.';
+        if (pop) popFail(pop, text);
+        if (pending) {
+          pending.className = 'roll-pending failed';
+          pending.textContent = label + ' · ' + text + ' ';
+          const b = document.createElement('button');
+          b.type = 'button'; b.className = 'btn small'; b.textContent = 'Try again';
+          b.addEventListener('click', () => { pending.remove(); send(data, label); });
+          pending.appendChild(b);
+        }
+      });
+  }
+  function rollPrivately(el) {
+    const r = el.dataset.roll === 'damage' ? damage(el.dataset.label, el.dataset.dmg, false) : d20(el);
+    if (!r) return;
+    mode = 'normal';
+    remember(r);
+    ensureTray();
+    if (tray && !tray.hidden && !panelOpen()) {
+      renderTray(r);
+      tray.classList.remove('bump'); void tray.offsetWidth; tray.classList.add('bump');
+    } else {
+      renderModes();
+      popResult(popStart(r.label), asShared(r));
+    }
+  }
 
   document.addEventListener('click', e => {
+    const dmg = e.target.closest('.roll-dmg[data-after]');
+    if (dmg) {
+      e.stopPropagation();
+      const item = dmg.closest('.roll-item, .roll-pop');
+      const label = (item.querySelector('.roll-what, .rp-label').textContent.split(' to hit')[0] || '').trim() + ' damage';
+      document.querySelectorAll('.roll-dmg[data-after="' + dmg.dataset.after + '"]').forEach(b => b.remove());
+      if (item.classList.contains('roll-pop')) closePop(item);
+      send({ after: dmg.dataset.after }, label);
+      return;
+    }
     const el = e.target.closest('[data-roll]');
     if (!el || el.closest('.roll-tray')) return;
     e.preventDefault();
-    const r = el.dataset.roll === 'damage' ? damage(el.dataset.label, el.dataset.dmg, false) : d20(el);
-    if (!r) return;
-    ensureTray();
-    remember(r);
-    render(r);
-    tray.classList.remove('bump'); void tray.offsetWidth; tray.classList.add('bump');
+    const cid = characterOf(el);
+    if (!(gmOn() && side && cid && side.dataset.mine === cid)) return rollPrivately(el);
+    const data = { character: cid, kind: el.dataset.roll, label: el.dataset.label || '', mod: el.dataset.mod || '', dmg: el.dataset.dmg || '',
+                   adv: el.dataset.adv || '', mode, to };
+    mode = 'normal';
+    renderModes();
+    send(data, data.label + (data.kind === 'attack' ? ' to hit' : data.kind === 'damage' ? ' damage' : ''));
   });
   document.addEventListener('keydown', e => {
     const el = e.target.closest && e.target.closest('[data-roll][tabindex]');

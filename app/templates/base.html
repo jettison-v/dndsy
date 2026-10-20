@@ -80,6 +80,7 @@
   <a href="/faq" data-no-peek>FAQ</a>
   <form method="post" action="/logout"><button type="submit">Sign out <small class="note">{{ user.email }}</small></button></form>
 </div>
+{% include "_table_rolls.html" %}
 {% endif %}
 {% block content %}{% endblock %}
 {% endblock %}

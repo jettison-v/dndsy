@@ -125,7 +125,7 @@ CHART = [
     ("Read", "Every character's page (Play and Sheet) and Party", "read"),
     ("Read", "Players' notes, stars, reminders and shortlists", "player_notes"),
     ("Contribute", "Suggest corrections and additions", "suggest"),
-    ("Contribute", "Notes, stars, reminders, shortlists and the Wild Shape switch", "own"),
+    ("Contribute", "Notes, stars, reminders, shortlists, the Wild Shape switch and table rolls", "own"),
     ("Run the table", "Decide on the table's suggestions", "moderate"),
     ("Run the table", "Add pictures and glossary entries", "story_extras"),
     ("Run the table", "Draft, edit and publish recaps; answer Claude's questions", "review"),
