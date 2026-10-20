@@ -11,19 +11,12 @@
   <ol id="roll-log" class="rs-log" aria-live="polite" hx-get="/rolls" hx-swap="afterbegin"
       hx-trigger="load[window.askdndRolls && askdndRolls.wanted()], rolls:load, every 3s[window.askdndRolls && askdndRolls.poll()]" hx-vals="js:{since: askdndRolls.since()}"></ol>
   <div class="rs-controls">
-    <div class="rs-dice" role="group" aria-label="Roll dice">
-      <span class="rs-label">Roll dice <span class="note">when the DM asks</span></span>
-      <div class="rs-dice-row">{% for d in [4, 6, 8, 10, 12, 20, 100] %}<button type="button" class="rs-die" data-add-die="{{ d }}" title="Add a d{{ d }}">d{{ d }}</button>{% endfor %}</div>
-      <div class="rs-dice-row"><output class="rs-formula" aria-live="polite">Pick dice</output>
-        <input type="text" inputmode="numeric" class="rs-mod" placeholder="±0" aria-label="Bonus to add" size="3">
-        <button type="button" class="btn small link" data-dice-clear>Clear</button>
-        <button type="button" class="btn primary small" data-dice-roll disabled>Roll</button></div>
-    </div>
     {% if tn and tn.mine %}
-    <details class="rs-checks" id="rs-checks"><summary>Checks, skills, saves, Death save, Hit Die</summary>
+    <details class="rs-fold" id="rs-checks"><summary>Checks, skills, saves, Death save, Hit Die</summary>
       <div class="rs-checks-body" hx-get="/rolls/checks" hx-trigger="toggle once from:#rs-checks"><p class="note">Loading…</p></div>
     </details>
     {% endif %}
+    <details class="rs-fold"><summary>Manual roll</summary><div data-manual></div></details>
     <label class="rs-row rs-anim"><input type="checkbox" data-roll-anim> Dice animation <span class="note">(this device)</span></label>
   </div>
 </aside>

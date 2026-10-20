@@ -1067,8 +1067,8 @@ a.sheet-ref { text-decoration-style: dotted; }
 }
 
 /* Rolls (app.js): private dice rolls. Roll buttons look like the numbers they roll. */
-.roll-hit { font: inherit; font-weight: 700; color: inherit; background: none; border: 0; padding: 0 4px; margin: 0 -4px; border-radius: 6px; cursor: pointer; }
-.roll-hit:hover, .roll-hit:focus-visible { background: var(--surface-2); color: var(--amber); }
+.roll-hit { font: inherit; font-weight: 700; color: var(--text); background: var(--surface-2); border: 1px solid var(--line); box-shadow: 0 1px 0 rgba(0, 0, 0, .35); padding: 0 8px; border-radius: 7px; cursor: pointer; line-height: 1.5; font-variant-numeric: tabular-nums; }
+.roll-hit:hover, .roll-hit:focus-visible { border-color: var(--amber); color: var(--amber); background: var(--amber-soft); }
 .roll-chip { font: inherit; font-size: .72rem; font-weight: 600; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; margin-left: 4px; cursor: pointer; vertical-align: middle; }
 .roll-chip:hover, .roll-chip:focus-visible { color: var(--amber); border-color: var(--amber); }
 .tile-roll { float: right; margin-top: 4px; }
@@ -1090,22 +1090,29 @@ a.sheet-ref { text-decoration-style: dotted; }
 .rw-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin: 8px 0; }
 .rw-label { width: 70px; flex: none; color: var(--muted); font-size: .8rem; }
 .rw-mode .roll-modes { display: flex; width: 100%; }
-.rw-mode .roll-modes button { flex: 1; padding: 6px 4px; font-size: .85rem; }
+.rw-mode .roll-modes button { flex: 1; padding: 7px 4px; font-size: .85rem; }
+.roll-win .roll-modes button[aria-pressed="true"] { background: var(--red); color: #fff; font-weight: 700; }
+.rw-add { margin: 8px 0; }
+.rw-add summary, .rs-fold summary { cursor: pointer; font-weight: 600; color: var(--text); font-size: .85rem; }
+.rw-add .dice-pick, .rs-fold .dice-pick { margin-top: 8px; }
+/* The dice picker (roll window, Manual roll) */
+.dice-pick { display: flex; flex-direction: column; gap: 8px; }
+.dp-dice { display: flex; flex-wrap: wrap; gap: 6px; }
+.dp-die { font: inherit; font-size: .76rem; font-weight: 600; min-width: 36px; padding: 5px 0; background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; }
+.dp-die:hover { border-color: var(--amber); color: var(--amber); }
+.dp-minus[aria-pressed="true"] { background: var(--red); border-color: var(--red); color: #fff; }
+.dp-formula { font-weight: 700; color: var(--text); font-size: .95rem; min-height: 1.4em; }
+.dp-formula.empty { font-weight: 400; color: var(--muted); font-size: .82rem; }
+.dp-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dp-bonus { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: .8rem; }
+.dice-pick input.dp-mod { width: 64px; padding: 4px 8px; font-size: .85rem; }
+.dp-row [data-manual-roll] { margin-left: auto; }
 .roll-win .roll-modes button { font-size: .8rem; padding: 4px 10px; }
-.rw-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.rw-chips .chip { font: inherit; font-size: .8rem; background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
-.rw-chips .chip[aria-pressed="true"] { color: var(--text); border-color: var(--amber); background: var(--amber-soft); }
 .roll-win input.rw-text { width: auto; }
 .rw-text { font: inherit; font-size: .85rem; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; min-width: 0; flex: 1; }
-.roll-win input.rw-other { flex: none; width: 104px; }
 .rw-text.bad { border-color: var(--red); }
-.rw-exh { color: var(--muted); font-size: .8rem; display: inline-flex; gap: 6px; align-items: center; }
-.rw-exh select { padding: 2px 6px;  font: inherit; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; }
 .rw-notes { list-style: none; margin: 6px 0; padding: 8px 10px; background: var(--bg); border-radius: 8px; font-size: .8rem; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
 .rw-notes b { color: var(--amber); font-weight: 600; margin-right: 4px; }
-.rw-why { font-size: .8rem; color: var(--muted); margin: 6px 0; }
-.rw-why summary { cursor: pointer; }
-.rw-why p { margin: 6px 0 0; line-height: 1.45; }
 .rw-note { font-size: .8rem; color: var(--muted); margin: 6px 0; }
 .rw-go { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
 .rw-go .note { font-size: .75rem; }
@@ -1182,16 +1189,6 @@ body.gm-on .topbar { margin-left: calc(-1 * var(--rolls-w, 0px)); }
 .roll-empty { color: var(--muted); font-size: .85rem; padding: 6px 4px; }
 .rs-controls { border-top: 1px solid var(--line); padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 10px; font-size: .8rem; color: var(--muted); max-height: 50%; overflow-y: auto; }
 .rs-row { display: flex; align-items: center; gap: 8px; }
-.rs-label { font-weight: 600; color: var(--text); }
-.rs-label .note { font-weight: 400; }
-.rs-dice { display: flex; flex-direction: column; gap: 6px; }
-.rs-dice-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.rs-die { font: inherit; font-size: .78rem; font-weight: 600; min-width: 38px; padding: 5px 0; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 8px; }
-.rs-die:hover { border-color: var(--amber); color: var(--amber); }
-.rs-formula { flex: 1; min-width: 80px; font-weight: 700; color: var(--text); font-size: .9rem; }
-.rs-dice input.rs-mod { width: 60px; flex: none; }
-.rs-mod { font: inherit; font-size: .85rem; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 4px 6px; }
-.rs-checks summary { cursor: pointer; color: var(--text); font-weight: 600; }
 .rc-group { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
 .rc-head { flex-basis: 100%; font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--faint); }
 .rc { font: inherit; font-size: .76rem; background: var(--surface); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; }

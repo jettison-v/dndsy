@@ -313,4 +313,34 @@ def test_the_sidebar_is_on_every_page_and_knows_your_character(table, db):
     assert 'data-play="1"' in table["player"].get(f"/characters/{cole.id}/battle").text
     assert 'data-play=""' in table["player"].get("/party").text
     assert 'data-mine=""' in table["dm"].get("/party").text  # the DM has no character to roll for
-    assert "rs-checks" not in table["dm"].get("/party").text and "data-add-die" in table["dm"].get("/party").text
+    assert "rs-checks" not in table["dm"].get("/party").text and "Manual roll" in table["dm"].get("/party").text
+
+
+# ------------------------------------------------------------------ what can roll
+
+def test_rollable_finds_dice_in_the_text():
+    from app.character_views import rollable
+
+    potion = rollable({"name": "Use an item: Potion of Healing", "kind": "item", "meta": "This potion is a magic item.",
+                       "text": "The creature regains 2d4 + 2 Hit Points."})
+    assert potion["dice"] == "2d4+2" and potion["heal"]
+    wind = rollable({"name": "Second Wind", "kind": "feature", "meta": "", "summary": "You regain 1d10+1 HP."})
+    assert wind["dice"] == "1d10+1" and wind["heal"]
+    redirect = rollable({"name": "Redirect Attack", "kind": "feature", "meta": "", "text": "takes 2d8 + 4 Force damage"})
+    assert redirect["dice"] == "2d8+4" and not redirect["heal"]
+    beads = rollable({"name": "Necklace of Prayer Beads", "kind": "item", "meta": "", "text": "has 1d4 + 2 magic beads"})
+    assert beads["dice"] == ""  # a count, not a roll
+    flurry = rollable({"name": "Flurry of Blows", "kind": "feature", "hit": "", "meta": "", "text": "make two Unarmed Strikes"},
+                      {"to_hit": "+6", "damage": "1d6+3 bludgeoning"})
+    assert flurry["hit"] == "+6" and flurry["dice"] == "1d6+3"
+
+
+def test_the_detail_panel_rolls(table, db):
+    from app import characters
+
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    panel = table["player"].get(f"/characters/{cole.id}/detail", params={"ref": "action:Flurry of Blows"}).text
+    assert "<dt>Roll</dt>" in panel and 'data-roll="attack" data-label="Flurry of Blows"' in panel
+    every = table["player"].get(f"/characters/{cole.id}/all/bonus").text  # Play's "See all"
+    assert 'data-label="Flurry of Blows" data-mod="+' in every

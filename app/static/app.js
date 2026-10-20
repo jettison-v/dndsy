@@ -748,7 +748,7 @@
   function dline(p, d20) {
     let s = d20 ? 'd20 ' + p.dice.map((d, i) => (i === p.kept_at ? '<u>' + d + '</u>' : d)).join(' / ') + ' ' + signed(p.modifier) + (p.mode === 'adv' ? ' · Adv' : p.mode === 'dis' ? ' · Dis' : '')
                 : esc(p.formula) + ': ' + p.dice.join(' ') + (p.modifier ? ' ' + signed(p.modifier) : '');
-    (p.extras || []).forEach(x => { s += ' · ' + esc(x.label) + ' ' + signed(x.total) + (x.dice.length ? ' <span class="roll-x">(' + esc(x.formula) + ')</span>' : ''); });
+    (p.extras || []).forEach(x => { s += ' · ' + esc(x.label) + ' ' + signed(x.total) + (x.dice.length ? ' <span class="roll-x">(' + esc(x.formula.replace('-', '\u2212')) + ')</span>' : ''); });
     return s;
   }
   const KIND_WORDS = { attack: ' to hit', damage: ' damage', heal: ' healing' };
@@ -775,17 +775,55 @@
   }
 
   // ---------------------------------------------------------------- the roll window
-  const REASONS = {
-    attack: 'Disadvantage: you\'re Blinded, Poisoned, Prone or Restrained, Frightened with the source in sight; long range; a ranged attack with an enemy within 5 ft. Advantage: you\'re Invisible or unseen; the target is Blinded, Paralyzed, Petrified, Restrained, Stunned or Unconscious, or Prone within 5 ft; an ally Helps. Both at once cancel out.',
-    save: 'Dex saves: Advantage while Dodging, Disadvantage while Restrained. Str and Dex saves fail automatically while Paralyzed, Petrified, Stunned or Unconscious. Both at once cancel out.',
-    check: 'Disadvantage: you\'re Poisoned, or Frightened with the source in sight. A check that needs sight fails while Blinded. Advantage: an ally Helps with this skill. Both at once cancel out.',
-    death: '10 or higher succeeds. Three successes and you\'re Stable; three failures and you die. A 20 brings you back with 1 Hit Point; a 1 counts as two failures. Damage at 0 HP is a failure (two on a critical hit).',
-  };
-  const BONUSES = {
-    attack: [['Bless', '+1d4'], ['Bane', '-1d4']], save: [['Bless', '+1d4'], ['Bane', '-1d4']],
-    check: [['Guidance', '+1d4']], death: [['Bless', '+1d4']],
-    damage: [["Hunter's Mark", '+1d6'], ['Hex', '+1d6']],
-  };
+  // A dice picker (the roll window's "Add dice or a bonus" and the sidebar's Manual roll): click a
+  // die to add one (in the window, "−" then a die subtracts it), plus a flat bonus.
+  const DIE_SIDES = [4, 6, 8, 10, 12, 20, 100];
+  const ascii = n => (n >= 0 ? '+' : '-') + Math.abs(n);
+  function pickerHTML(opts) {
+    return '<div class="dice-pick"><div class="dp-dice">' + DIE_SIDES.map(d => '<button type="button" class="dp-die" data-add-die="' + d + '">d' + d + '</button>').join('')
+      + (opts.minus ? '<button type="button" class="dp-die dp-minus" data-dp-minus aria-pressed="false" title="Subtract the next die">−</button>' : '') + '</div>'
+      + '<output class="dp-formula" aria-live="polite"></output>'
+      + '<div class="dp-row"><label class="dp-bonus">Bonus <input type="text" inputmode="numeric" class="dp-mod" placeholder="±0" value="' + (opts.bonus || '') + '"></label>'
+      + '<button type="button" class="btn small link" data-dp-clear>Clear</button>' + (opts.extra || '') + '</div></div>';
+  }
+  function wirePicker(root, onChange) {
+    const counts = {};  // "+6" / "-4" -> how many
+    const out = root.querySelector('.dp-formula'), modIn = root.querySelector('.dp-mod'), minus = root.querySelector('[data-dp-minus]');
+    const flat = () => Math.max(-99, Math.min(99, num(modIn.value)));
+    const terms = () => Object.keys(counts).filter(k => counts[k]).sort((a, b) => (a[0] === b[0] ? b.slice(1) - a.slice(1) : a[0] === '+' ? -1 : 1))
+      .map(k => ({ sign: k[0], n: counts[k], sides: +k.slice(1) }));
+    function text() {
+      let t = terms().map((x, i) => (x.sign === '-' ? (i ? ' − ' : '−') : i ? ' + ' : '') + x.n + 'd' + x.sides).join('');
+      const f = flat();
+      if (f) t += (t ? (f > 0 ? ' + ' : ' − ') : (f > 0 ? '+' : '−')) + Math.abs(f);
+      return t;
+    }
+    function show() {
+      const t = text();
+      out.textContent = t || 'Click dice to add them';
+      out.classList.toggle('empty', !t);
+      if (onChange) onChange();
+    }
+    root.addEventListener('click', e => {
+      const d = e.target.closest('[data-add-die]');
+      if (d) {
+        const k = (minus && minus.getAttribute('aria-pressed') === 'true' ? '-' : '+') + d.dataset.addDie;
+        counts[k] = Math.min((counts[k] || 0) + 1, 10);
+        if (minus) minus.setAttribute('aria-pressed', 'false');
+        show();
+      }
+      if (e.target.closest('[data-dp-minus]')) minus.setAttribute('aria-pressed', minus.getAttribute('aria-pressed') !== 'true');
+      if (e.target.closest('[data-dp-clear]')) { Object.keys(counts).forEach(k => delete counts[k]); modIn.value = ''; show(); }
+    });
+    modIn.addEventListener('input', show);
+    show();
+    return {
+      dice: () => terms().filter(x => x.sign === '+').length > 0,
+      formula: () => terms().filter(x => x.sign === '+').map(x => x.n + 'd' + x.sides).join('+') + (flat() ? ascii(flat()) : ''),
+      extras: bonusName => terms().map(x => 'Added:' + x.sign + x.n + 'd' + x.sides).concat(flat() ? [(bonusName || 'Bonus') + ':' + ascii(flat())] : []),
+      modIn,
+    };
+  }
   function ctxFor(cid) {
     const el = cid && document.querySelector('[data-roll-char="' + cid + '"], [data-character="' + cid + '"][data-roll-ctx]');
     try { return el ? JSON.parse(el.dataset.rollCtx) : {}; } catch (e) { return {}; }
@@ -850,30 +888,27 @@
       if (/^Con save/.test(spec.label)) notes.push('<b>Concentration</b> after damage: DC 10 or half the damage, whichever is higher (up to 30)');
       if (spec.label === 'Initiative') notes.push('<b>Initiative</b> Disadvantage if you\'re Surprised, Advantage if you\'re Invisible');
       if (notes.length) h += '<ul class="rw-notes">' + notes.map(n => '<li>' + n + '</li>').join('') + '</ul>';
-      if (REASONS[spec.kind]) h += '<details class="rw-why"><summary>Common reasons for Advantage or Disadvantage</summary><p>' + REASONS[spec.kind] + '</p></details>';
     }
     if (spec.note) h += '<p class="rw-note">' + esc(spec.note) + '</p>';
     if (spec.follow === 'damage' && spec.crit) h += '<p class="rw-note">Critical hit: every damage die is rolled twice, extra dice too.</p>';
-    const bonusKind = spec.follow === 'damage' ? 'damage' : d20 ? spec.kind : '';
+    let other = '';
     if (spec.follow === 'bonus') {
       h += '<div class="rw-row"><span class="rw-label">Die</span>' + seg('Die', [[4, 'd4'], [6, 'd6'], [8, 'd8'], [10, 'd10'], [12, 'd12']], 6) + '</div>'
         + '<div class="rw-row"><span class="rw-label">From</span><input type="text" class="rw-text" data-bonus-label value="Bardic Inspiration" maxlength="40"></div>'
         + '<p class="rw-note">Bardic Inspiration adds its die after you see a d20 roll fail.</p>';
+    } else if (spec.kind === 'dice') {
+      h += '<div class="rw-row"><span class="rw-label">For</span><input type="text" class="rw-text" data-for placeholder="What the DM asked for (optional)" maxlength="60"></div>';
     } else if (spec.follow !== 'reroll') {
-      const chips = BONUSES[bonusKind] || [];
-      if (chips.length) h += '<div class="rw-row"><span class="rw-label">Add</span><span class="rw-chips">' + chips.map(([l, f]) =>
-        '<button type="button" class="chip" data-extra="' + esc(l) + ':' + f + '" aria-pressed="false">' + esc(l) + ' ' + f.replace('-', '−') + '</button>').join('') + '</span></div>';
-      let other = '';
-      if (spec.kind === 'heal' && !spec.follow && spec.label !== 'Hit Die' && !/potion/i.test(spec.label) && ctx.spell_mod != null) other = signed(ctx.spell_mod).replace('−', '-');
-      h += '<div class="rw-row"><span class="rw-label">Other</span><input type="text" class="rw-text rw-other" placeholder="+2, \u22121 or +1d4" value="' + other + '"' + (other ? ' data-name="Spellcasting modifier" data-was="' + other + '"' : '') + ' aria-label="Other bonus" size="7">'
-        + (d20 ? '<label class="rw-exh">Exhaustion <select data-exh aria-label="Exhaustion level"><option value="0">0</option>' + [1, 2, 3, 4, 5].map(n => '<option value="' + n + '">' + n + '</option>').join('') + '</select></label>' : '') + '</div>';
-      if (other) h += '<p class="rw-note">Most healing spells add your spellcasting modifier (filled in); change it if this one doesn\'t.</p>';
-      if (spec.kind === 'dice') h += '<div class="rw-row"><span class="rw-label">For</span><input type="text" class="rw-text" data-for placeholder="What the DM asked for (optional)" maxlength="60"></div>';
+      if (spec.kind === 'heal' && !spec.follow && spec.label !== 'Hit Die' && !/potion/i.test(spec.label) && ctx.spell_mod != null) other = ascii(ctx.spell_mod);
+      h += '<details class="rw-add"' + (other ? ' open' : '') + '><summary>Add dice or a bonus</summary>' + pickerHTML({ minus: true, bonus: other })
+        + (other ? '<p class="rw-note">Most healing spells add your spellcasting modifier (filled in); change it if this one doesn\'t.</p>' : '') + '</details>';
     }
     if (spec.shared && !spec.follow) h += '<div class="rw-row"><span class="rw-label">Who sees</span>' + seg('To', [['table', 'Table'], ['dm', 'DM only'], ['self', 'Just me']], to) + '</div>';
     else if (!spec.shared) h += '<p class="rw-note">' + (gmOn() ? 'You don\'t play this character, so only you see this roll.' : 'Only you see this roll (Game Mode is off).') + '</p>';
     h += '<div class="rw-go"><button type="button" class="btn primary" data-go>Roll</button><span class="note">Enter rolls · Esc closes</span></div>';
     w.innerHTML = h;
+    const pick = w.querySelector('.dice-pick') ? wirePicker(w.querySelector('.dice-pick'), () => place(w, anchor)) : null;
+    w.querySelector('.rw-add')?.addEventListener('toggle', () => place(w, anchor));
     place(w, anchor);
     w.addEventListener('click', e => {
       const b = e.target.closest('button');
@@ -884,15 +919,7 @@
       if (b.dataset.die) w.querySelectorAll('[data-die]').forEach(x => x.setAttribute('aria-pressed', x === b));
       if (b.dataset.extra) b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true');
       if (b.hasAttribute('data-go')) {
-        const extras = [...w.querySelectorAll('[data-extra][aria-pressed=true]')].map(x => x.dataset.extra);
-        const otherIn = w.querySelector('.rw-other') || {}, other = otherIn.value || '';
-        const o = other.replace(/\s/g, '').replace(/−/g, '-');
-        if (o) {
-          if (!/^[+-]?(\d{1,2}d\d{1,3}|\d{1,2})$/.test(o)) { w.querySelector('.rw-other').classList.add('bad'); w.querySelector('.rw-other').focus(); return; }
-          extras.push((other === (otherIn.dataset || {}).was ? otherIn.dataset.name : 'Other') + ':' + (/^[+-]/.test(o) ? o : '+' + o));
-        }
-        const exh = +((w.querySelector('[data-exh]') || {}).value || 0);
-        if (exh) extras.push('Exhaustion ' + exh + ':-' + 2 * exh);
+        const extras = pick ? pick.extras(other && pick.modIn.value === other ? 'Spellcasting modifier' : 'Bonus') : [];
         const forText = ((w.querySelector('[data-for]') || {}).value || '').trim();
         const go = { ...spec, mode, extras, label: spec.kind === 'dice' ? (forText || 'Dice') : spec.label, ctx,
                      die: +((w.querySelector('[data-die][aria-pressed=true]') || {}).dataset || {}).die || 6,
@@ -1006,7 +1033,7 @@
       return;
     }
     const el = e.target.closest('[data-roll]');
-    if (!el) { if (win && !e.target.closest('.rs-dice')) closeWin(); return; }
+    if (!el) { if (win && !e.target.closest('[data-manual]')) closeWin(); return; }
     e.preventDefault();
     const spec = specFrom(el);
     if (e.shiftKey) { const w = openWin(el); roll(w, { ...spec, mode: spec.adv ? 'adv' : 'normal', extras: [], ctx: ctxFor(spec.cid) }); }
@@ -1020,22 +1047,14 @@
   addEventListener('resize', () => { if (win) place(win, win._anchor); });
   document.addEventListener('scroll', e => { if (win && !win.contains(e.target)) place(win, win._anchor); }, true);
 
-  // ---------------------------------------------------------------- the sidebar's dice tray
-  if (side) {
-    const tray = side.querySelector('.rs-dice'), counts = {};
-    const out = tray.querySelector('.rs-formula'), modIn = tray.querySelector('.rs-mod'), go = tray.querySelector('[data-dice-roll]');
-    const formula = () => {
-      const f = Object.keys(counts).sort((a, b) => b - a).map(s => counts[s] + 'd' + s).join('+'), m = num(modIn.value);
-      return f ? f + (m ? (m > 0 ? '+' : '-') + Math.abs(m) : '') : '';
-    };
-    const show = () => { const f = formula(); out.textContent = f ? f.replace(/\+/g, ' + ').replace(/-/g, ' − ') : 'Pick dice'; go.disabled = !f; };
-    tray.addEventListener('click', e => {
-      const d = e.target.closest('[data-add-die]');
-      if (d) { counts[d.dataset.addDie] = Math.min((counts[d.dataset.addDie] || 0) + 1, 20); show(); }
-      if (e.target.closest('[data-dice-clear]')) { Object.keys(counts).forEach(k => delete counts[k]); modIn.value = ''; show(); }
-      if (e.target.closest('[data-dice-roll]') && formula()) chooser(go, { kind: 'dice', label: '', dmg: formula(), cid: side.dataset.mine, shared: gmOn() });
-    });
-    modIn.addEventListener('input', show);
+  // ---------------------------------------------------------------- the sidebar's Manual roll
+  const manual = side && side.querySelector('[data-manual]');
+  if (manual) {
+    manual.innerHTML = pickerHTML({ extra: '<button type="button" class="btn primary small" data-manual-roll disabled>Roll</button>' });
+    const go = manual.querySelector('[data-manual-roll]');
+    let pick = null;
+    pick = wirePicker(manual.querySelector('.dice-pick'), () => { go.disabled = !pick || !pick.dice(); });
+    go.addEventListener('click', () => { if (pick.dice()) chooser(go, { kind: 'dice', label: '', dmg: pick.formula(), cid: side.dataset.mine, shared: gmOn() }); });
   }
 
   // ---------------------------------------------------------------- the sidebar's state

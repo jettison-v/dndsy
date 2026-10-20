@@ -1,5 +1,5 @@
 {# Side panel: everything about one thing on the sheet. Same layout for spells, actions, items, features. #}
-{% from "_char.html" import pips, pick_btn, pick_note, spell_mech, spends_detail, STATE_LABELS %}
+{% from "_char.html" import pips, pick_btn, pick_note, spell_mech, spends_detail, STATE_LABELS, hit %}
 {% set o = opt %}
 <div class="peek-head">
   <div><div class="note">{{ c.entity.name }} · {{ {"spells": "Spell", "actions": "Action", "attacks": "Attack", "inventory": "Item", "features": "Feature", "situational": "Situational", "creatures": "Form"}.get(section, "") }}</div>
@@ -13,8 +13,9 @@
     {{ pick_note(c, "remind", ref, ref in picks.remind, picks.notes.get("remind|" ~ ref, ""), can_pick) }}
   </div>{% endif %}
 
-  {# The mechanics, always in the same order #}
+  {# The mechanics, always in the same order; first, what it rolls #}
   <dl class="mech">
+    {% if roll %}<dt>Roll</dt><dd class="detail-roll">{{ hit(roll) }}</dd>{% endif %}
     {% if section == "spells" %}
       <dt>Level</dt><dd>{{ "Cantrip" if not x.level else x.level | ordinal }}{% if x.school %} · {{ x.school }}{% endif %}{% if x.state %} · {{ STATE_LABELS[x.state][0] or "" }}{% endif %}{% if x.class %} ({{ x.class }}){% endif %}</dd>
       <dt>Casting time</dt><dd>{{ x.casting_time }}{% if x.ritual %} · Ritual{% endif %}{% if x.trigger %}, {{ x.trigger }}{% endif %}</dd>

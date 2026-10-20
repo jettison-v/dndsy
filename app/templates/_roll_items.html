@@ -5,7 +5,7 @@
 {% macro dline(p, d20) -%}
 {%- if d20 -%}d20 {% for d in p.dice %}{% if loop.index0 == p.kept_at %}<u>{{ d }}</u>{% else %}{{ d }}{% endif %}{{ " / " if not loop.last }}{% endfor %} {{ "+" if p.modifier >= 0 else "−" }}{{ p.modifier | abs }}{{ " · Adv" if p.mode == "adv" }}{{ " · Dis" if p.mode == "dis" }}
 {%- else -%}{{ p.formula }}: {{ p.dice | join(" ") }}{% if p.modifier %} {{ "+" if p.modifier > 0 else "−" }}{{ p.modifier | abs }}{% endif %}{%- endif -%}
-{%- for x in p.extras %} · {{ x.label }} {{ "+" if x.total >= 0 else "−" }}{{ x.total | abs }}{% if x.dice %} <span class="roll-x">({{ x.formula }})</span>{% endif %}{% endfor -%}
+{%- for x in p.extras %} · {{ x.label }} {{ "+" if x.total >= 0 else "−" }}{{ x.total | abs }}{% if x.dice %} <span class="roll-x">({{ x.formula | replace("-", "−") }})</span>{% endif %}{% endfor -%}
 {%- endmacro %}
 {% set D20 = ("save", "check", "attack", "death") %}
 {% for r in rolls %}

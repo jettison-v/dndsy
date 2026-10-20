@@ -168,7 +168,40 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
         add(key=it["key"], oref=f"item:{it['base_name']}", kind="item", cost="Action", name=f"Use an item: {it['name']}", uses=uses,
             tags=[f"×{it['quantity']}"] if it["quantity"] > 1 else [], meta=first if len(first) <= 120 else first[:119].rsplit(" ", 1)[0] + "…",
             text=it.get("text") or it["summary"], summary=it["summary"], common="healing" in it["name"].lower())
+    unarmed = attacks.get("Unarmed Strike")
+    for o in out:
+        rollable(o, unarmed)
     return out
+
+
+# What an option rolls (the roll buttons: _char.html hit()): its to-hit, else dice in its details,
+# else dice its text says you regain ("regains 2d4 + 2 Hit Points") or deal ("1d6 fire damage").
+# Features that make Unarmed Strikes (Flurry of Blows) roll the Unarmed Strike.
+DICE = r"(\d+d\d+(?:\s*[+\u2212-]\s*\d+(?!d))?)"
+HEALS = re.compile(r"\b(?:regains?|restores?|heals?)\s+" + DICE, re.I)
+DEALS = re.compile(DICE + r"\s+(?:[a-z]+\s+){0,2}damage\b", re.I)
+MAKES_UNARMED = re.compile(r"\bmake (?:one|two|three|an?) Unarmed Strikes?\b", re.I)
+
+
+def _dice(text: str) -> str:
+    m = re.search(DICE, text or "")
+    return re.sub(r"\s+", "", m.group(1)).replace("\u2212", "-") if m else ""
+
+
+def rollable(o: dict, unarmed: dict | None = None) -> dict:
+    """Sets o["dice"] (damage or healing dice, "" if none) and o["heal"]; gives a feature that
+    makes Unarmed Strikes the Unarmed Strike's to-hit and damage."""
+    text = f"{o.get('summary') or ''} {o.get('text') or ''}"
+    if not o.get("hit") and unarmed and o.get("kind") == "feature" and MAKES_UNARMED.search(text):
+        o["hit"] = unarmed.get("to_hit", "")
+        o["meta"] = o.get("meta") or unarmed.get("damage", "")
+    meta = o.get("meta") or ""
+    o["dice"], o["heal"] = _dice(meta), "heals " in meta or "healing" in (o.get("name") or "").lower()
+    if not o["dice"]:
+        m = HEALS.search(text)
+        d = None if m else DEALS.search(text)
+        o["dice"], o["heal"] = (_dice(m.group(1)), True) if m else (_dice(d.group(1)), False) if d else ("", o["heal"])
+    return o
 
 
 def _mastery(attack: dict, mastered: dict[str, str]) -> str | None:
@@ -276,7 +309,16 @@ def detail(sheet: dict, ref: str, starred: set[str] = frozenset()) -> dict | Non
             if same:
                 x.setdefault("state", same["state"])
                 x.setdefault("class", book["class"])
-    return {"x": x, "opt": opt, "section": x["section"]}
+    roll = opt
+    if roll is None and x["section"] in ("spells", "inventory", "attacks", "actions", "features", "creatures"):
+        weapon = next((a for a in sheet.get("attacks") or [] if a["name"] == x.get("name")), None)
+        effect = x.get("damage") or (f"heals {x['healing']}" if x.get("healing") else "")
+        roll = rollable({"name": x.get("name") or "", "kind": "spell" if x["section"] == "spells" else "item",
+                         "hit": x.get("attack") or x.get("save") or (weapon or {}).get("to_hit", ""), "meta": effect if isinstance(effect, str) else "",
+                         "summary": x.get("summary") or "", "text": x.get("text") or "", "adv": []})
+    if roll is not None and not (roll.get("dice") or (roll.get("hit") or "")[:1] in ("+", "-", "\u2212")):
+        roll = None
+    return {"x": x, "opt": opt, "section": x["section"], "roll": roll}
 
 
 def label_for(sheet: dict, ref: str) -> str:
