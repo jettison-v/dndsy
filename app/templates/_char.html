@@ -1,4 +1,4 @@
-{# Shared pieces for the Battle, Character and Party pages. #}
+{# Shared pieces for the Character page (Play, Sheet, Plan) and Party. #}
 
 {# Reminder icon: a bell, outlined when off and filled when on. #}
 {% macro bell(on) -%}
@@ -54,7 +54,7 @@
 {% macro pick_btn(c, kind, ref, on, can_pick) -%}
 {%- if can_pick -%}
 <button type="button" class="pick {{ kind }}{{ ' on' if on }}" hx-post="/characters/{{ c.id }}/pick" hx-vals='{{ {"kind": kind, "ref": ref} | tojson }}' hx-swap="outerHTML"
-  aria-pressed="{{ 'true' if on else 'false' }}" title="{{ {'star': ('Starred: shown on Battle' if on else 'Star: show on Battle'), 'remind': ('In Easy to forget (click to remove)' if on else 'Remind me: add to Easy to forget'), 'fav': ('On your shortlist' if on else 'Add to your spell shortlist')}[kind] }}" aria-label="{{ {'star': 'Star', 'remind': 'Remind me', 'fav': 'Shortlist'}[kind] }}">
+  aria-pressed="{{ 'true' if on else 'false' }}" title="{{ {'star': ('Starred: shown on Play' if on else 'Star: show on Play'), 'remind': ('In Easy to forget (click to remove)' if on else 'Remind me: add to Easy to forget'), 'fav': ('On your shortlist' if on else 'Add to your spell shortlist')}[kind] }}" aria-label="{{ {'star': 'Star', 'remind': 'Remind me', 'fav': 'Shortlist'}[kind] }}">
   {%- if kind == "star" %}{{ "★" if on else "☆" }}{% elif kind == "fav" %}{{ "♥" if on else "♡" }}{% else %}{{ bell(on) }}{% endif -%}
 </button>
 {%- elif on and kind == "star" -%}<span class="pick star on static" title="Starred by their player">★</span>
@@ -193,4 +193,40 @@ data-roll="{{ kind }}" data-label="{{ label }}"{% if mod %} data-mod="{{ mod | r
 {# A character's picture from D&D Beyond (their image server). Hidden if it doesn't load. #}
 {% macro portrait(s, cls="") -%}
 {% if s and s.portrait %}<img class="portrait {{ cls }}" src="{{ s.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}
+{%- endmacro %}
+
+{# One Wild Shape form as a card (Sheet › Wild Shape, Plan's shortlist): the numbers for choosing
+   a form, with this druid's stats carried over. Click for the full form. #}
+{% macro form_card(c, fm, picks, can_pick, i=0) -%}{% set k = fm.card %}
+        {% set tags = (fm.moves + [fm.size | lower] + (["locked"] if fm.why_not else [])) | join(" ") %}
+        {% set notes = [picks.notes.get("fav|" ~ fm.key), picks.notes.get("remind|" ~ fm.key)] | select | list if picks.notes else [] %}
+        <article class="spell-row form-card{{ ' known' if fm.known }}{{ ' not-ready' if fm.why_not }}" data-modal-url="/characters/{{ c.id }}/form?name={{ fm.name | urlencode }}" data-modal-size="large"
+          data-ref="{{ fm.key }}" tabindex="0" role="button" data-state="{{ 'ready' if fm.known else 'learn' }}" data-fav="{{ '1' if fm.key in picks.fav else '0' }}"
+          data-level="{{ fm.cr_label }}" data-cast="other" data-name="{{ fm.name | lower }}" data-tags="{{ tags }}"
+          data-sort-default="{{ i }}" data-sort-damage="{{ k.per_turn }}" data-sort-hit="{{ k.hit_value }}" data-sort-speed="{{ k.fastest }}" data-sort-cr="{{ fm.cr }}">
+          <div class="fc-head">
+            {% if fm.image %}<img class="fc-pic" src="{{ fm.image }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}
+            <div class="fc-title"><b>{{ fm.name }}</b>
+              <div class="fc-chips"><span class="tag">CR {{ fm.cr_label }}</span><span class="tag">{{ fm.size }}</span>
+                {% if fm.known %}<span class="tag done">Known</span>{% endif %}{% if fm.why_not %}<span class="tag faint">{{ fm.why_not }}</span>{% endif %}</div></div>
+            <span class="fc-picks">{{ pick_btn(c, "fav", fm.key, fm.key in picks.fav, can_pick) }}{{ pick_btn(c, "remind", fm.key, fm.key in picks.remind, can_pick) }}</span>
+          </div>
+          <div class="fc-stats">
+            <div title="{{ 'Circle Forms: 13 + your Wisdom modifier' if k.ac_moon else 'The form\'s AC' }}"><small>AC</small><b>{{ k.ac }}</b></div>
+            <div title="Your Hit Points plus Temporary Hit Points when you shift"><small>Temp HP</small><b>+{{ k.temp_hp }}</b></div>
+            <div title="Best attack bonus"><small>To hit</small><b>{{ k.hit or "—" }}</b></div>
+            <div title="Average damage from the Attack action (Multiattack) if every attack hits"><small>Dmg / turn</small><b>{{ k.per_turn or "—" }}</b></div>
+            <div><small>Fastest</small><b>{{ k.fastest }}<span class="note"> ft</span></b></div>
+          </div>
+          <div class="fc-line"><span class="fc-k">Attack</span><span>{{ k.attack or "No attack" }}{% if k.attack_adv %} {{ adv(k.attack_adv) }}{% endif %}{% if k.radiant and k.attack %} <span class="muted">· can deal Radiant</span>{% endif %}{% for x in k.extra %} <span class="muted">· {{ x }}</span>{% endfor %}</span></div>
+          <div class="fc-line"><span class="fc-k">Moves</span><span>{{ k.speed }}{% if k.senses %} <span class="muted">· {{ k.senses }}</span>{% endif %}{% if k.resist %} <span class="muted">· Resists {{ k.resist }}</span>{% endif %}</span></div>
+          <div class="fc-line"><span class="fc-k">You</span><span>{% for sv in k.saves %}{{ sv.short }} save {{ sv.label }}{% if sv.adv %} {{ adv(sv.adv) }}{% endif %}{{ " · " if not loop.last }}{% endfor %}{% for sk in k.skills %} · {{ sk.name }} {{ sk.label }}{% if sk.adv %} {{ adv(sk.adv) }}{% endif %}{% endfor %}</span></div>
+          {% if k.traits or k.bonus or k.reactions or k.effects %}<div class="fc-tags">
+            {% for t in k.effects %}<span class="tag eff">{{ t }}</span>{% endfor %}
+            {% for t in k.bonus %}<span class="tag k-bonus">Bonus: {{ t }}</span>{% endfor %}
+            {% for t in k.reactions %}<span class="tag k-reaction">Reaction: {{ t }}</span>{% endfor %}
+            {% for t in k.traits %}<span class="tag">{{ t }}</span>{% endfor %}
+          </div>{% endif %}
+          {% for n in notes %}<div class="ri-note">✎ {{ n }}</div>{% endfor %}
+        </article>
 {%- endmacro %}

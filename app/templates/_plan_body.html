@@ -1,0 +1,21 @@
+{# Character › Plan (character_pages._plan_ctx): the player's own planning. Never shown to the DM
+   (the route sends them to Sheet). Easy to forget is also on Play, where it's used. #}
+{% from "_char.html" import spell_row, form_card %}
+<section class="section plan-notes">{% include "_notes_tab.html" %}</section>
+<div class="lower">
+  {% include "_forget.html" %}
+  <div class="section">
+    <div class="sec-head"><h2>Spell shortlist</h2>{% if can_pick and sheet and (sheet.spells or sheet.spellbook) %}<a href="/characters/{{ c.id }}">♥ more on Sheet › Spells →</a>{% endif %}</div>
+    {% if fav_spells %}
+    <div class="rows one">{% for sp in fav_spells %}{{ spell_row(c, sp, sp.state, picks, can_pick, sp["from"]) }}{% endfor %}</div>
+    {% else %}<p class="muted">{% if can_pick %}Nothing shortlisted yet. On Sheet › Spells, choose "All you could prepare" and press ♥ on a spell to compare it here before preparing it on D&amp;D Beyond.{% else %}{{ c.entity.name }}'s player hasn't shortlisted any spells.{% endif %}</p>{% endif %}
+  </div>
+</div>
+{% if druid %}
+<section class="section">
+  <div class="sec-head"><h2>Wild Shape shortlist</h2>{% if can_pick %}<a href="/characters/{{ c.id }}">♥ more on Sheet › Wild Shape →</a>{% endif %}</div>
+  {% if fav_forms %}
+  <div class="form-cards">{% for fm in fav_forms %}{{ form_card(c, fm, picks, can_pick, loop.index) }}{% endfor %}</div>
+  {% else %}<p class="muted">{% if can_pick %}Nothing shortlisted yet. On Sheet › Wild Shape, choose "All you can learn" and press ♥ on a form to compare it here before learning it.{% else %}{{ c.entity.name }}'s player hasn't shortlisted any forms.{% endif %}</p>{% endif %}
+</section>
+{% endif %}

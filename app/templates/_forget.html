@@ -1,0 +1,12 @@
+{# Easy to forget: the player's reminders, in their order. On Play (where they're used) and Plan (where they're made). #}
+<div class="section">
+  <div class="sec-head"><h2>Easy to forget</h2>{% if can_pick %}<a href="/characters/{{ c.id }}">Choose on Sheet →</a>{% endif %}</div>
+  {% if not show_picks %}
+  <p class="muted">Reminders belong to each player and aren't shown to the DM.</p>
+  {% elif reminders %}
+  <ul class="forget"{% if can_pick %} data-sort-column="forget" data-sort-url="/characters/{{ c.id }}/order" data-sort-item="li"{% endif %}>{% for r in reminders %}<li data-key="{{ r.ref }}"><span>{{ r.text }}{% if r.note %}<span class="forget-note">✎ {{ r.note }}</span>{% endif %}</span>{% if can_pick %}<button type="button" class="forget-x" aria-label="Remove this reminder" title="Remove"
+    hx-post="/characters/{{ c.id }}/pick" hx-vals='{{ {"kind": "remind", "ref": r.ref} | tojson }}' hx-target="closest li" hx-swap="delete">×</button>{% endif %}</li>{% endfor %}</ul>
+  {% else %}
+  <p class="muted">{% if can_pick %}Nothing yet. On Sheet, press <b>Remind</b> on anything you tend to forget (for example, Advantage against being Charmed).{% else %}{{ c.entity.name }}'s player hasn't added any reminders yet.{% endif %}</p>
+  {% endif %}
+</div>

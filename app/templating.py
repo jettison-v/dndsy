@@ -10,9 +10,19 @@ def _page_context(request: Request) -> dict:
     from app.manage import pages_for
 
     user = current_user(request)
+    table: dict = {}
+
+    def tablenav() -> dict:
+        """The menu bar's character switcher and Live pill (app/live.py), read once, only by pages that show them."""
+        from app.live import table as live_table
+
+        if "v" not in table:
+            table["v"] = live_table(user, request.url.path)
+        return table["v"]
+
     return {"user": user, "is_admin": is_admin(user), "is_reviewer": is_reviewer(user), "is_dm": is_dm(user), "can_moderate": can_moderate(user),
             "can_see_notes": can_see_character_notes(user), "path": request.url.path,
-            "manage_pages": pages_for(user, request.url.path)}
+            "manage_pages": pages_for(user, request.url.path), "tablenav": tablenav}
 
 
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates", context_processors=[_page_context])

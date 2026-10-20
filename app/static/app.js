@@ -16,16 +16,15 @@
   document.body.addEventListener('toast', e => toast(e.detail && e.detail.value));
 
   document.addEventListener('click', e => {
-    // Menus (Manage, account, phone nav)
+    // Menus (character switcher, Live, Manage, account, phone More). A click elsewhere closes
+    // them; clicks inside a [data-keep-open] menu (the Live popover's switch) don't.
     const opener = e.target.closest('[data-menu]');
-    document.querySelectorAll('.menu, .nav').forEach(m => {
-      if (!opener || m.id !== opener.dataset.menu) {
-        if (m.classList.contains('nav')) m.classList.remove('open'); else m.hidden = true;
-      }
+    document.querySelectorAll('.menu').forEach(m => {
+      if ((!opener || m.id !== opener.dataset.menu) && !(m.hasAttribute('data-keep-open') && m.contains(e.target))) m.hidden = true;
     });
     if (opener) {
       const m = document.getElementById(opener.dataset.menu);
-      if (m.classList.contains('nav')) m.classList.toggle('open'); else m.hidden = !m.hidden;
+      if (m) { m.hidden = !m.hidden; opener.setAttribute('aria-expanded', m.hidden ? 'false' : 'true'); }
     }
     // Read/edit toggles: data-show="id" reveals #id and hides data-hide targets
     const show = e.target.closest('[data-show]');
@@ -321,72 +320,76 @@
     b.classList.remove('busy'); b.disabled = false; if (b.dataset.label) b.textContent = b.dataset.label;
   }));
 
-  // Game Mode (Battle page): a switch per character, off unless this browser turned
-  // it on. While on and the tab is visible, ask the server to sync with D&D Beyond
-  // every couple of minutes (the server throttles per character) and swap in the
-  // updated page body.
+  // Game Mode (the Live popover in the menu bar): one switch per browser, off unless this
+  // browser turned it on. While on and the tab is visible, every couple of minutes: on Play,
+  // ask the server to sync that character and swap in the updated body (the pill comes along
+  // out of band); anywhere else, sync the character on screen (or your own) and swap the pill.
+  // The server throttles per character, however many browsers ask.
+  const GM = 'askdnd.gameMode';
   let gmTimer = null;
-  function gmKey(id) { return 'askdnd.gameMode.' + id; }
-  function gmIsOn(id) { try { return localStorage.getItem(gmKey(id)) === 'on'; } catch (e) { return false; } }
+  function gmIsOn() {
+    try {  // older versions kept one switch per character: any of those still counts
+      return localStorage.getItem(GM) === 'on' || Object.keys(localStorage).some(k => k.startsWith(GM + '.') && localStorage.getItem(k) === 'on');
+    } catch (e) { return false; }
+  }
+  function gmStore(on) {
+    try {
+      Object.keys(localStorage).filter(k => k.startsWith(GM + '.') || k.startsWith('askdnd.gameModeName.')).forEach(k => localStorage.removeItem(k));
+      localStorage.setItem(GM, on ? 'on' : 'off');
+    } catch (e) {}
+  }
+  function gmTick() {
+    if (!window.htmx) return;
+    const body = document.getElementById('battle-body'), pill = document.getElementById('live-pill');
+    if (body) htmx.ajax('POST', '/characters/' + body.dataset.character + '/sync', { target: '#battle-body', swap: 'outerHTML' });
+    else if (pill) htmx.ajax('POST', '/live/sync' + (pill.dataset.focus ? '?c=' + pill.dataset.focus : ''), { target: '#live-pill', swap: 'outerHTML' });
+  }
   function gmSetup() {
-    const sw = document.querySelector('[data-game-mode]');
+    const on = gmIsOn(), pill = document.getElementById('live-pill');
+    document.body.classList.toggle('gm-on', on);
+    document.querySelectorAll('[data-game-mode]').forEach(sw => sw.setAttribute('aria-checked', on ? 'true' : 'false'));
     clearInterval(gmTimer); gmTimer = null;
-    if (!sw) return;
-    const id = sw.dataset.gameMode, on = gmIsOn(id), body = document.getElementById('battle-body');
-    sw.setAttribute('aria-checked', on ? 'true' : 'false');
-    const now = body && body.querySelector('.gm-now'); if (now) now.hidden = !on;
-    const status = body && body.querySelector('.gm-status');
-    if (on && status && !status.querySelector('.quiet-warn')) status.textContent = status.textContent.replace(/^Updated/, 'Game Mode on · synced');
-    if (on && window.htmx) gmTimer = setInterval(() => {
-      if (document.visibilityState === 'visible') htmx.ajax('POST', '/characters/' + id + '/sync', { target: '#battle-body', swap: 'outerHTML' });
-    }, (Number(sw.dataset.every) || 150) * 1000);
+    if (on && pill) gmTimer = setInterval(() => { if (document.visibilityState === 'visible') gmTick(); }, (Number(pill.dataset.every) || 150) * 1000);
   }
   document.addEventListener('click', e => {
     const sw = e.target.closest('[data-game-mode]');
     if (!sw) return;
-    const id = sw.dataset.gameMode, on = !gmIsOn(id);
-    try {
-      localStorage.setItem(gmKey(id), on ? 'on' : 'off');
-      if (sw.dataset.name) localStorage.setItem('askdnd.gameModeName.' + id, sw.dataset.name);
-    } catch (err) {}
-    if (on && window.htmx) htmx.ajax('POST', '/characters/' + id + '/sync', { target: '#battle-body', swap: 'outerHTML' });
-    gmSetup(); gmBanner();
+    const on = !gmIsOn();
+    gmStore(on);
+    gmSetup();
+    if (on) gmTick();
+    toast(on ? 'Game Mode on: updating from D&D Beyond every 2–3 minutes' : 'Game Mode off');
   });
+  // After "Refresh now" or "Refresh everyone": show the new copy. Play swaps its body; other
+  // pages showing that character (Sheet, Plan, Party) reload.
+  document.body.addEventListener('liveRefreshed', e => {
+    const ids = ((e.detail && e.detail.ids) || []).map(String), body = document.getElementById('battle-body');
+    const page = document.querySelector('[data-character]');
+    if (body && ids.includes(body.dataset.character)) htmx.ajax('POST', '/characters/' + body.dataset.character + '/sync', { target: '#battle-body', swap: 'outerHTML' });
+    else if ((page && ids.includes(page.dataset.character)) || location.pathname === '/party') location.reload();
+  });
+  document.body.addEventListener('htmx:afterSettle', e => {
+    const ids = [e.target.id, e.detail.target && e.detail.target.id];
+    if (ids.includes('live-menu')) gmSetup();  // the popover's switch
+    if (ids.includes('battle-body')) { sortSetup(); econSetup(); }
+  });
+  gmSetup();
 
-  // Game Mode banner: on every page while Game Mode is on for any character, so it
-  // isn't forgotten. Away from that character's Battle page it keeps the copy fresh too.
-  let bannerTimer = null;
-  function gmOnIds() {
-    try { return Object.keys(localStorage).filter(k => k.startsWith('askdnd.gameMode.') && localStorage.getItem(k) === 'on').map(k => k.slice(16)); }
-    catch (e) { return []; }
-  }
-  function gmBanner() {
-    const banner = document.getElementById('gm-banner');
-    if (!banner) return;
-    const ids = gmOnIds();
-    clearInterval(bannerTimer); bannerTimer = null;
-    banner.hidden = !ids.length;
-    document.body.classList.toggle('gm-on', ids.length > 0);
-    if (!ids.length) return;
-    const id = ids[0];
-    let name = ''; try { name = localStorage.getItem('askdnd.gameModeName.' + id) || ''; } catch (e) {}
-    banner.querySelector('.gm-text').textContent = 'Game Mode is on' + (name ? ' for ' + name : '') + ': updating from D&D Beyond every 2–3 minutes.';
-    const open = banner.querySelector('.gm-open');
-    open.href = '/characters/' + id + '/battle';
-    open.hidden = location.pathname === open.getAttribute('href');
-    const onItsBattle = document.querySelector('[data-game-mode="' + id + '"]');
-    if (!onItsBattle) bannerTimer = setInterval(() => {
-      if (document.visibilityState === 'visible') ids.forEach(i => fetch('/characters/' + i + '/sync', { method: 'POST' }));
-    }, 150000);
+  // Phones (Play): Action / Bonus / Reaction as tabs over the three columns. The choice is
+  // kept while Game Mode swaps in a new body.
+  let econShown = 'action';
+  function econSetup() {
+    const econ = document.querySelector('.econ[data-econ-show]');
+    if (!econ) return;
+    econ.dataset.econShow = econShown;
+    document.querySelectorAll('[data-econ]').forEach(b => b.setAttribute('aria-selected', b.dataset.econ === econShown ? 'true' : 'false'));
   }
   document.addEventListener('click', e => {
-    if (!e.target.closest('#gm-banner .gm-off')) return;
-    gmOnIds().forEach(id => { try { localStorage.setItem(gmKey(id), 'off'); } catch (err) {} });
-    gmSetup(); gmBanner();
+    const b = e.target.closest('[data-econ]');
+    if (!b) return;
+    econShown = b.dataset.econ;
+    econSetup();
   });
-  gmBanner();
-  document.body.addEventListener('htmx:afterSettle', e => { if (e.target.id === 'battle-body' || e.detail.target?.id === 'battle-body') { gmSetup(); sortSetup(); } });
-  gmSetup();
 
   // Drag and drop to reorder a Battle column (the character's own player only).
   function sortSetup() {
@@ -587,17 +590,14 @@
   // A file picker with data-autosubmit sends its form as soon as a file is chosen (entity pictures).
   document.addEventListener('change', e => { if (e.target.matches('input[type=file][data-autosubmit]') && e.target.files.length) e.target.form.requestSubmit(); });
 
-  // Sticky headings sit below the top bar (and the Game Mode banner when it shows).
+  // Sticky headings sit below the top bar.
   function stickTop() {
-    const bar = $('.topbar'), banner = $('#gm-banner'), tabs = $('.sheet .tabbar');
-    const top = (bar ? bar.offsetHeight : 0) + (banner && !banner.hidden ? banner.offsetHeight : 0);
-    document.documentElement.style.setProperty('--stick-top', top + 'px');
+    const bar = $('.topbar'), tabs = $('.sheet .tabbar');
+    document.documentElement.style.setProperty('--stick-top', (bar ? bar.offsetHeight : 0) + 'px');
     if (tabs) document.documentElement.style.setProperty('--tabs-h', tabs.offsetHeight + 'px');
   }
   stickTop();
   window.addEventListener('resize', stickTop);
-  const gmb = $('#gm-banner');
-  if (gmb) new MutationObserver(stickTop).observe(gmb, {attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true});
 
   // A link like /campaign#glossary opens that tab (only on arrival; tabs don't change the address).
   if (location.hash) {

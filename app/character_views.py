@@ -427,14 +427,14 @@ ITEM_GROUPS = [("battle", "Usable in battle"), ("equipped", "Equipped"), ("Weapo
 OVERRIDE_CHOICES = {
     "hide": [("hide", "Hidden everywhere in askdnd")],
     "cost": [("Action", "Action"), ("Bonus action", "Bonus action"), ("Reaction", "Reaction"), ("Other", "Other (not on your turn)")],
-    "battle": [("common", "Shown on Battle"), ("normal", "Only in See all"), ("hide", "Not on Battle")],
+    "battle": [("common", "Shown on Play"), ("normal", "Only in See all"), ("hide", "Not on Play")],
     "feature_group": [("use", "Things you can use"), ("passive", "Always on (in your numbers)")],
     "situ_group": [("situational", "Situational"), ("in_numbers", "Already in your numbers")],
     "item_group": ITEM_GROUPS,
 }
 # Rule-term underlines (set from the term's pop-up, not the regrouping box); here so Manage › Characters can label them.
 TERM_CHOICES = {"underline": [("on", "Underlined"), ("off", "Not underlined")]}
-FIELD_LABELS = {"hide": "Show in askdnd", "cost": "Section (what it costs)", "battle": "On the Battle page",
+FIELD_LABELS = {"hide": "Show in askdnd", "cost": "Section (what it costs)", "battle": "On Play",
                 "feature_group": "Features group", "situ_group": "Situational group", "item_group": "Inventory group",
                 "underline": "Underlined in descriptions"}
 CATEGORY_GROUPS = {"Weapon": "Weapons", "Armor": "Armor", "Wondrous item": "Magic items", "Ring": "Magic items", "Rod": "Magic items",

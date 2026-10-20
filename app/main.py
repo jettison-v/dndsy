@@ -22,6 +22,7 @@ from app.auth import current_user
 from app.auth import router as auth_router
 from app.character_pages import router as character_router
 from app.help_pages import router as help_router
+from app.live import router as live_router
 from app.manage import router as manage_router
 from app.player_notes import router as notes_router
 from app.history_pages import router as history_router
@@ -74,6 +75,7 @@ app.include_router(admin_sessions_router)
 app.include_router(suggestions_router)
 app.include_router(story_router)
 app.include_router(character_router)
+app.include_router(live_router)
 app.include_router(entity_router)
 app.include_router(api_router)
 app.include_router(admin_usage_router)

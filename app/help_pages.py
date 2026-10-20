@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Request
 
-from app.character_pages import GAME_MODE_SECONDS
+from app.live import GAME_MODE_SECONDS
 from app.templating import templates
 
 router = APIRouter()

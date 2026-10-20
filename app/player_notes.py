@@ -1,4 +1,4 @@
-"""Player notes on the Character page: Battle combos, Leveling strategy, Personal
+"""Player notes on the Character page (Plan mode): Battle combos, Leveling strategy, Personal
 quests and General notes. They replace syncing players' Google Docs.
 
 - Only the character's player writes them (like stars and reminders, app/picks.py).
@@ -9,6 +9,7 @@ quests and General notes. They replace syncing players' Google Docs.
 
 import re
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -236,7 +237,13 @@ async def save_note(request: Request, character_id: int, db: Session = Depends(g
     n.title, n.status, n.data = title, status, data
     db.commit()
     request.session["toast"] = f"Saved: {title}"
-    return RedirectResponse(f"/characters/{ch.id}#notes", status_code=303)
+    return RedirectResponse(_back(request, ch), status_code=303)
+
+
+def _back(request: Request, ch: Character) -> str:
+    """After saving: back to Play if the note was added there (Battle combos), else Plan."""
+    came_from = urlparse(request.headers.get("referer", "")).path
+    return came_from if came_from == f"/characters/{ch.id}/battle" else f"/characters/{ch.id}/plan"
 
 
 @router.post("/characters/{character_id:int}/notes/{note_id:int}/delete")
@@ -249,11 +256,11 @@ def delete_note(request: Request, character_id: int, note_id: int, db: Session =
         db.delete(n)
         db.commit()
         request.session["toast"] = f"Deleted: {n.title}"
-    return RedirectResponse(f"/characters/{ch.id}#notes", status_code=303)
+    return RedirectResponse(_back(request, ch), status_code=303)
 
 
 def page_context(db: Session, ch: Character, user: dict | None, sheet: dict | None) -> dict:
-    """What the Character and Battle pages need to show notes."""
+    """What the Character page needs to show notes (Plan, and combos on Play)."""
     notes = notes_for(db, ch, user)
     return {"player_notes": grouped(notes), "note_count": len(notes), "combos": [n for n in notes if n.kind == "combo"],
             "nl": note_linker(db, ch, sheet) if notes else None, "note_kinds": KINDS, "quest_status": QUEST_STATUS}

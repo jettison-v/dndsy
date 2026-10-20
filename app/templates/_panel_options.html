@@ -6,6 +6,6 @@
 </div>
 <div class="peek-body">
   <div class="rows one">{% for o in opts %}{{ opt_row(c, o, picks, can_pick) }}{% endfor %}</div>
-  {% if can_pick and opts | length > 1 %}<p class="note" style="margin-top:12px">★ shows an option in its Battle column.</p>{% endif %}
+  {% if can_pick and opts | length > 1 %}<p class="note" style="margin-top:12px">★ shows an option in its column on Play.</p>{% endif %}
 </div>
 <div class="peek-foot"><a class="btn" href="/characters/{{ c.id }}" data-no-peek>Full character</a></div>

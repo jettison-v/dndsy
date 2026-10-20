@@ -19,44 +19,68 @@
 <body data-toast="{{ toast or '' }}">
 {% block body %}
 <header class="topbar"><div class="topbar-inner">
-  <button class="nav-toggle" data-menu="nav" aria-label="Menu">☰</button>
-  <a class="brand" href="/"><img src="/static/icons/android-chrome-192x192.png" alt="">askdnd</a>
-  {% if user %}
-  <nav class="nav" id="nav">
-    <a href="/" class="{{ 'active' if path in ('/', '/story') }}">Previously on…</a>
+  <a class="brand" href="/"><img src="/static/icons/android-chrome-192x192.png" alt=""><span class="brand-word">askdnd</span></a>
+  {% if user %}{% set tn = tablenav() %}{% set me = tn.here or tn.mine %}
+  {# Story pages on the left, then your table (Brett, 2026-10-19: menu bar Option 1) #}
+  <nav class="nav" aria-label="Story">
+    <a href="/" class="{{ 'active' if path in ('/', '/story') }}">Recap</a>
     <a href="/sessions" class="{{ 'active' if path.startswith('/sessions') }}">Sessions</a>
-    <a href="/battle" class="{{ 'active' if path == '/battle' or path.endswith('/battle') }}">Battle</a>
-    <a href="/character" class="{{ 'active' if path == '/character' or (path.startswith('/characters/') and not path.endswith('/battle')) }}">Character</a>
-    <a href="/party" class="{{ 'active' if path.startswith('/party') }}">Party</a>
     <a href="/campaign" class="{{ 'active' if path.startswith('/campaign') }}">Campaign</a>
     <a href="/map" class="{{ 'active' if path == '/map' }}">Map</a>
   </nav>
-  {% if manage_pages %}
-  <div class="manage">
-    <button class="{{ 'active' if path == '/manage' or manage_pages | selectattr('here') | list }}" data-menu="manage-menu" aria-haspopup="true">Manage ▾</button>
-    <div class="menu" id="manage-menu" hidden>
-      <a href="/manage" class="menu-home{{ ' active' if path == '/manage' }}">Overview<small>What needs attention</small></a>
-      {% for group in ["Table", "Party", "Admin"] %}{% set pages = manage_pages | selectattr("group", "equalto", group) | list %}{% if pages %}
-      <div class="menu-group">{{ group }}</div>
-      {% for p in pages %}<a href="{{ p.href }}" class="{{ 'active' if p.here }}">{{ p.label }}<small>{{ p.about }}</small></a>{% endfor %}
-      {% endif %}{% endfor %}
+  <span class="nav-sep" aria-hidden="true"></span>
+  <nav class="nav table-nav" aria-label="Your table">
+    <div class="switcher">
+      <button type="button" class="{{ 'active' if tn.here }}" data-menu="char-menu" aria-haspopup="true" aria-controls="char-menu">{{ me.name if me else "Characters" }} ▾</button>
+      <div class="menu" id="char-menu" hidden>
+        {% for r in tn.characters %}<a href="/characters/{{ r.id }}{{ tn.suffix }}" class="{{ 'active' if tn.here and r.id == tn.here.id }}">{{ r.name }}{% if r.mine %}<small>Your character</small>{% endif %}</a>{% endfor %}
+        {% if not tn.characters %}<a href="/party">No characters yet<small>Party</small></a>{% endif %}
+      </div>
     </div>
-  </div>
-  {% endif %}
-  <div class="account" {% if not manage_pages %}style="margin-left:auto"{% endif %}>
-    <button class="avatar" data-menu="account-menu" aria-label="Account">{% if user.picture %}<img src="{{ user.picture }}" alt="" referrerpolicy="no-referrer">{% else %}{{ (user.name or user.email)[:1] | upper }}{% endif %}</button>
-    <div class="menu" id="account-menu" hidden>
-      <a href="#" style="pointer-events:none">{{ user.name }}<small>{{ user.email }}</small></a>
-      <form method="post" action="/logout"><button type="submit">Sign out</button></form>
+    <a href="/party" class="party-link{{ ' active' if path.startswith('/party') }}">Party</a>
+  </nav>
+  <div class="bar-end">
+    <div class="live">{% include "_live_pill.html" %}<div class="menu live-menu" id="live-menu" data-keep-open hidden></div></div>
+    {% if manage_pages %}
+    <div class="manage">
+      <button class="{{ 'active' if path == '/manage' or manage_pages | selectattr('here') | list }}" data-menu="manage-menu" aria-haspopup="true">Manage ▾</button>
+      <div class="menu" id="manage-menu" hidden>
+        <a href="/manage" class="menu-home{{ ' active' if path == '/manage' }}">Overview<small>What needs attention</small></a>
+        {% for group in ["Table", "Party", "Admin"] %}{% set pages = manage_pages | selectattr("group", "equalto", group) | list %}{% if pages %}
+        <div class="menu-group">{{ group }}</div>
+        {% for p in pages %}<a href="{{ p.href }}" class="{{ 'active' if p.here }}">{{ p.label }}<small>{{ p.about }}</small></a>{% endfor %}
+        {% endif %}{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    <div class="account">
+      <button class="avatar" data-menu="account-menu" aria-label="Account">{% if user.picture %}<img src="{{ user.picture }}" alt="" referrerpolicy="no-referrer">{% else %}{{ (user.name or user.email)[:1] | upper }}{% endif %}</button>
+      <div class="menu" id="account-menu" hidden>
+        <a href="#" style="pointer-events:none">{{ user.name }}<small>{{ user.email }}</small></a>
+        <form method="post" action="/logout"><button type="submit">Sign out</button></form>
+      </div>
     </div>
   </div>
   {% endif %}
 </div></header>
-{% if user %}<div class="gm-banner" id="gm-banner" role="status" hidden>
-  <span class="gm-dot" aria-hidden="true"></span><span class="gm-text"></span>
-  <a class="btn small gm-open" href="#">Open Battle</a>
-  <button class="btn small gm-off" type="button">Turn off</button>
-</div>{% endif %}
+{% if user %}
+{# Phones: the main pages in a bottom bar; everything else under More. #}
+<nav class="bottom-nav" aria-label="Main">
+  <a href="/" class="{{ 'active' if path in ('/', '/story') }}">Recap</a>
+  <a href="/campaign" class="{{ 'active' if path.startswith('/campaign') }}">Campaign</a>
+  <a href="/battle" class="{{ 'active' if tn.mode == 'play' }}">Play</a>
+  <a href="/party" class="{{ 'active' if path.startswith('/party') }}">Party</a>
+  <button type="button" data-menu="more-menu" aria-haspopup="true" class="{{ 'active' if path.startswith('/sessions') or path == '/map' or path.startswith('/manage') or path.startswith('/admin') }}">More</button>
+</nav>
+<div class="menu more-menu" id="more-menu" hidden>
+  <a href="/sessions" class="{{ 'active' if path.startswith('/sessions') }}">Sessions</a>
+  <a href="/map" class="{{ 'active' if path == '/map' }}">Map</a>
+  {% if manage_pages %}<a href="/manage" class="{{ 'active' if path.startswith('/manage') }}">Manage<small>Admin and reviewer pages</small></a>{% endif %}
+  <a href="/about" data-no-peek>About</a>
+  <a href="/faq" data-no-peek>FAQ</a>
+  <form method="post" action="/logout"><button type="submit">Sign out <small class="note">{{ user.email }}</small></button></form>
+</div>
+{% endif %}
 {% block content %}{% endblock %}
 {% endblock %}
 <footer class="site-foot"><a href="/about" data-no-peek>About</a> · <a href="/faq" data-no-peek>FAQ</a></footer>

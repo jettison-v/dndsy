@@ -1,16 +1,17 @@
-"""Battle, Character and Party pages, built from D&D Beyond sheets.
+"""The Character page (Play, Sheet and Plan modes) and Party, built from D&D Beyond sheets.
 
+- One page per character with three modes: Play (/characters/{id}/battle: what you can do in
+  a fight), Sheet (/characters/{id}: the full sheet in tabs) and Plan (/characters/{id}/plan:
+  the player's notes, shortlists and reminders; never the DM). The header is the same in each.
 - /battle and /character open on the signed-in person's own character (set on
   Manage › People); /party shows everyone.
-- Reviewers link characters to D&D Beyond and refresh them. Anyone can turn on
-  Game Mode on a Battle page, which re-fetches that character every 2–3 minutes
-  while the page is open (throttled per character on the server).
+- Keeping the copy fresh (Game Mode, Refresh now) lives in the menu bar's Live control
+  (app/live.py). On Play, Game Mode swaps in the updated body from game_mode_sync.
 - Stars and reminders (app/picks.py): only the character's player sets them;
   the DM never sees them. Character notes are never shown here.
 """
 
 import json
-from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -21,7 +22,7 @@ from app import web
 from app import character_views as views
 from app import characters as chars
 from app import ddb, picks
-from app import class_rules, player_notes
+from app import class_rules, live, player_notes
 from app import wild_shape as ws
 from app import rules_terms as terms
 from app.auth import current_user, is_admin, is_reviewer
@@ -31,9 +32,7 @@ from app.templating import templates
 
 router = APIRouter()
 
-GAME_MODE_SECONDS = 150  # the page asks every 2.5 minutes…
-AUTO_MIN_AGE = timedelta(seconds=110)  # …and the server fetches at most this often per character
-MANUAL_MIN_AGE = timedelta(seconds=20)  # "Refresh now"
+GAME_MODE_SECONDS = live.GAME_MODE_SECONDS
 
 
 def _overrides(db: Session) -> dict[tuple[str, str], str]:
@@ -141,23 +140,6 @@ def _load(request: Request, db: Session, character_id: int):
     return user, ch, None
 
 
-@router.get("/characters/{character_id:int}")
-def character_page(request: Request, character_id: int, db: Session = Depends(get_db)):
-    user, ch, stop = _load(request, db, character_id)
-    if stop:
-        return stop
-    ctx = _view(db, ch, user)
-    if ctx["sheet"]:
-        ctx["granted_spells"] = views.granted_spells(ctx["sheet"])
-        # Actions tab: everything except leveled spells (those are on the Spells tab), like D&D Beyond
-        ctx["options"] = [o for o in views.options(ctx["sheet"], ctx["picks"]["star"])
-                          if o["kind"] != "spell" or (o["tags"] and o["tags"][0] == "cantrip" and o["hit"])]
-        ctx["forms"] = ws.forms(ctx["sheet"], ctx["picks"]["fav"], ch.wild_shape_keep)
-        ctx["ws_other_uses"] = ws.other_uses(ctx["sheet"]) if ctx["druid"] else []
-    ctx |= player_notes.page_context(db, ch, user, ctx["sheet"])
-    return _page(request, "character.html", {**ctx, "others": _mine_first(db, user, chars.campaign_characters(db, ch.entity.campaign_id))})
-
-
 def _known_forms(sheet: dict | None) -> list[dict]:
     """The forms a druid can shift into right now (known on D&D Beyond), with pictures."""
     out = []
@@ -169,6 +151,7 @@ def _known_forms(sheet: dict | None) -> list[dict]:
 
 
 def _battle_ctx(db: Session, ch: Character, user: dict) -> dict:
+    """Play mode's body (also swapped in by Game Mode and the Wild Shape switch)."""
     ctx = _view(db, ch, user)
     ctx["form"] = None
     if ctx["sheet"]:
@@ -180,34 +163,84 @@ def _battle_ctx(db: Session, ch: Character, user: dict) -> dict:
             ctx["form"] = ws.shaped(ctx["sheet"], beast, keep=ch.wild_shape_keep)
             ctx["columns"] = ctx["form"]["columns"]
     ctx["party"] = _party_rows(db, user)
-    ctx["game_mode_seconds"] = GAME_MODE_SECONDS
     ctx |= player_notes.page_context(db, ch, user, ctx["sheet"])
     return ctx
 
 
-@router.get("/characters/{character_id:int}/battle")
-def battle_page(request: Request, character_id: int, db: Session = Depends(get_db)):
+def _sheet_ctx(db: Session, ch: Character, user: dict) -> dict:
+    ctx = _view(db, ch, user)
+    if ctx["sheet"]:
+        ctx["granted_spells"] = views.granted_spells(ctx["sheet"])
+        # Actions tab: everything except leveled spells (those are on the Spells tab), like D&D Beyond
+        ctx["options"] = [o for o in views.options(ctx["sheet"], ctx["picks"]["star"])
+                          if o["kind"] != "spell" or (o["tags"] and o["tags"][0] == "cantrip" and o["hit"])]
+        ctx["forms"] = ws.forms(ctx["sheet"], ctx["picks"]["fav"], ch.wild_shape_keep)
+        ctx["ws_other_uses"] = ws.other_uses(ctx["sheet"]) if ctx["druid"] else []
+    return ctx
+
+
+def _plan_ctx(db: Session, ch: Character, user: dict) -> dict:
+    """Plan mode: the player's notes, Easy to forget, and the spell and Wild Shape shortlists."""
+    ctx = _view(db, ch, user)
+    s, fav = ctx["sheet"], ctx["picks"]["fav"]
+    ctx["fav_spells"], ctx["fav_forms"] = [], []
+    if s:
+        seen = set()
+        for b in s.get("spellbook") or []:
+            for sp in b["spells"]:
+                if sp["key"] in fav and sp["key"] not in seen:
+                    seen.add(sp["key"])
+                    ctx["fav_spells"].append({**sp, "from": b["class"] if len(s["spellbook"]) > 1 else ""})
+        for sp in views.granted_spells(s):
+            if sp["key"] in fav and sp["key"] not in seen:
+                seen.add(sp["key"])
+                ctx["fav_spells"].append({**sp, "state": "granted", "from": ", ".join(sp["sources"])})
+        if ctx["druid"]:
+            ctx["fav_forms"] = [f for f in ws.forms(s, fav, ch.wild_shape_keep) if f["key"] in fav]
+    return ctx
+
+
+MODE_CTX = {"play": _battle_ctx, "sheet": _sheet_ctx, "plan": _plan_ctx}
+
+
+def _character(request: Request, db: Session, character_id: int, mode: str):
+    """One Character page in one mode; the header and the mode switch are the same in each."""
     user, ch, stop = _load(request, db, character_id)
     if stop:
         return stop
-    return _page(request, "battle.html", {**_battle_ctx(db, ch, user), "others": _mine_first(db, user, chars.campaign_characters(db, ch.entity.campaign_id))})
+    if mode == "plan" and not picks.can_see(user):
+        return RedirectResponse(f"/characters/{ch.id}", status_code=303)  # Plan is the players' (never the DM)
+    ctx = MODE_CTX[mode](db, ch, user)
+    if mode != "play":
+        ctx |= player_notes.page_context(db, ch, user, ctx["sheet"])
+    return _page(request, "character.html", {**ctx, "mode": mode})
+
+
+@router.get("/characters/{character_id:int}")
+def character_page(request: Request, character_id: int, db: Session = Depends(get_db)):
+    return _character(request, db, character_id, "sheet")
+
+
+@router.get("/characters/{character_id:int}/battle")
+def battle_page(request: Request, character_id: int, db: Session = Depends(get_db)):
+    return _character(request, db, character_id, "play")
+
+
+@router.get("/characters/{character_id:int}/plan")
+def plan_page(request: Request, character_id: int, db: Session = Depends(get_db)):
+    return _character(request, db, character_id, "plan")
 
 
 @router.post("/characters/{character_id:int}/sync")
 def game_mode_sync(request: Request, character_id: int, now: str = Form(""), db: Session = Depends(get_db)):
-    """Game Mode: refresh from D&D Beyond (at most every ~2 minutes per character,
-    whoever is watching) and return the updated Battle body."""
+    """Game Mode on Play: refresh from D&D Beyond (at most every ~2 minutes per character,
+    whoever is watching) and return the updated Play body, with the menu bar's Live pill."""
     user, ch, stop = _load(request, db, character_id)
     if stop:
         return stop
-    if ch.ddb_id:
-        snap = ch.snapshot
-        min_age = MANUAL_MIN_AGE if now else AUTO_MIN_AGE
-        last = snap.attempted_at if snap else None
-        if last is None or datetime.now(UTC) - last >= min_age:
-            chars.refresh(db, ch)
-            db.commit()
-    return templates.TemplateResponse(request, "_battle_body.html", _battle_ctx(db, ch, user))
+    live.maybe_refresh(db, ch, live.MANUAL_MIN_AGE if now else live.AUTO_MIN_AGE)
+    tn = live.table(user, "", live.rows_from(db), ch.id)
+    return templates.TemplateResponse(request, "_battle_sync.html", {**_battle_ctx(db, ch, user), "tn": tn, "oob": True})
 
 
 @router.get("/characters/{character_id:int}/all/{cost}")

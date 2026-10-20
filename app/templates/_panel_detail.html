@@ -8,7 +8,7 @@
 </div>
 <div class="peek-body detail">
   {% if can_pick or picks.notes %}<div class="detail-picks">
-    {% if can_pick and o and o.cost != "Other" %}<div class="row">{{ pick_btn(c, "star", ref, ref in picks.star, can_pick) }}<span class="note">on Battle</span></div>{% endif %}
+    {% if can_pick and o and o.cost != "Other" %}<div class="row">{{ pick_btn(c, "star", ref, ref in picks.star, can_pick) }}<span class="note">on Play</span></div>{% endif %}
     {% if section == "spells" %}{{ pick_note(c, "fav", ref, ref in picks.fav, picks.notes.get("fav|" ~ ref, ""), can_pick) }}{% endif %}
     {{ pick_note(c, "remind", ref, ref in picks.remind, picks.notes.get("remind|" ~ ref, ""), can_pick) }}
   </div>{% endif %}

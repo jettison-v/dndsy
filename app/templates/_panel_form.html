@@ -14,7 +14,7 @@
     <div class="row" style="gap:6px">
       <span class="tag">CR {{ b.cr_label }}</span>{% if b.size %}<span class="tag">{{ b.size }} Beast</span>{% endif %}
       {% if known %}<span class="tag done">Known</span>{% elif why_not %}<span class="tag faint">{{ why_not }}</span>{% else %}<span class="tag">You could learn it</span>{% endif %}
-      {% if current %}<span class="tag draft">In this form on Battle</span>{% endif %}
+      {% if current %}<span class="tag draft">In this form on Play</span>{% endif %}
       {% if b.ddb_url %}<a class="note" href="{{ b.ddb_url }}" target="_blank" rel="noopener" data-no-peek>D&amp;D Beyond ↗</a>{% endif %}
     </div>
   </div>
@@ -22,7 +22,7 @@
     {% if can_pick and known %}
     <form method="post" action="/characters/{{ c.id }}/wild-shape">
       <input type="hidden" name="form" value="{{ '' if current else b.name }}">
-      <button class="btn{{ '' if current else ' primary' }}">{{ "Back to normal form" if current else "Shift into it on Battle" }}</button>
+      <button class="btn{{ '' if current else ' primary' }}">{{ "Back to normal form" if current else "Shift into it on Play" }}</button>
     </form>
     {% endif %}
     <button class="btn link peek-close" type="button" aria-label="Close">✕</button>

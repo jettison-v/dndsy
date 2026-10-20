@@ -73,14 +73,20 @@ def test_only_the_player_writes_and_the_dm_never_sees(db, cole, player, dm, admi
     r = player.post(f"{url}/notes", data={"kind": "combo", "title": "Bear and beam", "turn_label": "Setup",
                                            "turn_action": "Cast Moonbeam", "turn_bonus": "Wild Shape into Polar Bear",
                                            "turn_reaction": "", "turn_move": "", "turn_notes": ""}, follow_redirects=False)
-    assert r.status_code == 303 and r.headers["location"].endswith("#notes")
+    assert r.status_code == 303 and r.headers["location"] == f"{url}/plan"  # notes live on Plan
     note = db.scalar(select(PlayerNote))
-    page = player.get(url).text
+    page = player.get(f"{url}/plan").text
     assert "Bear and beam" in page and 'data-modal-url="/characters/%d/form?name=Polar%%20Bear"' % cole.id in page  # forms link
-    assert "Bear and beam" in player.get(f"{url}/battle").text  # combos show on Battle
-    assert "Bear and beam" in admin.get(url).text and "/notes/new" not in admin.get(url).text  # others read, can't write
+    assert "Bear and beam" in player.get(f"{url}/battle").text  # combos show on Play
+    assert "Bear and beam" not in player.get(url).text  # not on Sheet
+    assert "Bear and beam" in admin.get(f"{url}/plan").text and "/notes/new" not in admin.get(f"{url}/plan").text  # others read, can't write
     assert admin.post(f"{url}/notes", data={"kind": "general", "body": "x"}).status_code == 403
     assert "Bear and beam" not in dm.get(url).text and "Bear and beam" not in dm.get(f"{url}/battle").text
+    assert dm.get(f"{url}/plan", follow_redirects=False).headers["location"] == url  # the DM has no Plan
+    r = player.post(f"{url}/notes", data={"kind": "general", "body": "From Play"}, headers={"referer": f"http://testserver{url}/battle"},
+                    follow_redirects=False)
+    assert r.headers["location"] == f"{url}/battle"  # added from Play's Battle combos: back to Play
+    db.delete(db.scalars(select(PlayerNote).order_by(PlayerNote.id.desc())).first())
     assert dm.get(f"{url}/notes/{note.id}/edit").status_code == 403
     player.post(f"{url}/notes/{note.id}/delete")
     assert db.scalar(select(PlayerNote)) is None

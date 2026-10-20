@@ -1,0 +1,239 @@
+{# Character › Sheet: the full sheet in tabs (character_pages._sheet_ctx). #}
+{% from "_char.html" import pips, pick_btn, ri, opt_row, spell_row, bell, tile, adv, form_card %}
+{% set s = sheet %}
+{% if s %}
+{# Row 1: the numbers you look up most #}
+<div class="strip">
+  <div {{ tile(c, "hp") }}><small>Hit points</small><b>{{ s.hit_points.current }}</b>{% if s.hit_points.current != s.hit_points.max %}<span class="note"> / {{ s.hit_points.max }}</span>{% endif %}{% if s.hit_points.temp %}<span class="note"> +{{ s.hit_points.temp }} temp</span>{% endif %}</div>
+  <div {{ tile(c, "ac") }}><small>Armor class</small><b>{{ s.armor_class }}</b></div>
+  <div {{ tile(c, "speed") }}><small>Speed</small><b>{{ s.speed.walk }} ft</b>{% set extra = s.speed.items() | rejectattr(0, "in", ["walk", "parts", "notes"]) | list %}{% if extra %}<span class="note"> {% for k, v in extra %}{{ k }} {{ v }}{{ ", " if not loop.last }}{% endfor %}</span>{% endif %}</div>
+  <div {{ tile(c, "initiative") }}><small>Initiative</small><b>{{ s.initiative }}</b>{{ adv(s.initiative_adv) }}</div>
+  <div {{ tile(c, "proficiency") }}><small>Proficiency</small><b>+{{ s.proficiency_bonus }}</b></div>
+  <div {{ tile(c, "perception") }}><small>Passive Perception</small><b>{{ s.passive_perception }}</b></div>
+  {% for sc in s.spellcasting[:1] %}<div {{ tile(c, "spell") }}><small>Spell DC / attack</small><b>{{ sc.save_dc }}</b><span class="note"> / {{ sc.attack }}</span></div>{% endfor %}
+  <div class="insp{{ ' on' if s.inspiration }}" {{ tile(c, "inspiration") }} title="Heroic Inspiration"><small>Heroic Inspiration</small><b>{{ "✦ Yes" if s.inspiration else "—" }}</b></div>
+</div>
+
+{# Row 2: abilities with their saves, and advantages shown on the save they change #}
+<section class="section abilities-row">
+  <div class="abil6">
+    {% for a in s.abilities %}{% set sv = s.saves[loop.index0] %}
+    <div class="ab"><div class="top"><small>{{ a.name }} {{ a.score }}</small><b>{{ a.label }}</b></div>
+      <div class="sv{{ ' prof' if sv.proficient }}">Save {{ sv.label }} {{ adv(sv.adv) }}</div></div>
+    {% endfor %}
+  </div>
+  <p class="note" style="margin:8px 0 0">{% if s.save_adv_all %}{{ adv(s.save_adv_all) }} on every save {% for a in s.save_adv_all %}{{ a.when }} ({{ a.source }}){{ "; " if not loop.last }}{% endfor %} · {% endif %}Hit dice {% for h in s.hit_points.hit_dice %}{{ h.total - h.used }}/{{ h.total }} {{ h.die }}{{ ", " if not loop.last }}{% endfor %}</p>
+</section>
+
+{# Row 3: everything else, in tabs #}
+<section class="section">
+  {% if can_pick %}<p class="hint" style="margin:0 0 10px">This is your character: <span class="pick star on static">★</span> puts something on Play, <span class="pick remind on static">{{ bell(true) }}</span> adds it to Easy to forget, and ♥ adds a spell or form to your shortlist on Plan. Only you can change these, and the DM can't see them.</p>{% endif %}
+  <div class="tabbar" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="t-actions">Actions</button>
+    {% if s.spells or s.spellbook %}<button role="tab" aria-selected="false" data-tab="t-spells">Spells</button>{% endif %}
+    {% if druid %}<button role="tab" aria-selected="false" data-tab="t-forms">Wild Shape</button>{% elif s.creatures %}<button role="tab" aria-selected="false" data-tab="t-forms">Forms</button>{% endif %}
+    <button role="tab" aria-selected="false" data-tab="t-items">Inventory</button>
+    <button role="tab" aria-selected="false" data-tab="t-features">Features</button>
+    <button role="tab" aria-selected="false" data-tab="t-skills">Skills &amp; situational</button>
+    {% if s.story %}<button role="tab" aria-selected="false" data-tab="t-story">Background</button>{% endif %}
+  </div>
+
+  <div id="t-actions">
+    {% for cost, title in [("Action", "Actions"), ("Bonus action", "Bonus actions"), ("Reaction", "Reactions"), ("Other", "Other")] %}
+    {% set list = options | selectattr("cost", "equalto", cost) | list %}
+    {% if list %}<h3 class="divider k-{{ {"Action": "action", "Bonus action": "bonus", "Reaction": "reaction"}.get(cost, "other") }}">{{ title }} <span class="count">{{ list | length }}</span></h3>
+    <div class="rows">{% for o in list %}{{ opt_row(c, o, picks, can_pick) }}{% endfor %}</div>{% endif %}
+    {% endfor %}
+  </div>
+
+  {% if s.spells or s.spellbook %}
+  <div id="t-spells" hidden data-planner>
+    <div class="planner-classes">
+      {% for b in s.spellbook %}
+      <div class="planner-class">
+        <b>{{ b.class }}</b> <span class="muted">{{ b.ability }} · save DC {{ b.save_dc }} · attack {{ b.attack }}</span>
+        <div class="row" style="gap:6px;margin-top:4px">
+          {% if b.prepared_max %}<span class="tag {{ 'done' if b.prepared_count == b.prepared_max else 'draft' }}">{{ "Spellbook: prepared" if b.spellbook else "Prepared" }} {{ b.prepared_count }} of {{ b.prepared_max }}</span>{% endif %}
+          {% if b.cantrips_max %}<span class="tag {{ 'done' if b.cantrips_count == b.cantrips_max else 'draft' }}">Cantrips {{ b.cantrips_count }} of {{ b.cantrips_max }}</span>{% endif %}
+          {% set always = b.spells | selectattr("state", "equalto", "always") | list %}{% if always %}<span class="tag">+{{ always | length }} always prepared</span>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+      <div class="planner-class"><b>Slots</b>
+        <div class="res-row" style="margin-top:4px">{% for sl in s.spell_slots.slots %}<span>{{ sl.level }}{{ {1: "st", 2: "nd", 3: "rd"}.get(sl.level, "th") }} {{ pips({"max": sl.max, "left": sl.max - sl.used}) }}</span>{% endfor %}
+          {% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}<span>Pact, level {{ p.level }} {{ pips({"max": p.max, "left": p.max - p.used}) }}</span>{% endif %}</div></div>
+    </div>
+    <div class="planner-tools">
+      <div class="seg" role="group" aria-label="Which spells">
+        <button type="button" data-view="ready" aria-pressed="true">Ready to cast</button>
+        <button type="button" data-view="all" aria-pressed="false">All you could prepare</button>
+      </div>
+      <input type="search" data-search placeholder="Search spells" aria-label="Search spells">
+    </div>
+    <div class="filters" role="group" aria-label="Filter spells">
+      <button type="button" data-filter="level:0">Cantrips</button>
+      {% for l in range(1, 10) %}{% if s.spell_slots.slots | selectattr("level", "equalto", l) | list or (s.spell_slots.pact and s.spell_slots.pact.level >= l) %}<button type="button" data-filter="level:{{ l }}">Level {{ l }}</button>{% endif %}{% endfor %}
+      <span class="sep"></span>
+      <button type="button" data-filter="cast:bonus">Bonus action</button><button type="button" data-filter="cast:reaction">Reaction</button>
+      <button type="button" data-filter="tag:concentration">Concentration</button><button type="button" data-filter="notag:concentration">No concentration</button><button type="button" data-filter="tag:ritual">Ritual</button>
+      <button type="button" data-filter="tag:damage">Damage</button><button type="button" data-filter="tag:healing">Healing</button><button type="button" data-filter="tag:control">Control</button><button type="button" data-filter="tag:buff">Buff</button><button type="button" data-filter="tag:utility">Utility</button>
+    </div>
+    <p class="note planner-note"><span data-shown></span>{% if can_pick %} ♥ adds a spell to your shortlist on Plan, to compare before preparing it.{% endif %} askdnd can't change D&amp;D Beyond: prepare spells there{% if s.sheet_url %} (<a href="{{ s.sheet_url }}" target="_blank" rel="noopener">open ↗</a>){% endif %}, then refresh. Click a spell for its full description.</p>
+    <div class="spell-key" aria-hidden="true"><span></span><span>Spell · what it does</span><span>Casting time · range · duration · effect</span><span>Hit / DC</span><span></span></div>
+    {% for b in s.spellbook %}
+    <section class="planner-group">
+      {% if s.spellbook | length > 1 %}<h3 class="divider big">{{ b.class }}</h3>{% endif %}
+      {% for level, list in b.spells | groupby("level") %}
+      <div class="planner-level"><h3 class="divider">{{ "Cantrips" if level == 0 else "Level " ~ level }}</h3>
+        <div class="rows">{% for sp in list %}{{ spell_row(c, sp, sp.state, picks, can_pick) }}{% endfor %}</div></div>
+      {% endfor %}
+    </section>
+    {% endfor %}
+    {% set others = granted_spells %}
+    {% if others %}
+    <section class="planner-group"><h3 class="divider big">From your species, feats and items</h3>
+      <div class="planner-level"><div class="rows">{% for sp in others %}{{ spell_row(c, sp, "granted", picks, can_pick, sp.sources | join(", ")) }}{% endfor %}</div></div>
+    </section>{% endif %}
+    <p class="muted planner-empty" hidden>No spells match. Try another view or clear a filter.</p>
+  </div>
+  {% endif %}
+
+  <div id="t-items" hidden>
+    {% macro item_row(it) %}{{ ri(c, it.key, it.name ~ (" ×" ~ it.quantity if it.quantity > 1 else ""), picks, can_pick, star=it.battle,
+        chips=[("Custom", "custom") if it.custom else None, ("Changed", "edited") if it.changes else None, ("Note", "") if item_notes.get(it.key) else None,
+               ("Attuned", "done") if it.attunement == "attuned" else (("Needs attunement", "") if it.attunement == "required" else None),
+               (it.charges.left ~ " use" ~ ("s" if it.charges.left != 1 else "") ~ " left", "") if it.charges and it.charges.reset == "Used up" else None],
+        what=it.summary, uses=it.charges if it.charges and it.charges.reset != "Used up" else None,
+        mech=[it.type if not it.custom else "", it.rarity if it.magic else "", it.damage, ("AC " ~ it.armor_class) if it.armor_class else "", ("in " ~ it.in) if it.in else ""] | select | join(" · ")) }}{% endmacro %}
+    {% if s.attuned %}<p class="hint" style="margin:0">Attuned: {{ s.attuned | join(", ") }} ({{ s.attuned | length }} of 3)</p>{% endif %}
+    {% set battle = s.inventory | selectattr("group", "equalto", "battle") | list %}
+    {% set worn = s.inventory | selectattr("group", "equalto", "equipped") | list %}
+    {% if battle %}<h3 class="divider">Usable in battle <span class="count">{{ battle | length }}</span></h3><div class="rows">{% for it in battle %}{{ item_row(it) }}{% endfor %}</div>{% endif %}
+    {% if worn %}<h3 class="divider">Equipped <span class="count">{{ worn | length }}</span></h3><div class="rows">{% for it in worn %}{{ item_row(it) }}{% endfor %}</div>{% endif %}
+    {% set rest = s.inventory | rejectattr("group", "in", ["battle", "equipped"]) | list %}
+    {% if rest %}
+    <details class="fold"><summary>Everything else ({{ rest | length }})</summary>
+      {% for title in ["Weapons", "Armor", "Magic items", "Potions and scrolls", "Gear"] %}
+      {% set list = rest | selectattr("group", "equalto", title) | list %}
+      {% if list %}<h3 class="divider">{{ title }} <span class="count">{{ list | length }}</span></h3><div class="rows">{% for it in list %}{{ item_row(it) }}{% endfor %}</div>{% endif %}
+      {% endfor %}
+    </details>
+    {% endif %}
+    {% if s.currency %}<p class="note">Coins: {% for k, v in s.currency.items() %}{{ "{:,}".format(v) }} {{ k }}{{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
+  </div>
+
+  <div id="t-features" hidden>
+    {% macro feature_row(f) %}{{ ri(c, f.key, f.name, picks, can_pick, what=f.summary, mech=("level " ~ f.level) if f.level else "") }}{% endmacro %}
+    {% set active = s.features | selectattr("use") | list %}
+    {% set passive = s.features | rejectattr("use") | list %}
+    <p class="hint" style="margin:0 0 4px">What each feature lets you do. Click one for the full text and where it comes from.</p>
+    {% for source, list in active | groupby("source") %}<h3 class="divider">{{ source }} <span class="count">{{ list | length }}</span></h3><div class="rows">{% for f in list %}{{ feature_row(f) }}{% endfor %}</div>{% endfor %}
+    {% if passive %}
+    <details class="fold"><summary>Always on, already in your numbers ({{ passive | length }})</summary>
+      {% for source, list in passive | groupby("source") %}<h3 class="divider">{{ source }}</h3><div class="rows">{% for f in list %}{{ feature_row(f) }}{% endfor %}</div>{% endfor %}
+    </details>{% endif %}
+  </div>
+
+  <div id="t-skills" hidden>
+    {% set by = {} %}{% for sk in s.skills %}{% set _ = by.setdefault(sk.ability, []).append(sk) %}{% endfor %}
+    {% set passive = s.skills | selectattr("name", "in", ["Perception", "Insight", "Investigation"]) | list %}
+    <div class="skills-top">
+      <span class="legend"><span class="pm prof">●</span> Proficient <span class="pm expertise">◆</span> Expertise{% if s.skills | selectattr("proficiency", "equalto", "half") | list %} <span class="pm half">◐</span> Half (Jack of All Trades){% endif %} · click a skill to see how it adds up</span>
+      <span class="passives">Passive {% for sk in passive %}<span>{{ sk.name }} <b>{{ 10 + sk.bonus }}</b></span>{% endfor %}</span>
+    </div>
+    <div class="skill-groups">
+      {% for a in s.abilities if by.get(a.short) %}
+      <div class="skill-group">
+        <div class="skill-head"><span>{{ a.name }}</span><b>{{ a.label }}</b></div>
+        {% for sk in by[a.short] %}
+        <div class="skill {{ sk.proficiency }}" data-panel-url="/characters/{{ c.id }}/vital/skill-{{ sk.name | lower | replace(' ', '-') }}" tabindex="0" role="button">
+          <span class="pm {{ sk.proficiency }}" aria-label="{{ sk.proficiency or 'not proficient' }}">{{ {"proficient": "●", "expertise": "◆", "half": "◐"}.get(sk.proficiency, "○") }}</span>
+          <span class="skill-name">{{ sk.name }} {{ adv(sk.adv) }}</span>
+          <b class="skill-bonus">{{ sk.label }}</b>
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    {% set p = s.proficiencies %}
+    <details class="fold"><summary>Training: armor, weapons, tools, languages, senses</summary>
+      <dl class="profs">
+        {% for key, label in [("armor", "Armor"), ("weapons", "Weapons"), ("tools", "Tools"), ("languages", "Languages"), ("senses", "Senses")] %}{% if p[key] %}<dt>{{ label }}</dt><dd>{{ p[key] | join(", ") }}</dd>{% endif %}{% endfor %}
+      </dl></details>
+    {% macro situ_row(x) %}{{ ri(c, x.key, x.text, picks, can_pick, chips=[({"advantage": "Advantage", "disadvantage": "Disadvantage", "immunity": "Immunity", "resistance": "Resistance", "vulnerability": "Vulnerability", "bonus": "Bonus", "reaction": "Reaction"}.get(x.kind, x.kind), "kind-" ~ x.kind)], what=x.source) }}{% endmacro %}
+    {% set live = s.situational | rejectattr("in_numbers") | list %}
+    {% set counted = s.situational | selectattr("in_numbers") | list %}
+    <h3 class="divider" id="situational">Situational <span class="count">{{ s.situational | length }}</span></h3>
+    <p class="hint" style="margin:0 0 4px">Rules that only matter in some situations: advantages, immunities and resistances, and reactions that protect you.</p>
+    {% if live %}<div class="rows">{% for x in live %}{{ situ_row(x) }}{% endfor %}</div>{% else %}<p class="muted">Nothing situational on this sheet.</p>{% endif %}
+    {% if counted %}<details class="fold"><summary>Already in your numbers ({{ counted | length }})</summary><div class="rows">{% for x in counted %}{{ situ_row(x) }}{% endfor %}</div></details>{% endif %}
+  </div>
+
+  {% if druid %}{% set d = druid %}
+  <div id="t-forms" hidden data-planner data-noun="form">
+    <div class="planner-classes">
+      <div class="planner-class"><b>Wild Shape</b> <span class="muted">Druid {{ d.level }}{% if d.moon %} · Circle of the Moon{% endif %}</span>
+        <div class="row" style="gap:6px;margin-top:4px">
+          {% set known_n = forms | selectattr("known") | list | length %}
+          <span class="tag {{ 'done' if known_n == d.known else 'draft' }}">Known {{ known_n }} of {{ d.known }}</span>
+          <span class="tag">Max CR {{ d.max_cr_label }}{% if d.moon and d.max_cr > d.table_cr %} (Circle Forms){% endif %}</span>
+          <span class="tag {{ '' if d.fly else 'faint' }}">{{ "Fly Speed allowed" if d.fly else "No Fly Speed until Druid 8" }}</span>
+        </div></div>
+      <div class="planner-class"><b>In a form</b>
+        <div class="row" style="gap:6px;margin-top:4px">{% if d.uses %}<span class="res">Uses {{ pips(d.uses) }}</span>{% endif %}
+          <span class="tag">+{{ d.temp_hp }} temp HP</span>{% if d.moon %}<span class="tag">AC at least {{ 13 + ((s.abilities | selectattr("key", "equalto", "wisdom") | first).modifier) }}</span>{% endif %}
+          <span class="tag">Up to {{ d.hours }} h</span></div>
+        <div class="note" style="margin-top:4px">{% if d.beast_spells %}Beast Spells: cast your spells in a form (not ones with a costly or consumed Material component).{% elif d.moon_spells %}Spells in a form: {{ d.moon_spells | join(", ") }} (Circle of the Moon Spells).{% else %}No spellcasting in a form.{% endif %}
+          {% if d.elemental_fury %}{% if d.fury == "Primal Strike" %} Primal Strike: +{{ d.primal_strike }} once per turn.{% elif not d.fury %} Elemental Fury: Primal Strike would add {{ d.primal_strike }} to a form's attacks.{% endif %}{% endif %}
+          {% if d.lunar_form %} Lunar Form: +2d10 Radiant once per turn.{% endif %}</div>
+        {% if s.form_options and (s.form_options["items"] or s.form_options.features) %}<div class="note" style="margin-top:4px">Kept in a form: {% set kn = (s.form_options.features | selectattr("key", "in", c.wild_shape_keep or []) | map(attribute="name") | list) + (s.form_options["items"] | selectattr("key", "in", c.wild_shape_keep or []) | map(attribute="name") | list) %}{{ kn | join(", ") if kn else "nothing yet" }}. Change it in any form's window.</div>{% endif %}</div>
+    </div>
+    {% if ws_other_uses %}<details class="fold ws-other"{% if not d.moon and d.level >= 3 %} open{% endif %}><summary>Other ways to use Wild Shape ({{ ws_other_uses | length }})</summary>
+      <ul class="plain">{% for u in ws_other_uses %}<li><b>{{ u.name }}</b> <span class="muted">{{ u.summary }}</span></li>{% endfor %}</ul></details>{% endif %}
+    <div class="planner-tools">
+      <div class="seg" role="group" aria-label="Which forms">
+        <button type="button" data-view="ready" aria-pressed="true">Known</button>
+        <button type="button" data-view="all" aria-pressed="false">All you can learn</button>
+      </div>
+      <label class="fc-sort note">Sort <select data-card-sort aria-label="Sort forms">
+        <option value="default">Known first, then CR</option><option value="damage">Damage per turn</option>
+        <option value="hit">Attack bonus</option><option value="speed">Fastest</option><option value="cr">CR (highest)</option></select></label>
+      <input type="search" data-search placeholder="Search beasts" aria-label="Search beasts">
+    </div>
+    <div class="filters" role="group" aria-label="Filter forms">
+      {% for cr in forms | sort(attribute="cr") | map(attribute="cr_label") | unique %}<button type="button" data-filter="level:{{ cr }}">CR {{ cr }}</button>{% endfor %}
+      <span class="sep"></span>
+      {% for m in ["swim", "climb", "burrow", "fly"] %}<button type="button" data-filter="tag:{{ m }}">{{ m | capitalize }}</button>{% endfor %}
+      <span class="sep"></span>
+      {% for z in ["tiny", "small", "medium", "large", "huge"] %}{% if forms | selectattr("size", "equalto", z | capitalize) | list %}<button type="button" data-filter="tag:{{ z }}">{{ z | capitalize }}</button>{% endif %}{% endfor %}
+    </div>
+    <p class="note planner-note"><span data-shown></span>{% if can_pick %} ♥ adds a form to your shortlist on Plan, to compare before learning it.{% endif %} Learn forms on D&amp;D Beyond{% if s.sheet_url %} (<a href="{{ s.sheet_url }}" target="_blank" rel="noopener">open ↗</a>){% endif %}: you can swap one known form after each Long Rest. Click a form to see it with your stats carried over.</p>
+    <section class="planner-group"><div class="planner-level"><div class="form-cards" data-sortable-cards>
+    {% for fm in forms %}{{ form_card(c, fm, picks, can_pick, loop.index) }}{% endfor %}
+    </div></div></section>
+    <p class="muted planner-empty" hidden>No forms match. Try another view or clear a filter.</p>
+    <p class="note">Beast stat blocks: System Reference Document 5.2 (Wizards of the Coast, CC-BY-4.0). Pictures from D&amp;D Beyond.</p>
+  </div>
+  {% elif s.creatures %}
+  <div id="t-forms" hidden>
+    <div class="rows">{% for cr in s.creatures %}{{ ri(c, cr.key, cr.name, picks, can_pick, chips=[(cr.group, "")], what=("CR " ~ cr.cr ~ " · AC " ~ cr.armor_class ~ " · " ~ cr.hit_points ~ " HP"), mech=cr.speed) }}{% endfor %}</div>
+  </div>
+  {% endif %}
+  {% if s.story %}{% set st = s.story %}
+  <div id="t-story" class="story-tab" hidden>
+    <p class="hint" style="margin:0 0 4px">From the Background tab on D&amp;D Beyond, in the player's words. Everyone at the table can read it.</p>
+    {% if st.background %}<h3 class="divider">Background</h3><p><b>{{ st.background }}</b>{% if st.background_text %} <span class="muted">{{ st.background_text }}</span>{% endif %}</p>{% endif %}
+    {% if st.characteristics %}<h3 class="divider">Characteristics</h3>
+    <dl class="traits-grid">{% for k, v in st.characteristics %}<div><dt>{{ k }}</dt><dd>{{ v }}</dd></div>{% endfor %}</dl>{% endif %}
+    {% if st.traits %}<h3 class="divider">Personality</h3>
+    {% for label, text in st.traits %}<div class="story-block"><b>{{ label }}</b><p>{{ text }}</p></div>{% endfor %}{% endif %}
+    {% if st.appearance %}<h3 class="divider">Appearance</h3><div class="story-block"><p>{{ st.appearance }}</p></div>{% endif %}
+    {% if st.backstory %}<h3 class="divider">Backstory</h3><div class="story-block"><p>{{ st.backstory }}</p></div>{% endif %}
+    {% if not (st.traits or st.appearance or st.backstory) %}<p class="muted">Nothing written on D&amp;D Beyond's Background tab yet.</p>{% endif %}
+  </div>
+  {% endif %}
+</section>
+{% else %}
+<p class="subtitle">{% if c.player_name %}Played by {{ c.player_name }}. {% endif %}{% if c.ddb_id %}Not fetched from D&amp;D Beyond yet.{% else %}Not linked to D&amp;D Beyond yet.{% endif %}</p>
+{% if failed %}<p class="flash warn">{{ error }}</p>{% endif %}
+{% endif %}

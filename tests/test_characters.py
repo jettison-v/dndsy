@@ -182,7 +182,7 @@ def test_character_page(player, db):
     characters.refresh(db, cole)
     page = player.get(f"/characters/{cole.id}").text
     for text in ("Circle of the Moon", "Armor class", "Heat Metal", "Conc.", "Ring of Invisibility", "Attuned",
-                 "Polar Bear", "Wild Shape form", "Focus Points", "Last updated from D&amp;D Beyond just now",
+                 "Polar Bear", "Wild Shape form", "Focus Points", 'id="live-pill"', "just now",
                  "Bonus actions", "Reactions", "Situational", "Advantage on saving throws against being charmed",
                  "Advantage on Constitution saving throws to maintain Concentration · War Caster",
                  "adv-badge cond", "Training: armor, weapons", "Starry Wisp", "+7"):
@@ -198,7 +198,7 @@ def test_battle_page(player, db):
     page = player.get(f"/characters/{cole.id}/battle").text
     assert "Wild Shape" in page and "Unarmed Strike" in page and "+6" in page and "Absorb Elements" in page
     assert "Use an item: Potion of Healing" in page and "Easy to forget" in page and "Party" in page
-    assert 'data-game-mode="' in page and "See all actions" in page
+    assert 'id="live-pill"' in page and "See all actions" in page  # Game Mode is in the Live popover
     panel = player.get(f"/characters/{cole.id}/all/action").text
     assert "<html" not in panel and "Heat Metal" in panel and "Moonbeam" in panel
     one = player.get(f"/characters/{cole.id}/detail", params={"ref": "spell:Moonbeam"}).text
@@ -313,7 +313,7 @@ def test_dm_refreshes_one_and_all(dm, db):
     r = dm.post(f"/characters/{cole.id}/refresh", follow_redirects=False)
     assert r.status_code == 303 and cole.snapshot.status == "ok"
     page = dm.get(f"/characters/{cole.id}").text
-    assert "Updated from D&amp;D Beyond" in page and "Refresh from D&amp;D Beyond" in page
+    assert "Updated from D&amp;D Beyond" in page and "Refresh from D&amp;D Beyond" not in page  # refresh from Live
     page = dm.post("/characters/refresh").text  # follows the redirect back to /party
     assert char(db, "Trah").snapshot.status == "error"
     assert "Updated 1 from D&amp;D Beyond; couldn&#39;t update Trah" in page
@@ -331,9 +331,8 @@ def test_admin_links_a_character(admin, db):
 def test_refresh_buttons_show_that_they_are_working(dm, db):
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
-    page = dm.get("/party").text
-    assert 'data-busy="Refreshing from D&amp;D Beyond…"' in page and 'id="refresh-note" hidden' in page
-    assert 'data-busy="Refreshing…"' in dm.get(f"/characters/{cole.id}").text
+    panel = dm.get("/live", params={"c": cole.id}).text
+    assert panel.count('hx-disabled-elt="this"') == 2  # Refresh Cole now, Refresh everyone: disabled while working
 
 
 def test_my_character_comes_first_and_reminders_can_be_removed(player, db):
@@ -342,7 +341,7 @@ def test_my_character_comes_first_and_reminders_can_be_removed(player, db):
     characters.refresh(db, cole)
     owned_by(db, trah, "player@example.com")
     page = player.get(f"/characters/{cole.id}/battle").text
-    pills = page.split('class="char-nav"')[1].split("</div>")[0]
+    pills = page.split('id="char-menu"')[1].split("</div>")[0]  # the menu bar's character switcher
     assert pills.index(">Trah<") < pills.index(">Big C<") < pills.index(">Cole<")  # mine, then by name
     owned_by(db, cole, "player@example.com")
     trah.owner_id = None
@@ -376,10 +375,12 @@ def test_spell_planner_and_shortlist(player, db):
     owned_by(db, cole, "player@example.com")
     page = player.get(f"/characters/{cole.id}").text
     assert "data-planner" in page and "Prepared 10 of 10" in page and "Cantrips 3 of 3" in page
-    assert "Barkskin" in page and "Not prepared" in page and 'data-view="fav"' in page
+    assert "Barkskin" in page and "Not prepared" in page and 'data-view="fav"' not in page  # shortlists are on Plan
+    assert "Barkskin" not in player.get(f"/characters/{cole.id}/plan").text.split("Spell shortlist")[1]
     r = player.post(f"/characters/{cole.id}/pick", data={"kind": "fav", "ref": "spell:Barkskin"})
     assert "♥" in r.text
     assert 'data-fav="1"' in player.get(f"/characters/{cole.id}").text
+    assert "Barkskin" in player.get(f"/characters/{cole.id}/plan").text.split("Spell shortlist")[1]
 
 
 def test_inventory_and_feature_sections(player, db):
@@ -390,7 +391,7 @@ def test_inventory_and_feature_sections(player, db):
     items = page.split('id="t-items"')[1].split('id="t-features"')[0]
     assert items.index("Usable in battle") < items.index("Equipped") < items.index("Everything else")
     assert "Demon Armor" in items.split("Everything else")[1]  # not equipped: folded, under Armor
-    features = page.split('id="t-features"')[1].split('id="t-situ"')[0]
+    features = page.split('id="t-features"')[1].split('id="t-skills"')[0]
     assert features.index("Wild Shape") < features.index("Always on, already in your numbers") < features.index("Fleet of Foot")
 
 
@@ -425,7 +426,7 @@ def test_situational_folds_what_is_already_counted_and_no_circle_magic(player, d
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
     characters.refresh(db, cole)
-    situ = player.get(f"/characters/{cole.id}").text.split('id="t-situ"')[1].split('id="t-skills"')[0]
+    situ = player.get(f"/characters/{cole.id}").text.split('id="t-skills"')[1].split('id="situational"')[1]
     assert situ.index("charmed") < situ.index("Already in your numbers") < situ.index("+1 to saving throws")
     page = player.get(f"/characters/{cole.id}").text
     assert "Circle Spell" not in page and "Circle Magic" not in page  # Forgotten Realms rule: not our core books

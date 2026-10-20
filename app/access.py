@@ -122,7 +122,7 @@ def allows(rule: str, lvl: str | None, dm: bool = False) -> bool:
 # (group, what it covers, rule; "own" = only on the character the person plays)
 CHART = [
     ("Read", "Recaps, sessions, the campaign record, the map", "read"),
-    ("Read", "Every character's Battle, Character and Party pages", "read"),
+    ("Read", "Every character's page (Play and Sheet) and Party", "read"),
     ("Read", "Players' notes, stars, reminders and shortlists", "player_notes"),
     ("Contribute", "Suggest corrections and additions", "suggest"),
     ("Contribute", "Notes, stars, reminders, shortlists and the Wild Shape switch", "own"),

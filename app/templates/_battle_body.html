@@ -1,20 +1,9 @@
 {% from "_char.html" import pips, pick_btn, battle_strip, save_tiles, resource_row, portrait, spends, adv, hit, roll_attrs %}
 {% from "_notes_macros.html" import combo_body %}
 {% set s = sheet %}
+{# Character › Play (character_pages._battle_ctx). Game Mode and the Wild Shape switch swap this whole block. #}
 <div id="battle-body" data-character="{{ c.id }}" data-name="{{ c.entity.name }}" data-fetched="{{ fetched_at.isoformat() if fetched_at else '' }}">
   <div class="battlebar">
-    <div class="sec-head" style="margin:0">
-      <div class="row" style="gap:10px">{{ portrait(s, "md") }}<b style="font-size:1.3rem">{{ c.entity.name }}</b>{% if s %} <span class="note">{% for k in s.classes %}{{ k.name }} {{ k.level }}{{ " / " if not loop.last }}{% endfor %}</span>{% endif %}</div>
-      {% if c.ddb_id %}
-      <div class="gm">
-        <span class="gm-status" aria-live="polite">{% if failed %}<span class="quiet-warn">Couldn't reach D&amp;D Beyond; showing the copy from {{ fetched_at | ago }}</span>{% else %}Updated {{ fetched_at | ago }}{% endif %}</span>
-        <button class="btn small gm-now" type="button" hx-post="/characters/{{ c.id }}/sync" hx-vals='{"now": "1"}' hx-target="#battle-body" hx-swap="outerHTML" hidden>Refresh now</button>
-        <label class="gm-label"><span>Game Mode</span>
-          <button class="switch" type="button" role="switch" aria-checked="false" data-game-mode="{{ c.id }}" data-name="{{ c.entity.name }}" data-every="{{ game_mode_seconds }}"
-            aria-label="Game Mode: update from D&amp;D Beyond every 2 to 3 minutes while this page is open"></button></label>
-      </div>
-      {% endif %}
-    </div>
     {% if form %}{% set fb = form.beast %}
     <div class="ws-form" data-modal-url="/characters/{{ c.id }}/form?name={{ fb.name | urlencode }}" data-modal-size="large" tabindex="0" role="button">
       {% if fb.image %}<img class="ws-pic" src="{{ fb.image }}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}
@@ -43,11 +32,16 @@
   {% endif %}
 
   {% if s %}
-  {% if can_pick and not form %}<p class="note" style="margin:-6px 0 10px">Drag options to reorder a column. ★ on the Character page (or in "See all") adds more.</p>{% endif %}
-  <div class="econ">
-    {% for cost, sub, slug in [("Action", "One per turn", "action"), ("Bonus action", "One per turn, before or after your Action", "bonus"), ("Reaction", "One per round, also on others' turns", "reaction")] %}
+  {% if can_pick and not form %}<p class="note" style="margin:-6px 0 10px">Drag options to reorder a column. ★ on Sheet (or in "See all") adds more.</p>{% endif %}
+  {% set econ = [("Action", "One per turn", "action"), ("Bonus action", "One per turn, before or after your Action", "bonus"), ("Reaction", "One per round, also on others' turns", "reaction")] %}
+  {# Phones: the three columns become tabs (app.js keeps the chosen one across Game Mode updates). #}
+  <div class="econ-tabs" role="tablist" aria-label="Action, bonus action or reaction">
+    {% for cost, sub, slug in econ %}<button type="button" role="tab" class="k-{{ slug }}" data-econ="{{ slug }}" aria-selected="{{ 'true' if loop.first else 'false' }}">{{ {"Bonus action": "Bonus"}.get(cost, cost) }} <span class="count">{{ columns[cost].shown | length }}</span></button>{% endfor %}
+  </div>
+  <div class="econ" data-econ-show="action">
+    {% for cost, sub, slug in econ %}
     {% set col = columns[cost] %}
-    <div class="section">
+    <div class="section" data-econ-col="{{ slug }}">
       <h2 class="econ-head k-{{ slug }}">{{ cost }}<small>{{ col.sub or sub }}</small></h2>
       {% for n in col.notes or [] %}<p class="econ-note">{{ n }}</p>{% endfor %}
       <div class="moves"{% if can_pick and not form %} data-sort-column="{{ cost }}" data-sort-url="/characters/{{ c.id }}/order"{% endif %}>
@@ -78,23 +72,13 @@
   {% endif %}
 
   <div class="lower">
-    <div class="section">
-      <div class="sec-head"><h2>Easy to forget</h2>{% if can_pick %}<a href="/characters/{{ c.id }}">Choose on Character →</a>{% endif %}</div>
-      {% if not show_picks %}
-      <p class="muted">Reminders belong to each player and aren't shown to the DM.</p>
-      {% elif reminders %}
-      <ul class="forget"{% if can_pick %} data-sort-column="forget" data-sort-url="/characters/{{ c.id }}/order" data-sort-item="li"{% endif %}>{% for r in reminders %}<li data-key="{{ r.ref }}"><span>{{ r.text }}{% if r.note %}<span class="forget-note">✎ {{ r.note }}</span>{% endif %}</span>{% if can_pick %}<button type="button" class="forget-x" aria-label="Remove this reminder" title="Remove"
-        hx-post="/characters/{{ c.id }}/pick" hx-vals='{{ {"kind": "remind", "ref": r.ref} | tojson }}' hx-target="closest li" hx-swap="delete">×</button>{% endif %}</li>{% endfor %}</ul>
-      {% else %}
-      <p class="muted">{% if can_pick %}Nothing yet. On your Character page, press <b>Remind</b> on anything you tend to forget (for example, Advantage against being Charmed).{% else %}{{ c.entity.name }}'s player hasn't added any reminders yet.{% endif %}</p>
-      {% endif %}
-    </div>
+    {% include "_forget.html" %}
     {% if show_picks and (combos or can_pick) %}
     <div class="section">
       <div class="sec-head"><h2>Battle combos</h2>{% if can_pick %}<a href="#" data-modal-url="/characters/{{ c.id }}/notes/new?kind=combo" data-modal-size="large">+ Add</a>{% endif %}</div>
       {% for n in combos %}
       <details class="combo-fold"><summary><b>{{ n.title }}</b>{% if n.data.when %} <span class="muted">· {{ n.data.when }}</span>{% endif %}</summary>{{ combo_body(n, nl) }}</details>
-      {% else %}<p class="muted">Plans that take a setup turn and a payoff turn. Add one here or on the Character page's Notes tab.</p>{% endfor %}
+      {% else %}<p class="muted">Plans that take a setup turn and a payoff turn. Add one here or on Plan.</p>{% endfor %}
     </div>
     {% endif %}
     <div class="section">

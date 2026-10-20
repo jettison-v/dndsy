@@ -1,0 +1,27 @@
+{# The Live popover (app/live.py): Game Mode for this browser, each character's last refresh,
+   and refreshing now. "Refresh everyone" is for reviewers only. Also refreshes the pill. #}
+{% set f = tn.focus %}
+<div class="live-pop" role="dialog" aria-label="Live updates from D&amp;D Beyond">
+  <div class="live-gm">
+    <div><b>Game Mode</b>
+      <small>Keeps {{ f.name if f else "the party" }} fresh from D&amp;D Beyond every {{ "%g" | format(tn.every / 60) }} minutes while askdnd is open{% if f %}; on Play the page updates itself{% endif %}. Remembered on this device.</small></div>
+    <button class="switch" type="button" role="switch" aria-checked="false" data-game-mode aria-label="Game Mode"></button>
+  </div>
+  <div class="live-list">
+    <div class="live-head">D&amp;D Beyond copies</div>
+    {% for r in tn.characters %}
+    <div class="live-row{{ ' here' if f and r.id == f.id }}"><span>{{ r.name }}{% if r.mine %} <span class="note">(you)</span>{% endif %}</span>
+      {% if not r.linked %}<span class="note">not linked</span>
+      {% elif not r.fetched_at %}<span class="quiet-warn">{{ "couldn't refresh" if r.failed else "not fetched yet" }}</span>
+      {% elif r.failed %}<span class="quiet-warn" title="{{ r.error }}">couldn't refresh · showing {{ r.fetched_at | ago }}</span>
+      {% else %}<span class="note">{{ r.fetched_at | ago }}</span>{% endif %}</div>
+    {% else %}<p class="muted">No characters yet.</p>{% endfor %}
+  </div>
+  {% if (f and f.linked) or (reviewer and tn.linked) %}
+  <div class="live-actions">
+    {% if f and f.linked %}<button type="button" class="btn primary small" hx-post="/live/refresh/{{ f.id }}" hx-target="#live-menu" hx-disabled-elt="this">Refresh {{ f.name }} now</button>{% endif %}
+    {% if reviewer and tn.linked %}<button type="button" class="btn small" hx-post="/live/refresh-all{{ '?c=%s' % f.id if f }}" hx-target="#live-menu" hx-disabled-elt="this">Refresh everyone</button>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% with oob = True %}{% include "_live_pill.html" %}{% endwith %}

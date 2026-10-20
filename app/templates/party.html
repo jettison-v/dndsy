@@ -2,12 +2,8 @@
 {% block title %}Party · askdnd{% endblock %}
 {% block content %}
 <main class="page sheet wide">
-  <div class="title-row"><h1>Party</h1>
-    {% if reviewer and rows | selectattr("c.ddb_id") | list %}
-    <form method="post" action="/characters/refresh" class="inline" style="margin-left:auto" data-busy-note="refresh-note"><button class="btn" type="submit" data-busy="Refreshing from D&amp;D Beyond…">Refresh all from D&amp;D Beyond</button></form>
-    {% endif %}</div>
-  <p class="subtitle">Everyone at a glance, then the party's spells and items pooled for planning. Click a spell or item for details, or a name to see that character's.{% if oldest %} Oldest copy from D&amp;D Beyond: {{ oldest | ago }}.{% endif %}</p>
-  <p class="busy-note" id="refresh-note" hidden>Fetching {{ rows | selectattr("c.ddb_id") | list | length }} characters from D&amp;D Beyond. This takes a few seconds each; the page reloads when it's done.</p>
+  <div class="title-row"><h1>Party</h1></div>
+  <p class="subtitle">Everyone at a glance, then the party's spells and items pooled for planning. Click a spell or item for details, or a name to see that character's.{% if oldest %} Oldest copy from D&amp;D Beyond: {{ oldest | ago }} (refresh from Live in the menu bar).{% endif %}</p>
   {% if pick %}<p class="flash warn">You aren't set as playing a character yet, so pick one below. (An admin can set who plays which character on Manage › People.)</p>{% endif %}
 
   <section class="section">
