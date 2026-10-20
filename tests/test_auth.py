@@ -104,3 +104,13 @@ def test_dev_login_only_when_configured_and_not_production(monkeypatch):
     assert c.get("/dev/login", follow_redirects=False).headers["location"] == "/login"
     monkeypatch.setattr(config, "IS_PRODUCTION", False)
     assert c.get("/dev/login", follow_redirects=False).headers["location"] == "/"
+
+
+def test_dev_login_as_someone_else_who_can_sign_in(monkeypatch):
+    c = TestClient(app)
+    monkeypatch.setattr(config, "DEV_LOGIN_EMAIL", "player@example.com")
+    monkeypatch.setattr(config, "ALLOWED_EMAILS", parse_allowlist("player@example.com,other@example.com"))
+    assert c.get("/dev/login?as=stranger@example.com", follow_redirects=False).headers["location"] == "/login"
+    assert c.get("/dev/login?as=other@example.com", follow_redirects=False).headers["location"] == "/"
+    monkeypatch.setattr(config, "IS_PRODUCTION", True)
+    assert TestClient(app).get("/dev/login?as=other@example.com", follow_redirects=False).headers["location"] == "/login"

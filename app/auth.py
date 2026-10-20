@@ -3,7 +3,7 @@
 from authlib.integrations.starlette_client import OAuth, OAuthError
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -114,12 +114,17 @@ def _record_sign_in(db: Session, email: str, name: str) -> None:
 
 
 @router.get("/dev/login")
-def dev_login(request: Request):
-    """Local-only shortcut for previewing pages without Google (see DEV_LOGIN_EMAIL)."""
+def dev_login(request: Request, as_: str = Query("", alias="as")):
+    """Local-only shortcut for previewing pages without Google (see DEV_LOGIN_EMAIL).
+    `?as=<email>` previews as someone else who can sign in (two people at once: one tab on
+    localhost, another on 127.0.0.1, since each keeps its own cookie)."""
     local = request.client is not None and request.client.host in ("127.0.0.1", "::1", "testclient")
     if config.IS_PRODUCTION or not config.DEV_LOGIN_EMAIL or not local:
         return RedirectResponse("/login", status_code=303)
-    request.session["user"] = {"email": config.DEV_LOGIN_EMAIL, "name": "Dev preview", "picture": None}
+    email = as_.strip().lower() or config.DEV_LOGIN_EMAIL
+    if not access.level(email):
+        return RedirectResponse("/login", status_code=303)
+    request.session["user"] = {"email": email, "name": "Dev preview", "picture": None}
     return RedirectResponse("/", status_code=303)
 
 
