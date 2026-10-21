@@ -1210,12 +1210,25 @@ body.rolls-rail .rs-head { flex-direction: column; padding: 12px 0 10px; }
 body.rolls-rail .rs-title, body.rolls-rail .roll-main, body.rolls-rail .roll-empty, body.rolls-rail .roll-pending, body.rolls-rail .rs-controls { display: none; }
 body.rolls-rail .rs-icon { display: block; order: 2; }
 body.rolls-rail .rs-toggle span[aria-hidden] { display: inline-block; transform: scaleX(-1); }
-body.rolls-rail .rs-log { padding: 0 6px; gap: 12px; scrollbar-width: none; }
-body.rolls-rail .roll-item { grid-template-columns: 1fr; justify-items: center; gap: 2px; padding: 0; background: none; border: 0; }
-body.rolls-rail .roll-av { width: 36px; height: 36px; }
-body.rolls-rail .roll-total { font-size: .95rem; }
-body.rolls-rail .roll-short { display: block; font-size: .65rem; color: var(--muted); }
-body.rolls-rail .roll-lock { padding: 0; }
+/* …one avatar per person with their latest roll (app.js buildPeople), pulsing on a new one */
+body.rolls-rail .rs-log { display: none; }
+.rs-people { display: none; }
+body.rolls-rail .rs-people { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 4px 0 12px; overflow-y: auto; flex: 1; scrollbar-width: none; }
+.rs-person { display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: 0; padding: 0; color: var(--text); font: inherit; cursor: pointer; }
+.rs-person .roll-av { width: 38px; height: 38px; }
+.rs-p-total { font-size: .95rem; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.rs-person.nat20 .rs-p-total { color: var(--green); } .rs-person.nat1 .rs-p-total { color: #f08a8a; }
+.rs-person.nat20 .roll-av { box-shadow: 0 0 0 2px var(--green); } .rs-person.nat1 .roll-av { box-shadow: 0 0 0 2px var(--red); }
+.rs-person .roll-lock { color: var(--muted); padding: 0; }
+.rs-person.pulse .roll-av { animation: rs-pulse 1.2s ease-out 2; }
+@keyframes rs-pulse { 0% { box-shadow: 0 0 0 0 rgba(232, 179, 75, .85); } 100% { box-shadow: 0 0 0 10px rgba(232, 179, 75, 0); } }
+.rs-tip { position: fixed; z-index: 12; max-width: 260px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: .82rem; box-shadow: 0 6px 20px rgba(0, 0, 0, .45); }
+/* …and slides away when nobody has rolled for a few minutes; the edge tab brings it back */
+body.gm-on .rolls-side { transition: transform .25s ease, visibility 0s; }
+body.gm-on.rolls-quiet { --rolls-w: 0px; }
+body.gm-on.rolls-quiet .rolls-side { transform: translateX(-100%); visibility: hidden; transition: transform .25s ease, visibility 0s .25s; }
+.rs-edge { position: fixed; z-index: 4; left: 0; top: calc(var(--stick-top, 62px) + 12px); width: 28px; height: 44px; display: grid; place-items: center; background: #111315; color: var(--amber); border: 1px solid var(--line); border-left: 0; border-radius: 0 10px 10px 0; }
+.rs-edge:hover { color: var(--text); }
 @media (max-width: 1099px) and (min-width: 801px) { body.gm-on.rolls-open:not(.rolls-over) { --rolls-w: 64px; } }
 
 /* Others' rolls as small notices that fade, near the bottom left */
@@ -1238,7 +1251,12 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
   body.gm-on .rolls-side, body.gm-on.rolls-rail .rolls-side { top: auto; bottom: calc(60px + env(safe-area-inset-bottom)); width: auto; right: 0; max-height: 210px; border-right: 0; border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; box-shadow: 0 -10px 30px rgba(0, 0, 0, .45); }
   body.gm-on.rolls-full .rolls-side { max-height: 80vh; }
   body.gm-on.rolls-open { padding-bottom: calc(270px + env(safe-area-inset-bottom)); }
-  body.gm-on.rolls-rail { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+  body.gm-on.rolls-rail { padding-bottom: calc(150px + env(safe-area-inset-bottom)); }
+  body.gm-on.rolls-quiet { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
+  body.gm-on.rolls-quiet .rolls-side { transform: translateY(120%); }
+  body.rolls-rail .rs-people { flex-direction: row; justify-content: flex-start; padding: 0 14px 10px; gap: 14px; overflow-x: auto; flex: none; }
+  .rs-person .roll-av { width: 32px; height: 32px; }
+  .rs-edge { top: auto; bottom: calc(68px + env(safe-area-inset-bottom)); left: 8px; width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 999px; }
   .rs-head, body.rolls-rail .rs-head { position: relative; flex-direction: row; padding: 14px 14px 6px; cursor: pointer; }
   .rs-grip { display: block; position: absolute; top: 6px; left: calc(50% - 20px); width: 40px; height: 4px; border-radius: 2px; background: var(--line); }
   body.rolls-rail .rs-title { display: block; }

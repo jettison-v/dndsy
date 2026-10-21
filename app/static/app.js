@@ -633,6 +633,9 @@
     get: (k, s) => { try { return (s ? sessionStorage : localStorage).getItem(k); } catch (e) { return null; } },
     set: (k, v, s) => { try { (s ? sessionStorage : localStorage).setItem(k, v); } catch (e) { /* private window */ } },
   };
+  const QUIET = 3 * 60 * 1000;  // the collapsed rail slides away after this long with no rolls
+  const people = side && side.querySelector('.rs-people'), edge = document.querySelector('.rs-edge');
+  let lastActivity = 0, tipEl = null;
   let to = store.get(TO, true) || 'table';  // who sees your rolls; kept for this tab only, so it starts at Table
   let lastId = 0, loaded = false, overlay = false, win = null;
 
@@ -1206,6 +1209,7 @@
     b.toggle('rolls-over', overlay && state === 'open');
     side.querySelector('.rs-toggle').setAttribute('aria-expanded', state === 'rail' ? 'false' : 'true');
     if (remember && state !== 'full') store.set(SIDE + where(), state);
+    quietCheck();
   }
   function current() { const b = document.body.classList; return b.contains('rolls-full') ? 'full' : b.contains('rolls-open') ? 'open' : 'rail'; }
   function layout() { overlay = false; setState(!phone.matches && innerWidth < WIDE ? 'rail' : pref()); }
@@ -1275,7 +1279,64 @@
     tidy();
     const li = log.firstElementChild;
     if (li) { li.classList.remove('fresh'); void li.offsetWidth; li.classList.add('fresh'); }
+    buildPeople(li ? new Set([li.dataset.person]) : null);
+    activity();
   }
+
+  // ---------------------------------------------------------------- the rail: each person's latest roll
+  // Collapsed, the sidebar shows one avatar per person (their newest roll in the log) with its total,
+  // colored on a natural 20 or 1; a new roll pulses it; hover (or tap) says what it was. After QUIET
+  // with no rolls the rail slides away, and comes back with the next roll; the edge tab brings it back.
+  function whatOf(li) {
+    const name = li.querySelector('.roll-who b').textContent.trim(), total = li.querySelector('.roll-total');
+    const what = li.querySelector('.roll-what').textContent.trim().replace(/\s+/g, ' ');
+    const when = (li.querySelector('time') || {}).textContent || '';
+    return name + ': ' + (total ? what + ' ' + total.textContent : what.charAt(0).toLowerCase() + what.slice(1)) + (when ? ' (' + when + ')' : '');
+  }
+  function buildPeople(pulse) {
+    if (!people || !log) return;
+    const seen = new Set();
+    people.innerHTML = '';
+    log.querySelectorAll('.roll-item[data-person]').forEach(li => {
+      if (seen.has(li.dataset.person) || seen.size >= 8) return;
+      seen.add(li.dataset.person);
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'rs-person ' + [...li.classList].filter(c => /^(hue\d|nat20|nat1|hidden-roll)$/.test(c)).join(' ');
+      b.setAttribute('role', 'listitem');
+      const tip = whatOf(li);
+      b.title = tip;
+      b.setAttribute('aria-label', tip);
+      b.append(li.querySelector('.roll-av').cloneNode(true));
+      const total = li.querySelector('.roll-total'), lock = li.querySelector('.roll-lock');
+      if (total) { const t = document.createElement('b'); t.className = 'rs-p-total'; t.textContent = total.textContent.split(' · ')[0]; b.append(t); }
+      else if (lock) b.append(lock.cloneNode(true));
+      if (pulse && pulse.has(li.dataset.person)) b.classList.add('pulse');
+      people.append(b);
+    });
+  }
+  function showTip(btn) {
+    if (tipEl) tipEl.remove();
+    tipEl = document.createElement('div');
+    tipEl.className = 'rs-tip';
+    tipEl.setAttribute('role', 'status');
+    tipEl.textContent = btn.title;
+    document.body.append(tipEl);
+    const r = btn.getBoundingClientRect();
+    if (phone.matches) { tipEl.style.left = '8px'; tipEl.style.right = '8px'; tipEl.style.top = (r.top - tipEl.offsetHeight - 8) + 'px'; }
+    else { tipEl.style.left = (r.right + 8) + 'px'; tipEl.style.top = (r.top + r.height / 2 - tipEl.offsetHeight / 2) + 'px'; }
+    const mine = tipEl;
+    setTimeout(() => { if (tipEl === mine) { mine.remove(); tipEl = null; } }, 3500);
+  }
+  if (people) people.addEventListener('click', e => { const b = e.target.closest('.rs-person'); if (b) { e.stopPropagation(); showTip(b); } });
+  function activity(at) { lastActivity = Math.max(lastActivity, at || Date.now()); quietCheck(); }
+  function quietCheck() {
+    const quiet = gmOn() && !!side && loaded && current() === 'rail' && Date.now() - lastActivity > QUIET;
+    document.body.classList.toggle('rolls-quiet', quiet);
+    if (edge) edge.hidden = !quiet;
+  }
+  setInterval(quietCheck, 15000);
+  if (edge) edge.addEventListener('click', () => activity());
   function placeholder(label) {
     const li = document.createElement('li');
     li.className = 'roll-pending';
@@ -1298,13 +1359,21 @@
     const first = !loaded;
     tidy();
     loaded = true;
-    if (first) return;
+    if (first) {  // quiet already? The newest roll's time says
+      buildPeople();
+      log.querySelectorAll('time[data-at]').forEach(t => { lastActivity = Math.max(lastActivity, Date.parse(t.dataset.at) || 0); });
+      return quietCheck();
+    }
+    const fresh = new Set();
     [...log.querySelectorAll('.roll-item[data-seq]')].reverse().forEach(li => {
+      if (+li.dataset.seq > before) fresh.add(li.dataset.person);
       if (+li.dataset.seq > before && !li.dataset.mine) {
         if (!othersShown()) notice(li);
         li.classList.remove('fresh'); void li.offsetWidth; li.classList.add('fresh');
       }
     });
+    buildPeople(fresh);
+    if (fresh.size) activity();
   });
   function notice(li) {
     if (!pops) return;

@@ -379,3 +379,14 @@ def test_bad_parts_are_refused(table, db):
     cid = char(db, "Cole").id
     for bad in ({"part": "lots of fire"}, {"part": "99d6 fire"}, {"part": "1d6 fire", "count": "50"}, {"part": "1d1 fire"}):
         assert post(table["player"], character=cid, kind="damage", label="x", **bad).status_code == 400, bad
+
+
+def test_the_rail_knows_whose_roll_each_is(table, db):
+    cid = char(db, "Cole").id
+    post(table["player"], character=cid, kind="save", label="Wis save", mod="8")
+    post(table["dm"], kind="dice", label="", dmg="1d20")
+    log = table["other"].get("/rolls").text
+    assert f'data-person="c{cid}"' in log and 'data-person="w-DM"' in log
+    assert "roll-short" not in log  # no cut-off labels in the rail any more
+    page = table["player"].get("/party").text
+    assert 'class="rs-people"' in page and 'class="rs-edge"' in page

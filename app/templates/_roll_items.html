@@ -17,7 +17,7 @@
 {%- endmacro %}
 {% set D20 = ("save", "check", "attack", "death") %}
 {% for r in rolls %}
-<li class="roll-item hue{{ r.hue }}{{ ' mine' if r.mine }}{{ ' hidden-roll' if r.hidden }}{{ ' nat20' if r.nat == 20 }}{{ ' nat1' if r.nat == 1 }} kind-{{ r.kind }}" data-id="{{ r.id }}" data-seq="{{ r.seq }}"{% if r.mine %} data-mine="1"{% endif %}>
+<li class="roll-item hue{{ r.hue }}{{ ' mine' if r.mine }}{{ ' hidden-roll' if r.hidden }}{{ ' nat20' if r.nat == 20 }}{{ ' nat1' if r.nat == 1 }} kind-{{ r.kind }}" data-id="{{ r.id }}" data-seq="{{ r.seq }}" data-person="{{ 'c' ~ r.character_id if r.character_id else 'w-' ~ r.name }}"{% if r.mine %} data-mine="1"{% endif %}>
   <span class="roll-av" aria-hidden="true">{{ r.initial }}{% if r.portrait %}<img src="{{ r.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>
   <span class="roll-main">
     <span class="roll-who"><b>{{ r.name }}</b> <time datetime="{{ r.at }}" data-at="{{ r.at }}">{{ r.ago }}</time>{% if r.to == "dm" and not r.hidden %} <span class="roll-to">DM only</span>{% elif r.to == "self" %} <span class="roll-to">just you</span>{% endif %}</span>
@@ -37,7 +37,7 @@
     {% endif %}
   </span>
   {% if r.hidden %}<span class="roll-lock" role="img" aria-label="Hidden from the table"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
-  {% else %}{% set rays = r.main.parts | selectattr("kept", "defined") | list if r.main and r.main.parts else [] %}<b class="roll-total">{% if rays | length > 1 %}{{ rays | map(attribute="total") | join(" · ") }}{% else %}{{ r.total }}{% endif %}</b><span class="roll-short" aria-hidden="true">{{ r.short }}</span>{% endif %}
+  {% else %}{% set rays = r.main.parts | selectattr("kept", "defined") | list if r.main and r.main.parts else [] %}<b class="roll-total">{% if rays | length > 1 %}{{ rays | map(attribute="total") | join(" · ") }}{% else %}{{ r.total }}{% endif %}</b>{% endif %}
 </li>
 {% else %}
 <li class="roll-empty">No rolls yet. With Game Mode on, your saves, checks, attacks and the dice below roll here for the table.</li>
