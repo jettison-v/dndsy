@@ -288,8 +288,12 @@ def battle_columns(sheet: dict, starred: set[str], order: dict[str, list[str]] |
 
 
 def find(sheet: dict, ref: str) -> dict | None:
-    """The thing a star or reminder points at, wherever it lives on the sheet."""
-    for section in ("situational", "actions", "spells", "features", "inventory", "creatures", "attacks"):
+    """The thing a pin or reminder points at, wherever it lives on the sheet. A spell's key looks in
+    the spells first: a situational rule can share it (Absorb Elements' "Reaction spell: …")."""
+    order = ("situational", "actions", "spells", "features", "inventory", "creatures", "attacks")
+    if ref.startswith("spell:"):
+        order = ("spells",) + tuple(s for s in order if s != "spells")
+    for section in order:
         for x in sheet.get(section) or []:
             if x.get("key") == ref:
                 return {**x, "section": section}

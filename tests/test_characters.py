@@ -651,3 +651,11 @@ def test_a_pin_announces_itself_so_the_page_updates_without_a_refresh(player, db
     body = player.get(f"/characters/{cole.id}/battle/body").text
     assert body.startswith('<div id="battle-body"') or 'id="battle-body"' in body[:200]
     assert "Heat Metal" in body.split('data-econ-col="action"')[1].split('data-econ-col="bonus"')[0]
+
+
+def test_a_spell_key_opens_the_spell_not_a_situational_rule_with_the_same_key():
+    from app import character_views as views
+
+    sheet = {"situational": [{"key": "spell:Absorb Elements", "text": "Reaction spell: Absorb Elements"}],
+             "spells": [{"key": "spell:Absorb Elements", "name": "Absorb Elements"}]}
+    assert views.find(sheet, "spell:Absorb Elements")["section"] == "spells"
