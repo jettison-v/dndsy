@@ -29,13 +29,13 @@ from app.templating import templates
 router = APIRouter()
 
 KINDS = {
-    "combo": {"label": "Battle combo", "plural": "Battle combos", "new": "New battle combo",
+    "combo": {"label": "Battle combo", "tab": "Combos", "plural": "Battle combos", "new": "New battle combo",
               "about": "A plan that plays out over more than one turn: the setup, then the payoff."},
-    "leveling": {"label": "Leveling strategy", "plural": "Leveling strategy", "new": "New leveling plan",
+    "leveling": {"label": "Leveling strategy", "tab": "Leveling", "plural": "Leveling strategy", "new": "New leveling plan",
                  "about": "Where you're taking the character, level by level, and why."},
-    "quest": {"label": "Personal quest", "plural": "Personal quests", "new": "New personal quest",
+    "quest": {"label": "Personal quest", "tab": "Quests", "plural": "Personal quests", "new": "New personal quest",
               "about": "Something your character is after: the goal, why, who's involved and the leads."},
-    "general": {"label": "General note", "plural": "General notes", "new": "New note",
+    "general": {"label": "General note", "tab": "Notes", "plural": "General notes", "new": "New note",
                 "about": "Anything else, written however you like."},
 }
 QUEST_STATUS = {"open": "Open", "done": "Done", "abandoned": "Abandoned"}

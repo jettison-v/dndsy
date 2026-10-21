@@ -5,10 +5,10 @@
 <section class="section">
   <p class="hint" style="margin:0 0 10px">{% if can_pick %}Your plans for {{ c.entity.name }}. Every player can read your notes; the DM can't see anything here. Names of spells, features, items, Wild Shape forms, people and places become links.{% else %}{{ c.entity.name }}'s player's plans. The DM can't see these.{% endif %}</p>
   <div class="tabbar" role="tablist">
-    {% for kind, meta, notes in player_notes %}<button role="tab" aria-selected="{{ 'true' if loop.first else 'false' }}" data-tab="t-{{ kind }}">{{ meta.plural }}{% if notes %} <span class="count">{{ notes | length }}</span>{% endif %}</button>
-    {% endfor %}<button role="tab" aria-selected="false" data-tab="t-forget">Easy to forget{% if reminders %} <span class="count">{{ reminders | length }}</span>{% endif %}</button>
-    <button role="tab" aria-selected="false" data-tab="t-spell-list">Spell shortlist{% if fav_spells %} <span class="count">{{ fav_spells | length }}</span>{% endif %}</button>
-    {% if druid %}<button role="tab" aria-selected="false" data-tab="t-form-list">Wild Shape shortlist{% if fav_forms %} <span class="count">{{ fav_forms | length }}</span>{% endif %}</button>{% endif %}
+    {% for kind, meta, notes in player_notes %}<button role="tab" aria-selected="{{ 'true' if loop.first else 'false' }}" data-tab="t-{{ kind }}" title="{{ meta.plural }}">{{ meta.tab }}{% if notes %} <span class="count">{{ notes | length }}</span>{% endif %}</button>
+    {% endfor %}<button role="tab" aria-selected="false" data-tab="t-forget" title="Easy to forget">Reminders{% if reminders %} <span class="count">{{ reminders | length }}</span>{% endif %}</button>
+    <button role="tab" aria-selected="false" data-tab="t-spell-list" title="Spell shortlist">Spells{% if fav_spells %} <span class="count">{{ fav_spells | length }}</span>{% endif %}</button>
+    {% if druid %}<button role="tab" aria-selected="false" data-tab="t-form-list" title="Wild Shape shortlist">Wild Shapes{% if fav_forms %} <span class="count">{{ fav_forms | length }}</span>{% endif %}</button>{% endif %}
   </div>
 
   {% for kind, meta, notes in player_notes %}
