@@ -168,53 +168,65 @@
   // right-hand pane on desktop or a bottom sheet on phones. Cmd/Ctrl/Shift-click,
   // links marked data-no-peek and links in the panel's footer open the full page as usual.
   const ENTITY_URL = /^\/campaign\/((?:glossary\/)?\d+)$/;  // people/places, or glossary terms
-  let peek = null, lastFocus = null;
+  // Two layers: the base panel (a side panel, or a centered modal such as the Spell Book) and a
+  // top side panel that slides in from the window edge over a modal (Brett, 2026-10-21: a spell's
+  // details open beside the Spell Book, not inside it). Each layer keeps its own "← Back" history.
+  const layers = {};
+  let lastFocus = null;
 
-  function peekPanel() {
-    if (peek) return peek;
+  function peekPanel(name = 'base') {
+    if (layers[name]) return layers[name];
     const backdrop = document.createElement('div');
-    backdrop.className = 'peek-backdrop';
+    backdrop.className = 'peek-backdrop' + (name === 'top' ? ' top' : '');
     backdrop.hidden = true;
     const panel = document.createElement('aside');
-    panel.className = 'peek';
-    panel.id = 'peek';
+    panel.className = 'peek' + (name === 'top' ? ' top' : '');
+    panel.id = name === 'top' ? 'peek-top' : 'peek';
     panel.setAttribute('role', 'dialog');
     panel.setAttribute('aria-modal', 'false');
-    panel.setAttribute('aria-labelledby', 'peek-title');
     panel.hidden = true;
-    backdrop.addEventListener('click', closePeek);
+    const layer = { name, panel, backdrop, history: [], focus: null };
+    backdrop.addEventListener('click', () => closeLayer(layer));
     document.body.append(backdrop, panel);
-    peek = { panel, backdrop };
-    return peek;
+    layers[name] = layer;
+    return layer;
   }
+  const isOpen = l => l && !l.panel.hidden && l.panel.classList.contains('open');
 
-  function closePeek() {
-    if (!peek || peek.panel.hidden) return;
-    peek.panel.classList.remove('open');
-    peek.backdrop.hidden = true;
-    panelHistory = [];
-    setTimeout(() => { peek.panel.hidden = true; }, 180);
-    if (lastFocus) lastFocus.focus();
+  function closeLayer(layer) {
+    if (!layer || layer.panel.hidden) return;
+    if (layer.name === 'base') closeLayer(layers.top);
+    layer.panel.classList.remove('open');
+    layer.backdrop.hidden = true;
+    layer.history = [];
+    setTimeout(() => { if (!layer.panel.classList.contains('open')) layer.panel.hidden = true; }, 180);
+    const f = layer.name === 'top' ? layer.focus : lastFocus;
+    if (f && f.isConnected) f.focus();
   }
+  // Escape and "close" take off the topmost layer first.
+  function closePeek() { if (isOpen(layers.top)) closeLayer(layers.top); else closeLayer(layers.base); }
 
   function openPeek(id, opener) { openPanel('/campaign/' + id + '/peek', opener, '/campaign/' + id); }
 
-  // Any element with data-panel-url opens that fragment in the same side panel
-  // (Battle: "See all", an option's details). data-modal-url opens a centered modal;
-  // add data-modal-size="large" for a wide one (a Wild Shape form).
-  // Opening something from inside the panel (a row in "See all", a link in a short
-  // character view) remembers what was there, so "← Back" can return to it.
-  let panelHistory = [];
+  // Any element with data-panel-url opens that fragment in a side panel (Battle: "See all", an
+  // option's details). data-modal-url opens a centered modal; data-modal-size="large" makes it wide
+  // (a Wild Shape form, the Spell Book). A side panel opened from inside a modal goes on the top
+  // layer. Opening something from inside a panel remembers what was there, so "← Back" returns to it.
   function openPanel(url, opener, fallback, modal, back) {
-    const { panel, backdrop } = peekPanel();
-    const inside = panel.classList.contains('open') && opener && panel.contains(opener);
+    const base = layers.base;
+    const fromModal = !modal && opener && isOpen(base) && base.panel.classList.contains('modal') && base.panel.contains(opener);
+    const fromTop = opener && isOpen(layers.top) && layers.top.panel.contains(opener);
+    const layer = back ? back.layer : peekPanel(fromModal || fromTop ? 'top' : 'base');
+    const { panel, backdrop } = layer;
+    if (layer.name === 'base' && !back) closeLayer(layers.top);
+    const inside = isOpen(layer) && opener && panel.contains(opener);
     if (back) { /* returning: the history entry was already taken off */ }
     else if (inside && panel.dataset.url) {
       const title = panel.querySelector('#peek-title');
-      panelHistory.push({ url: panel.dataset.url, modal: panel.classList.contains('large') ? 'large' : panel.classList.contains('modal'), scroll: (panel.querySelector('.peek-body') || {}).scrollTop || 0,
-                          title: title ? title.textContent.trim() : '' });
-    } else panelHistory = [];
-    if (!inside && !back) lastFocus = opener;
+      layer.history.push({ url: panel.dataset.url, modal: panel.classList.contains('large') ? 'large' : panel.classList.contains('modal'), scroll: (panel.querySelector('.peek-body') || {}).scrollTop || 0,
+                           title: title ? title.textContent.trim() : '', layer });
+    } else layer.history = [];
+    if (!inside && !back) { if (layer.name === 'top') layer.focus = opener; else lastFocus = opener; }
     panel.classList.toggle('modal', !!modal);
     panel.classList.toggle('large', modal === 'large');
     backdrop.classList.toggle('dim', !!modal);
@@ -223,14 +235,16 @@
       .then(html => {
         panel.innerHTML = html;
         panel.dataset.url = url;
-        const prev = panelHistory[panelHistory.length - 1];
+        const title = panel.querySelector('#peek-title');
+        if (title) panel.setAttribute('aria-label', title.textContent.trim());
+        const prev = layer.history[layer.history.length - 1];
         if (prev) {
           const head = panel.querySelector('.peek-head > div');
           const b = document.createElement('button');
           b.type = 'button'; b.className = 'btn link peek-back';
           b.textContent = '← Back' + (prev.title ? ' to ' + prev.title : '');
           b.addEventListener('click', () => {
-            const p = panelHistory.pop();
+            const p = layer.history.pop();
             openPanel(p.url, null, null, p.modal, p);
           });
           if (head) head.prepend(b);
@@ -244,7 +258,8 @@
         if (body) body.scrollTop = back ? back.scroll : 0;
         if (window.htmx) htmx.process(panel);  // forms inside the panel (suggestions, edits)
         const close = panel.querySelector('.peek-close');
-        if (close) { close.addEventListener('click', closePeek); close.focus(); }
+        if (close) { close.addEventListener('click', () => closeLayer(layer)); close.focus(); }
+        panel.dispatchEvent(new CustomEvent('panel:loaded', { bubbles: true }));
       })
       .catch(() => { if (fallback) location.href = fallback; });
   }
@@ -1398,76 +1413,154 @@
   }
 })();
 
-// Spell Book (character_pages.spellbook_modal): effect tabs, filters and "Cast at", all in the
-// browser. Each card carries its averages per slot level (data-avgs, from app/spellbook.py), so
-// changing the slot level redraws the numbers and dims spells that need a higher slot.
+// Lists (DESIGN.md › Lists and filters; _lists.html): any [data-list] root. Chips are OR within a group
+// and AND across groups, each with a live count (greyed out at zero); a search looks through every row
+// and pauses the filters. Filters, sort and lens are remembered per list in this browser and forgotten
+// after a day without use. The Spell Book adds its "Averages at" lens on top (below).
 (function () {
-  const ORD = n => n + ({ 1: 'st', 2: 'nd', 3: 'rd' }[n] || 'th');
-  function apply(root) {
-    const st = root.dataset;
-    const slot = +st.slot || 0, effect = st.effect || 'damage', time = st.time || '', conc = st.conc || '';
-    const q = (st.q || '').toLowerCase(), ws = st.ws === '1', sort = st.sort || 'avg';
-    const counts = {};
-    const cards = [...root.querySelectorAll('[data-sb-card]')];
-    cards.forEach(card => {
-      const d = card.dataset, level = +d.level;
-      // A search looks through every tab and ignores the filters (shown as paused)
-      const passes = q ? d.name.includes(q) : (!time || d.time === time) && (!conc || d.conc === conc) && (!ws || d.ws);
-      if (passes) counts[d.effect] = (counts[d.effect] || 0) + 1;
-      card.hidden = !(passes && (q || d.effect === effect));
-      let avgs = {};
-      try { avgs = JSON.parse(d.avgs || '{}'); } catch (e) { avgs = {}; }
-      const at = level ? Math.max(level, slot) : 0, a = avgs[at];
-      const blocked = level > slot;
-      card.classList.toggle('blocked', blocked);
-      card._avg = a ? a.avg : -1;
-      const set = (sel, v) => { const el = card.querySelector(sel); if (el) el.textContent = v; };
-      if (a) { set('[data-sb-avg]', a.avg); set('[data-sb-per]', a.per); set('[data-sb-dice]', a.dice); }
-      set('[data-sb-up]', a && level && at > level ? 'upcast to ' + ORD(at) : '');
-      set('[data-sb-cost]', !level ? 'free' : blocked ? 'needs a ' + ORD(level) + ' slot' : ORD(at) + '-level slot');
-      card.querySelectorAll('[data-slot], .sb-roll').forEach(b => { if (level) b.dataset.slot = at; });
-      const lv = card.querySelector('[data-sb-level]'); if (lv) lv.value = level ? at : 0;
-    });
-    const grid = root.querySelector('.sb-cards');
-    cards.slice().sort((x, y) => sort === 'name' ? x.dataset.name.localeCompare(y.dataset.name)
-      : sort === 'level' ? (+x.dataset.level - +y.dataset.level) : (y._avg - x._avg)).forEach(c => grid.appendChild(c));
-    root.querySelectorAll('[data-sb-count]').forEach(c => { c.textContent = counts[c.dataset.sbCount] || 0; });
-    const shown = cards.filter(c => !c.hidden).length;
-    const empty = root.querySelector('[data-sb-empty]'); if (empty) empty.hidden = shown > 0;
-    const fs = root.querySelector('[data-sb-fold-sum]'); if (fs) fs.textContent = slot ? '· cast at ' + ORD(slot) : '· cantrips only';
-    const sum = root.querySelector('[data-sb-summary]');
-    if (sum) sum.textContent = shown + ' spell' + (shown === 1 ? '' : 's') + (slot ? ' · averages at a ' + ORD(slot) + '-level slot where a spell can be upcast' : ' · cantrips only');
-    const press = (sel, key, val) => root.querySelectorAll(sel).forEach(b => b.setAttribute(key, b.dataset[Object.keys(b.dataset)[0]] === val ? 'true' : 'false'));
-    press('[data-sb-effect]', 'aria-selected', q ? '-' : effect);
-    root.classList.toggle('sb-is-searching', !!q);
-    const sn = root.querySelector('[data-sb-searching]'); if (sn) sn.hidden = !q;
-    press('[data-sb-slot]', 'aria-pressed', String(slot));
-    press('[data-sb-time]', 'aria-pressed', time);
-    press('[data-sb-conc]', 'aria-pressed', conc);
+  const DAY = 864e5, KEY = r => 'askdnd:list:' + r.dataset.list;
+  const vals = (f, g) => { const v = f[g]; return Array.isArray(v) ? v : (v ? [v] : []); };
+  const fOf = row => row._f || (row._f = (() => { try { return JSON.parse(row.dataset.f || '{}'); } catch (e) { return {}; } })());
+  function load(root) {
+    let s = null;
+    try { s = JSON.parse(localStorage.getItem(KEY(root)) || 'null'); } catch (e) { s = null; }
+    if (!s || Date.now() - (s.at || 0) > DAY) s = { sel: {} };
+    let force = {};
+    try { force = JSON.parse(root.dataset.lsForce || '{}'); } catch (e) { force = {}; }
+    Object.entries(force).forEach(([g, vs]) => { s.sel[g] = [...new Set([...(s.sel[g] || []), ...vs])]; });
+    root._ls = { sel: s.sel || {}, sort: s.sort || '', lens: s.lens || '', more: !!s.more, q: '' };
+    const sort = root.querySelector('[data-ls-sort]'); if (sort && root._ls.sort) sort.value = root._ls.sort;
+    const lens = root.querySelector('[data-ls-lens]');
+    if (lens && root._ls.lens && [...lens.options].some(o => o.value === root._ls.lens)) lens.value = root._ls.lens;
+    const more = root.querySelector('[data-ls-more]'); if (more) more.open = root._ls.more;
   }
-  document.addEventListener('click', e => {
-    const root = e.target.closest('[data-spellbook]');
-    if (!root) return;
-    const search = root.querySelector('[data-sb-search]');
-    const clearSearch = () => { root.dataset.q = ''; if (search) search.value = ''; };
-    if (e.target.closest('[data-sb-clear]')) {  // filters only: the tab and Cast at stay
-      root.dataset.time = ''; root.dataset.conc = ''; root.dataset.ws = '';
-      const ws = root.querySelector('[data-sb-ws]'); if (ws) ws.checked = false;
-      clearSearch(); apply(root); return;
+  function save(root) {
+    const st = root._ls;
+    try { localStorage.setItem(KEY(root), JSON.stringify({ at: Date.now(), sel: st.sel, sort: st.sort, lens: st.lens, more: st.more })); } catch (e) { /* private window */ }
+  }
+  function apply(root) {
+    const st = root._ls, sel = st.sel, q = st.q.trim().toLowerCase();
+    const rows = [...root.querySelectorAll('[data-ls-row]')];
+    const on = Object.keys(sel).filter(g => (sel[g] || []).length);
+    const passes = (f, skip) => on.every(g => g === skip || vals(f, g).some(v => sel[g].includes(v)));
+    rows.forEach(r => { r.hidden = q ? !(r.dataset.name || '').includes(q) : !passes(fOf(r)); });
+    root.querySelectorAll('[data-ls-group]').forEach(chip => {
+      const g = chip.dataset.lsGroup, v = chip.dataset.lsValue, pressed = (sel[g] || []).includes(v);
+      const n = rows.filter(r => passes(fOf(r), g) && vals(fOf(r), g).includes(v)).length;
+      chip.setAttribute('aria-pressed', pressed ? 'true' : 'false');
+      chip.classList.toggle('zero', !n && !pressed);
+      const c = chip.querySelector('[data-ls-n]'); if (c) c.textContent = n;
+    });
+    // The active-filter row: one chip per value with ×
+    const active = root.querySelector('[data-ls-active]'), list = root.querySelector('[data-ls-active-chips]');
+    const picked = on.flatMap(g => sel[g].map(v => [g, v]));
+    if (list) list.replaceChildren(...picked.map(([g, v]) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'ls-chip on'; b.dataset.lsRemove = g + '\u0000' + v;
+      b.setAttribute('aria-label', 'Remove filter ' + v); b.textContent = v + ' ×';
+      return b;
+    }));
+    if (active) active.hidden = !picked.length || !!q;
+    const moreOn = root.querySelector('[data-ls-more-on]');
+    if (moreOn) {
+      const n = [...root.querySelectorAll('[data-ls-more] [data-ls-group][aria-pressed="true"]')].length;
+      moreOn.textContent = n ? '(' + n + ' on)' : '';
     }
-    if (e.target.closest('[data-sb-clear-search]')) { clearSearch(); apply(root); if (search) search.focus(); return; }
-    const b = e.target.closest('[data-sb-effect], [data-sb-slot], [data-sb-time], [data-sb-conc]');
-    if (!b) return;
-    const k = Object.keys(b.dataset).find(x => x.startsWith('sb'));
-    const field = { sbEffect: 'effect', sbSlot: 'slot', sbTime: 'time', sbConc: 'conc' }[k];
-    if (field === 'effect') clearSearch();  // picking a tab ends a search
-    // Casting time and Concentration: click a selected filter again to turn it off
-    root.dataset[field] = (field === 'time' || field === 'conc') && root.dataset[field] === b.dataset[k] ? '' : b.dataset[k];
-    apply(root);
+    const fc = root.querySelector('[data-ls-fold-count]'); if (fc) { fc.textContent = picked.length; fc.hidden = !picked.length; }
+    // Sort, with group headings when sorted by level
+    const box = root.querySelector('[data-ls-rows]'), sort = st.sort || 'level';
+    root.dispatchEvent(new CustomEvent('list:before-sort', { bubbles: true, detail: { rows } }));
+    const name = r => r.dataset.name || '';
+    const sorted = rows.slice().sort((a, b) => sort === 'name' ? name(a).localeCompare(name(b))
+      : sort === 'avg' ? ((+b.dataset.sortAvg || -1) - (+a.dataset.sortAvg || -1)) || name(a).localeCompare(name(b))
+      : (+a.dataset.level - +b.dataset.level) || name(a).localeCompare(name(b)));
+    box.querySelectorAll('.ls-grouphead').forEach(h => h.remove());
+    let last = null;
+    sorted.forEach(r => {
+      if (sort === 'level' && !r.hidden && r.dataset.groupLabel !== last) {
+        last = r.dataset.groupLabel;
+        const h = document.createElement('div');
+        h.className = 'ls-grouphead';
+        h.textContent = last;
+        box.appendChild(h);
+      }
+      box.appendChild(r);
+    });
+    const shown = rows.filter(r => !r.hidden).length, noun = root.dataset.noun || 'item';
+    const sum = root.querySelector('[data-ls-summary]'); if (sum) sum.textContent = shown + ' ' + noun + (shown === 1 ? '' : 's');
+    const empty = root.querySelector('[data-ls-empty]'); if (empty) empty.hidden = shown > 0;
+    root.classList.toggle('ls-is-searching', !!q);
+    const sn = root.querySelector('[data-ls-searching]'); if (sn) sn.hidden = !q;
+    save(root);
+  }
+  window.askdndList = { apply };
+  const rootOf = el => el.closest && el.closest('[data-list]');
+  document.addEventListener('click', e => {
+    const root = rootOf(e.target); if (!root || !root._ls) return;
+    const st = root._ls, search = root.querySelector('[data-ls-search]');
+    const clearSearch = () => { st.q = ''; if (search) search.value = ''; };
+    if (e.target.closest('[data-ls-clear]')) { st.sel = {}; clearSearch(); apply(root); return; }
+    if (e.target.closest('[data-ls-clear-search]')) { clearSearch(); apply(root); if (search) search.focus(); return; }
+    const rm = e.target.closest('[data-ls-remove]');
+    if (rm) { const [g, v] = rm.dataset.lsRemove.split('\u0000'); st.sel[g] = (st.sel[g] || []).filter(x => x !== v); apply(root); return; }
+    const chip = e.target.closest('[data-ls-group]');
+    if (chip) {
+      const g = chip.dataset.lsGroup, v = chip.dataset.lsValue, cur = st.sel[g] || [];
+      st.sel[g] = cur.includes(v) ? cur.filter(x => x !== v) : [...cur, v];
+      apply(root);
+    }
   });
   document.addEventListener('input', e => {
-    const root = e.target.closest('[data-spellbook]');
-    if (root && e.target.matches('[data-sb-search]')) { root.dataset.q = e.target.value; apply(root); }
+    const root = rootOf(e.target);
+    if (root && root._ls && e.target.matches('[data-ls-search]')) { root._ls.q = e.target.value; apply(root); }
+  });
+  document.addEventListener('change', e => {
+    const root = rootOf(e.target); if (!root || !root._ls) return;
+    if (e.target.matches('[data-ls-sort]')) { root._ls.sort = e.target.value; apply(root); }
+    if (e.target.matches('[data-ls-lens]')) { root._ls.lens = e.target.value; apply(root); }
+  });
+  document.addEventListener('toggle', e => {
+    const root = rootOf(e.target);
+    if (root && root._ls && e.target.matches('[data-ls-more]')) { root._ls.more = e.target.open; save(root); }
+  }, true);
+  // Lists can arrive later (a modal): set each one up when it appears
+  function init() {
+    document.querySelectorAll('[data-list]:not([data-ls-ready])').forEach(root => {
+      root.dataset.lsReady = '1';
+      const fold = root.querySelector('[data-ls-fold]'); if (fold && !matchMedia('(max-width: 700px)').matches) fold.open = true;
+      load(root);
+      apply(root);
+    });
+  }
+  new MutationObserver(init).observe(document.body, { childList: true, subtree: true });
+  init();
+})();
+
+// Spell Book: the "Averages at" lens. Each row carries its averages per slot level (data-avgs, from
+// app/spellbook.py); before the list sorts, redraw the numbers, the upcast rolls and the
+// Concentrate level for the chosen slot (a spell below its own level stays at its own level).
+(function () {
+  const ORD = n => n + ({ 1: 'st', 2: 'nd', 3: 'rd' }[n] || 'th');
+  document.addEventListener('list:before-sort', e => {
+    const root = e.target; if (!root.matches('[data-spellbook]')) return;
+    const lens = +(root._ls.lens || 0);
+    e.detail.rows.forEach(row => {
+      const level = +row.dataset.level;
+      let avgs = {};
+      try { avgs = JSON.parse(row.dataset.avgs || '{}'); } catch (err) { avgs = {}; }
+      const at = level ? Math.max(level, lens || level) : 0, a = avgs[at];
+      row.dataset.sortAvg = a ? a.avg : '';
+      const set = (sel, v) => { const el = row.querySelector(sel); if (el) el.textContent = v; };
+      if (a) {
+        set('[data-sb-avg]', a.avg);
+        set('[data-sb-dice]', a.dice + (level && at > level ? ' · at ' + ORD(at) : ''));
+        set('[data-sb-half]', ' · ' + Math.floor(a.avg / 2) + ' on a save');
+      }
+      row.querySelectorAll('.sb-roll').forEach(b => { if (level) b.dataset.slot = at; });
+      const lv = row.querySelector('[data-sb-level]'); if (lv) lv.value = level ? at : 0;
+    });
+  });
+  document.addEventListener('input', e => {
     // Concentration save: the DC from the damage just taken (10, or half the damage if higher; up to 30)
     if (e.target.matches('[data-conc-dmg]')) {
       const box = e.target.closest('.conc-box'), dc = Math.min(30, Math.max(10, Math.floor((+e.target.value || 0) / 2)));
@@ -1475,24 +1568,9 @@
       const btn = box.querySelector('[data-conc-roll]'); if (btn) btn.dataset.note = 'DC ' + dc;
     }
   });
-  document.addEventListener('change', e => {
-    const root = e.target.closest('[data-spellbook]');
-    if (!root) return;
-    if (e.target.matches('[data-sb-ws]')) { root.dataset.ws = e.target.checked ? '1' : ''; apply(root); }
-    if (e.target.matches('[data-sb-sort]')) { root.dataset.sort = e.target.value; apply(root); }
-  });
   // Keep it (End Concentration?): close the little pop-up without doing anything
   document.addEventListener('click', e => {
     const k = e.target.closest('[data-close-details]');
     if (k) { const d = k.closest('details'); if (d) d.open = false; }
   });
-  // The Spell Book arrives in the modal after load: set it up when it appears
-  new MutationObserver(() => document.querySelectorAll('[data-spellbook]:not([data-ready])').forEach(root => {
-    root.dataset.ready = '1';
-    const fold = root.querySelector('[data-sb-fold]'); if (fold && !matchMedia('(max-width: 700px)').matches) fold.open = true;
-    const ws = root.querySelector('[data-sb-ws]'); if (ws && ws.checked) root.dataset.ws = '1';
-    const first = [...root.querySelectorAll('[data-sb-count]')].find(c => +c.textContent > 0);
-    root.dataset.effect = first ? first.dataset.sbCount : 'damage';
-    apply(root);
-  })).observe(document.body, { childList: true, subtree: true });
 })();

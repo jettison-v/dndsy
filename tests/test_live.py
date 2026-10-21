@@ -48,9 +48,10 @@ def test_character_switcher_keeps_the_mode(player, db):
     menu = lambda path: player.get(path).text.split('id="char-menu"')[1].split("</div>")[0]  # noqa: E731
     assert f'href="/characters/{trah.id}/plan"' in menu(f"/characters/{cole.id}/plan")
     assert f'href="/characters/{trah.id}"' in menu(f"/characters/{cole.id}")
-    assert f'href="/characters/{trah.id}/battle"' in menu("/party")  # from elsewhere it opens Play
+    assert f'href="/characters/{trah.id}/battle"' in menu("/party")  # from elsewhere it opens Battle
     bar = player.get("/party").text.split('class="topbar"')[1].split("</header>")[0]
-    assert re.search(r">\s*Cole ▾", bar)  # your character, named in the menu bar
+    assert f'href="/characters/{cole.id}/battle" class="switcher-name">Cole</a>' in bar  # one click opens your character
+    assert 'aria-label="Switch character"' in bar  # the ▾ switches
     for label in ("Recap", "Sessions", "Campaign", "Map", "Party"):
         assert f">{label}</a>" in bar
     assert ">Battle</a>" not in bar and ">Previously on…</a>" not in bar

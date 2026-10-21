@@ -1,0 +1,40 @@
+{# Shared list pieces (DESIGN.md › Lists and filters; app.js "Lists"). A list is a [data-list] root holding
+   the filter column, the search box, the active-filter row and [data-ls-row] rows. Each row carries its
+   filter values as data-f (JSON: group key -> value, or a list of values). #}
+
+{# The left filter column: the main groups, then More filters. On phones it folds into "Filters (N)". #}
+{% macro filter_column(groups) -%}
+{%- set more = groups | selectattr("more") | list -%}
+<details class="ls-fold" data-ls-fold>
+  <summary>Filters <span class="count" data-ls-fold-count hidden></span></summary>
+  <aside class="ls-filters" aria-label="Filters">
+    <div class="ls-filters-head"><h3 class="ls-h">Filters</h3><span class="ls-rule" aria-hidden="true"></span><button type="button" class="btn link small ls-clear" data-ls-clear>Clear all</button></div>
+    {% for g in groups if not g.more %}{{ chip_group(g) }}{% endfor %}
+    {% if more %}<details class="ls-more" data-ls-more>
+      <summary>More filters <span class="note" data-ls-more-on></span></summary>
+      <div class="ls-more-body">{% for g in more %}{{ chip_group(g) }}{% endfor %}</div>
+    </details>{% endif %}
+  </aside>
+</details>
+{%- endmacro %}
+
+{# One group of chips: OR within the group, AND across groups; a second click turns a chip off. #}
+{% macro chip_group(g) -%}
+<div class="ls-group" role="group" aria-label="{{ g.label }}"><span class="ls-label">{{ g.label }}</span>
+  <span class="ls-chips">{% for v in g["values"] %}<button type="button" class="ls-chip" data-ls-group="{{ g.key }}" data-ls-value="{{ v }}" aria-pressed="false">{{ v }} <span class="ls-n" data-ls-n></span></button>{% endfor %}</span>
+</div>
+{%- endmacro %}
+
+{# Search: it looks through everything and pauses the filters, and says so. #}
+{% macro search_box(placeholder) -%}
+<div class="ls-search">
+  <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  <input type="search" placeholder="{{ placeholder }}" aria-label="{{ placeholder }}" data-ls-search>
+</div>
+<p class="ls-searching" data-ls-searching hidden>Searching everything: the filters are paused until you clear the search. <button type="button" class="btn link small" data-ls-clear-search>Clear search</button></p>
+{%- endmacro %}
+
+{# What's filtered right now, each with ×, and Clear all. #}
+{% macro active_row() -%}
+<div class="ls-active" data-ls-active hidden><span class="note">Showing only:</span> <span class="ls-active-chips" data-ls-active-chips></span> <button type="button" class="btn link small" data-ls-clear>Clear all</button></div>
+{%- endmacro %}

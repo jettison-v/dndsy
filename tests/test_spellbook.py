@@ -80,3 +80,23 @@ def test_spell_bar_shows_the_four_most_recently_used_starred_spells(db, cole, pl
     shown = [n for n in names if f">{n}</button>" in bar]
     assert len(shown) == 4 and bar.index(">Starry Wisp<") < bar.index(">Thorn Whip<") < bar.index(">Cure Wounds<")
     assert ">+2</button>" in bar  # the other two are in the Spell Book
+
+
+def test_filter_values_say_what_a_successful_save_does():
+    by = {e["name"]: e for e in sb.entries(cole_sheet(level=6))}
+    assert by["Moonbeam"]["f"]["on_save"] == "Half damage" and by["Moonbeam"]["f"]["area"] == "Area"
+    assert by["Moonbeam"]["f"]["roll"] == "Con save" and by["Moonbeam"]["f"]["dmg"] == ["Radiant"]
+    assert by["Starry Wisp"]["f"]["roll"] == "Attack roll" and by["Starry Wisp"]["f"]["on_save"] == ""
+    groups = sb.filter_groups(list(by.values()))
+    assert [g["key"] for g in groups if not g.get("more")] == ["level", "effect", "time", "conc"]  # always visible
+    assert all(g["values"] for g in groups if g.get("more"))  # More filters only list values that occur
+
+
+def test_spell_book_uses_the_shared_list_with_notes(db, cole, player):
+    from app import picks
+
+    picks.set_note(db, cole, "spell:Moonbeam", "Opener vs. groups")
+    book = player.get(f"/characters/{cole.id}/spellbook").text
+    assert 'data-list="spellbook"' in book and 'data-ls-group="level"' in book and "More filters" in book
+    assert "✎ Opener vs. groups" in book and "Half on a save" in book
+    assert 'data-panel-url="/characters/%d/detail?ref=spell%%3AMoonbeam"' % cole.id in book  # a row opens its side panel

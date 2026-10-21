@@ -163,11 +163,90 @@ def entries(sheet: dict, castable_in_form: set[str] | None = None) -> list[dict]
             "ws": bool(castable_in_form and sp["name"] in castable_in_form),
             "rounds": rounds(sp.get("duration") or ""),
         })
+        out[-1] |= _facts(out[-1], _main_event(out[-1]["recipe"]))
+        out[-1]["f"] = facets(out[-1])
     return sorted(out, key=lambda e: (e["level"], e["name"]))
 
 
-def counts(items: list[dict]) -> dict[str, int]:
-    return {k: sum(1 for e in items if e["effect"] == k) for k, _ in EFFECTS}
+# What a successful save does to the damage, from the audited recipe: half, none, or the damage
+# needs no save at all (Heat Metal: the save only decides whether you keep holding the object).
+ON_SAVE = {"half": "Half damage", "none": "No damage", "lands": "Damage needs no save"}
+AREA = re.compile(r"\b(cube|sphere|cone|line|cylinder|emanation|radius|square|wall)\b", re.I)
+
+
+def _facts(e: dict, ev: dict | None) -> dict:
+    on_save = None
+    if e["save"] and ev and ev.get("on") == "save" and ev.get("success") in ("half", "none"):
+        on_save = ev["success"]
+    elif e["save"] and ev and ev.get("on") == "auto":
+        on_save = "lands"
+    types = []
+    for part in (ev or {}).get("parts") or [] if (ev or {}).get("on") in ("hit", "save", "auto") else []:
+        m = PART.match(part.strip())
+        if m and m.group(5):
+            types += [t.strip().capitalize() for t in m.group(5).split(" or ") if t.strip()]
+    return {"on_save": on_save, "dmg_types": list(dict.fromkeys(types)), "area": bool(AREA.search(e["range"]))}
+
+
+def _range_bucket(rng: str) -> str:
+    low = rng.lower()
+    if low.startswith(("self", "touch")):
+        return "Self or touch"
+    m = re.match(r"(\d+)\s*(ft|feet|mile)", low)
+    if not m:
+        return "Other"
+    feet = int(m.group(1)) * (5280 if m.group(2) == "mile" else 1)
+    return "Up to 30 ft" if feet <= 30 else "60 ft" if feet <= 60 else "90 ft or more"
+
+
+def facets(e: dict) -> dict:
+    """The filter values one spell has, by filter group (a list where a spell can have several)."""
+    roll = "Attack roll" if e["attack"] else (e["save"].split()[0] + " save") if e["save"] else "No roll"
+    return {
+        "level": "Cantrip" if not e["level"] else ordinal(e["level"]),
+        "effect": dict(EFFECTS)[e["effect"]],
+        "time": {"Action": "Action", "Bonus action": "Bonus", "Reaction": "Reaction"}.get(e["time"], "Longer"),
+        "conc": "Conc." if e["conc"] else "No Conc.",
+        "ws": "Castable in a form" if e["ws"] else "",
+        "ritual": "Ritual" if e["ritual"] else "Not a ritual",
+        "roll": roll,
+        "on_save": ON_SAVE.get(e["on_save"] or "", ""),
+        "area": "Area" if e["area"] else "No area",
+        "dmg": e["dmg_types"],
+        "range": _range_bucket(e["range"]),
+    }
+
+
+def filter_groups(items: list[dict], wild_shape: bool = False) -> list[dict]:
+    """Filter groups for the Spell Book (DESIGN.md › Lists and filters): the first four always show,
+    the rest are under More filters. Values in a fixed order; the More groups list only values
+    that occur, and the main groups keep every value (greyed out when nothing matches)."""
+    def present(key):
+        seen = []
+        for e in items:
+            for v in (e["f"][key] if isinstance(e["f"][key], list) else [e["f"][key]]):
+                if v and v not in seen:
+                    seen.append(v)
+        return seen
+    levels = sorted({e["level"] for e in items})
+    rolls = ["Attack roll"] + [f"{a} save" for a in ("Str", "Dex", "Con", "Int", "Wis", "Cha")] + ["No roll"]
+    groups = [
+        {"key": "level", "label": "Level", "values": ["Cantrip" if not n else ordinal(n) for n in levels]},
+        {"key": "effect", "label": "Effect", "values": [label for _, label in EFFECTS]},
+        {"key": "time", "label": "Casting time", "values": ["Action", "Bonus", "Reaction", "Longer"]},
+        {"key": "conc", "label": "Concentration", "values": ["Conc.", "No Conc."]},
+    ]
+    if wild_shape:
+        groups.append({"key": "ws", "label": "Wild Shape", "values": ["Castable in a form"]})
+    more = [
+        {"key": "ritual", "label": "Ritual", "values": [v for v in ("Ritual", "Not a ritual") if v in present("ritual")]},
+        {"key": "roll", "label": "Attack or save", "values": [v for v in rolls if v in present("roll")]},
+        {"key": "on_save", "label": "On a successful save", "values": [v for v in ON_SAVE.values() if v in present("on_save")]},
+        {"key": "area", "label": "Area", "values": [v for v in ("Area", "No area") if v in present("area")]},
+        {"key": "dmg", "label": "Damage type", "values": sorted(present("dmg"))},
+        {"key": "range", "label": "Range", "values": [v for v in ("Self or touch", "Up to 30 ft", "60 ft", "90 ft or more", "Other") if v in present("range")]},
+    ]
+    return groups + [{**g, "more": True} for g in more if g["values"]]
 
 
 # ------------------------------------------------------------------ concentration

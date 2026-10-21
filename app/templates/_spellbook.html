@@ -1,6 +1,9 @@
-{# Large modal: the Spell Book (character_pages.spellbook_modal, app/spellbook.py). Grouped by effect,
-   with filters on the left; "Cast at" recalculates every average for upcasting (app.js "Spell Book"). #}
-{% from "_char.html" import pips, spell_roll %}
+{# Large modal: the Spell Book (character_pages.spellbook_modal, app/spellbook.py). The shared list pattern
+   (_lists.html, DESIGN.md › Lists and filters): Prepared spells only, filters on the left, compact rows.
+   A row opens its side panel from the window edge; "Averages at" redraws the numbers for upcasting. #}
+{% from "_char.html" import spell_roll, pin_icon %}
+{% from "_lists.html" import filter_column, search_box, active_row %}
+{% set ON_SAVE = {"half": ("Half on a save", "half"), "none": ("Nothing on a save", "none"), "lands": ("Damage needs no save", "lands")} %}
 <div class="peek-head sb-head">
   <div class="fm-title">
     <div class="note">{{ c.entity.name }}{% if sc.save_dc %} · {{ sc.class }} spells · DC {{ sc.save_dc }} · {{ sc.attack }} to hit{% endif %}</div>
@@ -9,61 +12,52 @@
   {% if conc %}<span class="note sb-conc">Concentrating on <b>{{ conc.spell }}</b>: a new Concentration spell ends it.</span>{% endif %}
   <div class="fm-actions"><button class="btn link peek-close" type="button" aria-label="Close">✕</button></div>
 </div>
-<div class="peek-body spellbook" data-spellbook data-slot="{{ default_slot }}">
-  <div class="sb-tabs" role="tablist" aria-label="Effect">
-    {% for k, label in effects %}<button type="button" role="tab" data-sb-effect="{{ k }}" aria-selected="{{ 'true' if loop.first else 'false' }}">{{ label }} <span class="count" data-sb-count="{{ k }}">{{ counts[k] }}</span></button>{% endfor %}
-  </div>
-  <div class="sb-layout">
-    <details class="sb-fold" data-sb-fold>
-    <summary>Filters <span class="note" data-sb-fold-sum></span></summary>
-    <aside class="sb-filters" aria-label="Filters">
-      <div class="sb-filters-head"><span class="sb-label">Filters</span><button type="button" class="btn link small" data-sb-clear>Clear filters</button></div>
-      <div class="sb-group"><span class="sb-label">Cast at <span class="note">(averages follow)</span></span>
-        <button type="button" class="sb-slotbtn" data-sb-slot="0" aria-pressed="{{ 'true' if default_slot == 0 else 'false' }}">Cantrips only</button>
-        {% for s in slots %}<button type="button" class="sb-slotbtn" data-sb-slot="{{ s.level }}" aria-pressed="{{ 'true' if s.level == default_slot else 'false' }}"><span>{{ "Pact " if s.pact }}{{ s.level }}{{ {1: "st", 2: "nd", 3: "rd"}.get(s.level, "th") }} level</span>{{ pips({"left": s.left, "max": s.max}) }}</button>{% endfor %}
+<div class="peek-body spellbook" data-list="spellbook" data-noun="spell"{% if in_form %} data-ls-force='{{ {"ws": ["Castable in a form"]} | tojson }}'{% endif %} data-spellbook>
+  <div class="ls-layout">
+    {{ filter_column(groups) }}
+    <div class="ls-main">
+      {{ search_box("Search your prepared spells") }}
+      {{ active_row() }}
+      <div class="ls-toolbar">
+        <span class="note" data-ls-summary></span>
+        <label class="ls-select"><span>Averages at</span>
+          <select data-ls-lens aria-label="Averages at">
+            <option value="0">Each spell's own level</option>
+            {% for s in slots %}<option value="{{ s.level }}">{{ "Pact " if s.pact }}{{ s.level | ordinal }}-level slot ({{ s.left }} of {{ s.max }} left)</option>{% endfor %}
+          </select></label>
+        <label class="ls-select"><span>Sort</span>
+          <select data-ls-sort aria-label="Sort">
+            <option value="level">Level, then name</option><option value="name">Name</option><option value="avg">Highest average</option>
+          </select></label>
       </div>
-      <div class="sb-group"><span class="sb-label">Casting time</span>
-        <span class="sb-chips">{% for k, l in [("Action", "Action"), ("Bonus action", "Bonus"), ("Reaction", "Reaction"), ("other", "Longer")] %}<button type="button" class="chip" data-sb-time="{{ k }}" aria-pressed="false">{{ l }}</button>{% endfor %}</span></div>
-      <div class="sb-group"><span class="sb-label">Concentration</span>
-        <span class="sb-chips">{% for k, l in [("no", "Not Conc."), ("yes", "Conc. only")] %}<button type="button" class="chip" data-sb-conc="{{ k }}" aria-pressed="false">{{ l }}</button>{% endfor %}</span></div>
-      {% if druid and druid.moon_spells %}<label class="sb-check"><input type="checkbox" data-sb-ws{{ ' checked' if in_form }}> Castable in Wild Shape</label>{% endif %}
-      <label class="field"><span>Sort</span><select data-sb-sort><option value="avg">Average (high first)</option><option value="level">Spell level</option><option value="name">Name</option></select></label>
-    </aside>
-    </details>
-    <div class="sb-main">
-      <div class="sb-search">
-        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        <input type="search" placeholder="Search all your spells" aria-label="Search all your spells" data-sb-search>
-      </div>
-      <p class="sb-searching" data-sb-searching hidden>Searching every tab: tabs and filters are paused until you clear the search. <button type="button" class="btn link small" data-sb-clear-search>Clear search</button></p>
-      <p class="note sb-summary" data-sb-summary></p>
-      <div class="sb-cards">
-        {% for e in spells %}
-        <article class="sb-card" data-sb-card data-effect="{{ e.effect }}" data-time="{{ e.time if e.time in ('Action', 'Bonus action', 'Reaction') else 'other' }}"
-          data-conc="{{ 'yes' if e.conc else 'no' }}" data-ws="{{ '1' if e.ws else '' }}" data-level="{{ e.level }}" data-name="{{ e.name | lower }}"
-          data-avgs='{{ e.avgs | tojson }}'>
-          <div class="sb-top"><b class="sb-name">{{ e.name }}</b><span class="tag sb-eff">{{ dict(effects)[e.effect] }}</span><span class="note">{{ e.level_label }}{% if e.conc %} · Conc.{% endif %}{% if e.ritual %} · Ritual{% endif %}{% if conc and conc.key == e.key %} · <span class="sb-active">active</span>{% endif %}</span></div>
-          <div class="sb-avg"><b data-sb-avg>—</b> <span class="note" data-sb-per></span></div>
-          <div class="sb-dice"><span data-sb-dice>{% if e.attack %}{{ e.attack }} to hit{% elif e.save %}{{ e.save }} save{% endif %}</span> <span class="sb-up" data-sb-up></span></div>
-          <div class="note sb-line">{{ e.time }}{% if e.range %} · {{ e.range }}{% endif %}{% if e.duration %} · {{ e.duration }}{% endif %}</div>
-          {% if e.summary %}<details class="sb-more"><summary>What it does</summary><p>{{ e.summary }}</p></details>{% endif %}
-          <div class="sb-foot">
-            <span class="note" data-sb-cost>{{ "free" if not e.level else "" }}</span>
-            <span class="sb-actions">
-              {% if e.recipe %}{{ spell_roll(c, e, (e.attack if e.attack else "Roll"), "btn small sb-roll", 0) }}{% endif %}
-              {% if e.conc and can_pick and not (conc and conc.key == e.key) %}
-              <form class="inline" hx-post="/characters/{{ c.id }}/concentration" hx-target="#battle-body" hx-swap="outerHTML">
-                <input type="hidden" name="key" value="{{ e.key }}"><input type="hidden" name="level" value="{{ e.level }}" data-sb-level>
-                <button class="btn small primary" title="Track Concentration on {{ e.name }} (spend the slot on D&amp;D Beyond)">Concentrate</button>
-              </form>
-              {% endif %}
-            </span>
-          </div>
-        </article>
+      <div class="ls-head sb-grid" aria-hidden="true"><span></span><span>Spell</span><span>Time</span><span>Range</span><span>Roll</span><span>Average</span><span></span></div>
+      <div class="ls-rows" data-ls-rows>
+        {% for e in spells %}{% set note = picks.notes.get(e.key) if show_picks else "" %}
+        <div class="ls-row sb-grid" data-ls-row data-f='{{ e.f | tojson }}' data-name="{{ e.name | lower }}" data-level="{{ e.level }}"
+          data-group-label="{{ 'Cantrips' if not e.level else (e.level | ordinal) ~ ' level' }}" data-avgs='{{ e.avgs | tojson }}'
+          data-panel-url="/characters/{{ c.id }}/detail?ref={{ e.key | urlencode }}" tabindex="0" role="button" aria-label="{{ e.name }}: details">
+          <span class="ls-pk">{% if show_picks and e.key in picks.star %}<span class="pick star on static" title="Pinned to Battle">{{ pin_icon() }}</span>{% endif %}</span>
+          <span class="ls-name"><span class="ls-line"><b>{{ e.name }}</b>{% if e.conc %} <span class="tag">Conc.</span>{% endif %}{% if e.ritual %} <span class="tag">Ritual</span>{% endif %}{% if conc and conc.key == e.key %} <span class="tag draft">Concentrating</span>{% endif %}</span>
+            {% if note %}<span class="ls-note" title="{{ note }}">✎ {{ note }}</span>{% endif %}</span>
+          <span class="sb-time">{{ {"Bonus action": "Bonus"}.get(e.time, e.time) }}</span>
+          <span class="sb-range note">{{ e.range or "—" }}</span>
+          <span class="sb-roll-col">{% if e.attack %}{{ e.attack }} to hit{% elif e.save %}{{ e.save }}{% else %}<span class="note">—</span>{% endif %}
+            {% if e.on_save %}<span class="sb-onsave {{ ON_SAVE[e.on_save][1] }}">{{ ON_SAVE[e.on_save][0] }}</span>{% endif %}</span>
+          <span class="sb-avg-col">{% if e.avgs %}<b data-sb-avg>—</b> <span class="note" data-sb-dice></span>{% if e.on_save == "half" %}<span class="note sb-half" data-sb-half></span>{% endif %}{% else %}<span class="note">—</span>{% endif %}</span>
+          <span class="sb-actions">
+            {% if e.recipe %}{{ spell_roll(c, e, ("Roll " ~ e.attack if e.attack else "Roll"), "btn small sb-roll", 0) }}{% endif %}
+            {% if e.conc and can_pick and not (conc and conc.key == e.key) %}
+            <form class="inline" hx-post="/characters/{{ c.id }}/concentration" hx-target="#battle-body" hx-swap="outerHTML">
+              <input type="hidden" name="key" value="{{ e.key }}"><input type="hidden" name="level" value="{{ e.level }}" data-sb-level>
+              <button class="btn small" title="Track Concentration on {{ e.name }} (spend the slot on D&amp;D Beyond)">Concentrate</button>
+            </form>
+            {% endif %}
+          </span>
+        </div>
         {% endfor %}
       </div>
-      <p class="note sb-empty" data-sb-empty hidden>No spells match. <button type="button" class="btn link small" data-sb-clear>Clear filters</button></p>
-      <p class="note sb-foot-note">Averages are the dice's average at the slot level you pick (cantrips by your level). Spend slots on D&amp;D Beyond; askdnd reads them on the next refresh.</p>
+      <p class="note ls-empty" data-ls-empty hidden>No spells match. <button type="button" class="btn link small" data-ls-clear>Clear all</button></p>
+      <p class="note sb-foot-note">Click a spell for everything about it: its full text, your note, and Pin, Shortlist and Remind me. Averages are the dice's average (cantrips at your level). Spend slots on D&amp;D Beyond; askdnd reads them on the next refresh.</p>
     </div>
   </div>
 </div>

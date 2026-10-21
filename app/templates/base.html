@@ -31,7 +31,10 @@
   <span class="nav-sep" aria-hidden="true"></span>
   <nav class="nav table-nav" aria-label="Your table">
     <div class="switcher">
-      <button type="button" class="{{ 'active' if tn.here }}" data-menu="char-menu" aria-haspopup="true" aria-controls="char-menu">{{ me.name if me else "Characters" }} ▾</button>
+      {# One click on the name opens that character; the ▾ switches characters (Brett, 2026-10-21) #}
+      {% if me %}<a href="/characters/{{ me.id }}{{ tn.suffix }}" class="switcher-name{{ ' active' if tn.here }}">{{ me.name }}</a>
+      <button type="button" class="switcher-caret{{ ' active' if tn.here }}" data-menu="char-menu" aria-haspopup="true" aria-controls="char-menu" aria-label="Switch character" title="Switch character">▾</button>
+      {% else %}<button type="button" data-menu="char-menu" aria-haspopup="true" aria-controls="char-menu">Characters ▾</button>{% endif %}
       <div class="menu" id="char-menu" hidden>
         {% for r in tn.characters %}<a href="/characters/{{ r.id }}{{ tn.suffix }}" class="{{ 'active' if tn.here and r.id == tn.here.id }}">{{ r.name }}{% if r.mine %}<small>Your character</small>{% endif %}</a>{% endfor %}
         {% if not tn.characters %}<a href="/party">No characters yet<small>Party</small></a>{% endif %}

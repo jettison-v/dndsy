@@ -471,20 +471,18 @@ def set_wild_shape(request: Request, character_id: int, form: str = Form(""), db
 
 @router.get("/characters/{character_id:int}/spellbook")
 def spellbook_modal(request: Request, character_id: int, db: Session = Depends(get_db)):
-    """The Spell Book (a large modal from Battle's spell bar): every spell the character can cast,
-    grouped by effect, with averages at each slot level and filters."""
+    """The Spell Book (a large modal from Battle's spell bar): every spell the character can cast now,
+    on the shared list pattern (filters, search, sort), with averages at each slot level."""
     user, ch, stop = _load(request, db, character_id)
     if stop:
         return stop
     ctx = _view(db, ch, user)
     sheet = ctx["sheet"] or {}
     spells = sb.entries(sheet, _castable_in_form(ctx))
-    slots = sb.slot_levels(sheet)
-    default = next((s["level"] for s in reversed(slots) if s["left"]), slots[-1]["level"] if slots else 0)
+    moon = bool(ctx["druid"] and ctx["druid"].get("moon_spells"))
     return templates.TemplateResponse(request, "_spellbook.html", {
-        **ctx, "spells": spells, "slots": slots, "default_slot": default, "effects": sb.EFFECTS, "counts": sb.counts(spells),
-        "in_form": bool(ch.wild_shape and ctx["druid"]), "sc": (sheet.get("spellcasting") or [{}])[0],
-        "conc": ch.concentration})
+        **ctx, "spells": spells, "slots": sb.slot_levels(sheet), "groups": sb.filter_groups(spells, wild_shape=moon),
+        "in_form": bool(ch.wild_shape and moon), "sc": (sheet.get("spellcasting") or [{}])[0], "conc": ch.concentration})
 
 
 def _concentration_reply(request: Request, db: Session, ch: Character, user: dict, toast: str):
