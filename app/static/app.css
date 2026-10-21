@@ -441,7 +441,9 @@ details.opt > summary b:hover { text-decoration: underline; text-decoration-colo
 .opt-text { white-space: pre-line; color: var(--muted); font-size: .94rem; padding: 0 0 14px 30px; }
 .opt-text p { white-space: normal; margin: 8px 0 0; }
 .pick { background: none; border: none; padding: 0 2px; min-height: 0; color: var(--faint); line-height: 1.2; }
-.pick.star { font-size: 1.1rem; } .pick.star.on { color: var(--amber); }
+.pick .ico-pin, .pick .ico-bookmark { display: inline-block; vertical-align: -3px; } .pick .ico-pin path, .pick .ico-bookmark path { fill: none; }
+.pick.on .ico-pin path, .pick.on .ico-bookmark path { fill: currentColor; }  /* pin (kind star) and bookmark (shortlist) */
+.pick.star.on { color: var(--amber); }
 .pick.static { cursor: default; }
 .pick.remind { font-size: .75rem; border: 1px solid var(--line); border-radius: 999px; padding: 1px 9px; color: var(--muted); white-space: nowrap; }
 .pick.remind.on { border-color: #b9a3e3; color: #b9a3e3; background: rgba(185, 163, 227, .15); }
@@ -536,7 +538,7 @@ details.opt .meta, .move .meta, .situ .meta, .poolrow .meta { margin-top: 2px; }
 .planner-note { margin: 4px 0 6px; }
 .planner-class-title { font-size: 1.15rem !important; }
 .spell-row.not-ready > summary b { color: var(--muted); font-weight: 500; }
-.pick.fav { font-size: 1.05rem; } .pick.fav.on { color: #f08a8a; }
+.pick.fav.on { color: var(--blue); }
 
 /* Character page v3: dense rows, side panel for details (laptop first) */
 .page.wide { max-width: 1360px; }
@@ -574,7 +576,6 @@ h3.divider.big::after { height: 2px; background: #4a4f57; }
   .ri-mech { display: none; }
 }
 /* Side panel details */
-.peek-body.detail .detail-picks { gap: 6px; margin: 2px 0 10px; align-items: center; }
 dl.mech { display: grid; grid-template-columns: max-content 1fr; gap: 5px 14px; margin: 0 0 6px; padding: 10px 12px; background: var(--surface-2); border-radius: 10px; font-size: .92rem; }
 dl.mech dt { color: var(--muted); } dl.mech dd { margin: 0; }
 .detail-what { font-size: .98rem; white-space: pre-line; }
@@ -805,12 +806,13 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .entry-map:hover { text-decoration: underline; }
 
 /* Notes on shortlist picks and reminders */
-.detail-picks { display: grid; gap: 8px; margin: 0 0 14px; }
-.pick-note-head { gap: 6px; }
-.pick-note-form { display: grid; gap: 2px; margin: 4px 0 0 26px; }
+.detail-marks { display: grid; gap: 6px; margin-bottom: 14px; }
+.mark-row { gap: 6px; }
+.pick-note-form { display: grid; gap: 2px; margin: 4px 0 0; }
 .pick-note-form textarea { width: 100%; font: inherit; font-size: .9rem; background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; resize: vertical; }
 .pick-note-saved { min-height: 1em; font-size: .78rem; color: var(--faint); }
-.pick-note-text { margin: 2px 0 0 26px; color: var(--muted); font-size: .9rem; }
+.pick-note-text { margin: 2px 0 0; color: var(--muted); font-size: .9rem; }
+.move-note { font-style: italic; color: #d8c9a8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ri-note { display: block; color: #c9b8ea; font-size: .82rem; line-height: 1.35; white-space: normal; overflow-wrap: anywhere; }
 .forget-note { display: block; color: #c9b8ea; font-size: .82rem; margin-top: 2px; }
 
@@ -853,7 +855,7 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .fm-body { padding: 16px 22px 22px; }
 .fm-vitals { margin-bottom: 6px; }
 .fm-grid { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 28px; align-items: start; }
-.fm-side .detail-picks { margin-top: 12px; }
+.fm-side .detail-marks { margin-top: 12px; }
 .fm-side .form-abilities { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .fm-list { list-style: none; margin: 0; padding: 0; font-size: .92rem; }
 .fm-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; padding: 4px 0; border-top: 1px solid var(--line); }
@@ -993,14 +995,9 @@ a.sheet-ref { text-decoration-style: dotted; }
 
 /* Wild Shape window: plan first, Action and Bonus action side by side, Reactions as a row */
 .fm-plan { margin: 10px 0 4px; }
-/* Your plan for this form: the shortlist note full width, Remind me as a compact row under it */
+/* Your plan for this form: Shortlist and Remind me, then your note, full width */
 .fm-plan-stack { display: grid; gap: 8px; }
-.fm-plan-stack .pick-note-form, .fm-plan-stack .pick-note-text { margin-left: 0; }
-.fm-plan-stack .pick-note-fav textarea { min-height: 64px; }
-.fm-plan-stack .pick-note-remind { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px 12px; }
-.fm-plan-stack .pick-note-remind .pick-note-head { flex: none; padding-top: 5px; }
-.fm-plan-stack .pick-note-remind .pick-note-form, .fm-plan-stack .pick-note-remind .pick-note-text { flex: 1 1 260px; margin: 0; }
-.fm-plan-stack .pick-note-remind textarea { min-height: 0; height: 2.3em; }
+.fm-plan-stack .detail-marks textarea { min-height: 64px; }
 .fm-grid { grid-template-columns: 250px minmax(0, 1fr); }
 .fm-econ { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .fm-reactions { margin-top: 14px; }
@@ -1281,7 +1278,7 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .combo-step.k-bonus .combo-k { color: var(--k-bonus); } .combo-step.k-action .combo-k { color: var(--k-action); } .combo-step.k-reaction .combo-k { color: var(--k-reaction); }
 
 /* One Character page, three modes (Brett, 2026-10-19): the same header in each, with the
-   Play / Sheet / Plan switch on the right. */
+   Battle / Sheet / Plan switch on the right. */
 .char-page .char-head { flex-wrap: nowrap; margin-bottom: 12px; }
 .char-title { flex: 1; min-width: 0; }
 .char-title h1 { margin: 0; font-size: 1.6rem; line-height: 1.2; }
@@ -1290,7 +1287,7 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .modes a { color: var(--muted); text-decoration: none; padding: 6px 16px; border-radius: 8px; font-weight: 500; }
 .modes a:hover { color: var(--text); }
 .modes a[aria-current=page] { background: var(--red); color: #fff; font-weight: 600; }
-.forget-tab .sec-head h2 { display: none; }  /* Plan's tab already says Easy to forget */
+.forget-tab .sec-head h2 { display: none; }  /* Plan's tab already says Reminders */
 .forget-tab .sec-head { justify-content: flex-end; }
 .econ-tabs { display: none; }
 @media (max-width: 640px) {
@@ -1309,7 +1306,7 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 }
 @media (max-width: 1000px) { .live-ago { display: none; } .live-word { display: inline; } }
 
-/* Spell bar on Play and the Spell Book (Brett, 2026-10-21: mockups on the spellcasting canvas) */
+/* Spell bar on Battle and the Spell Book (Brett, 2026-10-21: mockups on the spellcasting canvas) */
 .spell-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 14px; padding: 8px 12px; background: #1b1e2a; border: 1px solid #3a4260; border-radius: 12px; }
 .spellbook-btn { display: inline-flex; align-items: center; gap: 8px; background: var(--blue); color: #0f1113; border-color: var(--blue); font-weight: 700; }
 .spellbook-btn:hover { background: #95b7e8; }

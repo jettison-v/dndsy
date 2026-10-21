@@ -245,18 +245,19 @@ class CharacterSnapshot(Timestamped, Base):
 
 
 class CharacterPick(Timestamped, Base):
-    """A player's own marks on their character: a star (show it on Battle) or a
-    reminder (list it under Easy to forget). Only the character's player can set
-    them; like character notes, the DM never sees them (app/picks.py)."""
+    """A player's own marks on their character: a pin (kind "star": show it on Battle),
+    the shortlist ("fav"), a reminder ("remind") or their one note on a thing ("note").
+    Only the character's player can set them; like character notes, the DM never sees
+    them (app/picks.py)."""
 
     __tablename__ = "character_picks"
     __table_args__ = (UniqueConstraint("character_id", "kind", "ref"),)
     id: Mapped[int] = mapped_column(primary_key=True)
     character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), index=True)
-    kind: Mapped[str] = mapped_column(String(10))  # "star" | "remind" | "fav" (shortlist) | "order"
+    kind: Mapped[str] = mapped_column(String(10))  # "star" (pin) | "remind" | "fav" (shortlist) | "note" | "order"
     ref: Mapped[str] = mapped_column(String(300))  # a key from the parsed sheet, e.g. "spell:Moonbeam"
     label: Mapped[str] = mapped_column(String(500), default="", server_default="")  # shown if the thing disappears from the sheet
-    note: Mapped[str] = mapped_column(Text, default="", server_default="")  # the player's own why, on a shortlist pick or reminder
+    note: Mapped[str] = mapped_column(Text, default="", server_default="")  # on "note" rows: the player's note on the thing
 
 
 class SheetOverride(Timestamped, Base):

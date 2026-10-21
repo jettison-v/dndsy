@@ -1,5 +1,5 @@
 {# Large modal: a Wild Shape form with this druid's stats carried over (app/wild_shape.py), as battle cards. #}
-{% from "_char.html" import pips, pick_note, spends, adv, saves_block, hit %}
+{% from "_char.html" import pips, detail_marks, spends, adv, saves_block, hit %}
 {% set b = f.beast %}
 {% macro card(o) %}<div class="move static{{ ' yours' if o.source == 'yours' }}">
   {{ hit(o) }}<b>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag{{ ' faint' if t == 'Yours' }}">{{ t }}</span>{% endfor %}{{ spends(o.spends) }}
@@ -14,7 +14,7 @@
     <div class="row" style="gap:6px">
       <span class="tag">CR {{ b.cr_label }}</span>{% if b.size %}<span class="tag">{{ b.size }} Beast</span>{% endif %}
       {% if known %}<span class="tag done">Known</span>{% elif why_not %}<span class="tag faint">{{ why_not }}</span>{% else %}<span class="tag">You could learn it</span>{% endif %}
-      {% if current %}<span class="tag draft">In this form on Play</span>{% endif %}
+      {% if current %}<span class="tag draft">In this form on Battle</span>{% endif %}
       {% if b.ddb_url %}<a class="note" href="{{ b.ddb_url }}" target="_blank" rel="noopener" data-no-peek>D&amp;D Beyond ↗</a>{% endif %}
     </div>
   </div>
@@ -22,7 +22,7 @@
     {% if can_pick and known %}
     <form method="post" action="/characters/{{ c.id }}/wild-shape">
       <input type="hidden" name="form" value="{{ '' if current else b.name }}">
-      <button class="btn{{ '' if current else ' primary' }}">{{ "Back to normal form" if current else "Shift into it on Play" }}</button>
+      <button class="btn{{ '' if current else ' primary' }}">{{ "Back to normal form" if current else "Shift into it on Battle" }}</button>
     </form>
     {% endif %}
     <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
@@ -39,12 +39,11 @@
   </div>
 
   {# The player's own strategy for this form comes first: it's what they'll want at the table #}
-  {% if can_pick or picks.notes.get("fav|" ~ ref) or picks.notes.get("remind|" ~ ref) %}
+  {% if can_pick or picks.notes.get(ref) or ref in picks.fav or ref in picks.remind %}
   <section class="fm-plan">
     <h3>Your plan for this form</h3>
     <div class="fm-plan-stack">
-      {{ pick_note(c, "fav", ref, ref in picks.fav, picks.notes.get("fav|" ~ ref, ""), can_pick) }}
-      {{ pick_note(c, "remind", ref, ref in picks.remind, picks.notes.get("remind|" ~ ref, ""), can_pick) }}
+      {{ detail_marks(c, ref, picks, can_pick, ["fav", "remind"]) }}
     </div>
     {% if can_pick and not known and not why_not %}<p class="note">To shift into it, learn it on D&amp;D Beyond first (you can swap one known form after each Long Rest), then refresh.</p>{% endif %}
   </section>

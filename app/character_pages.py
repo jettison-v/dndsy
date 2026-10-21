@@ -1,12 +1,12 @@
-"""The Character page (Play, Sheet and Plan modes) and Party, built from D&D Beyond sheets.
+"""The Character page (Battle, Sheet and Plan modes) and Party, built from D&D Beyond sheets.
 
-- One page per character with three modes: Play (/characters/{id}/battle: what you can do in
+- One page per character with three modes: Battle (/characters/{id}/battle: what you can do in
   a fight), Sheet (/characters/{id}: the full sheet in tabs) and Plan (/characters/{id}/plan:
   the player's notes, shortlists and reminders; never the DM). The header is the same in each.
 - /battle and /character open on the signed-in person's own character (set on
   Manage › People); /party shows everyone.
 - Keeping the copy fresh (Game Mode, Refresh now) lives in the menu bar's Live control
-  (app/live.py). On Play, Game Mode swaps in the updated body from game_mode_sync.
+  (app/live.py). On Battle, Game Mode swaps in the updated body from game_mode_sync.
 - Stars and reminders (app/picks.py): only the character's player sets them;
   the DM never sees them. Character notes are never shown here.
 """
@@ -152,7 +152,7 @@ def _known_forms(sheet: dict | None) -> list[dict]:
 
 
 def _battle_ctx(db: Session, ch: Character, user: dict) -> dict:
-    """Play mode's body (also swapped in by Game Mode and the Wild Shape switch)."""
+    """Battle mode's body (also swapped in by Game Mode and the Wild Shape switch)."""
     ctx = _view(db, ch, user)
     ctx["form"] = None
     if ctx["sheet"]:
@@ -191,7 +191,7 @@ def _recent_spells(db: Session, ch: Character, names: set[str]) -> dict[str, int
 
 
 def _spellbar(db: Session, ch: Character, ctx: dict) -> dict | None:
-    """Play's spell bar: the Spell Book button, slots, starred spells (the most recently used
+    """Battle's spell bar: the Spell Book button, slots, starred spells (the most recently used
     few) and Concentration."""
     sheet = ctx["sheet"] or {}
     if not sheet.get("spells"):
@@ -218,7 +218,7 @@ def _sheet_ctx(db: Session, ch: Character, user: dict) -> dict:
 
 
 def _plan_ctx(db: Session, ch: Character, user: dict) -> dict:
-    """Plan mode: the player's notes, Easy to forget, and the spell and Wild Shape shortlists."""
+    """Plan mode: the player's notes, Reminders, and the spell and Wild Shape shortlists."""
     ctx = _view(db, ch, user)
     s, fav = ctx["sheet"], ctx["picks"]["fav"]
     ctx["fav_spells"], ctx["fav_forms"] = [], []
@@ -238,7 +238,7 @@ def _plan_ctx(db: Session, ch: Character, user: dict) -> dict:
     return ctx
 
 
-MODE_CTX = {"play": _battle_ctx, "sheet": _sheet_ctx, "plan": _plan_ctx}
+MODE_CTX = {"battle": _battle_ctx, "sheet": _sheet_ctx, "plan": _plan_ctx}
 
 
 def _character(request: Request, db: Session, character_id: int, mode: str):
@@ -249,7 +249,7 @@ def _character(request: Request, db: Session, character_id: int, mode: str):
     if mode == "plan" and not picks.can_see(user):
         return RedirectResponse(f"/characters/{ch.id}", status_code=303)  # Plan is the players' (never the DM)
     ctx = MODE_CTX[mode](db, ch, user)
-    if mode != "play":
+    if mode != "battle":
         ctx |= player_notes.page_context(db, ch, user, ctx["sheet"])
     return _page(request, "character.html", {**ctx, "mode": mode})
 
@@ -261,7 +261,7 @@ def character_page(request: Request, character_id: int, db: Session = Depends(ge
 
 @router.get("/characters/{character_id:int}/battle")
 def battle_page(request: Request, character_id: int, db: Session = Depends(get_db)):
-    return _character(request, db, character_id, "play")
+    return _character(request, db, character_id, "battle")
 
 
 @router.get("/characters/{character_id:int}/plan")
@@ -271,8 +271,8 @@ def plan_page(request: Request, character_id: int, db: Session = Depends(get_db)
 
 @router.post("/characters/{character_id:int}/sync")
 def game_mode_sync(request: Request, character_id: int, now: str = Form(""), db: Session = Depends(get_db)):
-    """Game Mode on Play: refresh from D&D Beyond (at most every ~2 minutes per character,
-    whoever is watching) and return the updated Play body, with the menu bar's Live pill."""
+    """Game Mode on Battle: refresh from D&D Beyond (at most every ~2 minutes per character,
+    whoever is watching) and return the updated Battle body, with the menu bar's Live pill."""
     user, ch, stop = _load(request, db, character_id)
     if stop:
         return stop
@@ -372,9 +372,10 @@ def vital_panel(request: Request, character_id: int, kind: str, db: Session = De
 
 
 @router.post("/characters/{character_id:int}/pick")
-def toggle_pick(request: Request, character_id: int, kind: str = Form(...), ref: str = Form(...), wrap: str = Form(""),
+def toggle_pick(request: Request, character_id: int, kind: str = Form(...), ref: str = Form(...), marks: str = Form(""),
                 db: Session = Depends(get_db)):
-    """Star or remind, from the character's own player only. Returns the button."""
+    """Pin, shortlist or remind, from the character's own player only. Returns the button, or with
+    `marks` (the side panel) the whole marks block, since pinning also shortlists."""
     user, ch, stop = _load(request, db, character_id)
     if stop:
         return stop
@@ -386,25 +387,27 @@ def toggle_pick(request: Request, character_id: int, kind: str = Form(...), ref:
     except ValueError:
         return HTMLResponse("", status_code=400)
     db.commit()
-    page = "_pick_note.html" if wrap and kind in picks.NOTE_KINDS else "_pick.html"
-    return templates.TemplateResponse(request, page, {"c": ch, "kind": kind, "ref": ref, "on": on, "can_pick": True, "note": ""})
+    if marks:
+        shown = [m for m in marks.split(",") if m in picks.KINDS]
+        return templates.TemplateResponse(request, "_detail_marks.html", {"c": ch, "ref": ref, "can_pick": True, "marks": shown,
+                                                                          "picks": picks.picks(db, ch, user)})
+    return templates.TemplateResponse(request, "_pick.html", {"c": ch, "kind": kind, "ref": ref, "on": on, "can_pick": True})
 
 
 @router.post("/characters/{character_id:int}/pick/note")
-def save_pick_note(request: Request, character_id: int, kind: str = Form(...), ref: str = Form(...), note: str = Form(""),
+def save_pick_note(request: Request, character_id: int, ref: str = Form(...), note: str = Form(""),
                    db: Session = Depends(get_db)):
-    """The player's note on a shortlist pick or reminder (saved as they type)."""
+    """The player's one note on a thing (saved as they type)."""
     user, ch, stop = _load(request, db, character_id)
     if stop:
         return stop
     if not picks.can_edit(db, user, ch):
         return _forbidden(request, "Only this character's player can do that.")
+    sheet = chars.character_summary(ch) or {}
     try:
-        saved = picks.set_note(db, ch, kind, ref, note)
+        picks.set_note(db, ch, ref, note, views.label_for(sheet, ref) or ws.label_for(ref))
     except ValueError:
         return HTMLResponse("", status_code=400)
-    if not saved:
-        return HTMLResponse("", status_code=404)
     db.commit()
     return HTMLResponse('<span class="note">Saved</span>')
 
@@ -468,7 +471,7 @@ def set_wild_shape(request: Request, character_id: int, form: str = Form(""), db
 
 @router.get("/characters/{character_id:int}/spellbook")
 def spellbook_modal(request: Request, character_id: int, db: Session = Depends(get_db)):
-    """The Spell Book (a large modal from Play's spell bar): every spell the character can cast,
+    """The Spell Book (a large modal from Battle's spell bar): every spell the character can cast,
     grouped by effect, with averages at each slot level and filters."""
     user, ch, stop = _load(request, db, character_id)
     if stop:

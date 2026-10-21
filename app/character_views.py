@@ -331,7 +331,7 @@ def detail(sheet: dict, ref: str, starred: set[str] = frozenset()) -> dict | Non
 
 
 def label_for(sheet: dict, ref: str) -> str:
-    """Short text for Easy to forget."""
+    """Short text for Reminders."""
     x = find(sheet, ref)
     if not x:
         return ""
@@ -349,7 +349,7 @@ def reminders(sheet: dict, remind: dict[str, str], order: list[str] | None = Non
     added; today's sheet text when the thing still exists, the saved label otherwise,
     with the player's note on why."""
     notes = notes or {}
-    out = [{"ref": ref, "text": label_for(sheet, ref) or saved, "note": notes.get(f"remind|{ref}", "")}
+    out = [{"ref": ref, "text": label_for(sheet, ref) or saved, "note": notes.get(ref, "")}
            for ref, saved in remind.items() if label_for(sheet, ref) or saved]
     if order:
         rank = {k: i for i, k in enumerate(order)}
@@ -478,14 +478,14 @@ ITEM_GROUPS = [("battle", "Usable in battle"), ("equipped", "Equipped"), ("Weapo
 OVERRIDE_CHOICES = {
     "hide": [("hide", "Hidden everywhere in askdnd")],
     "cost": [("Action", "Action"), ("Bonus action", "Bonus action"), ("Reaction", "Reaction"), ("Other", "Other (not on your turn)")],
-    "battle": [("common", "Shown on Play"), ("normal", "Only in See all"), ("hide", "Not on Play")],
+    "battle": [("common", "Shown on Battle"), ("normal", "Only in See all"), ("hide", "Not on Battle")],
     "feature_group": [("use", "Things you can use"), ("passive", "Always on (in your numbers)")],
     "situ_group": [("situational", "Situational"), ("in_numbers", "Already in your numbers")],
     "item_group": ITEM_GROUPS,
 }
 # Rule-term underlines (set from the term's pop-up, not the regrouping box); here so Manage › Characters can label them.
 TERM_CHOICES = {"underline": [("on", "Underlined"), ("off", "Not underlined")]}
-FIELD_LABELS = {"hide": "Show in askdnd", "cost": "Section (what it costs)", "battle": "On Play",
+FIELD_LABELS = {"hide": "Show in askdnd", "cost": "Section (what it costs)", "battle": "On Battle",
                 "feature_group": "Features group", "situ_group": "Situational group", "item_group": "Inventory group",
                 "underline": "Underlined in descriptions"}
 CATEGORY_GROUPS = {"Weapon": "Weapons", "Armor": "Armor", "Wondrous item": "Magic items", "Ring": "Magic items", "Rod": "Magic items",

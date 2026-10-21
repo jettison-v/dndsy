@@ -171,7 +171,7 @@ def beast_for(sheet: dict, name: str) -> dict | None:
 
 
 def label_for(ref: str) -> str:
-    """Easy to forget text for a form that isn't on the sheet."""
+    """Reminders text for a form that isn't on the sheet."""
     name = ref.removeprefix("form:")
     b = catalog_beast(name)
     return f"{b['name']} (Wild Shape, CR {b['cr_label']}): {_first_attack(b)}" if b else ""

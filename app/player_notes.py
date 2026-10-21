@@ -241,7 +241,7 @@ async def save_note(request: Request, character_id: int, db: Session = Depends(g
 
 
 def _back(request: Request, ch: Character) -> str:
-    """After saving: back to Play if the note was added there (Battle combos), else Plan."""
+    """After saving: back to Battle if the note was added there (Battle combos), else Plan."""
     came_from = urlparse(request.headers.get("referer", "")).path
     return came_from if came_from == f"/characters/{ch.id}/battle" else f"/characters/{ch.id}/plan"
 
@@ -260,7 +260,7 @@ def delete_note(request: Request, character_id: int, note_id: int, db: Session =
 
 
 def page_context(db: Session, ch: Character, user: dict | None, sheet: dict | None) -> dict:
-    """What the Character page needs to show notes (Plan, and combos on Play)."""
+    """What the Character page needs to show notes (Plan, and combos on Battle)."""
     notes = notes_for(db, ch, user)
     return {"player_notes": grouped(notes), "note_count": len(notes), "combos": [n for n in notes if n.kind == "combo"],
             "nl": note_linker(db, ch, sheet) if notes else None, "note_kinds": KINDS, "quest_status": QUEST_STATUS}

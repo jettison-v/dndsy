@@ -1,4 +1,4 @@
-"""The Spell Book (Character › Play): every spell the character can cast now, grouped by what it
+"""The Spell Book (Character › Battle): every spell the character can cast now, grouped by what it
 does, with the average roll at each slot level so upcasting is counted. Concentration tracking
 lives here too: which spell, at what level, and the round count (Brett, 2026-10-21).
 

@@ -1,8 +1,8 @@
 {# The Table rolls sidebar (app/table_rolls.py, app.js "Rolls"). Shown only while Game Mode is on
-   (body.gm-on): open on Play and a rail elsewhere, remembered per device; a bottom sheet on phones.
+   (body.gm-on): open on Battle and a rail elsewhere, remembered per device; a bottom sheet on phones.
    The rail shows each person's latest roll and slides away when nobody has rolled for a few minutes.
    The log loads and then polls for new rolls only while it's shown. #}
-<aside id="table-rolls" class="rolls-side" aria-label="Table rolls" data-mine="{{ tn.mine.id if tn and tn.mine else '' }}" data-play="{{ '1' if tn and tn.mode == 'play' }}">
+<aside id="table-rolls" class="rolls-side" aria-label="Table rolls" data-mine="{{ tn.mine.id if tn and tn.mine else '' }}" data-battle="{{ '1' if tn and tn.mode == 'battle' }}">
   <div class="rs-head">
     <span class="rs-grip" aria-hidden="true"></span>
     <svg class="rs-icon" width="22" height="22" viewBox="0 0 30 30" aria-hidden="true"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="15,8 21,19 9,19" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>

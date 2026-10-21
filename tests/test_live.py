@@ -24,7 +24,7 @@ def test_three_modes_share_one_header(player, db):
     assert '<table class="party">' not in play and "Full party" not in play  # the party is on Party, not Play
     plan_tabs = re.findall(r'data-tab="t-[a-z-]+"[^>]*>([^<]+)', plan)
     assert [t.strip() for t in plan_tabs] == ["Combos", "Leveling", "Quests", "Notes", "Reminders", "Spells", "Wild Shapes"]
-    for page, mode in ((play, "Play"), (sheet, "Sheet"), (plan, "Plan")):
+    for page, mode in ((play, "Battle"), (sheet, "Sheet"), (plan, "Plan")):
         assert f"Cole · {mode} · askdnd" in page and re.search(rf'aria-current="page">{mode}</a>', page)
     assert modes_nav(play) == modes_nav(sheet) == modes_nav(plan)  # the same switch in every mode
     tabs = re.findall(r'data-tab="t-[a-z]+">([^<]+)', sheet)
@@ -60,7 +60,7 @@ def test_bottom_bar_on_phones(player, db):
     import_bundle(db, BUNDLE)
     page = player.get("/party").text
     bottom = page.split('class="bottom-nav"')[1].split("</nav>")[0]
-    assert re.findall(r">(Recap|Campaign|Play|Party|More)<", bottom) == ["Recap", "Campaign", "Play", "Party", "More"]
+    assert re.findall(r">(Recap|Campaign|Battle|Party|More)<", bottom) == ["Recap", "Campaign", "Battle", "Party", "More"]
     more = page.split('id="more-menu"')[1].split("</div>")[0]
     assert 'href="/sessions"' in more and 'href="/map"' in more and "Sign out" in more
 

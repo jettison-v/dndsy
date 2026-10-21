@@ -265,6 +265,7 @@ def _character(db: Session, campaign: Campaign, name: str) -> Character:
 
 def _import_notes(db: Session, campaign: Campaign, bundle: dict, counts: Counter) -> None:
     from app.models import CharacterPick, PlayerNote
+    from app.picks import set_note
     from app.player_notes import KINDS, QUEST_STATUS
     from app.wild_shape import label_for
 
@@ -288,9 +289,8 @@ def _import_notes(db: Session, campaign: Campaign, bundle: dict, counts: Counter
         ref = f"form:{item.get('form', '').strip()}"
         pick = db.scalar(select(CharacterPick).where(CharacterPick.character_id == ch.id, CharacterPick.kind == "fav", CharacterPick.ref == ref))
         if pick is None:
-            pick = CharacterPick(character_id=ch.id, kind="fav", ref=ref, label=label_for(ref))
-            db.add(pick)
+            db.add(CharacterPick(character_id=ch.id, kind="fav", ref=ref, label=label_for(ref)))
             counts["shortlisted forms added"] += 1
-        pick.note = (item.get("note") or "").strip()[:500]
+        set_note(db, ch, ref, item.get("note") or "", label_for(ref))
         counts["form notes set"] += 1
     db.flush()

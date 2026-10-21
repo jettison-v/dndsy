@@ -1,12 +1,12 @@
 {# Character › Plan (character_pages._plan_ctx): the player's own planning, in tabs like Sheet's.
-   Never shown to the DM (the route sends them to Sheet). Easy to forget is also on Play, where it's used. #}
+   Never shown to the DM (the route sends them to Sheet). Reminders are also on Battle, where they're used. #}
 {% from "_char.html" import spell_row, form_card, spell_tools, form_tools %}
 {% from "_notes_macros.html" import note_body %}
 <section class="section">
   <p class="hint" style="margin:0 0 10px">{% if can_pick %}Your plans for {{ c.entity.name }}. Every player can read your notes; the DM can't see anything here. Names of spells, features, items, Wild Shape forms, people and places become links.{% else %}{{ c.entity.name }}'s player's plans. The DM can't see these.{% endif %}</p>
   <div class="tabbar" role="tablist">
     {% for kind, meta, notes in player_notes %}<button role="tab" aria-selected="{{ 'true' if loop.first else 'false' }}" data-tab="t-{{ kind }}" title="{{ meta.plural }}">{{ meta.tab }}{% if notes %} <span class="count">{{ notes | length }}</span>{% endif %}</button>
-    {% endfor %}<button role="tab" aria-selected="false" data-tab="t-forget" title="Easy to forget">Reminders{% if reminders %} <span class="count">{{ reminders | length }}</span>{% endif %}</button>
+    {% endfor %}<button role="tab" aria-selected="false" data-tab="t-forget" title="Reminders">Reminders{% if reminders %} <span class="count">{{ reminders | length }}</span>{% endif %}</button>
     <button role="tab" aria-selected="false" data-tab="t-spell-list" title="Spell shortlist">Spells{% if fav_spells %} <span class="count">{{ fav_spells | length }}</span>{% endif %}</button>
     {% if druid %}<button role="tab" aria-selected="false" data-tab="t-form-list" title="Wild Shape shortlist">Wild Shapes{% if fav_forms %} <span class="count">{{ fav_forms | length }}</span>{% endif %}</button>{% endif %}
   </div>
@@ -35,11 +35,11 @@
   <div id="t-spell-list" hidden data-planner>
     {% if fav_spells %}
     {{ spell_tools(sheet, [("all", "Your whole shortlist"), ("ready", "Ready to cast")]) }}
-    <p class="note planner-note"><span data-shown></span> Click a spell for its full description{% if can_pick %}, or ♥ to take it off your shortlist{% endif %}.</p>
+    <p class="note planner-note"><span data-shown></span> Click a spell for its full description{% if can_pick %}, or the bookmark to take it off your Shortlist{% endif %}.</p>
     <div class="spell-key" aria-hidden="true"><span></span><span>Spell · what it does</span><span>Casting time · range · duration · effect</span><span>Hit / DC</span><span></span></div>
     <div class="rows">{% for sp in fav_spells %}{{ spell_row(c, sp, sp.state, picks, can_pick, sp["from"]) }}{% endfor %}</div>
     <p class="muted planner-empty" hidden>No spells match. Try another view or clear a filter.</p>
-    {% else %}<p class="muted">{% if can_pick %}Nothing shortlisted yet. On Sheet › Spells, choose "All you could prepare" and press ♥ on a spell to compare it here before preparing it on D&amp;D Beyond.{% else %}{{ c.entity.name }}'s player hasn't shortlisted any spells.{% endif %}</p>{% endif %}
+    {% else %}<p class="muted">{% if can_pick %}Nothing shortlisted yet. On Sheet › Spells, choose "All you could prepare" and press the bookmark on a spell to compare it here before preparing it on D&amp;D Beyond.{% else %}{{ c.entity.name }}'s player hasn't shortlisted any spells.{% endif %}</p>{% endif %}
   </div>
 
   {% if druid %}
@@ -47,10 +47,10 @@
   <div id="t-form-list" hidden data-planner data-noun="form">
     {% if fav_forms %}
     {{ form_tools(fav_forms, [("all", "Your whole shortlist"), ("ready", "Known")]) }}
-    <p class="note planner-note"><span data-shown></span> Click a form to see it with your stats carried over{% if can_pick %}, or ♥ to take it off your shortlist{% endif %}.</p>
+    <p class="note planner-note"><span data-shown></span> Click a form to see it with your stats carried over{% if can_pick %}, or the bookmark to take it off your Shortlist{% endif %}.</p>
     <div class="form-cards" data-sortable-cards>{% for fm in fav_forms %}{{ form_card(c, fm, picks, can_pick, loop.index) }}{% endfor %}</div>
     <p class="muted planner-empty" hidden>No forms match. Try another view or clear a filter.</p>
-    {% else %}<p class="muted">{% if can_pick %}Nothing shortlisted yet. On Sheet › Wild Shape, choose "All you can learn" and press ♥ on a form to compare it here before learning it.{% else %}{{ c.entity.name }}'s player hasn't shortlisted any forms.{% endif %}</p>{% endif %}
+    {% else %}<p class="muted">{% if can_pick %}Nothing shortlisted yet. On Sheet › Wild Shape, choose "All you can learn" and press the bookmark on a form to compare it here before learning it.{% else %}{{ c.entity.name }}'s player hasn't shortlisted any forms.{% endif %}</p>{% endif %}
   </div>
   {% endif %}
 </section>

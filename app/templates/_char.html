@@ -1,4 +1,4 @@
-{# Shared pieces for the Character page (Play, Sheet, Plan) and Party. #}
+{# Shared pieces for the Character page (Battle, Sheet, Plan) and Party. #}
 
 {# Reminder icon: a bell, outlined when off and filled when on. #}
 {% macro bell(on) -%}
@@ -51,42 +51,60 @@
   {%- if x.higher %}<div class="note">Can also use a higher slot: {% for h in x.higher %}{{ h.level }} {{ h.left }}/{{ h.max }}{{ " · " if not loop.last }}{% endfor %}</div>{% endif %}</div>{% endfor -%}
 {%- endmacro %}
 
+{# Pin (kind "star": shown on Battle) and Shortlist (kind "fav") icons; CSS fills them when on. #}
+{% macro pin_icon() -%}
+<svg class="ico-pin" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M9 3h6l-1 6 3.5 3.5V14H6.5v-1.5L10 9 9 3Zm3 11v7" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>
+{%- endmacro %}
+{% macro bookmark_icon() -%}
+<svg class="ico-bookmark" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M7 3.5h10a1 1 0 0 1 1 1V21l-6-4.2L6 21V4.5a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+{%- endmacro %}
+{% set MARK = {
+  "star": {"name": "Pin to Battle", "on": "Pinned to Battle (click to unpin)", "off": "Pin to Battle (also adds it to your shortlist)", "theirs": "Pinned to Battle by their player", "label_on": "Pinned to Battle", "label_off": "Pin to Battle"},
+  "fav": {"name": "Shortlist", "on": "On your shortlist (click to remove)", "off": "Add to your shortlist", "theirs": "On their shortlist", "label_on": "On your shortlist", "label_off": "Shortlist"},
+  "remind": {"name": "Remind me", "on": "In your Reminders (click to remove)", "off": "Remind me: add to your Reminders", "theirs": "In their Reminders", "label_on": "In your Reminders", "label_off": "Remind me"}} %}
+{% macro mark_icon(kind, on) -%}
+{%- if kind == "star" %}{{ pin_icon() }}{% elif kind == "fav" %}{{ bookmark_icon() }}{% else %}{{ bell(on) }}{% endif -%}
+{%- endmacro %}
+
 {% macro pick_btn(c, kind, ref, on, can_pick) -%}
 {%- if can_pick -%}
 <button type="button" class="pick {{ kind }}{{ ' on' if on }}" hx-post="/characters/{{ c.id }}/pick" hx-vals='{{ {"kind": kind, "ref": ref} | tojson }}' hx-swap="outerHTML"
-  aria-pressed="{{ 'true' if on else 'false' }}" title="{{ {'star': ('Starred: shown on Play' if on else 'Star: show on Play'), 'remind': ('In Easy to forget (click to remove)' if on else 'Remind me: add to Easy to forget'), 'fav': ('On your shortlist' if on else 'Add to your spell shortlist')}[kind] }}" aria-label="{{ {'star': 'Star', 'remind': 'Remind me', 'fav': 'Shortlist'}[kind] }}">
-  {%- if kind == "star" %}{{ "★" if on else "☆" }}{% elif kind == "fav" %}{{ "♥" if on else "♡" }}{% else %}{{ bell(on) }}{% endif -%}
-</button>
-{%- elif on and kind == "star" -%}<span class="pick star on static" title="Starred by their player">★</span>
-{%- elif on and kind == "fav" -%}<span class="pick fav on static" title="On their shortlist">♥</span>
+  aria-pressed="{{ 'true' if on else 'false' }}" title="{{ MARK[kind].on if on else MARK[kind].off }}" aria-label="{{ MARK[kind].name }}">{{ mark_icon(kind, on) }}</button>
+{%- elif on and kind in ("star", "fav") -%}<span class="pick {{ kind }} on static" title="{{ MARK[kind].theirs }}">{{ mark_icon(kind, true) }}</span>
 {%- endif -%}
 {%- endmacro %}
 
-{# A shortlist (♥) or Remind me button with the player's note on why, for the side panel.
-   The whole block swaps when the button is pressed, so the note box appears with it. #}
-{% macro pick_note(c, kind, ref, on, note, can_pick) -%}
-{%- set title = {"fav": "shortlist", "remind": "Easy to forget"}[kind] -%}
-{%- if can_pick or on -%}
-<div class="pick-note pick-note-{{ kind }}{{ ' on' if on }}">
-  <div class="row pick-note-head">
-  {%- if can_pick -%}
-  <button type="button" class="pick {{ kind }}{{ ' on' if on }}" hx-post="/characters/{{ c.id }}/pick" hx-vals='{{ {"kind": kind, "ref": ref, "wrap": "1"} | tojson }}'
-    hx-target="closest .pick-note" hx-swap="outerHTML" aria-pressed="{{ 'true' if on else 'false' }}"
-    title="{{ ('On your ' ~ title ~ ' (click to remove)') if on else ('Add to your ' ~ title) }}" aria-label="{{ 'Shortlist' if kind == 'fav' else 'Remind me' }}">
-    {%- if kind == "fav" %}{{ "♥" if on else "♡" }}{% else %}{{ bell(on) }}{% endif -%}
-  </button>
-  {%- elif on -%}<span class="pick {{ kind }} on static">{% if kind == "fav" %}♥{% else %}{{ bell(true) }}{% endif %}</span>{%- endif -%}
-  <span class="note">{{ ("On the shortlist" if kind == "fav" else "In Easy to forget") if on else ("Shortlist" if kind == "fav" else "Remind me") }}</span>
+{# The side panel's marks (Pin, Shortlist, Remind me) and the player's one note on the thing.
+   Pressing a mark swaps the whole block, so pinning shows the shortlist turning on too.
+   `marks` lists which marks this thing offers (Pin only for things with a turn cost). #}
+{% macro detail_marks(c, ref, picks, can_pick, marks) -%}
+{%- set note = picks.notes.get(ref, "") -%}
+{%- if can_pick or note or ref in picks.star or ref in picks.fav or ref in picks.remind -%}
+<div class="detail-marks">
+  {%- for kind in marks if can_pick or ref in picks[kind] %}{% set on = ref in picks[kind] %}
+  <div class="row mark-row">
+    {%- if can_pick -%}
+    <button type="button" class="pick {{ kind }}{{ ' on' if on }}" hx-post="/characters/{{ c.id }}/pick" hx-vals='{{ {"kind": kind, "ref": ref, "marks": marks | join(",")} | tojson }}'
+      hx-target="closest .detail-marks" hx-swap="outerHTML" aria-pressed="{{ 'true' if on else 'false' }}" title="{{ MARK[kind].on if on else MARK[kind].off }}" aria-label="{{ MARK[kind].name }}">{{ mark_icon(kind, on) }}</button>
+    {%- else -%}<span class="pick {{ kind }} on static">{{ mark_icon(kind, true) }}</span>{%- endif -%}
+    <span class="note">{{ (MARK[kind].label_on if can_pick else MARK[kind].theirs) if on else MARK[kind].label_off }}</span>
   </div>
-  {% if on and can_pick %}
-  <form class="pick-note-form" hx-post="/characters/{{ c.id }}/pick/note" hx-trigger="input changed delay:700ms from:find textarea, submit" hx-target="find .pick-note-saved" hx-swap="innerHTML">
-    <input type="hidden" name="kind" value="{{ kind }}"><input type="hidden" name="ref" value="{{ ref }}">
-    <textarea name="note" rows="2" maxlength="500" placeholder="{{ 'Why is it on your shortlist?' if kind == 'fav' else 'Why remind you? (e.g. when it matters)' }}">{{ note }}</textarea>
-    <span class="pick-note-saved" aria-live="polite"></span>
-  </form>
-  {% elif on and note %}<p class="pick-note-text">{{ note }}</p>{% endif %}
+  {%- endfor %}
+  {{ note_box(c, ref, note, can_pick) }}
 </div>
 {%- endif -%}
+{%- endmacro %}
+
+{# The player's one note on a thing: a box for them (saved as they type), the text for other players. #}
+{% macro note_box(c, ref, note, can_pick) -%}
+{% if can_pick %}
+<form class="pick-note-form" hx-post="/characters/{{ c.id }}/pick/note" hx-trigger="input changed delay:700ms from:find textarea, submit" hx-target="find .pick-note-saved" hx-swap="innerHTML">
+  <input type="hidden" name="ref" value="{{ ref }}">
+  <label class="note" for="note-{{ ref | replace(':', '-') | replace(' ', '-') }}">✎ Your note</label>
+  <textarea id="note-{{ ref | replace(':', '-') | replace(' ', '-') }}" name="note" rows="2" maxlength="500" placeholder="Why it matters, when to use it. Shows wherever this appears.">{{ note }}</textarea>
+  <span class="pick-note-saved" aria-live="polite"></span>
+</form>
+{% elif note %}<p class="pick-note-text">✎ {{ note }}</p>{% endif %}
 {%- endmacro %}
 
 {% macro vitals(s, c) -%}
@@ -173,7 +191,7 @@
 {%- endmacro %}
 
 {# Limited resources, the ones with the most uses first (by total, not by what's left), then spell
-   slots. Play passes slots=False and skips Wild Shape: its spell bar and Wild Shape row show those. #}
+   slots. Battle passes slots=False and skips Wild Shape: its spell bar and Wild Shape row show those. #}
 {% macro resource_row(s, slots=True, skip=()) -%}
 {% set res = s.actions | selectattr("uses") | selectattr("source", "in", ["class", "feat", "race"]) | rejectattr("name", "in", skip) | sort(attribute="uses.max", reverse=True) | list %}
 {% if res %}<div class="res-row"><span class="res-label">Resources</span>{% for a in res %}<span class="res">{{ a.name }} {{ pips(a.uses) }}</span>{% endfor %}</div>{% endif %}
@@ -188,7 +206,7 @@
 
 {# One compact row; clicking it opens the side panel with everything about it. #}
 {% macro ri(c, key, name, picks, can_pick, star=False, fav=False, chips=(), what="", mech="", hit="", uses=None, cls="", attrs="", spend=(), url="", image="", modal=False, hit_adv=(), roll=None) -%}
-{%- set notes = [picks.notes.get("fav|" ~ key), picks.notes.get("remind|" ~ key)] | select | list if picks.notes else [] -%}
+{%- set notes = [picks.notes.get(key)] | select | list if picks.notes else [] -%}
 <div class="ri {{ cls }}{{ ' has-pic' if image }}" {% if modal %}data-modal-url="{{ url }}" data-modal-size="large"{% else %}data-panel-url="{{ url or ('/characters/' ~ c.id ~ '/detail?ref=' ~ (key | urlencode)) }}"{% endif %} data-ref="{{ key }}" tabindex="0" role="button" {{ attrs | safe }}>
   <span class="ri-pk">{% if image %}<img class="ri-pic" src="{{ image }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{% if fav %}{{ pick_btn(c, "fav", key, key in picks.fav, can_pick) }}{% endif %}{% if star %}{{ pick_btn(c, "star", key, key in picks.star, can_pick) }}{% endif %}</span>
   <span class="ri-main"><span class="ri-line"><span class="ri-name">{{ name }}</span>{% if uses %} {{ pips(uses) }}{% endif %}{% for t in chips if t %} <span class="tag {{ '' if t is string else t[1] }}">{{ t if t is string else t[0] }}</span>{% endfor %}</span>
@@ -231,7 +249,7 @@
    a form, with this druid's stats carried over. Click for the full form. #}
 {% macro form_card(c, fm, picks, can_pick, i=0) -%}{% set k = fm.card %}
         {% set tags = (fm.moves + [fm.size | lower] + (["locked"] if fm.why_not else [])) | join(" ") %}
-        {% set notes = [picks.notes.get("fav|" ~ fm.key), picks.notes.get("remind|" ~ fm.key)] | select | list if picks.notes else [] %}
+        {% set notes = [picks.notes.get(fm.key)] | select | list if picks.notes else [] %}
         <article class="spell-row form-card{{ ' known' if fm.known }}{{ ' not-ready' if fm.why_not }}" data-modal-url="/characters/{{ c.id }}/form?name={{ fm.name | urlencode }}" data-modal-size="large"
           data-ref="{{ fm.key }}" tabindex="0" role="button" data-state="{{ 'ready' if fm.known else 'learn' }}" data-fav="{{ '1' if fm.key in picks.fav else '0' }}"
           data-level="{{ fm.cr_label }}" data-cast="other" data-name="{{ fm.name | lower }}" data-tags="{{ tags }}"

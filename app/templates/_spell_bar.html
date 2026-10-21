@@ -1,4 +1,4 @@
-{# Play's spell bar (character_pages._spellbar): the Spell Book, slots, starred spells and Concentration. #}
+{# Battle's spell bar (character_pages._spellbar): the Spell Book, slots, starred spells and Concentration. #}
 {% from "_char.html" import roll_attrs, pips, spell_roll %}
 
 {% set b = spellbar %}
@@ -39,5 +39,5 @@
     {% endif %}
   </span>
   {% endif %}
-  {% if b.starred %}<span class="sb-starred"><span class="note" title="Your starred spells, most recently used first">★ Starred</span>{% for e in b.starred %}{{ spell_roll(c, e) }}{% endfor %}{% if b.more %}<button type="button" class="spell-chip more" data-modal-url="/characters/{{ c.id }}/spellbook" data-modal-size="large" title="More starred spells in the Spell Book">+{{ b.more }}</button>{% endif %}</span>{% endif %}
+  {% if b.starred %}<span class="sb-starred"><span class="note sb-pinned" title="Spells you pinned to Battle, most recently used first">{{ pin_icon() }} Pinned</span>{% for e in b.starred %}{{ spell_roll(c, e) }}{% endfor %}{% if b.more %}<button type="button" class="spell-chip more" data-modal-url="/characters/{{ c.id }}/spellbook" data-modal-size="large" title="More pinned spells in the Spell Book">+{{ b.more }}</button>{% endif %}</span>{% endif %}
 </div>

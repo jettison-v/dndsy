@@ -68,7 +68,7 @@
 <nav class="bottom-nav" aria-label="Main">
   <a href="/" class="{{ 'active' if path in ('/', '/story') }}">Recap</a>
   <a href="/campaign" class="{{ 'active' if path.startswith('/campaign') }}">Campaign</a>
-  <a href="/battle" class="{{ 'active' if tn.mode == 'play' }}">Play</a>
+  <a href="/battle" class="{{ 'active' if tn.mode == 'battle' }}">Battle</a>
   <a href="/party" class="{{ 'active' if path.startswith('/party') }}">Party</a>
   <button type="button" data-menu="more-menu" aria-haspopup="true" class="{{ 'active' if path.startswith('/sessions') or path == '/map' or path.startswith('/manage') or path.startswith('/admin') }}">More</button>
 </nav>

@@ -321,7 +321,7 @@
   }));
 
   // Game Mode (the Live popover in the menu bar): one switch per browser, off unless this
-  // browser turned it on. While on and the tab is visible, every couple of minutes: on Play,
+  // browser turned it on. While on and the tab is visible, every couple of minutes: on Battle,
   // ask the server to sync that character and swap in the updated body (the pill comes along
   // out of band); anywhere else, sync the character on screen (or your own) and swap the pill.
   // The server throttles per character, however many browsers ask.
@@ -361,7 +361,7 @@
     if (on) gmTick();
     toast(on ? 'Game Mode on: updating from D&D Beyond every 2–3 minutes' : 'Game Mode off');
   });
-  // After "Refresh now" or "Refresh everyone": show the new copy. Play swaps its body; other
+  // After "Refresh now" or "Refresh everyone": show the new copy. Battle swaps its body; other
   // pages showing that character (Sheet, Plan, Party) reload.
   document.body.addEventListener('liveRefreshed', e => {
     const ids = ((e.detail && e.detail.ids) || []).map(String), body = document.getElementById('battle-body');
@@ -376,7 +376,7 @@
   });
   gmSetup();
 
-  // Phones (Play): Action / Bonus / Reaction as tabs over the three columns. The choice is
+  // Phones (Battle): Action / Bonus / Reaction as tabs over the three columns. The choice is
   // kept while Game Mode swaps in a new body.
   let econShown = 'action';
   function econSetup() {
@@ -449,20 +449,19 @@
     if (v || f) plannerApply(root);
   });
   document.addEventListener('input', e => { const root = e.target.closest('[data-planner]'); if (root && e.target.matches('[data-search]')) plannerApply(root); });
-  // A ♥ press updates the row's data so the Shortlist view is right without a reload.
+  // A bookmark or pin press keeps the rows on the page in step without a reload, the way the
+  // server does it: the bookmark toggles the Shortlist, and pinning also shortlists.
   document.addEventListener('click', e => {
-    const b = e.target.closest('.pick.fav:not(.static)'), row = b && b.closest('.spell-row');
-    if (row) row.dataset.fav = b.classList.contains('on') ? '0' : '1';  // the server toggles it the same way
-    // ♥ in the side panel: keep the matching row on the page in step
-    if (b && b.closest('.pick-note')) {
-      const on = !b.classList.contains('on'), ref = JSON.parse(b.getAttribute('hx-vals') || '{}').ref;
-      document.querySelectorAll('.spell-row[data-ref]').forEach(r => {
-        if (r.dataset.ref !== ref) return;
-        r.dataset.fav = on ? '1' : '0';
-        const h = r.querySelector('.pick.fav');
-        if (h) { h.classList.toggle('on', on); h.textContent = on ? '♥' : '♡'; h.setAttribute('aria-pressed', on); }
-      });
-    }
+    const b = e.target.closest('.pick.fav:not(.static), .pick.star:not(.static)'); if (!b) return;
+    const pressing = !b.classList.contains('on'), pin = b.classList.contains('star');
+    if (pin && !pressing) return;  // unpinning leaves the Shortlist alone
+    const fav = pin ? true : pressing, ref = JSON.parse(b.getAttribute('hx-vals') || '{}').ref;
+    document.querySelectorAll('.spell-row[data-ref]').forEach(r => {
+      if (r.dataset.ref !== ref) return;
+      r.dataset.fav = fav ? '1' : '0';
+      const h = r.querySelector('.pick.fav:not(.static)');
+      if (h && h !== b) { h.classList.toggle('on', fav); h.setAttribute('aria-pressed', fav); }
+    });
   }, true);
   document.querySelectorAll('[data-planner]').forEach(plannerApply);
   // Manage › People: the line under each person says what their access will let them do, as you change it.
@@ -1194,10 +1193,10 @@
   }
 
   // ---------------------------------------------------------------- the sidebar's state
-  // Desktop: "open" or "rail", remembered per device for Play and for everywhere else; below
+  // Desktop: "open" or "rail", remembered per device for Battle and for everywhere else; below
   // WIDE it starts as the rail and opening it lays it over the page. Phones: a bottom sheet
   // ("open" shows the newest rolls, "rail" just its bar, "full" the whole log and the dice).
-  const where = () => (side && side.dataset.play ? 'play' : 'other');
+  const where = () => (side && side.dataset.battle ? 'play' : 'other');  // 'play': the stored key from before the rename
   function pref() { return store.get(SIDE + where()) || (where() === 'play' ? 'open' : 'rail'); }
   function setState(state, remember) {
     if (!side) return;

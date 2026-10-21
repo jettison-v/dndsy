@@ -1,9 +1,10 @@
-"""Stars and reminders a player puts on their own character.
+"""Pins, shortlists, reminders and notes a player puts on their own character.
 
-- A star shows the thing (action, spell, item, feature…) on the Battle page.
-- A reminder lists it under "Easy to forget".
-- A heart puts a spell or Wild Shape form on the player's shortlist.
-- Shortlist picks and reminders can carry a short note: why it's there.
+- A pin (kind "star" in the database) shows the thing (action, spell, item, feature…) on Battle.
+  Pinning also adds it to the shortlist (Brett, 2026-10-21).
+- The shortlist (kind "fav"): things the player is considering or wants close at hand.
+- A reminder lists it under "Reminders".
+- A note (kind "note"): one per thing, shown wherever that thing appears.
 
 Rules (Brett, 2026-10-16): only the character's player can set them (not
 admins, not the DM). Like character notes, they're visible to the players but
@@ -18,8 +19,7 @@ from sqlalchemy.orm import Session
 from app.auth import can_see_character_notes
 from app.models import Character, CharacterPick, User
 
-KINDS = ("star", "remind", "fav")  # fav: a spell or Wild Shape form on the player's shortlist
-NOTE_KINDS = ("fav", "remind")
+KINDS = ("star", "remind", "fav")  # star: pinned to Battle; fav: on the shortlist
 NOTE_MAX = 500
 
 
@@ -44,14 +44,14 @@ def can_see(user: dict | None) -> bool:
 
 
 def picks(db: Session, character: Character, user: dict | None) -> dict:
-    """{"star": {ref,…}, "remind": {ref: label}, "notes": {"fav|ref": note}…} — empty for the DM."""
+    """{"star": {ref,…}, "remind": {ref: label}, "notes": {ref: note}…} — empty for the DM."""
     out = {"star": set(), "remind": {}, "fav": set(), "order": {}, "notes": {}}
     if not can_see(user):
         return out
     for p in db.scalars(select(CharacterPick).where(CharacterPick.character_id == character.id).order_by(CharacterPick.id)):
-        if p.note and p.kind in NOTE_KINDS:
-            out["notes"][f"{p.kind}|{p.ref}"] = p.note
-        if p.kind in ("star", "fav"):
+        if p.kind == "note":
+            out["notes"][p.ref] = p.note
+        elif p.kind in ("star", "fav"):
             out[p.kind].add(p.ref)
         elif p.kind == "remind":
             out["remind"][p.ref] = p.label
@@ -64,7 +64,8 @@ def picks(db: Session, character: Character, user: dict | None) -> dict:
 
 
 def toggle(db: Session, character: Character, kind: str, ref: str, label: str = "") -> bool:
-    """Turn a star or reminder on or off. Returns the new state."""
+    """Turn a pin, shortlist pick or reminder on or off. Returns the new state.
+    Pinning also puts it on the shortlist; unpinning leaves the shortlist alone."""
     if kind not in KINDS or not ref:
         raise ValueError("unknown pick")
     pick = db.scalar(select(CharacterPick).where(
@@ -74,21 +75,27 @@ def toggle(db: Session, character: Character, kind: str, ref: str, label: str = 
         db.flush()
         return False
     db.add(CharacterPick(character_id=character.id, kind=kind, ref=ref[:300], label=label[:500]))
+    if kind == "star" and not db.scalar(select(CharacterPick).where(
+            CharacterPick.character_id == character.id, CharacterPick.kind == "fav", CharacterPick.ref == ref[:300])):
+        db.add(CharacterPick(character_id=character.id, kind="fav", ref=ref[:300], label=label[:500]))
     db.flush()
     return True
 
 
-def set_note(db: Session, character: Character, kind: str, ref: str, note: str) -> bool:
-    """The player's note on a shortlist pick or reminder. False if that pick isn't on."""
-    if kind not in NOTE_KINDS:
-        raise ValueError("notes are for the shortlist and reminders")
+def set_note(db: Session, character: Character, ref: str, note: str, label: str = "") -> None:
+    """The player's one note on a thing (any thing, marked or not). An empty note removes it."""
+    if not ref:
+        raise ValueError("no ref")
+    note = note.strip()[:NOTE_MAX]
     pick = db.scalar(select(CharacterPick).where(
-        CharacterPick.character_id == character.id, CharacterPick.kind == kind, CharacterPick.ref == ref[:300]))
-    if not pick:
-        return False
-    pick.note = note.strip()[:NOTE_MAX]
+        CharacterPick.character_id == character.id, CharacterPick.kind == "note", CharacterPick.ref == ref[:300]))
+    if pick and not note:
+        db.delete(pick)
+    elif pick:
+        pick.note = note
+    elif note:
+        db.add(CharacterPick(character_id=character.id, kind="note", ref=ref[:300], label=label[:500], note=note))
     db.flush()
-    return True
 
 
 def set_order(db: Session, character: Character, column: str, keys: list[str]) -> None:

@@ -310,8 +310,8 @@ def test_the_sidebar_is_on_every_page_and_knows_your_character(table, db):
     for path in ("/", f"/characters/{cole.id}/battle", "/party"):
         page = table["player"].get(path).text
         assert 'id="table-rolls"' in page and f'data-mine="{cole.id}"' in page, path
-    assert 'data-play="1"' in table["player"].get(f"/characters/{cole.id}/battle").text
-    assert 'data-play=""' in table["player"].get("/party").text
+    assert 'data-battle="1"' in table["player"].get(f"/characters/{cole.id}/battle").text
+    assert 'data-battle=""' in table["player"].get("/party").text
     assert 'data-mine=""' in table["dm"].get("/party").text  # the DM has no character to roll for
     assert "rs-checks" not in table["dm"].get("/party").text and "Manual roll" in table["dm"].get("/party").text
 

@@ -77,7 +77,7 @@ def test_only_the_player_writes_and_the_dm_never_sees(db, cole, player, dm, admi
     note = db.scalar(select(PlayerNote))
     page = player.get(f"{url}/plan").text
     assert "Bear and beam" in page and 'data-modal-url="/characters/%d/form?name=Polar%%20Bear"' % cole.id in page  # forms link
-    assert "Bear and beam" in player.get(f"{url}/battle").text  # combos show on Play
+    assert "Bear and beam" in player.get(f"{url}/battle").text  # combos show on Battle
     assert "Bear and beam" not in player.get(url).text  # not on Sheet
     assert "Bear and beam" in admin.get(f"{url}/plan").text and "/notes/new" not in admin.get(f"{url}/plan").text  # others read, can't write
     assert admin.post(f"{url}/notes", data={"kind": "general", "body": "x"}).status_code == 403
@@ -102,7 +102,8 @@ def test_import_loads_notes_and_wild_shape_shortlist_notes_once(db, cole):
     import_bundle(db, bundle)  # again: updated, not duplicated
     notes = list(db.scalars(select(PlayerNote)))
     assert len(notes) == 1 and notes[0].status == "open" and notes[0].data["goal"] == "Bring them back"
-    pick = db.scalar(select(CharacterPick).where(CharacterPick.ref == "form:Polar Bear", CharacterPick.kind == "fav"))
-    assert pick.note == "When: rarely"
+    assert db.scalar(select(CharacterPick).where(CharacterPick.ref == "form:Polar Bear", CharacterPick.kind == "fav"))
+    note = db.scalar(select(CharacterPick).where(CharacterPick.ref == "form:Polar Bear", CharacterPick.kind == "note"))
+    assert note.note == "When: rarely"
     with pytest.raises(ValueError):
         import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "player_notes": [{"character": "Nobody", "kind": "general", "title": "x", "data": {}}]})

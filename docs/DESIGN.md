@@ -27,14 +27,14 @@ One top bar for everyone (Brett, 2026-10-19, Option 1): story pages on the left,
 | **Sessions** | Everyone | Every published session, newest first |
 | **Campaign** | Everyone | People, places, factions, items, quests and the glossary |
 | **Map** | Everyone | The Sword Coast, with places marked |
-| **Cole ▾** (your character) | Everyone | Switches characters; opens one Character page in the same mode. Modes, switched at the page's top right: **Play** (`/characters/{id}/battle`: options by Action / Bonus action / Reaction, saves, Wild Shape row, On a hit, rolls, Easy to forget, Battle combos), **Sheet** (`/characters/{id}`: numbers strip, abilities and saves, tabs Actions, Spells, Wild Shape, Inventory, Features, Skills & situational, Background) and **Plan** (`/characters/{id}/plan`: tabs Battle combos, Leveling strategy, Personal quests, General notes, Easy to forget, Spell shortlist, Wild Shape shortlist; never the DM) |
+| **Cole ▾** (your character) | Everyone | Switches characters; opens one Character page in the same mode. Modes, switched at the page's top right: **Battle** (`/characters/{id}/battle`: options by Action / Bonus action / Reaction, saves, Wild Shape row, On a hit, rolls, Reminders, Battle combos), **Sheet** (`/characters/{id}`: numbers strip, abilities and saves, tabs Actions, Spells, Wild Shape, Inventory, Features, Skills & situational, Background) and **Plan** (`/characters/{id}/plan`: tabs Battle combos, Leveling strategy, Personal quests, General notes, Reminders, Spell shortlist, Wild Shape shortlist; never the DM) |
 | **Party** | Everyone | Party table (names open a short character modal), pooled spells and items |
 | **Live** pill | Everyone | When the D&D Beyond copy was last updated; green while Game Mode is on (per browser). Its popover: Game Mode, each character's last refresh and failures, Refresh now, and Refresh everyone (reviewers) |
 | **Manage ▾** | Admin and reviewers | Overview and the admin and reviewer pages |
-| **Table rolls** sidebar | Everyone, while Game Mode is on | Left sidebar on every page (`_table_rolls.html`, 340 px): open on Play, a 64 px rail elsewhere and below 1100 px, a bottom sheet on phones; remembered per device. Newest activity first, a roll and its damage / reroll / added die as one entry; a dice tray and your character's quick checks at the bottom. Others' rolls as fading notices while it's collapsed |
+| **Table rolls** sidebar | Everyone, while Game Mode is on | Left sidebar on every page (`_table_rolls.html`, 340 px): open on Battle, a 64 px rail elsewhere and below 1100 px, a bottom sheet on phones; remembered per device. Newest activity first, a roll and its damage / reroll / added die as one entry; a dice tray and your character's quick checks at the bottom. Others' rolls as fading notices while it's collapsed |
 | **Roll window** | Everyone | Opens next to any roll button (bottom of the screen on phones): Normal / Advantage / Disadvantage with the reasons, situational bonuses, who sees it; then the result with the d20 tumble and its follow-ups |
 
-Admin pages say so in their subtitle ("only you can see this page"). Breadcrumbs start at the top-level item (Manage › Review › Session 12). On phones a bottom bar holds Recap, Campaign, Play, Party and More (Sessions, Map, Manage, About, FAQ, sign out), and Play's three columns become Action / Bonus / Reaction tabs. Stars, reminders, shortlists, combos and character notes are never shown to the DM.
+Admin pages say so in their subtitle ("only you can see this page"). Breadcrumbs start at the top-level item (Manage › Review › Session 12). On phones a bottom bar holds Recap, Campaign, Battle, Party and More (Sessions, Map, Manage, About, FAQ, sign out), and Battle's three columns become Action / Bonus / Reaction tabs. Pins, reminders, shortlists, notes, combos and character notes are never shown to the DM.
 
 ## Review workflow (admin)
 
@@ -88,3 +88,31 @@ Status colors are used as text on a 14–15% tint of the same color.
 
 ## Section headings (2026-10-18)
 Section headings are all-caps, letter-spaced labels in amber with a fading rule (`h3.divider`). Only the action economy is color-coded, the same everywhere: ◆ red **Action**, ▲ amber **Bonus action**, ↺ blue **Reaction**, ● violet **Other** (classes `k-action`, `k-bonus`, `k-reaction`, `k-other`). Don't add more colors for other kinds of sections; the point is that color means "what it costs on your turn".
+
+## Words (glossary, Brett 2026-10-21)
+Use these words, and only these, in the app, the docs and the About and FAQ pages.
+
+| Word | Icon | What it means |
+|---|---|---|
+| **Battle** | | The fight page (`/characters/{id}/battle`). Never "Play". |
+| **Sheet** | | The holistic reference about the character: everything, organized. |
+| **Plan** | | Strategy: combos, leveling, quests, notes, the shortlist and reminders. Never shown to the DM. |
+| **Pin** / **Pinned to Battle** | 📌 (SVG pin) | Puts something with a turn cost (Action, Bonus action, Reaction) on Battle. Pinning also adds it to the Shortlist. |
+| **Shortlist** | Bookmark (SVG) | Things the player is considering or wants close at hand. Anything with a side panel can be shortlisted; a list only offers it once that list has a Shortlist view. |
+| **Reminders** / **Remind me** | Bell | Things that are easy to forget. Any item, plus free-text reminders. Never "Easy to forget". |
+| **Note** | ✎ | One note per thing, written by the player; it shows wherever that thing appears (one line under a row, full text in the side panel). |
+| **Ready · Shortlist · All** | | The three views on a list. "Ready" takes the list's own word: Prepared (spells), Known forms (Wild Shape), Equipped (inventory). |
+
+## Lists and filters (Brett 2026-10-21)
+Every list of game things (spells, Wild Shape forms, then inventory, features and the campaign) follows one pattern. Desktop first; phones get the same list with a **Filters (N)** sheet and no phone-only features.
+
+- **Main view decides across many items; the side panel shows one item.** Clicking a row opens the side panel, which slides in from the right edge of the window (also over the Spell Book, not inside it). Pin, Shortlist, Remind me and the note are always available in the side panel; Sheet may also offer them inline on rows.
+- **Views:** Ready · Shortlist · All, above the list. The Spell Book is the exception: it shows only Prepared spells (castable now).
+- **Filters:** a left column of chip groups, then a **More filters** fold. Chips are OR within a group, AND across groups; a second click turns a chip off; no "Any" chip. Each chip shows a live count; zero-count chips are greyed out but stay clickable (to be judged once live). An active-filter row with **Clear all** shows what's on.
+- **Search overrides filters** and says so (the filters dim while searching).
+- **Sort and lenses are separate from filters.** Spells sort by level, then name. A lens (such as "Averages at" a slot level) changes numbers, not which rows show.
+- **Remembered per page, per browser**, never shared across pages, and cleared after a day without use.
+- **Rows are compact**, one line plus an optional note line. Wild Shape rows get a thumbnail.
+- **Spell filters:** visible Level, Effect (damage, heal, control, support, utility), Casting time, Concentration. Under More: Ritual, Save type, On a successful save (half, nothing, damage still lands), Attack roll, Area or single target, Damage type, Range. Save spells always say what a successful save does.
+- **The DM** sees only the All view: no Ready, Shortlist or pins, and no notes.
+- **Build order:** 1) words and one note per thing, 2) Spell Book, 3) Sheet spells, 4) Plan, 5) Wild Shape; later Inventory, Features and Campaign. Each step ships on its own, and Brett reviews it before the next.

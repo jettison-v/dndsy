@@ -122,7 +122,7 @@ def allows(rule: str, lvl: str | None, dm: bool = False) -> bool:
 # (group, what it covers, rule; "own" = only on the character the person plays)
 CHART = [
     ("Read", "Recaps, sessions, the campaign record, the map", "read"),
-    ("Read", "Every character's page (Play and Sheet) and Party", "read"),
+    ("Read", "Every character's page (Battle and Sheet) and Party", "read"),
     ("Read", "Players' notes, stars, reminders and shortlists", "player_notes"),
     ("Contribute", "Suggest corrections and additions", "suggest"),
     ("Contribute", "Notes, stars, reminders, shortlists, the Wild Shape switch and table rolls", "own"),
@@ -171,6 +171,6 @@ def summary(lvl: str | None, dm: bool) -> str:
     }[lvl]
     if dm:
         parts += ("; as DM, decides on suggestions and adds pictures and glossary entries, " if lvl == PLAYER else "; as DM, ") + \
-            "never sees players' notes, stars or reminders"
+            "never sees players' notes, pins, shortlists or reminders"
     return parts + "."
 

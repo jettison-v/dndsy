@@ -91,7 +91,7 @@ def test_wild_shape_tab_panel_and_battle_switch(db, cole, player, dm):
     assert ">Wild Shape</button>" in page and "Known 6 of 6" in page and "form?name=Polar%20Bear" in page
     assert 'data-modal-url="/characters/%d/form?name=Polar%%20Bear" data-modal-size="large"' % cole.id in page  # opens in the large modal
     panel = player.get(f"/characters/{cole.id}/form?name=Polar Bear").text
-    assert "Circle Forms" in panel and "Shift into it on Play" in panel and "dndbeyond.com/avatars" in panel
+    assert "Circle Forms" in panel and "Shift into it on Battle" in panel and "dndbeyond.com/avatars" in panel
     assert player.get(f"/characters/{cole.id}/form?name=Unicorn").status_code == 404
 
     assert dm.post(f"/characters/{cole.id}/wild-shape", data={"form": "Polar Bear"}).status_code == 403  # their player only
@@ -107,21 +107,18 @@ def test_wild_shape_tab_panel_and_battle_switch(db, cole, player, dm):
     assert cole.wild_shape is None
 
 
-def test_notes_on_shortlist_and_reminders_are_the_players_and_hidden_from_the_dm(db, cole, player, dm):
+def test_one_note_per_form_is_the_players_and_hidden_from_the_dm(db, cole, player, dm):
     owned_by(db, char(db, "Trah"), "dm@example.com", is_dm=True)
     url = f"/characters/{cole.id}"
-    r = player.post(f"{url}/pick", data={"kind": "fav", "ref": "form:Tiger", "wrap": "1"})
-    assert "Why is it on your shortlist?" in r.text
-    assert player.post(f"{url}/pick/note", data={"kind": "fav", "ref": "form:Tiger", "note": "Pounce when I hit 9"}).text.endswith("Saved</span>")
-    assert player.post(f"{url}/pick/note", data={"kind": "star", "ref": "form:Tiger", "note": "x"}).status_code == 400
-    assert player.post(f"{url}/pick/note", data={"kind": "remind", "ref": "form:Tiger", "note": "x"}).status_code == 404  # not a reminder
-    assert dm.post(f"{url}/pick/note", data={"kind": "fav", "ref": "form:Tiger", "note": "x"}).status_code == 403
+    r = player.post(f"{url}/pick", data={"kind": "fav", "ref": "form:Tiger", "marks": "fav,remind"})
+    assert "On your shortlist" in r.text and "Remind me" in r.text and "Your note" in r.text  # the side panel's block
+    assert player.post(f"{url}/pick/note", data={"ref": "form:Tiger", "note": "Pounce when I hit 9"}).text.endswith("Saved</span>")
+    assert dm.post(f"{url}/pick/note", data={"ref": "form:Tiger", "note": "x"}).status_code == 403
     player.post(f"{url}/pick", data={"kind": "remind", "ref": "form:Tiger"})
-    player.post(f"{url}/pick/note", data={"kind": "remind", "ref": "form:Tiger", "note": "Only at night"})
-    page = player.get(url).text
-    assert "✎ Pounce when I hit 9" in page and "✎ Only at night" in page
-    assert "Tiger (Wild Shape, CR 1)" in player.get(f"{url}/battle").text  # reminder text for a form they don't know yet
-    assert "Pounce" not in dm.get(url).text and "Only at night" not in dm.get(f"{url}/battle").text
+    assert "✎ Pounce when I hit 9" in player.get(url).text
+    battle = player.get(f"{url}/battle").text
+    assert "Tiger (Wild Shape, CR 1)" in battle and "✎ Pounce when I hit 9" in battle  # the same note on the reminder
+    assert "Pounce" not in dm.get(url).text and "Pounce" not in dm.get(f"{url}/battle").text
 
 
 def _names(f, cost="Action"):

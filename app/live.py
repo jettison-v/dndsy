@@ -1,13 +1,13 @@
 """The menu bar's table pieces: the character switcher and the Live control.
 
 - The switcher ("Cole ▾") lists the campaign's characters, your own first, and opens the
-  same mode (Play / Sheet / Plan) for the one you pick.
+  same mode (Battle / Sheet / Plan) for the one you pick.
 - The Live pill says when the D&D Beyond copy was last updated: the character on screen,
   else your own, else the party's oldest copy. Its popover holds Game Mode (a switch per
   browser, kept in localStorage by app.js), each character's last refresh and failures,
   "Refresh <character> now" (anyone signed in, throttled) and "Refresh everyone"
   (reviewers only).
-- While Game Mode is on, app.js asks every couple of minutes: on Play it swaps in the updated
+- While Game Mode is on, app.js asks every couple of minutes: on Battle it swaps in the updated
   page body (character_pages.game_mode_sync), elsewhere it calls /live/sync and swaps the pill.
   The server fetches at most every AUTO_MIN_AGE per character, however many people watch.
 
@@ -38,10 +38,10 @@ GAME_MODE_SECONDS = 150  # the page asks every 2.5 minutes…
 AUTO_MIN_AGE = timedelta(seconds=110)  # …and the server fetches at most this often per character
 MANUAL_MIN_AGE = timedelta(seconds=20)  # "Refresh now"
 
-# /characters/5 is Sheet, /characters/5/battle is Play, /characters/5/plan is Plan
+# /characters/5 is Sheet, /characters/5/battle is Battle, /characters/5/plan is Plan
 CHARACTER_PAGE = re.compile(r"^/characters/(\d+)(/battle|/plan)?/?$")
-MODES = {"/battle": "play", "/plan": "plan", None: "sheet"}
-SUFFIX = {"play": "/battle", "sheet": "", "plan": "/plan"}
+MODES = {"/battle": "battle", "/plan": "plan", None: "sheet"}
+SUFFIX = {"battle": "/battle", "sheet": "", "plan": "/plan"}
 
 
 def rows_from(db: Session) -> list[dict]:
@@ -92,7 +92,7 @@ def table(user: dict | None, path: str = "", rows: list[dict] | None = None, foc
     oldest = min(linked, key=lambda r: r["fetched_at"] or datetime.min.replace(tzinfo=UTC)) if linked else None
     pill = focus if focus and focus["linked"] else oldest
     return {"characters": rows, "mine": mine, "here": here, "focus": focus, "mode": mode,
-            "suffix": SUFFIX[mode or "play"],  # the switcher keeps the mode; from elsewhere it opens Play
+            "suffix": SUFFIX[mode or "battle"],  # the switcher keeps the mode; from elsewhere it opens Battle
             "pill": pill, "party_pill": pill is not None and pill is not focus, "linked": linked,
             "every": GAME_MODE_SECONDS}
 
@@ -111,7 +111,7 @@ def maybe_refresh(db: Session, ch: Character, min_age: timedelta) -> bool:
 
 
 def pill(db: Session, user: dict, focus_id: int | None) -> str:
-    """The pill's HTML on its own (Game Mode's tick away from Play swaps it in)."""
+    """The pill's HTML on its own (Game Mode's tick away from Battle swaps it in)."""
     return templates.get_template("_live_pill.html").render(tn=table(user, "", rows_from(db), focus_id))
 
 
@@ -134,7 +134,7 @@ def live_panel(request: Request, c: int = 0, db: Session = Depends(get_db)):
 
 @router.post("/live/sync")
 def live_sync(request: Request, c: int = 0, db: Session = Depends(get_db)):
-    """Game Mode away from Play: keep the character on screen fresh (else your own, else
+    """Game Mode away from Battle: keep the character on screen fresh (else your own, else
     everyone's) and return the updated pill."""
     user = current_user(request)
     if not user:

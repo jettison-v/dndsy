@@ -1,7 +1,7 @@
-{% from "_char.html" import pips, pick_btn, battle_strip, save_tiles, resource_row, portrait, spends, adv, hit, roll_attrs %}
+{% from "_char.html" import pips, pick_btn, pin_icon, battle_strip, save_tiles, resource_row, portrait, spends, adv, hit, roll_attrs %}
 {% from "_notes_macros.html" import combo_body %}
 {% set s = sheet %}
-{# Character › Play (character_pages._battle_ctx). Game Mode and the Wild Shape switch swap this whole block. #}
+{# Character › Battle (character_pages._battle_ctx). Game Mode and the Wild Shape switch swap this whole block. #}
 <div id="battle-body" data-character="{{ c.id }}" data-name="{{ c.entity.name }}" data-fetched="{{ fetched_at.isoformat() if fetched_at else '' }}">
   <div class="battlebar">
     {% if form %}{% set fb = form.beast %}
@@ -33,7 +33,7 @@
 
   {% if s and spellbar %}{% include "_spell_bar.html" %}{% endif %}
   {% if s %}
-  {% if can_pick and not form %}<p class="note" style="margin:-6px 0 10px">Drag options to reorder a column. ★ on Sheet (or in "See all") adds more.</p>{% endif %}
+  {% if can_pick and not form %}<p class="note" style="margin:-6px 0 10px">Drag options to reorder a column. Pin more on Sheet or in "See all".</p>{% endif %}
   {% set econ = [("Action", "One per turn", "action"), ("Bonus action", "One per turn, before or after your Action", "bonus"), ("Reaction", "One per round, also on others' turns", "reaction")] %}
   {# Phones: the three columns become tabs (app.js keeps the chosen one across Game Mode updates). #}
   <div class="econ-tabs" role="tablist" aria-label="Action, bonus action or reaction">
@@ -49,8 +49,9 @@
       {% for o in col.shown %}
       <div class="move{{ ' yours' if o.source == 'yours' }}" data-key="{{ o.key }}" {% if form and o.source in ('form', 'rule') %}data-modal-url="/characters/{{ c.id }}/form?name={{ form.beast.name | urlencode }}" data-modal-size="large"{% else %}data-panel-url="/characters/{{ c.id }}/detail?ref={{ o.key | urlencode }}"{% endif %} tabindex="0" role="button">
         {{ hit(o) }}
-        {% if o.starred and show_picks %}<span class="pick star on static" aria-label="starred">★</span>{% endif %}<b>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag">{{ t }}</span>{% endfor %}{{ spends(o.spends) }}
+        {% if o.starred and show_picks %}<span class="pick star on static" title="Pinned to Battle">{{ pin_icon() }}</span>{% endif %}<b>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag">{{ t }}</span>{% endfor %}{{ spends(o.spends) }}
         {% if o.meta %}<div class="meta">{{ o.meta }}</div>{% endif %}
+        {% if show_picks and picks.notes.get(o.key) %}<div class="meta move-note" title="Your note">✎ {{ picks.notes[o.key] }}</div>{% endif %}
       </div>
       {% else %}<p class="muted">Nothing here yet.</p>{% endfor %}
       </div>

@@ -197,7 +197,7 @@ def test_battle_page(player, db):
     characters.refresh(db, cole)
     page = player.get(f"/characters/{cole.id}/battle").text
     assert "Wild Shape" in page and "Unarmed Strike" in page and "+6" in page and "Absorb Elements" in page
-    assert "Use an item: Potion of Healing" in page and "Easy to forget" in page and "Party" in page
+    assert "Use an item: Potion of Healing" in page and "Reminders" in page and "Party" in page
     assert 'id="live-pill"' in page and "See all actions" in page  # Game Mode is in the Live popover
     panel = player.get(f"/characters/{cole.id}/all/action").text
     assert "<html" not in panel and "Heat Metal" in panel and "Moonbeam" in panel
@@ -223,16 +223,45 @@ def test_only_the_player_stars_and_reminds(player, admin, db):
     page = player.get(f"/characters/{cole.id}").text
     assert 'class="pick star' in page and 'class="pick remind' in page and "This is your character" in page
     r = player.post(f"/characters/{cole.id}/pick", data={"kind": "star", "ref": "spell:Heat Metal"})
-    assert r.status_code == 200 and "★" in r.text and 'aria-pressed="true"' in r.text
+    assert r.status_code == 200 and 'class="ico-pin"' in r.text and 'aria-pressed="true"' in r.text
     situ = cole.snapshot.summary["situational"][0]["key"]
     player.post(f"/characters/{cole.id}/pick", data={"kind": "remind", "ref": situ})
     battle = player.get(f"/characters/{cole.id}/battle").text
-    assert "Advantage on saving throws against being charmed (Fey Ancestry)" in battle  # Easy to forget
-    assert "Heat Metal" in battle.split("Bonus action")[0]  # starred: shown in the Action column
+    assert "Advantage on saving throws against being charmed (Fey Ancestry)" in battle  # Reminders
+    assert "Heat Metal" in battle.split("Bonus action")[0]  # pinned: shown in the Action column
     assert admin.post(f"/characters/{cole.id}/pick", data={"kind": "star", "ref": "spell:Moonbeam"}).status_code == 403
     assert 'class="pick star"' not in admin.get(f"/characters/{cole.id}").text  # admins can't change them either
     player.post(f"/characters/{cole.id}/pick", data={"kind": "star", "ref": "spell:Heat Metal"})  # toggles off
     assert "Heat Metal" not in player.get(f"/characters/{cole.id}/battle").text.split("Bonus action")[0]
+
+
+def _marks(db, ch):
+    from app.models import CharacterPick
+    return {(p.kind, p.ref): p.note for p in db.scalars(select(CharacterPick).where(CharacterPick.character_id == ch.id))}
+
+
+def test_pinning_also_shortlists_and_unpinning_leaves_the_shortlist(db):
+    from app import picks
+
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    assert picks.toggle(db, cole, "star", "spell:Heat Metal", "Heat Metal") is True
+    assert {("star", "spell:Heat Metal"), ("fav", "spell:Heat Metal")} <= set(_marks(db, cole))
+    assert picks.toggle(db, cole, "star", "spell:Heat Metal") is False
+    assert ("star", "spell:Heat Metal") not in _marks(db, cole) and ("fav", "spell:Heat Metal") in _marks(db, cole)
+
+
+def test_one_note_per_thing_marked_or_not(db):
+    from app import picks
+
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    picks.set_note(db, cole, "spell:Moonbeam", "  Opener vs. groups  ")  # no mark needed
+    picks.toggle(db, cole, "remind", "spell:Moonbeam")
+    picks.toggle(db, cole, "fav", "spell:Moonbeam")
+    assert _marks(db, cole) == {("note", "spell:Moonbeam"): "Opener vs. groups", ("remind", "spell:Moonbeam"): "", ("fav", "spell:Moonbeam"): ""}
+    picks.set_note(db, cole, "spell:Moonbeam", "")  # an empty note removes it
+    assert ("note", "spell:Moonbeam") not in _marks(db, cole)
 
 
 def test_dm_never_sees_reminders(dm, db):
@@ -248,7 +277,7 @@ def test_dm_never_sees_reminders(dm, db):
     db.flush()
     battle = dm.get(f"/characters/{cole.id}/battle").text
     assert "SECRET REMINDER" not in battle and "aren't shown to the DM" in battle
-    assert "★" not in dm.get(f"/characters/{cole.id}/all/action").text
+    assert "ico-pin" not in dm.get(f"/characters/{cole.id}/all/action").text
 
 
 def test_my_battle_and_character_open_my_character(player, db):
@@ -378,7 +407,7 @@ def test_spell_planner_and_shortlist(player, db):
     assert "Barkskin" in page and "Not prepared" in page and 'data-view="fav"' not in page  # shortlists are on Plan
     assert "Barkskin" not in player.get(f"/characters/{cole.id}/plan").text.split("Spell shortlist")[1]
     r = player.post(f"/characters/{cole.id}/pick", data={"kind": "fav", "ref": "spell:Barkskin"})
-    assert "♥" in r.text
+    assert 'class="ico-bookmark"' in r.text and 'aria-pressed="true"' in r.text
     assert 'data-fav="1"' in player.get(f"/characters/{cole.id}").text
     assert "Barkskin" in player.get(f"/characters/{cole.id}/plan").text.split("Spell shortlist")[1]
 

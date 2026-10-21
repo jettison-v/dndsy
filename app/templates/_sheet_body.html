@@ -1,5 +1,5 @@
 {# Character › Sheet: the full sheet in tabs (character_pages._sheet_ctx). #}
-{% from "_char.html" import pips, pick_btn, ri, opt_row, spell_row, bell, tile, adv, form_card, spell_tools, form_tools, roll_attrs %}
+{% from "_char.html" import pips, pick_btn, ri, opt_row, spell_row, bell, pin_icon, bookmark_icon, tile, adv, form_card, spell_tools, form_tools, roll_attrs %}
 {% set s = sheet %}
 {% if s %}
 {# Row 1: the numbers you look up most #}
@@ -27,7 +27,7 @@
 
 {# Row 3: everything else, in tabs #}
 <section class="section">
-  {% if can_pick %}<p class="hint" style="margin:0 0 10px">This is your character: <span class="pick star on static">★</span> puts something on Play, <span class="pick remind on static">{{ bell(true) }}</span> adds it to Easy to forget, and ♥ adds a spell or form to your shortlist on Plan. Only you can change these, and the DM can't see them.</p>{% endif %}
+  {% if can_pick %}<p class="hint" style="margin:0 0 10px">This is your character: <span class="pick star on static">{{ pin_icon() }}</span> pins something to Battle (and your Shortlist), <span class="pick fav on static">{{ bookmark_icon() }}</span> adds a spell or form to your Shortlist on Plan, and <span class="pick remind on static">{{ bell(true) }}</span> adds it to your Reminders. Open anything for its side panel to write your note on it. Only you can change these, and the DM can't see them.</p>{% endif %}
   <div class="tabbar" role="tablist">
     <button role="tab" aria-selected="true" data-tab="t-actions">Actions</button>
     {% if s.spells or s.spellbook %}<button role="tab" aria-selected="false" data-tab="t-spells">Spells</button>{% endif %}
@@ -64,7 +64,7 @@
           {% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}<span>Pact, level {{ p.level }} {{ pips({"max": p.max, "left": p.max - p.used}) }}</span>{% endif %}</div></div>
     </div>
     {{ spell_tools(s, [("ready", "Ready to cast"), ("all", "All you could prepare")]) }}
-    <p class="note planner-note"><span data-shown></span>{% if can_pick %} ♥ adds a spell to your shortlist on Plan, to compare before preparing it.{% endif %} askdnd can't change D&amp;D Beyond: prepare spells there{% if s.sheet_url %} (<a href="{{ s.sheet_url }}" target="_blank" rel="noopener">open ↗</a>){% endif %}, then refresh. Click a spell for its full description.</p>
+    <p class="note planner-note"><span data-shown></span>{% if can_pick %} The bookmark adds a spell to your Shortlist on Plan, to compare before preparing it.{% endif %} askdnd can't change D&amp;D Beyond: prepare spells there{% if s.sheet_url %} (<a href="{{ s.sheet_url }}" target="_blank" rel="noopener">open ↗</a>){% endif %}, then refresh. Click a spell for its full description.</p>
     <div class="spell-key" aria-hidden="true"><span></span><span>Spell · what it does</span><span>Casting time · range · duration · effect</span><span>Hit / DC</span><span></span></div>
     {% for b in s.spellbook %}
     <section class="planner-group">
@@ -177,7 +177,7 @@
     {% if ws_other_uses %}<details class="fold ws-other"{% if not d.moon and d.level >= 3 %} open{% endif %}><summary>Other ways to use Wild Shape ({{ ws_other_uses | length }})</summary>
       <ul class="plain">{% for u in ws_other_uses %}<li><b>{{ u.name }}</b> <span class="muted">{{ u.summary }}</span></li>{% endfor %}</ul></details>{% endif %}
     {{ form_tools(forms, [("ready", "Known"), ("all", "All you can learn")]) }}
-    <p class="note planner-note"><span data-shown></span>{% if can_pick %} ♥ adds a form to your shortlist on Plan, to compare before learning it.{% endif %} Learn forms on D&amp;D Beyond{% if s.sheet_url %} (<a href="{{ s.sheet_url }}" target="_blank" rel="noopener">open ↗</a>){% endif %}: you can swap one known form after each Long Rest. Click a form to see it with your stats carried over.</p>
+    <p class="note planner-note"><span data-shown></span>{% if can_pick %} The bookmark adds a form to your Shortlist on Plan, to compare before learning it.{% endif %} Learn forms on D&amp;D Beyond{% if s.sheet_url %} (<a href="{{ s.sheet_url }}" target="_blank" rel="noopener">open ↗</a>){% endif %}: you can swap one known form after each Long Rest. Click a form to see it with your stats carried over.</p>
     <section class="planner-group"><div class="planner-level"><div class="form-cards" data-sortable-cards>
     {% for fm in forms %}{{ form_card(c, fm, picks, can_pick, loop.index) }}{% endfor %}
     </div></div></section>

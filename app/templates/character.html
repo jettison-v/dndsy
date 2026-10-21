@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_char.html" import portrait %}
-{% set mode_label = {"play": "Play", "sheet": "Sheet", "plan": "Plan"}[mode] %}
+{% set mode_label = {"battle": "Battle", "sheet": "Sheet", "plan": "Plan"}[mode] %}
 {% block title %}{{ c.entity.name }} · {{ mode_label }} · askdnd{% endblock %}
 {% block head %}{% if mode != "sheet" %}<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js" defer></script>{% endif %}{% endblock %}
 {% block content %}
@@ -15,13 +15,13 @@
       {% if failed %}<div class="note"><span class="quiet-warn">The latest refresh from D&amp;D Beyond didn't work, so this is the last good copy, from {{ fetched_at | ago }}. {{ error }}</span></div>{% endif %}{% endif %}
     </div>
     <nav class="modes" aria-label="Mode">
-      <a href="/characters/{{ c.id }}/battle"{% if mode == "play" %} aria-current="page"{% endif %}>Play</a>
+      <a href="/characters/{{ c.id }}/battle"{% if mode == "battle" %} aria-current="page"{% endif %}>Battle</a>
       <a href="/characters/{{ c.id }}"{% if mode == "sheet" %} aria-current="page"{% endif %}>Sheet</a>
       {% if show_picks %}<a href="/characters/{{ c.id }}/plan"{% if mode == "plan" %} aria-current="page"{% endif %}>Plan</a>{% endif %}
     </nav>
   </div>
 
-  {% if mode == "play" %}{% include "_battle_body.html" %}
+  {% if mode == "battle" %}{% include "_battle_body.html" %}
   {% elif mode == "plan" %}{% include "_plan_body.html" %}
   {% else %}{% include "_sheet_body.html" %}{% endif %}
 
