@@ -1408,7 +1408,6 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .sh-status { font-size: var(--fs-md); font-weight: 700; line-height: 1; justify-self: center; }
 .sh-status.on { color: var(--green); }
 .sh-status.off { color: var(--faint); }
-.sh-status.wanted { color: var(--amber); }  /* shortlisted, not prepared yet */
 .tag.sh-always { color: var(--green); background: var(--green-soft); }
 .ls-views button { padding: 5px 12px; min-height: 0; font-size: var(--fs-sm); }
 .ls-views button[aria-pressed="true"] { background: #2a3550; color: var(--text); }

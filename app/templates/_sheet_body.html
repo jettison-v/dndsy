@@ -113,7 +113,7 @@
           </div>
           <p class="note ls-empty" data-ls-empty hidden>No spells match. <button type="button" class="btn link small" data-ls-clear>Clear all</button></p>
           <p class="note ls-empty" data-ls-empty-view="fav" hidden>Nothing on your Shortlist yet. In <b>All</b>, press the bookmark on a spell you're considering; compare your Shortlist on Plan before preparing it on D&amp;D Beyond.</p>
-          {% if show_picks %}<p class="note">Tip: <b>Shortlist</b> with <b>Not prepared</b> shows the spells you're considering but haven't prepared yet (marked with an amber <span class="sh-status off wanted">○</span>).</p>{% endif %}
+          {% if show_picks %}<p class="note">Tip: <b>Shortlist</b> with <b>Not prepared</b> shows the spells you're considering but haven't prepared yet (marked <span class="sh-status off">○</span>).</p>{% endif %}
           <p class="note sb-foot-note">{% if can_pick %}The bookmark adds a spell to your Shortlist, the pin puts it on Battle and the bell adds it to your Reminders. {% endif %}Click a spell for its full description{% if can_pick %} and your note{% endif %}. askdnd can't change D&amp;D Beyond: prepare spells there{% if s.sheet_url %} (<a href="{{ s.sheet_url }}" target="_blank" rel="noopener">open ↗</a>){% endif %}, then refresh.</p>
         </div>
       </div>
