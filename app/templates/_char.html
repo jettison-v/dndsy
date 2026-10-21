@@ -137,6 +137,20 @@
 {%- endmacro %}
 {% set hit_btn = hit %}{# ri() has a "hit" argument of its own #}
 
+{# A spell's roll as one button: to hit for spell attacks, else its first other roll (save damage,
+   healing); a spell with nothing to roll opens its description. slot: the level to cast it at. #}
+{% macro spell_roll(c, e, label=none, cls="spell-chip", slot=0) -%}
+{%- set rec = e.recipe -%}
+{%- set first = (rec.events | rejectattr("on", "equalto", "hit") | list | first) if rec else none -%}
+{%- if e.attack and rec -%}
+<button type="button" class="{{ cls }}" {{ roll_attrs("attack", e.name, e.attack, "", (), recipe=rec) }}{% if slot %} data-slot="{{ slot }}"{% endif %} title="Roll to hit {{ e.attack }}">{{ label or e.name }}</button>
+{%- elif first -%}
+<button type="button" class="{{ cls }}" {{ roll_attrs({"heal": "heal", "temp": "temp", "plain": "dice"}.get(first.on, "damage"), e.name, "", "", note=("Each target makes a " ~ e.save ~ " save." if e.save else ""), recipe=rec) }}{% if slot %} data-slot="{{ slot }}"{% endif %} title="Roll {{ e.name }}">{{ label or e.name }}</button>
+{%- else -%}
+<button type="button" class="{{ cls }}" data-panel-url="/characters/{{ c.id }}/detail?ref={{ e.key | urlencode }}" title="What {{ e.name }} does">{{ label or e.name }}</button>
+{%- endif -%}
+{%- endmacro %}
+
 {# Battle's header: the Character page's number strip, with the labels and tiles it uses, tighter. #}
 {% macro battle_strip(s, c) -%}
 <div class="strip compact">

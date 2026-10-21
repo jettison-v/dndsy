@@ -31,6 +31,7 @@
   </div>
   {% endif %}
 
+  {% if s and spellbar %}{% include "_spell_bar.html" %}{% endif %}
   {% if s %}
   {% if can_pick and not form %}<p class="note" style="margin:-6px 0 10px">Drag options to reorder a column. ★ on Sheet (or in "See all") adds more.</p>{% endif %}
   {% set econ = [("Action", "One per turn", "action"), ("Bonus action", "One per turn, before or after your Action", "bonus"), ("Reaction", "One per round, also on others' turns", "reaction")] %}

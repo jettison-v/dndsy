@@ -23,6 +23,7 @@ from app import character_views as views
 from app import characters as chars
 from app import ddb, picks
 from app import class_rules, live, player_notes
+from app import spellbook as sb
 from app import wild_shape as ws
 from app import rules_terms as terms
 from app.auth import current_user, is_admin, is_reviewer
@@ -162,8 +163,26 @@ def _battle_ctx(db: Session, ch: Character, user: dict) -> dict:
         if beast:
             ctx["form"] = ws.shaped(ctx["sheet"], beast, keep=ch.wild_shape_keep)
             ctx["columns"] = ctx["form"]["columns"]
+    ctx["spellbar"] = _spellbar(ch, ctx)
     ctx |= player_notes.page_context(db, ch, user, ctx["sheet"])
     return ctx
+
+
+def _castable_in_form(ctx: dict) -> set[str]:
+    d = ctx.get("druid") or {}
+    return set(d.get("moon_spells") or []) | ({sp["name"] for sp in (ctx["sheet"] or {}).get("spells") or []} if d.get("beast_spells") else set())
+
+
+def _spellbar(ch: Character, ctx: dict) -> dict | None:
+    """Play's spell bar: the Spell Book button, slots, starred spells and Concentration."""
+    sheet = ctx["sheet"] or {}
+    if not sheet.get("spells"):
+        return None
+    form = ctx.get("form")
+    spells = sb.entries(sheet, _castable_in_form(ctx))
+    starred = [e for e in spells if e["key"] in ctx["picks"]["star"] and (not form or e["name"] in form.get("castable", []))]
+    return {"slots": sb.slot_levels(sheet), "starred": starred, "conc": ch.concentration or None,
+            "con_save": sb.concentration_save(form["saves"] if form else sheet.get("saves") or [])}
 
 
 def _sheet_ctx(db: Session, ch: Character, user: dict) -> dict:
@@ -425,6 +444,78 @@ def set_wild_shape(request: Request, character_id: int, form: str = Form(""), db
         resp.headers["HX-Trigger"] = json.dumps({"toast": f"Wild Shape: {ch.wild_shape}" if ch.wild_shape else "Back to normal form"})
         return resp
     return RedirectResponse(f"/characters/{ch.id}/battle", status_code=303)
+
+
+@router.get("/characters/{character_id:int}/spellbook")
+def spellbook_modal(request: Request, character_id: int, db: Session = Depends(get_db)):
+    """The Spell Book (a large modal from Play's spell bar): every spell the character can cast,
+    grouped by effect, with averages at each slot level and filters."""
+    user, ch, stop = _load(request, db, character_id)
+    if stop:
+        return stop
+    ctx = _view(db, ch, user)
+    sheet = ctx["sheet"] or {}
+    spells = sb.entries(sheet, _castable_in_form(ctx))
+    slots = sb.slot_levels(sheet)
+    default = next((s["level"] for s in reversed(slots) if s["left"]), slots[-1]["level"] if slots else 0)
+    return templates.TemplateResponse(request, "_spellbook.html", {
+        **ctx, "spells": spells, "slots": slots, "default_slot": default, "effects": sb.EFFECTS, "counts": sb.counts(spells),
+        "in_form": bool(ch.wild_shape and ctx["druid"]), "sc": (sheet.get("spellcasting") or [{}])[0],
+        "conc": ch.concentration})
+
+
+def _concentration_reply(request: Request, db: Session, ch: Character, user: dict, toast: str):
+    if request.headers.get("HX-Request"):
+        resp = templates.TemplateResponse(request, "_battle_body.html", _battle_ctx(db, ch, user))
+        resp.headers["HX-Trigger"] = json.dumps({"toast": toast})
+        return resp
+    return RedirectResponse(f"/characters/{ch.id}/battle", status_code=303)
+
+
+def _concentration_guard(request: Request, db: Session, character_id: int):
+    user, ch, stop = _load(request, db, character_id)
+    if not stop and not picks.can_edit(db, user, ch):
+        stop = _forbidden(request, "Only this character's player can do that.")
+    return user, ch, stop
+
+
+@router.post("/characters/{character_id:int}/concentration")
+def start_concentration(request: Request, character_id: int, key: str = Form(...), level: int = Form(0), db: Session = Depends(get_db)):
+    """Start tracking Concentration on a spell (the character's player). A new one replaces the
+    old, as at the table. Slots are spent on D&D Beyond; askdnd only keeps track."""
+    user, ch, stop = _concentration_guard(request, db, character_id)
+    if stop:
+        return stop
+    sp = next((e for e in sb.entries(chars.character_summary(ch) or {}) if e["key"] == key and e["conc"]), None)
+    if sp is None:
+        return HTMLResponse("", status_code=400)
+    ch.concentration = {"spell": sp["name"], "key": sp["key"], "level": max(level, sp["level"]), "round": 1, "rounds": sp["rounds"]}
+    db.commit()
+    return _concentration_reply(request, db, ch, user, f"Concentrating on {sp['name']}")
+
+
+@router.post("/characters/{character_id:int}/concentration/round")
+def next_concentration_round(request: Request, character_id: int, db: Session = Depends(get_db)):
+    user, ch, stop = _concentration_guard(request, db, character_id)
+    if stop:
+        return stop
+    if ch.concentration:
+        c = dict(ch.concentration)
+        c["round"] = min(c.get("round", 1) + 1, c.get("rounds") or 9999)
+        ch.concentration = c
+        db.commit()
+    return _concentration_reply(request, db, ch, user, f"Round {ch.concentration['round']}" if ch.concentration else "Not concentrating")
+
+
+@router.post("/characters/{character_id:int}/concentration/end")
+def end_concentration(request: Request, character_id: int, db: Session = Depends(get_db)):
+    user, ch, stop = _concentration_guard(request, db, character_id)
+    if stop:
+        return stop
+    name = (ch.concentration or {}).get("spell", "")
+    ch.concentration = None
+    db.commit()
+    return _concentration_reply(request, db, ch, user, f"Concentration on {name} ended" if name else "Not concentrating")
 
 
 @router.post("/characters/{character_id:int}/order")

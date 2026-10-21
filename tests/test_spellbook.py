@@ -1,0 +1,63 @@
+"""The Spell Book and Concentration (app/spellbook.py): effect groups, averages with upcasting,
+the Concentration save, and who can start or end Concentration."""
+
+from app import roll_recipes as rr
+from app import spellbook as sb
+from tests.test_characters import BUNDLE, COLE, admin, char, dm, no_network, owned_by, player  # noqa: F401
+from tests.test_suggestions import HX
+from tests.test_wild_shape import cole, cole_sheet  # noqa: F401
+
+
+def test_effect_groups():
+    assert sb.effect_of({"damage": "2d10 radiant", "tags": ["Damage", "Control"]}) == "damage"
+    assert sb.effect_of({"healing": "2d4", "tags": ["Healing"]}) == "heal"
+    assert sb.effect_of({"tags": ["Control"]}) == "control"
+    assert sb.effect_of({"tags": ["Buff"]}) == "support"
+    assert sb.effect_of({"casting_time": "Reaction", "damage": "1d6 acid", "tags": ["Damage", "Warding"]}) == "support"  # Absorb Elements
+    assert sb.effect_of({"tags": ["Detection"]}) == "utility"
+
+
+def test_averages_count_upcasting_and_cantrip_tiers():
+    moon = rr.spell("Moonbeam")
+    assert sb.average(moon, 2, 8)["avg"] == 11.0 and sb.average(moon, 3, 8) == {"avg": 16.5, "dice": "3d10 radiant", "per": "on a failed save"}
+    word = rr.spell("Healing Word")
+    assert sb.average(word, 3, 8, spell_mod=4)["avg"] == 6 * 2.5 + 4  # 6d4 + Wisdom at a 3rd-level slot
+    wisp = rr.spell("Starry Wisp")
+    assert sb.average(wisp, 0, 4)["avg"] == 4.5 and sb.average(wisp, 0, 8)["avg"] == 9.0  # 1d8, then 2d8 from level 5
+    assert sb.average(None, 3, 8) is None
+
+
+def test_concentration_rules():
+    assert sb.concentration_dc(0) == 10 and sb.concentration_dc(31) == 15 and sb.concentration_dc(200) == 30
+    assert sb.rounds("Concentration, up to 1 minute") == 10 and sb.rounds("Concentration, up to 10 minutes") == 100
+    save = sb.concentration_save(cole_sheet()["saves"])
+    assert save["label"] == "+2" and [a["source"] for a in save["adv"]] == ["War Caster"]  # War Caster counts for Concentration
+    assert all(not a["when"] for a in save["adv"])  # so it rolls with Advantage
+
+
+def test_entries_mark_what_works_in_wild_shape():
+    sheet = cole_sheet()
+    spells = {e["name"]: e for e in sb.entries(sheet, {"Moonbeam", "Starry Wisp"})}
+    assert spells["Moonbeam"]["ws"] and not spells["Thorn Whip"]["ws"]
+    assert spells["Moonbeam"]["avgs"][3]["avg"] == 16.5 and spells["Moonbeam"]["conc"] and spells["Moonbeam"]["rounds"] == 10
+
+
+def test_spellbook_and_concentration_for_the_player_only(db, cole, player, dm):
+    page = player.get(f"/characters/{cole.id}/battle").text
+    assert 'data-modal-url="/characters/%d/spellbook"' % cole.id in page and "Spell Book" in page
+    book = player.get(f"/characters/{cole.id}/spellbook").text
+    assert "data-spellbook" in book and 'data-name="moonbeam"' in book and ">Concentrate</button>" in book
+    assert ">Concentrate</button>" not in dm.get(f"/characters/{cole.id}/spellbook").text  # the DM can look, not act
+    assert dm.post(f"/characters/{cole.id}/concentration", data={"key": "spell:Moonbeam", "level": "3"}).status_code == 403
+    r = player.post(f"/characters/{cole.id}/concentration", data={"key": "spell:Moonbeam", "level": "3"}, headers=HX)
+    assert r.status_code == 200 and "Moonbeam" in r.text and "round 1/10" in r.text
+    db.refresh(cole)
+    assert cole.concentration == {"spell": "Moonbeam", "key": "spell:Moonbeam", "level": 3, "round": 1, "rounds": 10}
+    assert "Con save (Concentration on Moonbeam)" in r.text and 'data-adv="1"' in r.text
+    player.post(f"/characters/{cole.id}/concentration/round", headers=HX)
+    db.refresh(cole)
+    assert cole.concentration["round"] == 2
+    assert player.post(f"/characters/{cole.id}/concentration", data={"key": "spell:Thorn Whip"}).status_code == 400  # not Concentration
+    player.post(f"/characters/{cole.id}/concentration/end", headers=HX)
+    db.refresh(cole)
+    assert cole.concentration is None

@@ -1,0 +1,43 @@
+{# Play's spell bar (character_pages._spellbar): the Spell Book, slots, starred spells and Concentration. #}
+{% from "_char.html" import roll_attrs, pips, spell_roll %}
+
+{% set b = spellbar %}
+<div class="spell-bar" id="spell-bar">
+  <button type="button" class="btn spellbook-btn" data-modal-url="/characters/{{ c.id }}/spellbook" data-modal-size="large">
+    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v16H5.5A1.5 1.5 0 0 0 4 20.5v-16ZM4 20.5A1.5 1.5 0 0 0 5.5 22H19" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Spell Book</button>
+  {% if b.slots %}<span class="sb-slots" aria-label="Spell slots">{% for s in b.slots %}<span class="sb-slot">{{ "Pact " if s.pact }}{{ s.level }}{{ {1: "st", 2: "nd", 3: "rd"}.get(s.level, "th") }} {{ pips({"left": s.left, "max": s.max}) }}</span>{% endfor %}</span>{% endif %}
+  {% if b.conc %}{% set cn = b.conc %}
+  <span class="conc-pill" title="Concentrating on {{ cn.spell }} ({{ cn.level }}{{ {1: 'st', 2: 'nd', 3: 'rd'}.get(cn.level, 'th') }} level){% if cn.rounds %}, round {{ cn.round }} of {{ cn.rounds }}{% endif %}">
+    <span class="conc-k">Conc.</span><b>{{ cn.spell }}</b>
+    <span class="conc-k">{{ cn.level }}{{ {1: "st", 2: "nd", 3: "rd"}.get(cn.level, "th") }}{% if cn.rounds %} · round {{ cn.round }}/{{ cn.rounds }}{% endif %}</span>
+    {% if can_pick and cn.rounds and cn.round < cn.rounds %}<button type="button" class="conc-next" hx-post="/characters/{{ c.id }}/concentration/round" hx-target="#battle-body" hx-swap="outerHTML" title="Next round" aria-label="Next round">+1</button>{% endif %}
+    {% if b.con_save %}
+    <details class="conc-pop">
+      <summary class="conc-save">Save {{ b.con_save.label }}{% if b.con_save.adv %} Adv{% endif %}</summary>
+      <div class="conc-box" role="dialog" aria-label="Concentration save">
+        <div class="conc-head"><b>Concentration save</b><span class="note">{{ cn.spell }}</span></div>
+        <label class="conc-dmg">Damage you just took <input type="number" min="0" max="999" value="0" inputmode="numeric" data-conc-dmg></label>
+        <dl class="conc-facts">
+          <dt>DC</dt><dd><b data-conc-dc>10</b> <span class="note">(10, or half the damage if higher; up to 30)</span></dd>
+          <dt>Bonus</dt><dd>Con {{ b.con_save.label }}</dd>
+          {% if b.con_save.adv %}<dt>Advantage</dt><dd>{% for a in b.con_save.adv %}{{ a.source or a.text }}{{ ", " if not loop.last }}{% endfor %}</dd>{% endif %}
+        </dl>
+        <button type="button" class="btn primary conc-roll" data-conc-roll {{ roll_attrs("save", "Con save (Concentration on " ~ cn.spell ~ ")", b.con_save.label, "", b.con_save.adv, note="DC 10") }}>Roll Con save{% if b.con_save.adv %} · Adv{% endif %}</button>
+      </div>
+    </details>
+    {% endif %}
+    {% if can_pick %}
+    <details class="conc-pop">
+      <summary class="conc-x" aria-label="End Concentration" title="End Concentration">✕</summary>
+      <div class="conc-box warn" role="alertdialog" aria-label="End Concentration?">
+        <b>End Concentration on {{ cn.spell }}?</b>
+        <span class="note">The spell ends now. The slot stays spent.</span>
+        <div class="row" style="gap:8px"><button type="button" class="btn small" data-close-details>Keep it</button>
+          <button type="button" class="btn small danger" hx-post="/characters/{{ c.id }}/concentration/end" hx-target="#battle-body" hx-swap="outerHTML">End it</button></div>
+      </div>
+    </details>
+    {% endif %}
+  </span>
+  {% endif %}
+  {% if b.starred %}<span class="sb-starred"><span class="note">★ Starred</span>{% for e in b.starred %}{{ spell_roll(c, e) }}{% endfor %}</span>{% endif %}
+</div>

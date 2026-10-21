@@ -989,7 +989,7 @@
     if (rec) {
       evs = rec.events.filter(e => (spec.kind === 'attack') === (e.on === 'hit'));
       const grows = rec.level && evs.some(e => (e.upcast || []).some(Boolean) || e.count_upcast);
-      slot = rec.level ? ((ctx.slots || []).find(l => l >= rec.level) || rec.level) : 0;
+      slot = rec.level ? (spec.slot >= rec.level ? spec.slot : ((ctx.slots || []).find(l => l >= rec.level) || rec.level)) : 0;
       if (grows) h += '<div class="rw-row"><span class="rw-label">Cast at</span><select class="rw-slot" data-slot aria-label="Spell slot level">'
         + [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(l => l >= rec.level).map(l => '<option value="' + l + '"' + (l === slot ? ' selected' : '') + '>Level ' + l
           + (ctx.slots && ctx.slots.length && !ctx.slots.includes(l) ? ' (no slot left)' : '') + '</option>').join('') + '</select></div>';
@@ -1143,7 +1143,7 @@
     const shared = gmOn() && !!side && (kind === 'dice' || (!!cid && side.dataset.mine === cid));
     let recipe = null;
     try { recipe = el.dataset.recipe ? JSON.parse(el.dataset.recipe) : null; } catch (err) { recipe = null; }
-    return { kind, label: el.dataset.label || '', mod: el.dataset.mod || '', dmg: el.dataset.dmg || '', adv: !!el.dataset.adv, recipe,
+    return { kind, label: el.dataset.label || '', mod: el.dataset.mod || '', dmg: el.dataset.dmg || '', adv: !!el.dataset.adv, recipe, slot: +el.dataset.slot || 0,
              advWhy: el.dataset.advWhy || '', note: el.dataset.note || '', cid: kind === 'dice' && side ? side.dataset.mine : cid, shared };
   }
 
@@ -1328,4 +1328,89 @@
     setTimeout(() => n.classList.add('gone'), 4000);
     setTimeout(() => n.remove(), 4400);
   }
+})();
+
+// Spell Book (character_pages.spellbook_modal): effect tabs, filters and "Cast at", all in the
+// browser. Each card carries its averages per slot level (data-avgs, from app/spellbook.py), so
+// changing the slot level redraws the numbers and dims spells that need a higher slot.
+(function () {
+  const ORD = n => n + ({ 1: 'st', 2: 'nd', 3: 'rd' }[n] || 'th');
+  function apply(root) {
+    const st = root.dataset;
+    const slot = +st.slot || 0, effect = st.effect || 'damage', time = st.time || '', conc = st.conc || '';
+    const q = (st.q || '').toLowerCase(), ws = st.ws === '1', sort = st.sort || 'avg';
+    const counts = {};
+    const cards = [...root.querySelectorAll('[data-sb-card]')];
+    cards.forEach(card => {
+      const d = card.dataset, level = +d.level;
+      const passes = (!time || d.time === time) && (!conc || d.conc === conc) && (!ws || d.ws) && (!q || d.name.includes(q));
+      if (passes) counts[d.effect] = (counts[d.effect] || 0) + 1;
+      card.hidden = !(passes && d.effect === effect);
+      let avgs = {};
+      try { avgs = JSON.parse(d.avgs || '{}'); } catch (e) { avgs = {}; }
+      const at = level ? Math.max(level, slot) : 0, a = avgs[at];
+      const blocked = level > slot;
+      card.classList.toggle('blocked', blocked);
+      card._avg = a ? a.avg : -1;
+      const set = (sel, v) => { const el = card.querySelector(sel); if (el) el.textContent = v; };
+      if (a) { set('[data-sb-avg]', a.avg); set('[data-sb-per]', a.per); set('[data-sb-dice]', a.dice); }
+      set('[data-sb-up]', a && level && at > level ? 'upcast to ' + ORD(at) : '');
+      set('[data-sb-cost]', !level ? 'free' : blocked ? 'needs a ' + ORD(level) + ' slot' : ORD(at) + '-level slot');
+      card.querySelectorAll('[data-slot], .sb-roll').forEach(b => { if (level) b.dataset.slot = at; });
+      const lv = card.querySelector('[data-sb-level]'); if (lv) lv.value = level ? at : 0;
+    });
+    const grid = root.querySelector('.sb-cards');
+    cards.slice().sort((x, y) => sort === 'name' ? x.dataset.name.localeCompare(y.dataset.name)
+      : sort === 'level' ? (+x.dataset.level - +y.dataset.level) : (y._avg - x._avg)).forEach(c => grid.appendChild(c));
+    root.querySelectorAll('[data-sb-count]').forEach(c => { c.textContent = counts[c.dataset.sbCount] || 0; });
+    const shown = cards.filter(c => !c.hidden).length;
+    const empty = root.querySelector('[data-sb-empty]'); if (empty) empty.hidden = shown > 0;
+    const fs = root.querySelector('[data-sb-fold-sum]'); if (fs) fs.textContent = slot ? '· cast at ' + ORD(slot) : '· cantrips only';
+    const sum = root.querySelector('[data-sb-summary]');
+    if (sum) sum.textContent = shown + ' spell' + (shown === 1 ? '' : 's') + (slot ? ' · averages at a ' + ORD(slot) + '-level slot where a spell can be upcast' : ' · cantrips only');
+    const press = (sel, key, val) => root.querySelectorAll(sel).forEach(b => b.setAttribute(key, b.dataset[Object.keys(b.dataset)[0]] === val ? 'true' : 'false'));
+    press('[data-sb-effect]', 'aria-selected', effect);
+    press('[data-sb-slot]', 'aria-pressed', String(slot));
+    press('[data-sb-time]', 'aria-pressed', time);
+    press('[data-sb-conc]', 'aria-pressed', conc);
+  }
+  document.addEventListener('click', e => {
+    const root = e.target.closest('[data-spellbook]');
+    if (!root) return;
+    const b = e.target.closest('[data-sb-effect], [data-sb-slot], [data-sb-time], [data-sb-conc]');
+    if (!b) return;
+    const k = Object.keys(b.dataset).find(x => x.startsWith('sb'));
+    root.dataset[{ sbEffect: 'effect', sbSlot: 'slot', sbTime: 'time', sbConc: 'conc' }[k]] = b.dataset[k];
+    apply(root);
+  });
+  document.addEventListener('input', e => {
+    const root = e.target.closest('[data-spellbook]');
+    if (root && e.target.matches('[data-sb-search]')) { root.dataset.q = e.target.value; apply(root); }
+    // Concentration save: the DC from the damage just taken (10, or half the damage if higher; up to 30)
+    if (e.target.matches('[data-conc-dmg]')) {
+      const box = e.target.closest('.conc-box'), dc = Math.min(30, Math.max(10, Math.floor((+e.target.value || 0) / 2)));
+      const out = box.querySelector('[data-conc-dc]'); if (out) out.textContent = dc;
+      const btn = box.querySelector('[data-conc-roll]'); if (btn) btn.dataset.note = 'DC ' + dc;
+    }
+  });
+  document.addEventListener('change', e => {
+    const root = e.target.closest('[data-spellbook]');
+    if (!root) return;
+    if (e.target.matches('[data-sb-ws]')) { root.dataset.ws = e.target.checked ? '1' : ''; apply(root); }
+    if (e.target.matches('[data-sb-sort]')) { root.dataset.sort = e.target.value; apply(root); }
+  });
+  // Keep it (End Concentration?): close the little pop-up without doing anything
+  document.addEventListener('click', e => {
+    const k = e.target.closest('[data-close-details]');
+    if (k) { const d = k.closest('details'); if (d) d.open = false; }
+  });
+  // The Spell Book arrives in the modal after load: set it up when it appears
+  new MutationObserver(() => document.querySelectorAll('[data-spellbook]:not([data-ready])').forEach(root => {
+    root.dataset.ready = '1';
+    const fold = root.querySelector('[data-sb-fold]'); if (fold && !matchMedia('(max-width: 700px)').matches) fold.open = true;
+    const ws = root.querySelector('[data-sb-ws]'); if (ws && ws.checked) root.dataset.ws = '1';
+    const first = [...root.querySelectorAll('[data-sb-count]')].find(c => +c.textContent > 0);
+    root.dataset.effect = first ? first.dataset.sbCount : 'damage';
+    apply(root);
+  })).observe(document.body, { childList: true, subtree: true });
 })();

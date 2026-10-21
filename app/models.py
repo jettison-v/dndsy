@@ -216,6 +216,8 @@ class Character(Timestamped, Base):
     wild_shape: Mapped[str | None] = mapped_column(String(200), nullable=True)  # the form they're in on Battle (app/wild_shape.py), set by their player
     # What the DM lets them keep in Wild Shape (item and feature keys from the sheet's form_options), set by their player
     wild_shape_keep: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    # What they're concentrating on (app/spellbook.py), set by their player: {"spell", "key", "level", "round", "rounds"}
+    concentration: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     entity: Mapped[Entity] = relationship()
     owner: Mapped[User | None] = relationship()
     snapshot: Mapped["CharacterSnapshot | None"] = relationship(back_populates="character", uselist=False, passive_deletes=True)
