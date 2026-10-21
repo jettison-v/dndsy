@@ -1397,11 +1397,12 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 }
 
 /* Sheet › Spells: marks · spell · time · range · duration · roll · damage / healing · bell (same idea as below) */
-.sh-cols { display: grid; grid-template-columns: max-content max-content minmax(14rem, 1fr) max-content fit-content(9rem) fit-content(7rem) max-content fit-content(11rem) max-content; column-gap: 14px; }
+.sh-cols { display: grid; grid-template-columns: 1.25rem minmax(14rem, 1fr) max-content fit-content(9rem) fit-content(7rem) max-content fit-content(11rem) max-content; column-gap: 14px; }
 .sh-cols .ls-line { white-space: normal; }  /* a page-width table: let the name and its tags wrap rather than cut off */
 .sh-cols > .ls-head, .sh-cols > .ls-row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
 .sh-cols > .ls-grouphead { grid-column: 1 / -1; }
 .ls-row .ls-pk { gap: 2px; align-items: center; }
+.ls-marks { display: grid; grid-template-columns: repeat(3, 22px); justify-items: center; align-items: center; }
 .ls-what { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font-size: var(--fs-xs); }
 .ls-row.not-ready .ls-name b { color: var(--muted); font-weight: 500; }
 .sh-status { font-size: var(--fs-md); font-weight: 700; line-height: 1; justify-self: center; }
@@ -1416,7 +1417,7 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
   .sh-cols > .ls-head { display: none; }
   .sh-cols > .ls-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
   .sh-cols > .ls-row > .ls-name { flex: 1 1 60%; }
-  .sh-cols > .ls-row > :not(.ls-pk):not(.ls-name) { order: 2; font-size: var(--fs-xs); }
+  .sh-cols > .ls-row > :not(.ls-marks):not(.ls-name):not(.sh-status) { order: 2; font-size: var(--fs-xs); }
 }
 
 /* The Spell Book's table: pin · spell · time · range · roll · casting damage · actions. The header and
