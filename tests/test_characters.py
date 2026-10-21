@@ -548,7 +548,10 @@ def test_battle_shows_costs_and_slots_on_their_own_line(player, db):
     page = player.get(f"/characters/{cole.id}/battle").text
     assert '<span class="spend" title="Uses 1st-level slot: 4 of 4 left">1st-level slot' in page  # Absorb Elements
     assert "1 Focus Point" in player.get(f"/characters/{cole.id}/all/bonus").text  # Flurry of Blows, in See all
-    assert '<div class="res-row slots"><span class="res-label">Spell slots</span>' in page
+    assert '<span class="sb-slots" aria-label="Spell slots">' in page and 'class="res-row slots"' not in page  # on the spell bar, once
+    resources = page[page.index('<span class="res-label">Resources</span>'):]
+    assert resources.index("Luck Points") < resources.index("Focus Points") < resources.index("Uncanny Metabolism")  # most uses first
+    assert '<span class="res">Wild Shape' not in page  # its pips are on the Wild Shape row
     panel = player.get(f"/characters/{cole.id}/detail", params={"ref": "action:Flurry of Blows"}).text
     assert "Spends" in panel and "1 Focus Point: <b>2 of 2 left</b>" in panel
     spell = player.get(f"/characters/{cole.id}/detail", params={"ref": "spell:Healing Word"}).text

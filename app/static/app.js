@@ -1412,9 +1412,10 @@
     const cards = [...root.querySelectorAll('[data-sb-card]')];
     cards.forEach(card => {
       const d = card.dataset, level = +d.level;
-      const passes = (!time || d.time === time) && (!conc || d.conc === conc) && (!ws || d.ws) && (!q || d.name.includes(q));
+      // A search looks through every tab and ignores the filters (shown as paused)
+      const passes = q ? d.name.includes(q) : (!time || d.time === time) && (!conc || d.conc === conc) && (!ws || d.ws);
       if (passes) counts[d.effect] = (counts[d.effect] || 0) + 1;
-      card.hidden = !(passes && d.effect === effect);
+      card.hidden = !(passes && (q || d.effect === effect));
       let avgs = {};
       try { avgs = JSON.parse(d.avgs || '{}'); } catch (e) { avgs = {}; }
       const at = level ? Math.max(level, slot) : 0, a = avgs[at];
@@ -1438,7 +1439,9 @@
     const sum = root.querySelector('[data-sb-summary]');
     if (sum) sum.textContent = shown + ' spell' + (shown === 1 ? '' : 's') + (slot ? ' · averages at a ' + ORD(slot) + '-level slot where a spell can be upcast' : ' · cantrips only');
     const press = (sel, key, val) => root.querySelectorAll(sel).forEach(b => b.setAttribute(key, b.dataset[Object.keys(b.dataset)[0]] === val ? 'true' : 'false'));
-    press('[data-sb-effect]', 'aria-selected', effect);
+    press('[data-sb-effect]', 'aria-selected', q ? '-' : effect);
+    root.classList.toggle('sb-is-searching', !!q);
+    const sn = root.querySelector('[data-sb-searching]'); if (sn) sn.hidden = !q;
     press('[data-sb-slot]', 'aria-pressed', String(slot));
     press('[data-sb-time]', 'aria-pressed', time);
     press('[data-sb-conc]', 'aria-pressed', conc);
@@ -1446,10 +1449,21 @@
   document.addEventListener('click', e => {
     const root = e.target.closest('[data-spellbook]');
     if (!root) return;
+    const search = root.querySelector('[data-sb-search]');
+    const clearSearch = () => { root.dataset.q = ''; if (search) search.value = ''; };
+    if (e.target.closest('[data-sb-clear]')) {  // filters only: the tab and Cast at stay
+      root.dataset.time = ''; root.dataset.conc = ''; root.dataset.ws = '';
+      const ws = root.querySelector('[data-sb-ws]'); if (ws) ws.checked = false;
+      clearSearch(); apply(root); return;
+    }
+    if (e.target.closest('[data-sb-clear-search]')) { clearSearch(); apply(root); if (search) search.focus(); return; }
     const b = e.target.closest('[data-sb-effect], [data-sb-slot], [data-sb-time], [data-sb-conc]');
     if (!b) return;
     const k = Object.keys(b.dataset).find(x => x.startsWith('sb'));
-    root.dataset[{ sbEffect: 'effect', sbSlot: 'slot', sbTime: 'time', sbConc: 'conc' }[k]] = b.dataset[k];
+    const field = { sbEffect: 'effect', sbSlot: 'slot', sbTime: 'time', sbConc: 'conc' }[k];
+    if (field === 'effect') clearSearch();  // picking a tab ends a search
+    // Casting time and Concentration: click a selected filter again to turn it off
+    root.dataset[field] = (field === 'time' || field === 'conc') && root.dataset[field] === b.dataset[k] ? '' : b.dataset[k];
     apply(root);
   });
   document.addEventListener('input', e => {

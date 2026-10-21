@@ -18,7 +18,7 @@
         <span class="note">Your stats carried over. {% if form.castable %}Spells: only {{ form.castable | join(", ") }}.{% else %}No spellcasting in this form.{% endif %} Click for the full form, skills and rules.</span></div>
     </div>
     {% elif s %}<div class="battle-head">{{ battle_strip(s, c) }}{{ save_tiles(s.saves, s.save_adv_all) }}</div>
-    {{ resource_row(s) }}{% endif %}
+    {{ resource_row(s, slots=not spellbar, skip=(["Wild Shape"] if known_forms else [])) }}{% endif %}
   </div>
   {% if s and known_forms %}
   <div class="ws-bar ws-row" aria-label="Wild Shape">

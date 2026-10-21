@@ -61,3 +61,22 @@ def test_spellbook_and_concentration_for_the_player_only(db, cole, player, dm):
     player.post(f"/characters/{cole.id}/concentration/end", headers=HX)
     db.refresh(cole)
     assert cole.concentration is None
+
+
+def test_spell_bar_shows_the_four_most_recently_used_starred_spells(db, cole, player):
+    from app import web
+    from app.models import TableRoll
+
+    names = ["Cure Wounds", "Faerie Fire", "Healing Word", "Moonbeam", "Starry Wisp", "Thorn Whip"]
+    for n in names:
+        player.post(f"/characters/{cole.id}/pick", data={"kind": "star", "ref": f"spell:{n}"}, headers=HX)
+    camp = web.campaign(db)
+    for n in ("Thorn Whip", "Starry Wisp"):  # Starry Wisp is the latest
+        db.add(TableRoll(campaign_id=camp.id, character_id=cole.id, label=n, kind="attack", formula="d20+7", dice=[12], total=19))
+        db.flush()
+    page = player.get(f"/characters/{cole.id}/battle").text
+    bar = page[page.index('class="sb-starred"'):]
+    bar = bar[:bar.index("</span>\n</div>")]
+    shown = [n for n in names if f">{n}</button>" in bar]
+    assert len(shown) == 4 and bar.index(">Starry Wisp<") < bar.index(">Thorn Whip<") < bar.index(">Cure Wounds<")
+    assert ">+2</button>" in bar  # the other two are in the Spell Book

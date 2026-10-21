@@ -15,7 +15,7 @@ import json
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import web
@@ -28,7 +28,7 @@ from app import wild_shape as ws
 from app import rules_terms as terms
 from app.auth import current_user, is_admin, is_reviewer
 from app.db import get_db
-from app.models import Character, SheetOverride
+from app.models import Character, SheetOverride, TableRoll
 from app.templating import templates
 
 router = APIRouter()
@@ -163,7 +163,7 @@ def _battle_ctx(db: Session, ch: Character, user: dict) -> dict:
         if beast:
             ctx["form"] = ws.shaped(ctx["sheet"], beast, keep=ch.wild_shape_keep)
             ctx["columns"] = ctx["form"]["columns"]
-    ctx["spellbar"] = _spellbar(ch, ctx)
+    ctx["spellbar"] = _spellbar(db, ch, ctx)
     ctx |= player_notes.page_context(db, ch, user, ctx["sheet"])
     return ctx
 
@@ -173,16 +173,36 @@ def _castable_in_form(ctx: dict) -> set[str]:
     return set(d.get("moon_spells") or []) | ({sp["name"] for sp in (ctx["sheet"] or {}).get("spells") or []} if d.get("beast_spells") else set())
 
 
-def _spellbar(ch: Character, ctx: dict) -> dict | None:
-    """Play's spell bar: the Spell Book button, slots, starred spells and Concentration."""
+STARRED_ON_BAR = 4  # starred spells shown on the spell bar, most recently used first (Brett: no wrapping)
+
+
+def _recent_spells(db: Session, ch: Character, names: set[str]) -> dict[str, int]:
+    """When each of these spells was last rolled at the table (Table rolls, newest id = latest),
+    plus the one being concentrated on, which counts as just used."""
+    seen: dict[str, int] = {}
+    if names:
+        rows = db.execute(select(TableRoll.label, func.max(TableRoll.id)).where(
+            TableRoll.character_id == ch.id, TableRoll.parent_id.is_(None), TableRoll.label.in_(names)).group_by(TableRoll.label))
+        seen = {label: last for label, last in rows}
+    conc = (ch.concentration or {}).get("spell")
+    if conc in names:
+        seen[conc] = max(seen.values(), default=0) + 1
+    return seen
+
+
+def _spellbar(db: Session, ch: Character, ctx: dict) -> dict | None:
+    """Play's spell bar: the Spell Book button, slots, starred spells (the most recently used
+    few) and Concentration."""
     sheet = ctx["sheet"] or {}
     if not sheet.get("spells"):
         return None
     form = ctx.get("form")
     spells = sb.entries(sheet, _castable_in_form(ctx))
     starred = [e for e in spells if e["key"] in ctx["picks"]["star"] and (not form or e["name"] in form.get("castable", []))]
-    return {"slots": sb.slot_levels(sheet), "starred": starred, "conc": ch.concentration or None,
-            "con_save": sb.concentration_save(form["saves"] if form else sheet.get("saves") or [])}
+    recent = _recent_spells(db, ch, {e["name"] for e in starred})
+    starred.sort(key=lambda e: -recent.get(e["name"], 0))  # stable: never-used keep their order after the used ones
+    return {"slots": sb.slot_levels(sheet), "starred": starred[:STARRED_ON_BAR], "more": max(0, len(starred) - STARRED_ON_BAR),
+            "conc": ch.concentration or None, "con_save": sb.concentration_save(form["saves"] if form else sheet.get("saves") or [])}
 
 
 def _sheet_ctx(db: Session, ch: Character, user: dict) -> dict:
