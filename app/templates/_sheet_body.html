@@ -81,7 +81,7 @@
           </div>
           {{ active_row() }}
           <div class="ls-rows sh-cols" data-ls-rows>
-            <div class="ls-head" aria-hidden="true"><span></span><span>Status</span><span>Spell</span><span>Time</span><span>Range</span><span>Duration</span><span>Roll</span><span>Damage / Healing</span><span></span></div>
+            <div class="ls-head" aria-hidden="true"><span></span><span title="Prepared">✓</span><span>Spell</span><span>Time</span><span>Range</span><span>Duration</span><span>Roll</span><span>Damage / Healing</span><span></span></div>
             {% for e in sheet_spells %}{% set note = picks.notes.get(e.key) if show_picks else "" %}{% set a = e.avgs.get(e.level) %}
             {% set healing = a and a.per in ("healed", "Temporary HP") %}
             <div class="ls-row spell-row{{ ' not-ready' if not e.ready }}" data-ls-row data-ref="{{ e.key }}" data-fav="{{ '1' if e.key in picks.fav else '0' }}"
@@ -90,10 +90,12 @@
               data-panel-url="/characters/{{ c.id }}/detail?ref={{ e.key | urlencode }}" tabindex="0" role="button" aria-label="{{ e.name }}: details">
               <span class="ls-pk">{{ pick_btn(c, "fav", e.key, e.key in picks.fav, can_pick) }}{% if e.ready and e.time in ("Action", "Bonus action", "Reaction") %}{{ pick_btn(c, "star", e.key, e.key in picks.star, can_pick) }}{% endif %}</span>
               {# Prepared or not, at a glance: the first thing to know when planning (Brett, 2026-10-21) #}
-              {% set st = {"always": ("Always", "on", "Always prepared"), "prepared": ("Prepared", "on", "Prepared on D&D Beyond"), "known": ("Known", "on", "A spell you know"),
-                           "granted": ("Always", "on", "From a species trait, feat or item"), "spellbook": ("In spellbook", "off", "In your spellbook, not prepared")}.get(e.state, ("Not prepared", "off", "Not prepared on D&D Beyond")) %}
-              <span class="sh-status {{ st[1] }}{{ ' wanted' if st[1] == 'off' and e.key in picks.fav }}" title="{{ st[2] }}{{ '; on your Shortlist' if st[1] == 'off' and e.key in picks.fav }}">{{ "✓ " if st[1] == "on" }}{{ st[0] }}</span>
-              <span class="ls-name"><span class="ls-line"><b>{{ e.name }}</b>
+              {# An icon, to save width: ✓ prepared (or known, or always), ○ not prepared (amber when on the Shortlist) #}
+              {% set st = {"always": ("on", "Always prepared"), "prepared": ("on", "Prepared on D&D Beyond"), "known": ("on", "A spell you know"),
+                           "granted": ("on", "From a species trait, feat or item: always available"), "spellbook": ("off", "In your spellbook, not prepared")}.get(e.state, ("off", "Not prepared on D&D Beyond")) %}
+              {% set wanted = st[0] == "off" and e.key in picks.fav %}
+              <span class="sh-status {{ st[0] }}{{ ' wanted' if wanted }}" title="{{ st[1] }}{{ '; on your Shortlist' if wanted }}" role="img" aria-label="{{ st[1] }}">{{ "✓" if st[0] == "on" else "○" }}</span>
+              <span class="ls-name"><span class="ls-line"><b>{{ e.name }}</b>{% if e.state in ("always", "granted") %} <span class="tag sh-always" title="{{ st[1] }}">Always</span>{% endif %}
                 {%- if e.from %} <span class="tag">{{ e.from }}</span>{% endif %}
                 {%- if e.conc %} <span class="tag">Conc.</span>{% endif %}{% if e.ritual %} <span class="tag">Ritual</span>{% endif %}
                 {%- if e.core == false %} <span class="tag faint">Not core: {{ e.book }}</span>{% endif %}</span>
@@ -111,7 +113,7 @@
           </div>
           <p class="note ls-empty" data-ls-empty hidden>No spells match. <button type="button" class="btn link small" data-ls-clear>Clear all</button></p>
           <p class="note ls-empty" data-ls-empty-view="fav" hidden>Nothing on your Shortlist yet. In <b>All</b>, press the bookmark on a spell you're considering; compare your Shortlist on Plan before preparing it on D&amp;D Beyond.</p>
-          {% if show_picks %}<p class="note">Tip: <b>Shortlist</b> with <b>Not prepared</b> shows the spells you're considering but haven't prepared yet (marked <span class="sh-status off wanted">Not prepared</span>).</p>{% endif %}
+          {% if show_picks %}<p class="note">Tip: <b>Shortlist</b> with <b>Not prepared</b> shows the spells you're considering but haven't prepared yet (marked with an amber <span class="sh-status off wanted">○</span>).</p>{% endif %}
           <p class="note sb-foot-note">{% if can_pick %}The bookmark adds a spell to your Shortlist, the pin puts it on Battle and the bell adds it to your Reminders. {% endif %}Click a spell for its full description{% if can_pick %} and your note{% endif %}. askdnd can't change D&amp;D Beyond: prepare spells there{% if s.sheet_url %} (<a href="{{ s.sheet_url }}" target="_blank" rel="noopener">open ↗</a>){% endif %}, then refresh.</p>
         </div>
       </div>

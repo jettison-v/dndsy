@@ -1404,10 +1404,11 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .ls-row .ls-pk { gap: 2px; align-items: center; }
 .ls-what { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font-size: var(--fs-xs); }
 .ls-row.not-ready .ls-name b { color: var(--muted); font-weight: 500; }
-.sh-status { font-size: var(--fs-xs); font-weight: 600; white-space: nowrap; border-radius: 999px; padding: 1px 8px; justify-self: start; }
-.sh-status.on { color: var(--green); background: var(--green-soft); }
-.sh-status.off { color: var(--faint); border: 1px solid var(--line); }
-.sh-status.wanted { color: var(--amber); border-color: var(--amber); }  /* shortlisted, not prepared yet */
+.sh-status { font-size: var(--fs-md); font-weight: 700; line-height: 1; justify-self: center; }
+.sh-status.on { color: var(--green); }
+.sh-status.off { color: var(--faint); }
+.sh-status.wanted { color: var(--amber); }  /* shortlisted, not prepared yet */
+.tag.sh-always { color: var(--green); background: var(--green-soft); }
 .ls-views button { padding: 5px 12px; min-height: 0; font-size: var(--fs-sm); }
 .ls-views button[aria-pressed="true"] { background: #2a3550; color: var(--text); }
 @media (max-width: 900px) {
