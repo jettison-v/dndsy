@@ -21,19 +21,19 @@
       {{ active_row() }}
       <div class="ls-toolbar">
         <span class="note" data-ls-summary></span>
-        <label class="ls-select" title="Average damage or healing if cast with a slot of this level (each spell at least at its own level)"><span>Casting Damage</span>
-          <select data-ls-lens aria-label="Casting Damage at slot level">
+        <label class="ls-select" title="Average damage or healing if cast with a slot of this level (each spell at least at its own level)"><span>Cast at</span>
+          <select data-ls-lens aria-label="Cast at slot level">
             <option value="0">Base</option>
             {% for s in slots %}<option value="{{ s.level }}">{{ s.level | ordinal }}{{ " (Pact)" if s.pact }}</option>{% endfor %}
           </select></label>
         <label class="ls-select"><span>Sort</span>
           <select data-ls-sort aria-label="Sort">
-            <option value="level">Level</option><option value="name">Name</option><option value="avg">Damage</option>
+            <option value="level">Level</option><option value="name">Name</option><option value="avg">Amount</option>
           </select></label>
       </div>
       {# One grid for the header and every row (CSS subgrid): each column is as wide as its widest cell #}
       <div class="ls-rows sb-cols" data-ls-rows>
-        <div class="ls-head" aria-hidden="true"><span></span><span>Spell</span><span>Time</span><span>Range</span><span>Roll</span><span>Casting Damage</span><span></span></div>
+        <div class="ls-head" aria-hidden="true"><span></span><span>Spell</span><span>Time</span><span>Range</span><span>Roll</span><span>Damage / Healing</span><span></span></div>
         {% for e in spells %}{% set note = picks.notes.get(e.key) if show_picks else "" %}
         <div class="ls-row" data-ls-row data-f='{{ e.f | tojson }}' data-name="{{ e.name | lower }}" data-level="{{ e.level }}"
           data-group-label="{{ 'Cantrips' if not e.level else (e.level | ordinal) ~ ' level' }}" data-avgs='{{ e.avgs | tojson }}'
@@ -45,7 +45,8 @@
           <span class="sb-range">{{ e.range or "—" }}</span>
           <span class="sb-roll-col">{% if e.attack %}{{ e.attack }} to hit{% elif e.save %}{{ e.save }}{% else %}<span class="note">—</span>{% endif %}
             {% if e.on_save %}<span class="sb-onsave {{ ON_SAVE[e.on_save][1] }}">{{ ON_SAVE[e.on_save][0] }}</span>{% endif %}</span>
-          <span class="sb-avg-col">{% if e.avgs %}<b data-sb-avg>—</b> <span class="note" data-sb-dice></span>{% if e.on_save == "half" %}<span class="note sb-half" data-sb-half></span>{% endif %}{% else %}<span class="note">—</span>{% endif %}</span>
+          {% set healing = e.avgs and (e.avgs.values() | first).per in ("healed", "Temporary HP") %}
+          <span class="sb-avg-col{{ ' heal' if healing }}">{% if e.avgs %}<b data-sb-avg>—</b> <span class="note" data-sb-dice></span>{% if e.on_save == "half" %}<span class="note sb-half" data-sb-half></span>{% endif %}{% else %}<span class="note">—</span>{% endif %}</span>
           <span class="sb-actions">
             {% if e.recipe %}{{ spell_roll(c, e, ("Roll " ~ e.attack if e.attack else "Roll"), "btn small sb-roll", 0) }}{% endif %}
             {% if e.conc and can_pick and not (conc and conc.key == e.key) %}
@@ -59,7 +60,7 @@
         {% endfor %}
       </div>
       <p class="note ls-empty" data-ls-empty hidden>No spells match. <button type="button" class="btn link small" data-ls-clear>Clear all</button></p>
-      <p class="note sb-foot-note">Click a spell for everything about it: its full text, your note, and Pin, Shortlist and Remind me. Casting Damage is the dice's average (cantrips at your level). Spend slots on D&amp;D Beyond; askdnd reads them on the next refresh.</p>
+      <p class="note sb-foot-note">Click a spell for everything about it: its full text, your note, and Pin, Shortlist and Remind me. Damage / Healing is the dice's average (cantrips at your level); healing is in green. Spend slots on D&amp;D Beyond; askdnd reads them on the next refresh.</p>
     </div>
   </div>
 </div>

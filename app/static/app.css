@@ -1406,6 +1406,7 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .sb-onsave { font-size: var(--fs-xs); }
 .sb-onsave.half { color: var(--blue); } .sb-onsave.none { color: var(--amber); } .sb-onsave.lands { color: var(--red); }
 .sb-avg-col b { font-size: var(--fs-md); }
+.sb-avg-col.heal b { color: var(--green); }
 .sb-avg-col .note { font-size: var(--fs-xs); }
 .sb-range { color: var(--muted); }
 .sb-actions { display: inline-flex; gap: 6px; justify-content: flex-end; }

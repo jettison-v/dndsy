@@ -111,7 +111,7 @@ Every list of game things (spells, Wild Shape forms, then inventory, features an
 - **Views:** Ready · Shortlist · All, above the list. The Spell Book is the exception: it shows only Prepared spells (castable now).
 - **Filters:** a left column of chip groups, then a **More filters** fold. Chips are OR within a group, AND across groups; a second click turns a chip off; no "Any" chip. Each chip shows a live count; zero-count chips are greyed out but stay clickable (to be judged once live). An active-filter row above the list shows what's on, with **Clear all**; the filter column itself has no Clear all.
 - **Search overrides filters** and says so (the filters dim while searching).
-- **Sort and lenses are separate from filters.** Spells sort by level, then name. A lens (the Spell Book's **Casting Damage**: Base, 1st, 2nd…) changes numbers, not which rows show. Sort options are single words (Level, Name, Damage).
+- **Sort and lenses are separate from filters.** Spells sort by level, then name. A lens (the Spell Book's **Cast at**: Base, 1st, 2nd…) changes numbers, not which rows show; its column is **Damage / Healing**, with healing in green. Sort options are single words (Level, Name, Amount).
 - **Remembered per page, per browser**, never shared across pages, and cleared after a day without use.
 - **Rows are compact**, one line plus an optional note line. Wild Shape rows get a thumbnail.
 - **Spell filters:** visible Level, Effect (damage, heal, control, support, utility), Casting time, Concentration. Under More: Ritual, Save type, On a successful save (half, nothing, damage still lands), Attack roll, Area or single target, Damage type, Range. Save spells always say what a successful save does.
