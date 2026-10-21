@@ -208,7 +208,8 @@ def _spellbar(db: Session, ch: Character, ctx: dict) -> dict | None:
 def _sheet_ctx(db: Session, ch: Character, user: dict) -> dict:
     ctx = _view(db, ch, user)
     if ctx["sheet"]:
-        ctx["granted_spells"] = views.granted_spells(ctx["sheet"])
+        ctx["sheet_spells"] = sb.sheet_entries(ctx["sheet"])  # Spells tab: the shared list
+        ctx["spell_groups"] = sb.sheet_filter_groups(ctx["sheet_spells"])
         # Actions tab: everything except leveled spells (those are on the Spells tab), like D&D Beyond
         ctx["options"] = [o for o in views.options(ctx["sheet"], ctx["picks"]["star"])
                           if o["kind"] != "spell" or (o["tags"] and o["tags"][0] == "cantrip" and o["hit"])]

@@ -31,7 +31,7 @@
 
   <div id="t-forget" hidden>{% set bare = true %}{% include "_forget.html" %}</div>
 
-  {# The same view, search and filters as Sheet › Spells (app.js plannerApply). #}
+  {# The older planner tools (app.js plannerApply); moves to the shared list in lists step 4 (roadmap). #}
   <div id="t-spell-list" hidden data-planner>
     {% if fav_spells %}
     {{ spell_tools(sheet, [("all", "Your whole shortlist"), ("ready", "Ready to cast")]) }}
@@ -39,7 +39,7 @@
     <div class="spell-key" aria-hidden="true"><span></span><span>Spell · what it does</span><span>Casting time · range · duration · effect</span><span>Hit / DC</span><span></span></div>
     <div class="rows">{% for sp in fav_spells %}{{ spell_row(c, sp, sp.state, picks, can_pick, sp["from"]) }}{% endfor %}</div>
     <p class="muted planner-empty" hidden>No spells match. Try another view or clear a filter.</p>
-    {% else %}<p class="muted">{% if can_pick %}Nothing shortlisted yet. On Sheet › Spells, choose "All you could prepare" and press the bookmark on a spell to compare it here before preparing it on D&amp;D Beyond.{% else %}{{ c.entity.name }}'s player hasn't shortlisted any spells.{% endif %}</p>{% endif %}
+    {% else %}<p class="muted">{% if can_pick %}Nothing shortlisted yet. On Sheet › Spells, choose <b>All</b> and press the bookmark on a spell to compare it here before preparing it on D&amp;D Beyond.{% else %}{{ c.entity.name }}'s player hasn't shortlisted any spells.{% endif %}</p>{% endif %}
   </div>
 
   {% if druid %}

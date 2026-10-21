@@ -40,3 +40,11 @@
 {% macro active_row() -%}
 <div class="ls-active" data-ls-active hidden><span class="note">Showing only:</span> <span class="ls-active-chips" data-ls-active-chips></span> <button type="button" class="btn link small" data-ls-clear>Clear all</button></div>
 {%- endmacro %}
+
+{# Views above a list: Prepared · Shortlist · All. `views` is a list of (key, label); rows say which views
+   they belong to in data-views. Leave it out (the DM) and every row is shown. #}
+{% macro view_switch(views, label="Which ones") -%}
+<div class="seg ls-views" role="group" aria-label="{{ label }}">
+  {% for v, l in views %}<button type="button" data-ls-view="{{ v }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">{{ l }} <span class="ls-n" data-ls-view-n></span></button>{% endfor %}
+</div>
+{%- endmacro %}

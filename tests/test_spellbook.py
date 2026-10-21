@@ -100,3 +100,18 @@ def test_spell_book_uses_the_shared_list_with_notes(db, cole, player):
     assert 'data-list="spellbook"' in book and 'data-ls-group="level"' in book and "More filters" in book
     assert "✎ Opener vs. groups" in book and "Half on a save" in book
     assert 'data-panel-url="/characters/%d/detail?ref=spell%%3AMoonbeam"' % cole.id in book  # a row opens its side panel
+
+
+def test_sheet_spells_list_every_spell_with_views(db, cole, player, dm):
+    from app import picks
+
+    owned_by(db, char(db, "Trah"), "dm@example.com", is_dm=True)
+    picks.toggle(db, cole, "fav", "spell:Barkskin")
+    sheet = player.get(f"/characters/{cole.id}").text
+    spells = sheet.split('id="t-spells"')[1].split('id="t-forms"')[0]
+    assert 'data-list="sheet-spells"' in spells and 'data-ls-view="fav"' in spells
+    row = spells.split('data-ref="spell:Barkskin"')[1][:400]
+    assert 'data-views="fav all"' in row  # not prepared, but on the Shortlist
+    assert 'data-views="ready all"' in spells.split('data-ref="spell:Moonbeam"')[1][:400]
+    dm_spells = dm.get(f"/characters/{cole.id}").text.split('id="t-spells"')[1].split('id="t-forms"')[0]
+    assert "data-ls-view" not in dm_spells and "Barkskin" in dm_spells  # the DM sees All only, no views

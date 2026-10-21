@@ -479,6 +479,13 @@
       r.dataset.fav = fav ? '1' : '0';
       const h = r.querySelector('.pick.fav:not(.static)');
       if (h && h !== b) { h.classList.toggle('on', fav); h.setAttribute('aria-pressed', fav); }
+      if (r.dataset.views !== undefined) {  // a shared list: move it in or out of the Shortlist view
+        const vs = new Set(r.dataset.views.split(' ').filter(Boolean));
+        if (fav) vs.add('fav'); else vs.delete('fav');
+        r.dataset.views = [...vs].join(' ');
+        const root = r.closest('[data-list]');
+        if (root && root._ls && window.askdndList) setTimeout(() => window.askdndList.apply(root));
+      }
     });
   }, true);
   document.querySelectorAll('[data-planner]').forEach(plannerApply);
@@ -1416,7 +1423,8 @@
   }
 })();
 
-// Lists (DESIGN.md › Lists and filters; _lists.html): any [data-list] root. Chips are OR within a group
+// Lists (DESIGN.md › Lists and filters; _lists.html): any [data-list] root. Optional views ([data-ls-view]:
+// Prepared · Shortlist · All) pick which rows are in play (each row lists its views in data-views). Chips are OR within a group
 // and AND across groups, each with a live count (greyed out at zero); a search looks through every row
 // and pauses the filters. Filters, sort and lens are remembered per list in this browser and forgotten
 // after a day without use. The Spell Book adds its "Averages at" lens on top (below).
@@ -1431,7 +1439,9 @@
     let force = {};
     try { force = JSON.parse(root.dataset.lsForce || '{}'); } catch (e) { force = {}; }
     Object.entries(force).forEach(([g, vs]) => { s.sel[g] = [...new Set([...(s.sel[g] || []), ...vs])]; });
-    root._ls = { sel: s.sel || {}, sort: s.sort || '', lens: s.lens || '', more: !!s.more, q: '' };
+    const views = [...root.querySelectorAll('[data-ls-view]')].map(b => b.dataset.lsView);
+    root._ls = { sel: s.sel || {}, sort: s.sort || '', lens: s.lens || '', more: !!s.more, q: '',
+                 view: views.includes(s.view) ? s.view : (views[0] || '') };
     const sort = root.querySelector('[data-ls-sort]'); if (sort && root._ls.sort) sort.value = root._ls.sort;
     const lens = root.querySelector('[data-ls-lens]');
     if (lens && root._ls.lens && [...lens.options].some(o => o.value === root._ls.lens)) lens.value = root._ls.lens;
@@ -1439,17 +1449,24 @@
   }
   function save(root) {
     const st = root._ls;
-    try { localStorage.setItem(KEY(root), JSON.stringify({ at: Date.now(), sel: st.sel, sort: st.sort, lens: st.lens, more: st.more })); } catch (e) { /* private window */ }
+    try { localStorage.setItem(KEY(root), JSON.stringify({ at: Date.now(), sel: st.sel, sort: st.sort, lens: st.lens, more: st.more, view: st.view })); } catch (e) { /* private window */ }
   }
   function apply(root) {
     const st = root._ls, sel = st.sel, q = st.q.trim().toLowerCase();
     const rows = [...root.querySelectorAll('[data-ls-row]')];
     const on = Object.keys(sel).filter(g => (sel[g] || []).length);
     const passes = (f, skip) => on.every(g => g === skip || vals(f, g).some(v => sel[g].includes(v)));
-    rows.forEach(r => { r.hidden = q ? !(r.dataset.name || '').includes(q) : !passes(fOf(r)); });
+    const inView = (r, v = st.view) => !v || (r.dataset.views || '').split(' ').includes(v);
+    // A search looks through every row, whatever the view and filters
+    rows.forEach(r => { r.hidden = q ? !(r.dataset.name || '').includes(q) : !(inView(r) && passes(fOf(r))); });
+    root.querySelectorAll('[data-ls-view]').forEach(b => {
+      b.setAttribute('aria-pressed', !q && b.dataset.lsView === st.view ? 'true' : 'false');
+      const n = b.querySelector('[data-ls-view-n]');
+      if (n) n.textContent = rows.filter(r => inView(r, b.dataset.lsView) && passes(fOf(r))).length;
+    });
     root.querySelectorAll('[data-ls-group]').forEach(chip => {
       const g = chip.dataset.lsGroup, v = chip.dataset.lsValue, pressed = (sel[g] || []).includes(v);
-      const n = rows.filter(r => passes(fOf(r), g) && vals(fOf(r), g).includes(v)).length;
+      const n = rows.filter(r => inView(r) && passes(fOf(r), g) && vals(fOf(r), g).includes(v)).length;
       chip.setAttribute('aria-pressed', pressed ? 'true' : 'false');
       chip.classList.toggle('zero', !n && !pressed);
       const c = chip.querySelector('[data-ls-n]'); if (c) c.textContent = n;
@@ -1491,7 +1508,10 @@
     });
     const shown = rows.filter(r => !r.hidden).length, noun = root.dataset.noun || 'item';
     const sum = root.querySelector('[data-ls-summary]'); if (sum) sum.textContent = shown + ' ' + noun + (shown === 1 ? '' : 's');
-    const empty = root.querySelector('[data-ls-empty]'); if (empty) empty.hidden = shown > 0;
+    // Nothing to show: a view that's empty on its own says so (e.g. nothing shortlisted yet)
+    const viewEmpty = !q && !picked.length && !rows.some(r => inView(r)) && root.querySelector('[data-ls-empty-view="' + st.view + '"]');
+    root.querySelectorAll('[data-ls-empty-view]').forEach(m => { m.hidden = m !== viewEmpty; });
+    const empty = root.querySelector('[data-ls-empty]'); if (empty) empty.hidden = shown > 0 || !!viewEmpty;
     root.classList.toggle('ls-is-searching', !!q);
     const sn = root.querySelector('[data-ls-searching]'); if (sn) sn.hidden = !q;
     save(root);
@@ -1504,6 +1524,8 @@
     const clearSearch = () => { st.q = ''; if (search) search.value = ''; };
     if (e.target.closest('[data-ls-clear]')) { st.sel = {}; clearSearch(); apply(root); return; }
     if (e.target.closest('[data-ls-clear-search]')) { clearSearch(); apply(root); if (search) search.focus(); return; }
+    const view = e.target.closest('[data-ls-view]');
+    if (view) { st.view = view.dataset.lsView; clearSearch(); apply(root); return; }
     const rm = e.target.closest('[data-ls-remove]');
     if (rm) { const [g, v] = rm.dataset.lsRemove.split('\u0000'); st.sel[g] = (st.sel[g] || []).filter(x => x !== v); apply(root); return; }
     const chip = e.target.closest('[data-ls-group]');

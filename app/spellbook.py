@@ -140,32 +140,78 @@ def _spell_mod(sheet: dict) -> int:
     return next((v for k, v in sc.get("dc_parts") or [] if k.endswith(" modifier")), 0)
 
 
+def _entry(sp: dict, char_level: int, mod: int, top: int, castable_in_form: set[str] | None = None) -> dict:
+    """One spell as a list row: its numbers per slot level (up to `top`) and its filter values."""
+    recipe = rr.spell(sp["name"]) or sp.get("roll")
+    level = sp.get("level") or 0
+    avgs = {}
+    for slot in ([0] if not level else range(level, max(level, top) + 1)):
+        a = average(recipe, slot, char_level, mod)
+        if a:
+            avgs[slot] = a
+    e = {
+        "key": sp["key"], "name": sp["name"], "level": level, "level_label": ordinal(level),
+        "effect": effect_of(sp), "time": sp.get("casting_time") or "", "range": sp.get("range") or "",
+        "duration": sp.get("duration") or "", "conc": bool(sp.get("concentration")), "ritual": bool(sp.get("ritual")),
+        "attack": sp.get("attack") or "", "save": sp.get("save") or "", "summary": sp.get("summary") or "",
+        "recipe": recipe if recipe and recipe.get("events") else None, "avgs": avgs,
+        "ws": bool(castable_in_form and sp["name"] in castable_in_form),
+        "rounds": rounds(sp.get("duration") or ""),
+    }
+    e |= _facts(e, _main_event(e["recipe"]))
+    e["f"] = facets(e)
+    return e
+
+
 def entries(sheet: dict, castable_in_form: set[str] | None = None) -> list[dict]:
     """Every spell the character can cast now, for the Spell Book."""
-    char_level = sheet.get("level") or 1
-    mod = _spell_mod(sheet)
+    char_level, mod = sheet.get("level") or 1, _spell_mod(sheet)
     top = max([s["level"] for s in slot_levels(sheet)] or [0])
-    out = []
-    for sp in sheet.get("spells") or []:
-        recipe = rr.spell(sp["name"]) or sp.get("roll")
-        level = sp.get("level") or 0
-        avgs = {}
-        for slot in ([0] if not level else range(level, max(level, top) + 1)):
-            a = average(recipe, slot, char_level, mod)
-            if a:
-                avgs[slot] = a
-        out.append({
-            "key": sp["key"], "name": sp["name"], "level": level, "level_label": ordinal(level),
-            "effect": effect_of(sp), "time": sp.get("casting_time") or "", "range": sp.get("range") or "",
-            "duration": sp.get("duration") or "", "conc": bool(sp.get("concentration")), "ritual": bool(sp.get("ritual")),
-            "attack": sp.get("attack") or "", "save": sp.get("save") or "", "summary": sp.get("summary") or "",
-            "recipe": recipe if recipe and recipe.get("events") else None, "avgs": avgs,
-            "ws": bool(castable_in_form and sp["name"] in castable_in_form),
-            "rounds": rounds(sp.get("duration") or ""),
-        })
-        out[-1] |= _facts(out[-1], _main_event(out[-1]["recipe"]))
-        out[-1]["f"] = facets(out[-1])
+    out = [_entry(sp, char_level, mod, top, castable_in_form) for sp in sheet.get("spells") or []]
     return sorted(out, key=lambda e: (e["level"], e["name"]))
+
+
+READY = ("always", "prepared", "known", "granted")
+STATE_LABELS = {"always": "Always prepared", "prepared": "Prepared", "known": "Known", "spellbook": "In spellbook",
+                "available": "Not prepared", "granted": ""}
+
+
+def sheet_entries(sheet: dict) -> list[dict]:
+    """Every spell on Sheet › Spells: each class's list (prepared or not) and spells from species,
+    feats and items. Numbers at the spell's own level only (Sheet has no "Cast at")."""
+    from app.character_views import granted_spells  # character_views imports this module's neighbours
+
+    char_level, mod = sheet.get("level") or 1, _spell_mod(sheet)
+    books = sheet.get("spellbook") or []
+    out, seen = [], set()
+    for b in books:
+        for sp in b["spells"]:
+            if sp["key"] in seen:
+                continue
+            seen.add(sp["key"])
+            out.append(_entry(sp, char_level, mod, 0) | {
+                "state": sp["state"], "from": b["class"] if len(books) > 1 else "", "source": b["class"],
+                "core": sp.get("core"), "book": sp.get("book") or ""})
+    for sp in granted_spells(sheet):
+        if sp["key"] not in seen:
+            seen.add(sp["key"])
+            out.append(_entry(sp, char_level, mod, 0) | {
+                "state": "granted", "from": ", ".join(sp.get("sources") or []), "source": "Species, feats and items",
+                "core": sp.get("core"), "book": sp.get("book") or ""})
+    for e in out:
+        e["ready"] = e["state"] in READY
+        e["state_label"] = STATE_LABELS.get(e["state"], "")
+        e["f"]["from"] = e["source"]
+    return sorted(out, key=lambda e: (e["level"], e["name"]))
+
+
+def sheet_filter_groups(items: list[dict]) -> list[dict]:
+    """Sheet › Spells: the Spell Book's groups, plus where a spell comes from when there's a choice."""
+    groups = filter_groups(items)
+    froms = list(dict.fromkeys(e["f"]["from"] for e in items if e["f"].get("from")))
+    if len(froms) > 1:
+        groups.insert(4, {"key": "from", "label": "From", "values": froms})
+    return groups
 
 
 # What a successful save does to the damage, from the audited recipe: half, none, or the damage

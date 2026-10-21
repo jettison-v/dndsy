@@ -171,7 +171,7 @@ def test_plan_shortlists_filter_like_sheet(player, db):
     filters = lambda html: re.findall(r'data-filter="([^"]+)"', html)  # noqa: E731
     spells = part(plan, "t-spell-list", "t-form-list")
     assert "data-planner" in plan.split('id="t-spell-list"')[1][:40] and "data-search" in spells and "Barkskin" in spells
-    assert filters(spells) == filters(part(sheet, "t-spells", "t-forms"))  # the same spell filters as Sheet
+    assert 'data-list="sheet-spells"' in part(sheet, "t-spells", "t-forms")  # Sheet is on the shared list; Plan joins it in lists step 4
     assert re.findall(r'data-view="(\w+)"', spells) == ["all", "ready"]  # the whole shortlist first
     forms = part(plan, "t-form-list", None)
     assert "data-card-sort" in forms and "data-sortable-cards" in forms and "Polar Bear" in forms
