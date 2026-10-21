@@ -1,0 +1,124 @@
+# How askdnd organizes its data: plan (PROPOSED, 2026-10-21)
+
+Status: **proposed, waiting for Brett's decisions** (the questions at the end). Once decided, the final version of
+"The organization" below moves into `docs/ARCHITECTURE.md` (Data) with a line in `docs/DECISIONS.md`, and this file
+is marked as done.
+
+## Goals (Brett, 2026-10-21)
+
+1. **The tool's knowledge is separate from anyone's data.** Rules data (roll recipes, Beasts, rules terms, class
+   rules) belongs to the tool and is the same for everyone.
+2. **A DM's changes never edit the tool's knowledge.** They're stored with the campaign's data, point at what they
+   change, and apply only there.
+3. **Characters are separate from campaigns.** A character can move to another campaign; what it did in the old one
+   stays part of that campaign's history.
+4. **More than one campaign** in the same askdnd.
+
+## Where things stand today
+
+| Goal | Today | Gap |
+|---|---|---|
+| 1. Tool knowledge apart | Already true: rules data lives in the code (`app/data/*.json`, `rules_terms.py`, `class_rules.py`), versioned in git and deployed, never in the database | None |
+| 2. DM changes linked, not edits | The only kind today, sheet corrections (Manage › Characters), are rows that point at what they correct | They apply to every campaign; there's nowhere for a campaign's house rules |
+| 3. Characters apart | A character reaches its campaign through its story page (`characters.entity_id` → `entities.campaign_id`) | Moving means moving the story page and its history; no record of when a character joined or left |
+| 4. Several campaigns | Tables with campaign data carry `campaign_id`, and `campaign_members` exists | About 25 places use "the first campaign"; the DM tick and Reviewer access are per account, not per campaign |
+
+## The organization (proposed)
+
+Four layers, from most general to most specific. Each layer may point at the ones above it, never the other way.
+
+```
+1. Tool knowledge (in the code: git, deploys)
+     roll recipes · Beasts · rules terms · class rules · places list
+          ▲ points at (by key, e.g. "spell:Magic Missile")
+2. Tool-wide data (database)
+     users (name, email, tool role: owner / admin / member)
+     tool corrections (how askdnd reads D&D Beyond; today's sheet corrections)
+     spending limit, credit top-ups, job runs, version history
+          ▲
+3. Campaigns (database, every row has campaign_id)
+     campaigns
+     campaign_members     user × campaign → role (DM / reviewer / player), joined, left
+     campaign_characters  character × campaign → its story page, joined, left, Wild Shape keeps
+     house_rules          campaign × tool item → the DM's change, why, who, when
+     story: entries (NPCs, places…), sessions, recaps, events, glossary, corrections,
+            suggestions, speaker labels, note sources, table rolls
+          ▲
+4. Characters (database, every row has character_id; no campaign)
+     characters (name, player, D&D Beyond link, current Wild Shape form)
+     D&D Beyond copy · stars and reminders · player notes · item notes
+```
+
+### Why each piece is where it is
+
+- **Tool knowledge stays in the code.** It's audited (`docs/rules/rolls-audit.md`), reviewed like code, and the
+  same for every campaign. Putting it in the database would let one campaign's edit change everyone's.
+- **A change is a row that points at the thing it changes.** "Effective value" = the tool's knowledge, then a
+  tool-wide correction, then the campaign's house rule (the most specific wins). Removing the row brings the
+  tool's value back. Every row says who, when and why, and version history keeps old values.
+- **Two kinds of change, two scopes.** *Tool corrections* fix how askdnd reads D&D Beyond (a parser mistake: wrong
+  for everyone, so tool-wide). *House rules* are a DM's ruling (Magic Missile rolls once for all darts; what a
+  Druid keeps in Wild Shape): right for one table, so per campaign.
+- **Characters own their own data; campaigns own what happened.** The D&D Beyond copy, notes, stars and reminders
+  belong to the character and travel with it. Story pages, events, recaps and rolls belong to the campaign where
+  they happened, so they stay when a character leaves.
+- **Membership has dates.** `campaign_characters` and `campaign_members` keep `joined` and `left` instead of
+  deleting rows, so "who was in this campaign in session 12" stays answerable.
+- **Roles are per campaign.** Being DM, reviewer or player is about a table, so it lives on `campaign_members`. The
+  tool keeps only what's about the whole tool: owner and admin (setup, people, billing).
+- **The DM never sees players' notes:** a person can't see the notes of characters in a campaign they DM (now or
+  before), wherever those characters are now.
+
+### What changes in each existing table
+
+| Table | Change |
+|---|---|
+| `characters` | Gains its own `name` (from its story page). `entity_id` moves to `campaign_characters`. `wild_shape_keep` (a DM's ruling) moves to `campaign_characters` |
+| `campaign_characters` (new) | `campaign_id`, `character_id`, `entity_id` (its story page in that campaign), `joined_on`, `left_on`, `wild_shape_keep` |
+| `campaign_members` | Role adds reviewer; gains `joined_on`, `left_on` |
+| `users` | `access` becomes the tool role (owner / admin / member); `is_dm` and reviewer move to `campaign_members` |
+| `sheet_overrides` | Renamed `tool_corrections`, gains `reason`; unchanged meaning (tool-wide) |
+| `house_rules` (new) | `campaign_id`, `target_kind` (recipe, sheet item, rules term…), `target_key`, `field`, `value`, `reason`, `set_by`, timestamps |
+| `player_notes` | Gains an optional `campaign_id` (a personal quest belongs to a campaign; combos and leveling plans don't) |
+| `campaigns` | `monthly_limit_usd` moves to a tool-wide setting (one Anthropic account pays for all) |
+| Everything with `campaign_id` today | Unchanged |
+
+## How we'd build it (four steps, each shippable on its own)
+
+Each step: a migration that copies today's data into the new shape (production has one campaign and four
+characters, so it's a straight copy), a manual backup first (on top of the nightly one), tests, and a check on beta.
+Each migration can be undone.
+
+1. **Characters separate from campaigns.** Add `campaign_characters`, copy each character's link to its campaign and
+   story page, give characters their own name, move Wild Shape keeps. Change the ~33 places that go from a
+   character to its story page to go through the membership. Nothing visible changes. (Largest step.)
+2. **Roles per campaign.** Copy the DM tick and Reviewer access into `campaign_members`; `access.allows()` asks
+   about a person *in a campaign*. The access chart on Manage › People shows tool roles and campaign roles.
+   (~66 access checks, most through a few helpers.)
+3. **Tool corrections and house rules.** Rename sheet corrections, add `house_rules` and one module that works out
+   the effective value (tool knowledge → correction → house rule) for recipes, sheet items and rules terms. First
+   use: a Manage › House rules page where the DM can, say, roll Magic Missile once for all darts. The roll window
+   shows "House rule" when one applies.
+4. **More than one campaign.** A campaign switcher in the menu bar (remembered per person); story addresses carry
+   the campaign (`/c/main/sessions/20`), old addresses redirect to your current campaign. Party, Live and Table
+   rolls show the current campaign's characters. Admin: create a campaign, add people and characters to it, move a
+   character (ends one membership, starts another).
+
+Steps 1–3 don't change what anyone sees much; step 4 is where the second campaign appears.
+
+## Decisions needed (my recommendation first)
+
+1. **A character's name:** one name on the character, shown in every campaign (recommended), *or* a separate name
+   per campaign. Story aliases (Sarkas → No Name, misheard spellings) stay on the campaign's story page either way,
+   because they're about that campaign's transcripts.
+2. **Reviewer:** per campaign (recommended: reviewing recaps is running a table), *or* tool-wide as today.
+3. **Notes the DM can't see:** characters in any campaign they DM now *or did before* (recommended), *or* only
+   their current campaigns.
+4. **Personal quests:** belong to the campaign they were written in (recommended), *or* stay with the character
+   everywhere. Combos and leveling plans stay with the character.
+5. **Wild Shape keeps:** a DM ruling, so per campaign (recommended), *or* stay on the character.
+6. **Campaign in the address:** yes, `/c/<campaign>/…` for story pages (recommended: shared links always open the
+   right campaign), *or* only a remembered switcher.
+7. **Spending limit:** one tool-wide limit (recommended: one Anthropic account), *or* per campaign.
+8. **Order:** the four steps in the order above (recommended), *or* start with house rules (step 3), which is the
+   smallest visible win.
