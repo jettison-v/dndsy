@@ -638,3 +638,16 @@ def test_skills_tab_groups_by_ability_and_explains(player, db):
     assert f'data-panel-url="/characters/{cole.id}/vital/skill-sleight-of-hand"' in page
     panel = player.get(f"/characters/{cole.id}/vital/skill-perception").text
     assert "Perception (Wis)" in panel and "Stone of Good Luck" in panel and '<td class="num">+8</td>' in panel
+
+
+def test_a_pin_announces_itself_so_the_page_updates_without_a_refresh(player, db):
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    owned_by(db, cole, "player@example.com")
+    r = player.post(f"/characters/{cole.id}/pick", data={"kind": "star", "ref": "spell:Heat Metal", "marks": "star,fav,remind"})
+    event = json.loads(r.headers["HX-Trigger"])["marksChanged"]
+    assert event == {"character": cole.id, "kind": "star", "ref": "spell:Heat Metal", "on": True, "fav": True}  # pinning shortlists
+    body = player.get(f"/characters/{cole.id}/battle/body").text
+    assert body.startswith('<div id="battle-body"') or 'id="battle-body"' in body[:200]
+    assert "Heat Metal" in body.split('data-econ-col="action"')[1].split('data-econ-col="bonus"')[0]

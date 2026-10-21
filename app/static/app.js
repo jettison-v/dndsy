@@ -387,6 +387,31 @@
     if (body && ids.includes(body.dataset.character)) htmx.ajax('POST', '/characters/' + body.dataset.character + '/sync', { target: '#battle-body', swap: 'outerHTML' });
     else if ((page && ids.includes(page.dataset.character)) || location.pathname === '/party') location.reload();
   });
+  // A pin, bookmark or reminder changed (character_pages.toggle_pick): show it everywhere on the page
+  // without a refresh. Battle reloads its body (pins fill its columns; reminders its box); rows on
+  // Sheet and in lists update their buttons, and a shared list moves the row in or out of Shortlist.
+  document.body.addEventListener('marksChanged', e => {
+    const d = e.detail || {}, body = document.getElementById('battle-body');
+    if (body && String(body.dataset.character) === String(d.character))
+      htmx.ajax('GET', '/characters/' + d.character + '/battle/body', { target: '#battle-body', swap: 'outerHTML' });
+    const set = (row, kind, on) => row.querySelectorAll('.pick.' + kind + ':not(.static)').forEach(b => {
+      if (!b.closest('.detail-marks')) { b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+    });
+    document.querySelectorAll('[data-ref]').forEach(row => {
+      if (row.dataset.ref !== d.ref || row.closest('.peek.top, .detail-marks')) return;
+      set(row, d.kind, d.on);
+      if (d.fav === null || d.fav === undefined) return;
+      set(row, 'fav', d.fav);
+      if (row.dataset.fav !== undefined) row.dataset.fav = d.fav ? '1' : '0';
+      if (row.dataset.views !== undefined) {
+        const vs = new Set(row.dataset.views.split(' ').filter(Boolean));
+        if (d.fav) vs.add('fav'); else vs.delete('fav');
+        row.dataset.views = [...vs].join(' ');
+        const root = row.closest('[data-list]');
+        if (root && root._ls && window.askdndList) window.askdndList.apply(root);
+      }
+    });
+  });
   document.body.addEventListener('htmx:afterSettle', e => {
     const ids = [e.target.id, e.detail.target && e.detail.target.id];
     if (ids.includes('live-menu')) gmSetup();  // the popover's switch
@@ -467,27 +492,6 @@
     if (v || f) plannerApply(root);
   });
   document.addEventListener('input', e => { const root = e.target.closest('[data-planner]'); if (root && e.target.matches('[data-search]')) plannerApply(root); });
-  // A bookmark or pin press keeps the rows on the page in step without a reload, the way the
-  // server does it: the bookmark toggles the Shortlist, and pinning also shortlists.
-  document.addEventListener('click', e => {
-    const b = e.target.closest('.pick.fav:not(.static), .pick.star:not(.static)'); if (!b) return;
-    const pressing = !b.classList.contains('on'), pin = b.classList.contains('star');
-    if (pin && !pressing) return;  // unpinning leaves the Shortlist alone
-    const fav = pin ? true : pressing, ref = JSON.parse(b.getAttribute('hx-vals') || '{}').ref;
-    document.querySelectorAll('.spell-row[data-ref]').forEach(r => {
-      if (r.dataset.ref !== ref) return;
-      r.dataset.fav = fav ? '1' : '0';
-      const h = r.querySelector('.pick.fav:not(.static)');
-      if (h && h !== b) { h.classList.toggle('on', fav); h.setAttribute('aria-pressed', fav); }
-      if (r.dataset.views !== undefined) {  // a shared list: move it in or out of the Shortlist view
-        const vs = new Set(r.dataset.views.split(' ').filter(Boolean));
-        if (fav) vs.add('fav'); else vs.delete('fav');
-        r.dataset.views = [...vs].join(' ');
-        const root = r.closest('[data-list]');
-        if (root && root._ls && window.askdndList) setTimeout(() => window.askdndList.apply(root));
-      }
-    });
-  }, true);
   document.querySelectorAll('[data-planner]').forEach(plannerApply);
   // Manage › People: the line under each person says what their access will let them do, as you change it.
   document.addEventListener('change', e => {

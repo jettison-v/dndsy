@@ -390,9 +390,24 @@ def toggle_pick(request: Request, character_id: int, kind: str = Form(...), ref:
     db.commit()
     if marks:
         shown = [m for m in marks.split(",") if m in picks.KINDS]
-        return templates.TemplateResponse(request, "_detail_marks.html", {"c": ch, "ref": ref, "can_pick": True, "marks": shown,
+        resp = templates.TemplateResponse(request, "_detail_marks.html", {"c": ch, "ref": ref, "can_pick": True, "marks": shown,
                                                                           "picks": picks.picks(db, ch, user)})
-    return templates.TemplateResponse(request, "_pick.html", {"c": ch, "kind": kind, "ref": ref, "on": on, "can_pick": True})
+    else:
+        resp = templates.TemplateResponse(request, "_pick.html", {"c": ch, "kind": kind, "ref": ref, "on": on, "can_pick": True})
+    # Tell the page behind (Battle, Sheet's rows) so it shows the change without a refresh (roadmap step 5).
+    # Pinning also shortlists; unpinning leaves the shortlist as it was (fav: None).
+    fav = on if kind == "fav" else (True if kind == "star" and on else None)
+    resp.headers["HX-Trigger"] = json.dumps({"marksChanged": {"character": ch.id, "kind": kind, "ref": ref, "on": on, "fav": fav}})
+    return resp
+
+
+@router.get("/characters/{character_id:int}/battle/body")
+def battle_body(request: Request, character_id: int, db: Session = Depends(get_db)):
+    """Battle's body on its own, for a live update after a pin or reminder changes (no D&D Beyond refresh)."""
+    user, ch, stop = _load(request, db, character_id)
+    if stop:
+        return stop
+    return templates.TemplateResponse(request, "_battle_body.html", _battle_ctx(db, ch, user))
 
 
 @router.post("/characters/{character_id:int}/pick/note")
