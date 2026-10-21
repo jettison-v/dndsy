@@ -9,7 +9,8 @@
 <details class="ls-fold" data-ls-fold>
   <summary>Filters <span class="count" data-ls-fold-count hidden></span></summary>
   <aside class="ls-filters" aria-label="Filters">
-    <div class="ls-filters-head"><h3 class="ls-h">Filters</h3><span class="ls-rule" aria-hidden="true"></span></div>
+    {# Not an <h3>: panel styles give h3s their own margins, which pushed it off the rule #}
+    <div class="ls-filters-head"><span class="ls-h" role="heading" aria-level="3">Filters</span><span class="ls-rule" aria-hidden="true"></span></div>
     {% for g in groups if not g.more %}{{ chip_group(g) }}{% endfor %}
     {% if more %}<details class="ls-more" data-ls-more>
       <summary>More filters <span class="note" data-ls-more-on></span></summary>
