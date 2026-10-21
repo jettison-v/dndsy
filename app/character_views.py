@@ -6,6 +6,7 @@ import re
 from urllib.parse import quote
 
 from app import advantage, class_rules
+from app import roll_recipes as rr
 
 COSTS = ["Action", "Bonus action", "Reaction", "Other"]
 COLUMN_LIMIT = 7  # options shown in a Battle column before "See all"
@@ -138,7 +139,7 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
             adv=advantage.for_attack(advs, spell=True) if sp["attack"] else [],
             spends=spends,
             meta=" · ".join(x for x in (sp["range"], effect, sp["trigger"] if cost == "Reaction" else "") if x),
-            text=sp.get("text") or sp["summary"], summary=sp["summary"],
+            text=sp.get("text") or sp["summary"], summary=sp["summary"], recipe=rr.spell(sp["name"]) or sp.get("roll"),
             common=cost == "Reaction" or (not sp["level"] and bool(sp["attack"] or sp["save"]) and bool(sp["damage"])))
     for a in sheet.get("actions") or []:
         cost = _cost(a["activation"])
@@ -167,7 +168,8 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
         first = re.split(r"(?<=[.!?])\s", it["summary"] or "", maxsplit=1)[0]
         add(key=it["key"], oref=f"item:{it['base_name']}", kind="item", cost="Action", name=f"Use an item: {it['name']}", uses=uses,
             tags=[f"×{it['quantity']}"] if it["quantity"] > 1 else [], meta=first if len(first) <= 120 else first[:119].rsplit(" ", 1)[0] + "…",
-            text=it.get("text") or it["summary"], summary=it["summary"], common="healing" in it["name"].lower())
+            text=it.get("text") or it["summary"], summary=it["summary"], common="healing" in it["name"].lower(),
+            recipe=rr.item(it["base_name"]) or rr.item(it["name"]))
     unarmed = attacks.get("Unarmed Strike")
     for o in out:
         rollable(o, unarmed)
@@ -191,6 +193,12 @@ def _dice(text: str) -> str:
 def rollable(o: dict, unarmed: dict | None = None) -> dict:
     """Sets o["dice"] (damage or healing dice, "" if none) and o["heal"]; gives a feature that
     makes Unarmed Strikes the Unarmed Strike's to-hit and damage."""
+    recipe = o.get("recipe")
+    if recipe and recipe.get("events"):  # an audited (or D&D Beyond) recipe says exactly what rolls
+        other = [e for e in recipe["events"] if e["on"] != "hit"]
+        o["dice"] = (other or recipe["events"])[0]["parts"][0] if (other or recipe["events"])[0].get("parts") else ""
+        o["heal"] = bool(other) and other[0]["on"] == "heal"
+        return o
     text = f"{o.get('summary') or ''} {o.get('text') or ''}"
     if not o.get("hit") and unarmed and o.get("kind") == "feature" and MAKES_UNARMED.search(text):
         o["hit"] = unarmed.get("to_hit", "")
@@ -313,7 +321,8 @@ def detail(sheet: dict, ref: str, starred: set[str] = frozenset()) -> dict | Non
     if roll is None and x["section"] in ("spells", "inventory", "attacks", "actions", "features", "creatures"):
         weapon = next((a for a in sheet.get("attacks") or [] if a["name"] == x.get("name")), None)
         effect = x.get("damage") or (f"heals {x['healing']}" if x.get("healing") else "")
-        roll = rollable({"name": x.get("name") or "", "kind": "spell" if x["section"] == "spells" else "item",
+        recipe = rr.spell(x.get("name") or "") or x.get("roll") if x["section"] == "spells" else rr.item(x.get("name") or "")
+        roll = rollable({"name": x.get("name") or "", "kind": "spell" if x["section"] == "spells" else "item", "recipe": recipe,
                          "hit": x.get("attack") or x.get("save") or (weapon or {}).get("to_hit", ""), "meta": effect if isinstance(effect, str) else "",
                          "summary": x.get("summary") or "", "text": x.get("text") or "", "adv": []})
     if roll is not None and not (roll.get("dice") or (roll.get("hit") or "")[:1] in ("+", "-", "\u2212")):

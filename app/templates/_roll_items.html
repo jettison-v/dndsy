@@ -2,8 +2,16 @@
    die), newest activity first. data-seq is the newest row in it, so polling knows where it is.
    A hidden roll (DM only, seen by someone else) carries only who and when: no label, dice or
    total reach this browser. #}
+{% macro pline(x) -%}
+{%- if x.kept is defined and x.kept is not none -%}{{ x.label }}: d20 {% for d in x.dice %}{% if loop.index0 == x.kept_at %}<u>{{ d }}</u>{% else %}{{ d }}{% endif %}{{ " / " if not loop.last }}{% endfor %} {{ "+" if x.modifier >= 0 else "−" }}{{ x.modifier | abs }} = <b>{{ x.total }}</b>
+{%- elif not x.dice -%}{% if x.label %}{{ x.label }} · {% endif %}{{ x.kind or "bonus" }} {{ "+" if x.total >= 0 else "−" }}{{ x.total | abs }}
+{%- else -%}{% if x.label %}{{ x.label }} · {% endif %}{% if x.kind %}{{ x.kind }} {% endif %}{{ x.formula }}: {{ x.dice | join(" ") }}{{ " (critical)" if x.crit }} = <b>{{ x.total }}</b>{%- endif -%}
+{%- endmacro %}
 {% macro dline(p, d20) -%}
-{%- if d20 -%}d20 {% for d in p.dice %}{% if loop.index0 == p.kept_at %}<u>{{ d }}</u>{% else %}{{ d }}{% endif %}{{ " / " if not loop.last }}{% endfor %} {{ "+" if p.modifier >= 0 else "−" }}{{ p.modifier | abs }}{{ " · Adv" if p.mode == "adv" }}{{ " · Dis" if p.mode == "dis" }}
+{%- if p.parts and p.parts | length > 1 -%}
+{%- for x in p.parts %}<span class="roll-pl">{{ pline(x) }}</span>{% endfor -%}
+{%- for x in p.extras %}<span class="roll-pl">{{ x.label }} {{ "+" if x.total >= 0 else "−" }}{{ x.total | abs }}</span>{% endfor -%}
+{%- elif d20 -%}d20 {% for d in p.dice %}{% if loop.index0 == p.kept_at %}<u>{{ d }}</u>{% else %}{{ d }}{% endif %}{{ " / " if not loop.last }}{% endfor %} {{ "+" if p.modifier >= 0 else "−" }}{{ p.modifier | abs }}{{ " · Adv" if p.mode == "adv" }}{{ " · Dis" if p.mode == "dis" }}
 {%- else -%}{{ p.formula }}: {{ p.dice | join(" ") }}{% if p.modifier %} {{ "+" if p.modifier > 0 else "−" }}{{ p.modifier | abs }}{% endif %}{%- endif -%}
 {%- for x in p.extras %} · {{ x.label }} {{ "+" if x.total >= 0 else "−" }}{{ x.total | abs }}{% if x.dice %} <span class="roll-x">({{ x.formula | replace("-", "−") }})</span>{% endif %}{% endfor -%}
 {%- endmacro %}
@@ -29,7 +37,7 @@
     {% endif %}
   </span>
   {% if r.hidden %}<span class="roll-lock" role="img" aria-label="Hidden from the table"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
-  {% else %}<b class="roll-total">{{ r.total }}</b><span class="roll-short" aria-hidden="true">{{ r.short }}</span>{% endif %}
+  {% else %}{% set rays = r.main.parts | selectattr("kept", "defined") | list if r.main and r.main.parts else [] %}<b class="roll-total">{% if rays | length > 1 %}{{ rays | map(attribute="total") | join(" · ") }}{% else %}{{ r.total }}{% endif %}</b><span class="roll-short" aria-hidden="true">{{ r.short }}</span>{% endif %}
 </li>
 {% else %}
 <li class="roll-empty">No rolls yet. With Game Mode on, your saves, checks, attacks and the dice below roll here for the table.</li>

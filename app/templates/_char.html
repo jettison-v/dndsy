@@ -103,13 +103,26 @@
 {# Dice rolls (app.js "Rolls"): anything with data-roll rolls when clicked. data-mod is the bonus ("+7"),
    data-dmg the damage dice, data-adv="1" when Advantage always applies. With Game Mode on, your own
    character's rolls go to the server as Table rolls (app/table_rolls.py); otherwise they stay in this browser. #}
-{% macro roll_attrs(kind, label, mod="", dmg="", advs=(), note="") -%}
-data-roll="{{ kind }}" data-label="{{ label }}"{% if mod %} data-mod="{{ mod | replace('−', '-') }}"{% endif %}{% if dmg %} data-dmg="{{ dmg }}"{% endif %}{% if advs and advs | rejectattr("when") | list %} data-adv="1"{% endif %}{% if advs %} data-adv-why="{% for a in advs %}{{ a.text }}{% if not loop.last %}&#10;{% endif %}{% endfor %}"{% endif %}{% if note %} data-note="{{ note }}"{% endif %}
+{% macro roll_attrs(kind, label, mod="", dmg="", advs=(), note="", recipe=none) -%}
+{% if recipe %}data-recipe='{{ recipe | tojson }}' {% endif %}data-roll="{{ kind }}" data-label="{{ label }}"{% if mod %} data-mod="{{ mod | replace('−', '-') }}"{% endif %}{% if dmg %} data-dmg="{{ dmg }}"{% endif %}{% if advs and advs | rejectattr("when") | list %} data-adv="1"{% endif %}{% if advs %} data-adv-why="{% for a in advs %}{{ a.text }}{% if not loop.last %}&#10;{% endif %}{% endfor %}"{% endif %}{% if note %} data-note="{{ note }}"{% endif %}
 {%- endmacro %}
 
 {# An option's to-hit number as a roll button (attacks), or a small Roll button for damage or healing
    when the option has dice but no attack roll (save spells, Healing Word). #}
 {% macro hit(o) -%}
+{%- set rec = o.recipe if o.recipe is defined and o.recipe and o.recipe.events else none -%}
+{%- if rec -%}
+{#- An audited recipe (app/roll_recipes.py): the to-hit rolls the attack and then its damage; other
+    effects (a save, healing, an explosion) roll from the Roll / Heal button. -#}
+{%- set hits = rec.events | selectattr("on", "equalto", "hit") | list -%}
+{%- set others = rec.events | rejectattr("on", "equalto", "hit") | list -%}
+{%- set first = others[0] if others else none -%}
+<span class="hit">
+{%- if hits and o.hit and o.hit[0] in "+-−" -%}<button type="button" class="roll-hit" {{ roll_attrs("attack", o.name, o.hit, "", o.adv, recipe=rec) }} title="Roll to hit">{{ o.hit }}</button>{% if o.adv %} {{ adv(o.adv) }}{% endif %}
+{%- elif o.hit %}{{ o.hit }}{% endif -%}
+{%- if first %} <button type="button" class="roll-chip" {{ roll_attrs({"heal": "heal", "temp": "temp", "plain": "dice"}.get(first.on, "damage"), o.name, "", "", note=("Each target makes a " ~ o.hit ~ " save." if o.hit and o.hit[0] not in "+-−" else ""), recipe=rec) }} title="Roll">{{ "Heal" if first.on == "heal" else "Roll" }}</button>{% endif -%}
+</span>
+{%- else -%}
 {%- set dmg = o.dice if o.dice is defined else o.meta | dice -%}
 {%- set heal = o.heal if o.heal is defined else ("heals " in o.meta or "healing" in o.name | lower) -%}
 {%- set k = "heal" if heal else "damage" -%}
@@ -119,6 +132,7 @@ data-roll="{{ kind }}" data-label="{{ label }}"{% if mod %} data-mod="{{ mod | r
 <span class="hit">{{ o.hit }}{% if dmg %} <button type="button" class="roll-chip" {{ roll_attrs(k, o.name, "", dmg, note="Each target makes a " ~ o.hit ~ " save; the spell says what a success does.") }} title="Roll {{ dmg }}">{{ "Heal" if heal else "Roll" }}</button>{% endif %}</span>
 {%- elif dmg -%}
 <span class="hit"><button type="button" class="roll-chip" {{ roll_attrs(k, o.name, "", dmg) }} title="Roll {{ dmg }}">{{ "Heal" if heal else "Roll" }}</button></span>
+{%- endif -%}
 {%- endif -%}
 {%- endmacro %}
 {% set hit_btn = hit %}{# ri() has a "hit" argument of its own #}

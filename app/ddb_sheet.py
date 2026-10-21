@@ -675,6 +675,66 @@ class _Sheet:
         tier = 1 + (self.level >= 5) + (self.level >= 11) + (self.level >= 17)
         return f"{int(m.group(1)) * tier}d{m.group(2)}{m.group(3)}"
 
+    def _roll(self, df: dict) -> dict | None:
+        """A roll recipe (app/roll_recipes.py) from D&D Beyond's own numbers, for spells askdnd has no
+        audited recipe for (not in the SRD or checked by hand). Unconditional damage parts add up;
+        a part with a condition ("If the creature is submerged…") or one of several damage types
+        (Absorb Elements) is a choice. Not checked against a book (D&D Beyond sometimes has older
+        numbers), so the roll window says so."""
+        level = df.get("level") or 0
+        mods = [m for m in df.get("modifiers") or [] if _d(m, "die", "diceString")]
+        dmg = [m for m in mods if m.get("type") == "damage"]
+        heal = [m for m in mods if m.get("type") == "bonus" and m.get("subType") == "hit-points"]
+
+        def part(m):
+            die = m.get("die") or {}
+            n, sides, flat = die.get("diceCount"), die.get("diceValue"), die.get("fixedValue") or 0
+            kind = (m.get("friendlySubtypeName") or m.get("subType") or "").lower() if m.get("type") == "damage" else ""
+            return f"{n}d{sides}{f'{flat:+d}' if flat else ''}{(' ' + kind) if kind else ''}" if n and sides else ""
+
+        def upcast(m):
+            hl = ((m.get("atHigherLevels") or {}).get("higherLevelDefinitions") or [])
+            d = next((h.get("dice") for h in hl if h.get("dice") and h.get("level") == 1), None)
+            return f"{d['diceCount']}d{d['diceValue']}" if d and level else ""
+
+        on = "hit" if df.get("requiresAttackRoll") else "save" if df.get("requiresSavingThrow") else "auto"
+        save = (ABILITY_KEY.get(df.get("saveDcAbilityId")) or "")[:3].title()
+        def why(m):
+            r = (m.get("restriction") or "").strip()
+            return "" if re.fullmatch(r"\d+ \w+", r) else r  # "3 Darts" is a count, not a condition
+
+        plain = [m for m in dmg if not why(m)]
+        cond = [m for m in dmg if why(m)]
+        events = []
+        if plain:
+            events.append({"name": df["name"], "on": on, "parts": [part(m) for m in plain], "upcast": [upcast(m) for m in plain]})
+        if cond and len({why(m) for m in cond}) == 1 and len({re.sub(r" \w+$", "", part(m)) for m in cond}) == 1 and len(cond) > 1:
+            dice = re.sub(r" \w+$", "", part(cond[0]))  # one of several damage types (Absorb Elements)
+            types = " or ".join((m.get("friendlySubtypeName") or m.get("subType") or "").lower() for m in cond)
+            events.append({"name": df["name"], "on": on, "parts": [f"{dice} {types}"], "upcast": [upcast(cond[0])], "note": why(cond[0])})
+        else:
+            for m in cond:
+                alone = not plain and len(cond) == 1
+                events.append({"name": df["name"] if alone else why(m).rstrip(".")[:60], "on": on, "parts": [part(m)],
+                               "upcast": [upcast(m)], **({"note": why(m)} if alone else {})})
+        for m in heal:
+            events.append({"name": "Healing", "on": "heal", "parts": [part(m)], "upcast": [upcast(m)]})
+        if not events:
+            return None
+        spell_hl = (df.get("atHigherLevels") or {}).get("higherLevelDefinitions") or []
+        more = next((h for h in spell_hl if h.get("typeId") == 16), None)  # more darts / beams
+        count = re.match(r"(\d+) (\w+)", next((m.get("restriction") or "" for m in dmg), "") or "")
+        for e in events:
+            if save and e["on"] == "save":
+                e |= {"save": save, "note": " ".join(x for x in (e.get("note"), "Check the spell for what a successful save does.") if x)}
+            if not level and df.get("scaleType") == "characterlevel":
+                e["cantrip"] = "count" if more else "dice"
+            if count and count.group(2).lower().rstrip("s") in ("dart", "ray", "beam"):
+                e |= {"count": int(count.group(1)), "count_label": count.group(2).lower().rstrip("s")}
+            if more and level:
+                e["count_upcast"] = more.get("value") or 1
+        return {"level": level, "events": events, "checked": "D&D Beyond"}
+
     def spell(self, s: dict, source: str) -> dict | None:
         df = s.get("definition") or {}
         if not df.get("name"):
@@ -719,6 +779,7 @@ class _Sheet:
             "save": f"{save[:3].title()} {caster['save_dc']}" if caster and save and df.get("requiresSavingThrow") else "",
             "damage": damage,
             "healing": (_d(heal, "die", "diceString") or "") if heal else "",
+            "roll": self._roll(df),
             "tags": list(df.get("tags") or []),
             "trigger": (df.get("castingTimeDescription") or "").strip(),
             "sources": [source],

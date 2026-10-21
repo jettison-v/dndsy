@@ -1174,6 +1174,14 @@ body.gm-on .topbar { margin-left: calc(-1 * var(--rolls-w, 0px)); }
 .roll-what .roll-sub, .roll-dice { color: var(--muted); font-size: .8rem; }
 .roll-sub { color: var(--muted); }
 .roll-old s { color: var(--faint); }
+.roll-pl { display: block; }
+.rp-res .roll-sub { display: inline-block; vertical-align: middle; }
+.rw-sum { font-size: .85rem; margin: 8px 0; }
+.rw-sum .note { font-size: .78rem; }
+.rw-ev-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.rw-ev-list .chip { font: inherit; font-size: .8rem; background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
+.rw-ev-list .chip[aria-pressed="true"] { background: var(--red); border-color: var(--red); color: #fff; font-weight: 700; }
+.roll-win select.rw-slot { width: auto; padding: 4px 8px; }
 .roll-flag { font-size: .8rem; color: var(--amber); }
 .nat20 .roll-flag, .nat20 > .roll-total, b.nat20 { color: var(--green); }
 .nat1 .roll-flag, .nat1 > .roll-total, b.nat1 { color: #f08a8a; }

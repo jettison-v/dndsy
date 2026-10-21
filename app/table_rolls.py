@@ -32,6 +32,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app import picks, web
+from app import roll_recipes as rr
 from app.auth import current_user, is_dm
 from app.db import get_db
 from app.models import Character, CharacterSnapshot, TableRoll
@@ -40,7 +41,8 @@ from app.templating import templates
 router = APIRouter()
 
 D20_KINDS = ("save", "check", "attack", "death")
-ROOT_KINDS = (*D20_KINDS, "damage", "heal", "dice")
+ROOT_KINDS = (*D20_KINDS, "damage", "heal", "temp", "dice")
+MAX_COUNT = 12  # darts, rays, beams
 MODES = ("normal", "adv", "dis")
 VISIBILITY = ("table", "dm", "self")
 REROLLS = ("Heroic Inspiration", "Luck")
@@ -113,6 +115,35 @@ def roll_damage(expr: str, crit: bool = False, roll=None) -> dict | None:
     return roll_formula(expr, crit, roll)
 
 
+def check_parts(parts: list[str], count: int = 1) -> bool:
+    """Parts like "1d6+2 piercing" (from a stored recipe, app/roll_recipes.py): sensible dice only."""
+    parsed = [rr.parse_part(p) for p in parts]
+    if not parts or len(parts) > 8 or not (1 <= count <= MAX_COUNT) or any(p is None for p in parsed):
+        return False
+    if any((n and not 2 <= s <= 100) or n > 40 or abs(f) > 60 or len(k) > 60 for n, s, f, k in parsed):
+        return False
+    return sum(n for n, *_ in parsed) * count <= 120
+
+
+def roll_parts(parts: list[str], count: int = 1, crits: list[bool] | None = None, each: str = "", roll=None,
+               floor: bool = True) -> dict:
+    """Roll each part, once per instance (3 darts: 3 × 1d4+1), keeping each roll's own line. A
+    critical instance rolls its dice twice. `crits` (one per instance) also says how many there are."""
+    roll = roll or die
+    crits = crits if crits is not None else [False] * count
+    lines = []
+    for i, crit in enumerate(crits):
+        for n, sides, flat, kind in (rr.parse_part(p) for p in parts):
+            k = n * 2 if crit else n
+            dice = [roll(sides) for _ in range(k)]
+            lines.append({"label": f"{each.title()} {i + 1}" if len(crits) > 1 and each else "", "kind": kind, "crit": crit,
+                          "formula": (f"{k}d{sides}" + (f"{flat:+d}" if flat else "")) if k else str(flat), "dice": dice,
+                          "total": sum(dice) + flat})
+    total = sum(x["total"] for x in lines)
+    return {"dice": [d for x in lines for d in x["dice"]], "kept": None, "modifier": sum(rr.parse_part(p)[2] for p in parts) * len(crits),
+            "total": max(total, 0) if floor else total, "formula": " + ".join(parts), "parts": lines}
+
+
 def parse_extras(values: list[str]) -> list[tuple[str, int, int, int]] | None:
     """Situational bonuses as 'Bless:+1d4', 'Bane:-1d4', 'Other:+2' -> (label, sign, count, sides);
     a flat bonus has sides 0. None if any doesn't make sense."""
@@ -167,8 +198,12 @@ def roll_context(sheet: dict | None) -> dict:
     spell_mod = next((v for k, v in sc.get("dc_parts") or [] if k.endswith(" modifier")), None)
     con = next((a.get("modifier") for a in s.get("abilities") or [] if a.get("short") == "Con"), 0)
     dice = sorted({h["die"] for h in (s.get("hit_points") or {}).get("hit_dice") or [] if h.get("total", 0) > h.get("used", 0)})
+    slots = (s.get("spell_slots") or {})
+    have = sorted({x["level"] for x in slots.get("slots") or [] if x.get("max", 0) > x.get("used", 0)}
+                  | ({slots["pact"]["level"]} if slots.get("pact") and slots["pact"].get("max", 0) > slots["pact"].get("used", 0) else set()))
     return {"inspiration": bool(s.get("inspiration")), "luck": luck["left"] if luck else None,
-            "halfling": "halfling" in (s.get("species") or "").lower(), "spell_mod": spell_mod, "con": con, "hit_dice": dice}
+            "halfling": "halfling" in (s.get("species") or "").lower(), "spell_mod": spell_mod, "con": con, "hit_dice": dice,
+            "level": s.get("level") or 1, "slots": have}
 
 
 templates.env.globals["roll_context"] = lambda sheet: json.dumps(roll_context(sheet))
@@ -212,7 +247,9 @@ def _part(r: TableRoll) -> dict:
     """One roll's dice for display."""
     many = r.kept is not None and len(r.dice) > 1
     return {"dice": list(r.dice), "kept_at": r.dice.index(r.kept) if many and r.kept in r.dice else -1, "modifier": r.modifier,
-            "mode": r.mode, "formula": r.formula, "extras": list(r.extras or []), "total": r.total, "crit": r.crit}
+            "mode": r.mode, "formula": r.formula, "extras": list(r.extras or []), "total": r.total, "crit": r.crit,
+            "parts": [{**x, "kept_at": x["dice"].index(x["kept"]) if x.get("kept") in x.get("dice", []) and len(x["dice"]) > 1 else -1}
+                      for x in r.parts or []]}
 
 
 def _death(total: int, nat: int | None) -> str:
@@ -266,7 +303,7 @@ def entries(db: Session, roots: list[TableRoll], kids: list[TableRoll], viewer_i
             if mine and newest_mine:
                 ctx = mine_ctx or {}
                 e["can"] = {
-                    "damage": r.damage if r.kind == "attack" and r.damage and not dmg and nat != 1 else "",
+                    "damage": _damage_label(r) if r.kind == "attack" and (r.damage or r.spec) and not dmg and (nat != 1 or r.parts) else "",
                     "reroll": "" if rr or dmg or r.kind not in D20_KINDS else
                               "Luck" if ctx.get("halfling") and eff.kept == 1 else
                               "Heroic Inspiration" if ctx.get("inspiration") else "",
@@ -276,6 +313,13 @@ def entries(db: Session, roots: list[TableRoll], kids: list[TableRoll], viewer_i
             newest_mine = False
         out.append(e)
     return out
+
+
+def _damage_label(r: TableRoll) -> str:
+    """What an attack's damage button rolls: '1d6+3', or '2d6 fire, per ray'."""
+    if r.spec and r.spec.get("parts"):
+        return " + ".join(r.spec["parts"]) + (f", per {r.spec.get('each') or 'hit'}" if len(r.parts or []) > 1 else "")
+    return r.damage
 
 
 def _viewer(db: Session, user: dict) -> tuple[int | None, bool]:
@@ -342,7 +386,8 @@ def _reply(request: Request, db: Session, root: TableRoll, me_id: int, dm: bool)
 def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), label: str = Form(""),
               mod: str = Form(""), dmg: str = Form(""), adv: str = Form(""), mode: str = Form("normal"),
               to: str = Form("table"), extra: list[str] = Form([]), parent: int = Form(0), action: str = Form(""),
-              die_size: int = Form(0, alias="die"), db: Session = Depends(get_db)):
+              die_size: int = Form(0, alias="die"), part: list[str] = Form([]), dmg_part: list[str] = Form([]),
+              count: int = Form(1), each: str = Form(""), db: Session = Depends(get_db)):
     """Roll on the server and return the result (the entry and its HTML for the log).
 
     A new roll: `kind` with its data, for the player's own character (plain `dice` may have
@@ -370,29 +415,42 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
     label = " ".join(label.split())[:120] or ("Dice" if kind == "dice" else "")
     if kind not in ROOT_KINDS or not label or mode not in MODES or to not in VISIBILITY:
         return _error("That roll is missing something.")
-    damage = ""
+    damage, spec, each = "", None, " ".join(each.split())[:20].lower()
+    if (part and not check_parts(part, count)) or (dmg_part and not check_parts(dmg_part, count)) or not 1 <= count <= MAX_COUNT:
+        return _error("Those dice don't look right.")
     if kind in D20_KINDS:
         m = 0 if kind == "death" else _int(mod)
         if m is None or abs(m) > MAX_MOD:
             return _error("That bonus doesn't look right.")
         if mode == "normal" and adv:
             mode = "adv"  # Advantage that always applies (data-adv)
-        result = roll_d20(m, mode)
-        rolled = roll_extras(extras)
-        result["total"] += sum(x["total"] for x in rolled)
-        if kind == "attack" and parse_formula(dmg):
+        rays = []
+        for i in range(count if kind == "attack" else 1):  # several rays or beams: an attack roll each
+            r = roll_d20(m, mode)
+            x = roll_extras(extras)
+            r["total"] += sum(e["total"] for e in x)
+            rays.append({**r, "extras": x, "label": f"{(each or 'attack').title()} {i + 1}"})
+        result = {k: rays[0][k] for k in ("dice", "kept", "modifier", "total", "formula")}
+        rolled = rays[0]["extras"]
+        result["parts"] = rays if count > 1 else []
+        if kind == "attack" and dmg_part:
+            spec = {"parts": dmg_part, "each": each}
+        elif kind == "attack" and parse_formula(dmg):
             damage = dmg.replace(" ", "").replace("−", "-")
     else:
-        result = roll_formula(dmg, floor=kind != "dice")
-        if result is None:
-            return _error("Those dice don't look right.")
+        if part:
+            result = roll_parts(part, count, each=each, floor=kind != "dice")
+        else:
+            result = roll_formula(dmg, floor=kind != "dice")
+            if result is None:
+                return _error("Those dice don't look right.")
         rolled = roll_extras(extras)
         result["total"] = result["total"] + sum(x["total"] for x in rolled)
         result["total"] = max(result["total"], 0) if kind != "dice" else result["total"]
         mode = "normal"
     who = "" if ch else ("DM" if is_dm(user) else (me.name or "Someone").split()[0])
     row = TableRoll(campaign_id=campaign.id, character_id=ch.id if ch else None, user_id=me.id, label=label, kind=kind,
-                    mode=mode, visibility=to, damage=damage, extras=rolled, who=who, **result)
+                    mode=mode, visibility=to, damage=damage, spec=spec, extras=rolled, who=who, **result)
     db.add(row)
     db.commit()
     db.refresh(row)
@@ -408,15 +466,28 @@ def _follow_up(request, db, campaign_id, me_id, dm, parent_id, action, label, ex
     base = {"campaign_id": campaign_id, "character_id": root.character_id, "user_id": me_id, "parent_id": root.id,
             "visibility": root.visibility, "who": root.who}
     if action == "damage":
-        if root.kind != "attack" or not root.damage or "damage" in kids or eff.kept == 1:
+        rays = [x for x in root.parts or [] if x.get("kept") is not None]
+        if root.kind != "attack" or not (root.damage or root.spec) or "damage" in kids or (eff.kept == 1 and not rays):
             return _error("That attack has no damage to roll.", 409)
-        crit = eff.kept == 20
-        result = roll_formula(root.damage, crit)
-        rolled = roll_extras(extras, crit)
+        if rays:  # a damage roll for each ray that isn't a natural 1, doubled where it was a 20
+            hits = [x for x in rays if x["kept"] != 1]
+            if not hits:
+                return _error("Every attack rolled a 1: no damage.", 409)
+            result = roll_parts(root.spec["parts"], crits=[x["kept"] == 20 for x in hits])
+            for line, ray in zip(result["parts"], [r for r in hits for _ in root.spec["parts"]]):
+                line["label"] = ray["label"]
+            crit = any(x["kept"] == 20 for x in hits)
+            rolled = []
+            for ray in hits:  # extra dice (Hunter's Mark…) on each hit
+                rolled += [{**x, "label": f"{ray['label']} · {x['label']}"} for x in roll_extras(extras, ray["kept"] == 20)]
+        else:
+            crit = eff.kept == 20
+            result = roll_parts(root.spec["parts"], crits=[crit]) if root.spec else roll_formula(root.damage, crit)
+            rolled = roll_extras(extras, crit)
         result["total"] = max(result["total"] + sum(x["total"] for x in rolled), 0)
         row = TableRoll(**base, kind="damage", label=root.label, mode="normal", crit=crit, extras=rolled, **result)
     elif action == "reroll":
-        if root.kind not in D20_KINDS or "reroll" in kids or "damage" in kids or label not in REROLLS:
+        if root.kind not in D20_KINDS or "reroll" in kids or "damage" in kids or label not in REROLLS or root.parts:
             return _error("That roll can't be rerolled now.", 409)
         dice = list(root.dice)
         dice[dice.index(root.kept)] = die(20)  # the die that counted

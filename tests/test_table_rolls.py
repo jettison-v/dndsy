@@ -344,3 +344,38 @@ def test_the_detail_panel_rolls(table, db):
     assert "<dt>Roll</dt>" in panel and 'data-roll="attack" data-label="Flurry of Blows"' in panel
     every = table["player"].get(f"/characters/{cole.id}/all/bonus").text  # Play's "See all"
     assert 'data-label="Flurry of Blows" data-mod="+' in every
+
+
+# ------------------------------------------------------------------ recipes: parts, darts and rays
+
+def test_each_dart_is_rolled_on_its_own(table, db, monkeypatch):
+    rolls = iter([1, 2, 3, 4, 4])
+    monkeypatch.setattr(tr, "die", lambda sides: next(rolls))
+    r = post(table["player"], character=char(db, "Cole").id, kind="damage", label="Magic Missile", part="1d4+1 force", count="5", each="dart").json()
+    lines = r["roll"]["main"]["parts"]
+    assert [x["label"] for x in lines] == ["Dart 1", "Dart 2", "Dart 3", "Dart 4", "Dart 5"]
+    assert [x["total"] for x in lines] == [2, 3, 4, 5, 5] and r["roll"]["total"] == 19 and "Dart 3" in r["html"]
+
+
+def test_several_parts_keep_their_types(table, db, monkeypatch):
+    monkeypatch.setattr(tr, "die", lambda sides: 3)
+    r = post(table["player"], character=char(db, "Cole").id, kind="damage", label="Bite", part=["1d6+2 piercing", "2d4 poison"]).json()["roll"]
+    assert [(x["kind"], x["total"]) for x in r["main"]["parts"]] == [("piercing", 5), ("poison", 6)] and r["total"] == 11
+
+
+def test_rays_get_an_attack_roll_each_and_damage_for_each_hit(table, db, monkeypatch):
+    rolls = iter([20, 1, 12])
+    monkeypatch.setattr(tr, "die", lambda sides: next(rolls) if sides == 20 else 2)
+    atk = post(table["player"], character=char(db, "Cole").id, kind="attack", label="Scorching Ray", mod="7",
+               dmg_part="2d6 fire", count="3", each="ray").json()["roll"]
+    assert [x["kept"] for x in atk["main"]["parts"]] == [20, 1, 12] and atk["can"]["damage"] == "2d6 fire, per ray"
+    assert not atk["can"]["reroll"]  # several rays: no single die to reroll
+    dmg = post(table["player"], parent=atk["id"], action="damage").json()["roll"]["damage"]
+    assert [(x["label"], x["crit"], x["total"]) for x in dmg["parts"]] == [("Ray 1", True, 8), ("Ray 3", False, 4)]  # the 1 missed
+    assert dmg["total"] == 12
+
+
+def test_bad_parts_are_refused(table, db):
+    cid = char(db, "Cole").id
+    for bad in ({"part": "lots of fire"}, {"part": "99d6 fire"}, {"part": "1d6 fire", "count": "50"}, {"part": "1d1 fire"}):
+        assert post(table["player"], character=cid, kind="damage", label="x", **bad).status_code == 400, bad

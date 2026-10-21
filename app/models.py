@@ -559,6 +559,10 @@ class TableRoll(Base):
     crit: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")  # damage doubled for a critical hit
     # Situational bonuses, each rolled: [{"label": "Bless", "formula": "+1d4", "dice": [3], "total": 3}]
     extras: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
+    # Each part or instance on its own line: [{"label": "Dart 2", "kind": "force", "formula": "1d4+1", "dice": [3], "total": 4}];
+    # for several rays, each ray's attack roll
+    parts: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
+    spec: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # an attack's damage to roll next: {"parts": [...], "each": "ray"}
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     character: Mapped[Character | None] = relationship()
 
