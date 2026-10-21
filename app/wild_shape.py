@@ -188,9 +188,15 @@ def _entry(e: dict, cost: str, d: dict) -> dict:
     meta = []
     if reach:
         meta.append(reach.group(1).rstrip("."))
+    recipe = beast_recipe(e, d.get("damage_bonus", 0) if att else 0)
     if dmg:
-        kinds = " + ".join(f"{a} ({b}) {c}" if b else f"{a} {c}" for a, b, c in dmg)
+        first = recipe["events"][0]["parts"] if recipe else []
+        kinds = " + ".join(f"{a} ({b}) {c}" if b else f"{a} {c}" for a, b, c in _damages(_hit_sentence(text)[0]) if b) or \
+            " + ".join(f"{a} ({b}) {c}" if b else f"{a} {c}" for a, b, c in dmg)
         meta.append(kinds + (" (or Radiant)" if d.get("lunar_radiance") and att else ""))
+        for ev in (recipe["events"][1:] if recipe else []):
+            more = [p for p in ev["parts"] if p not in first]
+            meta.append(f"{ev['name']}: {' + '.join(more) if ev['parts'][:len(first)] == first else ' + '.join(ev['parts'])}")
     if att and d.get("lunar_form"):
         meta.append("+2d10 Radiant once per turn")
     if att and d.get("fury") == "Primal Strike":
@@ -201,7 +207,8 @@ def _entry(e: dict, cost: str, d: dict) -> dict:
         f"DC {save.group(2)} {save.group(1)[:3]}" if save else "")
     adv = (advantage.for_attack(d.get("advs") or [], melee=att.group(1).startswith("Melee")) + advantage.in_attack(e["name"], text)) if att else []
     return {"key": f"beast:{e['name']}", "name": e["name"], "cost": cost, "hit": hit, "meta": " · ".join(meta) or _clip(text),
-            "text": text, "tags": ["Form"], "uses": None, "spends": [], "starred": False, "source": "form", "adv": adv}
+            "text": text, "tags": ["Form"], "uses": None, "spends": [], "starred": False, "source": "form", "adv": adv,
+            "recipe": recipe}
 
 
 def _clip(text: str, n: int = 110) -> str:
@@ -217,6 +224,57 @@ def _damages(text: str) -> list[tuple[str, str, str]]:
     """Each "9 (1d8 + 5) Slashing damage" in an attack, leaving out alternatives
     ("…, or 6 (2d4) Piercing damage if the swarm is Bloodied")."""
     return [m.groups() for m in DAMAGE.finditer(text) if not text[max(0, m.start() - 3):m.start()].endswith("or ")]
+
+
+def _part(dice: str, kind: str, bonus: int = 0) -> str:
+    """'1d6 + 2', 'Piercing' -> '1d6+2 piercing' (a roll recipe part, app/roll_recipes.py)."""
+    m = re.fullmatch(r"(\d+d\d+)(?:\s*([+−-])\s*(\d+))?", dice.strip())
+    if not m:  # a fixed amount ("1 Bludgeoning damage")
+        return f"{dice.strip()} {kind.lower()}"
+    flat = ((-1 if m.group(2) in "−-" else 1) * int(m.group(3)) if m.group(3) else 0) + bonus
+    return f"{m.group(1)}{f'{flat:+d}' if flat else ''} {kind.lower()}"
+
+
+def _when(clause: str) -> str:
+    """A short name for a condition: 'if the swarm is Bloodied' -> 'Swarm Bloodied'."""
+    if re.search(r"moved 20\+ feet straight", clause):
+        return "After a 20-ft charge"
+    m = re.search(r"if (?:the|it|its) (\w+)? ?(?:is|has) (?:the )?(\w+)", clause)
+    return f"{(m.group(1) or '').title()} {m.group(2)}".strip() if m else clause.strip().capitalize()[:40]
+
+
+def beast_recipe(e: dict, damage_bonus: int = 0) -> dict | None:
+    """How a stat block action rolls (audited by scripts/roll_audit.py): the normal hit (or failed
+    save), and as other choices the alternatives ("…, or 2 (1d4) Piercing damage if the swarm is
+    Bloodied") and conditional extras ("If … moved 20+ feet straight toward it …, an extra 9 (2d8)").
+    A worn item's damage bonus goes on the first part of an attack."""
+    text = e["text"]
+    att, save = ATTACK.search(text), SAVE.search(text)
+    hit, rest = _hit_sentence(text)
+    base = [m for m in DAMAGE.finditer(hit) if not hit[max(0, m.start() - 4):m.start()].rstrip("—").endswith("or ")]
+    if not base or not any(m.group(2) for m in DAMAGE.finditer(text)):
+        return None
+    bonus = damage_bonus if att else 0
+    parts = [_part(m.group(2) or str(max(int(m.group(1)) + (bonus if i == 0 else 0), 1)), m.group(3), bonus if i == 0 and m.group(2) else 0)
+             for i, m in enumerate(base)]
+    on = "hit" if att else "save" if save else "auto"
+    first = {"name": e["name"], "on": on, "parts": parts}
+    if save:
+        first |= {"save": save.group(1)[:3], "success": "half" if re.search(r"Success: Half damage", text) else "none"}
+    rep = re.search(r"at the (?:start|end) of each of [\w' ]+ turns", text)
+    if rep and not att:
+        first["repeat"] = rep.group(0).removeprefix("at the ")
+    events = [first]
+    for m in DAMAGE.finditer(hit):  # "…, or 2 (1d4) Piercing damage if the swarm is Bloodied"
+        if m.group(2) and hit[max(0, m.start() - 4):m.start()].rstrip("—").endswith("or "):
+            cond = re.match(r"\s*(if [^—.]+)", hit[m.end():])
+            alt = [_part(m.group(2), m.group(3), bonus)] + parts[1:]
+            events.append({**first, "name": _when(cond.group(1)) if cond else "Otherwise", "parts": alt})
+    for sent in re.split(r"(?<=\.)\s+", rest):  # "If … moved 20+ feet …, the target takes an extra 9 (2d8) …"
+        extra = [m for m in DAMAGE.finditer(sent) if m.group(2)]
+        if extra and re.search(r"\bextra\b", sent):
+            events.append({**first, "name": _when(sent), "parts": parts + [_part(m.group(2), m.group(3)) for m in extra]})
+    return {"level": 0, "events": events}
 
 
 def _hit_sentence(text: str) -> tuple[str, str]:

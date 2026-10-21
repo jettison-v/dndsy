@@ -10,6 +10,7 @@ summaries and openly licensed data, never the books' text.
 | Dungeon Master's Guide (2024) on D&D Beyond | Same | Magic item rules beyond the PHB (attunement prerequisites, cursed items); later, rulings guidance for rules answers |
 | System Reference Document 5.2 (CC-BY-4.0) via Open5e | Public | `app/data/beasts_2024.json` (Wild Shape stat blocks), stored in the repo with credit |
 | D&D Beyond character data | Public character sheets | Each character's features, spells and known forms, with full feature text |
+| SRD 5.2 spells and items (CC-BY-4.0) via Open5e | Public; cached in `private/srd/` (not committed) | Roll recipes (`app/data/roll_recipes.json`), built and checked by `scripts/roll_audit.py`; report in `rolls-audit.md` |
 
 ## Offline copy (Brett's Mac only)
 
@@ -34,3 +35,11 @@ opening an address). See the script's docstring.
   Giant Fly is SRD-only; the SRD's Swarm of Insects has a Fly Speed D&D Beyond's MM entry doesn't list.
 - 2026-10-19: every class and subclass in the PHB, plus battle feats and weapon masteries, checked for what they change
   about a turn; the Battle page now follows `app/class_rules.py`. See `battle-actions.md`.
+- 2026-10-21: roll audit (`scripts/roll_audit.py`, `rolls-audit.md`). Every SRD 5.2 spell with dice (127), the Player's
+  Handbook spells the table uses, common items and all 88 Beast actions with dice: every dice expression in the text is
+  in the recipe or marked as not a roll you make, 48 recipes written by hand with the reason, and every SRD spell's dice
+  compared with the offline 2024 PHB (124 the same; Open5e's copy lacked dice for Conjure Celestial and the upcast line
+  for Dissonant Whispers, fixed by hand). Found and fixed: Beast charge damage (Rhinoceros, Boar, Elk, Giant Goat,
+  Warhorse, Giant Boar, Triceratops) was added to every hit; D&D Beyond's data has 2014 numbers for some of the table's
+  spells (Cure Wounds 1d8, Inflict Wounds as a 3d10 attack), so askdnd uses the audited 2024 recipe; Open5e's structured
+  upcasting is wrong for Ice Knife.

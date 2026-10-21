@@ -1,0 +1,2371 @@
+{
+ "credit": "Roll recipes for spells in the System Reference Document 5.2 by Wizards of the Coast LLC, licensed under CC-BY-4.0 (https://creativecommons.org/licenses/by/4.0/), written by askdnd from the rules text.",
+ "items": {
+  "Acid": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Acid",
+     "note": "DC 8 + your Dexterity modifier + Proficiency Bonus",
+     "on": "save",
+     "parts": [
+      "2d6 acid"
+     ],
+     "save": "Dex",
+     "success": "none"
+    }
+   ],
+   "level": 0
+  },
+  "Alchemist's Fire": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Alchemist's Fire",
+     "note": "DC 8 + your Dexterity modifier + Proficiency Bonus; on a failure it starts Burning",
+     "on": "save",
+     "parts": [
+      "1d4 fire"
+     ],
+     "repeat": "start of each of its turns while Burning",
+     "save": "Dex",
+     "success": "none"
+    }
+   ],
+   "level": 0
+  },
+  "Basic Poison": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Basic Poison",
+     "note": "Extra damage when the coated weapon or ammunition deals Piercing or Slashing damage",
+     "on": "auto",
+     "parts": [
+      "1d4 poison"
+     ]
+    }
+   ],
+   "level": 0
+  },
+  "Holy Water": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Holy Water",
+     "note": "Only a Fiend or an Undead takes it; DC 8 + your Dexterity modifier + Proficiency Bonus",
+     "on": "save",
+     "parts": [
+      "2d8 radiant"
+     ],
+     "save": "Dex",
+     "success": "none"
+    }
+   ],
+   "level": 0
+  },
+  "Hunting Trap": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Hunting Trap",
+     "note": "DC 13; on a failure its Speed is 0 until the start of its next turn",
+     "on": "save",
+     "parts": [
+      "1d4 piercing"
+     ],
+     "save": "Dex",
+     "success": "none"
+    }
+   ],
+   "level": 0
+  },
+  "Potion of Healing": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Healing",
+     "on": "heal",
+     "parts": [
+      "2d4+2"
+     ]
+    }
+   ],
+   "level": 0
+  },
+  "Potion of Healing (Greater)": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Healing",
+     "on": "heal",
+     "parts": [
+      "4d4+4"
+     ]
+    }
+   ],
+   "level": 0
+  },
+  "Potion of Healing (Superior)": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Healing",
+     "on": "heal",
+     "parts": [
+      "8d4+8"
+     ]
+    }
+   ],
+   "level": 0
+  },
+  "Potion of Healing (Supreme)": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Healing",
+     "on": "heal",
+     "parts": [
+      "10d4+20"
+     ]
+    }
+   ],
+   "level": 0
+  }
+ },
+ "spells": {
+  "Acid Arrow": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "On a hit",
+     "note": "On a miss: half of this initial damage only",
+     "on": "hit",
+     "parts": [
+      "4d4 acid"
+     ],
+     "upcast": [
+      "1d4"
+     ]
+    },
+    {
+     "name": "End of its next turn",
+     "on": "auto",
+     "parts": [
+      "2d4 acid"
+     ],
+     "repeat": "end of the target's next turn, after a hit",
+     "upcast": [
+      "1d4"
+     ]
+    }
+   ],
+   "level": 2
+  },
+  "Acid Splash": {
+   "checked": "text",
+   "events": [
+    {
+     "cantrip": "dice",
+     "name": "Acid Splash",
+     "on": "save",
+     "parts": [
+      "1d6 acid"
+     ],
+     "save": "Dex",
+     "success": "none"
+    }
+   ],
+   "level": 0
+  },
+  "Alter Self": {
+   "checked": "by hand",
+   "events": [
+    {
+     "mod": true,
+     "name": "Natural Weapons",
+     "note": "The damage type is the growth's (claws, fangs, horns or hooves)",
+     "on": "hit",
+     "parts": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 2
+  },
+  "Animate Objects": {
+   "checked": "by hand",
+   "events": [],
+   "level": 5
+  },
+  "Arcane Hand": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Clenched Fist",
+     "on": "hit",
+     "parts": [
+      "5d8 force"
+     ],
+     "upcast": [
+      "2d8"
+     ]
+    },
+    {
+     "mod": true,
+     "name": "Grasping Hand: crush",
+     "note": "A Bonus Action while the hand grapples the target",
+     "on": "auto",
+     "parts": [
+      "4d6 bludgeoning"
+     ],
+     "upcast": [
+      "2d6"
+     ]
+    }
+   ],
+   "level": 5
+  },
+  "Arcane Sword": {
+   "checked": "by hand",
+   "events": [
+    {
+     "mod": true,
+     "name": "Arcane Sword",
+     "on": "hit",
+     "parts": [
+      "4d12 force"
+     ],
+     "repeat": "Bonus Action on your later turns"
+    }
+   ],
+   "level": 7
+  },
+  "Befuddlement": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Befuddlement",
+     "on": "save",
+     "parts": [
+      "10d12 psychic"
+     ],
+     "save": "Int",
+     "success": "none"
+    }
+   ],
+   "level": 8
+  },
+  "Bestow Curse": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Curse: extra damage",
+     "note": "Only with this curse: whenever you deal damage to the target with an attack roll or a spell",
+     "on": "auto",
+     "parts": [
+      "1d8 necrotic"
+     ]
+    }
+   ],
+   "level": 3
+  },
+  "Black Tentacles": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Black Tentacles",
+     "on": "save",
+     "parts": [
+      "3d6 bludgeoning"
+     ],
+     "save": "Str",
+     "success": "none"
+    }
+   ],
+   "level": 4
+  },
+  "Blade Barrier": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Blade Barrier",
+     "on": "save",
+     "parts": [
+      "6d10 force"
+     ],
+     "save": "Dex",
+     "success": "half"
+    }
+   ],
+   "level": 6
+  },
+  "Blight": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Blight",
+     "on": "save",
+     "parts": [
+      "8d8 necrotic"
+     ],
+     "save": "Con",
+     "success": "half",
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ],
+   "level": 4
+  },
+  "Blink": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Blink roll",
+     "note": "4 to 6: you vanish to the Ethereal Plane",
+     "on": "plain",
+     "parts": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 3
+  },
+  "Burning Hands": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Burning Hands",
+     "on": "save",
+     "parts": [
+      "3d6 fire"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 1
+  },
+  "Call Lightning": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Call Lightning",
+     "note": "Outdoors in a storm you control: +1d10",
+     "on": "save",
+     "parts": [
+      "3d10 lightning"
+     ],
+     "repeat": "Magic action on later turns",
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d10"
+     ]
+    }
+   ],
+   "level": 3
+  },
+  "Chain Lightning": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Chain Lightning",
+     "note": "One roll for all four targets",
+     "on": "save",
+     "parts": [
+      "10d8 lightning"
+     ],
+     "save": "Dex",
+     "success": "half"
+    }
+   ],
+   "level": 6
+  },
+  "Chill Touch": {
+   "checked": "text",
+   "events": [
+    {
+     "cantrip": "dice",
+     "name": "Chill Touch",
+     "on": "hit",
+     "parts": [
+      "1d10 necrotic"
+     ]
+    }
+   ],
+   "level": 0
+  },
+  "Chromatic Orb": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Chromatic Orb",
+     "note": "Two or more d8s the same: the orb leaps to another target within 30 ft, with a new attack roll and a new damage roll (as many leaps as the slot level)",
+     "on": "hit",
+     "parts": [
+      "3d8"
+     ],
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ],
+   "level": 1
+  },
+  "Circle of Death": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Circle of Death",
+     "on": "save",
+     "parts": [
+      "8d8 necrotic"
+     ],
+     "save": "Con",
+     "success": "half",
+     "upcast": [
+      "2d8"
+     ]
+    }
+   ],
+   "level": 6
+  },
+  "Cloudkill": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Cloudkill",
+     "on": "save",
+     "parts": [
+      "5d8 poison"
+     ],
+     "save": "Con",
+     "success": "half",
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ],
+   "level": 5
+  },
+  "Cone of Cold": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Cone of Cold",
+     "on": "save",
+     "parts": [
+      "8d8 cold"
+     ],
+     "save": "Con",
+     "success": "half",
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ],
+   "level": 5
+  },
+  "Confusion": {
+   "checked": "by hand",
+   "events": [],
+   "level": 4
+  },
+  "Conjure Animals": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Conjure Animals",
+     "on": "save",
+     "parts": [
+      "3d10 slashing"
+     ],
+     "save": "Dex",
+     "success": "none",
+     "upcast": [
+      "1d10"
+     ]
+    }
+   ],
+   "level": 3
+  },
+  "Conjure Celestial": {
+   "checked": "by hand",
+   "events": [
+    {
+     "mod": true,
+     "name": "Healing Light",
+     "on": "heal",
+     "parts": [
+      "4d12"
+     ],
+     "upcast": [
+      "1d12"
+     ]
+    },
+    {
+     "name": "Searing Light",
+     "on": "save",
+     "parts": [
+      "6d12 radiant"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d12"
+     ]
+    }
+   ],
+   "level": 7
+  },
+  "Conjure Elemental": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Conjure Elemental",
+     "note": "The spirit's damage type; on a failure the target is also Restrained",
+     "on": "save",
+     "parts": [
+      "8d8"
+     ],
+     "save": "Dex",
+     "success": "none",
+     "upcast": [
+      "1d8"
+     ]
+    },
+    {
+     "name": "Restrained target",
+     "on": "save",
+     "parts": [
+      "4d8"
+     ],
+     "repeat": "start of each of the Restrained target's turns",
+     "save": "Dex",
+     "success": "none",
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ],
+   "level": 5
+  },
+  "Conjure Fey": {
+   "checked": "by hand",
+   "events": [
+    {
+     "mod": true,
+     "name": "Conjure Fey",
+     "on": "hit",
+     "parts": [
+      "3d12 psychic"
+     ],
+     "upcast": [
+      "1d12"
+     ]
+    }
+   ],
+   "level": 6
+  },
+  "Conjure Minor Elementals": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Conjure Minor Elementals",
+     "on": "auto",
+     "parts": [
+      "2d8"
+     ],
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ],
+   "level": 4
+  },
+  "Conjure Woodland Beings": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Conjure Woodland Beings",
+     "on": "save",
+     "parts": [
+      "5d8 force"
+     ],
+     "save": "Wis",
+     "success": "half",
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ],
+   "level": 4
+  },
+  "Contact Other Plane": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "If you fail your DC 15 Int save",
+     "note": "You take this damage",
+     "on": "auto",
+     "parts": [
+      "6d6 psychic"
+     ]
+    }
+   ],
+   "level": 5
+  },
+  "Contagion": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Contagion",
+     "on": "save",
+     "parts": [
+      "11d8 necrotic"
+     ],
+     "save": "Con",
+     "success": "none"
+    }
+   ],
+   "level": 5
+  },
+  "Control Water": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Control Water",
+     "on": "save",
+     "parts": [
+      "2d8 bludgeoning"
+     ],
+     "save": "Str",
+     "success": "half"
+    }
+   ],
+   "level": 4
+  },
+  "Control Weather": {
+   "checked": "by hand",
+   "events": [],
+   "level": 8
+  },
+  "Cure Wounds": {
+   "checked": "text",
+   "events": [
+    {
+     "mod": true,
+     "name": "Healing",
+     "on": "heal",
+     "parts": [
+      "2d8"
+     ],
+     "upcast": [
+      "2d8"
+     ]
+    }
+   ],
+   "level": 1
+  },
+  "Delayed Blast Fireball": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Delayed Blast Fireball",
+     "note": "+1d6 for each of your turns that ended before it exploded (add them with Add dice)",
+     "on": "save",
+     "parts": [
+      "12d6 fire"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 7
+  },
+  "Dimension Door": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Dimension Door",
+     "on": "auto",
+     "parts": [
+      "4d6 force"
+     ]
+    }
+   ],
+   "level": 4
+  },
+  "Disintegrate": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Disintegrate",
+     "on": "save",
+     "parts": [
+      "10d6+40 force"
+     ],
+     "save": "Dex",
+     "success": "none",
+     "upcast": [
+      "3d6"
+     ]
+    }
+   ],
+   "level": 6
+  },
+  "Dissonant Whispers": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Dissonant Whispers",
+     "note": "On a failure it must use its Reaction to move away from you",
+     "on": "save",
+     "parts": [
+      "3d6 psychic"
+     ],
+     "save": "Wis",
+     "success": "half",
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 1
+  },
+  "Divine Favor": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Divine Favor",
+     "on": "auto",
+     "parts": [
+      "1d4 radiant"
+     ]
+    }
+   ],
+   "level": 1
+  },
+  "Divine Smite": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Divine Smite",
+     "note": "+1d8 against a Fiend or an Undead. Added to a weapon hit: on a Critical Hit, roll it with the attack's damage (Add dice) so its dice double too",
+     "on": "auto",
+     "parts": [
+      "2d8 radiant"
+     ],
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ],
+   "level": 1
+  },
+  "Dragon's Breath": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Dragon's Breath",
+     "on": "save",
+     "parts": [
+      "3d6"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 2
+  },
+  "Dream": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Dream",
+     "on": "save",
+     "parts": [
+      "3d6 psychic"
+     ],
+     "save": "Wis",
+     "success": "none"
+    }
+   ],
+   "level": 5
+  },
+  "Earthquake": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Collapsing structure",
+     "on": "save",
+     "parts": [
+      "12d6 bludgeoning"
+     ],
+     "save": "Dex",
+     "success": "half"
+    }
+   ],
+   "level": 8
+  },
+  "Eldritch Blast": {
+   "checked": "text",
+   "events": [
+    {
+     "cantrip": "count",
+     "name": "Eldritch Blast",
+     "on": "hit",
+     "parts": [
+      "1d10 force"
+     ]
+    }
+   ],
+   "level": 0
+  },
+  "Enlarge/Reduce": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Enlarged: extra damage",
+     "note": "Added to an enlarged creature's weapon or Unarmed Strike hits. Reduce instead takes 1d4 from them (not below 1)",
+     "on": "auto",
+     "parts": [
+      "1d4"
+     ]
+    }
+   ],
+   "level": 2
+  },
+  "Ensnaring Strike": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Ensnaring Strike",
+     "on": "auto",
+     "parts": [
+      "1d6 piercing"
+     ],
+     "repeat": "start of each of its turns",
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 1
+  },
+  "Faithful Hound": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Faithful Hound",
+     "on": "save",
+     "parts": [
+      "4d8 force"
+     ],
+     "save": "Dex",
+     "success": "none"
+    }
+   ],
+   "level": 4
+  },
+  "False Life": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Temporary Hit Points",
+     "on": "temp",
+     "parts": [
+      "2d4+4"
+     ],
+     "upcast": [
+      "+5"
+     ]
+    }
+   ],
+   "level": 1
+  },
+  "Finger of Death": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Finger of Death",
+     "on": "save",
+     "parts": [
+      "7d8+30 necrotic"
+     ],
+     "save": "Con",
+     "success": "half"
+    }
+   ],
+   "level": 7
+  },
+  "Fire Bolt": {
+   "checked": "text",
+   "events": [
+    {
+     "cantrip": "dice",
+     "name": "Fire Bolt",
+     "on": "hit",
+     "parts": [
+      "1d10 fire"
+     ]
+    }
+   ],
+   "level": 0
+  },
+  "Fire Shield": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Warm shield",
+     "note": "To a creature within 5 ft that hits you with a melee attack",
+     "on": "auto",
+     "parts": [
+      "2d8 fire"
+     ]
+    },
+    {
+     "name": "Chill shield",
+     "note": "To a creature within 5 ft that hits you with a melee attack",
+     "on": "auto",
+     "parts": [
+      "2d8 cold"
+     ]
+    }
+   ],
+   "level": 4
+  },
+  "Fire Storm": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Fire Storm",
+     "on": "save",
+     "parts": [
+      "7d10 fire"
+     ],
+     "save": "Dex",
+     "success": "half"
+    }
+   ],
+   "level": 7
+  },
+  "Fireball": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Fireball",
+     "on": "save",
+     "parts": [
+      "8d6 fire"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 3
+  },
+  "Flame Blade": {
+   "checked": "by hand",
+   "events": [
+    {
+     "mod": true,
+     "name": "Flame Blade",
+     "on": "hit",
+     "parts": [
+      "3d6 fire"
+     ],
+     "repeat": "Magic action on later turns",
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 2
+  },
+  "Flame Strike": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Flame Strike",
+     "on": "save",
+     "parts": [
+      "5d6 fire",
+      "5d6 radiant"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d6",
+      "1d6"
+     ]
+    }
+   ],
+   "level": 5
+  },
+  "Flaming Sphere": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Flaming Sphere",
+     "on": "save",
+     "parts": [
+      "2d6 fire"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 2
+  },
+  "Forbiddance": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Forbiddance",
+     "on": "auto",
+     "parts": [
+      "5d10 radiant or necrotic"
+     ],
+     "repeat": "enters the"
+    }
+   ],
+   "level": 6
+  },
+  "Freezing Sphere": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Freezing Sphere",
+     "on": "save",
+     "parts": [
+      "10d6 cold"
+     ],
+     "save": "Con",
+     "success": "half",
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 6
+  },
+  "Geas": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Geas",
+     "on": "save",
+     "parts": [
+      "5d10 psychic"
+     ],
+     "save": "Wis",
+     "success": "none"
+    }
+   ],
+   "level": 5
+  },
+  "Glyph of Warding": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Glyph of Warding",
+     "on": "save",
+     "parts": [
+      "5d8 acid or cold or fire or lightning or thunder"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ],
+   "level": 3
+  },
+  "Guiding Bolt": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Guiding Bolt",
+     "on": "hit",
+     "parts": [
+      "4d6 radiant"
+     ],
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 1
+  },
+  "Harm": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Harm",
+     "on": "save",
+     "parts": [
+      "14d6 necrotic"
+     ],
+     "save": "Con",
+     "success": "half"
+    }
+   ],
+   "level": 6
+  },
+  "Healing Word": {
+   "checked": "text",
+   "events": [
+    {
+     "mod": true,
+     "name": "Healing",
+     "on": "heal",
+     "parts": [
+      "2d4"
+     ],
+     "upcast": [
+      "2d4"
+     ]
+    }
+   ],
+   "level": 1
+  },
+  "Heat Metal": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Heat Metal",
+     "on": "auto",
+     "parts": [
+      "2d8 fire"
+     ],
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ],
+   "level": 2
+  },
+  "Hellish Rebuke": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Hellish Rebuke",
+     "on": "save",
+     "parts": [
+      "2d10 fire"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d10"
+     ]
+    }
+   ],
+   "level": 1
+  },
+  "Heroes' Feast": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Hit Point maximum",
+     "note": "Each creature's Hit Point maximum increases by this much, and it gains the same Hit Points",
+     "on": "heal",
+     "parts": [
+      "2d10"
+     ]
+    }
+   ],
+   "level": 6
+  },
+  "Hex": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Hex",
+     "on": "auto",
+     "parts": [
+      "1d6 necrotic"
+     ]
+    }
+   ],
+   "level": 1
+  },
+  "Hunter's Mark": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Hunter's Mark",
+     "on": "auto",
+     "parts": [
+      "1d6 force"
+     ]
+    }
+   ],
+   "level": 1
+  },
+  "Ice Knife": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "On a hit",
+     "on": "hit",
+     "parts": [
+      "1d10 piercing"
+     ]
+    },
+    {
+     "name": "Dex save",
+     "on": "save",
+     "parts": [
+      "2d6 cold"
+     ],
+     "save": "Dex",
+     "success": "none",
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 1
+  },
+  "Ice Storm": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Ice Storm",
+     "on": "save",
+     "parts": [
+      "2d10 bludgeoning",
+      "4d6 cold"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d10",
+      ""
+     ]
+    }
+   ],
+   "level": 4
+  },
+  "Incendiary Cloud": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Incendiary Cloud",
+     "on": "save",
+     "parts": [
+      "10d8 fire"
+     ],
+     "save": "Dex",
+     "success": "half"
+    }
+   ],
+   "level": 8
+  },
+  "Inflict Wounds": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Inflict Wounds",
+     "on": "save",
+     "parts": [
+      "2d10 necrotic"
+     ],
+     "save": "Con",
+     "success": "half",
+     "upcast": [
+      "1d10"
+     ]
+    }
+   ],
+   "level": 1
+  },
+  "Insect Plague": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Insect Plague",
+     "on": "save",
+     "parts": [
+      "4d10 piercing"
+     ],
+     "save": "Con",
+     "success": "half",
+     "upcast": [
+      "1d10"
+     ]
+    }
+   ],
+   "level": 5
+  },
+  "Lightning Bolt": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Lightning Bolt",
+     "on": "save",
+     "parts": [
+      "8d6 lightning"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 3
+  },
+  "Magic Missile": {
+   "checked": "by hand",
+   "events": [
+    {
+     "count": 3,
+     "count_label": "dart",
+     "count_upcast": 1,
+     "name": "Dart",
+     "note": "Each dart is rolled on its own; aim them at one creature or several",
+     "on": "auto",
+     "parts": [
+      "1d4+1 force"
+     ]
+    }
+   ],
+   "level": 1
+  },
+  "Mass Cure Wounds": {
+   "checked": "text",
+   "events": [
+    {
+     "mod": true,
+     "name": "Healing",
+     "on": "heal",
+     "parts": [
+      "5d8"
+     ],
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ],
+   "level": 5
+  },
+  "Mass Healing Word": {
+   "checked": "text",
+   "events": [
+    {
+     "mod": true,
+     "name": "Healing",
+     "on": "heal",
+     "parts": [
+      "2d4"
+     ],
+     "upcast": [
+      "1d4"
+     ]
+    }
+   ],
+   "level": 3
+  },
+  "Meld into Stone": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Meld into Stone",
+     "on": "auto",
+     "parts": [
+      "6d6 force"
+     ]
+    }
+   ],
+   "level": 3
+  },
+  "Meteor Swarm": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Meteor Swarm",
+     "on": "save",
+     "parts": [
+      "20d6 fire",
+      "20d6 bludgeoning"
+     ],
+     "save": "Dex",
+     "success": "half"
+    }
+   ],
+   "level": 9
+  },
+  "Mind Sliver": {
+   "checked": "by hand (PHB)",
+   "events": [
+    {
+     "cantrip": "dice",
+     "name": "Mind Sliver",
+     "note": "On a failure it also subtracts 1d4 from its next save before the end of your next turn",
+     "on": "save",
+     "parts": [
+      "1d6 psychic"
+     ],
+     "save": "Int",
+     "success": "none"
+    }
+   ],
+   "level": 0
+  },
+  "Mind Spike": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Mind Spike",
+     "on": "save",
+     "parts": [
+      "3d8 psychic"
+     ],
+     "save": "Wis",
+     "success": "half",
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ],
+   "level": 2
+  },
+  "Moonbeam": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Moonbeam",
+     "on": "save",
+     "parts": [
+      "2d10 radiant"
+     ],
+     "save": "Con",
+     "success": "half",
+     "upcast": [
+      "1d10"
+     ]
+    }
+   ],
+   "level": 2
+  },
+  "Phantasmal Force": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Phantasmal Force",
+     "on": "auto",
+     "parts": [
+      "2d8 psychic"
+     ],
+     "repeat": "each of your turns"
+    }
+   ],
+   "level": 2
+  },
+  "Phantasmal Killer": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Phantasmal Killer",
+     "on": "save",
+     "parts": [
+      "4d10 psychic"
+     ],
+     "save": "Wis",
+     "success": "half",
+     "upcast": [
+      "1d10"
+     ]
+    }
+   ],
+   "level": 4
+  },
+  "Poison Spray": {
+   "checked": "text",
+   "events": [
+    {
+     "cantrip": "dice",
+     "name": "Poison Spray",
+     "on": "hit",
+     "parts": [
+      "1d12 poison"
+     ]
+    }
+   ],
+   "level": 0
+  },
+  "Power Word Kill": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Power Word Kill",
+     "on": "auto",
+     "parts": [
+      "12d12 psychic"
+     ]
+    }
+   ],
+   "level": 9
+  },
+  "Prayer of Healing": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Healing",
+     "on": "heal",
+     "parts": [
+      "2d8"
+     ],
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ],
+   "level": 2
+  },
+  "Prismatic Spray": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Ray color (each target)",
+     "note": "1 red, 2 orange, 3 yellow, 4 green, 5 blue, 6 indigo, 7 violet, 8 two rays (roll twice more)",
+     "on": "plain",
+     "parts": [
+      "1d8"
+     ]
+    },
+    {
+     "name": "Red",
+     "on": "save",
+     "parts": [
+      "12d6 fire"
+     ],
+     "save": "Dex",
+     "success": "half"
+    },
+    {
+     "name": "Orange",
+     "on": "save",
+     "parts": [
+      "12d6 acid"
+     ],
+     "save": "Dex",
+     "success": "half"
+    },
+    {
+     "name": "Yellow",
+     "on": "save",
+     "parts": [
+      "12d6 lightning"
+     ],
+     "save": "Dex",
+     "success": "half"
+    },
+    {
+     "name": "Green",
+     "on": "save",
+     "parts": [
+      "12d6 poison"
+     ],
+     "save": "Dex",
+     "success": "half"
+    },
+    {
+     "name": "Blue",
+     "on": "save",
+     "parts": [
+      "12d6 cold"
+     ],
+     "save": "Dex",
+     "success": "half"
+    }
+   ],
+   "level": 7
+  },
+  "Prismatic Wall": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Red layer",
+     "on": "save",
+     "parts": [
+      "12d6 fire"
+     ],
+     "save": "Dex",
+     "success": "half"
+    },
+    {
+     "name": "Orange layer",
+     "on": "save",
+     "parts": [
+      "12d6 acid"
+     ],
+     "save": "Dex",
+     "success": "half"
+    },
+    {
+     "name": "Yellow layer",
+     "on": "save",
+     "parts": [
+      "12d6 lightning"
+     ],
+     "save": "Dex",
+     "success": "half"
+    },
+    {
+     "name": "Green layer",
+     "on": "save",
+     "parts": [
+      "12d6 poison"
+     ],
+     "save": "Dex",
+     "success": "half"
+    },
+    {
+     "name": "Blue layer",
+     "on": "save",
+     "parts": [
+      "12d6 cold"
+     ],
+     "save": "Dex",
+     "success": "half"
+    }
+   ],
+   "level": 9
+  },
+  "Produce Flame": {
+   "checked": "text",
+   "events": [
+    {
+     "cantrip": "dice",
+     "name": "Produce Flame",
+     "on": "hit",
+     "parts": [
+      "1d8 fire"
+     ]
+    }
+   ],
+   "level": 0
+  },
+  "Ray of Frost": {
+   "checked": "text",
+   "events": [
+    {
+     "cantrip": "dice",
+     "name": "Ray of Frost",
+     "on": "hit",
+     "parts": [
+      "1d8 cold"
+     ]
+    }
+   ],
+   "level": 0
+  },
+  "Ray of Sickness": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Ray of Sickness",
+     "on": "hit",
+     "parts": [
+      "2d8 poison"
+     ],
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ],
+   "level": 1
+  },
+  "Regenerate": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Healing",
+     "on": "heal",
+     "parts": [
+      "4d8+15"
+     ]
+    }
+   ],
+   "level": 7
+  },
+  "Reincarnate": {
+   "checked": "by hand",
+   "events": [],
+   "level": 5
+  },
+  "Resistance": {
+   "checked": "by hand",
+   "events": [],
+   "level": 0
+  },
+  "Sacred Flame": {
+   "checked": "text",
+   "events": [
+    {
+     "cantrip": "dice",
+     "name": "Sacred Flame",
+     "on": "save",
+     "parts": [
+      "1d8 radiant"
+     ],
+     "save": "Dex",
+     "success": "none"
+    }
+   ],
+   "level": 0
+  },
+  "Scorching Ray": {
+   "checked": "text",
+   "events": [
+    {
+     "count": 3,
+     "count_label": "ray",
+     "count_upcast": 1,
+     "name": "Scorching Ray",
+     "on": "hit",
+     "parts": [
+      "2d6 fire"
+     ]
+    }
+   ],
+   "level": 2
+  },
+  "Searing Smite": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "On the hit",
+     "note": "Extra damage from the attack: on a Critical Hit, add it to the attack's damage (Add dice) so it doubles",
+     "on": "auto",
+     "parts": [
+      "1d6 fire"
+     ],
+     "upcast": [
+      "1d6"
+     ]
+    },
+    {
+     "name": "Each of its turns",
+     "note": "Then it makes a Con save; a success ends the spell",
+     "on": "auto",
+     "parts": [
+      "1d6 fire"
+     ],
+     "repeat": "start of each of its turns",
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 1
+  },
+  "Shatter": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Shatter",
+     "on": "save",
+     "parts": [
+      "3d8 thunder"
+     ],
+     "save": "Con",
+     "success": "half",
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ],
+   "level": 2
+  },
+  "Shillelagh": {
+   "checked": "by hand",
+   "events": [],
+   "level": 0,
+   "note": "The weapon uses your spellcasting modifier for attack and damage, with a d8 damage die (d10 at level 5, d12 at 11, 2d6 at 17)"
+  },
+  "Shining Smite": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Shining Smite",
+     "on": "auto",
+     "parts": [
+      "2d6 radiant"
+     ],
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 2
+  },
+  "Shocking Grasp": {
+   "checked": "text",
+   "events": [
+    {
+     "cantrip": "dice",
+     "name": "Shocking Grasp",
+     "on": "hit",
+     "parts": [
+      "1d8 lightning"
+     ]
+    }
+   ],
+   "level": 0
+  },
+  "Sorcerous Burst": {
+   "checked": "by hand",
+   "events": [
+    {
+     "cantrip": "dice",
+     "name": "Sorcerous Burst",
+     "note": "For each 8 you roll, you can add another d8 (Add dice), up to your spellcasting modifier in extra d8s",
+     "on": "hit",
+     "parts": [
+      "1d8"
+     ]
+    }
+   ],
+   "level": 0
+  },
+  "Spike Growth": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Each 5 feet moved",
+     "note": "For every 5 feet a creature travels in the area",
+     "on": "auto",
+     "parts": [
+      "2d4 piercing"
+     ]
+    }
+   ],
+   "level": 2
+  },
+  "Spirit Guardians": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Spirit Guardians",
+     "note": "Radiant if you're good or neutral, Necrotic if you're evil",
+     "on": "save",
+     "parts": [
+      "3d8 radiant or necrotic"
+     ],
+     "repeat": "when it enters or ends its turn in the Emanation",
+     "save": "Wis",
+     "success": "half",
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ],
+   "level": 3
+  },
+  "Spiritual Weapon": {
+   "checked": "by hand",
+   "events": [
+    {
+     "mod": true,
+     "name": "Spiritual Weapon",
+     "on": "hit",
+     "parts": [
+      "1d8 force"
+     ],
+     "repeat": "Bonus Action on your later turns",
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ],
+   "level": 2
+  },
+  "Starry Wisp": {
+   "checked": "text",
+   "events": [
+    {
+     "cantrip": "dice",
+     "name": "Starry Wisp",
+     "on": "hit",
+     "parts": [
+      "1d8 radiant"
+     ]
+    }
+   ],
+   "level": 0
+  },
+  "Storm of Vengeance": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Turn 1: thunder",
+     "on": "save",
+     "parts": [
+      "2d6 thunder"
+     ],
+     "save": "Con",
+     "success": "none"
+    },
+    {
+     "name": "Turn 2: acid rain",
+     "on": "auto",
+     "parts": [
+      "4d6 acid"
+     ]
+    },
+    {
+     "name": "Turn 3: six bolts",
+     "on": "save",
+     "parts": [
+      "10d6 lightning"
+     ],
+     "save": "Dex",
+     "success": "half"
+    },
+    {
+     "name": "Turn 4: hail",
+     "on": "auto",
+     "parts": [
+      "2d6 bludgeoning"
+     ]
+    },
+    {
+     "name": "Turns 5 to 10: freezing rain",
+     "on": "auto",
+     "parts": [
+      "1d6 cold"
+     ]
+    }
+   ],
+   "level": 9
+  },
+  "Sunbeam": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Sunbeam",
+     "on": "save",
+     "parts": [
+      "6d8 radiant"
+     ],
+     "save": "Con",
+     "success": "half"
+    }
+   ],
+   "level": 6
+  },
+  "Sunburst": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Sunburst",
+     "on": "save",
+     "parts": [
+      "12d6 radiant"
+     ],
+     "save": "Con",
+     "success": "half"
+    }
+   ],
+   "level": 8
+  },
+  "Symbol": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Symbol",
+     "on": "save",
+     "parts": [
+      "10d10 necrotic"
+     ],
+     "save": "Con",
+     "success": "half"
+    }
+   ],
+   "level": 7
+  },
+  "Teleport": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Mishap",
+     "note": "Each teleporting creature takes this on a Mishap",
+     "on": "auto",
+     "parts": [
+      "3d10 force"
+     ]
+    }
+   ],
+   "level": 7
+  },
+  "Thorn Whip": {
+   "checked": "by hand (PHB)",
+   "events": [
+    {
+     "cantrip": "dice",
+     "name": "Thorn Whip",
+     "note": "A Large or smaller target can be pulled up to 10 ft closer",
+     "on": "hit",
+     "parts": [
+      "1d6 piercing"
+     ]
+    }
+   ],
+   "level": 0
+  },
+  "Thunderwave": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Thunderwave",
+     "on": "save",
+     "parts": [
+      "2d8 thunder"
+     ],
+     "save": "Con",
+     "success": "half",
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ],
+   "level": 1
+  },
+  "Time Stop": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Turns in a row",
+     "on": "plain",
+     "parts": [
+      "1d4+1"
+     ]
+    }
+   ],
+   "level": 9
+  },
+  "Toll the Dead": {
+   "checked": "by hand (PHB)",
+   "events": [
+    {
+     "cantrip": "dice",
+     "name": "Unhurt target",
+     "on": "save",
+     "parts": [
+      "1d8 necrotic"
+     ],
+     "save": "Wis",
+     "success": "none"
+    },
+    {
+     "cantrip": "dice",
+     "name": "Target missing Hit Points",
+     "on": "save",
+     "parts": [
+      "1d12 necrotic"
+     ],
+     "save": "Wis",
+     "success": "none"
+    }
+   ],
+   "level": 0
+  },
+  "True Strike": {
+   "checked": "by hand",
+   "events": [
+    {
+     "cantrip": "extra",
+     "name": "Extra Radiant (level 5+)",
+     "note": "Added to the weapon's damage on a hit; the attack and damage use your spellcasting modifier",
+     "on": "auto",
+     "parts": [
+      "1d6 radiant"
+     ]
+    }
+   ],
+   "level": 0
+  },
+  "Tsunami": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "When it appears",
+     "on": "save",
+     "parts": [
+      "6d10 bludgeoning"
+     ],
+     "save": "Str",
+     "success": "half"
+    },
+    {
+     "name": "Later rounds",
+     "note": "1d10 less on each later round",
+     "on": "save",
+     "parts": [
+      "5d10 bludgeoning"
+     ],
+     "save": "Str",
+     "success": "none"
+    }
+   ],
+   "level": 8
+  },
+  "Vampiric Touch": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Vampiric Touch",
+     "note": "You regain Hit Points equal to half the Necrotic damage dealt",
+     "on": "hit",
+     "parts": [
+      "3d6 necrotic"
+     ],
+     "repeat": "Magic action on later turns",
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 3
+  },
+  "Vicious Mockery": {
+   "checked": "text",
+   "events": [
+    {
+     "cantrip": "dice",
+     "name": "Vicious Mockery",
+     "on": "save",
+     "parts": [
+      "1d6 psychic"
+     ],
+     "save": "Wis",
+     "success": "none"
+    }
+   ],
+   "level": 0
+  },
+  "Vitriolic Sphere": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Vitriolic Sphere",
+     "note": "A success takes half the initial damage only",
+     "on": "save",
+     "parts": [
+      "10d4 acid"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "2d4"
+     ]
+    },
+    {
+     "name": "End of its next turn",
+     "on": "auto",
+     "parts": [
+      "5d4 acid"
+     ],
+     "repeat": "end of its next turn, after a failed save"
+    }
+   ],
+   "level": 4
+  },
+  "Wall of Fire": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "When it appears",
+     "on": "save",
+     "parts": [
+      "5d8 fire"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d8"
+     ]
+    },
+    {
+     "name": "Burning side",
+     "on": "auto",
+     "parts": [
+      "5d8 fire"
+     ],
+     "repeat": "ends its turn within 10 ft of that side or in the wall, or enters it",
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ],
+   "level": 4
+  },
+  "Wall of Ice": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "When it appears",
+     "on": "save",
+     "parts": [
+      "10d6 cold"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "2d6"
+     ]
+    },
+    {
+     "name": "Frigid air",
+     "on": "save",
+     "parts": [
+      "5d6 cold"
+     ],
+     "repeat": "first time on a turn a creature moves through it",
+     "save": "Con",
+     "success": "half",
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 6
+  },
+  "Wall of Thorns": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "When it appears",
+     "on": "save",
+     "parts": [
+      "7d8 piercing"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d8"
+     ]
+    },
+    {
+     "name": "Entering the wall",
+     "on": "save",
+     "parts": [
+      "7d8 slashing"
+     ],
+     "repeat": "first time on a turn it enters, or ends its turn there",
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ],
+   "level": 6
+  },
+  "Web": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Web",
+     "on": "auto",
+     "parts": [
+      "2d4 fire"
+     ]
+    }
+   ],
+   "level": 2
+  },
+  "Weird": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Wis save",
+     "on": "save",
+     "parts": [
+      "10d10 psychic"
+     ],
+     "save": "Wis",
+     "success": "half"
+    },
+    {
+     "name": "Wis save (later)",
+     "on": "save",
+     "parts": [
+      "5d10 psychic"
+     ],
+     "save": "Wis",
+     "success": "none"
+    }
+   ],
+   "level": 9
+  },
+  "Wind Wall": {
+   "checked": "text",
+   "events": [
+    {
+     "name": "Wind Wall",
+     "on": "save",
+     "parts": [
+      "4d8 bludgeoning"
+     ],
+     "save": "Str",
+     "success": "half"
+    }
+   ],
+   "level": 3
+  },
+  "Wish": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Stress",
+     "note": "You take 1d10 per level of each spell you cast until a Long Rest: add dice for higher levels",
+     "on": "auto",
+     "parts": [
+      "1d10 necrotic"
+     ]
+    }
+   ],
+   "level": 9
+  },
+  "Word of Radiance": {
+   "checked": "by hand (PHB)",
+   "events": [
+    {
+     "cantrip": "dice",
+     "name": "Word of Radiance",
+     "on": "save",
+     "parts": [
+      "1d6 radiant"
+     ],
+     "save": "Con",
+     "success": "none"
+    }
+   ],
+   "level": 0
+  }
+ }
+}

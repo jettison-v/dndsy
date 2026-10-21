@@ -1,0 +1,1105 @@
+{
+ "spells": {
+  "Acid Arrow": {
+   "why": "two moments: on the hit, and again at the end of the target's next turn; both upcast",
+   "events": [
+    {
+     "name": "On a hit",
+     "on": "hit",
+     "parts": [
+      "4d4 acid"
+     ],
+     "upcast": [
+      "1d4"
+     ],
+     "note": "On a miss: half of this initial damage only"
+    },
+    {
+     "name": "End of its next turn",
+     "on": "auto",
+     "parts": [
+      "2d4 acid"
+     ],
+     "upcast": [
+      "1d4"
+     ],
+     "repeat": "end of the target's next turn, after a hit"
+    }
+   ]
+  },
+  "Alter Self": {
+   "why": "Natural Weapons: your Unarmed Strike with the growth, using your spellcasting modifier",
+   "events": [
+    {
+     "name": "Natural Weapons",
+     "on": "hit",
+     "parts": [
+      "1d6"
+     ],
+     "mod": true,
+     "note": "The damage type is the growth's (claws, fangs, horns or hooves)"
+    }
+   ]
+  },
+  "Animate Objects": {
+   "why": "the objects attack with the Animated Object stat block's Slam, rolled from that block",
+   "events": []
+  },
+  "Arcane Hand": {
+   "why": "two different damaging effects with different upcasting",
+   "events": [
+    {
+     "name": "Clenched Fist",
+     "on": "hit",
+     "parts": [
+      "5d8 force"
+     ],
+     "upcast": [
+      "2d8"
+     ]
+    },
+    {
+     "name": "Grasping Hand: crush",
+     "on": "auto",
+     "parts": [
+      "4d6 bludgeoning"
+     ],
+     "mod": true,
+     "upcast": [
+      "2d6"
+     ],
+     "note": "A Bonus Action while the hand grapples the target"
+    }
+   ]
+  },
+  "Arcane Sword": {
+   "why": "damage 'equal to 4d12 plus your spellcasting ability modifier'",
+   "events": [
+    {
+     "name": "Arcane Sword",
+     "on": "hit",
+     "parts": [
+      "4d12 force"
+     ],
+     "mod": true,
+     "repeat": "Bonus Action on your later turns"
+    }
+   ]
+  },
+  "Bestow Curse": {
+   "why": "the 1d8 is one of four curses you choose from, added when you damage the target",
+   "events": [
+    {
+     "name": "Curse: extra damage",
+     "on": "auto",
+     "parts": [
+      "1d8 necrotic"
+     ],
+     "note": "Only with this curse: whenever you deal damage to the target with an attack roll or a spell"
+    }
+   ]
+  },
+  "Blink": {
+   "why": "a plain d6 at the end of each of your turns",
+   "events": [
+    {
+     "name": "Blink roll",
+     "on": "plain",
+     "parts": [
+      "1d6"
+     ],
+     "note": "4 to 6: you vanish to the Ethereal Plane"
+    }
+   ]
+  },
+  "Call Lightning": {
+   "why": "a storm you control adds a die",
+   "events": [
+    {
+     "name": "Call Lightning",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "3d10 lightning"
+     ],
+     "upcast": [
+      "1d10"
+     ],
+     "repeat": "Magic action on later turns",
+     "note": "Outdoors in a storm you control: +1d10"
+    }
+   ]
+  },
+  "Chain Lightning": {
+   "why": "up to four targets save at the same time, so the damage is rolled once for all (2024 rules, Saving Throws and Damage)",
+   "events": [
+    {
+     "name": "Chain Lightning",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "10d8 lightning"
+     ],
+     "note": "One roll for all four targets"
+    }
+   ]
+  },
+  "Chromatic Orb": {
+   "why": "the leap is a new attack and a new damage roll",
+   "events": [
+    {
+     "name": "Chromatic Orb",
+     "on": "hit",
+     "parts": [
+      "3d8"
+     ],
+     "upcast": [
+      "1d8"
+     ],
+     "note": "Two or more d8s the same: the orb leaps to another target within 30 ft, with a new attack roll and a new damage roll (as many leaps as the slot level)"
+    }
+   ]
+  },
+  "Confusion": {
+   "why": "the 1d10 behavior and 1d4 direction are rolled for the confused creature",
+   "events": []
+  },
+  "Conjure Celestial": {
+   "why": "Open5e's copy lacks the dice; checked against the 2024 Player's Handbook",
+   "events": [
+    {
+     "name": "Healing Light",
+     "on": "heal",
+     "parts": [
+      "4d12"
+     ],
+     "mod": true,
+     "upcast": [
+      "1d12"
+     ]
+    },
+    {
+     "name": "Searing Light",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "6d12 radiant"
+     ],
+     "upcast": [
+      "1d12"
+     ]
+    }
+   ]
+  },
+  "Conjure Elemental": {
+   "why": "the Restrained target repeats the save each turn for less damage (checked against the 2024 Player's Handbook)",
+   "events": [
+    {
+     "name": "Conjure Elemental",
+     "on": "save",
+     "save": "Dex",
+     "success": "none",
+     "parts": [
+      "8d8"
+     ],
+     "upcast": [
+      "1d8"
+     ],
+     "note": "The spirit's damage type; on a failure the target is also Restrained"
+    },
+    {
+     "name": "Restrained target",
+     "on": "save",
+     "save": "Dex",
+     "success": "none",
+     "parts": [
+      "4d8"
+     ],
+     "upcast": [
+      "1d8"
+     ],
+     "repeat": "start of each of the Restrained target's turns"
+    }
+   ]
+  },
+  "Conjure Fey": {
+   "why": "damage 'equal to 3d12 plus your spellcasting ability modifier'",
+   "events": [
+    {
+     "name": "Conjure Fey",
+     "on": "hit",
+     "parts": [
+      "3d12 psychic"
+     ],
+     "mod": true,
+     "upcast": [
+      "1d12"
+     ]
+    }
+   ]
+  },
+  "Contact Other Plane": {
+   "why": "the damage is to you, if you fail your own DC 15 Intelligence save",
+   "events": [
+    {
+     "name": "If you fail your DC 15 Int save",
+     "on": "auto",
+     "parts": [
+      "6d6 psychic"
+     ],
+     "note": "You take this damage"
+    }
+   ]
+  },
+  "Control Weather": {
+   "why": "1d4 × 10 minutes is how long the change takes",
+   "events": []
+  },
+  "Delayed Blast Fireball": {
+   "why": "the damage grows each turn the bead waits",
+   "events": [
+    {
+     "name": "Delayed Blast Fireball",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "12d6 fire"
+     ],
+     "upcast": [
+      "1d6"
+     ],
+     "note": "+1d6 for each of your turns that ended before it exploded (add them with Add dice)"
+    }
+   ]
+  },
+  "Dissonant Whispers": {
+   "why": "Open5e's copy lacks the upcast line; the 2024 Player's Handbook adds 1d6 per slot level",
+   "events": [
+    {
+     "name": "Dissonant Whispers",
+     "on": "save",
+     "save": "Wis",
+     "success": "half",
+     "parts": [
+      "3d6 psychic"
+     ],
+     "upcast": [
+      "1d6"
+     ],
+     "note": "On a failure it must use its Reaction to move away from you"
+    }
+   ]
+  },
+  "Divine Smite": {
+   "why": "a Fiend or Undead adds a die; on a Critical Hit its dice double with the attack's",
+   "events": [
+    {
+     "name": "Divine Smite",
+     "on": "auto",
+     "parts": [
+      "2d8 radiant"
+     ],
+     "upcast": [
+      "1d8"
+     ],
+     "note": "+1d8 against a Fiend or an Undead. Added to a weapon hit: on a Critical Hit, roll it with the attack's damage (Add dice) so its dice double too"
+    }
+   ]
+  },
+  "Earthquake": {
+   "why": "the fissures and their depth are the DM's rolls; the damage is for creatures near a collapsing structure",
+   "events": [
+    {
+     "name": "Collapsing structure",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "12d6 bludgeoning"
+     ]
+    }
+   ]
+  },
+  "Enlarge/Reduce": {
+   "why": "the 1d4 changes the target's weapon damage; it isn't a save",
+   "events": [
+    {
+     "name": "Enlarged: extra damage",
+     "on": "auto",
+     "parts": [
+      "1d4"
+     ],
+     "note": "Added to an enlarged creature's weapon or Unarmed Strike hits. Reduce instead takes 1d4 from them (not below 1)"
+    }
+   ]
+  },
+  "False Life": {
+   "why": "upcasting adds a flat 5",
+   "events": [
+    {
+     "name": "Temporary Hit Points",
+     "on": "temp",
+     "parts": [
+      "2d4+4"
+     ],
+     "upcast": [
+      "+5"
+     ]
+    }
+   ]
+  },
+  "Fire Shield": {
+   "why": "a warm shield or a chill shield, not both",
+   "events": [
+    {
+     "name": "Warm shield",
+     "on": "auto",
+     "parts": [
+      "2d8 fire"
+     ],
+     "note": "To a creature within 5 ft that hits you with a melee attack"
+    },
+    {
+     "name": "Chill shield",
+     "on": "auto",
+     "parts": [
+      "2d8 cold"
+     ],
+     "note": "To a creature within 5 ft that hits you with a melee attack"
+    }
+   ]
+  },
+  "Flame Blade": {
+   "why": "damage 'equal to 3d6 plus your spellcasting ability modifier'",
+   "events": [
+    {
+     "name": "Flame Blade",
+     "on": "hit",
+     "parts": [
+      "3d6 fire"
+     ],
+     "mod": true,
+     "upcast": [
+      "1d6"
+     ],
+     "repeat": "Magic action on later turns"
+    }
+   ]
+  },
+  "Flame Strike": {
+   "why": "both damage types upcast",
+   "events": [
+    {
+     "name": "Flame Strike",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "5d6 fire",
+      "5d6 radiant"
+     ],
+     "upcast": [
+      "1d6",
+      "1d6"
+     ]
+    }
+   ]
+  },
+  "Heroes' Feast": {
+   "why": "the Hit Point maximum (and Hit Points) go up by 2d10",
+   "events": [
+    {
+     "name": "Hit Point maximum",
+     "on": "heal",
+     "parts": [
+      "2d10"
+     ],
+     "note": "Each creature's Hit Point maximum increases by this much, and it gains the same Hit Points"
+    }
+   ]
+  },
+  "Magic Missile": {
+   "why": "each dart deals its own 1d4 + 1",
+   "events": [
+    {
+     "name": "Dart",
+     "on": "auto",
+     "count": 3,
+     "count_label": "dart",
+     "count_upcast": 1,
+     "parts": [
+      "1d4+1 force"
+     ],
+     "note": "Each dart is rolled on its own; aim them at one creature or several"
+    }
+   ]
+  },
+  "Prismatic Spray": {
+   "why": "a d8 picks each target's ray; then that color's damage",
+   "events": [
+    {
+     "name": "Ray color (each target)",
+     "on": "plain",
+     "parts": [
+      "1d8"
+     ],
+     "note": "1 red, 2 orange, 3 yellow, 4 green, 5 blue, 6 indigo, 7 violet, 8 two rays (roll twice more)"
+    },
+    {
+     "name": "Red",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "12d6 fire"
+     ]
+    },
+    {
+     "name": "Orange",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "12d6 acid"
+     ]
+    },
+    {
+     "name": "Yellow",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "12d6 lightning"
+     ]
+    },
+    {
+     "name": "Green",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "12d6 poison"
+     ]
+    },
+    {
+     "name": "Blue",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "12d6 cold"
+     ]
+    }
+   ]
+  },
+  "Prismatic Wall": {
+   "why": "each layer a creature passes deals its own damage",
+   "events": [
+    {
+     "name": "Red layer",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "12d6 fire"
+     ]
+    },
+    {
+     "name": "Orange layer",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "12d6 acid"
+     ]
+    },
+    {
+     "name": "Yellow layer",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "12d6 lightning"
+     ]
+    },
+    {
+     "name": "Green layer",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "12d6 poison"
+     ]
+    },
+    {
+     "name": "Blue layer",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "12d6 cold"
+     ]
+    }
+   ]
+  },
+  "Reincarnate": {
+   "why": "a table roll for the new body (the DM may choose instead)",
+   "events": []
+  },
+  "Resistance": {
+   "why": "the 1d4 is rolled when the protected creature takes damage, to reduce it",
+   "events": []
+  },
+  "Searing Smite": {
+   "why": "the later damage happens before the save, which only ends the spell",
+   "events": [
+    {
+     "name": "On the hit",
+     "on": "auto",
+     "parts": [
+      "1d6 fire"
+     ],
+     "upcast": [
+      "1d6"
+     ],
+     "note": "Extra damage from the attack: on a Critical Hit, add it to the attack's damage (Add dice) so it doubles"
+    },
+    {
+     "name": "Each of its turns",
+     "on": "auto",
+     "parts": [
+      "1d6 fire"
+     ],
+     "upcast": [
+      "1d6"
+     ],
+     "repeat": "start of each of its turns",
+     "note": "Then it makes a Con save; a success ends the spell"
+    }
+   ]
+  },
+  "Shillelagh": {
+   "why": "it changes your Club or Quarterstaff instead of rolling its own damage",
+   "events": [],
+   "note": "The weapon uses your spellcasting modifier for attack and damage, with a d8 damage die (d10 at level 5, d12 at 11, 2d6 at 17)"
+  },
+  "Sorcerous Burst": {
+   "why": "an 8 lets you roll another d8, up to your spellcasting modifier in extra d8s",
+   "events": [
+    {
+     "name": "Sorcerous Burst",
+     "on": "hit",
+     "parts": [
+      "1d8"
+     ],
+     "cantrip": "dice",
+     "note": "For each 8 you roll, you can add another d8 (Add dice), up to your spellcasting modifier in extra d8s"
+    }
+   ]
+  },
+  "Spike Growth": {
+   "why": "the damage is for every 5 feet moved",
+   "events": [
+    {
+     "name": "Each 5 feet moved",
+     "on": "auto",
+     "parts": [
+      "2d4 piercing"
+     ],
+     "note": "For every 5 feet a creature travels in the area"
+    }
+   ]
+  },
+  "Spirit Guardians": {
+   "why": "Radiant or Necrotic by your alignment, not both",
+   "events": [
+    {
+     "name": "Spirit Guardians",
+     "on": "save",
+     "save": "Wis",
+     "success": "half",
+     "parts": [
+      "3d8 radiant or necrotic"
+     ],
+     "upcast": [
+      "1d8"
+     ],
+     "note": "Radiant if you're good or neutral, Necrotic if you're evil",
+     "repeat": "when it enters or ends its turn in the Emanation"
+    }
+   ]
+  },
+  "Spiritual Weapon": {
+   "why": "damage 'equal to 1d8 plus your spellcasting ability modifier'",
+   "events": [
+    {
+     "name": "Spiritual Weapon",
+     "on": "hit",
+     "parts": [
+      "1d8 force"
+     ],
+     "mod": true,
+     "upcast": [
+      "1d8"
+     ],
+     "repeat": "Bonus Action on your later turns"
+    }
+   ]
+  },
+  "Storm of Vengeance": {
+   "why": "a different effect each turn",
+   "events": [
+    {
+     "name": "Turn 1: thunder",
+     "on": "save",
+     "save": "Con",
+     "success": "none",
+     "parts": [
+      "2d6 thunder"
+     ]
+    },
+    {
+     "name": "Turn 2: acid rain",
+     "on": "auto",
+     "parts": [
+      "4d6 acid"
+     ]
+    },
+    {
+     "name": "Turn 3: six bolts",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "10d6 lightning"
+     ]
+    },
+    {
+     "name": "Turn 4: hail",
+     "on": "auto",
+     "parts": [
+      "2d6 bludgeoning"
+     ]
+    },
+    {
+     "name": "Turns 5 to 10: freezing rain",
+     "on": "auto",
+     "parts": [
+      "1d6 cold"
+     ]
+    }
+   ]
+  },
+  "Teleport": {
+   "why": "the GM rolls the outcome; this is the damage of a Mishap",
+   "events": [
+    {
+     "name": "Mishap",
+     "on": "auto",
+     "parts": [
+      "3d10 force"
+     ],
+     "note": "Each teleporting creature takes this on a Mishap"
+    }
+   ]
+  },
+  "Time Stop": {
+   "why": "how many turns you take is a roll",
+   "events": [
+    {
+     "name": "Turns in a row",
+     "on": "plain",
+     "parts": [
+      "1d4+1"
+     ]
+    }
+   ]
+  },
+  "True Strike": {
+   "why": "a weapon attack; extra Radiant damage only from level 5",
+   "events": [
+    {
+     "name": "Extra Radiant (level 5+)",
+     "on": "auto",
+     "parts": [
+      "1d6 radiant"
+     ],
+     "cantrip": "extra",
+     "note": "Added to the weapon's damage on a hit; the attack and damage use your spellcasting modifier"
+    }
+   ]
+  },
+  "Tsunami": {
+   "why": "a smaller save-or-take for later rounds, shrinking each round",
+   "events": [
+    {
+     "name": "When it appears",
+     "on": "save",
+     "save": "Str",
+     "success": "half",
+     "parts": [
+      "6d10 bludgeoning"
+     ]
+    },
+    {
+     "name": "Later rounds",
+     "on": "save",
+     "save": "Str",
+     "success": "none",
+     "parts": [
+      "5d10 bludgeoning"
+     ],
+     "note": "1d10 less on each later round"
+    }
+   ]
+  },
+  "Vampiric Touch": {
+   "why": "you also regain half the damage",
+   "events": [
+    {
+     "name": "Vampiric Touch",
+     "on": "hit",
+     "parts": [
+      "3d6 necrotic"
+     ],
+     "upcast": [
+      "1d6"
+     ],
+     "repeat": "Magic action on later turns",
+     "note": "You regain Hit Points equal to half the Necrotic damage dealt"
+    }
+   ]
+  },
+  "Vitriolic Sphere": {
+   "why": "only the initial damage upcasts; the later damage follows a failed save",
+   "events": [
+    {
+     "name": "Vitriolic Sphere",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "10d4 acid"
+     ],
+     "upcast": [
+      "2d4"
+     ],
+     "note": "A success takes half the initial damage only"
+    },
+    {
+     "name": "End of its next turn",
+     "on": "auto",
+     "parts": [
+      "5d4 acid"
+     ],
+     "repeat": "end of its next turn, after a failed save"
+    }
+   ]
+  },
+  "Wall of Fire": {
+   "why": "the lingering damage has no save",
+   "events": [
+    {
+     "name": "When it appears",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "5d8 fire"
+     ],
+     "upcast": [
+      "1d8"
+     ]
+    },
+    {
+     "name": "Burning side",
+     "on": "auto",
+     "parts": [
+      "5d8 fire"
+     ],
+     "upcast": [
+      "1d8"
+     ],
+     "repeat": "ends its turn within 10 ft of that side or in the wall, or enters it"
+    }
+   ]
+  },
+  "Wall of Ice": {
+   "why": "the two damages upcast differently",
+   "events": [
+    {
+     "name": "When it appears",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "10d6 cold"
+     ],
+     "upcast": [
+      "2d6"
+     ]
+    },
+    {
+     "name": "Frigid air",
+     "on": "save",
+     "save": "Con",
+     "success": "half",
+     "parts": [
+      "5d6 cold"
+     ],
+     "upcast": [
+      "1d6"
+     ],
+     "repeat": "first time on a turn a creature moves through it"
+    }
+   ]
+  },
+  "Wall of Thorns": {
+   "why": "'Both types of damage increase by 1d8'",
+   "events": [
+    {
+     "name": "When it appears",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "7d8 piercing"
+     ],
+     "upcast": [
+      "1d8"
+     ]
+    },
+    {
+     "name": "Entering the wall",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "7d8 slashing"
+     ],
+     "upcast": [
+      "1d8"
+     ],
+     "repeat": "first time on a turn it enters, or ends its turn there"
+    }
+   ]
+  },
+  "Wish": {
+   "why": "the stress damage is per level of each later spell; 2d4 days is a duration",
+   "events": [
+    {
+     "name": "Stress",
+     "on": "auto",
+     "parts": [
+      "1d10 necrotic"
+     ],
+     "note": "You take 1d10 per level of each spell you cast until a Long Rest: add dice for higher levels"
+    }
+   ]
+  }
+ },
+ "phb_spells": {
+  "Toll the Dead": {
+   "why": "1d8, or 1d12 if the target is missing Hit Points; not in the SRD, checked against the 2024 Player's Handbook",
+   "level": 0,
+   "events": [
+    {
+     "name": "Unhurt target",
+     "on": "save",
+     "save": "Wis",
+     "success": "none",
+     "parts": [
+      "1d8 necrotic"
+     ],
+     "cantrip": "dice"
+    },
+    {
+     "name": "Target missing Hit Points",
+     "on": "save",
+     "save": "Wis",
+     "success": "none",
+     "parts": [
+      "1d12 necrotic"
+     ],
+     "cantrip": "dice"
+    }
+   ]
+  },
+  "Mind Sliver": {
+   "why": "not in the SRD; checked against the 2024 Player's Handbook",
+   "level": 0,
+   "events": [
+    {
+     "name": "Mind Sliver",
+     "on": "save",
+     "save": "Int",
+     "success": "none",
+     "parts": [
+      "1d6 psychic"
+     ],
+     "cantrip": "dice",
+     "note": "On a failure it also subtracts 1d4 from its next save before the end of your next turn"
+    }
+   ]
+  },
+  "Thorn Whip": {
+   "why": "not in the SRD; checked against the 2024 Player's Handbook",
+   "level": 0,
+   "events": [
+    {
+     "name": "Thorn Whip",
+     "on": "hit",
+     "parts": [
+      "1d6 piercing"
+     ],
+     "cantrip": "dice",
+     "note": "A Large or smaller target can be pulled up to 10 ft closer"
+    }
+   ]
+  },
+  "Word of Radiance": {
+   "why": "not in the SRD; checked against the 2024 Player's Handbook",
+   "level": 0,
+   "events": [
+    {
+     "name": "Word of Radiance",
+     "on": "save",
+     "save": "Con",
+     "success": "none",
+     "parts": [
+      "1d6 radiant"
+     ],
+     "cantrip": "dice"
+    }
+   ]
+  }
+ },
+ "items": {
+  "Potion of Healing": {
+   "why": "SRD 5.2 Potions of Healing table",
+   "events": [
+    {
+     "name": "Healing",
+     "on": "heal",
+     "parts": [
+      "2d4+2"
+     ]
+    }
+   ]
+  },
+  "Potion of Healing (Greater)": {
+   "why": "SRD 5.2 Potions of Healing table",
+   "events": [
+    {
+     "name": "Healing",
+     "on": "heal",
+     "parts": [
+      "4d4+4"
+     ]
+    }
+   ]
+  },
+  "Potion of Healing (Superior)": {
+   "why": "SRD 5.2 Potions of Healing table",
+   "events": [
+    {
+     "name": "Healing",
+     "on": "heal",
+     "parts": [
+      "8d4+8"
+     ]
+    }
+   ]
+  },
+  "Potion of Healing (Supreme)": {
+   "why": "SRD 5.2 Potions of Healing table",
+   "events": [
+    {
+     "name": "Healing",
+     "on": "heal",
+     "parts": [
+      "10d4+20"
+     ]
+    }
+   ]
+  },
+  "Acid": {
+   "why": "SRD 5.2 adventuring gear",
+   "events": [
+    {
+     "name": "Acid",
+     "on": "save",
+     "save": "Dex",
+     "success": "none",
+     "parts": [
+      "2d6 acid"
+     ],
+     "note": "DC 8 + your Dexterity modifier + Proficiency Bonus"
+    }
+   ]
+  },
+  "Alchemist's Fire": {
+   "why": "SRD 5.2 adventuring gear; Burning deals 1d4 Fire at the start of each turn",
+   "events": [
+    {
+     "name": "Alchemist's Fire",
+     "on": "save",
+     "save": "Dex",
+     "success": "none",
+     "parts": [
+      "1d4 fire"
+     ],
+     "note": "DC 8 + your Dexterity modifier + Proficiency Bonus; on a failure it starts Burning",
+     "repeat": "start of each of its turns while Burning"
+    }
+   ]
+  },
+  "Holy Water": {
+   "why": "SRD 5.2 adventuring gear",
+   "events": [
+    {
+     "name": "Holy Water",
+     "on": "save",
+     "save": "Dex",
+     "success": "none",
+     "parts": [
+      "2d8 radiant"
+     ],
+     "note": "Only a Fiend or an Undead takes it; DC 8 + your Dexterity modifier + Proficiency Bonus"
+    }
+   ]
+  },
+  "Hunting Trap": {
+   "why": "SRD 5.2 adventuring gear",
+   "events": [
+    {
+     "name": "Hunting Trap",
+     "on": "save",
+     "save": "Dex",
+     "success": "none",
+     "parts": [
+      "1d4 piercing"
+     ],
+     "note": "DC 13; on a failure its Speed is 0 until the start of its next turn"
+    }
+   ]
+  },
+  "Basic Poison": {
+   "why": "SRD 5.2 adventuring gear",
+   "events": [
+    {
+     "name": "Basic Poison",
+     "on": "auto",
+     "parts": [
+      "1d4 poison"
+     ],
+     "note": "Extra damage when the coated weapon or ammunition deals Piercing or Slashing damage"
+    }
+   ]
+  }
+ }
+}
