@@ -202,15 +202,17 @@ def sheet_entries(sheet: dict) -> list[dict]:
         e["ready"] = e["state"] in READY
         e["state_label"] = STATE_LABELS.get(e["state"], "")
         e["f"]["from"] = e["source"]
+        e["f"]["prep"] = "Prepared" if e["ready"] else "Not prepared"  # with the Shortlist view: what to prepare next
     return sorted(out, key=lambda e: (e["level"], e["name"]))
 
 
 def sheet_filter_groups(items: list[dict]) -> list[dict]:
-    """Sheet › Spells: the Spell Book's groups, plus where a spell comes from when there's a choice."""
-    groups = filter_groups(items)
+    """Sheet › Spells: Prepared first (Shortlist + Not prepared = spells you're considering but haven't
+    prepared on D&D Beyond), then the Spell Book's groups, plus where a spell comes from when there's a choice."""
+    groups = [{"key": "prep", "label": "Prepared", "values": ["Prepared", "Not prepared"]}] + filter_groups(items)
     froms = list(dict.fromkeys(e["f"]["from"] for e in items if e["f"].get("from")))
     if len(froms) > 1:
-        groups.insert(4, {"key": "from", "label": "From", "values": froms})
+        groups.insert(5, {"key": "from", "label": "From", "values": froms})
     return groups
 
 

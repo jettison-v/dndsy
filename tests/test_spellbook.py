@@ -112,6 +112,7 @@ def test_sheet_spells_list_every_spell_with_views(db, cole, player, dm):
     assert 'data-list="sheet-spells"' in spells and 'data-ls-view="fav"' in spells
     row = spells.split('data-ref="spell:Barkskin"')[1][:400]
     assert 'data-views="fav all"' in row  # not prepared, but on the Shortlist
+    assert '"prep": "Not prepared"' in row and 'tag draft' in spells.split('data-ref="spell:Barkskin"')[1][:2500]
     assert 'data-views="ready all"' in spells.split('data-ref="spell:Moonbeam"')[1][:400]
     dm_spells = dm.get(f"/characters/{cole.id}").text.split('id="t-spells"')[1].split('id="t-forms"')[0]
     assert "data-ls-view" not in dm_spells and "Barkskin" in dm_spells  # the DM sees All only, no views

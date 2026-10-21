@@ -1494,18 +1494,27 @@
     const sorted = rows.slice().sort((a, b) => sort === 'name' ? name(a).localeCompare(name(b))
       : sort === 'avg' ? ((+b.dataset.sortAvg || -1) - (+a.dataset.sortAvg || -1)) || name(a).localeCompare(name(b))
       : (+a.dataset.level - +b.dataset.level) || name(a).localeCompare(name(b)));
-    box.querySelectorAll('.ls-grouphead').forEach(h => h.remove());
+    // Move rows only when the order or the headings change, and keep the scroll position: moving every
+    // row on each press (a bookmark) made the page jump to the top.
+    const scroller = root.closest('.peek-body'), y = window.scrollY, sy = scroller ? scroller.scrollTop : 0;
+    const heads = new Map([...box.querySelectorAll('.ls-grouphead')].map(h => [h.textContent, h]));
+    const want = [];
     let last = null;
     sorted.forEach(r => {
       if (sort === 'level' && !r.hidden && r.dataset.groupLabel !== last) {
         last = r.dataset.groupLabel;
-        const h = document.createElement('div');
-        h.className = 'ls-grouphead';
-        h.textContent = last;
-        box.appendChild(h);
+        let h = heads.get(last);
+        if (h) heads.delete(last);
+        else { h = document.createElement('div'); h.className = 'ls-grouphead'; h.textContent = last; }
+        want.push(h);
       }
-      box.appendChild(r);
+      want.push(r);
     });
+    heads.forEach(h => h.remove());
+    const now = [...box.children].filter(n => n.matches('[data-ls-row], .ls-grouphead'));
+    if (now.length !== want.length || now.some((n, i) => n !== want[i])) want.forEach(n => box.appendChild(n));
+    if (window.scrollY !== y) window.scrollTo(0, y);
+    if (scroller && scroller.scrollTop !== sy) scroller.scrollTop = sy;
     const shown = rows.filter(r => !r.hidden).length, noun = root.dataset.noun || 'item';
     const sum = root.querySelector('[data-ls-summary]'); if (sum) sum.textContent = shown + ' ' + noun + (shown === 1 ? '' : 's');
     // Nothing to show: a view that's empty on its own says so (e.g. nothing shortlisted yet)
