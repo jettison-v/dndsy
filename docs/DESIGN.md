@@ -64,6 +64,7 @@ Dark theme, inspired by D&D Beyond (dark chrome, red accents, warm parchment-ton
 
 Status colors are used as text on a 14–15% tint of the same color.
 
+- **Text sizes:** use the scale `--fs-xs` (.75rem: labels, secondary lines), `--fs-sm` (.875rem: list cells, chips, controls), `--fs-md` (1rem: body and a row's name), `--fs-lg` (1.2rem: section headings). New and reworked screens use only these; the rest of the app moves to them in the design-system checkpoint (docs/plans/2026-10-21-roadmap.md).
 - **Type:** UI in **Inter** (fallback system-ui) at 16px / 1.6; section headings 1.2rem semibold; page titles 1.9rem bold. Story text in `"Iowan Old Style", Palatino, Georgia, serif` at 1.12rem / 1.75. The logo alone uses Roboto Condensed.
 - **Shape and space:** 12px radius on sections, 8px on buttons and inputs, pill tags; sections have 28–30px padding and 24px between them.
 - **Key-moment types** are colored words, not boxes: Event (muted), Reveal (lavender), Decision (blue), Loot (amber), Theory (italic, muted) so speculation never looks like fact.
@@ -106,11 +107,11 @@ Use these words, and only these, in the app, the docs and the About and FAQ page
 ## Lists and filters (Brett 2026-10-21)
 Every list of game things (spells, Wild Shape forms, then inventory, features and the campaign) follows one pattern. Desktop first; phones get the same list with a **Filters (N)** sheet and no phone-only features.
 
-- **Main view decides across many items; the side panel shows one item.** Clicking a row opens the side panel, which slides in from the right edge of the window (also over the Spell Book, not inside it). Pin, Shortlist, Remind me and the note are always available in the side panel; Sheet may also offer them inline on rows.
+- **Main view decides across many items; the side panel shows one item.** Clicking a row opens the side panel from the right edge; inside a modal such as the Spell Book it slides out from the modal's own right edge, inside it. The Spell Book fills the window so rows aren't cramped. Pin, Shortlist, Remind me and the note are always available in the side panel; Sheet may also offer them inline on rows.
 - **Views:** Ready · Shortlist · All, above the list. The Spell Book is the exception: it shows only Prepared spells (castable now).
-- **Filters:** a left column of chip groups, then a **More filters** fold. Chips are OR within a group, AND across groups; a second click turns a chip off; no "Any" chip. Each chip shows a live count; zero-count chips are greyed out but stay clickable (to be judged once live). An active-filter row with **Clear all** shows what's on.
+- **Filters:** a left column of chip groups, then a **More filters** fold. Chips are OR within a group, AND across groups; a second click turns a chip off; no "Any" chip. Each chip shows a live count; zero-count chips are greyed out but stay clickable (to be judged once live). An active-filter row above the list shows what's on, with **Clear all**; the filter column itself has no Clear all.
 - **Search overrides filters** and says so (the filters dim while searching).
-- **Sort and lenses are separate from filters.** Spells sort by level, then name. A lens (such as "Averages at" a slot level) changes numbers, not which rows show.
+- **Sort and lenses are separate from filters.** Spells sort by level, then name. A lens (the Spell Book's **Casting Damage**: Base, 1st, 2nd…) changes numbers, not which rows show. Sort options are single words (Level, Name, Damage).
 - **Remembered per page, per browser**, never shared across pages, and cleared after a day without use.
 - **Rows are compact**, one line plus an optional note line. Wild Shape rows get a thumbnail.
 - **Spell filters:** visible Level, Effect (damage, heal, control, support, utility), Casting time, Concentration. Under More: Ritual, Save type, On a successful save (half, nothing, damage still lands), Attack roll, Area or single target, Damage type, Range. Save spells always say what a successful save does.

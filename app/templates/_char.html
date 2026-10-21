@@ -81,6 +81,7 @@
 {%- set note = picks.notes.get(ref, "") -%}
 {%- if can_pick or note or ref in picks.star or ref in picks.fav or ref in picks.remind -%}
 <div class="detail-marks">
+  <div class="mark-bar">
   {%- for kind in marks if can_pick or ref in picks[kind] %}{% set on = ref in picks[kind] %}
   <div class="row mark-row">
     {%- if can_pick -%}
@@ -90,6 +91,7 @@
     <span class="note">{{ (MARK[kind].label_on if can_pick else MARK[kind].theirs) if on else MARK[kind].label_off }}</span>
   </div>
   {%- endfor %}
+  </div>
   {{ note_box(c, ref, note, can_pick) }}
 </div>
 {%- endif -%}

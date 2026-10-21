@@ -169,13 +169,13 @@
   // links marked data-no-peek and links in the panel's footer open the full page as usual.
   const ENTITY_URL = /^\/campaign\/((?:glossary\/)?\d+)$/;  // people/places, or glossary terms
   // Two layers: the base panel (a side panel, or a centered modal such as the Spell Book) and a
-  // top side panel that slides in from the window edge over a modal (Brett, 2026-10-21: a spell's
-  // details open beside the Spell Book, not inside it). Each layer keeps its own "← Back" history.
+  // top side panel that slides in from the modal's own right edge, inside it (Brett, 2026-10-21:
+  // a spell's details open inside the Spell Book). Each layer keeps its own "← Back" history.
   const layers = {};
   let lastFocus = null;
 
   function peekPanel(name = 'base') {
-    if (layers[name]) return layers[name];
+    if (layers[name] && layers[name].panel.isConnected) return layers[name];
     const backdrop = document.createElement('div');
     backdrop.className = 'peek-backdrop' + (name === 'top' ? ' top' : '');
     backdrop.hidden = true;
@@ -187,15 +187,15 @@
     panel.hidden = true;
     const layer = { name, panel, backdrop, history: [], focus: null };
     backdrop.addEventListener('click', () => closeLayer(layer));
-    document.body.append(backdrop, panel);
+    (name === 'top' ? layers.base.panel : document.body).append(backdrop, panel);  // the top layer lives inside the modal
     layers[name] = layer;
     return layer;
   }
-  const isOpen = l => l && !l.panel.hidden && l.panel.classList.contains('open');
+  const isOpen = l => l && l.panel.isConnected && !l.panel.hidden && l.panel.classList.contains('open');
 
   function closeLayer(layer) {
     if (!layer || layer.panel.hidden) return;
-    if (layer.name === 'base') closeLayer(layers.top);
+    if (layer.name === 'base' && layers.top) closeLayer(layers.top);
     layer.panel.classList.remove('open');
     layer.backdrop.hidden = true;
     layer.history = [];
@@ -218,17 +218,18 @@
     const fromTop = opener && isOpen(layers.top) && layers.top.panel.contains(opener);
     const layer = back ? back.layer : peekPanel(fromModal || fromTop ? 'top' : 'base');
     const { panel, backdrop } = layer;
-    if (layer.name === 'base' && !back) closeLayer(layers.top);
+    if (layer.name === 'base' && !back && layers.top) closeLayer(layers.top);
     const inside = isOpen(layer) && opener && panel.contains(opener);
     if (back) { /* returning: the history entry was already taken off */ }
     else if (inside && panel.dataset.url) {
       const title = panel.querySelector('#peek-title');
-      layer.history.push({ url: panel.dataset.url, modal: panel.classList.contains('large') ? 'large' : panel.classList.contains('modal'), scroll: (panel.querySelector('.peek-body') || {}).scrollTop || 0,
+      layer.history.push({ url: panel.dataset.url, modal: panel.classList.contains('full') ? 'full' : panel.classList.contains('large') ? 'large' : panel.classList.contains('modal'), scroll: (panel.querySelector('.peek-body') || {}).scrollTop || 0,
                            title: title ? title.textContent.trim() : '', layer });
     } else layer.history = [];
     if (!inside && !back) { if (layer.name === 'top') layer.focus = opener; else lastFocus = opener; }
     panel.classList.toggle('modal', !!modal);
-    panel.classList.toggle('large', modal === 'large');
+    panel.classList.toggle('large', modal === 'large' || modal === 'full');
+    panel.classList.toggle('full', modal === 'full');
     backdrop.classList.toggle('dim', !!modal);
     fetch(url, { headers: { 'HX-Request': 'true' } })
       .then(r => (r.ok ? r.text() : Promise.reject(r.status)))
@@ -258,7 +259,9 @@
         if (body) body.scrollTop = back ? back.scroll : 0;
         if (window.htmx) htmx.process(panel);  // forms inside the panel (suggestions, edits)
         const close = panel.querySelector('.peek-close');
-        if (close) { close.addEventListener('click', () => closeLayer(layer)); close.focus(); }
+        if (close) close.addEventListener('click', () => closeLayer(layer));
+        panel.tabIndex = -1;
+        panel.focus({ preventScroll: true });  // focus the dialog itself, so no focus ring sits on ✕
         panel.dispatchEvent(new CustomEvent('panel:loaded', { bubbles: true }));
       })
       .catch(() => { if (fallback) location.href = fallback; });
@@ -269,7 +272,7 @@
     const t = e.target.closest('[data-panel-url], [data-modal-url]');
     if (!t || e.target.closest('button[hx-post], form, [data-roll]')) return;
     e.preventDefault();
-    if (t.dataset.modalUrl) openPanel(t.dataset.modalUrl, t, t.getAttribute('href'), t.dataset.modalSize === 'large' ? 'large' : true);
+    if (t.dataset.modalUrl) openPanel(t.dataset.modalUrl, t, t.getAttribute('href'), ['large', 'full'].includes(t.dataset.modalSize) ? t.dataset.modalSize : true);
     else openPanel(t.dataset.panelUrl, t, t.getAttribute('href'));
   });
   document.addEventListener('keydown', e => {
@@ -1553,7 +1556,7 @@
       const set = (sel, v) => { const el = row.querySelector(sel); if (el) el.textContent = v; };
       if (a) {
         set('[data-sb-avg]', a.avg);
-        set('[data-sb-dice]', a.dice + (level && at > level ? ' · at ' + ORD(at) : ''));
+        set('[data-sb-dice]', a.dice + (a.per === 'healed' ? ' healed' : '') + (level && at > level ? ' · at ' + ORD(at) : ''));
         set('[data-sb-half]', ' · ' + Math.floor(a.avg / 2) + ' on a save');
       }
       row.querySelectorAll('.sb-roll').forEach(b => { if (level) b.dataset.slot = at; });

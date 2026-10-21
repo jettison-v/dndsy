@@ -2,13 +2,14 @@
    the filter column, the search box, the active-filter row and [data-ls-row] rows. Each row carries its
    filter values as data-f (JSON: group key -> value, or a list of values). #}
 
-{# The left filter column: the main groups, then More filters. On phones it folds into "Filters (N)". #}
+{# The left filter column: the main groups, then More filters. On phones it folds into "Filters (N)".
+   Clear all lives in the active-filter row above the list, shown once something is filtered. #}
 {% macro filter_column(groups) -%}
 {%- set more = groups | selectattr("more") | list -%}
 <details class="ls-fold" data-ls-fold>
   <summary>Filters <span class="count" data-ls-fold-count hidden></span></summary>
   <aside class="ls-filters" aria-label="Filters">
-    <div class="ls-filters-head"><h3 class="ls-h">Filters</h3><span class="ls-rule" aria-hidden="true"></span><button type="button" class="btn link small ls-clear" data-ls-clear>Clear all</button></div>
+    <div class="ls-filters-head"><h3 class="ls-h">Filters</h3><span class="ls-rule" aria-hidden="true"></span></div>
     {% for g in groups if not g.more %}{{ chip_group(g) }}{% endfor %}
     {% if more %}<details class="ls-more" data-ls-more>
       <summary>More filters <span class="note" data-ls-more-on></span></summary>

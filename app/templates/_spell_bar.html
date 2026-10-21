@@ -3,7 +3,7 @@
 
 {% set b = spellbar %}
 <div class="spell-bar" id="spell-bar">
-  <button type="button" class="btn spellbook-btn" data-modal-url="/characters/{{ c.id }}/spellbook" data-modal-size="large">
+  <button type="button" class="btn spellbook-btn" data-modal-url="/characters/{{ c.id }}/spellbook" data-modal-size="full">
     <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v16H5.5A1.5 1.5 0 0 0 4 20.5v-16ZM4 20.5A1.5 1.5 0 0 0 5.5 22H19" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Spell Book</button>
   {% if b.slots %}<span class="sb-slots" aria-label="Spell slots">{% for s in b.slots %}<span class="sb-slot">{{ "Pact " if s.pact }}{{ s.level }}{{ {1: "st", 2: "nd", 3: "rd"}.get(s.level, "th") }} {{ pips({"left": s.left, "max": s.max}) }}</span>{% endfor %}</span>{% endif %}
   {% if b.conc %}{% set cn = b.conc %}
@@ -39,5 +39,5 @@
     {% endif %}
   </span>
   {% endif %}
-  {% if b.starred %}<span class="sb-starred"><span class="note sb-pinned" title="Spells you pinned to Battle, most recently used first">{{ pin_icon() }} Pinned</span>{% for e in b.starred %}{{ spell_roll(c, e) }}{% endfor %}{% if b.more %}<button type="button" class="spell-chip more" data-modal-url="/characters/{{ c.id }}/spellbook" data-modal-size="large" title="More pinned spells in the Spell Book">+{{ b.more }}</button>{% endif %}</span>{% endif %}
+  {% if b.starred %}<span class="sb-starred"><span class="note sb-pinned" title="Spells you pinned to Battle, most recently used first">{{ pin_icon() }} Pinned</span>{% for e in b.starred %}{{ spell_roll(c, e) }}{% endfor %}{% if b.more %}<button type="button" class="spell-chip more" data-modal-url="/characters/{{ c.id }}/spellbook" data-modal-size="full" title="More pinned spells in the Spell Book">+{{ b.more }}</button>{% endif %}</span>{% endif %}
 </div>

@@ -9,7 +9,8 @@
     <div class="note">{{ c.entity.name }}{% if sc.save_dc %} · {{ sc.class }} spells · DC {{ sc.save_dc }} · {{ sc.attack }} to hit{% endif %}</div>
     <h2 id="peek-title">Spell Book</h2>
   </div>
-  {% if conc %}<span class="note sb-conc">Concentrating on <b>{{ conc.spell }}</b>: a new Concentration spell ends it.</span>{% endif %}
+  {% if conc %}<span class="conc-pill sb-conc" title="Concentrating on {{ conc.spell }}: a new Concentration spell ends it"><span class="conc-k">Conc.</span><b>{{ conc.spell }}</b>
+    <span class="conc-k">{{ conc.level | ordinal if conc.level else "cantrip" }}{% if conc.rounds %} · round {{ conc.round }}/{{ conc.rounds }}{% endif %}</span></span>{% endif %}
   <div class="fm-actions"><button class="btn link peek-close" type="button" aria-label="Close">✕</button></div>
 </div>
 <div class="peek-body spellbook" data-list="spellbook" data-noun="spell"{% if in_form %} data-ls-force='{{ {"ws": ["Castable in a form"]} | tojson }}'{% endif %} data-spellbook>
@@ -20,17 +21,17 @@
       {{ active_row() }}
       <div class="ls-toolbar">
         <span class="note" data-ls-summary></span>
-        <label class="ls-select"><span>Averages at</span>
-          <select data-ls-lens aria-label="Averages at">
-            <option value="0">Each spell's own level</option>
-            {% for s in slots %}<option value="{{ s.level }}">{{ "Pact " if s.pact }}{{ s.level | ordinal }}-level slot ({{ s.left }} of {{ s.max }} left)</option>{% endfor %}
+        <label class="ls-select" title="Average damage or healing if cast with a slot of this level (each spell at least at its own level)"><span>Casting Damage</span>
+          <select data-ls-lens aria-label="Casting Damage at slot level">
+            <option value="0">Base</option>
+            {% for s in slots %}<option value="{{ s.level }}">{{ s.level | ordinal }}{{ " (Pact)" if s.pact }}</option>{% endfor %}
           </select></label>
         <label class="ls-select"><span>Sort</span>
           <select data-ls-sort aria-label="Sort">
-            <option value="level">Level, then name</option><option value="name">Name</option><option value="avg">Highest average</option>
+            <option value="level">Level</option><option value="name">Name</option><option value="avg">Damage</option>
           </select></label>
       </div>
-      <div class="ls-head sb-grid" aria-hidden="true"><span></span><span>Spell</span><span>Time</span><span>Range</span><span>Roll</span><span>Average</span><span></span></div>
+      <div class="ls-head sb-grid" aria-hidden="true"><span></span><span>Spell</span><span>Time</span><span>Range</span><span>Roll</span><span>Casting Damage</span><span></span></div>
       <div class="ls-rows" data-ls-rows>
         {% for e in spells %}{% set note = picks.notes.get(e.key) if show_picks else "" %}
         <div class="ls-row sb-grid" data-ls-row data-f='{{ e.f | tojson }}' data-name="{{ e.name | lower }}" data-level="{{ e.level }}"
@@ -40,7 +41,7 @@
           <span class="ls-name"><span class="ls-line"><b>{{ e.name }}</b>{% if e.conc %} <span class="tag">Conc.</span>{% endif %}{% if e.ritual %} <span class="tag">Ritual</span>{% endif %}{% if conc and conc.key == e.key %} <span class="tag draft">Concentrating</span>{% endif %}</span>
             {% if note %}<span class="ls-note" title="{{ note }}">✎ {{ note }}</span>{% endif %}</span>
           <span class="sb-time">{{ {"Bonus action": "Bonus"}.get(e.time, e.time) }}</span>
-          <span class="sb-range note">{{ e.range or "—" }}</span>
+          <span class="sb-range">{{ e.range or "—" }}</span>
           <span class="sb-roll-col">{% if e.attack %}{{ e.attack }} to hit{% elif e.save %}{{ e.save }}{% else %}<span class="note">—</span>{% endif %}
             {% if e.on_save %}<span class="sb-onsave {{ ON_SAVE[e.on_save][1] }}">{{ ON_SAVE[e.on_save][0] }}</span>{% endif %}</span>
           <span class="sb-avg-col">{% if e.avgs %}<b data-sb-avg>—</b> <span class="note" data-sb-dice></span>{% if e.on_save == "half" %}<span class="note sb-half" data-sb-half></span>{% endif %}{% else %}<span class="note">—</span>{% endif %}</span>
@@ -57,7 +58,7 @@
         {% endfor %}
       </div>
       <p class="note ls-empty" data-ls-empty hidden>No spells match. <button type="button" class="btn link small" data-ls-clear>Clear all</button></p>
-      <p class="note sb-foot-note">Click a spell for everything about it: its full text, your note, and Pin, Shortlist and Remind me. Averages are the dice's average (cantrips at your level). Spend slots on D&amp;D Beyond; askdnd reads them on the next refresh.</p>
+      <p class="note sb-foot-note">Click a spell for everything about it: its full text, your note, and Pin, Shortlist and Remind me. Casting Damage is the dice's average (cantrips at your level). Spend slots on D&amp;D Beyond; askdnd reads them on the next refresh.</p>
     </div>
   </div>
 </div>
