@@ -196,13 +196,30 @@ def test_battle_page(player, db):
     cole = char(db, "Cole")
     characters.refresh(db, cole)
     page = player.get(f"/characters/{cole.id}/battle").text
-    assert "Wild Shape" in page and "Unarmed Strike" in page and "+6" in page and "Absorb Elements" in page
-    assert "Use an item: Potion of Healing" in page and "Reminders" in page and "Party" in page
+    assert "Wild Shape" in page and "Reminders" in page and "Party" in page
+    assert "hasn't pinned anything here yet" in page  # Battle shows only what the player pinned
     assert 'id="live-pill"' in page and "See all actions" in page  # Game Mode is in the Live popover
     panel = player.get(f"/characters/{cole.id}/all/action").text
     assert "<html" not in panel and "Heat Metal" in panel and "Moonbeam" in panel
     one = player.get(f"/characters/{cole.id}/detail", params={"ref": "spell:Moonbeam"}).text
     assert "Moonbeam" in one and "Casting time" in one and "Full description" in one
+
+
+def test_battle_shows_only_pins_to_players_and_the_usual_options_to_the_dm(player, dm, db):
+    from app import picks
+
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    owned_by(db, cole, "player@example.com")
+    owned_by(db, char(db, "Trah"), "dm@example.com", is_dm=True)
+    action = lambda page: page.split('data-econ-col="action"')[1].split('data-econ-col="bonus"')[0]  # noqa: E731
+    assert "Nothing pinned yet" in action(player.get(f"/characters/{cole.id}/battle").text)
+    picks.toggle(db, cole, "star", "spell:Heat Metal", "Heat Metal")
+    mine = action(player.get(f"/characters/{cole.id}/battle").text)
+    assert "Heat Metal" in mine and "Unarmed Strike" not in mine and "See all actions" in mine
+    theirs = action(dm.get(f"/characters/{cole.id}/battle").text)  # the DM can't see pins: the usual options
+    assert "Unarmed Strike" in theirs and "Use an item: Potion of Healing" in theirs and "+6" in theirs
 
 
 def test_sheet_shows_quiet_note_when_latest_refresh_failed(player, db):
@@ -389,9 +406,12 @@ def test_drag_and_drop_order_is_saved_for_the_player_only(player, admin, db):
     page = player.get(f"/characters/{cole.id}/battle").text
     assert 'data-sort-column="Action"' in page and "sortablejs@1.15.2" in page
     keys = ["spell:Thorn Whip", "attack:unarmed", "spell:Starry Wisp"]
+    from app import picks
+    for k in keys:  # Battle shows what the player pinned
+        picks.toggle(db, cole, "star", k)
     r = player.post(f"/characters/{cole.id}/order", data={"column": "Action", "keys": keys})
     assert r.status_code == 204
-    action = player.get(f"/characters/{cole.id}/battle").text.split("Bonus action")[0]
+    action = player.get(f"/characters/{cole.id}/battle").text.split('data-econ-col="action"')[1].split('data-econ-col="bonus"')[0]
     assert action.index("Thorn Whip") < action.index("Unarmed Strike") < action.index("Starry Wisp")
     assert admin.post(f"/characters/{cole.id}/order", data={"column": "Action", "keys": keys}).status_code == 403
     assert "data-sort-column" not in admin.get(f"/characters/{cole.id}/battle").text
@@ -575,7 +595,8 @@ def test_battle_shows_costs_and_slots_on_their_own_line(player, db):
     cole = char(db, "Cole")
     characters.refresh(db, cole)
     page = player.get(f"/characters/{cole.id}/battle").text
-    assert '<span class="spend" title="Uses 1st-level slot: 4 of 4 left">1st-level slot' in page  # Absorb Elements
+    reactions = player.get(f"/characters/{cole.id}/all/reaction").text
+    assert '<span class="spend" title="Uses 1st-level slot: 4 of 4 left">1st-level slot' in reactions  # Absorb Elements
     assert "1 Focus Point" in player.get(f"/characters/{cole.id}/all/bonus").text  # Flurry of Blows, in See all
     assert '<span class="sb-slots" aria-label="Spell slots">' in page and 'class="res-row slots"' not in page  # on the spell bar, once
     resources = page[page.index('<span class="res-label">Resources</span>'):]

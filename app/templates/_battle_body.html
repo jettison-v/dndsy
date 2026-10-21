@@ -53,7 +53,7 @@
         {% if o.meta %}<div class="meta">{{ o.meta }}</div>{% endif %}
         {% if show_picks and picks.notes.get(o.key) %}<div class="meta move-note" title="Your note">✎ {{ picks.notes[o.key] }}</div>{% endif %}
       </div>
-      {% else %}<p class="muted">Nothing here yet.</p>{% endfor %}
+      {% else %}<p class="muted pin-empty">{% if form %}Nothing here in this form.{% elif can_pick %}Nothing pinned yet. Open <b>See all</b> below and pin what you'd use on your turn.{% elif show_picks %}{{ c.entity.name }}'s player hasn't pinned anything here yet.{% else %}Nothing here yet.{% endif %}</p>{% endfor %}
       </div>
       {% if cost == "Action" and form %}<div class="move static"><b>Dash, Disengage, Dodge, Help, Hide, Influence, Magic, Search, Study, Utilize</b><div class="meta">What anyone can do. Magic covers features like Land's Aid; spells only {{ "as listed above" if form.castable else "if a feature allows it" }}.</div></div>
       {% elif cost == "Action" %}<div class="move static"><b>Attack, Dash, Disengage, Dodge, Help, Hide, Influence, Magic, Ready, Search, Study, Utilize</b><div class="meta">What anyone can do</div></div>{% endif %}

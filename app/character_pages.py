@@ -156,7 +156,7 @@ def _battle_ctx(db: Session, ch: Character, user: dict) -> dict:
     ctx = _view(db, ch, user)
     ctx["form"] = None
     if ctx["sheet"]:
-        ctx["columns"] = views.battle_columns(ctx["sheet"], ctx["picks"]["star"], ctx["picks"]["order"])
+        ctx["columns"] = views.battle_columns(ctx["sheet"], ctx["picks"]["star"], ctx["picks"]["order"], pinned_only=ctx["show_picks"])
         ctx["riders"] = class_rules.turn(ctx["sheet"])["riders"]
         ctx["known_forms"] = _known_forms(ctx["sheet"]) if ctx["druid"] else []
         beast = ws.beast_for(ctx["sheet"], ch.wild_shape) if ch.wild_shape and ctx["druid"] else None

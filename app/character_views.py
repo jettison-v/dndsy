@@ -260,9 +260,11 @@ def _battle_override(sheet: dict, oref: str) -> str | None:
     return (sheet.get("_overrides") or {}).get(f"{oref}|battle")
 
 
-def battle_columns(sheet: dict, starred: set[str], order: dict[str, list[str]] | None = None) -> dict:
-    """Action / Bonus action / Reaction columns: starred first, then the common
-    options (or the player's own drag-and-drop order); the rest is behind "See all"."""
+def battle_columns(sheet: dict, starred: set[str], order: dict[str, list[str]] | None = None, pinned_only: bool = False) -> dict:
+    """Action / Bonus action / Reaction columns: pinned first, then the common options (or the
+    player's own drag-and-drop order); the rest is behind "See all". With `pinned_only` (anyone who
+    can see the player's pins), only what the player pinned: Battle shows their plan
+    (Brett, 2026-10-21: fewer automatic choices, to encourage planning and learning)."""
     cols, order = {}, order or {}
     for cost in ("Action", "Bonus action", "Reaction"):
         everything = []
@@ -271,7 +273,7 @@ def battle_columns(sheet: dict, starred: set[str], order: dict[str, list[str]] |
             if o["cost"] != cost or (v == "hide" and not o["starred"]):
                 continue
             everything.append({**o, "common": o["common"] if v is None else v == "common"})
-        shown = [o for o in everything if o["starred"]] + [o for o in everything if o["common"] and not o["starred"]]
+        shown = [o for o in everything if o["starred"]] + ([] if pinned_only else [o for o in everything if o["common"] and not o["starred"]])
         if order.get(cost):
             rank = {k: i for i, k in enumerate(order[cost])}
             shown.sort(key=lambda o: rank.get(o["key"], len(rank)))  # stable: new ones keep their place after
