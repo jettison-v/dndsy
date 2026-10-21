@@ -1397,13 +1397,17 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 }
 
 /* Sheet › Spells: marks · spell · time · range · duration · roll · damage / healing · bell (same idea as below) */
-.sh-cols { display: grid; grid-template-columns: max-content minmax(14rem, 1fr) max-content fit-content(9rem) fit-content(7rem) max-content fit-content(11rem) max-content; column-gap: 14px; }
+.sh-cols { display: grid; grid-template-columns: max-content max-content minmax(14rem, 1fr) max-content fit-content(9rem) fit-content(7rem) max-content fit-content(11rem) max-content; column-gap: 14px; }
 .sh-cols .ls-line { white-space: normal; }  /* a page-width table: let the name and its tags wrap rather than cut off */
 .sh-cols > .ls-head, .sh-cols > .ls-row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
 .sh-cols > .ls-grouphead { grid-column: 1 / -1; }
 .ls-row .ls-pk { gap: 2px; align-items: center; }
 .ls-what { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font-size: var(--fs-xs); }
 .ls-row.not-ready .ls-name b { color: var(--muted); font-weight: 500; }
+.sh-status { font-size: var(--fs-xs); font-weight: 600; white-space: nowrap; border-radius: 999px; padding: 1px 8px; justify-self: start; }
+.sh-status.on { color: var(--green); background: var(--green-soft); }
+.sh-status.off { color: var(--faint); border: 1px solid var(--line); }
+.sh-status.wanted { color: var(--amber); border-color: var(--amber); }  /* shortlisted, not prepared yet */
 .ls-views button { padding: 5px 12px; min-height: 0; font-size: var(--fs-sm); }
 .ls-views button[aria-pressed="true"] { background: #2a3550; color: var(--text); }
 @media (max-width: 900px) {
