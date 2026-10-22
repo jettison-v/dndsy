@@ -217,3 +217,33 @@ def test_next_session_button(client, db):
     page = client.get(f"/admin/sessions/{s.id}").text
     assert "Next: Session 30" in page
     assert "Draft next session" not in page  # no synced notes for session 30 in this test
+
+
+def test_publishing_drafts_the_next_session_and_late_duplicates_join_the_entry(client, db, monkeypatch):
+    """Brett, 2026-10-22: the notes backlog goes one at a time. Publishing starts the next draft; a "new" entry
+    suggested again by a later draft adds to the entry made since, instead of a duplicate."""
+    from app.models import Fact
+
+    s29 = drafted_session(db)
+    s30 = GameSession(campaign_id=s29.campaign_id, number=30, source="notes")
+    db.add(s30)
+    db.flush()
+    started = []
+    monkeypatch.setattr(admin_sessions, "_draft_in_background", lambda ids: started.append(ids) or True)
+    r = client.post(f"/admin/sessions/{s29.id}/publish", headers=HX)
+    assert started == [[s30.id]] and "drafting Session 30 next" in r.headers["HX-Trigger"]
+
+    late = Proposal(session_id=s30.id, kind="entity", payload={"entity_id": None, "name": "Horn Devil", "kind": "creature",
+                                                                "old_summary": "", "summary": "Fled to the sea cave.", "new_aliases": ["horny"]})
+    db.add(late)
+    db.flush()
+    client.post(f"/admin/proposals/{proposal(db, 'Horn Devil').id}/accept", headers=HX)  # session 29's: creates it
+    client.post(f"/admin/proposals/{late.id}/accept", headers=HX)  # session 30's: joins it
+    db.expire_all()
+    devils = list(db.scalars(select(Entity).where(Entity.name == "Horn Devil")))
+    assert len(devils) == 1 and devils[0].summary == "Stunned."  # kept, not replaced
+    assert "Fled to the sea cave." in [f.text for f in db.scalars(select(Fact).where(Fact.entity_id == devils[0].id))]
+    assert "horny" in [a.alias for a in devils[0].aliases]
+    client.post(f"/admin/proposals/{late.id}/undo", headers=HX)
+    db.expire_all()
+    assert db.scalar(select(Fact).where(Fact.text == "Fled to the sea cave.")) is None  # Undo takes the fact back

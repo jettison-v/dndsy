@@ -52,7 +52,7 @@ def test_dm_guide_shows_the_backlog_to_the_dm_only(monkeypatch, db):
     monkeypatch.setattr(config, "REVIEWER_EMAILS", parse_allowlist("dm@example.com"))
     reviewer = client_for(monkeypatch, db, "dm@example.com")
     page = reviewer.get("/manage/dm-guide").text
-    assert "You review" in page and "Draft the remaining sessions" in page and "of 1</b> sessions are published" in page
+    assert "You review" in page and "One session at a time" in page and "of 1</b> sessions are published" in page
     assert "<b>DM guide</b>" in reviewer.get("/manage").text
     player = client_for(monkeypatch, db, "mark@example.com")
     assert player.get("/manage/dm-guide").status_code == 403

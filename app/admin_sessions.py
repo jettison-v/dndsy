@@ -311,9 +311,21 @@ def save_recap(request: Request, session_id: int, body: str = Form(...), note: s
 def publish(request: Request, session_id: int, db: Session = Depends(get_db)):
     def act(s):
         review.publish(db, s)
+        nxt = _next_to_draft(db, s)
+        if nxt is not None and _draft_in_background([nxt.id]):
+            return f"Published. Claude is drafting {session_label(nxt)} next, so it's ready when you are."
         return "Published. The table can read it now."
 
     return _act(request, db, session_id, act)
+
+
+def _next_to_draft(db: Session, s: GameSession) -> GameSession | None:
+    """The backlog goes one at a time (Brett, 2026-10-22): after publishing, the next session in story order that
+    has notes and no draft yet. Drafting each after the one before is reviewed means it knows the people and
+    places accepted there, and doesn't suggest them again."""
+    order = timeline(db, s.campaign_id)
+    after = order[order.index(s) + 1:] if s in order else []
+    return next((x for x in after if x.source == "notes" and review.review_status(x, False) == "no draft"), None)
 
 
 @router.post("/sessions/{session_id:int}/events")

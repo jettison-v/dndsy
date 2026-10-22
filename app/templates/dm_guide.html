@@ -28,9 +28,9 @@
     {% if b %}
     <p>Brett's campaign notes cover many sessions that haven't been turned into recaps yet. <b>{{ b.published }} of {{ b.total }}</b> sessions are published. These numbers update as you work.</p>
     <ol class="guide-steps">
-      <li class="{{ 'done' if not b.to_draft }}"><b>Draft the remaining sessions</b>{% if b.to_draft %} <span class="tag draft">{{ b.to_draft | length }} to draft</span>{% else %} <span class="tag done">Done</span>{% endif %}
-        <p>On <a href="/admin/sessions">Recaps</a>, press <b>Draft all</b>. Claude drafts them oldest first, so each draft reads the recaps before it. It takes a few minutes and costs about 12¢ a session. Brett can do this, or you can.</p></li>
-      <li class="{{ 'done' if not b.to_review and not b.to_draft }}"><b>Review and publish, oldest first</b>{% if b.to_review %} <span class="tag draft">{{ b.to_review | length }} waiting</span>{% endif %}
+      <li class="{{ 'done' if not b.to_review and not b.to_draft }}"><b>One session at a time, oldest first</b>{% if b.to_review %} <span class="tag draft">{{ b.to_review | length }} ready to review</span>{% endif %}{% if b.to_draft %} <span class="tag faint">{{ b.to_draft | length }} not drafted yet</span>{% endif %}
+        <p>If nothing is ready to review, press <b>Draft the next one</b> on <a href="/admin/sessions">Recaps</a> (about a minute, about 13¢). After that it runs itself: <b>publishing a session starts drafting the next one</b>, so it's waiting for you next time.</p>
+        <p class="note">Why one at a time: each draft only knows the people and places you've already accepted. Drafting all at once would suggest the same new NPC again in every session, and ask the same questions twice.</p>
         {% if b.to_review %}<p>Next up: {% for r in b.to_review[:3] %}<a href="/admin/sessions/{{ r.s.id }}">{{ r.label }}{% if r.s.title %}: {{ r.s.title }}{% endif %}</a>{{ ", " if not loop.last }}{% endfor %}{% if b.to_review | length > 3 %} and {{ b.to_review | length - 3 }} more{% endif %}.</p>{% endif %}
         <p>Each one takes 10 to 20 minutes. On the session's page, top to bottom:</p>
         <ol class="guide-sub">

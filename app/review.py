@@ -223,6 +223,11 @@ def accept_proposal(db: Session, p: Proposal, summary: str | None = None) -> Non
         if summary is not None and summary.strip():
             data["summary"] = summary.strip()
         entity = db.get(Entity, data["entity_id"]) if data.get("entity_id") else None
+        # A "new" entry that exists by now (another session's suggestion was accepted first, or the DM added it):
+        # add to it instead of making a duplicate, and keep its description; this draft's version becomes a fact.
+        late = entity is None and _resolve_entity(db, session.campaign_id, None, data["name"])
+        if late:
+            entity = late
         if entity is None:
             entity = Entity(campaign_id=session.campaign_id, kind=EntityKind(data["kind"]), name=data["name"])
             db.add(entity)
@@ -235,7 +240,16 @@ def accept_proposal(db: Session, p: Proposal, summary: str | None = None) -> Non
                 "quest_open": entity.quest_open,
                 "status": entity.status.value,
             }
-        entity.summary = data["summary"]
+        if late and (entity.summary or "").strip() and data["summary"].strip() != entity.summary.strip():
+            from app.models import Fact
+
+            fact = Fact(entity_id=entity.id, kind="addition", text=data["summary"].strip(), status="merged",
+                        author_name=f"{session_label_short(session)} draft", author_email="")
+            db.add(fact)
+            db.flush()
+            undo["created_fact_id"] = fact.id
+        else:
+            entity.summary = data["summary"]
         if data.get("quest_open") is not None:
             entity.quest_open = data["quest_open"]
         have = {a.alias.casefold() for a in entity.aliases}
@@ -251,6 +265,10 @@ def accept_proposal(db: Session, p: Proposal, summary: str | None = None) -> Non
         data["applied_entity_id"] = entity.id
     p.payload = data
     p.status = "accepted"
+
+
+def session_label_short(session: GameSession) -> str:
+    return f"Session {session.number}" if session.number is not None else "A session's"
 
 
 def _resolve_entity(db: Session, campaign_id: int, entity_id: int | None, name: str) -> Entity | None:
@@ -291,6 +309,12 @@ def undo_proposal(db: Session, p: Proposal) -> None:
             db.delete(entity)
     elif undo.get("entity_id"):
         entity = db.get(Entity, undo["entity_id"])
+        if undo.get("created_fact_id"):
+            from app.models import Fact
+
+            fact = db.get(Fact, undo["created_fact_id"])
+            if fact:
+                db.delete(fact)
         if entity:
             entity.summary = undo.get("summary", entity.summary)
             entity.quest_open = undo.get("quest_open")

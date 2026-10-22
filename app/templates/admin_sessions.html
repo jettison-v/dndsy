@@ -12,11 +12,15 @@
   <section class="section">
     <div class="row">
       <div style="flex:1;min-width:240px"><b>{{ missing | length }} session{{ "s" if missing | length > 1 }} not drafted yet.</b>
-        <div class="note">Drafted oldest first, so each one reads the recaps before it. About ${{ "%.2f" | format(missing | length * 0.13) }}.</div></div>
+        <div class="note">One at a time works best: draft the oldest, review and publish it, and the next one drafts by itself. Each draft then knows the people and places you accepted, so it doesn't suggest them again. About 13¢ a session.</div></div>
       <form method="post" action="/admin/sessions/draft">
-        {% for id in missing %}<input type="hidden" name="session_ids" value="{{ id }}">{% endfor %}
-        <button class="btn primary" data-busy="Starting drafts…">Draft all</button>
+        <input type="hidden" name="session_ids" value="{{ missing[0] }}">
+        <button class="btn primary" data-busy="Starting the draft…">Draft the next one</button>
       </form>
+      {% if missing | length > 1 %}<form method="post" action="/admin/sessions/draft" title="Drafts them all now; later drafts won't know what you accept in earlier ones">
+        {% for id in missing %}<input type="hidden" name="session_ids" value="{{ id }}">{% endfor %}
+        <button class="btn link small" data-busy="Starting drafts…">Draft all {{ missing | length }} at once</button>
+      </form>{% endif %}
     </div>
   </section>
   {% endif %}

@@ -33,6 +33,15 @@ def db_engine():
 
 
 @pytest.fixture(autouse=True)
+def _no_background_drafts(monkeypatch):
+    """Publishing a session starts drafting the next one (a real Claude call in a thread): never in tests.
+    Tests that care replace it with their own recorder."""
+    from app import admin_sessions
+
+    monkeypatch.setattr(admin_sessions, "_draft_in_background", lambda ids: True)
+
+
+@pytest.fixture(autouse=True)
 def _access_rows(monkeypatch):
     """Access checks (app/access.py) read people from the database. Tests never see
     the local dev database: no rows unless the test uses `db`, and no caching."""
