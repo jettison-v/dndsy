@@ -1604,4 +1604,11 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .peek-facts li { display: block; }
 .peek-facts .btn.link.small { padding: 0 var(--sp-1); }
 .peek-pending { margin-top: var(--sp-2); }
-.entity-edit .entity-head .title-row h1 { font-size: var(--fs-xl); }
+/* The entry's Edit window: the window's title already names it, and its sections sit as compact cards */
+.entity-edit .entity-head .title-row h1 { display: none; }
+.entity-edit .entity-head .title-row { margin: 0; }
+.entity-edit .entity-head .subtitle { margin: 0 0 var(--sp-3); }
+.entity-edit .section { background: var(--surface-2); padding: var(--sp-4) var(--sp-5); margin: 0 0 var(--sp-3); border-radius: var(--r-lg); }
+.entity-edit details.section > summary { cursor: pointer; }
+.entity-edit .section-head { margin-bottom: var(--sp-2); }
+.entity-edit .section .story { background: var(--bg); }
