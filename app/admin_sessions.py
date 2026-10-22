@@ -289,6 +289,8 @@ def redraft(request: Request, session_id: int, db: Session = Depends(get_db)):
     def act(s):
         if s.source == "transcript":
             raise review.ReviewError("Transcript sessions are redrafted by sending them again from the Processor.")
+        if s.source == "manual":
+            raise review.ReviewError("You wrote this one by hand; edit the recap directly.")
         if not _draft_in_background([s.id]):
             raise review.ReviewError("Claude is busy; try again in a minute.")
         return "Claude is redrafting… about a minute"
@@ -397,6 +399,7 @@ def create_session(
     number: str = Form(""),
     title: str = Form(""),
     account: str = Form(...),
+    mode: str = Form("ask"),
     db: Session = Depends(get_db),
 ):
     user, denied = _guard(request)
@@ -419,6 +422,14 @@ def create_session(
     if num is not None and db.scalar(select(GameSession).where(GameSession.campaign_id == campaign.id, GameSession.number == num)):
         request.session["toast"] = f"Session {num} already exists. Leave the number blank or pick another."
         return RedirectResponse("/admin/sessions/new", status_code=303)
+    if mode == "manual":  # the DM's own recap, no Claude (content workflows step 1): review it, add key moments, publish
+        s = GameSession(campaign_id=campaign.id, played_on=played, number=num, title=title.strip(), source="manual")
+        db.add(s)
+        db.flush()
+        review.save_recap(db, s, account)
+        db.commit()
+        request.session["toast"] = "Saved as the recap. Add key moments if you like, then publish."
+        return RedirectResponse(f"/admin/sessions/{s.id}", status_code=303)
     s = GameSession(campaign_id=campaign.id, played_on=played, number=num, title=title.strip(), source="account")
     db.add(s)
     db.flush()

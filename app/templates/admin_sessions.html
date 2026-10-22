@@ -37,7 +37,7 @@
           <form method="post" action="/admin/sessions/draft"><input type="hidden" name="session_ids" value="{{ r.s.id }}"><button class="btn" data-busy="Starting…">Draft from notes</button></form>
           {% elif r.status != "no draft" %}<a class="btn" href="/admin/sessions/{{ r.s.id }}">Review</a>
           {% elif r.s.source == "transcript" %}<span class="note">Send from the Processor</span>
-          {% elif r.s.source == "account" %}<a class="btn" href="/admin/sessions/{{ r.s.id }}">Continue</a>{% endif %}
+          {% elif r.s.source in ("account", "manual") %}<a class="btn" href="/admin/sessions/{{ r.s.id }}">Continue</a>{% endif %}
         </td>
       </tr>
       {% endfor %}

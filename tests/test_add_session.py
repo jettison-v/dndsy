@@ -135,3 +135,19 @@ def test_deleting_a_session_deletes_its_messages(db):
     db.delete(s)
     db.flush()
     assert db.scalar(select(SessionMessage)) is None
+
+
+def test_a_session_written_by_hand_needs_no_claude(client, db):
+    """Content workflows step 1: the DM's own recap, saved as written; no Claude call, no redraft."""
+    from app.models import GameSession
+    from app.review import latest_recap
+
+    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}})
+    r = client.post("/admin/sessions/new", data={"played_on": "2026-05-08", "title": "Ashore", "account": "We landed at Saltmarsh.", "mode": "manual"},
+                    follow_redirects=False)
+    s = db.scalar(select(GameSession).where(GameSession.title == "Ashore"))
+    assert r.headers["location"] == f"/admin/sessions/{s.id}" and s.source == "manual"
+    assert latest_recap(s).body == "We landed at Saltmarsh." and not s.messages
+    assert "written by hand" in client.get(f"/admin/sessions/{s.id}").text
+    r = client.post(f"/admin/sessions/{s.id}/redraft", headers={"HX-Request": "true"})
+    assert "edit the recap directly" in r.headers.get("HX-Trigger", "") + r.text
