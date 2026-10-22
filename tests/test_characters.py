@@ -252,7 +252,8 @@ def test_only_the_player_stars_and_reminds(player, admin, db):
     every = player.get(f"/characters/{cole.id}/all/action").text
     assert "Heat Metal" in every
     assert ">Cantrips <" in every and ">2nd-level spells <" in every and 'data-opt-kind="spell"' in every  # bucketed, with chips
-    assert every.index(">Attacks <") < every.index(">Cantrips <") < every.index(">Items <")
+    h = lambda label: every.index(f'<h3 class="divider">{label} ')  # noqa: E731
+    assert h("Attacks") < h("Cantrips") < h("Items")
     assert admin.post(f"/characters/{cole.id}/pick", data={"kind": "star", "ref": "spell:Moonbeam"}).status_code == 403
     assert 'class="pick star"' not in admin.get(f"/characters/{cole.id}").text  # admins can't change them either
     player.post(f"/characters/{cole.id}/pick", data={"kind": "star", "ref": "spell:Heat Metal"})  # toggles off
