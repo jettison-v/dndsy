@@ -115,7 +115,7 @@ def allows(rule: str, lvl: str | None, dm: bool = False) -> bool:
         "moderate": staff or dm,            # decide on the table's suggestions
         "story_extras": staff or dm,        # pictures on campaign pages, glossary entries
         "edit_entries": staff or dm,        # campaign entries: names, spellings, descriptions, relationships (Brett, 2026-10-22: DMs too)
-        "review": staff,                    # recaps, Claude's questions, entries (names, descriptions), character refresh
+        "review": staff or dm,              # recaps, Claude's questions, key moments, character refresh (Brett, 2026-10-22: the DM includes Reviewer)
         "admin": lvl == ADMIN,              # People, Characters, Usage, Data, campaign doc, regrouping
     }[rule]
 
@@ -172,7 +172,7 @@ def summary(lvl: str | None, dm: bool) -> str:
         PLAYER: "Reads everything and suggests corrections",
     }[lvl]
     if dm:
-        parts += ("; as DM, decides on suggestions, edits campaign entries and adds pictures and glossary entries, " if lvl == PLAYER else "; as DM, ") + \
+        parts += ("; as DM, everything a reviewer does (recaps, entries, suggestions, pictures, glossary), " if lvl == PLAYER else "; as DM, ") + \
             "never sees players' notes, pins, shortlists or reminders"
     return parts + "."
 

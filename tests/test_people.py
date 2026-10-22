@@ -158,4 +158,4 @@ def test_people_page_shows_the_chart_and_each_persons_summary(env, monkeypatch, 
     owner.post("/admin/people", data={"email": "dm@example.com", "level": "player", "is_dm": "1"})
     page = owner.get("/admin/people").text
     assert "What each access level can do" in page and "Yes, even as Player" in page and "Not included for anyone" in page
-    assert "as DM, decides on suggestions" in page  # the DM's own row explains what the tick adds
+    assert "as DM, everything a reviewer does" in page  # the DM's own row explains what the tick adds
