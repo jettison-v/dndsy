@@ -1522,3 +1522,27 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .ds-corners span { width: 64px; height: 40px; background: var(--surface-2); border: 1px solid var(--line-strong); display: block; }
 .ds-sizes { overflow-x: auto; }
 .ds-sizes td { vertical-align: middle; font-size: var(--fs-sm); }
+/* Toast options on the design page (demo until one is chosen) */
+.ds-toasts { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--sp-3); }
+.ds-toast-card { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-3) var(--sp-4); background: var(--surface-2); border-radius: var(--r-lg); font-size: var(--fs-sm); }
+.ds-toast-card .ds-row { margin-top: auto; }
+[data-inline-ok].is-done { color: var(--green); border-color: var(--green-line); background: var(--green-soft); }
+.demo-toast { position: fixed; z-index: 50; display: flex; align-items: center; gap: var(--sp-3); font-size: var(--fs-sm); opacity: 0; transition: opacity .2s, transform .2s; }
+.demo-toast.show { opacity: 1; }
+.demo-toast .dt-icon { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font-weight: 800; font-size: var(--fs-xs); flex: none; }
+.demo-toast .dt-act { font: inherit; font-weight: 700; background: none; border: 0; cursor: pointer; padding: 0; }
+.demo-toast .dt-x { font: inherit; background: none; border: 0; color: var(--muted); cursor: pointer; padding: 0 var(--sp-1); }
+.demo-toast.v-b { right: 24px; bottom: 24px; max-width: min(380px, calc(100vw - 32px)); padding: var(--sp-3) var(--sp-4); background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: 0 12px 30px var(--shadow); transform: translateY(12px); }
+.demo-toast.v-b.show { transform: none; }
+.demo-toast.v-b.k-ok .dt-icon { background: var(--green-soft); color: var(--green); } .demo-toast.v-b.k-error .dt-icon { background: var(--red-soft); color: var(--link); }
+.demo-toast.v-b.k-error { border-color: var(--red-line); } .demo-toast.v-b .dt-act { color: var(--blue); }
+.demo-toast.v-c { top: 72px; left: 50%; transform: translate(-50%, -8px); padding: var(--sp-1) var(--sp-4) var(--sp-1) var(--sp-1); border-radius: var(--r-pill); font-weight: 600; }
+.demo-toast.v-c.show { transform: translate(-50%, 0); }
+.demo-toast.v-c.k-ok { background: var(--green-soft); color: var(--green); border: 1px solid var(--green-line); } .demo-toast.v-c.k-ok .dt-icon { background: var(--green); color: var(--bg); }
+.demo-toast.v-c.k-error { background: var(--red-soft); color: var(--link); border: 1px solid var(--red-line); } .demo-toast.v-c.k-error .dt-icon { background: var(--red); color: var(--text-strong); }
+.demo-toast.v-d { bottom: 24px; left: 50%; transform: translate(-50%, 12px); max-width: calc(100vw - 32px); padding: var(--sp-3) var(--sp-4); background: var(--text); color: var(--bg);
+  border-radius: var(--r-md); box-shadow: 0 12px 30px var(--shadow); font-weight: 500; }
+.demo-toast.v-d.show { transform: translate(-50%, 0); }
+.demo-toast.v-d .dt-act { color: var(--red); } .demo-toast.v-d.k-error { background: var(--red); color: var(--text-strong); } .demo-toast.v-d .dt-x { color: inherit; }
+@media (max-width: 640px) { .demo-toast.v-b { right: 16px; left: 16px; bottom: 76px; max-width: none; } .demo-toast.v-d { bottom: 76px; } }

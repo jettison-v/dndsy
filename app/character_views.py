@@ -80,12 +80,13 @@ def _slot(sheet: dict, sp: dict) -> list[dict]:
     pact = slots.get("pact")
     regular = {s["level"]: s for s in slots.get("slots") or []}
     if pact and pact["level"] >= sp["level"] and ("Warlock" in (sp.get("sources") or []) or not regular):
-        return [{"label": f"Pact slot ({ordinal(pact['level'])})", "of": "Pact Magic",
+        return [{"label": f"Pact ({ordinal(pact['level'])})", "of": "Pact Magic",
                  "uses": {"left": pact["max"] - pact["used"], "max": pact["max"]}}]
     s = regular.get(sp["level"])
     if not s:
         return []
-    return [{"label": f"{ordinal(sp['level'])}-level slot", "of": "Spell slots", "uses": {"left": s["max"] - s["used"], "max": s["max"]},
+    # "1st-level", not "1st-level slot": players know what it spends (Brett, 2026-10-22)
+    return [{"label": f"{ordinal(sp['level'])}-level", "of": "Spell slots", "uses": {"left": s["max"] - s["used"], "max": s["max"]},
              "higher": [{"level": ordinal(x["level"]), "left": x["max"] - x["used"], "max": x["max"]}
                         for lvl, x in sorted(regular.items()) if lvl > sp["level"]]}]
 

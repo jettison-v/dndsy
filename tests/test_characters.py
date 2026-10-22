@@ -578,7 +578,7 @@ def test_options_show_what_they_spend():
 
     cole = ddb.parse_character(COLE)
     assert spends("Flurry of Blows", cole) == [("1 Focus Point", 2, 2)]
-    assert spends("Healing Word", cole) == [("1st-level slot", 4, 4)]
+    assert spends("Healing Word", cole) == [("1st-level", 4, 4)]
     assert next(o for o in views.options(cole) if o["name"] == "Moonbeam")["tags"] == ["Conc."]  # its "2nd-level slot" chip gives the level
     assert not any(o["name"] == "Wild Shape: Circle Forms" for o in views.options(cole))  # part of Wild Shape, not its own action
     assert spends("Wild Resurgence: Regain Wild Shape", cole) == []  # it gives a use back
@@ -588,9 +588,9 @@ def test_options_show_what_they_spend():
     assert next(o for o in views.options(no_name) if o["name"] == "Hunter's Mark")["tags"][0] == "1st"  # free cast only: level pill stays
     assert spends("Channel Divinity: Divine Sense", big_c) == [("1 use of Channel Divinity", 2, 2)]
     assert spends("Lay On Hands: Purify Poison", big_c) == [("5 HP from the pool", 30, 30)]
-    assert spends("Divine Smite", big_c) == [("Free cast", 0, 1), ("or 1st-level slot", 4, 4)]
+    assert spends("Divine Smite", big_c) == [("Free cast", 0, 1), ("or 1st-level", 4, 4)]
     assert not any(o["name"] == "Stunning Strike" for o in views.options(no_name))  # a rider on a hit, under "On a hit"
-    assert spends("Tasha's Hideous Laughter", no_name) == [("Pact slot (1st)", 2, 2)]  # warlock
+    assert spends("Tasha's Hideous Laughter", no_name) == [("Pact (1st)", 2, 2)]  # warlock
     assert spends("Hunter's Mark", no_name) == [("Free cast", 1, 1)]  # from a feat, no slot
 
 
@@ -600,7 +600,7 @@ def test_battle_shows_costs_and_slots_on_their_own_line(player, db):
     characters.refresh(db, cole)
     page = player.get(f"/characters/{cole.id}/battle").text
     reactions = player.get(f"/characters/{cole.id}/all/reaction").text
-    assert '<span class="spend" title="Uses 1st-level slot: 4 of 4 left">1st-level slot' in reactions  # Absorb Elements
+    assert '<span class="spend" title="Uses a 1st-level slot: 4 of 4 left">1st-level <span class="pips"' in reactions  # Absorb Elements
     assert "1 Focus Point" in player.get(f"/characters/{cole.id}/all/bonus").text  # Flurry of Blows, in See all
     assert '<span class="sb-slots" aria-label="Spell slots">' in page and 'class="res-row slots"' not in page  # on the spell bar, once
     resources = page[page.index('<span class="res-label">Resources</span>'):]
@@ -609,7 +609,7 @@ def test_battle_shows_costs_and_slots_on_their_own_line(player, db):
     panel = player.get(f"/characters/{cole.id}/detail", params={"ref": "action:Flurry of Blows"}).text
     assert "Spends" in panel and "1 Focus Point: <b>2 of 2 left</b>" in panel
     spell = player.get(f"/characters/{cole.id}/detail", params={"ref": "spell:Healing Word"}).text
-    assert "1st-level slot: <b>4 of 4 left</b>" in spell and "Can also use a higher slot: 2nd 3/3 · 3rd 3/3" in spell
+    assert "1st-level: <b>4 of 4 left</b>" in spell and "Can also use a higher slot: 2nd 3/3 · 3rd 3/3" in spell
 
 
 def test_number_tiles_open_an_explanation(player, db):
