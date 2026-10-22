@@ -412,3 +412,16 @@ when it deploys.
 2. Run it on a copy of production first. A copy made from the nightly backup is the cheapest way to get one.
 3. Model "belongs to" links that can change over time as their own rows with dates (joined, left) instead of a
    column you overwrite; history stays answerable.
+
+**Update: the manual backup before deploying, over SSH.** Beta's database has no address outside Railway, so the
+backup ran *inside* the beta service: `railway ssh --service askdnd-v2 -- …` runs one command in the live
+container. That needed three one-time steps on the Mac: register its public key with Railway
+(`railway ssh keys add --key ~/.ssh/id_ed25519.pub --name brett-mac`; importing keys from GitHub failed), accept
+Railway's host key on first connect, and unlock the passphrase-protected key once with
+`ssh-add --apple-use-keychain ~/.ssh/id_ed25519` so tools can use it without asking. The dump (read-only, about
+45 MB) was copied to `private/backups/beta-2026-10-22-before-step1.json.gz` (git ignores it) and checked before
+pushing; the temporary copy on Railway was deleted.
+
+**For a new project:** add an SSH key to your hosting account early. "Run one command inside production" is the
+fastest way to back up, inspect or fix things when the database isn't reachable from outside, and it's safer than
+opening the database to the internet.
