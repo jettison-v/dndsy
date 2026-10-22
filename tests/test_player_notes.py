@@ -78,7 +78,7 @@ def test_only_the_player_writes_and_the_dm_never_sees(db, cole, player, dm, admi
     assert r.status_code == 303 and r.headers["location"] == f"{url}/plan"  # notes live on Plan
     note = db.scalar(select(PlayerNote))
     page = player.get(f"{url}/plan").text
-    assert "Bear and beam" in page and 'data-panel-url="/characters/%d/notes/%d"' % (cole.id, note.id) in page  # a compact row
+    assert "Bear and beam" in page and 'data-modal-url="/characters/%d/notes/%d" data-modal-size="large"' % (cole.id, note.id) in page  # combos open large
     panel = player.get(f"{url}/notes/{note.id}").text  # the full note in the side panel
     assert 'data-modal-url="/characters/%d/form?name=Polar%%20Bear"' % cole.id in panel and "/edit" in panel  # forms link
     assert "/edit" not in admin.get(f"{url}/notes/{note.id}").text and dm.get(f"{url}/notes/{note.id}").status_code == 403

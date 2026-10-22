@@ -425,11 +425,11 @@ def test_spell_planner_and_shortlist(player, db):
     page = player.get(f"/characters/{cole.id}").text
     assert "data-planner" in page and "Prepared 10 of 10" in page and "Cantrips 3 of 3" in page
     assert "Barkskin" in page and "Not prepared" in page and 'data-view="fav"' not in page  # shortlists are on Plan
-    assert "Barkskin" not in player.get(f"/characters/{cole.id}/plan").text.split("Spell shortlist")[1]
+    assert 'data-ref="spell:Barkskin" data-fav="0"' in player.get(f"/characters/{cole.id}/plan").text  # in All, not shortlisted
     r = player.post(f"/characters/{cole.id}/pick", data={"kind": "fav", "ref": "spell:Barkskin"})
     assert 'class="ico-bookmark"' in r.text and 'aria-pressed="true"' in r.text
     assert 'data-fav="1"' in player.get(f"/characters/{cole.id}").text
-    assert "Barkskin" in player.get(f"/characters/{cole.id}/plan").text.split("Spell shortlist")[1]
+    assert 'data-ref="spell:Barkskin" data-fav="1"' in player.get(f"/characters/{cole.id}/plan").text  # now on the Shortlist
 
 
 def test_inventory_and_feature_sections(player, db):

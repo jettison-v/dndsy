@@ -5,8 +5,17 @@
   {% if not show_picks %}
   <p class="muted">Reminders belong to each player and aren't shown to the DM.</p>
   {% elif reminders %}
-  <ul class="forget"{% if can_pick %} data-sort-column="forget" data-sort-url="/characters/{{ c.id }}/order" data-sort-item="li"{% endif %}>{% for r in reminders %}<li data-key="{{ r.ref }}"><span>{{ r.text }}{% if r.note %}<span class="forget-note">✎ {{ r.note }}</span>{% endif %}</span>{% if can_pick %}<button type="button" class="forget-x" aria-label="Remove this reminder" title="Remove"
-    hx-post="/characters/{{ c.id }}/pick" hx-vals='{{ {"kind": "remind", "ref": r.ref} | tojson }}' hx-target="closest li" hx-swap="delete">×</button>{% endif %}</li>{% endfor %}</ul>
+  {# Compact rows like Plan's notes: what it is, the text, your note; a click opens it (a form in its window,
+     anything else from the sheet in the side panel; your own reminders have nothing more to open); drag to reorder #}
+  {% set KIND = {"spell": "Spell", "form": "Wild Shape form", "text": "Your reminder", "item": "Item", "custom": "Item", "attack": "Attack", "action": "Action", "feature": "Feature", "situ": "Situational rule", "rule": "Rule"} %}
+  <ul class="forget"{% if can_pick %} data-sort-column="forget" data-sort-url="/characters/{{ c.id }}/order" data-sort-item="li"{% endif %}>{% for r in reminders %}{% set k = r.ref.split(":")[0] %}
+    <li class="forget-row" data-key="{{ r.ref }}" data-ref="{{ r.ref }}"{% if k == "form" %} data-modal-url="/characters/{{ c.id }}/form?name={{ r.ref.split(':', 1)[1] | urlencode }}" data-modal-size="large" tabindex="0" role="button"{% elif k != "text" %} data-panel-url="/characters/{{ c.id }}/detail?ref={{ r.ref | urlencode }}" tabindex="0" role="button"{% endif %}>
+      {% if can_pick %}<span class="drag-handle" aria-hidden="true" title="Drag to reorder">⋮⋮</span>{% endif %}
+      <span class="forget-main"><span class="forget-kind">{{ KIND.get(k, "Reminder") }}</span><span class="forget-text">{{ r.text }}</span>
+        {% if r.note %}<span class="forget-note ri-note">✎ {{ r.note }}</span>{% endif %}</span>
+      {% if can_pick %}<button type="button" class="forget-x" aria-label="Remove this reminder" title="Remove"
+        hx-post="/characters/{{ c.id }}/pick" hx-vals='{{ {"kind": "remind", "ref": r.ref} | tojson }}' hx-target="closest li" hx-swap="delete">×</button>{% endif %}
+    </li>{% endfor %}</ul>
   {% else %}
   <p class="muted">{% if can_pick %}Nothing yet. Press the bell (<b>Remind me</b>) on anything you tend to forget (for example, Advantage against being Charmed), or write one below.{% else %}{{ c.entity.name }}'s player hasn't added any reminders yet.{% endif %}</p>
   {% endif %}

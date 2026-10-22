@@ -222,13 +222,14 @@ def _plan_ctx(db: Session, ch: Character, user: dict) -> dict:
     """Plan mode: the player's notes, Reminders, and the spell and Wild Shape shortlists."""
     ctx = _view(db, ch, user)
     s, fav = ctx["sheet"], ctx["picks"]["fav"]
-    ctx["fav_spells"], ctx["fav_forms"], ctx["plan_spells"], ctx["plan_spell_groups"] = [], [], [], []
+    ctx["fav_spells"], ctx["fav_forms"], ctx["plan_spells"], ctx["plan_spell_groups"], ctx["plan_forms"] = [], [], [], [], []
     if s:
-        ctx["plan_spells"] = [e for e in sb.sheet_entries(s) if e["key"] in fav]  # the Shortlist, on the shared list
+        ctx["plan_spells"] = sb.sheet_entries(s)  # every spell: Shortlist to compare, All to pick from
         ctx["plan_spell_groups"] = sb.sheet_filter_groups(ctx["plan_spells"])
-        ctx["fav_spells"] = ctx["plan_spells"]  # the tab's count
+        ctx["fav_spells"] = [e for e in ctx["plan_spells"] if e["key"] in fav]  # the tab's count
         if ctx["druid"]:
-            ctx["fav_forms"] = [f for f in ws.forms(s, fav, ch.wild_shape_keep) if f["key"] in fav]
+            ctx["plan_forms"] = ws.forms(s, fav, ch.wild_shape_keep)  # every form you can learn: Shortlist and All
+            ctx["fav_forms"] = [f for f in ctx["plan_forms"] if f["key"] in fav]
     return ctx
 
 

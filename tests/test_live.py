@@ -172,8 +172,9 @@ def test_plan_shortlists_filter_like_sheet(player, db):
     spells = part(plan, "t-spell-list", "t-form-list")
     assert 'data-list="plan-spells"' in spells and 'data-ls-group="prep"' in spells and "Barkskin" in spells  # the shared list
     assert 'data-list="sheet-spells"' in part(sheet, "t-spells", "t-forms")  # the same rows and filters as Sheet
-    assert "data-ls-view" not in spells  # the whole shortlist, no views
+    assert re.findall(r'data-ls-view="(\w+)"', spells) == ["fav", "all"]  # evaluate (Shortlist) and select (All)
+    assert re.findall(r'data-view="(\w+)"', part(plan, "t-form-list", None)) == ["fav", "all"]  # the same for Wild Shape
     forms = part(plan, "t-form-list", None)
     assert "data-card-sort" in forms and "data-sortable-cards" in forms and "Polar Bear" in forms
-    assert [f for f in filters(forms) if f.startswith("level:")] == ["level:2"]  # CR filters: only what's shortlisted
+    assert "level:2" in filters(forms) and len([f for f in filters(forms) if f.startswith("level:")]) > 1  # CR filters for every form you can learn
     assert [f for f in filters(forms) if f.startswith("tag:")][:4] == ["tag:swim", "tag:climb", "tag:burrow", "tag:fly"]
