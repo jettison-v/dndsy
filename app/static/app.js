@@ -258,8 +258,6 @@
         const body = panel.querySelector('.peek-body');
         if (body) body.scrollTop = back ? back.scroll : 0;
         if (window.htmx) htmx.process(panel);  // forms inside the panel (suggestions, edits)
-        const close = panel.querySelector('.peek-close');
-        if (close) close.addEventListener('click', () => closeLayer(layer));
         panel.tabIndex = -1;
         panel.focus({ preventScroll: true });  // focus the dialog itself, so no focus ring sits on ✕
         panel.dispatchEvent(new CustomEvent('panel:loaded', { bubbles: true }));
@@ -267,6 +265,13 @@
       .catch(() => { if (fallback) location.href = fallback; });
   }
   window.askdndPanel = openPanel;
+  // ✕ closes its own layer. Delegated, so it still works after part of a panel is swapped in
+  // (Wild Shape's "Kept in a form" boxes re-render the whole window).
+  document.addEventListener('click', e => {
+    const x = e.target.closest('.peek-close'); if (!x) return;
+    const layer = Object.values(layers).find(l => l && l.panel === x.closest('.peek'));  // the innermost (the top layer sits inside a modal)
+    if (layer) closeLayer(layer);
+  });
 
   document.addEventListener('click', e => {
     const t = e.target.closest('[data-panel-url], [data-modal-url]');
