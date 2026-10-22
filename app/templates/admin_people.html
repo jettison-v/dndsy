@@ -36,7 +36,7 @@
           <input type="hidden" name="email" value="{{ p.email }}">
           <select name="character_id" aria-label="Character played by {{ p.email }}">
             <option value="none">No character</option>
-            {% for ch in characters %}<option value="{{ ch.id }}" {{ "selected" if p.character_id == ch.id }}>{{ ch.entity.name }}</option>{% endfor %}
+            {% for ch in characters %}<option value="{{ ch.id }}" {{ "selected" if p.character_id == ch.id }}>{{ ch.name }}</option>{% endfor %}
           </select>
           {% if fixed %}<span class="fixed-level"><span class="tag published">Admin</span></span>
           <span class="dm-cell">{% if p.is_dm %}<span class="tag">DM</span>{% endif %}<input type="hidden" name="is_dm" value="{{ '1' if p.is_dm }}"></span>

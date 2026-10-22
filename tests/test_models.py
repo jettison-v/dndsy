@@ -4,6 +4,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+from app import characters
 from app.config import sqlalchemy_url
 from app.models import (
     Campaign,
@@ -51,8 +52,9 @@ def test_renamed_character_found_by_old_name(db):
     pc.aliases.append(EntityAlias(alias="Sarkas", note="former name"))
     db.add_all([player, pc])
     db.flush()
-    db.add(Character(entity_id=pc.id, owner_id=player.id))
-    db.flush()
+    ch = Character(name=pc.name, owner_id=player.id)
+    db.add(ch)
+    characters.join(db, ch, pc)
 
     found = db.scalars(
         select(Entity).join(EntityAlias).where(EntityAlias.alias == "Sarkas")

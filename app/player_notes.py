@@ -173,7 +173,7 @@ def note_linker(db: Session, character: Character, sheet: dict | None) -> NoteLi
             urls[f["name"]] = (f"{base}/form?name={f['name'].replace(' ', '%20')}", True)
     names = sorted(urls, key=len, reverse=True)
     pattern = re.compile(r"(?<![\w-])(?:" + "|".join(re.escape(n) for n in names) + r")(?![\w-])") if names else None
-    campaign = entity_linker(db, character.entity.campaign_id) if character.entity else None
+    campaign = entity_linker(db, character.campaign_id) if character.campaign_id else None
     return NoteLinker(pattern, urls, campaign)
 
 
@@ -234,7 +234,8 @@ async def save_note(request: Request, character_id: int, db: Session = Depends(g
     if n is None:
         last = db.scalar(select(func.max(PlayerNote.position)).where(PlayerNote.character_id == ch.id)) or 0
         me = picks.user_row(db, user)
-        n = PlayerNote(character_id=ch.id, author_id=me.id if me else None, kind=kind, position=last + 1)
+        n = PlayerNote(character_id=ch.id, author_id=me.id if me else None, kind=kind, position=last + 1,
+                       campaign_id=ch.campaign_id if kind == "quest" else None)  # a quest belongs to its campaign
         db.add(n)
     n.title, n.status, n.data = title, status, data
     db.commit()

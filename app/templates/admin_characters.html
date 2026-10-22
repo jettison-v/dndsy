@@ -14,10 +14,10 @@
     <ul class="people">
       {% for c in rows %}{% set snap = c.snapshot %}
       <li class="char-link-row">
-        <div class="who"><b><a href="/characters/{{ c.id }}">{{ c.entity.name }}</a></b>
+        <div class="who"><b><a href="/characters/{{ c.id }}">{{ c.name }}</a></b>
           <span class="note">{% if c.player_name %}{{ c.player_name }} · {% endif %}{% if not c.ddb_id %}not linked yet{% elif snap and snap.fetched_at %}updated {{ snap.fetched_at | ago }}{% else %}not fetched yet{% endif %}{% if snap and snap.status == "error" %} · <span class="quiet-warn">{{ snap.error }}</span>{% endif %}</span></div>
         <form method="post" action="/characters/{{ c.id }}/link" class="row link-form">
-          <input type="text" name="ddb_link" aria-label="D&amp;D Beyond link for {{ c.entity.name }}" value="{{ 'https://www.dndbeyond.com/characters/' ~ c.ddb_id if c.ddb_id }}" placeholder="https://www.dndbeyond.com/characters/12345678" required>
+          <input type="text" name="ddb_link" aria-label="D&amp;D Beyond link for {{ c.name }}" value="{{ 'https://www.dndbeyond.com/characters/' ~ c.ddb_id if c.ddb_id }}" placeholder="https://www.dndbeyond.com/characters/12345678" required>
           <button class="btn{{ ' primary' if not c.ddb_id }}" type="submit" data-busy="Fetching…">{{ "Save and refresh" if c.ddb_id else "Link and fetch" }}</button>
         </form>
       </li>

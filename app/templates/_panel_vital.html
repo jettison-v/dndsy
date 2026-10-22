@@ -8,7 +8,7 @@
 {%- endmacro %}
 {% macro explain(text) %}<p class="detail-what">{{ text | terms(underline, []) }}</p>{% endmacro %}
 <div class="peek-head">
-  <div><div class="note">{{ c.entity.name }}</div><h2 id="peek-title">{{ title }}</h2></div>
+  <div><div class="note">{{ c.name }}</div><h2 id="peek-title">{{ title }}</h2></div>
   <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
 </div>
 <div class="peek-body detail">

@@ -29,7 +29,7 @@ from app import characters as chars
 from app import web
 from app.auth import current_user, is_reviewer
 from app.db import get_db
-from app.models import Character, CharacterSnapshot, Entity, User
+from app.models import CampaignCharacter, Character, CharacterSnapshot, User
 from app.templating import templates
 
 router = APIRouter()
@@ -49,13 +49,13 @@ def rows_from(db: Session) -> list[dict]:
     campaign = web.campaign(db)
     if not campaign:
         return []
-    q = (select(Character.id, Entity.name, User.email, Character.ddb_id,
+    q = (select(Character.id, Character.name, User.email, Character.ddb_id,
                 CharacterSnapshot.fetched_at, CharacterSnapshot.status, CharacterSnapshot.error)
-         .join(Entity, Character.entity_id == Entity.id)
+         .join(CampaignCharacter, CampaignCharacter.character_id == Character.id)
          .outerjoin(User, Character.owner_id == User.id)
          .outerjoin(CharacterSnapshot, CharacterSnapshot.character_id == Character.id)
-         .where(Entity.campaign_id == campaign.id)
-         .order_by(Entity.name))
+         .where(CampaignCharacter.campaign_id == campaign.id, CampaignCharacter.left_on.is_(None))
+         .order_by(Character.name))
     return [{"id": cid, "name": name, "owner": (email or "").lower(), "linked": bool(ddb_id), "fetched_at": fetched,
              "failed": status == "error", "error": error or ""}
             for cid, name, email, ddb_id, fetched, status, error in db.execute(q)]
@@ -155,7 +155,7 @@ def live_refresh_one(request: Request, character_id: int, db: Session = Depends(
     ch = db.get(Character, character_id)
     if ch is None or not ch.ddb_id:
         return HTMLResponse("", status_code=404)
-    name = ch.entity.name
+    name = ch.name
     if not maybe_refresh(db, ch, MANUAL_MIN_AGE):
         msg = f"{name} was updated a moment ago"
     elif ch.snapshot.status == "ok":

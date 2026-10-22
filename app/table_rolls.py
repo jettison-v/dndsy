@@ -271,7 +271,7 @@ def entries(db: Session, roots: list[TableRoll], kids: list[TableRoll], viewer_i
     names, pics = {}, {}
     if ids:
         for ch in db.scalars(select(Character).where(Character.id.in_(ids))):
-            names[ch.id] = ch.entity.name
+            names[ch.id] = ch.name
         pics = dict(db.execute(select(CharacterSnapshot.character_id, CharacterSnapshot.summary["portrait"].astext)
                                .where(CharacterSnapshot.character_id.in_(ids))).all())
     seq = {r.id: max([r.id] + [k.id for k in by_root.get(r.id, [])]) for r in roots}
@@ -406,12 +406,12 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
         return _follow_up(request, db, campaign.id, me.id, is_dm(user), parent, action, label, extras, die_size)
 
     ch = db.get(Character, character) if character else None
-    if character and (not ch or ch.entity.campaign_id != campaign.id):
+    if character and (not ch or ch.campaign_id != campaign.id):
         return _error("That character isn't in the campaign.", 404)
     if kind != "dice" and not ch:
         return _error("That character isn't in the campaign.", 404)
     if ch and not picks.can_edit(db, user, ch):
-        return _error(f"Only {ch.entity.name}'s player rolls for {ch.entity.name} at the table.", 403)
+        return _error(f"Only {ch.name}'s player rolls for {ch.name} at the table.", 403)
     label = " ".join(label.split())[:120] or ("Dice" if kind == "dice" else "")
     if kind not in ROOT_KINDS or not label or mode not in MODES or to not in VISIBILITY:
         return _error("That roll is missing something.")

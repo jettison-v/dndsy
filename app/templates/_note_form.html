@@ -1,7 +1,7 @@
 {# Large modal: add or edit a player note. Repeating rows (turns, levels, steps) use [data-repeat] in app.js. #}
 {% set d = data %}
 <div class="peek-head fm-head">
-  <div class="fm-title"><div class="note">{{ c.entity.name }} · {{ meta.label }}</div>
+  <div class="fm-title"><div class="note">{{ c.name }} · {{ meta.label }}</div>
     <h2 id="peek-title">{{ n.title if n else meta.new }}</h2>
     <div class="note">{{ meta.about }}</div></div>
   <button class="btn link peek-close" type="button" aria-label="Close">✕</button>

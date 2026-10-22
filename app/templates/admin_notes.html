@@ -44,7 +44,7 @@
     <p class="hint" style="margin-top:6px">These no longer sync: player notes on each Character page replace them. Their last copy is kept until you remove it. Hidden from the DM.</p>
     <table class="list">
       {% for s in retired %}{% set st = stats[s.id] %}
-      <tr><td><b>{{ s.title or s.google_doc_id }}</b><div class="note">{{ s.character.entity.name if s.character else "A character" }}'s notes</div></td>
+      <tr><td><b>{{ s.title or s.google_doc_id }}</b><div class="note">{{ s.character.name if s.character else "A character" }}'s notes</div></td>
         <td style="text-align:right;white-space:nowrap">{% if st.latest %}<a class="btn" href="/admin/notes/snapshots/{{ st.latest.id }}">View last copy</a>{% endif %}
           <form class="inline" method="post" action="/admin/notes/sources/{{ s.id }}/delete" onsubmit="return confirm('Remove this doc and its saved copies?')"><button class="btn link danger">Remove</button></form></td></tr>
       {% endfor %}

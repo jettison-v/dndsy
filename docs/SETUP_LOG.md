@@ -393,3 +393,22 @@ Roadmap step 12 checks it.
    proves the backups restore, in one go.
 2. Keep restore scripts able to take an older backup: build the schema at the backup's version, load, then migrate.
 3. Turn off anything that spends money or sends messages by default outside production.
+
+## 2026-10-22: Data organization step 1, characters separate from campaigns
+
+**What was set up.** A database change (an Alembic migration) that reshapes existing data, not just adds to it:
+characters got their own name, and their link to a campaign moved into a new table, `campaign_characters`
+(campaign, character, its story page, joined, left, Wild Shape keeps). The migration copies today's four characters
+across in one go, and can be undone (`alembic downgrade`), which puts every value back where it was. Nothing on
+screen changes; it's groundwork for roles per campaign and a second campaign.
+
+**How it was checked.** A test builds the database as it was before, fills it with production-shaped data, runs
+the migration up, down and up again, and compares every value. Then the migration ran on the local copy of beta
+(`askdnd_beta`), and the app was clicked through there before pushing. Railway runs the same migration on beta
+when it deploys.
+
+**For a new project:**
+1. When a migration moves data (not only adds columns), write a test that runs it on realistic rows, both ways.
+2. Run it on a copy of production first. A copy made from the nightly backup is the cheapest way to get one.
+3. Model "belongs to" links that can change over time as their own rows with dates (joined, left) instead of a
+   column you overwrite; history stays answerable.

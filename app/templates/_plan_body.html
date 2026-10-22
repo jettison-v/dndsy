@@ -5,7 +5,7 @@
 {% from "_form_list.html" import form_list %}
 {% from "_notes_macros.html" import note_summary %}
 <section class="section">
-  {% call help("plan", help_off, "notes") %}{% if can_pick %}Your plans for {{ c.entity.name }}. Players can read them; the DM can't. Names become links.{% else %}{{ c.entity.name }}'s player's plans. The DM can't see these.{% endif %}{% endcall %}
+  {% call help("plan", help_off, "notes") %}{% if can_pick %}Your plans for {{ c.name }}. Players can read them; the DM can't. Names become links.{% else %}{{ c.name }}'s player's plans. The DM can't see these.{% endif %}{% endcall %}
   <div class="tabbar" role="tablist">
     {% for kind, meta, notes in player_notes %}<button role="tab" aria-selected="{{ 'true' if loop.first else 'false' }}" data-tab="t-{{ kind }}" title="{{ meta.plural }}">{{ meta.tab }}{% if notes %} <span class="count">{{ notes | length }}</span>{% endif %}</button>
     {% endfor %}<button role="tab" aria-selected="false" data-tab="t-forget" title="Reminders">Reminders{% if reminders %} <span class="count">{{ reminders | length }}</span>{% endif %}</button>
@@ -42,7 +42,7 @@
 
   {# Evaluate and select: your Shortlist to compare, and All to pick from (bookmark), on the same rows and filters as Sheet #}
   <div id="t-spell-list" hidden>
-    {% if plan_spells %}{{ spell_list(c, sheet, plan_spells, plan_spell_groups, picks, can_pick, show_picks, "plan-spells", [("fav", "Shortlist"), ("all", "All")], help_off) }}{% else %}<p class="muted">No spells to plan: {{ c.entity.name }} has no spellcasting on D&amp;D Beyond.</p>{% endif %}
+    {% if plan_spells %}{{ spell_list(c, sheet, plan_spells, plan_spell_groups, picks, can_pick, show_picks, "plan-spells", [("fav", "Shortlist"), ("all", "All")], help_off) }}{% else %}<p class="muted">No spells to plan: {{ c.name }} has no spellcasting on D&amp;D Beyond.</p>{% endif %}
   </div>
 
   {% if druid %}

@@ -19,6 +19,7 @@ from sqlalchemy import event, inspect, select
 from sqlalchemy.orm import Session
 
 from app.models import (
+    CampaignCharacter,
     Campaign,
     Character,
     CharacterPick,
@@ -40,7 +41,8 @@ TRACKED = {
     Entity: ("name", "summary", "quest_open", "status"),
     GlossaryTerm: ("term", "description"),
     GameSession: ("title", "played_on"),
-    Character: ("ddb_id", "player_name", "owner_id", "wild_shape_keep"),
+    Character: ("name", "ddb_id", "player_name", "owner_id"),
+    CampaignCharacter: ("wild_shape_keep",),
     PlayerNote: ("title", "status", "data"),
     CharacterPick: ("note",),
     Campaign: ("name", "dm_name"),
@@ -54,7 +56,7 @@ TRACKED = {
 KEEP_ON_DELETE = (PlayerNote, GlossaryTerm, StoryEvent, EntityAlias, EntityRelation, Fact, Entity)
 # Everything needed to recreate a deleted row (besides its tracked fields)
 DELETE_CONTEXT = {
-    PlayerNote: ("kind", "character_id", "position"),
+    PlayerNote: ("kind", "character_id", "position", "campaign_id"),
     GlossaryTerm: ("campaign_id", "misheard_as"),
     StoryEvent: ("session_id", "position"),
     EntityAlias: ("entity_id",),
@@ -130,8 +132,10 @@ def label(obj) -> str:
         return f"Glossary: {obj.term}"
     if isinstance(obj, GameSession):
         return f"Session {obj.number}" if obj.number else f"Session of {obj.played_on}"
+    if isinstance(obj, CampaignCharacter):
+        return f"Character: {obj.character.name if obj.character else obj.character_id}"
     if isinstance(obj, Character):
-        return f"Character: {obj.entity.name if obj.entity else obj.id}"
+        return f"Character: {obj.name or obj.id}"
     if isinstance(obj, PlayerNote):
         return f"Note: {obj.title}"
     if isinstance(obj, CharacterPick):
@@ -214,7 +218,8 @@ def restore(db: Session, rev: Revision) -> str:
             c = dict(rev.old or {})
             if rev.table == "player_notes":
                 db.add(PlayerNote(character_id=c["character_id"], kind=c["kind"], title=c.get("title", ""),
-                                  status=c.get("status", ""), data=c.get("data") or {}, position=c.get("position", 0)))
+                                  status=c.get("status", ""), data=c.get("data") or {}, position=c.get("position", 0),
+                                  campaign_id=c.get("campaign_id")))
             elif rev.table == "glossary_terms":
                 db.add(GlossaryTerm(campaign_id=c["campaign_id"], term=c.get("term", ""), description=c.get("description", ""),
                                     misheard_as=c.get("misheard_as") or []))

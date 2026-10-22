@@ -74,12 +74,12 @@ def test_player_characters_use_their_d_and_d_beyond_portrait(people, db, monkeyp
 
     monkeypatch.setattr(characters.refresh, "__defaults__", (fake_fetch,))
     import_bundle(db, CHAR_BUNDLE)
-    cole = next(c for c in db.scalars(select(Character)) if c.entity.name == "Cole")
+    cole = next(c for c in db.scalars(select(Character)) if c.name == "Cole")
     characters.refresh(db, cole)
     portrait = characters.character_summary(cole)["portrait"]
     assert portrait.startswith("https://www.dndbeyond.com/avatars/")
-    assert pictures.urls(db, [cole.entity_id])[cole.entity_id] == {"thumb": portrait, "full": pictures.ddb_full(portrait), "uploaded": False}
+    assert pictures.urls(db, [cole.entity.id])[cole.entity.id] == {"thumb": portrait, "full": pictures.ddb_full(portrait), "uploaded": False}
     player = people["player"]
     assert portrait.replace("&", "&amp;") in player.get(f"/characters/{cole.id}").text
-    assert "From D&amp;D Beyond" in player.get(f"/campaign/{cole.entity_id}/peek").text
+    assert "From D&amp;D Beyond" in player.get(f"/campaign/{cole.entity.id}/peek").text
     assert ddb.parse_character  # parser keeps only dndbeyond.com portraits (see test_ddb)

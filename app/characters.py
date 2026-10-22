@@ -12,13 +12,32 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import ddb
-from app.models import Character, CharacterItemNote, CharacterSnapshot, Entity
+from app.models import CampaignCharacter, Character, CharacterItemNote, CharacterSnapshot, Entity
 
 Fetch = Callable[[str], dict]
 
 
 def campaign_characters(db: Session, campaign_id: int) -> list[Character]:
-    return list(db.scalars(select(Character).join(Entity).where(Entity.campaign_id == campaign_id).order_by(Entity.name)))
+    """The characters in this campaign now, by name."""
+    return list(db.scalars(select(Character).join(CampaignCharacter)
+                           .where(CampaignCharacter.campaign_id == campaign_id, CampaignCharacter.left_on.is_(None))
+                           .order_by(Character.name)))
+
+
+def for_entity(db: Session, entity_id: int) -> Character | None:
+    """The character whose story page this is (in any campaign, now or before)."""
+    return db.scalar(select(Character).join(CampaignCharacter).where(CampaignCharacter.entity_id == entity_id))
+
+
+def join(db: Session, character: Character, entity: Entity) -> CampaignCharacter:
+    """Put a character in its story page's campaign (it can be in one campaign at a time)."""
+    if character.membership is not None:
+        raise ValueError(f"{character.name} is already in a campaign.")
+    m = CampaignCharacter(campaign_id=entity.campaign_id, entity=entity)
+    character.memberships.append(m)
+    character.name = character.name or entity.name
+    db.flush()
+    return m
 
 
 def set_ddb_link(db: Session, character: Character, value: str) -> None:
@@ -53,6 +72,7 @@ def refresh(db: Session, character: Character, fetch: Fetch = ddb.fetch_characte
         snap.status, snap.error = "error", str(e)
     else:
         snap.raw, snap.summary, snap.fetched_at = raw, summary, now
+        character.ddb_campaign_id = ddb.campaign_id(raw)
         snap.status, snap.error = "ok", ""
         _store_item_notes(db, character, notes)
     db.flush()
@@ -84,7 +104,7 @@ def refresh_all(db: Session, campaign_id: int, fetch: Fetch = ddb.fetch_characte
         if refresh(db, ch, fetch).status == "ok":
             ok += 1
         else:
-            failed.append(ch.entity.name)
+            failed.append(ch.name)
     return ok, failed
 
 

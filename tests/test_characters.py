@@ -38,7 +38,7 @@ def down(ddb_id):
 
 
 def char(db, name) -> Character:
-    return next(c for c in db.scalars(select(Character)) if c.entity.name == name)
+    return next(c for c in db.scalars(select(Character)) if c.name == name)
 
 
 @pytest.fixture(autouse=True)

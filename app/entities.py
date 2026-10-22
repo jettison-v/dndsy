@@ -262,8 +262,19 @@ def rename(entity: Entity, name: str) -> None:
         raise EntityError("That's already the name.")
     old = entity.name
     entity.name = new
+    sync_character_name(entity, new)
     if not any(a.alias.casefold() == old.casefold() for a in entity.aliases):
         entity.aliases.append(EntityAlias(alias=old, misspelling=False, note="earlier name"))
+
+
+def sync_character_name(entity: Entity, name: str) -> None:
+    """A player character has one name in every campaign: renaming its story page renames it."""
+    if entity.kind != EntityKind.PC or (db := object_session(entity)) is None:
+        return
+    from app.characters import for_entity
+
+    if (ch := for_entity(db, entity.id)) is not None:
+        ch.name = name
 
 
 def undo_description(entity: Entity) -> None:
@@ -398,9 +409,9 @@ def set_details(entity: Entity, kind: str, quest_open: str, published: bool) -> 
 
 
 def _not_a_character(db: Session, entity: Entity, verb: str) -> None:
-    from app.models import Character
+    from app.models import CampaignCharacter
 
-    if entity.kind == EntityKind.PC or db.scalar(select(Character.id).where(Character.entity_id == entity.id)):
+    if entity.kind == EntityKind.PC or db.scalar(select(CampaignCharacter.id).where(CampaignCharacter.entity_id == entity.id)):
         raise EntityError(f"{entity.name} is a player character, so it can't be {verb} here.")
 
 

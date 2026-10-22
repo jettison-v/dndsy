@@ -13,12 +13,16 @@ from sqlalchemy import (
     DateTime,
     Enum,
     ForeignKey,
+    Index,
     Integer,
     LargeBinary,
     String,
     Text,
     UniqueConstraint,
     func,
+)
+from sqlalchemy import (
+    text as sql,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -86,6 +90,7 @@ class Campaign(Timestamped, Base):
     slug: Mapped[str] = mapped_column(String(100), unique=True)
     dm_name: Mapped[str] = mapped_column(String(200), default="", server_default="")
     monthly_limit_usd: Mapped[float | None] = mapped_column(nullable=True)  # Claude spending cap (app/spending.py); blank = none
+    ddb_campaign_id: Mapped[str | None] = mapped_column(String(40))  # the matching campaign on D&D Beyond, if known
     members: Mapped[list["CampaignMember"]] = relationship(back_populates="campaign")
 
 
@@ -216,23 +221,72 @@ class EntityRelation(Timestamped, Base):
 
 
 class Character(Timestamped, Base):
-    """Player character details; its name and aliases live on the linked entity."""
+    """A player character. It belongs to its player, not to a campaign: its D&D Beyond copy, notes, pins and
+    reminders travel with it. Which campaign it's in (and its story page there) is a CampaignCharacter."""
 
     __tablename__ = "characters"
     id: Mapped[int] = mapped_column(primary_key=True)
-    entity_id: Mapped[int] = mapped_column(ForeignKey("entities.id", ondelete="CASCADE"), unique=True)
+    name: Mapped[str] = mapped_column(String(200), default="", server_default="")  # one name, shown in every campaign
     owner_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     ddb_id: Mapped[str | None] = mapped_column(String(40))  # D&D Beyond character id
+    ddb_campaign_id: Mapped[str | None] = mapped_column(String(40))  # the D&D Beyond campaign its sheet says it's in
     player_name: Mapped[str] = mapped_column(String(200), default="", server_default="")  # who plays it, before they have an account
     wild_shape: Mapped[str | None] = mapped_column(String(200), nullable=True)  # the form they're in on Battle (app/wild_shape.py), set by their player
-    # What the DM lets them keep in Wild Shape (item and feature keys from the sheet's form_options), set by their player
-    wild_shape_keep: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     # What they're concentrating on (app/spellbook.py), set by their player: {"spell", "key", "level", "round", "rounds"}
     concentration: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     conditions: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{"name": "Invisible", "source": "Ring of Invisibility"}] (app/conditions.py)
-    entity: Mapped[Entity] = relationship()
     owner: Mapped[User | None] = relationship()
     snapshot: Mapped["CharacterSnapshot | None"] = relationship(back_populates="character", uselist=False, passive_deletes=True)
+    memberships: Mapped[list["CampaignCharacter"]] = relationship(
+        back_populates="character", order_by="CampaignCharacter.id", cascade="all, delete-orphan", passive_deletes=True,
+        lazy="selectin")
+
+    @property
+    def membership(self) -> "CampaignCharacter | None":
+        """The campaign it's in now (at most one, like on D&D Beyond)."""
+        return next((m for m in self.memberships if m.left_on is None), None)
+
+    @property
+    def campaign_id(self) -> int | None:
+        m = self.membership
+        return m.campaign_id if m else None
+
+    @property
+    def entity(self) -> "Entity | None":
+        """Its story page in the campaign it's in now."""
+        m = self.membership
+        return m.entity if m else None
+
+    @property
+    def wild_shape_keep(self) -> list | None:
+        """What its current campaign's DM lets it keep in Wild Shape (a ruling, so per campaign)."""
+        m = self.membership
+        return m.wild_shape_keep if m else None
+
+    @wild_shape_keep.setter
+    def wild_shape_keep(self, value: list | None) -> None:
+        if (m := self.membership) is not None:
+            m.wild_shape_keep = value
+
+
+class CampaignCharacter(Base):
+    """A character in a campaign: its story page there, when it joined and left. Leaving keeps the row (and the
+    story page, events and recaps), so who was at the table in a session stays answerable."""
+
+    __tablename__ = "campaign_characters"
+    __table_args__ = (
+        Index("campaign_characters_one_current", "character_id", unique=True, postgresql_where=sql("left_on IS NULL")),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"), index=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+    entity_id: Mapped[int] = mapped_column(ForeignKey("entities.id", ondelete="CASCADE"), unique=True)  # its story page
+    joined_on: Mapped[date] = mapped_column(Date, server_default=func.current_date())
+    left_on: Mapped[date | None] = mapped_column(Date)
+    # What the DM lets it keep in Wild Shape (item and feature keys from the sheet's form_options), set by its player
+    wild_shape_keep: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    character: Mapped[Character] = relationship(back_populates="memberships")
+    entity: Mapped[Entity] = relationship()
 
 
 class CharacterSnapshot(Timestamped, Base):
@@ -297,6 +351,8 @@ class PlayerNote(Timestamped, Base):
     character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), index=True)
     author_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     kind: Mapped[str] = mapped_column(String(12))  # "combo" | "leveling" | "quest" | "general"
+    # Personal quests belong to the campaign they were written in; combos, leveling plans and notes travel with the character
+    campaign_id: Mapped[int | None] = mapped_column(ForeignKey("campaigns.id", ondelete="SET NULL"), nullable=True)
     title: Mapped[str] = mapped_column(String(200), default="", server_default="")
     status: Mapped[str] = mapped_column(String(12), default="", server_default="")  # quests: open | done | abandoned
     data: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")  # the kind's fields (see player_notes.KINDS)

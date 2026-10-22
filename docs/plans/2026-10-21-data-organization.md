@@ -1,6 +1,6 @@
 # How askdnd organizes its data: plan (PROPOSED, 2026-10-21)
 
-Status: **decided 2026-10-22** (Brett's answers on the "askdnd campaigns and roles" page; see "Decisions" at the end).
+Status: **decided 2026-10-22**; step 1 done 2026-10-22 (Brett's answers on the "askdnd campaigns and roles" page; see "Decisions" at the end).
 Built after roadmap step 11's Inventory and Features lists and a round of Brett's small feedback. Once decided, the final version of
 "The organization" below moves into `docs/ARCHITECTURE.md` (Data) with a line in `docs/DECISIONS.md`, and this file
 is marked as done.
@@ -102,6 +102,11 @@ Each migration can be undone.
 1. **Characters separate from campaigns.** Add `campaign_characters`, copy each character's link to its campaign and
    story page, give characters their own name, move Wild Shape keeps. Change the ~33 places that go from a
    character to its story page to go through the membership. Nothing visible changes. (Largest step.)
+   **Done 2026-10-22** (migration 9a5b7c1d4e60): `Character.membership` is the campaign it's in now (one at a time,
+   enforced by the database), `Character.entity` its story page there; renaming the story page renames the
+   character; version history of Wild Shape keeps moved with them; personal quests carry their campaign; characters
+   and campaigns store their D&D Beyond campaign id. The "move it?" prompt for a mismatch comes with step 4, which
+   adds moving.
 2. **Roles per campaign.** Copy the DM tick and Reviewer access into `campaign_members`; `access.allows()` asks
    about a person *in a campaign*. The access chart on Manage › People shows tool roles and campaign roles.
    Manage › People groups people by their role in the current campaign (DM, Reviewers, Players, then people

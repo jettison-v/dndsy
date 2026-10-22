@@ -419,7 +419,7 @@ def pooled_spells(rows: list[dict]) -> list[tuple[str, list[dict]]]:
     for r in rows:
         if not r["sheet"]:
             continue
-        who = r["c"].entity.name
+        who = r["c"].name
         for sp in r["sheet"]["spells"]:
             entry = spells.setdefault(sp["name"], {**sp, "who": [], "url": _panel_url(r["c"], sp["key"])})
             note = f"{sp['uses']['max']}/{sp['uses']['reset']}" if sp["uses"] and not sp["uses_slot"] else (
@@ -443,7 +443,7 @@ def pooled_items(rows: list[dict]) -> list[tuple[str, list[dict]]]:
     for r in rows:
         if not r["sheet"]:
             continue
-        who = r["c"].entity.name
+        who = r["c"].name
         for it in r["sheet"]["inventory"]:
             if not (it["magic"] or it["battle"]):
                 continue

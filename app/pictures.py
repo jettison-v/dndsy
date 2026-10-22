@@ -15,7 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, load_only
 
 from app import access
-from app.models import Character, Entity, EntityPicture
+from app.models import CampaignCharacter, Entity, EntityPicture
 
 MAX_UPLOAD = 15 * 1024 * 1024
 FULL_SIZE, THUMB_SIZE = 1200, 320
@@ -85,10 +85,11 @@ def urls(db: Session, entity_ids) -> dict[int, dict]:
     if not ids:
         return {}
     out = {}
-    for ch in db.scalars(select(Character).where(Character.entity_id.in_(ids))):
-        portrait = ((ch.snapshot.summary or {}) if ch.snapshot else {}).get("portrait")
+    for m in db.scalars(select(CampaignCharacter).where(CampaignCharacter.entity_id.in_(ids))):
+        snap = m.character.snapshot
+        portrait = ((snap.summary or {}) if snap else {}).get("portrait")
         if portrait:
-            out[ch.entity_id] = {"thumb": portrait, "full": ddb_full(portrait), "uploaded": False}
+            out[m.entity_id] = {"thumb": portrait, "full": ddb_full(portrait), "uploaded": False}
     pics = db.scalars(select(EntityPicture).where(EntityPicture.entity_id.in_(ids))
                       .options(load_only(EntityPicture.entity_id, EntityPicture.updated_at)))
     for p in pics:

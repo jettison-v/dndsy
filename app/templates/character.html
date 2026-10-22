@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_char.html" import portrait %}
 {% set mode_label = {"battle": "Battle", "sheet": "Sheet", "plan": "Plan"}[mode] %}
-{% block title %}{{ c.entity.name }} · {{ mode_label }} · askdnd{% endblock %}
+{% block title %}{{ c.name }} · {{ mode_label }} · askdnd{% endblock %}
 {% block head %}{% if mode != "sheet" %}<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js" defer></script>{% endif %}
 {% if can_pick %}<script src="https://cdn.jsdelivr.net/npm/turndown@7.2.0/dist/turndown.js" defer></script>{% endif %}{% endblock %}
 {% block content %}
@@ -11,7 +11,7 @@
   <div class="char-head">
     {{ portrait(s, "md") }}
     <div class="char-title">
-      <h1>{{ c.entity.name }}</h1>
+      <h1>{{ c.name }}</h1>
       {% if s %}<div class="muted char-sub">{{ s.species }} · {% for k in s.classes %}{{ k.name }} {{ k.level }}{% if k.subclass %} ({{ k.subclass }}){% endif %}{{ " / " if not loop.last }}{% endfor %} · level {{ s.level }}{% if s.background %} · {{ s.background }}{% endif %}{% if c.player_name %} · played by {{ c.player_name }}{% endif %}{% if s.sheet_url %} · <a href="{{ s.sheet_url }}" target="_blank" rel="noopener">Open on D&amp;D Beyond ↗</a>{% endif %}</div>
       {% if failed %}<div class="note"><span class="quiet-warn">The latest refresh from D&amp;D Beyond didn't work, so this is the last good copy, from {{ fetched_at | ago }}. {{ error }}</span></div>{% endif %}{% endif %}
     </div>

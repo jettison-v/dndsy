@@ -379,12 +379,14 @@ def test_dm_tools_create_tidy_and_add_moments(monkeypatch, db):
 
 
 def test_player_characters_cant_be_deleted_or_merged_away(db):
+    from app import characters
     from app.models import Character
 
     import_bundle(db, BUNDLE)
     e = lillippi(db)
-    db.add(Character(entity_id=e.id))
-    db.flush()
+    ch = Character(name=e.name)
+    db.add(ch)
+    characters.join(db, ch, e)
     other = db.scalar(select(Entity).where(Entity.name == "Saltmarsh"))
     with pytest.raises(entities.EntityError, match="player character"):
         entities.delete(db, e)

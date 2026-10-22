@@ -2,7 +2,7 @@
 {% from "_char.html" import vitals, portrait, pips, saves_block %}
 {% set s = sheet %}
 <div class="peek-head">
-  {{ portrait(s, "md") }}<div style="flex:1"><h2 id="peek-title">{{ c.entity.name }}</h2>
+  {{ portrait(s, "md") }}<div style="flex:1"><h2 id="peek-title">{{ c.name }}</h2>
     {% if s %}<div class="note">{{ s.species }} · {% for k in s.classes %}{{ k.name }} {{ k.level }}{{ " / " if not loop.last }}{% endfor %}{% if c.player_name %} · {{ c.player_name }}{% endif %}</div>{% endif %}</div>
   <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
 </div>

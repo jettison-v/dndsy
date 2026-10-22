@@ -9,7 +9,7 @@
   <section class="section">
     <h2>Party at a glance</h2>
     {% set party = rows %}{% include "_party_table.html" %}
-    <p class="note" style="margin:10px 0 0">Click a name for a short version of that character.{% if pick %} Open their {% for r in rows %}<a href="/characters/{{ r.c.id }}{{ '/battle' if pick == 'battle' }}">{{ r.c.entity.name }}</a>{{ ", " if not loop.last }}{% endfor %}.{% endif %}</p>
+    <p class="note" style="margin:10px 0 0">Click a name for a short version of that character.{% if pick %} Open their {% for r in rows %}<a href="/characters/{{ r.c.id }}{{ '/battle' if pick == 'battle' }}">{{ r.c.name }}</a>{{ ", " if not loop.last }}{% endfor %}.{% endif %}</p>
   </section>
 
   {% set n_spells = spells | map(attribute=1) | map("length") | sum %}{% set n_items = items | map(attribute=1) | map("length") | sum %}

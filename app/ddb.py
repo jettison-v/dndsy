@@ -183,6 +183,12 @@ def item_notes(data: dict) -> list[dict]:
     return list(out.values())
 
 
+def campaign_id(data: dict) -> str | None:
+    """The D&D Beyond campaign the character is in, if any."""
+    c = data.get("campaign")
+    return str(c["id"])[:40] if isinstance(c, dict) and c.get("id") else None
+
+
 def sanitize(data: dict) -> dict:
     clean = {k: v for k, v in data.items() if k != "notes"}
     notes = data.get("notes") if isinstance(data.get("notes"), dict) else {}

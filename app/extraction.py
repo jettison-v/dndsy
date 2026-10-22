@@ -16,12 +16,13 @@ import anthropic
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
+from app.characters import campaign_characters
+
 from app import spending
 from app.relations import TYPES as REL_TYPES
 from app.relations import find as find_relation
 from app.models import (
     Campaign,
-    Character,
     Correction,
     Entity,
     EntityKind,
@@ -254,9 +255,9 @@ def _known_world(db: Session, campaign: Campaign) -> str:
     if campaign.dm_name:
         lines.append(f"Dungeon Master: {campaign.dm_name}")
     lines.append("\nPlayer characters (character — player):")
-    for ch in db.scalars(select(Character).join(Entity).where(Entity.campaign_id == campaign.id).order_by(Entity.name)):
+    for ch in campaign_characters(db, campaign.id):
         player = ch.player_name or (ch.owner.name if ch.owner else "unknown")
-        lines.append(f"- {ch.entity.name} — {player}{_alias_text(ch.entity)}")
+        lines.append(f"- {ch.name} — {player}{_alias_text(ch.entity)}")
     lines.append("\nKnown people, places and things (name [kind]: summary; aliases):")
     for e in db.scalars(
         select(Entity).where(Entity.campaign_id == campaign.id, Entity.kind != EntityKind.PC).order_by(Entity.kind, Entity.name)

@@ -6,7 +6,7 @@
 {% set ON_SAVE = {"half": ("Half on a save", "half"), "none": ("Nothing on a save", "none"), "lands": ("Damage needs no save", "lands")} %}
 <div class="peek-head sb-head">
   <div class="fm-title">
-    <div class="note">{{ c.entity.name }}{% if sc.save_dc %} · {{ sc.class }} spells · DC {{ sc.save_dc }} · {{ sc.attack }} to hit{% endif %}</div>
+    <div class="note">{{ c.name }}{% if sc.save_dc %} · {{ sc.class }} spells · DC {{ sc.save_dc }} · {{ sc.attack }} to hit{% endif %}</div>
     <h2 id="peek-title">Spell Book</h2>
   </div>
   {% if conc %}<span class="conc-pill sb-conc" title="Concentrating on {{ conc.spell }}: a new Concentration spell ends it"><span class="conc-k">Conc.</span><b>{{ conc.spell }}</b>

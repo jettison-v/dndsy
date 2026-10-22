@@ -17,7 +17,7 @@
         hx-post="/characters/{{ c.id }}/pick" hx-vals='{{ {"kind": "remind", "ref": r.ref} | tojson }}' hx-target="closest li" hx-swap="delete">×</button>{% endif %}
     </li>{% endfor %}</ul>
   {% else %}
-  <p class="muted">{% if can_pick %}Nothing yet. Press the bell (<b>Remind me</b>) on anything you tend to forget (for example, Advantage against being Charmed), or write one below.{% else %}{{ c.entity.name }}'s player hasn't added any reminders yet.{% endif %}</p>
+  <p class="muted">{% if can_pick %}Nothing yet. Press the bell (<b>Remind me</b>) on anything you tend to forget (for example, Advantage against being Charmed), or write one below.{% else %}{{ c.name }}'s player hasn't added any reminders yet.{% endif %}</p>
   {% endif %}
   {% if can_pick and show_picks %}{# Free-text reminders, not tied to anything on the sheet #}
   <form class="forget-add" hx-post="/characters/{{ c.id }}/reminders" hx-swap="none" hx-on::after-request="if (event.detail.successful) this.reset()">

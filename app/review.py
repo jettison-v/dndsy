@@ -8,6 +8,8 @@ tested on its own.
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.characters import campaign_characters
+
 from app import relations
 from app.models import (
     Correction,
@@ -76,17 +78,16 @@ def ask_question(db: Session, session: GameSession, question: str, person: str, 
 
 def ask_options(db: Session, campaign_id: int) -> list[tuple[str, str]]:
     """People a question can be sent to: (name, hint) for the DM and each player."""
-    from app.models import Campaign, Character
+    from app.models import Campaign
 
     campaign = db.get(Campaign, campaign_id)
     options: dict[str, str] = {}
     if campaign and campaign.dm_name:
         options[campaign.dm_name] = "Dungeon Master"
-    chars = db.scalars(select(Character).join(Entity).where(Entity.campaign_id == campaign_id).order_by(Entity.name))
-    for ch in chars:
+    for ch in campaign_characters(db, campaign_id):
         player = ch.player_name or (ch.owner.name if ch.owner else "")
         if player and player not in options:
-            options[player] = f"plays {ch.entity.name}"
+            options[player] = f"plays {ch.name}"
     return list(options.items())
 
 

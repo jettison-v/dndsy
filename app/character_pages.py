@@ -664,8 +664,8 @@ def link(request: Request, character_id: int, ddb_link: str = Form(""), db: Sess
         return RedirectResponse("/admin/characters", status_code=303)
     snap = chars.refresh(db, ch)
     db.commit()
-    request.session["toast"] = (f"{ch.entity.name}: linked and updated from D&D Beyond" if snap.status == "ok"
-                                else f"{ch.entity.name}: linked, but couldn't fetch it yet")
+    request.session["toast"] = (f"{ch.name}: linked and updated from D&D Beyond" if snap.status == "ok"
+                                else f"{ch.name}: linked, but couldn't fetch it yet")
     return RedirectResponse("/admin/characters", status_code=303)
 
 

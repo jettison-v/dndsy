@@ -28,7 +28,7 @@ from datetime import date
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import relations
+from app import characters, entities, relations
 from app.models import (
     Campaign,
     CampaignMember,
@@ -162,6 +162,7 @@ def _import_bundle(db: Session, bundle: dict, keep_text: bool = False) -> Counte
                 old_name = entity.name
                 del existing[(kind, _norm(old_name))]
                 entity.name = item["name"].strip()
+                entities.sync_character_name(entity, entity.name)
                 existing[key] = entity
                 for a in list(entity.aliases):
                     if _norm(a.alias) == _norm(entity.name):
@@ -200,10 +201,11 @@ def _import_bundle(db: Session, bundle: dict, keep_text: bool = False) -> Counte
         if "character" in item:
             if kind != EntityKind.PC:
                 raise BundleError(f"{item['name']}: only pc entities can have character details")
-            ch = db.scalar(select(Character).where(Character.entity_id == entity.id))
+            ch = characters.for_entity(db, entity.id)
             if ch is None:
-                ch = Character(entity_id=entity.id)
+                ch = Character(name=entity.name)
                 db.add(ch)
+                characters.join(db, ch, entity)
                 counts["characters created"] += 1
             details = item["character"]
             if details.get("player_name"):
@@ -257,7 +259,7 @@ def _import_bundle(db: Session, bundle: dict, keep_text: bool = False) -> Counte
 
 
 def _character(db: Session, campaign: Campaign, name: str) -> Character:
-    ch = db.scalar(select(Character).join(Entity).where(Entity.campaign_id == campaign.id, Entity.name == name))
+    ch = next((c for c in characters.campaign_characters(db, campaign.id) if c.name == name), None)
     if ch is None:
         raise BundleError(f"no character named {name!r}")
     return ch
@@ -277,7 +279,8 @@ def _import_notes(db: Session, campaign: Campaign, bundle: dict, counts: Counter
         note = db.scalar(select(PlayerNote).where(PlayerNote.character_id == ch.id, PlayerNote.kind == kind, PlayerNote.title == title))
         if note is None:
             position = len(list(db.scalars(select(PlayerNote.id).where(PlayerNote.character_id == ch.id)))) + 1
-            note = PlayerNote(character_id=ch.id, kind=kind, title=title, position=position)
+            note = PlayerNote(character_id=ch.id, kind=kind, title=title, position=position,
+                              campaign_id=campaign.id if kind == "quest" else None)
             db.add(note)
             counts["player notes created"] += 1
         else:
