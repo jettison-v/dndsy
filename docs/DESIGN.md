@@ -48,7 +48,7 @@ The session review page is a short checklist, top to bottom:
 
 ## Visual system
 
-Dark only (Brett, 2026-10-22), inspired by D&D Beyond (dark chrome, red accents, warm parchment-toned story text) without copying its logo, name or artwork. Every value below is a token in `app/static/app.css` `:root`; pages use the names, never the values. `tests/test_design_system.py` fails on a text size, color or screen width outside the tokens. Until the visual passes finish (roadmap step 9), older rules are counted against a baseline that can only go down.
+Dark only (Brett, 2026-10-22), inspired by D&D Beyond (dark chrome, red accents, warm parchment-toned story text) without copying its logo, name or artwork. Every value below is a token in `app/static/app.css` `:root`; pages use the names, never the values. `tests/test_design_system.py` fails on a text size, color or screen width outside the tokens. Sizes in `em` are allowed (they scale a parent that uses a token).
 
 **Colors**
 
@@ -65,7 +65,7 @@ Dark only (Brett, 2026-10-22), inspired by D&D Beyond (dark chrome, red accents,
 
 Status colors are text on their `-soft` tint.
 
-**Text sizes** (Brett, 2026-10-22): `--fs-xs` 12px labels, secondary lines and tags · `--fs-sm` 14px list cells, chips, controls · `--fs-md` 16px body and a row's name · `--fs-lg` 19px section headings · `--fs-xl` 26px the character's name · `--fs-2xl` 30px page titles. UI in **Inter** (fallback system-ui) at 16px / 1.6; story text in `"Iowan Old Style", Palatino, Georgia, serif` at 1.12rem / 1.75. The logo alone uses Roboto Condensed.
+**Text sizes** (Brett, 2026-10-22): `--fs-xs` 12px labels, secondary lines and tags · `--fs-sm` 14px list cells, chips, controls · `--fs-md` 16px body and a row's name · `--fs-lg` 19px section headings · `--fs-xl` 26px the character's name · `--fs-2xl` 30px page titles. UI in **Inter** (fallback system-ui) at 16px / 1.6; story text in `"Iowan Old Style", Palatino, Georgia, serif` at `--fs-lg` / 1.75. The logo alone uses Roboto Condensed.
 
 **Space:** a 4px scale, `--sp-1` 4 · `--sp-2` 8 · `--sp-3` 12 · `--sp-4` 16 · `--sp-5` 24 · `--sp-6` 32. Prefer `gap` on flex and grid over margins between siblings.
 

@@ -1,10 +1,9 @@
 """The design system's guardrail (roadmap step 9, Brett 2026-10-22): the stylesheet uses the tokens in
 app.css's :root for text sizes, colors and screen widths, so the app doesn't drift again.
 
-The visual passes are still moving the older rules onto the tokens, so for now this is a ratchet: each
-count must match its baseline exactly. When you move rules onto tokens, lower the baseline in the same
-commit; a new one-off value fails the test. The baselines reach 0 at the end of step 9. When something
-truly needs a new value, add a token to :root (and DESIGN.md) on purpose.
+Every text size, color and screen width outside :root fails the test. When something truly needs a new
+value, add a token to :root (and DESIGN.md › Visual system) on purpose. Sizes in em are allowed: they
+scale a parent that already uses a token.
 """
 
 import re
@@ -13,7 +12,6 @@ from pathlib import Path
 CSS = (Path(__file__).parent.parent / "app" / "static" / "app.css").read_text()
 SCREEN_WIDTHS = {640, 641, 900, 901, 1099, 1100}  # phone, tablet, wide (and the pixel either side)
 
-BASELINE = {"text sizes": 53, "colors": 11, "screen widths": 5}
 
 
 def _without_tokens(css: str) -> str:
@@ -31,12 +29,8 @@ def offenders() -> dict[str, list[str]]:
 
 
 def test_stylesheet_uses_the_tokens():
-    found = offenders()
-    for kind, values in found.items():
-        n, base = len(values), BASELINE[kind]
-        assert n <= base, (f"{n - base} new one-off {kind} in app.css (e.g. {values[-1]}). Use a token from :root "
-                           f"(docs/DESIGN.md › Visual system), or add one on purpose.")
-        assert n == base, f"Fewer one-off {kind} now ({n}): lower BASELINE['{kind}'] to {n} in this test."
+    for kind, values in offenders().items():
+        assert not values, f"One-off {kind} in app.css: {sorted(set(values))}. Use a token from :root (docs/DESIGN.md › Visual system), or add one on purpose."
 
 
 def test_tokens_are_defined_once():
