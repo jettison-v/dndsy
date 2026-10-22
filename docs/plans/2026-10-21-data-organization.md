@@ -84,6 +84,15 @@ Four layers, from most general to most specific. Each layer may point at the one
 | `campaigns` | `monthly_limit_usd` moves to a tool-wide setting (one Anthropic account pays for all) |
 | Everything with `campaign_id` today | Unchanged |
 
+## D&D Beyond (Brett asked, 2026-10-22: will syncing stay efficient?)
+
+D&D Beyond's own model matches this shape: a person owns characters; a campaign has a DM and the characters
+that joined it, one campaign at a time. askdnd syncs characters by their D&D Beyond id, and a character's
+D&D Beyond data can say which D&D Beyond campaign it's in (we drop that today). So step 1 adds
+`campaigns.ddb_campaign_id`, and the character refresh keeps the D&D Beyond campaign id. When a character's
+D&D Beyond campaign doesn't match its askdnd campaign, askdnd asks the admin whether to move it (never
+automatically, since a campaign's history depends on who was there).
+
 ## How we'd build it (four steps, each shippable on its own)
 
 Each step: a migration that copies today's data into the new shape (production has one campaign and four
@@ -95,6 +104,8 @@ Each migration can be undone.
    character to its story page to go through the membership. Nothing visible changes. (Largest step.)
 2. **Roles per campaign.** Copy the DM tick and Reviewer access into `campaign_members`; `access.allows()` asks
    about a person *in a campaign*. The access chart on Manage › People shows tool roles and campaign roles.
+   Manage › People groups people by their role in the current campaign (DM, Reviewers, Players, then people
+   with no role in it), and removed people sit in a collapsed section at the bottom (Brett, 2026-10-22).
    (~66 access checks, most through a few helpers.)
 3. **Tool corrections and house rules.** Rename sheet corrections, add `house_rules` and one module that works out
    the effective value (tool knowledge → correction → house rule) for recipes, sheet items and rules terms. First
