@@ -1,6 +1,7 @@
 # How askdnd organizes its data: plan (PROPOSED, 2026-10-21)
 
-Status: **proposed, waiting for Brett's decisions** (the questions at the end). Once decided, the final version of
+Status: **decided 2026-10-22** (Brett's answers on the "askdnd campaigns and roles" page; see "Decisions" at the end).
+Built after roadmap step 11's Inventory and Features lists and a round of Brett's small feedback. Once decided, the final version of
 "The organization" below moves into `docs/ARCHITECTURE.md` (Data) with a line in `docs/DECISIONS.md`, and this file
 is marked as done.
 
@@ -66,8 +67,8 @@ Four layers, from most general to most specific. Each layer may point at the one
   deleting rows, so "who was in this campaign in session 12" stays answerable.
 - **Roles are per campaign.** Being DM, reviewer or player is about a table, so it lives on `campaign_members`. The
   tool keeps only what's about the whole tool: owner and admin (setup, people, billing).
-- **The DM never sees players' notes:** a person can't see the notes of characters in a campaign they DM (now or
-  before), wherever those characters are now.
+- **The DM never sees players' notes:** a person can't see the notes of characters in a campaign they DM now,
+  wherever those characters are (decision 3).
 
 ### What changes in each existing table
 
@@ -106,19 +107,16 @@ Each migration can be undone.
 
 Steps 1–3 don't change what anyone sees much; step 4 is where the second campaign appears.
 
-## Decisions needed (my recommendation first)
+## Decisions (Brett, 2026-10-22)
 
-1. **A character's name:** one name on the character, shown in every campaign (recommended), *or* a separate name
-   per campaign. Story aliases (Sarkas → No Name, misheard spellings) stay on the campaign's story page either way,
-   because they're about that campaign's transcripts.
-2. **Reviewer:** per campaign (recommended: reviewing recaps is running a table), *or* tool-wide as today.
-3. **Notes the DM can't see:** characters in any campaign they DM now *or did before* (recommended), *or* only
-   their current campaigns.
-4. **Personal quests:** belong to the campaign they were written in (recommended), *or* stay with the character
-   everywhere. Combos and leveling plans stay with the character.
-5. **Wild Shape keeps:** a DM ruling, so per campaign (recommended), *or* stay on the character.
-6. **Campaign in the address:** yes, `/c/<campaign>/…` for story pages (recommended: shared links always open the
-   right campaign), *or* only a remembered switcher.
-7. **Spending limit:** one tool-wide limit (recommended: one Anthropic account), *or* per campaign.
-8. **Order:** the four steps in the order above (recommended), *or* start with house rules (step 3), which is the
-   smallest visible win.
+1. **A character's name:** one name on the character, shown in every campaign. Story aliases stay on each
+   campaign's story page.
+2. **Reviewer:** per campaign.
+3. **Notes the DM can't see:** only characters in campaigns they DM **now** (not the recommendation: someone
+   who stops DMing a campaign can read its players' notes afterwards, like any player).
+4. **Personal quests:** belong to the campaign they were written in. Combos and leveling plans stay with the character.
+5. **Wild Shape keeps:** per campaign (a DM ruling).
+6. **Campaign in the address:** yes, `/c/<campaign>/…` for story pages; old addresses open your current campaign.
+7. **Spending limit:** one for the tool.
+8. **Order:** the four steps as listed (characters, roles, house rules, more campaigns).
+9. **Step 10 vs step 11:** Inventory and Features lists first, then Brett's next batch of small feedback, then step 10.
