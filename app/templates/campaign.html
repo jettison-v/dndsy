@@ -19,7 +19,8 @@
 {% block content %}
 {% from "_suggest_form.html" import suggest with context %}
 <main class="page sheet wide">
-  <div class="title-row"><h1>{{ campaign.name if campaign else "Campaign" }}</h1></div>
+  <div class="title-row"><h1>{{ campaign.name if campaign else "Campaign" }}</h1>
+    {% if editor %}<a class="btn" href="#" data-modal-url="/campaign/new" style="margin-left:auto">+ New entry</a>{% endif %}</div>
   <p class="subtitle">People, places and things the party has met.{% if campaign and campaign.dm_name %} Dungeon Master: {{ campaign.dm_name }}.{% endif %}</p>
   {% if groups or tree or glossary %}
   <section class="section">
@@ -30,9 +31,11 @@
     </div>
     {% for title, entries in groups %}
     <div id="t-{{ title | lower | replace(' ', '-') }}"{% if not loop.first %} hidden{% endif %}>
+      {% if editor %}<div class="sec-head" style="justify-content:flex-end"><a href="#" data-modal-url="/campaign/new?kind={{ group_kinds[title] }}">+ New {{ {"Quests": "quest", "People": "person", "Places": "place", "Factions": "faction", "Items": "item", "Creatures": "creature"}.get(title, "entry") }}</a></div>{% endif %}
+      {% if not entries %}<p class="muted">None yet. Use <b>+ New</b> to add the first.</p>{% endif %}
       <div class="card-grid">
         {% for e in entries %}
-        <div class="entry">{% set p = pics.get(e.id) %}{% if p %}<img class="entry-pic" src="{{ p.thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer">{% endif %}<a class="entry-link" href="/campaign/{{ e.id }}"><b>{{ e.name }}</b></a>{% if e.kind.value == "quest" %} <span class="tag {{ 'draft' if e.quest_open else 'done' }}">{{ "Open" if e.quest_open else "Done" }}</span>{% endif %}
+        <div class="entry">{% set p = pics.get(e.id) %}{% if p %}<img class="entry-pic" src="{{ p.thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer">{% endif %}<a class="entry-link" href="/campaign/{{ e.id }}"><b>{{ e.name }}</b></a>{% if e.status.value != "published" %} <span class="tag faint" title="Only the DM, reviewers and admins see it">Hidden</span>{% endif %}{% if e.kind.value == "quest" %} <span class="tag {{ 'draft' if e.quest_open else 'done' }}">{{ "Open" if e.quest_open else "Done" }}</span>{% endif %}
           {% if e.display_aliases %}<div class="note">also: {{ e.display_aliases | map(attribute="alias") | join(", ") }}</div>{% endif %}
           {% if e.summary %}<p>{{ e.summary }}</p>{% endif %}
           {% if markers.get(e.id) %}<a class="entry-map" href="/map?at={{ markers[e.id] | urlencode }}" data-no-peek>Show on map</a>{% endif %}</div>

@@ -20,6 +20,7 @@ from app.models import (
     EntityAlias,
     EntityKind,
     EventEntity,
+    EventKind,
     ExtractionRun,
     Fact,
     GlossaryTerm,
@@ -337,3 +338,144 @@ def mention_suggestions(db: Session, campaign_id: int, q: str, include_drafts: b
                             offer(e.name, KIND_LABELS.get(e.kind, ""), r + 5, via=m, order=MENTION_ORDER.get(e.kind, 9))
     ranked = sorted(found.values(), key=lambda d: (d["rank"], d["order"], len(d["name"]), d["name"].casefold()))[:limit]
     return [{k: d[k] for k in ("name", "kind", "via")} for d in ranked]
+
+
+# --- The DM's own tools (docs/plans/2026-10-22-content-workflows.md, step 1) --------------------------------
+
+
+def find_by_name(db: Session, campaign_id: int, name: str) -> Entity | None:
+    """An entry already called this (by name or another name), so the DM isn't offered a duplicate."""
+    key = _norm(name)
+    for e in db.scalars(select(Entity).where(Entity.campaign_id == campaign_id)):
+        if _norm(e.name) == key or any(_norm(a.alias) == key for a in e.aliases):
+            return e
+    return None
+
+
+def create(db: Session, campaign_id: int, kind: str, name: str, summary: str = "", published: bool = True) -> Entity:
+    """A new person, place, faction, item, quest or creature written by the DM (no transcript, no Claude)."""
+    name = " ".join((name or "").split())
+    if not name:
+        raise EntityError("Enter a name.")
+    if len(name) > 200:
+        raise EntityError("That name is too long.")
+    try:
+        k = EntityKind(kind)
+    except ValueError as e:
+        raise EntityError("Pick what kind of entry it is.") from e
+    if k == EntityKind.PC:
+        raise EntityError("Player characters come from Manage › Characters.")
+    if (same := find_by_name(db, campaign_id, name)) is not None:
+        raise EntityError(f"{same.name} is already in the campaign record.")
+    entity = Entity(campaign_id=campaign_id, kind=k, name=name, summary=(summary or "").replace("\r\n", "\n").strip()[:4000],
+                    status=Status.PUBLISHED if published else Status.DRAFT, quest_open=True if k == EntityKind.QUEST else None)
+    db.add(entity)
+    db.flush()
+    return entity
+
+
+def set_details(entity: Entity, kind: str, quest_open: str, published: bool) -> None:
+    """Kind, a quest's open or done, and whether the table sees it."""
+    try:
+        k = EntityKind(kind)
+    except ValueError as e:
+        raise EntityError("Pick what kind of entry it is.") from e
+    if (k == EntityKind.PC) != (entity.kind == EntityKind.PC):
+        raise EntityError("Player characters stay player characters; link them on Manage › Characters.")
+    entity.kind = k
+    entity.quest_open = (quest_open != "done") if k == EntityKind.QUEST else None
+    entity.status = Status.PUBLISHED if published else Status.DRAFT
+
+
+def _not_a_character(db: Session, entity: Entity, verb: str) -> None:
+    from app.models import Character
+
+    if entity.kind == EntityKind.PC or db.scalar(select(Character.id).where(Character.entity_id == entity.id)):
+        raise EntityError(f"{entity.name} is a player character, so it can't be {verb} here.")
+
+
+def delete(db: Session, entity: Entity) -> str:
+    """Remove an entry. Its facts and relationships go one by one, so Manage › History can bring them back."""
+    _not_a_character(db, entity, "deleted")
+    from app.models import EntityRelation
+
+    for fact in db.scalars(select(Fact).where(Fact.entity_id == entity.id)):
+        db.delete(fact)
+    for rel in db.scalars(select(EntityRelation).where((EntityRelation.from_entity_id == entity.id) | (EntityRelation.to_entity_id == entity.id))):
+        db.delete(rel)
+    name = entity.name
+    db.delete(entity)
+    db.flush()
+    return name
+
+
+def _alias_note(entity: Entity, alias: str) -> str:
+    return next((a.note for a in entity.aliases if a.alias == alias), "") or ""
+
+
+def merge(db: Session, source: Entity, target: Entity) -> None:
+    """Fold a duplicate into the entry that stays: its name and other names become target's other names, and its
+    facts, relationships, key moments and picture move over. Target's description stays; source's, if different,
+    is kept as a fact so nothing is lost."""
+    from app.models import EntityPicture, EntityRelation
+
+    if source.id == target.id:
+        raise EntityError("Pick a different entry to merge into.")
+    if source.campaign_id != target.campaign_id:
+        raise EntityError("Those entries are in different campaigns.")
+    _not_a_character(db, source, "merged away")
+    have = {_norm(target.name)} | {_norm(a.alias) for a in target.aliases}
+    for alias, misspelling in [(source.name, False)] + [(a.alias, a.misspelling) for a in source.aliases]:
+        if _norm(alias) not in have:
+            target.aliases.append(EntityAlias(alias=alias, misspelling=misspelling, note=f"merged from {source.name}" if alias == source.name else _alias_note(source, alias)))
+            have.add(_norm(alias))
+    for fact in db.scalars(select(Fact).where(Fact.entity_id == source.id)):
+        fact.entity_id = target.id
+    if (source.summary or "").strip() and source.summary.strip() != (target.summary or "").strip():
+        if not (target.summary or "").strip():
+            target.summary = source.summary
+        else:
+            db.add(Fact(entity_id=target.id, kind="addition", text=f"From the merged entry {source.name}: {source.summary.strip()}",
+                        author_name="Merged entry", author_email="", status="merged"))
+    for rel in list(db.scalars(select(EntityRelation).where((EntityRelation.from_entity_id == source.id) | (EntityRelation.to_entity_id == source.id)))):
+        ends = (target.id if rel.from_entity_id == source.id else rel.from_entity_id, target.id if rel.to_entity_id == source.id else rel.to_entity_id)
+        clash = ends[0] == ends[1] or db.scalar(select(EntityRelation.id).where(
+            EntityRelation.from_entity_id == ends[0], EntityRelation.type == rel.type, EntityRelation.to_entity_id == ends[1]))
+        if clash:
+            db.delete(rel)
+        else:
+            rel.from_entity_id, rel.to_entity_id = ends
+    linked = set(db.scalars(select(EventEntity.event_id).where(EventEntity.entity_id == target.id)))
+    for link in list(db.scalars(select(EventEntity).where(EventEntity.entity_id == source.id))):
+        if link.event_id not in linked:
+            db.add(EventEntity(event_id=link.event_id, entity_id=target.id))
+        db.delete(link)
+    pic = db.scalar(select(EntityPicture).where(EntityPicture.entity_id == source.id))
+    if pic is not None and db.scalar(select(EntityPicture.id).where(EntityPicture.entity_id == target.id)) is None:
+        pic.entity_id = target.id
+    db.flush()
+    db.delete(source)
+    db.flush()
+
+
+def add_moment(db: Session, entity: Entity, session_id: int, kind: str, text: str) -> StoryEvent:
+    """A key moment written by the DM, in a session's story, mentioning this entry. Shown straight away."""
+    from app.models import GameSession
+
+    text = (text or "").replace("\r\n", "\n").strip()
+    if not text:
+        raise EntityError("Write what happened.")
+    session = db.get(GameSession, session_id)
+    if session is None or session.campaign_id != entity.campaign_id:
+        raise EntityError("Pick the session it happened in.")
+    try:
+        k = EventKind(kind)
+    except ValueError as e:
+        raise EntityError("Pick what kind of moment it is.") from e
+    last = max((e.position for e in session.events), default=0)
+    event = StoryEvent(session_id=session.id, position=last + 1, kind=k, text=text[:2000], status=Status.PUBLISHED)
+    db.add(event)
+    db.flush()
+    db.add(EventEntity(event_id=event.id, entity_id=entity.id))
+    db.flush()
+    return event

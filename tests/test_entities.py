@@ -334,3 +334,59 @@ def test_accepting_a_regenerated_description_takes_used_facts_off_the_list(db):
 
     history.mark("edit")  # accept_description marks its changes as Claude's; outside a request that would linger
     assert (used.status, kept.status) == ("done", "merged") and e.draft_fact_ids is None
+
+
+def test_dm_tools_create_tidy_and_add_moments(monkeypatch, db):
+    """Content workflows step 1 (docs/plans/2026-10-22-content-workflows.md): the DM writes the canon by hand."""
+    from tests.test_suggestions import client_for
+
+    import_bundle(db, BUNDLE)
+    db.add(User(email="dm@example.com", name="Dee", is_dm=True))
+    db.flush()
+    dm = client_for(monkeypatch, db, "dm@example.com")
+    assert "+ New entry" in dm.get("/campaign").text and "New entry" in dm.get("/campaign/new?kind=place").text
+    r = dm.post("/campaign/new", data={"kind": "npc", "name": "Captain Trager Grill", "summary": "Cult-marked captain."}, headers=HX)
+    grill = db.scalar(select(Entity).where(Entity.name == "Captain Trager Grill"))
+    assert r.headers["HX-Redirect"] == f"/campaign?open={grill.id}" and grill.status.value == "published"
+    again = dm.post("/campaign/new", data={"kind": "npc", "name": "lillippi lemon"}, headers=HX).text
+    assert "already in the campaign record" in again  # by name or other name, any case
+    dm.post("/campaign/new", data={"kind": "quest", "name": "Find the bell", "hidden": "1"}, headers=HX)
+    bell = db.scalar(select(Entity).where(Entity.name == "Find the bell"))
+    assert bell.status.value == "draft" and bell.quest_open is True and "Hidden" in dm.get("/campaign").text
+
+    dm.post(f"/campaign/{bell.id}/details", data={"kind": "quest", "quest_open": "done", "published": "1"}, headers=HX)
+    db.refresh(bell)
+    assert bell.quest_open is False and bell.status.value == "published"
+
+    s1 = db.scalar(select(GameSession).where(GameSession.number == 1))
+    dm.post(f"/campaign/{grill.id}/moments", data={"session_id": s1.id, "kind": "reveal", "text": "Grill bore the mark of the cult."}, headers=HX)
+    assert "Grill bore the mark of the cult." in dm.get(f"/campaign/{grill.id}/peek").text
+
+    dup = entities.create(db, grill.campaign_id, "npc", "Capt Trager Grill", "A captain on the road.")
+    entities.add_fact(db, dup, "He carries a silver whistle.", {"email": "p@x"}, merged=True)
+    db.commit()
+    r = dm.post(f"/campaign/{dup.id}/merge", data={"into": grill.id}, headers=HX)
+    assert r.headers["HX-Redirect"] == f"/campaign?open={grill.id}"
+    db.expire_all()
+    grill = db.get(Entity, grill.id)
+    assert db.scalar(select(Entity).where(Entity.name == "Capt Trager Grill")) is None
+    assert "Capt Trager Grill" in [a.alias for a in grill.aliases]  # links and transcripts still find it
+    facts = [f.text for f in db.scalars(select(Fact).where(Fact.entity_id == grill.id))]
+    assert "He carries a silver whistle." in facts and any("A captain on the road." in t for t in facts)  # nothing lost
+
+    r = dm.post(f"/campaign/{bell.id}/delete", headers=HX)
+    assert r.headers["HX-Redirect"] == "/campaign" and db.get(Entity, bell.id) is None
+
+
+def test_player_characters_cant_be_deleted_or_merged_away(db):
+    from app.models import Character
+
+    import_bundle(db, BUNDLE)
+    e = lillippi(db)
+    db.add(Character(entity_id=e.id))
+    db.flush()
+    other = db.scalar(select(Entity).where(Entity.name == "Saltmarsh"))
+    with pytest.raises(entities.EntityError, match="player character"):
+        entities.delete(db, e)
+    with pytest.raises(entities.EntityError, match="player character"):
+        entities.merge(db, e, other)

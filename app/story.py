@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app import web
 from app import atlas, pictures, review
-from app.auth import can_moderate, current_user
+from app.auth import can_edit_entries, can_moderate, current_user
 from app.db import get_db
 from app.extraction import session_label, timeline
 from app.linking import Linker, entity_linker
@@ -142,15 +142,18 @@ def sessions(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/campaign")
 def campaign_page(request: Request, db: Session = Depends(get_db)):
-    if not current_user(request):
+    user = current_user(request)
+    if not user:
         return RedirectResponse("/login", status_code=303)
     campaign = web.campaign(db)
+    editor = can_edit_entries(user)  # the DM, reviewers and admins also see hidden entries, and get "+ New"
     groups, glossary = [], []
     if campaign:
+        shown = (Entity.status == Status.PUBLISHED) if not editor else (Entity.id.is_not(None))
         entities = list(
             db.scalars(
                 select(Entity)
-                .where(Entity.campaign_id == campaign.id, Entity.status == Status.PUBLISHED, Entity.kind != EntityKind.PC)
+                .where(Entity.campaign_id == campaign.id, shown, Entity.kind != EntityKind.PC)
                 .order_by(Entity.name)
             )
         )
@@ -158,12 +161,14 @@ def campaign_page(request: Request, db: Session = Depends(get_db)):
             entries = [e for e in entities if e.kind == kind]
             if kind == EntityKind.QUEST:
                 entries.sort(key=lambda e: (not e.quest_open, e.name))
-            if entries:
+            if entries or editor:
                 groups.append((title, entries))
         glossary = list(db.scalars(select(GlossaryTerm).where(GlossaryTerm.campaign_id == campaign.id).order_by(GlossaryTerm.term)))
         graph = family_graph(db, campaign.id, visible=lambda e: e.status == Status.PUBLISHED)
     return templates.TemplateResponse(
         request, "campaign.html", {"campaign": campaign, "groups": groups, "glossary": glossary, "tree": graph.mermaid() if campaign and graph.people else "",
+                                   "editor": editor, "group_kinds": {title: kind.value for kind, title in GROUPS},
+                                   "toast": request.session.pop("toast", None),
                                    "pics": pictures.urls(db, [e.id for _, entries in groups for e in entries]),
                                    "markers": {e.id: m for _, entries in groups for e in entries if (m := atlas.entity_marker(e))}}
     )

@@ -171,5 +171,42 @@
       {% endfor %}
     </ul>
     {% else %}<p class="muted" style="margin-top:8px">No published key moments mention {{ e.name }} yet.</p>{% endif %}
+    {% if can_edit and sessions %}
+    <details class="add-moment"><summary>+ Add a key moment</summary>
+      <form class="stack" hx-post="/campaign/{{ e.id }}/moments" {{ hx | safe }} style="margin-top:10px">
+        <div class="row">
+          <select name="session_id" aria-label="Session">{% for sid, label in sessions %}<option value="{{ sid }}">{{ label }}</option>{% endfor %}</select>
+          <select name="kind" aria-label="Kind"><option value="event">Event</option><option value="reveal">Reveal</option><option value="decision">Decision</option><option value="loot">Loot</option><option value="theory">Theory</option></select>
+        </div>
+        <textarea name="text" rows="2" required aria-label="What happened" placeholder="What happened, in a sentence (type @ for a name)"></textarea>
+        <div class="row"><button class="btn primary small">Add</button><span class="note">Shows in that session's key moments and on {{ e.name }}, straight away.</span></div>
+      </form>
+    </details>
+    {% endif %}
   </section>
+
+  {% if can_edit %}
+  <section class="section" id="details">
+    <h2>Details</h2>
+    <form class="row" hx-post="/campaign/{{ e.id }}/details" {{ hx | safe }} style="margin-top:8px">
+      {% if e.kind.value == "pc" %}<input type="hidden" name="kind" value="pc"><span class="tag">Player character</span>
+      {% else %}<select name="kind" aria-label="Kind">{% for value, label in kinds %}<option value="{{ value }}"{{ ' selected' if value == e.kind.value }}>{{ label }}</option>{% endfor %}</select>{% endif %}
+      {% if e.kind.value == "quest" %}<select name="quest_open" aria-label="Quest status"><option value="open"{{ ' selected' if e.quest_open }}>Open</option><option value="done"{{ ' selected' if not e.quest_open }}>Done</option></select>{% endif %}
+      <label class="check"><input type="checkbox" name="published" value="1"{{ ' checked' if e.status.value == "published" }}> The table can see it</label>
+      <button class="btn small">Save</button>
+    </form>
+  </section>
+
+  {% if e.kind.value != "pc" %}
+  <section class="section" id="tidy">
+    <h2>Merge or delete</h2>
+    <p class="hint" style="margin:6px 0 10px">A duplicate from a transcript? Merge it into the entry to keep: its name becomes another name there, and its facts, relationships, key moments and picture move over.</p>
+    <form class="row" hx-post="/campaign/{{ e.id }}/merge" hx-swap="none" hx-confirm="Merge {{ e.name }} into the entry you picked? {{ e.name }} goes away.">
+      <select name="into" aria-label="Entry to keep" required><option value="">Merge into…</option>{% for o in others %}<option value="{{ o.id }}">{{ o.name }}</option>{% endfor %}</select>
+      <button class="btn small">Merge</button>
+    </form>
+    <div class="row" style="margin-top:12px"><button class="btn link danger small" hx-post="/campaign/{{ e.id }}/delete" hx-swap="none" hx-confirm="Delete {{ e.name }}? Manage › History can bring it back.">Delete {{ e.name }}</button></div>
+  </section>
+  {% endif %}
+  {% endif %}
 </div>

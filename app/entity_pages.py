@@ -59,7 +59,16 @@ def entity_context(db: Session, entity: Entity, user: dict) -> dict:
         "picture": pictures.urls(db, [entity.id]).get(entity.id),
         "can_picture": pictures.can_manage(user),
         "map_marker": atlas.entity_marker(entity),
+        "kinds": [(k.value, label) for k, label in entities.KIND_LABELS.items() if k.value != "pc"],
+        "sessions": _sessions(db, entity.campaign_id) if can_edit_entries(user) else [],
     }
+
+
+def _sessions(db: Session, campaign_id: int) -> list[tuple[int, str]]:
+    """Sessions to put a new key moment in, newest first."""
+    from app.extraction import session_label, timeline
+
+    return [(s.id, session_label(s)) for s in reversed(timeline(db, campaign_id))]
 
 
 @router.get("/{entity_id:int}")
@@ -72,6 +81,36 @@ def entity_page(request: Request, entity_id: int, db: Session = Depends(get_db))
     if not _visible(entity, user):
         return _not_found(request)
     return RedirectResponse(f"/campaign?open={entity_id}", status_code=303)
+
+
+@router.get("/new")
+def new_entry_form(request: Request, kind: str = "npc", db: Session = Depends(get_db)):
+    """The DM's "+ New": a small window to add a person, place, faction, item, quest or creature by hand."""
+    user = current_user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    if not can_edit_entries(user):
+        return web.forbidden(request, "Only the DM, reviewers and admins add entries.")
+    kinds = [(k.value, label) for k, label in entities.KIND_LABELS.items() if k.value != "pc"]
+    return templates.TemplateResponse(request, "_entity_new.html", {"kinds": kinds, "kind": kind, "error": "", "form": {}})
+
+
+@router.post("/new")
+def new_entry(request: Request, kind: str = Form(""), name: str = Form(""), summary: str = Form(""), hidden: str = Form(""),
+              db: Session = Depends(get_db)):
+    user = current_user(request)
+    if not user or not can_edit_entries(user):
+        return web.forbidden(request, "Only the DM, reviewers and admins add entries.")
+    campaign = web.campaign(db)
+    try:
+        entity = entities.create(db, campaign.id, kind, name, summary, published=not hidden)
+        db.commit()
+    except entities.EntityError as e:
+        db.rollback()
+        kinds = [(k.value, label) for k, label in entities.KIND_LABELS.items() if k.value != "pc"]
+        return templates.TemplateResponse(request, "_entity_new.html", {"kinds": kinds, "kind": kind, "error": str(e),
+                                                                        "form": {"name": name, "summary": summary, "hidden": hidden}})
+    return Response(status_code=204, headers={"HX-Redirect": f"/campaign?open={entity.id}"})
 
 
 @router.get("/{entity_id:int}/peek")
@@ -233,6 +272,54 @@ def set_description(request: Request, entity_id: int, summary: str = Form(""), d
 @router.post("/{entity_id:int}/name")
 def rename(request: Request, entity_id: int, name: str = Form(""), db: Session = Depends(get_db)):
     return _act(request, db, entity_id, lambda entity, user: entities.rename(entity, name) or "Renamed")
+
+
+@router.post("/{entity_id:int}/details")
+def set_details(request: Request, entity_id: int, kind: str = Form(...), quest_open: str = Form("open"), published: str = Form(""),
+                db: Session = Depends(get_db)):
+    return _act(request, db, entity_id, lambda entity, user: entities.set_details(entity, kind, quest_open, bool(published)) or "Saved")
+
+
+@router.post("/{entity_id:int}/moments")
+def add_moment(request: Request, entity_id: int, session_id: int = Form(0), kind: str = Form("event"), text: str = Form(""),
+               db: Session = Depends(get_db)):
+    return _act(request, db, entity_id, lambda entity, user: entities.add_moment(db, entity, session_id, kind, text) and "Key moment added")
+
+
+def _leave(request: Request, db: Session, entity_id: int, fn: Callable[[Entity], tuple[str, str]]):
+    """Delete or merge: the entry is gone, so go back to the Campaign page (or the entry it was merged into)."""
+    user = current_user(request)
+    if not user or not can_edit_entries(user):
+        return web.forbidden(request, "Only the DM, reviewers and admins can do that.")
+    entity = db.get(Entity, entity_id)
+    if not _visible(entity, user):
+        return _not_found(request)
+    try:
+        message, url = fn(entity)
+        db.commit()
+    except entities.EntityError as e:
+        db.rollback()
+        return Response(status_code=204, headers={"HX-Trigger": json.dumps({"toast": str(e)})})
+    request.session["toast"] = message
+    return Response(status_code=204, headers={"HX-Redirect": url})
+
+
+@router.post("/{entity_id:int}/delete")
+def delete_entry(request: Request, entity_id: int, db: Session = Depends(get_db)):
+    return _leave(request, db, entity_id, lambda e: (f"Deleted {entities.delete(db, e)}. Manage › History can bring it back.", "/campaign"))
+
+
+@router.post("/{entity_id:int}/merge")
+def merge_entry(request: Request, entity_id: int, into: int = Form(0), db: Session = Depends(get_db)):
+    def act(source):
+        target = db.get(Entity, into)
+        if target is None:
+            raise entities.EntityError("Pick the entry to keep.")
+        name = source.name
+        entities.merge(db, source, target)
+        return f"Merged {name} into {target.name}", f"/campaign?open={target.id}"
+
+    return _leave(request, db, entity_id, act)
 
 
 @router.post("/{entity_id:int}/description/discard")
