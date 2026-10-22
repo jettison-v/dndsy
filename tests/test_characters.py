@@ -238,7 +238,7 @@ def test_only_the_player_stars_and_reminds(player, admin, db):
     characters.refresh(db, cole)
     owned_by(db, cole, "player@example.com")
     page = player.get(f"/characters/{cole.id}").text
-    assert 'class="pick star' in page and 'class="pick remind' in page and "How Sheet works" in page
+    assert 'class="pick star' in page and 'class="pick remind' in page and "The DM can't see these." in page
     r = player.post(f"/characters/{cole.id}/pick", data={"kind": "star", "ref": "spell:Heat Metal"})
     assert r.status_code == 200 and 'class="ico-pin"' in r.text and 'aria-pressed="true"' in r.text
     situ = cole.snapshot.summary["situational"][0]["key"]

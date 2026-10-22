@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_char.html" import portrait, pin_icon, bookmark_icon, bell %}
+{% from "_char.html" import portrait %}
 {% set mode_label = {"battle": "Battle", "sheet": "Sheet", "plan": "Plan"}[mode] %}
 {% block title %}{{ c.entity.name }} · {{ mode_label }} · askdnd{% endblock %}
 {% block head %}{% if mode != "sheet" %}<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js" defer></script>{% endif %}
@@ -20,25 +20,6 @@
       <a href="/characters/{{ c.id }}"{% if mode == "sheet" %} aria-current="page"{% endif %}>Sheet</a>
       {% if show_picks %}<a href="/characters/{{ c.id }}/plan"{% if mode == "plan" %} aria-current="page"{% endif %}>Plan</a>{% endif %}
     </nav>
-    {# How this mode works, in a pop-over instead of a paragraph above the content (Brett, 2026-10-22) #}
-    {% if can_pick or (mode == "plan" and show_picks) %}
-    <details class="info-pop">
-      <summary aria-label="How {{ mode_label }} works" title="How {{ mode_label }} works">i</summary>
-      <div class="info-box">
-        {% if not can_pick %}<p>{{ c.entity.name }}'s player's plans. The DM can't see these.</p>
-        {% elif mode == "battle" %}<p>Your options for a turn, by what they cost. <b>+ Add</b> pins more to a column; drag an option to reorder its column. Open anything for its side panel and your note on it.</p>
-          <p class="note">Only you can change these, and the DM can't see your pins or notes.</p>
-        {% elif mode == "plan" %}<p>Your plans for {{ c.entity.name }}. Names of spells, features, items, Wild Shape forms, people and places become links.</p>
-          <p class="note">Every player can read your notes; the DM can't see anything here.</p>
-        {% else %}<ul class="info-keys">
-          <li><span class="pick star on static">{{ pin_icon() }}</span> pins something to Battle (and your Shortlist)</li>
-          <li><span class="pick fav on static">{{ bookmark_icon() }}</span> adds a spell or form to your Shortlist on Plan</li>
-          <li><span class="pick remind on static">{{ bell(true) }}</span> adds it to your Reminders</li></ul>
-          <p>Open anything for its side panel to write your note on it.</p>
-          <p class="note">Only you can change these, and the DM can't see them.</p>{% endif %}
-      </div>
-    </details>
-    {% endif %}
   </div>
 
   {% if mode == "battle" %}{% include "_battle_body.html" %}

@@ -1528,19 +1528,6 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .battlebar > .res-row:first-child { margin: 0 0 10px; }
 .battlebar > .res-row.slots + .battle-head { margin-top: 10px; }
 
-/* "How this works" (i) next to the Battle / Sheet / Plan switch: the help text that used to sit
-   above each mode's content, in a pop-over. Outside click closes it (app.js). */
-.info-pop { position: relative; flex: none; align-self: center; }
-.info-pop > summary { list-style: none; cursor: pointer; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line);
-  display: grid; place-items: center; color: var(--muted); font: italic 600 var(--fs-sm)/1 Georgia, serif; }
-.info-pop > summary::-webkit-details-marker { display: none; }
-.info-pop > summary:hover, .info-pop[open] > summary { color: var(--text); border-color: var(--muted); }
-.info-box { position: absolute; right: 0; top: calc(100% + 8px); z-index: 20; width: min(360px, calc(100vw - 32px)); padding: 12px 14px;
-  background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,.4); font-size: var(--fs-sm); }
-.info-box p { margin: 0 0 8px; } .info-box p:last-child { margin: 0; }
-.info-keys { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 6px; }
-.info-keys li { display: flex; gap: 8px; align-items: center; }
-@media (max-width: 640px) { .char-page .char-head:has(.info-pop) .modes { width: calc(100% - 40px); } }
 
 /* Notes editor: formatting buttons over an editable area; saved as Markdown (app.js richNotes) */
 .rich-bar { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; }

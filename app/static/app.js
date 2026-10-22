@@ -472,9 +472,9 @@
       }
     });
   });
-  // Pop-ups made of <details> (Concentration, conditions, + Condition, the page's "how this works"): a click anywhere else closes them
+  // Pop-ups made of <details> (Concentration, conditions, + Condition): a click anywhere else closes them
   document.addEventListener('click', e => {
-    document.querySelectorAll('details.conc-pop[open], details.cond-pill[open], details.info-pop[open]').forEach(d => { if (!d.contains(e.target)) d.open = false; });
+    document.querySelectorAll('details.conc-pop[open], details.cond-pill[open]').forEach(d => { if (!d.contains(e.target)) d.open = false; });
   });
   // Lists' "Full notes": each row's note in full instead of one line, remembered per list. Plan's tabs re-render
   // their lists after a save, so it's applied again after every swap.

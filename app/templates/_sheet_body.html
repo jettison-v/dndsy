@@ -29,6 +29,7 @@
 
 {# Row 3: everything else, in tabs #}
 <section class="section">
+  {% if can_pick %}<p class="hint" style="margin:0 0 10px"><span class="pick star on static">{{ pin_icon() }}</span> Battle · <span class="pick fav on static">{{ bookmark_icon() }}</span> Shortlist · <span class="pick remind on static">{{ bell(true) }}</span> Reminders. Click anything for details and your note. The DM can't see these.</p>{% endif %}
   <div class="tabbar" role="tablist">
     <button role="tab" aria-selected="true" data-tab="t-actions">Actions</button>
     {% if s.spells or s.spellbook %}<button role="tab" aria-selected="false" data-tab="t-spells">Spells</button>{% endif %}

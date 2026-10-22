@@ -5,6 +5,7 @@
 {% from "_form_list.html" import form_list %}
 {% from "_notes_macros.html" import note_summary %}
 <section class="section">
+  <p class="hint" style="margin:0 0 10px">{% if can_pick %}Your plans for {{ c.entity.name }}. Players can read them; the DM can't. Names become links.{% else %}{{ c.entity.name }}'s player's plans. The DM can't see these.{% endif %}</p>
   <div class="tabbar" role="tablist">
     {% for kind, meta, notes in player_notes %}<button role="tab" aria-selected="{{ 'true' if loop.first else 'false' }}" data-tab="t-{{ kind }}" title="{{ meta.plural }}">{{ meta.tab }}{% if notes %} <span class="count">{{ notes | length }}</span>{% endif %}</button>
     {% endfor %}<button role="tab" aria-selected="false" data-tab="t-forget" title="Reminders">Reminders{% if reminders %} <span class="count">{{ reminders | length }}</span>{% endif %}</button>
