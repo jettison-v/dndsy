@@ -29,7 +29,6 @@
 
 {# Row 3: everything else, in tabs #}
 <section class="section">
-  {% if can_pick %}<p class="hint" style="margin:0 0 10px">This is your character: <span class="pick star on static">{{ pin_icon() }}</span> pins something to Battle (and your Shortlist), <span class="pick fav on static">{{ bookmark_icon() }}</span> adds a spell or form to your Shortlist on Plan, and <span class="pick remind on static">{{ bell(true) }}</span> adds it to your Reminders. Open anything for its side panel to write your note on it. Only you can change these, and the DM can't see them.</p>{% endif %}
   <div class="tabbar" role="tablist">
     <button role="tab" aria-selected="true" data-tab="t-actions">Actions</button>
     {% if s.spells or s.spellbook %}<button role="tab" aria-selected="false" data-tab="t-spells">Spells</button>{% endif %}

@@ -91,7 +91,12 @@ def test_only_the_player_writes_and_the_dm_never_sees(db, cole, player, dm, admi
     r = player.post(f"{url}/notes", data={"kind": "general", "body": "From Play"}, headers={"referer": f"http://testserver{url}/battle"},
                     follow_redirects=False)
     assert r.headers["location"] == f"{url}/battle"  # added from Play's Battle combos: back to Play
-    db.delete(db.scalars(select(PlayerNote).order_by(PlayerNote.id.desc())).first())
+    general = db.scalars(select(PlayerNote).order_by(PlayerNote.id.desc())).first()
+    general.data = {"body": "**After a Long Rest**\n\n- Trance"}
+    db.commit()
+    form = player.get(f"{url}/notes/{general.id}/edit").text  # the editor starts from the rendered note; the textarea keeps the Markdown
+    assert "data-rich" in form and "<strong>After a Long Rest</strong>" in form and "**After a Long Rest**" in form
+    db.delete(general)
     assert dm.get(f"{url}/notes/{note.id}/edit").status_code == 403
     player.post(f"{url}/notes/{note.id}/delete")
     assert db.scalar(select(PlayerNote)) is None

@@ -282,8 +282,9 @@ def game_mode_sync(request: Request, character_id: int, now: str = Form(""), db:
 
 
 @router.get("/characters/{character_id:int}/all/{cost}")
-def see_all(request: Request, character_id: int, cost: str, db: Session = Depends(get_db)):
-    """Side panel: every option of one kind (actions, bonus actions, reactions)."""
+def see_all(request: Request, character_id: int, cost: str, add: int = 0, db: Session = Depends(get_db)):
+    """Side panel: every option of one kind (actions, bonus actions, reactions). add=1 (the column's
+    + Add on Battle): only the ones not pinned yet."""
     user, ch, stop = _load(request, db, character_id)
     if stop:
         return stop
@@ -291,8 +292,8 @@ def see_all(request: Request, character_id: int, cost: str, db: Session = Depend
     ctx = _view(db, ch, user)
     if not cost or not ctx["sheet"]:
         return HTMLResponse("", status_code=404)
-    everything = [o for o in views.options(ctx["sheet"], ctx["picks"]["star"]) if o["cost"] == cost]
-    return templates.TemplateResponse(request, "_panel_options.html", {**ctx, "title": cost, "opts": everything})
+    everything = [o for o in views.options(ctx["sheet"], ctx["picks"]["star"]) if o["cost"] == cost and not (add and o["starred"])]
+    return templates.TemplateResponse(request, "_panel_options.html", {**ctx, "title": cost, "opts": everything, "adding": bool(add)})
 
 
 @router.get("/characters/{character_id:int}/detail")

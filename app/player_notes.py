@@ -200,7 +200,7 @@ def new_note(request: Request, character_id: int, kind: str = "combo", db: Sessi
     if kind not in KINDS:
         return HTMLResponse("", status_code=404)
     return templates.TemplateResponse(request, "_note_form.html", {"c": ch, "n": None, "kind": kind, "meta": KINDS[kind],
-                                                                   "data": {}, "status": "open", "statuses": QUEST_STATUS})
+                                                                   "data": {}, "status": "open", "statuses": QUEST_STATUS, "body_html": ""})
 
 
 @router.get("/characters/{character_id:int}/notes/{note_id:int}/edit")
@@ -212,7 +212,8 @@ def edit_note(request: Request, character_id: int, note_id: int, db: Session = D
     if n is None or n.character_id != ch.id:
         return HTMLResponse("", status_code=404)
     return templates.TemplateResponse(request, "_note_form.html", {"c": ch, "n": n, "kind": n.kind, "meta": KINDS[n.kind],
-                                                                   "data": n.data or {}, "status": n.status, "statuses": QUEST_STATUS})
+                                                                   "data": n.data or {}, "status": n.status, "statuses": QUEST_STATUS,
+                                                                   "body_html": Markup(markdown_to_html((n.data or {}).get("body") or "", lambda name: None))})
 
 
 @router.post("/characters/{character_id:int}/notes")

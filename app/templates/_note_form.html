@@ -82,7 +82,9 @@
   <label class="field" style="max-width:220px"><span>Status</span><select name="status">{% for k, v in statuses.items() %}<option value="{{ k }}"{{ ' selected' if status == k }}>{{ v }}</option>{% endfor %}</select></label>
 
   {% else %}
-  <label class="field"><span>Note</span><textarea name="body" rows="14" placeholder="Write anything. Markdown works: **bold**, - lists, # headings.">{{ d.body }}</textarea></label>
+  {# app.js richNotes swaps the textarea for an editor with formatting buttons; the textarea still holds the Markdown that's saved #}
+  <div class="field"><span>Note</span><textarea name="body" rows="14" data-rich aria-label="Note" placeholder="Write anything. Markdown works: **bold**, - lists, # headings.">{{ d.body }}</textarea>
+    <template class="rich-src">{{ body_html }}</template></div>
   {% endif %}
 
   <div class="row note-form-foot">

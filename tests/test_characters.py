@@ -238,7 +238,7 @@ def test_only_the_player_stars_and_reminds(player, admin, db):
     characters.refresh(db, cole)
     owned_by(db, cole, "player@example.com")
     page = player.get(f"/characters/{cole.id}").text
-    assert 'class="pick star' in page and 'class="pick remind' in page and "This is your character" in page
+    assert 'class="pick star' in page and 'class="pick remind' in page and "How Sheet works" in page
     r = player.post(f"/characters/{cole.id}/pick", data={"kind": "star", "ref": "spell:Heat Metal"})
     assert r.status_code == 200 and 'class="ico-pin"' in r.text and 'aria-pressed="true"' in r.text
     situ = cole.snapshot.summary["situational"][0]["key"]
@@ -246,6 +246,10 @@ def test_only_the_player_stars_and_reminds(player, admin, db):
     battle = player.get(f"/characters/{cole.id}/battle").text
     assert "Advantage on saving throws against being charmed (Fey Ancestry)" in battle  # Reminders
     assert "Heat Metal" in battle.split("Bonus action")[0]  # pinned: shown in the Action column
+    assert "/all/action?add=1" in battle  # the column's + Add
+    adding = player.get(f"/characters/{cole.id}/all/action?add=1").text
+    assert "not pinned yet" in adding and "Heat Metal" not in adding  # leaves out what's pinned
+    assert "Heat Metal" in player.get(f"/characters/{cole.id}/all/action").text
     assert admin.post(f"/characters/{cole.id}/pick", data={"kind": "star", "ref": "spell:Moonbeam"}).status_code == 403
     assert 'class="pick star"' not in admin.get(f"/characters/{cole.id}").text  # admins can't change them either
     player.post(f"/characters/{cole.id}/pick", data={"kind": "star", "ref": "spell:Heat Metal"})  # toggles off

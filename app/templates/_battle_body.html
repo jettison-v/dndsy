@@ -17,8 +17,8 @@
         {{ save_tiles(form.saves, form.save_adv_all) }}
         <span class="note">Your stats carried over. {% if form.castable %}Spells: only {{ form.castable | join(", ") }}.{% else %}No spellcasting in this form.{% endif %} Click for the full form, skills and rules.</span></div>
     </div>
-    {% elif s %}<div class="battle-head">{{ battle_strip(s, c) }}{{ save_tiles(s.saves, s.save_adv_all) }}</div>
-    {{ resource_row(s, slots=not spellbar, skip=(["Wild Shape"] if known_forms else [])) }}{% endif %}
+    {% elif s %}{{ resource_row(s, slots=not spellbar, skip=(["Wild Shape"] if known_forms else [])) }}
+    <div class="battle-head">{{ battle_strip(s, c) }}{{ save_tiles(s.saves, s.save_adv_all) }}</div>{% endif %}
   </div>
   {% if s and known_forms %}
   <div class="ws-bar ws-row" aria-label="Wild Shape">
@@ -62,7 +62,6 @@
 
   {% if s and spellbar %}{% include "_spell_bar.html" %}{% endif %}
   {% if s %}
-  {% if can_pick and not form %}<p class="note" style="margin:-6px 0 10px">Drag options to reorder a column. Pin more on Sheet or in "See all".</p>{% endif %}
   {% set econ = [("Action", "One per turn", "action"), ("Bonus action", "One per turn, before or after your Action", "bonus"), ("Reaction", "One per round, also on others' turns", "reaction")] %}
   {# Phones: the three columns become tabs (app.js keeps the chosen one across Game Mode updates). #}
   <div class="econ-tabs" role="tablist" aria-label="Action, bonus action or reaction">
@@ -73,6 +72,7 @@
     {% set col = columns[cost] %}
     <div class="section" data-econ-col="{{ slug }}">
       <h2 class="econ-head k-{{ slug }}">{{ cost }}<small>{{ col.sub or sub }}</small></h2>
+      {% if can_pick and not form %}<a class="head-add econ-add" href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/{{ slug }}?add=1" title="Pin more {{ cost | lower }}s">+ Add</a>{% endif %}
       {% for n in col.notes or [] %}<p class="econ-note">{{ n }}</p>{% endfor %}
       <div class="moves"{% if can_pick and not form %} data-sort-column="{{ cost }}" data-sort-url="/characters/{{ c.id }}/order"{% endif %}>
       {% for o in col.shown %}
@@ -84,7 +84,7 @@
         {% elif can_pick and o.ends and o.ends in active_conditions %}<button class="btn small cond-go" hx-post="/characters/{{ c.id }}/conditions/end" hx-vals='{{ {"name": o.ends} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">{{ o.name }}</button>{% endif %}
         {% if show_picks and picks.notes.get(o.key) %}<div class="meta move-note" title="Your note">✎ {{ picks.notes[o.key] }}</div>{% endif %}
       </div>
-      {% else %}<p class="muted pin-empty">{% if form %}Nothing here in this form.{% elif can_pick %}Nothing pinned yet. Open <b>See all</b> below and pin what you'd use on your turn.{% elif show_picks %}{{ c.entity.name }}'s player hasn't pinned anything here yet.{% else %}Nothing here yet.{% endif %}</p>{% endfor %}
+      {% else %}<p class="muted pin-empty">{% if form %}Nothing here in this form.{% elif can_pick %}Nothing pinned yet. Use <b>+ Add</b> to pin what you'd use on your turn.{% elif show_picks %}{{ c.entity.name }}'s player hasn't pinned anything here yet.{% else %}Nothing here yet.{% endif %}</p>{% endfor %}
       </div>
       {% if cost == "Action" and form %}<div class="move static"><b>Dash, Disengage, Dodge, Help, Hide, Influence, Magic, Search, Study, Utilize</b><div class="meta">What anyone can do. Magic covers features like Land's Aid; spells only {{ "as listed above" if form.castable else "if a feature allows it" }}.</div></div>
       {% elif cost == "Action" %}<div class="move static"><b>Attack, Dash, Disengage, Dodge, Help, Hide, Influence, Magic, Ready, Search, Study, Utilize</b><div class="meta">What anyone can do</div></div>{% endif %}
@@ -108,7 +108,7 @@
     {% include "_forget.html" %}
     {% if show_picks and (combos or can_pick) %}
     <div class="section">
-      <div class="sec-head"><h2>Battle combos</h2>{% if can_pick %}<a href="#" data-modal-url="/characters/{{ c.id }}/notes/new?kind=combo" data-modal-size="large">+ Add</a>{% endif %}</div>
+      <div class="sec-head"><h2>Battle combos</h2>{% if can_pick %}<a class="head-add" href="#" data-modal-url="/characters/{{ c.id }}/notes/new?kind=combo" data-modal-size="large">+ Add</a>{% endif %}</div>
       {% for n in combos %}
       <details class="combo-fold"><summary><b>{{ n.title }}</b>{% if n.data.when %} <span class="muted">· {{ n.data.when }}</span>{% endif %}</summary>{{ combo_body(n, nl) }}</details>
       {% else %}<p class="muted">Plans that take a setup turn and a payoff turn. Add one here or on Plan.</p>{% endfor %}

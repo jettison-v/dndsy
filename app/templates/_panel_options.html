@@ -1,11 +1,11 @@
 {# Side panel content (app.js openPanel): one option, or all options of one kind. #}
 {% from "_char.html" import opt_row %}
 <div class="peek-head">
-  <div><div class="note">{{ c.entity.name }}{% if opts | length > 1 %} · everything you can do{% endif %}</div><h2 id="peek-title" class="econ-title k-{{ {"Action": "action", "Bonus action": "bonus", "Reaction": "reaction"}.get(title, "other") }}">{{ title }}{% if opts | length > 1 %}s{% endif %}</h2></div>
+  <div><div class="note">{{ c.entity.name }}{% if adding %} · not pinned yet{% elif opts | length > 1 %} · everything you can do{% endif %}</div><h2 id="peek-title" class="econ-title k-{{ {"Action": "action", "Bonus action": "bonus", "Reaction": "reaction"}.get(title, "other") }}">{{ title }}{% if opts | length > 1 or adding %}s{% endif %}</h2></div>
   <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
 </div>
 <div class="peek-body">
   <div class="rows one">{% for o in opts %}{{ opt_row(c, o, picks, can_pick) }}{% endfor %}</div>
-  {% if can_pick and opts | length > 1 %}<p class="note" style="margin-top:12px">Pin an option to show it in its column on Battle.</p>{% endif %}
+  {% if adding and not opts %}<p class="muted">Everything here is already pinned.</p>{% endif %}
+  {% if can_pick and (opts | length > 1 or adding and opts) %}<p class="note" style="margin-top:12px">Pin an option to show it in its column on Battle.</p>{% endif %}
 </div>
-<div class="peek-foot"><a class="btn" href="/characters/{{ c.id }}" data-no-peek>Full character</a></div>

@@ -938,6 +938,9 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .note-card-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
 .note-card-head b { font-size: 1.05rem; } .note-card-head .btn { margin-left: auto; }
 .note-mech { margin: 4px 0 8px; }
+/* In the side panel (a quest, a combo) each label sits above its text: the panel is too narrow for two columns */
+.peek dl.note-mech { grid-template-columns: 1fr; gap: 0; }
+.peek dl.note-mech dd + dt { margin-top: 10px; }
 .combo-turns { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 10px; margin: 6px 0; }
 .combo-turn { background: var(--surface); border-radius: 10px; padding: 8px 12px; }
 .combo-turn-label { font-weight: 700; margin-bottom: 4px; }
@@ -1446,7 +1449,7 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 /* A full-window modal (the Spell Book), and the top panel layer: a side panel that slides in from
    the modal's right edge, inside it (a spell's details in the Spell Book). */
 .peek.modal { overflow: hidden; }
-.peek.modal.full { width: calc(100% - 32px); height: calc(100vh - 32px); max-height: none; }
+.peek.modal.full { width: min(95vw, calc(100% - 32px)); height: 92vh; max-height: none; }
 .peek > .peek.top { position: absolute; top: 0; right: 0; bottom: 0; left: auto; width: min(440px, 92%); max-height: none; z-index: 6;
   border: none; border-left: 1px solid var(--line); border-radius: 0; box-shadow: -12px 0 30px rgba(0,0,0,.45); transform: translateX(100%); }
 .peek > .peek.top.open { transform: none; }
@@ -1513,3 +1516,44 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
   .fm-cols > .ls-row > .ls-name { flex: 1 1 50%; }
   .fm-cols > .ls-row > :not(.ls-marks):not(.ls-name):not(.sh-status):not(.fm-pic) { order: 2; font-size: var(--fs-xs); }
 }
+
+/* Quiet header actions (Brett, 2026-10-22): "+ Add" on Battle's Action, Bonus action and Reaction
+   columns and on Battle combos. Muted until hovered, so the headings stay the loudest thing. */
+.head-add { font-size: var(--fs-sm); font-weight: 500; color: var(--muted); text-decoration: none; }
+.head-add:hover, .head-add:focus-visible { color: var(--text); text-decoration: underline; }
+.econ .section { position: relative; }
+.econ-add { position: absolute; top: 16px; right: 18px; }
+
+/* Battle: resources above the number tiles */
+.battlebar > .res-row:first-child { margin: 0 0 10px; }
+.battlebar > .res-row.slots + .battle-head { margin-top: 10px; }
+
+/* "How this works" (i) next to the Battle / Sheet / Plan switch: the help text that used to sit
+   above each mode's content, in a pop-over. Outside click closes it (app.js). */
+.info-pop { position: relative; flex: none; align-self: center; }
+.info-pop > summary { list-style: none; cursor: pointer; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line);
+  display: grid; place-items: center; color: var(--muted); font: italic 600 var(--fs-sm)/1 Georgia, serif; }
+.info-pop > summary::-webkit-details-marker { display: none; }
+.info-pop > summary:hover, .info-pop[open] > summary { color: var(--text); border-color: var(--muted); }
+.info-box { position: absolute; right: 0; top: calc(100% + 8px); z-index: 20; width: min(360px, calc(100vw - 32px)); padding: 12px 14px;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,.4); font-size: var(--fs-sm); }
+.info-box p { margin: 0 0 8px; } .info-box p:last-child { margin: 0; }
+.info-keys { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 6px; }
+.info-keys li { display: flex; gap: 8px; align-items: center; }
+@media (max-width: 640px) { .char-page .char-head:has(.info-pop) .modes { width: calc(100% - 40px); } }
+
+/* Notes editor: formatting buttons over an editable area; saved as Markdown (app.js richNotes) */
+.rich-bar { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; }
+.rich-bar button { font: inherit; font-size: var(--fs-sm); min-width: 34px; padding: 4px 9px; color: var(--muted); background: var(--surface-2);
+  border: 1px solid var(--line); border-radius: 6px; cursor: pointer; }
+.rich-bar button:hover { color: var(--text); }
+.rich-bar button[aria-pressed=true] { color: var(--text); border-color: var(--muted); }
+.rich-area { min-height: 300px; max-height: 55vh; overflow: auto; color: var(--text); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 8px; padding: 10px 14px; line-height: 1.5; }
+.rich-area:focus { border-color: var(--red); outline: none; }
+.rich-area:empty::before { content: attr(data-placeholder); color: var(--muted); }
+.rich-area > :first-child { margin-top: 0; }
+.rich-area h3 { font-size: var(--fs-lg); margin: 14px 0 6px; }
+.rich-area p { margin: 0 0 8px; }
+.rich-area ul, .rich-area ol { margin: 0 0 8px; padding-left: 22px; }
+.rich-area h1, .rich-area h2 { font-size: var(--fs-lg); margin: 14px 0 6px; }

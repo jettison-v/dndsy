@@ -471,10 +471,72 @@
       }
     });
   });
-  // Pop-ups made of <details> (Concentration, conditions, + Condition): a click anywhere else closes them
+  // Pop-ups made of <details> (Concentration, conditions, + Condition, the page's "how this works"): a click anywhere else closes them
   document.addEventListener('click', e => {
-    document.querySelectorAll('details.conc-pop[open], details.cond-pill[open]').forEach(d => { if (!d.contains(e.target)) d.open = false; });
+    document.querySelectorAll('details.conc-pop[open], details.cond-pill[open], details.info-pop[open]').forEach(d => { if (!d.contains(e.target)) d.open = false; });
   });
+  // Notes editor (Brett, 2026-10-22: most players won't know Markdown). The textarea[data-rich] stays the
+  // form field; an editable area with formatting buttons takes its place on screen and writes Markdown back
+  // into it on every change (Turndown), so a note nobody edits is saved exactly as it was. Without Turndown
+  // the plain textarea stays.
+  document.addEventListener('panel:loaded', e => e.target.querySelectorAll('textarea[data-rich]').forEach(richNotes));
+  function richNotes(ta) {
+    if (!window.TurndownService || ta._rich) return;
+    ta._rich = true;
+    const td = new TurndownService({ headingStyle: 'atx', bulletListMarker: '-', emDelimiter: '*', strongDelimiter: '**' });
+    td.addRule('listItem', {  // "- item", not Turndown's "-   item"
+      filter: 'li',
+      replacement(content, node, options) {
+        content = content.replace(/^\n+/, '').replace(/\n+$/, '\n').replace(/\n/gm, '\n  ');
+        const list = node.parentNode;
+        const prefix = list.nodeName === 'OL' ? (Number(list.getAttribute('start') || 1) + [...list.children].indexOf(node)) + '. ' : options.bulletListMarker + ' ';
+        return prefix + content + (node.nextSibling && !/\n$/.test(content) ? '\n' : '');
+      },
+    });
+    const area = document.createElement('div');
+    area.className = 'rich-area';
+    area.contentEditable = 'true';
+    area.setAttribute('role', 'textbox'); area.setAttribute('aria-multiline', 'true'); area.setAttribute('aria-label', 'Note');
+    area.dataset.placeholder = 'Write anything.';
+    const src = ta.parentElement.querySelector('template.rich-src');
+    area.innerHTML = src ? src.innerHTML.trim() : '';
+    const bar = document.createElement('div');
+    bar.className = 'rich-bar'; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Formatting');
+    const blockOf = () => {
+      for (let n = getSelection().anchorNode; n && n !== area; n = n.parentNode) if (n.nodeType === 1 && /^(H\d|P|LI|DIV)$/.test(n.tagName)) return n.tagName;
+      return '';
+    };
+    const sync = () => { ta.value = td.turndown(area.innerHTML).trim(); };
+    const state = () => bar.querySelectorAll('button').forEach(b => {
+      let on = false;
+      try { on = b.dataset.cmd === 'heading' ? /^H\d$/.test(blockOf()) : document.queryCommandState(b.dataset.cmd); } catch (_) { /* not supported */ }
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    [['B', 'bold', 'Bold (Ctrl/⌘+B)'], ['I', 'italic', 'Italic (Ctrl/⌘+I)'], ['Heading', 'heading', 'Heading'],
+     ['• List', 'insertUnorderedList', 'Bulleted list'], ['1. List', 'insertOrderedList', 'Numbered list']].forEach(([label, cmd, title]) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = label; b.title = title; b.dataset.cmd = cmd;
+      b.style.fontWeight = cmd === 'bold' ? '700' : ''; b.style.fontStyle = cmd === 'italic' ? 'italic' : '';
+      b.addEventListener('mousedown', ev => ev.preventDefault());  // keep the selection in the note
+      b.addEventListener('click', () => {
+        area.focus();
+        if (cmd === 'heading') document.execCommand('formatBlock', false, /^H\d$/.test(blockOf()) ? 'p' : 'h3');
+        else document.execCommand(cmd);
+        sync(); state();
+      });
+      bar.appendChild(b);
+    });
+    area.addEventListener('focus', () => document.execCommand('defaultParagraphSeparator', false, 'p'));
+    area.addEventListener('input', sync);
+    area.addEventListener('keyup', state);
+    area.addEventListener('mouseup', state);
+    area.addEventListener('paste', ev => {  // paste as plain text: no fonts or colors from other sites
+      ev.preventDefault();
+      document.execCommand('insertText', false, ev.clipboardData.getData('text/plain'));
+    });
+    ta.hidden = true;
+    ta.after(bar, area);
+  }
   // A swap that re-renders a whole panel or window (Wild Shape's "Kept in a form" boxes) keeps its scroll position
   document.body.addEventListener('htmx:beforeSwap', e => {
     const t = e.detail.target, body = t && t.matches && t.matches('.peek') && t.querySelector('.peek-body');
