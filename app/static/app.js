@@ -207,6 +207,10 @@
   function closePeek() { if (isOpen(layers.top)) closeLayer(layers.top); else closeLayer(layers.base); }
 
   function openPeek(id, opener) { openPanel('/campaign/' + id + '/peek', opener, '/campaign/' + id); }
+  // A link to an entry (/campaign/45) lands on /campaign?open=45: show the Campaign page with its panel open
+  // (Brett, 2026-10-22: entries live in the side panel; no full page)
+  { const id = location.pathname === '/campaign' && new URLSearchParams(location.search).get('open');
+    if (id && /^\d+$/.test(id)) { history.replaceState(null, '', '/campaign' + location.hash); openPanel('/campaign/' + id + '/peek', null, null); } }
 
   // Any element with data-panel-url opens that fragment in a side panel (Battle: "See all", an
   // option's details). data-modal-url opens a centered modal; data-modal-size="large" makes it wide

@@ -61,6 +61,11 @@ def can_moderate(user: dict | None) -> bool:
     return _allows(user, "moderate")
 
 
+def can_edit_entries(user: dict | None) -> bool:
+    """Who edits campaign entries directly (names, descriptions, relationships): reviewers, admins and the DM."""
+    return _allows(user, "edit_entries")
+
+
 def can_see_character_notes(user: dict | None) -> bool:
     """Character notes are visible to players but never to the DM (CLAUDE.md)."""
     return _allows(user, "player_notes")

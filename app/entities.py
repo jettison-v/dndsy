@@ -11,12 +11,13 @@ from collections.abc import Callable
 
 import anthropic
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 
 from app import spending
 from app.extraction import MODEL, ExtractionError, _cost, _norm, session_label, timeline
 from app.models import (
     Entity,
+    EntityAlias,
     EntityKind,
     EventEntity,
     ExtractionRun,
@@ -79,7 +80,16 @@ def reject_fact(fact: Fact) -> None:
 
 
 def undo_fact(fact: Fact) -> None:
-    fact.status = "pending"
+    """Back one step: a Done fact returns to the page; a merged or rejected one to waiting."""
+    fact.status = "merged" if fact.status == "done" else "pending"
+
+
+def done_fact(fact: Fact) -> None:
+    """The DM or an editor takes a fact off the page's list (it's in the description now, or no longer needed).
+    It stays under Done, with Undo (Brett, 2026-10-22)."""
+    if fact.status != "merged":
+        raise EntityError("Only facts on the page can be marked Done.")
+    fact.status = "done"
 
 
 def merged_facts(db: Session, entity_id: int) -> list[Fact]:
@@ -119,13 +129,15 @@ the table (treat them as true), relationships, and key moments in story order \
 - Key moments of kind "theory" are speculation; you may mention them only as \
 open questions, never as fact.
 - Keep names spelled exactly as given. Don't invent anything.
-- Describe; never advise the players or tell them what to do."""
+- Describe; never advise the players or tell them what to do.
+- In used_fact_ids, list the id of every fact from the table that your summary \
+now covers, so it can come off the list of facts."""
 
 DESCRIBE_SCHEMA = {
     "type": "object",
     "additionalProperties": False,
-    "required": ["summary"],
-    "properties": {"summary": {"type": "string"}},
+    "required": ["summary", "used_fact_ids"],
+    "properties": {"summary": {"type": "string"}, "used_fact_ids": {"type": "array", "items": {"type": "integer"}}},
 }
 
 
@@ -140,7 +152,7 @@ def build_describe_messages(db: Session, entity: Entity) -> list[dict]:
     parts.append("\nCurrent summary:\n" + (entity.summary or "(none yet)"))
     facts = merged_facts(db, entity.id)
     if facts:
-        parts.append("\nFacts from the table (corrections override the summary):\n" + "\n".join(f"- {f.labeled_text}" for f in facts))
+        parts.append("\nFacts from the table (corrections override the summary):\n" + "\n".join(f"- [fact {f.id}] {f.labeled_text}" for f in facts))
     rels = lines_for(db, entity)
     if rels:
         parts.append("\nRelationships:\n" + "\n".join(f"- {l.label} {l.other.name}" + (f" ({l.note})" if l.note else "") for l in rels))
@@ -172,10 +184,13 @@ def regenerate(db: Session, entity: Entity, client_factory: Callable[[], anthrop
         if response.stop_reason == "refusal":
             raise ExtractionError("Claude declined this one.")
         text = next((b.text for b in response.content if b.type == "text"), "")
-        summary = json.loads(text)["summary"].strip()
+        out = json.loads(text)
+        summary = out["summary"].strip()
         if not summary:
             raise ExtractionError("Claude returned an empty summary.")
         entity.draft_summary = summary
+        merged = {f.id for f in merged_facts(db, entity.id)}
+        entity.draft_fact_ids = sorted(merged & {i for i in out.get("used_fact_ids") or [] if isinstance(i, int)})
         run.status = "done"
         run.input_tokens = (response.usage.input_tokens or 0) + (response.usage.cache_read_input_tokens or 0) + (
             response.usage.cache_creation_input_tokens or 0
@@ -203,10 +218,43 @@ def accept_description(entity: Entity, text: str | None = None) -> None:
     entity.previous_summary = entity.summary or ""
     entity.summary = new
     entity.draft_summary = None
+    # Facts Claude worked in come off the list ("Added to the description" under Done, with Undo)
+    db = object_session(entity)
+    if db is not None and entity.draft_fact_ids:
+        for fact in db.scalars(select(Fact).where(Fact.id.in_(entity.draft_fact_ids), Fact.status == "merged")):
+            fact.status = "done"
+    entity.draft_fact_ids = None
 
 
 def discard_description(entity: Entity) -> None:
     entity.draft_summary = None
+    entity.draft_fact_ids = None
+
+
+def set_description(entity: Entity, text: str) -> None:
+    """The DM's or an editor's own words, no Claude (Brett, 2026-10-22). Undo keeps the earlier one."""
+    new = (text or "").replace("\r\n", "\n").strip()
+    if len(new) > 4000:
+        raise EntityError("That's a bit long for a description (4,000 characters max).")
+    if new == (entity.summary or ""):
+        raise EntityError("Nothing changed.")
+    entity.previous_summary = entity.summary or ""
+    entity.summary = new
+
+
+def rename(entity: Entity, name: str) -> None:
+    """A new name; the old one is kept as another name, so links, @-mentions and Claude still find it."""
+    new = " ".join((name or "").split())
+    if not new:
+        raise EntityError("Enter a name.")
+    if len(new) > 200:
+        raise EntityError("That name is too long.")
+    if new == entity.name:
+        raise EntityError("That's already the name.")
+    old = entity.name
+    entity.name = new
+    if not any(a.alias.casefold() == old.casefold() for a in entity.aliases):
+        entity.aliases.append(EntityAlias(alias=old, misspelling=False, note="earlier name"))
 
 
 def undo_description(entity: Entity) -> None:

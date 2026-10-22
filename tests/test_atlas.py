@@ -33,7 +33,7 @@ def player(monkeypatch, db):
 
 def page(db, client, name) -> str:
     e = db.scalar(select(Entity).where(Entity.name == name))
-    return client.get(f"/campaign/{e.id}").text + client.get(f"/campaign/{e.id}/peek").text
+    return client.get(f"/campaign/{e.id}/peek").text
 
 
 def test_markers_match_names_ignoring_case_and_build_links():

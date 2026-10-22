@@ -141,7 +141,7 @@ def test_review_page_shows_relationship_suggestion(admin, db):  # noqa: F811
 
 def test_entity_page_relationship_editing(admin, player, db):  # noqa: F811
     E = family(db)
-    page = admin.get(f"/campaign/{E['Kiera'].id}").text
+    page = admin.get(f"/campaign/{E['Kiera'].id}/edit").text
     assert "Child of" in page and "Add relationship" in page
     admin.post(f"/campaign/{E['Tomas'].id}/relationships", data={"type": "member_of", "other_id": E["Tidewardens"].id}, headers=HX)
     rel = db.scalar(select(EntityRelation).where(EntityRelation.type == "member_of"))

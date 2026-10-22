@@ -56,7 +56,7 @@ def test_entity_correction_becomes_labeled_fact(player, db):
     db.flush()
     text = build_describe_messages(db, e)[0]["content"][0]["text"]
     assert "Correction: He is Cole's father, not uncle." in text
-    assert "Suggest a correction or addition" in player.get(f"/campaign/{e.id}/peek").text
+    assert f'hx-post="/campaign/{e.id}/facts?in=panel"' in player.get(f"/campaign/{e.id}/peek").text  # add one from the panel
 
 
 def test_session_suggestion_flows_to_review_and_redraft(player, admin, db):
@@ -108,13 +108,13 @@ def test_the_dms_entries_skip_review(dm, player, db):
 
     import_bundle(db, BUNDLE)
     e = db.scalar(select(Entity).where(Entity.name == "Kieran"))
-    assert "doesn't wait for a reviewer" in dm.get(f"/campaign/{e.id}/peek").text
-    assert "Goes to the DM and admins" in player.get(f"/campaign/{e.id}/peek").text
+    assert "so it goes straight on." in dm.get(f"/campaign/{e.id}/peek").text
+    assert "The DM or a reviewer adds it." in player.get(f"/campaign/{e.id}/peek").text
     # People, places, factions…: straight onto the page, from the panel or the page
     assert "Added to the page" in dm.post(f"/campaign/{e.id}/suggest", data={"kind": "addition", "text": "He sails."}, headers=HX).text
     dm.post(f"/campaign/{e.id}/facts", data={"kind": "addition", "text": "He fishes."}, headers=HX)
     assert [f.status for f in db.scalars(select(Fact).order_by(Fact.id))] == ["merged", "merged"]
-    assert "He sails." in player.get(f"/campaign/{e.id}").text
+    assert "He sails." in player.get(f"/campaign/{e.id}/peek").text
     player.post(f"/campaign/{e.id}/suggest", data={"kind": "addition", "text": "He sings."}, headers=HX)
     assert db.scalar(select(Fact).where(Fact.text == "He sings.")).status == "pending"  # everyone else still waits
 

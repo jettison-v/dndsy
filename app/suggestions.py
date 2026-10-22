@@ -70,7 +70,7 @@ def suggest_entity(request: Request, entity_id: int, text: str = Form(""), kind:
     except entities.EntityError as e:
         return _problem(str(e))
     db.commit()
-    return _thanks("Added to the page. Reload to see it.") if is_dm(user) else _thanks()
+    return _thanks("Added to the page.") if is_dm(user) else _thanks()
 
 
 @router.post("/sessions/{session_id:int}/suggest")

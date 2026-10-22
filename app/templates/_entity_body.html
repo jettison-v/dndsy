@@ -26,9 +26,13 @@
   </figure>
   {% endif %}
   </div>
-  {% if is_reviewer %}
+  {% if can_edit %}
   <details class="section names">
-    <summary><b>Names and spellings</b> <span class="note">({{ e.aliases | length }}; reviewers only)</span></summary>
+    <summary><b>Name and spellings</b> <span class="note">({{ e.aliases | length }} other names)</span></summary>
+    <form class="row" hx-post="/campaign/{{ e.id }}/name" {{ hx | safe }} style="margin-top:10px">
+      <input type="text" name="name" value="{{ e.name }}" aria-label="Name" required style="flex:1;min-width:180px">
+      <button class="btn">Rename</button><span class="note">The old name stays as another name, so links still find it.</span>
+    </form>
     <p class="hint" style="margin-top:8px">Other names show as "also known as". Misspellings stay hidden but still help @-mentions, links and Claude recognize the name.</p>
     <ul class="plain">
       {% for a in e.aliases %}
@@ -49,16 +53,23 @@
 
   <section class="section" id="about">
     <div class="section-head"><h2>About</h2>
-      {% if is_reviewer and not e.draft_summary %}
+      {% if can_edit and not e.draft_summary %}
       <form class="inline" hx-post="/campaign/{{ e.id }}/description/regenerate" {{ hx | safe }} hx-indicator="#regen-wait" hx-disabled-elt="find button"><button class="btn link">Regenerate description</button></form>
       {% endif %}
     </div>
-    {% if e.summary %}<div class="story">{{ ln.text(e.summary) }}</div>{% else %}<p class="muted">No description yet.</p>{% endif %}
-    {% if is_reviewer %}
+    <div id="desc-read">{% if e.summary %}<div class="story">{{ ln.text(e.summary) }}</div>{% else %}<p class="muted">No description yet.</p>{% endif %}
+      {% if can_edit %}<button type="button" class="btn small" style="margin-top:10px" data-show="desc-edit" data-hide="desc-read">Edit description</button>{% endif %}</div>
+    {% if can_edit %}
+    {# Your own words, no Claude (Brett, 2026-10-22); Undo keeps the earlier one #}
+    <form id="desc-edit" class="stack" hidden hx-post="/campaign/{{ e.id }}/description" {{ hx | safe }}>
+      <textarea name="summary" rows="5" aria-label="Description">{{ e.summary or "" }}</textarea>
+      <div class="row"><button class="btn primary">Save</button><button type="button" class="btn link" data-cancel="desc-edit" data-restore="desc-read">Cancel</button></div>
+    </form>
     <p class="note htmx-indicator wait" id="regen-wait">Claude is reading the facts and key moments…</p>
     {% if e.draft_summary %}
     <div class="item" id="desc-view">
       <p class="item-title">Claude's new description</p>
+      {% if e.draft_fact_ids %}<p class="note" style="margin:-4px 0 8px">Using it takes {{ e.draft_fact_ids | length }} fact{{ "s" if e.draft_fact_ids | length != 1 }} Claude worked in off the list below (they stay under Done).</p>{% endif %}
       <div class="compare">
         <div><span>Now</span>{{ e.summary or "(none)" }}</div>
         <div class="after"><span>Proposed</span>{{ e.draft_summary }}</div>
@@ -83,16 +94,16 @@
   </section>
 
   <section class="section" id="relationships">
-    <div class="section-head"><h2>Relationships</h2>{% if is_reviewer %}<button type="button" class="btn link" id="rel-add" data-show="rel-form" data-hide="rel-add">+ Add</button>{% endif %}</div>
+    <div class="section-head"><h2>Relationships</h2>{% if can_edit %}<button type="button" class="btn link" id="rel-add" data-show="rel-form" data-hide="rel-add">+ Add</button>{% endif %}</div>
     {% if relations %}
     <ul class="rels">
       {% for r in relations %}
       <li><span class="muted">{{ r.label | capitalize }}</span> <a href="/campaign/{{ r.other.id }}">{{ r.other.name }}</a>{% if r.note %} <span class="note">· {{ r.note }}</span>{% endif %}
-        {% if is_reviewer %}<form class="inline" hx-post="/campaign/{{ e.id }}/relationships/{{ r.id }}/delete" {{ hx | safe }} hx-confirm="Remove this relationship?"><button class="btn link danger" aria-label="Remove {{ r.label }} {{ r.other.name }}">Remove</button></form>{% endif %}</li>
+        {% if can_edit %}<form class="inline" hx-post="/campaign/{{ e.id }}/relationships/{{ r.id }}/delete" {{ hx | safe }} hx-confirm="Remove this relationship?"><button class="btn link danger" aria-label="Remove {{ r.label }} {{ r.other.name }}">Remove</button></form>{% endif %}</li>
       {% endfor %}
     </ul>
     {% else %}<p class="muted">None recorded yet.</p>{% endif %}
-    {% if is_reviewer %}
+    {% if can_edit %}
     <form id="rel-form" class="stack" hidden hx-post="/campaign/{{ e.id }}/relationships" {{ hx | safe }} style="margin-top:14px">
       <div class="row">
         <span>{{ e.name }} is</span>
@@ -109,7 +120,7 @@
     <div class="section-head"><h2>What the table knows</h2>{% if pending %}<span class="count">{{ pending | length }} to review</span>{% endif %}</div>
     <p class="hint">Facts added by people at the table. They appear here as written once the DM, an admin or a reviewer adds them.</p>
     {% if merged %}
-    <ul class="facts">{% for f in merged %}<li>{% if f.kind == "correction" %}<span class="tag edited">Correction</span> {% endif %}{{ ln.text(f.text) }}<small>{{ f.author_name or "Someone" }} · {{ f.created_at.strftime("%b %-d, %Y") }}</small></li>{% endfor %}</ul>
+    <ul class="facts">{% for f in merged %}<li>{% if f.kind == "correction" %}<span class="tag edited">Correction</span> {% endif %}{{ ln.text(f.text) }}<small>{{ f.author_name or "Someone" }} · {{ f.created_at.strftime("%b %-d, %Y") }}{% if can_moderate %} · <button class="btn link small" hx-post="/campaign/facts/{{ f.id }}/done" {{ hx | safe }} title="Take it off this list (it stays under Done)">Done</button>{% endif %}</small></li>{% endfor %}</ul>
     {% else %}<p class="muted">No facts yet.</p>{% endif %}
 
     {% for f in pending %}
@@ -141,7 +152,7 @@
       {% for f in done_facts %}
       <div class="item">
         <p class="item-title" {% if f.status == "rejected" %}style="color:var(--muted)"{% endif %}>{{ f.text }}</p>
-        <div class="row"><span class="tag {{ 'published' if f.status == 'merged' else '' }}">{{ "Merged" if f.status == "merged" else "Rejected" }}</span>
+        <div class="row"><span class="tag {{ 'published' if f.status in ('merged', 'done') else '' }}">{{ {"merged": "Merged", "done": "Done", "rejected": "Rejected"}.get(f.status, f.status) }}</span>
           <span class="note">{{ f.author_name or f.author_email }}</span>
           <form class="inline" hx-post="/campaign/facts/{{ f.id }}/undo" {{ hx | safe }}><button class="btn link">Undo</button></form></div>
       </div>

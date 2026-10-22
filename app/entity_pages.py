@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from app import web
 from app import atlas, entities, pictures, relations
-from app.auth import can_moderate, current_user, is_dm, is_reviewer
+from app.auth import can_edit_entries, can_moderate, current_user, is_dm, is_reviewer
 from app.db import get_db
 from app.extraction import ExtractionError
 from app.linking import entity_linker
@@ -44,11 +44,13 @@ def entity_context(db: Session, entity: Entity, user: dict) -> dict:
     ]
     return {
         "e": entity,
+        "can_edit": can_edit_entries(user),
         "kind_label": entities.KIND_LABELS.get(entity.kind, entity.kind.value),
         "merged": [f for f in facts if f.status == "merged"],
         "pending": [f for f in facts if f.status == "pending"] if moderator else [],
         "mine_pending": [f for f in facts if f.status == "pending" and f.author_email.lower() == email] if not moderator else [],
         "done_facts": sorted((f for f in facts if f.status != "pending"), key=lambda f: f.updated_at, reverse=True) if moderator else [],
+        "finished": [f for f in facts if f.status == "done"],  # worked into the description or marked Done
         "relations": relations.lines_for(db, entity),
         "rel_choices": relations.CHOICES,
         "others": others,
@@ -62,52 +64,51 @@ def entity_context(db: Session, entity: Entity, user: dict) -> dict:
 
 @router.get("/{entity_id:int}")
 def entity_page(request: Request, entity_id: int, db: Session = Depends(get_db)):
+    """No full page any more (Brett, 2026-10-22): a link to an entry opens the Campaign page with its side panel."""
     user = current_user(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
     entity = db.get(Entity, entity_id)
     if not _visible(entity, user):
         return _not_found(request)
-    return templates.TemplateResponse(
-        request, "entity.html", {**entity_context(db, entity, user), "toast": request.session.pop("toast", None)}
-    )
+    return RedirectResponse(f"/campaign?open={entity_id}", status_code=303)
 
 
 @router.get("/{entity_id:int}/peek")
 def entity_peek(request: Request, entity_id: int, db: Session = Depends(get_db)):
-    """A short summary for the peek panel (right pane on desktop, sheet on phones)."""
+    """The side panel: everything about one entry, the table's facts and the form to add one."""
     user = current_user(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
     entity = db.get(Entity, entity_id)
     if not _visible(entity, user):
         return _not_found(request)
-    reviewer = is_reviewer(user)
-    merged = list(db.scalars(select(Fact).where(Fact.entity_id == entity.id, Fact.status == "merged").order_by(Fact.id)))
-    return templates.TemplateResponse(
-        request,
-        "_peek.html",
-        {
-            "e": entity,
-            "kind_label": entities.KIND_LABELS.get(entity.kind, entity.kind.value),
-            "relations": relations.lines_for(db, entity),
-            "facts": merged[-3:],
-            "picture": pictures.urls(db, [entity.id]).get(entity.id),
-            "moments": entities.moments(db, entity)[-3:],
-            "ln": entity_linker(db, entity.campaign_id, exclude_id=entity.id, include_drafts=reviewer),
-            "map_marker": atlas.entity_marker(entity),
-        },
-    )
+    return templates.TemplateResponse(request, "_peek.html", entity_context(db, entity, user))
+
+
+@router.get("/{entity_id:int}/edit")
+def entity_edit(request: Request, entity_id: int, db: Session = Depends(get_db)):
+    """The large window for the DM, reviewers and admins: names, description, relationships, picture, facts."""
+    user = current_user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    entity = db.get(Entity, entity_id)
+    if not _visible(entity, user):
+        return _not_found(request)
+    if not can_edit_entries(user):
+        return web.forbidden(request, "Only the DM, reviewers and admins edit campaign entries.")
+    return templates.TemplateResponse(request, "_entity_edit.html", entity_context(db, entity, user))
 
 
 def _act(request: Request, db: Session, entity_id: int, action: Callable[[Entity, dict], str], reviewer_only: bool = True,
-         allowed: Callable[[dict], bool] = is_reviewer):
-    """Run an entity-page action, commit, and answer with the updated body."""
+         allowed: Callable[[dict], bool] = can_edit_entries):
+    """Run an entity action, commit, and answer with what was showing: the side panel (?in=panel) or the edit
+    window's body."""
     user = current_user(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
     if reviewer_only and not allowed(user):
-        return web.forbidden(request, "Only reviewers can do that.")
+        return web.forbidden(request, "Only the DM, reviewers and admins can do that.")
     entity = db.get(Entity, entity_id)
     if not _visible(entity, user):
         return _not_found(request)
@@ -122,11 +123,12 @@ def _act(request: Request, db: Session, entity_id: int, action: Callable[[Entity
     if entity is None:  # e.g. removed while acting
         return RedirectResponse("/campaign", status_code=303)
     if request.headers.get("HX-Request"):
-        response = templates.TemplateResponse(request, "_entity_body.html", entity_context(db, entity, user))
+        panel = request.query_params.get("in") == "panel"
+        response = templates.TemplateResponse(request, "_peek.html" if panel else "_entity_body.html", entity_context(db, entity, user))
         response.headers["HX-Trigger"] = json.dumps({"toast": message})
         return response
     request.session["toast"] = message
-    return RedirectResponse(f"/campaign/{entity_id}", status_code=303)
+    return RedirectResponse(f"/campaign?open={entity_id}", status_code=303)
 
 
 @router.post("/{entity_id:int}/facts")
@@ -195,6 +197,11 @@ def reject_fact(request: Request, fact_id: int, db: Session = Depends(get_db)):
     return _fact_action(request, db, fact_id, lambda f: entities.reject_fact(f) or "Rejected")
 
 
+@router.post("/facts/{fact_id:int}/done")
+def done_fact(request: Request, fact_id: int, db: Session = Depends(get_db)):
+    return _fact_action(request, db, fact_id, lambda f: entities.done_fact(f) or "Marked Done")
+
+
 @router.post("/facts/{fact_id:int}/undo")
 def undo_fact(request: Request, fact_id: int, db: Session = Depends(get_db)):
     return _fact_action(request, db, fact_id, lambda f: entities.undo_fact(f) or "Undone")
@@ -216,6 +223,16 @@ def accept_description(request: Request, entity_id: int, summary: str | None = F
         return "Description updated"
 
     return _act(request, db, entity_id, act)
+
+
+@router.post("/{entity_id:int}/description")
+def set_description(request: Request, entity_id: int, summary: str = Form(""), db: Session = Depends(get_db)):
+    return _act(request, db, entity_id, lambda entity, user: entities.set_description(entity, summary) or "Description saved")
+
+
+@router.post("/{entity_id:int}/name")
+def rename(request: Request, entity_id: int, name: str = Form(""), db: Session = Depends(get_db)):
+    return _act(request, db, entity_id, lambda entity, user: entities.rename(entity, name) or "Renamed")
 
 
 @router.post("/{entity_id:int}/description/discard")

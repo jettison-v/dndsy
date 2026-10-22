@@ -114,6 +114,7 @@ def allows(rule: str, lvl: str | None, dm: bool = False) -> bool:
         "player_notes": not dm,             # read players' notes, stars, reminders and shortlists
         "moderate": staff or dm,            # decide on the table's suggestions
         "story_extras": staff or dm,        # pictures on campaign pages, glossary entries
+        "edit_entries": staff or dm,        # campaign entries: names, spellings, descriptions, relationships (Brett, 2026-10-22: DMs too)
         "review": staff,                    # recaps, Claude's questions, entries (names, descriptions), character refresh
         "admin": lvl == ADMIN,              # People, Characters, Usage, Data, campaign doc, regrouping
     }[rule]
@@ -129,7 +130,8 @@ CHART = [
     ("Run the table", "Decide on the table's suggestions", "moderate"),
     ("Run the table", "Add pictures and glossary entries", "story_extras"),
     ("Run the table", "Draft, edit and publish recaps; answer Claude's questions", "review"),
-    ("Run the table", "Edit entries (names, spellings, descriptions); refresh characters", "review"),
+    ("Run the table", "Edit campaign entries (names, spellings, descriptions, relationships)", "edit_entries"),
+    ("Run the table", "Refresh characters from D&D Beyond", "review"),
     ("Set up", "People: invite, access, DM tick, who plays which character", "admin"),
     ("Set up", "Characters: D&D Beyond links and regrouping", "admin"),
     ("Set up", "Usage (Claude spending), Data (import), the campaign doc", "admin"),
@@ -170,7 +172,7 @@ def summary(lvl: str | None, dm: bool) -> str:
         PLAYER: "Reads everything and suggests corrections",
     }[lvl]
     if dm:
-        parts += ("; as DM, decides on suggestions and adds pictures and glossary entries, " if lvl == PLAYER else "; as DM, ") + \
+        parts += ("; as DM, decides on suggestions, edits campaign entries and adds pictures and glossary entries, " if lvl == PLAYER else "; as DM, ") + \
             "never sees players' notes, pins, shortlists or reminders"
     return parts + "."
 

@@ -49,7 +49,7 @@ def test_the_dm_adds_a_picture_everyone_sees_it(people, db):
     import_bundle(db, BUNDLE)
     dm, player = people["dm"], people["player"]
     k = entity(db, "Kieran")
-    assert "Add a picture" in dm.get(f"/campaign/{k.id}").text and "Add a picture" not in player.get(f"/campaign/{k.id}").text
+    assert "Add a picture" in dm.get(f"/campaign/{k.id}/edit").text and "Add a picture" not in player.get(f"/campaign/{k.id}/peek").text
     r = player.post(f"/campaign/{k.id}/picture", files={"file": ("k.png", png(), "image/png")}, headers=HX)
     assert "Only the DM and reviewers" in r.headers["HX-Trigger"] and db.scalar(select(EntityPicture)) is None
     r = dm.post(f"/campaign/{k.id}/picture", files={"file": ("k.png", png(), "image/png")}, headers=HX)
@@ -58,7 +58,7 @@ def test_the_dm_adds_a_picture_everyone_sees_it(people, db):
     assert url["uploaded"] and url["thumb"].startswith(f"/campaign/{k.id}/picture?size=thumb&v=")
     got = player.get(url["thumb"])
     assert got.status_code == 200 and got.headers["content-type"] == "image/webp" and "immutable" in got.headers["cache-control"]
-    assert url["full"] in player.get(f"/campaign/{k.id}").text and url["full"] in player.get(f"/campaign/{k.id}/peek").text
+    assert url["full"] in player.get(f"/campaign/{k.id}/peek").text
     k.status = Status.PUBLISHED
     db.flush()
     assert url["thumb"].replace("&", "&amp;") in player.get("/campaign").text
@@ -81,5 +81,5 @@ def test_player_characters_use_their_d_and_d_beyond_portrait(people, db, monkeyp
     assert pictures.urls(db, [cole.entity_id])[cole.entity_id] == {"thumb": portrait, "full": pictures.ddb_full(portrait), "uploaded": False}
     player = people["player"]
     assert portrait.replace("&", "&amp;") in player.get(f"/characters/{cole.id}").text
-    assert "From D&amp;D Beyond" in player.get(f"/campaign/{cole.entity_id}").text
+    assert "From D&amp;D Beyond" in player.get(f"/campaign/{cole.entity_id}/peek").text
     assert ddb.parse_character  # parser keeps only dndbeyond.com portraits (see test_ddb)

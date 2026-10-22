@@ -1599,3 +1599,9 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .opt-tools { display: flex; flex-direction: column; gap: var(--sp-2); margin-bottom: var(--sp-2); position: sticky; top: calc(-1 * var(--sp-4)); z-index: 2; background: var(--surface); padding: var(--sp-2) 0; }
 .opt-group h3.divider { margin-top: var(--sp-4); }
 .opt-group:first-of-type h3.divider { margin-top: var(--sp-2); }
+
+/* A campaign entry's side panel (_peek.html): the table's facts, each with Done for the DM */
+.peek-facts li { display: block; }
+.peek-facts .btn.link.small { padding: 0 var(--sp-1); }
+.peek-pending { margin-top: var(--sp-2); }
+.entity-edit .entity-head .title-row h1 { font-size: var(--fs-xl); }

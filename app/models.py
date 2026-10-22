@@ -117,6 +117,7 @@ class Entity(Timestamped, Base):
     # the summary it replaced once accepted (for Undo).
     draft_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     previous_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    draft_fact_ids: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # facts Claude worked into draft_summary
     aliases: Mapped[list["EntityAlias"]] = relationship(cascade="all, delete-orphan")
 
     @property
@@ -162,7 +163,8 @@ class Fact(Timestamped, Base):
     text: Mapped[str] = mapped_column(Text)
     author_name: Mapped[str] = mapped_column(String(200), default="", server_default="")
     author_email: Mapped[str] = mapped_column(String(320), default="", server_default="")
-    status: Mapped[str] = mapped_column(String(20), default="pending", server_default="pending")  # pending | merged | rejected
+    # pending | merged | rejected | done (worked into the description, or marked Done by the DM or an editor)
+    status: Mapped[str] = mapped_column(String(20), default="pending", server_default="pending")
     # "addition" (something new) or "correction" (something on the page is wrong)
     kind: Mapped[str] = mapped_column(String(20), default="addition", server_default="addition")
 

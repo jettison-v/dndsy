@@ -11,7 +11,7 @@ from app.db import get_db
 from app.extraction import _known_world, store_result
 from app.importer import import_bundle
 from app.main import app
-from app.models import Campaign, Entity, ExtractionRun, Fact, GameSession
+from app.models import Campaign, Entity, ExtractionRun, Fact, GameSession, User
 from app.review import latest_questions, publish
 
 HX = {"HX-Request": "true"}
@@ -78,12 +78,14 @@ def test_entity_page_shows_moments_in_story_order(player, db):
     import_bundle(db, BUNDLE)
     published_events(db)
     e = lillippi(db)
-    page = player.get(f"/campaign/{e.id}").text
-    assert "Tiefling bard." in page and "Also known as LL" in page
+    r = player.get(f"/campaign/{e.id}", follow_redirects=False)  # no full page: the Campaign page opens its panel
+    assert r.status_code == 303 and r.headers["location"] == f"/campaign?open={e.id}"
+    page = player.get(f"/campaign/{e.id}/peek").text  # everything is in the side panel now
+    assert "Tiefling bard." in page and "Also: LL" in page
     assert page.index("The party met Lillippi.") < page.index("Lillippi sang in")
     assert f'href="/campaign/{e.id}"' in player.get("/campaign").text
     assert f'href="/campaign/{e.id}"' in player.get("/").text  # key-moment entity names link to the page
-    assert "Regenerate description" not in page  # reviewers only
+    assert "/edit" not in page and player.get(f"/campaign/{e.id}/edit").status_code == 403  # editing: the DM, reviewers, admins
 
 
 def test_fact_flow_merge_keeps_summary(player, db, monkeypatch):
@@ -97,8 +99,9 @@ def test_fact_flow_merge_keeps_summary(player, db, monkeypatch):
     assert "owes Cole" not in _known_world(db, db.scalar(select(Campaign)))  # pending facts aren't used
 
     admin = login(monkeypatch, db, "admin@example.com", "Brett")
-    page = admin.get(f"/campaign/{e.id}").text
+    page = admin.get(f"/campaign/{e.id}/edit").text
     assert "She owes Cole 10 gold." in page and "Merge" in page
+    assert "She owes Cole 10 gold." in admin.get(f"/campaign/{e.id}/peek").text  # and in the side panel
     admin.post(f"/campaign/facts/{fact.id}/merge", headers=HX)
     db.refresh(fact)
     db.refresh(e)
@@ -136,10 +139,11 @@ class FakeStream:
         return self.response
 
 
-def fake_claude(summary, seen):
+def fake_claude(summary, seen, used=None):
+    out = {"summary": summary} if used is None else {"summary": summary, "used_fact_ids": used}
     response = SimpleNamespace(
         stop_reason="end_turn",
-        content=[SimpleNamespace(type="text", text=json.dumps({"summary": summary}))],
+        content=[SimpleNamespace(type="text", text=json.dumps(out))],
         usage=SimpleNamespace(input_tokens=300, output_tokens=60, cache_creation_input_tokens=0, cache_read_input_tokens=0),
     )
 
@@ -253,10 +257,9 @@ def test_peek_fragment(player, db):
     published_events(db)
     e = lillippi(db)
     frag = player.get(f"/campaign/{e.id}/peek").text
-    assert "<html" not in frag and "Tiefling bard." in frag and "Open full page" in frag
-    assert "The party met Lillippi." in frag or "Lillippi sang in" in frag
-    # app.js opens the panel for every /campaign/<id> link; the full-page button must opt out
-    assert f'href="/campaign/{e.id}" data-no-peek>Open full page</a>' in frag
+    assert "<html" not in frag and "Tiefling bard." in frag and "Open full page" not in frag
+    assert "The party met Lillippi." in frag and "Lillippi sang in" in frag  # every key moment
+    assert f'hx-post="/campaign/{e.id}/facts?in=panel"' in frag  # adding a fact answers with the panel
 
 
 def test_misspellings_hidden_but_still_matched(admin, db):
@@ -267,7 +270,7 @@ def test_misspellings_hidden_but_still_matched(admin, db):
         {"kind": "npc", "name": "Bhal", "aliases": [{"alias": "Bhaal", "misspelling": True}, "Fire Lord"]}]})
     e = db.scalar(select(Entity).where(Entity.name == "Bhal"))
     assert [a.alias for a in e.display_aliases] == ["Fire Lord"]
-    page = admin.get(f"/campaign/{e.id}").text
+    page = admin.get(f"/campaign/{e.id}/edit").text
     assert "Also known as Fire Lord" in page and "Mark as other name" in page
     cid = e.campaign_id
     assert f'data-entity="{e.id}">Bhaal</a>' in str(entity_linker(db, cid).text("Bhaal returned."))
@@ -286,3 +289,48 @@ def test_misspellings_hidden_but_still_matched(admin, db):
     db.expire_all()
     e = db.get(Entity, e.id)
     assert sorted((a.alias, a.misspelling) for a in e.aliases) == [("Bael", True), ("Bhaal", False), ("Fire Lord", True)]
+
+
+def test_the_dm_edits_entries_directly_and_marks_facts_done(monkeypatch, db):
+    """Brett, 2026-10-22: DMs edit names and descriptions without Claude; a fact can be marked Done."""
+    from tests.test_suggestions import client_for
+
+    import_bundle(db, BUNDLE)
+    e = lillippi(db)
+    db.add(User(email="dm@example.com", name="Dee", is_dm=True))
+    db.flush()
+    dm = client_for(monkeypatch, db, "dm@example.com")
+    assert dm.get(f"/campaign/{e.id}/edit").status_code == 200
+    r = dm.post(f"/campaign/{e.id}/description", data={"summary": "A tiefling bard who owes nobody."}, headers=HX)
+    assert "Description saved" in r.headers["HX-Trigger"]
+    dm.post(f"/campaign/{e.id}/name", data={"name": "Lillippi"}, headers=HX)
+    db.refresh(e)
+    assert e.summary == "A tiefling bard who owes nobody." and e.previous_summary == "Tiefling bard."
+    assert e.name == "Lillippi" and "Lillippi Lemon" in [a.alias for a in e.aliases]  # the old name still links
+    r = dm.post(f"/campaign/{e.id}/facts?in=panel", data={"text": "She sings sea shanties."}, headers=HX)
+    assert "She sings sea shanties." in r.text and 'id="peek-title"' in r.text  # the panel, updated in place
+    fact = db.scalar(select(Fact))
+    r = dm.post(f"/campaign/facts/{fact.id}/done?in=panel", headers=HX)
+    db.refresh(fact)
+    assert fact.status == "done" and "Done (1)" in r.text
+    dm.post(f"/campaign/facts/{fact.id}/undo?in=panel", headers=HX)
+    db.refresh(fact)
+    assert fact.status == "merged"  # Undo puts it back on the list
+
+
+def test_accepting_a_regenerated_description_takes_used_facts_off_the_list(db):
+    import_bundle(db, BUNDLE)
+    e = lillippi(db)
+    used = entities.add_fact(db, e, "She owes Cole 10 gold.", {"email": "a@x"}, merged=True)
+    kept = entities.add_fact(db, e, "Her lute is cursed.", {"email": "a@x"}, merged=True)
+    db.flush()
+    seen = []
+    entities.regenerate(db, e, client_factory=fake_claude("A tiefling bard in debt to Cole.", seen, used=[used.id, 999]))
+    assert e.draft_fact_ids == [used.id]  # only facts that exist and are on the page
+    assert f"[fact {used.id}]" in seen[0]["messages"][0]["content"][0]["text"]
+    entities.accept_description(e)
+    db.flush()
+    from app import history
+
+    history.mark("edit")  # accept_description marks its changes as Claude's; outside a request that would linger
+    assert (used.status, kept.status) == ("done", "merged") and e.draft_fact_ids is None
