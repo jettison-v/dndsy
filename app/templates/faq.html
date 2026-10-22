@@ -5,6 +5,10 @@
 <main class="page narrow help">
   <div class="title-row"><h1>FAQ</h1></div>
   <p class="subtitle">How askdnd's features work, so nothing comes as a surprise. The short version is on the <a href="/about">About</a> page.</p>
+  {# Search: shows only the answers with every word typed, opened (app.js) #}
+  <div class="ls-search faq-search"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <input type="search" id="faq-search" placeholder="Search the FAQ: pin, Wild Shape, backups…" aria-label="Search the FAQ" autocomplete="off"></div>
+  <p class="muted" id="faq-none" hidden>No answers mention that. Try another word, or ask the admin.</p>
 
   <section class="section">
     <h2>The story</h2>
@@ -106,6 +110,49 @@
     {% endcall %}
     {% call q("Why isn't some content from my D&D Beyond sheet here?") %}
       <p>The table plays the 2024 core rules only, so options from other books (Forgotten Realms extras, for example) are left out, and anything non-core already on a sheet is labeled. An admin can also move or hide things that D&amp;D Beyond groups oddly, for every character at once.</p>
+    {% endcall %}
+  </section>
+
+  <section class="section">
+    <h2>Behind the scenes</h2>
+    {% call q("How is askdnd's information organized?", "data") %}
+      <p>Four kinds of information, each kept in its own place:</p>
+      <figure class="faq-fig">
+        <svg class="faq-dg" viewBox="0 0 720 300" role="img" aria-label="Rules knowledge lives in askdnd's code; people and settings apply to the whole tool; the campaign holds the story; each character holds its D&amp;D Beyond copy and the player's own marks and notes, and links to its story page in the campaign.">
+          <defs><marker id="faq-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+          <rect class="code" x="10" y="10" width="700" height="56" rx="10"/>
+          <text class="t" x="26" y="34">Rules knowledge (in askdnd's code)</text>
+          <text class="s" x="26" y="54">roll recipes · Beasts for Wild Shape · rules terms · class rules · the 2024 books' summaries</text>
+          <rect class="box" x="10" y="84" width="220" height="200" rx="10"/>
+          <text class="t" x="26" y="110">The whole tool</text>
+          <text class="s" x="26" y="134">people and their access</text>
+          <text class="s" x="26" y="154">sheet corrections</text>
+          <text class="s" x="26" y="174">spending limit, backups</text>
+          <text class="s" x="26" y="194">version history</text>
+          <rect class="camp" x="250" y="84" width="230" height="200" rx="10"/>
+          <text class="t" x="266" y="110">The campaign</text>
+          <text class="s" x="266" y="134">sessions, recaps, key moments</text>
+          <text class="s" x="266" y="154">people, places, factions</text>
+          <text class="s" x="266" y="174">glossary, suggestions</text>
+          <text class="s" x="266" y="194">table rolls</text>
+          <rect class="box" x="266" y="214" width="198" height="52" rx="8"/>
+          <text x="280" y="236">Story page for each character</text>
+          <text class="s" x="280" y="254">aliases, what happened</text>
+          <rect class="char" x="500" y="84" width="210" height="200" rx="10"/>
+          <text class="t" x="516" y="110">Each character</text>
+          <text class="s" x="516" y="134">D&amp;D Beyond copy (refreshed)</text>
+          <text class="s" x="516" y="154">pins, Shortlist, Reminders</text>
+          <text class="s" x="516" y="174">notes, combos, plans</text>
+          <text class="s" x="516" y="194">conditions, Wild Shape</text>
+          <path class="ln" d="M500 240 H 468" marker-end="url(#faq-a)"/>
+          <text class="lab" x="474" y="232">links to</text>
+          <path class="ln" d="M365 84 V 70" marker-end="url(#faq-a)"/>
+          <path class="ln" d="M605 84 V 70" marker-end="url(#faq-a)"/>
+          <text class="lab" x="612" y="80">uses</text>
+        </svg>
+      </figure>
+      <p>The rules knowledge is the same for everyone and changes only when askdnd is updated. The campaign holds what happened at the table. A character holds what's about the character: its D&amp;D Beyond copy and its player's own marks and notes, which the DM never sees.</p>
+      <p>Coming next (roadmap step 10): characters will join campaigns with dates, so one character can move to another campaign while its history stays; roles like DM and reviewer will be per campaign; and DMs will get <b>house rules</b> that change a rule for their table only.</p>
     {% endcall %}
   </section>
 

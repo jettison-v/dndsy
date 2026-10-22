@@ -1579,3 +1579,18 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
   .ft-cols > .ls-row > .ls-name { flex: 1 1 60%; }
   .ft-cols > .ls-row > :not(.ls-marks):not(.ls-name) { order: 2; font-size: var(--fs-xs); }
 }
+
+/* FAQ: search, and the diagram of how askdnd's information is organized */
+.faq-search { margin: 0 0 var(--sp-5); }
+.faq-fig { margin: var(--sp-3) 0; overflow-x: auto; }
+.faq-dg { display: block; width: 100%; min-width: 560px; height: auto; color: var(--text); }
+.faq-dg .box { fill: var(--surface-2); stroke: var(--line); stroke-width: 1.5; }
+.faq-dg .code { fill: var(--violet-soft); stroke: var(--violet); stroke-width: 1.5; }
+.faq-dg .camp { fill: var(--blue-soft); stroke: var(--blue); stroke-width: 1.5; }
+.faq-dg .char { fill: var(--green-soft); stroke: var(--green); stroke-width: 1.5; }
+.faq-dg text { fill: currentColor; font-size: var(--fs-sm); }
+.faq-dg .t { font-weight: 700; font-size: var(--fs-sm); }
+.faq-dg .s { fill: var(--muted); font-size: var(--fs-xs); }
+.faq-dg .lab { fill: var(--muted); font-size: var(--fs-xs); font-style: italic; }
+.faq-dg .ln { stroke: currentColor; stroke-width: 1.5; fill: none; }
+.faq-dg .head { fill: currentColor; }

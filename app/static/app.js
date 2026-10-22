@@ -514,6 +514,18 @@
     const c = e.target.closest('.clamp'); if (!c || e.target.closest('a, button')) return;
     const open = c.classList.toggle('open'); c.setAttribute('aria-expanded', open ? 'true' : 'false'); c.title = open ? 'Show less' : 'Show all';
   });
+  // FAQ search: only the answers containing every word typed, opened; sections with none hide (Brett, 2026-10-22)
+  const faqBox = document.getElementById('faq-search');
+  if (faqBox) faqBox.addEventListener('input', () => {
+    const words = faqBox.value.toLowerCase().split(/\s+/).filter(Boolean);
+    let any = false;
+    document.querySelectorAll('details.faq').forEach(d => {
+      const hit = !words.length || words.every(w => d.textContent.toLowerCase().includes(w));
+      d.hidden = !hit; d.open = !!words.length && hit; any = any || hit;
+    });
+    document.querySelectorAll('.help .section').forEach(s => { s.hidden = !!words.length && !s.querySelector('details.faq:not([hidden])'); });
+    document.getElementById('faq-none').hidden = any;
+  });
   // FAQ: a link to one answer (a help line's "More") opens it
   const openFaq = () => { const d = location.hash.length > 1 && document.getElementById(location.hash.slice(1)); if (d && d.matches('details.faq')) { d.open = true; d.scrollIntoView({ block: 'start' }); } };
   openFaq(); window.addEventListener('hashchange', openFaq);
