@@ -329,3 +329,20 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 3. Polling every few seconds is a fine first version of "live" for a handful of users. Reach for WebSockets only when polling is visibly too slow or too heavy.
 4. For testing "two people at once" on one computer, use two addresses for the same local server (localhost and 127.0.0.1): each gets its own sign-in.
 
+
+## 2026-10-22: Responding to a hosting provider's security incident (Railway)
+
+**What happened.** On 2026-10-21 Railway paused all builds, then disclosed that an attacker may have read customers' environment variables, which is where askdnd's secrets live. Railway's advice: replace ("rotate") every secret stored there, and check logs for unusual activity.
+
+**What we did first (the two that can cost money or expose data):**
+- **Anthropic API key.** Made a new key in the askdnd workspace, saved it with `scripts/set-secret.sh ANTHROPIC_API_KEY --clipboard` (local `.env` and Railway at once, never on screen), checked it with a free call that lists models, then disabled the old key. Usage looked normal.
+- **AWS backup key** (user `askdnd-v2-backups`). Made a new access key and saved both halves to the `askdnd-backup` service straight from the clipboard. Checked that it can read `v2/backups/` and is still refused everywhere else, then deactivated the old key. The old key's "Last used" was the nightly 10:00 UTC backup, as expected.
+- The Railway command line had been signed out by the incident; `railway login --browserless` signed it back in (approve the code in a browser where you're already signed in).
+
+**Still to do once Railway builds are back** (each needs a redeploy to take effect, and changing them sooner would only break beta): a new `SESSION_SECRET` (signs everyone out), a new Google client secret, a new `UPLOAD_TOKEN` (also in the Mac's local `.env`), the Postgres password if Railway offers a reset, and the **legacy service's** keys (askdnd.ai) at each provider. Until the backup service redeploys, the nightly backup will fail, because it still has the old, now-deactivated key; the three existing backups are untouched.
+
+**Same on a new project:**
+1. Keep a list of every secret, where it lives and where to rotate it, so an incident is a checklist, not a scramble.
+2. Rotate first what can cost money or expose data (AI keys, cloud storage keys). Give each key the smallest permission that works, so a leak stays small.
+3. Use spending caps (the Anthropic prepaid balance) so a leaked key has a ceiling.
+4. Save new secrets from the clipboard with a script, test them with a harmless call, then turn the old ones off.
