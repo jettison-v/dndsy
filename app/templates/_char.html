@@ -42,7 +42,7 @@
 
 {# What an option uses up (a Focus Point, a 1st-level slot…), with how many are left. #}
 {% macro spends(list) -%}
-{%- for x in list %} <span class="spend{{ ' none' if not x.uses.left }}" title="Uses {{ x.label | replace('or ', '') }}: {{ x.uses.left }} of {{ x.uses.max }} left">{{ x.label }} {{ pips(x.uses) }}</span>{% endfor -%}
+{%- for x in list %} <span class="spend{{ ' none' if not x.uses.left }}" title="Uses {{ 'a ' if x.of in ('Spell slots', 'Pact Magic') }}{{ x.label | replace('or ', '') }}{{ ' slot' if x.of in ('Spell slots', 'Pact Magic') }}: {{ x.uses.left }} of {{ x.uses.max }} left">{{ x.label }} {{ pips(x.uses) }}</span>{% endfor -%}
 {%- endmacro %}
 
 {# The same, spelled out for the side panel. #}

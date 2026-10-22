@@ -117,7 +117,7 @@
     {{ ds("Pips", "_char.html pips()", "Uses left out of the maximum; more than 8 shows as 3/10.") }}
     <div class="ds-row">{{ pips({"max": 4, "left": 3}) }} {{ pips({"max": 2, "left": 0}) }} {{ pips({"max": 10, "left": 3}) }}</div>
     {{ ds("What it uses up", "_char.html spends()", "On an option: the resource and how many are left.") }}
-    <div class="ds-row">{{ spends([{"label": "1 Focus Point", "uses": {"max": 2, "left": 2}}, {"label": "1st-level slot", "uses": {"max": 4, "left": 0}}]) }}</div>
+    <div class="ds-row">{{ spends([{"label": "1 Focus Point", "uses": {"max": 2, "left": 2}}, {"label": "1st-level", "of": "Spell slots", "uses": {"max": 4, "left": 0}}]) }}</div>
   </section>
 
   <section class="section" id="help">
@@ -143,8 +143,53 @@
       </tbody>
     </table></div>
     <p class="note">A side panel opened from inside a modal slides out from the modal's own right edge, inside it.</p>
-    {{ ds("Toast", "#toast", "A short confirmation after an action (\"Saved\").") }}
-    <div class="ds-row"><button class="btn" type="button" onclick="window.askdndToast && askdndToast('Saved')">Show a toast</button></div>
+    {{ ds("Toast", "#toast", "A short message after an action: \"Saved\", \"Wild Shape: Polar Bear\", \"Couldn't save the order\".") }}
+    <div class="ds-row"><button class="btn" type="button" onclick="window.askdndToast && askdndToast('Saved')">Today's toast</button></div>
+    <h3 class="divider">Toast options (pick one)</h3>
+    <p class="hint">Each shows a success, an error and one with Undo. Errors stay until closed in B and D; the others fade after a few seconds.</p>
+    <div class="ds-toasts">
+      {% for v, name, about in [("a", "A · Top bar (today)", "Top centre, under the menu bar, green edge. Text only; errors look the same as successes."),
+                               ("b", "B · Corner card", "Bottom right, out of the way of the page and the table rolls. An icon and color by kind, ✕ to close, room for Undo."),
+                               ("c", "C · Status pill", "Top centre, compact; the whole pill takes the status color (green, red, blue). Quick to read, no actions."),
+                               ("d", "D · Snackbar", "Bottom centre, light on dark like a phone notice, with one action (Undo). Above the bottom bar on phones."),
+                               ("e", "E · On the button", "No floating message for successes: the button itself turns to \"✓ Saved\" for a moment. Errors use B.")] %}
+      <div class="ds-toast-card"><b>{{ name }}</b><span class="muted">{{ about }}</span>
+        <div class="ds-row">{% if v == "e" %}<button class="btn small" type="button" data-inline-ok>Save</button><button class="btn small" type="button" data-demo-toast="b" data-kind="error">Error</button>
+          {% else %}<button class="btn small" type="button" data-demo-toast="{{ v }}" data-kind="ok">Success</button><button class="btn small" type="button" data-demo-toast="{{ v }}" data-kind="error">Error</button>{% if v in ("b", "d") %}<button class="btn small" type="button" data-demo-toast="{{ v }}" data-kind="undo">With Undo</button>{% endif %}{% endif %}</div>
+      </div>{% endfor %}
+    </div>
+    <script>
+    // Demo only (Manage › Design system): the five toast styles side by side, until one is picked for app.js toast()
+    (() => {
+      const MSG = { ok: "Saved", error: "Couldn't save the order. Try again.", undo: "Reminder removed" };
+      let box = null, hide = null;
+      function show(v, kind) {
+        if (box) box.remove(); clearTimeout(hide);
+        if (v === "a") { window.askdndToast && askdndToast(MSG[kind]); return; }
+        box = document.createElement("div");
+        box.className = `demo-toast v-${v} k-${kind === "undo" ? "ok" : kind}`;
+        box.setAttribute("role", kind === "error" ? "alert" : "status");
+        const icon = kind === "error" ? "!" : "✓";
+        box.innerHTML = (v === "b" ? `<span class="dt-icon">${icon}</span>` : v === "c" ? `<span class="dt-icon">${icon}</span>` : "")
+          + `<span class="dt-msg"></span>`
+          + (kind === "undo" ? `<button type="button" class="dt-act">Undo</button>` : "")
+          + (v === "b" || (v === "d" && kind === "error") ? `<button type="button" class="dt-x" aria-label="Close">✕</button>` : "");
+        box.querySelector(".dt-msg").textContent = MSG[kind];
+        box.addEventListener("click", e => { if (e.target.closest(".dt-x, .dt-act")) { box.remove(); box = null; } });
+        document.body.appendChild(box);
+        requestAnimationFrame(() => box && box.classList.add("show"));
+        if (!(kind === "error" && (v === "b" || v === "d"))) hide = setTimeout(() => { if (box) { box.classList.remove("show"); setTimeout(() => box && box.remove(), 250); } }, 3200);
+      }
+      document.addEventListener("click", e => {
+        const b = e.target.closest("[data-demo-toast]"); if (b) show(b.dataset.demoToast, b.dataset.kind);
+        const ok = e.target.closest("[data-inline-ok]");
+        if (ok && !ok.classList.contains("is-done")) {
+          const was = ok.textContent; ok.textContent = "✓ Saved"; ok.classList.add("is-done");
+          setTimeout(() => { ok.textContent = was; ok.classList.remove("is-done"); }, 1800);
+        }
+      });
+    })();
+    </script>
   </section>
 
   <section class="section" id="story">
