@@ -1,9 +1,30 @@
 {
-  "_about": "Magic items whose actions askdnd shows on Battle (app/conditions.py). Our own short summaries of the 2024 rules, never book text. starts / ends: a condition the action gives or ends (shown as a pill on Battle).",
-  "Ring of Invisibility": [
+  "_about": "Magic items askdnd knows by name (app/conditions.py). Our own short summaries of the 2024 rules, never book text. actions: Battle options the item gives; starts / ends: a condition or effect the action gives or ends (a pill on Battle); note: what the pill says about how long it lasts. on_use: what drinking or using a consumable (already a 'Use an item' option) starts. Chosen from a scan of every 2024 magic item (docs/reviews/2026-10-22-magic-item-effects.md).",
+  "Ring of Invisibility": {"actions": [
     {"cost": "Action", "name": "Turn Invisible", "meta": "Magic action · Ring of Invisibility", "starts": "Invisible",
+     "note": "Lasts until you take the ring off or take a Bonus Action to become visible. Attacking or casting a spell doesn't end it.",
      "text": "Take a Magic action to give yourself the Invisible condition. It lasts until you take the ring off or take a Bonus Action to become visible. Unlike the Invisibility spell, attacking or casting a spell doesn't end it."},
     {"cost": "Bonus action", "name": "Become visible", "meta": "Bonus Action · Ring of Invisibility", "ends": "Invisible",
      "text": "Take a Bonus Action to end the Invisible condition the ring gave you."}
-  ]
+  ]},
+  "Cloak of Invisibility": {"actions": [
+    {"cost": "Action", "name": "Pull up the hood", "meta": "Magic action · 1 charge · Cloak of Invisibility", "starts": "Invisible",
+     "note": "1 hour, or until you pull the hood down (no action needed) or take the cloak off.",
+     "text": "Take a Magic action and spend 1 charge to give yourself the Invisible condition for 1 hour. Pulling the hood down (no action) or taking the cloak off ends it."}
+  ]},
+  "Winged Boots": {"actions": [
+    {"cost": "Action", "name": "Fly", "meta": "Magic action · 1 charge · Winged Boots", "starts": "Flying",
+     "note": "Fly Speed 30 feet for 1 hour; if you're in the air when it ends, you descend 30 feet per round until you land.",
+     "text": "Take a Magic action and spend 1 charge for a Fly Speed of 30 feet for 1 hour."}
+  ]},
+  "Wings of Flying": {"actions": [
+    {"cost": "Action", "name": "Spread the wings", "meta": "Magic action · Wings of Flying", "starts": "Flying",
+     "note": "Fly Speed 60 feet for 1 hour, or until you end it with a Magic action. If you're aloft when they vanish, you fall; then 1d12 hours before you can use them again.",
+     "text": "Take a Magic action to turn the cloak into wings: a Fly Speed of 60 feet for 1 hour."}
+  ]},
+  "Potion of Invisibility": {"on_use": {"starts": "Invisible", "note": "1 hour. Ends early if you make an attack roll, deal damage or cast a spell."}},
+  "Potion of Greater Invisibility": {"on_use": {"starts": "Invisible", "note": "1 hour. Attacking or casting doesn't end it."}},
+  "Dust of Disappearance": {"on_use": {"starts": "Invisible", "note": "2d4 minutes for you and everyone within 10 feet. It ends for a creature right after it makes an attack roll, deals damage or casts a spell."}},
+  "Potion of Growth": {"on_use": {"starts": "Enlarged", "note": "10 minutes, no Concentration needed (the enlarge effect of Enlarge/Reduce)."}},
+  "Potion of Water Breathing": {"on_use": {"starts": "Water Breathing", "note": "24 hours."}}
 }

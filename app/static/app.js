@@ -1059,7 +1059,10 @@
     if (d20) {
       h += '<div class="rw-row rw-mode">' + seg('Mode', [['normal', 'Normal'], ['adv', 'Advantage'], ['dis', 'Disadvantage']], mode) + '</div>';
       const notes = [];
-      (spec.advWhy || '').split('\n').filter(Boolean).forEach(t => notes.push(/^advantage\b/i.test(t) ? '<b>Advantage</b>' + esc(t.slice(9)) : '<b>Advantage</b> ' + esc(t)));
+      // Reasons: Advantage by default; "!dis " marks Disadvantage and "!note " a plain note (conditions)
+      (spec.advWhy || '').split('\n').filter(Boolean).forEach(t => notes.push(
+        t.startsWith('!dis ') ? '<b>Disadvantage</b> ' + esc(t.slice(5)) : t.startsWith('!note ') ? '<b>Note</b> ' + esc(t.slice(6))
+        : /^advantage\b/i.test(t) ? '<b>Advantage</b>' + esc(t.slice(9)) : '<b>Advantage</b> ' + esc(t)));
       if (ctx.luck) notes.push('<b>Lucky</b> you can spend a Luck Point (' + ctx.luck + ' left) for Advantage');
       if (ctx.inspiration) notes.push('<b>Heroic Inspiration</b> you have it: you can reroll after you see the roll');
       if (ctx.halfling) notes.push('<b>Luck</b> (Halfling) you can reroll a 1');
@@ -1224,6 +1227,17 @@
     else if (action === 'bonus') chooser(anchor, base);
     else { const w = win && win.contains(anchor) ? win : openWin(anchor); roll(w, { ...base, reason: e.can.reroll, ctx: ctxFor(cid), extras: [] }); }
   }
+  // Which ability a roll uses, from its label ("Stealth", "Dex save", "Strength check"), for conditions
+  const SKILL_ABILITY = { athletics: 'str', acrobatics: 'dex', 'sleight of hand': 'dex', stealth: 'dex', arcana: 'int', history: 'int',
+    investigation: 'int', nature: 'int', religion: 'int', 'animal handling': 'wis', insight: 'wis', medicine: 'wis', perception: 'wis',
+    survival: 'wis', deception: 'cha', intimidation: 'cha', performance: 'cha', persuasion: 'cha' };
+  function abilityOf(label) {
+    const l = (label || '').toLowerCase();
+    const skill = Object.keys(SKILL_ABILITY).find(k => l.includes(k));
+    if (skill) return SKILL_ABILITY[skill];
+    const m = l.match(/\b(str|dex|con|int|wis|cha)/);
+    return m ? m[1] : '';
+  }
   function specFrom(el) {
     const cid = characterOf(el), kind = el.dataset.roll;
     const shared = gmOn() && !!side && (kind === 'dice' || (!!cid && side.dataset.mine === cid));
@@ -1236,8 +1250,13 @@
     if (body) {
       let ca = {};
       try { ca = JSON.parse(body.dataset.condAdv || '{}'); } catch (err) { ca = {}; }
-      const extra = kind === 'attack' ? ca.attack : (kind === 'check' && /^initiative$/i.test(el.dataset.label || '')) ? ca.initiative : null;
-      if (extra && extra.length) advWhy = [advWhy, ...extra].filter(Boolean).join('\n');
+      const label = el.dataset.label || '', ab = abilityOf(label);
+      const keys = kind === 'attack' ? ['attack', 'd20']
+        : kind === 'check' && /^initiative$/i.test(label) ? ['initiative', 'check', 'check:dex', 'd20']
+        : kind === 'check' ? ['check', 'check:' + ab, 'd20']
+        : kind === 'save' ? ['save:' + ab, 'd20'] : kind === 'death' ? ['d20'] : [];
+      const lines = keys.flatMap(k => ca[k] || []).map(e => (e.mode === 'dis' ? '!dis ' : e.mode === 'note' ? '!note ' : '') + e.text);
+      if (lines.length) advWhy = [advWhy, ...lines].filter(Boolean).join('\n');
     }
     return { kind, label: el.dataset.label || '', mod: el.dataset.mod || '', dmg: el.dataset.dmg || '', adv: !!el.dataset.adv, recipe, slot: +el.dataset.slot || 0,
              advWhy, note: el.dataset.note || '', cid: kind === 'dice' && side ? side.dataset.mine : cid, shared };

@@ -166,7 +166,8 @@ def _battle_ctx(db: Session, ch: Character, user: dict) -> dict:
             ctx["columns"] = ctx["form"]["columns"]
     ctx["spellbar"] = _spellbar(db, ch, ctx)
     ctx["conditions"] = [{**x, "rules": cond.rules_text(x["name"])} for x in ch.conditions or []]  # everyone sees them
-    ctx["cond_adv"] = cond.adv_reasons(ch.conditions)  # offered in the roll window (app.js specFrom)
+    ctx["cond_adv"] = cond.roll_effects(ch.conditions)  # listed in the roll window (app.js specFrom)
+    ctx["all_conditions"], ctx["all_effects"] = list(cond.CONDITIONS), list(cond.EFFECTS)
     ctx["active_conditions"] = {x["name"] for x in ch.conditions or []}
     ctx |= player_notes.page_context(db, ch, user, ctx["sheet"])
     return ctx
@@ -551,17 +552,18 @@ def start_concentration(request: Request, character_id: int, key: str = Form(...
 
 
 @router.post("/characters/{character_id:int}/conditions")
-def start_condition(request: Request, character_id: int, name: str = Form(...), source: str = Form(""), db: Session = Depends(get_db)):
-    """A condition from a magic item's action (Turn Invisible), from the character's own player only."""
+def start_condition(request: Request, character_id: int, name: str = Form(...), source: str = Form(""), note: str = Form(""),
+                    level: int = Form(0), db: Session = Depends(get_db)):
+    """A condition or effect (from a magic item's action, or picked: Poisoned, Exhaustion 2…), from the character's own player only."""
     user, ch, stop = _concentration_guard(request, db, character_id)
     if stop:
         return stop
     try:
-        ch.conditions = cond.add(ch.conditions, name, source)
+        ch.conditions = cond.add(ch.conditions, name, source, note, level)
     except ValueError:
         return HTMLResponse("", status_code=400)
     db.commit()
-    return _concentration_reply(request, db, ch, user, f"{name}" + (f" ({source})" if source else ""))
+    return _concentration_reply(request, db, ch, user, f"{name}" + (f" {level}" if name == "Exhaustion" else "") + (f" ({source})" if source else ""))
 
 
 @router.post("/characters/{character_id:int}/conditions/end")

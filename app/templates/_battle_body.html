@@ -31,18 +31,32 @@
   </div>
   {% endif %}
 
-  {% if conditions %}{# What the character is right now (a magic item's Invisible…): everyone at the table sees it #}
-  <div class="cond-bar" aria-label="Conditions">
+  {% if conditions or (can_pick and s and not form) %}{# Status: conditions and item effects; everyone at the table sees them #}
+  <div class="cond-bar" aria-label="Status">
     {% for x in conditions %}
-    <details class="cond-pill">
-      <summary><span class="conc-k">Now</span><b>{{ x.name }}</b>{% if x.source %}<span class="conc-k">{{ x.source }}</span>{% endif %}</summary>
+    <details class="cond-pill{{ ' bad' if x.name in all_conditions and x.name != 'Invisible' }}">
+      <summary><b>{{ x.name }}{% if x.level %} {{ x.level }}{% endif %}</b>{% if x.source %}<span class="conc-k">{{ x.source }}</span>{% endif %}</summary>
       <div class="cond-box">
         <p>{{ x.rules }}</p>
-        {% if x.name == "Invisible" and x.source == "Ring of Invisibility" %}<p class="note">From the ring, it lasts until you take the ring off or take a Bonus Action to become visible; attacking or casting doesn't end it. The DM decides who can see you.</p>{% endif %}
-        {% if can_pick %}<button class="btn small" hx-post="/characters/{{ c.id }}/conditions/end" hx-vals='{{ {"name": x.name} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">End {{ x.name }}</button>{% endif %}
+        {% if x.note %}<p class="note">{{ x.note }}</p>{% endif %}
+        <p class="note">askdnd lists what it changes in the roll window; the DM makes the call.</p>
+        {% if can_pick %}<div class="row">
+          {% if x.name == "Exhaustion" %}{% for lv in range(1, 7) %}<button class="btn small{{ ' primary' if lv == x.level }}" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": "Exhaustion", "level": lv, "source": x.source or ""} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML" title="Exhaustion level {{ lv }}">{{ lv }}</button>{% endfor %}{% endif %}
+          <button class="btn small" hx-post="/characters/{{ c.id }}/conditions/end" hx-vals='{{ {"name": x.name} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">End {{ x.name }}</button></div>{% endif %}
       </div>
     </details>
     {% endfor %}
+    {% if can_pick and s and not form %}
+    <details class="cond-pill cond-add">
+      <summary>+ Condition</summary>
+      <div class="cond-box">
+        <div class="ls-label">Conditions</div>
+        <div class="ls-chips">{% for n in all_conditions if n not in active_conditions %}<button class="ls-chip" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": n, "level": 1} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">{{ n }}</button>{% endfor %}</div>
+        <div class="ls-label" style="margin-top:8px">Effects</div>
+        <div class="ls-chips">{% for n in all_effects if n not in active_conditions %}<button class="ls-chip" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": n} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">{{ n }}</button>{% endfor %}</div>
+      </div>
+    </details>
+    {% endif %}
   </div>
   {% endif %}
 
@@ -66,7 +80,7 @@
         {{ hit(o) }}
         {% if o.starred and show_picks %}<span class="pick star on static" title="Pinned to Battle">{{ pin_icon() }}</span>{% endif %}<b>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag">{{ t }}</span>{% endfor %}{{ spends(o.spends) }}
         {% if o.meta %}<div class="meta">{{ o.meta }}</div>{% endif %}
-        {% if can_pick and o.starts and o.starts not in active_conditions %}<button class="btn small cond-go" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": o.starts, "source": o.item} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">{{ o.name }}</button>
+        {% if can_pick and o.starts and o.starts not in active_conditions %}<button class="btn small cond-go" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": o.starts, "source": o.item, "note": o.note or ""} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML" title="Shows {{ o.starts }} under the header for the whole table">{{ ("Used it: " ~ o.starts) if o.track else o.name }}</button>
         {% elif can_pick and o.ends and o.ends in active_conditions %}<button class="btn small cond-go" hx-post="/characters/{{ c.id }}/conditions/end" hx-vals='{{ {"name": o.ends} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">{{ o.name }}</button>{% endif %}
         {% if show_picks and picks.notes.get(o.key) %}<div class="meta move-note" title="Your note">✎ {{ picks.notes[o.key] }}</div>{% endif %}
       </div>

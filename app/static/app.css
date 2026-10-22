@@ -1494,3 +1494,6 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .cond-box { position: absolute; top: calc(100% + 8px); left: 0; z-index: 20; width: 320px; background: var(--surface); border: 1px solid var(--blue); border-radius: 12px; padding: 12px 14px; box-shadow: 0 14px 40px rgba(0,0,0,.5); font-size: var(--fs-sm); }
 .cond-box p { margin: 0 0 8px; }
 .cond-go { margin-top: 6px; }
+.cond-pill.bad > summary { border-color: var(--amber); }
+.cond-add > summary { border-style: dashed; border-color: var(--line); color: var(--muted); }
+.cond-box .ls-chips { margin-top: 4px; }

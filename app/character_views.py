@@ -164,7 +164,7 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
     for it in sheet.get("inventory") or []:
         for a in conditions.item_actions(it):  # magic items that grant an action (Ring of Invisibility…)
             add(key=a["key"], oref=f"item:{it['base_name']}#{a['key'].split('#')[1]}", kind="item", cost=a["cost"], name=a["name"],
-                meta=a["meta"], text=a["text"], summary=a["text"], starts=a.get("starts"), ends=a.get("ends"), item=a["item"],
+                meta=a["meta"], text=a["text"], summary=a["text"], starts=a.get("starts"), ends=a.get("ends"), item=a["item"], note=a.get("note", ""),
                 common=False)  # in See all; the player pins what they'd use
         if not it["battle"]:
             continue
@@ -173,7 +173,8 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
         add(key=it["key"], oref=f"item:{it['base_name']}", kind="item", cost="Action", name=f"Use an item: {it['name']}", uses=uses,
             tags=[f"×{it['quantity']}"] if it["quantity"] > 1 else [], meta=first if len(first) <= 120 else first[:119].rsplit(" ", 1)[0] + "…",
             text=it.get("text") or it["summary"], summary=it["summary"], common="healing" in it["name"].lower(),
-            recipe=rr.item(it["base_name"]) or rr.item(it["name"]))
+            recipe=rr.item(it["base_name"]) or rr.item(it["name"]),
+            **({"starts": ou["starts"], "note": ou.get("note", ""), "item": it["name"], "track": True} if (ou := conditions.on_use(it)) else {}))
     unarmed = attacks.get("Unarmed Strike")
     for o in out:
         rollable(o, unarmed)
