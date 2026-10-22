@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 from app import web
 from app import character_views as views
 from app import characters as chars
+from app import conditions as cond
 from app import ddb, picks
 from app import class_rules, live, player_notes
 from app import spellbook as sb
@@ -164,6 +165,9 @@ def _battle_ctx(db: Session, ch: Character, user: dict) -> dict:
             ctx["form"] = ws.shaped(ctx["sheet"], beast, keep=ch.wild_shape_keep)
             ctx["columns"] = ctx["form"]["columns"]
     ctx["spellbar"] = _spellbar(db, ch, ctx)
+    ctx["conditions"] = [{**x, "rules": cond.rules_text(x["name"])} for x in ch.conditions or []]  # everyone sees them
+    ctx["cond_adv"] = cond.adv_reasons(ch.conditions)  # offered in the roll window (app.js specFrom)
+    ctx["active_conditions"] = {x["name"] for x in ch.conditions or []}
     ctx |= player_notes.page_context(db, ch, user, ctx["sheet"])
     return ctx
 
@@ -302,7 +306,8 @@ def detail_panel(request: Request, character_id: int, ref: str, db: Session = De
     if d is None:
         return HTMLResponse("", status_code=404)
     oref = d["opt"]["oref"] if d["opt"] else views.override_ref({**d["x"], "key": ref}, d["section"])
-    return templates.TemplateResponse(request, "_panel_detail.html", {**ctx, **d, "ref": ref, "oref": oref,
+    item_actions = cond.item_actions(d["x"]) if d["section"] == "inventory" else []  # its Battle actions, to pin
+    return templates.TemplateResponse(request, "_panel_detail.html", {**ctx, **d, "ref": ref, "oref": oref, "item_actions": item_actions,
                                       "underline": terms.underlined(_overrides(db)),
                                       "choices": views.OVERRIDE_CHOICES, "field_labels": views.FIELD_LABELS,
                                       "fields": views.fields_for(d["section"], d["opt"])})
@@ -543,6 +548,30 @@ def start_concentration(request: Request, character_id: int, key: str = Form(...
     ch.concentration = {"spell": sp["name"], "key": sp["key"], "level": max(level, sp["level"]), "round": 1, "rounds": sp["rounds"]}
     db.commit()
     return _concentration_reply(request, db, ch, user, f"Concentrating on {sp['name']}")
+
+
+@router.post("/characters/{character_id:int}/conditions")
+def start_condition(request: Request, character_id: int, name: str = Form(...), source: str = Form(""), db: Session = Depends(get_db)):
+    """A condition from a magic item's action (Turn Invisible), from the character's own player only."""
+    user, ch, stop = _concentration_guard(request, db, character_id)
+    if stop:
+        return stop
+    try:
+        ch.conditions = cond.add(ch.conditions, name, source)
+    except ValueError:
+        return HTMLResponse("", status_code=400)
+    db.commit()
+    return _concentration_reply(request, db, ch, user, f"{name}" + (f" ({source})" if source else ""))
+
+
+@router.post("/characters/{character_id:int}/conditions/end")
+def end_condition(request: Request, character_id: int, name: str = Form(...), db: Session = Depends(get_db)):
+    user, ch, stop = _concentration_guard(request, db, character_id)
+    if stop:
+        return stop
+    ch.conditions = cond.end(ch.conditions, name) or None
+    db.commit()
+    return _concentration_reply(request, db, ch, user, f"No longer {name}")
 
 
 @router.post("/characters/{character_id:int}/concentration/round")

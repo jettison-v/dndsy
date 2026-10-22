@@ -5,7 +5,7 @@ they're easy to test without a browser."""
 import re
 from urllib.parse import quote
 
-from app import advantage, class_rules
+from app import advantage, class_rules, conditions
 from app import roll_recipes as rr
 
 COSTS = ["Action", "Bonus action", "Reaction", "Other"]
@@ -162,6 +162,10 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
                 tags=[r["source"]], common=True)
     _general_options(sheet, add, mastered, have)
     for it in sheet.get("inventory") or []:
+        for a in conditions.item_actions(it):  # magic items that grant an action (Ring of Invisibility…)
+            add(key=a["key"], oref=f"item:{it['base_name']}#{a['key'].split('#')[1]}", kind="item", cost=a["cost"], name=a["name"],
+                meta=a["meta"], text=a["text"], summary=a["text"], starts=a.get("starts"), ends=a.get("ends"), item=a["item"],
+                common=False)  # in See all; the player pins what they'd use
         if not it["battle"]:
             continue
         uses = it["charges"] if it["charges"] and it["charges"]["reset"] != "Used up" else None
@@ -289,7 +293,9 @@ def battle_columns(sheet: dict, starred: set[str], order: dict[str, list[str]] |
 
 def find(sheet: dict, ref: str) -> dict | None:
     """The thing a pin or reminder points at, wherever it lives on the sheet. A spell's key looks in
-    the spells first: a situational rule can share it (Absorb Elements' "Reaction spell: …")."""
+    the spells first: a situational rule can share it (Absorb Elements' "Reaction spell: …"). An item's
+    action ("item:12#turn-invisible") opens the item."""
+    ref = ref.split("#", 1)[0]
     order = ("situational", "actions", "spells", "features", "inventory", "creatures", "attacks")
     if ref.startswith("spell:"):
         order = ("spells",) + tuple(s for s in order if s != "spells")

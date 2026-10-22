@@ -1229,8 +1229,18 @@
     const shared = gmOn() && !!side && (kind === 'dice' || (!!cid && side.dataset.mine === cid));
     let recipe = null;
     try { recipe = el.dataset.recipe ? JSON.parse(el.dataset.recipe) : null; } catch (err) { recipe = null; }
+    // A condition the character has now (Invisible…) offers Advantage with its reason, never forces it:
+    // the roll window shows the reason and the player (and DM) decide (app/conditions.adv_reasons).
+    let advWhy = el.dataset.advWhy || '';
+    const body = cid && document.querySelector('#battle-body[data-character="' + cid + '"]');
+    if (body) {
+      let ca = {};
+      try { ca = JSON.parse(body.dataset.condAdv || '{}'); } catch (err) { ca = {}; }
+      const extra = kind === 'attack' ? ca.attack : (kind === 'check' && /^initiative$/i.test(el.dataset.label || '')) ? ca.initiative : null;
+      if (extra && extra.length) advWhy = [advWhy, ...extra].filter(Boolean).join('\n');
+    }
     return { kind, label: el.dataset.label || '', mod: el.dataset.mod || '', dmg: el.dataset.dmg || '', adv: !!el.dataset.adv, recipe, slot: +el.dataset.slot || 0,
-             advWhy: el.dataset.advWhy || '', note: el.dataset.note || '', cid: kind === 'dice' && side ? side.dataset.mine : cid, shared };
+             advWhy, note: el.dataset.note || '', cid: kind === 'dice' && side ? side.dataset.mine : cid, shared };
   }
 
   document.addEventListener('click', e => {

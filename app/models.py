@@ -218,6 +218,7 @@ class Character(Timestamped, Base):
     wild_shape_keep: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     # What they're concentrating on (app/spellbook.py), set by their player: {"spell", "key", "level", "round", "rounds"}
     concentration: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    conditions: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{"name": "Invisible", "source": "Ring of Invisibility"}] (app/conditions.py)
     entity: Mapped[Entity] = relationship()
     owner: Mapped[User | None] = relationship()
     snapshot: Mapped["CharacterSnapshot | None"] = relationship(back_populates="character", uselist=False, passive_deletes=True)

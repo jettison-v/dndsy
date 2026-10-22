@@ -1,5 +1,5 @@
 {# Side panel: everything about one thing on the sheet. Same layout for spells, actions, items, features. #}
-{% from "_char.html" import pips, detail_marks, spell_mech, spends_detail, STATE_LABELS, hit %}
+{% from "_char.html" import pips, pick_btn, detail_marks, spell_mech, spends_detail, STATE_LABELS, hit %}
 {% set o = opt %}
 <div class="peek-head">
   <div><div class="note">{{ c.entity.name }} · {{ {"spells": "Spell", "actions": "Action", "attacks": "Attack", "inventory": "Item", "features": "Feature", "situational": "Situational", "creatures": "Form"}.get(section, "") }}</div>
@@ -35,7 +35,10 @@
       <dt>Type</dt><dd>{{ x.type }}{% if x.magic and x.rarity %} · {{ x.rarity }}{% endif %}</dd>
       {% if x.custom %}<dt>Custom</dt><dd><span class="tag custom">Custom</span> Made on D&amp;D Beyond for this campaign, not from a book. The description is whatever was typed there.</dd>{% endif %}
       {% if x.changes %}<dt>Changed</dt><dd><span class="tag edited">Changed</span> {{ x.changes | join(". ") }}.</dd>{% endif %}
-      {% if x.attunement %}<dt>Attunement</dt><dd>{{ "Attuned" if x.attunement == "attuned" else "Needs attunement" }}{% if x.attunement_note %} ({{ x.attunement_note }}){% endif %}</dd>{% endif %}
+      {% if x.attunement %}{% set used = (sheet.attuned or []) | length %}<dt>Attunement</dt><dd>{{ "Attuned" if x.attunement == "attuned" else "Needs attunement" }}{% if x.attunement_note %} ({{ x.attunement_note }}){% endif %}
+        <div class="note">{{ used }} of 3 attunement slots used{% if x.attunement != "attuned" %}{{ "; attuning it would use the last one" if used == 2 else ("; all 3 are in use, so another item would have to end first" if used >= 3 else "") }}{% endif %}.</div></dd>{% endif %}
+      {% if item_actions %}<dt>On Battle</dt><dd>{% for a in item_actions %}<div class="row item-action">{{ pick_btn(c, "star", a.key, a.key in picks.star, can_pick) }}<span><b>{{ a.name }}</b> <span class="note">{{ a.meta }}</span></span></div>{% endfor %}
+        <div class="note">{% if can_pick %}Pin one to show it in its column on Battle.{% else %}Actions this item gives.{% endif %}</div></dd>{% endif %}
       {% if x.charges %}<dt>Charges</dt><dd>{{ x.charges.left }} of {{ x.charges.max }} · {{ x.charges.reset_note or x.charges.reset_phrase }}</dd>{% endif %}
       {% if x.damage %}<dt>Damage</dt><dd>{{ x.damage }}</dd>{% endif %}{% if x.armor_class %}<dt>AC</dt><dd>{{ x.armor_class }}</dd>{% endif %}
       {% if x.properties %}<dt>Properties</dt><dd>{{ x.properties | join(", ") }}</dd>{% endif %}

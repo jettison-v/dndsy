@@ -2,7 +2,7 @@
 {% from "_notes_macros.html" import combo_body %}
 {% set s = sheet %}
 {# Character › Battle (character_pages._battle_ctx). Game Mode and the Wild Shape switch swap this whole block. #}
-<div id="battle-body" data-character="{{ c.id }}" data-name="{{ c.entity.name }}" data-fetched="{{ fetched_at.isoformat() if fetched_at else '' }}">
+<div id="battle-body" data-character="{{ c.id }}" data-name="{{ c.entity.name }}" data-fetched="{{ fetched_at.isoformat() if fetched_at else '' }}" data-cond-adv='{{ cond_adv | tojson }}'>
   <div class="battlebar">
     {% if form %}{% set fb = form.beast %}
     <div class="ws-form" data-modal-url="/characters/{{ c.id }}/form?name={{ fb.name | urlencode }}" data-modal-size="large" tabindex="0" role="button">
@@ -31,6 +31,21 @@
   </div>
   {% endif %}
 
+  {% if conditions %}{# What the character is right now (a magic item's Invisible…): everyone at the table sees it #}
+  <div class="cond-bar" aria-label="Conditions">
+    {% for x in conditions %}
+    <details class="cond-pill">
+      <summary><span class="conc-k">Now</span><b>{{ x.name }}</b>{% if x.source %}<span class="conc-k">{{ x.source }}</span>{% endif %}</summary>
+      <div class="cond-box">
+        <p>{{ x.rules }}</p>
+        {% if x.name == "Invisible" and x.source == "Ring of Invisibility" %}<p class="note">From the ring, it lasts until you take the ring off or take a Bonus Action to become visible; attacking or casting doesn't end it. The DM decides who can see you.</p>{% endif %}
+        {% if can_pick %}<button class="btn small" hx-post="/characters/{{ c.id }}/conditions/end" hx-vals='{{ {"name": x.name} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">End {{ x.name }}</button>{% endif %}
+      </div>
+    </details>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   {% if s and spellbar %}{% include "_spell_bar.html" %}{% endif %}
   {% if s %}
   {% if can_pick and not form %}<p class="note" style="margin:-6px 0 10px">Drag options to reorder a column. Pin more on Sheet or in "See all".</p>{% endif %}
@@ -51,6 +66,8 @@
         {{ hit(o) }}
         {% if o.starred and show_picks %}<span class="pick star on static" title="Pinned to Battle">{{ pin_icon() }}</span>{% endif %}<b>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag">{{ t }}</span>{% endfor %}{{ spends(o.spends) }}
         {% if o.meta %}<div class="meta">{{ o.meta }}</div>{% endif %}
+        {% if can_pick and o.starts and o.starts not in active_conditions %}<button class="btn small cond-go" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": o.starts, "source": o.item} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">{{ o.name }}</button>
+        {% elif can_pick and o.ends and o.ends in active_conditions %}<button class="btn small cond-go" hx-post="/characters/{{ c.id }}/conditions/end" hx-vals='{{ {"name": o.ends} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">{{ o.name }}</button>{% endif %}
         {% if show_picks and picks.notes.get(o.key) %}<div class="meta move-note" title="Your note">✎ {{ picks.notes[o.key] }}</div>{% endif %}
       </div>
       {% else %}<p class="muted pin-empty">{% if form %}Nothing here in this form.{% elif can_pick %}Nothing pinned yet. Open <b>See all</b> below and pin what you'd use on your turn.{% elif show_picks %}{{ c.entity.name }}'s player hasn't pinned anything here yet.{% else %}Nothing here yet.{% endif %}</p>{% endfor %}

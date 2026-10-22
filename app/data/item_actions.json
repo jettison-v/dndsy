@@ -1,0 +1,9 @@
+{
+  "_about": "Magic items whose actions askdnd shows on Battle (app/conditions.py). Our own short summaries of the 2024 rules, never book text. starts / ends: a condition the action gives or ends (shown as a pill on Battle).",
+  "Ring of Invisibility": [
+    {"cost": "Action", "name": "Turn Invisible", "meta": "Magic action · Ring of Invisibility", "starts": "Invisible",
+     "text": "Take a Magic action to give yourself the Invisible condition. It lasts until you take the ring off or take a Bonus Action to become visible. Unlike the Invisibility spell, attacking or casting a spell doesn't end it."},
+    {"cost": "Bonus action", "name": "Become visible", "meta": "Bonus Action · Ring of Invisibility", "ends": "Invisible",
+     "text": "Take a Bonus Action to end the Invisible condition the ring gave you."}
+  ]
+}
