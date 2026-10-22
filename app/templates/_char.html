@@ -225,18 +225,6 @@
 {{ sp.casting_time }}{% if sp.range %} · {{ sp.range }}{% endif %}{% if sp.duration and sp.duration != "Instantaneous" %} · {{ sp.duration | replace("Concentration, up to ", "Conc. ") }}{% endif %}{% if sp.damage %} · {{ sp.damage }}{% elif sp.healing %} · heals {{ sp.healing }}{% endif %}
 {%- endmacro %}
 
-{% macro spell_row(c, sp, state, picks, can_pick, source="") -%}
-{%- set ready = state in ("always", "prepared", "known", "granted") -%}
-{%- set cast = {"Action": "action", "Bonus action": "bonus", "Reaction": "reaction"}.get(sp.casting_time, "other") -%}
-{%- set lab = STATE_LABELS[state] -%}
-{%- set tags = (sp.tags | map('lower') | list + (['concentration'] if sp.concentration else []) + (['ritual'] if sp.ritual else []) + (['healing'] if sp.healing else []) + (['damage'] if sp.damage else [])) | join(' ') -%}
-{{ ri(c, sp.key, sp.name, picks, can_pick, star=ready and cast != "other", fav=True,
-      chips=[(lab[0], lab[1]) if lab[0] else None, (source, "") if source else None, ("Ritual", "") if sp.ritual else None,
-             ("Not core: " ~ sp.book, "faint") if sp.core == false else None],
-      what=sp.summary, mech=spell_mech(sp), hit=sp.attack or sp.save, uses=None, cls="spell-row" ~ ("" if ready else " not-ready"),
-      attrs='data-state="%s" data-fav="%s" data-level="%s" data-cast="%s" data-name="%s" data-tags="%s"' | format('ready' if ready else state, '1' if sp.key in picks.fav else '0', sp.level, cast, sp.name | lower | e, tags | e)) }}
-{%- endmacro %}
-
 {% macro opt_row(c, o, picks, can_pick) -%}
 {{ ri(c, o.key, o.name, picks, can_pick, star=o.cost != "Other", chips=o.tags, what=o.summary or o.meta,
       mech=o.meta if o.summary else "", hit=o.hit, uses=o.uses, spend=o.spends, hit_adv=o.adv, roll=o if o.dice or (o.hit and o.hit[0] in "+-−") else None) }}
@@ -245,82 +233,4 @@
 {# A character's picture from D&D Beyond (their image server). Hidden if it doesn't load. #}
 {% macro portrait(s, cls="") -%}
 {% if s and s.portrait %}<img class="portrait {{ cls }}" src="{{ s.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}
-{%- endmacro %}
-
-{# One Wild Shape form as a card (Sheet › Wild Shape, Plan's shortlist): the numbers for choosing
-   a form, with this druid's stats carried over. Click for the full form. #}
-{% macro form_card(c, fm, picks, can_pick, i=0) -%}{% set k = fm.card %}
-        {% set tags = (fm.moves + [fm.size | lower] + (["locked"] if fm.why_not else [])) | join(" ") %}
-        {% set notes = [picks.notes.get(fm.key)] | select | list if picks.notes else [] %}
-        <article class="spell-row form-card{{ ' known' if fm.known }}{{ ' not-ready' if fm.why_not }}" data-modal-url="/characters/{{ c.id }}/form?name={{ fm.name | urlencode }}" data-modal-size="large"
-          data-ref="{{ fm.key }}" tabindex="0" role="button" data-state="{{ 'ready' if fm.known else 'learn' }}" data-fav="{{ '1' if fm.key in picks.fav else '0' }}"
-          data-level="{{ fm.cr_label }}" data-cast="other" data-name="{{ fm.name | lower }}" data-tags="{{ tags }}"
-          data-sort-default="{{ i }}" data-sort-damage="{{ k.per_turn }}" data-sort-hit="{{ k.hit_value }}" data-sort-speed="{{ k.fastest }}" data-sort-cr="{{ fm.cr }}">
-          <div class="fc-head">
-            {% if fm.image %}<img class="fc-pic" src="{{ fm.image }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}
-            <div class="fc-title"><b>{{ fm.name }}</b>
-              <div class="fc-chips"><span class="tag">CR {{ fm.cr_label }}</span><span class="tag">{{ fm.size }}</span>
-                {% if fm.known %}<span class="tag done">Known</span>{% endif %}{% if fm.why_not %}<span class="tag faint">{{ fm.why_not }}</span>{% endif %}</div></div>
-            <span class="fc-picks">{{ pick_btn(c, "fav", fm.key, fm.key in picks.fav, can_pick) }}{{ pick_btn(c, "remind", fm.key, fm.key in picks.remind, can_pick) }}</span>
-          </div>
-          <div class="fc-stats">
-            <div title="{{ 'Circle Forms: 13 + your Wisdom modifier' if k.ac_moon else 'The form\'s AC' }}"><small>AC</small><b>{{ k.ac }}</b></div>
-            <div title="Your Hit Points plus Temporary Hit Points when you shift"><small>Temp HP</small><b>+{{ k.temp_hp }}</b></div>
-            <div title="Best attack bonus"><small>To hit</small><b>{{ k.hit or "—" }}</b></div>
-            <div title="Average damage from the Attack action (Multiattack) if every attack hits"><small>Dmg / turn</small><b>{{ k.per_turn or "—" }}</b></div>
-            <div><small>Fastest</small><b>{{ k.fastest }}<span class="note"> ft</span></b></div>
-          </div>
-          <div class="fc-line"><span class="fc-k">Attack</span><span>{{ k.attack or "No attack" }}{% if k.attack_adv %} {{ adv(k.attack_adv) }}{% endif %}{% if k.radiant and k.attack %} <span class="muted">· can deal Radiant</span>{% endif %}{% for x in k.extra %} <span class="muted">· {{ x }}</span>{% endfor %}</span></div>
-          <div class="fc-line"><span class="fc-k">Moves</span><span>{{ k.speed }}{% if k.senses %} <span class="muted">· {{ k.senses }}</span>{% endif %}{% if k.resist %} <span class="muted">· Resists {{ k.resist }}</span>{% endif %}</span></div>
-          <div class="fc-line"><span class="fc-k">You</span><span>{% for sv in k.saves %}{{ sv.short }} save {{ sv.label }}{% if sv.adv %} {{ adv(sv.adv) }}{% endif %}{{ " · " if not loop.last }}{% endfor %}{% for sk in k.skills %} · {{ sk.name }} {{ sk.label }}{% if sk.adv %} {{ adv(sk.adv) }}{% endif %}{% endfor %}</span></div>
-          {% if k.traits or k.bonus or k.reactions or k.effects %}<div class="fc-tags">
-            {% for t in k.effects %}<span class="tag eff">{{ t }}</span>{% endfor %}
-            {% for t in k.bonus %}<span class="tag k-bonus">Bonus: {{ t }}</span>{% endfor %}
-            {% for t in k.reactions %}<span class="tag k-reaction">Reaction: {{ t }}</span>{% endfor %}
-            {% for t in k.traits %}<span class="tag">{{ t }}</span>{% endfor %}
-          </div>{% endif %}
-          {% for n in notes %}<div class="ri-note">✎ {{ n }}</div>{% endfor %}
-        </article>
-{%- endmacro %}
-
-
-{# The Spells planner's tools (Plan's spell shortlist; Sheet › Spells now uses _lists.html): which spells (`views`, the
-   first one chosen), search, and filters that all have to match. app.js plannerApply does the work
-   on the [data-planner] around them. #}
-{% macro spell_tools(s, views) -%}
-<div class="planner-tools">
-  <div class="seg" role="group" aria-label="Which spells">
-    {% for v, label in views %}<button type="button" data-view="{{ v }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">{{ label }}</button>{% endfor %}
-  </div>
-  <input type="search" data-search placeholder="Search spells" aria-label="Search spells">
-</div>
-<div class="filters" role="group" aria-label="Filter spells">
-  <button type="button" data-filter="level:0">Cantrips</button>
-  {% for l in range(1, 10) %}{% if s.spell_slots.slots | selectattr("level", "equalto", l) | list or (s.spell_slots.pact and s.spell_slots.pact.level >= l) %}<button type="button" data-filter="level:{{ l }}">Level {{ l }}</button>{% endif %}{% endfor %}
-  <span class="sep"></span>
-  <button type="button" data-filter="cast:bonus">Bonus action</button><button type="button" data-filter="cast:reaction">Reaction</button>
-  <button type="button" data-filter="tag:concentration">Concentration</button><button type="button" data-filter="notag:concentration">No concentration</button><button type="button" data-filter="tag:ritual">Ritual</button>
-  <button type="button" data-filter="tag:damage">Damage</button><button type="button" data-filter="tag:healing">Healing</button><button type="button" data-filter="tag:control">Control</button><button type="button" data-filter="tag:buff">Buff</button><button type="button" data-filter="tag:utility">Utility</button>
-</div>
-{%- endmacro %}
-
-{# The same for Wild Shape cards (Sheet › Wild Shape, Plan's Wild Shape shortlist), plus sorting.
-   CR and size filters only offer what's in `forms`. #}
-{% macro form_tools(forms, views) -%}
-<div class="planner-tools">
-  <div class="seg" role="group" aria-label="Which forms">
-    {% for v, label in views %}<button type="button" data-view="{{ v }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">{{ label }}</button>{% endfor %}
-  </div>
-  <label class="fc-sort note">Sort <select data-card-sort aria-label="Sort forms">
-    <option value="default">Known first, then CR</option><option value="damage">Damage per turn</option>
-    <option value="hit">Attack bonus</option><option value="speed">Fastest</option><option value="cr">CR (highest)</option></select></label>
-  <input type="search" data-search placeholder="Search beasts" aria-label="Search beasts">
-</div>
-<div class="filters" role="group" aria-label="Filter forms">
-  {% for cr in forms | sort(attribute="cr") | map(attribute="cr_label") | unique %}<button type="button" data-filter="level:{{ cr }}">CR {{ cr }}</button>{% endfor %}
-  <span class="sep"></span>
-  {% for m in ["swim", "climb", "burrow", "fly"] %}<button type="button" data-filter="tag:{{ m }}">{{ m | capitalize }}</button>{% endfor %}
-  <span class="sep"></span>
-  {% for z in ["tiny", "small", "medium", "large", "huge"] %}{% if forms | selectattr("size", "equalto", z | capitalize) | list %}<button type="button" data-filter="tag:{{ z }}">{{ z | capitalize }}</button>{% endif %}{% endfor %}
-</div>
 {%- endmacro %}

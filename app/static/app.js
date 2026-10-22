@@ -404,7 +404,6 @@
         if (!here || !there) return;
         here.innerHTML = there.innerHTML;
         if (window.htmx) htmx.process(here);
-        if (here.matches('[data-planner]') && window.askdndPlanner) window.askdndPlanner(here);
         if (window.askdndNotesInit) window.askdndNotesInit(here);  // "Full notes" stays on
       });
       if (typeof sortSetup === 'function') sortSetup();  // Reminders can be dragged
@@ -607,45 +606,6 @@
   // Star and Remind me buttons sit inside <summary>: don't open/close the row when pressed.
   document.addEventListener('click', e => { if (e.target.closest('summary .pick')) e.preventDefault(); }, true);
 
-  // Spell planner (Character › Spells): a view (ready / shortlist / all), filters that
-  // all have to match, and a search box. Rows carry data-* attributes from the server.
-  window.askdndPlanner = root => plannerApply(root);  // Plan's tabs call it after a live refresh
-  function plannerApply(root) {
-    const view = (root.querySelector('[data-view][aria-pressed=true]') || {}).dataset?.view || 'ready';
-    const filters = [...root.querySelectorAll('[data-filter][aria-pressed=true]')].map(b => b.dataset.filter);
-    const levels = filters.filter(f => f.startsWith('level:')).map(f => f.slice(6));
-    const q = (root.querySelector('[data-search]')?.value || '').trim().toLowerCase();
-    let shown = 0;
-    root.querySelectorAll('.spell-row').forEach(r => {
-      const d = r.dataset, tags = ' ' + d.tags + ' ';
-      let ok = view === 'all' || (view === 'ready' ? d.state === 'ready' : d.fav === '1');
-      if (levels.length && !levels.includes(d.level)) ok = false;
-      for (const f of filters) {
-        const [k, v] = f.split(':');
-        if (k === 'cast' && d.cast !== v) ok = false;
-        if (k === 'tag' && !tags.includes(' ' + v + ' ')) ok = false;
-        if (k === 'notag' && tags.includes(' ' + v + ' ')) ok = false;
-      }
-      if (q && !d.name.includes(q)) ok = false;
-      r.hidden = !ok;
-      if (ok) shown++;
-    });
-    root.querySelectorAll('.planner-level, .planner-group').forEach(g => { g.hidden = !g.querySelector('.spell-row:not([hidden])'); });
-    const label = root.querySelector('[data-shown]');
-    const noun = root.dataset.noun || 'spell';
-    if (label) label.textContent = shown + ' ' + noun + (shown === 1 ? '' : 's') + ' shown.';
-    const empty = root.querySelector('.planner-empty'); if (empty) empty.hidden = shown > 0;
-  }
-  document.addEventListener('click', e => {
-    const root = e.target.closest('[data-planner]');
-    if (!root) return;
-    const v = e.target.closest('[data-view]'), f = e.target.closest('[data-filter]');
-    if (v) root.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', b === v ? 'true' : 'false'));
-    if (f) f.setAttribute('aria-pressed', f.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
-    if (v || f) plannerApply(root);
-  });
-  document.addEventListener('input', e => { const root = e.target.closest('[data-planner]'); if (root && e.target.matches('[data-search]')) plannerApply(root); });
-  document.querySelectorAll('[data-planner]').forEach(plannerApply);
   // Manage › People: the line under each person says what their access will let them do, as you change it.
   document.addEventListener('change', e => {
     const form = e.target.closest('.person-form'); if (!form) return;
@@ -670,19 +630,6 @@
       const row = rm.closest('.repeat-row');
       if (rows.length > 1) row.remove(); else row.querySelectorAll('input, textarea').forEach(i => { i.value = ''; });
     }
-  });
-
-  // Wild Shape cards: sort by what matters for choosing (damage, attack bonus, speed, CR).
-  document.addEventListener('change', e => {
-    const sel = e.target.closest('[data-card-sort]');
-    if (!sel) return;
-    const root = sel.closest('[data-planner]'), box = root && root.querySelector('[data-sortable-cards]');
-    if (!box) return;
-    const key = sel.value, attr = 'sort' + key[0].toUpperCase() + key.slice(1);
-    const cards = [...box.children];
-    cards.sort((a, b) => key === 'default' ? a.dataset.sortDefault - b.dataset.sortDefault
-                                           : (parseFloat(b.dataset[attr]) || 0) - (parseFloat(a.dataset[attr]) || 0));
-    cards.forEach(c => box.appendChild(c));
   });
 
   // Rule terms: side-panel descriptions underline terms like "Unarmed Strike" (dotted, quiet).
