@@ -73,6 +73,8 @@ Status colors are text on their `-soft` tint.
 
 **Controls:** search boxes, selects and regular buttons are `--control-h` tall: 32px on desktop, 44px on phones (Brett, 2026-10-22).
 
+**Panels and modals** (four sizes, chosen by what's inside): side panel `--panel-w` 420px (details for one thing; also inside a modal) · modal `--modal-w` 720px (a form or short content) · large `--modal-lg-w` 1180px (rich content in columns: a Wild Shape form, a combo, a leveling plan) · full window `--modal-full-w` 95% (a whole tool with its own list, the Spell Book). On phones each is a sheet from the bottom.
+
 **Screen widths:** phone ≤ 640px, tablet ≤ 900px, wide ≥ 1100px (media queries can't use variables; the test allows only these).
 
 - **Key-moment types** are colored words, not boxes: Event (muted), Reveal (lavender), Decision (blue), Loot (amber), Theory (italic, muted) so speculation never looks like fact.
@@ -88,7 +90,7 @@ Each one is on Manage › Design system with its class or macro. Use these; don'
 - **Lists** (Lists and filters below): search box (`search_box()`), toolbar (`.ls-toolbar` with `view_switch()`, `.ls-select`, `.ls-check`), filter group (`chip_group()`), row (`ri()`, or `.ls-row` in the shared list), empty state.
 - **Marks** (`.pick.star`, `.fav`, `.remind`): Pin, Shortlist, Remind me; every icon button has a label on hover. **Pips** (`pips()`) and **what it uses up** (`spends()`).
 - **Help line** (`.hint`): one short line under a heading, with **Got it** to hide it for you; the FAQ keeps the full explanation (Brett, 2026-10-22). **Note** (`.note`) for dates and footnotes. **Empty state** (`.muted`): every list says what goes there and how to add the first one.
-- **Side panel** (`data-panel-url`) from the right edge (the bottom on phones): head with what it belongs to, its name and ✕; a scrolling body; an optional foot. **Modal** (`data-modal-url`, sizes regular, `large`, `full`).
+- **Side panel** (`data-panel-url`) from the right edge (the bottom on phones): head with what it belongs to, its name and ✕; a scrolling body; an optional foot. **Modal** (`data-modal-url`; `data-modal-size` `large` or `full`). Sizes under Visual system › Panels and modals.
 - **Story block** (`.story`) for recaps, descriptions and answers.
 - **Toast:** a short confirmation near the top ("Answer saved", "Published").
 - **Review pieces:** **Read/Edit block** (reading view plus an **Edit** link; edit mode swaps in the form with **Save** and **Cancel**), **Question item** (Answer / Skip; answered ones move to Done with **Edit** / **Remove answer**), **Suggestion item** (Before and Proposed side by side, stacked on phones; **Accept**, **Edit**, **Reject**; Done shows "Now in askdnd" with **Undo**), **Done drawer** ("▸ Done (n)") and **Progress panel** (checklist with the single **Publish** button; a bottom bar on phones).

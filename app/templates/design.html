@@ -132,10 +132,17 @@
 
   <section class="section" id="panels">
     <h2>Panels and toasts</h2>
-    {{ ds("Side panel", "data-panel-url", "Details for one thing, from the right edge (the bottom on phones).") }}
-    <div class="ds-row"><button class="btn" type="button" data-panel-url="/manage/design/panel">Open a side panel</button>
-      <button class="btn" type="button" data-modal-url="/manage/design/panel">Open a modal</button>
-      <button class="btn" type="button" data-modal-url="/manage/design/panel" data-modal-size="large">Open a large modal</button></div>
+    {{ ds("Four sizes", "--panel-w · --modal-w · --modal-lg-w · --modal-full-w", "Pick by what's inside, never by page. On phones every one is a sheet from the bottom.", "the side panel inside a modal (the Spell Book's) goes from 440px to --panel-w") }}
+    <div class="tbl ds-sizes"><table class="list">
+      <thead><tr><th>Size</th><th>Desktop</th><th>For</th><th>Open with</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><b>Side panel</b></td><td>420px wide, full height, from the right edge</td><td>Details for one thing (a spell, an item, a note), next to the list it came from</td><td><code>data-panel-url</code></td><td><button class="btn small" type="button" data-panel-url="/manage/design/panel">Open</button></td></tr>
+        <tr><td><b>Modal</b></td><td>720px, up to 86% of the height</td><td>A form or short content that needs your attention (a note, a reminder)</td><td><code>data-modal-url</code></td><td><button class="btn small" type="button" data-modal-url="/manage/design/panel">Open</button></td></tr>
+        <tr><td><b>Large modal</b></td><td>1180px, 90% of the height</td><td>Rich content in columns (a Wild Shape form, a combo, a leveling plan)</td><td><code>data-modal-size="large"</code></td><td><button class="btn small" type="button" data-modal-url="/manage/design/panel" data-modal-size="large">Open</button></td></tr>
+        <tr><td><b>Full window</b></td><td>95% of the width, 92% of the height</td><td>A whole tool with its own list and side panel (the Spell Book)</td><td><code>data-modal-size="full"</code></td><td><button class="btn small" type="button" data-modal-url="/manage/design/panel" data-modal-size="full">Open</button></td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">A side panel opened from inside a modal slides out from the modal's own right edge, inside it.</p>
     {{ ds("Toast", "#toast", "A short confirmation after an action (\"Saved\").") }}
     <div class="ds-row"><button class="btn" type="button" onclick="window.askdndToast && askdndToast('Saved')">Show a toast</button></div>
   </section>

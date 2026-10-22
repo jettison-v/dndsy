@@ -22,6 +22,9 @@
   --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-pill: 999px;
   /* Controls (search box, selects, buttons): 32px tall on desktop, 44px on phones (Brett, 2026-10-22) */
   --control-h: 32px;
+  /* Panels and modals: side panel (also inside a modal) · regular modal (forms) · large (a Wild Shape form, combos,
+     leveling) · full window (the Spell Book) */
+  --panel-w: 420px; --modal-w: 720px; --modal-lg-w: 1180px; --modal-full-w: 95vw;
   /* Screen widths (media queries can't use variables): phone ≤ 640px, tablet ≤ 900px, wide ≥ 1100px */
 }
 @media (max-width: 640px) { :root { --control-h: 44px; } }
@@ -334,7 +337,7 @@ table.list td a:hover { color: var(--text-strong); text-decoration: underline; }
 a.ent { color: inherit; text-decoration: underline; text-decoration-color: rgba(214, 69, 69, .55); text-decoration-thickness: 1px; text-underline-offset: 3px; }
 a.ent:hover { text-decoration-color: var(--red); color: var(--text-strong); }
 .story a.ent { color: #f3b9a8; }
-.peek { position: fixed; top: 62px; right: 0; bottom: 0; width: 420px; max-width: 100%; background: var(--surface); border-left: 1px solid var(--line); box-shadow: -12px 0 30px rgba(0,0,0,.35); z-index: 8; display: flex; flex-direction: column; transform: translateX(100%); transition: transform .18s ease; }
+.peek { position: fixed; top: 62px; right: 0; bottom: 0; width: var(--panel-w); max-width: 100%; background: var(--surface); border-left: 1px solid var(--line); box-shadow: -12px 0 30px rgba(0,0,0,.35); z-index: 8; display: flex; flex-direction: column; transform: translateX(100%); transition: transform .18s ease; }
 .peek.open { transform: none; }
 .peek-head { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; padding: 20px 22px 8px; }
 .peek-head h2 { font-size: 1.35rem; margin: 2px 0; }
@@ -486,7 +489,7 @@ a.who { color: var(--text); font-weight: 600; text-decoration: underline; text-d
 .poolrow .meta { display: inline; font-size: .82rem; }
 .chips { display: inline-flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
 .chip { font-size: .76rem; border-radius: var(--r-pill); padding: 0 8px; background: var(--surface-2); white-space: nowrap; }
-.peek.modal { top: 50%; left: 50%; right: auto; bottom: auto; width: min(720px, calc(100% - 32px)); max-height: 86vh; transform: translate(-50%, -46%); opacity: 0; border: none; border-top: 3px solid var(--red); border-radius: 14px; transition: transform .18s ease, opacity .18s ease; }
+.peek.modal { top: 50%; left: 50%; right: auto; bottom: auto; width: min(var(--modal-w), calc(100% - 32px)); max-height: 86vh; transform: translate(-50%, -46%); opacity: 0; border: none; border-top: 3px solid var(--red); border-radius: 14px; transition: transform .18s ease, opacity .18s ease; }
 .peek.modal.open { transform: translate(-50%, -50%); opacity: 1; }
 .peek-backdrop.dim { background: rgba(0, 0, 0, .55); }
 .peek-foot.row { display: flex; gap: 8px; }
@@ -822,6 +825,7 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .ws-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
 .ws-row { margin: -4px 0 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
 .ws-label { font-family: var(--cond); text-transform: uppercase; letter-spacing: .06em; font-size: .78rem; color: var(--amber); margin-right: 4px; }
+.ws-chip:not(:has(img)) { padding-left: 12px; }
 .ws-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface-2); border: 1px solid var(--line); color: var(--muted); border-radius: var(--r-pill); padding: 3px 12px 3px 4px; font-size: .85rem; min-height: 32px; }
 .ws-chip:first-of-type { padding-left: 12px; }
 .ws-chip img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
@@ -832,7 +836,7 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 @media (max-width: 600px) { .ws-pic { width: 56px; height: 56px; } .form-abilities { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
 /* Large modal (Wild Shape forms): wide on desktop, a full-height sheet on phones */
-.peek.modal.large { width: min(1180px, calc(100% - 48px)); max-height: 90vh; height: 90vh; }
+.peek.modal.large { width: min(var(--modal-lg-w), calc(100% - 48px)); max-height: 90vh; height: 90vh; }
 .fm-head { align-items: center; padding: 18px 22px 12px; border-bottom: 1px solid var(--line); }
 .fm-pic { width: 88px; height: 88px; border-radius: 14px; object-fit: cover; border: 1px solid var(--line); flex: none; }
 .fm-title { flex: 1; min-width: 0; }
@@ -1390,7 +1394,7 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 /* A full-window modal (the Spell Book), and the top panel layer: a side panel that slides in from
    the modal's right edge, inside it (a spell's details in the Spell Book). */
 .peek.modal { overflow: hidden; }
-.peek.modal.full { width: min(95vw, calc(100% - 32px)); height: 92vh; max-height: none; }
+.peek.modal.full { width: min(var(--modal-full-w), calc(100% - 32px)); height: 92vh; max-height: none; }
 .peek > .peek.top { position: absolute; top: 0; right: 0; bottom: 0; left: auto; width: min(440px, 92%); max-height: none; z-index: 6;
   border: none; border-left: 1px solid var(--line); border-radius: 0; box-shadow: -12px 0 30px rgba(0,0,0,.45); transform: translateX(100%); }
 .peek > .peek.top.open { transform: none; }
@@ -1500,6 +1504,7 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .ds-meta code, .ds-page code { font-size: var(--fs-xs); color: var(--muted); background: var(--surface-2); border-radius: var(--r-sm); padding: 1px var(--sp-1); }
 .ds-later { flex-basis: 100%; font-size: var(--fs-xs); color: var(--amber); }
 .ds-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); }
+.ds-row + .ds-row { margin-top: var(--sp-3); }
 .ds-sample { margin: 0; }
 .ds-sample .title-row h1 { margin: 0; }
 .ds-h2 { margin: 0; }
@@ -1515,3 +1520,5 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .ds-space div, .ds-corners div { display: flex; flex-direction: column; gap: var(--sp-1); }
 .ds-space span { background: var(--red); display: block; }
 .ds-corners span { width: 64px; height: 40px; background: var(--surface-2); border: 1px solid var(--line-strong); display: block; }
+.ds-sizes { overflow-x: auto; }
+.ds-sizes td { vertical-align: middle; font-size: var(--fs-sm); }
