@@ -1,7 +1,7 @@
 {# Character › Plan (character_pages._plan_ctx): the player's own planning, in tabs like Sheet's.
    Never shown to the DM (the route sends them to Sheet). Reminders are also on Battle, where they're used. #}
 {% from "_char.html" import spell_row, form_card, spell_tools, form_tools %}
-{% from "_notes_macros.html" import note_body %}
+{% from "_notes_macros.html" import note_summary %}
 <section class="section">
   <p class="hint" style="margin:0 0 10px">{% if can_pick %}Your plans for {{ c.entity.name }}. Every player can read your notes; the DM can't see anything here. Names of spells, features, items, Wild Shape forms, people and places become links.{% else %}{{ c.entity.name }}'s player's plans. The DM can't see these.{% endif %}</p>
   <div class="tabbar" role="tablist">
@@ -15,15 +15,21 @@
   <div id="t-{{ kind }}"{% if not loop.first %} hidden{% endif %}>
     <div class="sec-head"><p class="muted" style="margin:0">{{ meta.about }}</p>
       {% if can_pick %}<a class="btn small" href="#" data-modal-url="/characters/{{ c.id }}/notes/new?kind={{ kind }}" data-modal-size="large">+ {{ meta.label }}</a>{% endif %}</div>
-    {% if notes %}<div class="note-cards{{ ' wide' if kind in ('combo', 'leveling', 'quest') }}">
+    {% if notes %}
+    {# Compact rows (tiles for general notes), the full note in the side panel; drag to reorder (roadmap step 6) #}
+    <div class="{{ 'note-tiles' if kind == 'general' else 'note-rows' }}"{% if can_pick %} data-sort-column="{{ kind }}" data-sort-url="/characters/{{ c.id }}/notes/order" data-sort-item=".note-item"{% endif %}>
       {% for n in notes %}
-      <article class="note-card note-{{ kind }}">
-        <div class="note-card-head"><b>{{ n.title }}</b>
-          {% if kind == "quest" %}<span class="tag {{ {'open': 'draft', 'done': 'done', 'abandoned': 'faint'}[n.status or 'open'] }}">{{ quest_status[n.status or 'open'] }}</span>{% endif %}
-          <span class="note">{{ n.updated_at | ago }}</span>
-          {% if can_pick %}<a class="btn link small" href="#" data-modal-url="/characters/{{ c.id }}/notes/{{ n.id }}/edit" data-modal-size="large">Edit</a>{% endif %}</div>
-        {{ note_body(n, nl, quest_status) }}
-      </article>
+      <div class="note-item {{ 'note-tile' if kind == 'general' else 'note-row' }}" data-key="{{ n.id }}" data-panel-url="/characters/{{ c.id }}/notes/{{ n.id }}" tabindex="0" role="button" aria-label="{{ n.title }}: open">
+        {% if can_pick %}<span class="drag-handle" aria-hidden="true" title="Drag to reorder">⋮⋮</span>{% endif %}
+        <div class="note-item-main">
+          <div class="note-item-head"><b>{{ n.title }}</b>
+            {% if kind == "quest" %}<span class="tag {{ {'open': 'draft', 'done': 'done', 'abandoned': 'faint'}[n.status or 'open'] }}">{{ quest_status[n.status or 'open'] }}</span>{% endif %}
+            <span class="note">{{ n.updated_at | ago }}</span></div>
+          {% if kind == "general" %}<div class="note-tile-body story-md">{{ nl.md(n.data.body) }}</div>
+          {% else %}{% set sum = note_summary(n) | trim %}{% if sum %}<div class="note-item-sum">{{ sum | striptags | truncate(220) }}</div>{% endif %}{% endif %}
+        </div>
+        {% if can_pick %}<a class="btn link small note-edit" href="#" data-modal-url="/characters/{{ c.id }}/notes/{{ n.id }}/edit" data-modal-size="large">Edit</a>{% endif %}
+      </div>
       {% endfor %}
     </div>{% elif not can_pick %}<p class="muted">None yet.</p>{% endif %}
   </div>

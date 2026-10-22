@@ -7,12 +7,13 @@ quests and General notes. They replace syncing players' Google Docs.
   forms) become links that open them; so do people and places from the campaign.
 """
 
+import json
 import re
 from dataclasses import dataclass
 from urllib.parse import urlparse
 
-from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, Depends, Form, Request
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from markupsafe import Markup, escape
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -236,8 +237,46 @@ async def save_note(request: Request, character_id: int, db: Session = Depends(g
         db.add(n)
     n.title, n.status, n.data = title, status, data
     db.commit()
+    if request.headers.get("HX-Request"):  # saved from the modal: the page updates in place, no reload (roadmap step 6)
+        return _changed(ch, kind, f"Saved: {title}")
     request.session["toast"] = f"Saved: {title}"
     return RedirectResponse(_back(request, ch), status_code=303)
+
+
+def _changed(ch: Character, kind: str, toast: str) -> Response:
+    """No page to send: tell the page a note changed (it closes the modal and refreshes that part)."""
+    return Response(status_code=204, headers={"HX-Trigger": json.dumps({"toast": toast, "notesChanged": {"character": ch.id, "kind": kind}})})
+
+
+@router.get("/characters/{character_id:int}/notes/{note_id:int}")
+def note_panel(request: Request, character_id: int, note_id: int, db: Session = Depends(get_db)):
+    """Side panel: one note in full (Plan's rows and tiles open it)."""
+    user, ch, stop = _load(request, db, character_id)
+    if stop:
+        return stop
+    n = db.get(PlayerNote, note_id)
+    if n is None or n.character_id != ch.id:
+        return HTMLResponse("", status_code=404)
+    from app import characters as chars
+
+    return templates.TemplateResponse(request, "_note_panel.html", {
+        "c": ch, "n": n, "meta": KINDS[n.kind], "can_pick": picks.can_edit(db, user, ch), "quest_status": QUEST_STATUS,
+        "nl": note_linker(db, ch, chars.character_summary(ch))})
+
+
+@router.post("/characters/{character_id:int}/notes/order")
+def order_notes(request: Request, character_id: int, column: str = Form(...), keys: list[str] = Form(default=[]),
+                db: Session = Depends(get_db)):
+    """Drag and drop on Plan: the player's own order for one kind of note (combos, leveling, quests, notes)."""
+    user, ch, stop = _load(request, db, character_id, edit=True)
+    if stop:
+        return stop
+    ids = [int(k) for k in keys if k.isdigit()]
+    mine = {n.id: n for n in db.scalars(select(PlayerNote).where(PlayerNote.character_id == ch.id, PlayerNote.kind == column))}
+    for i, nid in enumerate(x for x in ids if x in mine):
+        mine[nid].position = i + 1
+    db.commit()
+    return Response(status_code=204)
 
 
 def _back(request: Request, ch: Character) -> str:
@@ -255,6 +294,8 @@ def delete_note(request: Request, character_id: int, note_id: int, db: Session =
     if n is not None and n.character_id == ch.id:
         db.delete(n)
         db.commit()
+        if request.headers.get("HX-Request"):
+            return _changed(ch, n.kind, f"Deleted: {n.title}")
         request.session["toast"] = f"Deleted: {n.title}"
     return RedirectResponse(_back(request, ch), status_code=303)
 

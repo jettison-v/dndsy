@@ -393,7 +393,8 @@
     if (!/\/characters\/\d+\/plan$/.test(location.pathname) || !location.pathname.includes('/' + character + '/')) return;
     fetch(location.pathname, { headers: { 'HX-Request': 'true' } }).then(r => r.text()).then(html => {
       const doc = new DOMParser().parseFromString(html, 'text/html');
-      ['t-forget', 't-spell-list', 't-form-list'].forEach(id => {
+      // Every tab on Plan: notes (combos, leveling, quests, notes), Reminders and the shortlists
+      [...document.querySelectorAll('[role=tab][data-tab]')].map(t => t.dataset.tab).forEach(id => {
         const here = document.getElementById(id), there = doc.getElementById(id);
         if (!here || !there) return;
         here.innerHTML = there.innerHTML;
@@ -409,6 +410,15 @@
       });
     });
   }
+  // A Plan note was saved or deleted in its modal (player_notes.save_note): close the modal and update
+  // the page in place, staying on the same tab (roadmap step 6). Battle reloads its body (combos).
+  document.body.addEventListener('notesChanged', e => {
+    const d = e.detail || {}, body = document.getElementById('battle-body');
+    closePeek();
+    if (body && String(body.dataset.character) === String(d.character))
+      htmx.ajax('GET', '/characters/' + d.character + '/battle/body', { target: '#battle-body', swap: 'outerHTML' });
+    refreshPlanTabs(d.character);
+  });
   // A note was saved in a side panel (character_pages.save_pick_note): the one-line note under that
   // thing's rows changes in place; Battle reloads its body (option rows and Reminders); Plan its tabs.
   document.body.addEventListener('noteChanged', e => {

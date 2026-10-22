@@ -1,6 +1,8 @@
 """Player notes (app/player_notes.py): only the character's player writes them, every
 player reads them, the DM never sees them; each kind keeps its structure."""
 
+import json
+
 import pytest
 from sqlalchemy import select
 from starlette.datastructures import FormData
@@ -76,7 +78,10 @@ def test_only_the_player_writes_and_the_dm_never_sees(db, cole, player, dm, admi
     assert r.status_code == 303 and r.headers["location"] == f"{url}/plan"  # notes live on Plan
     note = db.scalar(select(PlayerNote))
     page = player.get(f"{url}/plan").text
-    assert "Bear and beam" in page and 'data-modal-url="/characters/%d/form?name=Polar%%20Bear"' % cole.id in page  # forms link
+    assert "Bear and beam" in page and 'data-panel-url="/characters/%d/notes/%d"' % (cole.id, note.id) in page  # a compact row
+    panel = player.get(f"{url}/notes/{note.id}").text  # the full note in the side panel
+    assert 'data-modal-url="/characters/%d/form?name=Polar%%20Bear"' % cole.id in panel and "/edit" in panel  # forms link
+    assert "/edit" not in admin.get(f"{url}/notes/{note.id}").text and dm.get(f"{url}/notes/{note.id}").status_code == 403
     assert "Bear and beam" in player.get(f"{url}/battle").text  # combos show on Battle
     assert "Bear and beam" not in player.get(url).text  # not on Sheet
     assert "Bear and beam" in admin.get(f"{url}/plan").text and "/notes/new" not in admin.get(f"{url}/plan").text  # others read, can't write
@@ -107,3 +112,20 @@ def test_import_loads_notes_and_wild_shape_shortlist_notes_once(db, cole):
     assert note.note == "When: rarely"
     with pytest.raises(ValueError):
         import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "player_notes": [{"character": "Nobody", "kind": "general", "title": "x", "data": {}}]})
+
+
+def test_saving_from_the_modal_updates_in_place_and_notes_can_be_reordered(db, cole, player, admin):
+    url = f"/characters/{cole.id}"
+    hx = {"HX-Request": "true"}
+    for title in ("First", "Second"):
+        r = player.post(f"{url}/notes", data={"kind": "general", "title": title, "body": "x"}, headers=hx)
+        assert r.status_code == 204 and json.loads(r.headers["HX-Trigger"])["notesChanged"] == {"character": cole.id, "kind": "general"}
+    first, second = db.scalars(select(PlayerNote).order_by(PlayerNote.position)).all()
+    assert player.post(f"{url}/notes/order", data={"column": "general", "keys": [str(second.id), str(first.id)]}).status_code == 204
+    db.refresh(first), db.refresh(second)
+    assert second.position < first.position
+    assert admin.post(f"{url}/notes/order", data={"column": "general", "keys": [str(first.id)]}).status_code == 403
+    plan = player.get(f"{url}/plan").text
+    assert plan.index(">Second<") < plan.index(">First<")
+    r = player.post(f"{url}/notes/{first.id}/delete", headers=hx)
+    assert r.status_code == 204 and "Deleted: First" in r.headers["HX-Trigger"]

@@ -1453,3 +1453,24 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .peek > .peek-backdrop.top { position: absolute; inset: 0; z-index: 5; background: rgba(0, 0, 0, .35); }
 .peek:focus { outline: none; }
 @media (max-width: 800px) { .peek.modal.full { width: 100%; height: 94vh; } }
+
+/* Plan's notes (roadmap step 6): compact rows for combos, leveling and quests; tiles for general notes,
+   three per row with a capped height. A click opens the full note in the side panel; drag to reorder. */
+.note-rows { display: flex; flex-direction: column; }
+.note-item { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; border-radius: 8px; }
+.note-row { padding: 9px 8px; border-top: 1px solid #2c3036; }
+.note-row:hover, .note-tile:hover, .note-item:focus-visible { background: #20242a; }
+.note-item-main { flex: 1; min-width: 0; }
+.note-item-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.note-item-head b { font-size: var(--fs-md); }
+.note-item-head .note { font-size: var(--fs-xs); }
+.note-item-sum { color: var(--muted); font-size: var(--fs-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.note-edit { flex: none; }
+.drag-handle { color: var(--faint); cursor: grab; font-size: var(--fs-sm); letter-spacing: -2px; padding-top: 3px; user-select: none; }
+.note-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.note-tile { background: var(--surface-2); padding: 12px 14px; max-height: 190px; overflow: hidden; position: relative; }
+.note-tile::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 36px; background: linear-gradient(transparent, var(--surface-2)); pointer-events: none; }
+.note-tile-body { font-size: var(--fs-sm); margin-top: 4px; }
+.note-tile-body p { margin: 0 0 6px; }
+@media (max-width: 900px) { .note-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .note-tiles { grid-template-columns: 1fr; } }

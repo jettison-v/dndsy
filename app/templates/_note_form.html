@@ -6,7 +6,8 @@
     <div class="note">{{ meta.about }}</div></div>
   <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
 </div>
-<form class="peek-body note-form" method="post" action="/characters/{{ c.id }}/notes">
+{# hx-post: saving updates the page in place (no reload, you stay on your tab); the plain post is the fallback #}
+<form class="peek-body note-form" method="post" action="/characters/{{ c.id }}/notes" hx-post="/characters/{{ c.id }}/notes" hx-swap="none">
   {% if n %}<input type="hidden" name="note_id" value="{{ n.id }}">{% else %}<input type="hidden" name="kind" value="{{ kind }}">{% endif %}
   <label class="field"><span>Title</span><input type="text" name="title" maxlength="200" value="{{ n.title if n else '' }}"
     placeholder="{{ {'combo': 'e.g. Grapple, then Moonbeam', 'leveling': 'e.g. Moon Druid with a Monk dip', 'quest': 'e.g. Find out what happened to my father', 'general': 'e.g. Things the DM told me'}[kind] }}" autofocus></label>
@@ -87,7 +88,7 @@
   <div class="row note-form-foot">
     <button class="btn primary" type="submit">Save</button>
     <span class="note">Every player can read this; the DM can't.</span>
-    {% if n %}<button class="btn link danger" type="submit" formaction="/characters/{{ c.id }}/notes/{{ n.id }}/delete" formnovalidate
-      onclick="return confirm('Delete this note?')" style="margin-left:auto">Delete</button>{% endif %}
+    {% if n %}<button class="btn link danger" type="button" hx-post="/characters/{{ c.id }}/notes/{{ n.id }}/delete" hx-swap="none"
+      hx-confirm="Delete this note?" style="margin-left:auto">Delete</button>{% endif %}
   </div>
 </form>

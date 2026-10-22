@@ -34,3 +34,11 @@
     {% if d.steps %}<ul class="quest-steps">{% for st in d.steps %}<li class="{{ 'done' if st.done }}">{{ "☑" if st.done else "☐" }} {{ nl.text(st.text) }}</li>{% endfor %}</ul>{% endif %}
   {% else %}<div class="note-body story-md">{{ nl.md(d.body) }}</div>{% endif %}
 {% endmacro %}
+
+{# One line about a note, for Plan's compact rows: what it's for at a glance. #}
+{% macro note_summary(n) %}{% set d = n.data or {} %}
+  {%- if n.kind == "combo" -%}{{ d.when or (d.turns | map(attribute="label") | select | join(" → ")) or d.payoff or "" }}
+  {%- elif n.kind == "leveling" -%}{% set next = (d.steps or []) | rejectattr("done") | first %}{{ d.goal or "" }}{% if next %}{{ " · " if d.goal }}Next: level {{ next.level }}{% if next.take %}, {{ next.take }}{% endif %}{% endif %}
+  {%- elif n.kind == "quest" -%}{{ d.goal or d.why or "" }}
+  {%- else -%}{{ d.body or "" }}{%- endif -%}
+{% endmacro %}
