@@ -1,48 +1,86 @@
 {% extends "base.html" %}
-{% block title %}Suggestions · askdnd{% endblock %}
+{% block title %}Inbox · askdnd{% endblock %}
+{# Manage › Inbox (content workflows step 2): everything waiting for the DM's OK. The table's suggestions all get
+   the same actions (Accept · Edit · Ask Claude to work it in · Dismiss), Claude's description drafts open the
+   entry's Edit window, and session drafts link to their review page. #}
 {% block content %}
-<main class="page narrow">
+<main class="page narrow inbox">
   {% include "_manage_head.html" %}
-  <div class="title-row"><h1>Suggestions</h1>{% set n = table.entries | length + table.facts | length %}{% if n %}<span class="count">{{ n }} waiting</span>{% endif %}</div>
-  <p class="subtitle">Corrections and additions from the table. They come to the DM, admins and reviewers, and any of them can decide. Nothing changes until one of them does. The DM's own go straight in.</p>
+  <div class="title-row"><h1>Inbox</h1>{% set n = items | length + drafts | length %}{% if n %}<span class="count">{{ n }} waiting</span>{% endif %}</div>
+  <p class="subtitle">Everything waiting for an OK from the DM, a reviewer or an admin. Nothing reaches the table until one of you decides. Players see what happened to theirs: Added, Used or Not used.</p>
 
-  {% if table.facts %}
   <section class="section">
-    <h2>People, places and other entries</h2>
-    <p class="hint" style="margin-top:6px">Add puts it on the page exactly as written.</p>
-    {% for it in table.facts %}{% set f = it.f %}
-    <div class="item">
-      <p class="item-title"><a href="/campaign/{{ f.entity_id }}">{{ it.name }}</a> <span class="tag {{ 'edited' if f.kind == 'correction' else 'new' }}">{{ f.kind | capitalize }}</span>
-        <span class="note">from {{ f.author_name or f.author_email or "someone" }} · {{ f.created_at.strftime("%b %-d") }}</span></p>
-      <div class="answer">{{ f.text }}</div>
-      <div class="row">
-        <form class="inline" method="post" action="/suggestions/facts/{{ f.id }}/merge"><button class="btn primary">Add to the page</button></form>
-        <form class="inline" method="post" action="/suggestions/facts/{{ f.id }}/reject"><button class="btn link">Reject</button></form>
+    <h2>From the table</h2>
+    {% if items %}
+    <p class="note">Accept puts it on the page as written. Edit lets you change it first. Ask Claude to work it in drafts a new description (or recap) with it, for you to check. Dismiss drops it.</p>
+    {% for it in items %}{% set x = it.x %}{% set key = it.type ~ "-" ~ x.id %}
+    <div class="item inbox-item" id="{{ key }}">
+      <p class="item-title"><a href="{{ it.href }}"{% if it.type == "fact" %} data-no-peek{% endif %}>{{ it.label }}</a>
+        <span class="tag {{ 'edited' if x.kind == 'correction' else 'new' }}">{{ x.kind | capitalize }}</span>
+        <span class="note">from {{ x.author_name or x.author_email or "someone" }} · {{ x.created_at.strftime("%b %-d") }}</span></p>
+      <div class="answer" id="{{ key }}-text">{{ x.text }}</div>
+      {% if it.type == "fact" %}
+      <div class="row" id="{{ key }}-actions">
+        <form class="inline" method="post" action="/suggestions/facts/{{ x.id }}/accept"><button class="btn primary">Accept</button></form>
+        <button type="button" class="btn" data-show="{{ key }}-edit" data-hide="{{ key }}-actions {{ key }}-text">Edit</button>
+        <form class="inline" method="post" action="/suggestions/facts/{{ x.id }}/claude"><button class="btn" data-busy="Claude is drafting…">Ask Claude to work it in</button></form>
+        <form class="inline" method="post" action="/suggestions/facts/{{ x.id }}/dismiss"><button class="btn link">Dismiss</button></form>
       </div>
-    </div>
-    {% endfor %}
-  </section>
-  {% endif %}
-
-  {% if table.entries %}
-  <section class="section">
-    <h2>Sessions and the glossary</h2>
-    <p class="hint" style="margin-top:6px">Session ones can go into that session's next redraft. For the glossary, fix the term (click it) and then mark it done.</p>
-    {% for it in table.entries %}{% set x = it.x %}
-    <div class="item">
-      <p class="item-title"><a href="{{ it.href }}">{{ it.label }}</a> <span class="tag {{ 'edited' if x.kind == 'correction' else 'new' }}">{{ x.kind | capitalize }}</span>
-        <span class="note">from {{ x.author_name or x.author_email }} · {{ x.created_at.strftime("%b %-d") }}</span></p>
-      <div class="answer">{{ x.text }}</div>
+      <form class="stack" id="{{ key }}-edit" method="post" action="/suggestions/facts/{{ x.id }}/edit" hidden>
+        <textarea name="text" rows="3" required aria-label="The fact, as it will show on {{ it.label }}">{{ x.text }}</textarea>
+        <div class="row"><button class="btn primary">Accept with my changes</button>
+          <button type="button" class="btn link" data-cancel="{{ key }}-edit" data-restore="{{ key }}-actions {{ key }}-text">Cancel</button></div>
+      </form>
+      {% elif it.type == "session" %}
       <div class="row">
-        {% if x.target_type == "session" %}<form class="inline" method="post" action="/admin/suggestions/{{ x.id }}/use"><button class="btn primary">Use in next draft</button></form>{% endif %}
-        <form class="inline" method="post" action="/admin/suggestions/{{ x.id }}/done"><button class="btn">{{ "I fixed it" if x.target_type == "glossary" else "Mark done" }}</button></form>
+        <a class="btn primary" href="{{ it.href }}#recap">Edit the recap</a>
+        {% if it.redraft %}<form class="inline" method="post" action="/admin/suggestions/{{ x.id }}/claude"><button class="btn">Ask Claude to work it in</button></form>{% endif %}
+        <form class="inline" method="post" action="/admin/suggestions/{{ x.id }}/done"><button class="btn">I fixed it</button></form>
         <form class="inline" method="post" action="/admin/suggestions/{{ x.id }}/dismiss"><button class="btn link">Dismiss</button></form>
       </div>
+      <p class="note">{% if it.redraft %}Ask Claude redrafts the session with it; you review and publish again.{% else %}Edit the recap yourself, then press I fixed it.{% endif %}</p>
+      {% else %}{% set t = it.term %}
+      <div class="row" id="{{ key }}-actions">
+        <button type="button" class="btn primary" data-show="{{ key }}-edit" data-hide="{{ key }}-actions">{{ "Edit the term" if t else "Add the term" }}</button>
+        {% if t %}<form class="inline" method="post" action="/admin/suggestions/{{ x.id }}/done"><button class="btn">I fixed it</button></form>{% endif %}
+        <form class="inline" method="post" action="/admin/suggestions/{{ x.id }}/dismiss"><button class="btn link">Dismiss</button></form>
+      </div>
+      <form class="stack" id="{{ key }}-edit" method="post" action="/admin/suggestions/{{ x.id }}/glossary" hidden>
+        <label class="field">Term <input type="text" name="term" required value="{{ t.term if t }}"></label>
+        <label class="field">What it is <textarea name="description" rows="2">{{ t.description if t }}</textarea></label>
+        <label class="field">Misheard as <input type="text" name="misheard_as" value="{{ t.misheard_as | join(', ') if t }}" placeholder="Spellings a transcript might use, separated by commas"></label>
+        <div class="row"><button class="btn primary">{{ "Save and accept" if t else "Add and accept" }}</button>
+          <button type="button" class="btn link" data-cancel="{{ key }}-edit" data-restore="{{ key }}-actions">Cancel</button></div>
+      </form>
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% else %}<p class="all-clear">✓ Nothing waiting from the table.</p>{% endif %}
+  </section>
+
+  {% if drafts %}
+  <section class="section" id="drafts">
+    <h2>Claude's drafts to check</h2>
+    <p class="note">New descriptions Claude wrote from an entry's facts and key moments. Nothing changes until you use one.</p>
+    {% for e in drafts %}
+    <div class="item inbox-item">
+      <p class="item-title"><a href="/campaign?open={{ e.id }}" data-no-peek>{{ e.name }}</a> <span class="tag draft">New description</span></p>
+      <div class="answer clamp">{{ e.draft_summary }}</div>
+      <div class="row"><a class="btn primary" href="/campaign?open={{ e.id }}" data-modal-url="/campaign/{{ e.id }}/edit" data-modal-size="large">Check it</a>
+        <span class="note">Opens the entry's Edit window: use it, edit it or discard it.</span></div>
     </div>
     {% endfor %}
   </section>
   {% endif %}
 
-  {% if not table.entries and not table.facts %}<p class="all-clear">✓ Nothing waiting.</p>{% endif %}
+  <section class="section" id="reviews">
+    <h2>Sessions to review</h2>
+    {% if reviews %}
+    <p class="note">Drafted from Brett's notes or a recording. Each has its own page: the recap, key moments, Claude's questions and suggested updates.</p>
+    <ul class="plain inbox-reviews">{% for r in reviews %}
+      <li><a href="/admin/sessions/{{ r.s.id }}">{{ r.label }}{% if r.s.title %}: {{ r.s.title }}{% endif %}</a>
+        <span class="tag draft">{{ "Draft" if r.status == "draft" else "Edited since publishing" }}</span></li>{% endfor %}</ul>
+    {% else %}<p class="all-clear">✓ No drafts waiting. <a href="/admin/sessions">Recaps</a> drafts the next one.</p>{% endif %}
+  </section>
 </main>
 {% endblock %}

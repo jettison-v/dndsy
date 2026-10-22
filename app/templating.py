@@ -37,6 +37,15 @@ def _markdown(text: str) -> str:
 templates.env.filters["md"] = _markdown
 
 
+def _outcome(status: str) -> dict:
+    from app.suggestions import outcome
+
+    return outcome(status)
+
+
+templates.env.filters["outcome"] = _outcome  # a suggestion's status as its author sees it: Waiting, Added, Used, Not used
+
+
 def _relation_label(type_: str) -> str:
     from app.relations import TYPES
 

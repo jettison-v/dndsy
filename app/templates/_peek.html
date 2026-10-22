@@ -23,10 +23,15 @@
   {% for f in pending %}
   <div class="item peek-pending"><p class="item-title">{{ f.text }}</p>
     <p class="note" style="margin:-6px 0 8px">{{ f.author_name or f.author_email or "Someone" }} · {{ f.created_at.strftime("%b %-d") }}</p>
-    <div class="row"><button class="btn primary small" hx-post="/campaign/facts/{{ f.id }}/merge?in=panel" {{ px | safe }}>Merge</button>
-      <button class="btn link small" hx-post="/campaign/facts/{{ f.id }}/reject?in=panel" {{ px | safe }}>Reject</button></div></div>
+    <div class="row"><button class="btn primary small" hx-post="/campaign/facts/{{ f.id }}/merge?in=panel" {{ px | safe }}>Accept</button>
+      <button class="btn link small" hx-post="/campaign/facts/{{ f.id }}/reject?in=panel" {{ px | safe }}>Dismiss</button>
+      <a class="btn link small" href="/suggestions#fact-{{ f.id }}" data-no-peek>Edit or ask Claude in the Inbox</a></div></div>
   {% endfor %}
-  {% for f in mine_pending %}<div class="item"><p class="item-title" style="margin-bottom:4px">{{ f.text }}</p><span class="tag draft">Waiting for the DM or an admin</span></div>{% endfor %}
+  {% if mine %}
+  <h3>Your suggestions here</h3>
+  <ul class="plain peek-mine">{% for f in mine | reverse %}{% set o = f.status | outcome %}<li><span class="tag {{ o.tag }}">{{ o.label }}</span> {{ f.text }}</li>{% endfor %}</ul>
+  <p class="note"><a href="/your-suggestions">All your suggestions</a></p>
+  {% endif %}
 
   <form class="stack add-fact" hx-post="/campaign/{{ e.id }}/facts?in=panel" {{ px | safe }} hx-disabled-elt="find button">
     <div class="row">

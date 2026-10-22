@@ -128,13 +128,10 @@
       <p class="item-title">{{ f.text }}</p>
       <p class="note" style="margin:-6px 0 10px">Added by {{ f.author_name or f.author_email or "someone" }} · {{ f.created_at.strftime("%b %-d") }}</p>
       <div class="row">
-        <form class="inline" hx-post="/campaign/facts/{{ f.id }}/merge" {{ hx | safe }}><button class="btn primary">Merge</button></form>
-        <form class="inline" hx-post="/campaign/facts/{{ f.id }}/reject" {{ hx | safe }}><button class="btn link">Reject</button></form>
+        <form class="inline" hx-post="/campaign/facts/{{ f.id }}/merge" {{ hx | safe }}><button class="btn primary">Accept</button></form>
+        <form class="inline" hx-post="/campaign/facts/{{ f.id }}/reject" {{ hx | safe }}><button class="btn link">Dismiss</button></form>
       </div>
     </div>
-    {% endfor %}
-    {% for f in mine_pending %}
-    <div class="item"><p class="item-title" style="margin-bottom:4px">{{ f.text }}</p><span class="tag draft">Waiting for the DM or an admin</span></div>
     {% endfor %}
 
     <form class="stack add-fact" hx-post="/campaign/{{ e.id }}/facts" {{ hx | safe }}>

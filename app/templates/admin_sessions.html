@@ -25,8 +25,7 @@
   </section>
   {% endif %}
 
-  {% set waiting = table.entries | length + table.facts | length %}
-  {% if waiting %}<p class="flash" id="from-the-table">{{ waiting }} suggestion{{ "s" if waiting != 1 }} from the table waiting. <a href="/suggestions">Open Suggestions →</a></p>{% endif %}
+  {% if waiting %}<p class="flash" id="from-the-table">{{ waiting }} suggestion{{ "s" if waiting != 1 }} or draft{{ "s" if waiting != 1 }} waiting for your OK. <a href="/suggestions">Open the inbox →</a></p>{% endif %}
 
   <section class="section">
     <table class="list">

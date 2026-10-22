@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Your suggestions · askdnd{% endblock %}
+{# Every correction or addition you sent, newest first, with what happened to it (content workflows decision 8:
+   no notifications, just the status where you look). #}
+{% block content %}
+<main class="page narrow">
+  <div class="title-row"><h1>Your suggestions</h1></div>
+  <p class="subtitle">What happened to each correction or addition you sent. <b>Added</b>: it's on the page as you wrote it. <b>Used</b>: the DM worked it into a description or recap. <b>Not used</b>: the DM decided against it.</p>
+  {% if rows %}
+  <ul class="plain mine-list">{% for r in rows %}{% set o = r.x.status | outcome %}
+    <li class="item"><p class="item-title"><span class="tag {{ o.tag }}">{{ o.label }}</span> <a href="{{ r.href }}" data-no-peek>{{ r.label }}</a>
+      <span class="note">· {{ r.x.created_at.strftime("%b %-d") }}</span></p>
+      <div class="answer">{{ r.x.text }}</div></li>{% endfor %}</ul>
+  {% else %}<p class="muted">Nothing yet. Use <b>Suggest a correction or addition</b> under a recap, or add what the party learned in any entry's side panel.</p>{% endif %}
+</main>
+{% endblock %}

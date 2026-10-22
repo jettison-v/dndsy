@@ -1,7 +1,7 @@
 """The Manage area: one list of its pages (grouped for the menu and the tab bar)
 and the Manage home page, which shows what needs attention in each.
 
-Who sees what: Suggestions go to the DM, reviewers and admins; Recaps to reviewers
+Who sees what: the Inbox (suggestions) goes to the DM, reviewers and admins; Recaps to reviewers
 and admins; everything else to admins only.
 """
 
@@ -24,7 +24,7 @@ router = APIRouter()
 # (key, label, href, what it's for, group, who may open it, extra paths that belong to it)
 PAGES = (
     ("guide", "DM guide", "/manage/dm-guide", "How the campaign record works, and getting through the backlog", "Table", can_moderate, ()),
-    ("suggestions", "Suggestions", "/suggestions", "Corrections and additions from the table", "Table", can_moderate, ()),
+    ("suggestions", "Inbox", "/suggestions", "Suggestions from the table and Claude's drafts, waiting for your OK", "Table", can_moderate, ()),
     ("recaps", "Recaps", "/admin/sessions", "Draft, review and publish session recaps", "Table", is_reviewer, ("/admin/notes",)),
     ("history", "History", "/admin/history", "Every change, with Restore", "Table", is_reviewer, ()),
     ("people", "People", "/admin/people", "Who can sign in, their access and character", "Party", is_admin, ()),

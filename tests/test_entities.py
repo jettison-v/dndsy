@@ -91,8 +91,8 @@ def test_entity_page_shows_moments_in_story_order(player, db):
 def test_fact_flow_merge_keeps_summary(player, db, monkeypatch):
     import_bundle(db, BUNDLE)
     e = lillippi(db)
-    r = player.post(f"/campaign/{e.id}/facts", data={"text": "She owes Cole 10 gold."}, headers=HX)
-    assert "Waiting for the DM or an admin" in r.text
+    r = player.post(f"/campaign/{e.id}/facts?in=panel", data={"text": "She owes Cole 10 gold."}, headers=HX)
+    assert "Your suggestions here" in r.text and 'tag draft">Waiting<' in r.text
     fact = db.scalar(select(Fact))
     assert fact.status == "pending" and fact.author_name == "Pat" and fact.author_email == "player@example.com"
     assert player.post(f"/campaign/facts/{fact.id}/merge", headers=HX).status_code == 403

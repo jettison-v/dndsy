@@ -8,7 +8,7 @@
   <div class="title-row"><h1>DM guide</h1></div>
   <p class="subtitle">How askdnd's campaign record works for you as the DM, and a plan for getting through the backlog from Brett's notes. Only the DM, reviewers and admins see this page.</p>
   <nav class="ds-jump" aria-label="On this page">
-    <a href="#idea">The idea</a><a href="#backlog">The backlog</a><a href="#after">After a game night</a><a href="#players">Player suggestions</a>
+    <a href="#idea">The idea</a><a href="#backlog">The backlog</a><a href="#after">After a game night</a><a href="#players">The inbox</a>
     <a href="#write">Writing it yourself</a><a href="#tidy">Tidying and undo</a><a href="#privacy">Who sees what</a><a href="#words">Words</a>
   </nav>
 
@@ -46,7 +46,7 @@
       <li><b>Tidy as you go</b>{% if b.hidden %} <span class="tag faint">{{ b.hidden }} hidden {{ "entry" if b.hidden == 1 else "entries" }}</span>{% endif %}
         <p>Drafts sometimes create the same person twice ("Capt Trager Grill" and "Captain Trager Grill"). Open one on the <a href="/campaign">Campaign</a> page, press <b>Edit</b>, and <b>Merge</b> it into the other. See <a href="#tidy">Tidying and undo</a>.</p></li>
       <li class="{{ 'done' if not b.suggestions }}"><b>Players' suggestions</b>{% if b.suggestions %} <span class="tag draft">{{ b.suggestions }} waiting</span>{% else %} <span class="tag done">None waiting</span>{% endif %}
-        <p>On <a href="/suggestions">Manage › Suggestions</a>. See <a href="#players">Player suggestions</a>.</p></li>
+        <p>On <a href="/suggestions">Manage › Suggestions</a>. See <a href="#players">The inbox</a>.</p></li>
     </ol>
     <div class="guide-tips"><b>Tips</b>
       <ul>
@@ -67,13 +67,22 @@
   </section>
 
   <section class="section" id="players">
-    <h2>When a player suggests something</h2>
+    <h2>The inbox: suggestions and Claude's drafts</h2>
+    <p>Everything waiting for your OK is on <a href="/suggestions">Manage › Inbox</a>. Every suggestion from a player gets the same four choices:</p>
+    <dl class="mech guide-words">
+      <dt>Accept</dt><dd>It shows on the page exactly as they wrote it.</dd>
+      <dt>Edit</dt><dd>Change the wording first, then accept.</dd>
+      <dt>Ask Claude to work it in</dt><dd>On a person, place or other entry: Claude writes a new description that includes it. It waits under <i>Claude's drafts to check</i> until you use, edit or discard it. On a session: Claude redrafts the recap with it, and you review and publish again.</dd>
+      <dt>Dismiss</dt><dd>Drop it. Nothing on the page changes.</dd>
+    </dl>
     <ul class="guide-list">
-      <li><b>On a person, place or other entry</b>, it shows in that entry's panel under <i>What the table knows</i>, marked waiting. <b>Merge</b> shows it to the table; <b>Reject</b> drops it. When you've worked a fact into the description yourself, press <b>Done</b> to take it off the list.</li>
-      <li><b>On a recap or a glossary term</b>, it goes to <a href="/suggestions">Manage › Suggestions</a>. Fix the recap or term yourself, or <b>Use</b> it so the next redraft includes it.</li>
+      <li><b>On a recap:</b> <b>Edit the recap</b> yourself and press <b>I fixed it</b>, or <b>Ask Claude</b> to redraft with it. (Sessions you wrote by hand or that came from a recording can't be redrafted, so edit those.)</li>
+      <li><b>On a glossary term:</b> <b>Edit the term</b> (or <b>Add the term</b> for a new one) right there, and it's accepted when you save.</li>
+      <li><b>On an entry's side panel</b> you can also Accept or Dismiss without opening the inbox. When you've worked a fact into the description yourself, press <b>Done</b> to take it off <i>What the table knows</i>.</li>
+      <li><b>Players see what happened</b> to theirs, in the entry's panel and on <i>Your suggestions</i> (in their account menu): <b>Added</b> (on the page), <b>Used</b> (worked into a description or recap), or <b>Not used</b>. No notifications.</li>
       <li><b>Your own suggestions</b> skip all of this and go straight on.</li>
     </ul>
-    <p class="note">Coming soon: one inbox for every suggestion, with the same buttons everywhere (Accept, Edit, Ask Claude to work it in, Dismiss), and players will see what happened to theirs.</p>
+    <p>The inbox also lists <b>sessions to review</b>; each still has its own page with the recap, key moments, questions and suggested updates.</p>
   </section>
 
   <section class="section" id="write">
@@ -113,6 +122,7 @@
       <dt>Publish</dt><dd>Show a session's recap and key moments to the table.</dd>
       <dt>Hidden</dt><dd>An entry the table can't see.</dd>
       <dt>Key moment</dt><dd>One line about something important in a session; shown on the session and on every entry it mentions.</dd>
+      <dt>Inbox</dt><dd>Manage › Inbox: players' suggestions, Claude's drafts and sessions to review, all waiting for your OK.</dd>
       <dt>What the table knows</dt><dd>Facts added by players or you, listed on an entry until worked into its description.</dd>
       <dt>Suggested update</dt><dd>A change Claude proposes while drafting a session (a new person, a spelling, a new description).</dd>
       <dt>Claude's questions</dt><dd>Things Claude wasn't sure about while drafting; answering them improves this and later drafts.</dd>

@@ -60,6 +60,7 @@
       <button class="avatar" data-menu="account-menu" aria-label="Account">{% if user.picture %}<img src="{{ user.picture }}" alt="" referrerpolicy="no-referrer">{% else %}{{ (user.name or user.email)[:1] | upper }}{% endif %}</button>
       <div class="menu" id="account-menu" hidden>
         <a href="#" style="pointer-events:none">{{ user.name }}<small>{{ user.email }}</small></a>
+        <a href="/your-suggestions" class="{{ 'active' if path == '/your-suggestions' }}">Your suggestions<small>What happened to each one</small></a>
         <form method="post" action="/logout"><button type="submit">Sign out</button></form>
       </div>
     </div>
@@ -78,6 +79,7 @@
 <div class="menu more-menu" id="more-menu" hidden>
   <a href="/sessions" class="{{ 'active' if path.startswith('/sessions') }}">Sessions</a>
   <a href="/map" class="{{ 'active' if path == '/map' }}">Map</a>
+  <a href="/your-suggestions" class="{{ 'active' if path == '/your-suggestions' }}">Your suggestions</a>
   {% if manage_pages %}<a href="/manage" class="{{ 'active' if path.startswith('/manage') }}">Manage<small>Admin and reviewer pages</small></a>{% endif %}
   <a href="/about" data-no-peek>About</a>
   <a href="/faq" data-no-peek>FAQ</a>

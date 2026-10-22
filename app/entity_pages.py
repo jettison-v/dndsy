@@ -48,7 +48,8 @@ def entity_context(db: Session, entity: Entity, user: dict) -> dict:
         "kind_label": entities.KIND_LABELS.get(entity.kind, entity.kind.value),
         "merged": [f for f in facts if f.status == "merged"],
         "pending": [f for f in facts if f.status == "pending"] if moderator else [],
-        "mine_pending": [f for f in facts if f.status == "pending" and f.author_email.lower() == email] if not moderator else [],
+        # A player's own suggestions here, with what happened to each (Waiting, Added, Used, Not used)
+        "mine": [f for f in facts if f.author_email.lower() == email] if not moderator else [],
         "done_facts": sorted((f for f in facts if f.status != "pending"), key=lambda f: f.updated_at, reverse=True) if moderator else [],
         "finished": [f for f in facts if f.status == "done"],  # worked into the description or marked Done
         "relations": relations.lines_for(db, entity),
@@ -228,12 +229,12 @@ def delete_picture(request: Request, entity_id: int, db: Session = Depends(get_d
 
 @router.post("/facts/{fact_id:int}/merge")
 def merge_fact(request: Request, fact_id: int, db: Session = Depends(get_db)):
-    return _fact_action(request, db, fact_id, lambda f: entities.merge_fact(f) or "Merged onto the page")
+    return _fact_action(request, db, fact_id, lambda f: entities.merge_fact(f) or "Added to the page")
 
 
 @router.post("/facts/{fact_id:int}/reject")
 def reject_fact(request: Request, fact_id: int, db: Session = Depends(get_db)):
-    return _fact_action(request, db, fact_id, lambda f: entities.reject_fact(f) or "Rejected")
+    return _fact_action(request, db, fact_id, lambda f: entities.reject_fact(f) or "Dismissed")
 
 
 @router.post("/facts/{fact_id:int}/done")

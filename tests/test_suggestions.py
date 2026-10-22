@@ -63,9 +63,9 @@ def test_session_suggestion_flows_to_review_and_redraft(player, admin, db):
     import_bundle(db, BUNDLE)
     s = db.scalar(select(GameSession))
     player.post(f"/sessions/{s.id}/suggest", data={"kind": "correction", "text": "Kieran, not Kiera."}, headers=HX)
-    assert "1 suggestion from the table waiting" in admin.get("/admin/sessions").text
+    assert "1 suggestion or draft waiting for your OK" in admin.get("/admin/sessions").text
     page = admin.get("/suggestions").text
-    assert "Kieran, not Kiera." in page and "Use in next draft" in page
+    assert "Kieran, not Kiera." in page and "Edit the recap" in page and "I fixed it" in page
     x = db.scalar(select(Suggestion))
     admin.post(f"/admin/suggestions/{x.id}/use")
     db.expire_all()
@@ -149,9 +149,10 @@ def test_suggestions_go_to_the_dm_and_admins(dm, player, db):
     s = db.scalar(select(GameSession))
     player.post(f"/campaign/{e.id}/suggest", data={"kind": "addition", "text": "He sails."}, headers=HX)
     player.post(f"/sessions/{s.id}/suggest", data={"kind": "correction", "text": "Kieran, not Kiera."}, headers=HX)
-    assert player.get("/suggestions").status_code == 403 and "Manage" not in player.get("/").text
+    assert player.get("/suggestions", follow_redirects=False).headers["location"] == "/your-suggestions"
+    assert "Manage" not in player.get("/").text
     home = dm.get("/").text
-    assert "2 suggestions from the table are waiting" in home and 'href="/suggestions"' in home
+    assert "2 suggestions or drafts are waiting" in home and 'href="/suggestions"' in home
     page = dm.get("/suggestions").text
     assert "He sails." in page and "Kieran, not Kiera." in page
     fact = db.scalar(select(Fact))
@@ -160,7 +161,7 @@ def test_suggestions_go_to_the_dm_and_admins(dm, player, db):
     dm.post(f"/admin/suggestions/{x.id}/use")
     db.expire_all()
     assert db.get(Fact, fact.id).status == "merged" and db.get(Suggestion, x.id).status == "used"
-    assert "Nothing waiting" in dm.get("/suggestions").text
+    assert "Nothing waiting from the table" in dm.get("/suggestions").text
     # A player can't decide on suggestions
     player.post(f"/campaign/{e.id}/suggest", data={"kind": "addition", "text": "He sings."}, headers=HX)
     sings = db.scalar(select(Fact).where(Fact.text == "He sings."))
@@ -171,3 +172,60 @@ def test_suggestions_go_to_the_dm_and_admins(dm, player, db):
     dm.post(f"/campaign/facts/{sings.id}/reject", headers=HX)  # the DM can also decide on the entry's own page
     db.expire_all()
     assert db.get(Fact, sings.id).status == "rejected"
+
+
+def test_one_inbox_same_actions_and_players_see_the_outcome(dm, player, db, monkeypatch):
+    """Content workflows step 2: Accept · Edit · Ask Claude to work it in · Dismiss, and Waiting / Added / Used / Not used."""
+    from app import admin_sessions, entities
+    from app.models import Recap, Status
+
+    import_bundle(db, BUNDLE)
+    e = db.scalar(select(Entity).where(Entity.name == "Kieran"))
+    s = db.scalar(select(GameSession))
+    s.source = "notes"
+    db.add(Recap(session_id=s.id, version=1, body="The party met Kiera.", author="ai", status=Status.PUBLISHED))
+    for text in ("He sails.", "He sings.", "He fishes.", "He hums."):
+        r = player.post(f"/campaign/{e.id}/suggest", data={"kind": "addition", "text": text}, headers=HX)
+    assert 'href="/your-suggestions"' in r.text
+    player.post(f"/sessions/{s.id}/suggest", data={"kind": "correction", "text": "Kieran, not Kiera."}, headers=HX)
+    player.post("/campaign/glossary/suggest", data={"text": "Womford is a fishing village."}, headers=HX)
+    fact = {f.text: f for f in db.scalars(select(Fact))}
+
+    page = dm.get("/suggestions").text
+    assert page.count("/claude\"") == 5 and "Add the term" in page and "Sessions to review" in page
+
+    dm.post(f"/suggestions/facts/{fact['He sails.'].id}/accept")
+    dm.post(f"/suggestions/facts/{fact['He sings.'].id}/edit", data={"text": "He sings sea shanties."})
+    dm.post(f"/suggestions/facts/{fact['He hums.'].id}/dismiss")
+
+    def fake_regenerate(db, entity):
+        entity.draft_summary = "Cole's father, a sailor who fishes."
+        entity.draft_fact_ids = [fact["He fishes."].id]
+        db.commit()
+        return entity.draft_summary
+    monkeypatch.setattr(entities, "regenerate", fake_regenerate)
+    dm.post(f"/suggestions/facts/{fact['He fishes.'].id}/claude")
+    page = dm.get("/suggestions").text
+    assert "Claude's drafts to check" in page and f'data-modal-url="/campaign/{e.id}/edit"' in page
+    dm.post(f"/campaign/{e.id}/description/accept", headers=HX)
+
+    started = []
+    monkeypatch.setattr(admin_sessions, "_draft_in_background", lambda ids: started.append(ids) or True)
+    x = db.scalar(select(Suggestion).where(Suggestion.target_type == "session"))
+    dm.post(f"/admin/suggestions/{x.id}/claude")
+    assert started == [[s.id]]
+    g = db.scalar(select(Suggestion).where(Suggestion.target_type == "glossary"))
+    dm.post(f"/admin/suggestions/{g.id}/glossary", data={"term": "Womford", "description": "A fishing village", "misheard_as": "Wombford"})
+
+    db.expire_all()
+    assert [db.get(Fact, fact[t].id).status for t in ("He sails.", "He sings.", "He fishes.", "He hums.")] == ["merged", "merged", "done", "rejected"]
+    assert db.get(Fact, fact["He sings."].id).text == "He sings sea shanties."
+    assert db.scalar(select(Correction).where(Correction.session_id == s.id)).after == "Kieran, not Kiera."
+    assert db.scalar(select(GlossaryTerm).where(GlossaryTerm.term == "Womford")).misheard_as == ["Wombford"]
+    assert "Nothing waiting from the table" in dm.get("/suggestions").text
+
+    mine = player.get("/your-suggestions").text
+    assert (mine.count(">Added</span>"), mine.count(">Used</span>"), mine.count(">Not used</span>")) == (3, 2, 1)
+    peek = player.get(f"/campaign/{e.id}/peek").text
+    assert "Your suggestions here" in peek and ">Not used<" in peek and "He hums." in peek
+    assert "Your suggestions here" not in dm.get(f"/campaign/{e.id}/peek").text
