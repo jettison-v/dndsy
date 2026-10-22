@@ -126,16 +126,18 @@ def check_parts(parts: list[str], count: int = 1) -> bool:
 
 
 def roll_parts(parts: list[str], count: int = 1, crits: list[bool] | None = None, each: str = "", roll=None,
-               floor: bool = True) -> dict:
+               floor: bool = True, once: bool = False) -> dict:
     """Roll each part, once per instance (3 darts: 3 × 1d4+1), keeping each roll's own line. A
-    critical instance rolls its dice twice. `crits` (one per instance) also says how many there are."""
+    critical instance rolls its dice twice. `crits` (one per instance) also says how many there are.
+    `once` (a house rule, app/house_rules.py): the first instance's dice count for every instance."""
     roll = roll or die
     crits = crits if crits is not None else [False] * count
-    lines = []
+    lines, first = [], {}
     for i, crit in enumerate(crits):
-        for n, sides, flat, kind in (rr.parse_part(p) for p in parts):
+        for j, (n, sides, flat, kind) in enumerate(rr.parse_part(p) for p in parts):
             k = n * 2 if crit else n
-            dice = [roll(sides) for _ in range(k)]
+            dice = list(first[j]) if once and i else [roll(sides) for _ in range(k)]
+            first.setdefault(j, dice)
             lines.append({"label": f"{each.title()} {i + 1}" if len(crits) > 1 and each else "", "kind": kind, "crit": crit,
                           "formula": (f"{k}d{sides}" + (f"{flat:+d}" if flat else "")) if k else str(flat), "dice": dice,
                           "total": sum(dice) + flat})
@@ -387,7 +389,7 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
               mod: str = Form(""), dmg: str = Form(""), adv: str = Form(""), mode: str = Form("normal"),
               to: str = Form("table"), extra: list[str] = Form([]), parent: int = Form(0), action: str = Form(""),
               die_size: int = Form(0, alias="die"), part: list[str] = Form([]), dmg_part: list[str] = Form([]),
-              count: int = Form(1), each: str = Form(""), db: Session = Depends(get_db)):
+              count: int = Form(1), each: str = Form(""), once: str = Form(""), db: Session = Depends(get_db)):
     """Roll on the server and return the result (the entry and its HTML for the log).
 
     A new roll: `kind` with its data, for the player's own character (plain `dice` may have
@@ -439,7 +441,7 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
             damage = dmg.replace(" ", "").replace("−", "-")
     else:
         if part:
-            result = roll_parts(part, count, each=each, floor=kind != "dice")
+            result = roll_parts(part, count, each=each, floor=kind != "dice", once=bool(once))
         else:
             result = roll_formula(dmg, floor=kind != "dice")
             if result is None:

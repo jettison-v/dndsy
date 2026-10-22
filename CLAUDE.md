@@ -20,7 +20,7 @@ A companion app for one D&D 2024 table (4 players + DM, playing on Zoom with D&D
 - Pushing to `main` deploys to beta. That's fine, but keep `main` working.
 
 ## Where things are (as of 2026-10-19)
-- **Manage** (`/manage`, app/manage.py): one overview of admin and reviewer pages (DM guide, People with the access chart, Characters, Recaps, Suggestions, History, Usage, Data, Design system). Access rules live only in `app/access.py` (`allows()`).
+- **Manage** (`/manage`, app/manage.py): one overview of admin and reviewer pages (DM guide, Inbox, Recaps, History, House rules, People with the access chart, Characters with tool corrections, Usage, Data, Design system). Access rules live only in `app/access.py` (`allows()`).
 - **Version history** (app/history.py): records edits automatically; Manage › History restores; imports are previewed and can be undone.
 - **Backups**: the `askdnd-backup` Railway cron service dumps the database to S3 `v2/backups/` nightly; `scripts/restore_db.py` restores into an empty database.
 - **Local data**: the local app uses `askdnd_beta`, a copy of beta from the newest backup (`scripts/pull_beta.sh` refreshes it; stop the server first). Local changes never reach beta. Automatic drafting is off locally (`AUTO_DRAFT`).

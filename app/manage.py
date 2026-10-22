@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from app import web
 from app import review
-from app.auth import can_moderate, current_user, is_admin, is_reviewer
+from app.auth import can_moderate, can_set_house_rules, current_user, is_admin, is_reviewer
 from app.db import get_db
 from app.models import CharacterSnapshot, User
 from app.templating import templates
@@ -27,8 +27,9 @@ PAGES = (
     ("suggestions", "Inbox", "/suggestions", "Suggestions from the table and Claude's drafts, waiting for your OK", "Table", can_moderate, ()),
     ("recaps", "Recaps", "/admin/sessions", "Draft, review and publish session recaps", "Table", is_reviewer, ("/admin/notes",)),
     ("history", "History", "/admin/history", "Every change, with Restore", "Table", is_reviewer, ()),
+    ("house", "House rules", "/manage/house-rules", "Your rulings on how askdnd rolls things at this table", "Table", can_set_house_rules, ()),
     ("people", "People", "/admin/people", "Who can sign in, their role at the table and character", "Party", is_admin, ()),
-    ("characters", "Characters", "/admin/characters", "D&D Beyond links and regrouping", "Party", is_admin, ()),
+    ("characters", "Characters", "/admin/characters", "D&D Beyond links and tool corrections", "Party", is_admin, ()),
     ("usage", "Usage", "/admin/usage", "Claude spending and balance", "Admin", is_admin, ()),
     ("data", "Data", "/admin/import", "Imports and nightly backups", "Admin", is_admin, ()),
     ("design", "Design system", "/manage/design", "Every component and token, for building and reviewing screens", "Admin", is_admin, ()),
@@ -129,6 +130,11 @@ def _status(db: Session, user: dict, keys: set[str]) -> dict[str, dict]:
 
         n = db.scalar(select(func.count()).select_from(Revision).where(Revision.created_at > datetime.now(UTC).replace(hour=0, minute=0, second=0)))
         out["history"] = {"text": f"{n} change{'s' if n != 1 else ''} today" if n else "No changes today", "attention": False}
+    if "house" in keys and campaign:
+        from app.models import HouseRule
+
+        n = db.scalar(select(func.count()).select_from(HouseRule).where(HouseRule.campaign_id == campaign.id)) or 0
+        out["house"] = {"text": f"{n} house rule{'s' if n != 1 else ''}" if n else "None yet: the 2024 rules as written", "attention": False}
     if "data" in keys:
         b = backup_status(db)
         out["data"] = {"text": b["text"], "attention": b["attention"], "sub": "Import a campaign bundle (.json)"}

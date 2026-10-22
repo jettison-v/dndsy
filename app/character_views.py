@@ -5,7 +5,7 @@ they're easy to test without a browser."""
 import re
 from urllib.parse import quote
 
-from app import advantage, class_rules, conditions
+from app import advantage, class_rules, conditions, house_rules
 from app import roll_recipes as rr
 
 COSTS = ["Action", "Bonus action", "Reaction", "Other"]
@@ -140,7 +140,7 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
             adv=advantage.for_attack(advs, spell=True) if sp["attack"] else [],
             spends=spends,
             meta=" · ".join(x for x in (sp["range"], effect, sp["trigger"] if cost == "Reaction" else "") if x),
-            text=sp.get("text") or sp["summary"], summary=sp["summary"], recipe=rr.spell(sp["name"]) or sp.get("roll"),
+            text=sp.get("text") or sp["summary"], summary=sp["summary"], recipe=house_rules.spell(sp["name"]) or sp.get("roll"),
             common=cost == "Reaction" or (not sp["level"] and bool(sp["attack"] or sp["save"]) and bool(sp["damage"])))
     for a in sheet.get("actions") or []:
         cost = _cost(a["activation"])
@@ -335,7 +335,7 @@ def detail(sheet: dict, ref: str, starred: set[str] = frozenset()) -> dict | Non
     if roll is None and x["section"] in ("spells", "inventory", "attacks", "actions", "features", "creatures"):
         weapon = next((a for a in sheet.get("attacks") or [] if a["name"] == x.get("name")), None)
         effect = x.get("damage") or (f"heals {x['healing']}" if x.get("healing") else "")
-        recipe = rr.spell(x.get("name") or "") or x.get("roll") if x["section"] == "spells" else rr.item(x.get("name") or "")
+        recipe = house_rules.spell(x.get("name") or "") or x.get("roll") if x["section"] == "spells" else rr.item(x.get("name") or "")
         roll = rollable({"name": x.get("name") or "", "kind": "spell" if x["section"] == "spells" else "item", "recipe": recipe,
                          "hit": x.get("attack") or x.get("save") or (weapon or {}).get("to_hit", ""), "meta": effect if isinstance(effect, str) else "",
                          "summary": x.get("summary") or "", "text": x.get("text") or "", "adv": []})
@@ -485,7 +485,7 @@ def granted_spells(sheet: dict) -> list[dict]:
 
 # ------------------------------------------------------------------ admin regrouping
 # An admin can correct how askdnd groups anything from D&D Beyond. Corrections
-# are stored by name (sheet_overrides) so they apply to every character.
+# are stored by name (tool_corrections) so they apply to every character.
 
 ITEM_GROUPS = [("battle", "Usable in battle"), ("equipped", "Equipped"), ("Weapons", "Weapons"), ("Armor", "Armor"),
                ("Magic items", "Magic items"), ("Potions and scrolls", "Potions and scrolls"), ("Gear", "Gear")]

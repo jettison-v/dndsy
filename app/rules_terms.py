@@ -8,7 +8,7 @@ Balance: matching is case-sensitive, because 2024 text capitalizes its rule term
 ("Unarmed Strikes", "the Prone condition") and ordinary words stay lowercase. Only
 the first mention in a panel is underlined. Terms every player knows (`basic`) are
 defined but not underlined unless an admin turns them on; an admin can also turn
-any term off. Those choices are stored in sheet_overrides as ("term:<name>", "underline").
+any term off. Those choices are stored in tool_corrections as ("term:<name>", "underline").
 """
 
 import re

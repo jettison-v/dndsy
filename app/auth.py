@@ -67,6 +67,11 @@ def can_edit_entries(user: dict | None, campaign_id: int | None = None) -> bool:
     return _allows(user, "edit_entries", campaign_id)
 
 
+def can_set_house_rules(user: dict | None, campaign_id: int | None = None) -> bool:
+    """House rules are the DM's rulings: the campaign's DM and admins."""
+    return _allows(user, "house_rules", campaign_id)
+
+
 def can_see_character_notes(user: dict | None, character=None) -> bool:
     """Character notes are visible to players but never to the DM of the campaign the character is in now
     (CLAUDE.md; data organization decision 3). Without a character: the first campaign."""

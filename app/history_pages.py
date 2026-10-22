@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from app import history, picks
 from app.admin import _guard
-from app.auth import can_see_character_notes, is_admin, is_reviewer
+from app.auth import can_see_character_notes, can_set_house_rules, is_admin, is_reviewer
 from app.db import get_db
 from app.models import Character, Revision
 from app.templating import templates
@@ -24,20 +24,24 @@ router = APIRouter(prefix="/admin/history")
 STORY = ("entities", "glossary_terms", "game_sessions", "campaigns", "story_events", "entity_aliases", "relationships", "facts")
 ADMIN_ONLY = ("characters", "campaign_characters", "users", "campaign_members")
 NOTES = ("player_notes", "character_picks")
+HOUSE = ("house_rules",)
 FILTERS = {"": ("Everything", None), "entries": ("Entries", ("entities", "entity_aliases", "relationships", "facts")),
            "moments": ("Key moments", ("story_events",)), "glossary": ("Glossary", ("glossary_terms",)),
            "sessions": ("Sessions", ("game_sessions",)), "characters": ("Characters", ("characters", "campaign_characters")),
-           "notes": ("Player notes", NOTES), "people": ("People", ("users", "campaign_members")), "campaign": ("Campaign", ("campaigns",))}
+           "notes": ("Player notes", NOTES), "people": ("People", ("users", "campaign_members")), "campaign": ("Campaign", ("campaigns",)),
+           "house": ("House rules", HOUSE)}
 
 
 def visible_tables(user: dict) -> tuple[str, ...]:
-    tables = STORY + (ADMIN_ONLY if is_admin(user) else ()) + (NOTES if can_see_character_notes(user) else ())
+    tables = STORY + HOUSE + (ADMIN_ONLY if is_admin(user) else ()) + (NOTES if can_see_character_notes(user) else ())
     return tables
 
 
 def may_restore(db: Session, user: dict, rev: Revision) -> bool:
     if rev.table in STORY:
         return is_reviewer(user)
+    if rev.table in HOUSE:
+        return can_set_house_rules(user)
     if rev.table in ADMIN_ONLY:
         return is_admin(user)
     if rev.table in NOTES:

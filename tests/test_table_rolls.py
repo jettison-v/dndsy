@@ -390,3 +390,13 @@ def test_the_rail_knows_whose_roll_each_is(table, db):
     assert "roll-short" not in log  # no cut-off labels in the rail any more
     page = table["player"].get("/party").text
     assert 'class="rs-people"' in page and 'class="rs-edge"' in page
+
+
+def test_one_roll_for_all_darts_on_the_server(table, db, monkeypatch):
+    """A house rule (app/house_rules.py): the first dart's dice count for every dart."""
+    rolls = iter([3, 1, 2])
+    monkeypatch.setattr(tr, "die", lambda sides: next(rolls))
+    cole = char(db, "Cole")
+    r = post(table["player"], character=cole.id, kind="damage", label="Magic Missile", mode="normal", to="table",
+             part="1d4+1 force", count=3, each="dart", once=1)
+    assert [p["total"] for p in r.json()["roll"]["main"]["parts"]] == [4, 4, 4] and r.json()["roll"]["total"] == 12

@@ -441,3 +441,19 @@ same manual backup over Railway SSH was taken before deploying.
    migration like this one.
 2. Keep every permission rule in one function and draw any "who can do what" chart from it, so the help text can't
    drift from the code.
+
+## 2026-10-23: Data organization step 3, tool corrections and house rules
+
+**What was set up.** Two kinds of change to what askdnd knows, kept apart. **Tool corrections** (renamed from
+sheet corrections) fix how askdnd reads D&D Beyond and apply everywhere; they now have a Why column. **House rules**
+are a DM's rulings for one campaign, on a new page, Manage › House rules. Both are rows that point at what they
+change, so askdnd's audited rules data in the code is never edited, and removing a row brings back the rule
+underneath. A database table was renamed in the same migration (`sheet_overrides` → `tool_corrections`), with its
+id counter and constraints renamed too so the names stay consistent.
+
+**For a new project:**
+1. Keep "the product's knowledge" (shipped in code, reviewed, the same for every customer) apart from
+   "a customer's settings" (in the database, per workspace). Overrides should point at what they override, never
+   copy and edit it.
+2. Work out the effective value in one place, in a fixed order (default → global fix → local override), so every
+   screen agrees.

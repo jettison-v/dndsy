@@ -26,14 +26,15 @@
   </section>
 
   <section class="section">
-    <h2>Regrouping</h2>
-    <p class="hint" style="margin-top:6px">Corrections you made from a character's side panel (the Admin box, or an underlined rule term's pop-up). Each applies to everything with that name on every character. Undo returns it to askdnd's automatic choice.</p>
+    <h2>Tool corrections</h2>
+    <p class="hint" style="margin-top:6px">Corrections to how askdnd reads D&amp;D Beyond, made from a character's side panel (the Admin box, or an underlined rule term's pop-up). Each applies to everything with that name on every character, in every campaign; a DM's rulings for one table are <a href="/manage/house-rules">House rules</a> instead. Add a few words on why, so the mistake can be fixed in askdnd itself. Undo returns it to askdnd's automatic choice.</p>
     {% if overrides %}
     <table class="list">
-      <tr><th>Thing</th><th>Setting</th><th>Now</th><th>When</th><th></th></tr>
+      <tr><th>Thing</th><th>Setting</th><th>Now</th><th>Why</th><th>When</th><th></th></tr>
       {% for o in overrides %}
       <tr><td>{{ o.ref.split(":", 1)[1] if ":" in o.ref else o.ref }} <span class="note">{{ o.ref.split(":", 1)[0] if ":" in o.ref else "" }}</span></td>
         <td class="note">{{ field_labels.get(o.field, o.field) }}</td><td>{{ labels.get(o.field, {}).get(o.value, o.value) }}</td>
+        <td><form method="post" action="/admin/characters/overrides/{{ o.id }}/reason" class="row inline"><input type="text" name="reason" value="{{ o.reason }}" placeholder="Why" aria-label="Why {{ o.ref }} was corrected" maxlength="300"><button class="btn small" type="submit">Save</button></form></td>
         <td class="note">{{ o.updated_at | ago }}</td>
         <td><form method="post" action="/admin/characters/overrides/{{ o.id }}/delete" class="inline"><button class="btn link" type="submit">Undo</button></form></td></tr>
       {% endfor %}

@@ -1,6 +1,6 @@
 # How askdnd organizes its data: plan (PROPOSED, 2026-10-21)
 
-Status: **decided 2026-10-22**; steps 1 and 2 done 2026-10-22/23 (Brett's answers on the "askdnd campaigns and roles" page; see "Decisions" at the end).
+Status: **decided 2026-10-22**; steps 1–3 done 2026-10-22/23 (Brett's answers on the "askdnd campaigns and roles" page; see "Decisions" at the end).
 Built after roadmap step 11's Inventory and Features lists and a round of Brett's small feedback. Once decided, the final version of
 "The organization" below moves into `docs/ARCHITECTURE.md` (Data) with a line in `docs/DECISIONS.md`, and this file
 is marked as done.
@@ -122,6 +122,12 @@ Each migration can be undone.
    the effective value (tool knowledge → correction → house rule) for recipes, sheet items and rules terms. First
    use: a Manage › House rules page where the DM can, say, roll Magic Missile once for all darts. The roll window
    shows "House rule" when one applies.
+   **Done 2026-10-23** (migration bc7d9e3f6a82): `tool_corrections` (with a Why column on Manage › Characters) and
+   `house_rules`; `app/house_rules.py` applies them (recipes through `house_rules.spell()`, sheet items and rules
+   terms through `house_rules.sheet_overrides()`). Manage › House rules (the campaign's DM and admins) offers two
+   kinds: **one roll for all** (spells whose instances roll without attack rolls: Magic Missile) and **a ruling**
+   (a note on any spell with a recipe, shown in the roll window). Removing one brings the 2024 rules back; History
+   restores. House rules on sheet items and rules terms work in the code but have no page yet.
 4. **More than one campaign.** A campaign switcher in the menu bar (remembered per person); story addresses carry
    the campaign (`/c/main/sessions/20`), old addresses redirect to your current campaign. Party, Live and Table
    rolls show the current campaign's characters. Admin: create a campaign, add people and characters to it, move a

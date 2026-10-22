@@ -19,6 +19,7 @@ from sqlalchemy import event, inspect, select
 from sqlalchemy.orm import Session
 
 from app.models import (
+    HouseRule,
     CampaignMember,
     Role,
     CampaignCharacter,
@@ -50,13 +51,14 @@ TRACKED = {
     Campaign: ("name", "dm_name"),
     User: ("name", "access"),
     CampaignMember: ("role", "left_on"),
+    HouseRule: ("value", "reason"),
     StoryEvent: ("text", "kind", "status"),
     EntityAlias: ("alias", "misspelling", "note"),
     EntityRelation: ("type", "note"),
     Fact: ("text", "status"),
 }
 # Their whole content goes into history when deleted, so it can be brought back
-KEEP_ON_DELETE = (PlayerNote, GlossaryTerm, StoryEvent, EntityAlias, EntityRelation, Fact, Entity)
+KEEP_ON_DELETE = (PlayerNote, GlossaryTerm, StoryEvent, EntityAlias, EntityRelation, Fact, Entity, HouseRule)
 # Everything needed to recreate a deleted row (besides its tracked fields)
 DELETE_CONTEXT = {
     PlayerNote: ("kind", "character_id", "position", "campaign_id"),
@@ -66,14 +68,15 @@ DELETE_CONTEXT = {
     EntityRelation: ("from_entity_id", "to_entity_id"),
     Fact: ("entity_id", "author_name", "author_email", "kind"),
     Entity: ("campaign_id", "kind"),
+    HouseRule: ("campaign_id", "target_kind", "target_key", "field", "set_by"),
 }
-BRING_BACK = ("player_notes", "glossary_terms", "story_events", "entity_aliases", "relationships", "facts")
+BRING_BACK = ("player_notes", "glossary_terms", "story_events", "entity_aliases", "relationships", "facts", "house_rules")
 SOURCES = {"edit": "Edited", "import": "Import", "claude": "Claude rewrite accepted", "recap": "From a recap",
            "restore": "Restored", "undo-import": "Import undone"}
 FIELD_LABELS = {"summary": "Description", "quest_open": "Quest", "status": "Published", "name": "Name", "term": "Term",
                 "description": "Description", "title": "Title", "played_on": "Date played", "ddb_id": "D&D Beyond link",
                 "player_name": "Player name", "owner_id": "Played by", "data": "Content", "note": "Note",
-                "dm_name": "DM name", "access": "Access", "is_dm": "DM", "role": "Role", "left_on": "Left the campaign", "deleted": "Deleted",
+                "dm_name": "DM name", "access": "Access", "is_dm": "DM", "role": "Role", "left_on": "Left the campaign", "value": "Rule", "reason": "Why", "deleted": "Deleted",
                 "wild_shape_keep": "Kept in Wild Shape", "text": "Text", "kind": "Kind", "alias": "Name",
                 "misspelling": "Misspelling", "type": "Relationship"}
 
@@ -135,6 +138,8 @@ def label(obj) -> str:
         return f"Glossary: {obj.term}"
     if isinstance(obj, GameSession):
         return f"Session {obj.number}" if obj.number else f"Session of {obj.played_on}"
+    if isinstance(obj, HouseRule):
+        return f"House rule: {obj.target_key}"
     if isinstance(obj, CampaignMember):
         who = obj.user.name if obj.user else obj.user_id
         return f"Role: {who} in {obj.campaign.name if obj.campaign else 'a campaign'}"
@@ -221,6 +226,14 @@ def can_restore(db: Session, rev: Revision) -> bool:
     return obj is not None and rev.field in TRACKED.get(type(obj), ())
 
 
+def _changed(rev: Revision) -> None:
+    """Rules cached in memory (house rules) are read again after a restore."""
+    if rev.table == "house_rules":
+        from app import house_rules
+
+        house_rules.invalidate()
+
+
 def restore(db: Session, rev: Revision) -> str:
     """Put back the value from before this change (or recreate a deleted note or term)."""
     with source("restore"):
@@ -247,13 +260,18 @@ def restore(db: Session, rev: Revision) -> str:
             elif rev.table == "facts":
                 db.add(Fact(entity_id=c["entity_id"], text=c.get("text", ""), status=c.get("status", "merged"),
                             author_name=c.get("author_name", ""), author_email=c.get("author_email", ""), kind=c.get("kind", "addition")))
+            elif rev.table == "house_rules":
+                db.add(HouseRule(campaign_id=c["campaign_id"], target_kind=c["target_kind"], target_key=c["target_key"],
+                                 field=c["field"], value=c.get("value", ""), reason=c.get("reason", ""), set_by=c.get("set_by", "")))
             db.flush()
+            _changed(rev)
             return f"Brought back {rev.label}"
         obj = target(db, rev)
         if obj is None:
             raise ValueError("That no longer exists.")
         setattr(obj, rev.field, _value(type(obj), rev.field, rev.old))
         db.flush()
+        _changed(rev)
     return f"Restored {FIELD_LABELS.get(rev.field, rev.field).lower()} of {rev.label}"
 
 

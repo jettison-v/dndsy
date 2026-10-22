@@ -27,6 +27,7 @@ from app.table_rolls import router as table_rolls_router
 from app.manage import router as manage_router
 from app.player_notes import router as notes_router
 from app.history_pages import router as history_router
+from app.house_rules_pages import router as house_rules_router
 from app.entity_pages import router as entity_router
 from app.db import SessionLocal
 from app.db import engine as db_engine
@@ -86,6 +87,7 @@ app.include_router(atlas_router)
 app.include_router(manage_router)
 app.include_router(notes_router)
 app.include_router(history_router)
+app.include_router(house_rules_router)
 
 LOGIN_ERRORS = {
     "not_allowed": "That Google account isn't on the list for this table.",

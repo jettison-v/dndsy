@@ -83,6 +83,7 @@
         <li><b>Who sees it</b> (with Game Mode on).</li>
       </ul>
       <p><b>Spells, Wild Shape attacks and items roll exactly what the rules say.</b> askdnd keeps a checked "recipe" for every spell in the 2024 rules' free reference (the SRD), the Player's Handbook spells the table uses, the Beasts and common items: every damage part with its type (the Giant Toad's bite is piercing <i>plus</i> poison), each dart or ray on its own (Magic Missile's darts, a separate attack roll for each of Scorching Ray's rays), and choices where the rules give one (Toll the Dead on an unhurt or hurt target, a Rhinoceros's charge, a Bloodied swarm). For a spell that gets stronger with a higher slot, choose <b>Cast at</b> level in the roll window (levels you have no slot left for are marked); cantrips grow with your level by themselves. Healing spells add your spellcasting modifier only when the spell says so. A spell from another book uses D&amp;D Beyond's numbers, and the window says they weren't checked. The full audit is in <code>docs/rules/rolls-audit.md</code>.</p>
+      <p><b>House rules.</b> The DM can change how a spell rolls at this table (for example, one roll for all of Magic Missile's darts) or add a short ruling to it, on Manage › House rules. The roll window then says <b>House rule</b> and what it is. House rules apply to this campaign only; askdnd's own recipes don't change.</p>
       <p>Press <b>Roll</b> (or Enter; Shift-click a roll button to skip the window). The window turns into the result after a short dice tumble (click to skip). From there you can roll <b>damage</b> after an attack (every die doubled on a natural 20, added dice too), <b>reroll</b> with Heroic Inspiration (or a 1 with a Halfling's Luck), or <b>add a die</b> such as Bardic Inspiration. They stay attached to the roll.</p>
       <p><b>With Game Mode on</b> (the Live control in the menu bar), rolls for your own character are shared: askdnd's server rolls the dice and everyone sees them in <b>Table rolls</b>, a sidebar on the left of every page (a sheet at the bottom on phones). It's open on Battle and a narrow strip elsewhere; « collapses or opens it, and your choice is remembered on that device. At its bottom, <b>Checks, skills, saves, Death save, Hit Die</b> rolls for your character, and <b>Manual roll</b> is for when the DM asks for "2d6" (click d6 twice). Collapsed, it shows one picture per person with their latest roll (green for a natural 20, red for a 1); a new roll makes that picture pulse, and resting the mouse on it (or tapping it) says what the roll was. After a few minutes with no rolls the collapsed strip slides out of the way and comes back with the next roll; the small tab at the edge brings it back any time. While it's collapsed or hidden, other players' rolls arrive as small notices. A roll says <i>sending…</i> until askdnd has it; if it can't get through, it says so and offers <b>Try again</b>. The dice animation can be turned on or off there for your device.</p>
       <p><b>With Game Mode off</b>, or on someone else's character, rolls are private: they're rolled in your browser and nobody else sees them. Neither kind goes to D&amp;D Beyond's Game Log.</p>
@@ -128,16 +129,16 @@
           <text class="s" x="26" y="54">roll recipes · Beasts for Wild Shape · rules terms · class rules · the 2024 books' summaries</text>
           <rect class="box" x="10" y="84" width="220" height="200" rx="10"/>
           <text class="t" x="26" y="110">The whole tool</text>
-          <text class="s" x="26" y="134">people and their access</text>
-          <text class="s" x="26" y="154">sheet corrections</text>
+          <text class="s" x="26" y="134">people, admins</text>
+          <text class="s" x="26" y="154">tool corrections</text>
           <text class="s" x="26" y="174">spending limit, backups</text>
           <text class="s" x="26" y="194">version history</text>
           <rect class="camp" x="250" y="84" width="230" height="200" rx="10"/>
           <text class="t" x="266" y="110">The campaign</text>
           <text class="s" x="266" y="134">sessions, recaps, key moments</text>
           <text class="s" x="266" y="154">people, places, factions</text>
-          <text class="s" x="266" y="174">glossary, suggestions</text>
-          <text class="s" x="266" y="194">table rolls</text>
+          <text class="s" x="266" y="174">glossary, suggestions, rolls</text>
+          <text class="s" x="266" y="194">roles, house rules</text>
           <rect class="box" x="266" y="214" width="198" height="52" rx="8"/>
           <text x="280" y="236">A story page each</text>
           <text class="s" x="280" y="254">aliases, what happened</text>
@@ -154,8 +155,9 @@
           <text class="lab" x="612" y="80">uses</text>
         </svg>
       </figure>
-      <p>The rules knowledge is the same for everyone and changes only when askdnd is updated. The campaign holds what happened at the table. A character holds what's about the character: its D&amp;D Beyond copy and its player's own marks and notes, which the DM never sees.</p>
-      <p>Coming next (roadmap step 10): characters will join campaigns with dates, so one character can move to another campaign while its history stays; roles like DM and reviewer will be per campaign; and DMs will get <b>house rules</b> that change a rule for their table only.</p>
+      <p>The rules knowledge is the same for everyone and changes only when askdnd is updated. The campaign holds what happened at the table, who plays which role there (DM, reviewer, player) and the DM's <b>house rules</b>. A character holds what's about the character: its D&amp;D Beyond copy and its player's own marks and notes, which the DM never sees. A character joins a campaign on a date and could later move to another, while what it did stays in the first one's story.</p>
+      <p>Changes are layered, most specific last: askdnd's rules knowledge, then an admin's <b>tool correction</b> (fixing how askdnd reads D&amp;D Beyond, for everyone), then the DM's <b>house rule</b> (for this table only). Removing a correction or a house rule brings back what's underneath.</p>
+      <p>Coming next: more than one campaign, with a campaign switcher in the menu bar.</p>
     {% endcall %}
   </section>
 

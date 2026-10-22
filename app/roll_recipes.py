@@ -46,10 +46,17 @@ def srd_name(name: str) -> str:
     return RENAMED.get(name) or re.sub(r"^[A-Z][a-z]+(?:'s)\s+", "", name or "")
 
 
-def spell(name: str) -> dict | None:
-    """The audited recipe for a spell by its D&D Beyond name, or None."""
+def spell_key(name: str) -> str | None:
+    """The recipe's own name for a spell's D&D Beyond name ("Melf's Acid Arrow" -> "Acid Arrow"), or None."""
     all_ = recipes().get("spells") or {}
-    return all_.get(name) or all_.get(srd_name(name))
+    return name if name in all_ else srd_name(name) if srd_name(name) in all_ else None
+
+
+def spell(name: str) -> dict | None:
+    """The audited recipe for a spell by its D&D Beyond name, or None. This is the tool's knowledge; a campaign's
+    house rules are applied on top by app/house_rules.py."""
+    key = spell_key(name)
+    return (recipes().get("spells") or {})[key] if key else None
 
 
 def item(name: str) -> dict | None:

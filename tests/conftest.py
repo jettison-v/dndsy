@@ -45,23 +45,27 @@ def _no_background_drafts(monkeypatch):
 def _access_rows(monkeypatch):
     """Access checks (app/access.py) read people from the database. Tests never see
     the local dev database: no rows unless the test uses `db`, and no caching."""
-    from app import access, live
+    from app import access, house_rules, live
 
     monkeypatch.setattr(access, "loader", lambda: {})
     monkeypatch.setattr(live, "loader", lambda: [])
+    monkeypatch.setattr(house_rules, "loader", lambda: {})
     monkeypatch.setattr(access, "CACHE_SECONDS", -1)
+    monkeypatch.setattr(house_rules, "CACHE_SECONDS", -1)
     access.invalidate()
+    house_rules.invalidate()
 
 
 @pytest.fixture
 def db(db_engine, monkeypatch):
     """A session whose changes are rolled back after each test."""
-    from app import access, live
+    from app import access, house_rules, live
 
     with db_engine.connect() as conn:
         trans = conn.begin()
         with Session(bind=conn, join_transaction_mode="create_savepoint") as session:
             monkeypatch.setattr(access, "loader", lambda: access.rows_from(session))
             monkeypatch.setattr(live, "loader", lambda: live.rows_from(session))
+            monkeypatch.setattr(house_rules, "loader", lambda: house_rules.rows_from(session))
             yield session
         trans.rollback()

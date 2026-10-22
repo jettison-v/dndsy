@@ -126,6 +126,7 @@ def allows(rule: str, tool: str | None, campaign_role: str | None = None) -> boo
         "story_extras": runs,               # pictures on campaign pages, glossary entries
         "edit_entries": runs,               # campaign entries: names, spellings, descriptions, relationships
         "review": runs,                     # recaps, Claude's questions, key moments, character refresh
+        "house_rules": campaign_role == DM or tool == ADMIN,  # the DM's rulings on how askdnd rolls and reads things
         "admin": tool == ADMIN,             # People, Characters, Usage, Data, campaign doc, regrouping
     }[rule]
 
@@ -142,8 +143,9 @@ CHART = [
     ("Run the table", "Draft, edit and publish recaps; answer Claude's questions", "review"),
     ("Run the table", "Edit campaign entries (names, spellings, descriptions, relationships)", "edit_entries"),
     ("Run the table", "Refresh characters from D&D Beyond", "review"),
+    ("Run the table", "House rules: how askdnd rolls things at this table", "house_rules"),
     ("Set up askdnd", "People: invite, roles, who plays which character", "admin"),
-    ("Set up askdnd", "Characters: D&D Beyond links and regrouping", "admin"),
+    ("Set up askdnd", "Characters: D&D Beyond links and tool corrections", "admin"),
     ("Set up askdnd", "Usage (Claude spending), Data (import), the campaign doc", "admin"),
 ]
 # The chart's columns: the three campaign roles, then Admin (a tool role, on top of any campaign role)

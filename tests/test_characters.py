@@ -13,7 +13,7 @@ from app.config import parse_allowlist
 from app.db import get_db
 from app.importer import import_bundle
 from app.main import app
-from app.models import Campaign, Character, CharacterSnapshot, PlayerNote, SheetOverride
+from app.models import Campaign, Character, CharacterSnapshot, PlayerNote, ToolCorrection
 
 COLE = json.loads((Path(__file__).parent / "fixtures" / "ddb" / "cole.json").read_text())["data"]
 BUNDLE = {
@@ -467,7 +467,7 @@ def test_inventory_and_feature_sections(player, db):
 
 
 def test_side_panel_for_everything_and_admin_regrouping(player, admin, db):
-    from app.models import SheetOverride
+    from app.models import ToolCorrection
 
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
@@ -491,7 +491,7 @@ def test_side_panel_for_everything_and_admin_regrouping(player, admin, db):
     assert "regroup for every character" in admin.get(f"/characters/{cole.id}/detail", params={"ref": "feature:Druid:Wild Shape"}).text
     admin.post(f"/characters/{cole.id}/override", data={"ref": "attack:unarmed", "oref": "attack:Unarmed Strike", "field": "battle", "value": "hide"})
     assert "Unarmed Strike" not in player.get(f"/characters/{cole.id}/battle").text.split("Bonus action")[0]
-    assert db.scalar(select(SheetOverride).where(SheetOverride.ref == "attack:Unarmed Strike")).set_by == "admin@example.com"
+    assert db.scalar(select(ToolCorrection).where(ToolCorrection.ref == "attack:Unarmed Strike")).set_by == "admin@example.com"
 
 
 def test_situational_folds_what_is_already_counted_and_no_circle_magic(player, db):
@@ -505,7 +505,7 @@ def test_situational_folds_what_is_already_counted_and_no_circle_magic(player, d
 
 
 def test_universal_regrouping_and_admin_characters_page(player, admin, db):
-    from app.models import SheetOverride
+    from app.models import ToolCorrection
 
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
@@ -521,7 +521,7 @@ def test_universal_regrouping_and_admin_characters_page(player, admin, db):
     admin.post(f"/characters/{cole.id}/override", data={"ref": "x", "oref": "spell:Healing Word", "field": "cost", "value": "Action"})
     page = admin.get("/admin/characters").text
     assert "Bag of Holding" in page and "Heat Metal" in page and "Undo" in page and "D&amp;D Beyond links" in page
-    o = db.scalar(select(SheetOverride).where(SheetOverride.ref == "spell:Heat Metal"))
+    o = db.scalar(select(ToolCorrection).where(ToolCorrection.ref == "spell:Heat Metal"))
     admin.post(f"/admin/characters/overrides/{o.id}/delete")
     assert "Heat Metal" in player.get(f"/characters/{cole.id}").text
     assert player.get("/admin/characters").status_code == 403
@@ -568,7 +568,7 @@ def test_descriptions_underline_rule_terms_with_definitions(admin, player, db):
     assert 'data-term="abyssal"' not in panel and 'data-term="unarmed-strike"' in panel
     assert "Underlined in descriptions" in admin.get("/admin/characters").text
     assert admin.post("/rules/terms/abyssal/underline", data={"value": "on"}).json() == {"on": True}
-    assert db.scalar(select(SheetOverride).where(SheetOverride.ref == "term:Abyssal")) is None  # back to the default
+    assert db.scalar(select(ToolCorrection).where(ToolCorrection.ref == "term:Abyssal")) is None  # back to the default
 
 
 def test_item_notes_are_stored_apart_and_everyone_sees_them(player, dm, db):

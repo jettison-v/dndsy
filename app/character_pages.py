@@ -22,14 +22,14 @@ from app import web
 from app import character_views as views
 from app import characters as chars
 from app import conditions as cond
-from app import ddb, help_pages, picks
+from app import ddb, help_pages, house_rules, picks
 from app import class_rules, live, player_notes
 from app import spellbook as sb
 from app import wild_shape as ws
 from app import rules_terms as terms
 from app.auth import current_user, is_admin, is_reviewer
 from app.db import get_db
-from app.models import Character, SheetOverride, TableRoll
+from app.models import Character, ToolCorrection, TableRoll
 from app.templating import templates
 
 router = APIRouter()
@@ -38,7 +38,7 @@ GAME_MODE_SECONDS = live.GAME_MODE_SECONDS
 
 
 def _overrides(db: Session) -> dict[tuple[str, str], str]:
-    return {(o.ref, o.field): o.value for o in db.scalars(select(SheetOverride))}
+    return house_rules.sheet_overrides(db)  # tool corrections, then the campaign's house rules
 
 
 def _view(db: Session, ch: Character, user: dict) -> dict:
@@ -328,14 +328,14 @@ def set_override(request: Request, character_id: int, ref: str = Form(...), oref
         return _forbidden(request, "Only an admin can regroup things.")
     if field not in views.OVERRIDE_CHOICES or value not in [v for v, _ in views.OVERRIDE_CHOICES[field]] + ["default"]:
         return HTMLResponse("", status_code=400)
-    row = db.scalar(select(SheetOverride).where(SheetOverride.ref == oref[:300], SheetOverride.field == field))
+    row = db.scalar(select(ToolCorrection).where(ToolCorrection.ref == oref[:300], ToolCorrection.field == field))
     if value == "default":
         if row:
             db.delete(row)
     elif row:
         row.value, row.set_by = value, user["email"]
     else:
-        db.add(SheetOverride(ref=oref[:300], field=field, value=value, set_by=user["email"]))
+        db.add(ToolCorrection(ref=oref[:300], field=field, value=value, set_by=user["email"]))
     db.commit()
     resp = templates.TemplateResponse(request, "_override_field.html", {
         "c": {"id": character_id}, "ref": ref, "oref": oref, "field": field, "current": None if value == "default" else value,
@@ -689,13 +689,13 @@ def set_term_underline(request: Request, slug: str, value: str = Form(...), db: 
     if t is None or value not in ("on", "off", "default"):
         return JSONResponse({"error": "Unknown term or setting."}, status_code=400)
     ref = f"term:{t.name}"
-    row = db.scalar(select(SheetOverride).where(SheetOverride.ref == ref, SheetOverride.field == "underline"))
+    row = db.scalar(select(ToolCorrection).where(ToolCorrection.ref == ref, ToolCorrection.field == "underline"))
     if value == "default" or (value == "on") == (not t.basic):
         if row:
             db.delete(row)  # same as the built-in choice: nothing to store
     elif row:
         row.value, row.set_by = value, user["email"]
     else:
-        db.add(SheetOverride(ref=ref, field="underline", value=value, set_by=user["email"]))
+        db.add(ToolCorrection(ref=ref, field="underline", value=value, set_by=user["email"]))
     db.commit()
     return JSONResponse({"on": t.slug in terms.underlined(_overrides(db))})

@@ -10,7 +10,7 @@ ranks spells as "best".
 
 import re
 
-from app import roll_recipes as rr
+from app import house_rules
 
 EFFECTS = [("damage", "Damage"), ("heal", "Heal"), ("control", "Control"), ("support", "Support"), ("utility", "Utility")]
 ORD = {0: "cantrip", 1: "1st", 2: "2nd", 3: "3rd"}
@@ -142,7 +142,7 @@ def _spell_mod(sheet: dict) -> int:
 
 def _entry(sp: dict, char_level: int, mod: int, top: int, castable_in_form: set[str] | None = None) -> dict:
     """One spell as a list row: its numbers per slot level (up to `top`) and its filter values."""
-    recipe = rr.spell(sp["name"]) or sp.get("roll")
+    recipe = house_rules.spell(sp["name"]) or sp.get("roll")
     level = sp.get("level") or 0
     avgs = {}
     for slot in ([0] if not level else range(level, max(level, top) + 1)):

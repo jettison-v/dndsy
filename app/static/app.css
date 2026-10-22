@@ -533,6 +533,7 @@ details.opt .meta, .move .meta, .situ .meta, .poolrow .meta { margin-top: 2px; }
 .person-form { display: contents; }
 .person-form select { width: 100%; }
 .person-actions { display: flex; gap: 4px; align-items: center; }
+.people li.house-rule { display: flex; }
 @media (max-width: 900px) {
   .people-head { display: none; }
   .people li { grid-template-columns: 1fr 1fr; }
@@ -1067,6 +1068,7 @@ a.sheet-ref { text-decoration-style: dotted; }
 .rw-notes { list-style: none; margin: 6px 0; padding: 8px 10px; background: var(--bg); border-radius: var(--r-md); font-size: var(--fs-xs); color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
 .rw-notes b { color: var(--amber); font-weight: 600; margin-right: 4px; }
 .rw-note { font-size: var(--fs-xs); color: var(--muted); margin: 6px 0; }
+.rw-house b { color: var(--violet); font-weight: 600; margin-right: 4px; }
 .rw-go { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
 .rw-go .note { font-size: var(--fs-xs); }
 .rw-result { display: flex; gap: 14px; align-items: flex-start; }

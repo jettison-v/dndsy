@@ -947,18 +947,21 @@
   const kindOf = ev => ({ heal: 'heal', temp: 'temp', plain: 'dice' }[ev.on] || 'damage');
   const SUCCESS = { half: 'half on a success', none: 'nothing on a success' };
   function describe(ev) {
-    const many = ev.count > 1 ? ev.count + ' ' + (ev.count_label || 'time') + 's × ' : '';
+    const many = ev.count > 1 ? ev.count + ' ' + (ev.count_label || 'time') + 's × ' + (ev.once ? 'one roll: ' : '') : '';
     const how = ev.on === 'save' ? (ev.save ? ev.save + ' save' : 'save') + (ev.success ? ', ' + SUCCESS[ev.success] : '') : ev.on === 'hit' ? 'on a hit' : '';
     const shown = ev.parts.map(p => { const x = parsePart(p); return x && !x.n ? Math.abs(x.flat) + (x.kind ? ' (' + x.kind + ')' : '') : p; });
     const text = ev.parts.map((p, i) => { const x = parsePart(p); return (i ? (x && !x.n && x.flat < 0 ? ' \u2212 ' : ' + ') : '') + shown[i]; }).join('');
     return many + text + (ev.mod ? ' + spellcasting modifier' : '') + (how && ev.on !== 'hit' ? ' · ' + how : '');
   }
 
-  // Each part, once per instance (3 darts), each on its own line; a critical instance doubles its dice
-  function rollParts(parts, crits, each, floor) {
-    const lines = [];
-    crits.forEach((crit, i) => parts.forEach(pt => {
-      const p = parsePart(pt), k = crit ? p.n * 2 : p.n, dice = Array.from({ length: k }, () => die(p.s));
+  // Each part, once per instance (3 darts), each on its own line; a critical instance doubles its dice.
+  // `once` (a house rule): the first instance's dice count for every instance.
+  function rollParts(parts, crits, each, floor, once) {
+    const lines = [], first = [];
+    crits.forEach((crit, i) => parts.forEach((pt, j) => {
+      const p = parsePart(pt), k = crit ? p.n * 2 : p.n;
+      const dice = once && i ? first[j].slice() : Array.from({ length: k }, () => die(p.s));
+      if (!i) first[j] = dice;
       lines.push({ label: crits.length > 1 && each ? title(each) + ' ' + (i + 1) : '', kind: p.kind, crit,
                    formula: k ? k + 'd' + p.s + (p.flat ? ascii(p.flat) : '') : String(p.flat), dice, total: dice.reduce((a, b) => a + b, 0) + p.flat });
     }));
@@ -978,7 +981,7 @@
       }
       main = { ...rays[0], parts: rays.length > 1 ? rays : [] };
     } else {
-      main = spec.parts && spec.parts.length ? rollParts(spec.parts, Array(spec.count || 1).fill(false), spec.each, spec.kind !== 'dice')
+      main = spec.parts && spec.parts.length ? rollParts(spec.parts, Array(spec.count || 1).fill(false), spec.each, spec.kind !== 'dice', spec.once)
                                                : rollFormula(spec.dmg, false, spec.kind !== 'dice');
       if (!main) return null;
       main.extras = rollExtras(spec.extras);
@@ -1213,6 +1216,7 @@
       if (evs.length > 1) h += '<div class="rw-row rw-evs"><span class="rw-label">Which</span><span class="rw-ev-list">' + evs.map((e, i) =>
         '<button type="button" class="chip" data-ev="' + i + '" aria-pressed="' + (i === 0) + '">' + esc(e.name) + '</button>').join('') + '</span></div>';
       h += '<p class="rw-sum"></p>';
+      (rec.house_rules || []).forEach(r => { h += '<p class="rw-note rw-house"><b>House rule</b> ' + esc(r.text) + (r.reason ? ' · ' + esc(r.reason) : '') + '</p>'; });
       if (rec.checked === 'D&D Beyond') h += '<p class="rw-note">From D&amp;D Beyond\'s data: not checked against the rules text (askdnd\'s audit only covers the 2024 rules).</p>';
     }
     let other = '';
@@ -1265,7 +1269,7 @@
         const ev = rec ? current() : null;
         if (rec && !ev) return;
         const fromRecipe = ev ? (spec.kind === 'attack' ? { dmgParts: ev.parts, count: ev.count, each: ev.count_label || '' }
-          : { kind: kindOf(evs[evi]), parts: ev.parts, count: ev.count, each: ev.count_label || '', label: spec.label + (evs.length > 1 ? ' · ' + evs[evi].name : '') }) : {};
+          : { kind: kindOf(evs[evi]), parts: ev.parts, count: ev.count, once: !!ev.once, each: ev.count_label || '', label: spec.label + (evs.length > 1 ? ' · ' + evs[evi].name : '') }) : {};
         const go = { ...spec, ...fromRecipe, mode, extras, label: spec.kind === 'dice' ? (forText || 'Dice') : (fromRecipe.label || spec.label), ctx,
                      die: +((w.querySelector('[data-die][aria-pressed=true]') || {}).dataset || {}).die || 6,
                      bonusLabel: ((w.querySelector('[data-bonus-label]') || {}).value || '').trim() };
@@ -1319,7 +1323,7 @@
       if (go.follow === 'bonus') { p.set('die', go.die); p.set('label', go.bonusLabel || 'Bardic Inspiration'); }
     } else {
       Object.entries({ character: go.cid || '', kind: go.kind, label: go.label, mod: go.mod || '', dmg: go.dmg || '', mode: go.mode, to,
-                       count: go.count || 1, each: go.each || '' }).forEach(([k, v]) => p.set(k, v));
+                       count: go.count || 1, each: go.each || '', once: go.once ? 1 : '' }).forEach(([k, v]) => p.set(k, v));
       (go.parts || []).forEach(x => p.append('part', x));
       (go.dmgParts || []).forEach(x => p.append('dmg_part', x));
     }

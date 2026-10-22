@@ -333,18 +333,36 @@ class CharacterPick(Timestamped, Base):
     note: Mapped[str] = mapped_column(Text, default="", server_default="")  # on "note" rows: the player's note on the thing
 
 
-class SheetOverride(Timestamped, Base):
-    """An admin's correction to how askdnd groups something from D&D Beyond, e.g.
-    "Fleet of Foot is always on" or "hide Circle Magic from Battle". Applies to
-    every character, and is kept as feedback for improving the parser."""
+class ToolCorrection(Timestamped, Base):
+    """An admin's correction to how askdnd reads D&D Beyond, e.g. "Fleet of Foot is always on" or "hide
+    Circle Magic from Battle". A parser mistake is wrong for everyone, so it applies to every character in every
+    campaign (a campaign's own rulings are HouseRules), and is kept as feedback for improving the parser."""
 
-    __tablename__ = "sheet_overrides"
+    __tablename__ = "tool_corrections"
     __table_args__ = (UniqueConstraint("ref", "field"),)
     id: Mapped[int] = mapped_column(primary_key=True)
     ref: Mapped[str] = mapped_column(String(300))  # e.g. "feature:Fleet of Foot", "spell:Moonbeam", a Situational key
     field: Mapped[str] = mapped_column(String(30))  # "feature_group" | "situ_group" | "battle"
     value: Mapped[str] = mapped_column(String(30))
+    reason: Mapped[str] = mapped_column(String(300), default="", server_default="")  # why, in a few words
     set_by: Mapped[str] = mapped_column(String(320), default="", server_default="")
+
+
+class HouseRule(Timestamped, Base):
+    """A DM's ruling for one campaign that changes how askdnd treats something it knows ("Magic Missile: one roll
+    for all darts"). It points at the tool's knowledge and never edits it: removing the row brings the tool's value
+    back (app/house_rules.py works out the effective value)."""
+
+    __tablename__ = "house_rules"
+    __table_args__ = (UniqueConstraint("campaign_id", "target_kind", "target_key", "field"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"), index=True)
+    target_kind: Mapped[str] = mapped_column(String(20))  # "spell" (a roll recipe); later sheet items and rules terms
+    target_key: Mapped[str] = mapped_column(String(200))  # the recipe's name, e.g. "Magic Missile"
+    field: Mapped[str] = mapped_column(String(30))  # what it changes (house_rules.FIELDS)
+    value: Mapped[str] = mapped_column(Text, default="", server_default="")
+    reason: Mapped[str] = mapped_column(Text, default="", server_default="")
+    set_by: Mapped[str] = mapped_column(String(200), default="", server_default="")  # the DM's (or an admin's) name
 
 
 class PlayerNote(Timestamped, Base):
