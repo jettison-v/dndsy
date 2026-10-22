@@ -136,7 +136,7 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
         spends = slot_spends(sheet, sp)
         says_level = any(x["of"] == "Spell slots" for x in spends)  # "1st-level slot" already gives the level
         tags = ([] if says_level else [level]) + (["Conc."] if sp["concentration"] else [])
-        add(key=sp["key"], kind="spell", cost=cost, name=sp["name"], hit=sp["attack"] or sp["save"], tags=tags,
+        add(key=sp["key"], kind="spell", cost=cost, name=sp["name"], hit=sp["attack"] or sp["save"], tags=tags, level=sp["level"] or 0,
             adv=advantage.for_attack(advs, spell=True) if sp["attack"] else [],
             spends=spends,
             meta=" · ".join(x for x in (sp["range"], effect, sp["trigger"] if cost == "Reaction" else "") if x),
@@ -526,6 +526,25 @@ def fields_for(section: str, opt: dict | None) -> list[str]:
 
 
 TURN_COSTS = ("Action", "Bonus action", "Reaction")
+OPTION_KINDS = (("attack", "Attacks"), ("feature", "Features"), ("spell", "Spells"), ("item", "Items"), ("rule", "Rules"))
+
+
+def option_groups(opts: list[dict]) -> list[dict]:
+    """Battle's "See all" and "+ Add" panels, bucketed (Brett, 2026-10-22: the lists grow every level):
+    attacks, features, spells by level, items, then rules everyone has (Opportunity Attack…). Each group
+    says its kind, for the panel's filter chips."""
+    def kind(o):
+        return "rule" if o["key"].startswith("rule:") and o["kind"] == "feature" else o["kind"]
+    out = []
+    for k, label in OPTION_KINDS:
+        mine = [o for o in opts if kind(o) == k]
+        if k == "spell":
+            for lvl in sorted({o.get("level") or 0 for o in mine}):
+                rows = [o for o in mine if (o.get("level") or 0) == lvl]
+                out.append({"kind": k, "label": "Cantrips" if not lvl else f"{ordinal(lvl)}-level spells", "opts": rows})
+        elif mine:
+            out.append({"kind": k, "label": label, "opts": mine})
+    return out
 # A feature's own words, when no Battle option carries it (Wild Companion: "As a Magic action, …")
 TURN_WORDS = (("Reaction", re.compile(r"\b(?:as|take|use your|uses? a) (?:a )?Reaction\b", re.I)),
               ("Bonus action", re.compile(r"\b(?:as|take|use) a Bonus Action\b", re.I)),

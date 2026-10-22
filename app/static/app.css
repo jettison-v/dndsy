@@ -1594,3 +1594,8 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .faq-dg .lab { fill: var(--muted); font-size: var(--fs-xs); font-style: italic; }
 .faq-dg .ln { stroke: currentColor; stroke-width: 1.5; fill: none; }
 .faq-dg .head { fill: currentColor; }
+
+/* Battle's "See all" / "+ Add" panels: search and kind chips above the groups */
+.opt-tools { display: flex; flex-direction: column; gap: var(--sp-2); margin-bottom: var(--sp-2); position: sticky; top: calc(-1 * var(--sp-4)); z-index: 2; background: var(--surface); padding: var(--sp-2) 0; }
+.opt-group h3.divider { margin-top: var(--sp-4); }
+.opt-group:first-of-type h3.divider { margin-top: var(--sp-2); }

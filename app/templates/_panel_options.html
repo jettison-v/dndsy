@@ -4,8 +4,19 @@
   <div><div class="note">{{ c.entity.name }}{% if adding %} · not pinned yet{% elif opts | length > 1 %} · everything you can do{% endif %}</div><h2 id="peek-title" class="econ-title k-{{ {"Action": "action", "Bonus action": "bonus", "Reaction": "reaction"}.get(title, "other") }}">{{ title }}{% if opts | length > 1 or adding %}s{% endif %}</h2></div>
   <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
 </div>
-<div class="peek-body">
-  <div class="rows one">{% for o in opts %}{{ opt_row(c, o, picks, can_pick) }}{% endfor %}</div>
+<div class="peek-body" data-opt-panel>
+  {# Bucketed (character_views.option_groups), with chips to show one kind and a search box (app.js) #}
+  {% set kinds = groups | map(attribute="kind") | unique | list %}
+  {% if opts | length > 6 %}<div class="opt-tools">
+    <div class="ls-search"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input type="search" data-opt-search placeholder="Search {{ title | lower }}s" aria-label="Search {{ title | lower }}s" autocomplete="off"></div>
+    {% if kinds | length > 1 %}<div class="ls-chips" role="group" aria-label="Show only">{% for k in kinds %}{% set n = groups | selectattr("kind", "equalto", k) | map(attribute="opts") | map("length") | sum %}<button type="button" class="ls-chip" data-opt-kind="{{ k }}" aria-pressed="false">{{ {"attack": "Attacks", "feature": "Features", "spell": "Spells", "item": "Items", "rule": "Rules"}[k] }} <span class="ls-n">{{ n }}</span></button>{% endfor %}</div>{% endif %}
+  </div>{% endif %}
+  {% for g in groups %}<div class="opt-group" data-kind="{{ g.kind }}">
+    {% if groups | length > 1 %}<h3 class="divider">{{ g.label }} <span class="count">{{ g.opts | length }}</span></h3>{% endif %}
+    <div class="rows one">{% for o in g.opts %}{{ opt_row(c, o, picks, can_pick) }}{% endfor %}</div>
+  </div>{% endfor %}
+  <p class="muted" data-opt-none hidden>Nothing matches.</p>
   {% if adding and not opts %}<p class="muted">Everything here is already pinned.</p>{% endif %}
   {% if can_pick and (opts | length > 1 or adding and opts) %}<p class="note" style="margin-top:12px">Pin an option to show it in its column on Battle.</p>{% endif %}
 </div>

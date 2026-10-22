@@ -514,6 +514,26 @@
     const c = e.target.closest('.clamp'); if (!c || e.target.closest('a, button')) return;
     const open = c.classList.toggle('open'); c.setAttribute('aria-expanded', open ? 'true' : 'false'); c.title = open ? 'Show less' : 'Show all';
   });
+  // Battle's "See all" / "+ Add" panels: chips show one kind (attacks, features, spells…), search looks at names
+  // and descriptions; groups with nothing left hide (Brett, 2026-10-22)
+  function optFilter(panel) {
+    const on = [...panel.querySelectorAll('[data-opt-kind][aria-pressed=true]')].map(b => b.dataset.optKind);
+    const q = ((panel.querySelector('[data-opt-search]') || {}).value || '').toLowerCase().trim();
+    let any = false;
+    panel.querySelectorAll('.opt-group').forEach(g => {
+      const kindOk = !on.length || on.includes(g.dataset.kind);
+      let shown = 0;
+      g.querySelectorAll('.ri').forEach(r => { const ok = kindOk && (!q || r.textContent.toLowerCase().includes(q)); r.hidden = !ok; if (ok) shown++; });
+      g.hidden = !shown; any = any || shown > 0;
+    });
+    const none = panel.querySelector('[data-opt-none]'); if (none) none.hidden = any;
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-opt-kind]'); if (!b) return;
+    b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+    optFilter(b.closest('[data-opt-panel]'));
+  });
+  document.addEventListener('input', e => { if (e.target.matches('[data-opt-search]')) optFilter(e.target.closest('[data-opt-panel]')); });
   // FAQ search: only the answers containing every word typed, opened; sections with none hide (Brett, 2026-10-22)
   const faqBox = document.getElementById('faq-search');
   if (faqBox) faqBox.addEventListener('input', () => {

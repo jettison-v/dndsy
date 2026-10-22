@@ -295,7 +295,8 @@ def see_all(request: Request, character_id: int, cost: str, add: int = 0, db: Se
     if not cost or not ctx["sheet"]:
         return HTMLResponse("", status_code=404)
     everything = [o for o in views.options(ctx["sheet"], ctx["picks"]["star"]) if o["cost"] == cost and not (add and o["starred"])]
-    return templates.TemplateResponse(request, "_panel_options.html", {**ctx, "title": cost, "opts": everything, "adding": bool(add)})
+    return templates.TemplateResponse(request, "_panel_options.html", {**ctx, "title": cost, "opts": everything, "adding": bool(add),
+                                                                      "groups": views.option_groups(everything)})
 
 
 @router.get("/characters/{character_id:int}/detail")
