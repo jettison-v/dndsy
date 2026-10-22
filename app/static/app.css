@@ -1566,3 +1566,16 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
   .it-cols > .ls-row > .ls-name { flex: 1 1 50%; }
   .it-cols > .ls-row > :not(.ls-marks):not(.ls-name):not(.sh-status) { order: 2; font-size: var(--fs-xs); }
 }
+
+/* Sheet › Features (_feature_list.html): feature · from · level · used as · uses · marks */
+.ft-cols { display: grid; grid-template-columns: minmax(16rem, 1fr) max-content max-content max-content max-content max-content; column-gap: 14px; }
+.ft-cols > .ls-head, .ft-cols > .ls-row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
+.ft-cols > .ls-grouphead { grid-column: 1 / -1; }
+.feature-row.not-ready b { font-weight: 500; }
+@media (max-width: 900px) {
+  .ft-cols { display: block; }
+  .ft-cols > .ls-head { display: none; }
+  .ft-cols > .ls-row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; }
+  .ft-cols > .ls-row > .ls-name { flex: 1 1 60%; }
+  .ft-cols > .ls-row > :not(.ls-marks):not(.ls-name) { order: 2; font-size: var(--fs-xs); }
+}

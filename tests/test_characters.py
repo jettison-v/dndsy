@@ -450,7 +450,10 @@ def test_inventory_and_feature_sections(player, db):
     assert 'data-group-label="Armor"' in demon and 'data-views="all"' in demon  # not equipped: only under All
     assert '"kind": "Armor"' in demon and '"attune": "Needs attunement"' in demon  # filter values
     features = page.split('id="t-features"')[1].split('id="t-skills"')[0]
-    assert features.index("Wild Shape") < features.index("Always on, already in your numbers") < features.index("Fleet of Foot")
+    frows = {r.split("<b>")[1].split("</b>")[0]: r for r in features.split(' data-ls-row ')[1:]}  # a list now (roadmap step 11)
+    assert 'data-group-label="Druid"' in frows["Wild Shape"] and '"turn": ["Bonus action"]' in frows["Wild Shape"]
+    assert 'data-group-label="Always on, already in your numbers"' in frows["Fleet of Foot"] and '"turn": ["Always on"]' in frows["Fleet of Foot"]
+    assert '"uses": "Limited uses"' in frows["Wild Shape"]  # its uses come from the Wild Shape action
 
 
 def test_side_panel_for_everything_and_admin_regrouping(player, admin, db):
@@ -473,7 +476,8 @@ def test_side_panel_for_everything_and_admin_regrouping(player, admin, db):
     admin.post(f"/characters/{cole.id}/override", data={"ref": "feature:Wood Elf:Fleet of Foot", "oref": "feature:Fleet of Foot",
                                                         "field": "feature_group", "value": "use"})
     features = player.get(f"/characters/{cole.id}").text.split('id="t-features"')[1].split('id="t-situ"')[0]
-    assert features.index("Fleet of Foot") < features.index("Always on, already in your numbers")
+    fleet = next(r for r in features.split(' data-ls-row ')[1:] if "<b>Fleet of Foot</b>" in r)
+    assert 'data-group-label="Wood Elf"' in fleet  # regrouped: now with the features you use
     assert "regroup for every character" in admin.get(f"/characters/{cole.id}/detail", params={"ref": "feature:Druid:Wild Shape"}).text
     admin.post(f"/characters/{cole.id}/override", data={"ref": "attack:unarmed", "oref": "attack:Unarmed Strike", "field": "battle", "value": "hide"})
     assert "Unarmed Strike" not in player.get(f"/characters/{cole.id}/battle").text.split("Bonus action")[0]

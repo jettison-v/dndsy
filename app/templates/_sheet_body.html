@@ -3,6 +3,7 @@
 {% from "_form_list.html" import form_list %}
 {% from "_help.html" import help %}
 {% from "_item_list.html" import item_list %}
+{% from "_feature_list.html" import feature_list %}
 {% from "_char.html" import pips, pick_btn, ri, opt_row, bell, pin_icon, bookmark_icon, tile, adv, roll_attrs %}
 {% set s = sheet %}
 {% if s %}
@@ -81,15 +82,7 @@
   </div>
 
   <div id="t-features" hidden>
-    {% macro feature_row(f) %}{{ ri(c, f.key, f.name, picks, can_pick, what=f.summary, mech=("level " ~ f.level) if f.level else "") }}{% endmacro %}
-    {% set active = s.features | selectattr("use") | list %}
-    {% set passive = s.features | rejectattr("use") | list %}
-    {% call help("features", help_off, "modes") %}What each feature lets you do. Click one for the full text and where it comes from.{% endcall %}
-    {% for source, list in active | groupby("source") %}<h3 class="divider">{{ source }} <span class="count">{{ list | length }}</span></h3><div class="rows">{% for f in list %}{{ feature_row(f) }}{% endfor %}</div>{% endfor %}
-    {% if passive %}
-    <details class="fold"><summary>Always on, already in your numbers ({{ passive | length }})</summary>
-      {% for source, list in passive | groupby("source") %}<h3 class="divider">{{ source }}</h3><div class="rows">{% for f in list %}{{ feature_row(f) }}{% endfor %}</div>{% endfor %}
-    </details>{% endif %}
+    {{ feature_list(c, feature_rows, picks, can_pick, show_picks, "sheet-features", ([("all", "All"), ("fav", "Shortlist")] if show_picks else ()), help_off) }}
   </div>
 
   <div id="t-skills" hidden>

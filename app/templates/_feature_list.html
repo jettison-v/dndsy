@@ -1,0 +1,55 @@
+{# Features on the shared list pattern (_lists.html, roadmap step 11): All · Shortlist, chip filters, search,
+   Group / Level / Name sorts and the side panel. `features` from character_views.feature_rows (each with `turn`,
+   what it's used as, and `uses`). The Group sort keeps the old tab's order: features you use, by where they
+   come from, then the ones that are always on. #}
+{% from "_lists.html" import filter_column, search_box, active_row, view_switch, notes_toggle %}
+{% from "_char.html" import pick_btn, pips %}
+{% from "_help.html" import help %}
+{% macro feature_list(c, features, picks, can_pick, show_picks, key="sheet-features", views=(), help_off=()) -%}
+{%- set TURN = ["Action", "Bonus action", "Reaction", "Other", "Always on"] -%}
+{%- set sources = features | map(attribute="source") | unique | list -%}
+{%- set groups = [
+  {"key": "from", "label": "From", "values": sources},
+  {"key": "turn", "label": "Used as", "values": TURN | select("in", features | map(attribute="turn") | sum(start=[]) | list) | list},
+  {"key": "uses", "label": "Uses", "values": ["Limited uses"] if features | selectattr("uses") | first else []},
+] | selectattr("values") | list -%}
+<div class="feature-list" data-list="{{ key }}" data-noun="feature" data-default-sort="default">
+  <div class="ls-layout">
+    {{ filter_column(groups) }}
+    <div class="ls-main">
+      {{ search_box("Search your features") }}
+      <div class="ls-toolbar">
+        {% if show_picks and views %}{{ view_switch(views, "Which features") }}{% endif %}
+        <span class="note" data-ls-summary></span>
+        <label class="ls-select"><span>Sort</span>
+          <select data-ls-sort aria-label="Sort"><option value="default">Group</option><option value="name">Name</option></select></label>
+        {% if show_picks and picks.notes and (features | map(attribute="key") | select("in", picks.notes) | first) %}{{ notes_toggle() }}{% endif %}
+      </div>
+      {{ active_row() }}
+      <div class="ls-rows ft-cols" data-ls-rows>
+        <div class="ls-head" aria-hidden="true"><span>Feature</span><span>From</span><span>Level</span><span>Used as</span><span>Uses</span><span></span></div>
+        {% for f in features %}{% set note = picks.notes.get(f.key) if show_picks else "" %}
+        {% set gi = (sources.index(f.source) + 1) if f.use else 900 %}
+        <div class="ls-row feature-row{{ ' not-ready' if not f.use }}" data-ls-row data-ref="{{ f.key }}" data-fav="{{ '1' if f.key in picks.fav else '0' }}"
+          data-views="{{ 'fav ' if f.key in picks.fav }}all" data-name="{{ f.name | lower }}" data-group-label="{{ f.source if f.use else 'Always on, already in your numbers' }}"
+          data-f='{{ {"from": f.source, "turn": f.turn, "uses": "Limited uses" if f.uses else ""} | tojson }}'
+          data-sort-default="{{ gi * 1000 + loop.index }}"
+          data-panel-url="/characters/{{ c.id }}/detail?ref={{ f.key | urlencode }}" tabindex="0" role="button" aria-label="{{ f.name }}: details">
+          <span class="ls-name"><span class="ls-line"><b>{{ f.name }}</b></span>
+            {% if f.summary %}<span class="ls-what">{{ f.summary }}</span>{% endif %}
+            {% if note %}<span class="ls-note" title="{{ note }}">✎ {{ note }}</span>{% endif %}</span>
+          <span>{{ f.source }}</span>
+          <span>{{ f.level or "—" }}</span>
+          <span>{{ f.turn | reject("equalto", "Other") | join(", ") or "—" }}</span>
+          <span>{% if f.uses %}{{ pips(f.uses) }}{% else %}<span class="note">—</span>{% endif %}</span>
+          <span class="ls-marks two"><span>{{ pick_btn(c, "fav", f.key, f.key in picks.fav, can_pick) }}</span><span>{{ pick_btn(c, "remind", f.key, f.key in picks.remind, can_pick) }}</span></span>
+        </div>
+        {% endfor %}
+      </div>
+      <p class="note ls-empty" data-ls-empty hidden>No features match. <button type="button" class="btn link small" data-ls-clear>Clear all</button></p>
+      {% if views %}<p class="note ls-empty" data-ls-empty-view="fav" hidden>Nothing on your Shortlist yet. In <b>All</b>, press the bookmark on a feature you want close at hand.</p>{% endif %}
+      {% call help("features", help_off, "modes", "sb-foot-note") %}What each feature lets you do. Click one for the full text and where it comes from.{% endcall %}
+    </div>
+  </div>
+</div>
+{%- endmacro %}

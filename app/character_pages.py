@@ -219,6 +219,7 @@ def _sheet_ctx(db: Session, ch: Character, user: dict) -> dict:
         # Actions tab: everything except leveled spells (those are on the Spells tab), like D&D Beyond
         ctx["options"] = [o for o in views.options(ctx["sheet"], ctx["picks"]["star"])
                           if o["kind"] != "spell" or (o["tags"] and o["tags"][0] == "cantrip" and o["hit"])]
+        ctx["feature_rows"] = views.feature_rows(ctx["sheet"], views.options(ctx["sheet"]))  # Features tab: the shared list
         ctx["forms"] = ws.forms(ctx["sheet"], ctx["picks"]["fav"], ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep))
         ctx["ws_other_uses"] = ws.other_uses(ctx["sheet"]) if ctx["druid"] else []
     return ctx

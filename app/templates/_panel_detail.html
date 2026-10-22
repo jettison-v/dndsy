@@ -7,7 +7,7 @@
   <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
 </div>
 <div class="peek-body detail">
-  {{ detail_marks(c, ref, picks, can_pick, (["star"] if o and o.cost != "Other" else []) + (["fav"] if section in ("spells", "creatures", "inventory") else []) + ["remind"]) }}
+  {{ detail_marks(c, ref, picks, can_pick, (["star"] if o and o.cost != "Other" else []) + (["fav"] if section in ("spells", "creatures", "inventory", "features") else []) + ["remind"]) }}
 
   {# The mechanics, always in the same order; first, what it rolls #}
   <dl class="mech">

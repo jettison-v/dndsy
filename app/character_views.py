@@ -525,6 +525,32 @@ def fields_for(section: str, opt: dict | None) -> list[str]:
     return fields
 
 
+TURN_COSTS = ("Action", "Bonus action", "Reaction")
+# A feature's own words, when no Battle option carries it (Wild Companion: "As a Magic action, …")
+TURN_WORDS = (("Reaction", re.compile(r"\b(?:as|take|use your|uses? a) (?:a )?Reaction\b", re.I)),
+              ("Bonus action", re.compile(r"\b(?:as|take|use) a Bonus Action\b", re.I)),
+              ("Action", re.compile(r"\b(?:as|take) (?:a|an|the \w+) (?:Magic )?action\b|\bMagic action\b", re.I)))
+
+
+def feature_rows(sheet: dict, opts: list[dict]) -> list[dict]:
+    """Sheet › Features as list rows (_feature_list.html): what each feature is used as on a turn (from the
+    options it gives, matched by name: "Wild Shape", "Wild Shape: Circle Forms"…) and its limited uses."""
+    def mine(name: str, n: str) -> bool:
+        return name == n or name.startswith(n + ":") or name.startswith(n + " (")
+    out = []
+    for f in sheet.get("features") or []:
+        n = f["name"]
+        costs = {o["cost"] for o in opts if mine(o["name"], n)}
+        turn = [c for c in TURN_COSTS if c in costs]
+        if not turn and f.get("use"):
+            text = f"{f.get('summary') or ''} {f.get('text') or ''}"
+            turn = [next((cost for cost, rx in TURN_WORDS if rx.search(text)), "Other")]
+        turn = turn or ["Always on"]
+        uses = next((a["uses"] for a in sheet.get("actions") or [] if mine(a["name"], n) and a.get("uses")), None)
+        out.append({**f, "turn": turn, "uses": uses})
+    return out
+
+
 def apply_overrides(sheet: dict, overrides: dict[tuple[str, str], str]) -> dict:
     """Return the sheet with admin regrouping applied."""
     if not sheet:
