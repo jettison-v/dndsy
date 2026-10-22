@@ -1286,7 +1286,7 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .ls-layout { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 20px; align-items: start; }
 .ls-fold > summary { display: none; }
 .ls-filters { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 0; }
-.ls-filters-head { display: flex; align-items: center; gap: 10px; min-height: 48px; }  /* the search box's height: Filters lines up with it */
+.ls-filters-head { display: flex; align-items: center; gap: 10px; min-height: var(--control-h); }  /* the search box's height: Filters lines up with it */
 .ls-h { font-size: var(--fs-xs); line-height: 1; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); }
 .ls-rule { flex: 1; height: 1px; background: linear-gradient(90deg, var(--line-strong), transparent); }
 .ls-group { display: flex; flex-direction: column; gap: 6px; }
@@ -1548,3 +1548,8 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .demo-toast.v-d.show { transform: translate(-50%, 0); }
 .demo-toast.v-d .dt-act { color: var(--red); } .demo-toast.v-d.k-error { background: var(--red); color: var(--text-strong); } .demo-toast.v-d .dt-x { color: inherit; }
 @media (max-width: 640px) { .demo-toast.v-b { right: 16px; left: 16px; bottom: 76px; max-width: none; } .demo-toast.v-d { bottom: 76px; } }
+
+/* One line, then the rest on click (app.js): long summary lines on class cards */
+.clamp { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+.clamp.open { display: block; }
+.clamp:hover { color: var(--text); }

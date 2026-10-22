@@ -509,6 +509,11 @@
   document.addEventListener('touchend', () => { clearTimeout(tipTimer); setTimeout(tipHide, 1200); }, { passive: true });
   document.addEventListener('click', tipHide, true);
   window.addEventListener('scroll', tipHide, true);
+  // Long lines in summary cards (Sheet › Wild Shape's "In a form"…) show one line; a click shows the rest (Brett, 2026-10-22)
+  document.addEventListener('click', e => {
+    const c = e.target.closest('.clamp'); if (!c || e.target.closest('a, button')) return;
+    const open = c.classList.toggle('open'); c.setAttribute('aria-expanded', open ? 'true' : 'false'); c.title = open ? 'Show less' : 'Show all';
+  });
   // FAQ: a link to one answer (a help line's "More") opens it
   const openFaq = () => { const d = location.hash.length > 1 && document.getElementById(location.hash.slice(1)); if (d && d.matches('details.faq')) { d.open = true; d.scrollIntoView({ block: 'start' }); } };
   openFaq(); window.addEventListener('hashchange', openFaq);
