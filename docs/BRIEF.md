@@ -56,6 +56,8 @@ Before each session, every player gets:
 - The recap was fuzzy after a 2–3 month gap ("Remember how we got past this the first time?"), and nobody could recall who told the party about the Leviathan's library.
 
 ## What it won't do
+_Updated 2026-10-22: askdnd now aims to become our table's virtual tabletop, with DM tools; see `docs/plans/2026-10-22-vtt-roadmap.md`. The two lines about replacing D&D Beyond's sheet or VTT and DM-only features no longer hold. D&D Beyond stays where characters are built._
+
 - Tell players what to do. It explains options and choices, not tactics or optimization.
 - Replace D&D Beyond as the character sheet or the VTT.
 - Serve the public. Users are the table only, which also keeps licensing exposure low for book content.
