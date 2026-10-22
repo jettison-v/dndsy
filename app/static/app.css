@@ -1612,3 +1612,21 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .entity-edit details.section > summary { cursor: pointer; }
 .entity-edit .section-head { margin-bottom: var(--sp-2); }
 .entity-edit .section .story { background: var(--bg); }
+
+/* Manage › DM guide: the flow at the top, the backlog checklist, tips */
+.guide-flow { display: grid; gap: var(--sp-2); margin: var(--sp-3) 0; }
+.gf-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.gf-box { padding: var(--sp-1) var(--sp-3); border-radius: var(--r-md); border: 1px solid var(--line); font-size: var(--fs-sm); font-weight: 600; }
+.gf-in { background: var(--violet-soft); border-color: var(--violet); }
+.gf-you { background: var(--amber-soft); border-color: var(--amber); }
+.gf-out { background: var(--blue-soft); border-color: var(--blue); }
+.gf-arrow { color: var(--muted); font-size: var(--fs-sm); }
+.guide-steps { padding-left: var(--sp-5); display: grid; gap: var(--sp-3); margin: var(--sp-3) 0; }
+.guide-steps > li > p { margin: var(--sp-1) 0 0; }
+.guide-steps > li.done > b { color: var(--muted); text-decoration: line-through; }
+.guide-sub { padding-left: var(--sp-5); display: grid; gap: var(--sp-1); margin: var(--sp-2) 0 0; }
+.guide-warn { display: block; margin-top: var(--sp-1); padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); background: var(--amber-soft); font-size: var(--fs-sm); }
+.guide-tips { margin-top: var(--sp-3); padding: var(--sp-3) var(--sp-4); border-radius: var(--r-lg); background: var(--surface-2); }
+.guide-tips ul { margin: var(--sp-1) 0 0; padding-left: var(--sp-5); }
+.guide-list { padding-left: var(--sp-5); display: grid; gap: var(--sp-2); }
+.dm-guide .section { scroll-margin-top: 80px; }

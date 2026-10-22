@@ -43,3 +43,16 @@ def test_design_system_page_is_for_admins(monkeypatch, db):
     monkeypatch.setattr(config, "REVIEWER_EMAILS", parse_allowlist("dm@example.com"))
     reviewer = client_for(monkeypatch, db, "dm@example.com")
     assert reviewer.get("/manage/design").status_code == 403 and reviewer.get("/manage/design/panel").status_code == 403
+
+
+def test_dm_guide_shows_the_backlog_to_the_dm_only(monkeypatch, db):
+    from app.importer import import_bundle
+
+    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "sessions": [{"number": 1, "played_on": "2026-01-10"}]})
+    monkeypatch.setattr(config, "REVIEWER_EMAILS", parse_allowlist("dm@example.com"))
+    reviewer = client_for(monkeypatch, db, "dm@example.com")
+    page = reviewer.get("/manage/dm-guide").text
+    assert "You review" in page and "Draft the remaining sessions" in page and "of 1</b> sessions are published" in page
+    assert "<b>DM guide</b>" in reviewer.get("/manage").text
+    player = client_for(monkeypatch, db, "mark@example.com")
+    assert player.get("/manage/dm-guide").status_code == 403

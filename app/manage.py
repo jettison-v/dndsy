@@ -23,6 +23,7 @@ router = APIRouter()
 
 # (key, label, href, what it's for, group, who may open it, extra paths that belong to it)
 PAGES = (
+    ("guide", "DM guide", "/manage/dm-guide", "How the campaign record works, and getting through the backlog", "Table", can_moderate, ()),
     ("suggestions", "Suggestions", "/suggestions", "Corrections and additions from the table", "Table", can_moderate, ()),
     ("recaps", "Recaps", "/admin/sessions", "Draft, review and publish session recaps", "Table", is_reviewer, ("/admin/notes",)),
     ("history", "History", "/admin/history", "Every change, with Restore", "Table", is_reviewer, ()),
@@ -84,6 +85,11 @@ def _status(db: Session, user: dict, keys: set[str]) -> dict[str, dict]:
 
     campaign = web.campaign(db)
     out: dict[str, dict] = {}
+    if "guide" in keys:
+        b = backlog(db)
+        left = len(b.get("to_draft", [])) + len(b.get("to_review", []))
+        out["guide"] = {"text": f"Backlog: {left} session{'s' if left != 1 else ''} to draft or review" if left else "Backlog cleared",
+                        "attention": False, "sub": "Start here"}
     if "suggestions" in keys:
         n = waiting_count(db)
         out["suggestions"] = {"text": f"{n} waiting" if n else "Nothing waiting", "attention": bool(n)}
@@ -181,3 +187,41 @@ def design_panel(request: Request):
     if not user or not is_admin(user):
         return web.forbidden(request, "The design system page is for admins.")
     return templates.TemplateResponse(request, "_design_panel.html", {})
+
+
+# ------------------------------------------------------------------ the DM guide (Brett, 2026-10-22)
+
+
+def backlog(db: Session) -> dict:
+    """What's waiting in the campaign record, for the DM guide's checklist (live numbers, so it shrinks as she works)."""
+    from app.extraction import session_label, timeline
+    from app.models import Entity, EntityKind, Proposal, Status
+    from app.suggestions import waiting_count
+
+    campaign = web.campaign(db)
+    if campaign is None:
+        return {}
+    sessions = timeline(db, campaign.id)
+    rows = [(s, review.review_status(s, False)) for s in sessions]
+    return {
+        "to_draft": [s for s, st in rows if st == "no draft" and s.source == "notes"],
+        "to_record": [s for s, st in rows if st == "no draft" and s.source == "transcript"],
+        "to_review": [{"s": s, "label": session_label(s), "status": st} for s, st in rows if st in ("draft", "edited")],
+        "published": sum(1 for _, st in rows if st == "published"),
+        "total": len(rows),
+        "proposals": db.scalar(select(func.count()).select_from(Proposal).where(Proposal.status == "pending")) or 0,
+        "suggestions": waiting_count(db),
+        "hidden": db.scalar(select(func.count()).select_from(Entity).where(
+            Entity.campaign_id == campaign.id, Entity.status == Status.DRAFT, Entity.kind != EntityKind.PC)) or 0,
+    }
+
+
+@router.get("/manage/dm-guide")
+def dm_guide(request: Request, db: Session = Depends(get_db)):
+    """How the campaign record works for the DM, in plain words, with the notes backlog as a live checklist."""
+    user = current_user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    if not can_moderate(user):
+        return web.forbidden(request, "The DM guide is for the DM, reviewers and admins.")
+    return templates.TemplateResponse(request, "dm_guide.html", {"b": backlog(db)})

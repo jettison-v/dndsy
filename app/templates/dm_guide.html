@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}DM guide · Manage · askdnd{% endblock %}
+{# For the DM (and reviewers): how the campaign record works, in plain words, plus the notes backlog as a live
+   checklist (manage.backlog). Keep it in step with the workflows: docs/plans/2026-10-22-content-workflows.md. #}
+{% block content %}
+<main class="page narrow help dm-guide">
+  {% include "_manage_head.html" %}
+  <div class="title-row"><h1>DM guide</h1></div>
+  <p class="subtitle">How askdnd's campaign record works for you as the DM, and a plan for getting through the backlog from Brett's notes. Only the DM, reviewers and admins see this page.</p>
+  <nav class="ds-jump" aria-label="On this page">
+    <a href="#idea">The idea</a><a href="#backlog">The backlog</a><a href="#after">After a game night</a><a href="#players">Player suggestions</a>
+    <a href="#write">Writing it yourself</a><a href="#tidy">Tidying and undo</a><a href="#privacy">Who sees what</a><a href="#words">Words</a>
+  </nav>
+
+  <section class="section" id="idea">
+    <h2>The idea: you own what the table reads</h2>
+    <p>Recaps, key moments, people, places, factions, items, quests and the glossary are the <b>campaign record</b>. Three things feed it, and nothing from Claude or a player reaches the table until you (or a reviewer) say yes:</p>
+    <div class="guide-flow" role="img" aria-label="Brett's notes and session recordings are drafted by Claude and reviewed by you; players' suggestions wait for your decision; what you write goes straight to the table.">
+      <div class="gf-row"><span class="gf-box gf-in">Brett's notes and recordings</span><span class="gf-arrow">→ Claude drafts →</span><span class="gf-box gf-you">You review</span><span class="gf-arrow">→</span><span class="gf-box gf-out">The table</span></div>
+      <div class="gf-row"><span class="gf-box gf-in">Players' suggestions</span><span class="gf-arrow">→</span><span class="gf-box gf-you">You decide</span><span class="gf-arrow">→</span><span class="gf-box gf-out">The table</span></div>
+      <div class="gf-row"><span class="gf-box gf-you">What you write</span><span class="gf-arrow">→ straight to →</span><span class="gf-box gf-out">The table</span></div>
+    </div>
+    <p class="note">Nothing is ever lost: every change is kept on <a href="/admin/history">Manage › History</a> with <b>Restore</b>.</p>
+  </section>
+
+  <section class="section" id="backlog">
+    <h2>The backlog (for now)</h2>
+    {% if b %}
+    <p>Brett's campaign notes cover many sessions that haven't been turned into recaps yet. <b>{{ b.published }} of {{ b.total }}</b> sessions are published. These numbers update as you work.</p>
+    <ol class="guide-steps">
+      <li class="{{ 'done' if not b.to_draft }}"><b>Draft the remaining sessions</b>{% if b.to_draft %} <span class="tag draft">{{ b.to_draft | length }} to draft</span>{% else %} <span class="tag done">Done</span>{% endif %}
+        <p>On <a href="/admin/sessions">Recaps</a>, press <b>Draft all</b>. Claude drafts them oldest first, so each draft reads the recaps before it. It takes a few minutes and costs about 12¢ a session. Brett can do this, or you can.</p></li>
+      <li class="{{ 'done' if not b.to_review and not b.to_draft }}"><b>Review and publish, oldest first</b>{% if b.to_review %} <span class="tag draft">{{ b.to_review | length }} waiting</span>{% endif %}
+        {% if b.to_review %}<p>Next up: {% for r in b.to_review[:3] %}<a href="/admin/sessions/{{ r.s.id }}">{{ r.label }}{% if r.s.title %}: {{ r.s.title }}{% endif %}</a>{{ ", " if not loop.last }}{% endfor %}{% if b.to_review | length > 3 %} and {{ b.to_review | length - 3 }} more{% endif %}.</p>{% endif %}
+        <p>Each one takes 10 to 20 minutes. On the session's page, top to bottom:</p>
+        <ol class="guide-sub">
+          <li><b>Read the recap.</b> Fix anything wrong right there; your wording wins.</li>
+          <li><b>Key moments.</b> Delete wrong ones, fix the wording, add any that are missing.</li>
+          <li><b>Claude's questions.</b> Answer what you know and <b>Skip</b> the rest. If you answered several, <b>Redraft</b> lets Claude use them (or just edit the recap yourself).</li>
+          <li><b>Suggested updates</b> (new people and places, spellings, description changes): <b>Accept</b>, <b>Edit</b> or <b>Reject</b>.
+            <span class="guide-warn">For now, accepting a <i>description change</i> replaces the description that's there. If that entry has wording you want to keep, choose <b>Edit</b> and combine the two before accepting. This becomes automatic soon.</span></li>
+          <li><b>Publish.</b> The table sees it on <i>Previously on…</i> and <i>Sessions</i>. You can edit and republish any time.</li>
+        </ol></li>
+      {% if b.to_record %}<li><b>Sessions waiting for a recording</b> <span class="tag">{{ b.to_record | length }}</span>
+        <p>These need Brett to send the transcript from the Processor on his Mac. Nothing to do here until he does.</p></li>{% endif %}
+      <li><b>Tidy as you go</b>{% if b.hidden %} <span class="tag faint">{{ b.hidden }} hidden {{ "entry" if b.hidden == 1 else "entries" }}</span>{% endif %}
+        <p>Drafts sometimes create the same person twice ("Capt Trager Grill" and "Captain Trager Grill"). Open one on the <a href="/campaign">Campaign</a> page, press <b>Edit</b>, and <b>Merge</b> it into the other. See <a href="#tidy">Tidying and undo</a>.</p></li>
+      <li class="{{ 'done' if not b.suggestions }}"><b>Players' suggestions</b>{% if b.suggestions %} <span class="tag draft">{{ b.suggestions }} waiting</span>{% else %} <span class="tag done">None waiting</span>{% endif %}
+        <p>On <a href="/suggestions">Manage › Suggestions</a>. See <a href="#players">Player suggestions</a>.</p></li>
+    </ol>
+    <div class="guide-tips"><b>Tips</b>
+      <ul>
+        <li><b>Go in order.</b> Each draft builds on the recaps before it, so earlier fixes make later drafts better.</li>
+        <li><b>Small bites work.</b> One or two sessions before each game night clears it in a few weeks.</li>
+        <li><b>Good enough is fine.</b> Everything stays editable, and History keeps every earlier version.</li>
+      </ul></div>
+    {% else %}<p class="muted">No campaign yet.</p>{% endif %}
+  </section>
+
+  <section class="section" id="after">
+    <h2>After a game night (once the backlog is done)</h2>
+    <ol class="guide-sub">
+      <li>Brett records the session; the Processor on his Mac removes table talk and sends only the game to askdnd.</li>
+      <li>A draft appears on <a href="/admin/sessions">Recaps</a> within a few minutes.</li>
+      <li>Review and publish it, as above. Before the next session is ideal, so the table's <i>Previously on…</i> is ready.</li>
+    </ol>
+  </section>
+
+  <section class="section" id="players">
+    <h2>When a player suggests something</h2>
+    <ul class="guide-list">
+      <li><b>On a person, place or other entry</b>, it shows in that entry's panel under <i>What the table knows</i>, marked waiting. <b>Merge</b> shows it to the table; <b>Reject</b> drops it. When you've worked a fact into the description yourself, press <b>Done</b> to take it off the list.</li>
+      <li><b>On a recap or a glossary term</b>, it goes to <a href="/suggestions">Manage › Suggestions</a>. Fix the recap or term yourself, or <b>Use</b> it so the next redraft includes it.</li>
+      <li><b>Your own suggestions</b> skip all of this and go straight on.</li>
+    </ul>
+    <p class="note">Coming soon: one inbox for every suggestion, with the same buttons everywhere (Accept, Edit, Ask Claude to work it in, Dismiss), and players will see what happened to theirs.</p>
+  </section>
+
+  <section class="section" id="write">
+    <h2>Writing it yourself</h2>
+    <ul class="guide-list">
+      <li><b>A new person, place, faction, item, quest or creature:</b> <b>+ New entry</b> on the <a href="/campaign">Campaign</a> page (or <b>+ New</b> in a tab). Prepare an NPC before the party meets them by ticking <i>Hide from the table for now</i>.</li>
+      <li><b>Change an entry:</b> click it, then <b>Edit</b>. You can rename it (the old name keeps working), write the description in your own words, add relationships, a picture or a key moment, mark a quest done, or hide it.</li>
+      <li><b>Claude's help, when you want it:</b> in an entry's Edit window, <b>Regenerate description</b> rewrites it from the facts and key moments; you see it before anything changes. Facts it worked in come off the list when you accept.</li>
+      <li><b>A session with no notes or recording:</b> <a href="/admin/sessions/new">Recaps › + Add session</a>, write what happened, and choose <b>Save as the recap</b> (your words, no Claude) or <b>Save and ask Claude</b> (Claude checks it against the sessions around it and asks questions).</li>
+      <li><b>A spelling or term:</b> Campaign › Glossary › <b>Add a term</b>. Transcripts use the glossary to spell names right.</li>
+    </ul>
+  </section>
+
+  <section class="section" id="tidy">
+    <h2>Tidying and undo</h2>
+    <ul class="guide-list">
+      <li><b>Merge</b> a duplicate into the entry to keep (Edit › Merge or delete): its name becomes another name there, and its facts, relationships, key moments and picture move over.</li>
+      <li><b>Hide</b> an entry (Edit › Details › untick <i>The table can see it</i>) to keep it from the table without losing it.</li>
+      <li><b>Delete</b> an entry you don't need (Edit › Merge or delete). Player characters can't be deleted here.</li>
+      <li><b>Undo anything</b> on <a href="/admin/history">Manage › History</a>: every name, description, fact, relationship and key moment change, with <b>Restore</b>.</li>
+    </ul>
+  </section>
+
+  <section class="section" id="privacy">
+    <h2>Who sees what</h2>
+    <ul class="guide-list">
+      <li>Everything published is visible to everyone at the table.</li>
+      <li>Drafts, hidden entries and these Manage pages are only for you, reviewers and admins.</li>
+      <li>As DM you <b>never</b> see players' own notes, pins, shortlists or reminders. That's on purpose: they can plan without spoilers going the other way.</li>
+    </ul>
+  </section>
+
+  <section class="section" id="words">
+    <h2>Words you'll see</h2>
+    <dl class="mech guide-words">
+      <dt>Draft</dt><dd>Written (by Claude or you) but not shown to the table yet.</dd>
+      <dt>Publish</dt><dd>Show a session's recap and key moments to the table.</dd>
+      <dt>Hidden</dt><dd>An entry the table can't see.</dd>
+      <dt>Key moment</dt><dd>One line about something important in a session; shown on the session and on every entry it mentions.</dd>
+      <dt>What the table knows</dt><dd>Facts added by players or you, listed on an entry until worked into its description.</dd>
+      <dt>Suggested update</dt><dd>A change Claude proposes while drafting a session (a new person, a spelling, a new description).</dd>
+      <dt>Claude's questions</dt><dd>Things Claude wasn't sure about while drafting; answering them improves this and later drafts.</dd>
+      <dt>Redraft</dt><dd>Claude drafts the session again, using your answers and corrections.</dd>
+    </dl>
+  </section>
+</main>
+{% endblock %}

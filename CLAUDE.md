@@ -20,7 +20,7 @@ A companion app for one D&D 2024 table (4 players + DM, playing on Zoom with D&D
 - Pushing to `main` deploys to beta. That's fine, but keep `main` working.
 
 ## Where things are (as of 2026-10-19)
-- **Manage** (`/manage`, app/manage.py): one overview of admin and reviewer pages (People with the access chart, Characters, Recaps, Suggestions, History, Usage, Data, Design system). Access rules live only in `app/access.py` (`allows()`).
+- **Manage** (`/manage`, app/manage.py): one overview of admin and reviewer pages (DM guide, People with the access chart, Characters, Recaps, Suggestions, History, Usage, Data, Design system). Access rules live only in `app/access.py` (`allows()`).
 - **Version history** (app/history.py): records edits automatically; Manage › History restores; imports are previewed and can be undone.
 - **Backups**: the `askdnd-backup` Railway cron service dumps the database to S3 `v2/backups/` nightly; `scripts/restore_db.py` restores into an empty database.
 - **Spending limit**: Manage › Usage (app/spending.py); every Claude call checks it first.
@@ -45,6 +45,6 @@ Python (current stable) managed with **uv** · FastAPI serving server-rendered p
 
 ## Conventions
 - Small, focused commits with clear messages. Run `uv run ruff check app scripts tests` and `uv run pytest -q` before committing. GitHub Actions runs both on every push, and Railway waits for them before deploying beta.
-- When a feature or a visibility rule changes, update the About and FAQ pages (`app/templates/about.html`, `faq.html`) to match.
+- When a feature or a visibility rule changes, update the About and FAQ pages (`app/templates/about.html`, `faq.html`) to match. When a campaign-content workflow changes (recaps, entries, suggestions, review), also update the DM guide (`app/templates/dm_guide.html`, Manage › DM guide), which the DM reads instead of the code.
 - Tests for core logic (extraction parsing, visibility rules, D&D Beyond parsing). Don't test against live paid APIs by default.
 - Secrets come from environment variables (Railway variables in production, `.env` locally). Document every variable in `.env.example`.
