@@ -343,3 +343,11 @@ def test_battle_shows_saves_for_the_normal_form_and_in_wild_shape(db, cole, play
     block = page[page.index('class="ws-form"'):page.index('class="econ"')]
     assert block.count('role="listitem"') == 6 and 'Con<span class="st-word"> save</span></small><b>+7</b>' in block  # bear's Con +3, Increased Toughness +4
     assert "War Caster" in block and "Fey Ancestry" not in block
+
+
+def test_the_form_window_shows_only_what_the_form_brings(db, cole, player):
+    panel = player.get(f"/characters/{cole.id}/form", params={"name": "Hippopotamus"}).text
+    cards = panel.split("Battle cards")[1].split("<h3>Traits</h3>")[0]
+    assert "Bite" in cards and "Multiattack" in cards
+    for theirs in ("Starry Wisp", "Moonbeam", "Unarmed Strike", "Leave the form", "Dash, Disengage"):
+        assert theirs not in cards.split("work in any form")[1], theirs  # the same in every form: not here
