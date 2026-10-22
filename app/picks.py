@@ -40,14 +40,14 @@ def can_edit(db: Session, user: dict | None, character: Character) -> bool:
     return bool(me and character.owner_id == me.id)
 
 
-def can_see(user: dict | None) -> bool:
-    return can_see_character_notes(user)
+def can_see(user: dict | None, character: Character | None = None) -> bool:
+    return can_see_character_notes(user, character)
 
 
 def picks(db: Session, character: Character, user: dict | None) -> dict:
     """{"star": {ref,…}, "remind": {ref: label}, "notes": {ref: note}…} — empty for the DM."""
     out = {"star": set(), "remind": {}, "fav": set(), "order": {}, "notes": {}}
-    if not can_see(user):
+    if not can_see(user, character):
         return out
     for p in db.scalars(select(CharacterPick).where(CharacterPick.character_id == character.id).order_by(CharacterPick.id)):
         if p.kind == "note":

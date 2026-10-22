@@ -68,7 +68,8 @@ DURING A SESSION (phase 2)
 - **Session** → date, approved recap, extracted events. Raw transcript is NOT stored.
 - **Character** → its own name, owner, D&D Beyond ID (and the D&D Beyond campaign its sheet says it's in), latest good D&D Beyond copy, and the player's structured notes (battle combos, leveling strategy, personal quests, general notes), pins and reminders. It belongs to its player, not to a campaign, so all of this travels with it.
 - **Campaign character** (`campaign_characters`, since 2026-10-22) → a character in a campaign: its story page there, when it joined and left, and the DM's Wild Shape ruling (what it keeps). One campaign at a time; leaving keeps the row and the story, so who was at the table stays answerable. Personal quests remember the campaign they were written in. The full plan (roles, house rules, more campaigns): `docs/plans/2026-10-21-data-organization.md`.
-- **Visibility rule**: players' notes, stars and reminders are visible to players, hidden from the DM. Everything else is visible to everyone.
+- **People and roles** (since 2026-10-23): a person's **tool role** (`users.access`: member or admin; owners are `ADMIN_EMAILS`) is about askdnd as a whole: admins set up people, characters, spending and imports. Their **campaign role** (`campaign_members.role`: DM, reviewer or player, with joined and left dates) is about one table. The DM includes Reviewer in their campaign. All rules are in `app/access.py` (`allows()`); Manage › People sets both and draws its chart from those rules.
+- **Visibility rule**: players' notes, pins and reminders are visible to players, hidden from the DM of the campaign the character is in now (even if that DM is an admin). Everything else is visible to everyone.
 - **Book content** (phase 2) → sections with page numbers and page images.
 
 ## Build plan: 3 weeks to the first milestone

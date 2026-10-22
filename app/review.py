@@ -108,7 +108,8 @@ def names_for(db: Session, user: dict) -> set[str]:
         for ch in db.scalars(select(Character).where(Character.owner_id == account.id)):
             if ch.player_name:
                 names.add(" ".join(ch.player_name.split()).casefold())
-        for m in db.scalars(select(CampaignMember).where(CampaignMember.user_id == account.id, CampaignMember.role == Role.DM)):
+        for m in db.scalars(select(CampaignMember).where(CampaignMember.user_id == account.id, CampaignMember.role == Role.DM,
+                                                         CampaignMember.left_on.is_(None))):
             campaign = db.get(Campaign, m.campaign_id)
             if campaign.dm_name:
                 names.add(" ".join(campaign.dm_name.split()).casefold())

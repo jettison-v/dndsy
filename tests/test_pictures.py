@@ -11,6 +11,7 @@ from app.importer import import_bundle
 from app.main import app
 from app.models import Character, Entity, EntityPicture, Status, User
 from tests.test_suggestions import HX, client_for
+from tests.roles import set_role
 
 BUNDLE = {
     "campaign": {"slug": "main", "name": "Main"},
@@ -26,8 +27,7 @@ def png(w=1600, h=900, color=(200, 40, 40)) -> bytes:
 
 @pytest.fixture
 def people(monkeypatch, db):
-    db.add(User(email="dm@example.com", name="Dee", is_dm=True))
-    db.flush()
+    set_role(db, "dm@example.com")
     yield {"dm": client_for(monkeypatch, db, "dm@example.com"), "player": client_for(monkeypatch, db, "mark@example.com")}
     app.dependency_overrides.clear()
 

@@ -19,6 +19,8 @@ from sqlalchemy import event, inspect, select
 from sqlalchemy.orm import Session
 
 from app.models import (
+    CampaignMember,
+    Role,
     CampaignCharacter,
     Campaign,
     Character,
@@ -46,7 +48,8 @@ TRACKED = {
     PlayerNote: ("title", "status", "data"),
     CharacterPick: ("note",),
     Campaign: ("name", "dm_name"),
-    User: ("name", "access", "is_dm"),
+    User: ("name", "access"),
+    CampaignMember: ("role", "left_on"),
     StoryEvent: ("text", "kind", "status"),
     EntityAlias: ("alias", "misspelling", "note"),
     EntityRelation: ("type", "note"),
@@ -70,7 +73,7 @@ SOURCES = {"edit": "Edited", "import": "Import", "claude": "Claude rewrite accep
 FIELD_LABELS = {"summary": "Description", "quest_open": "Quest", "status": "Published", "name": "Name", "term": "Term",
                 "description": "Description", "title": "Title", "played_on": "Date played", "ddb_id": "D&D Beyond link",
                 "player_name": "Player name", "owner_id": "Played by", "data": "Content", "note": "Note",
-                "dm_name": "DM name", "access": "Access", "is_dm": "DM", "deleted": "Deleted",
+                "dm_name": "DM name", "access": "Access", "is_dm": "DM", "role": "Role", "left_on": "Left the campaign", "deleted": "Deleted",
                 "wild_shape_keep": "Kept in Wild Shape", "text": "Text", "kind": "Kind", "alias": "Name",
                 "misspelling": "Misspelling", "type": "Relationship"}
 
@@ -132,6 +135,9 @@ def label(obj) -> str:
         return f"Glossary: {obj.term}"
     if isinstance(obj, GameSession):
         return f"Session {obj.number}" if obj.number else f"Session of {obj.played_on}"
+    if isinstance(obj, CampaignMember):
+        who = obj.user.name if obj.user else obj.user_id
+        return f"Role: {who} in {obj.campaign.name if obj.campaign else 'a campaign'}"
     if isinstance(obj, CampaignCharacter):
         return f"Character: {obj.character.name if obj.character else obj.character_id}"
     if isinstance(obj, Character):
@@ -196,6 +202,10 @@ def _value(model, field: str, v):
         return Status(v) if v is not None else Status.DRAFT
     if model is StoryEvent and field == "kind":
         return EventKind(v)
+    if model is CampaignMember and field == "role":
+        return Role(v)
+    if model is CampaignMember and field == "left_on":
+        return date.fromisoformat(v) if v else None
     return v
 
 
@@ -274,6 +284,10 @@ def shown(value, field: str) -> str:
         return "Published" if value == Status.PUBLISHED.value else "Not published"
     if field == "is_dm":
         return "Yes" if value else "No"
+    if field == "role":
+        return {"dm": "DM", "reviewer": "Reviewer", "player": "Player"}.get(value, str(value))
+    if field == "access":
+        return {"member": "Member", "admin": "Admin", "removed": "Removed"}.get(value, str(value))
     if value is None or value == "":
         return "—"
     if isinstance(value, dict):

@@ -5,8 +5,8 @@ from app.models import Role
 
 
 def can_view_character_notes(role: Role | None) -> bool:
-    return role == Role.PLAYER
+    return role in (Role.PLAYER, Role.REVIEWER)
 
 
 def can_view_published_story(role: Role | None) -> bool:
-    return role in (Role.PLAYER, Role.DM)
+    return role in (Role.PLAYER, Role.REVIEWER, Role.DM)

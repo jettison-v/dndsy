@@ -28,7 +28,7 @@ class PictureError(Exception):
 
 def can_manage(user: dict | None) -> bool:
     """The DM runs the story, so the DM adds pictures; so can reviewers and admins."""
-    return bool(user) and access.allows("story_extras", access.level(user.get("email")), access.is_dm(user.get("email")))
+    return bool(user) and access.allows("story_extras", access.level(user.get("email")), access.role(user.get("email")))
 
 
 def process(raw: bytes) -> tuple[bytes, bytes]:

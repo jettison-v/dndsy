@@ -35,7 +35,10 @@ def _enum(cls):
 
 
 class Role(StrEnum):
-    DM = "dm"
+    """A person's role in one campaign (app/access.py)."""
+
+    DM = "dm"  # includes Reviewer; never sees the notes of the campaign's characters
+    REVIEWER = "reviewer"
     PLAYER = "player"
 
 
@@ -75,10 +78,9 @@ class User(Timestamped, Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(320), unique=True)  # stored lowercase
     name: Mapped[str] = mapped_column(String(200))
-    # Set on Manage › People: player | reviewer | admin, or "removed" (can't sign in).
-    # None = not set in the app (people imported but never invited); the Railway lists decide.
+    # Their tool role, set on Manage › People: member | admin, or "removed" (can't sign in). None = not set in the
+    # app (people imported but never invited); the Railway lists decide. Roles at a table are in campaign_members.
     access: Mapped[str | None] = mapped_column(String(20))
-    is_dm: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")  # never sees character notes
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     dismissed_help: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # help lines they pressed "Got it" on (help_pages.HELP)
 
@@ -95,14 +97,19 @@ class Campaign(Timestamped, Base):
 
 
 class CampaignMember(Base):
-    """A user's role in one campaign (the DM of one campaign may play in another)."""
+    """A person's role in one campaign (the DM of one campaign may play in another). Leaving keeps the row with
+    left_on set, so who was at the table stays answerable; one current row per person and campaign."""
 
     __tablename__ = "campaign_members"
-    __table_args__ = (UniqueConstraint("campaign_id", "user_id"),)
+    __table_args__ = (
+        Index("campaign_members_one_current", "campaign_id", "user_id", unique=True, postgresql_where=sql("left_on IS NULL")),
+    )
     id: Mapped[int] = mapped_column(primary_key=True)
     campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"))
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     role: Mapped[Role] = mapped_column(_enum(Role))
+    joined_on: Mapped[date] = mapped_column(Date, server_default=func.current_date())
+    left_on: Mapped[date | None] = mapped_column(Date)
     campaign: Mapped[Campaign] = relationship(back_populates="members")
     user: Mapped[User] = relationship()
 

@@ -53,7 +53,7 @@ def _view(db: Session, ch: Character, user: dict) -> dict:
         "error": snap.error if snap else "",
         "picks": mine,
         "can_pick": picks.can_edit(db, user, ch),
-        "show_picks": picks.can_see(user),
+        "show_picks": picks.can_see(user, ch),
         "reminders": views.reminders(sheet, mine["remind"], mine["order"].get("forget"), mine["notes"]) if sheet else [],
         "druid": ws.druid(sheet),
         "reviewer": is_reviewer(user),
@@ -248,7 +248,7 @@ def _character(request: Request, db: Session, character_id: int, mode: str):
     user, ch, stop = _load(request, db, character_id)
     if stop:
         return stop
-    if mode == "plan" and not picks.can_see(user):
+    if mode == "plan" and not picks.can_see(user, ch):
         return RedirectResponse(f"/characters/{ch.id}", status_code=303)  # Plan is the players' (never the DM)
     ctx = MODE_CTX[mode](db, ch, user)
     if mode != "battle":

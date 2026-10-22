@@ -13,7 +13,7 @@ from app.config import parse_allowlist
 from app.db import get_db
 from app.importer import import_bundle
 from app.main import app
-from app.models import Character, CharacterSnapshot, PlayerNote, SheetOverride
+from app.models import Campaign, Character, CharacterSnapshot, PlayerNote, SheetOverride
 
 COLE = json.loads((Path(__file__).parent / "fixtures" / "ddb" / "cole.json").read_text())["data"]
 BUNDLE = {
@@ -142,6 +142,12 @@ def owned_by(db, character, email, **kw):
     from app.models import User
 
     u = db.scalar(select(User).where(User.email == email)) or User(email=email, name=email)
+    if kw.pop("is_dm", False):  # the DM of the character's campaign (roles are per campaign)
+        from tests.roles import set_role
+
+        db.add(u)
+        db.flush()
+        set_role(db, email, "dm", u.name, db.get(Campaign, character.campaign_id))
     for k, v in kw.items():
         setattr(u, k, v)
     db.add(u)

@@ -9,6 +9,7 @@ from app.entities import build_describe_messages
 from app.importer import import_bundle
 from app.main import app
 from app.models import Correction, Entity, Fact, GameSession, GlossaryTerm, Suggestion
+from tests.roles import set_role
 
 HX = {"HX-Request": "true"}
 BUNDLE = {
@@ -97,8 +98,7 @@ def test_glossary_panel_suggest_edit_delete(player, admin, db):
 def dm(monkeypatch, db):
     from app.models import User
 
-    db.add(User(email="dm@example.com", name="Dee", is_dm=True))
-    db.flush()
+    set_role(db, "dm@example.com")
     yield client_for(monkeypatch, db, "dm@example.com")
     app.dependency_overrides.clear()
 

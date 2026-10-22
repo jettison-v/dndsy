@@ -527,6 +527,9 @@ details.opt .meta, .move .meta, .situ .meta, .poolrow .meta { margin-top: 2px; }
 /* People rows: the same columns on every row (person · plays · access · DM · buttons) */
 .people-head, .people li { display: grid; grid-template-columns: minmax(0, 1fr) 150px 120px 64px 160px; gap: 8px 14px; align-items: center; }
 .people-head { color: var(--muted); font-size: var(--fs-xs); margin-top: 12px; }
+.people-group { margin: 18px 0 0; font-size: var(--fs-sm); color: var(--muted); }
+.people-group .count { color: var(--faint); font-weight: 400; }
+.people-away { margin-top: 18px; }
 .person-form { display: contents; }
 .person-form select { width: 100%; }
 .person-actions { display: flex; gap: 4px; align-items: center; }
@@ -928,7 +931,6 @@ a.sheet-ref { text-decoration-style: dotted; }
 .access-chart .access-group th { text-align: left; font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); padding-top: 14px; border-top: none; }
 .ac-yes { color: var(--green); font-weight: 700; } .ac-no { color: var(--faint); } .ac-own { color: var(--violet); font-size: var(--fs-sm); }
 .access-chart .dm-col { border-left: 1px solid var(--line); font-size: var(--fs-sm); }
-.ac-dm-gains { color: var(--green); } .ac-dm-never { color: var(--red); } .ac-dm-same { color: var(--faint); }
 .people li .access-summary { grid-column: 1 / -1; order: 10; margin-top: -4px; }
 
 /* Manage › Data: import preview */

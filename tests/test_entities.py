@@ -13,6 +13,7 @@ from app.importer import import_bundle
 from app.main import app
 from app.models import Campaign, Entity, ExtractionRun, Fact, GameSession, User
 from app.review import latest_questions, publish
+from tests.roles import set_role
 
 HX = {"HX-Request": "true"}
 
@@ -297,8 +298,7 @@ def test_the_dm_edits_entries_directly_and_marks_facts_done(monkeypatch, db):
 
     import_bundle(db, BUNDLE)
     e = lillippi(db)
-    db.add(User(email="dm@example.com", name="Dee", is_dm=True))
-    db.flush()
+    set_role(db, "dm@example.com")
     dm = client_for(monkeypatch, db, "dm@example.com")
     assert dm.get(f"/campaign/{e.id}/edit").status_code == 200
     r = dm.post(f"/campaign/{e.id}/description", data={"summary": "A tiefling bard who owes nobody."}, headers=HX)
@@ -341,8 +341,7 @@ def test_dm_tools_create_tidy_and_add_moments(monkeypatch, db):
     from tests.test_suggestions import client_for
 
     import_bundle(db, BUNDLE)
-    db.add(User(email="dm@example.com", name="Dee", is_dm=True))
-    db.flush()
+    set_role(db, "dm@example.com")
     dm = client_for(monkeypatch, db, "dm@example.com")
     assert "+ New entry" in dm.get("/campaign").text and "New entry" in dm.get("/campaign/new?kind=place").text
     r = dm.post("/campaign/new", data={"kind": "npc", "name": "Captain Trager Grill", "summary": "Cult-marked captain."}, headers=HX)

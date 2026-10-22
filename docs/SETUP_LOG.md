@@ -425,3 +425,19 @@ pushing; the temporary copy on Railway was deleted.
 **For a new project:** add an SSH key to your hosting account early. "Run one command inside production" is the
 fastest way to back up, inspect or fix things when the database isn't reachable from outside, and it's safer than
 opening the database to the internet.
+
+## 2026-10-23: Data organization step 2, roles per campaign
+
+**What was set up.** Two kinds of role instead of one access level plus a DM tick. A **tool role** (member or
+admin) on the person, for setting up askdnd itself, and a **campaign role** (DM, reviewer or player) per campaign,
+for running a table. A migration moved today's people across: Mary's Reviewer access and DM tick became "DM in
+Main campaign", everyone else who can sign in became a player there, and Brett stays admin. Manage › People now
+groups people by role and shows a chart of what each role can do, drawn from the same rules the app checks. The
+same manual backup over Railway SSH was taken before deploying.
+
+**For a new project:**
+1. Separate "what you can do in the product" (admin, member) from "what you do in a workspace" (owner, editor,
+   viewer per project or team). Almost every multi-team app ends up needing both, and splitting them late means a
+   migration like this one.
+2. Keep every permission rule in one function and draw any "who can do what" chart from it, so the help text can't
+   drift from the code.

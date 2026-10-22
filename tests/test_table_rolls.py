@@ -10,6 +10,7 @@ from app import table_rolls as tr
 from app.importer import import_bundle
 from app.models import TableRoll
 from tests.test_characters import BUNDLE, char, no_network, owned_by  # noqa: F401
+from tests.roles import set_role
 
 
 def seq(*values):
@@ -80,8 +81,7 @@ def table(db, monkeypatch):
     import_bundle(db, BUNDLE)
     owned_by(db, char(db, "Cole"), "player@example.com")
     owned_by(db, char(db, "Trah"), "other@example.com")
-    db.add(User(email="dm@example.com", name="Dee", is_dm=True))
-    db.flush()
+    set_role(db, "dm@example.com")
     monkeypatch.setattr(config, "ALLOWED_EMAILS", parse_allowlist("dm@example.com,player@example.com,other@example.com"))
     app.dependency_overrides[get_db] = lambda: db
     people = {}

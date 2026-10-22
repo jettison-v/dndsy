@@ -1,6 +1,6 @@
 # How askdnd organizes its data: plan (PROPOSED, 2026-10-21)
 
-Status: **decided 2026-10-22**; step 1 done 2026-10-22 (Brett's answers on the "askdnd campaigns and roles" page; see "Decisions" at the end).
+Status: **decided 2026-10-22**; steps 1 and 2 done 2026-10-22/23 (Brett's answers on the "askdnd campaigns and roles" page; see "Decisions" at the end).
 Built after roadmap step 11's Inventory and Features lists and a round of Brett's small feedback. Once decided, the final version of
 "The organization" below moves into `docs/ARCHITECTURE.md` (Data) with a line in `docs/DECISIONS.md`, and this file
 is marked as done.
@@ -112,6 +112,12 @@ Each migration can be undone.
    Manage › People groups people by their role in the current campaign (DM, Reviewers, Players, then people
    with no role in it), and removed people sit in a collapsed section at the bottom (Brett, 2026-10-22).
    (~66 access checks, most through a few helpers.)
+   **Done 2026-10-23** (migration ab6c8d2e5f71): `users.access` is member or admin; `campaign_members.role` is DM,
+   reviewer or player with joined and left dates (one current row per person and campaign). The checks in
+   `app/auth.py` take a campaign (the first one until step 4), and notes are hidden from the DM of the character's
+   current campaign. Manage › People: Role and Admin per person, grouped DM · Reviewers · Players · No role,
+   removed people folded; the chart has Player · Reviewer · DM · Admin columns. A person with no role in a
+   campaign can still read it until step 4 makes the campaign part of every page.
 3. **Tool corrections and house rules.** Rename sheet corrections, add `house_rules` and one module that works out
    the effective value (tool knowledge → correction → house rule) for recipes, sheet items and rules terms. First
    use: a Manage › House rules page where the DM can, say, roll Magic Missile once for all darts. The roll window

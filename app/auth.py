@@ -34,41 +34,43 @@ def current_user(request: Request) -> dict | None:
     return None
 
 
-def _allows(user: dict | None, rule: str) -> bool:
-    """Ask the shared rules in app/access.py (the People page's chart is drawn from them)."""
+def _allows(user: dict | None, rule: str, campaign_id: int | None = None) -> bool:
+    """Ask the shared rules in app/access.py (the People page's chart is drawn from them). Campaign roles are
+    about one campaign: the first one unless another is given."""
     if not user:
         return False
     email = user.get("email")
-    return access.allows(rule, access.level(email), access.is_dm(email))
+    return access.allows(rule, access.level(email), access.role(email, campaign_id))
 
 
 def is_admin(user: dict | None) -> bool:
     return _allows(user, "admin")
 
 
-def is_reviewer(user: dict | None) -> bool:
-    """Reviewers and admins (see app/access.py)."""
-    return _allows(user, "review")
+def is_reviewer(user: dict | None, campaign_id: int | None = None) -> bool:
+    """Reviewers, the DM and admins (see app/access.py)."""
+    return _allows(user, "review", campaign_id)
 
 
-def is_dm(user: dict | None) -> bool:
+def is_dm(user: dict | None, campaign_id: int | None = None) -> bool:
     """The DM controls the story: their corrections and additions don't wait for a reviewer."""
-    return bool(user) and access.is_dm(user.get("email"))
+    return bool(user) and access.is_dm(user.get("email"), campaign_id)
 
 
-def can_moderate(user: dict | None) -> bool:
+def can_moderate(user: dict | None, campaign_id: int | None = None) -> bool:
     """Who gets the table's suggestions: admins, reviewers and the DM."""
-    return _allows(user, "moderate")
+    return _allows(user, "moderate", campaign_id)
 
 
-def can_edit_entries(user: dict | None) -> bool:
+def can_edit_entries(user: dict | None, campaign_id: int | None = None) -> bool:
     """Who edits campaign entries directly (names, descriptions, relationships): reviewers, admins and the DM."""
-    return _allows(user, "edit_entries")
+    return _allows(user, "edit_entries", campaign_id)
 
 
-def can_see_character_notes(user: dict | None) -> bool:
-    """Character notes are visible to players but never to the DM (CLAUDE.md)."""
-    return _allows(user, "player_notes")
+def can_see_character_notes(user: dict | None, character=None) -> bool:
+    """Character notes are visible to players but never to the DM of the campaign the character is in now
+    (CLAUDE.md; data organization decision 3). Without a character: the first campaign."""
+    return _allows(user, "player_notes", character.campaign_id if character is not None else None)
 
 
 @router.get("/auth/google")

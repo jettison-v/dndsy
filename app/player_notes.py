@@ -110,7 +110,7 @@ def parse(kind: str, form) -> tuple[str, str, dict]:
 
 def notes_for(db: Session, character: Character, user: dict | None) -> list[PlayerNote]:
     """This character's notes, or none for the DM."""
-    if not can_see_character_notes(user):
+    if not can_see_character_notes(user, character):
         return []
     return list(db.scalars(select(PlayerNote).where(PlayerNote.character_id == character.id)
                            .order_by(PlayerNote.position, PlayerNote.id)))
@@ -187,7 +187,7 @@ def _load(request: Request, db: Session, character_id: int, edit: bool = False):
     ch = db.get(Character, character_id)
     if ch is None:
         return user, None, HTMLResponse("Not found", status_code=404)
-    if not can_see_character_notes(user) or (edit and not picks.can_edit(db, user, ch)):
+    if not can_see_character_notes(user, ch) or (edit and not picks.can_edit(db, user, ch)):
         return user, None, web.forbidden(request, "Only this character's player can do that.")
     return user, ch, None
 

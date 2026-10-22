@@ -1,4 +1,4 @@
-"""Manage › People: access levels set in the app (app/access.py)."""
+"""Manage › People: tool roles (member, admin) and roles per campaign (DM, reviewer, player), app/access.py."""
 
 import pytest
 from fastapi.testclient import TestClient
@@ -9,7 +9,7 @@ from app.config import parse_allowlist
 from app.db import get_db
 from app.importer import import_bundle
 from app.main import app
-from app.models import User
+from app.models import Campaign, CampaignMember, Role, User
 
 
 @pytest.fixture
@@ -33,41 +33,75 @@ def sign_in(monkeypatch, email):
     return c, r
 
 
+MAIN = {"campaign": {"slug": "main", "name": "Main"}}
+
+
 def test_owner_adds_a_reviewer_who_can_then_review(env, monkeypatch, db):
+    import_bundle(db, MAIN)
     owner, _ = sign_in(monkeypatch, "owner@example.com")
-    owner.post("/admin/people", data={"email": "New@Example.com", "name": "Nia", "level": "reviewer"})
-    assert db.scalar(select(User).where(User.email == "new@example.com")).access == "reviewer"
+    owner.post("/admin/people", data={"email": "New@Example.com", "name": "Nia", "role": "reviewer"})
+    nia_row = db.scalar(select(User).where(User.email == "new@example.com"))
+    assert nia_row.access == "member" and access.role("new@example.com") == "reviewer"
     nia, r = sign_in(monkeypatch, "new@example.com")
     assert r.headers["location"] == "/"  # allowed in without being in ALLOWED_EMAILS
     assert nia.get("/admin/sessions").status_code == 200
     assert nia.get("/admin/people").status_code == 403
-    owner.post("/admin/people/update", data={"email": "new@example.com", "level": "admin"})
+    owner.post("/admin/people/update", data={"email": "new@example.com", "role": "reviewer", "admin": "1"})
     assert nia.get("/admin/people").status_code == 200
 
 
+def test_reviewer_is_per_campaign(env, monkeypatch, db):
+    import_bundle(db, MAIN)
+    other = Campaign(slug="other", name="Other")
+    db.add(other)
+    owner, _ = sign_in(monkeypatch, "owner@example.com")
+    owner.post("/admin/people", data={"email": "nia@example.com", "role": "reviewer"})
+    first = db.scalar(select(Campaign).where(Campaign.slug == "main"))
+    db.flush()
+    assert access.role("nia@example.com", first.id) == "reviewer" and access.role("nia@example.com", other.id) is None
+    assert auth.is_reviewer({"email": "nia@example.com"}, first.id) and not auth.is_reviewer({"email": "nia@example.com"}, other.id)
+
+
+def test_role_changes_keep_the_membership_and_no_role_ends_it(env, monkeypatch, db):
+    import_bundle(db, MAIN)
+    owner, _ = sign_in(monkeypatch, "owner@example.com")
+    owner.post("/admin/people", data={"email": "nia@example.com", "role": "player"})
+    owner.post("/admin/people/update", data={"email": "nia@example.com", "role": "dm"})
+    rows = list(db.scalars(select(CampaignMember).join(User).where(User.email == "nia@example.com")))
+    assert [(m.role, m.left_on) for m in rows] == [(Role.DM, None)]
+    owner.post("/admin/people/update", data={"email": "nia@example.com", "role": "none"})
+    db.expire_all()
+    assert rows[0].left_on is not None and access.role("nia@example.com") is None
+    page = owner.get("/admin/people").text
+    assert "No role in this campaign" in page
+    owner.post("/admin/people/update", data={"email": "nia@example.com", "role": "player"})  # back: a new membership
+    assert len(list(db.scalars(select(CampaignMember).join(User).where(User.email == "nia@example.com")))) == 2
+
+
 def test_removed_person_is_locked_out_even_if_on_railway_list(env, monkeypatch, db):
+    import_bundle(db, MAIN)
     owner, _ = sign_in(monkeypatch, "owner@example.com")
     player, _ = sign_in(monkeypatch, "player@example.com")
     assert player.get("/party").status_code == 200
-    owner.post("/admin/people/update", data={"email": "player@example.com", "level": "player", "remove": "1"})
+    owner.post("/admin/people/update", data={"email": "player@example.com", "role": "player", "remove": "1"})
     assert player.get("/party", follow_redirects=False).headers["location"] == "/login"
     _, r = sign_in(monkeypatch, "player@example.com")
     assert "not_allowed" in r.headers["location"]
+    assert "Removed or not invited yet (1)" in owner.get("/admin/people").text  # folded at the bottom
 
 
 def test_owner_cant_be_demoted_and_admins_cant_lower_themselves(env, monkeypatch, db):
     owner, _ = sign_in(monkeypatch, "owner@example.com")
-    owner.post("/admin/people/update", data={"email": "owner@example.com", "level": "removed"})
+    owner.post("/admin/people/update", data={"email": "owner@example.com", "remove": "1"})
     assert access.level("owner@example.com") == "admin"
-    owner.post("/admin/people", data={"email": "boss@example.com", "level": "admin"})
+    owner.post("/admin/people", data={"email": "boss@example.com", "admin": "1"})
     boss, _ = sign_in(monkeypatch, "boss@example.com")
-    boss.post("/admin/people/update", data={"email": "boss@example.com", "level": "player"})
+    boss.post("/admin/people/update", data={"email": "boss@example.com", "role": "player"})  # no Admin box on your own row
     assert access.level("boss@example.com") == "admin"
 
 
 def test_imported_members_need_an_invite(env, monkeypatch, db):
-    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"},
-                       "members": [{"email": "mary@example.com", "name": "Mary", "role": "dm"}]})
+    import_bundle(db, {**MAIN, "members": [{"email": "mary@example.com", "name": "Mary", "role": "dm"}]})
     _, r = sign_in(monkeypatch, "mary@example.com")
     assert "not_allowed" in r.headers["location"]
     owner, _ = sign_in(monkeypatch, "owner@example.com")
@@ -76,32 +110,44 @@ def test_imported_members_need_an_invite(env, monkeypatch, db):
 
 
 def test_dm_never_sees_character_notes_even_as_admin(env, monkeypatch, db):
-    from app.models import Campaign, Character, NoteSnapshot, NoteSource
+    from app.models import Character, NoteSnapshot, NoteSource
 
+    import_bundle(db, {**MAIN, "entities": [{"kind": "pc", "name": "Cole", "character": {"player_name": "Brett"}}]})
     owner, _ = sign_in(monkeypatch, "owner@example.com")
-    owner.post("/admin/people", data={"email": "dm@example.com", "level": "admin", "is_dm": "1"})
+    owner.post("/admin/people", data={"email": "dm@example.com", "role": "dm", "admin": "1"})
     dm, _ = sign_in(monkeypatch, "dm@example.com")
     assert dm.get("/admin/usage").status_code == 200
     assert "/admin/people" in dm.get("/").text
     # The campaign doc is for the whole table; an old character doc stays hidden from the DM
-    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"},
-                       "entities": [{"kind": "pc", "name": "Cole", "character": {"player_name": "Brett"}}]})
     campaign = db.scalar(select(Campaign))
     char = db.scalar(select(Character))
-    if True:
-        src = NoteSource(campaign_id=campaign.id, google_doc_id="c" * 30, title="Secret Cole doc", character_id=char.id)
-        src.snapshots.append(NoteSnapshot(content_hash="h", text="secret plan"))
-        db.add(src)
-        db.flush()
-        assert "Secret Cole doc" not in dm.get("/admin/notes").text and "Secret Cole doc" in owner.get("/admin/notes").text
-        assert "secret plan" not in dm.get(f"/admin/notes/snapshots/{src.snapshots[0].id}", follow_redirects=False).text
+    src = NoteSource(campaign_id=campaign.id, google_doc_id="c" * 30, title="Secret Cole doc", character_id=char.id)
+    src.snapshots.append(NoteSnapshot(content_hash="h", text="secret plan"))
+    db.add(src)
+    db.flush()
+    assert "Secret Cole doc" not in dm.get("/admin/notes").text and "Secret Cole doc" in owner.get("/admin/notes").text
+    assert "secret plan" not in dm.get(f"/admin/notes/snapshots/{src.snapshots[0].id}", follow_redirects=False).text
     assert dm.get("/admin/notes").status_code == 200 and owner.get("/admin/notes").status_code == 200
+    assert dm.get(f"/characters/{char.id}/plan", follow_redirects=False).status_code == 303  # Plan is the players'
+
+
+def test_a_dm_who_stops_dming_reads_the_notes_like_any_player(env, monkeypatch, db):
+    """Decision 3: only characters in campaigns they DM now."""
+    from app.models import Character
+
+    import_bundle(db, {**MAIN, "entities": [{"kind": "pc", "name": "Cole", "character": {"player_name": "Brett"}}]})
+    char = db.scalar(select(Character))
+    owner, _ = sign_in(monkeypatch, "owner@example.com")
+    owner.post("/admin/people", data={"email": "dm@example.com", "role": "dm"})
+    assert not auth.can_see_character_notes({"email": "dm@example.com"}, char)
+    owner.post("/admin/people/update", data={"email": "dm@example.com", "role": "player"})
+    assert auth.can_see_character_notes({"email": "dm@example.com"}, char)
 
 
 def test_players_cant_manage_people(env, monkeypatch, db):
     player, _ = sign_in(monkeypatch, "player@example.com")
     assert player.get("/admin/people").status_code == 403
-    assert player.post("/admin/people", data={"email": "x@example.com", "level": "admin"}).status_code == 403
+    assert player.post("/admin/people", data={"email": "x@example.com", "admin": "1"}).status_code == 403
     assert db.scalar(select(User).where(User.email == "x@example.com")) is None
 
 
@@ -112,23 +158,21 @@ def test_sign_in_records_name_and_time(env, monkeypatch, db):
 
 
 def test_invite_from_the_list(env, monkeypatch, db):
-    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"},
-                       "members": [{"email": "mary@example.com", "name": "Mary", "role": "dm"}]})
+    import_bundle(db, {**MAIN, "members": [{"email": "mary@example.com", "name": "Mary", "role": "dm"}]})
     owner, _ = sign_in(monkeypatch, "owner@example.com")
-    assert 'name="level"' in owner.get("/admin/people").text
-    owner.post("/admin/people/update", data={"email": "mary@example.com", "level": "reviewer"})
-    assert access.level("mary@example.com") == "reviewer" and access.is_dm("mary@example.com")
+    assert 'name="role"' in owner.get("/admin/people").text
+    owner.post("/admin/people/update", data={"email": "mary@example.com", "role": "dm"})
+    assert access.level("mary@example.com") == "member" and access.is_dm("mary@example.com")
 
 
 def test_assign_character_on_people_page(env, monkeypatch, db):
     from app.models import Character
 
-    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"},
-                       "entities": [{"kind": "pc", "name": "Cole", "character": {"player_name": "Brett"}}]})
+    import_bundle(db, {**MAIN, "entities": [{"kind": "pc", "name": "Cole", "character": {"player_name": "Brett"}}]})
     cole = db.scalar(select(Character))
     owner, _ = sign_in(monkeypatch, "owner@example.com")
     assert f'<option value="{cole.id}" >Cole</option>' in owner.get("/admin/people").text
-    owner.post("/admin/people/update", data={"email": "player@example.com", "level": "player", "character_id": str(cole.id)})
+    owner.post("/admin/people/update", data={"email": "player@example.com", "role": "player", "character_id": str(cole.id)})
     assert cole.owner.email == "player@example.com"
     owner.post("/admin/people/update", data={"email": "owner@example.com", "character_id": str(cole.id)})
     assert cole.owner.email == "owner@example.com" and access.level("owner@example.com") == "admin"
@@ -137,25 +181,72 @@ def test_assign_character_on_people_page(env, monkeypatch, db):
 
 
 def test_access_chart_is_drawn_from_the_rules_the_app_uses():
-    from app import access
-
     rows = {r["what"]: r for r in access.chart()["rows"]}
-    assert access.chart()["levels"] == ["Player", "Reviewer", "Admin"]
-    decide = rows["Decide on the table's suggestions"]
-    assert decide["cells"] == ["no", "yes", "yes"] and decide["dm"] == "gains"  # the DM decides even as a Player
-    notes = rows["Players' notes, stars, reminders and shortlists"]
-    assert notes["cells"] == ["yes", "yes", "yes"] and notes["dm"] == "never"  # never the DM, even as Admin
-    assert rows["People: invite, access, DM tick, who plays which character"]["cells"] == ["no", "no", "yes"]
-    assert rows["Notes, stars, reminders, shortlists, the Wild Shape switch and table rolls"]["cells"] == ["own"] * 3
+    assert access.chart()["columns"] == ["Player", "Reviewer", "DM", "Admin"]
+    assert rows["Decide on the table's suggestions"]["cells"] == ["no", "yes", "yes", "yes"]  # the DM includes Reviewer
+    assert rows["Players' notes, pins, reminders and shortlists"]["cells"] == ["yes", "yes", "no", "yes"]
+    assert rows["People: invite, roles, who plays which character"]["cells"] == ["no", "no", "no", "yes"]
+    assert rows["Notes, pins, reminders, shortlists, the Wild Shape switch and table rolls"]["cells"] == ["own"] * 4
     for r in access.CHART:  # every rule in the chart is one the app checks
         if r[2] != "own":
-            access.allows(r[2], access.PLAYER)
-    assert "Never, even as Admin" in access.summary(access.ADMIN, True) or "never sees" in access.summary(access.ADMIN, True)
+            access.allows(r[2], access.MEMBER, access.PLAYER)
+    assert not access.allows("player_notes", access.ADMIN, access.DM)  # an admin who DMs still never sees the notes
+    assert "never sees" in access.summary(access.ADMIN, access.DM)
 
 
-def test_people_page_shows_the_chart_and_each_persons_summary(env, monkeypatch, db):
+def test_people_page_groups_by_role_and_shows_the_chart(env, monkeypatch, db):
+    import_bundle(db, MAIN)
     owner, _ = sign_in(monkeypatch, "owner@example.com")
-    owner.post("/admin/people", data={"email": "dm@example.com", "level": "player", "is_dm": "1"})
+    owner.post("/admin/people", data={"email": "dm@example.com", "name": "Dee", "role": "dm"})
+    owner.post("/admin/people", data={"email": "rev@example.com", "name": "Rev", "role": "reviewer"})
+    owner.post("/admin/people", data={"email": "pat@example.com", "name": "Pat", "role": "player"})
     page = owner.get("/admin/people").text
-    assert "What each access level can do" in page and "Yes, even as Player" in page and "Not included for anyone" in page
-    assert "as DM, everything a reviewer does" in page  # the DM's own row explains what the tick adds
+    assert "What each role can do" in page and "Not included for anyone" in page
+    order = [page.index(f'<h3 class="people-group">{t}') for t in ("DM", "Reviewers", "Players")]
+    assert order == sorted(order)
+    assert page.index("<b>Dee</b>") < page.index("<b>Rev</b>") < page.index("<b>Pat</b>")
+    assert "Runs this campaign" in page  # the DM's row explains the role
+
+
+def test_migration_moves_the_dm_tick_and_reviewer_into_campaign_roles(db_engine):
+    """The step 2 migration on people shaped like production's, then back down and up again."""
+    import os
+    import subprocess
+
+    from sqlalchemy import text
+
+    from app.db import Base
+
+    env = {"DATABASE_URL": db_engine.url.render_as_string(hide_password=False), "PATH": os.environ["PATH"]}
+
+    def alembic(*args):
+        r = subprocess.run(["alembic", *args], env=env, capture_output=True, text=True)
+        assert r.returncode == 0, r.stderr
+
+    Base.metadata.drop_all(db_engine)
+    try:
+        alembic("upgrade", "9a5b7c1d4e60")
+        with db_engine.begin() as c:
+            c.execute(text("INSERT INTO campaigns (id, name, slug, dm_name) VALUES (1, 'Main', 'main', 'Mary')"))
+            c.execute(text("""INSERT INTO users (id, email, name, access, is_dm) VALUES
+                (1, 'brett@example.com', 'Brett', 'admin', false), (2, 'jay@example.com', 'Jay', 'player', false),
+                (3, 'mary@example.com', 'Mary', 'reviewer', true), (4, 'old@example.com', 'Old', 'removed', false),
+                (5, 'new@example.com', 'New', NULL, false)"""))
+            c.execute(text("INSERT INTO campaign_members (campaign_id, user_id, role) VALUES (1, 1, 'player')"))
+            c.execute(text("""INSERT INTO revisions ("table", row_id, label, field, old, new, actor, source)
+                              VALUES ('users', 2, 'Jay', 'access', '"reviewer"', '"player"', 'brett@example.com', 'edit')"""))
+        alembic("upgrade", "head")
+        with db_engine.connect() as c:
+            assert c.execute(text("SELECT user_id, role, left_on FROM campaign_members ORDER BY user_id")).all() == [
+                (1, "player", None), (2, "player", None), (3, "dm", None)]  # removed and never-invited people get no role
+            assert c.execute(text("SELECT id, access FROM users ORDER BY id")).all() == [
+                (1, "admin"), (2, "member"), (3, "member"), (4, "removed"), (5, None)]
+            assert c.execute(text("SELECT old, new FROM revisions")).one() == ("member", "member")
+        alembic("downgrade", "9a5b7c1d4e60")
+        with db_engine.connect() as c:
+            assert c.execute(text("SELECT id, access, is_dm FROM users ORDER BY id")).all() == [
+                (1, "admin", False), (2, "player", False), (3, "reviewer", True), (4, "removed", False), (5, None, False)]
+        alembic("upgrade", "head")
+    finally:
+        subprocess.run(["alembic", "downgrade", "base"], env=env, capture_output=True)
+        Base.metadata.create_all(db_engine)

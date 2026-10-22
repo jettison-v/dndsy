@@ -27,7 +27,7 @@ PAGES = (
     ("suggestions", "Inbox", "/suggestions", "Suggestions from the table and Claude's drafts, waiting for your OK", "Table", can_moderate, ()),
     ("recaps", "Recaps", "/admin/sessions", "Draft, review and publish session recaps", "Table", is_reviewer, ("/admin/notes",)),
     ("history", "History", "/admin/history", "Every change, with Restore", "Table", is_reviewer, ()),
-    ("people", "People", "/admin/people", "Who can sign in, their access and character", "Party", is_admin, ()),
+    ("people", "People", "/admin/people", "Who can sign in, their role at the table and character", "Party", is_admin, ()),
     ("characters", "Characters", "/admin/characters", "D&D Beyond links and regrouping", "Party", is_admin, ()),
     ("usage", "Usage", "/admin/usage", "Claude spending and balance", "Admin", is_admin, ()),
     ("data", "Data", "/admin/import", "Imports and nightly backups", "Admin", is_admin, ()),

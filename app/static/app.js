@@ -684,14 +684,14 @@
   // Star and Remind me buttons sit inside <summary>: don't open/close the row when pressed.
   document.addEventListener('click', e => { if (e.target.closest('summary .pick')) e.preventDefault(); }, true);
 
-  // Manage › People: the line under each person says what their access will let them do, as you change it.
+  // Manage › People: the line under each person says what their role (and Admin) will let them do, as you change it.
   document.addEventListener('change', e => {
     const form = e.target.closest('.person-form'); if (!form) return;
     const out = form.querySelector('.access-summary'); if (!out) return;
-    const lvl = (form.querySelector('select[name=level]') || {}).value || 'admin';
-    const dmBox = form.querySelector('input[type=checkbox][name=is_dm]'), dmHidden = form.querySelector('input[type=hidden][name=is_dm]');
-    const dm = dmBox ? dmBox.checked : !!(dmHidden && dmHidden.value);
-    out.textContent = JSON.parse(out.dataset.summaries)[lvl + '|' + (dm ? 1 : 0)] || '';
+    const role = ((form.querySelector('select[name=role]') || {}).value || '').replace('none', '');
+    const box = form.querySelector('input[type=checkbox][name=admin]');
+    const tool = !box || box.checked ? 'admin' : 'member';  // no box: the owner or yourself, always Admin
+    out.textContent = JSON.parse(out.dataset.summaries)[tool + '|' + role] || '';
   });
 
   // Repeating rows in forms (a combo's turns, a level plan's levels): [data-repeat] holds
