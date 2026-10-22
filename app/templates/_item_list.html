@@ -1,0 +1,62 @@
+{# Inventory on the shared list pattern (_lists.html, roadmap step 11): Equipped · Shortlist · All, chip filters,
+   search, sorts and the side panel, like Sheet › Spells. `items` is sheet.inventory (apply_overrides gives each
+   its group: battle, equipped, Weapons, Armor, Magic items, Potions and scrolls, Gear). #}
+{% from "_lists.html" import filter_column, search_box, active_row, view_switch, notes_toggle %}
+{% from "_char.html" import pick_btn, pips %}
+{% from "_help.html" import help %}
+{% macro item_list(c, items, picks, can_pick, show_picks, item_notes, key="sheet-items", views=(), help_off=()) -%}
+{%- set GROUPS = [("battle", "Usable in battle"), ("equipped", "Equipped"), ("Weapons", "Weapons"), ("Armor", "Armor"),
+                  ("Magic items", "Magic items"), ("Potions and scrolls", "Potions and scrolls"), ("Gear", "Gear")] -%}
+{%- set RARITY = ["Common", "Uncommon", "Rare", "Very Rare", "Legendary", "Artifact"] -%}
+{%- set kinds = ["Weapon", "Armor", "Potion", "Scroll", "Wondrous", "Ring", "Rod, staff or wand", "Gear", "Custom"] -%}
+{%- set groups = [
+  {"key": "kind", "label": "Kind", "values": kinds | select("in", items | map(attribute="kind_label") | list) | list},
+  {"key": "magic", "label": "Magic", "values": ["Magic", "Not magic"]},
+  {"key": "use", "label": "Use", "values": ["Usable in battle", "Has uses"] | select("in", items | map(attribute="use_labels") | sum(start=[]) | list) | list},
+  {"key": "attune", "label": "Attunement", "values": ["Attuned", "Needs attunement"] | select("in", items | map(attribute="attune_label") | list) | list, "more": true},
+  {"key": "rarity", "label": "Rarity", "values": RARITY | select("in", items | map(attribute="rarity") | list) | list, "more": true},
+] | selectattr("values") | list -%}
+<div class="item-list" data-list="{{ key }}" data-noun="item" data-default-sort="default">
+  <div class="ls-layout">
+    {{ filter_column(groups) }}
+    <div class="ls-main">
+      {{ search_box("Search your items") }}
+      <div class="ls-toolbar">
+        {% if show_picks and views %}{{ view_switch(views, "Which items") }}{% endif %}
+        <span class="note" data-ls-summary></span>
+        <label class="ls-select"><span>Sort</span>
+          <select data-ls-sort aria-label="Sort"><option value="default">Group</option><option value="name">Name</option><option value="rarity">Rarity</option></select></label>
+        {% if show_picks and picks.notes and (items | map(attribute="key") | select("in", picks.notes) | first) %}{{ notes_toggle() }}{% endif %}
+      </div>
+      {{ active_row() }}
+      <div class="ls-rows it-cols" data-ls-rows>
+        <div class="ls-head" aria-hidden="true"><span title="Equipped or attuned">✓</span><span>Item</span><span>Kind</span><span>Uses</span><span>Details</span><span></span></div>
+        {% for it in items %}{% set note = picks.notes.get(it.key) if show_picks else "" %}
+        {% set gi = (GROUPS | map(attribute=0) | list).index(it.group) if it.group in (GROUPS | map(attribute=0) | list) else 6 %}
+        {% set on = it.equipped or it.attunement == "attuned" %}
+        <div class="ls-row item-row" data-ls-row data-ref="{{ it.key }}" data-fav="{{ '1' if it.key in picks.fav else '0' }}"
+          data-views="{{ 'ready ' if on }}{{ 'fav ' if it.key in picks.fav }}all" data-name="{{ it.name | lower }}" data-group-label="{{ GROUPS[gi][1] }}"
+          data-f='{{ {"kind": it.kind_label, "magic": "Magic" if it.magic else "Not magic", "use": it.use_labels, "attune": it.attune_label, "rarity": it.rarity} | tojson }}'
+          data-sort-default="{{ gi * 1000 + loop.index }}" data-sort-rarity="{{ (RARITY.index(it.rarity) + 1) if it.rarity in RARITY else 0 }}"
+          data-panel-url="/characters/{{ c.id }}/detail?ref={{ it.key | urlencode }}" tabindex="0" role="button" aria-label="{{ it.name }}: details">
+          <span class="sh-status {{ 'on' if on else 'off' }}" title="{{ 'Attuned' if it.attunement == 'attuned' else ('Equipped' if it.equipped else 'Carried, not equipped') }}" role="img" aria-label="{{ 'Equipped' if on else 'Not equipped' }}">{{ "✓" if on else "○" }}</span>
+          <span class="ls-name"><span class="ls-line"><b>{{ it.name }}</b>{% if it.quantity > 1 %} <span class="muted">×{{ it.quantity }}</span>{% endif %}
+            {%- if it.attunement == "attuned" %} <span class="tag done">Attuned</span>{% elif it.attunement == "required" %} <span class="tag faint">Needs attunement</span>{% endif %}
+            {%- if it.custom %} <span class="tag custom">Custom</span>{% endif %}{% if it.changes %} <span class="tag edited">Changed</span>{% endif %}{% if item_notes.get(it.key) %} <span class="tag">Note</span>{% endif %}</span>
+            {% if it.summary %}<span class="ls-what">{{ it.summary }}</span>{% endif %}
+            {% if note %}<span class="ls-note" title="{{ note }}">✎ {{ note }}</span>{% endif %}</span>
+          <span>{{ it.kind_label }}{% if it.magic and it.rarity %}<span class="note it-rarity">{{ it.rarity }}</span>{% endif %}</span>
+          <span>{% if it.charges and it.charges.reset != "Used up" %}{{ pips(it.charges) }}{% elif it.charges %}<span class="note">{{ it.charges.left }} left</span>{% else %}<span class="note">—</span>{% endif %}</span>
+          <span class="sb-range">{{ [it.damage, ("AC " ~ it.armor_class) if it.armor_class else "", ("in " ~ it.in) if it.in else ""] | select | join(" · ") or "—" }}</span>
+          <span class="ls-marks"><span>{{ pick_btn(c, "fav", it.key, it.key in picks.fav, can_pick) }}</span><span>{% if it.battle %}{{ pick_btn(c, "star", it.key, it.key in picks.star, can_pick) }}{% endif %}</span><span>{{ pick_btn(c, "remind", it.key, it.key in picks.remind, can_pick) }}</span></span>
+        </div>
+        {% endfor %}
+      </div>
+      <p class="note ls-empty" data-ls-empty hidden>No items match. <button type="button" class="btn link small" data-ls-clear>Clear all</button></p>
+      {% if views %}<p class="note ls-empty" data-ls-empty-view="fav" hidden>Nothing on your Shortlist yet. In <b>All</b>, press the bookmark on an item you want close at hand.</p>
+      <p class="note ls-empty" data-ls-empty-view="ready" hidden>Nothing equipped. Equip items on D&amp;D Beyond, then refresh; <b>All</b> shows everything you carry.</p>{% endif %}
+      {% call help("items", help_off, "items", "sb-foot-note") %}Click an item for its description, uses and your note. Equip and attune on D&amp;D Beyond, then refresh.{% endcall %}
+    </div>
+  </div>
+</div>
+{%- endmacro %}

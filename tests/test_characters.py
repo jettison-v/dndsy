@@ -442,8 +442,13 @@ def test_inventory_and_feature_sections(player, db):
     characters.refresh(db, cole)
     page = player.get(f"/characters/{cole.id}").text
     items = page.split('id="t-items"')[1].split('id="t-features"')[0]
-    assert items.index("Usable in battle") < items.index("Equipped") < items.index("Everything else")
-    assert "Demon Armor" in items.split("Everything else")[1]  # not equipped: folded, under Armor
+    rows = items.split(' data-ls-row ')[1:]  # Inventory is a list now (roadmap step 11): rows say their group
+    keyed = sorted((int(r.split('data-sort-default="')[1].split('"')[0]), r.split('data-group-label="')[1].split('"')[0]) for r in rows)
+    groups = [g for _, g in keyed]  # the order the Group sort shows (the page sorts on data-sort-default)
+    assert groups.index("Usable in battle") < groups.index("Equipped") < groups.index("Armor")
+    demon = next(r for r in rows if "Demon Armor" in r)
+    assert 'data-group-label="Armor"' in demon and 'data-views="all"' in demon  # not equipped: only under All
+    assert '"kind": "Armor"' in demon and '"attune": "Needs attunement"' in demon  # filter values
     features = page.split('id="t-features"')[1].split('id="t-skills"')[0]
     assert features.index("Wild Shape") < features.index("Always on, already in your numbers") < features.index("Fleet of Foot")
 
@@ -495,7 +500,8 @@ def test_universal_regrouping_and_admin_characters_page(player, admin, db):
     assert "Show in askdnd" in panel and "Inventory group" in panel  # gear is clickable and can be regrouped
     admin.post(f"/characters/{cole.id}/override", data={"ref": "x", "oref": "item:Bag of Holding", "field": "item_group", "value": "Gear"})
     items = player.get(f"/characters/{cole.id}").text.split('id="t-items"')[1].split('id="t-features"')[0]
-    assert items.index("Everything else") < items.index("Bag of Holding")  # no longer under Equipped
+    bag = next(r for r in items.split(' data-ls-row ')[1:] if "Bag of Holding" in r)
+    assert 'data-group-label="Gear"' in bag  # no longer under Equipped
     admin.post(f"/characters/{cole.id}/override", data={"ref": "x", "oref": "spell:Heat Metal", "field": "hide", "value": "hide"})
     assert "Heat Metal" not in player.get(f"/characters/{cole.id}").text
     admin.post(f"/characters/{cole.id}/override", data={"ref": "x", "oref": "spell:Healing Word", "field": "cost", "value": "Action"})

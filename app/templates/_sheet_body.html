@@ -2,6 +2,7 @@
 {% from "_spell_list.html" import spell_list %}
 {% from "_form_list.html" import form_list %}
 {% from "_help.html" import help %}
+{% from "_item_list.html" import item_list %}
 {% from "_char.html" import pips, pick_btn, ri, opt_row, bell, pin_icon, bookmark_icon, tile, adv, roll_attrs %}
 {% set s = sheet %}
 {% if s %}
@@ -74,26 +75,8 @@
   {% endif %}
 
   <div id="t-items" hidden>
-    {% macro item_row(it) %}{{ ri(c, it.key, it.name ~ (" ×" ~ it.quantity if it.quantity > 1 else ""), picks, can_pick, star=it.battle,
-        chips=[("Custom", "custom") if it.custom else None, ("Changed", "edited") if it.changes else None, ("Note", "") if item_notes.get(it.key) else None,
-               ("Attuned", "done") if it.attunement == "attuned" else (("Needs attunement", "") if it.attunement == "required" else None),
-               (it.charges.left ~ " use" ~ ("s" if it.charges.left != 1 else "") ~ " left", "") if it.charges and it.charges.reset == "Used up" else None],
-        what=it.summary, uses=it.charges if it.charges and it.charges.reset != "Used up" else None,
-        mech=[it.type if not it.custom else "", it.rarity if it.magic else "", it.damage, ("AC " ~ it.armor_class) if it.armor_class else "", ("in " ~ it.in) if it.in else ""] | select | join(" · ")) }}{% endmacro %}
-    {% if s.attuned %}<p class="hint" style="margin:0">Attuned: {{ s.attuned | join(", ") }} ({{ s.attuned | length }} of 3)</p>{% endif %}
-    {% set battle = s.inventory | selectattr("group", "equalto", "battle") | list %}
-    {% set worn = s.inventory | selectattr("group", "equalto", "equipped") | list %}
-    {% if battle %}<h3 class="divider">Usable in battle <span class="count">{{ battle | length }}</span></h3><div class="rows">{% for it in battle %}{{ item_row(it) }}{% endfor %}</div>{% endif %}
-    {% if worn %}<h3 class="divider">Equipped <span class="count">{{ worn | length }}</span></h3><div class="rows">{% for it in worn %}{{ item_row(it) }}{% endfor %}</div>{% endif %}
-    {% set rest = s.inventory | rejectattr("group", "in", ["battle", "equipped"]) | list %}
-    {% if rest %}
-    <details class="fold"><summary>Everything else ({{ rest | length }})</summary>
-      {% for title in ["Weapons", "Armor", "Magic items", "Potions and scrolls", "Gear"] %}
-      {% set list = rest | selectattr("group", "equalto", title) | list %}
-      {% if list %}<h3 class="divider">{{ title }} <span class="count">{{ list | length }}</span></h3><div class="rows">{% for it in list %}{{ item_row(it) }}{% endfor %}</div>{% endif %}
-      {% endfor %}
-    </details>
-    {% endif %}
+    {% if s.attuned %}<p class="note" style="margin:0 0 10px">Attuned: {{ s.attuned | join(", ") }} ({{ s.attuned | length }} of 3)</p>{% endif %}
+    {{ item_list(c, s.inventory, picks, can_pick, show_picks, item_notes, "sheet-items", [("ready", "Equipped"), ("fav", "Shortlist"), ("all", "All")], help_off) }}
     {% if s.currency %}<p class="note">Coins: {% for k, v in s.currency.items() %}{{ "{:,}".format(v) }} {{ k }}{{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
   </div>
 

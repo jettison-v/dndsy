@@ -16,7 +16,7 @@ router = APIRouter()
 
 # Help line key -> the FAQ answer its "More" opens (faq.html q(..., id=...))
 HELP = {"battle": "modes", "sheet": "marks", "plan": "notes", "features": "modes", "situational": "modes",
-        "background": "privacy", "spells": "spell-book", "forms": "wild-shape"}
+        "background": "privacy", "spells": "spell-book", "forms": "wild-shape", "items": "items"}
 
 
 def dismissed(db: Session, user: dict | None) -> set[str]:

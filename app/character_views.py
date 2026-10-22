@@ -502,6 +502,7 @@ TERM_CHOICES = {"underline": [("on", "Underlined"), ("off", "Not underlined")]}
 FIELD_LABELS = {"hide": "Show in askdnd", "cost": "Section (what it costs)", "battle": "On Battle",
                 "feature_group": "Features group", "situ_group": "Situational group", "item_group": "Inventory group",
                 "underline": "Underlined in descriptions"}
+ITEM_KINDS = {"Other Gear": "Gear", "Wondrous item": "Wondrous", "Rod": "Rod, staff or wand", "Staff": "Rod, staff or wand", "Wand": "Rod, staff or wand"}
 CATEGORY_GROUPS = {"Weapon": "Weapons", "Armor": "Armor", "Wondrous item": "Magic items", "Ring": "Magic items", "Rod": "Magic items",
                    "Staff": "Magic items", "Wand": "Magic items", "Potion": "Potions and scrolls", "Scroll": "Potions and scrolls"}
 
@@ -542,7 +543,11 @@ def apply_overrides(sheet: dict, overrides: dict[tuple[str, str], str]) -> dict:
     for it in sheet["inventory"]:
         group = get(it, "inventory", "item_group") or (
             "battle" if it["battle"] else "equipped" if it["equipped"] else CATEGORY_GROUPS.get(it.get("category"), "Gear"))
-        items.append({**it, "group": group, "battle": group == "battle"})
+        items.append({**it, "group": group, "battle": group == "battle",
+                      # the Inventory list's filter values (_item_list.html)
+                      "kind_label": "Custom" if it.get("custom") else ITEM_KINDS.get(it.get("category") or "", it.get("category") or "Gear"),
+                      "use_labels": (["Usable in battle"] if group == "battle" else []) + (["Has uses"] if it.get("charges") else []),
+                      "attune_label": {"attuned": "Attuned", "required": "Needs attunement"}.get(it.get("attunement") or "", "")})
     sheet["inventory"] = items
     sheet["_overrides"] = {f"{r}|{fld}": v for (r, fld), v in overrides.items()}
     return sheet

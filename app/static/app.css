@@ -1553,3 +1553,16 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .clamp { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
 .clamp.open { display: block; }
 .clamp:hover { color: var(--text); }
+
+/* Sheet › Inventory (_item_list.html): equipped · item · kind · uses · details · marks */
+.it-cols { display: grid; grid-template-columns: 1.25rem minmax(14rem, 1fr) max-content max-content fit-content(14rem) max-content; column-gap: 14px; }
+.it-cols > .ls-head, .it-cols > .ls-row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
+.it-cols > .ls-grouphead { grid-column: 1 / -1; }
+.it-cols .it-rarity { display: block; font-size: var(--fs-xs); }
+@media (max-width: 900px) {
+  .it-cols { display: block; }
+  .it-cols > .ls-head { display: none; }
+  .it-cols > .ls-row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; }
+  .it-cols > .ls-row > .ls-name { flex: 1 1 50%; }
+  .it-cols > .ls-row > :not(.ls-marks):not(.ls-name):not(.sh-status) { order: 2; font-size: var(--fs-xs); }
+}
