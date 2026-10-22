@@ -367,3 +367,29 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 4. Hosting services can also deploy a branch to its own temporary address ("preview environments"). Worth it with more reviewers; it needs its own database copy.
 
 **Update, later on 2026-10-22: merging the branch.** Brett approved steps 3 and 4 side by side, so `design-system` was merged into `main` (a "fast-forward": `main` simply moved up to the branch's last commit, because the branch already contained everything on `main`). Pushing `main` ran the tests and deployed beta; Railway's start command (`alembic upgrade head`) added the new database column for "Got it" on the way. Then the worktree folder and the branch were removed, since everything in them is now on `main`. To review the next big change the same way: `git worktree add -b <name> ../dndsy-design main`, then start `web-new` from `.claude/launch.json` (it runs from `../dndsy-design` on port 8001).
+
+## 2026-10-22: A local copy of beta's data, for testing on real data
+
+**What was set up.** `scripts/pull_beta.sh` copies beta's data into a local database (`askdnd_beta`) from the
+newest nightly backup in S3, and the local app now uses it (one `DATABASE_URL` line in `.env`; remove it to go
+back to the old `askdnd_dev`). Beta is never touched: the backup is downloaded with the backup service's own key,
+which `railway run --service askdnd-backup` lends to that single command without showing it. The file lands in
+`private/backups/`, which git ignores.
+
+**How it restores.** The backup was made before today's database changes, two of which also rearrange existing
+data. So the script builds the database as it was when the backup was made, loads the backup, then applies every
+change since (`alembic upgrade head`). The restore tool learned to load into whatever version the database is at,
+which is also what a real disaster recovery from an older backup needs.
+
+**Automatic drafting is off locally** (`AUTO_DRAFT`, on in production): publishing a session on the copy doesn't
+start a real Claude draft. Set `AUTO_DRAFT=1` in `.env` to test it on purpose.
+
+**Found on the way:** the newest backup in S3 was Oct 21. The Oct 22 run failed because the backup service still
+had the deactivated AWS key until today's redeploy (see above), so tonight's should be the first good one since.
+Roadmap step 12 checks it.
+
+**For a new project:**
+1. Test on a copy of real data, never on production. A copy made from the nightly backup gets you real data and
+   proves the backups restore, in one go.
+2. Keep restore scripts able to take an older backup: build the schema at the backup's version, load, then migrate.
+3. Turn off anything that spends money or sends messages by default outside production.

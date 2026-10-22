@@ -14,7 +14,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import web
+from app import config, web
 from app import db as dbmod
 from app import review
 from app.admin import _reviewer_guard as _guard
@@ -322,6 +322,8 @@ def publish(request: Request, session_id: int, db: Session = Depends(get_db)):
     def act(s):
         review.publish(db, s)
         nxt = _next_to_draft(db, s)
+        if nxt is not None and not config.AUTO_DRAFT:
+            return f"Published. Automatic drafting is off here, so draft {session_label(nxt)} from Recaps when you want it."
         if nxt is not None and _draft_in_background([nxt.id]):
             return f"Published. Claude is drafting {session_label(nxt)} next, so it's ready when you are."
         return "Published. The table can read it now."

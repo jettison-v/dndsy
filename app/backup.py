@@ -3,7 +3,7 @@
 Nightly, scripts/backup_db.py uploads one to S3 under v2/backups/ (never anywhere
 else in the bucket, which the legacy app also uses) and keeps the last 30 days.
 scripts/restore_db.py loads one into an empty database built with
-`alembic upgrade head`.
+`alembic upgrade` (to head, or to the backup's own version and then head).
 
 The database never holds raw transcripts (CLAUDE.md), so backups don't either.
 They do hold players' notes and the campaign record, so the bucket stays private.
@@ -71,12 +71,19 @@ def from_bytes(raw: bytes) -> dict:
 
 
 def load(conn: Connection, data: dict) -> dict[str, int]:
-    """Insert a backup into a database whose tables are empty. Returns rows per table."""
+    """Insert a backup into a database whose tables are empty. Returns rows per table.
+
+    The database may be built at the backup's own (older) version, `alembic upgrade <data["alembic"]>`, and
+    upgraded to head afterwards, so data changes in later migrations run too (scripts/pull_beta.sh does this).
+    So the tables as they are in the database are used, not as they are in today's code."""
+    live = MetaData()
+    live.reflect(conn)
+    order = [live.tables[t.name] for t in tables() if t.name in live.tables]
     counts = {}
-    for t in tables():
+    for t in order:
         if conn.execute(t.select().limit(1)).first() is not None:
             raise ValueError(f"Table {t.name} isn't empty: restore into a fresh database.")
-    for t in tables():
+    for t in order:
         rows = data["tables"].get(t.name) or []
         if rows:
             cols = {c.name: c for c in t.columns}

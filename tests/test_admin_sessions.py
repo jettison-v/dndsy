@@ -230,6 +230,9 @@ def test_publishing_drafts_the_next_session_and_late_duplicates_join_the_entry(c
     db.flush()
     started = []
     monkeypatch.setattr(admin_sessions, "_draft_in_background", lambda ids: started.append(ids) or True)
+    r = client.post(f"/admin/sessions/{s29.id}/publish", headers=HX)  # locally, automatic drafting is off
+    assert started == [] and "Automatic drafting is off here" in r.headers["HX-Trigger"]
+    monkeypatch.setattr(config, "AUTO_DRAFT", True)  # as on beta
     r = client.post(f"/admin/sessions/{s29.id}/publish", headers=HX)
     assert started == [[s30.id]] and "drafting Session 30 next" in r.headers["HX-Trigger"]
 
