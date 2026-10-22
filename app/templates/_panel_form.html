@@ -68,21 +68,23 @@
 
     <div class="fm-main">
       <h3>Battle cards</h3>
-      <p class="note fm-small">What this form brings. Your Unarmed Strike, Circle spells and features work in any form; they're on Battle once you shift.</p>
+      {% if not known %}<p class="note fm-small">What this form brings. Your Unarmed Strike, Circle spells and features work in any form, so they show once you know it.</p>{% endif %}
       <div class="fm-econ">
         {% for cost, slug, sub in [("Action", "action", "One per turn"), ("Bonus action", "bonus", "One per turn, before or after your Action")] %}
         <section class="fm-col">
           <h4 class="econ-head k-{{ slug }}">{{ cost }}<small>{{ sub }}</small></h4>
-          {# Only what this form brings (its attacks, Multiattack, its own bonus actions and reactions): this window is for
-             choosing a form by what it can do, so your Unarmed Strike, Circle spells, features and the general rules that
-             work in any form are left out (Brett, 2026-10-22). They're on Battle once you shift. #}
-          {% for o in f.columns[cost].shown | selectattr("source", "equalto", "form") %}{{ card(o) }}{% else %}<p class="muted">Nothing of its own.</p>{% endfor %}
+          {# A known form shows everything you can do in it. A form you're only considering shows just what it brings
+             (its attacks, Multiattack, its own bonus actions and reactions), so choosing between forms isn't cluttered by
+             your Unarmed Strike, Circle spells and rules that work in any form (Brett, 2026-10-22). #}
+          {% for o in (f.columns[cost].shown if known else f.columns[cost].shown | selectattr("source", "equalto", "form")) %}{{ card(o) }}{% else %}<p class="muted">{{ "None." if known else "Nothing of its own." }}</p>{% endfor %}
+          {% if cost == "Action" and known %}<div class="move static"><b class="muted">Dash, Disengage, Dodge, Help, Hide, Influence, Magic, Search, Study, Utilize</b>
+            <div class="meta">What anyone can do{% if not f.castable %}; no spells in this form{% endif %}</div></div>{% endif %}
         </section>
         {% endfor %}
       </div>
       <section class="fm-col fm-reactions">
         <h4 class="econ-head k-reaction">Reaction<small>One per round, also on others' turns</small></h4>
-        <div class="fm-reaction-list">{% for o in f.columns["Reaction"].shown | selectattr("source", "equalto", "form") %}{{ card(o) }}{% else %}<p class="muted">Nothing of its own.</p>{% endfor %}</div>
+        <div class="fm-reaction-list">{% for o in (f.columns["Reaction"].shown if known else f.columns["Reaction"].shown | selectattr("source", "equalto", "form")) %}{{ card(o) }}{% else %}<p class="muted">{{ "None." if known else "Nothing of its own." }}</p>{% endfor %}</div>
       </section>
 
       {% if f.traits %}<h3>Traits</h3>
