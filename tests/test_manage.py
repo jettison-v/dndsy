@@ -31,3 +31,15 @@ def test_reviewers_see_table_pages_only_and_players_none(monkeypatch, db):
     player = client_for(monkeypatch, db, "mark@example.com")
     assert player.get("/manage").status_code == 403
     assert 'href="/manage"' not in player.get("/").text
+
+
+def test_design_system_page_is_for_admins(monkeypatch, db):
+    admin = client_for(monkeypatch, db, "brett@example.com")
+    page = admin.get("/manage/design").text
+    assert "<b>Design system</b>" in admin.get("/manage").text  # a card on the overview
+    for part in ("--fs-2xl", "Roll chip", "search_box()", 'data-panel-url="/manage/design/panel"'):
+        assert part in page
+    assert 'id="peek-title">Fire Bolt' in admin.get("/manage/design/panel").text
+    monkeypatch.setattr(config, "REVIEWER_EMAILS", parse_allowlist("dm@example.com"))
+    reviewer = client_for(monkeypatch, db, "dm@example.com")
+    assert reviewer.get("/manage/design").status_code == 403 and reviewer.get("/manage/design/panel").status_code == 403

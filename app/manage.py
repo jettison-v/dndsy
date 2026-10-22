@@ -30,6 +30,7 @@ PAGES = (
     ("characters", "Characters", "/admin/characters", "D&D Beyond links and regrouping", "Party", is_admin, ()),
     ("usage", "Usage", "/admin/usage", "Claude spending and balance", "Admin", is_admin, ()),
     ("data", "Data", "/admin/import", "Imports and nightly backups", "Admin", is_admin, ()),
+    ("design", "Design system", "/manage/design", "Every component and token, for building and reviewing screens", "Admin", is_admin, ()),
 )
 GROUPS = ("Table", "Party", "Admin")
 
@@ -139,3 +140,44 @@ def manage_home(request: Request, db: Session = Depends(get_db)):
     status = _status(db, user, {p["key"] for p in pages})
     groups = [(g, [p for p in pages if p["group"] == g]) for g in GROUPS]
     return templates.TemplateResponse(request, "manage.html", {"groups": [(g, ps) for g, ps in groups if ps], "status": status})
+
+
+# ------------------------------------------------------------------ design system (roadmap step 9)
+
+# Tokens shown on the component page, in the order of app.css's :root (the stylesheet is the source of truth)
+COLOR_TOKENS = (
+    ("Surfaces", ("--bg", "--surface", "--surface-2", "--line", "--line-strong", "--chrome")),
+    ("Text", ("--text", "--text-strong", "--muted", "--faint", "--link")),
+    ("Story", ("--story-bg", "--story-line", "--story-text")),
+    ("Status", ("--red", "--amber", "--green", "--blue", "--violet")),
+    ("Action economy", ("--k-action", "--k-bonus", "--k-reaction", "--k-other")),
+)
+TEXT_SIZES = (("--fs-xs", "12", "Labels, secondary lines, tags"), ("--fs-sm", "14", "List cells, chips, controls"),
+              ("--fs-md", "16", "Body text, a row's name"), ("--fs-lg", "19", "Section headings"),
+              ("--fs-xl", "26", "Character name"), ("--fs-2xl", "30", "Page title"))
+SPACE = (("--sp-1", 4), ("--sp-2", 8), ("--sp-3", 12), ("--sp-4", 16), ("--sp-5", 24), ("--sp-6", 32))
+CORNERS = (("--r-sm", "6px", "Small chips, inner boxes"), ("--r-md", "8px", "Buttons, inputs"),
+           ("--r-lg", "12px", "Sections, cards, panels"), ("--r-pill", "999px", "Tags, chips, counts"))
+
+
+@router.get("/manage/design")
+def design_page(request: Request):
+    """Admins: every token and component with the app's own markup (made-up content only)."""
+    user = current_user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    if not is_admin(user):
+        return web.forbidden(request, "The design system page is for admins.")
+    demo = {"c": {"id": 0}, "picks": {"star": {"spell:Fire Bolt"}, "fav": {"spell:Fire Bolt", "spell:Shield"}, "remind": set(),
+                                       "notes": {"spell:Shield": "Save it for the big hit"}}}
+    return templates.TemplateResponse(request, "design.html", {"colors": COLOR_TOKENS, "sizes": TEXT_SIZES, "space": SPACE,
+                                                               "corners": CORNERS, **demo})
+
+
+@router.get("/manage/design/panel")
+def design_panel(request: Request):
+    """The sample side panel and modal on the component page."""
+    user = current_user(request)
+    if not user or not is_admin(user):
+        return web.forbidden(request, "The design system page is for admins.")
+    return templates.TemplateResponse(request, "_design_panel.html", {})

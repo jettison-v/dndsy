@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% from "_char.html" import pips, pin_icon, bookmark_icon, bell, ri, spends %}
+{% from "_lists.html" import search_box, chip_group, view_switch %}
+{% block title %}Design system · Manage · askdnd{% endblock %}
+{# The living component page (roadmap step 9): every token and component with the app's own classes and
+   macros, so it changes when they do. Made-up content only. DESIGN.md explains when to use each. #}
+{% macro ds(name, code, about, later="") -%}
+<div class="ds-meta"><b>{{ name }}</b> <code>{{ code }}</code><span class="muted">{{ about }}</span>
+  {%- if later %}<span class="ds-later">Step 3: {{ later }}</span>{% endif %}</div>
+{%- endmacro %}
+{% block content %}
+<main class="page wide ds-page">
+  {% include "_manage_head.html" %}
+  <div class="title-row"><h1>Design system</h1></div>
+  <p class="subtitle">Every token and component askdnd is built from, drawn with the app's own styles, so this page changes when they do. Rules for when to use each: <code>docs/DESIGN.md</code>. A test blocks text sizes, colors and screen widths outside the tokens.</p>
+
+  <nav class="ds-jump" aria-label="On this page">
+    {% for id, label in [("colors", "Colors"), ("type", "Text sizes"), ("space", "Space and corners"), ("buttons", "Buttons"), ("pills", "Pills"),
+                         ("headings", "Headings"), ("surfaces", "Sections and tiles"), ("lists", "Lists"), ("marks", "Marks and pips"),
+                         ("help", "Help and empty states"), ("panels", "Panels and toasts"), ("story", "Story text")] %}<a href="#{{ id }}">{{ label }}</a>{% endfor %}
+  </nav>
+
+  <section class="section" id="colors">
+    <h2>Colors</h2>
+    <p class="hint">Dark only. Status colors are text on a soft tint of the same color. Only the action economy gets colored headings.</p>
+    {% for group, names in colors %}
+    <h3 class="divider">{{ group }}</h3>
+    <div class="ds-swatches">{% for n in names %}<div class="ds-swatch"><span style="background:var({{ n }})"></span><code>{{ n }}</code></div>{% endfor %}</div>
+    {% endfor %}
+  </section>
+
+  <section class="section" id="type">
+    <h2>Text sizes</h2>
+    <p class="hint">Six sizes (Brett, 2026-10-22). Inter for the interface, the serif for story text.</p>
+    <div class="ds-type">{% for name, px, use in sizes %}
+      <div><span style="font-size:var({{ name }}); font-weight:{{ 700 if px in ('26', '30') else 600 if px == '19' else 400 }}">The party rests at the Yawning Portal</span>
+        <span class="muted"><code>{{ name }}</code> {{ px }}px · {{ use }}</span></div>{% endfor %}
+    </div>
+  </section>
+
+  <section class="section" id="space">
+    <h2>Space and corners</h2>
+    <p class="hint">Padding, margins and gaps come from a 4px scale. Controls are <code>--control-h</code> tall: 32px on desktop, 44px on phones. Layouts change at 640px (phone), 900px (tablet) and 1100px (wide).</p>
+    <div class="ds-space">{% for name, px in space %}<div><span style="width:var({{ name }}); height:var({{ name }})"></span><code>{{ name }}</code> {{ px }}px</div>{% endfor %}</div>
+    <div class="ds-corners">{% for name, px, use in corners %}<div><span style="border-radius:var({{ name }})"></span><code>{{ name }}</code> {{ px }}<small class="muted">{{ use }}</small></div>{% endfor %}</div>
+  </section>
+
+  <section class="section" id="buttons">
+    <h2>Buttons</h2>
+    {{ ds("Four styles, two sizes", ".btn · .primary · .link · .danger · .small", "Primary is the one main action on a screen; Danger always asks first.", "one height (--control-h) for the regular size") }}
+    <div class="ds-row"><button class="btn primary" type="button">Publish</button><button class="btn" type="button">Edit</button><button class="btn link" type="button">Cancel</button><button class="btn link danger" type="button">Delete</button></div>
+    <div class="ds-row"><button class="btn primary small" type="button">Save</button><button class="btn small" type="button">+ Add a step</button><button class="btn link small" type="button">Clear all</button><button class="btn link danger small" type="button">Remove</button></div>
+  </section>
+
+  <section class="section" id="pills">
+    <h2>Pills</h2>
+    {{ ds("Tag", ".tag", "Labels something; never clickable. Status tags use a status color.", "one size, from --fs-xs") }}
+    <div class="ds-row"><span class="tag">Conc.</span><span class="tag">Ritual</span><span class="tag done">Published</span><span class="tag draft">Draft</span><span class="tag new">New</span><span class="tag error">Couldn't refresh</span><span class="tag faint">Not core: Xanathar's</span><span class="tag kind-advantage">Advantage</span><span class="tag kind-resistance">Resistance</span></div>
+    {{ ds("Chip", ".ls-chip · .ws-chip · .spell-chip · .cond-pill · .chip", "Clickable: a filter, a form, a spell to cast, a condition.", "these five become one Chip, with an \"on\" state") }}
+    <div class="ds-row"><button class="ls-chip" type="button" aria-pressed="false">Concentration <span class="ls-n">4</span></button><button class="ls-chip" type="button" aria-pressed="true">1st level <span class="ls-n">3</span></button><button class="ws-chip" type="button">Normal</button><button class="ws-chip on" type="button">Polar Bear</button><button class="spell-chip" type="button">Healing Word</button><span class="chip">Bonus</span></div>
+    {{ ds("Count", ".count", "A number next to a tab or heading.") }}
+    <div class="ds-row"><span>Combos <span class="count">3</span></span><span>Reminders <span class="count">2</span></span></div>
+    {{ ds("Roll chip", ".roll-chip · .roll-hit", "Rolls dice (to hit, damage, healing); amber on hover. Kept separate from Chips (Brett, 2026-10-22).") }}
+    <div class="ds-row"><span class="hit"><button class="roll-hit" type="button">+7</button></span><button class="roll-chip" type="button">Roll</button><button class="roll-chip" type="button">Heal</button></div>
+  </section>
+
+  <section class="section" id="headings">
+    <h2>Headings</h2>
+    {{ ds("Page title", "main h1", "One per page.", "--fs-2xl") }}
+    <div class="ds-sample"><div class="title-row"><h1>Previously on…</h1></div></div>
+    {{ ds("Section heading", ".section h2", "Starts a section card.", "--fs-lg") }}
+    <div class="ds-sample"><h2 class="ds-h2">Relationships</h2></div>
+    {{ ds("Divider label", "h3.divider", "Groups inside a section: caps, letter-spaced, amber, with a fading rule.") }}
+    <div class="ds-sample"><h3 class="divider">1st level <span class="count">4</span></h3></div>
+    {{ ds("Action economy", ".econ-head .k-action / .k-bonus / .k-reaction / .k-other", "The only colored headings: what it costs on your turn.") }}
+    <div class="econ ds-econ">
+      {% for cost, slug, sub in [("Action", "action", "One per turn"), ("Bonus action", "bonus", "Before or after your Action"), ("Reaction", "reaction", "Also on others' turns")] %}
+      <div class="section"><h2 class="econ-head k-{{ slug }}">{{ cost }}<small>{{ sub }}</small></h2><a class="head-add econ-add" href="#headings">+ Add</a></div>{% endfor %}
+    </div>
+    {{ ds("Heading with an action", ".sec-head + link · .head-add", "Red link for a section's own action (Reminders, Battle combos); quiet grey .head-add inside busy columns (Brett, 2026-10-22).") }}
+    <div class="ds-sample"><div class="sec-head"><h2>Battle combos</h2><a href="#headings">+ Add</a></div></div>
+  </section>
+
+  <section class="section" id="surfaces">
+    <h2>Sections and tiles</h2>
+    {{ ds("Section", ".section", "A card on the page background. This page is made of them.") }}
+    {{ ds("Stat", ".stats > .stat", "A big number with what it means (Manage › Usage). .attention adds a red edge.") }}
+    <div class="stats"><div class="stat"><span>This month</span><b>$4.20</b><small>$15.80 left of $20.00</small></div><div class="stat attention"><span>Backups</span><b>2 days</b><small>Last backup failed</small></div><div class="stat"><span>All time</span><b>$31.06</b><small>48 drafts</small></div></div>
+    {{ ds("Number tiles", ".strip.compact", "Battle's header: label above, number below; each opens how it adds up.") }}
+    <div class="strip compact"><div><small>Hit points</small><b>51</b></div><div><small>Armor class</small><b>16</b></div><div><small>Speed</small><b>45 ft</b></div><div><small>Initiative</small><b>+3</b></div><div><small>Spell DC / attack</small><b>15</b><span class="note"> / +7</span></div><div><small>Heroic Inspiration</small><b>—</b></div></div>
+    {{ ds("Resources row", ".res-row", "Limited uses with pips, most uses first.") }}
+    <div class="res-row"><span class="res-label">Resources</span><span class="res">Luck Points {{ pips({"max": 3, "left": 3}) }}</span><span class="res">Focus Points {{ pips({"max": 2, "left": 1}) }}</span><span class="res">Wild Shape {{ pips({"max": 3, "left": 0}) }}</span></div>
+  </section>
+
+  <section class="section" id="lists">
+    <h2>Lists</h2>
+    <p class="hint">The shared list pattern (DESIGN.md › Lists and filters): search, views, filter chips, sort, rows that open the side panel.</p>
+    {{ ds("Search box", "_lists.html search_box()", "Searches everything and pauses the filters.", "32px tall (--control-h), today about 44px") }}
+    <div class="ds-sample ds-narrow">{{ search_box("Search all your spells") }}</div>
+    {{ ds("Toolbar", ".ls-toolbar · view_switch() · .ls-select · .ls-check", "Views on the left, then the summary, sort and options.") }}
+    <div class="ls-toolbar">{{ view_switch([("ready", "Prepared"), ("fav", "Shortlist"), ("all", "All")], "Which spells") }}<span class="note">12 spells</span>
+      <label class="ls-select"><span>Sort</span><select aria-label="Sort"><option>Level</option><option>Name</option></select></label><label class="ls-check"><input type="checkbox"> Full notes</label></div>
+    {{ ds("Filter group", "_lists.html chip_group()", "OR within a group, AND across groups; each chip shows how many match.") }}
+    <div class="ds-sample">{{ chip_group({"key": "time", "label": "Casting time", "values": ["Action", "Bonus action", "Reaction"]}) }}</div>
+    {{ ds("Row", "_char.html ri()", "One thing per row: marks, name, tags, a summary line, the roll on the right; a click opens the side panel.") }}
+    <div class="rows one ds-rows">
+      {{ ri(c, "spell:Fire Bolt", "Fire Bolt", picks, False, star=True, fav=True, chips=["Cantrip"], what="A mote of fire streaks at a creature or object.", mech="120 ft · 1d10 fire", url="/manage/design/panel") }}
+      {{ ri(c, "spell:Shield", "Shield", picks, False, star=True, fav=True, chips=["1st level"], what="An invisible barrier: +5 AC until your next turn.", mech="Reaction · Self", url="/manage/design/panel") }}
+      {{ ri(c, "action:Flurry", "Flurry of Blows", picks, False, uses={"max": 2, "left": 1}, what="Two Unarmed Strikes as a Bonus Action.", url="/manage/design/panel") }}
+    </div>
+  </section>
+
+  <section class="section" id="marks">
+    <h2>Marks and pips</h2>
+    {{ ds("Marks", ".pick.star / .fav / .remind", "Pin to Battle, Shortlist, Remind me. Only the player sets them; the DM never sees them.", "a label on hover for every icon button") }}
+    <div class="ds-row"><span class="pick star on static">{{ pin_icon() }}</span> Pinned <span class="pick fav on static">{{ bookmark_icon() }}</span> Shortlisted <span class="pick remind on static">{{ bell(true) }}</span> Reminder</div>
+    {{ ds("Pips", "_char.html pips()", "Uses left out of the maximum; more than 8 shows as 3/10.") }}
+    <div class="ds-row">{{ pips({"max": 4, "left": 3}) }} {{ pips({"max": 2, "left": 0}) }} {{ pips({"max": 10, "left": 3}) }}</div>
+    {{ ds("What it uses up", "_char.html spends()", "On an option: the resource and how many are left.") }}
+    <div class="ds-row">{{ spends([{"label": "1 Focus Point", "uses": {"max": 2, "left": 2}}, {"label": "1st-level slot", "uses": {"max": 4, "left": 0}}]) }}</div>
+  </section>
+
+  <section class="section" id="help">
+    <h2>Help and empty states</h2>
+    {{ ds("Help line", ".hint", "One short line under a heading.", "a \"Got it\" button that hides it for you; the FAQ keeps the full text") }}
+    <p class="hint">Drag to reorder a column; <b>+ Add</b> pins more.</p>
+    {{ ds("Note", ".note", "Small secondary text: dates, who changed something, footnotes.") }}
+    <p class="note">Updated Oct 19. Every player can read this; the DM can't.</p>
+    {{ ds("Empty state", ".muted", "Says what goes here and how to add the first one.", "on every list") }}
+    <p class="muted">Nothing pinned yet. Use <b>+ Add</b> to pin what you'd use on your turn.</p>
+  </section>
+
+  <section class="section" id="panels">
+    <h2>Panels and toasts</h2>
+    {{ ds("Side panel", "data-panel-url", "Details for one thing, from the right edge (the bottom on phones).") }}
+    <div class="ds-row"><button class="btn" type="button" data-panel-url="/manage/design/panel">Open a side panel</button>
+      <button class="btn" type="button" data-modal-url="/manage/design/panel">Open a modal</button>
+      <button class="btn" type="button" data-modal-url="/manage/design/panel" data-modal-size="large">Open a large modal</button></div>
+    {{ ds("Toast", "#toast", "A short confirmation after an action (\"Saved\").") }}
+    <div class="ds-row"><button class="btn" type="button" onclick="window.askdndToast && askdndToast('Saved')">Show a toast</button></div>
+  </section>
+
+  <section class="section" id="story">
+    <h2>Story text</h2>
+    {{ ds("Story block", ".story", "Recaps, descriptions and answers: warm parchment at night, in the serif.") }}
+    <div class="story"><p>The party left Waterdeep at dawn, the dragon's map rolled tight in a waxed case. By dusk the road had turned to mud and the hired guide had quietly vanished.</p></div>
+  </section>
+</main>
+{% endblock %}

@@ -1489,3 +1489,29 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .ls-check { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-sm); color: var(--muted); cursor: pointer; white-space: nowrap; }
 .ls-check input { margin: 0; accent-color: var(--red); }
 .ls-notes-full .ls-note { white-space: pre-line; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+
+/* Manage › Design system (the living component page): only layout for the samples; the samples use the real styles */
+.ds-jump { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin: 0 0 var(--sp-5); }
+.ds-jump a { font-size: var(--fs-sm); color: var(--muted); text-decoration: none; padding: var(--sp-1) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-pill); }
+.ds-jump a:hover { color: var(--text); }
+.ds-page .section { scroll-margin-top: 80px; }
+.ds-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-1) var(--sp-3); margin: var(--sp-5) 0 var(--sp-2); font-size: var(--fs-sm); }
+.ds-meta:first-of-type { margin-top: var(--sp-3); }
+.ds-meta code, .ds-page code { font-size: var(--fs-xs); color: var(--muted); background: var(--surface-2); border-radius: var(--r-sm); padding: 1px var(--sp-1); }
+.ds-later { flex-basis: 100%; font-size: var(--fs-xs); color: var(--amber); }
+.ds-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); }
+.ds-sample { margin: 0; }
+.ds-sample .title-row h1 { margin: 0; }
+.ds-h2 { margin: 0; }
+.ds-narrow { max-width: 420px; }
+.ds-econ .section { background: var(--surface-2); min-height: 70px; }
+.ds-rows { max-width: 640px; }
+.ds-swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--sp-3); }
+.ds-swatch { display: flex; align-items: center; gap: var(--sp-2); }
+.ds-swatch span { width: 36px; height: 36px; border-radius: var(--r-md); border: 1px solid var(--line-strong); flex: none; }
+.ds-type { display: grid; gap: var(--sp-3); }
+.ds-type > div { display: flex; flex-direction: column; }
+.ds-space, .ds-corners { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--sp-5); margin-top: var(--sp-3); font-size: var(--fs-sm); }
+.ds-space div, .ds-corners div { display: flex; flex-direction: column; gap: var(--sp-1); }
+.ds-space span { background: var(--red); display: block; }
+.ds-corners span { width: 64px; height: 40px; background: var(--surface-2); border: 1px solid var(--line-strong); display: block; }

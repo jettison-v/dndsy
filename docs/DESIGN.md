@@ -1,6 +1,6 @@
 # askdnd Design Guide
 
-_Last updated 2026-10-15 · Applies to every page in the app. Old mockups are archived in `docs/mockups/archive/`; the living component page (Manage) is the reference._
+_Last updated 2026-10-22 · Applies to every page in the app. The living component page (**Manage › Design system**, `/manage/design`) shows every token and component with the app's own styles; old mockups are archived in `docs/mockups/archive/`._
 
 askdnd is read before a session and reviewed after one. People open it on a laptop next to Zoom and D&D Beyond, sometimes on a phone. It should feel like a well-kept campaign journal, not an admin panel.
 
@@ -11,9 +11,9 @@ askdnd is read before a session and reviewed after one. People open it on a lapt
 3. **One primary action per step.** Each section has at most one red button. Everything else is a quiet secondary button or a text link.
 4. **Status is always visible**, in the same place and the same colors everywhere (Draft, Published, Edited since publishing, Accepted…).
 5. **Say what happens next.** Buttons are verbs with outcomes ("Publish to the table", "Redraft"), and anything that costs money or is seen by the table says so in a short line beneath.
-6. **Readable first.** Normal-case text everywhere; no all-caps labels except the logo. Story text uses a book-like serif at a comfortable line length.
+6. **Readable first.** Normal-case text everywhere; all-caps only for the logo and divider labels. Story text uses a book-like serif at a comfortable line length.
 7. **Calm and roomy.** Generous padding, few divider lines, color only for status and the one primary action.
-8. **Works on a phone.** One column under 800px, tap targets at least 40px, and the publish action pinned to the bottom of the screen.
+8. **Works on a phone.** One column on phones (640px and below), tap targets 44px, and the publish action pinned to the bottom of the screen.
 9. **Never lose work.** Cancel discards only that edit; a changed published recap shows "Edited since publishing" until republished.
 10. **Inform, don't advise** (from the product rules). Copy explains what something is or does. It never tells players what to do in the game.
 
@@ -48,42 +48,55 @@ The session review page is a short checklist, top to bottom:
 
 ## Visual system
 
-Dark theme, inspired by D&D Beyond (dark chrome, red accents, warm parchment-toned story text) without copying its logo, name or artwork.
+Dark only (Brett, 2026-10-22), inspired by D&D Beyond (dark chrome, red accents, warm parchment-toned story text) without copying its logo, name or artwork. Every value below is a token in `app/static/app.css` `:root`; pages use the names, never the values. `tests/test_design_system.py` fails on a text size, color or screen width outside the tokens. Until the visual passes finish (roadmap step 9), older rules are counted against a baseline that can only go down.
 
-| Token | Value | Use |
-|---|---|---|
-| `--bg` | `#15171a` | Page background |
-| `--surface` / `--surface-2` | `#1f2226` / `#272b30` | Sections, panels / buttons, inputs, nested blocks |
-| `--line` | `#34383e` | Dividers, borders |
-| `--text` / `--muted` / `--faint` | `#ebe7df` / `#a29d93` / `#6f6b64` | Body text / secondary / tertiary |
-| `--story-bg` / `--story-text` | `#221f1a` / `#f0e7d4` (border `#3b3428`) | Recaps, answers, proposed text: warm "parchment at night" |
-| `--red` | `#d64545` (hover `#e35a5a`) | The one primary button, section numbers, top-bar rule, focus |
-| `--amber` | `#e8b34b` | Draft / needs attention |
-| `--green` | `#5bbf7f` | Published / accepted / answered / done |
-| `--blue` | `#7ea6e0` | Edited since publishing / new |
+**Colors**
 
-Status colors are used as text on a 14–15% tint of the same color.
+| Token | Use |
+|---|---|
+| `--bg` · `--surface` · `--surface-2` | Page · sections and panels · buttons, inputs, nested blocks |
+| `--line` · `--line-strong` · `--chrome` | Dividers and borders · stronger rules, swatch edges · the top bar |
+| `--text` · `--text-strong` · `--muted` · `--faint` · `--link` | Body · white on red and headings that need it · secondary · tertiary · links |
+| `--story-bg` · `--story-line` · `--story-text` | Recaps, answers, proposed text: warm "parchment at night" |
+| `--red` (`--red-hover`, `--red-soft`) | The one primary button, the top-bar rule, focus |
+| `--amber` · `--green` · `--blue` (each with `-soft`) | Draft or needs attention · published, done · edited since publishing, new |
+| `--violet` (`--violet-soft`) | Reminders (the bell) |
+| `--k-action` · `--k-bonus` · `--k-reaction` · `--k-other` | The action economy, the only colored headings (see Section headings) |
 
-- **Text sizes:** use the scale `--fs-xs` (.75rem: labels, secondary lines), `--fs-sm` (.875rem: list cells, chips, controls), `--fs-md` (1rem: body and a row's name), `--fs-lg` (1.2rem: section headings). New and reworked screens use only these; the rest of the app moves to them in the design-system checkpoint (docs/plans/2026-10-21-roadmap.md).
-- **Type:** UI in **Inter** (fallback system-ui) at 16px / 1.6; section headings 1.2rem semibold; page titles 1.9rem bold. Story text in `"Iowan Old Style", Palatino, Georgia, serif` at 1.12rem / 1.75. The logo alone uses Roboto Condensed.
-- **Shape and space:** 12px radius on sections, 8px on buttons and inputs, pill tags; sections have 28–30px padding and 24px between them.
+Status colors are text on their `-soft` tint.
+
+**Text sizes** (Brett, 2026-10-22): `--fs-xs` 12px labels, secondary lines and tags · `--fs-sm` 14px list cells, chips, controls · `--fs-md` 16px body and a row's name · `--fs-lg` 19px section headings · `--fs-xl` 26px the character's name · `--fs-2xl` 30px page titles. UI in **Inter** (fallback system-ui) at 16px / 1.6; story text in `"Iowan Old Style", Palatino, Georgia, serif` at 1.12rem / 1.75. The logo alone uses Roboto Condensed.
+
+**Space:** a 4px scale, `--sp-1` 4 · `--sp-2` 8 · `--sp-3` 12 · `--sp-4` 16 · `--sp-5` 24 · `--sp-6` 32. Prefer `gap` on flex and grid over margins between siblings.
+
+**Corners:** `--r-sm` 6px small chips and inner boxes · `--r-md` 8px buttons and inputs · `--r-lg` 12px sections, cards, panels · `--r-pill` tags, chips, counts.
+
+**Controls:** search boxes, selects and regular buttons are `--control-h` tall: 32px on desktop, 44px on phones (Brett, 2026-10-22).
+
+**Screen widths:** phone ≤ 640px, tablet ≤ 900px, wide ≥ 1100px (media queries can't use variables; the test allows only these).
+
 - **Key-moment types** are colored words, not boxes: Event (muted), Reveal (lavender), Decision (blue), Loot (amber), Theory (italic, muted) so speculation never looks like fact.
 
 ## Components
 
-- **Section:** dark surface card with a numbered heading (red number), a one-line hint, then content.
-- **Tag:** small rounded pill, status color on a soft tint.
-- **Read/Edit block:** reading view plus an **Edit** link in the section header; edit mode swaps in the form with **Save** (primary) and **Cancel**.
-- **Question item:** question, then **Answer** / **Skip**. Answered ones move to Done showing the answer in a story-style block, a "Remembered for future drafts" tag when it applies, and **Edit** / **Remove answer**.
-- **Suggestion item:** name, kind and "New" tags; Before and Proposed side by side (stacked on phones); **Accept**, **Edit**, **Reject**. In Done, accepted ones show "Now in askdnd" with **Edit** and **Undo** (undo restores the earlier summary).
-- **Done drawer:** collapsed "▸ Done (n)" line at the bottom of a section.
-- **Progress panel:** checklist with counts and the single **Publish** button; becomes a bottom bar on phones.
-- **Toast:** short confirmation near the top ("Answer saved", "Published").
+Each one is on Manage › Design system with its class or macro. Use these; don't invent a near-copy.
+
+- **Buttons** (`.btn`): four styles, **Primary** (`.primary`, red, one per screen), **Secondary** (plain `.btn`), **Quiet** (`.link`, text only) and **Danger** (`.link.danger`, always confirms), each in two sizes (regular and `.small`). Labels are verbs with outcomes.
+- **Pills**, four kinds (Brett, 2026-10-22): **Tag** (`.tag`) labels something and is never clickable (Conc., Ritual, Draft); **Chip** is clickable, with an on state (filters, Wild Shape forms, spells to cast, conditions; today `.ls-chip`, `.ws-chip`, `.spell-chip`, `.cond-pill`, `.chip`, merged into one in step 3); **Count** (`.count`) is a number by a tab or heading; **Roll chip** (`.roll-chip`, `.roll-hit`) rolls dice and turns amber on hover.
+- **Headings:** page title (`main h1`), section heading (`.section h2`), divider label (`h3.divider`), action-economy heading (`.econ-head` + `.k-*`). A heading's own action ("+ Add") is a red link for a section's action (Reminders, Battle combos) and the quiet `.head-add` inside busy columns (Action, Bonus action, Reaction).
+- **Section** (`.section`): a card on the page background with a heading, an optional help line, then content. **Stat** (`.stats > .stat`, `.attention` for a red edge), **number tiles** (`.strip.compact`, Battle's header) and the **resources row** (`.res-row`).
+- **Lists** (Lists and filters below): search box (`search_box()`), toolbar (`.ls-toolbar` with `view_switch()`, `.ls-select`, `.ls-check`), filter group (`chip_group()`), row (`ri()`, or `.ls-row` in the shared list), empty state.
+- **Marks** (`.pick.star`, `.fav`, `.remind`): Pin, Shortlist, Remind me; every icon button has a label on hover. **Pips** (`pips()`) and **what it uses up** (`spends()`).
+- **Help line** (`.hint`): one short line under a heading, with **Got it** to hide it for you; the FAQ keeps the full explanation (Brett, 2026-10-22). **Note** (`.note`) for dates and footnotes. **Empty state** (`.muted`): every list says what goes there and how to add the first one.
+- **Side panel** (`data-panel-url`) from the right edge (the bottom on phones): head with what it belongs to, its name and ✕; a scrolling body; an optional foot. **Modal** (`data-modal-url`, sizes regular, `large`, `full`).
+- **Story block** (`.story`) for recaps, descriptions and answers.
+- **Toast:** a short confirmation near the top ("Answer saved", "Published").
+- **Review pieces:** **Read/Edit block** (reading view plus an **Edit** link; edit mode swaps in the form with **Save** and **Cancel**), **Question item** (Answer / Skip; answered ones move to Done with **Edit** / **Remove answer**), **Suggestion item** (Before and Proposed side by side, stacked on phones; **Accept**, **Edit**, **Reject**; Done shows "Now in askdnd" with **Undo**), **Done drawer** ("▸ Done (n)") and **Progress panel** (checklist with the single **Publish** button; a bottom bar on phones).
 
 ## Implementation notes
 
 - Server-rendered Jinja templates; small interactions (Edit/Cancel, answer, accept, undo) use HTMX partial swaps so the page doesn't jump.
-- One shared stylesheet with the tokens above as CSS variables; pages don't define their own colors.
+- One shared stylesheet with the tokens above as CSS variables; pages don't define their own colors or sizes, and `tests/test_design_system.py` checks it.
 - Every interactive element has a visible focus style and an accessible label.
 - Mockups (archived in `docs/mockups/archive/`) and the living component page use made-up content only.
 
