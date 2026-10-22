@@ -336,5 +336,10 @@ def test_battle_shows_saves_for_the_normal_form_and_in_wild_shape(db, cole, play
     player.post(f"/characters/{cole.id}/wild-shape", data={"form": "Polar Bear"}, headers=HX)
     page = dm.get(f"/characters/{cole.id}/battle").text
     block = page[page.index('class="ws-form"'):page.index('class="econ"')]
+    assert 'Con<span class="st-word"> save</span></small><b>+8</b>' in block  # by default everything is kept: Luckstone +1 too
+    cole.wild_shape_keep = []  # the player unticks everything
+    db.flush()
+    page = dm.get(f"/characters/{cole.id}/battle").text
+    block = page[page.index('class="ws-form"'):page.index('class="econ"')]
     assert block.count('role="listitem"') == 6 and 'Con<span class="st-word"> save</span></small><b>+7</b>' in block  # bear's Con +3, Increased Toughness +4
     assert "War Caster" in block and "Fey Ancestry" not in block

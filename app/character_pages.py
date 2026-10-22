@@ -162,7 +162,7 @@ def _battle_ctx(db: Session, ch: Character, user: dict) -> dict:
         ctx["known_forms"] = _known_forms(ctx["sheet"]) if ctx["druid"] else []
         beast = ws.beast_for(ctx["sheet"], ch.wild_shape) if ch.wild_shape and ctx["druid"] else None
         if beast:
-            ctx["form"] = ws.shaped(ctx["sheet"], beast, keep=ch.wild_shape_keep)
+            ctx["form"] = ws.shaped(ctx["sheet"], beast, keep=ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep))
             ctx["columns"] = ctx["form"]["columns"]
     ctx["spellbar"] = _spellbar(db, ch, ctx)
     ctx["conditions"] = [{**x, "rules": cond.rules_text(x["name"])} for x in ch.conditions or []]  # everyone sees them
@@ -218,7 +218,7 @@ def _sheet_ctx(db: Session, ch: Character, user: dict) -> dict:
         # Actions tab: everything except leveled spells (those are on the Spells tab), like D&D Beyond
         ctx["options"] = [o for o in views.options(ctx["sheet"], ctx["picks"]["star"])
                           if o["kind"] != "spell" or (o["tags"] and o["tags"][0] == "cantrip" and o["hit"])]
-        ctx["forms"] = ws.forms(ctx["sheet"], ctx["picks"]["fav"], ch.wild_shape_keep)
+        ctx["forms"] = ws.forms(ctx["sheet"], ctx["picks"]["fav"], ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep))
         ctx["ws_other_uses"] = ws.other_uses(ctx["sheet"]) if ctx["druid"] else []
     return ctx
 
@@ -233,7 +233,7 @@ def _plan_ctx(db: Session, ch: Character, user: dict) -> dict:
         ctx["plan_spell_groups"] = sb.sheet_filter_groups(ctx["plan_spells"])
         ctx["fav_spells"] = [e for e in ctx["plan_spells"] if e["key"] in fav]  # the tab's count
         if ctx["druid"]:
-            ctx["plan_forms"] = ws.forms(s, fav, ch.wild_shape_keep)  # every form you can learn: Shortlist and All
+            ctx["plan_forms"] = ws.forms(s, fav, ws.chosen_keep(s, ch.wild_shape_keep))  # every form you can learn: Shortlist and All
             ctx["fav_forms"] = [f for f in ctx["plan_forms"] if f["key"] in fav]
     return ctx
 
@@ -460,8 +460,8 @@ def form_panel(request: Request, character_id: int, name: str, db: Session = Dep
         return HTMLResponse("", status_code=404)
     known = any(f["name"].lower() == beast["name"].lower() for f in _known_forms(ctx["sheet"]))
     return templates.TemplateResponse(request, "_panel_form.html", {
-        **ctx, "f": ws.shaped(ctx["sheet"], beast, keep=ch.wild_shape_keep), "ref": f"form:{beast['name']}", "known": known,
-        "keep_options": ws.options_for(ctx["sheet"] or {}, ch.wild_shape_keep), "beast_name": beast["name"],
+        **ctx, "f": ws.shaped(ctx["sheet"], beast, keep=ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep)), "ref": f"form:{beast['name']}", "known": known,
+        "keep_options": ws.options_for(ctx["sheet"] or {}, ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep)), "beast_name": beast["name"],
         "why_not": ws.why_not(ctx["druid"], beast), "credit": ws.credit() if beast.get("source") == "SRD 5.2" else "",
         "current": (ch.wild_shape or "").lower() == beast["name"].lower()})
 

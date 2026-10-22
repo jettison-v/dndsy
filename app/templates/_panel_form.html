@@ -72,7 +72,8 @@
         {% for cost, slug, sub in [("Action", "action", "One per turn"), ("Bonus action", "bonus", "One per turn, before or after your Action")] %}
         <section class="fm-col">
           <h4 class="econ-head k-{{ slug }}">{{ cost }}<small>{{ sub }}</small></h4>
-          {% for o in f.columns[cost].shown %}{{ card(o) }}{% else %}<p class="muted">None.</p>{% endfor %}
+          {# The form's own options only: this window is for choosing a form by what it can do (Brett, 2026-10-22) #}
+          {% for o in f.columns[cost].shown | rejectattr("source", "equalto", "yours") %}{{ card(o) }}{% else %}<p class="muted">None.</p>{% endfor %}
           {% if cost == "Action" %}<div class="move static"><b class="muted">Dash, Disengage, Dodge, Help, Hide, Influence, Magic, Search, Study, Utilize</b>
             <div class="meta">What anyone can do{% if not f.castable %}; no spells in this form{% endif %}</div></div>{% endif %}
         </section>
@@ -80,7 +81,7 @@
       </div>
       <section class="fm-col fm-reactions">
         <h4 class="econ-head k-reaction">Reaction<small>One per round, also on others' turns</small></h4>
-        <div class="fm-reaction-list">{% for o in f.columns["Reaction"].shown %}{{ card(o) }}{% else %}<p class="muted">None.</p>{% endfor %}</div>
+        <div class="fm-reaction-list">{% for o in f.columns["Reaction"].shown | rejectattr("source", "equalto", "yours") %}{{ card(o) }}{% else %}<p class="muted">None.</p>{% endfor %}</div>
       </section>
 
       {% if f.traits %}<h3>Traits</h3>

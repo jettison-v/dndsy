@@ -21,14 +21,14 @@
         {% if show_picks and views %}{{ view_switch(views, "Which forms") }}{% endif %}
         <span class="note" data-ls-summary></span>
         <label class="ls-select"><span>Sort</span>
-          <select data-ls-sort aria-label="Sort"><option value="default">Known, then CR</option><option value="damage">Damage</option><option value="hit">To hit</option><option value="speed">Speed</option><option value="cr">CR</option><option value="name">Name</option></select></label>
+          <select data-ls-sort aria-label="Sort"><option value="default">Known</option><option value="damage">Damage</option><option value="hit">To hit</option><option value="speed">Speed</option><option value="cr">CR</option><option value="name">Name</option></select></label>
       </div>
       {{ active_row() }}
       <div class="ls-rows fm-cols" data-ls-rows>
         <div class="ls-head" aria-hidden="true"><span title="Known">✓</span><span></span><span>Form</span><span>AC</span><span>Temp HP</span><span>To hit</span><span>Damage / turn</span><span>Speed</span><span></span></div>
         {% for fm in forms %}{% set k = fm.card %}{% set note = picks.notes.get(fm.key) if show_picks else "" %}
         <div class="ls-row form-row{{ ' not-ready' if fm.why_not }}" data-ls-row data-ref="{{ fm.key }}" data-fav="{{ '1' if fm.key in picks.fav else '0' }}"
-          data-views="{{ 'ready ' if fm.known }}{{ 'fav ' if fm.key in picks.fav }}all" data-name="{{ fm.name | lower }}" data-level="{{ fm.cr }}" data-group-label="CR {{ fm.cr_label }}"
+          data-views="{{ 'ready ' if fm.known }}{{ 'fav ' if fm.key in picks.fav }}all" data-name="{{ fm.name | lower }}" data-level="{{ fm.cr }}" data-group-label="{{ 'Known' if fm.known else 'CR ' ~ fm.cr_label }}"
           data-f='{{ {"status": fm.status_label, "cr": fm.cr_label, "move": fm.move_labels, "size": fm.size, "turn": (["Bonus action"] if k.bonus else []) + (["Reaction"] if k.reactions else [])} | tojson }}'
           data-sort-default="{{ loop.index }}" data-sort-damage="{{ k.per_turn or 0 }}" data-sort-hit="{{ k.hit_value or 0 }}" data-sort-speed="{{ k.fastest or 0 }}" data-sort-cr="{{ fm.cr }}"
           data-modal-url="/characters/{{ c.id }}/form?name={{ fm.name | urlencode }}" data-modal-size="large" tabindex="0" role="button" aria-label="{{ fm.name }}: open the form">

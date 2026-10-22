@@ -466,6 +466,19 @@
       }
     });
   });
+  // Pop-ups made of <details> (Concentration, conditions, + Condition): a click anywhere else closes them
+  document.addEventListener('click', e => {
+    document.querySelectorAll('details.conc-pop[open], details.cond-pill[open]').forEach(d => { if (!d.contains(e.target)) d.open = false; });
+  });
+  // A swap that re-renders a whole panel or window (Wild Shape's "Kept in a form" boxes) keeps its scroll position
+  document.body.addEventListener('htmx:beforeSwap', e => {
+    const t = e.detail.target, body = t && t.matches && t.matches('.peek') && t.querySelector('.peek-body');
+    if (body) t._keepScroll = body.scrollTop;
+  });
+  document.body.addEventListener('htmx:afterSwap', e => {
+    const t = e.detail.target;
+    if (t && t._keepScroll !== undefined) { const body = t.querySelector('.peek-body'); if (body) body.scrollTop = t._keepScroll; delete t._keepScroll; }
+  });
   document.body.addEventListener('htmx:afterSettle', e => {
     const ids = [e.target.id, e.detail.target && e.detail.target.id];
     if (ids.includes('live-menu')) gmSetup();  // the popover's switch
@@ -1593,7 +1606,7 @@
     const want = [];
     let last = null;
     sorted.forEach(r => {
-      if (sort === 'level' && !r.hidden && r.dataset.groupLabel !== last) {
+      if ((sort === 'level' || sort === 'default') && !r.hidden && r.dataset.groupLabel !== last) {
         last = r.dataset.groupLabel;
         let h = heads.get(last);
         if (h) heads.delete(last);

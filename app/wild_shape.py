@@ -362,11 +362,24 @@ def card(sheet: dict, beast: dict, keep=None) -> dict:
     }
 
 
+def keep_set(sheet: dict, keep) -> set[str]:
+    return set(keep or [])
+
+
+def chosen_keep(sheet: dict | None, saved: list | None) -> list:
+    """A character's kept traits and items: what they saved, or every one until they choose
+    (Brett, 2026-10-22: all ticked by default)."""
+    if saved is not None:
+        return saved
+    opts = (sheet or {}).get("form_options") or {"items": [], "features": []}
+    return [x["key"] for x in opts["features"]] + [x["key"] for x in opts["items"]]
+
+
 def kept(sheet: dict, keep) -> dict:
     """What the player keeps in Wild Shape (the DM's ruling, saved per character):
     totals of worn items' bonuses, and class features that change the numbers."""
     opts = sheet.get("form_options") or {"items": [], "features": []}
-    keep = set(keep or [])
+    keep = keep_set(sheet, keep)
     items = [i for i in opts["items"] if i["key"] in keep]
     total = {k: sum(i["effects"].get(k, 0) for i in items)
              for k in ("saves", "checks", "initiative", "ac", "attack", "damage", "speed", "str_score", "dex_score", "con_score")}
@@ -379,7 +392,7 @@ def kept(sheet: dict, keep) -> dict:
 def options_for(sheet: dict, keep) -> list[dict]:
     """The toggles to show, in two groups: Traits (class features) and Equipment (worn items),
     each with what it does in a form and whether it's kept. Keys are the saved choices."""
-    keep = set(keep or [])
+    keep = keep_set(sheet, keep)
     labels = {"saves": "saves", "checks": "ability checks", "initiative": "Initiative", "ac": "AC",
               "attack": "to hit with natural weapons and unarmed strikes", "damage": "damage with natural weapons and unarmed strikes",
               "speed": "speed",
