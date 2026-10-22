@@ -727,6 +727,11 @@
   }
   stickTop();
   window.addEventListener('resize', stickTop);
+  // The top bar can change height after the first measure (web fonts arriving, the Live pill updating), which
+  // left Battle's sticky header in the wrong place until a refresh (Brett, 2026-10-22): measure again then.
+  if (window.ResizeObserver) { const ro = new ResizeObserver(stickTop); ['.topbar', '.sheet .tabbar'].forEach(q => { const el = $(q); if (el) ro.observe(el); }); }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(stickTop);
+  window.addEventListener('load', stickTop);
 
   // A link like /campaign#glossary opens that tab (only on arrival; tabs don't change the address).
   if (location.hash) {
