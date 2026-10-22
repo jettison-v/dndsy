@@ -14,7 +14,7 @@
 import json
 
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -222,18 +222,11 @@ def _plan_ctx(db: Session, ch: Character, user: dict) -> dict:
     """Plan mode: the player's notes, Reminders, and the spell and Wild Shape shortlists."""
     ctx = _view(db, ch, user)
     s, fav = ctx["sheet"], ctx["picks"]["fav"]
-    ctx["fav_spells"], ctx["fav_forms"] = [], []
+    ctx["fav_spells"], ctx["fav_forms"], ctx["plan_spells"], ctx["plan_spell_groups"] = [], [], [], []
     if s:
-        seen = set()
-        for b in s.get("spellbook") or []:
-            for sp in b["spells"]:
-                if sp["key"] in fav and sp["key"] not in seen:
-                    seen.add(sp["key"])
-                    ctx["fav_spells"].append({**sp, "from": b["class"] if len(s["spellbook"]) > 1 else ""})
-        for sp in views.granted_spells(s):
-            if sp["key"] in fav and sp["key"] not in seen:
-                seen.add(sp["key"])
-                ctx["fav_spells"].append({**sp, "state": "granted", "from": ", ".join(sp["sources"])})
+        ctx["plan_spells"] = [e for e in sb.sheet_entries(s) if e["key"] in fav]  # the Shortlist, on the shared list
+        ctx["plan_spell_groups"] = sb.sheet_filter_groups(ctx["plan_spells"])
+        ctx["fav_spells"] = ctx["plan_spells"]  # the tab's count
         if ctx["druid"]:
             ctx["fav_forms"] = [f for f in ws.forms(s, fav, ch.wild_shape_keep) if f["key"] in fav]
     return ctx
@@ -399,6 +392,23 @@ def toggle_pick(request: Request, character_id: int, kind: str = Form(...), ref:
     fav = on if kind == "fav" else (True if kind == "star" and on else None)
     resp.headers["HX-Trigger"] = json.dumps({"marksChanged": {"character": ch.id, "kind": kind, "ref": ref, "on": on, "fav": fav}})
     return resp
+
+
+@router.post("/characters/{character_id:int}/reminders")
+def add_reminder(request: Request, character_id: int, text: str = Form(""), db: Session = Depends(get_db)):
+    """A free-text reminder from the Reminders box (Battle and Plan), from the character's own player only."""
+    user, ch, stop = _load(request, db, character_id)
+    if stop:
+        return stop
+    if not picks.can_edit(db, user, ch):
+        return _forbidden(request, "Only this character's player can do that.")
+    try:
+        ref = picks.add_text_reminder(db, ch, text)
+    except ValueError:
+        return HTMLResponse("", status_code=400)
+    db.commit()
+    return Response(status_code=204, headers={"HX-Trigger": json.dumps({
+        "toast": "Reminder added", "marksChanged": {"character": ch.id, "kind": "remind", "ref": ref, "on": True, "fav": None}})})
 
 
 @router.get("/characters/{character_id:int}/battle/body")

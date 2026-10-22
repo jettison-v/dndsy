@@ -1,5 +1,5 @@
 {# Character › Sheet: the full sheet in tabs (character_pages._sheet_ctx). #}
-{% from "_lists.html" import filter_column, search_box, active_row, view_switch %}
+{% from "_spell_list.html" import spell_list %}
 {% from "_char.html" import pips, pick_btn, ri, opt_row, spell_row, bell, pin_icon, bookmark_icon, tile, adv, form_card, spell_tools, form_tools, roll_attrs %}
 {% set s = sheet %}
 {% if s %}
@@ -67,57 +67,7 @@
         <div class="res-row" style="margin-top:4px">{% for sl in s.spell_slots.slots %}<span>{{ sl.level }}{{ {1: "st", 2: "nd", 3: "rd"}.get(sl.level, "th") }} {{ pips({"max": sl.max, "left": sl.max - sl.used}) }}</span>{% endfor %}
           {% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}<span>Pact, level {{ p.level }} {{ pips({"max": p.max, "left": p.max - p.used}) }}</span>{% endif %}</div></div>
     </div>
-    {% set ON_SAVE = {"half": ("Half on a save", "half"), "none": ("Nothing on a save", "none"), "lands": ("Damage needs no save", "lands")} %}
-    <div class="sheet-spells" data-list="sheet-spells" data-noun="spell">
-      <div class="ls-layout">
-        {{ filter_column(spell_groups) }}
-        <div class="ls-main">
-          {{ search_box("Search all your spells") }}
-          <div class="ls-toolbar">
-            {% if show_picks %}{{ view_switch([("ready", "Prepared"), ("fav", "Shortlist"), ("all", "All")], "Which spells") }}{% endif %}
-            <span class="note" data-ls-summary></span>
-            <label class="ls-select"><span>Sort</span>
-              <select data-ls-sort aria-label="Sort"><option value="level">Level</option><option value="name">Name</option><option value="avg">Amount</option></select></label>
-          </div>
-          {{ active_row() }}
-          <div class="ls-rows sh-cols" data-ls-rows>
-            <div class="ls-head" aria-hidden="true"><span title="Prepared">✓</span><span>Spell</span><span>Time</span><span>Range</span><span>Duration</span><span>Roll</span><span>Damage / Healing</span><span></span></div>
-            {% for e in sheet_spells %}{% set note = picks.notes.get(e.key) if show_picks else "" %}{% set a = e.avgs.get(e.level) %}
-            {% set healing = a and a.per in ("healed", "Temporary HP") %}
-            <div class="ls-row spell-row{{ ' not-ready' if not e.ready }}" data-ls-row data-ref="{{ e.key }}" data-fav="{{ '1' if e.key in picks.fav else '0' }}"
-              data-views="{{ 'ready ' if e.ready }}{{ 'fav ' if e.key in picks.fav }}all" data-f='{{ e.f | tojson }}' data-name="{{ e.name | lower }}" data-level="{{ e.level }}"
-              data-group-label="{{ 'Cantrips' if not e.level else (e.level | ordinal) ~ ' level' }}" data-sort-avg="{{ a.avg if a else '' }}"
-              data-panel-url="/characters/{{ c.id }}/detail?ref={{ e.key | urlencode }}" tabindex="0" role="button" aria-label="{{ e.name }}: details">
-              {# Prepared or not, at a glance: the first thing to know when planning (Brett, 2026-10-21) #}
-              {# An icon, to save width: ✓ prepared (or known, or always), ○ not prepared (amber when on the Shortlist) #}
-              {% set st = {"always": ("on", "Always prepared"), "prepared": ("on", "Prepared on D&D Beyond"), "known": ("on", "A spell you know"),
-                           "granted": ("on", "From a species trait, feat or item: always available"), "spellbook": ("off", "In your spellbook, not prepared")}.get(e.state, ("off", "Not prepared on D&D Beyond")) %}
-              {% set wanted = st[0] == "off" and e.key in picks.fav %}
-              <span class="sh-status {{ st[0] }}{{ ' wanted' if wanted }}" title="{{ st[1] }}{{ '; on your Shortlist' if wanted }}" role="img" aria-label="{{ st[1] }}">{{ "✓" if st[0] == "on" else "○" }}</span>
-              <span class="ls-name"><span class="ls-line"><b>{{ e.name }}</b>{% if e.state in ("always", "granted") %} <span class="tag sh-always" title="{{ st[1] }}">Always</span>{% endif %}
-                {%- if e.from %} <span class="tag">{{ e.from }}</span>{% endif %}
-                {%- if e.conc %} <span class="tag">Conc.</span>{% endif %}{% if e.ritual %} <span class="tag">Ritual</span>{% endif %}
-                {%- if e.core == false %} <span class="tag faint">Not core: {{ e.book }}</span>{% endif %}</span>
-                {% if e.summary %}<span class="ls-what">{{ e.summary }}</span>{% endif %}
-                {% if note %}<span class="ls-note" title="{{ note }}">✎ {{ note }}</span>{% endif %}</span>
-              <span>{{ {"Bonus action": "Bonus"}.get(e.time, e.time) }}</span>
-              <span class="sb-range">{{ e.range or "—" }}</span>
-              <span class="sb-range">{{ (e.duration | replace("Concentration, up to ", "") | replace("Instantaneous", "Instant")) or "—" }}</span>
-              <span class="sb-roll-col">{% if e.attack %}{{ e.attack }} to hit{% elif e.save %}{{ e.save }}{% else %}<span class="note">—</span>{% endif %}
-                {% if e.on_save %}<span class="sb-onsave {{ ON_SAVE[e.on_save][1] }}">{{ ON_SAVE[e.on_save][0] }}</span>{% endif %}</span>
-              <span class="sb-avg-col{{ ' heal' if healing }}">{% if a %}<b>{{ "%g" | format(a.avg) }}</b> <span class="note">{{ a.dice }}{{ " healed" if a.per == "healed" }}</span>{% else %}<span class="note">—</span>{% endif %}</span>
-              {# Bookmark, pin and bell together on the right, each in a fixed slot so they line up (layout B, Brett 2026-10-21) #}
-              <span class="ls-marks"><span>{{ pick_btn(c, "fav", e.key, e.key in picks.fav, can_pick) }}</span><span>{% if e.ready and e.time in ("Action", "Bonus action", "Reaction") %}{{ pick_btn(c, "star", e.key, e.key in picks.star, can_pick) }}{% endif %}</span><span>{{ pick_btn(c, "remind", e.key, e.key in picks.remind, can_pick) }}</span></span>
-            </div>
-            {% endfor %}
-          </div>
-          <p class="note ls-empty" data-ls-empty hidden>No spells match. <button type="button" class="btn link small" data-ls-clear>Clear all</button></p>
-          <p class="note ls-empty" data-ls-empty-view="fav" hidden>Nothing on your Shortlist yet. In <b>All</b>, press the bookmark on a spell you're considering; compare your Shortlist on Plan before preparing it on D&amp;D Beyond.</p>
-          {% if show_picks %}<p class="note">Tip: <b>Shortlist</b> with <b>Not prepared</b> shows the spells you're considering but haven't prepared yet (marked <span class="sh-status off">○</span>).</p>{% endif %}
-          <p class="note sb-foot-note">{% if can_pick %}The bookmark adds a spell to your Shortlist, the pin puts it on Battle and the bell adds it to your Reminders. {% endif %}Click a spell for its full description{% if can_pick %} and your note{% endif %}. askdnd can't change D&amp;D Beyond: prepare spells there{% if s.sheet_url %} (<a href="{{ s.sheet_url }}" target="_blank" rel="noopener">open ↗</a>){% endif %}, then refresh.</p>
-        </div>
-      </div>
-    </div>
+    {{ spell_list(c, s, sheet_spells, spell_groups, picks, can_pick, show_picks, "sheet-spells", [("ready", "Prepared"), ("fav", "Shortlist"), ("all", "All")]) }}
   </div>
   {% endif %}
 

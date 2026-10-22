@@ -1,6 +1,7 @@
 {# Character › Plan (character_pages._plan_ctx): the player's own planning, in tabs like Sheet's.
    Never shown to the DM (the route sends them to Sheet). Reminders are also on Battle, where they're used. #}
-{% from "_char.html" import spell_row, form_card, spell_tools, form_tools %}
+{% from "_char.html" import form_card, form_tools %}
+{% from "_spell_list.html" import spell_list %}
 {% from "_notes_macros.html" import note_summary %}
 <section class="section">
   <p class="hint" style="margin:0 0 10px">{% if can_pick %}Your plans for {{ c.entity.name }}. Every player can read your notes; the DM can't see anything here. Names of spells, features, items, Wild Shape forms, people and places become links.{% else %}{{ c.entity.name }}'s player's plans. The DM can't see these.{% endif %}</p>
@@ -37,14 +38,9 @@
 
   <div id="t-forget" hidden>{% set bare = true %}{% include "_forget.html" %}</div>
 
-  {# The older planner tools (app.js plannerApply); moves to the shared list in lists step 4 (roadmap). #}
-  <div id="t-spell-list" hidden data-planner>
-    {% if fav_spells %}
-    {{ spell_tools(sheet, [("all", "Your whole shortlist"), ("ready", "Ready to cast")]) }}
-    <p class="note planner-note"><span data-shown></span> Click a spell for its full description{% if can_pick %}, or the bookmark to take it off your Shortlist{% endif %}.</p>
-    <div class="spell-key" aria-hidden="true"><span></span><span>Spell · what it does</span><span>Casting time · range · duration · effect</span><span>Hit / DC</span><span></span></div>
-    <div class="rows">{% for sp in fav_spells %}{{ spell_row(c, sp, sp.state, picks, can_pick, sp["from"]) }}{% endfor %}</div>
-    <p class="muted planner-empty" hidden>No spells match. Try another view or clear a filter.</p>
+  {# Your spell Shortlist on the shared list (the same rows and filters as Sheet › Spells, without views) #}
+  <div id="t-spell-list" hidden>
+    {% if plan_spells %}{{ spell_list(c, sheet, plan_spells, plan_spell_groups, picks, can_pick, show_picks, "plan-spells") }}
     {% else %}<p class="muted">{% if can_pick %}Nothing shortlisted yet. On Sheet › Spells, choose <b>All</b> and press the bookmark on a spell to compare it here before preparing it on D&amp;D Beyond.{% else %}{{ c.entity.name }}'s player hasn't shortlisted any spells.{% endif %}</p>{% endif %}
   </div>
 

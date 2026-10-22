@@ -1474,3 +1474,5 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .note-tile-body p { margin: 0 0 6px; }
 @media (max-width: 900px) { .note-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 600px) { .note-tiles { grid-template-columns: 1fr; } }
+.forget-add { display: flex; gap: 8px; margin-top: 10px; }
+.forget-add input { flex: 1; min-width: 0; font: inherit; font-size: var(--fs-sm); background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }

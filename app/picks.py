@@ -12,6 +12,7 @@ never to the DM.
 """
 
 import json
+import uuid
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -80,6 +81,18 @@ def toggle(db: Session, character: Character, kind: str, ref: str, label: str = 
         db.add(CharacterPick(character_id=character.id, kind="fav", ref=ref[:300], label=label[:500]))
     db.flush()
     return True
+
+
+def add_text_reminder(db: Session, character: Character, text: str) -> str:
+    """A reminder the player writes themselves, not tied to anything on the sheet ("Ask the DM about the map").
+    Stored like any reminder, with a ref of its own; the text is its label. Returns the ref."""
+    text = " ".join(text.split())[:500]
+    if not text:
+        raise ValueError("empty reminder")
+    ref = f"text:{uuid.uuid4().hex[:12]}"
+    db.add(CharacterPick(character_id=character.id, kind="remind", ref=ref, label=text))
+    db.flush()
+    return ref
 
 
 def set_note(db: Session, character: Character, ref: str, note: str, label: str = "") -> None:
