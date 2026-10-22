@@ -423,7 +423,7 @@ def test_spell_planner_and_shortlist(player, db):
     characters.refresh(db, cole)
     owned_by(db, cole, "player@example.com")
     page = player.get(f"/characters/{cole.id}").text
-    assert "data-planner" in page and "Prepared 10 of 10" in page and "Cantrips 3 of 3" in page
+    assert 'data-list="sheet-spells"' in page and "Prepared 10 of 10" in page and "Cantrips 3 of 3" in page
     assert "Barkskin" in page and "Not prepared" in page and 'data-view="fav"' not in page  # shortlists are on Plan
     assert 'data-ref="spell:Barkskin" data-fav="0"' in player.get(f"/characters/{cole.id}/plan").text  # in All, not shortlisted
     r = player.post(f"/characters/{cole.id}/pick", data={"kind": "fav", "ref": "spell:Barkskin"})

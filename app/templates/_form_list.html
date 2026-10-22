@@ -1,0 +1,55 @@
+{# Wild Shape forms on the shared list pattern (_lists.html, roadmap step 8): compact rows with pictures.
+   Sheet › Wild Shape (Known · All you can learn) and Plan › Wild Shapes (Shortlist · All you can learn).
+   `forms` from wild_shape.forms; a row opens the form in its large window. #}
+{% from "_lists.html" import filter_column, search_box, active_row, view_switch %}
+{% from "_char.html" import pick_btn, adv %}
+{% macro form_list(c, forms, picks, can_pick, show_picks, key="sheet-forms", views=()) -%}
+{%- set sizes = ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"] -%}
+{%- set groups = [
+  {"key": "status", "label": "Status", "values": ["Known", "Can learn", "Locked"] | select("in", forms | map(attribute="status_label") | list) | list},
+  {"key": "cr", "label": "Challenge Rating", "values": forms | sort(attribute="cr") | map(attribute="cr_label") | unique | list},
+  {"key": "move", "label": "Moves", "values": ["Swim", "Climb", "Burrow", "Fly"] | select("in", forms | map(attribute="move_labels") | sum(start=[]) | list) | list},
+  {"key": "size", "label": "Size", "values": sizes | select("in", forms | map(attribute="size") | list) | list},
+  {"key": "turn", "label": "On your turn", "values": ["Bonus action", "Reaction"], "more": true},
+] -%}
+<div class="form-list" data-list="{{ key }}" data-noun="form" data-default-sort="default">
+  <div class="ls-layout">
+    {{ filter_column(groups) }}
+    <div class="ls-main">
+      {{ search_box("Search beasts") }}
+      <div class="ls-toolbar">
+        {% if show_picks and views %}{{ view_switch(views, "Which forms") }}{% endif %}
+        <span class="note" data-ls-summary></span>
+        <label class="ls-select"><span>Sort</span>
+          <select data-ls-sort aria-label="Sort"><option value="default">Known, then CR</option><option value="damage">Damage</option><option value="hit">To hit</option><option value="speed">Speed</option><option value="cr">CR</option><option value="name">Name</option></select></label>
+      </div>
+      {{ active_row() }}
+      <div class="ls-rows fm-cols" data-ls-rows>
+        <div class="ls-head" aria-hidden="true"><span title="Known">✓</span><span></span><span>Form</span><span>AC</span><span>Temp HP</span><span>To hit</span><span>Damage / turn</span><span>Speed</span><span></span></div>
+        {% for fm in forms %}{% set k = fm.card %}{% set note = picks.notes.get(fm.key) if show_picks else "" %}
+        <div class="ls-row form-row{{ ' not-ready' if fm.why_not }}" data-ls-row data-ref="{{ fm.key }}" data-fav="{{ '1' if fm.key in picks.fav else '0' }}"
+          data-views="{{ 'ready ' if fm.known }}{{ 'fav ' if fm.key in picks.fav }}all" data-name="{{ fm.name | lower }}" data-level="{{ fm.cr }}" data-group-label="CR {{ fm.cr_label }}"
+          data-f='{{ {"status": fm.status_label, "cr": fm.cr_label, "move": fm.move_labels, "size": fm.size, "turn": (["Bonus action"] if k.bonus else []) + (["Reaction"] if k.reactions else [])} | tojson }}'
+          data-sort-default="{{ loop.index }}" data-sort-damage="{{ k.per_turn or 0 }}" data-sort-hit="{{ k.hit_value or 0 }}" data-sort-speed="{{ k.fastest or 0 }}" data-sort-cr="{{ fm.cr }}"
+          data-modal-url="/characters/{{ c.id }}/form?name={{ fm.name | urlencode }}" data-modal-size="large" tabindex="0" role="button" aria-label="{{ fm.name }}: open the form">
+          <span class="sh-status {{ 'on' if fm.known else 'off' }}" title="{{ 'Known' if fm.known else (fm.why_not or 'You could learn it') }}" role="img" aria-label="{{ fm.status_label }}">{{ "✓" if fm.known else ("🔒" if fm.why_not else "○") }}</span>
+          <span class="fm-pic">{% if fm.image %}<img src="{{ fm.image }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>
+          <span class="ls-name"><span class="ls-line"><b>{{ fm.name }}</b> <span class="tag">CR {{ fm.cr_label }}</span> <span class="tag">{{ fm.size }}</span>{% if fm.why_not %} <span class="tag faint">{{ fm.why_not }}</span>{% endif %}</span>
+            <span class="ls-what">{{ k.attack or "No attack" }}{% for t in k.bonus %} · Bonus: {{ t }}{% endfor %}{% for t in k.reactions %} · Reaction: {{ t }}{% endfor %}</span>
+            {% if note %}<span class="ls-note" title="{{ note }}">✎ {{ note }}</span>{% endif %}</span>
+          <span title="{{ 'Circle Forms: 13 + your Wisdom modifier' if k.ac_moon else 'The form\'s AC' }}">{{ k.ac }}</span>
+          <span title="Temporary Hit Points when you shift">+{{ k.temp_hp }}</span>
+          <span>{{ k.hit or "—" }}{% if k.attack_adv %} {{ adv(k.attack_adv) }}{% endif %}</span>
+          <span class="sb-avg-col">{% if k.per_turn %}<b>{{ k.per_turn }}</b>{% else %}<span class="note">—</span>{% endif %}</span>
+          <span class="sb-range">{{ k.speed }}</span>
+          <span class="ls-marks two"><span>{{ pick_btn(c, "fav", fm.key, fm.key in picks.fav, can_pick) }}</span><span>{{ pick_btn(c, "remind", fm.key, fm.key in picks.remind, can_pick) }}</span></span>
+        </div>
+        {% endfor %}
+      </div>
+      <p class="note ls-empty" data-ls-empty hidden>No forms match. <button type="button" class="btn link small" data-ls-clear>Clear all</button></p>
+      {% if views %}<p class="note ls-empty" data-ls-empty-view="fav" hidden>Nothing on your Shortlist yet. In <b>All you can learn</b>, press the bookmark on a form you're considering.</p>{% endif %}
+      <p class="note sb-foot-note">Click a form to see it with your stats carried over. Damage / turn is the average from the Attack action if every attack hits. Learn forms on D&amp;D Beyond (you can swap one known form after each Long Rest).</p>
+    </div>
+  </div>
+</div>
+{%- endmacro %}

@@ -1,5 +1,6 @@
 {# Character › Sheet: the full sheet in tabs (character_pages._sheet_ctx). #}
 {% from "_spell_list.html" import spell_list %}
+{% from "_form_list.html" import form_list %}
 {% from "_char.html" import pips, pick_btn, ri, opt_row, spell_row, bell, pin_icon, bookmark_icon, tile, adv, form_card, spell_tools, form_tools, roll_attrs %}
 {% set s = sheet %}
 {% if s %}
@@ -143,7 +144,7 @@
   </div>
 
   {% if druid %}{% set d = druid %}
-  <div id="t-forms" hidden data-planner data-noun="form">
+  <div id="t-forms" hidden>
     <div class="planner-classes">
       <div class="planner-class"><b>Wild Shape</b> <span class="muted">Druid {{ d.level }}{% if d.moon %} · Circle of the Moon{% endif %}</span>
         <div class="row" style="gap:6px;margin-top:4px">
@@ -163,12 +164,7 @@
     </div>
     {% if ws_other_uses %}<details class="fold ws-other"{% if not d.moon and d.level >= 3 %} open{% endif %}><summary>Other ways to use Wild Shape ({{ ws_other_uses | length }})</summary>
       <ul class="plain">{% for u in ws_other_uses %}<li><b>{{ u.name }}</b> <span class="muted">{{ u.summary }}</span></li>{% endfor %}</ul></details>{% endif %}
-    {{ form_tools(forms, [("ready", "Known"), ("all", "All you can learn")]) }}
-    <p class="note planner-note"><span data-shown></span>{% if can_pick %} The bookmark adds a form to your Shortlist on Plan, to compare before learning it.{% endif %} Learn forms on D&amp;D Beyond{% if s.sheet_url %} (<a href="{{ s.sheet_url }}" target="_blank" rel="noopener">open ↗</a>){% endif %}: you can swap one known form after each Long Rest. Click a form to see it with your stats carried over.</p>
-    <section class="planner-group"><div class="planner-level"><div class="form-cards" data-sortable-cards>
-    {% for fm in forms %}{{ form_card(c, fm, picks, can_pick, loop.index) }}{% endfor %}
-    </div></div></section>
-    <p class="muted planner-empty" hidden>No forms match. Try another view or clear a filter.</p>
+    {{ form_list(c, forms, picks, can_pick, show_picks, "sheet-forms", [("ready", "Known"), ("all", "All you can learn")]) }}
     <p class="note">Beast stat blocks: System Reference Document 5.2 (Wizards of the Coast, CC-BY-4.0). Pictures from D&amp;D Beyond.</p>
   </div>
   {% elif s.creatures %}

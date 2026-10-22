@@ -168,13 +168,11 @@ def test_plan_shortlists_filter_like_sheet(player, db):
         player.post(f"{url}/pick", data={"kind": "fav", "ref": ref})
     sheet, plan = player.get(url).text, player.get(f"{url}/plan").text
     part = lambda page, start, end: page.split(f'id="{start}"')[1].split(f'id="{end}"')[0] if end else page.split(f'id="{start}"')[1]  # noqa: E731
-    filters = lambda html: re.findall(r'data-filter="([^"]+)"', html)  # noqa: E731
     spells = part(plan, "t-spell-list", "t-form-list")
     assert 'data-list="plan-spells"' in spells and 'data-ls-group="prep"' in spells and "Barkskin" in spells  # the shared list
     assert 'data-list="sheet-spells"' in part(sheet, "t-spells", "t-forms")  # the same rows and filters as Sheet
     assert re.findall(r'data-ls-view="(\w+)"', spells) == ["fav", "all"]  # evaluate (Shortlist) and select (All)
-    assert re.findall(r'data-view="(\w+)"', part(plan, "t-form-list", None)) == ["fav", "all"]  # the same for Wild Shape
     forms = part(plan, "t-form-list", None)
-    assert "data-card-sort" in forms and "data-sortable-cards" in forms and "Polar Bear" in forms
-    assert "level:2" in filters(forms) and len([f for f in filters(forms) if f.startswith("level:")]) > 1  # CR filters for every form you can learn
-    assert [f for f in filters(forms) if f.startswith("tag:")][:4] == ["tag:swim", "tag:climb", "tag:burrow", "tag:fly"]
+    assert 'data-list="plan-forms"' in forms and "Polar Bear" in forms and 'class="fm-pic"' in forms  # rows with pictures
+    assert re.findall(r'data-ls-view="(\w+)"', forms) == ["fav", "all"]  # evaluate (Shortlist) and select (All you can learn)
+    assert 'data-ls-group="cr" data-ls-value="2"' in forms and 'data-ls-group="move" data-ls-value="Swim"' in forms

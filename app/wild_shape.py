@@ -156,6 +156,9 @@ def forms(sheet: dict, fav: set[str], keep=None) -> list[dict]:
             "ac": b["ac"], "speed": _speed_text(b.get("speed") or {}), "moves": sorted(k for k in b.get("speed") or {} if k != "walk"),
             "image": b.get("image", ""), "known": is_known, "why_not": reason, "summary": _first_attack(b),
             "card": card(sheet, b, keep),
+            # for the shared list's filters (templates/_form_list.html)
+            "status_label": "Known" if is_known else "Locked" if reason else "Can learn",
+            "move_labels": [m.capitalize() for m in sorted(k for k in b.get("speed") or {} if k != "walk")],
         })
     rows.sort(key=lambda r: (not r["known"], r["cr"], r["name"]))
     return rows

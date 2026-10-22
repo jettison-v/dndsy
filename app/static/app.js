@@ -1576,12 +1576,16 @@
     }
     const fc = root.querySelector('[data-ls-fold-count]'); if (fc) { fc.textContent = picked.length; fc.hidden = !picked.length; }
     // Sort, with group headings when sorted by level
-    const box = root.querySelector('[data-ls-rows]'), sort = st.sort || 'level';
+    const box = root.querySelector('[data-ls-rows]'), sort = st.sort || root.dataset.defaultSort || 'level';
     root.dispatchEvent(new CustomEvent('list:before-sort', { bubbles: true, detail: { rows } }));
     const name = r => r.dataset.name || '';
+    // level (with headings), name, avg (highest first), default (the server's order), or any other key:
+    // highest first by the row's data-sort-<key> (Wild Shape: damage, hit, speed, cr)
+    const by = k => r => +(r.dataset['sort' + k[0].toUpperCase() + k.slice(1)] || -1);
     const sorted = rows.slice().sort((a, b) => sort === 'name' ? name(a).localeCompare(name(b))
-      : sort === 'avg' ? ((+b.dataset.sortAvg || -1) - (+a.dataset.sortAvg || -1)) || name(a).localeCompare(name(b))
-      : (+a.dataset.level - +b.dataset.level) || name(a).localeCompare(name(b)));
+      : sort === 'level' ? (+a.dataset.level - +b.dataset.level) || name(a).localeCompare(name(b))
+      : sort === 'default' ? by('default')(a) - by('default')(b)
+      : (by(sort)(b) - by(sort)(a)) || name(a).localeCompare(name(b)));
     // Move rows only when the order or the headings change, and keep the scroll position: moving every
     // row on each press (a bookmark) made the page jump to the top.
     const scroller = root.closest('.peek-body'), y = window.scrollY, sy = scroller ? scroller.scrollTop : 0;

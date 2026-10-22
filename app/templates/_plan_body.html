@@ -2,6 +2,7 @@
    Never shown to the DM (the route sends them to Sheet). Reminders are also on Battle, where they're used. #}
 {% from "_char.html" import form_card, form_tools %}
 {% from "_spell_list.html" import spell_list %}
+{% from "_form_list.html" import form_list %}
 {% from "_notes_macros.html" import note_summary %}
 <section class="section">
   <p class="hint" style="margin:0 0 10px">{% if can_pick %}Your plans for {{ c.entity.name }}. Every player can read your notes; the DM can't see anything here. Names of spells, features, items, Wild Shape forms, people and places become links.{% else %}{{ c.entity.name }}'s player's plans. The DM can't see these.{% endif %}</p>
@@ -46,14 +47,9 @@
 
   {% if druid %}
   {# The same view, sort, search and filters as Sheet › Wild Shape. #}
-  <div id="t-form-list" hidden data-planner data-noun="form">
+  <div id="t-form-list" hidden>
     {# Evaluate and select, as for spells: your Shortlist, and All you can learn to pick from #}
-    {% if plan_forms %}
-    {{ form_tools(plan_forms, [("fav", "Shortlist"), ("all", "All you can learn")]) }}
-    <p class="note planner-note"><span data-shown></span> Click a form to see it with your stats carried over{% if can_pick %}; the bookmark adds it to your Shortlist or takes it off{% endif %}.</p>
-    <div class="form-cards" data-sortable-cards>{% for fm in plan_forms %}{{ form_card(c, fm, picks, can_pick, loop.index) }}{% endfor %}</div>
-    <p class="muted planner-empty" hidden>No forms here. {% if can_pick %}In <b>All you can learn</b>, press the bookmark on a form to compare it here before learning it.{% endif %}</p>
-    {% endif %}
+    {% if plan_forms %}{{ form_list(c, plan_forms, picks, can_pick, show_picks, "plan-forms", [("fav", "Shortlist"), ("all", "All you can learn")]) }}{% endif %}
   </div>
   {% endif %}
 </section>
