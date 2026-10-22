@@ -2,7 +2,8 @@
    · All views) and Plan › Spells (the Shortlist only, no views). `spells` from spellbook.sheet_entries. #}
 {% from "_lists.html" import filter_column, search_box, active_row, view_switch, notes_toggle %}
 {% from "_char.html" import pick_btn %}
-{% macro spell_list(c, s, spells, groups, picks, can_pick, show_picks, key="sheet-spells", views=()) -%}
+{% from "_help.html" import help %}
+{% macro spell_list(c, s, spells, groups, picks, can_pick, show_picks, key="sheet-spells", views=(), help_off=()) -%}
   {% set ON_SAVE = {"half": ("Half on a save", "half"), "none": ("Nothing on a save", "none"), "lands": ("Damage needs no save", "lands")} %}
   <div class="sheet-spells" data-list="{{ key }}" data-noun="spell">
     <div class="ls-layout">
@@ -50,8 +51,7 @@
         </div>
         <p class="note ls-empty" data-ls-empty hidden>No spells match. <button type="button" class="btn link small" data-ls-clear>Clear all</button></p>
         {% if views %}<p class="note ls-empty" data-ls-empty-view="fav" hidden>Nothing on your Shortlist yet. In <b>All</b>, press the bookmark on a spell you're considering; compare your Shortlist on Plan before preparing it on D&amp;D Beyond.</p>{% endif %}
-        {% if show_picks and views %}<p class="note">Tip: <b>Shortlist</b> with <b>Not prepared</b> shows the spells you're considering but haven't prepared yet (marked <span class="sh-status off">○</span>).</p>{% endif %}
-        <p class="note sb-foot-note">{% if can_pick %}The bookmark adds a spell to your Shortlist, the pin puts it on Battle and the bell adds it to your Reminders. {% endif %}Click a spell for its full description{% if can_pick %} and your note{% endif %}. askdnd can't change D&amp;D Beyond: prepare spells there{% if s.sheet_url %} (<a href="{{ s.sheet_url }}" target="_blank" rel="noopener">open ↗</a>){% endif %}, then refresh.</p>
+        {% call help("spells", help_off, "spell-book", "sb-foot-note") %}Click a spell for its description{% if can_pick %} and your note{% endif %}.{% if show_picks and views %} <b>Shortlist</b> with <b>Not prepared</b> shows what you're considering (<span class="sh-status off">○</span>).{% endif %} Prepare spells on D&amp;D Beyond{% if s.sheet_url %} (<a href="{{ s.sheet_url }}" target="_blank" rel="noopener">open ↗</a>){% endif %}, then refresh.{% endcall %}
       </div>
     </div>
   </div>

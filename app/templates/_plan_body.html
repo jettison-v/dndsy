@@ -1,10 +1,11 @@
 {# Character › Plan (character_pages._plan_ctx): the player's own planning, in tabs like Sheet's.
    Never shown to the DM (the route sends them to Sheet). Reminders are also on Battle, where they're used. #}
+{% from "_help.html" import help %}
 {% from "_spell_list.html" import spell_list %}
 {% from "_form_list.html" import form_list %}
 {% from "_notes_macros.html" import note_summary %}
 <section class="section">
-  <p class="hint" style="margin:0 0 10px">{% if can_pick %}Your plans for {{ c.entity.name }}. Players can read them; the DM can't. Names become links.{% else %}{{ c.entity.name }}'s player's plans. The DM can't see these.{% endif %}</p>
+  {% call help("plan", help_off, "notes") %}{% if can_pick %}Your plans for {{ c.entity.name }}. Players can read them; the DM can't. Names become links.{% else %}{{ c.entity.name }}'s player's plans. The DM can't see these.{% endif %}{% endcall %}
   <div class="tabbar" role="tablist">
     {% for kind, meta, notes in player_notes %}<button role="tab" aria-selected="{{ 'true' if loop.first else 'false' }}" data-tab="t-{{ kind }}" title="{{ meta.plural }}">{{ meta.tab }}{% if notes %} <span class="count">{{ notes | length }}</span>{% endif %}</button>
     {% endfor %}<button role="tab" aria-selected="false" data-tab="t-forget" title="Reminders">Reminders{% if reminders %} <span class="count">{{ reminders | length }}</span>{% endif %}</button>
@@ -33,7 +34,7 @@
         {% if can_pick %}<a class="btn link small note-edit" href="#" data-modal-url="/characters/{{ c.id }}/notes/{{ n.id }}/edit" data-modal-size="large">Edit</a>{% endif %}
       </div>
       {% endfor %}
-    </div>{% elif not can_pick %}<p class="muted">None yet.</p>{% endif %}
+    </div>{% else %}<p class="muted">{% if can_pick %}None yet. Use <b>+ {{ meta.label }}</b> to write the first one.{% else %}None yet.{% endif %}</p>{% endif %}
   </div>
   {% endfor %}
 
@@ -41,14 +42,14 @@
 
   {# Evaluate and select: your Shortlist to compare, and All to pick from (bookmark), on the same rows and filters as Sheet #}
   <div id="t-spell-list" hidden>
-    {% if plan_spells %}{{ spell_list(c, sheet, plan_spells, plan_spell_groups, picks, can_pick, show_picks, "plan-spells", [("fav", "Shortlist"), ("all", "All")]) }}{% endif %}
+    {% if plan_spells %}{{ spell_list(c, sheet, plan_spells, plan_spell_groups, picks, can_pick, show_picks, "plan-spells", [("fav", "Shortlist"), ("all", "All")], help_off) }}{% else %}<p class="muted">No spells to plan: {{ c.entity.name }} has no spellcasting on D&amp;D Beyond.</p>{% endif %}
   </div>
 
   {% if druid %}
   {# The same view, sort, search and filters as Sheet › Wild Shape. #}
   <div id="t-form-list" hidden>
     {# Evaluate and select, as for spells: your Shortlist, and All you can learn to pick from #}
-    {% if plan_forms %}{{ form_list(c, plan_forms, picks, can_pick, show_picks, "plan-forms", [("fav", "Shortlist"), ("all", "All you can learn")]) }}{% endif %}
+    {% if plan_forms %}{{ form_list(c, plan_forms, picks, can_pick, show_picks, "plan-forms", [("fav", "Shortlist"), ("all", "All you can learn")], help_off) }}{% else %}<p class="muted">No Wild Shape forms to plan yet.</p>{% endif %}
   </div>
   {% endif %}
 </section>

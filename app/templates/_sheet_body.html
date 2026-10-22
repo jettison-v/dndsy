@@ -1,6 +1,7 @@
 {# Character › Sheet: the full sheet in tabs (character_pages._sheet_ctx). #}
 {% from "_spell_list.html" import spell_list %}
 {% from "_form_list.html" import form_list %}
+{% from "_help.html" import help %}
 {% from "_char.html" import pips, pick_btn, ri, opt_row, bell, pin_icon, bookmark_icon, tile, adv, roll_attrs %}
 {% set s = sheet %}
 {% if s %}
@@ -29,7 +30,7 @@
 
 {# Row 3: everything else, in tabs #}
 <section class="section">
-  {% if can_pick %}<p class="hint" style="margin:0 0 10px"><span class="pick star on static">{{ pin_icon() }}</span> Battle · <span class="pick fav on static">{{ bookmark_icon() }}</span> Shortlist · <span class="pick remind on static">{{ bell(true) }}</span> Reminders. Click anything for details and your note. The DM can't see these.</p>{% endif %}
+  {% if can_pick %}{% call help("sheet", help_off, "marks") %}<span class="pick star on static">{{ pin_icon() }}</span> Battle · <span class="pick fav on static">{{ bookmark_icon() }}</span> Shortlist · <span class="pick remind on static">{{ bell(true) }}</span> Reminders. Click anything for details and your note. The DM can't see these.{% endcall %}{% endif %}
   <div class="tabbar" role="tablist">
     <button role="tab" aria-selected="true" data-tab="t-actions">Actions</button>
     {% if s.spells or s.spellbook %}<button role="tab" aria-selected="false" data-tab="t-spells">Spells</button>{% endif %}
@@ -65,10 +66,10 @@
       </div>
       {% endfor %}
       <div class="planner-class"><b>Slots</b>
-        <div class="res-row" style="margin-top:4px">{% for sl in s.spell_slots.slots %}<span>{{ sl.level }}{{ {1: "st", 2: "nd", 3: "rd"}.get(sl.level, "th") }} {{ pips({"max": sl.max, "left": sl.max - sl.used}) }}</span>{% endfor %}
-          {% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}<span>Pact, level {{ p.level }} {{ pips({"max": p.max, "left": p.max - p.used}) }}</span>{% endif %}</div></div>
+        <div class="res-row" style="margin-top:4px">{% for sl in s.spell_slots.slots %}<span class="res">{{ sl.level }}{{ {1: "st", 2: "nd", 3: "rd"}.get(sl.level, "th") }} {{ pips({"max": sl.max, "left": sl.max - sl.used}) }}</span>{% endfor %}
+          {% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}<span class="res">Pact, level {{ p.level }} {{ pips({"max": p.max, "left": p.max - p.used}) }}</span>{% endif %}</div></div>
     </div>
-    {{ spell_list(c, s, sheet_spells, spell_groups, picks, can_pick, show_picks, "sheet-spells", [("ready", "Prepared"), ("fav", "Shortlist"), ("all", "All")]) }}
+    {{ spell_list(c, s, sheet_spells, spell_groups, picks, can_pick, show_picks, "sheet-spells", [("ready", "Prepared"), ("fav", "Shortlist"), ("all", "All")], help_off) }}
   </div>
   {% endif %}
 
@@ -100,7 +101,7 @@
     {% macro feature_row(f) %}{{ ri(c, f.key, f.name, picks, can_pick, what=f.summary, mech=("level " ~ f.level) if f.level else "") }}{% endmacro %}
     {% set active = s.features | selectattr("use") | list %}
     {% set passive = s.features | rejectattr("use") | list %}
-    <p class="hint" style="margin:0 0 4px">What each feature lets you do. Click one for the full text and where it comes from.</p>
+    {% call help("features", help_off, "modes") %}What each feature lets you do. Click one for the full text and where it comes from.{% endcall %}
     {% for source, list in active | groupby("source") %}<h3 class="divider">{{ source }} <span class="count">{{ list | length }}</span></h3><div class="rows">{% for f in list %}{{ feature_row(f) }}{% endfor %}</div>{% endfor %}
     {% if passive %}
     <details class="fold"><summary>Always on, already in your numbers ({{ passive | length }})</summary>
@@ -138,7 +139,7 @@
     {% set live = s.situational | rejectattr("in_numbers") | list %}
     {% set counted = s.situational | selectattr("in_numbers") | list %}
     <h3 class="divider" id="situational">Situational <span class="count">{{ s.situational | length }}</span></h3>
-    <p class="hint" style="margin:0 0 4px">Rules that only matter in some situations: advantages, immunities and resistances, and reactions that protect you.</p>
+    {% call help("situational", help_off, "modes") %}Rules that only matter in some situations: advantages, immunities and resistances, and reactions that protect you.{% endcall %}
     {% if live %}<div class="rows">{% for x in live %}{{ situ_row(x) }}{% endfor %}</div>{% else %}<p class="muted">Nothing situational on this sheet.</p>{% endif %}
     {% if counted %}<details class="fold"><summary>Already in your numbers ({{ counted | length }})</summary><div class="rows">{% for x in counted %}{{ situ_row(x) }}{% endfor %}</div></details>{% endif %}
   </div>
@@ -164,7 +165,7 @@
     </div>
     {% if ws_other_uses %}<details class="fold ws-other"{% if not d.moon and d.level >= 3 %} open{% endif %}><summary>Other ways to use Wild Shape ({{ ws_other_uses | length }})</summary>
       <ul class="plain">{% for u in ws_other_uses %}<li><b>{{ u.name }}</b> <span class="muted">{{ u.summary }}</span></li>{% endfor %}</ul></details>{% endif %}
-    {{ form_list(c, forms, picks, can_pick, show_picks, "sheet-forms", [("ready", "Known"), ("all", "All you can learn")]) }}
+    {{ form_list(c, forms, picks, can_pick, show_picks, "sheet-forms", [("ready", "Known"), ("all", "All you can learn")], help_off) }}
     <p class="note">Beast stat blocks: System Reference Document 5.2 (Wizards of the Coast, CC-BY-4.0). Pictures from D&amp;D Beyond.</p>
   </div>
   {% elif s.creatures %}
@@ -174,7 +175,7 @@
   {% endif %}
   {% if s.story %}{% set st = s.story %}
   <div id="t-story" class="story-tab" hidden>
-    <p class="hint" style="margin:0 0 4px">From the Background tab on D&amp;D Beyond, in the player's words. Everyone at the table can read it.</p>
+    {% call help("background", help_off, "privacy") %}From the Background tab on D&amp;D Beyond, in the player's words. Everyone at the table can read it.{% endcall %}
     {% if st.background %}<h3 class="divider">Background</h3><p><b>{{ st.background }}</b>{% if st.background_text %} <span class="muted">{{ st.background_text }}</span>{% endif %}</p>{% endif %}
     {% if st.characteristics %}<h3 class="divider">Characteristics</h3>
     <dl class="traits-grid">{% for k, v in st.characteristics %}<div><dt>{{ k }}</dt><dd>{{ v }}</dd></div>{% endfor %}</dl>{% endif %}

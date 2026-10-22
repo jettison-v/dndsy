@@ -76,6 +76,7 @@ class User(Timestamped, Base):
     access: Mapped[str | None] = mapped_column(String(20))
     is_dm: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")  # never sees character notes
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    dismissed_help: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # help lines they pressed "Got it" on (help_pages.HELP)
 
 
 class Campaign(Timestamped, Base):

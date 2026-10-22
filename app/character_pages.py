@@ -22,7 +22,7 @@ from app import web
 from app import character_views as views
 from app import characters as chars
 from app import conditions as cond
-from app import ddb, picks
+from app import ddb, help_pages, picks
 from app import class_rules, live, player_notes
 from app import spellbook as sb
 from app import wild_shape as ws
@@ -59,6 +59,7 @@ def _view(db: Session, ch: Character, user: dict) -> dict:
         "reviewer": is_reviewer(user),
         "admin": is_admin(user),
         "item_notes": chars.item_notes(db, ch),
+        "help_off": help_pages.dismissed(db, user),
     }
 
 

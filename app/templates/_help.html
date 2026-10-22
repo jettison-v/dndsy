@@ -1,0 +1,9 @@
+{# A help line (DESIGN.md › Components): one short line, "More" to the FAQ answer, "Got it" hides it for this
+   person on every device (help_pages.HELP). Pass the page's help_off set; the line is the caller's body. #}
+{% macro help(key, help_off, faq, cls="") -%}
+{%- if key not in help_off -%}
+<p class="hint help-line {{ cls }}" id="help-{{ key }}"><span class="help-text">{{ caller() }}</span>
+  <a class="help-more" href="/faq#{{ faq }}" data-no-peek>More</a>
+  <button type="button" class="btn link small help-x" hx-post="/help/dismiss" hx-vals='{"key": "{{ key }}"}' hx-target="#help-{{ key }}" hx-swap="outerHTML" title="Hide this line">Got it</button></p>
+{%- endif -%}
+{%- endmacro %}

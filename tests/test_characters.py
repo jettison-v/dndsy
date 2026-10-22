@@ -690,3 +690,34 @@ def test_free_text_reminders_are_the_players_and_show_on_battle(player, admin, d
     assert player.post(f"/characters/{cole.id}/reminders", data={"text": "   "}).status_code == 400
     assert admin.post(f"/characters/{cole.id}/reminders", data={"text": "x"}).status_code == 403
     assert "Ask the DM" not in dm.get(f"/characters/{cole.id}/battle").text
+
+
+def test_help_lines_hide_for_good_with_got_it(player, admin, db):
+    from app.models import User
+
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    owned_by(db, cole, "player@example.com")
+    page = player.get(f"/characters/{cole.id}").text
+    assert 'id="help-sheet"' in page and 'href="/faq#marks"' in page and "Got it" in page
+    r = player.post("/help/dismiss", data={"key": "sheet"})
+    assert r.status_code == 200 and r.text == ""
+    assert 'id="help-sheet"' not in player.get(f"/characters/{cole.id}").text  # gone for this person
+    assert 'id="help-features"' in player.get(f"/characters/{cole.id}").text  # the other lines stay
+    me = db.scalar(select(User).where(User.email == "player@example.com"))
+    db.refresh(me)
+    assert me.dismissed_help == ["sheet"]
+    assert player.post("/help/dismiss", data={"key": "nope"}).status_code == 400
+    assert 'id="help-features"' in admin.get(f"/characters/{cole.id}").text  # other people still see theirs
+    assert 'id="marks"' in player.get("/faq").text  # "More" opens that answer
+
+
+def test_battle_column_rules_are_a_chip(player, db):
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    owned_by(db, cole, "player@example.com")
+    battle = player.get(f"/characters/{cole.id}/battle").text
+    assert "Circle Forms change your Wild Shape" in battle  # still there, inside the pop-up
+    assert 'class="tag rules-chip">Rules (' in battle and "econ-note" not in battle

@@ -1,5 +1,6 @@
 {% from "_char.html" import pips, pick_btn, pin_icon, battle_strip, save_tiles, resource_row, portrait, spends, adv, hit, roll_attrs %}
 {% from "_notes_macros.html" import combo_body %}
+{% from "_help.html" import help %}
 {% set s = sheet %}
 {# Character › Battle (character_pages._battle_ctx). Game Mode and the Wild Shape switch swap this whole block. #}
 <div id="battle-body" data-character="{{ c.id }}" data-name="{{ c.entity.name }}" data-fetched="{{ fetched_at.isoformat() if fetched_at else '' }}" data-cond-adv='{{ cond_adv | tojson }}'>
@@ -62,7 +63,7 @@
 
   {% if s and spellbar %}{% include "_spell_bar.html" %}{% endif %}
   {% if s %}
-  {% if can_pick and not form %}<p class="note" style="margin:-6px 0 10px">Drag to reorder a column; <b>+ Add</b> pins more.</p>{% endif %}
+  {% if can_pick and not form %}{% call help("battle", help_off, "modes") %}Drag to reorder a column; <b>+ Add</b> pins more.{% endcall %}{% endif %}
   {% set econ = [("Action", "One per turn", "action"), ("Bonus action", "One per turn, before or after your Action", "bonus"), ("Reaction", "One per round, also on others' turns", "reaction")] %}
   {# Phones: the three columns become tabs (app.js keeps the chosen one across Game Mode updates). #}
   <div class="econ-tabs" role="tablist" aria-label="Action, bonus action or reaction">
@@ -73,8 +74,12 @@
     {% set col = columns[cost] %}
     <div class="section" data-econ-col="{{ slug }}">
       <h2 class="econ-head k-{{ slug }}">{{ cost }}<small>{{ col.sub or sub }}</small></h2>
-      {% if can_pick and not form %}<a class="head-add econ-add" href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/{{ slug }}?add=1" title="Pin more {{ cost | lower }}s">+ Add</a>{% endif %}
-      {% for n in col.notes or [] %}<p class="econ-note">{{ n }}</p>{% endfor %}
+      {# Top right: rules that change this column (Brett, 2026-10-22: out of the way of the options; hover or tap), then + Add #}
+      {% if col.notes or (can_pick and not form) %}<div class="econ-tools k-{{ slug }}">
+        {% if col.notes %}<span class="rules-pop" tabindex="0" aria-describedby="rules-{{ slug }}"><span class="tag rules-chip">Rules ({{ col.notes | length }})</span>
+          <span class="rules-box" id="rules-{{ slug }}" role="tooltip">{% for n in col.notes %}<span>{{ n }}</span>{% endfor %}</span></span>{% endif %}
+        {% if can_pick and not form %}<a class="head-add" href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/{{ slug }}?add=1" title="Pin more {{ cost | lower }}s">+ Add</a>{% endif %}
+      </div>{% endif %}
       <div class="moves"{% if can_pick and not form %} data-sort-column="{{ cost }}" data-sort-url="/characters/{{ c.id }}/order"{% endif %}>
       {% for o in col.shown %}
       <div class="move{{ ' yours' if o.source == 'yours' }}" data-key="{{ o.key }}" {% if form and o.source in ('form', 'rule') %}data-modal-url="/characters/{{ c.id }}/form?name={{ form.beast.name | urlencode }}" data-modal-size="large"{% else %}data-panel-url="/characters/{{ c.id }}/detail?ref={{ o.key | urlencode }}"{% endif %} tabindex="0" role="button">

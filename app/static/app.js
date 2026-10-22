@@ -475,6 +475,43 @@
   document.addEventListener('click', e => {
     document.querySelectorAll('details.conc-pop[open], details.cond-pill[open]').forEach(d => { if (!d.contains(e.target)) d.open = false; });
   });
+  // Icon buttons say what they do (Brett, 2026-10-22): a label on hover or keyboard focus, or a long press on
+  // phones. The text is the button's data-tip, aria-label or title; the native title is held back while
+  // the label shows so the two don't stack.
+  const TIP_SEL = '.pick:not(.static), .pick.static[title], .peek-close, [data-tip]';
+  let tipEl = null, tipFor = null, tipTimer = null;
+  const tipText = el => el.dataset.tip || el.getAttribute('aria-label') || el.dataset.title || el.getAttribute('title') || '';
+  function tipShow(el) {
+    const text = tipText(el); if (!text) return;
+    if (el.hasAttribute('title')) { el.dataset.title = el.getAttribute('title'); el.removeAttribute('title'); }
+    tipEl = tipEl || Object.assign(document.createElement('div'), { className: 'icon-tip', role: 'tooltip' });
+    tipEl.textContent = text; document.body.appendChild(tipEl); tipFor = el;
+    const r = el.getBoundingClientRect(), w = tipEl.offsetWidth;
+    tipEl.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px';
+    tipEl.style.top = (r.top > 40 ? r.top - tipEl.offsetHeight - 6 : r.bottom + 6) + 'px';
+  }
+  function tipHide() {
+    clearTimeout(tipTimer);
+    if (tipFor && tipFor.dataset.title) { tipFor.setAttribute('title', tipFor.dataset.title); delete tipFor.dataset.title; }
+    if (tipEl) tipEl.remove(); tipFor = null;
+  }
+  document.addEventListener('mouseover', e => {
+    const el = e.target.closest && e.target.closest(TIP_SEL);
+    if (el === tipFor) return;
+    tipHide(); if (el) tipTimer = setTimeout(() => tipShow(el), 250);
+  });
+  document.addEventListener('focusin', e => { const el = e.target.closest && e.target.closest(TIP_SEL); tipHide(); if (el && el.matches(':focus-visible')) tipShow(el); });
+  document.addEventListener('focusout', tipHide);
+  document.addEventListener('touchstart', e => {
+    const el = e.target.closest && e.target.closest(TIP_SEL); tipHide();
+    if (el) tipTimer = setTimeout(() => tipShow(el), 450);
+  }, { passive: true });
+  document.addEventListener('touchend', () => { clearTimeout(tipTimer); setTimeout(tipHide, 1200); }, { passive: true });
+  document.addEventListener('click', tipHide, true);
+  window.addEventListener('scroll', tipHide, true);
+  // FAQ: a link to one answer (a help line's "More") opens it
+  const openFaq = () => { const d = location.hash.length > 1 && document.getElementById(location.hash.slice(1)); if (d && d.matches('details.faq')) { d.open = true; d.scrollIntoView({ block: 'start' }); } };
+  openFaq(); window.addEventListener('hashchange', openFaq);
   // Lists' "Full notes": each row's note in full instead of one line, remembered per list. Plan's tabs re-render
   // their lists after a save, so it's applied again after every swap.
   const notesKey = box => 'askdnd:notes-full:' + (box.closest('[data-list]') || {}).dataset?.list;

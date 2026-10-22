@@ -11,9 +11,9 @@ import re
 from pathlib import Path
 
 CSS = (Path(__file__).parent.parent / "app" / "static" / "app.css").read_text()
-SCREEN_WIDTHS = {640, 900, 1100, 1099}  # phone, tablet, wide (and just below wide)
+SCREEN_WIDTHS = {640, 641, 900, 901, 1099, 1100}  # phone, tablet, wide (and the pixel either side)
 
-BASELINE = {"text sizes": 215, "colors": 68, "screen widths": 24}
+BASELINE = {"text sizes": 53, "colors": 11, "screen widths": 5}
 
 
 def _without_tokens(css: str) -> str:
@@ -24,7 +24,7 @@ def _without_tokens(css: str) -> str:
 def offenders() -> dict[str, list[str]]:
     css = _without_tokens(CSS)
     sizes = [v.strip() for v in re.findall(r"font-size:\s*([^;}]+)", css)
-             if not re.match(r"(var\(--fs-|inherit|calc\(var\(--fs-)", v.strip())]
+             if not re.match(r"(var\(--fs-|inherit|calc\(var\(--fs-|[\d.]+em$)", v.strip())]  # em: relative to a token
     colors = re.findall(r"#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\([^)]*\)", css)
     widths = [w for w in re.findall(r"\((?:max|min)-width:\s*(\d+)px\)", css) if int(w) not in SCREEN_WIDTHS]
     return {"text sizes": sizes, "colors": colors, "screen widths": widths}

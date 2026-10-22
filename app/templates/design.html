@@ -6,7 +6,7 @@
    macros, so it changes when they do. Made-up content only. DESIGN.md explains when to use each. #}
 {% macro ds(name, code, about, later="") -%}
 <div class="ds-meta"><b>{{ name }}</b> <code>{{ code }}</code><span class="muted">{{ about }}</span>
-  {%- if later %}<span class="ds-later">Step 3: {{ later }}</span>{% endif %}</div>
+  {%- if later %}<span class="ds-later">Planned: {{ later }}</span>{% endif %}</div>
 {%- endmacro %}
 {% block content %}
 <main class="page wide ds-page">
@@ -47,16 +47,16 @@
 
   <section class="section" id="buttons">
     <h2>Buttons</h2>
-    {{ ds("Four styles, two sizes", ".btn · .primary · .link · .danger · .small", "Primary is the one main action on a screen; Danger always asks first.", "one height (--control-h) for the regular size") }}
+    {{ ds("Four styles, two sizes", ".btn · .primary · .link · .danger · .small", "Primary is the one main action on a screen; Danger always asks first. Regular is --control-h tall (32px, 44px on phones), small --control-h-sm.") }}
     <div class="ds-row"><button class="btn primary" type="button">Publish</button><button class="btn" type="button">Edit</button><button class="btn link" type="button">Cancel</button><button class="btn link danger" type="button">Delete</button></div>
     <div class="ds-row"><button class="btn primary small" type="button">Save</button><button class="btn small" type="button">+ Add a step</button><button class="btn link small" type="button">Clear all</button><button class="btn link danger small" type="button">Remove</button></div>
   </section>
 
   <section class="section" id="pills">
     <h2>Pills</h2>
-    {{ ds("Tag", ".tag", "Labels something; never clickable. Status tags use a status color.", "one size, from --fs-xs") }}
+    {{ ds("Tag", ".tag", "Labels something; never clickable. Status tags use a status color.") }}
     <div class="ds-row"><span class="tag">Conc.</span><span class="tag">Ritual</span><span class="tag done">Published</span><span class="tag draft">Draft</span><span class="tag new">New</span><span class="tag error">Couldn't refresh</span><span class="tag faint">Not core: Xanathar's</span><span class="tag kind-advantage">Advantage</span><span class="tag kind-resistance">Resistance</span></div>
-    {{ ds("Chip", ".ls-chip · .ws-chip · .spell-chip · .cond-pill · .chip", "Clickable: a filter, a form, a spell to cast, a condition.", "these five become one Chip, with an \"on\" state") }}
+    {{ ds("Chip", ".ls-chip · .ws-chip · .spell-chip · .cond-pill · .chip", "Clickable, one look: a filter, a Wild Shape form, a spell to cast, a condition. Blue when on (--selected-bg).") }}
     <div class="ds-row"><button class="ls-chip" type="button" aria-pressed="false">Concentration <span class="ls-n">4</span></button><button class="ls-chip" type="button" aria-pressed="true">1st level <span class="ls-n">3</span></button><button class="ws-chip" type="button">Normal</button><button class="ws-chip on" type="button">Polar Bear</button><button class="spell-chip" type="button">Healing Word</button><span class="chip">Bonus</span></div>
     {{ ds("Count", ".count", "A number next to a tab or heading.") }}
     <div class="ds-row"><span>Combos <span class="count">3</span></span><span>Reminders <span class="count">2</span></span></div>
@@ -66,16 +66,16 @@
 
   <section class="section" id="headings">
     <h2>Headings</h2>
-    {{ ds("Page title", "main h1", "One per page.", "--fs-2xl") }}
+    {{ ds("Page title", "main h1", "One per page.") }}
     <div class="ds-sample"><div class="title-row"><h1>Previously on…</h1></div></div>
-    {{ ds("Section heading", ".section h2", "Starts a section card.", "--fs-lg") }}
+    {{ ds("Section heading", ".section h2", "Starts a section card.") }}
     <div class="ds-sample"><h2 class="ds-h2">Relationships</h2></div>
     {{ ds("Divider label", "h3.divider", "Groups inside a section: caps, letter-spaced, amber, with a fading rule.") }}
     <div class="ds-sample"><h3 class="divider">1st level <span class="count">4</span></h3></div>
-    {{ ds("Action economy", ".econ-head .k-action / .k-bonus / .k-reaction / .k-other", "The only colored headings: what it costs on your turn.") }}
+    {{ ds("Action economy", ".econ-head .k-action / .k-bonus / .k-reaction / .k-other", "The only colored headings: what it costs on your turn. Rules from classes and feats that change a column sit in a \"Rules (n)\" chip at its top right (hover or tap).") }}
     <div class="econ ds-econ">
       {% for cost, slug, sub in [("Action", "action", "One per turn"), ("Bonus action", "bonus", "Before or after your Action"), ("Reaction", "reaction", "Also on others' turns")] %}
-      <div class="section"><h2 class="econ-head k-{{ slug }}">{{ cost }}<small>{{ sub }}</small></h2><a class="head-add econ-add" href="#headings">+ Add</a></div>{% endfor %}
+      <div class="section"><h2 class="econ-head k-{{ slug }}">{{ cost }}<small>{{ sub }}</small></h2><div class="econ-tools k-{{ slug }}">{% if slug == "bonus" %}<span class="rules-pop" tabindex="0"><span class="tag rules-chip">Rules (1)</span><span class="rules-box" role="tooltip"><span>A sample rule from a class feature that changes this column.</span></span></span>{% endif %}<a class="head-add" href="#headings">+ Add</a></div></div>{% endfor %}
     </div>
     {{ ds("Heading with an action", ".sec-head + link · .head-add", "Red link for a section's own action (Reminders, Battle combos); quiet grey .head-add inside busy columns (Brett, 2026-10-22).") }}
     <div class="ds-sample"><div class="sec-head"><h2>Battle combos</h2><a href="#headings">+ Add</a></div></div>
@@ -95,7 +95,7 @@
   <section class="section" id="lists">
     <h2>Lists</h2>
     <p class="hint">The shared list pattern (DESIGN.md › Lists and filters): search, views, filter chips, sort, rows that open the side panel.</p>
-    {{ ds("Search box", "_lists.html search_box()", "Searches everything and pauses the filters.", "32px tall (--control-h), today about 44px") }}
+    {{ ds("Search box", "_lists.html search_box()", "Searches everything and pauses the filters. --control-h tall.") }}
     <div class="ds-sample ds-narrow">{{ search_box("Search all your spells") }}</div>
     {{ ds("Toolbar", ".ls-toolbar · view_switch() · .ls-select · .ls-check", "Views on the left, then the summary, sort and options.") }}
     <div class="ls-toolbar">{{ view_switch([("ready", "Prepared"), ("fav", "Shortlist"), ("all", "All")], "Which spells") }}<span class="note">12 spells</span>
@@ -112,7 +112,7 @@
 
   <section class="section" id="marks">
     <h2>Marks and pips</h2>
-    {{ ds("Marks", ".pick.star / .fav / .remind", "Pin to Battle, Shortlist, Remind me. Only the player sets them; the DM never sees them.", "a label on hover for every icon button") }}
+    {{ ds("Marks", ".pick.star / .fav / .remind", "Pin to Battle, Shortlist, Remind me. Only the player sets them; the DM never sees them. Hover (or long-press) any icon button for its label.") }}
     <div class="ds-row"><span class="pick star on static">{{ pin_icon() }}</span> Pinned <span class="pick fav on static">{{ bookmark_icon() }}</span> Shortlisted <span class="pick remind on static">{{ bell(true) }}</span> Reminder</div>
     {{ ds("Pips", "_char.html pips()", "Uses left out of the maximum; more than 8 shows as 3/10.") }}
     <div class="ds-row">{{ pips({"max": 4, "left": 3}) }} {{ pips({"max": 2, "left": 0}) }} {{ pips({"max": 10, "left": 3}) }}</div>
@@ -122,17 +122,17 @@
 
   <section class="section" id="help">
     <h2>Help and empty states</h2>
-    {{ ds("Help line", ".hint", "One short line under a heading.", "a \"Got it\" button that hides it for you; the FAQ keeps the full text") }}
-    <p class="hint">Drag to reorder a column; <b>+ Add</b> pins more.</p>
+    {{ ds("Help line", "_help.html help()", "One short line, More to the FAQ answer, and Got it to hide it for you on every device.") }}
+    <p class="hint help-line"><span class="help-text">Drag to reorder a column; <b>+ Add</b> pins more.</span> <a class="help-more" href="/faq#modes">More</a> <button type="button" class="btn link small help-x">Got it</button></p>
     {{ ds("Note", ".note", "Small secondary text: dates, who changed something, footnotes.") }}
     <p class="note">Updated Oct 19. Every player can read this; the DM can't.</p>
-    {{ ds("Empty state", ".muted", "Says what goes here and how to add the first one.", "on every list") }}
+    {{ ds("Empty state", ".muted", "Says what goes here and how to add the first one.") }}
     <p class="muted">Nothing pinned yet. Use <b>+ Add</b> to pin what you'd use on your turn.</p>
   </section>
 
   <section class="section" id="panels">
     <h2>Panels and toasts</h2>
-    {{ ds("Four sizes", "--panel-w · --modal-w · --modal-lg-w · --modal-full-w", "Pick by what's inside, never by page. On phones every one is a sheet from the bottom.", "the side panel inside a modal (the Spell Book's) goes from 440px to --panel-w") }}
+    {{ ds("Four sizes", "--panel-w · --modal-w · --modal-lg-w · --modal-full-w", "Pick by what's inside, never by page. On phones every one is a sheet from the bottom.") }}
     <div class="tbl ds-sizes"><table class="list">
       <thead><tr><th>Size</th><th>Desktop</th><th>For</th><th>Open with</th><th></th></tr></thead>
       <tbody>

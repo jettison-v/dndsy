@@ -3,7 +3,8 @@
    `forms` from wild_shape.forms; a row opens the form in its large window. #}
 {% from "_lists.html" import filter_column, search_box, active_row, view_switch, notes_toggle %}
 {% from "_char.html" import pick_btn, adv %}
-{% macro form_list(c, forms, picks, can_pick, show_picks, key="sheet-forms", views=()) -%}
+{% from "_help.html" import help %}
+{% macro form_list(c, forms, picks, can_pick, show_picks, key="sheet-forms", views=(), help_off=()) -%}
 {%- set sizes = ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"] -%}
 {%- set groups = [
   {"key": "status", "label": "Status", "values": ["Known", "Can learn", "Locked"] | select("in", forms | map(attribute="status_label") | list) | list},
@@ -49,7 +50,7 @@
       </div>
       <p class="note ls-empty" data-ls-empty hidden>No forms match. <button type="button" class="btn link small" data-ls-clear>Clear all</button></p>
       {% if views %}<p class="note ls-empty" data-ls-empty-view="fav" hidden>Nothing on your Shortlist yet. In <b>All you can learn</b>, press the bookmark on a form you're considering.</p>{% endif %}
-      <p class="note sb-foot-note">Click a form to see it with your stats carried over. Damage / turn is the average from the Attack action if every attack hits. Learn forms on D&amp;D Beyond (you can swap one known form after each Long Rest).</p>
+      {% call help("forms", help_off, "wild-shape", "sb-foot-note") %}Click a form to see it with your stats. Damage / turn assumes every attack hits. Learn forms on D&amp;D Beyond; you can swap one after a Long Rest.{% endcall %}
     </div>
   </div>
 </div>
