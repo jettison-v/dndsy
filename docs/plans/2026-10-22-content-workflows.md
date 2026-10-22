@@ -41,6 +41,8 @@ and Claude propose; the DM decides when Claude helps.
 
 ## Build order (before roadmap step 10)
 
-1. **DM tools** (decision 6) and the DM-includes-Reviewer access change (decision 2).
+1. **DM tools** (decision 6) and the DM-includes-Reviewer access change (decision 2). Done 2026-10-22: + New entry,
+   Details (kind, quest, hidden), + Add a key moment, merge, delete (not player characters), Add session › Save as the
+   recap; the DM tick now grants everything Reviewer does.
 2. **One inbox** (decisions 3, 7, 8).
 3. **Protect the DM's words** (decision 5).
