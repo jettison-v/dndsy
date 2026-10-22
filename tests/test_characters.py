@@ -659,3 +659,14 @@ def test_a_spell_key_opens_the_spell_not_a_situational_rule_with_the_same_key():
     sheet = {"situational": [{"key": "spell:Absorb Elements", "text": "Reaction spell: Absorb Elements"}],
              "spells": [{"key": "spell:Absorb Elements", "name": "Absorb Elements"}]}
     assert views.find(sheet, "spell:Absorb Elements")["section"] == "spells"
+
+
+def test_a_note_announces_itself_so_the_rows_update_without_a_refresh(player, db):
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    owned_by(db, cole, "player@example.com")
+    r = player.post(f"/characters/{cole.id}/pick/note", data={"ref": "spell:Moonbeam", "note": "  Opener vs. groups "})
+    assert json.loads(r.headers["HX-Trigger"])["noteChanged"] == {"character": cole.id, "ref": "spell:Moonbeam", "note": "Opener vs. groups"}
+    r = player.post(f"/characters/{cole.id}/pick/note", data={"ref": "spell:Moonbeam", "note": ""})
+    assert json.loads(r.headers["HX-Trigger"])["noteChanged"]["note"] == ""  # cleared: the line goes away

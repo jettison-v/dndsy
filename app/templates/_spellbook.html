@@ -35,7 +35,7 @@
       <div class="ls-rows sb-cols" data-ls-rows>
         <div class="ls-head" aria-hidden="true"><span></span><span>Spell</span><span>Time</span><span>Range</span><span>Roll</span><span>Damage / Healing</span><span></span></div>
         {% for e in spells %}{% set note = picks.notes.get(e.key) if show_picks else "" %}
-        <div class="ls-row" data-ls-row data-f='{{ e.f | tojson }}' data-name="{{ e.name | lower }}" data-level="{{ e.level }}"
+        <div class="ls-row" data-ls-row data-ref="{{ e.key }}" data-f='{{ e.f | tojson }}' data-name="{{ e.name | lower }}" data-level="{{ e.level }}"
           data-group-label="{{ 'Cantrips' if not e.level else (e.level | ordinal) ~ ' level' }}" data-avgs='{{ e.avgs | tojson }}'
           data-panel-url="/characters/{{ c.id }}/detail?ref={{ e.key | urlencode }}" tabindex="0" role="button" aria-label="{{ e.name }}: details">
           <span class="ls-pk">{% if show_picks and e.key in picks.star %}<span class="pick star on static" title="Pinned to Battle">{{ pin_icon() }}</span>{% endif %}</span>

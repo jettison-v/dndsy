@@ -387,11 +387,55 @@
     if (body && ids.includes(body.dataset.character)) htmx.ajax('POST', '/characters/' + body.dataset.character + '/sync', { target: '#battle-body', swap: 'outerHTML' });
     else if ((page && ids.includes(page.dataset.character)) || location.pathname === '/party') location.reload();
   });
+  // Plan's Reminders and Shortlist tabs: fetch the page again and swap in just those tabs' contents
+  // (each tab keeps whether it's open), after a mark or note changes.
+  function refreshPlanTabs(character) {
+    if (!/\/characters\/\d+\/plan$/.test(location.pathname) || !location.pathname.includes('/' + character + '/')) return;
+    fetch(location.pathname, { headers: { 'HX-Request': 'true' } }).then(r => r.text()).then(html => {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      ['t-forget', 't-spell-list', 't-form-list'].forEach(id => {
+        const here = document.getElementById(id), there = doc.getElementById(id);
+        if (!here || !there) return;
+        here.innerHTML = there.innerHTML;
+        if (window.htmx) htmx.process(here);
+        if (here.matches('[data-planner]') && window.askdndPlanner) window.askdndPlanner(here);
+      });
+      if (typeof sortSetup === 'function') sortSetup();  // Reminders can be dragged
+      document.querySelectorAll('[role=tab][data-tab]').forEach(t => {  // the tab counts
+        const there = doc.querySelector('[role=tab][data-tab="' + t.dataset.tab + '"] .count'), here = t.querySelector('.count');
+        if (there && here) here.textContent = there.textContent;
+        else if (there && !here) t.insertAdjacentHTML('beforeend', ' <span class="count">' + there.textContent + '</span>');
+        else if (!there && here) here.remove();
+      });
+    });
+  }
+  // A note was saved in a side panel (character_pages.save_pick_note): the one-line note under that
+  // thing's rows changes in place; Battle reloads its body (option rows and Reminders); Plan its tabs.
+  document.body.addEventListener('noteChanged', e => {
+    const d = e.detail || {}, body = document.getElementById('battle-body');
+    if (body && String(body.dataset.character) === String(d.character))
+      htmx.ajax('GET', '/characters/' + d.character + '/battle/body', { target: '#battle-body', swap: 'outerHTML' });
+    refreshPlanTabs(d.character);
+    document.querySelectorAll('[data-ref]').forEach(row => {
+      if (row.dataset.ref !== d.ref || row.closest('.peek.top, .detail-marks')) return;
+      let line = row.querySelector('.ls-note, .ri-note');
+      if (!d.note) { if (line) line.remove(); return; }
+      if (!line) {
+        const home = row.querySelector('.ls-name, .ri-main'); if (!home) return;
+        line = document.createElement('span');
+        line.className = row.matches('.ls-row') ? 'ls-note' : 'ri-note';
+        home.appendChild(line);
+      }
+      line.textContent = '✎ ' + d.note;
+      line.title = d.note;
+    });
+  });
   // A pin, bookmark or reminder changed (character_pages.toggle_pick): show it everywhere on the page
   // without a refresh. Battle reloads its body (pins fill its columns; reminders its box); rows on
   // Sheet and in lists update their buttons, and a shared list moves the row in or out of Shortlist.
   document.body.addEventListener('marksChanged', e => {
     const d = e.detail || {}, body = document.getElementById('battle-body');
+    refreshPlanTabs(d.character);
     if (body && String(body.dataset.character) === String(d.character))
       htmx.ajax('GET', '/characters/' + d.character + '/battle/body', { target: '#battle-body', swap: 'outerHTML' });
     const set = (row, kind, on) => row.querySelectorAll('.pick.' + kind + ':not(.static)').forEach(b => {
@@ -457,6 +501,7 @@
 
   // Spell planner (Character › Spells): a view (ready / shortlist / all), filters that
   // all have to match, and a search box. Rows carry data-* attributes from the server.
+  window.askdndPlanner = root => plannerApply(root);  // Plan's tabs call it after a live refresh
   function plannerApply(root) {
     const view = (root.querySelector('[data-view][aria-pressed=true]') || {}).dataset?.view || 'ready';
     const filters = [...root.querySelectorAll('[data-filter][aria-pressed=true]')].map(b => b.dataset.filter);

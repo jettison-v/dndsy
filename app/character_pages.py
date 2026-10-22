@@ -425,7 +425,10 @@ def save_pick_note(request: Request, character_id: int, ref: str = Form(...), no
     except ValueError:
         return HTMLResponse("", status_code=400)
     db.commit()
-    return HTMLResponse('<span class="note">Saved</span>')
+    # Tell the page behind so the note line under the row shows it without a refresh (roadmap step 5b)
+    note = (picks.picks(db, ch, user)["notes"].get(ref) or "")
+    return HTMLResponse('<span class="note">Saved</span>', headers={
+        "HX-Trigger": json.dumps({"noteChanged": {"character": ch.id, "ref": ref, "note": note}})})
 
 
 @router.get("/characters/{character_id:int}/form")
