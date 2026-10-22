@@ -18,6 +18,7 @@ from app import web
 from app import db as dbmod
 from app import review
 from app.admin import _reviewer_guard as _guard
+from app.auth import current_user
 from app.db import get_db
 from app.extraction import (
     ExtractionError,
@@ -301,8 +302,17 @@ def redraft(request: Request, session_id: int, db: Session = Depends(get_db)):
 @router.post("/sessions/{session_id:int}/recap")
 def save_recap(request: Request, session_id: int, body: str = Form(...), note: str = Form(""), standing: str = Form(""), db: Session = Depends(get_db)):
     def act(s):
-        review.save_recap(db, s, body, note, bool(standing))
+        review.save_recap(db, s, body, note, bool(standing), by=web.person_name(current_user(request)))
         return "Recap saved"
+
+    return _act(request, db, session_id, act)
+
+
+@router.post("/sessions/{session_id:int}/recap/keep-mine")
+def keep_mine(request: Request, session_id: int, db: Session = Depends(get_db)):
+    def act(s):
+        mine = review.keep_person_version(db, s)
+        return f"Back to {mine.author_name or 'your'}'s version" if mine.author_name else "Back to your version"
 
     return _act(request, db, session_id, act)
 
@@ -356,7 +366,7 @@ def _proposal_action(request: Request, db: Session, proposal_id: int, fn: Callab
 @router.post("/proposals/{proposal_id}/accept")
 def accept(request: Request, proposal_id: int, summary: str = Form(""), db: Session = Depends(get_db)):
     def fn(p):
-        review.accept_proposal(db, p, summary or None)
+        review.accept_proposal(db, p, summary or None, by=web.person_name(current_user(request)))
         return "Accepted"
 
     return _proposal_action(request, db, proposal_id, fn)
@@ -383,7 +393,7 @@ def undo(request: Request, proposal_id: int, db: Session = Depends(get_db)):
 @router.post("/proposals/{proposal_id}/edit")
 def edit_accepted(request: Request, proposal_id: int, summary: str = Form(...), db: Session = Depends(get_db)):
     def fn(p):
-        review.edit_accepted_proposal(db, p, summary)
+        review.edit_accepted_proposal(db, p, summary, by=web.person_name(current_user(request)))
         return "Updated"
 
     return _proposal_action(request, db, proposal_id, fn)
@@ -438,7 +448,7 @@ def create_session(
         s = GameSession(campaign_id=campaign.id, played_on=played, number=num, title=title.strip(), source="manual")
         db.add(s)
         db.flush()
-        review.save_recap(db, s, account)
+        review.save_recap(db, s, account, by=web.person_name(user))
         db.commit()
         request.session["toast"] = "Saved as the recap. Add key moments if you like, then publish."
         return RedirectResponse(f"/admin/sessions/{s.id}", status_code=303)

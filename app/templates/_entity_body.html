@@ -57,7 +57,9 @@
       <form class="inline" hx-post="/campaign/{{ e.id }}/description/regenerate" {{ hx | safe }} hx-indicator="#regen-wait" hx-disabled-elt="find button"><button class="btn link">Regenerate description</button></form>
       {% endif %}
     </div>
-    <div id="desc-read">{% if e.summary %}<div class="story">{{ ln.text(e.summary) }}</div>{% else %}<p class="muted">No description yet.</p>{% endif %}
+    <div id="desc-read">{% if e.summary %}<div class="story">{{ ln.text(e.summary) }}</div>
+      {% if e.summary_by %}<p class="note">Written by {{ "Claude" if e.summary_by == "claude" else e.summary_by }}{% if e.written_by_person %}. Claude keeps these words when it suggests changes.{% endif %}</p>{% endif %}
+      {% else %}<p class="muted">No description yet.</p>{% endif %}
       {% if can_edit %}<button type="button" class="btn small" style="margin-top:10px" data-show="desc-edit" data-hide="desc-read">Edit description</button>{% endif %}</div>
     {% if can_edit %}
     {# Your own words, no Claude (Brett, 2026-10-22); Undo keeps the earlier one #}
@@ -70,10 +72,11 @@
     <div class="item" id="desc-view">
       <p class="item-title">Claude's new description</p>
       {% if e.draft_fact_ids %}<p class="note" style="margin:-4px 0 8px">Using it takes {{ e.draft_fact_ids | length }} fact{{ "s" if e.draft_fact_ids | length != 1 }} Claude worked in off the list below (they stay under Done).</p>{% endif %}
-      <div class="compare">
-        <div><span>Now</span>{{ e.summary or "(none)" }}</div>
-        <div class="after"><span>Proposed</span>{{ e.draft_summary }}</div>
-      </div>
+      {% if e.summary %}
+      <div class="compare single"><div class="after markup"><span>{% if e.written_by_person %}Keeps {{ e.written_by_person }}'s words; Claude's changes marked{% else %}Claude's changes marked{% endif %}</span>{{ e.summary | diff(e.draft_summary) }}</div></div>
+      {% else %}
+      <div class="compare single"><div class="after"><span>Proposed</span>{{ e.draft_summary }}</div></div>
+      {% endif %}
       <div class="row">
         <form class="inline" hx-post="/campaign/{{ e.id }}/description/accept" {{ hx | safe }}><button class="btn primary">Accept</button></form>
         <button type="button" class="btn" data-show="desc-form" data-hide="desc-view">Edit</button>

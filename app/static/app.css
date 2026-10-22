@@ -232,6 +232,13 @@ details.conversation[open] > summary { margin-bottom: 12px; }
 .compare > div { font-size: var(--fs-md); padding: 12px 14px; border-radius: var(--r-md); background: var(--surface-2); }
 .compare > div.after { background: var(--story-bg); border: 1px solid var(--story-line); color: var(--story-text); }
 .compare span { display: block; font-size: var(--fs-xs); color: var(--muted); margin-bottom: 4px; }
+/* A marked-up edit (render.word_diff): someone's words with Claude's changes, so nothing is replaced unseen */
+.markup del { color: var(--muted); background: var(--red-soft); text-decoration: line-through; border-radius: 3px; }
+.markup ins { color: var(--text-strong); background: var(--green-soft); text-decoration: none; border-radius: 3px; }
+.recap-markup { white-space: pre-wrap; font-family: var(--serif); color: var(--story-text); background: var(--story-bg); border-radius: var(--r-md); padding: 12px 14px; margin: 0 0 10px; max-height: 24em; overflow: auto; }
+.kept-words { padding-top: 0; }
+.guide-del { color: var(--muted); background: var(--red-soft); }
+.guide-ins { color: var(--text-strong); background: var(--green-soft); text-decoration: none; }
 
 /* Progress panel */
 .aside { position: sticky; top: 84px; }

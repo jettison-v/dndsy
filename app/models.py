@@ -118,7 +118,15 @@ class Entity(Timestamped, Base):
     draft_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     previous_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     draft_fact_ids: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # facts Claude worked into draft_summary
+    # Who wrote the description last: "claude", a person's name, or "" (not known). A person's words are kept: Claude's
+    # later updates arrive as marked-up edits of them (content workflows step 3).
+    summary_by: Mapped[str] = mapped_column(String(200), default="", server_default="")
     aliases: Mapped[list["EntityAlias"]] = relationship(cascade="all, delete-orphan")
+
+    @property
+    def written_by_person(self) -> str:
+        """The person who wrote the description last ("" when Claude did, or it isn't known)."""
+        return "" if self.summary_by in ("", "claude") else self.summary_by
 
     @property
     def display_aliases(self) -> list["EntityAlias"]:
@@ -342,7 +350,8 @@ class Recap(Timestamped, Base):
     session_id: Mapped[int] = mapped_column(ForeignKey("game_sessions.id", ondelete="CASCADE"))
     version: Mapped[int] = mapped_column(Integer)
     body: Mapped[str] = mapped_column(Text)  # Markdown
-    author: Mapped[str] = mapped_column(String(20))  # "ai" or "brett"
+    author: Mapped[str] = mapped_column(String(20))  # "ai" (Claude) or "brett" (a person: see author_name)
+    author_name: Mapped[str] = mapped_column(String(200), default="", server_default="")  # who, when a person wrote it
     status: Mapped[Status] = mapped_column(_enum(Status), default=Status.DRAFT)
     session: Mapped[GameSession] = relationship(back_populates="recaps")
 

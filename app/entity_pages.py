@@ -104,7 +104,7 @@ def new_entry(request: Request, kind: str = Form(""), name: str = Form(""), summ
         return web.forbidden(request, "Only the DM, reviewers and admins add entries.")
     campaign = web.campaign(db)
     try:
-        entity = entities.create(db, campaign.id, kind, name, summary, published=not hidden)
+        entity = entities.create(db, campaign.id, kind, name, summary, published=not hidden, by=web.person_name(user))
         db.commit()
     except entities.EntityError as e:
         db.rollback()
@@ -259,7 +259,7 @@ def regenerate(request: Request, entity_id: int, db: Session = Depends(get_db)):
 @router.post("/{entity_id:int}/description/accept")
 def accept_description(request: Request, entity_id: int, summary: str | None = Form(None), db: Session = Depends(get_db)):
     def act(entity, user):
-        entities.accept_description(entity, summary)
+        entities.accept_description(entity, summary, by=web.person_name(user))
         return "Description updated"
 
     return _act(request, db, entity_id, act)
@@ -267,7 +267,7 @@ def accept_description(request: Request, entity_id: int, summary: str | None = F
 
 @router.post("/{entity_id:int}/description")
 def set_description(request: Request, entity_id: int, summary: str = Form(""), db: Session = Depends(get_db)):
-    return _act(request, db, entity_id, lambda entity, user: entities.set_description(entity, summary) or "Description saved")
+    return _act(request, db, entity_id, lambda entity, user: entities.set_description(entity, summary, by=web.person_name(user)) or "Description saved")
 
 
 @router.post("/{entity_id:int}/name")

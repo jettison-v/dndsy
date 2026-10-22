@@ -181,8 +181,9 @@ def unused_answer_count(db: Session, session: GameSession) -> int:
 # --- Suggestions (proposals) -------------------------------------------------
 
 
-def accept_proposal(db: Session, p: Proposal, summary: str | None = None) -> None:
-    """Apply a suggestion and remember what it replaced, so Undo can restore it."""
+def accept_proposal(db: Session, p: Proposal, summary: str | None = None, by: str = "") -> None:
+    """Apply a suggestion and remember what it replaced, so Undo can restore it. `summary` is the reviewer's edit
+    of the proposed description (which makes it theirs: `by`)."""
     if p.status != "pending":
         raise ReviewError("That suggestion was already decided.")
     from app.history import mark
@@ -220,9 +221,14 @@ def accept_proposal(db: Session, p: Proposal, summary: str | None = None) -> Non
         data["from_id"], data["to_id"] = ends[0].id, ends[1].id
         data["undo"] = {"created_relation_id": rel.id} if created else {}
     else:
+        edited = summary is not None and bool(summary.strip()) and summary.strip() != data["summary"].strip()
         if summary is not None and summary.strip():
             data["summary"] = summary.strip()
         entity = db.get(Entity, data["entity_id"]) if data.get("entity_id") else None
+        # Protect what's there now: the draft was a marked-up edit of the description at drafting time. If someone has
+        # changed it since, accepting would undo their change, so combine the two by hand.
+        if entity is not None and not edited and (entity.summary or "").strip() != (data.get("old_summary") or "").strip():
+            raise ReviewError(f"{entity.name}'s description changed since this draft. Use Edit to combine the two.")
         # A "new" entry that exists by now (another session's suggestion was accepted first, or the DM added it):
         # add to it instead of making a duplicate, and keep its description; this draft's version becomes a fact.
         late = entity is None and _resolve_entity(db, session.campaign_id, None, data["name"])
@@ -239,6 +245,7 @@ def accept_proposal(db: Session, p: Proposal, summary: str | None = None) -> Non
                 "summary": entity.summary,
                 "quest_open": entity.quest_open,
                 "status": entity.status.value,
+                "summary_by": entity.summary_by,
             }
         if late and (entity.summary or "").strip() and data["summary"].strip() != entity.summary.strip():
             from app.models import Fact
@@ -250,6 +257,7 @@ def accept_proposal(db: Session, p: Proposal, summary: str | None = None) -> Non
             undo["created_fact_id"] = fact.id
         else:
             entity.summary = data["summary"]
+            entity.summary_by = by[:200] if edited and by else "claude"
         if data.get("quest_open") is not None:
             entity.quest_open = data["quest_open"]
         have = {a.alias.casefold() for a in entity.aliases}
@@ -317,6 +325,7 @@ def undo_proposal(db: Session, p: Proposal) -> None:
                 db.delete(fact)
         if entity:
             entity.summary = undo.get("summary", entity.summary)
+            entity.summary_by = undo.get("summary_by", "")
             entity.quest_open = undo.get("quest_open")
             entity.status = Status(undo.get("status", entity.status.value))
             added = {a.casefold() for a in undo.get("added_aliases", [])}
@@ -328,7 +337,7 @@ def undo_proposal(db: Session, p: Proposal) -> None:
     p.status = "pending"
 
 
-def edit_accepted_proposal(db: Session, p: Proposal, summary: str) -> None:
+def edit_accepted_proposal(db: Session, p: Proposal, summary: str, by: str = "") -> None:
     """Change the summary of an accepted suggestion (and the entity it updated)."""
     summary = summary.strip()
     if p.status != "accepted" or p.kind != "entity" or not summary:
@@ -336,6 +345,7 @@ def edit_accepted_proposal(db: Session, p: Proposal, summary: str) -> None:
     entity = db.get(Entity, p.payload.get("applied_entity_id"))
     if entity:
         entity.summary = summary
+        entity.summary_by = by[:200]
     p.payload = {**p.payload, "summary": summary}
 
 
@@ -359,14 +369,14 @@ def review_status(session: GameSession, drafting: bool) -> str:
     return "published" if latest.id == published.id else "edited"
 
 
-def save_recap(db: Session, session: GameSession, body: str, note: str = "", standing: bool = False) -> Recap:
+def save_recap(db: Session, session: GameSession, body: str, note: str = "", standing: bool = False, by: str = "") -> Recap:
     body = body.replace("\r\n", "\n").strip()
     if not body:
         raise ReviewError("The recap can't be empty.")
     latest = latest_recap(session)
     if latest is None or latest.body.strip() != body:
         version = (db.scalar(select(func.max(Recap.version)).where(Recap.session_id == session.id)) or 0) + 1
-        latest = Recap(session_id=session.id, version=version, body=body, author="brett", status=Status.DRAFT)
+        latest = Recap(session_id=session.id, version=version, body=body, author="brett", author_name=by[:200], status=Status.DRAFT)
         db.add(latest)
         db.flush()
         db.refresh(session)
@@ -384,6 +394,23 @@ def save_recap(db: Session, session: GameSession, body: str, note: str = "", sta
             correction.standing_instruction = standing
         db.add(correction)
     return latest
+
+
+def person_version(session: GameSession) -> Recap | None:
+    """When Claude redrafted over a recap someone wrote: their latest version, to show Claude's draft as a marked-up
+    edit of it and offer to keep theirs (content workflows step 3)."""
+    latest = latest_recap(session)
+    if latest is None or latest.author != "ai":
+        return None
+    return next((r for r in reversed(session.recaps) if r.author != "ai" and r.version < latest.version), None)
+
+
+def keep_person_version(db: Session, session: GameSession) -> Recap:
+    """Set Claude's redraft aside and make the person's version the latest again (the redraft stays in the versions)."""
+    mine = person_version(session)
+    if mine is None:
+        raise ReviewError("There's no earlier version of yours to go back to.")
+    return save_recap(db, session, mine.body, by=mine.author_name)
 
 
 def publish(db: Session, session: GameSession) -> None:
@@ -447,6 +474,9 @@ def review_context(db: Session, session: GameSession, drafting: bool) -> dict:
         "status": review_status(session, drafting),
         "latest": latest_recap(session),
         "published": published_recap(session),
+        "person_version": person_version(session),
+        "current": {e.id: e for e in db.scalars(select(Entity).where(Entity.id.in_(
+            {p.payload.get("entity_id") for p in open_proposals if p.kind == "entity" and p.payload.get("entity_id")})))},
         "events": list(session.events),
         "event_kinds": [k.value for k in EventKind],
         "open_questions": open_questions,

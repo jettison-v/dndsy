@@ -80,7 +80,10 @@ Entities: only ones this session adds information about. Use the existing \
 name when it is already known (match aliases and misspellings); give a full \
 updated summary of 1-3 sentences that merges what was known with what's new. \
 For new ones, pick the kind and write a summary. Add aliases only for real \
-alternative names or spellings.
+alternative names or spellings. A summary marked "written by" a person is their \
+words: keep its wording and order, and change only what this session adds or \
+corrects (add a sentence, fix a detail); never rephrase what's still true, and \
+it may stay longer than 3 sentences.
 
 Relationships: lasting links between people, factions and places that this \
 session reveals or changes and that aren't in the known relationships yet. \
@@ -259,7 +262,8 @@ def _known_world(db: Session, campaign: Campaign) -> str:
         select(Entity).where(Entity.campaign_id == campaign.id, Entity.kind != EntityKind.PC).order_by(Entity.kind, Entity.name)
     ):
         quest = "" if e.quest_open is None else (" (open)" if e.quest_open else " (done)")
-        lines.append(f"- {e.name} [{e.kind.value}]{quest}: {e.summary}{_alias_text(e)}")
+        who = f" (written by {e.written_by_person}: keep their wording)" if e.written_by_person else ""
+        lines.append(f"- {e.name} [{e.kind.value}]{quest}{who}: {e.summary}{_alias_text(e)}")
     facts: dict[int, list[str]] = {}
     for f in db.scalars(
         select(Fact).join(Entity).where(Entity.campaign_id == campaign.id, Fact.status == "merged").order_by(Fact.id)
@@ -396,6 +400,14 @@ def build_messages(db: Session, session: GameSession, source: Source, background
     if answers:
         qa = "\n".join(f"- Q: {c.before}\n  A: {c.after}" for c in answers)
         volatile.append({"type": "text", "text": f"<clarifications_from_brett>\n{qa}\n</clarifications_from_brett>"})
+    latest = session.recaps[-1] if session.recaps else None
+    if latest is not None and latest.author != "ai":  # protect their words (content workflows step 3)
+        who = latest.author_name or "someone at the table"
+        volatile.append({"type": "text", "text": (
+            f"<current_recap written_by=\"{who}\">\n{latest.body}\n</current_recap>\n"
+            f"{who} wrote or edited the current recap. Your recap must keep their wording, order and paragraphs: "
+            "change only what the source or the clarifications show is wrong or missing. Don't rephrase anything "
+            "that's still true.")})
     volatile.append({"type": "text", "text": "Draft this session's record."})
     return [{"role": "user", "content": stable + volatile}]
 
@@ -502,6 +514,7 @@ def store_result(db: Session, session: GameSession, run: ExtractionRun, data: di
                     "name": existing.name if existing else item["name"].strip(),
                     "kind": existing.kind.value if existing else item["kind"],
                     "old_summary": existing.summary if existing else "",
+                    "written_by": existing.written_by_person if existing else "",  # shown as a marked-up edit of theirs
                     "summary": item["summary"].strip(),
                     "new_aliases": new_aliases,
                     "quest_open": quest_open,

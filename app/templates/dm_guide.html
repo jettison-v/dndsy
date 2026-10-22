@@ -9,7 +9,7 @@
   <p class="subtitle">How askdnd's campaign record works for you as the DM, and a plan for getting through the backlog from Brett's notes. Only the DM, reviewers and admins see this page.</p>
   <nav class="ds-jump" aria-label="On this page">
     <a href="#idea">The idea</a><a href="#backlog">The backlog</a><a href="#after">After a game night</a><a href="#players">The inbox</a>
-    <a href="#write">Writing it yourself</a><a href="#tidy">Tidying and undo</a><a href="#privacy">Who sees what</a><a href="#words">Words</a>
+    <a href="#write">Writing it yourself</a><a href="#kept">Your words are kept</a><a href="#tidy">Tidying and undo</a><a href="#privacy">Who sees what</a><a href="#words">Words</a>
   </nav>
 
   <section class="section" id="idea">
@@ -37,8 +37,7 @@
           <li><b>Read the recap.</b> Fix anything wrong right there; your wording wins.</li>
           <li><b>Key moments.</b> Delete wrong ones, fix the wording, add any that are missing.</li>
           <li><b>Claude's questions.</b> Answer what you know and <b>Skip</b> the rest. If you answered several, <b>Redraft</b> lets Claude use them (or just edit the recap yourself).</li>
-          <li><b>Suggested updates</b> (new people and places, spellings, description changes): <b>Accept</b>, <b>Edit</b> or <b>Reject</b>.
-            <span class="guide-warn">For now, accepting a <i>description change</i> replaces the description that's there. If that entry has wording you want to keep, choose <b>Edit</b> and combine the two before accepting. This becomes automatic soon.</span></li>
+          <li><b>Suggested updates</b> (new people and places, spellings, description changes): <b>Accept</b>, <b>Edit</b> or <b>Reject</b>. A description change shows as a <b>marked-up edit</b>: struck-through words would go, highlighted words are Claude's. Where you wrote the description, Claude keeps your words and only adds or fixes what the session changed.</li>
           <li><b>Publish.</b> The table sees it on <i>Previously on…</i> and <i>Sessions</i>. You can edit and republish any time.</li>
         </ol></li>
       {% if b.to_record %}<li><b>Sessions waiting for a recording</b> <span class="tag">{{ b.to_record | length }}</span>
@@ -93,6 +92,18 @@
       <li><b>Claude's help, when you want it:</b> in an entry's Edit window, <b>Regenerate description</b> rewrites it from the facts and key moments; you see it before anything changes. Facts it worked in come off the list when you accept.</li>
       <li><b>A session with no notes or recording:</b> <a href="/admin/sessions/new">Recaps › + Add session</a>, write what happened, and choose <b>Save as the recap</b> (your words, no Claude) or <b>Save and ask Claude</b> (Claude checks it against the sessions around it and asks questions).</li>
       <li><b>A spelling or term:</b> Campaign › Glossary › <b>Add a term</b>. Transcripts use the glossary to spell names right.</li>
+    </ul>
+  </section>
+
+  <section class="section" id="kept">
+    <h2>Your words are kept</h2>
+    <p>askdnd remembers who wrote each description and recap last. Once you've written or edited one, it's yours:</p>
+    <ul class="guide-list">
+      <li><b>Claude keeps your wording.</b> When a later session, a redraft or <b>Ask Claude to work it in</b> changes something you wrote, Claude is told to keep your words and only add or fix what's new.</li>
+      <li><b>You see every change marked up</b> before anything happens: <del class="guide-del">struck through</del> means it would go, <ins class="guide-ins">highlighted</ins> means Claude added it. Accept, Edit or Reject as usual.</li>
+      <li><b>Nothing overwrites a newer edit.</b> If you changed a description after Claude drafted its update, accepting the old update is refused; use <b>Edit</b> to combine the two.</li>
+      <li><b>Recaps:</b> if Claude redrafts a recap you edited, the session's page shows what it changed, with <b>Keep your version</b> to go straight back to yours.</li>
+      <li>An entry's Edit window says who wrote its description (<i>Written by …</i>).</li>
     </ul>
   </section>
 

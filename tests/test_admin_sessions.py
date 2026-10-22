@@ -247,3 +247,71 @@ def test_publishing_drafts_the_next_session_and_late_duplicates_join_the_entry(c
     client.post(f"/admin/proposals/{late.id}/undo", headers=HX)
     db.expire_all()
     assert db.scalar(select(Fact).where(Fact.text == "Fled to the sea cave.")) is None  # Undo takes the fact back
+
+
+def test_the_dms_words_are_kept(client, db):
+    """Content workflows step 3: who wrote each description and recap is recorded; Claude's updates to a person's
+    words are asked to keep them and arrive as marked-up edits; a stale update can't overwrite a newer edit."""
+    from app import entities
+    from app.render import word_diff
+
+    assert str(word_diff("She owes Cole.", "She owes Cole 10 gold.")) == "She owes Cole <ins>10 gold</ins>."
+
+    s = drafted_session(db)
+    lil = db.scalar(select(Entity).where(Entity.name == "Lillippi Lemon"))
+    assert lil.written_by_person == ""  # imported
+    accept = proposal(db, "Lillippi Lemon")
+    client.post(f"/admin/proposals/{accept.id}/accept", headers=HX)
+    db.expire_all()
+    assert db.get(Entity, lil.id).summary_by == "claude"
+    client.post(f"/admin/proposals/{accept.id}/undo", headers=HX)
+    db.expire_all()
+    assert db.get(Entity, lil.id).summary_by == ""
+
+    # The DM writes the description: Claude is told to keep it, and the update shows as a marked-up edit
+    client.post(f"/campaign/{lil.id}/description", data={"summary": "A tiefling bard with a silver lute."}, headers=HX)
+    db.expire_all()
+    lil = db.get(Entity, lil.id)
+    assert lil.written_by_person
+    world = build_messages(db, s, Source("notes", "x"))[0]["content"][0]["text"]
+    assert "Lillippi Lemon [npc] (written by " in world and "keep their wording" in world
+    run = ExtractionRun(session_id=s.id, source="notes", status="done")
+    db.add(run)
+    db.flush()
+    store_result(db, s, run, {**RESULT, "entities": [{**RESULT["entities"][1], "summary": "A tiefling bard with a silver lute, who fought devils."}]})
+    db.flush()
+    p = proposal(db, "Lillippi Lemon")
+    assert p.payload["written_by"] == lil.written_by_person and p.payload["old_summary"] == "A tiefling bard with a silver lute."
+    page = client.get(f"/admin/sessions/{s.id}").text
+    assert "Keeps " in page and "lute<ins>, who fought devils</ins>." in page
+
+    # Edited since the draft: accepting is refused until combined by hand
+    entities.set_description(lil, "A tiefling bard.", by="Dee")
+    db.commit()  # the refused accept below rolls back whatever wasn't committed
+    r = client.post(f"/admin/proposals/{p.id}/accept", headers=HX)
+    assert "changed since this draft" in r.text
+    client.post(f"/admin/proposals/{p.id}/accept", data={"summary": "A tiefling bard who fought devils."}, headers=HX)
+    db.expire_all()
+    assert (db.get(Entity, lil.id).summary, db.get(Proposal, p.id).status) == ("A tiefling bard who fought devils.", "accepted")
+    assert db.get(Entity, lil.id).written_by_person  # the edit made it theirs
+
+    # Recaps: the redraft is asked to keep the person's recap, shown marked up, and they can keep theirs
+    client.post(f"/admin/sessions/{s.id}/recap", data={"body": "We fought **devils** at the gate."}, headers=HX)
+    db.expire_all()
+    s = db.get(GameSession, s.id)
+    assert s.recaps[-1].author_name
+    prompt = "".join(b["text"] for b in build_messages(db, s, Source("notes", "x"))[0]["content"] if b["type"] == "text")
+    assert "<current_recap written_by=" in prompt and "We fought **devils** at the gate." in prompt
+    run = ExtractionRun(session_id=s.id, source="notes", status="done")
+    db.add(run)
+    db.flush()
+    store_result(db, s, run, {**RESULT, "recap": "We fought **devils** at the north gate."})
+    db.commit()
+    db.expire_all()
+    page = client.get(f"/admin/sessions/{s.id}").text
+    assert "Claude redrafted" in page and "<ins>north</ins>" in page and "/recap/keep-mine" in page
+    client.post(f"/admin/sessions/{s.id}/recap/keep-mine", headers=HX)
+    db.expire_all()
+    s = db.get(GameSession, s.id)
+    assert s.recaps[-1].body == "We fought **devils** at the gate." and s.recaps[-1].author == "brett"
+    assert "Claude redrafted" not in client.get(f"/admin/sessions/{s.id}").text

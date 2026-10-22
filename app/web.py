@@ -20,6 +20,11 @@ def campaign(db: Session) -> Campaign | None:
     return db.scalar(select(Campaign).order_by(Campaign.id))
 
 
+def person_name(user: dict | None) -> str:
+    """How someone is named where we record who wrote something (a description, a recap)."""
+    return ((user or {}).get("name") or (user or {}).get("email") or "someone")[:200]
+
+
 def message(request: Request, title: str, text: str, status: int = 200):
     return templates.TemplateResponse(request, "message.html", {"title": title, "message": text}, status_code=status)
 

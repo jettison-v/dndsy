@@ -49,4 +49,10 @@ and Claude propose; the DM decides when Claude helps.
    recap · Ask Claude to redraft with it · I fixed it · Dismiss; glossary: edit or add the term in place), Claude's
    description drafts (Check it opens the entry's Edit window), and sessions to review. Players see Waiting, Added,
    Used or Not used in the entry's panel and on **Your suggestions** (`/your-suggestions`, account menu).
-3. **Protect the DM's words** (decision 5).
+3. **Protect the DM's words** (decision 5). Done 2026-10-22: entries record who wrote the description last
+   (`entities.summary_by`: "claude" or a person's name; backfilled from version history) and recaps who wrote each
+   person-made version (`recaps.author_name`). Claude is told to keep a person's wording, in session drafts (the
+   known world marks their descriptions; a redraft gets their current recap), in Regenerate and in Ask Claude to work
+   it in. Every description change shows as a marked-up edit (`render.word_diff`); accepting a session's update to a
+   description edited since the draft is refused (Edit combines them); a redrafted recap shows what Claude changed,
+   with Keep your version.

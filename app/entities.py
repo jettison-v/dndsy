@@ -132,7 +132,11 @@ open questions, never as fact.
 - Keep names spelled exactly as given. Don't invent anything.
 - Describe; never advise the players or tell them what to do.
 - In used_fact_ids, list the id of every fact from the table that your summary \
-now covers, so it can come off the list of facts."""
+now covers, so it can come off the list of facts.
+- When the current summary is marked as written by a person, it's their words: \
+keep its wording and order, and change only what the facts, relationships and \
+key moments require (add a sentence, fix a detail). Never rephrase what's still \
+true, and it may stay longer than 4 sentences."""
 
 DESCRIBE_SCHEMA = {
     "type": "object",
@@ -150,7 +154,8 @@ def build_describe_messages(db: Session, entity: Entity) -> list[dict]:
         parts.append("Quest status: " + ("open" if entity.quest_open else "done"))
     if entity.aliases:
         parts.append("Also known as: " + ", ".join(a.alias for a in entity.aliases))
-    parts.append("\nCurrent summary:\n" + (entity.summary or "(none yet)"))
+    who = f" (written by {entity.written_by_person}: keep their wording)" if entity.written_by_person else ""
+    parts.append(f"\nCurrent summary{who}:\n" + (entity.summary or "(none yet)"))
     facts = merged_facts(db, entity.id)
     if facts:
         parts.append("\nFacts from the table (corrections override the summary):\n" + "\n".join(f"- [fact {f.id}] {f.labeled_text}" for f in facts))
@@ -208,8 +213,9 @@ def regenerate(db: Session, entity: Entity, client_factory: Callable[[], anthrop
         raise ExtractionError(run.error) from e
 
 
-def accept_description(entity: Entity, text: str | None = None) -> None:
-    """Use Claude's draft (or the reviewer's edit of it) as the summary; keep the old one for Undo."""
+def accept_description(entity: Entity, text: str | None = None, by: str = "") -> None:
+    """Use Claude's draft (or the reviewer's edit of it, which makes it theirs) as the summary; keep the old one for
+    Undo."""
     new = (text if text is not None else entity.draft_summary or "").replace("\r\n", "\n").strip()
     if not new:
         raise EntityError("There's no new description to use.")
@@ -218,6 +224,7 @@ def accept_description(entity: Entity, text: str | None = None) -> None:
     mark("claude")  # version history: this description came from Claude
     entity.previous_summary = entity.summary or ""
     entity.summary = new
+    entity.summary_by = by if by and new != (entity.draft_summary or "").strip() else "claude"
     entity.draft_summary = None
     # Facts Claude worked in come off the list ("Added to the description" under Done, with Undo)
     db = object_session(entity)
@@ -232,7 +239,7 @@ def discard_description(entity: Entity) -> None:
     entity.draft_fact_ids = None
 
 
-def set_description(entity: Entity, text: str) -> None:
+def set_description(entity: Entity, text: str, by: str = "") -> None:
     """The DM's or an editor's own words, no Claude (Brett, 2026-10-22). Undo keeps the earlier one."""
     new = (text or "").replace("\r\n", "\n").strip()
     if len(new) > 4000:
@@ -241,6 +248,7 @@ def set_description(entity: Entity, text: str) -> None:
         raise EntityError("Nothing changed.")
     entity.previous_summary = entity.summary or ""
     entity.summary = new
+    entity.summary_by = by[:200]
 
 
 def rename(entity: Entity, name: str) -> None:
@@ -262,6 +270,7 @@ def undo_description(entity: Entity) -> None:
     if entity.previous_summary is None:
         raise EntityError("Nothing to undo.")
     entity.summary, entity.previous_summary = entity.previous_summary, None
+    entity.summary_by = ""  # not known any more
 
 
 # --- @-mentions ---------------------------------------------------------------------
@@ -352,7 +361,7 @@ def find_by_name(db: Session, campaign_id: int, name: str) -> Entity | None:
     return None
 
 
-def create(db: Session, campaign_id: int, kind: str, name: str, summary: str = "", published: bool = True) -> Entity:
+def create(db: Session, campaign_id: int, kind: str, name: str, summary: str = "", published: bool = True, by: str = "") -> Entity:
     """A new person, place, faction, item, quest or creature written by the DM (no transcript, no Claude)."""
     name = " ".join((name or "").split())
     if not name:
@@ -368,7 +377,8 @@ def create(db: Session, campaign_id: int, kind: str, name: str, summary: str = "
     if (same := find_by_name(db, campaign_id, name)) is not None:
         raise EntityError(f"{same.name} is already in the campaign record.")
     entity = Entity(campaign_id=campaign_id, kind=k, name=name, summary=(summary or "").replace("\r\n", "\n").strip()[:4000],
-                    status=Status.PUBLISHED if published else Status.DRAFT, quest_open=True if k == EntityKind.QUEST else None)
+                    status=Status.PUBLISHED if published else Status.DRAFT, quest_open=True if k == EntityKind.QUEST else None,
+                    summary_by=by[:200] if summary.strip() else "")
     db.add(entity)
     db.flush()
     return entity

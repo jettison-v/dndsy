@@ -43,7 +43,16 @@ def _outcome(status: str) -> dict:
     return outcome(status)
 
 
-templates.env.filters["outcome"] = _outcome  # a suggestion's status as its author sees it: Waiting, Added, Used, Not used
+templates.env.filters["outcome"] = _outcome
+
+
+def _diff(old: str, new: str):
+    from app.render import word_diff
+
+    return word_diff(old, new)
+
+
+templates.env.filters["diff"] = _diff  # {{ before | diff(after) }}: a marked-up edit (<del>, <ins>)  # a suggestion's status as its author sees it: Waiting, Added, Used, Not used
 
 
 def _relation_label(type_: str) -> str:

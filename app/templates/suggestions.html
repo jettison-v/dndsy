@@ -65,7 +65,7 @@
     {% for e in drafts %}
     <div class="item inbox-item">
       <p class="item-title"><a href="/campaign?open={{ e.id }}" data-no-peek>{{ e.name }}</a> <span class="tag draft">New description</span></p>
-      <div class="answer clamp">{{ e.draft_summary }}</div>
+      <div class="answer clamp markup">{% if e.summary %}{{ e.summary | diff(e.draft_summary) }}{% else %}{{ e.draft_summary }}{% endif %}</div>
       <div class="row"><a class="btn primary" href="/campaign?open={{ e.id }}" data-modal-url="/campaign/{{ e.id }}/edit" data-modal-size="large">Check it</a>
         <span class="note">Opens the entry's Edit window: use it, edit it or discard it.</span></div>
     </div>
