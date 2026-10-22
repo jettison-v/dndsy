@@ -346,3 +346,22 @@ Plain-English recaps of each setup milestone, written for reuse on future projec
 2. Rotate first what can cost money or expose data (AI keys, cloud storage keys). Give each key the smallest permission that works, so a leak stays small.
 3. Use spending caps (the Anthropic prepaid balance) so a leaked key has a ceiling.
 4. Save new secrets from the clipboard with a script, test them with a harmless call, then turn the old ones off.
+
+**Update, later on 2026-10-22.** Builds came back. `SESSION_SECRET` and `UPLOAD_TOKEN` were rotated (generated on the Mac and piped straight into `scripts/set-secret.sh`, so no one ever saw them), and an empty commit pushed to `main` redeployed beta and the backup service. Still open: the Google client secret, the Postgres password and the legacy keys (roadmap step 12).
+
+## 2026-10-22: Reviewing a big change side by side (branch + second local server)
+
+**Why.** The design system's visual passes change how every page looks. Brett wants to compare old and new before they reach beta, on the same data, with everything clickable.
+
+**What we set up:**
+- A **branch**, `design-system`: a parallel line of commits. `main` (and so beta) stays as it is until the branch is merged.
+- A **worktree**: a second folder, `~/Code/dndsy-design`, with the branch checked out (`git worktree add -b design-system ../dndsy-design main`). Two folders, one repository: no copying, and each folder can run its own server.
+- **Two local servers** in `.claude/launch.json`: `web` (the current look, from `main`, port 8000) and `web-new` (the branch, port 8001). Both read the same `.env`, so the same local database and the same sign-in.
+- Compare by opening the same page on `localhost:8000` and `localhost:8001` side by side.
+- When Brett approves, the branch is merged into `main` and deploys to beta as usual. Fixes made on `main` in the meantime get merged into the branch so the two don't drift.
+
+**Same on a new project:**
+1. Do large or risky changes on a branch; keep `main` deployable.
+2. For a visual review, run old and new side by side on the **same data**. Comparing local to the live site mixes up data differences with design differences.
+3. A worktree avoids switching branches back and forth in one folder (and restarting servers each time).
+4. Hosting services can also deploy a branch to its own temporary address ("preview environments"). Worth it with more reviewers; it needs its own database copy.
