@@ -4,6 +4,7 @@
 {# Character › Battle (character_pages._battle_ctx). Game Mode and the Wild Shape switch swap this whole block. #}
 <div id="battle-body" data-character="{{ c.id }}" data-name="{{ c.entity.name }}" data-fetched="{{ fetched_at.isoformat() if fetched_at else '' }}" data-cond-adv='{{ cond_adv | tojson }}'>
   <div class="battlebar">
+    {% if s %}{{ resource_row(s, slots=not spellbar, skip=(["Wild Shape"] if known_forms else [])) }}{% endif %}
     {% if form %}{% set fb = form.beast %}
     <div class="ws-form" data-modal-url="/characters/{{ c.id }}/form?name={{ fb.name | urlencode }}" data-modal-size="large" tabindex="0" role="button">
       {% if fb.image %}<img class="ws-pic" src="{{ fb.image }}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}
@@ -17,8 +18,7 @@
         {{ save_tiles(form.saves, form.save_adv_all) }}
         <span class="note">Your stats carried over. {% if form.castable %}Spells: only {{ form.castable | join(", ") }}.{% else %}No spellcasting in this form.{% endif %} Click for the full form, skills and rules.</span></div>
     </div>
-    {% elif s %}{{ resource_row(s, slots=not spellbar, skip=(["Wild Shape"] if known_forms else [])) }}
-    <div class="battle-head">{{ battle_strip(s, c) }}{{ save_tiles(s.saves, s.save_adv_all) }}</div>{% endif %}
+    {% elif s %}<div class="battle-head">{{ battle_strip(s, c) }}{{ save_tiles(s.saves, s.save_adv_all) }}</div>{% endif %}
   </div>
   {% if s and known_forms %}
   <div class="ws-bar ws-row" aria-label="Wild Shape">
@@ -108,7 +108,7 @@
     {% include "_forget.html" %}
     {% if show_picks and (combos or can_pick) %}
     <div class="section">
-      <div class="sec-head"><h2>Battle combos</h2>{% if can_pick %}<a class="head-add" href="#" data-modal-url="/characters/{{ c.id }}/notes/new?kind=combo" data-modal-size="large">+ Add</a>{% endif %}</div>
+      <div class="sec-head"><h2>Battle combos</h2>{% if can_pick %}<a href="#" data-modal-url="/characters/{{ c.id }}/notes/new?kind=combo" data-modal-size="large">+ Add</a>{% endif %}</div>
       {% for n in combos %}
       <details class="combo-fold"><summary><b>{{ n.title }}</b>{% if n.data.when %} <span class="muted">· {{ n.data.when }}</span>{% endif %}</summary>{{ combo_body(n, nl) }}</details>
       {% else %}<p class="muted">Plans that take a setup turn and a payoff turn. Add one here or on Plan.</p>{% endfor %}

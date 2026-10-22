@@ -1557,3 +1557,8 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .rich-area p { margin: 0 0 8px; }
 .rich-area ul, .rich-area ol { margin: 0 0 8px; padding-left: 22px; }
 .rich-area h1, .rich-area h2 { font-size: var(--fs-lg); margin: 14px 0 6px; }
+
+/* Lists: "Full notes" in the toolbar shows each row's note in full */
+.ls-check { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-sm); color: var(--muted); cursor: pointer; white-space: nowrap; }
+.ls-check input { margin: 0; accent-color: var(--red); }
+.ls-notes-full .ls-note { white-space: pre-line; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }

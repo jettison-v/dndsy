@@ -102,6 +102,7 @@ def test_wild_shape_tab_panel_and_battle_switch(db, cole, player, dm):
     db.refresh(cole)
     assert cole.wild_shape == "Polar Bear"
     assert "In Wild Shape: Polar Bear" in dm.get(f"/characters/{cole.id}/battle").text  # the whole table sees it
+    assert '<span class="res-label">Resources</span>' in r.text  # resources can still be spent in a form
     player.post(f"/characters/{cole.id}/wild-shape", data={"form": ""}, headers=HX)
     db.refresh(cole)
     assert cole.wild_shape is None

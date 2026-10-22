@@ -405,6 +405,7 @@
         here.innerHTML = there.innerHTML;
         if (window.htmx) htmx.process(here);
         if (here.matches('[data-planner]') && window.askdndPlanner) window.askdndPlanner(here);
+        if (window.askdndNotesInit) window.askdndNotesInit(here);  // "Full notes" stays on
       });
       if (typeof sortSetup === 'function') sortSetup();  // Reminders can be dragged
       document.querySelectorAll('[role=tab][data-tab]').forEach(t => {  // the tab counts
@@ -475,6 +476,23 @@
   document.addEventListener('click', e => {
     document.querySelectorAll('details.conc-pop[open], details.cond-pill[open], details.info-pop[open]').forEach(d => { if (!d.contains(e.target)) d.open = false; });
   });
+  // Lists' "Full notes": each row's note in full instead of one line, remembered per list. Plan's tabs re-render
+  // their lists after a save, so it's applied again after every swap.
+  const notesKey = box => 'askdnd:notes-full:' + (box.closest('[data-list]') || {}).dataset?.list;
+  const applyNotes = box => box.closest('[data-list]').classList.toggle('ls-notes-full', box.checked);
+  const initNotes = root => root.querySelectorAll('[data-ls-notes]').forEach(box => {
+    try { box.checked = localStorage.getItem(notesKey(box)) === '1'; } catch (_) { /* storage blocked */ }
+    applyNotes(box);
+  });
+  document.addEventListener('change', e => {
+    const box = e.target.closest && e.target.closest('[data-ls-notes]'); if (!box) return;
+    applyNotes(box);
+    try { localStorage.setItem(notesKey(box), box.checked ? '1' : '0'); } catch (_) { /* storage blocked */ }
+  });
+  initNotes(document);
+  window.askdndNotesInit = initNotes;
+  document.body.addEventListener('htmx:afterSwap', e => initNotes(e.detail.target));
+  document.addEventListener('panel:loaded', e => initNotes(e.target));
   // Notes editor (Brett, 2026-10-22: most players won't know Markdown). The textarea[data-rich] stays the
   // form field; an editable area with formatting buttons takes its place on screen and writes Markdown back
   // into it on every change (Turndown), so a note nobody edits is saved exactly as it was. Without Turndown

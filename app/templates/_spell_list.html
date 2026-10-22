@@ -1,6 +1,6 @@
 {# The spell list on the shared list pattern (_lists.html): Sheet › Spells (every spell, with Prepared · Shortlist
    · All views) and Plan › Spells (the Shortlist only, no views). `spells` from spellbook.sheet_entries. #}
-{% from "_lists.html" import filter_column, search_box, active_row, view_switch %}
+{% from "_lists.html" import filter_column, search_box, active_row, view_switch, notes_toggle %}
 {% from "_char.html" import pick_btn %}
 {% macro spell_list(c, s, spells, groups, picks, can_pick, show_picks, key="sheet-spells", views=()) -%}
   {% set ON_SAVE = {"half": ("Half on a save", "half"), "none": ("Nothing on a save", "none"), "lands": ("Damage needs no save", "lands")} %}
@@ -14,6 +14,7 @@
           <span class="note" data-ls-summary></span>
           <label class="ls-select"><span>Sort</span>
             <select data-ls-sort aria-label="Sort"><option value="level">Level</option><option value="name">Name</option><option value="avg">Amount</option></select></label>
+          {% if show_picks and picks.notes and (spells | map(attribute="key") | select("in", picks.notes) | first) %}{{ notes_toggle() }}{% endif %}
         </div>
         {{ active_row() }}
         <div class="ls-rows sh-cols" data-ls-rows>

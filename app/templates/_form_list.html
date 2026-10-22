@@ -1,7 +1,7 @@
 {# Wild Shape forms on the shared list pattern (_lists.html, roadmap step 8): compact rows with pictures.
    Sheet › Wild Shape (Known · All you can learn) and Plan › Wild Shapes (Shortlist · All you can learn).
    `forms` from wild_shape.forms; a row opens the form in its large window. #}
-{% from "_lists.html" import filter_column, search_box, active_row, view_switch %}
+{% from "_lists.html" import filter_column, search_box, active_row, view_switch, notes_toggle %}
 {% from "_char.html" import pick_btn, adv %}
 {% macro form_list(c, forms, picks, can_pick, show_picks, key="sheet-forms", views=()) -%}
 {%- set sizes = ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"] -%}
@@ -22,6 +22,7 @@
         <span class="note" data-ls-summary></span>
         <label class="ls-select"><span>Sort</span>
           <select data-ls-sort aria-label="Sort"><option value="default">Known</option><option value="damage">Damage</option><option value="hit">To hit</option><option value="speed">Speed</option><option value="cr">CR</option><option value="name">Name</option></select></label>
+        {% if show_picks and picks.notes and (forms | map(attribute="key") | select("in", picks.notes) | first) %}{{ notes_toggle() }}{% endif %}
       </div>
       {{ active_row() }}
       <div class="ls-rows fm-cols" data-ls-rows>

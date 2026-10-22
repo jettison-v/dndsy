@@ -672,6 +672,7 @@ def test_a_note_announces_itself_so_the_rows_update_without_a_refresh(player, db
     owned_by(db, cole, "player@example.com")
     r = player.post(f"/characters/{cole.id}/pick/note", data={"ref": "spell:Moonbeam", "note": "  Opener vs. groups "})
     assert json.loads(r.headers["HX-Trigger"])["noteChanged"] == {"character": cole.id, "ref": "spell:Moonbeam", "note": "Opener vs. groups"}
+    assert "data-ls-notes" in player.get(f"/characters/{cole.id}/plan").text  # Plan's spell list offers "Full notes"
     r = player.post(f"/characters/{cole.id}/pick/note", data={"ref": "spell:Moonbeam", "note": ""})
     assert json.loads(r.headers["HX-Trigger"])["noteChanged"]["note"] == ""  # cleared: the line goes away
 

@@ -43,6 +43,11 @@
 
 {# Views above a list: Prepared · Shortlist · All. `views` is a list of (key, label); rows say which views
    they belong to in data-views. Leave it out (the DM) and every row is shown. #}
+{# Rows show your note on one line; this shows each note in full (remembered per list, app.js). #}
+{% macro notes_toggle() -%}
+<label class="ls-check"><input type="checkbox" data-ls-notes> Full notes</label>
+{%- endmacro %}
+
 {% macro view_switch(views, label="Which ones") -%}
 <div class="seg ls-views" role="group" aria-label="{{ label }}">
   {% for v, l in views %}<button type="button" data-ls-view="{{ v }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">{{ l }} <span class="ls-n" data-ls-view-n></span></button>{% endfor %}
