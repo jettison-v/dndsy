@@ -53,20 +53,32 @@ img { max-width: 100%; }
 .brand { font-family: var(--cond); font-weight: 700; font-size: var(--fs-lg); color: var(--text-strong); text-decoration: none; display: flex; align-items: center; gap: 10px; }
 .brand img { width: 34px; height: 34px; border-radius: 7px; }
 .nav { display: flex; gap: 2px; align-items: center; }
-.nav a, .switcher > button { color: var(--muted); text-decoration: none; font-weight: 500; font-size: var(--fs-md); padding: 8px 12px; border-radius: var(--r-sm); }
-.nav a:hover, .switcher > button:hover { color: var(--text); background: var(--surface); }
-.nav a.active, .switcher > button.active { color: var(--text-strong); background: var(--surface); }
-/* Menu bar (Brett, 2026-10-19, Option 1): story pages | your character ▾ and Party | Live, Manage, you */
+.nav a { color: var(--muted); text-decoration: none; font-weight: 500; font-size: var(--fs-md); padding: 8px 12px; border-radius: var(--r-sm); }
+.nav a:hover { color: var(--text); background: var(--surface); }
+.nav a.active { color: var(--text-strong); background: var(--surface); }
+/* Menu bar (Brett, 2026-10-22, Option B): the campaign's name | Story, Campaign | your character, Party ▾ | Live, Manage, you */
 .nav-sep { width: 1px; height: 24px; background: var(--line); flex: none; }
-.switcher { position: relative; display: flex; align-items: center; }
-.switcher > .switcher-name { font-weight: 600; color: var(--text); padding-right: 4px; border-radius: var(--r-sm) 0 0 6px; }
-.switcher > .switcher-caret { padding: 8px 8px 8px 4px; border-radius: 0 6px 6px 0; }
-.switcher > button { background: none; border: none; font-weight: 600; color: var(--text); }
-.switcher .menu { left: 0; right: auto; width: 220px; }
-.campaign-switch { position: relative; }
-.campaign-switch > button { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: var(--r-pill); padding: 4px 12px; font-size: var(--fs-sm); white-space: nowrap; }
-.campaign-switch > button:hover { color: var(--text); }
+.campaign-name { font-weight: 600; font-size: var(--fs-md); color: var(--text-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+.campaign-switch { position: relative; min-width: 0; }
+.campaign-switch > button { background: none; border: none; padding: 6px 8px; border-radius: var(--r-sm); display: block; }
+.campaign-switch > button:hover { background: var(--surface); }
 .campaign-switch .menu { left: 0; right: auto; }
+.table-nav { display: flex; gap: 6px; align-items: center; }
+.char-btn { display: inline-flex; align-items: center; gap: 8px; min-height: var(--control-h); padding: 4px 12px; background: none; border: 1px solid var(--line); border-radius: var(--r-sm); color: var(--text); text-decoration: none; font-weight: 500; font-size: var(--fs-md); white-space: nowrap; }
+a.char-btn { padding-left: 5px; max-width: 200px; }
+a.char-btn > span:last-child { overflow: hidden; text-overflow: ellipsis; }
+.char-btn:hover { background: var(--surface); }
+.char-btn.active { background: var(--surface); border-color: var(--line-strong); color: var(--text-strong); }
+.char-av { position: relative; width: 24px; height: 24px; border-radius: 50%; display: inline-grid; place-items: center; flex: none; overflow: hidden; background: var(--line-strong); color: var(--text); font-size: var(--fs-xs); font-weight: 700; }
+.char-av img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.party-switch { position: relative; }
+@media (max-width: 1100px) { .brand-word { display: none; } }
+.menu.party-menu { left: 0; right: auto; width: 290px; max-width: calc(100vw - 24px); }
+.menu a.party-row { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: center; }
+.party-row .char-av { grid-row: span 2; width: 32px; height: 32px; font-size: var(--fs-sm); }
+.party-row .party-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.menu a.party-all { border-top: 1px solid var(--line); margin-top: var(--sp-1); padding-top: var(--sp-3); font-weight: 600; border-radius: 0 0 var(--r-sm) var(--r-sm); }
+.menu .menu-note { margin: 0; padding: 8px 10px; color: var(--muted); font-size: var(--fs-sm); }
 .bar-end { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .manage { position: relative; }
 .manage > button { background: var(--surface); border: 1px solid var(--line); color: var(--text); border-radius: var(--r-sm); padding: 6px 12px; font-weight: 500; font-size: var(--fs-md); }
@@ -345,12 +357,15 @@ table.list td a:hover { color: var(--text-strong); text-decoration: underline; }
   .aside .publish-block { display: none; }
   .mobile-bar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--chrome); border-top: 2px solid var(--red); gap: 12px; align-items: center; z-index: 4; }
   .mobile-bar .btn.primary { flex: 1; min-height: 48px; }
-  .nav, .nav-sep, .party-link, .manage, .account, .brand-word, .campaign-switch { display: none; }
-  .table-nav { display: flex; }
-  .bottom-nav { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--chrome); border-top: 1px solid var(--line); padding: 4px 4px env(safe-area-inset-bottom); }
+  .nav, .nav-sep, .table-nav, .manage, .account, .brand-word { display: none; }
+  .campaign-name { max-width: none; font-size: var(--fs-sm); }
+  .campaign-switch, span.campaign-name { flex: 1; }
+  .bottom-nav { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--chrome); border-top: 1px solid var(--line); padding: 4px 4px env(safe-area-inset-bottom); }
   .bottom-nav > a, .bottom-nav > button { display: grid; place-items: center; min-height: 52px; color: var(--muted); text-decoration: none; font-size: var(--fs-xs); font-weight: 500; background: none; border: none; border-radius: var(--r-md); }
   .bottom-nav > a.active, .bottom-nav > button.active { color: var(--text-strong); font-weight: 700; box-shadow: inset 0 2px 0 var(--red); }
-  .more-menu { position: fixed; z-index: 40; top: auto; right: 8px; bottom: calc(64px + env(safe-area-inset-bottom)); }
+  .bottom-nav > a.bn-char { align-content: center; gap: 2px; padding: 0 2px; }
+  .bn-char > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2; }
+  .menu.sheet-menu { position: fixed; z-index: 40; top: auto; left: auto; right: 8px; bottom: calc(64px + env(safe-area-inset-bottom)); max-height: calc(100vh - 140px); overflow-y: auto; }
   body { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
   .mobile-bar { bottom: calc(60px + env(safe-area-inset-bottom)) !important; }
   .live-ago { display: none; }
@@ -803,10 +818,12 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 @media (max-width: 1100px) { .session-body { grid-template-columns: 1fr; gap: 0; } }
 
 /* Map tab: AideDD's Sword Coast atlas in a frame */
-.map-page .title-row .map-open { margin-left: auto; }
-.map-page .hint { margin-bottom: 12px; }
-.map-frame { display: block; width: 100%; height: calc(100vh - 230px); min-height: 420px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
-@media (max-width: 640px) { .map-frame { height: calc(100vh - 200px); } }
+/* The Campaign page's Map tab (app/atlas.py) */
+.map-head { align-items: center; margin-bottom: 12px; }
+.map-head .hint { margin: 0; flex: 1 1 320px; }
+.map-head .map-open { margin-left: auto; }
+.map-frame { display: block; width: 100%; height: calc(100vh - 300px); min-height: 420px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
+@media (max-width: 640px) { .map-frame { height: calc(100vh - 260px); } }
 .entry-map { display: inline-block; margin-top: 8px; font-size: var(--fs-sm); font-weight: 500; color: var(--blue); text-decoration: none; }
 .entry-map::before { content: "⌖ "; }
 .entry-map:hover { text-decoration: underline; }

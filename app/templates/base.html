@@ -18,38 +18,45 @@
 </head>
 <body data-toast="{{ toast or '' }}">
 {% block body %}
+{# The menu bar (Option B, Brett 2026-10-22; docs/mockups/menu-bar.html): the campaign (its name, Story, Campaign),
+   then the people at the table (your character, Party ▾), then Live, Manage and you. #}
+{% macro avatar(r) %}<span class="char-av" aria-hidden="true">{{ r.name[:1] | upper }}{% if r.portrait %}<img src="{{ r.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>{% endmacro %}
+{% macro party_menu(id, tn, cls="") %}
+<div class="menu party-menu {{ cls }}" id="{{ id }}" hidden>
+  <div class="menu-group">The party</div>
+  {# A character opens in the mode you're in (Battle, Sheet or Plan) #}
+  {% for r in tn.characters %}<a href="/characters/{{ r.id }}{{ tn.suffix }}" class="party-row{{ ' active' if tn.here and r.id == tn.here.id }}">{{ avatar(r) }}<span class="party-name">{{ r.name }}</span><small>{{ ["You" if r.mine, r.classes, r.hp] | select | join(" · ") }}</small></a>
+  {% else %}<p class="menu-note">No characters in this campaign yet.</p>{% endfor %}
+  <a href="/party" class="party-all{{ ' active' if path.startswith('/party') }}">Everyone at a glance</a>
+</div>
+{% endmacro %}
 <header class="topbar"><div class="topbar-inner">
   <a class="brand" href="{{ cbase }}/"><img src="/static/icons/android-chrome-192x192.png" alt=""><span class="brand-word">askdnd</span></a>
-  {% if user and my_campaigns | length > 1 %}
+  {% if user and here %}
+  {% if my_campaigns | length > 1 %}
   <div class="campaign-switch">
-    <button data-menu="campaign-menu" aria-haspopup="true" aria-label="Campaign: {{ here.name if here else 'none' }}. Switch campaign">{{ here.name if here else "Pick a campaign" }} ▾</button>
+    <button class="campaign-name" data-menu="campaign-menu" aria-haspopup="true" aria-label="Campaign: {{ here.name }}. Switch campaign">{{ here.name }} ▾</button>
     <div class="menu" id="campaign-menu" hidden>
       <div class="menu-group">Your campaigns</div>
-      {% for c in my_campaigns %}<a href="/c/{{ c.slug }}{{ switch_path }}" class="{{ 'active' if here and c.id == here.id }}">{{ c.name }}{% if here and c.id == here.id %}<small>You're here</small>{% endif %}</a>{% endfor %}
+      {% for c in my_campaigns %}<a href="/c/{{ c.slug }}{{ switch_path }}" class="{{ 'active' if c.id == here.id }}">{{ c.name }}{% if c.id == here.id %}<small>You're here</small>{% elif campaign_role(c.id) %}<small>{{ campaign_role(c.id) }}</small>{% endif %}</a>{% endfor %}
     </div>
   </div>
+  {% else %}<span class="campaign-name" title="The campaign you're in">{{ here.name }}</span>{% endif %}
   {% endif %}
-  {% if user %}{% set tn = tablenav() %}{% set me = tn.here or tn.mine %}
-  {# Story pages on the left, then your table (Brett, 2026-10-19: menu bar Option 1) #}
-  <nav class="nav" aria-label="Story">
-    <a href="{{ cbase }}/" class="{{ 'active' if path in ('/', '/story') }}">Recap</a>
-    <a href="{{ cbase }}/sessions" class="{{ 'active' if path.startswith('/sessions') }}">Sessions</a>
+  {% if user %}{% set tn = tablenav() %}{% set mine_here = tn.here and tn.here.mine %}
+  <span class="nav-sep" aria-hidden="true"></span>
+  <nav class="nav" aria-label="The campaign">
+    <a href="{{ cbase }}/" class="{{ 'active' if path in ('/', '/story') }}">Story</a>
     <a href="{{ cbase }}/campaign" class="{{ 'active' if path.startswith('/campaign') }}">Campaign</a>
-    <a href="{{ cbase }}/map" class="{{ 'active' if path == '/map' }}">Map</a>
   </nav>
   <span class="nav-sep" aria-hidden="true"></span>
-  <nav class="nav table-nav" aria-label="Your table">
-    <div class="switcher">
-      {# One click on the name opens that character; the ▾ switches characters (Brett, 2026-10-21) #}
-      {% if me %}<a href="/characters/{{ me.id }}{{ tn.suffix }}" class="switcher-name{{ ' active' if tn.here }}">{{ me.name }}</a>
-      <button type="button" class="switcher-caret{{ ' active' if tn.here }}" data-menu="char-menu" aria-haspopup="true" aria-controls="char-menu" aria-label="Switch character" title="Switch character">▾</button>
-      {% else %}<button type="button" data-menu="char-menu" aria-haspopup="true" aria-controls="char-menu">Characters ▾</button>{% endif %}
-      <div class="menu" id="char-menu" hidden>
-        {% for r in tn.characters %}<a href="/characters/{{ r.id }}{{ tn.suffix }}" class="{{ 'active' if tn.here and r.id == tn.here.id }}">{{ r.name }}{% if r.mine %}<small>Your character</small>{% endif %}</a>{% endfor %}
-        {% if not tn.characters %}<a href="/party">No characters yet<small>Party</small></a>{% endif %}
-      </div>
+  <nav class="table-nav" aria-label="Your table">
+    {# Your character: one click, in the mode you used last. The DM has none here. #}
+    {% if tn.mine %}<a href="/characters/{{ tn.mine.id }}{{ tn.suffix }}" class="char-btn{{ ' active' if mine_here }}" title="Your character">{{ avatar(tn.mine) }}<span>{{ tn.mine.name }}</span></a>{% endif %}
+    <div class="party-switch">
+      <button type="button" class="char-btn{{ ' active' if path.startswith('/party') or (tn.here and not mine_here) }}" data-menu="party-menu" aria-haspopup="true" aria-controls="party-menu">Party ▾</button>
+      {{ party_menu("party-menu", tn) }}
     </div>
-    <a href="/party" class="party-link{{ ' active' if path.startswith('/party') }}">Party</a>
   </nav>
   <div class="bar-end">
     <div class="live">{% include "_live_pill.html" %}<div class="menu live-menu" id="live-menu" data-keep-open hidden></div></div>
@@ -77,18 +84,17 @@
   {% endif %}
 </div></header>
 {% if user %}
-{# Phones: the main pages in a bottom bar; everything else under More. #}
+{# Phones: the same groups in a bottom bar (Story · Campaign · your character · Party · More); the rest under More. #}
 <nav class="bottom-nav" aria-label="Main">
-  <a href="{{ cbase }}/" class="{{ 'active' if path in ('/', '/story') }}">Recap</a>
+  <a href="{{ cbase }}/" class="{{ 'active' if path in ('/', '/story') }}">Story</a>
   <a href="{{ cbase }}/campaign" class="{{ 'active' if path.startswith('/campaign') }}">Campaign</a>
-  <a href="/battle" class="{{ 'active' if tn.mode == 'battle' }}">Battle</a>
-  <a href="/party" class="{{ 'active' if path.startswith('/party') }}">Party</a>
-  <button type="button" data-menu="more-menu" aria-haspopup="true" class="{{ 'active' if path.startswith('/sessions') or path == '/map' or path.startswith('/manage') or path.startswith('/admin') }}">More</button>
+  {% if tn.mine %}<a href="/characters/{{ tn.mine.id }}{{ tn.suffix }}" class="bn-char{{ ' active' if mine_here }}" aria-label="Your character: {{ tn.mine.name }}">{{ avatar(tn.mine) }}<span>{{ tn.mine.name }}</span></a>{% endif %}
+  <button type="button" data-menu="party-menu-m" aria-haspopup="true" aria-controls="party-menu-m" class="{{ 'active' if path.startswith('/party') or (tn.here and not mine_here) }}">Party</button>
+  <button type="button" data-menu="more-menu" aria-haspopup="true" class="{{ 'active' if path.startswith('/manage') or path.startswith('/admin') or path == '/your-suggestions' }}">More</button>
 </nav>
-<div class="menu more-menu" id="more-menu" hidden>
+{{ party_menu("party-menu-m", tn, "sheet-menu") }}
+<div class="menu more-menu sheet-menu" id="more-menu" hidden>
   {% if my_campaigns | length > 1 %}{% for c in my_campaigns if not (here and c.id == here.id) %}<a href="/c/{{ c.slug }}{{ switch_path }}">{{ c.name }}<small>Switch campaign</small></a>{% endfor %}{% endif %}
-  <a href="{{ cbase }}/sessions" class="{{ 'active' if path.startswith('/sessions') }}">Sessions</a>
-  <a href="{{ cbase }}/map" class="{{ 'active' if path == '/map' }}">Map</a>
   <a href="/your-suggestions" class="{{ 'active' if path == '/your-suggestions' }}">Your suggestions</a>
   {% if manage_pages %}<a href="{{ manage_pages[0].href }}" class="{{ 'active' if path.startswith('/manage') }}">Manage<small>Running the campaign and askdnd</small></a>{% endif %}
   <a href="/about" data-no-peek>About</a>

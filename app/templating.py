@@ -15,17 +15,24 @@ def _page_context(request: Request) -> dict:
     table: dict = {}
 
     def tablenav() -> dict:
-        """The menu bar's character switcher and Live pill (app/live.py), read once, only by pages that show them."""
+        """The menu bar's characters and Live pill (app/live.py), read once, only by pages that show them. A character
+        page's mode is remembered in the session, so "your character" opens in the mode you used last."""
         from app.live import table as live_table
 
         if "v" not in table:
-            table["v"] = live_table(user, request.url.path)
+            table["v"] = live_table(user, request.url.path, last_mode=request.session.get("mode"))
+            if table["v"].get("mode") and request.session.get("mode") != table["v"]["mode"]:
+                request.session["mode"] = table["v"]["mode"]
         return table["v"]
+
+    def campaign_role(campaign_id: int) -> str:
+        """Your role in another campaign, for the campaign menu ("DM", "Reviewer"; players have no label)."""
+        return {"dm": "DM", "reviewer": "Reviewer"}.get(access.role(user.get("email"), campaign_id) or "", "") if user else ""
 
     here = access.current_campaign() if user else None
     return {"user": user, "is_admin": is_admin(user), "is_reviewer": is_reviewer(user), "is_dm": is_dm(user), "can_moderate": can_moderate(user),
             "can_see_notes": can_see_character_notes(user), "path": request.url.path,
-            "manage_pages": pages_for(user, request.url.path), "tablenav": tablenav,
+            "manage_pages": pages_for(user, request.url.path), "tablenav": tablenav, "campaign_role": campaign_role,
             "in_campaign": access.path_slug.get() is not None,  # the address names the campaign (/c/<campaign>/…)
             # The campaign you're in, the start of its story addresses, and the campaigns you can switch to
             "here": here, "cbase": f"/c/{here['slug']}" if here else "",
@@ -33,8 +40,8 @@ def _page_context(request: Request) -> dict:
             "switch_path": switch_path(request.url.path)}
 
 
-# Pages that make sense in any campaign: switching campaigns keeps you on them (else you land on the Recap)
-SWITCH_KEEPS = ("/", "/sessions", "/campaign", "/map", "/party", "/your-suggestions", "/manage", "/manage/inbox",
+# Pages that make sense in any campaign: switching campaigns keeps you on them (else you land on Story)
+SWITCH_KEEPS = ("/", "/campaign", "/party", "/your-suggestions", "/manage", "/manage/inbox",
                 "/manage/sessions", "/manage/sessions/doc", "/manage/table", "/manage/house-rules", "/manage/history",
                 "/manage/settings", "/manage/dm-guide")
 

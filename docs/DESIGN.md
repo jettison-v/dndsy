@@ -19,22 +19,21 @@ askdnd is read before a session and reviewed after one. People open it on a lapt
 
 ## Navigation
 
-One top bar for everyone (Brett, 2026-10-19, Option 1): story pages on the left, then your table, then Live, **Manage ▾** (for those who can manage) and the account menu.
+One top bar for everyone (Brett, 2026-10-22, Option B; `docs/mockups/menu-bar.html`), in two groups that match the data: the campaign (its name, **Story**, **Campaign**), then the people at the table (your character, **Party ▾**), then Live, **Manage ▾** (for those who can manage) and the account menu. The play area (map and combat, VTT) will be one more item in the table group, next to Party.
 
 | Item | Audience | What it is |
 |---|---|---|
-| **Recap** (home) | Everyone | The pre-session refresher ("Previously on…"): latest recap, key moments, open threads |
-| **Sessions** | Everyone | Every published session, newest first |
-| **Campaign** | Everyone | Tabs **World** (the Reader for people, places, factions, items and creatures; `?open=<id>` is an entry's address), **Quests** (the board), **Relationships** (family trees, other ties, anyone's connections) and **Glossary**; `?tab=` picks one |
-| **Map** | Everyone | The Sword Coast, with places marked |
-| **Cole ▾** (your character) | Everyone | Switches characters; opens one Character page in the same mode. Modes, switched at the page's top right: **Battle** (`/characters/{id}/battle`: options by Action / Bonus action / Reaction, saves, Wild Shape row, On a hit, rolls, Reminders, Battle combos), **Sheet** (`/characters/{id}`: numbers strip, abilities and saves, tabs Actions, Spells, Wild Shape, Inventory, Features, Skills & situational, Background) and **Plan** (`/characters/{id}/plan`: tabs Battle combos, Leveling strategy, Personal quests, General notes, Reminders, Spell shortlist, Wild Shape shortlist; never the DM) |
-| **Party** | Everyone | Party table (names open a short character modal), pooled spells and items |
+| Campaign name | Everyone | Always shown, right of the logo. A plain label with one campaign; with two or more, the switcher (your role in each other campaign beside its name) |
+| **Story** (home) | Everyone | Tabs **Previously on…** (the pre-session refresher: questions for you, then the latest recap, key moments, open threads) and **All sessions** (every published session, newest first); `?tab=sessions` picks the second. The old `/sessions` address redirects |
+| **Campaign** | Everyone | Tabs **World** (the Reader for people, places, factions, items and creatures; `?open=<id>` is an entry's address), **Quests** (the board), **Relationships** (family trees, other ties, anyone's connections), **Glossary** and **Map** (the Sword Coast; `?tab=map&at=<place>` centers it, which is where **Show on map** goes; the old `/map` redirects); `?tab=` picks one |
+| **Cole** (your character) | Anyone with a character in this campaign (not the DM) | Portrait and name, one click to your character in the mode you used last (kept in the session). Modes, switched at the page's top right: **Battle** (`/characters/{id}/battle`: options by Action / Bonus action / Reaction, saves, Wild Shape row, On a hit, rolls, Reminders, Battle combos), **Sheet** (`/characters/{id}`: numbers strip, abilities and saves, tabs Actions, Spells, Wild Shape, Inventory, Features, Skills & situational, Background) and **Plan** (`/characters/{id}/plan`: tabs Battle combos, Leveling strategy, Personal quests, General notes, Reminders, Spell shortlist, Wild Shape shortlist; never the DM) |
+| **Party ▾** | Everyone | A menu: each character with portrait, class and level, and HP when known ("You" on yours); a character opens in the mode you're in. Then **Everyone at a glance**: the Party page (party table, names open a short character modal; pooled spells and items) |
 | **Live** pill | Everyone | When the D&D Beyond copy was last updated; green while Game Mode is on (per browser). Its popover: Game Mode, each character's last refresh and failures, Refresh now, and Refresh everyone (reviewers) |
 | **Manage ▾** | Admin and reviewers | Overview and the admin and reviewer pages |
 | **Table rolls** sidebar | Everyone, while Game Mode is on | Left sidebar on every page (`_table_rolls.html`, 340 px): open on Battle, a 64 px rail elsewhere and below 1100 px, a bottom sheet on phones; remembered per device. Newest activity first, a roll and its damage / reroll / added die as one entry; a dice tray and your character's quick checks at the bottom. Others' rolls as fading notices while it's collapsed |
 | **Roll window** | Everyone | Opens next to any roll button (bottom of the screen on phones): Normal / Advantage / Disadvantage with the reasons, situational bonuses, who sees it; then the result with the d20 tumble and its follow-ups |
 
-Admin pages say so in their subtitle ("only you can see this page"). Breadcrumbs start at the top-level item (Manage › Review › Session 12). On phones a bottom bar holds Recap, Campaign, Battle, Party and More (Sessions, Map, Manage, About, FAQ, sign out), and Battle's three columns become Action / Bonus / Reaction tabs. Pins, reminders, shortlists, notes, combos and character notes are never shown to the DM.
+Admin pages say so in their subtitle ("only you can see this page"). Breadcrumbs start at the top-level item (Manage › Review › Session 12). On phones the top bar keeps the logo, the campaign's name and Live, and a bottom bar holds Story, Campaign, your character, Party (the same menu, from the bottom) and More (other campaigns, Your suggestions, Manage, About, FAQ, sign out), and Battle's three columns become Action / Bonus / Reaction tabs. Pins, reminders, shortlists, notes, combos and character notes are never shown to the DM.
 
 ## Review workflow (admin)
 

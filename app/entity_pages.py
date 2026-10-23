@@ -65,7 +65,8 @@ def entity_context(db: Session, entity: Entity, user: dict) -> dict:
         "ln": entity_linker(db, entity.campaign_id, exclude_id=entity.id, include_drafts=reviewer),
         "picture": pictures.urls(db, [entity.id]).get(entity.id),
         "can_picture": pictures.can_manage(user),
-        "map_marker": atlas.entity_marker(entity),
+        "map_marker": (marker := atlas.entity_marker(entity)),
+        "map_href": atlas.show_on_map(marker) if marker else "", "map_src": atlas.atlas_url(marker) if marker else "",
         "kinds": [(k.value, label) for k, label in entities.KIND_LABELS.items() if k.value != "pc"],
         "sessions": _sessions(db, entity.campaign_id) if can_edit_entries(user) else [],
     }

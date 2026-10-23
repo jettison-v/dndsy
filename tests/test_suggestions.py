@@ -128,7 +128,7 @@ def test_the_dms_entries_skip_review(dm, player, db):
     assert (x.status, x.from_dm) == ("used", True)
     c = db.scalar(select(Correction).where(Correction.session_id == s.id))
     assert (c.kind, c.before, c.after) == ("answer", "Correction from the DM", "It was Kieran, not Kiera.")
-    story = player.get("/").text + player.get("/sessions").text
+    story = player.get("/").text  # Previously on… and All sessions, one page
     assert story.count("From the DM") == 2 and story.count(", not Kiera.") == 2  # (Kieran is linked)
 
     # Glossary: the DM edits and adds terms directly

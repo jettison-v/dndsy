@@ -79,7 +79,7 @@
   {% if can_edit %}<a class="btn primary" href="#" data-modal-url="/campaign/{{ e.id }}/edit" data-modal-size="large">Edit</a>{% endif %}
   {% if reader and can_edit and e.kind.value == "quest" %}{# A whole-page post: the quest moves between Open and Done at the top of the page #}
   <form method="post" action="/campaign/{{ e.id }}/quest"><input type="hidden" name="open" value="{{ '1' if e.quest_open == false else '0' }}"><button class="btn">{{ "Reopen" if e.quest_open == false else "Mark done" }}</button></form>{% endif %}
-  {% if map_marker %}<a class="btn" href="/map?at={{ map_marker | urlencode }}" data-no-peek>Show on map</a>{% endif %}
+  {% if map_marker %}<a class="btn" href="{{ map_href }}" data-map-src="{{ map_src }}" data-map-at="{{ map_marker }}" data-no-peek>Show on map</a>{% endif %}
   {% if not reader and e.kind.value != "pc" %}<a class="btn link" href="{{ cbase }}/campaign?open={{ e.id }}">Open in Campaign</a>{% endif %}
   {% if reader %}<span class="note reader-keys">↑ ↓ move through the list</span>{% endif %}
 </div>
