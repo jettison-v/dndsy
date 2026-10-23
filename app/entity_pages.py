@@ -18,7 +18,7 @@ from app.auth import can_edit_entries, can_moderate, current_user, is_dm, is_rev
 from app.db import get_db
 from app.extraction import ExtractionError
 from app.linking import entity_linker
-from app.models import Entity, EntityAlias, EntityPicture, Fact, Status
+from app.models import CampaignCharacter, Entity, EntityAlias, EntityKind, EntityPicture, Fact, Status
 from app.templating import templates
 
 router = APIRouter(prefix="/campaign")
@@ -69,6 +69,8 @@ def entity_context(db: Session, entity: Entity, user: dict) -> dict:
         "map_href": atlas.show_on_map(marker) if marker else "", "map_src": atlas.atlas_url(marker) if marker else "",
         "kinds": [(k.value, label) for k, label in entities.KIND_LABELS.items() if k.value != "pc"],
         "sessions": _sessions(db, entity.campaign_id) if can_edit_entries(user) else [],
+        "sheet": db.scalar(select(CampaignCharacter.character_id).where(CampaignCharacter.entity_id == entity.id).limit(1))
+        if entity.kind == EntityKind.PC else None,  # a player character's sheet
     }
 
 

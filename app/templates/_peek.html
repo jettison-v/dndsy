@@ -29,7 +29,7 @@
   {% if reader %}<div class="reader-cols"><div>{% endif %}
 
   {% if relations and not reader %}
-  <h3>Relationships{% if e.kind.value not in ("quest", "pc") %} <a class="head-link" href="{{ cbase }}/campaign?open={{ e.id }}">See connections</a>{% endif %}</h3>
+  <h3>Relationships{% if e.kind.value != "quest" %} <a class="head-link" href="{{ cbase }}/campaign?open={{ e.id }}">See connections</a>{% endif %}</h3>
   <ul class="plain">{% for r in relations %}<li><span class="muted">{{ r.label | capitalize }}</span> <a class="ent" href="{{ entry_url(r.other.id) }}" data-entity="{{ r.other.id }}">{{ r.other.name }}</a>{% if r.note %} <span class="note">· {{ r.note }}</span>{% endif %}</li>{% endfor %}</ul>
   {% endif %}
 
@@ -80,7 +80,8 @@
   {% if reader and can_edit and e.kind.value == "quest" %}{# A whole-page post: the quest moves between Open and Done at the top of the page #}
   <form method="post" action="/campaign/{{ e.id }}/quest"><input type="hidden" name="open" value="{{ '1' if e.quest_open == false else '0' }}"><button class="btn">{{ "Reopen" if e.quest_open == false else "Mark done" }}</button></form>{% endif %}
   {% if map_marker %}<a class="btn" href="{{ map_href }}" data-map-src="{{ map_src }}" data-map-at="{{ map_marker }}" data-no-peek>Show on map</a>{% endif %}
-  {% if not reader and e.kind.value != "pc" %}<a class="btn link" href="{{ cbase }}/campaign?open={{ e.id }}">Open in Campaign</a>{% endif %}
+  {% if sheet %}<a class="btn" href="/characters/{{ sheet }}" data-no-peek>Character sheet</a>{% endif %}
+  {% if not reader %}<a class="btn link" href="{{ cbase }}/campaign?open={{ e.id }}">Open in Campaign</a>{% endif %}
   {% if reader %}<span class="note reader-keys">↑ ↓ move through the list</span>{% endif %}
 </div>
 {% if reader %}</article>{% endif %}

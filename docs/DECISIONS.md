@@ -228,3 +228,4 @@ One line per decision: date — decision — why. Newest at the bottom.
 
 - 2026-10-23: One address per page: every link askdnd makes goes straight to its page (a test crawls every page as admin, DM and player), and old addresses are gone (a friendly Not found), except the home page, Google's two return addresses and the Processor's upload. Why: only Brett and the DM use askdnd so far, so clean addresses now cost almost nothing; later they'd mean redirects kept forever (Brett).
 - 2026-10-23: Campaign › Quests becomes a quest log (Open/Done list on the left, one quest's journal on the right, quiet Edit and Mark done); approved in docs/mockups/campaign-v2.html. Why: quests have a state and move with the story; the board was heavy.
+- 2026-10-23: Player characters are People in Campaign › World and open there (with a Character sheet button), not in the side panel; World's count says entries, not names. Why: characters have relationships like anyone else (Brett).
