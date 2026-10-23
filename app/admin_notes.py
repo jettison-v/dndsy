@@ -1,5 +1,5 @@
 """Admin: the campaign doc (a Google Doc of session notes that recap drafts come
-from), under Manage › Recaps, and its Sync button.
+from), Manage › Sessions › Campaign doc (/c/<campaign>/manage/sessions/doc), and its Sync button.
 
 Players' character docs used to sync here too; structured player notes on the
 Character page replace them (2026-10-18). Old character-doc sources are no longer
@@ -48,7 +48,12 @@ oauth.register(
     client_kwargs={"scope": f"openid email {DRIVE_READONLY}"},
 )
 
-router = APIRouter(prefix="/admin/notes")
+router = APIRouter()
+DOC = "/manage/sessions/doc"  # under the campaign; Google's sign-in comes back to /admin/notes/callback (set in Google Cloud)
+
+
+def _back() -> RedirectResponse:
+    return RedirectResponse(f"{web.base()}{DOC}", status_code=303)
 
 _API_OFF = (
     "A Google API this needs isn't turned on for your Google Cloud project. Enable both the "
@@ -92,13 +97,14 @@ def explain_google_error(resp) -> str:
     return f"Google said {resp.status_code}: {err.get('message') or 'unknown error'}"
 
 
-@router.get("")
+@router.get(DOC)
 def notes_page(request: Request, db: Session = Depends(get_db), result: str | None = None):
     user, denied = _guard(request)
     if denied:
         return denied
     campaign = web.campaign(db)
-    every = [s for s in db.scalars(select(NoteSource).order_by(NoteSource.id)) if _visible(s, user)] if campaign else []
+    every = [s for s in db.scalars(select(NoteSource).where(NoteSource.campaign_id == campaign.id).order_by(NoteSource.id))
+             if _visible(s, user)] if campaign else []
     sources = [s for s in every if s.character_id is None]
     retired = [s for s in every if s.character_id is not None]
     stats = {}
@@ -123,7 +129,7 @@ def notes_page(request: Request, db: Session = Depends(get_db), result: str | No
     )
 
 
-@router.post("/sources")
+@router.post(DOC + "/sources")
 def add_source(request: Request, url: str = Form(...), db: Session = Depends(get_db)):
     user, denied = _guard(request)
     if denied:
@@ -139,10 +145,10 @@ def add_source(request: Request, url: str = Form(...), db: Session = Depends(get
     else:
         db.add(NoteSource(campaign_id=campaign.id, google_doc_id=doc_id))
         db.commit()
-    return RedirectResponse("/admin/notes", status_code=303)
+    return _back()
 
 
-@router.post("/sources/{source_id}/delete")
+@router.post(DOC + "/sources/{source_id}/delete")
 def delete_source(request: Request, source_id: int, db: Session = Depends(get_db)):
     user, denied = _guard(request)
     if denied:
@@ -151,10 +157,10 @@ def delete_source(request: Request, source_id: int, db: Session = Depends(get_db
     if source and _visible(source, user):
         db.delete(source)
         db.commit()
-    return RedirectResponse("/admin/notes", status_code=303)
+    return _back()
 
 
-@router.post("/sync")
+@router.post(DOC + "/sync")
 async def start_sync(request: Request):
     user, denied = _guard(request)
     if denied:
@@ -165,7 +171,7 @@ async def start_sync(request: Request):
     )
 
 
-@router.get("/callback", name="notes_sync_callback")
+@router.get("/admin/notes/callback", name="notes_sync_callback")
 async def sync_callback(request: Request, db: Session = Depends(get_db)):
     user, denied = _guard(request)
     if denied:
@@ -174,11 +180,11 @@ async def sync_callback(request: Request, db: Session = Depends(get_db)):
         token = await oauth.google_drive.authorize_access_token(request)
     except OAuthError as e:
         request.session["notes_error"] = f"Google didn't grant access: {e.description or e.error}"
-        return RedirectResponse("/admin/notes", status_code=303)
+        return _back()
     granted_email = (token.get("userinfo") or {}).get("email", "").lower()
     if granted_email != user["email"] or DRIVE_READONLY not in token.get("scope", ""):
         request.session["notes_error"] = "Sign in with your own account and allow read-only Drive access."
-        return RedirectResponse("/admin/notes", status_code=303)
+        return _back()
 
     sources = list(db.scalars(select(NoteSource).where(NoteSource.character_id.is_(None)).order_by(NoteSource.id)))
     fetched: dict[str, object] = {}
@@ -197,7 +203,7 @@ async def sync_callback(request: Request, db: Session = Depends(get_db)):
     results = sync_sources(db, sources, fetch)
     db.commit()
     request.session["sync_results"] = results
-    return RedirectResponse("/admin/notes", status_code=303)
+    return _back()
 
 
 async def fetch_doc(doc_id: str, token: dict) -> tuple[str, ExportedDoc]:
@@ -232,20 +238,20 @@ async def fetch_doc(doc_id: str, token: dict) -> tuple[str, ExportedDoc]:
     return doc.get("title", ""), ExportedDoc(text=text, images=images)
 
 
-@router.get("/snapshots/{snapshot_id}")
+@router.get(DOC + "/snapshots/{snapshot_id}")
 def view_snapshot(request: Request, snapshot_id: int, db: Session = Depends(get_db)):
     user, denied = _guard(request)
     if denied:
         return denied
     snap = db.get(NoteSnapshot, snapshot_id)
     if snap is None or not _visible(snap.source, user):
-        return RedirectResponse("/admin/notes", status_code=303)
+        return _back()
     ids = {img.name: img.id for img in snap.images}
-    body = markdown_to_html(snap.text, lambda name: f"/admin/notes/images/{ids[name]}" if name in ids else None)
+    body = markdown_to_html(snap.text, lambda name: f"{web.base()}{DOC}/images/{ids[name]}" if name in ids else None)
     return templates.TemplateResponse(request, "admin_snapshot.html", {"user": user, "snap": snap, "body": body})
 
 
-@router.get("/images/{image_id}")
+@router.get(DOC + "/images/{image_id}")
 def image(request: Request, image_id: int, db: Session = Depends(get_db)):
     user, denied = _guard(request)
     if denied:

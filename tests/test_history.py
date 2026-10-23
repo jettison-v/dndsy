@@ -66,7 +66,7 @@ def test_deleted_player_notes_come_back_and_stay_hidden_from_the_dm(db, cole, pl
     assert "Secret plan" not in dm.get("/admin/history").text  # the DM never sees players' notes, even in history
     assert "Secret plan" in admin.get("/admin/history?show=notes").text
     assert player.get("/admin/history").status_code == 403  # players don't open Manage
-    admin.post(f"/admin/history/{rev.id}/restore")
+    admin.post(f"/manage/history/{rev.id}/restore")
     assert db.scalar(select(PlayerNote)).data == {"body": "Steal the egg."}
 
 
@@ -76,9 +76,9 @@ def test_import_page_lists_imports_with_undo(db, admin):
     entity(db, "Star Mounts").summary = "Changed."
     db.flush()
     import_bundle(db, STORY, batch=batch)
-    page = admin.get("/admin/import").text
+    page = admin.get("/manage/backups").text
     assert "Recent imports" in page and f'value="{batch}"' in page
-    admin.post("/admin/history/undo-import", data={"batch": batch})
+    admin.post("/manage/history/undo-import", data={"batch": batch})
     assert entity(db, "Star Mounts").summary == "Changed."
 
 

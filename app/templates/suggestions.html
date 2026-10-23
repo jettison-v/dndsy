@@ -21,12 +21,12 @@
       <div class="answer" id="{{ key }}-text">{{ x.text }}</div>
       {% if it.type == "fact" %}
       <div class="row" id="{{ key }}-actions">
-        <form class="inline" method="post" action="/suggestions/facts/{{ x.id }}/accept"><button class="btn primary">Accept</button></form>
+        <form class="inline" method="post" action="{{ cbase }}/suggestions/facts/{{ x.id }}/accept"><button class="btn primary">Accept</button></form>
         <button type="button" class="btn" data-show="{{ key }}-edit" data-hide="{{ key }}-actions {{ key }}-text">Edit</button>
-        <form class="inline" method="post" action="/suggestions/facts/{{ x.id }}/claude"><button class="btn" data-busy="Claude is drafting…">Ask Claude to work it in</button></form>
-        <form class="inline" method="post" action="/suggestions/facts/{{ x.id }}/dismiss"><button class="btn link">Dismiss</button></form>
+        <form class="inline" method="post" action="{{ cbase }}/suggestions/facts/{{ x.id }}/claude"><button class="btn" data-busy="Claude is drafting…">Ask Claude to work it in</button></form>
+        <form class="inline" method="post" action="{{ cbase }}/suggestions/facts/{{ x.id }}/dismiss"><button class="btn link">Dismiss</button></form>
       </div>
-      <form class="stack" id="{{ key }}-edit" method="post" action="/suggestions/facts/{{ x.id }}/edit" hidden>
+      <form class="stack" id="{{ key }}-edit" method="post" action="{{ cbase }}/suggestions/facts/{{ x.id }}/edit" hidden>
         <textarea name="text" rows="3" required aria-label="The fact, as it will show on {{ it.label }}">{{ x.text }}</textarea>
         <div class="row"><button class="btn primary">Accept with my changes</button>
           <button type="button" class="btn link" data-cancel="{{ key }}-edit" data-restore="{{ key }}-actions {{ key }}-text">Cancel</button></div>
@@ -34,18 +34,18 @@
       {% elif it.type == "session" %}
       <div class="row">
         <a class="btn primary" href="{{ it.href }}#recap">Edit the recap</a>
-        {% if it.redraft %}<form class="inline" method="post" action="/admin/suggestions/{{ x.id }}/claude"><button class="btn">Ask Claude to work it in</button></form>{% endif %}
-        <form class="inline" method="post" action="/admin/suggestions/{{ x.id }}/done"><button class="btn">I fixed it</button></form>
-        <form class="inline" method="post" action="/admin/suggestions/{{ x.id }}/dismiss"><button class="btn link">Dismiss</button></form>
+        {% if it.redraft %}<form class="inline" method="post" action="{{ cbase }}/admin/suggestions/{{ x.id }}/claude"><button class="btn">Ask Claude to work it in</button></form>{% endif %}
+        <form class="inline" method="post" action="{{ cbase }}/admin/suggestions/{{ x.id }}/done"><button class="btn">I fixed it</button></form>
+        <form class="inline" method="post" action="{{ cbase }}/admin/suggestions/{{ x.id }}/dismiss"><button class="btn link">Dismiss</button></form>
       </div>
       <p class="note">{% if it.redraft %}Ask Claude redrafts the session with it; you review and publish again.{% else %}Edit the recap yourself, then press I fixed it.{% endif %}</p>
       {% else %}{% set t = it.term %}
       <div class="row" id="{{ key }}-actions">
         <button type="button" class="btn primary" data-show="{{ key }}-edit" data-hide="{{ key }}-actions">{{ "Edit the term" if t else "Add the term" }}</button>
-        {% if t %}<form class="inline" method="post" action="/admin/suggestions/{{ x.id }}/done"><button class="btn">I fixed it</button></form>{% endif %}
-        <form class="inline" method="post" action="/admin/suggestions/{{ x.id }}/dismiss"><button class="btn link">Dismiss</button></form>
+        {% if t %}<form class="inline" method="post" action="{{ cbase }}/admin/suggestions/{{ x.id }}/done"><button class="btn">I fixed it</button></form>{% endif %}
+        <form class="inline" method="post" action="{{ cbase }}/admin/suggestions/{{ x.id }}/dismiss"><button class="btn link">Dismiss</button></form>
       </div>
-      <form class="stack" id="{{ key }}-edit" method="post" action="/admin/suggestions/{{ x.id }}/glossary" hidden>
+      <form class="stack" id="{{ key }}-edit" method="post" action="{{ cbase }}/admin/suggestions/{{ x.id }}/glossary" hidden>
         <label class="field">Term <input type="text" name="term" required value="{{ t.term if t }}"></label>
         <label class="field">What it is <textarea name="description" rows="2">{{ t.description if t }}</textarea></label>
         <label class="field">Misheard as <input type="text" name="misheard_as" value="{{ t.misheard_as | join(', ') if t }}" placeholder="Spellings a transcript might use, separated by commas"></label>
@@ -78,9 +78,9 @@
     {% if reviews %}
     <p class="note">Drafted from Brett's notes or a recording. Each has its own page: the recap, key moments, Claude's questions and suggested updates.</p>
     <ul class="plain inbox-reviews">{% for r in reviews %}
-      <li><a href="/admin/sessions/{{ r.s.id }}">{{ r.label }}{% if r.s.title %}: {{ r.s.title }}{% endif %}</a>
+      <li><a href="{{ cbase }}/manage/sessions/{{ r.s.id }}">{{ r.label }}{% if r.s.title %}: {{ r.s.title }}{% endif %}</a>
         <span class="tag draft">{{ "Draft" if r.status == "draft" else "Edited since publishing" }}</span></li>{% endfor %}</ul>
-    {% else %}<p class="all-clear">✓ No drafts waiting. <a href="/admin/sessions">Recaps</a> drafts the next one.</p>{% endif %}
+    {% else %}<p class="all-clear">✓ No drafts waiting. <a href="{{ cbase }}/manage/sessions">Recaps</a> drafts the next one.</p>{% endif %}
   </section>
 </main>
 {% endblock %}

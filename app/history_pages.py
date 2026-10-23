@@ -1,5 +1,10 @@
 """Manage › History: every recorded change, with Restore; and Undo for an import.
 
+Two views of the same records (Manage layout, 2026-10-23):
+- the campaign's History (/c/<campaign>/manage/history): only that campaign's changes;
+- askdnd's History (/manage/history, admins): changes that belong to no campaign (accounts, a character in none),
+  or one import's changes in every campaign.
+
 Who sees what: reviewers and admins see story changes (entries, glossary,
 sessions, campaign). Characters and People changes are admins only. Players'
 notes appear only for people who may read player notes (never the DM).
@@ -12,14 +17,14 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import history, picks
+from app import access, history, picks, web
 from app.admin import _guard
 from app.auth import can_see_character_notes, can_set_house_rules, is_admin, is_reviewer
 from app.db import get_db
 from app.models import Character, Revision
 from app.templating import templates
 
-router = APIRouter(prefix="/admin/history")
+router = APIRouter(prefix="/manage/history")
 
 STORY = ("entities", "glossary_terms", "game_sessions", "campaigns", "story_events", "entity_aliases", "relationships", "facts")
 ADMIN_ONLY = ("characters", "campaign_characters", "users", "campaign_members")
@@ -51,7 +56,7 @@ def may_restore(db: Session, user: dict, rev: Revision) -> bool:
 
 
 def recent_imports(db: Session, limit: int = 10) -> list[dict]:
-    """Imports recorded in history, newest first, for Manage › Data."""
+    """Imports recorded in history, newest first, for Manage › Backups and imports."""
     rows = db.scalars(select(Revision).where(Revision.source == "import", Revision.batch.is_not(None))
                       .order_by(Revision.id.desc()).limit(5000))
     batches: dict[str, dict] = {}
@@ -65,12 +70,31 @@ def recent_imports(db: Session, limit: int = 10) -> list[dict]:
     return out
 
 
+PAGE = 300  # changes shown at once
+
+
+def _matching(db: Session, q, keep) -> list[Revision]:
+    """The newest PAGE changes from `q` that `keep(revision, campaign id)` accepts (read in chunks)."""
+    out: list[Revision] = []
+    last = None
+    while len(out) < PAGE:
+        chunk = list(db.scalars((q.where(Revision.id < last) if last else q).order_by(Revision.id.desc()).limit(1000)))
+        if not chunk:
+            break
+        where = history.campaigns_of(db, chunk)
+        out += [r for r in chunk if keep(r, where[r.id])]
+        last = chunk[-1].id
+    return out[:PAGE]
+
+
 @router.get("")
 def history_page(request: Request, show: str = "", table: str = "", row: int | None = None, batch: str = "",
                  db: Session = Depends(get_db)):
-    user, denied = _guard(request, allow=is_reviewer)
+    in_campaign = access.path_slug.get() is not None
+    user, denied = _guard(request, allow=is_reviewer if in_campaign else is_admin)
     if denied:
         return denied
+    campaign = web.campaign(db) if in_campaign else None
     allowed = visible_tables(user)
     tables = FILTERS.get(show, FILTERS[""])[1] or allowed
     q = select(Revision).where(Revision.table.in_([t for t in tables if t in allowed]))
@@ -78,7 +102,12 @@ def history_page(request: Request, show: str = "", table: str = "", row: int | N
         q = q.where(Revision.table == table, Revision.row_id == row)
     if batch:
         q = q.where(Revision.batch == batch)
-    revs = list(db.scalars(q.order_by(Revision.id.desc()).limit(300)))
+    if in_campaign:
+        revs = _matching(db, q, lambda r, c: campaign is not None and c == campaign.id)
+    elif batch:
+        revs = _matching(db, q, lambda r, c: True)  # one import, in every campaign
+    else:
+        revs = _matching(db, q, lambda r, c: c is None)
     days: dict[str, list] = defaultdict(list)
     for r in revs:
         days[r.created_at.strftime("%A %-d %B %Y")].append({
@@ -86,8 +115,11 @@ def history_page(request: Request, show: str = "", table: str = "", row: int | N
             "old": history.shown(r.old, r.field), "new": history.shown(r.new, r.field),
             "long": r.field in ("summary", "description", "data", "note", "deleted"),
             "restorable": may_restore(db, user, r) and history.can_restore(db, r)})
+    shown_filters = ({k: v[0] for k, v in FILTERS.items() if not v[1] or set(v[1]) & set(allowed)} if in_campaign
+                     else {k: FILTERS[k][0] for k in ("", "people", "characters")})
     return templates.TemplateResponse(request, "admin_history.html", {
-        "days": list(days.items()), "show": show, "filters": {k: v[0] for k, v in FILTERS.items() if not v[1] or set(v[1]) & set(allowed)},
+        "days": list(days.items()), "show": show, "filters": shown_filters, "in_campaign": in_campaign, "campaign": campaign,
+        "here": f"{web.base()}/manage/history" if in_campaign else "/manage/history",
         "focus": revs[0].label if (table and row is not None and revs) else "", "batch": batch,
         "toast": request.session.pop("toast", None)})
 
@@ -103,7 +135,7 @@ def restore(request: Request, rev_id: int, db: Session = Depends(get_db)):
     else:
         request.session["toast"] = history.restore(db, rev)
         db.commit()
-    return RedirectResponse(request.headers.get("referer") or "/admin/history", status_code=303)
+    return RedirectResponse(request.headers.get("referer") or f"{web.base()}/manage/history", status_code=303)
 
 
 @router.post("/undo-import")
@@ -115,4 +147,4 @@ def undo_import(request: Request, batch: str = Form(...), db: Session = Depends(
     db.commit()
     request.session["toast"] = f"Import undone: {done} change{'s' if done != 1 else ''} put back" + (
         f", {skipped} left alone (changed again since)" if skipped else "")
-    return RedirectResponse("/admin/import", status_code=303)
+    return RedirectResponse("/manage/backups", status_code=303)

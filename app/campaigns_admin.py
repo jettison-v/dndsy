@@ -1,5 +1,7 @@
-"""Manage › Campaigns (admins): every campaign, creating one, and moving characters between them
-(data organization step 4). People's roles in a campaign are set on Manage › People while in it."""
+"""Manage › Campaigns (admins, /manage/campaigns): every campaign, creating one, and moving characters between them
+(data organization step 4). And each campaign's Manage › Settings (/c/<campaign>/manage/settings): its name, the
+DM's name and its D&D Beyond campaign id, which its DM can change too (Manage layout, 2026-10-23). Who plays in a
+campaign, and adding characters to it, are on its Manage › Table (app/manage_table.py)."""
 
 import re
 
@@ -8,15 +10,16 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import access, ddb, web
+from app import access, web
 from app import characters as chars
-from app.auth import is_admin
+from app.auth import can_edit_settings, is_admin
 from app.db import get_db
 from app.models import Campaign, CampaignMember, Character, Role, User
 from app.templating import templates
 
-router = APIRouter(prefix="/manage/campaigns")
+router = APIRouter()
 DENIED = "Campaigns are set up by admins."
+SETTINGS_DENIED = "A campaign's settings are for its DM and admins."
 BACK = "/manage/campaigns"
 
 
@@ -54,7 +57,7 @@ def overview(db: Session) -> dict:
             "unmatched": [(i, n) for i, n in seen.items() if i not in by_ddb]}
 
 
-@router.get("")
+@router.get(BACK)
 def page(request: Request, db: Session = Depends(get_db)):
     user, denied = web.require(request, is_admin, DENIED)
     if denied:
@@ -62,7 +65,7 @@ def page(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(request, "manage_campaigns.html", {**overview(db), "toast": request.session.pop("toast", None)})
 
 
-@router.post("")
+@router.post(BACK)
 def create(request: Request, name: str = Form(""), dm_name: str = Form(""), ddb_campaign_id: str = Form(""),
            db: Session = Depends(get_db)):
     user, denied = web.require(request, is_admin, DENIED)
@@ -77,28 +80,44 @@ def create(request: Request, name: str = Form(""), dm_name: str = Form(""), ddb_
     db.add(c)
     db.commit()
     access.invalidate()
-    request.session["toast"] = f"Created {name}. Switch to it to add people (Manage › People) and characters."
-    return RedirectResponse(BACK, status_code=303)
+    request.session["toast"] = f"Created {name}. Add its people and characters on its Table."
+    return RedirectResponse(f"/c/{c.slug}/manage/table", status_code=303)
 
 
-@router.post("/{campaign_id:int}")
-def edit(request: Request, campaign_id: int, name: str = Form(""), dm_name: str = Form(""), ddb_campaign_id: str = Form(""),
-         db: Session = Depends(get_db)):
-    user, denied = web.require(request, is_admin, DENIED)
+@router.get("/manage/settings")
+def settings_page(request: Request, db: Session = Depends(get_db)):
+    user, denied = web.require(request, can_edit_settings, SETTINGS_DENIED)
     if denied:
         return denied
-    c = db.get(Campaign, campaign_id)
+    campaign = web.campaign(db)
+    if campaign is None:
+        return web.not_found(request, "Pick a campaign first.")
+    return templates.TemplateResponse(request, "manage_settings.html", {
+        "campaign": campaign, "ddb_name": chars.ddb_campaigns(db).get(campaign.ddb_campaign_id or "", ""),
+        "toast": request.session.pop("toast", None)})
+
+
+@router.post("/manage/settings")
+def save_settings(request: Request, name: str = Form(""), dm_name: str = Form(""), ddb_campaign_id: str = Form(""),
+                  db: Session = Depends(get_db)):
+    """The campaign in the address: its DM or an admin. Its address (/c/<slug>) stays the same."""
+    user, denied = web.require(request, can_edit_settings, SETTINGS_DENIED)
+    if denied:
+        return denied
+    c = web.campaign(db)
     if c is not None and " ".join(name.split()):
         c.name = " ".join(name.split())[:200]
         c.dm_name = " ".join(dm_name.split())[:200]
         c.ddb_campaign_id = ddb_campaign_id.strip()[:40] or None
         db.commit()
         access.invalidate()
-        request.session["toast"] = f"Saved {c.name}"
-    return RedirectResponse(BACK, status_code=303)
+        request.session["toast"] = "Saved"
+    elif c is not None:
+        request.session["toast"] = "Give the campaign a name."
+    return RedirectResponse(f"{web.base(c)}/manage/settings", status_code=303)
 
 
-@router.post("/characters/{character_id:int}/move")
+@router.post(BACK + "/characters/{character_id:int}/move")
 def move(request: Request, character_id: int, campaign_id: str = Form(""), db: Session = Depends(get_db)):
     """Move a character: its time in the old campaign ends today and stays in that campaign's story."""
     user, denied = web.require(request, is_admin, DENIED)
@@ -111,34 +130,3 @@ def move(request: Request, character_id: int, campaign_id: str = Form(""), db: S
         db.commit()
         request.session["toast"] = f"{ch.name} is now in {target.name}" if target else f"{ch.name} is in no campaign now"
     return RedirectResponse(BACK, status_code=303)
-
-
-@router.post("/{campaign_id:int}/characters")
-def add_character(request: Request, campaign_id: int, name: str = Form(""), player_name: str = Form(""),
-                  ddb_link: str = Form(""), db: Session = Depends(get_db)):
-    """A new character, straight into this campaign (its D&D Beyond copy is fetched if a link is given)."""
-    user, denied = web.require(request, is_admin, DENIED)
-    if denied:
-        return denied
-    target = db.get(Campaign, campaign_id)
-    name = " ".join(name.split())[:200]
-    if target is None or not name:
-        request.session["toast"] = "Give the character a name."
-        return RedirectResponse(BACK, status_code=303)
-    ch = Character(name=name, player_name=" ".join(player_name.split())[:200])
-    db.add(ch)
-    db.flush()
-    chars.move(db, ch, target.id)
-    note = ""
-    if ddb_link.strip():
-        try:
-            chars.set_ddb_link(db, ch, ddb_link)
-            snap = chars.refresh(db, ch)
-            note = "" if snap.status == "ok" else f" ({snap.error})"
-        except ddb.DdbError as e:
-            note = f" ({e})"
-    db.commit()
-    request.session["toast"] = f"Added {name} to {target.name}{note}"
-    return RedirectResponse(BACK, status_code=303)
-
-

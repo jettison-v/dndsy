@@ -135,7 +135,7 @@ def test_accept_relationship_after_its_entity_and_undo(db):
 def test_review_page_shows_relationship_suggestion(admin, db):  # noqa: F811
     family(db)
     s = drafted(db, [{"from": "Tomas", "type": "enemy_of", "to": "Tidewardens", "note": ""}])
-    page = admin.get(f"/admin/sessions/{s.id}").text
+    page = admin.get(f"/manage/sessions/{s.id}").text
     assert "Relationship" in page and "enemy of" in page
 
 

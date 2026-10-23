@@ -185,7 +185,7 @@ def test_regenerate_description_accept_and_undo(admin, db, monkeypatch):
     assert e.summary == "Tiefling bard." and e.previous_summary is None
 
     # The entity run shows on the Usage page and doesn't count as a session draft.
-    assert "Lillippi Lemon" in admin.get("/admin/usage").text
+    assert "Lillippi Lemon" in admin.get("/manage/usage").text
     s = db.scalar(select(GameSession).where(GameSession.number == 2))
     assert latest_questions(db, s) == []
 

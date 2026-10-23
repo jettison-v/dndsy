@@ -26,6 +26,6 @@
   {% elif mode == "plan" %}{% include "_plan_body.html" %}
   {% else %}{% include "_sheet_body.html" %}{% endif %}
 
-  {% if admin and mode == "sheet" %}<p class="note">Admin: link this character to D&amp;D Beyond and review your regrouping on <a href="/admin/characters">Manage › Characters</a>.</p>{% endif %}
+  {% if admin and mode == "sheet" %}<p class="note">Admin: link this character to D&amp;D Beyond on <a href="{{ cbase }}/manage/table">Manage › Table</a>; your regrouping is on <a href="/manage/tool-corrections">Manage › Tool corrections</a>.</p>{% endif %}
 </main>
 {% endblock %}

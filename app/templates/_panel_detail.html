@@ -66,7 +66,7 @@
     {% for field in fields %}{% set current = sheet._overrides.get(oref ~ "|" ~ field) %}{% set saved = false %}
     {% include "_override_field.html" %}
     {% endfor %}
-    <p class="note admin-foot">Applies to everything named “{{ oref.split(":", 1)[-1] }}” on every character. The page behind updates when you reload it. All changes, with Undo: <a href="/admin/characters" data-no-peek>Manage › Characters</a>.</p>
+    <p class="note admin-foot">Applies to everything named “{{ oref.split(":", 1)[-1] }}” on every character. The page behind updates when you reload it. All changes, with Undo: <a href="/manage/tool-corrections" data-no-peek>Manage › Tool corrections</a>.</p>
   </section>
   {% endif %}
 </div>

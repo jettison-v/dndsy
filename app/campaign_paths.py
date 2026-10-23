@@ -5,9 +5,9 @@ This sits in front of every page. For /c/<slug>/rest it remembers the campaign f
 campaign this way also makes it the person's current campaign (users.current_campaign_id), so plain links on the
 page (/campaign/12) stay in it. A campaign the person can't open is "not found".
 
-Story pages opened at their old address (/, /sessions, /campaign, /map) are sent to the same page in the person's
-current campaign, so the address says which campaign it is. Everything else (characters, Party, Manage) keeps its
-address and shows the current campaign.
+Story pages and the campaign's Manage pages opened without the prefix (/, /sessions, /campaign, /map, /manage/inbox…)
+are sent to the same page in the person's current campaign, so the address says which campaign it is. Everything
+else (characters, Party, askdnd-wide Manage pages) keeps its address and shows the current campaign.
 """
 
 import re
@@ -20,10 +20,22 @@ from app import access
 
 PREFIX = re.compile(r"^/c/([a-z0-9][a-z0-9-]*)(/.*)?$")
 STORY = ("/sessions", "/campaign", "/map")
+# The campaign's Manage pages (app/manage.py), plus /manage itself (Needs you). /manage/history without a campaign
+# is the admins' askdnd-wide History, so it isn't here.
+MANAGE = ("/manage/inbox", "/manage/sessions", "/manage/proposals", "/manage/table", "/manage/house-rules",
+          "/manage/settings", "/manage/dm-guide")
+
+# askdnd-wide Manage pages: the same in every campaign, so their address never names one (/c/x/manage/usage → /manage/usage)
+ASKDND = ("/manage/campaigns", "/manage/accounts", "/manage/tool-corrections", "/manage/usage", "/manage/backups", "/manage/design")
 
 
 def is_story(path: str) -> bool:
     return path in ("/", "/story") or any(path == p or path.startswith(p + "/") or path.startswith(p + "?") for p in STORY)
+
+
+def in_campaign(path: str) -> bool:
+    """A page about one campaign: story pages and the campaign's Manage pages."""
+    return is_story(path) or path == "/manage" or any(path == p or path.startswith(p + "/") for p in MANAGE)
 
 
 def remember_in(db, email: str, campaign_id: int) -> None:
@@ -70,7 +82,11 @@ class CampaignPaths:
                         return await PlainTextResponse("That campaign isn't one of yours.", 404)(scope, receive, send)
                     if (access._rows().get(email) or {}).get("current") != here["id"]:
                         await anyio.to_thread.run_sync(remember, email, here["id"])
-            elif email and scope["method"] == "GET" and is_story(scope["path"]) and not _header(scope, b"hx-request"):
+                if scope["method"] == "GET" and not _header(scope, b"hx-request") and any(
+                        rest == p or rest.startswith(p + "/") for p in ASKDND):
+                    query = scope.get("query_string", b"").decode()
+                    return await RedirectResponse(rest + (f"?{query}" if query else ""), status_code=307)(scope, receive, send)
+            elif email and scope["method"] == "GET" and in_campaign(scope["path"]) and not _header(scope, b"hx-request"):
                 here = access.current_campaign(email) if access.level(email) else None
                 if here:
                     query = scope.get("query_string", b"").decode()

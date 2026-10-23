@@ -884,17 +884,38 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 /* Manage: grouped menu, tabs on every Manage page, and the overview cards */
 .menu .menu-group { padding: 8px 12px 2px; font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); }
 .menu .menu-home { border-bottom: 1px solid var(--line); }
+.menu a + .menu-group { border-top: 1px solid var(--line); margin-top: var(--sp-1); padding-top: var(--sp-3); }
 .manage-tabs { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 0 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--line); font-size: var(--fs-sm); }
 .manage-tabs a { color: var(--muted); text-decoration: none; padding: 4px 10px; border-radius: var(--r-pill); }
 .manage-tabs a:hover { color: var(--text); background: var(--surface); }
 .manage-tabs a.on { color: var(--text); background: var(--surface-2); font-weight: 600; }
-.manage-tabs .manage-home { color: var(--faint); padding-left: 0; } .manage-tabs .manage-home::after { content: " ›"; }
-.manage-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
-.manage-card { display: grid; gap: 4px; padding: 14px 16px; border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--line); color: var(--text); text-decoration: none; }
-.manage-card:hover { border-color: var(--faint); }
-.manage-card.attention { border-left-color: var(--red); }
-.manage-card b { font-size: var(--fs-md); } .manage-card .muted { font-size: var(--fs-sm); }
-.manage-stat { font-weight: 600; margin-top: 4px; }
+.manage-tabs .manage-scope { font: 700 var(--fs-xs) var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); padding-right: var(--sp-2); }
+/* Manage lists and grids: Needs you, Table, Accounts, Campaigns, Sessions (Manage layout, 2026-10-23) */
+.manage-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.manage-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--sp-2) var(--sp-4); align-items: center; padding: var(--sp-3) 0; border-bottom: 1px solid var(--line-soft); }
+.manage-list li .note { display: block; }
+.manage-list li b { color: var(--text-strong); }
+.manage-grid { display: grid; gap: var(--sp-2) var(--sp-4); align-items: center; padding: var(--sp-3) 0; border-bottom: 1px solid var(--line-soft); font-size: var(--fs-sm); }
+.manage-grid > * { min-width: 0; overflow-wrap: anywhere; }
+.manage-grid .note { display: block; }
+.manage-grid.head { color: var(--muted); font: 700 var(--fs-xs) var(--cond); letter-spacing: .06em; text-transform: uppercase; border-bottom: 1px solid var(--line); padding-bottom: var(--sp-2); }
+.manage-grid select { width: 100%; }
+.manage-grid .actions { display: flex; gap: var(--sp-2); justify-content: flex-end; flex-wrap: wrap; }
+.manage-grid .pick { display: flex; gap: var(--sp-2); align-items: center; } .manage-grid .pick select { flex: 1; min-width: 0; }
+.grid-chars { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.2fr) auto; }
+.grid-people { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) auto; }
+.grid-accounts { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.2fr) minmax(0, .8fr) auto; }
+@media (max-width: 640px) {
+  .grid-people, .grid-accounts { grid-template-columns: 1fr 1fr; }
+  .grid-chars { grid-template-columns: 1fr; }
+  .manage-grid.head { display: none; }
+  .manage-grid > :first-child { grid-column: 1 / -1; }
+  .manage-grid .actions { justify-content: flex-start; }
+}
+.sub-tabs { display: flex; gap: var(--sp-4); border-bottom: 1px solid var(--line); margin: 0 0 var(--sp-4); font-size: var(--fs-sm); }
+.sub-tabs a { padding-bottom: var(--sp-2); color: var(--muted); text-decoration: none; }
+.sub-tabs a.on { color: var(--text-strong); border-bottom: 2px solid var(--red); }
+.tag.faint { background: transparent; border: 1px solid var(--line); color: var(--faint); }
 
 /* Player notes (Plan, Battle combos, and the note form) */
 .note-mech { margin: 4px 0 8px; }

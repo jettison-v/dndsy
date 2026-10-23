@@ -42,7 +42,7 @@ def test_upload_matches_session_by_date_and_starts_draft(client, db, monkeypatch
     r = post(client)
     assert r.status_code == 202
     sid = db.scalar(select(GameSession)).id
-    assert r.json()["session_id"] == sid and r.json()["review_url"].endswith(f"/admin/sessions/{sid}")
+    assert r.json()["session_id"] == sid and r.json()["review_url"].endswith(f"/manage/sessions/{sid}")
     assert calls == [(sid, "[0:42:00] Mary: You wake in the brig.")]
 
 

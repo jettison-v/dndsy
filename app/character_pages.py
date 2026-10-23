@@ -624,6 +624,15 @@ async def save_order(request: Request, character_id: int, db: Session = Depends(
 # ---------------------------------------------------------------- reviewers
 
 
+def _table() -> str:
+    return f"{web.base()}/manage/table"
+
+
+def _back(request: Request, default: str) -> str:
+    """Where a refresh sends you back to: Manage › Table when it was pressed there, else `default`."""
+    return _table() if request.query_params.get("from") == "table" else default
+
+
 @router.post("/characters/refresh")
 def refresh_all(request: Request, db: Session = Depends(get_db)):
     if not is_reviewer(current_user(request)):
@@ -633,7 +642,7 @@ def refresh_all(request: Request, db: Session = Depends(get_db)):
     db.commit()
     msg = f"Updated {ok} from D&D Beyond"
     request.session["toast"] = msg + (f"; couldn't update {', '.join(failed)}" if failed else "")
-    return RedirectResponse("/party", status_code=303)
+    return RedirectResponse(_back(request, "/party"), status_code=303)
 
 
 @router.post("/characters/{character_id:int}/refresh")
@@ -646,27 +655,27 @@ def refresh_one(request: Request, character_id: int, db: Session = Depends(get_d
     snap = chars.refresh(db, ch)
     db.commit()
     request.session["toast"] = "Updated from D&D Beyond" if snap.status == "ok" else "Couldn't update; showing the last good copy"
-    return RedirectResponse(f"/characters/{ch.id}", status_code=303)
+    return RedirectResponse(_back(request, f"/characters/{ch.id}"), status_code=303)
 
 
 @router.post("/characters/{character_id:int}/link")
 def link(request: Request, character_id: int, ddb_link: str = Form(""), db: Session = Depends(get_db)):
-    """Admin (Manage › Characters): save the D&D Beyond link, then fetch the character."""
+    """Admin (Manage › Table): save the D&D Beyond link, then fetch the character."""
     if not is_admin(current_user(request)):
         return _forbidden(request, "Only an admin can change D&D Beyond links.")
     ch = db.get(Character, character_id)
     if ch is None:
-        return RedirectResponse("/admin/characters", status_code=303)
+        return RedirectResponse(_table(), status_code=303)
     try:
         chars.set_ddb_link(db, ch, ddb_link)
     except ddb.DdbError as e:
         request.session["toast"] = str(e)
-        return RedirectResponse("/admin/characters", status_code=303)
+        return RedirectResponse(_table(), status_code=303)
     snap = chars.refresh(db, ch)
     db.commit()
     request.session["toast"] = (f"{ch.name}: linked and updated from D&D Beyond" if snap.status == "ok"
                                 else f"{ch.name}: linked, but couldn't fetch it yet")
-    return RedirectResponse("/admin/characters", status_code=303)
+    return RedirectResponse(_table(), status_code=303)
 
 
 @router.get("/rules/terms.json")

@@ -113,21 +113,23 @@ def test_moving_a_character_keeps_its_story_in_the_old_campaign(two, db):
                                                                   CampaignCharacter.left_on.is_(None))))) == 1
 
 
-def test_manage_campaigns_creates_moves_and_adds(two, db):
+def test_manage_campaigns_creates_and_moves_and_table_adds(two, db):
     admin, pat = two["admin"], two["pat"]
     assert pat.get("/manage/campaigns").status_code == 403
     page = admin.get("/manage/campaigns").text
     assert "Curse of Strahd" in page and "/c/strahd" in page and "Move" in page
-    admin.post("/manage/campaigns", data={"name": "Curse of Strahd", "dm_name": "Mary"})
+    r = admin.post("/manage/campaigns", data={"name": "Curse of Strahd", "dm_name": "Mary"}, follow_redirects=False)
+    assert r.headers["location"] == "/c/curse-of-strahd/manage/table"  # straight to its people and characters
     assert db.scalar(select(Campaign).where(Campaign.slug == "curse-of-strahd")).dm_name == "Mary"
     trah = char(db, "Trah")
     admin.post(f"/manage/campaigns/characters/{trah.id}/move", data={"campaign_id": str(two["strahd"].id)})
     assert trah.campaign_id == two["strahd"].id
     admin.post(f"/manage/campaigns/characters/{trah.id}/move", data={"campaign_id": ""})
     assert trah.campaign_id is None and "Not in a campaign" in admin.get("/manage/campaigns").text
-    admin.post(f"/manage/campaigns/{two['strahd'].id}/characters", data={"name": "Ismark", "player_name": "Sam"})
+    admin.post("/c/strahd/manage/table/characters", data={"name": "Ismark"})  # added on the campaign's Table
     ismark = db.scalar(select(Character).where(Character.name == "Ismark"))
     assert ismark.campaign_id == two["strahd"].id and ismark.entity.name == "Ismark"
+    assert pat.post("/c/main/manage/table/characters", data={"name": "Nope"}).status_code == 403
 
 
 def test_a_character_dnd_beyond_puts_elsewhere_is_offered_a_move_never_moved(two, db):
@@ -195,3 +197,22 @@ def test_migration_moves_the_spending_limit_to_the_tool(db_engine):
     finally:
         subprocess.run(["alembic", "downgrade", "base"], env=env, capture_output=True)
         Base.metadata.create_all(db_engine)
+
+
+def test_a_campaigns_manage_pages_act_on_the_campaign_in_the_address(two, db):
+    from app.models import GameSession
+
+    admin = two["admin"]
+    main_table, strahd_table = admin.get("/c/main/manage/table").text, admin.get("/c/strahd/manage/table").text
+    assert "<b>Pat</b>" in main_table and "<b>Sam</b>" not in main_table and "Ismark" not in main_table
+    assert "<b>Sam</b>" in strahd_table and "<b>Pat</b>" not in strahd_table
+    admin.post("/c/strahd/manage/table/people", data={"email": "pat@example.com", "role": "reviewer"})
+    assert access.role("pat@example.com", two["strahd"].id) == "reviewer" and access.role("pat@example.com", two["main"].id) == "player"
+    admin.post("/c/strahd/manage/settings", data={"name": "Strahd", "dm_name": "Brett"})
+    assert two["strahd"].name == "Strahd" and two["main"].name != "Strahd"
+    s = GameSession(campaign_id=two["strahd"].id, number=1, source="manual")
+    db.add(s)
+    db.flush()
+    r = admin.get(f"/c/main/manage/sessions/{s.id}", follow_redirects=False)  # a Strahd session opens in Strahd
+    assert r.headers["location"] == f"/c/strahd/manage/sessions/{s.id}"
+    assert two["sam"].get("/c/main/manage/sessions").status_code == 404  # not one of Sam's campaigns

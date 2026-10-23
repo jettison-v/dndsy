@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Campaign doc · Recaps · askdnd{% endblock %}
+{% block title %}Campaign doc · Sessions · askdnd{% endblock %}
 {% block content %}
-<main class="page narrow">
+<main class="page">
   {% include "_manage_head.html" %}
-  <div class="crumbs"><a href="/admin/sessions">Recaps</a> › Campaign doc</div>
-  <div class="title-row"><h1>Campaign doc</h1></div>
+  <div class="title-row"><h1>Sessions</h1></div>
+  {% include "_sessions_tabs.html" %}
   <p class="subtitle">The Google Doc of session notes that recap drafts come from. Everyone at the table may see what's drafted from it. Sync asks Google for <b>read-only</b> access each time; nothing is kept afterwards. Players' own notes now live on each Character page.</p>
   {% if error %}<div class="flash bad">{{ error }}</div>{% endif %}
   {% if results %}
@@ -12,11 +12,11 @@
     <ul>{% for title, status in results.items() %}<li><b>{{ title }}</b>: {{ status }}</li>{% endfor %}</ul></div>
   {% endif %}
   {% if not campaign %}
-  <div class="flash warn">Import the campaign first: <a href="/admin/import">Data</a>.</div>
+  <div class="flash warn">Import the campaign first: <a href="/manage/backups">Backups and imports</a>.</div>
   {% else %}
   <section class="section">
     <div class="section-head"><h2>Synced doc</h2>
-      {% if sources %}<form method="post" action="/admin/notes/sync"><button class="btn primary" data-busy="Opening Google…">Sync now</button></form>{% endif %}</div>
+      {% if sources %}<form method="post" action="{{ cbase }}/manage/sessions/doc/sync"><button class="btn primary" data-busy="Opening Google…">Sync now</button></form>{% endif %}</div>
     {% if sources %}
     <table class="list" style="margin-top:12px">
       {% for s in sources %}{% set st = stats[s.id] %}
@@ -24,8 +24,8 @@
         <td><b>{{ s.title or s.google_doc_id }}</b>
           <div class="note">Campaign notes · visible to the table</div></td>
         <td class="note">{% if st.latest %}Synced {{ s.last_synced_at.strftime("%b %-d, %-I:%M %p") }} UTC<br>{{ "{:,}".format(st.words) }} words · {{ st.images }} images{% else %}Not synced yet{% endif %}</td>
-        <td style="text-align:right;white-space:nowrap">{% if st.latest %}<a class="btn" href="/admin/notes/snapshots/{{ st.latest.id }}">View</a>{% endif %}
-          <form class="inline" method="post" action="/admin/notes/sources/{{ s.id }}/delete" onsubmit="return confirm('Remove this doc? Its synced copies are deleted too.')"><button class="btn link danger">Remove</button></form></td>
+        <td style="text-align:right;white-space:nowrap">{% if st.latest %}<a class="btn" href="{{ cbase }}/manage/sessions/doc/snapshots/{{ st.latest.id }}">View</a>{% endif %}
+          <form class="inline" method="post" action="{{ cbase }}/manage/sessions/doc/sources/{{ s.id }}/delete" onsubmit="return confirm('Remove this doc? Its synced copies are deleted too.')"><button class="btn link danger">Remove</button></form></td>
       </tr>
       {% endfor %}
     </table>
@@ -33,7 +33,7 @@
   </section>
   <section class="section">
     <h2>Add a doc</h2>
-    <form method="post" action="/admin/notes/sources" class="row" style="margin-top:12px">
+    <form method="post" action="{{ cbase }}/manage/sessions/doc/sources" class="row" style="margin-top:12px">
       <input type="url" name="url" placeholder="Paste a Google Docs link" required style="flex:1;min-width:220px">
       <button class="btn">Add</button>
     </form>
@@ -45,8 +45,8 @@
     <table class="list">
       {% for s in retired %}{% set st = stats[s.id] %}
       <tr><td><b>{{ s.title or s.google_doc_id }}</b><div class="note">{{ s.character.name if s.character else "A character" }}'s notes</div></td>
-        <td style="text-align:right;white-space:nowrap">{% if st.latest %}<a class="btn" href="/admin/notes/snapshots/{{ st.latest.id }}">View last copy</a>{% endif %}
-          <form class="inline" method="post" action="/admin/notes/sources/{{ s.id }}/delete" onsubmit="return confirm('Remove this doc and its saved copies?')"><button class="btn link danger">Remove</button></form></td></tr>
+        <td style="text-align:right;white-space:nowrap">{% if st.latest %}<a class="btn" href="{{ cbase }}/manage/sessions/doc/snapshots/{{ st.latest.id }}">View last copy</a>{% endif %}
+          <form class="inline" method="post" action="{{ cbase }}/manage/sessions/doc/sources/{{ s.id }}/delete" onsubmit="return confirm('Remove this doc and its saved copies?')"><button class="btn link danger">Remove</button></form></td></tr>
       {% endfor %}
     </table>
   </section>

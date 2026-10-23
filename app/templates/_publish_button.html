@@ -1,2 +1,2 @@
 {% if status == "published" %}<button class="btn primary is-done" disabled>Published ✓</button>
-{% else %}<form hx-post="/admin/sessions/{{ s.id }}/publish" hx-target="#review" hx-swap="outerHTML" style="flex:1"><button class="btn primary" style="width:100%" {% if drafting %}disabled{% endif %}>{{ "Publish changes" if status == "edited" else "Publish to the table" }}</button></form>{% endif %}
+{% else %}<form hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/publish" hx-target="#review" hx-swap="outerHTML" style="flex:1"><button class="btn primary" style="width:100%" {% if drafting %}disabled{% endif %}>{{ "Publish changes" if status == "edited" else "Publish to the table" }}</button></form>{% endif %}

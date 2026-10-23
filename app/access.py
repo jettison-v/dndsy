@@ -9,14 +9,15 @@ Two kinds of role (data organization step 2, docs/plans/2026-10-21-data-organiza
   everything a reviewer does in their campaign and never sees the notes of the
   characters in it (CLAUDE.md).
 
-Admins set both on Manage › People. The Railway variables still act as a floor:
+Admins set tool roles on Manage › Accounts and campaign roles on each campaign's Manage › Table.
+The Railway variables still act as a floor:
 ALLOWED_EMAILS can sign in, REVIEWER_EMAILS are at least reviewers in every campaign.
 
 `allows()` below is the one list of these rules: app/auth.py's checks use it, and
-the chart on Manage › People is drawn from it.
+the chart on Manage › Table is drawn from it.
 
 Access is checked on every request, so the rows are cached in memory for a few
-seconds and reloaded after any change made on the People page.
+seconds and reloaded after any change made on Accounts or Table.
 """
 
 import time
@@ -140,7 +141,7 @@ def level(email: str | None, rows: dict[str, dict] | None = None) -> str | None:
         return ADMIN
     stored = ((_rows() if rows is None else rows).get(email) or {}).get("access")
     if stored == REMOVED:
-        return None  # removed on the People page
+        return None  # removed on Manage › Accounts
     if stored in TOOL_ROLES:
         return stored
     listed = config.is_allowed(email, config.ALLOWED_EMAILS) or config.is_allowed(email, config.REVIEWER_EMAILS)
@@ -167,7 +168,7 @@ def is_dm(email: str | None, campaign_id: int | None = None) -> bool:
 
 # ------------------------------------------------------------------ what each role may do
 # The single list of rules. app/auth.py (and pictures, suggestions) ask these, and the
-# chart on Manage › People is drawn from them, so the chart can't drift from the app.
+# chart on Manage › Table is drawn from them, so the chart can't drift from the app.
 
 def allows(rule: str, tool: str | None, campaign_role: str | None = None) -> bool:
     """May someone with this tool role and this role in the campaign do `rule`?"""
@@ -183,7 +184,9 @@ def allows(rule: str, tool: str | None, campaign_role: str | None = None) -> boo
         "edit_entries": runs,               # campaign entries: names, spellings, descriptions, relationships
         "review": runs,                     # recaps, Claude's questions, key moments, character refresh
         "house_rules": campaign_role == DM or tool == ADMIN,  # the DM's rulings on how askdnd rolls and reads things
-        "admin": tool == ADMIN,             # People, Characters, Usage, Data, campaign doc, regrouping
+        "see_table": campaign_role == DM or tool == ADMIN,  # Manage › Table: who plays which character (Brett, 2026-10-23)
+        "settings": campaign_role == DM or tool == ADMIN,   # the campaign's name, DM's name, D&D Beyond id (Brett, 2026-10-23)
+        "admin": tool == ADMIN,             # accounts, roles, characters, Usage, backups, campaign doc, tool corrections
     }[rule]
 
 
@@ -200,9 +203,11 @@ CHART = [
     ("Run the table", "Edit campaign entries (names, spellings, descriptions, relationships)", "edit_entries"),
     ("Run the table", "Refresh characters from D&D Beyond", "review"),
     ("Run the table", "House rules: how askdnd rolls things at this table", "house_rules"),
-    ("Set up askdnd", "People: invite, roles, who plays which character", "admin"),
-    ("Set up askdnd", "Characters: D&D Beyond links and tool corrections", "admin"),
-    ("Set up askdnd", "Usage (Claude spending), Data (import), the campaign doc", "admin"),
+    ("Run the table", "See the Table: who plays which character, D&D Beyond links", "see_table"),
+    ("Run the table", "Settings: the campaign's name and the DM's name", "settings"),
+    ("Set up askdnd", "Table: roles, who plays which character, adding characters and D&D Beyond links", "admin"),
+    ("Set up askdnd", "Accounts (who can sign in, admins), Campaigns, tool corrections", "admin"),
+    ("Set up askdnd", "Usage (Claude spending), backups and imports, the campaign doc", "admin"),
 ]
 # The chart's columns: the three campaign roles, then Admin (a tool role, on top of any campaign role)
 COLUMNS = [("Player", MEMBER, PLAYER), ("Reviewer", MEMBER, REVIEWER), ("DM", MEMBER, DM), ("Admin", ADMIN, PLAYER)]
@@ -216,7 +221,7 @@ NOT_INCLUDED = [
 
 
 def chart() -> dict:
-    """The People page's access chart: a cell per campaign role, plus Admin."""
+    """The access chart on Manage › Table: a cell per campaign role, plus Admin."""
     rows = []
     for group, what, rule in CHART:
         cells = ["own"] * len(COLUMNS) if rule == "own" else [
@@ -227,7 +232,7 @@ def chart() -> dict:
 
 
 def summary(tool: str | None, campaign_role: str | None) -> str:
-    """One line for a person's row on People: what they can do in this campaign."""
+    """One line for a person's row on Table: what they can do in this campaign."""
     if tool not in TOOL_ROLES:
         return "Can't sign in."
     parts = {
@@ -237,5 +242,5 @@ def summary(tool: str | None, campaign_role: str | None) -> str:
         None: "No role in this campaign yet",
     }[campaign_role]
     if tool == ADMIN:
-        parts += "; as admin, also sets up people, characters and spending"
+        parts += "; as admin, also sets up accounts, characters and spending"
     return parts + "."

@@ -64,7 +64,7 @@ def test_session_suggestion_flows_to_review_and_redraft(player, admin, db):
     import_bundle(db, BUNDLE)
     s = db.scalar(select(GameSession))
     player.post(f"/sessions/{s.id}/suggest", data={"kind": "correction", "text": "Kieran, not Kiera."}, headers=HX)
-    assert "1 suggestion or draft waiting for your OK" in admin.get("/admin/sessions").text
+    assert "1 suggestion or draft waiting for your OK" in admin.get("/manage/sessions").text
     page = admin.get("/suggestions").text
     assert "Kieran, not Kiera." in page and "Edit the recap" in page and "I fixed it" in page
     x = db.scalar(select(Suggestion))
@@ -149,10 +149,10 @@ def test_suggestions_go_to_the_dm_and_admins(dm, player, db):
     s = db.scalar(select(GameSession))
     player.post(f"/campaign/{e.id}/suggest", data={"kind": "addition", "text": "He sails."}, headers=HX)
     player.post(f"/sessions/{s.id}/suggest", data={"kind": "correction", "text": "Kieran, not Kiera."}, headers=HX)
-    assert player.get("/suggestions", follow_redirects=False).headers["location"] == "/your-suggestions"
+    assert player.get("/c/main/manage/inbox", follow_redirects=False).headers["location"] == "/your-suggestions"
     assert "Manage" not in player.get("/").text
     home = dm.get("/").text
-    assert "2 suggestions or drafts are waiting" in home and 'href="/suggestions"' in home
+    assert "2 suggestions or drafts are waiting" in home and 'href="/c/main/manage/inbox"' in home
     page = dm.get("/suggestions").text
     assert "He sails." in page and "Kieran, not Kiera." in page
     fact = db.scalar(select(Fact))

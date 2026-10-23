@@ -294,6 +294,52 @@ def undo_import(db: Session, batch: str) -> tuple[int, int]:
     return done, skipped
 
 
+# ------------------------------------------------------------------ which campaign a change belongs to
+
+# How a row leads to its campaign: (its column, what that column points at). Deleted rows keep the column in `old`.
+LEADS_TO = {
+    "entities": ("campaign_id", "campaign"), "glossary_terms": ("campaign_id", "campaign"),
+    "game_sessions": ("campaign_id", "campaign"), "campaigns": ("id", "campaign"), "house_rules": ("campaign_id", "campaign"),
+    "campaign_members": ("campaign_id", "campaign"), "campaign_characters": ("campaign_id", "campaign"),
+    "player_notes": ("campaign_id", "campaign"), "story_events": ("session_id", "session"),
+    "entity_aliases": ("entity_id", "entity"), "relationships": ("from_entity_id", "entity"), "facts": ("entity_id", "entity"),
+    "characters": ("id", "character"), "character_picks": ("character_id", "character"),
+}
+
+
+def campaigns_of(db: Session, revs: list[Revision]) -> dict[int, int | None]:
+    """{revision id: the campaign its change belongs to}, None for askdnd as a whole (accounts; a character in no
+    campaign). A character's changes belong to the campaign it's in now."""
+    pointers: dict[int, tuple[str, int | None]] = {}
+    live: dict[str, set[int]] = {}
+    for r in revs:
+        col, kind = LEADS_TO.get(r.table, (None, None))
+        if kind is None:
+            pointers[r.id] = ("", None)
+        elif col == "id":
+            pointers[r.id] = (kind, r.row_id)
+        elif r.field == "deleted":
+            pointers[r.id] = (kind, (r.old or {}).get(col))
+        else:
+            live.setdefault(r.table, set()).add(r.row_id)
+    values: dict[tuple[str, int], int | None] = {}
+    for table, ids in live.items():
+        model = MODELS[table]
+        col = LEADS_TO[table][0]
+        values |= {(table, i): v for i, v in db.execute(select(model.id, getattr(model, col)).where(model.id.in_(ids)))}
+    for r in revs:
+        if r.id not in pointers:
+            pointers[r.id] = (LEADS_TO[r.table][1], values.get((r.table, r.row_id)))
+        if pointers[r.id][1] is None and r.character_id:  # a player's note from before notes had a campaign
+            pointers[r.id] = ("character", r.character_id)
+    want = {k: {i for kk, i in pointers.values() if kk == k and i} for k in ("session", "entity", "character")}
+    via = {("session", i): c for i, c in db.execute(select(GameSession.id, GameSession.campaign_id).where(GameSession.id.in_(want["session"])))}
+    via |= {("entity", i): c for i, c in db.execute(select(Entity.id, Entity.campaign_id).where(Entity.id.in_(want["entity"])))}
+    via |= {("character", i): c for i, c in db.execute(select(CampaignCharacter.character_id, CampaignCharacter.campaign_id).where(
+        CampaignCharacter.character_id.in_(want["character"]), CampaignCharacter.left_on.is_(None)))}
+    return {rid: (i if kind == "campaign" else via.get((kind, i))) for rid, (kind, i) in pointers.items()}
+
+
 def shown(value, field: str) -> str:
     """A value as the history page shows it."""
     if field == "quest_open":

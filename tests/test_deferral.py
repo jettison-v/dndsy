@@ -43,15 +43,15 @@ def test_ask_options_and_names(db):
 
 def test_ask_moves_question_to_waiting_and_publishing_still_works(admin, db):  # noqa: F811
     s = drafted(db)
-    r = admin.post(f"/admin/sessions/{s.id}/questions/ask", data={"q": QUESTIONS[0], "person": " Jo ", "note": "You were there"}, headers=HX)
+    r = admin.post(f"/manage/sessions/{s.id}/questions/ask", data={"q": QUESTIONS[0], "person": " Jo ", "note": "You were there"}, headers=HX)
     assert "Waiting on Jo" in r.text and "You were there" in r.text and "1 waiting" in r.text
     ctx = review.review_context(db, s, drafting=False)
     assert ctx["open_questions"] == [QUESTIONS[1]] and ctx["done_questions"] == []
     assert [(p, [c.before for c in cs]) for p, cs in ctx["waiting"]] == [("Jo", [QUESTIONS[0]])]
     row = db.scalar(select(Correction).where(Correction.kind == "ask"))
     assert row.asked_by == "Brett" and row.asked_of == "Jo"
-    assert "Choose who to ask" in admin.post(f"/admin/sessions/{s.id}/questions/ask", data={"q": QUESTIONS[1], "person": ""}, headers=HX).headers["HX-Trigger"]
-    admin.post(f"/admin/sessions/{s.id}/publish", headers=HX)
+    assert "Choose who to ask" in admin.post(f"/manage/sessions/{s.id}/questions/ask", data={"q": QUESTIONS[1], "person": ""}, headers=HX).headers["HX-Trigger"]
+    admin.post(f"/manage/sessions/{s.id}/publish", headers=HX)
     assert "R." in admin.get("/").text
 
 
@@ -80,9 +80,9 @@ def test_reviewer_records_answer_on_behalf(admin, db):  # noqa: F811
     s = drafted(db)
     review.ask_question(db, s, QUESTIONS[0], "Robin", "", "Brett")
     db.flush()
-    r = admin.post(f"/admin/sessions/{s.id}/questions/answer", data={"q": QUESTIONS[0], "answer": "Grumm did.", "on_behalf_of": "Robin"}, headers=HX)
+    r = admin.post(f"/manage/sessions/{s.id}/questions/answer", data={"q": QUESTIONS[0], "answer": "Grumm did.", "on_behalf_of": "Robin"}, headers=HX)
     assert "Answered by Robin" in r.text
     row = db.scalar(select(Correction).where(Correction.before == QUESTIONS[0]))
     assert row.kind == "answer" and row.answered_by == "Robin" and row.asked_of == "Robin"
-    admin.post(f"/admin/sessions/{s.id}/questions/reopen", data={"q": QUESTIONS[0]}, headers=HX)
+    admin.post(f"/manage/sessions/{s.id}/questions/reopen", data={"q": QUESTIONS[0]}, headers=HX)
     assert QUESTIONS[0] in review.review_context(db, s, drafting=False)["open_questions"]

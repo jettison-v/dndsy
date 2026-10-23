@@ -1,10 +1,22 @@
 {% extends "base.html" %}
-{% block title %}Data · Manage · askdnd{% endblock %}
+{% block title %}Backups and imports · Manage · askdnd{% endblock %}
 {% block content %}
 <main class="page" style="max-width:1000px">
   {% include "_manage_head.html" %}
-  <div class="title-row"><h1>Import campaign data</h1></div>
-  <p class="subtitle">Upload a campaign bundle (.json). You'll see exactly what it would change before anything is saved. Importing the same file again updates matching records; it never duplicates them.</p>
+  <div class="title-row"><h1>Backups and imports</h1></div>
+  <p class="subtitle">askdnd's nightly backups, then importing campaign data. Only admins can see this page.</p>
+  {% if backup is defined %}
+  <section class="section" id="backups">
+    <div class="section-head"><h2>Nightly backups</h2><span class="tag {{ 'draft' if backup.attention else 'done' }}">{{ backup.text }}</span></div>
+    <p class="hint" style="margin-top:6px">Every night at 10:00 UTC (3 am Pacific) the whole database is copied to S3 (<code>askdnd-ai/v2/backups/</code>), keeping 30 days. A failed or missed night shows on every campaign's Needs you page for admins.</p>
+    {% if backups %}<table class="list">{% for b in backups %}
+      <tr><td><b>{{ b.finished_at.strftime("%-d %b %Y, %-I:%M %p") }} UTC</b><div class="note">{{ b.detail }}</div></td>
+        <td style="text-align:right"><span class="tag {{ 'done' if b.status == 'ok' else 'draft' }}">{{ "Worked" if b.status == "ok" else "Failed" }}</span></td></tr>
+    {% endfor %}</table>{% else %}<p class="muted">No runs recorded yet. The next one is tonight.</p>{% endif %}
+  </section>
+  {% endif %}
+  <h3 class="divider">Import campaign data</h3>
+  <p class="hint">Upload a campaign bundle (.json). You'll see exactly what it would change before anything is saved. Importing the same file again updates matching records; it never duplicates them.</p>
   {% if error %}<div class="flash bad">{% if filename %}<b>{{ filename }}</b>: {% endif %}{{ error }}</div>{% endif %}
   {% if counts %}<div class="flash"><b>Imported {{ filename }}.</b>{% if kept %} Existing descriptions were kept.{% endif %}<ul>{% for k, v in counts.items() %}<li>{{ k }}: {{ v }}</li>{% endfor %}</ul></div>{% endif %}
 
@@ -44,41 +56,31 @@
     {% endif %}
     {% endif %}
 
-    <form method="post" action="/admin/import/apply" class="import-confirm">
+    <form method="post" action="/manage/backups/import/apply" class="import-confirm">
       <input type="hidden" name="token" value="{{ token }}">
       {% if pv.text_changes %}<label class="check"><input type="checkbox" name="keep_text" value="1"> Keep the current descriptions, quest status and published state of existing entries (import only what's new)</label>{% endif %}
       <div class="row">
         <button class="btn primary" data-busy="Importing…" {% if pv.nothing %}disabled{% endif %}>Import these changes</button>
-        <button class="btn" type="submit" formaction="/admin/import/cancel">Cancel</button>
+        <button class="btn" type="submit" formaction="/manage/backups/import/cancel">Cancel</button>
       </div>
     </form>
   </section>
   {% else %}
   <section class="section">
-    <form method="post" action="/admin/import" enctype="multipart/form-data" class="stack">
+    <form method="post" action="/manage/backups/import" enctype="multipart/form-data" class="stack">
       <input type="file" name="file" accept=".json,application/json" required>
       <div><button class="btn primary" data-busy="Reading…">Preview import</button></div>
     </form>
   </section>
   {% endif %}
-  {% if backup is defined %}
-  <section class="section" id="backups">
-    <div class="section-head"><h2>Nightly backups</h2><span class="tag {{ 'draft' if backup.attention else 'done' }}">{{ backup.text }}</span></div>
-    <p class="hint" style="margin-top:6px">Every night at 10:00 UTC (3 am Pacific) the whole database is copied to S3 (<code>askdnd-ai/v2/backups/</code>), keeping 30 days. A failed or missed night turns this card red on the Manage overview.</p>
-    {% if backups %}<table class="list">{% for b in backups %}
-      <tr><td><b>{{ b.finished_at.strftime("%-d %b %Y, %-I:%M %p") }} UTC</b><div class="note">{{ b.detail }}</div></td>
-        <td style="text-align:right"><span class="tag {{ 'done' if b.status == 'ok' else 'draft' }}">{{ "Worked" if b.status == "ok" else "Failed" }}</span></td></tr>
-    {% endfor %}</table>{% else %}<p class="muted">No runs recorded yet. The next one is tonight.</p>{% endif %}
-  </section>
-  {% endif %}
   {% if imports %}
   <section class="section">
     <h2>Recent imports</h2>
-    <p class="hint" style="margin-top:6px">Each import's changes are in <a href="/admin/history">History</a>. Undo puts back everything an import changed, except anything edited again since.</p>
+    <p class="hint" style="margin-top:6px">Each import's changes are in <a href="/manage/history">History</a>. Undo puts back everything an import changed, except anything edited again since.</p>
     <table class="list">{% for b in imports %}
       <tr><td><b>{{ b.at.strftime("%-d %b %Y, %-I:%M %p") }} UTC</b><div class="note">{{ b.actor or "someone" }} · {{ b.changes }} change{{ "s" if b.changes != 1 }} to {{ b.things }} thing{{ "s" if b.things != 1 }}</div></td>
-        <td style="text-align:right;white-space:nowrap"><a class="btn small" href="/admin/history?batch={{ b.batch }}">See changes</a>
-          <form method="post" action="/admin/history/undo-import" class="inline" onsubmit="return confirm('Undo this import? Its changes are put back to how they were before.')">
+        <td style="text-align:right;white-space:nowrap"><a class="btn small" href="/manage/history?batch={{ b.batch }}">See changes</a>
+          <form method="post" action="/manage/history/undo-import" class="inline" onsubmit="return confirm('Undo this import? Its changes are put back to how they were before.')">
             <input type="hidden" name="batch" value="{{ b.batch }}"><button class="btn small">Undo</button></form></td></tr>
     {% endfor %}</table>
   </section>

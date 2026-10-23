@@ -492,3 +492,26 @@ pays for everything.
    new one, deploy, test, then disable the old one.
 2. Before rotating a database password, check who uses the database and whether it's reachable from the internet at
    all. A database with no public address is much less exposed by a leaked password.
+
+## 2026-10-23: The first pull request (Manage layout)
+
+This is the first change built the new way (agreed in the VTT roadmap): on its own short **branch**, opened as a
+**pull request** (PR), checked by GitHub Actions, and merged by Brett. Until now changes went straight onto `main`,
+which deploys beta right away.
+
+- **Why a branch and a PR.** The work happens off to the side, so `main` (and beta) keep working while it's
+  unfinished. The PR is one page on GitHub showing everything that will change, the tests' result, and a place to
+  comment. Nothing reaches beta until someone presses **Merge**.
+- **How to review one.** Open the PR link. The description has a short review guide: what changed, what to try.
+  The **Checks** section must be green (ruff and pytest ran on GitHub). **Files changed** shows every line, but the
+  guide is enough; you don't need to read code.
+- **How to merge.** Press **Merge pull request** (then **Confirm**). That puts the branch onto `main`, and Railway
+  deploys beta as usual (it waits for the checks). Not on game night.
+- **Keeping it current.** If `main` moved on while the PR was open (another session merged something), the branch is
+  brought up to date first, so what you tested is what lands.
+
+**For a new project:**
+1. Work on short branches and merge through pull requests from day one, even alone: `main` stays deployable and every
+   change has one page explaining it.
+2. Make CI (lint and tests) run on every PR and require it before deploying, so a red check stops a bad merge.
+3. Write the PR description for the person who merges: what changed, how to try it, what's not done.

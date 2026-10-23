@@ -37,7 +37,7 @@
         <h2>Monthly limit</h2>
         <p class="hint" style="margin-top:6px">Once this month's spending reaches the limit, askdnd stops calling Claude (drafts, account checks, descriptions) and says why. It resets on the 1st. The Anthropic Console's own limit still applies.</p>
         {% if u.limit_reached %}<div class="flash warn" style="margin-top:8px">Reached: new drafts are paused until the 1st or until you raise the limit.</div>{% endif %}
-        <form method="post" action="/admin/usage/limit" class="stack" style="margin-top:12px">
+        <form method="post" action="/manage/usage/limit" class="stack" style="margin-top:12px">
           <label class="field">Limit per month <span class="note">(blank for none)</span><input type="text" name="amount" inputmode="decimal" placeholder="$10.00" value="{% if u.limit is not none %}{{ "%.2f" | format(u.limit) }}{% endif %}"></label>
           <div><button class="btn">Save limit</button></div>
         </form>
@@ -48,10 +48,10 @@
         {% for t in topups %}
         <div class="row" style="justify-content:space-between; padding:6px 0; flex-wrap:nowrap">
           <span><b>${{ "%.2f" | format(t.amount_usd) }}</b><br><span class="note">{{ t.added_on.strftime("%b %-d, %Y") }}{% if t.note %} · {{ t.note }}{% endif %}</span></span>
-          <form class="inline" method="post" action="/admin/usage/topups/{{ t.id }}/delete" onsubmit="return confirm('Remove this top-up?')"><button class="btn link danger">Remove</button></form>
+          <form class="inline" method="post" action="/manage/usage/topups/{{ t.id }}/delete" onsubmit="return confirm('Remove this top-up?')"><button class="btn link danger">Remove</button></form>
         </div>
         {% endfor %}
-        <form method="post" action="/admin/usage/topups" class="stack" style="margin-top:12px">
+        <form method="post" action="/manage/usage/topups" class="stack" style="margin-top:12px">
           <label class="field">Amount<input type="text" name="amount" inputmode="decimal" placeholder="$20.00" required></label>
           <label class="field">Date bought<input type="date" name="added_on" value="{{ today_iso }}" required></label>
           <label class="field">Note <span class="note">(optional)</span><input type="text" name="note" placeholder="e.g. Initial funding"></label>
