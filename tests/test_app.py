@@ -29,7 +29,9 @@ def test_about_and_faq_are_open_to_anyone():
     from app.main import app
 
     c = TestClient(app)
-    about, faq = c.get("/about"), c.get("/faq")
+    about, faq = c.get("/help?tab=about"), c.get("/help")  # Help: the FAQ and About as tabs (2026-10-23)
+    assert c.get("/faq", follow_redirects=False).headers["location"] == "/help"
+    assert c.get("/about", follow_redirects=False).headers["location"] == "/help?tab=about"
     assert about.status_code == 200 and "Ground rules" in about.text and "never shown to the DM" in about.text
     assert faq.status_code == 200 and "Who sees my suggestion" in faq.text and "every 2.5 minutes" in faq.text
-    assert 'href="/faq"' in c.get("/login").text
+    assert 'href="/help"' in c.get("/login").text

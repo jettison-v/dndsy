@@ -76,11 +76,14 @@
       </div>
     </div>
     {% endif %}
+    {# Help: the FAQ and About, one quiet icon instead of another word in the bar (Brett, 2026-10-23) #}
+    <a href="/help" class="help-btn{{ ' active' if path == '/help' }}" aria-label="Help" data-tip="Help" data-no-peek>?</a>
     <div class="account">
       <button class="avatar" data-menu="account-menu" aria-label="Account">{% if user.picture %}<img src="{{ user.picture }}" alt="" referrerpolicy="no-referrer">{% else %}{{ (user.name or user.email)[:1] | upper }}{% endif %}</button>
       <div class="menu" id="account-menu" hidden>
         <a href="#" style="pointer-events:none">{{ user.name }}<small>{{ user.email }}</small></a>
         <a href="/your-suggestions" class="{{ 'active' if path == '/your-suggestions' }}">Your suggestions<small>What happened to each one</small></a>
+        <a href="/help" class="{{ 'active' if path == '/help' }}" data-no-peek>Help<small>The FAQ and About askdnd</small></a>
         <form method="post" action="/logout"><button type="submit">Sign out</button></form>
       </div>
     </div>
@@ -101,15 +104,14 @@
   {% if my_campaigns | length > 1 %}{% for c in my_campaigns if not (here and c.id == here.id) %}<a href="/c/{{ c.slug }}{{ switch_path }}">{{ c.name }}<small>Switch campaign</small></a>{% endfor %}{% endif %}
   <a href="/your-suggestions" class="{{ 'active' if path == '/your-suggestions' }}">Your suggestions</a>
   {% if manage_pages %}<a href="{{ manage_pages[0].href }}" class="{{ 'active' if path.startswith('/manage') }}">Manage<small>Running the campaign and askdnd</small></a>{% endif %}
-  <a href="/about" data-no-peek>About</a>
-  <a href="/faq" data-no-peek>FAQ</a>
+  <a href="/help" class="{{ 'active' if path == '/help' }}" data-no-peek>Help<small>The FAQ and About askdnd</small></a>
   <form method="post" action="/logout"><button type="submit">Sign out <small class="note">{{ user.email }}</small></button></form>
 </div>
 {% include "_table_rolls.html" %}
 {% endif %}
 {% block content %}{% endblock %}
 {% endblock %}
-<footer class="site-foot"><a href="/about" data-no-peek>About</a> · <a href="/faq" data-no-peek>FAQ</a></footer>
+<footer class="site-foot"><a href="/help" data-no-peek>Help</a> · <a href="/help?tab=about" data-no-peek>About</a></footer>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>

@@ -90,6 +90,8 @@ a.char-btn > span:last-child { overflow: hidden; text-overflow: ellipsis; }
 .account { position: relative; }
 .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--line-strong); display: grid; place-items: center; font-weight: 600; font-size: var(--fs-sm); color: var(--text); border: none; padding: 0; }
 .avatar img { width: 32px; height: 32px; border-radius: 50%; }
+.help-btn { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line-strong); color: var(--muted); font-weight: 600; font-size: var(--fs-sm); text-decoration: none; flex: none; }
+.help-btn:hover, .help-btn.active { color: var(--text-strong); border-color: var(--muted); }
 .menu form button { width: 100%; text-align: left; background: none; border: none; color: var(--text); padding: 8px 10px; border-radius: var(--r-sm); }
 .menu form button:hover { background: var(--surface); }
 /* Live (app/live.py): when the D&D Beyond copy was last updated; green while Game Mode is on */

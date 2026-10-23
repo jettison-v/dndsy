@@ -1,10 +1,5 @@
-{% extends "base.html" %}
-{% block title %}FAQ · askdnd{% endblock %}
+{# Help › FAQ (help.html). How askdnd's features work. Question ids are link targets: /help#<id>. #}
 {% macro q(question, id="") %}<details class="faq"{% if id %} id="{{ id }}"{% endif %}><summary>{{ question }}</summary><div class="faq-a">{{ caller() }}</div></details>{% endmacro %}
-{% block content %}
-<main class="page narrow help">
-  <div class="title-row"><h1>FAQ</h1></div>
-  <p class="subtitle">How askdnd's features work, so nothing comes as a surprise. The short version is on the <a href="/about">About</a> page.</p>
   {# Search: shows only the answers with every word typed, opened (app.js) #}
   <div class="ls-search faq-search"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
     <input type="search" id="faq-search" placeholder="Search the FAQ: pin, Wild Shape, backups…" aria-label="Search the FAQ" autocomplete="off"></div>
@@ -211,5 +206,3 @@
       <p>Yes, to check what the DM or a player sees: <b>View as</b> on Manage › Accounts or a campaign's Table. A banner says who you're viewing as, and nothing can be changed until <b>Stop viewing</b>, so nothing happens in their name. An admin who is a campaign's DM can't view as its players, because that would show them their players' notes.</p>
     {% endcall %}
   </section>
-</main>
-{% endblock %}
