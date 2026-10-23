@@ -54,7 +54,8 @@ advise.
 **Phase 0, Foundations.** 0.1 One site, a VTT switch, a test campaign (above) S core · 0.2 Finish data organization
 (step 10) L core, in progress · 0.3 Live table connection (WebSockets; changes within a second) M core · 0.4 Play log
 with undo M core · 0.5 File storage for the campaign (S3 `v2/`) M core · 0.6 Rules content as data (SRD 5.2; DM
-creations in the database, never the public repo) M core · 0.7 Finish the Railway cleanup (step 12) S core.
+creations in the database, never the public repo; rules answers are built on it, Brett 2026-10-23) M core · 0.7 Finish
+the Railway cleanup (step 12) S core, done 2026-10-23.
 
 **Phase 1, Live character state (first).** 1.1 Hit points askdnd owns, typed damage with resistances M core · 1.2
 Casting spends slots, upcasting, concentration M core · 1.3 Class resources and uses M core · 1.4 Short and long
