@@ -278,7 +278,7 @@ def mine(request: Request, db: Session = Depends(get_db)):
     for x in db.scalars(select(Suggestion).where(func.lower(Suggestion.author_email) == email)):
         if x.target_type == "session":
             s = db.get(GameSession, x.target_id)
-            rows.append({"x": x, "label": session_label(s) if s else "A session", "href": "/sessions"})
+            rows.append({"x": x, "label": session_label(s) if s else "A session", "href": f"{web.base()}/?tab=sessions#s{s.id}" if s else f"{web.base()}/?tab=sessions"})
         else:
             t = db.get(GlossaryTerm, x.target_id) if x.target_id else None
             rows.append({"x": x, "label": f"Glossary: {t.term}" if t else "Glossary: new term", "href": "/campaign#glossary"})

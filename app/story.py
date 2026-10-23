@@ -1,4 +1,4 @@
-"""Pages for the whole table: Previously on…, Sessions, Campaign. Characters: app/character_pages.py."""
+"""Pages for the whole table: Story (Previously on… and All sessions) and Campaign. Characters: app/character_pages.py."""
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
@@ -54,7 +54,7 @@ def published_items(db: Session, campaign: Campaign) -> list[dict]:
 def published_story(db: Session) -> dict:
     campaign = web.campaign(db)
     if campaign is None:
-        return {"latest": None, "earlier": [], "threads": [], "quests": []}
+        return {"latest": None, "earlier": [], "items": [], "threads": [], "quests": []}
     items = published_items(db, campaign)
     quests = list(
         db.scalars(
@@ -71,6 +71,7 @@ def published_story(db: Session) -> dict:
     return {
         "latest": items[-1] if items else None,
         "earlier": list(reversed(items[:-1])),
+        "items": list(reversed(items)),  # All sessions, newest first
         "threads": [t for item in items[-3:] for t in item["theories"]],
         "quests": quests,
     }
@@ -93,7 +94,9 @@ def _linker(db: Session) -> Linker:
 
 @router.get("/")
 @router.get("/story")
-def story(request: Request, db: Session = Depends(get_db)):
+def story(request: Request, tab: str = "", db: Session = Depends(get_db)):
+    """Story (menu bar Option B, Brett 2026-10-22): tabs Previously on… (questions for you, then the latest session's
+    recap, key moments and open threads) and All sessions (every published session, newest first). ?tab=sessions."""
     user = current_user(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
@@ -102,6 +105,7 @@ def story(request: Request, db: Session = Depends(get_db)):
         "story.html",
         {
             **published_story(db),
+            "tab": "sessions" if tab == "sessions" else "previously",
             "questions": questions_card(db, user),
             "waiting": waiting_count(db) if can_moderate(user) else 0,
             "toast": request.session.pop("toast", None),
@@ -132,12 +136,9 @@ def answer_question(
 
 
 @router.get("/sessions")
-def sessions(request: Request, db: Session = Depends(get_db)):
-    if not current_user(request):
-        return RedirectResponse("/login", status_code=303)
-    campaign = web.campaign(db)
-    items = list(reversed(published_items(db, campaign))) if campaign else []
-    return templates.TemplateResponse(request, "sessions.html", {"items": items, "ln": _linker(db)})
+def sessions(request: Request):
+    """The old Sessions page is Story's All sessions tab."""
+    return RedirectResponse(f"{web.base()}/?tab=sessions", status_code=303)
 
 
 def seen_in_sessions(db: Session, campaign_id: int) -> tuple[int | None, dict[int, dict]]:
@@ -164,10 +165,12 @@ def seen_in_sessions(db: Session, campaign_id: int) -> tuple[int | None, dict[in
 
 
 @router.get("/campaign")
-def campaign_page(request: Request, open: str = "", tab: str = "", db: Session = Depends(get_db)):
+def campaign_page(request: Request, open: str = "", tab: str = "", at: str = "", db: Session = Depends(get_db)):
     """The Campaign page (roadmap step 11; Brett 2026-10-22): tabs World (the Reader: names down the left, one entry
-    on the page), Quests (the board), Relationships (family trees, other ties, anyone's connections) and Glossary.
-    `?open=<id>` is an entry's address (a quest's opens Quests); `?tab=` picks a tab."""
+    on the page), Quests (the board), Relationships (family trees, other ties, anyone's connections), Glossary and
+    Map (app/atlas.py; menu bar Option B). `?open=<id>` is an entry's address (a quest's opens Quests); `?tab=` picks
+    a tab; `?tab=map&at=<place>` centers the map on that place ("Show on map")."""
+    from app import atlas
     from app.entity_pages import entity_context
 
     user = current_user(request)
@@ -202,12 +205,13 @@ def campaign_page(request: Request, open: str = "", tab: str = "", db: Session =
         reference = [e for _, rows in groups for e in rows]
         recent = [e for e in reference if latest and seen.get(e.id, {}).get("session_id") == latest]
         selected = (asked if asked and asked.kind != EntityKind.QUEST else None) or next(iter(recent + reference), None)
-    if tab not in ("world", "quests", "relationships", "glossary"):
+    if tab not in ("world", "quests", "relationships", "glossary", "map"):
         tab = "quests" if asked is not None and asked.kind == EntityKind.QUEST else "world"
     article = {**entity_context(db, selected, user), "where": "reader"} if selected else {}
     return templates.TemplateResponse(
         request, "campaign.html", {"campaign": campaign, "quests": quests, "done_quests": done, "groups": groups, "glossary": glossary,
                                    "editor": editor, "seen": seen, "latest": latest, "selected": selected, "tab": tab,
                                    "board": board, "families": fams, "ties": tie, "open_quest": asked.id if asked is not None else None,
+                                   "map": atlas.view(at if tab == "map" else ""),
                                    "toast": request.session.pop("toast", None), **article}
     )

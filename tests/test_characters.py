@@ -401,7 +401,7 @@ def test_my_character_comes_first_and_reminders_can_be_removed(player, db):
     characters.refresh(db, cole)
     owned_by(db, trah, "player@example.com")
     page = player.get(f"/characters/{cole.id}/battle").text
-    pills = page.split('id="char-menu"')[1].split("</div>")[0]  # the menu bar's character switcher
+    pills = page.split('id="party-menu"')[1].split("</div>\n")[1]  # the menu bar's Party menu
     assert pills.index(">Trah<") < pills.index(">Big C<") < pills.index(">Cole<")  # mine, then by name
     owned_by(db, cole, "player@example.com")
     trah.owner_id = None

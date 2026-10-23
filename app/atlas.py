@@ -1,8 +1,8 @@
 """The campaign map: AideDD's interactive Sword Coast atlas (map by Mike Schley).
 
-We don't host the map. The Map tab shows AideDD's page in a frame, and a place in
-the campaign record gets "Show on map" when its name, or one of its other names or
-spellings, matches a marker there. The marker names live in
+We don't host the map. The Campaign page's Map tab shows AideDD's page in a frame, and a
+place in the campaign record gets "Show on map" when its name, or one of its other names
+or spellings, matches a marker there. The marker names live in
 app/data/sword_coast_places.txt (refresh with scripts/atlas_places.py).
 """
 
@@ -13,9 +13,9 @@ from urllib.parse import quote
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 
+from app import web
 from app.auth import current_user
 from app.models import Entity, EntityKind
-from app.templating import templates
 
 router = APIRouter()
 
@@ -55,10 +55,20 @@ def entity_marker(entity: Entity) -> str | None:
     return marker_for([entity.name, *(a.alias for a in entity.aliases)])
 
 
+def view(at: str = "") -> dict:
+    """The Map tab's frame: `at` centers it on that marker (only real markers are used)."""
+    marker = marker_for([at]) if at else None
+    return {"marker": marker, "src": atlas_url(marker), "credit": CREDIT}
+
+
+def show_on_map(marker: str) -> str:
+    """Where "Show on map" goes: the Campaign page's Map tab, centered on the marker."""
+    return f"{web.base()}/campaign?tab=map&at={quote(marker)}"
+
+
 @router.get("/map")
 def map_page(request: Request, at: str = ""):
-    """The Map tab. `?at=Star Mounts` centers it on that marker (only real markers are used)."""
+    """The old Map page is the Campaign page's Map tab (menu bar Option B, Brett 2026-10-22)."""
     if not current_user(request):
         return RedirectResponse("/login", status_code=303)
-    marker = marker_for([at]) if at else None
-    return templates.TemplateResponse(request, "map.html", {"marker": marker, "src": atlas_url(marker), "credit": CREDIT})
+    return RedirectResponse(show_on_map(at) if at else f"{web.base()}/campaign?tab=map", status_code=303)

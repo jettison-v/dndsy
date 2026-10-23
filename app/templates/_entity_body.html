@@ -10,7 +10,7 @@
         {% if e.status.value != "published" %}<span class="tag draft">Not published</span>{% endif %}
       </div>
       <p class="subtitle">{% if e.display_aliases %}Also known as {{ e.display_aliases | map(attribute="alias") | join(", ") }}{% else %}{{ kind_label }} in the campaign record{% endif %}</p>
-      {% if map_marker %}<a class="btn small" href="/map?at={{ map_marker | urlencode }}" data-no-peek>Show on map</a>{% endif %}
+      {% if map_marker %}<a class="btn small" href="{{ map_href }}" data-map-src="{{ map_src }}" data-map-at="{{ map_marker }}" data-no-peek>Show on map</a>{% endif %}
     </div>
     {% if picture or can_picture %}
     <figure class="entity-pic">
@@ -167,7 +167,7 @@
     <ul class="events" style="margin-top:10px">
       {% for m in moments %}
       <li class="ev {{ 'theory' if m.e.kind.value == 'theory' }}"><span class="kind {{ m.e.kind.value }}">{{ m.e.kind.value }}</span>
-        <div class="ev-text">{{ ln.text(m.e.text) }}<small><a href="/sessions#s{{ m.e.session_id }}">{{ m.label }}</a></small></div></li>
+        <div class="ev-text">{{ ln.text(m.e.text) }}<small><a href="{{ cbase }}/?tab=sessions#s{{ m.e.session_id }}">{{ m.label }}</a></small></div></li>
       {% endfor %}
     </ul>
     {% else %}<p class="muted" style="margin-top:8px">No published key moments mention {{ e.name }} yet.</p>{% endif %}

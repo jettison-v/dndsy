@@ -1,4 +1,4 @@
-"""One Character page with Play / Sheet / Plan modes, the menu bar's character switcher, and
+"""One Character page with Play / Sheet / Plan modes, the menu bar's characters (your character, Party ▾), and
 the Live control (Game Mode and refreshing). D&D Beyond is never called (fake fetch)."""
 
 import json
@@ -41,29 +41,72 @@ def test_plan_is_never_shown_to_the_dm(dm, db):
     assert f"/characters/{cole.id}/plan" not in dm.get(f"/characters/{cole.id}/battle").text  # no Plan in the switch
 
 
-def test_character_switcher_keeps_the_mode(player, db):
+def party_menu(page: str, id: str = "party-menu") -> str:
+    return page.split(f'id="{id}"')[1].split('class="party-all')[0]
+
+
+def topbar(page: str) -> str:
+    return page.split('class="topbar"')[1].split("</header>")[0]
+
+
+def test_party_menu_keeps_the_mode(player, db):
+    import_bundle(db, BUNDLE)
+    cole, trah = char(db, "Cole"), char(db, "Trah")
+    characters.refresh(db, cole)
+    owned_by(db, cole, "player@example.com")
+    menu = lambda path: party_menu(player.get(path).text)  # noqa: E731
+    assert f'href="/characters/{trah.id}/plan"' in menu(f"/characters/{cole.id}/plan")
+    assert f'href="/characters/{trah.id}"' in menu(f"/characters/{cole.id}")
+    # Each character with class and level, and HP when known; "You" on your own
+    hp = cole.snapshot.summary["hit_points"]
+    assert f"You · {cole.snapshot.summary['classes'][0]['name']}" in menu("/party")
+    assert f"{hp['current']}/{hp['max']} HP" in menu("/party")
+    bar = topbar(player.get("/party").text)
+    assert ">Everyone at a glance</a>" in bar and 'href="/party"' in bar
+    for label in ("Story", "Campaign"):
+        assert f">{label}</a>" in bar
+    for gone in ("Recap", "Sessions", "Map", "Previously on…", "Battle"):
+        assert f">{gone}</a>" not in bar
+    assert 'aria-label="Switch character"' not in bar and 'id="char-menu"' not in bar
+
+
+def test_your_character_opens_in_the_mode_you_used_last(player, db):
     import_bundle(db, BUNDLE)
     cole, trah = char(db, "Cole"), char(db, "Trah")
     owned_by(db, cole, "player@example.com")
-    menu = lambda path: player.get(path).text.split('id="char-menu"')[1].split("</div>")[0]  # noqa: E731
-    assert f'href="/characters/{trah.id}/plan"' in menu(f"/characters/{cole.id}/plan")
-    assert f'href="/characters/{trah.id}"' in menu(f"/characters/{cole.id}")
-    assert f'href="/characters/{trah.id}/battle"' in menu("/party")  # from elsewhere it opens Battle
-    bar = player.get("/party").text.split('class="topbar"')[1].split("</header>")[0]
-    assert f'href="/characters/{cole.id}/battle" class="switcher-name">Cole</a>' in bar  # one click opens your character
-    assert 'aria-label="Switch character"' in bar  # the ▾ switches
-    for label in ("Recap", "Sessions", "Campaign", "Map", "Party"):
-        assert f">{label}</a>" in bar
-    assert ">Battle</a>" not in bar and ">Previously on…</a>" not in bar
+    mine = lambda path: topbar(player.get(path).text).split('class="char-btn')[0].rsplit("<a ", 1)[1]  # noqa: E731
+    assert f'href="/characters/{cole.id}/battle"' in mine("/party")  # Battle until you've used another mode
+    player.get(f"/characters/{trah.id}/plan")
+    assert f'href="/characters/{cole.id}/plan"' in mine("/party")  # the mode you used last, on any character
+    assert f'href="/characters/{trah.id}/plan"' in party_menu(player.get("/c/main/").text)
+    player.get(f"/characters/{cole.id}")
+    assert f'href="/characters/{cole.id}"' in mine("/c/main/campaign")
+    assert ">Cole</span></a>" in topbar(player.get("/party").text)
+
+
+def test_the_dm_has_no_character_button(dm, db):
+    import_bundle(db, BUNDLE)
+    owned_by(db, char(db, "Trah"), "dm@example.com", is_dm=True)
+    char(db, "Trah").owner_id = None
+    db.flush()
+    page = dm.get("/party").text
+    assert 'title="Your character"' not in topbar(page) and 'class="bn-char' not in page
+    assert 'data-menu="party-menu"' in topbar(page) and ">Cole<" in party_menu(page)
+    bottom = page.split('class="bottom-nav"')[1].split("</nav>")[0]
+    assert re.findall(r">(Story|Campaign|Party|More)<", bottom) == ["Story", "Campaign", "Party", "More"]
 
 
 def test_bottom_bar_on_phones(player, db):
     import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    owned_by(db, cole, "player@example.com")
     page = player.get("/party").text
     bottom = page.split('class="bottom-nav"')[1].split("</nav>")[0]
-    assert re.findall(r">(Recap|Campaign|Battle|Party|More)<", bottom) == ["Recap", "Campaign", "Battle", "Party", "More"]
+    assert re.findall(r">(Story|Campaign|Cole|Party|More)<", bottom) == ["Story", "Campaign", "Cole", "Party", "More"]
+    assert f'href="/characters/{cole.id}/battle"' in bottom and 'data-menu="party-menu-m"' in bottom
+    assert ">Everyone at a glance</a>" in page.split('id="party-menu-m"')[1]
     more = page.split('id="more-menu"')[1].split("</div>")[0]
-    assert 'href="/c/main/sessions"' in more and 'href="/c/main/map"' in more and "Sign out" in more
+    assert "/sessions" not in more and "/map" not in more and "Sign out" in more
 
 
 def test_live_pill_replaces_game_mode_and_refresh_buttons(player, db):

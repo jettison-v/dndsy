@@ -16,7 +16,7 @@
   document.body.addEventListener('toast', e => toast(e.detail && e.detail.value));
 
   document.addEventListener('click', e => {
-    // Menus (character switcher, Live, Manage, account, phone More). A click elsewhere closes
+    // Menus (campaign, Party, Live, Manage, account, phone More). A click elsewhere closes
     // them; clicks inside a [data-keep-open] menu (the Live popover's switch) don't.
     const opener = e.target.closest('[data-menu]');
     document.querySelectorAll('.menu').forEach(m => {
@@ -1840,6 +1840,47 @@
   document.addEventListener('click', e => {
     const k = e.target.closest('[data-close-details]');
     if (k) { const d = k.closest('details'); if (d) d.open = false; }
+  });
+})();
+
+// Story and the Campaign page's Map tab (menu bar Option B). A [data-goto-tab] link shows that tab on this page
+// ("Earlier sessions"); /?tab=sessions#s12 opens that session. The map's frame loads when its tab is first shown,
+// and "Show on map" on the Campaign page recenters it there instead of loading the page again.
+(function () {
+  document.addEventListener('click', e => {
+    const a = e.target.closest('[data-goto-tab]'), t = a && document.querySelector('[role=tab][data-tab="' + a.dataset.gotoTab + '"]');
+    if (!t || e.metaKey || e.ctrlKey) return;
+    e.preventDefault();
+    t.click();
+    t.closest('[role=tablist]').scrollIntoView({ block: 'start' });
+  });
+  // Phones: a tab row that scrolls sideways starts with the chosen tab in view (Map is last on the Campaign page)
+  document.querySelectorAll('[role=tablist]').forEach(list => {
+    const t = list.querySelector('[aria-selected=true]'); if (!t || list.scrollWidth <= list.clientWidth) return;
+    const over = t.getBoundingClientRect().right - list.getBoundingClientRect().right;
+    if (over > 0) list.scrollLeft += over + 16;
+  });
+  if (location.hash.length > 1) {
+    const d = document.getElementById(location.hash.slice(1));
+    if (d && d.tagName === 'DETAILS') d.open = true;
+  }
+  const frame = document.getElementById('map-frame');
+  if (!frame) return;
+  document.addEventListener('tab:shown', e => {
+    if (e.target.id === 't-map' && !frame.getAttribute('src') && frame.dataset.src) frame.src = frame.dataset.src;
+  });
+  document.addEventListener('click', e => {
+    const a = e.target.closest('[data-map-src]');
+    if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    e.preventDefault();
+    frame.removeAttribute('data-src');
+    frame.src = a.dataset.mapSrc;
+    document.getElementById('map-open').href = a.dataset.mapSrc;
+    const tag = document.getElementById('map-at'); tag.textContent = a.dataset.mapAt; tag.hidden = false;
+    const peek = a.closest('.peek'); if (peek) document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    document.querySelector('[role=tab][data-tab="t-map"]').click();
+    const u = new URL(location.href); u.searchParams.set('tab', 'map'); u.searchParams.set('at', a.dataset.mapAt);
+    history.replaceState(null, '', u.pathname + u.search);
   });
 })();
 

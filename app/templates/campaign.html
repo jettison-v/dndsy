@@ -13,7 +13,7 @@
   <p class="subtitle">People, places and things the party has met.{% if campaign and campaign.dm_name %} Dungeon Master: {{ campaign.dm_name }}.{% endif %}</p>
   {% if campaign %}
   <div class="tabbar" role="tablist" data-tab-param>
-    {% for key, label, n in [("world", "World", none), ("quests", "Quests", quests | length), ("relationships", "Relationships", none), ("glossary", "Glossary", glossary | length)] %}
+    {% for key, label, n in [("world", "World", none), ("quests", "Quests", quests | length), ("relationships", "Relationships", none), ("glossary", "Glossary", glossary | length), ("map", "Map", none)] %}
     <button role="tab" aria-selected="{{ 'true' if tab == key else 'false' }}" data-tab="t-{{ key }}">{{ label }}{% if n is not none %} <span class="count">{{ n }}</span>{% endif %}</button>{% endfor %}
   </div>
 
@@ -137,6 +137,16 @@
     </details>
     {% else %}<div style="margin-top:12px">{{ suggest("/campaign/glossary/suggest", "the new glossary entry", kinds=False) }}</div>{% endif %}
   </section>
+
+  {# Map (menu bar Option B, Brett 2026-10-22): AideDD's Sword Coast atlas (app/atlas.py). The frame loads when the tab
+     is first shown; "Show on map" on a place opens this tab centered on it. #}
+  <div id="t-map" class="map-tab"{% if tab != "map" %} hidden{% endif %}>
+    <div class="row map-head"><p class="hint">Search, zoom and click a marker for its lore. Places in the campaign record have a <b>Show on map</b> button that brings you here.</p>
+      <span class="tag" id="map-at"{% if not map.marker %} hidden{% endif %}>{{ map.marker or "" }}</span>
+      <a class="btn small map-open" id="map-open" href="{{ map.src }}" target="_blank" rel="noopener" data-no-peek>Open full screen ↗</a></div>
+    <iframe class="map-frame" id="map-frame" {{ "src" if tab == "map" else "data-src" }}="{{ map.src }}" title="Sword Coast interactive map"></iframe>
+    <p class="note">{{ map.credit }} (<a href="https://www.aidedd.org/atlas/" target="_blank" rel="noopener" data-no-peek>aidedd.org</a>). Custom markers you add there are saved in your own browser only.</p>
+  </div>
   {% else %}
   <p class="muted">Nothing here yet.</p>
   {% endif %}

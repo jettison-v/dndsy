@@ -70,9 +70,15 @@ def test_story_pages_live_at_their_campaigns_address(two, db):
 
 def test_the_switcher_lists_your_campaigns_and_remembers_the_last(two, db):
     admin, pat = two["admin"], two["pat"]
+    set_role(db, "admin@example.com", "dm", campaign=two["strahd"])
+    access.invalidate()
     page = admin.get("/c/main/").text
-    assert 'id="campaign-menu"' in page and 'href="/c/strahd/"' in page and 'href="/c/main/sessions"' in page
-    assert 'id="campaign-menu"' not in pat.get("/c/main/").text  # one campaign: no switcher
+    assert 'id="campaign-menu"' in page and 'href="/c/strahd/"' in page and 'href="/c/main/campaign"' in page
+    menu = page.split('id="campaign-menu"')[1].split("</div>\n  </div>")[0]
+    assert "Main<small>You're here</small>" in menu and "Curse of Strahd<small>DM</small>" in menu  # your role elsewhere
+    one = pat.get("/c/main/").text
+    assert 'id="campaign-menu"' not in one  # one campaign: no switcher…
+    assert '<span class="campaign-name" title="The campaign you\'re in">Main</span>' in one  # …but its name is shown
     admin.get("/c/strahd/party")  # opening a campaign makes it the current one
     assert db.scalar(select(User).where(User.email == "admin@example.com")).current_campaign_id == two["strahd"].id
     assert admin.get("/", follow_redirects=False).headers["location"] == "/c/strahd/"
@@ -220,3 +226,12 @@ def test_a_campaigns_manage_pages_act_on_the_campaign_in_the_address(two, db):
     r = admin.get(f"/c/main/manage/sessions/{s.id}", follow_redirects=False)  # a Strahd session opens in Strahd
     assert r.headers["location"] == f"/c/strahd/manage/sessions/{s.id}"
     assert two["sam"].get("/c/main/manage/sessions").status_code == 404  # not one of Sam's campaigns
+
+
+def test_story_holds_previously_on_and_all_sessions(two):
+    pat = two["pat"]
+    assert pat.get("/c/main/sessions", follow_redirects=False).headers["location"] == "/c/main/?tab=sessions"
+    page = pat.get("/c/main/").text
+    assert '<div id="t-previously">' in page and '<div id="t-sessions" hidden>' in page
+    page = pat.get("/c/main/?tab=sessions").text
+    assert '<div id="t-previously" hidden>' in page and '<div id="t-sessions">' in page

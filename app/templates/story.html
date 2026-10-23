@@ -1,10 +1,18 @@
 {% extends "base.html" %}
 {% from "_suggest_form.html" import suggest with context %}
-{% block title %}Previously on… · askdnd{% endblock %}
+{% block title %}Story · askdnd{% endblock %}
 {% block content %}
+{# Story (menu bar Option B, Brett 2026-10-22; docs/mockups/menu-bar.html): Recap and Sessions in one page.
+   Tabs: Previously on… (questions for you, the latest session) and All sessions. ?tab=sessions picks the second. #}
 <main class="page wide">
-  <div class="title-row"><h1>Previously on…</h1></div>
+  <div class="title-row"><h1>Story</h1></div>
   {% if waiting %}<p class="flash">{{ waiting }} suggestion{{ "s" if waiting != 1 }} or draft{{ "s" if waiting != 1 }} {{ "are" if waiting != 1 else "is" }} waiting for an OK from you, the DM or a reviewer. <a href="{{ cbase }}/manage/inbox">Open the inbox →</a></p>{% endif %}
+  <div class="tabbar" role="tablist" data-tab-param>
+    <button role="tab" aria-selected="{{ 'true' if tab == 'previously' else 'false' }}" data-tab="t-previously">Previously on…</button>
+    <button role="tab" aria-selected="{{ 'true' if tab == 'sessions' else 'false' }}" data-tab="t-sessions">All sessions{% if items %} <span class="count">{{ items | length }}</span>{% endif %}</button>
+  </div>
+
+  <div id="t-previously"{% if tab != "previously" %} hidden{% endif %}>
   {% if questions %}
   <section class="section ask-card" id="questions-for-you">
     <div class="section-head"><h2>Questions for you</h2><span class="count">{{ questions | length }}</span></div>
@@ -35,7 +43,7 @@
   <div class="dm-notes" role="note"><b>From the DM</b>{% for x in latest.dm_notes %}<p>{% if x.kind == "correction" %}<span class="tag edited">Correction</span> {% endif %}{{ ln.text(x.text) }}</p>{% endfor %}</div>
   {% endif %}
   <div style="margin-top:12px">{{ suggest("/sessions/" ~ latest.s.id ~ "/suggest", "this session") }}</div>
-  {% if earlier %}<p style="margin-top:20px"><a class="btn" href="/sessions">Earlier sessions</a></p>{% endif %}
+  {% if earlier %}<p style="margin-top:20px"><a class="btn" href="{{ cbase }}/?tab=sessions" data-goto-tab="t-sessions">Earlier sessions</a></p>{% endif %}
   </div>
   <aside class="session-side">
   {% if latest.events %}
@@ -54,5 +62,28 @@
   </aside>
   </div>
   {% endif %}
+  </div>
+
+  <div id="t-sessions"{% if tab != "sessions" %} hidden{% endif %}>
+  <p class="subtitle">Every published session, newest first.</p>
+  {% for item in items %}
+  <details class="section" id="s{{ item.s.id }}" {% if loop.first %}open{% endif %}>
+    <summary style="cursor:pointer"><b>{{ item.label }}</b>{% if item.s.title %} · {{ item.s.title }}{% endif %}</summary>
+    <div class="session-body">
+    <div class="session-main">
+    <div class="story" style="margin-top:16px">{{ ln.html(item.html) }}</div>
+    {{ suggest("/sessions/" ~ item.s.id ~ "/suggest", "this session") }}
+    </div>
+    <aside class="session-side">
+    {% if item.dm_notes %}<div class="dm-notes" role="note"><b>From the DM</b>{% for x in item.dm_notes %}<p>{% if x.kind == "correction" %}<span class="tag edited">Correction</span> {% endif %}{{ ln.text(x.text) }}</p>{% endfor %}</div>{% endif %}
+    {% if item.events %}<h3 class="divider">Key moments <span class="count">{{ item.events | length }}</span></h3><ul class="events">{% for e in item.events %}<li class="ev"><span class="kind {{ e.kind.value }}">{{ e.kind.value }}</span><div class="ev-text">{{ ln.text(e.text) }}{% if e.entities %}<small>{% for x in e.entities %}<a href="/campaign/{{ x.id }}">{{ x.name }}</a>{{ " · " if not loop.last }}{% endfor %}</small>{% endif %}</div></li>{% endfor %}</ul>{% endif %}
+    {% if not item.events and not item.dm_notes %}<p class="note" style="margin-top:16px">No key moments recorded for this session.</p>{% endif %}
+    </aside>
+    </div>
+  </details>
+  {% else %}
+  <p class="muted">Nothing published yet.</p>
+  {% endfor %}
+  </div>
 </main>
 {% endblock %}

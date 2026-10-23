@@ -1,7 +1,8 @@
-"""The menu bar's table pieces: the character switcher and the Live control.
+"""The menu bar's table pieces: your character, the Party menu and the Live control.
 
-- The switcher ("Cole ▾") lists the campaign's characters, your own first, and opens the
-  same mode (Battle / Sheet / Plan) for the one you pick.
+- Your character (portrait and name) is one click to it, in the mode you used last (Battle / Sheet /
+  Plan). Party ▾ lists the campaign's characters, your own first, with class, level and HP, and opens
+  the one you pick in the mode you're in (menu bar Option B, Brett 2026-10-22).
 - The Live pill says when the D&D Beyond copy was last updated: the character on screen,
   else your own, else the party's oldest copy. Its popover holds Game Mode (a switch per
   browser, kept in localStorage by app.js), each character's last refresh and failures,
@@ -45,20 +46,26 @@ SUFFIX = {"battle": "/battle", "sheet": "", "plan": "/plan"}
 
 
 def rows_from(db: Session) -> list[dict]:
-    """Each campaign character: id, name, who plays it, and its last D&D Beyond copy."""
+    """Each campaign character: id, name, who plays it, its last D&D Beyond copy, and from that copy its
+    portrait, classes and hit points (read straight from the stored summary, not the whole sheet)."""
     campaign = web.campaign(db)
     if not campaign:
         return []
+    summary = CharacterSnapshot.summary
     q = (select(Character.id, Character.name, User.email, Character.ddb_id,
-                CharacterSnapshot.fetched_at, CharacterSnapshot.status, CharacterSnapshot.error)
+                CharacterSnapshot.fetched_at, CharacterSnapshot.status, CharacterSnapshot.error,
+                summary["portrait"].astext, summary["classes"], summary["hit_points"]["current"].astext,
+                summary["hit_points"]["max"].astext)
          .join(CampaignCharacter, CampaignCharacter.character_id == Character.id)
          .outerjoin(User, Character.owner_id == User.id)
          .outerjoin(CharacterSnapshot, CharacterSnapshot.character_id == Character.id)
          .where(CampaignCharacter.campaign_id == campaign.id, CampaignCharacter.left_on.is_(None))
          .order_by(Character.name))
     return [{"id": cid, "name": name, "owner": (email or "").lower(), "linked": bool(ddb_id), "fetched_at": fetched,
-             "failed": status == "error", "error": error or ""}
-            for cid, name, email, ddb_id, fetched, status, error in db.execute(q)]
+             "failed": status == "error", "error": error or "", "portrait": portrait or "",
+             "classes": " / ".join(f"{k.get('name')} {k.get('level')}" for k in classes or [] if isinstance(k, dict)),
+             "hp": f"{hp}/{hp_max} HP" if hp and hp_max else ""}
+            for cid, name, email, ddb_id, fetched, status, error, portrait, classes, hp, hp_max in db.execute(q)]
 
 
 def _load_from_db() -> list[dict]:
@@ -71,8 +78,10 @@ def _load_from_db() -> list[dict]:
 loader: Callable[[], list[dict]] = _load_from_db
 
 
-def table(user: dict | None, path: str = "", rows: list[dict] | None = None, focus_id: int | None = None) -> dict:
-    """What the menu bar needs: the characters (yours first), the one on screen, the mode, and the pill."""
+def table(user: dict | None, path: str = "", rows: list[dict] | None = None, focus_id: int | None = None,
+          last_mode: str | None = None) -> dict:
+    """What the menu bar needs: the characters (yours first), the one on screen, the mode, and the pill.
+    `last_mode` is the mode this person used last (templating keeps it in their session)."""
     if not user:
         return {}
     if rows is None:
@@ -92,7 +101,8 @@ def table(user: dict | None, path: str = "", rows: list[dict] | None = None, foc
     oldest = min(linked, key=lambda r: r["fetched_at"] or datetime.min.replace(tzinfo=UTC)) if linked else None
     pill = focus if focus and focus["linked"] else oldest
     return {"characters": rows, "mine": mine, "here": here, "focus": focus, "mode": mode,
-            "suffix": SUFFIX[mode or "battle"],  # the switcher keeps the mode; from elsewhere it opens Battle
+            # Characters open in the mode you're in, else the one you used last, else Battle
+            "suffix": SUFFIX[mode or (last_mode if last_mode in SUFFIX else None) or "battle"],
             "pill": pill, "party_pill": pill is not None and pill is not focus, "linked": linked,
             "every": GAME_MODE_SECONDS}
 
