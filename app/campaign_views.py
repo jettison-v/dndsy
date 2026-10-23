@@ -258,8 +258,8 @@ def connections(db: Session, entity: Entity, visible: Visible) -> dict:
     sibs, spouses = pick(lambda l: l[0] == "sibling_of"), pick(lambda l: l[0] == "married_to")
     left_a, left_e = pick(lambda l: _group(l[0]) == "ally"), pick(lambda l: _group(l[0]) == "enemy")
     right = pick(lambda l: _group(l[0]) in ("allegiance", "quest"))
-    row(above, 70)
-    row(below, 430)
+    row(above, cy - 140)
+    row(below, cy + 140)
     col(sibs, cx - 280, cy - (len(sibs) - 1) * 29)
     col(spouses, cx + 280, cy - (len(spouses) - 1) * 29)
     heads = []
@@ -274,7 +274,13 @@ def connections(db: Session, entity: Entity, visible: Visible) -> dict:
     if right:
         heads.append(("Factions and quests" if any(_group(l[0]) == "quest" for l in right) else "Factions and service", W - 95, 66))
         col(right, W - 95, 100)
-    height = max([500] + [n.y + 60 for n in nodes])
-    pct = lambda x, y: (round(100 * x / W, 2), round(100 * y / height, 2))  # noqa: E731
-    return {"e": entity, "nodes": nodes, "heads": heads, "w": W, "h": height, "cx": cx, "cy": cy, "pct": pct,
+    # Trim to what's there, so a small family stays small (Brett, 2026-10-23): the box is the nodes plus a margin
+    xs, ys = [cx] + [n.x for n in nodes] + [h[1] for h in heads], [cy] + [n.y for n in nodes] + [h[2] for h in heads]
+    x0, y0 = min(xs) - 90, min(ys) - 36
+    width, height = max(xs) + 90 - x0, max(ys) + 36 - y0
+    nodes = [Node(n.entity, n.label, n.group, n.x - x0, n.y - y0) for n in nodes]
+    heads = [(t, x - x0, y - y0) for t, x, y in heads]
+    cx, cy = cx - x0, cy - y0
+    pct = lambda x, y: (round(100 * x / width, 2), round(100 * y / height, 2))  # noqa: E731
+    return {"e": entity, "nodes": nodes, "heads": heads, "w": round(width), "h": round(height), "cx": cx, "cy": cy, "pct": pct,
             "lines": sorted(lines, key=lambda l: list(TYPES).index(l[0]))}

@@ -102,12 +102,12 @@
   {# Relationships: a tree per family (R1), the other ties as lists; any name opens its connections (R2) #}
   <div id="t-relationships"{% if tab != "relationships" %} hidden{% endif %}>
     {% macro who(p, fam=none) -%}
-    <a class="ft-p" href="#" data-modal-url="{{ cbase }}/campaign/{{ p.id }}/connections" data-modal-size="large"><b>{{ p.name }}</b>
+    <a class="ft-p" href="#" data-modal-url="{{ cbase }}/campaign/{{ p.id }}/connections"><b>{{ p.name }}</b>
       {%- if p.status.value != "published" %} <span class="tag faint">Hidden</span>{% endif %}
       {%- if fam and fam.spouses.get(p.id) %}<span class="note">⚭ {{ fam.spouses[p.id] | map(attribute="name") | join(", ") }}</span>{% endif %}
       {%- if fam and fam.siblings.get(p.id) %}<span class="note">Sibling of {{ fam.siblings[p.id] | map(attribute="name") | join(", ") }}</span>{% endif %}</a>
     {%- endmacro %}
-    {% macro name(p) -%}<a class="tie-name" href="#" data-modal-url="{{ cbase }}/campaign/{{ p.id }}/connections" data-modal-size="large">{{ p.name }}</a>{%- endmacro %}
+    {% macro name(p) -%}<a class="tie-name" href="#" data-modal-url="{{ cbase }}/campaign/{{ p.id }}/connections">{{ p.name }}</a>{%- endmacro %}
     {% if families %}<div class="ft-wrap">
       {% for f in families %}
       <section class="section ft"><h2>{{ f.name }}</h2>
