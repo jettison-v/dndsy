@@ -40,7 +40,7 @@
       <p>D&amp;D Beyond doesn't officially offer this data, so if they change their format, refreshing may stop working for a while. The numbers have been checked against D&amp;D Beyond's own sheet; if one ever looks different, tell an admin.</p>
     {% endcall %}
     {% call q("How do I get the latest from D&D Beyond?") %}
-      <p>Use <b>Live</b> in the menu bar (the pill that says when the copy was last updated; it turns green while Game Mode is on). Open it to turn on <b>Game Mode</b>: the character you're looking at (or your own) refreshes every {{ "%g" | format(game_mode_minutes) }} minutes while askdnd is open, and on Battle the page updates itself. Game Mode is remembered per browser. The same window lists when each character was last refreshed (and any that couldn't be), and has <b>Refresh &lt;character&gt; now</b> for anyone; reviewers also get <b>Refresh everyone</b>.</p>
+      <p>Use <b>Live</b> in the menu bar (the pill that says when the copy was last updated; it turns green while Game Mode is on). Open it to turn on <b>Game Mode</b>: the whole party refreshes every {{ "%g" | format(game_mode_minutes) }} minutes while askdnd is open (the character you're looking at, or your own, first), and on Battle the page updates itself. Game Mode is remembered per browser. The same window lists when each character was last refreshed (and any that couldn't be), and has <b>Refresh &lt;character&gt; now</b> for anyone; reviewers also get <b>Refresh everyone</b>.</p>
     {% endcall %}
     {% call q("Can askdnd roll dice or change things on D&D Beyond?") %}
       <p>No. It only reads your public character. D&amp;D Beyond's terms don't allow other apps to act on it, so rolls, HP and spell slots are still done in D&amp;D Beyond.</p>

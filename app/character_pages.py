@@ -250,12 +250,13 @@ def plan_page(request: Request, character_id: int, db: Session = Depends(get_db)
 
 @router.post("/characters/{character_id:int}/sync")
 def game_mode_sync(request: Request, character_id: int, now: str = Form(""), db: Session = Depends(get_db)):
-    """Game Mode on Battle: refresh from D&D Beyond (at most every ~2 minutes per character,
-    whoever is watching) and return the updated Battle body, with the menu bar's Live pill."""
+    """Game Mode on Battle: refresh this character from D&D Beyond, then the rest of the party (each at most every
+    ~2 minutes, whoever is watching), and return the updated Battle body, with the menu bar's Live pill."""
     user, ch, stop = _load(request, db, character_id)
     if stop:
         return stop
     live.maybe_refresh(db, ch, live.MANUAL_MIN_AGE if now else live.AUTO_MIN_AGE)
+    live.refresh_party(db, user, ch.id, skip=ch.id)
     tn = live.table(user, "", live.rows_from(db), ch.id)
     return templates.TemplateResponse(request, "_battle_sync.html", {**_battle_ctx(db, ch, user), "tn": tn, "oob": True})
 
