@@ -145,6 +145,12 @@ def needs(db: Session, user: dict) -> list[dict]:
             out.append({"text": f"Characters last refreshed {_ago(oldest)}", "sub": "Refresh them from D&D Beyond",
                         "href": where[0], "go": where[1]})
     if is_admin(user):
+        from app.tool_corrections_pages import open_count
+
+        n = open_count(db)
+        if n:
+            out.append({"text": f"{n} tool correction{'s' if n != 1 else ''} to build into askdnd", "admin": True,
+                        "sub": "Ask Claude to build them in; each is a patch until then", "href": "/manage/tool-corrections", "go": "Tool corrections"})
         b = backup_status(db)
         if b["attention"]:
             out.append({"text": b["text"], "sub": "Only admins see askdnd-wide items like this", "href": "/manage/backups",

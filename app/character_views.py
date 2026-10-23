@@ -141,7 +141,9 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
             spends=spends,
             meta=" · ".join(x for x in (sp["range"], effect, sp["trigger"] if cost == "Reaction" else "") if x),
             text=sp.get("text") or sp["summary"], summary=sp["summary"], recipe=house_rules.spell(sp["name"]) or sp.get("roll"),
-            common=cost == "Reaction" or (not sp["level"] and bool(sp["attack"] or sp["save"]) and bool(sp["damage"])))
+            # Smites are cast right after you hit, so they belong with the fight (tool correction built in, 2026-10-23)
+            common=cost == "Reaction" or (not sp["level"] and bool(sp["attack"] or sp["save"]) and bool(sp["damage"]))
+            or (cost == "Bonus action" and sp["name"].endswith(" Smite")))
     for a in sheet.get("actions") or []:
         cost = _cost(a["activation"])
         if _not_an_action(a, cost, rules, action_names):
@@ -503,6 +505,8 @@ FIELD_LABELS = {"hide": "Show in askdnd", "cost": "Section (what it costs)", "ba
                 "feature_group": "Features group", "situ_group": "Situational group", "item_group": "Inventory group",
                 "underline": "Underlined in descriptions"}
 ITEM_KINDS = {"Other Gear": "Gear", "Wondrous item": "Wondrous", "Rod": "Rod, staff or wand", "Staff": "Rod, staff or wand", "Wand": "Rod, staff or wand"}
+# By D&D Beyond's item type, before its category: ammunition is "Other Gear" there (tool correction built in, 2026-10-23)
+TYPE_GROUPS = {"Ammunition": "Weapons"}
 CATEGORY_GROUPS = {"Weapon": "Weapons", "Armor": "Armor", "Wondrous item": "Magic items", "Ring": "Magic items", "Rod": "Magic items",
                    "Staff": "Magic items", "Wand": "Magic items", "Potion": "Potions and scrolls", "Scroll": "Potions and scrolls"}
 
@@ -587,7 +591,8 @@ def apply_overrides(sheet: dict, overrides: dict[tuple[str, str], str]) -> dict:
     items = []
     for it in sheet["inventory"]:
         group = get(it, "inventory", "item_group") or (
-            "battle" if it["battle"] else "equipped" if it["equipped"] else CATEGORY_GROUPS.get(it.get("category"), "Gear"))
+            "battle" if it["battle"] else "equipped" if it["equipped"]
+            else TYPE_GROUPS.get(it.get("type") or "") or CATEGORY_GROUPS.get(it.get("category"), "Gear"))
         items.append({**it, "group": group, "battle": group == "battle",
                       # the Inventory list's filter values (_item_list.html)
                       "kind_label": "Custom" if it.get("custom") else ITEM_KINDS.get(it.get("category") or "", it.get("category") or "Gear"),
