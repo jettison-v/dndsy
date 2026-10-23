@@ -59,7 +59,6 @@ def test_map_tab_centers_on_real_markers_only(player):
     assert TestClient(app).get("/map", follow_redirects=False).headers["location"] == "/login"
 
 
-def test_place_cards_on_the_campaign_page_link_to_the_map(player):
-    text = player.get("/campaign").text
-    assert 'class="entry-map" href="/map?at=Star%20Mounts"' in text and 'href="/map?at=Waterdeep"' in text
-    assert text.count('class="entry-map"') == 2
+def test_places_in_the_campaign_reader_link_to_the_map(player, db):
+    mounts = db.scalar(select(Entity).where(Entity.name == "Star Mounts"))
+    assert 'href="/map?at=Star%20Mounts"' in player.get(f"/campaign?open={mounts.id}").text

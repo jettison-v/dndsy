@@ -13,7 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import web
-from app import atlas, entities, pictures, relations
+from app import access, atlas, entities, pictures, relations
 from app.auth import can_edit_entries, can_moderate, current_user, is_dm, is_reviewer
 from app.db import get_db
 from app.extraction import ExtractionError
@@ -25,7 +25,10 @@ router = APIRouter(prefix="/campaign")
 
 
 def _visible(entity: Entity | None, user: dict | None) -> bool:
-    return entity is not None and (entity.status == Status.PUBLISHED or is_reviewer(user))
+    """Published (hidden ones for the DM, reviewers and admins), and in the campaign you're in."""
+    here = access.current_campaign()
+    return (entity is not None and (entity.status == Status.PUBLISHED or is_reviewer(user))
+            and (here is None or entity.campaign_id == here["id"]))
 
 
 def _not_found(request: Request):
@@ -126,6 +129,18 @@ def entity_peek(request: Request, entity_id: int, db: Session = Depends(get_db))
     return templates.TemplateResponse(request, "_peek.html", entity_context(db, entity, user))
 
 
+@router.get("/{entity_id:int}/read")
+def entity_read(request: Request, entity_id: int, db: Session = Depends(get_db)):
+    """The Campaign page's Reader: one entry on the page, swapped in when you pick a name or a quest."""
+    user = current_user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    entity = db.get(Entity, entity_id)
+    if not _visible(entity, user):
+        return _not_found(request)
+    return templates.TemplateResponse(request, "_peek.html", {**entity_context(db, entity, user), "where": "reader"})
+
+
 @router.get("/{entity_id:int}/edit")
 def entity_edit(request: Request, entity_id: int, db: Session = Depends(get_db)):
     """The large window for the DM, reviewers and admins: names, description, relationships, picture, facts."""
@@ -163,8 +178,9 @@ def _act(request: Request, db: Session, entity_id: int, action: Callable[[Entity
     if entity is None:  # e.g. removed while acting
         return RedirectResponse("/campaign", status_code=303)
     if request.headers.get("HX-Request"):
-        panel = request.query_params.get("in") == "panel"
-        response = templates.TemplateResponse(request, "_peek.html" if panel else "_entity_body.html", entity_context(db, entity, user))
+        where = request.query_params.get("in", "")  # the side panel, the Campaign page's Reader, or the edit window
+        context = {**entity_context(db, entity, user), "where": where}
+        response = templates.TemplateResponse(request, "_peek.html" if where in ("panel", "reader") else "_entity_body.html", context)
         response.headers["HX-Trigger"] = json.dumps({"toast": message})
         return response
     request.session["toast"] = message
@@ -279,6 +295,12 @@ def rename(request: Request, entity_id: int, name: str = Form(""), db: Session =
 def set_details(request: Request, entity_id: int, kind: str = Form(...), quest_open: str = Form("open"), published: str = Form(""),
                 db: Session = Depends(get_db)):
     return _act(request, db, entity_id, lambda entity, user: entities.set_details(entity, kind, quest_open, bool(published)) or "Saved")
+
+
+@router.post("/{entity_id:int}/quest")
+def set_quest(request: Request, entity_id: int, open: str = Form("1"), db: Session = Depends(get_db)):
+    """Mark done or Reopen, from the quest in the Reader."""
+    return _act(request, db, entity_id, lambda entity, user: entities.set_quest_open(entity, open == "1"))
 
 
 @router.post("/{entity_id:int}/moments")

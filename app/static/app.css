@@ -1645,3 +1645,49 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .guide-tips ul { margin: var(--sp-1) 0 0; padding-left: var(--sp-5); }
 .guide-list { padding-left: var(--sp-5); display: grid; gap: var(--sp-2); }
 .dm-guide .section { scroll-margin-top: 80px; }
+
+/* The Campaign page (campaign.html, roadmap step 11, option E): quests on top, then the Reader, names down the
+   left and one entry on the page (_peek.html with where="reader"). */
+.quests-head { justify-content: flex-start; gap: var(--sp-3); }
+.quests-head h2 { margin: 0; font-size: var(--fs-lg); }
+.quest-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--sp-3); margin-top: var(--sp-3); }
+.quest-card { display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-3) var(--sp-4); border-radius: var(--r-lg); background: var(--story-bg); border: 1px solid var(--story-line); color: var(--text); text-decoration: none; }
+.quest-card:hover { border-color: var(--line-strong); }
+.quest-card.sel { border-color: var(--blue); }
+.quest-card-name b { font-size: var(--fs-md); }
+.quest-card-text { font-family: var(--serif); color: var(--story-text); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.quest-card .note { font-size: var(--fs-xs); margin-top: var(--sp-1); }
+.quests details.done .quest-cards { margin-top: var(--sp-2); }
+.reader { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: var(--sp-5); align-items: start; }
+.reader-nav { position: sticky; top: calc(var(--stick-top, 62px) + var(--tabs-h, 41px) + var(--sp-3)); max-height: calc(100vh - var(--stick-top, 62px) - var(--tabs-h, 41px) - var(--sp-5)); overflow-y: auto; background: var(--surface); border-radius: var(--r-lg); padding: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-2); }
+.reader-nav > * { flex: none; }
+.reader-nav .ls-views { display: flex; }
+.reader-nav .ls-views button { flex: 1; }
+.reader-rows { display: flex; flex-direction: column; }
+.reader-rows .ls-grouphead { padding: var(--sp-3) var(--sp-2) var(--sp-1); }
+.rd-item { display: flex; align-items: center; gap: var(--sp-2); padding: 5px var(--sp-2); border-radius: var(--r-sm); color: var(--text); text-decoration: none; font-size: var(--fs-sm); }
+.rd-item:hover { background: var(--row-hover); }
+.rd-item.sel { background: var(--selected-bg); color: var(--text-strong); box-shadow: inset 2px 0 0 var(--blue); }
+.rd-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rd-dot { width: 7px; height: 7px; flex: none; border-radius: var(--r-pill); background: var(--blue); }
+.rd-item:not(:has(.rd-dot)) { padding-left: calc(var(--sp-2) + 7px + var(--sp-2)); }
+.reader-article { background: var(--surface); border-radius: var(--r-lg); padding: var(--sp-6) 40px; min-height: 60vh; scroll-margin-top: calc(var(--stick-top, 62px) + var(--tabs-h, 41px) + var(--sp-3)); }
+.reader-head h2 { font-size: var(--fs-xl); margin: 2px 0; }
+.reader-body .story { margin: var(--sp-4) 0; }
+.reader-body .peek-pic { max-width: 420px; }
+.reader-body h3:not(.divider) { font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); margin: 24px 0 8px; }
+.reader-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-6); }
+.moment-line { list-style: none; padding: 0; margin: 0; border-left: 2px solid var(--story-line); }
+.moment-line li { position: relative; padding: 0 0 var(--sp-3) var(--sp-4); }
+.moment-line li::before { content: ""; position: absolute; left: -6px; top: 9px; width: 10px; height: 10px; border-radius: var(--r-pill); background: var(--story-line); }
+.moment-line .note { display: block; font-size: var(--fs-xs); }
+.reader-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin-top: var(--sp-6); padding-top: var(--sp-4); border-top: 1px solid var(--line); }
+.reader-foot form { margin: 0; }
+.reader-keys { margin-left: auto; font-size: var(--fs-xs); }
+@media (max-width: 900px) {
+  .reader { grid-template-columns: 1fr; }
+  .reader-nav { position: static; max-height: 50vh; }
+  .reader-cols { grid-template-columns: 1fr; gap: 0; }
+  .reader-article { padding: var(--sp-5); }
+  .reader-keys { display: none; }
+}

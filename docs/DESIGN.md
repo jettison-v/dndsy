@@ -25,7 +25,7 @@ One top bar for everyone (Brett, 2026-10-19, Option 1): story pages on the left,
 |---|---|---|
 | **Recap** (home) | Everyone | The pre-session refresher ("Previously on…"): latest recap, key moments, open threads |
 | **Sessions** | Everyone | Every published session, newest first |
-| **Campaign** | Everyone | People, places, factions, items, quests and the glossary |
+| **Campaign** | Everyone | Tabs World, Family tree, Glossary. World: open quests on top (Done in a drawer), then the **Reader** for people, places, factions, items and creatures (`?open=<id>` is an entry's address) |
 | **Map** | Everyone | The Sword Coast, with places marked |
 | **Cole ▾** (your character) | Everyone | Switches characters; opens one Character page in the same mode. Modes, switched at the page's top right: **Battle** (`/characters/{id}/battle`: options by Action / Bonus action / Reaction, saves, Wild Shape row, On a hit, rolls, Reminders, Battle combos), **Sheet** (`/characters/{id}`: numbers strip, abilities and saves, tabs Actions, Spells, Wild Shape, Inventory, Features, Skills & situational, Background) and **Plan** (`/characters/{id}/plan`: tabs Battle combos, Leveling strategy, Personal quests, General notes, Reminders, Spell shortlist, Wild Shape shortlist; never the DM) |
 | **Party** | Everyone | Party table (names open a short character modal), pooled spells and items |
@@ -92,6 +92,7 @@ Each one is on Manage › Design system with its class or macro. Use these; don'
 - **Help line** (`_help.html` `help()`): one short line, **More** to the FAQ answer and **Got it** to hide it for that person on every device (`users.dismissed_help`; keys in `help_pages.HELP`) (Brett, 2026-10-22). **Note** (`.note`) for dates and footnotes. **Empty state** (`.muted`): every list says what goes there and how to add the first one.
 - **Side panel** (`data-panel-url`) from the right edge (the bottom on phones): head with what it belongs to, its name and ✕; a scrolling body; an optional foot. **Modal** (`data-modal-url`; `data-modal-size` `large` or `full`). Sizes under Visual system › Panels and modals.
 - **Story block** (`.story`) for recaps, descriptions and answers.
+- **Reader** (`.reader`, the Campaign page; Brett 2026-10-22, option E in `docs/mockups/campaign-reading.html`): for reading rather than deciding. A name list on the left (`.reader-nav`, the shared list engine with **All · Last session**, search and kind headings; a blue dot `.rd-dot` marks the last session, so no name is listed twice) and one entry on the page (`.reader-article`, `_peek.html` with `where="reader"`: two columns, key moments as a timeline `.moment-line`). ↑ ↓ move through the names. **Quest cards** (`.quest-card`, story colors) sit above it: what's active, apart from the reference.
 - **Toast:** a short confirmation near the top ("Answer saved", "Published").
 - **Review pieces:** **Read/Edit block** (reading view plus an **Edit** link; edit mode swaps in the form with **Save** and **Cancel**), **Question item** (Answer / Skip; answered ones move to Done with **Edit** / **Remove answer**), **Suggestion item** (Before and Proposed side by side, stacked on phones; **Accept**, **Edit**, **Reject**; Done shows "Now in askdnd" with **Undo**), **Done drawer** ("▸ Done (n)") and **Progress panel** (checklist with the single **Publish** button; a bottom bar on phones).
 
@@ -120,7 +121,7 @@ Use these words, and only these, in the app, the docs and the About and FAQ page
 | **Ready · Shortlist · All** | | The three views on a list. "Ready" takes the list's own word: Prepared (spells), Known forms (Wild Shape), Equipped (inventory). |
 
 ## Lists and filters (Brett 2026-10-21)
-Every list of game things (spells, Wild Shape forms, then inventory, features and the campaign) follows one pattern. Desktop first; phones get the same list with a **Filters (N)** sheet and no phone-only features.
+Every list of game things (spells, Wild Shape forms, inventory, features) follows one pattern. The Campaign page is for reading, not deciding, so it uses the Reader (Components) with the same engine and no filter column. Desktop first; phones get the same list with a **Filters (N)** sheet and no phone-only features.
 
 - **Main view decides across many items; the side panel shows one item.** Clicking a row opens the side panel from the right edge; inside a modal such as the Spell Book it slides out from the modal's own right edge, inside it. The Spell Book fills the window so rows aren't cramped. Pin, Shortlist, Remind me and the note are always available in the side panel; Sheet may also offer them inline on rows.
 - **Views:** Ready · Shortlist · All, above the list. The Spell Book is the exception: it shows only Prepared spells (castable now).

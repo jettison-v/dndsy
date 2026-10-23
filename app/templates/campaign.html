@@ -18,52 +18,83 @@
 </script>{% endif %}{% endblock %}
 {% block content %}
 {% from "_suggest_form.html" import suggest with context %}
+{% from "_lists.html" import view_switch %}
+{# The Campaign page (roadmap step 11; Brett 2026-10-22, option E in docs/mockups/campaign-reading.html): quests on
+   top, because they're what the party is doing now; then the Reader for the reference (names down the left, one entry
+   on the page). The name list uses the shared list engine (app.js "Lists"): All · Last session, search, kind headings. #}
 <main class="page sheet wide">
   <div class="title-row"><h1>{{ campaign.name if campaign else "Campaign" }}</h1>
     {% if editor %}<a class="btn" href="#" data-modal-url="/campaign/new" style="margin-left:auto">+ New entry</a>{% endif %}</div>
   <p class="subtitle">People, places and things the party has met.{% if campaign and campaign.dm_name %} Dungeon Master: {{ campaign.dm_name }}.{% endif %}</p>
-  {% if groups or tree or glossary %}
-  <section class="section">
-    <div class="tabbar" role="tablist">
-      {% for title, entries in groups %}<button role="tab" aria-selected="{{ 'true' if loop.first else 'false' }}" data-tab="t-{{ title | lower | replace(' ', '-') }}">{{ title }} <span class="count">{{ entries | length }}</span></button>{% endfor %}
-      {% if tree %}<button role="tab" aria-selected="{{ 'false' if groups else 'true' }}" data-tab="t-family-tree">Family tree</button>{% endif %}
-      {% if glossary %}<button role="tab" aria-selected="{{ 'false' if groups or tree else 'true' }}" data-tab="t-glossary">Glossary <span class="count">{{ glossary | length }}</span></button>{% endif %}
+  {% if campaign %}
+  <div class="tabbar" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="t-world">World</button>
+    {% if tree %}<button role="tab" aria-selected="false" data-tab="t-family-tree">Family tree</button>{% endif %}
+    <button role="tab" aria-selected="false" data-tab="t-glossary">Glossary <span class="count">{{ glossary | length }}</span></button>
+  </div>
+  <div id="t-world">
+    {% macro quest_card(q) -%}
+    {% set s = seen.get(q.id) %}
+    <a class="quest-card{{ ' sel' if selected and selected.id == q.id }}" href="{{ cbase }}/campaign?open={{ q.id }}" data-rd-id="{{ q.id }}"
+       hx-get="{{ cbase }}/campaign/{{ q.id }}/read" hx-target="#reader-article" hx-swap="outerHTML" hx-push-url="{{ cbase }}/campaign?open={{ q.id }}">
+      <span class="quest-card-name"><b>{{ q.name }}</b>{% if q.status.value != "published" %} <span class="tag faint" title="Only the DM, reviewers and admins see it">Hidden</span>{% endif %}
+        <span class="tag {{ 'draft' if q.quest_open != false else 'done' }}">{{ "Open" if q.quest_open != false else "Done" }}</span></span>
+      {% if q.summary %}<span class="quest-card-text">{{ q.summary }}</span>{% endif %}
+      {% if s %}<span class="note">Latest · {{ s.label }}: {{ s.latest }}</span>{% endif %}
+    </a>
+    {%- endmacro %}
+    <section class="section quests">
+      <div class="sec-head quests-head"><h2>Quests</h2><span class="count">{{ quests | length }} open</span>
+        {% if editor %}<a href="#" data-modal-url="/campaign/new?kind=quest" style="margin-left:auto">+ New quest</a>{% endif %}</div>
+      {% if quests %}<div class="quest-cards">{% for q in quests %}{{ quest_card(q) }}{% endfor %}</div>
+      {% else %}<p class="muted">No open quests.{% if editor %} Use <b>+ New quest</b> to add one.{% endif %}</p>{% endif %}
+      {% if done_quests %}<details class="done"><summary>Done ({{ done_quests | length }})</summary>
+        <div class="quest-cards">{% for q in done_quests %}{{ quest_card(q) }}{% endfor %}</div></details>{% endif %}
+    </section>
+
+    <div class="reader" id="reader">
+      <aside class="reader-nav" data-list="campaign-reader" data-noun="entry" data-default-sort="default" aria-label="People, places and things">
+        <div class="ls-search">
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <input type="search" placeholder="Search people, places and things" aria-label="Search people, places and things" data-ls-search>
+        </div>
+        {{ view_switch([("all", "All"), ("recent", "Last session")], "Which ones") }}
+        <div class="reader-rows" data-ls-rows>
+          {% for title, rows in groups %}{% set gi = loop.index %}{% for e in rows %}{% set s = seen.get(e.id) %}{% set recent = latest and s and s.session_id == latest %}
+          <a class="rd-item{{ ' sel' if selected and selected.id == e.id }}" data-ls-row data-rd-id="{{ e.id }}" data-views="{{ 'recent ' if recent }}all"
+             data-name="{{ ([e.name] + (e.aliases | map(attribute='alias') | list) + [e.summary]) | join(' ') | lower }}" data-group-label="{{ title }}" data-sort-default="{{ gi * 10000 + loop.index }}"
+             href="{{ cbase }}/campaign?open={{ e.id }}" hx-get="{{ cbase }}/campaign/{{ e.id }}/read" hx-target="#reader-article" hx-swap="outerHTML" hx-push-url="{{ cbase }}/campaign?open={{ e.id }}">
+            {%- if recent %}<span class="rd-dot" title="In the last session ({{ s.label }})" aria-label="In the last session"></span>{% endif %}<span class="rd-name">{{ e.name }}</span>
+            {%- if e.status.value != "published" %} <span class="tag faint" title="Only the DM, reviewers and admins see it">Hidden</span>{% endif %}</a>
+          {% endfor %}{% endfor %}
+        </div>
+        {% if not groups %}<p class="muted">Nobody and nothing yet.{% if editor %} Use <b>+ New entry</b> to add the first.{% endif %}</p>{% endif %}
+        <p class="note ls-empty" data-ls-empty hidden>Nothing matches.</p>
+        <p class="note ls-empty" data-ls-empty-view="recent" hidden>Nothing here was in a key moment from the last session.</p>
+      </aside>
+      {% if selected %}{% include "_peek.html" %}
+      {% else %}<article class="reader-article" id="reader-article"><p class="muted">Pick a name to read about it.</p></article>{% endif %}
     </div>
-    {% for title, entries in groups %}
-    <div id="t-{{ title | lower | replace(' ', '-') }}"{% if not loop.first %} hidden{% endif %}>
-      {% if editor %}<div class="sec-head" style="justify-content:flex-end"><a href="#" data-modal-url="/campaign/new?kind={{ group_kinds[title] }}">+ New {{ {"Quests": "quest", "People": "person", "Places": "place", "Factions": "faction", "Items": "item", "Creatures": "creature"}.get(title, "entry") }}</a></div>{% endif %}
-      {% if not entries %}<p class="muted">None yet. Use <b>+ New</b> to add the first.</p>{% endif %}
-      <div class="card-grid">
-        {% for e in entries %}
-        <div class="entry">{% set p = pics.get(e.id) %}{% if p %}<img class="entry-pic" src="{{ p.thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer">{% endif %}<a class="entry-link" href="/campaign/{{ e.id }}"><b>{{ e.name }}</b></a>{% if e.status.value != "published" %} <span class="tag faint" title="Only the DM, reviewers and admins see it">Hidden</span>{% endif %}{% if e.kind.value == "quest" %} <span class="tag {{ 'draft' if e.quest_open else 'done' }}">{{ "Open" if e.quest_open else "Done" }}</span>{% endif %}
-          {% if e.display_aliases %}<div class="note">also: {{ e.display_aliases | map(attribute="alias") | join(", ") }}</div>{% endif %}
-          {% if e.summary %}<p>{{ e.summary }}</p>{% endif %}
-          {% if markers.get(e.id) %}<a class="entry-map" href="/map?at={{ markers[e.id] | urlencode }}" data-no-peek>Show on map</a>{% endif %}</div>
-        {% endfor %}
-      </div>
-    </div>
-    {% endfor %}
-    {% if tree %}
-    <div id="t-family-tree"{% if groups %} hidden{% endif %}>
-      <p class="hint" style="margin:0 0 8px">From the parent and marriage links on each page. A red dot joins married parents, a grey dot parents who aren't married; arrows point to their children. Click anyone to see more.</p>
-      <div class="family-graph"><pre class="mermaid">{{ tree }}</pre></div>
-    </div>
-    {% endif %}
-    {% if glossary %}
-    <div id="t-glossary"{% if groups or tree %} hidden{% endif %}>
-      <p class="hint" style="margin:0 0 8px">Campaign names and words with their correct spelling. Click one for more, or to suggest a fix.</p>
-      <table class="list">{% for g in glossary %}<tr><td style="width:30%"><a href="/campaign/glossary/{{ g.id }}"><b>{{ g.term }}</b></a></td><td class="muted">{{ g.description }}</td></tr>{% endfor %}</table>
-      {% if is_dm or is_reviewer %}
-      <details class="suggest"><summary>Add a term</summary>
-        <form class="stack" hx-post="/campaign/glossary/add" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button">
-          <label class="field">Term<input type="text" name="term" required></label>
-          <label class="field">What it means<input type="text" name="description"></label>
-          <div class="row"><button class="btn primary">Add</button><span class="note">Goes straight into the glossary.</span></div>
-        </form>
-      </details>
-      {% else %}<div style="margin-top:12px">{{ suggest("/campaign/glossary/suggest", "the new glossary entry", kinds=False) }}</div>{% endif %}
-    </div>
-    {% endif %}
+  </div>
+  {% if tree %}
+  <section class="section" id="t-family-tree" hidden>
+    <p class="hint" style="margin:0 0 8px">From the parent and marriage links on each page. A red dot joins married parents, a grey dot parents who aren't married; arrows point to their children. Click anyone to see more.</p>
+    <div class="family-graph"><pre class="mermaid">{{ tree }}</pre></div>
+  </section>
+  {% endif %}
+  <section class="section" id="t-glossary" hidden>
+    <p class="hint" style="margin:0 0 8px">Campaign names and words with their correct spelling. Click one for more, or to suggest a fix.</p>
+    {% if glossary %}<table class="list">{% for g in glossary %}<tr><td style="width:30%"><a href="/campaign/glossary/{{ g.id }}"><b>{{ g.term }}</b></a></td><td class="muted">{{ g.description }}</td></tr>{% endfor %}</table>
+    {% else %}<p class="muted">No terms yet.</p>{% endif %}
+    {% if is_dm or is_reviewer %}
+    <details class="suggest"><summary>Add a term</summary>
+      <form class="stack" hx-post="/campaign/glossary/add" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button">
+        <label class="field">Term<input type="text" name="term" required></label>
+        <label class="field">What it means<input type="text" name="description"></label>
+        <div class="row"><button class="btn primary">Add</button><span class="note">Goes straight into the glossary.</span></div>
+      </form>
+    </details>
+    {% else %}<div style="margin-top:12px">{{ suggest("/campaign/glossary/suggest", "the new glossary entry", kinds=False) }}</div>{% endif %}
   </section>
   {% else %}
   <p class="muted">Nothing here yet.</p>

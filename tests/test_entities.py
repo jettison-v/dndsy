@@ -86,7 +86,7 @@ def test_entity_page_shows_moments_in_story_order(player, db):
     page = player.get(f"/campaign/{e.id}/peek").text  # everything is in the side panel now
     assert "Tiefling bard." in page and "Also: LL" in page
     assert page.index("The party met Lillippi.") < page.index("Lillippi sang in")
-    assert f'href="/campaign/{e.id}"' in player.get("/campaign").text
+    assert f'href="/c/main/campaign?open={e.id}"' in player.get("/campaign").text  # its name in the Reader's list
     assert f'href="/campaign/{e.id}"' in player.get("/").text  # key-moment entity names link to the page
     assert "/edit" not in page and player.get(f"/campaign/{e.id}/edit").status_code == 403  # editing: the DM, reviewers, admins
 
