@@ -13,7 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import web
-from app import access, atlas, entities, pictures, relations
+from app import access, atlas, campaign_views, entities, pictures, relations
 from app.auth import can_edit_entries, can_moderate, current_user, is_dm, is_reviewer
 from app.db import get_db
 from app.extraction import ExtractionError
@@ -56,6 +56,9 @@ def entity_context(db: Session, entity: Entity, user: dict) -> dict:
         "done_facts": sorted((f for f in facts if f.status != "pending"), key=lambda f: f.updated_at, reverse=True) if moderator else [],
         "finished": [f for f in facts if f.status == "done"],  # worked into the description or marked Done
         "relations": relations.lines_for(db, entity),
+        # The quests it's part of, and its connections drawn around it (the Reader; Brett 2026-10-22, R2)
+        "part_of": campaign_views.part_of(db, entity, lambda e: e.status == Status.PUBLISHED or reviewer),
+        "cx": campaign_views.connections(db, entity, lambda e: e.status == Status.PUBLISHED or reviewer),
         "rel_choices": relations.CHOICES,
         "others": others,
         "moments": entities.moments(db, entity),
@@ -139,6 +142,19 @@ def entity_read(request: Request, entity_id: int, db: Session = Depends(get_db))
     if not _visible(entity, user):
         return _not_found(request)
     return templates.TemplateResponse(request, "_peek.html", {**entity_context(db, entity, user), "where": "reader"})
+
+
+@router.get("/{entity_id:int}/connections")
+def entity_connections(request: Request, entity_id: int, db: Session = Depends(get_db)):
+    """Everyone tied to one entry, drawn around it, in a window (the Relationships tab); its names move the middle."""
+    user = current_user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    entity = db.get(Entity, entity_id)
+    if not _visible(entity, user):
+        return _not_found(request)
+    cx = campaign_views.connections(db, entity, lambda e: e.status == Status.PUBLISHED or is_reviewer(user))
+    return templates.TemplateResponse(request, "_connections_modal.html", {"cx": cx})
 
 
 @router.get("/{entity_id:int}/edit")

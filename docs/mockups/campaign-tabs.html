@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Campaign tabs · askdnd mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../app/static/app.css">
+<style>
+/* Mockup only: tokens only; made-up campaign (DESIGN.md: mockups use made-up content). Pieces already in app.css
+   (.reader, .rd-item, .quest-card, .moment-line…) are used as they are. */
+.mk-switch { position: sticky; top: 0; z-index: 9; background: var(--chrome); border-bottom: 1px solid var(--line); padding: var(--sp-2) var(--sp-5); display: flex; gap: var(--sp-4); align-items: center; flex-wrap: wrap; }
+.mk-switch .note { margin-right: auto; }
+.mk-why { color: var(--muted); font-size: var(--fs-sm); margin: 0 0 var(--sp-4); max-width: 90ch; }
+.mk-why b { color: var(--text); }
+.topbar { top: 49px; }
+.sheet .tabbar { top: 109px; }
+.reader-nav { top: 170px; max-height: calc(100vh - 190px); }
+.chipl { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: var(--r-pill); background: var(--surface-2); border: 1px solid var(--line); font-size: var(--fs-sm); color: var(--text); text-decoration: none; cursor: pointer; margin: 0 4px 4px 0; }
+.chipl:hover { border-color: var(--line-strong); }
+.chipl .note { font-size: var(--fs-xs); }
+/* Quests · Board */
+.qb { display: flex; flex-direction: column; gap: var(--sp-4); }
+.qb-card { background: var(--surface); border-radius: var(--r-lg); padding: var(--sp-5) var(--sp-6); border-left: 3px solid var(--amber); }
+.qb-card.done { border-left-color: var(--green); }
+.qb-top { display: flex; gap: var(--sp-3); align-items: baseline; flex-wrap: wrap; }
+.qb-top h2 { margin: 0; font-size: var(--fs-lg); }
+.qb-top .note { margin-left: auto; }
+.qb-card .story { margin: var(--sp-3) 0 var(--sp-4); font-size: var(--fs-md); padding: var(--sp-3) var(--sp-4); }
+.qb-cols { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: var(--sp-6); }
+.qb h3 { font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); margin: 0 0 var(--sp-2); }
+.qb-quiet { color: var(--muted); font-size: var(--fs-xs); }
+.qb-done { background: var(--surface); border-radius: var(--r-lg); padding: var(--sp-4) var(--sp-6); }
+.qb-done-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--sp-4); padding: var(--sp-2) 0; border-top: 1px solid var(--line-soft); cursor: pointer; }
+/* Quests · Timeline */
+.qt { background: var(--surface); border-radius: var(--r-lg); padding: var(--sp-5); overflow-x: auto; }
+.qt-grid { display: grid; grid-template-columns: 240px repeat(12, minmax(34px, 1fr)); align-items: center; min-width: 760px; }
+.qt-grid > div { padding: var(--sp-2) 0; border-top: 1px solid var(--line-soft); min-height: 44px; display: flex; align-items: center; }
+.qt-grid .qt-h { border-top: 0; color: var(--muted); font-size: var(--fs-xs); justify-content: center; min-height: 0; }
+.qt-name { cursor: pointer; gap: var(--sp-2); font-size: var(--fs-sm); }
+.qt-name.sel b { color: var(--text-strong); text-decoration: underline; text-decoration-color: var(--blue); }
+.qt-cell { justify-content: center; position: relative; }
+.qt-cell.span::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: var(--story-line); }
+.qt-cell.first::before { left: 50%; }
+.qt-cell.last::before { right: 50%; }
+.qt-dot { position: relative; width: 14px; height: 14px; border-radius: var(--r-pill); background: var(--amber); border: 2px solid var(--surface); cursor: pointer; }
+.qt-dot.done { background: var(--green); }
+.qt-legend { display: flex; gap: var(--sp-4); margin-top: var(--sp-3); font-size: var(--fs-xs); color: var(--muted); align-items: center; }
+.qt-legend span.qt-dot { display: inline-block; width: 10px; height: 10px; cursor: default; }
+.qt-detail { margin-top: var(--sp-4); }
+/* Relationships · Family trees */
+.ft-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, auto)); gap: var(--sp-4); }
+.ft { background: var(--surface); border-radius: var(--r-lg); padding: var(--sp-5); }
+.ft h2 { margin: 0 0 var(--sp-4); font-size: var(--fs-lg); }
+.ft-gen { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-4); }
+.ft-gen + .ft-gen { margin-top: var(--sp-5); padding-top: var(--sp-4); border-top: 1px dashed var(--line-strong); }
+.ft-unit { display: flex; align-items: center; gap: var(--sp-1); }
+.ft-kids { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); }
+.ft-kids > .note { font-size: var(--fs-xs); }
+.ft-kids > div { display: flex; gap: var(--sp-2); flex-wrap: wrap; justify-content: center; }
+.ft-p { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); text-align: center; cursor: pointer; min-width: 120px; }
+.ft-p:hover { border-color: var(--line-strong); }
+.ft-p b { display: block; font-size: var(--fs-sm); }
+.ft-p .note { font-size: var(--fs-xs); }
+.ft-ring { color: var(--red); font-size: var(--fs-md); }
+.ft-sib { color: var(--muted); font-size: var(--fs-xs); }
+.ties { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--sp-4); margin-top: var(--sp-4); }
+.ties .section { margin: 0; padding: var(--sp-5); }
+.tie-row { display: flex; gap: var(--sp-2); align-items: baseline; padding: var(--sp-1) 0; font-size: var(--fs-sm); flex-wrap: wrap; }
+/* Relationships · Around one person and the web */
+.ego { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: var(--sp-5); align-items: start; }
+.ego-svg, .web-svg { background: var(--surface); border-radius: var(--r-lg); width: 100%; height: auto; display: block; }
+.n-label { fill: var(--text); font: 500 13px var(--sans); }
+.n-sub { fill: var(--muted); font: 11px var(--sans); }
+.n-hub { fill: var(--selected-bg); stroke: var(--blue); stroke-width: 2; }
+.n-node { fill: var(--surface-2); stroke: var(--line-strong); cursor: pointer; }
+.n-node.faction { fill: var(--story-bg); stroke: var(--story-line); }
+.n-node:hover { stroke: var(--text); }
+.e-family { stroke: var(--line-strong); stroke-width: 2; }
+.e-allegiance { stroke: var(--blue-line); stroke-width: 2; stroke-dasharray: 6 4; }
+.e-ally { stroke: var(--green-line); stroke-width: 2; }
+.e-enemy { stroke: var(--red-line); stroke-width: 2; stroke-dasharray: 2 4; }
+.e-label { fill: var(--muted); font: 11px var(--sans); }
+.legend { display: flex; flex-wrap: wrap; gap: var(--sp-4); font-size: var(--fs-xs); color: var(--muted); margin: var(--sp-2) 0 var(--sp-3); align-items: center; }
+.legend svg { vertical-align: middle; margin-right: 4px; }
+.web-dim { opacity: .2; }
+.web-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--sp-4); align-items: start; }
+.web-side { background: var(--surface); border-radius: var(--r-lg); padding: var(--sp-4); }
+@media (max-width: 900px) {
+  .qb-cols, .ego, .web-wrap { grid-template-columns: 1fr; }
+  .ft-wrap { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="mk-switch">
+  <span class="note"><b>Mockup</b> · Campaign tabs (made-up campaign). Pick a tab, then an option.</span>
+  <div class="seg" role="group" aria-label="Option" id="opts"></div>
+  <label class="ls-check"><input type="checkbox" id="dm" checked> DM view</label>
+</div>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="#"><span class="brand-word">askdnd</span></a>
+  <nav class="nav"><a href="#">Recap</a><a href="#">Sessions</a><a href="#" class="active">Campaign</a><a href="#">Map</a></nav>
+  <span class="nav-sep"></span>
+  <nav class="nav table-nav"><div class="switcher"><a href="#" class="switcher-name">Thorne</a></div><a href="#">Party</a></nav>
+  <div class="bar-end"><div class="avatar">B</div></div>
+</div></header>
+
+<main class="page sheet wide">
+  <div class="title-row"><h1>The Drowned Bell</h1><a class="btn dm-only" href="#" style="margin-left:auto">+ New entry</a></div>
+  <p class="subtitle">People, places and things the party has met. Dungeon Master: Rowan.</p>
+  <div class="tabbar" role="tablist" id="tabs"></div>
+  <p class="mk-why" id="why"></p>
+  <div id="view"></div>
+</main>
+
+<script>
+const LAST = 12;
+const P = (id, kind, name, summary, extra = {}) => ({ id, kind, name, summary, aliases: null, hidden: false, facts: [], ...extra });
+const E = [
+  P(1, "quest", "Ring the Drowned Bell", "Brother Fennick believes the bell beneath Hollow Reef can calm the storms over Saltmere, if someone rings it at the spring tide. The party agreed to find a way down.",
+    { open: true, giver: 10, moments: [[9, "Fennick showed the party the bell's rubbing in the Lantern Temple.", [10, 20]], [10, "The Tidewardens warned the party off.", [30]], [12, "The party found the sea-cave entrance under Hollow Reef.", [23]]], facts: ["The spring tide is in about three weeks."] }),
+  P(2, "quest", "Find Captain Orla's chart", "Orla Vane will trade passage past the reef for the chart her first mate stole. He was last seen at the Gulls' Rest.",
+    { open: true, giver: 11, moments: [[11, "Orla offered the deal over a game of dice.", [11, 24]]], facts: [] }),
+  P(3, "quest", "Clear the toll road", "Bandits had closed the coast road into Saltmere. The party drove them off and Lord Tallow paid the bounty.",
+    { open: false, giver: 14, doneIn: 4, moments: [[2, "Lord Tallow posted a bounty on the bandits.", [14]], [3, "The party tracked the bandits to the old bridge.", []], [4, "The bandit leader surrendered at the old bridge.", [14]]], facts: [] }),
+  P(4, "quest", "Where is Pip?", "Mother Sorrel's son went out with the lamp-boats and didn't come back. Wren says she saw him on a black-sailed ship.",
+    { open: true, giver: 12, moments: [[7, "Pip went missing with the lamp-boats.", [13]], [10, "Sorrel asked the party for help.", [12]], [12, "Wren saw Pip on a black-sailed ship.", [15, 13]]], facts: ["Hale is out searching the coves on his own."] }),
+  P(5, "quest", "The Tallow ledger", "Corwin Tallow asked the party to find his father's missing ledger before the magistrate's audit.",
+    { open: true, giver: 19, moments: [[6, "Corwin asked for help, quietly.", [19, 22]]], facts: [] }),
+  P(10, "npc", "Brother Fennick", "Priest of the Lantern Temple, keeper of the lighthouse flame. Kind, tired and more scared of the bell than he lets on.", { aliases: ["the Lamplighter"], facts: ["He can't swim."] }),
+  P(11, "npc", "Captain Orla Vane", "Smuggler captain of the Gull's Wager. Fair in a deal, ruthless out of one.", { aliases: ["Orla"] }),
+  P(12, "npc", "Mother Sorrel", "Herbalist on the cliff path. Her tea fixes most things and she knows every family in Saltmere."),
+  P(13, "npc", "Pip", "Mother Sorrel's younger son, twelve, missing since the lamp-boats went out."),
+  P(14, "npc", "Lord Aubrec Tallow", "Magistrate of Saltmere. Pays on time, asks no questions, and seems to know about the bell already."),
+  P(15, "npc", "Wren", "Dockside urchin who sells news for copper. Usually right."),
+  P(16, "npc", "Dalla Thorn", "Dwarf smith by the harbor. Mended Thorne's shield."),
+  P(17, "npc", "The Grey Widow", "Whoever commands the black-sailed ship. The table hasn't met her yet.", { hidden: true }),
+  P(18, "npc", "Lady Ines Tallow", "Aubrec's wife; runs the manor and most of the town's charity."),
+  P(19, "npc", "Corwin Tallow", "The magistrate's son. Polite, nervous, and out late most nights."),
+  P(25, "npc", "Mirelle Tallow", "The magistrate's daughter, studying at the Lantern Temple."),
+  P(26, "npc", "Old Tam", "Sorrel's husband, a lamp-boat pilot. Lost at sea years ago."),
+  P(27, "npc", "Hale", "Sorrel's elder son, a fisherman with a short temper."),
+  P(28, "npc", "Kit Vane", "Orla's daughter and cabin hand on the Gull's Wager."),
+  P(20, "place", "The Lantern Temple", "The lighthouse temple at the end of the mole; its flame is never allowed to go out."),
+  P(21, "place", "Saltmere", "Fishing town on the storm coast, home base for the party."),
+  P(22, "place", "Tallow Manor", "The magistrate's house above the harbor, with more guards than a magistrate needs."),
+  P(23, "place", "Hollow Reef", "A ring of rocks off the point. The sea-cave beneath it leads down toward the bell."),
+  P(24, "place", "The Gulls' Rest", "Harbor inn; loud, cheap and full of sailors who saw everything."),
+  P(30, "faction", "The Tidewardens", "Old order sworn to keep the bell silent. Most people think they're a story."),
+  P(31, "faction", "The Ash Choir", "Hooded singers seen at night on the cliffs. Wherever they sing, the storms get worse."),
+  P(40, "item", "Moonglass shard", "A sliver of pale glass that glows near seawater. Ilse carries it."),
+  P(50, "creature", "Reef hag", "Something with long fingers lives in the kelp off Hollow Reef."),
+];
+const R = [["married", 14, 18], ["married", 12, 26], ["parent", 14, 19], ["parent", 18, 19], ["parent", 14, 25], ["parent", 18, 25],
+  ["parent", 12, 13], ["parent", 26, 13], ["parent", 12, 27], ["parent", 26, 27], ["parent", 11, 28], ["sibling", 10, 14], ["sibling", 13, 27],
+  ["member", 10, 30], ["member", 19, 31], ["member", 17, 31], ["member", 16, 30], ["serves", 15, 11],
+  ["ally", 10, 12], ["ally", 16, 11], ["enemy", 30, 31], ["enemy", 11, 17]];
+const KINDS = [["npc", "People", "Person"], ["place", "Places", "Place"], ["faction", "Factions", "Faction"], ["item", "Items", "Item"], ["creature", "Creatures", "Creature"], ["quest", "Quests", "Quest"]];
+const LABEL = Object.fromEntries(KINDS.map(k => [k[0], k[2]]));
+const byId = id => E.find(e => e.id === id);
+const dm = () => document.getElementById("dm").checked;
+const vis = e => e && (dm() || !e.hidden);
+const hiddenTag = e => e.hidden ? ' <span class="tag faint">Hidden</span>' : "";
+// Every key moment (quests carry them; people and places pick theirs up from the quests' moments that mention them)
+const allMoments = E.filter(e => e.moments).flatMap(q => q.moments.map(([s, t, ids]) => ({ s, t, ids: [q.id, ...ids], quest: q.id })));
+const momentsOf = id => allMoments.filter(m => m.ids.includes(id)).sort((a, b) => a.s - b.s);
+const seenOf = id => { const m = momentsOf(id); return m.length ? m[m.length - 1].s : null; };
+const questsOf = id => E.filter(q => q.kind === "quest" && q.moments.some(m => m[2].includes(id)) || (q.giver === id && q.kind === "quest"));
+const REL = { married: ["married to", "married to"], parent: ["parent of", "child of"], sibling: ["sibling of", "sibling of"], member: ["member of", "has member"],
+  serves: ["serves", "served by"], ally: ["ally of", "ally of"], enemy: ["enemy of", "enemy of"] };
+const GROUP = { married: "family", parent: "family", sibling: "family", member: "allegiance", serves: "allegiance", ally: "ally", enemy: "enemy" };
+const relsOf = id => R.filter(([, a, b]) => a === id || b === id).map(([t, a, b]) => ({ t, other: a === id ? b : a, label: REL[t][a === id ? 0 : 1], group: GROUP[t] })).filter(r => vis(byId(r.other)));
+
+let tab = "quests", opt = { quests: "board", world: "reader", rel: "trees" }, sel = 10, qsel = 1, q = "", recentOnly = false, webSel = null, webShow = { family: true, allegiance: true, ally: true, enemy: true };
+const OPTS = {
+  world: [["reader", "World · without quests"]],
+  quests: [["board", "Q1 · Board"], ["log", "Q2 · Log"], ["timeline", "Q3 · Timeline"]],
+  rel: [["trees", "R1 · Family trees + ties"], ["ego", "R2 · Around one person"], ["web", "R3 · Everyone's web"]],
+};
+const WHY = {
+  "world.reader": "<b>World without quests.</b> The Reader gets the whole tab. Two additions: the entry says which <b>quests</b> it's part of (from the key moments that mention it), and its relationships link to the Relationships tab. The search and switch stay pinned while the names scroll.",
+  "quests.board": "<b>Q1 · Board (recommended).</b> Every open quest at full size, nothing to click to see where it stands: who gave it, a short timeline of its key moments, who and where it involves, and what the table knows. A quiet line says when a quest hasn't come up for a while (a fact, not advice). Done quests are one line each at the bottom.",
+  "quests.log": "<b>Q2 · Log.</b> The same layout as World: quests down the left (Open, then Done), one quest on the page. Consistent with World, but you see one quest at a time.",
+  "quests.timeline": "<b>Q3 · Timeline.</b> Quests against sessions: a dot for every key moment, a line while the quest is open. Shows at a glance what's moving and what's gone quiet. Click a quest or a dot for its story below.",
+  "rel.trees": "<b>R1 · Family trees + ties (recommended).</b> Each family is its own small tree, drawn in the page's own style (no diagram library): generations in rows, couples joined by a ring, children under their parents. Below, the other ties as plain lists: who belongs to which faction, who serves whom, allies and enemies. Click anyone to read about them in World.",
+  "rel.ego": "<b>R2 · Around one person.</b> Pick a name; they sit in the middle with everyone they're tied to around them: family keeps its shape (parents above, spouse and siblings beside, children below), allies and enemies on the left, factions and service on the right. Answers “how is this person connected?”. Click anyone around them to move the middle.",
+  "rel.web": "<b>R3 · Everyone's web.</b> All people and factions on one map, line styles by kind of tie, chips to show or hide each kind. Click someone to light up their ties and see them listed on the right. Best for the big picture; gets busy as the campaign grows."
+};
+
+function search(ph) { return `<div class="ls-search"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input type="search" placeholder="${ph}" value="${q}" data-q></div>`; }
+const link = id => { const e = byId(id); return `<a class="ent" href="#" data-go="${id}">${e.name}</a>`; };
+const chip = id => { const e = byId(id); return `<span class="chipl" data-go="${id}">${e.name}<span class="note">${LABEL[e.kind]}</span></span>`; };
+const timeline = ms => ms.length ? `<ol class="moment-line">${ms.map(m => `<li>${m.t}<span class="note">Session ${m.s}</span></li>`).join("")}</ol>` : '<p class="muted">No key moments yet.</p>';
+
+function questBody(qe, compact) {
+  const ms = momentsOf(qe.id), who = [...new Set([qe.giver, ...qe.moments.flatMap(m => m[2])])].filter(id => vis(byId(id)));
+  const last = ms.length ? ms[ms.length - 1].s : null, quiet = qe.open && last && LAST - last >= 3 ? `<span class="qb-quiet">No key moments since Session ${last}</span>` : "";
+  const shown = compact && ms.length > 3 ? ms.slice(-3) : ms;
+  return `<div class="qb-top"><h2>${qe.name}</h2><span class="tag ${qe.open ? "draft" : "done"}">${qe.open ? "Open" : "Done"}</span>${hiddenTag(qe)}
+      <span class="note">Given by ${link(qe.giver)} · Session ${ms[0] ? ms[0].s : "?"}${qe.open ? "" : ` · done Session ${qe.doneIn}`}</span></div>
+    <div class="story">${qe.summary}</div>
+    <div class="qb-cols"><div><h3>Progress</h3>${compact && ms.length > 3 ? `<p class="note">${ms.length - 3} earlier</p>` : ""}${timeline(shown)}${quiet}</div>
+      <div><h3>Who and where</h3><div>${who.map(chip).join("")}</div>
+        <h3 style="margin-top:var(--sp-4)">What the table knows</h3>${qe.facts.length ? `<ul class="plain">${qe.facts.map(f => `<li>${f}</li>`).join("")}</ul>` : '<p class="muted">Nothing yet.</p>'}
+        <a href="#" class="note">+ Add what the party learned</a></div></div>
+    ${dm() ? `<div class="reader-foot" style="margin-top:var(--sp-4)"><a class="btn primary" href="#">Edit</a><a class="btn" href="#">${qe.open ? "Mark done" : "Reopen"}</a></div>` : ""}`;
+}
+
+function viewWorld() {
+  const ref = E.filter(e => e.kind !== "quest" && vis(e) && (!q || (e.name + " " + e.summary).toLowerCase().includes(q)));
+  const dot = e => seenOf(e.id) === LAST ? '<span class="rd-dot" title="In the last session"></span>' : "";
+  const rows = KINDS.filter(([k]) => k !== "quest").map(([k, t]) => [t, ref.filter(e => e.kind === k && (!recentOnly || seenOf(e.id) === LAST))]).filter(g => g[1].length)
+    .map(([t, rs]) => `<div class="ls-grouphead">${t}</div>${rs.map(e => `<a class="rd-item${e.id === sel ? " sel" : ""}" data-go="${e.id}" href="#">${dot(e)}<span class="rd-name">${e.name}</span>${hiddenTag(e)}</a>`).join("")}`).join("");
+  const e = byId(sel), ms = momentsOf(e.id), qs = questsOf(e.id).filter(vis), rels = relsOf(e.id);
+  const all = E.filter(x => x.kind !== "quest" && vis(x)), nRecent = all.filter(x => seenOf(x.id) === LAST).length;
+  return `<div class="reader"><aside class="reader-nav"><div class="reader-nav-head">${search("Search people, places and things")}
+      <div class="seg ls-views"><button type="button" data-recent="0" aria-pressed="${!recentOnly}">All <span class="ls-n">${all.length}</span></button><button type="button" data-recent="1" aria-pressed="${recentOnly}">Last session <span class="ls-n">${nRecent}</span></button></div></div>
+      <div class="reader-rows">${rows || '<p class="note">Nothing matches.</p>'}</div></aside>
+    <article class="reader-article"><div class="reader-head"><div class="note">${LABEL[e.kind]} · ${ms.length ? `Last seen Session ${ms[ms.length - 1].s} · ${ms.length} key moments` : "No key moments yet"}</div><h2>${e.name}${hiddenTag(e)}</h2>${e.aliases ? `<div class="note">Also: ${e.aliases.join(", ")}</div>` : ""}</div>
+      <div class="reader-body"><div class="story">${e.summary}</div>
+        ${qs.length ? `<h3>Part of</h3><div>${qs.map(x => `<span class="chipl" data-goq="${x.id}">${x.name} <span class="tag ${x.open ? "draft" : "done"}">${x.open ? "Open" : "Done"}</span></span>`).join("")}</div>` : ""}
+        <div class="reader-cols"><div>${rels.length ? `<h3>Relationships</h3><ul class="plain">${rels.map(r => `<li><span class="muted">${r.label[0].toUpperCase() + r.label.slice(1)}</span> ${link(r.other)}</li>`).join("")}</ul><a href="#" class="note" data-rel="${e.id}">See on Relationships →</a>` : ""}
+          <h3>What the table knows</h3>${e.facts.length ? `<ul class="plain">${e.facts.map(f => `<li>${f}</li>`).join("")}</ul>` : '<p class="muted">Nothing yet. Add what the party learned below.</p>'}
+          <form class="stack add-fact" onsubmit="return false"><textarea rows="2" placeholder="Something the party learned about ${e.name}"></textarea><div class="row"><button class="btn small">Send</button></div></form></div>
+          <div><h3>Key moments</h3>${timeline(ms)}</div></div></div>
+      <div class="reader-foot">${dm() ? '<a class="btn primary" href="#">Edit</a>' : ""}<span class="note reader-keys">↑ ↓ move through the list</span></div></article></div>`;
+}
+
+function viewQuests() {
+  const open = E.filter(e => e.kind === "quest" && e.open && vis(e)), done = E.filter(e => e.kind === "quest" && !e.open && vis(e));
+  const head = `<div class="title-row" style="margin:0 0 var(--sp-3)"><span class="note">${open.length} open · ${done.length} done</span>${dm() ? '<a class="btn" href="#" style="margin-left:auto">+ New quest</a>' : ""}</div>`;
+  if (opt.quests === "board") {
+    return head + `<div class="qb">${open.map(x => `<section class="qb-card">${questBody(x, true)}</section>`).join("")}
+      <div class="qb-done"><h3 style="font-size:var(--fs-xs);font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--green);margin:0 0 var(--sp-2)">Done · ${done.length}</h3>
+      ${done.map(x => `<div class="qb-done-row" data-goq="${x.id}"><span><b>${x.name}</b> <span class="muted">· ${x.summary.split(". ")[0]}.</span></span><span class="note">Done Session ${x.doneIn}</span></div>`).join("")}</div></div>`;
+  }
+  if (opt.quests === "log") {
+    const item = x => { const ms = momentsOf(x.id); return `<a class="rd-item${x.id === qsel ? " sel" : ""}" data-goq="${x.id}" href="#"><span class="rd-name">${x.name}</span><span class="note" style="margin-left:auto">S${ms.length ? ms[ms.length - 1].s : "–"}</span></a>`; };
+    return head + `<div class="reader"><aside class="reader-nav"><div class="reader-nav-head">${search("Search quests")}</div><div class="reader-rows"><div class="ls-grouphead">Open</div>${open.map(item).join("")}<div class="ls-grouphead">Done</div>${done.map(item).join("")}</div></aside>
+      <article class="reader-article qb">${questBody(byId(qsel), false)}</article></div>`;
+  }
+  const qs = [...open, ...done];
+  const cells = qs.map(x => {
+    const ms = momentsOf(x.id), first = ms[0].s, last = x.open ? LAST : x.doneIn;
+    const row = Array.from({ length: 12 }, (_, i) => { const s = i + 1, has = ms.filter(m => m.s === s), inSpan = s >= first && s <= last;
+      return `<div class="qt-cell${inSpan ? " span" : ""}${s === first ? " first" : ""}${s === last ? " last" : ""}">${has.length ? `<span class="qt-dot${x.open ? "" : " done"}" title="Session ${s}: ${has.map(m => m.t).join(" ")}" data-goq="${x.id}"></span>` : ""}</div>`; }).join("");
+    return `<div class="qt-name${x.id === qsel ? " sel" : ""}" data-goq="${x.id}"><b>${x.name}</b><span class="tag ${x.open ? "draft" : "done"}">${x.open ? "Open" : "Done"}</span></div>${row}`;
+  }).join("");
+  return head + `<div class="qt"><div class="qt-grid"><div class="qt-h"></div>${Array.from({ length: 12 }, (_, i) => `<div class="qt-h">${i + 1}</div>`).join("")}${cells}</div>
+    <div class="qt-legend"><span>Sessions →</span><span><span class="qt-dot"></span> key moment, open quest</span><span><span class="qt-dot done"></span> done quest</span><span>Hover a dot for the moment</span></div></div>
+    <section class="qb qb-card qt-detail${byId(qsel).open ? "" : " done"}">${questBody(byId(qsel), false)}</section>`;
+}
+
+// Families: groups of people joined by parent, marriage or sibling ties; generations from parent links
+function families() {
+  const fam = R.filter(r => GROUP[r[0]] === "family"), seen = new Set(), out = [];
+  for (const [, a] of fam) {
+    if (seen.has(a)) continue;
+    const comp = new Set([a]), stack = [a];
+    while (stack.length) { const x = stack.pop(); fam.forEach(([, p, c]) => { [[p, c], [c, p]].forEach(([u, v]) => { if (u === x && !comp.has(v)) { comp.add(v); stack.push(v); } }); }); }
+    comp.forEach(x => seen.add(x)); out.push([...comp]);
+  }
+  return out.map(ids => {
+    const gen = {}; const parents = c => fam.filter(r => r[0] === "parent" && r[2] === c).map(r => r[1]);
+    const g = id => gen[id] ?? (gen[id] = parents(id).length ? Math.max(...parents(id).map(g)) + 1 : 0);
+    ids.forEach(g);
+    for (let i = 0; i < 3; i++) fam.forEach(([t, a, b]) => { if (t !== "parent" && ids.includes(a)) { const m = Math.max(gen[a], gen[b]); gen[a] = gen[b] = m; } });
+    return ids.map(id => ({ id, gen: gen[id] }));
+  });
+}
+const person = id => { const e = byId(id); return vis(e) ? `<div class="ft-p" data-go="${id}"><b>${e.name}</b><span class="note">${e.summary.split(/[.,;]/)[0]}</span></div>` : ""; };
+function treeHtml(members) {
+  const ids = members.map(m => m.id), maxGen = Math.max(...members.map(m => m.gen));
+  const spouse = id => R.find(r => r[0] === "married" && (r[1] === id || r[2] === id));
+  const parentsOf = c => R.filter(r => r[0] === "parent" && r[2] === c).map(r => r[1]).sort();
+  const rows = [];
+  for (let g = 0; g <= maxGen; g++) {
+    const here = members.filter(m => m.gen === g).map(m => m.id), done = new Set(), units = [];
+    if (g === 0) {
+      // Couples first, joined by a ring; a sibling stands beside the one they're a sibling of
+      const sibOf = id => R.filter(r => r[0] === "sibling" && (r[1] === id || r[2] === id)).map(r => r[1] === id ? r[2] : r[1]).filter(x => here.includes(x));
+      const sibTie = '<span class="ft-sib" title="Siblings">siblings</span>';
+      here.forEach(id => { const s = spouse(id); if (!s || done.has(id)) return; const other = s[1] === id ? s[2] : s[1]; done.add(id); done.add(other);
+        const left = sibOf(id).filter(x => !done.has(x)), right = sibOf(other).filter(x => !done.has(x)); [...left, ...right].forEach(x => done.add(x));
+        units.push(`<div class="ft-unit">${left.map(x => person(x) + sibTie).join("")}${person(id)}<span class="ft-ring" title="Married">⚭</span>${person(other)}${right.map(x => sibTie + person(x)).join("")}</div>`); });
+      here.forEach(id => { if (done.has(id)) return; done.add(id); units.push(`<div class="ft-unit">${person(id)}</div>`); });
+      rows.push(`<div class="ft-gen">${units.join("")}</div>`);
+    } else {
+      const byParents = {};
+      here.forEach(id => { const k = parentsOf(id).join("+"); (byParents[k] = byParents[k] || []).push(id); });
+      rows.push(`<div class="ft-gen">${Object.entries(byParents).map(([k, kids]) => `<div class="ft-kids"><span class="note">Children of ${k.split("+").map(x => byId(+x).name.replace(/^(Lord|Lady|Mother|Captain|Old|Brother) /, "").split(" ")[0]).join(" and ")}</span><div>${kids.map(person).join("")}</div></div>`).join("")}</div>`);
+    }
+  }
+  const name = ids.includes(14) ? "The Tallows" : ids.includes(12) ? "Sorrel's family" : ids.includes(11) ? "The Vanes" : "A family";
+  return `<section class="ft"><h2>${name}</h2>${rows.join("")}</section>`;
+}
+function tiesHtml() {
+  const list = (title, groups, help) => { const rs = R.filter(r => groups.includes(r[0]) && vis(byId(r[1])) && vis(byId(r[2])));
+    return `<section class="section"><h3 class="divider" style="margin-top:0">${title}</h3>${help ? `<p class="note" style="margin:0 0 var(--sp-2)">${help}</p>` : ""}${rs.map(([t, a, b]) => `<div class="tie-row">${link(a)} <span class="muted">${REL[t][0]}</span> ${link(b)}</div>`).join("") || '<p class="muted">None yet.</p>'}</section>`; };
+  const factions = E.filter(e => e.kind === "faction").map(f => { const mem = R.filter(r => r[0] === "member" && r[2] === f.id).map(r => r[1]).filter(id => vis(byId(id)));
+    return `<div class="tie-row"><b>${link(f.id)}</b> <span class="muted">·</span> ${mem.map(link).join(", ") || '<span class="muted">no known members</span>'}</div>`; }).join("");
+  return `<div class="ties"><section class="section"><h3 class="divider" style="margin-top:0">Factions and their members</h3>${factions}</section>${list("Who serves whom", ["serves"])}${list("Allies", ["ally"])}${list("Enemies", ["enemy"])}</div>`;
+}
+
+function egoSvg(id) {
+  // Family keeps its shape (parents above, spouse and siblings beside, children below); other ties sit in the side
+  // columns: allies and enemies on the left, factions and service on the right.
+  const W = 900, H = 540, cx = 450, cy = 250, rels = relsOf(id), me = byId(id);
+  const pick = f => rels.filter(f);
+  const place = [];  // [rel, x, y]
+  const row = (rs, y) => rs.forEach((r, i) => place.push([r, cx + (i - (rs.length - 1) / 2) * 165, y]));
+  const col = (rs, x, y0) => rs.forEach((r, i) => place.push([r, x, y0 + i * 56]));
+  row(pick(r => r.t === "parent" && r.label === "child of"), 80);
+  row(pick(r => r.t === "parent" && r.label === "parent of"), 420);
+  col(pick(r => r.t === "sibling"), cx - 240, cy - (pick(r => r.t === "sibling").length - 1) * 28);
+  col(pick(r => r.t === "married"), cx + 240, cy);
+  const allies = pick(r => r.group === "ally"), enemies = pick(r => r.group === "enemy"), alleg = pick(r => r.group === "allegiance");
+  col(allies, 100, 110); col(enemies, 100, 110 + (allies.length + 1) * 56 + 20); col(alleg, 800, 110);
+  const heads = [["Allies", 100, 78, allies.length], ["Enemies", 100, 78 + (allies.length + 1) * 56 + 20, enemies.length], ["Factions and service", 800, 78, alleg.length]]
+    .filter(h => h[3]).map(([t, x, y]) => `<text class="n-sub" x="${x}" y="${y}" text-anchor="middle" style="text-transform:uppercase;letter-spacing:.12em;fill:var(--amber)">${t}</text>`).join("");
+  const edges = place.map(([r, x, y]) => `<line class="e-${r.group}" x1="${cx}" y1="${cy}" x2="${x}" y2="${y}"/>`).join("");
+  const labels = place.map(([r, x, y]) => `<text class="e-label" x="${(cx + x) / 2}" y="${(cy + y) / 2 - 5}" text-anchor="middle">${r.label}</text>`).join("");
+  const nodes = place.map(([r, x, y]) => { const o = byId(r.other);
+    return `<g data-ego="${r.other}" style="cursor:pointer"><rect class="n-node${o.kind === "faction" ? " faction" : ""}" x="${x - 74}" y="${y - 20}" width="148" height="40" rx="8"/><text class="n-label" x="${x}" y="${y - 2}" text-anchor="middle">${o.name.length > 20 ? o.name.slice(0, 19) + "…" : o.name}</text><text class="n-sub" x="${x}" y="${y + 13}" text-anchor="middle">${LABEL[o.kind]}</text></g>`; }).join("");
+  return `<svg class="ego-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${me.name} and everyone tied to them">${heads}${edges}${nodes}
+    <g><rect class="n-hub" x="${cx - 92}" y="${cy - 26}" width="184" height="52" rx="10"/><text class="n-label" x="${cx}" y="${cy - 2}" text-anchor="middle" style="font-size:15px">${me.name}</text><text class="n-sub" x="${cx}" y="${cy + 15}" text-anchor="middle">${rels.length} ties</text></g>${labels}</svg>`;
+}
+
+const WEBPOS = { 10: [470, 90], 14: [300, 90], 18: [150, 90], 19: [210, 230], 25: [380, 230], 12: [140, 470], 26: [60, 360], 13: [260, 560], 27: [80, 560], 15: [620, 470],
+  11: [760, 380], 28: [880, 470], 16: [780, 180], 17: [600, 300], 30: [640, 60], 31: [420, 380] };
+function webSvg() {
+  const W = 960, H = 620, live = R.filter(r => webShow[GROUP[r[0]]] && vis(byId(r[1])) && vis(byId(r[2])));
+  const near = webSel ? new Set([webSel, ...live.filter(r => r[1] === webSel || r[2] === webSel).flatMap(r => [r[1], r[2]])]) : null;
+  const edges = live.map(([t, a, b]) => { const [x1, y1] = WEBPOS[a], [x2, y2] = WEBPOS[b], on = !webSel || a === webSel || b === webSel;
+    return `<line class="e-${GROUP[t]}${on ? "" : " web-dim"}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`; }).join("");
+  const nodes = Object.entries(WEBPOS).filter(([id]) => vis(byId(+id))).map(([id, [x, y]]) => { const o = byId(+id), dim = near && !near.has(+id);
+    return `<g data-web="${id}" style="cursor:pointer" class="${dim ? "web-dim" : ""}"><rect class="${+id === webSel ? "n-hub" : "n-node" + (o.kind === "faction" ? " faction" : "")}" x="${x - 66}" y="${y - 17}" width="132" height="34" rx="8"/><text class="n-label" x="${x}" y="${y + 4}" text-anchor="middle" style="font-size:12px">${o.name.length > 18 ? o.name.slice(0, 17) + "…" : o.name}</text></g>`; }).join("");
+  return `<svg class="web-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Everyone's ties">${edges}${nodes}</svg>`;
+}
+const legend = () => `<div class="legend">${[["family", "Family"], ["allegiance", "Factions and service"], ["ally", "Allies"], ["enemy", "Enemies"]].map(([g, t]) => `<span><svg width="28" height="6"><line class="e-${g}" x1="0" y1="3" x2="28" y2="3"/></svg>${t}</span>`).join("")}</div>`;
+
+function viewRel() {
+  if (opt.rel === "trees") return `<div class="ft-wrap">${families().map(treeHtml).join("")}</div>${tiesHtml()}`;
+  if (opt.rel === "ego") {
+    const people = E.filter(e => (e.kind === "npc" || e.kind === "faction") && vis(e) && relsOf(e.id).length && (!q || e.name.toLowerCase().includes(q)));
+    if (!relsOf(sel).length) sel = 10;
+    return `<div class="ego"><aside class="reader-nav" style="position:static;max-height:none"><div class="reader-nav-head">${search("Search names")}</div><div class="reader-rows">
+      ${[["npc", "People"], ["faction", "Factions"]].map(([k, t]) => `<div class="ls-grouphead">${t}</div>${people.filter(e => e.kind === k).map(e => `<a class="rd-item${e.id === sel ? " sel" : ""}" data-ego="${e.id}" href="#"><span class="rd-name">${e.name}</span><span class="note" style="margin-left:auto">${relsOf(e.id).length}</span></a>`).join("")}`).join("")}</div></aside>
+      <div>${legend()}${egoSvg(sel)}<p class="note" style="margin-top:var(--sp-2)">Click anyone around ${byId(sel).name} to put them in the middle; <a href="#" data-go="${sel}">read about ${byId(sel).name} in World</a>.</p></div></div>`;
+  }
+  const chips = [["family", "Family"], ["allegiance", "Factions and service"], ["ally", "Allies"], ["enemy", "Enemies"]].map(([g, t]) => `<button type="button" class="ls-chip" data-web-g="${g}" aria-pressed="${webShow[g]}">${t}</button>`).join(" ");
+  const side = webSel ? `<b>${byId(webSel).name}</b><p class="note">${byId(webSel).summary}</p><ul class="plain">${relsOf(webSel).map(r => `<li><span class="muted">${r.label[0].toUpperCase() + r.label.slice(1)}</span> ${link(r.other)}</li>`).join("")}</ul><a class="btn small" href="#" data-go="${webSel}">Read in World</a>` : '<p class="muted">Click anyone to light up their ties.</p>';
+  return `<div class="mk-bar" style="display:flex;gap:var(--sp-2);flex-wrap:wrap;margin-bottom:var(--sp-2)">${chips}</div>${legend()}<div class="web-wrap">${webSvg()}<aside class="web-side">${side}</aside></div>`;
+}
+
+function render() {
+  const tabs = [["world", "World"], ["quests", `Quests <span class="count">${E.filter(e => e.kind === "quest" && e.open && vis(e)).length}</span>`], ["rel", "Relationships"], ["glossary", 'Glossary <span class="count">9</span>']];
+  document.getElementById("tabs").innerHTML = tabs.map(([k, t]) => `<button role="tab" data-tabk="${k}" aria-selected="${k === tab}">${t}</button>`).join("");
+  document.getElementById("opts").innerHTML = (OPTS[tab] || []).map(([k, t]) => `<button type="button" data-opt="${k}" aria-pressed="${opt[tab] === k}">${t}</button>`).join("");
+  document.getElementById("why").innerHTML = WHY[tab + "." + opt[tab]] || "Glossary stays as it is.";
+  document.querySelectorAll(".dm-only").forEach(x => { x.hidden = !dm(); });
+  if (!vis(byId(sel))) sel = 10;
+  const v = document.getElementById("view");
+  v.innerHTML = tab === "world" ? viewWorld() : tab === "quests" ? viewQuests() : tab === "rel" ? viewRel() : '<section class="section"><p class="muted">Unchanged: campaign names and words with their correct spelling.</p></section>';
+}
+document.addEventListener("click", ev => {
+  const t = ev.target.closest("[data-tabk]"); if (t) { tab = t.dataset.tabk; q = ""; render(); window.scrollTo(0, 0); return; }
+  const o = ev.target.closest("[data-opt]"); if (o) { opt[tab] = o.dataset.opt; q = ""; render(); return; }
+  const rc = ev.target.closest("[data-recent]"); if (rc) { recentOnly = rc.dataset.recent === "1"; render(); return; }
+  const g = ev.target.closest("[data-go]"); if (g) { ev.preventDefault(); const e = byId(+g.dataset.go); if (e.kind === "quest") { qsel = e.id; tab = "quests"; } else { sel = e.id; tab = "world"; } render(); window.scrollTo(0, 0); return; }
+  const gq = ev.target.closest("[data-goq]"); if (gq) { ev.preventDefault(); qsel = +gq.dataset.goq; if (tab !== "quests") tab = "quests"; if (opt.quests === "board") opt.quests = "log"; render(); return; }
+  const ego = ev.target.closest("[data-ego]"); if (ego) { ev.preventDefault(); sel = +ego.dataset.ego; render(); return; }
+  const rl = ev.target.closest("[data-rel]"); if (rl) { ev.preventDefault(); tab = "rel"; opt.rel = "ego"; render(); window.scrollTo(0, 0); return; }
+  const wn = ev.target.closest("[data-web]"); if (wn) { webSel = webSel === +wn.dataset.web ? null : +wn.dataset.web; render(); return; }
+  const wg = ev.target.closest("[data-web-g]"); if (wg) { webShow[wg.dataset.webG] = !webShow[wg.dataset.webG]; render(); }
+});
+document.addEventListener("input", ev => { if (ev.target.matches("[data-q]")) { q = ev.target.value.toLowerCase(); render(); const s = document.querySelector("[data-q]"); s.focus(); s.setSelectionRange(q.length, q.length); } });
+document.getElementById("dm").addEventListener("change", render);
+render();
+</script>
+</body>
+</html>

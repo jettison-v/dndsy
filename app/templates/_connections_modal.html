@@ -1,0 +1,13 @@
+{# The Relationships tab's window: one entry's connections. A name moves it to the middle (_connections.html). #}
+{% from "_connections.html" import connections_diagram with context %}
+<div class="peek-head">
+  <div><div class="note">Connections</div><h2 id="peek-title">{{ cx.e.name }}</h2></div>
+  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
+</div>
+<div class="peek-body">
+  {% if cx.nodes %}{{ connections_diagram(cx, "window") }}
+  {% else %}<p class="muted">No relationships yet. The DM adds them in an entry's Edit window.</p>{% endif %}
+</div>
+<div class="peek-foot row">
+  <a class="btn" href="{{ cbase }}/campaign?{{ 'tab=quests&' if cx.e.kind.value == 'quest' }}open={{ cx.e.id }}">{{ "Open in Quests" if cx.e.kind.value == "quest" else "Read in World" }}</a>
+</div>

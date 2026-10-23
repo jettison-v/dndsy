@@ -1,7 +1,9 @@
 {# A campaign entry: everything about it, in the side panel (Brett, 2026-10-22: no full page) or, with
    where="reader", on the Campaign page's Reader (roadmap step 11, option E: two columns, key moments as a
    timeline, Mark done for quests). The DM, reviewers and admins get Edit, which opens the large edit window.
-   Forms here answer with whichever one is showing (?in={{ w }} or ?in=reader). #}
+   Forms here answer with whichever one is showing (?in=panel or ?in=reader). The Reader also draws the entry's
+   connections (_connections.html). Both say which quests it's part of. #}
+{% from "_connections.html" import connections_diagram with context %}
 {% set reader = where == "reader" %}
 {% set w = "reader" if reader else "panel" %}
 {% set px = 'hx-target="closest .reader-article" hx-swap="outerHTML"' if reader else 'hx-target="closest .peek" hx-swap="innerHTML"' %}
@@ -16,10 +18,18 @@
 <div class="{{ 'reader-body' if reader else 'peek-body' }}">
   {% if picture %}<img class="peek-pic" src="{{ picture.full }}" alt="{{ e.name }}" referrerpolicy="no-referrer">{% if not picture.uploaded %}<p class="note" style="margin:-4px 0 8px">From D&amp;D Beyond</p>{% endif %}{% endif %}
   {% if e.summary %}<div class="story">{{ ln.text(e.summary) }}</div>{% else %}<p class="muted">No description yet.{% if can_edit %} Use <b>Edit</b> to write one.{% endif %}</p>{% endif %}
+  {% if part_of %}
+  <h3>Part of</h3>
+  <div class="part-of">{% for q in part_of %}<a class="chip-link" href="{{ cbase }}/campaign?tab=quests&amp;open={{ q.id }}" data-goto-quest="{{ q.id }}" data-no-peek>{{ q.name }} <span class="tag {{ 'done' if q.quest_open == false else 'draft' }}">{{ "Done" if q.quest_open == false else "Open" }}</span></a>{% endfor %}</div>
+  {% endif %}
+  {% if reader and cx.nodes %}
+  <h3>Connections</h3>
+  {{ connections_diagram(cx) }}
+  {% endif %}
   {% if reader %}<div class="reader-cols"><div>{% endif %}
 
-  {% if relations %}
-  <h3>Relationships</h3>
+  {% if relations and not reader %}
+  <h3>Relationships{% if e.kind.value not in ("quest", "pc") %} <a class="head-link" href="{{ cbase }}/campaign?open={{ e.id }}">See connections</a>{% endif %}</h3>
   <ul class="plain">{% for r in relations %}<li><span class="muted">{{ r.label | capitalize }}</span> <a class="ent" href="/campaign/{{ r.other.id }}" data-entity="{{ r.other.id }}">{{ r.other.name }}</a>{% if r.note %} <span class="note">· {{ r.note }}</span>{% endif %}</li>{% endfor %}</ul>
   {% endif %}
 

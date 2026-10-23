@@ -1,57 +1,23 @@
 {% extends "base.html" %}
 {% block title %}Campaign · askdnd{% endblock %}
-{% block head %}{% if tree %}
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
-<script>
-  // The family tree lives in a tab, and Mermaid can't size a hidden diagram: draw it the first time its tab opens.
-  document.addEventListener('DOMContentLoaded', () => {
-    mermaid.initialize({
-      startOnLoad: false, securityLevel: 'strict', theme: 'base',
-      themeVariables: { background: '#1f2226', primaryColor: '#272b30', primaryTextColor: '#ebe7df', primaryBorderColor: '#4a4f57',
-                        lineColor: '#8a857b', fontFamily: 'Inter, system-ui, sans-serif', fontSize: '15px' },
-      flowchart: { curve: 'basis', nodeSpacing: 28, rankSpacing: 46, htmlLabels: false }
-    });
-    const draw = () => { const el = document.querySelector('#t-family-tree .mermaid:not([data-processed])'); if (el && !el.closest('[hidden]')) mermaid.run({ nodes: [el] }); };
-    document.addEventListener('tab:shown', draw);
-    draw();
-  });
-</script>{% endif %}{% endblock %}
 {% block content %}
 {% from "_suggest_form.html" import suggest with context %}
 {% from "_lists.html" import view_switch %}
-{# The Campaign page (roadmap step 11; Brett 2026-10-22, option E in docs/mockups/campaign-reading.html): quests on
-   top, because they're what the party is doing now; then the Reader for the reference (names down the left, one entry
-   on the page). The name list uses the shared list engine (app.js "Lists"): All · Last session, search, kind headings. #}
+{# The Campaign page (roadmap step 11; Brett 2026-10-22, docs/mockups/campaign-reading.html option E and
+   docs/mockups/campaign-tabs.html Q1, R1 with R2). Tabs: World (the Reader: names down the left, one entry on the
+   page; the list uses the shared list engine, app.js "Lists"), Quests (the board: what the party is doing), Relationships
+   (family trees, the other ties, anyone's connections in a window) and Glossary. ?tab= picks one. #}
 <main class="page sheet wide">
   <div class="title-row"><h1>{{ campaign.name if campaign else "Campaign" }}</h1>
     {% if editor %}<a class="btn" href="#" data-modal-url="/campaign/new" style="margin-left:auto">+ New entry</a>{% endif %}</div>
   <p class="subtitle">People, places and things the party has met.{% if campaign and campaign.dm_name %} Dungeon Master: {{ campaign.dm_name }}.{% endif %}</p>
   {% if campaign %}
-  <div class="tabbar" role="tablist">
-    <button role="tab" aria-selected="true" data-tab="t-world">World</button>
-    {% if tree %}<button role="tab" aria-selected="false" data-tab="t-family-tree">Family tree</button>{% endif %}
-    <button role="tab" aria-selected="false" data-tab="t-glossary">Glossary <span class="count">{{ glossary | length }}</span></button>
+  <div class="tabbar" role="tablist" data-tab-param>
+    {% for key, label, n in [("world", "World", none), ("quests", "Quests", quests | length), ("relationships", "Relationships", none), ("glossary", "Glossary", glossary | length)] %}
+    <button role="tab" aria-selected="{{ 'true' if tab == key else 'false' }}" data-tab="t-{{ key }}">{{ label }}{% if n is not none %} <span class="count">{{ n }}</span>{% endif %}</button>{% endfor %}
   </div>
-  <div id="t-world">
-    {% macro quest_card(q) -%}
-    {% set s = seen.get(q.id) %}
-    <a class="quest-card{{ ' sel' if selected and selected.id == q.id }}" href="{{ cbase }}/campaign?open={{ q.id }}" data-rd-id="{{ q.id }}"
-       hx-get="{{ cbase }}/campaign/{{ q.id }}/read" hx-target="#reader-article" hx-swap="outerHTML" hx-push-url="{{ cbase }}/campaign?open={{ q.id }}">
-      <span class="quest-card-name"><b>{{ q.name }}</b>{% if q.status.value != "published" %} <span class="tag faint" title="Only the DM, reviewers and admins see it">Hidden</span>{% endif %}
-        <span class="tag {{ 'draft' if q.quest_open != false else 'done' }}">{{ "Open" if q.quest_open != false else "Done" }}</span></span>
-      {% if q.summary %}<span class="quest-card-text">{{ q.summary }}</span>{% endif %}
-      {% if s %}<span class="note">Latest · {{ s.label }}: {{ s.latest }}</span>{% endif %}
-    </a>
-    {%- endmacro %}
-    <section class="section quests">
-      <div class="sec-head quests-head"><h2>Quests</h2><span class="count">{{ quests | length }} open</span>
-        {% if editor %}<a href="#" data-modal-url="/campaign/new?kind=quest" style="margin-left:auto">+ New quest</a>{% endif %}</div>
-      {% if quests %}<div class="quest-cards">{% for q in quests %}{{ quest_card(q) }}{% endfor %}</div>
-      {% else %}<p class="muted">No open quests.{% if editor %} Use <b>+ New quest</b> to add one.{% endif %}</p>{% endif %}
-      {% if done_quests %}<details class="done"><summary>Done ({{ done_quests | length }})</summary>
-        <div class="quest-cards">{% for q in done_quests %}{{ quest_card(q) }}{% endfor %}</div></details>{% endif %}
-    </section>
 
+  <div id="t-world"{% if tab != "world" %} hidden{% endif %}>
     <div class="reader" id="reader">
       <aside class="reader-nav" data-list="campaign-reader" data-noun="entry" data-default-sort="default" aria-label="People, places and things">
         <div class="reader-nav-head">{# stays at the top while the names scroll #}
@@ -78,13 +44,86 @@
       {% else %}<article class="reader-article" id="reader-article"><p class="muted">Pick a name to read about it.</p></article>{% endif %}
     </div>
   </div>
-  {% if tree %}
-  <section class="section" id="t-family-tree" hidden>
-    <p class="hint" style="margin:0 0 8px">From the parent and marriage links on each page. A red dot joins married parents, a grey dot parents who aren't married; arrows point to their children. Click anyone to see more.</p>
-    <div class="family-graph"><pre class="mermaid">{{ tree }}</pre></div>
-  </section>
-  {% endif %}
-  <section class="section" id="t-glossary" hidden>
+
+  {# Quests: the board (Q1). Everything about each open quest at once; finished ones one line each. #}
+  <div id="t-quests" class="quest-board"{% if tab != "quests" %} hidden{% endif %}>
+    <div class="quest-board-head"><span class="note">{{ quests | length }} open · {{ done_quests | length }} done</span>
+      {% if editor %}<a class="btn" href="#" data-modal-url="/campaign/new?kind=quest">+ New quest</a>{% endif %}</div>
+    {% for c in board %}{% set q = c.q %}
+    <section class="section quest-board-card{{ ' sel' if open_quest == q.id }}" id="quest-{{ q.id }}">
+      <div class="qb-top"><h2>{{ q.name }}</h2> <span class="tag draft">Open</span>{% if q.status.value != "published" %} <span class="tag faint" title="Only the DM, reviewers and admins see it">Hidden</span>{% endif %}
+        <span class="note qb-meta">{% if c.givers %}Given by {% for g in c.givers %}<a class="ent" href="/campaign/{{ g.id }}">{{ g.name }}</a>{{ " and " if not loop.last }}{% endfor %}{% endif %}
+          {%- if c.givers and c.moments %} · {% endif %}{% if c.moments %}Since {{ c.moments[0].label }}{% endif %}</span></div>
+      {% if q.summary %}<div class="story">{{ q.summary }}</div>{% endif %}
+      {% if not (c.moments or c.who or c.facts) %}
+      <p class="muted">No key moments or facts yet. <a class="qb-add" href="/campaign/{{ q.id }}">Add what the party learned</a></p>
+      {% else %}
+      <div class="qb-cols">
+        <div><h3>Progress</h3>
+          {% if c.moments | length > 3 %}<details class="qb-earlier"><summary class="note">{{ c.moments | length - 3 }} earlier</summary>
+            <ol class="moment-line">{% for m in c.moments[:-3] %}<li>{{ m.e.text }}<span class="note">{{ m.label }}</span></li>{% endfor %}</ol></details>{% endif %}
+          {% if c.moments %}<ol class="moment-line">{% for m in c.moments[-3:] %}<li>{{ m.e.text }}<span class="note">{{ m.label }}</span></li>{% endfor %}</ol>
+          {% else %}<p class="muted">No key moments yet.</p>{% endif %}
+          {% if c.quiet %}<p class="note">No key moments since {{ c.quiet }}.</p>{% endif %}</div>
+        <div><h3>Who and where</h3>
+          {% if c.who %}<div class="part-of">{% for e in c.who %}<a class="chip-link" href="/campaign/{{ e.id }}">{{ e.name }}</a>{% endfor %}</div>
+          {% else %}<p class="muted">No one yet.</p>{% endif %}
+          <h3>What the table knows</h3>
+          {% if c.facts %}<ul class="plain">{% for f in c.facts %}<li>{% if f.kind == "correction" %}<span class="tag edited">Correction</span> {% endif %}{{ f.text }}</li>{% endfor %}</ul>
+          {% else %}<p class="muted">Nothing yet.</p>{% endif %}
+          <a class="qb-add" href="/campaign/{{ q.id }}">Add what the party learned</a></div>
+      </div>
+      {% endif %}
+      {% if editor %}<div class="reader-foot row">
+        <a class="btn primary" href="#" data-modal-url="/campaign/{{ q.id }}/edit" data-modal-size="large">Edit</a>
+        <form method="post" action="/campaign/{{ q.id }}/quest"><input type="hidden" name="open" value="0"><button class="btn">Mark done</button></form>
+      </div>{% endif %}
+    </section>
+    {% else %}<section class="section"><p class="muted">No open quests.{% if editor %} Use <b>+ New quest</b> to add one.{% endif %}</p></section>{% endfor %}
+    {% if done_quests %}
+    <section class="section qb-done">
+      <h3 class="divider" style="margin-top:0">Done <span class="count">{{ done_quests | length }}</span></h3>
+      {% for q in done_quests %}{% set s = seen.get(q.id) %}
+      <a class="qb-done-row{{ ' sel' if open_quest == q.id }}" id="quest-{{ q.id }}" href="/campaign/{{ q.id }}"><span><b>{{ q.name }}</b>{% if q.summary %} <span class="muted">· {{ q.summary | truncate(110) }}</span>{% endif %}</span>
+        <span class="note">{% if s %}Last moment {{ s.label }}{% endif %}</span></a>
+      {% endfor %}
+    </section>
+    {% endif %}
+  </div>
+
+  {# Relationships: a tree per family (R1), the other ties as lists; any name opens its connections (R2) #}
+  <div id="t-relationships"{% if tab != "relationships" %} hidden{% endif %}>
+    {% macro who(p, fam=none) -%}
+    <a class="ft-p" href="#" data-modal-url="{{ cbase }}/campaign/{{ p.id }}/connections" data-modal-size="large"><b>{{ p.name }}</b>
+      {%- if p.status.value != "published" %} <span class="tag faint">Hidden</span>{% endif %}
+      {%- if fam and fam.spouses.get(p.id) %}<span class="note">⚭ {{ fam.spouses[p.id] | map(attribute="name") | join(", ") }}</span>{% endif %}
+      {%- if fam and fam.siblings.get(p.id) %}<span class="note">Sibling of {{ fam.siblings[p.id] | map(attribute="name") | join(", ") }}</span>{% endif %}</a>
+    {%- endmacro %}
+    {% macro name(p) -%}<a class="tie-name" href="#" data-modal-url="{{ cbase }}/campaign/{{ p.id }}/connections" data-modal-size="large">{{ p.name }}</a>{%- endmacro %}
+    {% if families %}<div class="ft-wrap">
+      {% for f in families %}
+      <section class="section ft"><h2>{{ f.name }}</h2>
+        {% for row in f.rows %}<div class="ft-gen">
+          {% for g in row %}<div class="ft-group">{% if g.parents %}<span class="note">{{ "Children" if g.people | length > 1 else "Child" }} of {{ g.parents | map(attribute="name") | join(" and ") }}</span>{% endif %}
+            <div class="ft-people">{% for p in g.people %}{{ who(p, f) }}{% endfor %}</div></div>{% endfor %}
+        </div>{% endfor %}
+      </section>
+      {% endfor %}
+    </div>{% endif %}
+    {% set any_ties = ties.factions or ties.serves or ties.allies or ties.enemies or ties.gave %}
+    {% if any_ties %}<div class="ties">
+      {% if ties.factions %}<section class="section"><h3 class="divider">Factions and their members</h3>
+        {% for f, members in ties.factions %}<p class="tie-row">{{ name(f) }} <span class="muted">·</span> {% for m in members %}{{ name(m) }}{{ ", " if not loop.last }}{% endfor %}</p>{% endfor %}</section>{% endif %}
+      {% for title, rows, verb in [("Who serves whom", ties.serves, "serves"), ("Allies", ties.allies, "ally of"), ("Enemies", ties.enemies, "enemy of"), ("Quests given", ties.gave, "gave")] if rows %}
+      <section class="section"><h3 class="divider">{{ title }}</h3>
+        {% for r in rows %}<p class="tie-row">{{ name(r.from_entity) }} <span class="muted">{{ verb }}</span> {{ name(r.to_entity) }}</p>{% endfor %}</section>
+      {% endfor %}
+    </div>{% endif %}
+    {% if not families and not any_ties %}<section class="section"><p class="muted">No relationships yet.{% if editor %} Add them in an entry's <b>Edit</b> window (parent of, married to, member of, gave…).{% endif %}</p></section>
+    {% else %}<p class="note">Click anyone to see everyone they're tied to.{% if editor %} Add relationships in an entry's <b>Edit</b> window.{% endif %}</p>{% endif %}
+  </div>
+
+  <section class="section" id="t-glossary"{% if tab != "glossary" %} hidden{% endif %}>
     <p class="hint" style="margin:0 0 8px">Campaign names and words with their correct spelling. Click one for more, or to suggest a fix.</p>
     {% if glossary %}<table class="list">{% for g in glossary %}<tr><td style="width:30%"><a href="/campaign/glossary/{{ g.id }}"><b>{{ g.term }}</b></a></td><td class="muted">{{ g.description }}</td></tr>{% endfor %}</table>
     {% else %}<p class="muted">No terms yet.</p>{% endif %}

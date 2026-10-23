@@ -89,7 +89,8 @@ it may stay longer than 3 sentences.
 Relationships: lasting links between people, factions and places that this \
 session reveals or changes and that aren't in the known relationships yet. \
 Types: parent_of, married_to, sibling_of, member_of (a person in a faction), \
-serves (a person serving another person or a faction), ally_of, enemy_of. \
+serves (a person serving another person or a faction), ally_of, enemy_of, \
+gave (a person or faction who gave the party a quest; "to" is the quest). \
 Use exact known names (or the names of new entities you list). Only state \
 what the source says, not guesses.
 

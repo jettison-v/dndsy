@@ -1,7 +1,7 @@
 """Relationships between entities: types and their wording, adding and
-removing them, and the family tree drawn from parent_of + married_to."""
+removing them. The Campaign page draws them in app/campaign_views.py."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
@@ -24,6 +24,7 @@ TYPES: dict[str, RelType] = {
     "serves": RelType("serves", "served by"),
     "ally_of": RelType("ally of", "ally of", symmetric=True),
     "enemy_of": RelType("enemy of", "enemy of", symmetric=True),
+    "gave": RelType("gave", "given by"),  # a person (or faction) gave a quest (Brett 2026-10-22: the Quests tab's "Given by")
 }
 # Choices for the "Add a relationship" form, phrased from the entity page's
 # point of view: (value, label). "~" marks the inverse direction.
@@ -108,84 +109,3 @@ def describe(db: Session, campaign_id: int) -> list[str]:
         for r in db.scalars(q)
         if r.type in TYPES
     ]
-
-
-# --- Family tree ---------------------------------------------------------------
-
-
-@dataclass
-class FamilyUnit:
-    """One set of parents (married or not) and their children."""
-
-    parents: list[int]
-    married: bool
-    children: list[int] = field(default_factory=list)
-
-
-@dataclass
-class FamilyGraph:
-    people: dict[int, Entity]
-    units: list[FamilyUnit]
-
-    def mermaid(self) -> str:
-        """Mermaid flowchart text: each person once; parents join at a dot
-        (red if married, grey if not) and the dot points to their children."""
-
-        def label(e: Entity) -> str:
-            return e.name.replace('"', "#quot;").replace("<", "#lt;").replace(">", "#gt;")
-
-        lines = ["flowchart TD"]
-        for pid, e in sorted(self.people.items(), key=lambda kv: kv[1].name.casefold()):
-            lines.append(f'  P{pid}["{label(e)}"]:::person')
-            lines.append(f'  click P{pid} href "/campaign/{pid}"')
-        for i, u in enumerate(self.units):
-            lines.append(f"  U{i}(( )):::{'married' if u.married else 'parents'}")
-            for pid in u.parents:
-                lines.append(f"  P{pid} --- U{i}")
-            for kid in u.children:
-                lines.append(f"  U{i} --> P{kid}")
-        lines += [
-            "  classDef person fill:#272b30,stroke:#4a4f57,color:#ebe7df,rx:8,ry:8",
-            "  classDef married fill:#d64545,stroke:#d64545",
-            "  classDef parents fill:#6f6b64,stroke:#6f6b64",
-        ]
-        return "\n".join(lines)
-
-
-def family_graph(db: Session, campaign_id: int, visible=lambda e: True) -> FamilyGraph:
-    """Everyone linked by parent_of or married_to, grouped into family units:
-    children are grouped by their exact set of parents; a married couple with
-    no shared children still forms a unit."""
-    rels = [
-        r
-        for r in db.scalars(
-            select(EntityRelation)
-            .join(Entity, Entity.id == EntityRelation.from_entity_id)
-            .where(Entity.campaign_id == campaign_id, EntityRelation.type.in_(("parent_of", "married_to")))
-        )
-        if visible(r.from_entity) and visible(r.to_entity)
-    ]
-    people: dict[int, Entity] = {}
-    parents_of: dict[int, set[int]] = {}
-    marriages: set[frozenset[int]] = set()
-    for r in rels:
-        people[r.from_entity_id], people[r.to_entity_id] = r.from_entity, r.to_entity
-        if r.type == "parent_of":
-            parents_of.setdefault(r.to_entity_id, set()).add(r.from_entity_id)
-        elif r.from_entity_id != r.to_entity_id:
-            marriages.add(frozenset((r.from_entity_id, r.to_entity_id)))
-
-    def name(pid):
-        return people[pid].name.casefold()
-
-    units: dict[frozenset[int], FamilyUnit] = {}
-    for kid in sorted(parents_of, key=name):
-        key = frozenset(parents_of[kid])
-        unit = units.setdefault(key, FamilyUnit(sorted(key, key=name), key in marriages))
-        unit.children.append(kid)
-    for couple in sorted(marriages, key=lambda c: sorted(name(p) for p in c)):
-        if couple in units:
-            units[couple].married = True
-        else:
-            units[couple] = FamilyUnit(sorted(couple, key=name), True)
-    return FamilyGraph(people, list(units.values()))

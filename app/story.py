@@ -6,14 +6,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import web
-from app import review
+from app import campaign_views, review
 from app.auth import can_edit_entries, can_moderate, current_user
 from app.db import get_db
 from app.extraction import session_label, timeline
 from app.linking import Linker, entity_linker
 from app.models import (Campaign, Correction, Entity, EntityKind, EventEntity, EventKind, GameSession, GlossaryTerm, Status, StoryEvent,
                         Suggestion)
-from app.relations import family_graph
 from app.render import markdown_to_html
 from app.suggestions import waiting_count
 from app.templating import templates
@@ -165,9 +164,10 @@ def seen_in_sessions(db: Session, campaign_id: int) -> tuple[int | None, dict[in
 
 
 @router.get("/campaign")
-def campaign_page(request: Request, open: str = "", db: Session = Depends(get_db)):
-    """The Campaign page (roadmap step 11, Brett 2026-10-22, option E): quests on top, then the Reader for
-    everything else (names down the left, the entry on the page). `?open=<id>` is an entry's own address."""
+def campaign_page(request: Request, open: str = "", tab: str = "", db: Session = Depends(get_db)):
+    """The Campaign page (roadmap step 11; Brett 2026-10-22): tabs World (the Reader: names down the left, one entry
+    on the page), Quests (the board), Relationships (family trees, other ties, anyone's connections) and Glossary.
+    `?open=<id>` is an entry's address (a quest's opens Quests); `?tab=` picks a tab."""
     from app.entity_pages import entity_context
 
     user = current_user(request)
@@ -175,16 +175,18 @@ def campaign_page(request: Request, open: str = "", db: Session = Depends(get_db
         return RedirectResponse("/login", status_code=303)
     campaign = web.campaign(db)
     editor = can_edit_entries(user)  # the DM, reviewers and admins also see hidden entries, and get "+ New"
-    quests, done, groups, glossary, seen, latest, tree, selected = [], [], [], [], {}, None, "", None
+    visible = lambda e: e.status == Status.PUBLISHED or editor  # noqa: E731
+    quests, done, groups, glossary, seen, latest, selected, board, fams, tie = [], [], [], [], {}, None, None, [], [], {}
+    asked = None
     if campaign:
-        shown = (Entity.status == Status.PUBLISHED) if not editor else (Entity.id.is_not(None))
         entries = list(
             db.scalars(
                 select(Entity)
-                .where(Entity.campaign_id == campaign.id, shown, Entity.kind != EntityKind.PC)
+                .where(Entity.campaign_id == campaign.id, Entity.kind != EntityKind.PC)
                 .order_by(Entity.name)
             )
         )
+        entries = [e for e in entries if visible(e)]
         latest, seen = seen_in_sessions(db, campaign.id)
         quests = [e for e in entries if e.kind == EntityKind.QUEST and e.quest_open is not False]
         done = [e for e in entries if e.kind == EntityKind.QUEST and e.quest_open is False]
@@ -192,16 +194,20 @@ def campaign_page(request: Request, open: str = "", db: Session = Depends(get_db
             if kind != EntityKind.QUEST and (rows := [e for e in entries if e.kind == kind]):
                 groups.append((title, rows))
         glossary = list(db.scalars(select(GlossaryTerm).where(GlossaryTerm.campaign_id == campaign.id).order_by(GlossaryTerm.term)))
-        graph = family_graph(db, campaign.id, visible=lambda e: e.status == Status.PUBLISHED)
-        tree = graph.mermaid() if graph.people else ""
+        board = campaign_views.quest_board(db, campaign.id, quests, visible, latest)
+        fams = campaign_views.families(db, campaign.id, visible)
+        tie = campaign_views.ties(db, campaign.id, visible)
         # The entry to show: the one asked for, else something from the last session, else the first one
+        asked = next((e for e in entries if open.isdigit() and e.id == int(open)), None)
         reference = [e for _, rows in groups for e in rows]
         recent = [e for e in reference if latest and seen.get(e.id, {}).get("session_id") == latest]
-        selected = next((e for e in entries if open.isdigit() and e.id == int(open)), None) or next(iter(recent + reference + quests + done), None)
+        selected = (asked if asked and asked.kind != EntityKind.QUEST else None) or next(iter(recent + reference), None)
+    if tab not in ("world", "quests", "relationships", "glossary"):
+        tab = "quests" if asked is not None and asked.kind == EntityKind.QUEST else "world"
     article = {**entity_context(db, selected, user), "where": "reader"} if selected else {}
     return templates.TemplateResponse(
         request, "campaign.html", {"campaign": campaign, "quests": quests, "done_quests": done, "groups": groups, "glossary": glossary,
-                                   "tree": tree, "editor": editor, "seen": seen, "latest": latest, "selected": selected,
+                                   "editor": editor, "seen": seen, "latest": latest, "selected": selected, "tab": tab,
+                                   "board": board, "families": fams, "ties": tie, "open_quest": asked.id if asked is not None else None,
                                    "toast": request.session.pop("toast", None), **article}
     )
-

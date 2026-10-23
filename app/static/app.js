@@ -212,7 +212,7 @@
   // The Campaign page's Reader already shows the entry it was asked for: then ?open= is that entry's address.
   { const id = /^(\/c\/[^/]+)?\/campaign$/.test(location.pathname) && new URLSearchParams(location.search).get('open');
     const shown = document.getElementById('reader-article');
-    if (id && /^\d+$/.test(id) && !(shown && shown.dataset.readerId === id)) { history.replaceState(null, '', location.pathname + location.hash); openPanel('/campaign/' + id + '/peek', null, null); } }
+    if (id && /^\d+$/.test(id) && !(shown && shown.dataset.readerId === id) && !document.getElementById('quest-' + id)) { history.replaceState(null, '', location.pathname + location.hash); openPanel('/campaign/' + id + '/peek', null, null); } }
 
   // Any element with data-panel-url opens that fragment in a side panel (Battle: "See all", an
   // option's details). data-modal-url opens a centered modal; data-modal-size="large" makes it wide
@@ -317,9 +317,14 @@
     const m = ENTITY_URL.exec(a.getAttribute('href') || a.getAttribute('xlink:href') || '');  // SVG links use xlink:href
     if (!m) return;
     e.preventDefault();
-    // On the Campaign page, a name in the Reader or the quests opens that entry in the Reader instead
+    // On the Campaign page, a name opens that entry in the Reader (World) instead
     const item = !a.closest('.peek') && document.querySelector('[data-rd-id="' + m[1] + '"]');
-    if (item) { item.click(); return; }
+    if (item) {
+      const tab = item.closest('[id^="t-"]'), btn = tab && tab.hidden && document.querySelector('[role=tab][data-tab="' + tab.id + '"]');
+      if (btn) btn.click();
+      item.click();
+      return;
+    }
     openPeek(m[1], a);
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closePeek(); });
@@ -1838,9 +1843,30 @@
   });
 })();
 
-// The Campaign page's Reader (campaign.html): picking a name or a quest swaps the entry in (HTMX) and marks it
-// in the list; ↑ ↓ move through the names that are showing. On narrow screens the entry sits below the list.
+// The Campaign page's Reader (campaign.html): picking a name swaps the entry in (HTMX) and marks it in the list;
+// ↑ ↓ move through the names that are showing. On narrow screens the entry sits below the list. Its tabs keep
+// their place in the address (?tab=), and "Part of" chips jump to the quest on the Quests tab.
 (function () {
+  document.addEventListener('tab:shown', e => {
+    const list = document.querySelector('[data-tab-param]'); if (!list || !list.contains(document.querySelector('[data-tab="' + e.target.id + '"]'))) return;
+    const u = new URL(location.href); u.searchParams.set('tab', e.target.id.replace(/^t-/, ''));
+    history.replaceState(null, '', u.pathname + u.search + u.hash);
+  });
+  function showQuest(id) {
+    const card = document.getElementById('quest-' + id), btn = document.querySelector('[role=tab][data-tab="t-quests"]');
+    if (!card || !btn) return false;
+    if (document.getElementById('t-quests').hidden) btn.click();
+    document.querySelectorAll('.quest-board .sel').forEach(n => n.classList.remove('sel'));
+    card.classList.add('sel');
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return true;
+  }
+  document.addEventListener('click', e => {
+    const a = e.target.closest('[data-goto-quest]');
+    if (a && !a.closest('.peek') && !e.metaKey && !e.ctrlKey && showQuest(a.dataset.gotoQuest)) e.preventDefault();
+  });
+  { const sel = document.querySelector('.quest-board .sel');
+    if (sel && !document.getElementById('t-quests').hidden) sel.scrollIntoView({ block: 'start' }); }
   function mark() {
     const art = document.getElementById('reader-article'); if (!art) return;
     document.querySelectorAll('[data-rd-id]').forEach(n => n.classList.toggle('sel', n.dataset.rdId === art.dataset.readerId));

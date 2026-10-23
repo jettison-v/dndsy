@@ -1,0 +1,26 @@
+{# One entry's connections (Brett 2026-10-22, R2 in docs/mockups/campaign-tabs.html): the entry in the middle and
+   everyone tied to it around it, from campaign_views.connections. Lines are SVG; names and labels are HTML placed in
+   percent, so the diagram scales with its box. On phones it becomes a plain list.
+   mode "reader": a name opens that entry in the Reader (app.js); "window": a name moves it to the middle. #}
+{% macro connections_diagram(cx, mode="reader") -%}
+{%- set kinds = {"pc": "Player character", "npc": "Person", "place": "Place", "faction": "Faction", "quest": "Quest", "item": "Item", "creature": "Creature", "other": "Other"} -%}
+<div class="cx">
+  <div class="cx-diagram" style="aspect-ratio: {{ cx.w }} / {{ cx.h }}">
+    <svg viewBox="0 0 {{ cx.w }} {{ cx.h }}" preserveAspectRatio="none" aria-hidden="true">
+      {%- for n in cx.nodes %}<line class="e-{{ n.group }}" x1="{{ cx.cx }}" y1="{{ cx.cy }}" x2="{{ n.x }}" y2="{{ n.y }}" vector-effect="non-scaling-stroke"/>{% endfor -%}
+    </svg>
+    {%- for t, x, y in cx.heads %}{% set p = cx.pct(x, y) %}<span class="cx-head" style="left: {{ p[0] }}%; top: {{ p[1] }}%">{{ t }}</span>{% endfor %}
+    {%- for n in cx.nodes %}{% set p = cx.pct((cx.cx + n.x) / 2, (cx.cy + n.y) / 2) %}<span class="cx-label" style="left: {{ p[0] }}%; top: {{ p[1] }}%">{{ n.label }}</span>{% endfor %}
+    {%- for n in cx.nodes %}{% set p = cx.pct(n.x, n.y) %}
+    <a class="cx-node {{ n.entity.kind.value }}" style="left: {{ p[0] }}%; top: {{ p[1] }}%" {% if mode == "window" %}href="#" hx-get="{{ cbase }}/campaign/{{ n.entity.id }}/connections" hx-target="closest .peek" hx-swap="innerHTML"{% else %}href="/campaign/{{ n.entity.id }}"{% endif %} title="{{ n.label | capitalize }} {{ n.entity.name }}">
+      <b>{{ n.entity.name }}</b><small>{{ kinds.get(n.entity.kind.value, "") }}{% if n.entity.status.value != "published" %} · Hidden{% endif %}</small></a>
+    {%- endfor %}
+    {% set p = cx.pct(cx.cx, cx.cy) %}<div class="cx-node cx-hub" style="left: {{ p[0] }}%; top: {{ p[1] }}%"><b>{{ cx.e.name }}</b><small>{{ cx.nodes | length }} tie{{ "s" if cx.nodes | length != 1 }}</small></div>
+  </div>
+  <div class="cx-legend note" aria-hidden="true">
+    {%- for g, t in [("family", "Family"), ("allegiance", "Factions and service"), ("ally", "Allies"), ("enemy", "Enemies"), ("quest", "Quests")] %}{% if cx.nodes | selectattr("group", "equalto", g) | first %}
+    <span><svg width="24" height="6"><line class="e-{{ g }}" x1="0" y1="3" x2="24" y2="3"/></svg>{{ t }}</span>{% endif %}{% endfor %}
+  </div>
+  <ul class="plain cx-list">{% for t, mine, o, label in cx.lines %}<li><span class="muted">{{ label | capitalize }}</span> <a class="ent" {% if mode == "window" %}href="#" hx-get="{{ cbase }}/campaign/{{ o.id }}/connections" hx-target="closest .peek" hx-swap="innerHTML"{% else %}href="/campaign/{{ o.id }}"{% endif %}>{{ o.name }}</a></li>{% endfor %}</ul>
+</div>
+{%- endmacro %}

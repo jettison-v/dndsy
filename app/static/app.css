@@ -1667,18 +1667,9 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .guide-list { padding-left: var(--sp-5); display: grid; gap: var(--sp-2); }
 .dm-guide .section { scroll-margin-top: 80px; }
 
-/* The Campaign page (campaign.html, roadmap step 11, option E): quests on top, then the Reader, names down the
-   left and one entry on the page (_peek.html with where="reader"). */
-.quests-head { justify-content: flex-start; gap: var(--sp-3); }
-.quests-head h2 { margin: 0; font-size: var(--fs-lg); }
-.quest-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--sp-3); margin-top: var(--sp-3); }
-.quest-card { display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-3) var(--sp-4); border-radius: var(--r-lg); background: var(--story-bg); border: 1px solid var(--story-line); color: var(--text); text-decoration: none; }
-.quest-card:hover { border-color: var(--line-strong); }
-.quest-card.sel { border-color: var(--blue); }
-.quest-card-name b { font-size: var(--fs-md); }
-.quest-card-text { font-family: var(--serif); color: var(--story-text); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
-.quest-card .note { font-size: var(--fs-xs); margin-top: var(--sp-1); }
-.quests details.done .quest-cards { margin-top: var(--sp-2); }
+/* The Campaign page (campaign.html, roadmap step 11; Brett 2026-10-22): World is the Reader, names down the left
+   and one entry on the page (_peek.html with where="reader"); Quests is the board; Relationships has a tree per
+   family, the other ties, and anyone's connections (_connections.html). */
 .reader { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: var(--sp-5); align-items: start; }
 .reader-nav { position: sticky; top: calc(var(--stick-top, 62px) + var(--tabs-h, 41px) + var(--sp-3)); max-height: calc(100vh - var(--stick-top, 62px) - var(--tabs-h, 41px) - var(--sp-5)); overflow-y: auto; background: var(--surface); border-radius: var(--r-lg); padding: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-2); }
 .reader-nav > * { flex: none; }
@@ -1713,3 +1704,79 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
   .reader-article { padding: var(--sp-5); }
   .reader-keys { display: none; }
 }
+
+/* Part of (an entry's quests) and other small link chips */
+.part-of { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); }
+.chip-link { display: inline-flex; align-items: center; gap: var(--sp-2); min-height: var(--chip-h); padding: 0 var(--sp-3); border-radius: var(--r-pill); background: var(--surface-2); border: 1px solid var(--line); color: var(--text); font-size: var(--fs-sm); text-decoration: none; }
+.chip-link:hover { border-color: var(--line-strong); }
+.head-link { margin-left: var(--sp-2); font-size: var(--fs-xs); font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--link); }
+
+/* Quests: the board */
+.quest-board-head { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-3); }
+.quest-board-head .btn { margin-left: auto; }
+.quest-board-card { border-left: 3px solid var(--amber); scroll-margin-top: calc(var(--stick-top, 62px) + var(--tabs-h, 41px) + var(--sp-3)); }
+.quest-board-card.sel { box-shadow: 0 0 0 1px var(--blue); }
+.qb-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2) var(--sp-3); }
+.qb-top { margin-bottom: var(--sp-3); }
+.qb-top h2 { margin: 0; font-size: var(--fs-lg); flex: 0 1 auto; min-width: 0; }
+.qb-meta { margin-left: auto; }
+.quest-board-card .story { margin: var(--sp-3) 0 var(--sp-4); font-size: var(--fs-md); padding: var(--sp-3) var(--sp-4); }
+.qb-cols { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: var(--sp-6); }
+.quest-board h3:not(.divider) { font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); margin: 0 0 var(--sp-2); }
+.qb-cols > div > h3:not(:first-child) { margin-top: var(--sp-4); }
+.qb-earlier > summary { cursor: pointer; margin-bottom: var(--sp-2); }
+.qb-add { display: inline-block; margin-top: var(--sp-2); font-size: var(--fs-sm); }
+.qb-done-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--sp-4); padding: var(--sp-2); border-top: 1px solid var(--line-soft); border-radius: var(--r-sm); color: var(--text); text-decoration: none; scroll-margin-top: calc(var(--stick-top, 62px) + var(--tabs-h, 41px) + var(--sp-3)); }
+.qb-done-row:hover { background: var(--row-hover); }
+.qb-done-row.sel { background: var(--selected-bg); }
+
+/* Relationships: a tree per family, the other ties */
+.ft-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: var(--sp-4); }
+.ft h2 { margin: 0 0 var(--sp-4); font-size: var(--fs-lg); }
+.ft-gen { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-4) var(--sp-5); }
+.ft-gen + .ft-gen { margin-top: var(--sp-4); padding-top: var(--sp-4); border-top: 1px dashed var(--line-strong); }
+.ft-group { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); }
+.ft-group > .note { font-size: var(--fs-xs); }
+.ft-people { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-2); }
+.ft-p { display: flex; flex-direction: column; align-items: center; min-width: 130px; padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--line); color: var(--text); text-decoration: none; text-align: center; }
+.ft-p:hover { border-color: var(--line-strong); }
+.ft-p b { font-size: var(--fs-sm); }
+.ft-p .note { font-size: var(--fs-xs); }
+.ties { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--sp-4); margin-top: var(--sp-4); }
+.ties .section { margin: 0; padding: var(--sp-5); }
+.ties h3.divider { margin-top: 0; }
+.tie-row { margin: 0; padding: var(--sp-1) 0; font-size: var(--fs-sm); }
+.tie-name { color: var(--text); text-decoration: underline; text-decoration-color: var(--red-line); text-underline-offset: 3px; }
+.tie-name:hover { color: var(--text-strong); text-decoration-color: var(--red); }
+
+/* Connections: one entry in the middle, everyone tied to it around it */
+.cx-diagram { position: relative; width: 100%; max-width: 900px; margin: 0 auto; }
+.cx-diagram > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.cx-node { position: absolute; transform: translate(-50%, -50%); width: 17%; display: flex; flex-direction: column; align-items: center; padding: var(--sp-1) var(--sp-2); border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--line-strong); color: var(--text); text-decoration: none; text-align: center; line-height: 1.3; }
+a.cx-node:hover { border-color: var(--text); }
+.cx-node b { font-size: var(--fs-sm); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cx-node small { font-size: var(--fs-xs); color: var(--muted); }
+.cx-node.faction, .cx-node.quest { background: var(--story-bg); border-color: var(--story-line); }
+.cx-hub { width: 21%; background: var(--selected-bg); border: 2px solid var(--blue); }
+.cx-hub b { font-size: var(--fs-md); }
+.cx-label { position: absolute; transform: translate(-50%, -50%); font-size: var(--fs-xs); color: var(--muted); background: var(--surface); padding: 0 var(--sp-1); border-radius: var(--r-sm); white-space: nowrap; }
+.peek .cx-label { background: var(--surface); }
+.cx-head { position: absolute; transform: translate(-50%, -50%); font-size: var(--fs-xs); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); white-space: nowrap; }
+.cx line { stroke-width: 2; }
+.e-family { stroke: var(--line-strong); }
+.e-allegiance { stroke: var(--blue-line); stroke-dasharray: 6 4; }
+.e-ally { stroke: var(--green-line); }
+.e-enemy { stroke: var(--red-line); stroke-dasharray: 2 4; }
+.e-quest { stroke: var(--story-line); stroke-dasharray: 8 3; }
+.cx-legend { display: flex; flex-wrap: wrap; gap: var(--sp-4); margin-top: var(--sp-2); font-size: var(--fs-xs); }
+.cx-legend svg { vertical-align: middle; margin-right: var(--sp-1); }
+.cx .cx-list { display: none; }
+@media (max-width: 900px) {
+  .qb-cols { grid-template-columns: 1fr; gap: var(--sp-4); }
+  .ft-wrap { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .cx-diagram, .cx-legend { display: none; }
+  .cx .cx-list { display: block; }
+}
+

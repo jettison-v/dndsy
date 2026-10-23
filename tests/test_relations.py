@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy import select
 
-from app import relations
+from app import campaign_views, relations
 from app.extraction import _known_world, store_result
 from app.importer import import_bundle
 from app.models import Campaign, Entity, EntityRelation, ExtractionRun, GameSession, Proposal
@@ -56,34 +56,31 @@ def test_lines_show_inverses(db):
     assert "Kiera member of Tidewardens" in _known_world(db, db.scalar(select(Campaign)))
 
 
-def test_family_graph(db):
+def test_family_trees(db):
+    """The Relationships tab (Brett 2026-10-22, R1): one tree per family, generations in rows, children by parents."""
     E = family(db)
-    g = relations.family_graph(db, db.scalar(select(Campaign)).id)
-    names = {pid: e.name for pid, e in g.people.items()}
-    units = sorted(
-        ((tuple(names[p] for p in u.parents), u.married, tuple(sorted(names[c] for c in u.children))) for u in g.units)
-    )
-    assert units == [
-        (("Aldric",), False, ("Tomas",)),  # a child with one known parent
-        (("Aldric", "Mira"), True, ("Kiera",)),
-        (("Bram",), False, ("Orrin",)),
-        (("Kiera", "Orrin"), True, ("Pip",)),
+    fams = campaign_views.families(db, db.scalar(select(Campaign)).id, lambda e: True)
+    assert len(fams) == 1 and fams[0].name == "Aldric and Mira's family"
+    rows = [[([p.name for p in g.parents], [p.name for p in g.people]) for g in row] for row in fams[0].rows]
+    assert rows == [
+        [([], ["Aldric", "Mira", "Bram"])],  # married couples side by side
+        [(["Aldric", "Mira"], ["Kiera"]), (["Bram"], ["Orrin"]), (["Aldric"], ["Tomas"])],  # Kiera and Orrin are married: side by side
+        [(["Kiera", "Orrin"], ["Pip"])],
     ]
-    assert len(g.people) == 7  # everyone once
-    text = g.mermaid()
-    assert text.startswith("flowchart TD") and text.count('["Kiera"]') == 1
-    assert f'click P{E["Pip"].id} href "/campaign/{E["Pip"].id}"' in text
+    assert [s.name for s in fams[0].spouses[E["Kiera"].id]] == ["Orrin"]
 
 
-def test_family_graph_unmarried_coparents_and_quotes(db):
+def test_unmarried_coparents_share_a_row_and_hidden_people_stay_out(db):
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "entities": [
-        {"kind": "npc", "name": 'Bhal "the Fire"'}, {"kind": "npc", "name": "Terra"}, {"kind": "pc", "name": "Big C"}]})
+        {"kind": "npc", "name": "Bhal"}, {"kind": "npc", "name": "Terra"}, {"kind": "pc", "name": "Big C"}, {"kind": "npc", "name": "Alea"}]})
     E = ents(db)
-    relations.add(db, E['Bhal "the Fire"'], "parent_of", E["Big C"])
-    relations.add(db, E["Terra"], "parent_of", E["Big C"])
-    g = relations.family_graph(db, db.scalar(select(Campaign)).id)
-    assert len(g.units) == 1 and not g.units[0].married and len(g.units[0].parents) == 2
-    assert "#quot;the Fire#quot;" in g.mermaid()
+    for a, b in (("Bhal", "Big C"), ("Terra", "Big C"), ("Alea", "Terra")):
+        relations.add(db, E[a], "parent_of", E[b])
+    cid = db.scalar(select(Campaign)).id
+    rows = campaign_views.families(db, cid, lambda e: True)[0].rows
+    assert [[p.name for g in row for p in g.people] for row in rows] == [["Alea"], ["Bhal", "Terra"], ["Big C"]]
+    rows = campaign_views.families(db, cid, lambda e: e.name != "Alea")[0].rows
+    assert [[p.name for g in row for p in g.people] for row in rows] == [["Bhal", "Terra"], ["Big C"]]
 
 
 def drafted(db, rels):
@@ -148,6 +145,6 @@ def test_entity_page_relationship_editing(admin, player, db):  # noqa: F811
     assert rel.from_entity_id == E["Tomas"].id
     admin.post(f"/campaign/{E['Tomas'].id}/relationships/{rel.id}/delete", headers=HX)
     assert db.scalar(select(EntityRelation).where(EntityRelation.type == "member_of")) is None
-    tree = admin.get("/campaign").text
-    assert "Family tree" in tree and "class=\"mermaid\"" in tree and "flowchart TD" in tree
-    assert 'data-tab="t-family-tree">Family tree</button>' in tree and '<section class="section" id="t-family-tree" hidden>' in tree  # drawn when its tab opens
+    page = admin.get("/campaign?tab=relationships").text
+    assert '<div id="t-relationships">' in page and "Aldric and Mira&#39;s family" in page
+    assert f'data-modal-url="/c/main/campaign/{E["Pip"].id}/connections"' in page  # anyone opens their connections
