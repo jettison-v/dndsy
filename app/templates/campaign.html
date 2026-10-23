@@ -54,11 +54,13 @@
 
     <div class="reader" id="reader">
       <aside class="reader-nav" data-list="campaign-reader" data-noun="entry" data-default-sort="default" aria-label="People, places and things">
+        <div class="reader-nav-head">{# stays at the top while the names scroll #}
         <div class="ls-search">
           <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
           <input type="search" placeholder="Search people, places and things" aria-label="Search people, places and things" data-ls-search>
         </div>
         {{ view_switch([("all", "All"), ("recent", "Last session")], "Which ones") }}
+        </div>
         <div class="reader-rows" data-ls-rows>
           {% for title, rows in groups %}{% set gi = loop.index %}{% for e in rows %}{% set s = seen.get(e.id) %}{% set recent = latest and s and s.session_id == latest %}
           <a class="rd-item{{ ' sel' if selected and selected.id == e.id }}" data-ls-row data-rd-id="{{ e.id }}" data-views="{{ 'recent ' if recent }}all"
