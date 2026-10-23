@@ -4,7 +4,7 @@
 {% block content %}
 <main class="page wide">
   <div class="title-row"><h1>Previously on…</h1></div>
-  {% if waiting %}<p class="flash">{{ waiting }} suggestion{{ "s" if waiting != 1 }} or draft{{ "s" if waiting != 1 }} {{ "are" if waiting != 1 else "is" }} waiting for an OK from you, the DM or a reviewer. <a href="/suggestions">Open the inbox →</a></p>{% endif %}
+  {% if waiting %}<p class="flash">{{ waiting }} suggestion{{ "s" if waiting != 1 }} or draft{{ "s" if waiting != 1 }} {{ "are" if waiting != 1 else "is" }} waiting for an OK from you, the DM or a reviewer. <a href="{{ cbase }}/manage/inbox">Open the inbox →</a></p>{% endif %}
   {% if questions %}
   <section class="section ask-card" id="questions-for-you">
     <div class="section-head"><h2>Questions for you</h2><span class="count">{{ questions | length }}</span></div>

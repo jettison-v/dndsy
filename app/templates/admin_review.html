@@ -3,7 +3,7 @@
 {% block content %}
 <main class="page">
   {% include "_manage_head.html" %}
-  <div class="crumbs"><a href="/admin/sessions">Recaps</a> › {{ label }}</div>
+  <div class="crumbs"><a href="{{ cbase }}/manage/sessions">Sessions</a> › {{ label }}</div>
   {% include "_review_body.html" %}
 </main>
 {% endblock %}

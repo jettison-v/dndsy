@@ -115,9 +115,9 @@ def test_tool_corrections_say_why(admin, db):
     o = ToolCorrection(ref="spell:Moonbeam", field="battle", value="hide")
     db.add(o)
     db.flush()
-    admin.post(f"/admin/characters/overrides/{o.id}/reason", data={"reason": "  D&D Beyond   lists it twice "})
+    admin.post(f"/manage/tool-corrections/overrides/{o.id}/reason", data={"reason": "  D&D Beyond   lists it twice "})
     assert o.reason == "D&D Beyond lists it twice"
-    page = admin.get("/admin/characters").text
+    page = admin.get("/manage/tool-corrections").text
     assert "Tool corrections" in page and 'value="D&amp;D Beyond lists it twice"' in page
 
 

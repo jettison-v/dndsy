@@ -1,4 +1,4 @@
-"""Admin: what askdnd has spent on Claude, and an estimated credit balance."""
+"""Manage › Usage (admins): what askdnd has spent on Claude, and an estimated credit balance."""
 
 from datetime import UTC, date, datetime
 
@@ -11,10 +11,10 @@ from app import spending
 from app.admin import _guard
 from app.db import get_db
 from app.extraction import session_label
-from app.models import CreditTopUp, Entity, ExtractionRun, GameSession
+from app.models import Campaign, CreditTopUp, Entity, ExtractionRun, GameSession
 from app.templating import templates
 
-router = APIRouter(prefix="/admin")
+router = APIRouter(prefix="/manage")  # askdnd-wide: /manage/usage
 
 
 def _spent(db: Session, since: datetime | None = None) -> float:
@@ -55,12 +55,15 @@ def usage_page(request: Request, db: Session = Depends(get_db)):
     runs = list(db.scalars(select(ExtractionRun).order_by(ExtractionRun.id.desc()).limit(100)))
     sessions = {s.id: s for s in db.scalars(select(GameSession).where(GameSession.id.in_({r.session_id for r in runs if r.session_id})))}
     ents = {e.id: e for e in db.scalars(select(Entity).where(Entity.id.in_({r.entity_id for r in runs if r.entity_id})))}
+    slugs = {c.id: c.slug for c in db.scalars(select(Campaign))}  # every campaign's runs, each linked in its own campaign
     rows = []
     for r in runs:
         if r.session_id in sessions:
-            rows.append({"r": r, "label": session_label(sessions[r.session_id]), "href": f"/admin/sessions/{r.session_id}"})
+            s = sessions[r.session_id]
+            rows.append({"r": r, "label": session_label(s), "href": f"/c/{slugs.get(s.campaign_id)}/manage/sessions/{s.id}"})
         elif r.entity_id in ents:
-            rows.append({"r": r, "label": ents[r.entity_id].name, "href": f"/campaign/{r.entity_id}"})
+            e = ents[r.entity_id]
+            rows.append({"r": r, "label": e.name, "href": f"/c/{slugs.get(e.campaign_id)}/campaign/{e.id}"})
         else:
             rows.append({"r": r, "label": "—", "href": None})
     topups = list(db.scalars(select(CreditTopUp).order_by(CreditTopUp.added_on.desc())))
@@ -93,7 +96,7 @@ def add_topup(request: Request, amount: str = Form(...), added_on: date = Form(.
         db.add(CreditTopUp(amount_usd=round(amount, 2), added_on=added_on, note=note.strip()[:200]))
         db.commit()
         request.session["toast"] = f"Added ${amount:,.2f}"
-    return RedirectResponse("/admin/usage", status_code=303)
+    return RedirectResponse("/manage/usage", status_code=303)
 
 
 @router.post("/usage/limit")
@@ -108,7 +111,7 @@ def set_limit(request: Request, amount: str = Form(""), db: Session = Depends(ge
         spending.set_limit(db, value)
         db.commit()
         request.session["toast"] = f"Monthly limit set to ${value:,.2f}" if value is not None else "Monthly limit removed"
-    return RedirectResponse("/admin/usage", status_code=303)
+    return RedirectResponse("/manage/usage", status_code=303)
 
 
 @router.post("/usage/topups/{topup_id}/delete")
@@ -121,4 +124,4 @@ def delete_topup(request: Request, topup_id: int, db: Session = Depends(get_db))
         db.delete(t)
         db.commit()
         request.session["toast"] = "Removed"
-    return RedirectResponse("/admin/usage", status_code=303)
+    return RedirectResponse("/manage/usage", status_code=303)

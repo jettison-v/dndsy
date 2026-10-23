@@ -113,7 +113,7 @@ def test_notes_page_admin_only(monkeypatch, db):
 
     monkeypatch.setattr(auth.oauth.google, "authorize_access_token", token)
     client.get("/auth/callback", follow_redirects=False)
-    assert client.get("/admin/notes").status_code == 403
+    assert client.get("/manage/sessions/doc").status_code == 403
     app.dependency_overrides.clear()
 
 
@@ -235,7 +235,7 @@ class Resp:
 def test_add_source_and_sync(admin_client, db, monkeypatch):
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}})
     url = "https://docs.google.com/document/d/" + "a" * 44 + "/edit"
-    admin_client.post("/admin/notes/sources", data={"url": url})
+    admin_client.post("/manage/sessions/doc/sources", data={"url": url})
     assert db.scalar(select(NoteSource)).google_doc_id == "a" * 44
 
     async def drive_token(request):
@@ -260,8 +260,8 @@ def test_add_source_and_sync(admin_client, db, monkeypatch):
     assert "2 images" in page.text
     snap = db.scalar(select(NoteSnapshot))
     assert {i.name: i.data for i in snap.images} == {"obj-1": b"photo", "obj-2": b"tree"}
-    view = admin_client.get(f"/admin/notes/snapshots/{snap.id}").text
-    assert "/admin/notes/images/" in view
+    view = admin_client.get(f"/manage/sessions/doc/snapshots/{snap.id}").text
+    assert "/manage/sessions/doc/images/" in view
     assert view.count("<ul>") >= 2  # nested bullet list
 
 
@@ -275,7 +275,7 @@ def test_sync_rejects_missing_drive_scope(admin_client, db, monkeypatch):
 
 def test_google_errors_explained_and_shown_in_red(admin_client, db, monkeypatch):
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}})
-    admin_client.post("/admin/notes/sources", data={"url": "https://docs.google.com/document/d/" + "b" * 44 + "/edit"})
+    admin_client.post("/manage/sessions/doc/sources", data={"url": "https://docs.google.com/document/d/" + "b" * 44 + "/edit"})
 
     async def drive_token(request):
         return {"userinfo": {"email": "admin@example.com"}, "scope": admin_notes.DRIVE_READONLY}

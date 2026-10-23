@@ -1,4 +1,4 @@
-"""Admin: the Review list and the session review page.
+"""Manage › Sessions: the campaign's sessions (drafting, review, publishing) and each session's review page.
 
 Actions on the review page are HTMX requests: each returns the re-rendered
 review body (plus a toast) so the page updates in place. Without HTMX they
@@ -14,7 +14,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import config, web
+from app import access, config, web
 from app import db as dbmod
 from app import review
 from app.admin import _reviewer_guard as _guard
@@ -36,7 +36,7 @@ from app.suggestions import waiting_count
 from app.render import markdown_to_html
 from app.templating import templates
 
-router = APIRouter(prefix="/admin")
+router = APIRouter(prefix="/manage")  # under the campaign: /c/<campaign>/manage/sessions/…
 
 _busy = threading.Lock()  # one drafting job at a time keeps costs and order predictable
 
@@ -156,7 +156,7 @@ def draft(request: Request, session_ids: list[int] = Form(...)):
     request.session["toast"] = (
         "Claude is drafting… about a minute per session" if started else "Claude is already drafting; try again when it finishes"
     )
-    target = f"/admin/sessions/{session_ids[0]}" if len(session_ids) == 1 else "/admin/sessions"
+    target = f"{web.base()}/manage/sessions/{session_ids[0]}" if len(session_ids) == 1 else f"{web.base()}/manage/sessions"
     return RedirectResponse(target, status_code=303)
 
 
@@ -196,7 +196,13 @@ def review_page(request: Request, session_id: int, db: Session = Depends(get_db)
         return denied
     s = db.get(GameSession, session_id)
     if s is None:
-        return RedirectResponse("/admin/sessions", status_code=303)
+        return RedirectResponse(f"{web.base()}/manage/sessions", status_code=303)
+    here = web.campaign(db)
+    if here is not None and s.campaign_id != here.id:  # a session of another campaign: open it at that campaign's address
+        theirs = next((c for c in access.campaigns_for(user["email"]) if c["id"] == s.campaign_id), None)
+        query = request.url.query
+        return RedirectResponse(f"{web.base(theirs)}/manage/sessions/{s.id}" + (f"?{query}" if query else "") if theirs
+                                else f"{web.base()}/manage/sessions", status_code=303)
     return templates.TemplateResponse(
         request,
         "admin_review.html",
@@ -212,7 +218,7 @@ def review_body(request: Request, session_id: int, db: Session = Depends(get_db)
         return denied
     s = db.get(GameSession, session_id)
     if s is None:
-        return RedirectResponse("/admin/sessions", status_code=303)
+        return RedirectResponse(f"{web.base()}/manage/sessions", status_code=303)
     return templates.TemplateResponse(request, "_review_body.html", _body_context(db, s))
 
 
@@ -223,7 +229,7 @@ def _act(request: Request, db: Session, session_id: int, action: Callable[[GameS
         return denied
     s = db.get(GameSession, session_id)
     if s is None:
-        return RedirectResponse("/admin/sessions", status_code=303)
+        return RedirectResponse(f"{web.base()}/manage/sessions", status_code=303)
     try:
         message = action(s)
         db.commit()
@@ -237,7 +243,7 @@ def _act(request: Request, db: Session, session_id: int, action: Callable[[GameS
         response.headers["HX-Trigger"] = json.dumps({"toast": message})
         return response
     request.session["toast"] = message
-    return RedirectResponse(f"/admin/sessions/{session_id}", status_code=303)
+    return RedirectResponse(f"{web.base()}/manage/sessions/{session_id}", status_code=303)
 
 
 @router.post("/sessions/{session_id:int}/questions/answer")
@@ -361,7 +367,7 @@ def delete_event(request: Request, session_id: int, event_id: int, db: Session =
 def _proposal_action(request: Request, db: Session, proposal_id: int, fn: Callable[[Proposal], str]):
     p = db.get(Proposal, proposal_id)
     if p is None:
-        return RedirectResponse("/admin/sessions", status_code=303)
+        return RedirectResponse(f"{web.base()}/manage/sessions", status_code=303)
     return _act(request, db, p.session_id, lambda s: fn(p))
 
 
@@ -439,13 +445,13 @@ def create_session(
         num = int(number) if number.strip() else None
     except ValueError:
         request.session["toast"] = "Check the date and session number."
-        return RedirectResponse("/admin/sessions/new", status_code=303)
+        return RedirectResponse(f"{web.base()}/manage/sessions/new", status_code=303)
     if not account.strip():
         request.session["toast"] = "Write what happened first."
-        return RedirectResponse("/admin/sessions/new", status_code=303)
+        return RedirectResponse(f"{web.base()}/manage/sessions/new", status_code=303)
     if num is not None and db.scalar(select(GameSession).where(GameSession.campaign_id == campaign.id, GameSession.number == num)):
         request.session["toast"] = f"Session {num} already exists. Leave the number blank or pick another."
-        return RedirectResponse("/admin/sessions/new", status_code=303)
+        return RedirectResponse(f"{web.base()}/manage/sessions/new", status_code=303)
     if mode == "manual":  # the DM's own recap, no Claude (content workflows step 1): review it, add key moments, publish
         s = GameSession(campaign_id=campaign.id, played_on=played, number=num, title=title.strip(), source="manual")
         db.add(s)
@@ -453,13 +459,13 @@ def create_session(
         review.save_recap(db, s, account, by=web.person_name(user))
         db.commit()
         request.session["toast"] = "Saved as the recap. Add key moments if you like, then publish."
-        return RedirectResponse(f"/admin/sessions/{s.id}", status_code=303)
+        return RedirectResponse(f"{web.base()}/manage/sessions/{s.id}", status_code=303)
     s = GameSession(campaign_id=campaign.id, played_on=played, number=num, title=title.strip(), source="account")
     db.add(s)
     db.flush()
     db.add(SessionMessage(session_id=s.id, role="reviewer", author=user.get("name") or user["email"], body=account.strip()))
     db.commit()
-    return RedirectResponse(f"/admin/sessions/{s.id}?check=1", status_code=303)
+    return RedirectResponse(f"{web.base()}/manage/sessions/{s.id}?check=1", status_code=303)
 
 
 def _run_check(db: Session, s: GameSession) -> str:

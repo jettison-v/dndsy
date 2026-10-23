@@ -53,10 +53,10 @@ def client(monkeypatch, db):
 
 def test_usage_page_and_topups(client, db):
     runs(db)
-    page = client.post("/admin/usage/topups", data={"amount": "$20.00", "added_on": "2026-10-15", "note": "first"}).text
+    page = client.post("/manage/usage/topups", data={"amount": "$20.00", "added_on": "2026-10-15", "note": "first"}).text
     assert "$19.78" in page and "of $20.00 bought" in page
     t = db.scalar(select(CreditTopUp))
-    client.post(f"/admin/usage/topups/{t.id}/delete")
+    client.post(f"/manage/usage/topups/{t.id}/delete")
     assert db.scalar(select(CreditTopUp)) is None
 
 
@@ -94,9 +94,9 @@ def test_usage_page_sets_and_clears_the_limit(client, db):
     from app import spending
 
     runs(db)
-    page = client.post("/admin/usage/limit", data={"amount": "$0.10"}).text
+    page = client.post("/manage/usage/limit", data={"amount": "$0.10"}).text
     assert "Monthly limit set to $0.10" in page and "limit of $0.10 reached" in page
     assert spending.limit(db) == 0.10
-    assert "Enter a monthly limit" in client.post("/admin/usage/limit", data={"amount": "lots"}).text
-    assert "Monthly limit removed" in client.post("/admin/usage/limit", data={"amount": ""}).text
+    assert "Enter a monthly limit" in client.post("/manage/usage/limit", data={"amount": "lots"}).text
+    assert "Monthly limit removed" in client.post("/manage/usage/limit", data={"amount": ""}).text
     assert spending.limit(db) is None

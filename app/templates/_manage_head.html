@@ -1,5 +1,6 @@
-{# Top of every Manage page: back to the overview, and tabs for the pages this person can open. #}
-<nav class="manage-tabs" aria-label="Manage">
-  <a href="/manage" class="manage-home">Manage</a>
-  {% for p in manage_pages %}<a href="{{ p.href }}" class="{{ 'on' if p.here }}"{% if p.here %} aria-current="page"{% endif %}>{{ p.label }}</a>{% endfor %}
+{# Top of every Manage page: tabs for the pages of its group (this campaign, or askdnd as a whole) that this person can open. #}
+{% set on = manage_pages | selectattr("here") | first %}{% set grp = on.group if on else ("campaign" if in_campaign else "askdnd") %}
+<nav class="manage-tabs" aria-label="Manage: {{ here.name if grp == 'campaign' and here else 'askdnd' }}">
+  <span class="manage-scope">{{ (here.name if here else "This campaign") if grp == "campaign" else "askdnd" }}</span>
+  {% for p in manage_pages if p.group == grp %}<a href="{{ p.href }}" class="{{ 'on' if p.here }}"{% if p.here %} aria-current="page"{% endif %}>{{ p.label }}</a>{% endfor %}
 </nav>

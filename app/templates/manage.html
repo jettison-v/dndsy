@@ -1,22 +1,22 @@
 {% extends "base.html" %}
-{% block title %}Manage · askdnd{% endblock %}
+{% block title %}Needs you · Manage · askdnd{% endblock %}
 {% block content %}
 <main class="page">
   {% include "_manage_head.html" %}
-  <div class="title-row"><h1>Manage</h1></div>
-  <p class="subtitle">Keeping askdnd running for the table. Cards with a red edge need something from you.</p>
-  {% for group, pages in groups %}
-  <h3 class="divider">{{ group }}</h3>
-  <div class="manage-cards">
-    {% for p in pages %}{% set st = status.get(p.key, {}) %}
-    <a class="manage-card{{ ' attention' if st.attention }}" href="{{ p.href }}">
-      <b>{{ p.label }}</b>
-      <span class="muted">{{ p.about }}</span>
-      {% if st.text %}<span class="manage-stat">{{ st.text }}</span>{% endif %}
-      {% if st.sub %}<span class="note">{{ st.sub }}</span>{% endif %}
-    </a>
+  <div class="title-row"><h1>Needs you</h1></div>
+  <p class="subtitle">What's waiting in {{ campaign.name if campaign else "the campaign" }}, most important first.</p>
+  {% if items %}
+  <ul class="manage-list">
+    {% for x in items %}
+    <li><span><b>{{ x.text }}</b>{% if x.admin %} <span class="tag faint">admins</span>{% endif %}<span class="note">{{ x.sub }}</span></span>
+      <a class="btn small{{ ' primary' if loop.first }}" href="{{ x.href }}">{{ x.go }}</a></li>
     {% endfor %}
-  </div>
-  {% endfor %}
+  </ul>
+  {% else %}
+  <p class="all-clear">✓ All caught up</p>
+  <ul class="manage-list" style="margin-top:var(--sp-4)">
+    {% for p in pages %}<li><span><a href="{{ p.href }}"><b>{{ p.label }}</b></a><span class="note">{{ p.about }}</span></span></li>{% endfor %}
+  </ul>
+  {% endif %}
 </main>
 {% endblock %}

@@ -75,15 +75,15 @@ def campaign_with_neighbors(db):
 
 def test_add_session_flow(client, db, monkeypatch):
     campaign_with_neighbors(db)
-    assert "Add a session" in client.get("/admin/sessions/new").text
-    r = client.post("/admin/sessions/new", data={"played_on": "2026-05-01", "title": "Boarding", "account": "We sailed to the Leviathan."}, follow_redirects=False)
-    sid = int(r.headers["location"].split("/")[3].split("?")[0])
-    page = client.get(f"/admin/sessions/{sid}?check=1").text
+    assert "Add a session" in client.get("/manage/sessions/new").text
+    r = client.post("/manage/sessions/new", data={"played_on": "2026-05-01", "title": "Boarding", "account": "We sailed to the Leviathan."}, follow_redirects=False)
+    sid = int(r.headers["location"].split("?")[0].rsplit("/", 1)[1])
+    page = client.get(f"/manage/sessions/{sid}?check=1").text
     assert "We sailed to the Leviathan." in page and 'hx-trigger="load"' in page
 
     seen = []
     monkeypatch.setattr(conversation.anthropic, "Anthropic", fake_claude(seen=seen))
-    r = client.post(f"/admin/sessions/{sid}/check", headers=HX)
+    r = client.post(f"/manage/sessions/{sid}/check", headers=HX)
     assert "How did the party get aboard" in r.text
     content = " ".join(b["text"] for b in seen[0]["messages"][0]["content"])
     assert "They fought devils in a sea cave." in content  # session before
@@ -91,7 +91,7 @@ def test_add_session_flow(client, db, monkeypatch):
     assert "We sailed to the Leviathan." in content
 
     monkeypatch.setattr(conversation.anthropic, "Anthropic", fake_claude(reply="Thanks, that covers it.", ready=True))
-    r = client.post(f"/admin/sessions/{sid}/messages", data={"body": "A pirate captain smuggled us aboard."}, headers=HX)
+    r = client.post(f"/manage/sessions/{sid}/messages", data={"body": "A pirate captain smuggled us aboard."}, headers=HX)
     assert "Claude has enough to draft" in r.text
     msgs = list(db.scalars(select(SessionMessage).where(SessionMessage.session_id == sid).order_by(SessionMessage.id)))
     assert [m.role for m in msgs] == ["reviewer", "claude", "reviewer", "claude"]
@@ -99,7 +99,7 @@ def test_add_session_flow(client, db, monkeypatch):
 
     started = []
     monkeypatch.setattr(admin_sessions, "_draft_in_background", lambda ids: started.append(ids) or True)
-    client.post(f"/admin/sessions/{sid}/draft-account", headers=HX)
+    client.post(f"/manage/sessions/{sid}/draft-account", headers=HX)
     assert started == [[sid]]
 
     s = db.get(GameSession, sid)
@@ -116,14 +116,14 @@ def test_conversation_runs_do_not_hide_review_questions(client, db, monkeypatch)
     db.add(run)
     db.add(ExtractionRun(session_id=s.id, source="conversation", status="done"))
     db.flush()
-    assert "Which ship?" in client.get(f"/admin/sessions/{s.id}").text
+    assert "Which ship?" in client.get(f"/manage/sessions/{s.id}").text
 
 
 def test_duplicate_number_and_missing_account_rejected(client, db):
     campaign_with_neighbors(db)
-    r = client.post("/admin/sessions/new", data={"played_on": "2026-05-01", "number": "29", "account": "x"})
+    r = client.post("/manage/sessions/new", data={"played_on": "2026-05-01", "number": "29", "account": "x"})
     assert "already exists" in r.text
-    r = client.post("/admin/sessions/new", data={"played_on": "2026-05-01", "account": "   "})
+    r = client.post("/manage/sessions/new", data={"played_on": "2026-05-01", "account": "   "})
     assert "Write what happened" in r.text
 
 
@@ -143,11 +143,11 @@ def test_a_session_written_by_hand_needs_no_claude(client, db):
     from app.review import latest_recap
 
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}})
-    r = client.post("/admin/sessions/new", data={"played_on": "2026-05-08", "title": "Ashore", "account": "We landed at Saltmarsh.", "mode": "manual"},
+    r = client.post("/manage/sessions/new", data={"played_on": "2026-05-08", "title": "Ashore", "account": "We landed at Saltmarsh.", "mode": "manual"},
                     follow_redirects=False)
     s = db.scalar(select(GameSession).where(GameSession.title == "Ashore"))
-    assert r.headers["location"] == f"/admin/sessions/{s.id}" and s.source == "manual"
+    assert r.headers["location"] == f"/c/main/manage/sessions/{s.id}" and s.source == "manual"
     assert latest_recap(s).body == "We landed at Saltmarsh." and not s.messages
-    assert "written by hand" in client.get(f"/admin/sessions/{s.id}").text
-    r = client.post(f"/admin/sessions/{s.id}/redraft", headers={"HX-Request": "true"})
+    assert "written by hand" in client.get(f"/manage/sessions/{s.id}").text
+    r = client.post(f"/manage/sessions/{s.id}/redraft", headers={"HX-Request": "true"})
     assert "edit the recap directly" in r.headers.get("HX-Trigger", "") + r.text

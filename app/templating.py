@@ -26,6 +26,7 @@ def _page_context(request: Request) -> dict:
     return {"user": user, "is_admin": is_admin(user), "is_reviewer": is_reviewer(user), "is_dm": is_dm(user), "can_moderate": can_moderate(user),
             "can_see_notes": can_see_character_notes(user), "path": request.url.path,
             "manage_pages": pages_for(user, request.url.path), "tablenav": tablenav,
+            "in_campaign": access.path_slug.get() is not None,  # the address names the campaign (/c/<campaign>/…)
             # The campaign you're in, the start of its story addresses, and the campaigns you can switch to
             "here": here, "cbase": f"/c/{here['slug']}" if here else "",
             "my_campaigns": access.campaigns_for(user.get("email")) if user else [],
@@ -33,9 +34,9 @@ def _page_context(request: Request) -> dict:
 
 
 # Pages that make sense in any campaign: switching campaigns keeps you on them (else you land on the Recap)
-SWITCH_KEEPS = ("/", "/sessions", "/campaign", "/map", "/party", "/manage", "/suggestions", "/your-suggestions",
-                "/admin/sessions", "/admin/history", "/admin/people", "/admin/characters", "/manage/house-rules",
-                "/manage/dm-guide", "/manage/campaigns")
+SWITCH_KEEPS = ("/", "/sessions", "/campaign", "/map", "/party", "/your-suggestions", "/manage", "/manage/inbox",
+                "/manage/sessions", "/manage/sessions/doc", "/manage/table", "/manage/house-rules", "/manage/history",
+                "/manage/settings", "/manage/dm-guide")
 
 
 def switch_path(path: str) -> str:

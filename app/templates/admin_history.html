@@ -4,11 +4,12 @@
 <main class="page" style="max-width:1000px">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>History</h1></div>
-  <p class="subtitle">Every change to entries, the glossary, sessions, characters, people and players' notes: what it was, what it became, who and how. <b>Restore</b> puts the earlier version back (and that's recorded too). Kept in askdnd's database on Railway.</p>
-  {% if focus %}<p class="flash">Showing the history of <b>{{ focus }}</b>. <a href="/admin/history">Show everything</a></p>{% endif %}
-  {% if batch %}<p class="flash">Showing one import. <a href="/admin/history">Show everything</a></p>{% endif %}
+  {% if in_campaign %}<p class="subtitle">Every change in {{ campaign.name if campaign else "this campaign" }}: entries, the glossary, sessions, house rules, its characters, roles and players' notes. What it was, what it became, who and how. <b>Restore</b> puts the earlier version back (and that's recorded too). Kept in askdnd's database on Railway.</p>
+  {% else %}<p class="subtitle">Changes that belong to askdnd as a whole rather than one campaign: accounts, and characters that are in no campaign. Each campaign's own changes are on its History. Only admins can see this page.</p>{% endif %}
+  {% if focus %}<p class="flash">Showing the history of <b>{{ focus }}</b>. <a href="{{ here }}">Show everything</a></p>{% endif %}
+  {% if batch %}<p class="flash">Showing one import. <a href="{{ here }}">Show everything</a></p>{% endif %}
   <div class="filters" role="group" aria-label="Show">
-    {% for k, lab in filters.items() %}<a class="btn small{{ ' primary' if show == k else '' }}" href="/admin/history{{ '?show=' ~ k if k }}">{{ lab }}</a>{% endfor %}
+    {% for k, lab in filters.items() %}<a class="btn small{{ ' primary' if show == k else '' }}" href="{{ here }}{{ '?show=' ~ k if k }}">{{ lab }}</a>{% endfor %}
   </div>
   {% for day, rows in days %}
   <h3 class="divider">{{ day }}</h3>
@@ -17,7 +18,7 @@
     <div class="hist-head">
       <b>{{ r.label }}</b> <span class="tag">{{ x.field }}</span> <span class="tag {{ 'draft' if r.source in ('import', 'undo-import') else '' }}">{{ x.source }}</span>
       <span class="note">{{ r.created_at.strftime("%-I:%M %p") }} UTC{% if r.actor %} · {{ r.actor }}{% endif %}</span>
-      {% if x.restorable %}<form method="post" action="/admin/history/{{ r.id }}/restore" class="inline hist-restore"
+      {% if x.restorable %}<form method="post" action="{{ here }}/{{ r.id }}/restore" class="inline hist-restore"
         onsubmit="return confirm('Put back the earlier version?')"><button class="btn small">{{ "Bring back" if r.field == "deleted" else "Restore" }}</button></form>{% endif %}
     </div>
     {% if r.field == "deleted" %}
@@ -30,7 +31,7 @@
   </div>
   {% endfor %}
   {% else %}
-  <p class="muted">No changes recorded yet. History began on 19 October 2026; changes made before that weren't recorded.</p>
+  <p class="muted">{% if in_campaign or batch %}No changes recorded yet.{% else %}No askdnd-wide changes recorded yet.{% endif %} History began on 19 October 2026; changes made before that weren't recorded.</p>
   {% endfor %}
 </main>
 {% endblock %}

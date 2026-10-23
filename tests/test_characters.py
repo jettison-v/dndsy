@@ -504,7 +504,7 @@ def test_situational_folds_what_is_already_counted_and_no_circle_magic(player, d
     assert "Circle Spell" not in page and "Circle Magic" not in page  # Forgotten Realms rule: not our core books
 
 
-def test_universal_regrouping_and_admin_characters_page(player, admin, db):
+def test_universal_regrouping_and_the_tool_corrections_page(player, admin, db):
     from app.models import ToolCorrection
 
     import_bundle(db, BUNDLE)
@@ -519,12 +519,12 @@ def test_universal_regrouping_and_admin_characters_page(player, admin, db):
     admin.post(f"/characters/{cole.id}/override", data={"ref": "x", "oref": "spell:Heat Metal", "field": "hide", "value": "hide"})
     assert "Heat Metal" not in player.get(f"/characters/{cole.id}").text
     admin.post(f"/characters/{cole.id}/override", data={"ref": "x", "oref": "spell:Healing Word", "field": "cost", "value": "Action"})
-    page = admin.get("/admin/characters").text
-    assert "Bag of Holding" in page and "Heat Metal" in page and "Undo" in page and "D&amp;D Beyond links" in page
+    page = admin.get("/manage/tool-corrections").text
+    assert "Bag of Holding" in page and "Heat Metal" in page and "Undo" in page
     o = db.scalar(select(ToolCorrection).where(ToolCorrection.ref == "spell:Heat Metal"))
-    admin.post(f"/admin/characters/overrides/{o.id}/delete")
+    admin.post(f"/manage/tool-corrections/overrides/{o.id}/delete")
     assert "Heat Metal" in player.get(f"/characters/{cole.id}").text
-    assert player.get("/admin/characters").status_code == 403
+    assert player.get("/manage/tool-corrections").status_code == 403
     assert player.post(f"/characters/{cole.id}/link", data={"ddb_link": "1"}).status_code == 403
 
 
@@ -566,7 +566,7 @@ def test_descriptions_underline_rule_terms_with_definitions(admin, player, db):
     assert admin.post("/rules/terms/abyssal/underline", data={"value": "off"}).json() == {"on": False}
     panel = player.get(f"/characters/{cole.id}/detail", params={"ref": armor["key"]}).text
     assert 'data-term="abyssal"' not in panel and 'data-term="unarmed-strike"' in panel
-    assert "Underlined in descriptions" in admin.get("/admin/characters").text
+    assert "Underlined in descriptions" in admin.get("/manage/tool-corrections").text
     assert admin.post("/rules/terms/abyssal/underline", data={"value": "on"}).json() == {"on": True}
     assert db.scalar(select(ToolCorrection).where(ToolCorrection.ref == "term:Abyssal")) is None  # back to the default
 

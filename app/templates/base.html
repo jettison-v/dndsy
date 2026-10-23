@@ -55,12 +55,12 @@
     <div class="live">{% include "_live_pill.html" %}<div class="menu live-menu" id="live-menu" data-keep-open hidden></div></div>
     {% if manage_pages %}
     <div class="manage">
-      <button class="{{ 'active' if path == '/manage' or manage_pages | selectattr('here') | list }}" data-menu="manage-menu" aria-haspopup="true">Manage ▾</button>
+      <button class="{{ 'active' if manage_pages | selectattr('here') | list }}" data-menu="manage-menu" aria-haspopup="true">Manage ▾</button>
       <div class="menu" id="manage-menu" hidden>
-        <a href="/manage" class="menu-home{{ ' active' if path == '/manage' }}">Overview<small>What needs attention</small></a>
-        {% for group in ["Table", "Party", "Admin"] %}{% set pages = manage_pages | selectattr("group", "equalto", group) | list %}{% if pages %}
-        <div class="menu-group">{{ group }}</div>
-        {% for p in pages %}<a href="{{ p.href }}" class="{{ 'active' if p.here }}">{{ p.label }}<small>{{ p.about }}</small></a>{% endfor %}
+        {# Two groups: this campaign's pages, then askdnd's (admins). Manage layout, 2026-10-23 #}
+        {% for group, title in [("campaign", here.name if here else "This campaign"), ("askdnd", "askdnd · admins")] %}{% set pages = manage_pages | selectattr("group", "equalto", group) | list %}{% if pages %}
+        <div class="menu-group">{{ title }}</div>
+        {% for p in pages %}<a href="{{ p.href }}" class="{{ 'active' if p.here }}" title="{{ p.about }}">{{ p.label }}</a>{% endfor %}
         {% endif %}{% endfor %}
       </div>
     </div>
@@ -90,7 +90,7 @@
   <a href="{{ cbase }}/sessions" class="{{ 'active' if path.startswith('/sessions') }}">Sessions</a>
   <a href="{{ cbase }}/map" class="{{ 'active' if path == '/map' }}">Map</a>
   <a href="/your-suggestions" class="{{ 'active' if path == '/your-suggestions' }}">Your suggestions</a>
-  {% if manage_pages %}<a href="/manage" class="{{ 'active' if path.startswith('/manage') }}">Manage<small>Admin and reviewer pages</small></a>{% endif %}
+  {% if manage_pages %}<a href="{{ manage_pages[0].href }}" class="{{ 'active' if path.startswith('/manage') }}">Manage<small>Running the campaign and askdnd</small></a>{% endif %}
   <a href="/about" data-no-peek>About</a>
   <a href="/faq" data-no-peek>FAQ</a>
   <form method="post" action="/logout"><button type="submit">Sign out <small class="note">{{ user.email }}</small></button></form>

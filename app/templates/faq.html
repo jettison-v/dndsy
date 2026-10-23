@@ -40,7 +40,7 @@
   <section class="section">
     <h2>Characters</h2>
     {% call q("Where does my character come from?") %}
-      <p>From your character's page on D&amp;D Beyond. It has to be set to <b>Public</b> there (Character Settings › Character Privacy), and an admin links it on Manage › Characters. askdnd keeps the last good copy, so if D&amp;D Beyond is down you still see your character, with the time it was last updated.</p>
+      <p>From your character's page on D&amp;D Beyond. It has to be set to <b>Public</b> there (Character Settings › Character Privacy), and an admin links it on the campaign's Manage › Table. askdnd keeps the last good copy, so if D&amp;D Beyond is down you still see your character, with the time it was last updated.</p>
       <p>D&amp;D Beyond doesn't officially offer this data, so if they change their format, refreshing may stop working for a while. The numbers have been checked against D&amp;D Beyond's own sheet; if one ever looks different, tell an admin.</p>
     {% endcall %}
     {% call q("How do I get the latest from D&D Beyond?") %}
@@ -164,7 +164,7 @@
     {% endcall %}
     {% call q("Can askdnd hold more than one campaign?", "campaigns") %}
       <p>Yes. If you're in more than one, the campaign's name shows next to askdnd in the menu bar (under <b>More</b> on phones); pick another to switch. askdnd remembers the one you were in last. Story pages carry the campaign in their address, like <code>/c/main/sessions</code>, so a link you share opens the right campaign; old links open the campaign you're in.</p>
-      <p>Each campaign has its own recaps, Campaign pages, map, glossary, table rolls, house rules and roles: you can be the DM of one and a player in another, and you only see campaigns you have a role in (admins see them all). A character is in one campaign at a time, like on D&amp;D Beyond. If it moves, what it did stays in its old campaign's story; its D&amp;D Beyond copy, notes, pins and reminders go with it, and personal quests stay with the campaign they were written in. Admins set campaigns up on Manage › Campaigns.</p>
+      <p>Each campaign has its own recaps, Campaign pages, map, glossary, table rolls, house rules and roles: you can be the DM of one and a player in another, and you only see campaigns you have a role in (admins see them all). A character is in one campaign at a time, like on D&amp;D Beyond. If it moves, what it did stays in its old campaign's story; its D&amp;D Beyond copy, notes, pins and reminders go with it, and personal quests stay with the campaign they were written in. Admins set campaigns up on Manage › Campaigns. Each campaign's own Manage pages (its inbox, sessions, table, house rules, history and settings) are at its address too, like <code>/c/main/manage</code>, so they always act on that campaign.</p>
     {% endcall %}
   </section>
 
@@ -183,9 +183,9 @@
         <li><b>Player</b>: read everything for the table and suggest corrections.</li>
         <li><b>Reviewer</b>: also drafts, edits and publishes sessions, decides on suggestions, refreshes characters and adds pictures.</li>
         <li><b>DM</b>: everything a reviewer does; their own corrections skip review, they decide on everyone else's suggestions, edit campaign entries (names, descriptions, relationships), edit the glossary and add pictures. The DM never sees the character notes, pins, shortlists, reminders or notes on things of the characters in the campaign they run.</li>
-        <li><b>Admin</b>: also manages people, character links and regrouping, and sees usage and costs. An admin who is also the DM still never sees those notes.</li>
+        <li><b>Admin</b>: also manages accounts, roles, character links and regrouping, and sees usage and costs. An admin who is also the DM still never sees those notes.</li>
       </ul>
-      <p>Player, Reviewer and DM are roles in a campaign, so someone can run one campaign and play in another. Admin is about askdnd as a whole. Admins set both on Manage › People.</p>
+      <p>Player, Reviewer and DM are roles in a campaign, so someone can run one campaign and play in another. Admin is about askdnd as a whole. Admins set who can sign in (and who's an admin) on Manage › Accounts, and each campaign's roles and characters on its Manage › Table. The DM can see their campaign's Table and change its name and their own name (as Claude writes it in recaps) on Manage › Settings.</p>
     {% endcall %}
     {% call q("Where do the pictures come from?") %}
       <p>Player characters show their D&amp;D Beyond portrait. The DM, reviewers and admins can add a picture to any person, place, faction or other entry from its page (Add a picture). Uploads are shrunk, and hidden information such as a phone photo's location is removed.</p>
@@ -194,17 +194,17 @@
       <p>No. Transcripts are filtered on the admin's own computer, only game content is sent to Claude, and only the extracted story (recaps, key moments, the campaign record) is kept.</p>
     {% endcall %}
     {% call q("What if something gets changed or deleted by mistake?") %}
-      <p>askdnd keeps a <b>history of every change</b> to the campaign record (entries, other names, relationships, facts and key moments), the glossary, sessions, characters, people and players' notes: what it was, what it became, who changed it and how. Reviewers and admins can open <b>Manage › History</b> and press <b>Restore</b> to put an earlier version back (deleted notes and glossary terms can be brought back too). Each entry also links to its own history. Players' notes stay hidden from the DM there as well.</p>
-      <p>Imports on <b>Manage › Data</b> show a preview before anything is saved, and a whole import can be undone afterwards.</p>
+      <p>askdnd keeps a <b>history of every change</b> to the campaign record (entries, other names, relationships, facts and key moments), the glossary, sessions, characters, people and players' notes: what it was, what it became, who changed it and how. Reviewers and admins can open the campaign's <b>Manage › History</b> and press <b>Restore</b> to put an earlier version back (deleted notes and glossary terms can be brought back too). Each entry also links to its own history. Players' notes stay hidden from the DM there as well. Changes to accounts, which belong to no campaign, are on the admins' own History.</p>
+      <p>Imports on <b>Manage › Backups and imports</b> show a preview before anything is saved, and a whole import can be undone afterwards.</p>
     {% endcall %}
     {% call q("Is askdnd backed up?") %}
-      <p>Yes. Every night (3 am Pacific) the whole database is copied to a private Amazon S3 storage bucket, and the last 30 days of copies are kept. That copy lives outside Railway, where askdnd runs, so even a problem there wouldn't lose the campaign. The backup job has its own key that can only reach its backups folder. Restoring one is a deliberate step the admin takes with the restore script; it's been tested. If a night's backup fails or doesn't run, the Data card on the Manage overview turns red.</p>
+      <p>Yes. Every night (3 am Pacific) the whole database is copied to a private Amazon S3 storage bucket, and the last 30 days of copies are kept. That copy lives outside Railway, where askdnd runs, so even a problem there wouldn't lose the campaign. The backup job has its own key that can only reach its backups folder. Restoring one is a deliberate step the admin takes with the restore script; it's been tested. If a night's backup fails or doesn't run, it shows on <b>Manage › Needs you</b> for admins.</p>
     {% endcall %}
     {% call q("Does using askdnd cost anything?") %}
       <p>Not for players. Claude is paid per use by the admin, with a monthly limit: drafting a recap costs a few cents, and regenerating a Campaign description about 1–2¢. Admins see spending on Manage › Usage and can set askdnd's own monthly limit there: once a month's spending reaches it, askdnd pauses drafts and description rewrites until the 1st (or until the limit is raised) and says so.</p>
     {% endcall %}
     {% call q("How do I get someone signed in?") %}
-      <p>An admin adds their Google email on Manage › People. While the Google sign-in is in testing, the admin also adds them as a test user in Google Cloud Console.</p>
+      <p>An admin adds their Google email on Manage › Accounts (or straight to a campaign on its Manage › Table). While the Google sign-in is in testing, the admin also adds them as a test user in Google Cloud Console.</p>
     {% endcall %}
   </section>
 </main>

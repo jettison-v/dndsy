@@ -58,7 +58,7 @@ def upload_transcript(
         db.commit()
     if not admin_sessions.draft_transcript_in_background(session.id, body.text):
         return JSONResponse({"error": "Claude is busy drafting another session. Try again in a minute."}, status_code=409)
-    review_url = str(request.base_url).rstrip("/") + f"/admin/sessions/{session.id}"
+    review_url = str(request.base_url).rstrip("/") + f"/c/{campaign.slug}/manage/sessions/{session.id}"
     return JSONResponse(
         {"session_id": session.id, "label": session_label(session), "review_url": review_url, "status": "drafting"},
         status_code=202,

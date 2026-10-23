@@ -3,12 +3,12 @@
 {% block content %}
 <main class="page narrow">
   {% include "_manage_head.html" %}
-  <div class="crumbs"><a href="/admin/sessions">Recaps</a> › Add session</div>
+  <div class="crumbs"><a href="{{ cbase }}/manage/sessions">Sessions</a> › Add session</div>
   <div class="title-row"><h1>Add a session</h1></div>
   <p class="subtitle">For a session with no notes or recording. Write what happened, then either save it as the recap yourself, or have Claude check it against the sessions before and after and ask about anything missing.</p>
   {% if error %}<div class="flash bad">{{ error }}</div>{% endif %}
   <section class="section">
-    <form method="post" action="/admin/sessions/new" class="stack">
+    <form method="post" action="{{ cbase }}/manage/sessions/new" class="stack">
       <div class="row" style="align-items:flex-start">
         <label class="field" style="flex:1;min-width:180px">Date played <span class="note">(approximate is fine; it sets the order)</span><input type="date" name="played_on" required></label>
         <label class="field" style="width:140px">Session number <span class="note">(optional)</span><input type="text" name="number" inputmode="numeric" placeholder="e.g. 30"></label>
@@ -16,7 +16,7 @@
       <label class="field">Title <span class="note">(optional)</span><input type="text" name="title" placeholder="e.g. Boarding the Leviathan"></label>
       <label class="field">What happened<textarea name="account" rows="14" required placeholder="Type or paste everything you remember: where the party went, who they met, fights, decisions, loot, how it ended. Rough notes are fine."></textarea></label>
       <div class="row"><button class="btn primary" name="mode" value="manual">Save as the recap</button>
-        <button class="btn" name="mode" value="ask">Save and ask Claude</button><a class="btn link" href="/admin/sessions">Cancel</a>
+        <button class="btn" name="mode" value="ask">Save and ask Claude</button><a class="btn link" href="{{ cbase }}/manage/sessions">Cancel</a>
         <span class="note">Saving as the recap uses your words as written; Claude's check costs about 2–5¢.</span></div>
     </form>
   </section>

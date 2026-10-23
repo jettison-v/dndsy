@@ -20,9 +20,12 @@ A companion app for one D&D 2024 table (4 players + DM, playing on Zoom with D&D
 - Pushing to `main` deploys to beta. That's fine, but keep `main` working.
 
 ## Where things are (as of 2026-10-23)
-- **Manage** (`/manage`, app/manage.py): one overview of admin and reviewer pages (DM guide, Inbox, Recaps, History, House rules, People with the access chart, Characters with tool corrections, Campaigns, Usage, Data, Design system). Access rules live only in `app/access.py` (`allows()`).
+- **Manage** (app/manage.py lists every page; layout approved 2026-10-23, `docs/mockups/manage-layout.html`), two groups:
+  - **The campaign** (DM, reviewers, admins) at `/c/<campaign>/manage/…`: Needs you (the Manage home), Inbox, Sessions (app/admin_sessions.py; the campaign doc is its tab, app/admin_notes.py), Table (app/manage_table.py: who plays which character, roles, D&D Beyond links, the access chart; the DM sees it, admins change it), House rules, History, Settings (in app/campaigns_admin.py; the DM can edit), DM guide. Plain `/manage/…` addresses of these redirect to the current campaign (app/campaign_paths.py).
+  - **askdnd** (admins) at `/manage/…`: Campaigns, Accounts (app/manage_accounts.py), Tool corrections, Usage, Backups and imports (app/admin.py), History (askdnd-wide: accounts), Design system.
+  - Old addresses (/admin/…, /suggestions) redirect (`MOVED` in app/manage.py). Access rules live only in `app/access.py` (`allows()`).
 - **Campaigns** (data organization, `docs/plans/2026-10-21-data-organization.md`): story pages live at `/c/<campaign>/…` (app/campaign_paths.py strips the prefix, so routes don't repeat it); `web.campaign(db)` is the campaign the person asking is in now (`access.current_campaign()`), the first one when no one is asking. Roles (DM, reviewer, player) are per campaign; characters join campaigns through `campaign_characters`; house rules in app/house_rules.py.
-- **Version history** (app/history.py): records edits automatically; Manage › History restores; imports are previewed and can be undone.
+- **Version history** (app/history.py): records edits automatically; each campaign's Manage › History shows its changes (`history.campaigns_of()`) and restores; imports are previewed and can be undone.
 - **Backups**: the `askdnd-backup` Railway cron service dumps the database to S3 `v2/backups/` nightly; `scripts/restore_db.py` restores into an empty database.
 - **Local data**: the local app uses `askdnd_beta`, a copy of beta from the newest backup (`scripts/pull_beta.sh` refreshes it; stop the server first). Local changes never reach beta. Automatic drafting is off locally (`AUTO_DRAFT`).
 - **Spending limit**: Manage › Usage (app/spending.py); every Claude call checks it first.

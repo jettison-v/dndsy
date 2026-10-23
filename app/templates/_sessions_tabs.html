@@ -1,0 +1,2 @@
+{# Manage › Sessions: the sessions, and (admins) the campaign doc they're drafted from #}
+{% if is_admin %}<nav class="sub-tabs" aria-label="Sessions"><a href="{{ cbase }}/manage/sessions" class="{{ 'on' if not path.startswith('/manage/sessions/doc') }}">Sessions</a><a href="{{ cbase }}/manage/sessions/doc" class="{{ 'on' if path.startswith('/manage/sessions/doc') }}">Campaign doc</a></nav>{% endif %}

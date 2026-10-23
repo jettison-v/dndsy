@@ -1,4 +1,4 @@
-"""Admin pages (Brett): import campaign data."""
+"""Manage › Backups and imports (admins): the nightly backups, then importing campaign data."""
 
 import json
 
@@ -14,7 +14,7 @@ from app.db import get_db
 from app.importer import BundleError, import_bundle
 from app.templating import templates
 
-router = APIRouter(prefix="/admin")
+router = APIRouter(prefix="/manage/backups")  # askdnd-wide
 
 MAX_UPLOAD_BYTES = 2_000_000
 
@@ -28,7 +28,7 @@ def _reviewer_guard(request: Request):
     return _guard(request, allow=is_reviewer)
 
 
-@router.get("/import")
+@router.get("")
 def import_form(request: Request, db: Session = Depends(get_db)):
     user, denied = _guard(request)
     if denied:
@@ -96,4 +96,4 @@ def import_cancel(request: Request, token: str = Form("")):
         return denied
     import_preview.take(token, user["email"])
     request.session["toast"] = "Import cancelled. Nothing changed."
-    return RedirectResponse("/admin/import", status_code=303)
+    return RedirectResponse("/manage/backups", status_code=303)

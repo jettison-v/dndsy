@@ -8,9 +8,23 @@
   <div class="title-row"><h1>DM guide</h1></div>
   <p class="subtitle">How askdnd's campaign record works for you as the DM, and a plan for getting through the backlog from Brett's notes. Only the DM, reviewers and admins see this page.</p>
   <nav class="ds-jump" aria-label="On this page">
-    <a href="#idea">The idea</a><a href="#backlog">The backlog</a><a href="#after">After a game night</a><a href="#players">The inbox</a>
+    <a href="#pages">Your pages</a><a href="#idea">The idea</a><a href="#backlog">The backlog</a><a href="#after">After a game night</a><a href="#players">The inbox</a>
     <a href="#write">Writing it yourself</a><a href="#kept">Your words are kept</a><a href="#tidy">Tidying and undo</a><a href="#privacy">Who sees what</a><a href="#words">Words</a>
   </nav>
+
+  <section class="section" id="pages">
+    <h2>Your Manage pages</h2>
+    <p>Everything for running {{ here.name if here else "the campaign" }} is under <b>Manage</b>, in the menu bar. They always act on the campaign in the address, so they can't change the wrong one.</p>
+    <ul class="guide-list">
+      <li><a href="{{ cbase }}/manage"><b>Needs you</b></a>: what's waiting, most important first. Start here.</li>
+      <li><a href="{{ cbase }}/manage/inbox"><b>Inbox</b></a>: suggestions from the table and Claude's drafts.</li>
+      <li><a href="{{ cbase }}/manage/sessions"><b>Sessions</b></a>: draft, review and publish each session's recap.</li>
+      <li><a href="{{ cbase }}/manage/table"><b>Table</b></a>: who plays which character, and their D&amp;D Beyond links. An admin changes it.</li>
+      <li><a href="{{ cbase }}/manage/house-rules"><b>House rules</b></a>: your rulings on how askdnd rolls things.</li>
+      <li><a href="{{ cbase }}/manage/history"><b>History</b></a>: every change in this campaign, with Restore.</li>
+      <li><a href="{{ cbase }}/manage/settings"><b>Settings</b></a>: the campaign's name, and your name as Claude writes it in recaps.</li>
+    </ul>
+  </section>
 
   <section class="section" id="idea">
     <h2>The idea: you own what the table reads</h2>
@@ -20,7 +34,7 @@
       <div class="gf-row"><span class="gf-box gf-in">Players' suggestions</span><span class="gf-arrow">→</span><span class="gf-box gf-you">You decide</span><span class="gf-arrow">→</span><span class="gf-box gf-out">The table</span></div>
       <div class="gf-row"><span class="gf-box gf-you">What you write</span><span class="gf-arrow">→ straight to →</span><span class="gf-box gf-out">The table</span></div>
     </div>
-    <p class="note">Nothing is ever lost: every change is kept on <a href="/admin/history">Manage › History</a> with <b>Restore</b>.</p>
+    <p class="note">Nothing is ever lost: every change is kept on <a href="{{ cbase }}/manage/history">Manage › History</a> with <b>Restore</b>.</p>
   </section>
 
   <section class="section" id="backlog">
@@ -29,9 +43,9 @@
     <p>Brett's campaign notes cover many sessions that haven't been turned into recaps yet. <b>{{ b.published }} of {{ b.total }}</b> sessions are published. These numbers update as you work.</p>
     <ol class="guide-steps">
       <li class="{{ 'done' if not b.to_review and not b.to_draft }}"><b>One session at a time, oldest first</b>{% if b.to_review %} <span class="tag draft">{{ b.to_review | length }} ready to review</span>{% endif %}{% if b.to_draft %} <span class="tag faint">{{ b.to_draft | length }} not drafted yet</span>{% endif %}
-        <p>If nothing is ready to review, press <b>Draft the next one</b> on <a href="/admin/sessions">Recaps</a> (about a minute, about 13¢). After that it runs itself: <b>publishing a session starts drafting the next one</b>, so it's waiting for you next time.</p>
+        <p>If nothing is ready to review, press <b>Draft the next one</b> on <a href="{{ cbase }}/manage/sessions">Sessions</a> (about a minute, about 13¢). After that it runs itself: <b>publishing a session starts drafting the next one</b>, so it's waiting for you next time.</p>
         <p class="note">Why one at a time: each draft only knows the people and places you've already accepted. Drafting all at once would suggest the same new NPC again in every session, and ask the same questions twice.</p>
-        {% if b.to_review %}<p>Next up: {% for r in b.to_review[:3] %}<a href="/admin/sessions/{{ r.s.id }}">{{ r.label }}{% if r.s.title %}: {{ r.s.title }}{% endif %}</a>{{ ", " if not loop.last }}{% endfor %}{% if b.to_review | length > 3 %} and {{ b.to_review | length - 3 }} more{% endif %}.</p>{% endif %}
+        {% if b.to_review %}<p>Next up: {% for r in b.to_review[:3] %}<a href="{{ cbase }}/manage/sessions/{{ r.s.id }}">{{ r.label }}{% if r.s.title %}: {{ r.s.title }}{% endif %}</a>{{ ", " if not loop.last }}{% endfor %}{% if b.to_review | length > 3 %} and {{ b.to_review | length - 3 }} more{% endif %}.</p>{% endif %}
         <p>Each one takes 10 to 20 minutes. On the session's page, top to bottom:</p>
         <ol class="guide-sub">
           <li><b>Read the recap.</b> Fix anything wrong right there; your wording wins.</li>
@@ -45,7 +59,7 @@
       <li><b>Tidy as you go</b>{% if b.hidden %} <span class="tag faint">{{ b.hidden }} hidden {{ "entry" if b.hidden == 1 else "entries" }}</span>{% endif %}
         <p>Drafts sometimes create the same person twice ("Capt Trager Grill" and "Captain Trager Grill"). Open one on the <a href="/campaign">Campaign</a> page, press <b>Edit</b>, and <b>Merge</b> it into the other. See <a href="#tidy">Tidying and undo</a>.</p></li>
       <li class="{{ 'done' if not b.suggestions }}"><b>Players' suggestions</b>{% if b.suggestions %} <span class="tag draft">{{ b.suggestions }} waiting</span>{% else %} <span class="tag done">None waiting</span>{% endif %}
-        <p>On <a href="/suggestions">Manage › Suggestions</a>. See <a href="#players">The inbox</a>.</p></li>
+        <p>On <a href="{{ cbase }}/manage/inbox">Manage › Inbox</a>. See <a href="#players">The inbox</a>.</p></li>
     </ol>
     <div class="guide-tips"><b>Tips</b>
       <ul>
@@ -60,14 +74,14 @@
     <h2>After a game night (once the backlog is done)</h2>
     <ol class="guide-sub">
       <li>Brett records the session; the Processor on his Mac removes table talk and sends only the game to askdnd.</li>
-      <li>A draft appears on <a href="/admin/sessions">Recaps</a> within a few minutes.</li>
+      <li>A draft appears on <a href="{{ cbase }}/manage/sessions">Sessions</a> within a few minutes.</li>
       <li>Review and publish it, as above. Before the next session is ideal, so the table's <i>Previously on…</i> is ready.</li>
     </ol>
   </section>
 
   <section class="section" id="players">
     <h2>The inbox: suggestions and Claude's drafts</h2>
-    <p>Everything waiting for your OK is on <a href="/suggestions">Manage › Inbox</a>. Every suggestion from a player gets the same four choices:</p>
+    <p>Everything waiting for your OK is on <a href="{{ cbase }}/manage/inbox">Manage › Inbox</a>. Every suggestion from a player gets the same four choices:</p>
     <dl class="mech guide-words">
       <dt>Accept</dt><dd>It shows on the page exactly as they wrote it.</dd>
       <dt>Edit</dt><dd>Change the wording first, then accept.</dd>
@@ -91,7 +105,7 @@
       <li><b>Change an entry:</b> pick it on the Campaign page (or click its name anywhere), then <b>Edit</b>. You can rename it (the old name keeps working), write the description in your own words, add relationships, a picture or a key moment, or hide it. A quest has <b>Mark done</b> next to Edit (and <b>Reopen</b> once it's done); it moves between the open quests and <b>Done</b> at the top of the page.</li>
       <li><b>Hidden entries</b> show in your list with a <b>Hidden</b> tag; the table doesn't see them until you tick <i>The table can see it</i> in Edit.</li>
       <li><b>Claude's help, when you want it:</b> in an entry's Edit window, <b>Regenerate description</b> rewrites it from the facts and key moments; you see it before anything changes. Facts it worked in come off the list when you accept.</li>
-      <li><b>A session with no notes or recording:</b> <a href="/admin/sessions/new">Recaps › + Add session</a>, write what happened, and choose <b>Save as the recap</b> (your words, no Claude) or <b>Save and ask Claude</b> (Claude checks it against the sessions around it and asks questions).</li>
+      <li><b>A session with no notes or recording:</b> <a href="{{ cbase }}/manage/sessions/new">Sessions › + Add session</a>, write what happened, and choose <b>Save as the recap</b> (your words, no Claude) or <b>Save and ask Claude</b> (Claude checks it against the sessions around it and asks questions).</li>
       <li><b>A spelling or term:</b> Campaign › Glossary › <b>Add a term</b>. Transcripts use the glossary to spell names right.</li>
     </ul>
   </section>
@@ -99,7 +113,7 @@
   <section class="section" id="house">
     <h2>House rules</h2>
     <ul class="guide-list">
-      <li><b>Your rulings on how askdnd rolls things</b> go on <a href="/manage/house-rules">Manage › House rules</a>: one roll for all of Magic Missile's darts, or a short ruling on any spell ("Fireball: I decide who is in the area"). The roll window shows <b>House rule</b> and your words to whoever rolls it.</li>
+      <li><b>Your rulings on how askdnd rolls things</b> go on <a href="{{ cbase }}/manage/house-rules">Manage › House rules</a>: one roll for all of Magic Missile's darts, or a short ruling on any spell ("Fireball: I decide who is in the area"). The roll window shows <b>House rule</b> and your words to whoever rolls it.</li>
       <li>They apply to this campaign only and never change askdnd's own rules data. <b>Remove</b> one and the spell rolls as the 2024 rules say again; History can bring it back.</li>
     </ul>
   </section>
@@ -122,7 +136,7 @@
       <li><b>Merge</b> a duplicate into the entry to keep (Edit › Merge or delete): its name becomes another name there, and its facts, relationships, key moments and picture move over.</li>
       <li><b>Hide</b> an entry (Edit › Details › untick <i>The table can see it</i>) to keep it from the table without losing it.</li>
       <li><b>Delete</b> an entry you don't need (Edit › Merge or delete). Player characters can't be deleted here.</li>
-      <li><b>Undo anything</b> on <a href="/admin/history">Manage › History</a>: every name, description, fact, relationship and key moment change, with <b>Restore</b>.</li>
+      <li><b>Undo anything</b> on <a href="{{ cbase }}/manage/history">Manage › History</a>: every name, description, fact, relationship and key moment change, with <b>Restore</b>.</li>
     </ul>
   </section>
 
@@ -132,7 +146,7 @@
       <li>Everything published is visible to everyone at the table.</li>
       <li>Drafts, hidden entries and these Manage pages are only for you, reviewers and admins.</li>
       <li>As DM you <b>never</b> see players' own notes, pins, shortlists or reminders. That's on purpose: they can plan without spoilers going the other way.</li>
-      <li>Being DM is a role in this campaign (Manage › People), and it includes everything a reviewer can do here. If you ever play in another campaign, you'd be a player there.</li>
+      <li>Being DM is a role in this campaign (you can see it on Manage › Table; an admin sets it), and it includes everything a reviewer can do here. If you ever play in another campaign, you'd be a player there.</li>
     </ul>
   </section>
 

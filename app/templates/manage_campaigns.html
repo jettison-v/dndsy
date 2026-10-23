@@ -4,39 +4,32 @@
 <main class="page" style="max-width:1000px">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Campaigns</h1></div>
-  <p class="subtitle">Every campaign in askdnd, and which characters are in each. A character is in one campaign at a time, like on D&amp;D Beyond; moving it keeps what it did in its old campaign's story. People's roles (DM, reviewer, player) are set on <a href="/admin/people">Manage › People</a> while you're in that campaign (switch with the campaign name in the menu bar). Only admins can see this page.</p>
+  <p class="subtitle">Every campaign in askdnd, and which characters are in each. A character is in one campaign at a time, like on D&amp;D Beyond; moving it keeps what it did in its old campaign's story. Each campaign's people, characters and details are on its own Manage pages (Manage it). Only admins can see this page.</p>
 
   <section class="section">
-    <h2>Campaigns</h2>
-    <ul class="people">
+    <ul class="manage-list">
       {% for x in campaigns %}{% set c = x.c %}
-      <li class="house-rule campaign-row">
-        <div class="who"><b>{{ c.name }}</b>
-          <span class="note"><a href="/c/{{ c.slug }}/">/c/{{ c.slug }}</a> · {% if x.dms %}DM {{ x.dms | join(", ") }}{% else %}no DM yet{% endif %} · {{ x.people }} {{ "person" if x.people == 1 else "people" }} · {{ x.characters | map(attribute="name") | join(", ") or "no characters yet" }}{% if c.ddb_campaign_id %} · D&amp;D Beyond: {{ x.ddb_name or c.ddb_campaign_id }}{% endif %}</span>
-          <details class="fold"><summary>Edit</summary>
-            <form method="post" action="/manage/campaigns/{{ c.id }}" class="stack" style="margin-top:8px">
-              <label class="field">Name<input type="text" name="name" value="{{ c.name }}" maxlength="200" required></label>
-              <label class="field">DM's name (Claude uses it in recaps)<input type="text" name="dm_name" value="{{ c.dm_name }}" maxlength="200"></label>
-              <label class="field">D&amp;D Beyond campaign id (optional; askdnd notices characters whose sheet says another campaign)<input type="text" name="ddb_campaign_id" value="{{ c.ddb_campaign_id or '' }}" maxlength="40"></label>
-              <div class="row"><button class="btn" type="submit">Save</button></div>
-            </form>
-          </details>
-          <details class="fold"><summary>Add a new character</summary>
-            <form method="post" action="/manage/campaigns/{{ c.id }}/characters" class="stack" style="margin-top:8px">
-              <label class="field">Character's name<input type="text" name="name" maxlength="200" required></label>
-              <label class="field">Who plays it (optional; link their account on People)<input type="text" name="player_name" maxlength="200"></label>
-              <label class="field">D&amp;D Beyond link (optional)<input type="text" name="ddb_link" placeholder="https://www.dndbeyond.com/characters/12345678"></label>
-              <div class="row"><button class="btn" type="submit">Add to {{ c.name }}</button></div>
-            </form>
-          </details>
-        </div>
-      </li>
+      <li><span><b>{{ c.name }}</b>
+          <span class="note"><a href="/c/{{ c.slug }}/">/c/{{ c.slug }}</a> · {% if x.dms %}DM {{ x.dms | join(", ") }}{% else %}no DM yet{% endif %} · {{ x.people }} {{ "person" if x.people == 1 else "people" }} · {{ x.characters | map(attribute="name") | join(", ") or "no characters yet" }}{% if c.ddb_campaign_id %} · D&amp;D Beyond: {{ x.ddb_name or c.ddb_campaign_id }}{% endif %}</span></span>
+        <a class="btn small" href="/c/{{ c.slug }}/manage">Manage it</a></li>
       {% endfor %}
     </ul>
   </section>
 
   <section class="section">
-    <h2>Characters</h2>
+    <h2>New campaign</h2>
+    <form method="post" action="/manage/campaigns" class="stack" style="margin-top:12px">
+      <label class="field">Name<input type="text" name="name" maxlength="200" required {% if unmatched %}value="{{ unmatched[0][1] }}"{% endif %}></label>
+      <label class="field">DM's name (optional)<input type="text" name="dm_name" maxlength="200"></label>
+      {% if unmatched %}<label class="field">Its D&amp;D Beyond campaign
+        <select name="ddb_campaign_id">{% for i, n in unmatched %}<option value="{{ i }}">{{ n or i }}</option>{% endfor %}<option value="">None</option></select></label>{% endif %}
+      <div class="row"><button class="btn primary" type="submit">Create</button></div>
+      <p class="note">Then add its people and characters on its Table, or move characters to it here.</p>
+    </form>
+  </section>
+
+  <section class="section">
+    <h2>Move a character</h2>
     <p class="hint" style="margin-top:6px">Move a character to another campaign. Its time in the old one ends today; its story page, key moments and rolls stay there, and its Wild Shape keeps start over (each DM rules on those). Its D&amp;D Beyond copy, notes, pins and reminders go with it.</p>
     <ul class="people">
       {% for r in characters %}{% set ch = r.c %}
@@ -55,18 +48,6 @@
       </li>
       {% else %}<li class="muted">No characters yet.</li>{% endfor %}
     </ul>
-  </section>
-
-  <section class="section">
-    <h2>New campaign</h2>
-    <form method="post" action="/manage/campaigns" class="stack" style="margin-top:12px">
-      <label class="field">Name<input type="text" name="name" maxlength="200" required {% if unmatched %}value="{{ unmatched[0][1] }}"{% endif %}></label>
-      <label class="field">DM's name (optional)<input type="text" name="dm_name" maxlength="200"></label>
-      {% if unmatched %}<label class="field">Its D&amp;D Beyond campaign
-        <select name="ddb_campaign_id">{% for i, n in unmatched %}<option value="{{ i }}">{{ n or i }}</option>{% endfor %}<option value="">None</option></select></label>{% endif %}
-      <div class="row"><button class="btn primary" type="submit">Create</button></div>
-      <p class="note">Then switch to it with the campaign name in the menu bar, add its people on Manage › People, and move or add its characters here.</p>
-    </form>
   </section>
 </main>
 {% endblock %}

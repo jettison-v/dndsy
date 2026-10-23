@@ -33,13 +33,13 @@ def client(monkeypatch, db):
 
 def upload(client, payload):
     data = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
-    return client.post("/admin/import", files={"file": ("bundle.json", data, "application/json")})
+    return client.post("/manage/backups/import", files={"file": ("bundle.json", data, "application/json")})
 
 
 def test_import_requires_admin(client, monkeypatch):
-    assert client.get("/admin/import", follow_redirects=False).status_code == 303
+    assert client.get("/manage/backups", follow_redirects=False).status_code == 303
     sign_in(client, monkeypatch, "player@example.com")
-    assert client.get("/admin/import").status_code == 403
+    assert client.get("/manage/backups").status_code == 403
     assert upload(client, {"campaign": {"slug": "x", "name": "X"}}).status_code == 403
 
 
@@ -56,13 +56,13 @@ def test_admin_can_import(client, monkeypatch, db):
 
     sign_in(client, monkeypatch, "admin@example.com")
     page = client.get("/")
-    assert "Manage" in page.text and "/admin/import" in page.text
+    assert "Manage" in page.text and "/manage/backups" in page.text
     r = upload(client, {"campaign": {"slug": "x", "name": "X"}, "entities": [{"kind": "npc", "name": "Uni"}]})
     assert "Preview: bundle.json" in r.text and "Nothing saved yet" in r.text and "Uni" in r.text
     assert db.scalar(select(Entity)) is None  # nothing written by the preview
-    r = client.post("/admin/import/apply", data={"token": token_in(r.text)})
+    r = client.post("/manage/backups/import/apply", data={"token": token_in(r.text)})
     assert "entities created: 1" in r.text and db.scalar(select(Entity)).name == "Uni"
-    assert "expired or was already imported" in client.post("/admin/import/apply", data={"token": "not-a-real-one"}).text
+    assert "expired or was already imported" in client.post("/manage/backups/import/apply", data={"token": "not-a-real-one"}).text
 
 
 def test_preview_shows_what_would_change_and_can_keep_descriptions(client, monkeypatch, db):
@@ -86,11 +86,11 @@ def test_preview_shows_what_would_change_and_can_keep_descriptions(client, monke
     assert "Keep the current descriptions" in r.text
     db.refresh(uni)
     assert uni.summary == "Edited here since."  # previewing changed nothing
-    client.post("/admin/import/apply", data={"token": token_in(r.text), "keep_text": "1"})
+    client.post("/manage/backups/import/apply", data={"token": token_in(r.text), "keep_text": "1"})
     db.refresh(uni)
     assert uni.summary == "Edited here since."  # kept
     r = upload(client, bundle)
-    client.post("/admin/import/apply", data={"token": token_in(r.text)})
+    client.post("/manage/backups/import/apply", data={"token": token_in(r.text)})
     db.refresh(uni)
     assert uni.summary == "Old text."  # replaced only when confirmed without keeping
 
@@ -99,8 +99,8 @@ def test_cancel_discards_the_upload(client, monkeypatch, db):
     sign_in(client, monkeypatch, "admin@example.com")
     r = upload(client, {"campaign": {"slug": "x", "name": "X"}, "entities": [{"kind": "npc", "name": "Uni"}]})
     token = token_in(r.text)
-    assert "Nothing changed" in client.post("/admin/import/cancel", data={"token": token}, follow_redirects=True).text
-    assert "expired or was already imported" in client.post("/admin/import/apply", data={"token": token}).text
+    assert "Nothing changed" in client.post("/manage/backups/import/cancel", data={"token": token}, follow_redirects=True).text
+    assert "expired or was already imported" in client.post("/manage/backups/import/apply", data={"token": token}).text
 
 
 def test_bad_file_shows_error(client, monkeypatch):

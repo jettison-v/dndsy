@@ -215,7 +215,7 @@ def from_the_table(db: Session, campaign_id: int) -> list[dict]:
     for x in pending:
         if x.target_type == "session" and x.target_id in sessions:
             s = sessions[x.target_id]
-            items.append({"type": "session", "x": x, "label": session_label(s), "href": f"/admin/sessions/{s.id}",
+            items.append({"type": "session", "x": x, "label": session_label(s), "href": f"{web.base()}/manage/sessions/{s.id}",
                           "redraft": s.source in REDRAFTABLE})
         elif x.target_type == "glossary":
             t = terms.get(x.target_id)
@@ -249,7 +249,7 @@ def waiting_count(db: Session) -> int:
     return len(from_the_table(db, campaign.id)) + len(description_drafts(db, campaign.id))
 
 
-@router.get("/suggestions")
+@router.get("/manage/inbox")  # under the campaign: /c/<campaign>/manage/inbox
 def inbox(request: Request, db: Session = Depends(get_db)):
     user = current_user(request)
     if not user:
@@ -288,7 +288,7 @@ def mine(request: Request, db: Session = Depends(get_db)):
 
 def _done(request: Request, message: str) -> RedirectResponse:
     request.session["toast"] = message
-    return RedirectResponse("/suggestions", status_code=303)
+    return RedirectResponse(f"{web.base()}/manage/inbox", status_code=303)
 
 
 @router.post("/suggestions/facts/{fact_id:int}/{action}")
@@ -299,7 +299,7 @@ def act_on_fact(request: Request, fact_id: int, action: str, text: str = Form(""
     fact = db.get(Fact, fact_id)
     action = {"merge": "accept", "reject": "dismiss"}.get(action, action)
     if not can_moderate(user) or fact is None or fact.status != "pending" or action not in ("accept", "edit", "claude", "dismiss"):
-        return RedirectResponse("/suggestions", status_code=303)
+        return RedirectResponse(f"{web.base()}/manage/inbox", status_code=303)
     entity = db.get(Entity, fact.entity_id)
     if action == "dismiss":
         entities.reject_fact(fact)
@@ -327,7 +327,7 @@ def accept_glossary(request: Request, suggestion_id: int, term: str = Form(""), 
     user = current_user(request)
     x = db.get(Suggestion, suggestion_id)
     if not _can_edit_glossary(user) or x is None or x.status != "pending" or x.target_type != "glossary":
-        return RedirectResponse("/suggestions", status_code=303)
+        return RedirectResponse(f"{web.base()}/manage/inbox", status_code=303)
     g = db.get(GlossaryTerm, x.target_id) if x.target_id else None
     new_term = " ".join(term.split())[:200]
     clash = db.scalar(select(GlossaryTerm).where(GlossaryTerm.campaign_id == x.campaign_id, GlossaryTerm.term == new_term,
@@ -352,7 +352,7 @@ def act_on_suggestion(request: Request, suggestion_id: int, action: str, db: Ses
     user = current_user(request)
     x = db.get(Suggestion, suggestion_id)
     if not can_moderate(user) or x is None or x.status != "pending" or action not in ("use", "claude", "done", "dismiss"):
-        return RedirectResponse("/suggestions", status_code=303)
+        return RedirectResponse(f"{web.base()}/manage/inbox", status_code=303)
     if action in ("use", "claude") and x.target_type == "session":
         s = db.get(GameSession, x.target_id)
         if action == "claude" and (s is None or s.source not in REDRAFTABLE):

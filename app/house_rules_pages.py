@@ -60,7 +60,7 @@ def add(request: Request, spell: str = Form(""), field: str = Form(""), value: s
         db.commit()
         house_rules.invalidate()
         request.session["toast"] = f"House rule saved for {key}"
-    return RedirectResponse("/manage/house-rules", status_code=303)
+    return RedirectResponse(f"{web.base()}/manage/house-rules", status_code=303)
 
 
 @router.post("/{rule_id:int}/delete")
@@ -76,4 +76,4 @@ def remove(request: Request, rule_id: int, db: Session = Depends(get_db)):
         db.commit()
         house_rules.invalidate()
         request.session["toast"] = f"Removed. {key} works as the rules say again (History can bring it back)."
-    return RedirectResponse("/manage/house-rules", status_code=303)
+    return RedirectResponse(f"{web.base()}/manage/house-rules", status_code=303)

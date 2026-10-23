@@ -1,33 +1,30 @@
-"""Manage › Characters (admins): D&D Beyond links, refreshes, and the regrouping
-corrections made from character side panels (tool_corrections)."""
+"""Manage › Tool corrections (admins, /manage/tool-corrections): corrections to how askdnd reads D&D Beyond, made
+from character side panels (tool_corrections). They apply to every character in every campaign, so they belong to
+askdnd as a whole. A DM's rulings for one table are House rules instead."""
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import web
 from app import character_views as views
-from app import characters as chars
 from app.admin import _guard
 from app.db import get_db
 from app.models import ToolCorrection
 from app.templating import templates
 
-router = APIRouter(prefix="/admin/characters")
+router = APIRouter(prefix="/manage/tool-corrections")
 
 
 @router.get("")
-def characters_admin(request: Request, db: Session = Depends(get_db)):
+def page(request: Request, db: Session = Depends(get_db)):
     user, denied = _guard(request)
     if denied:
         return denied
-    campaign = web.campaign(db)
-    rows = chars.campaign_characters(db, campaign.id) if campaign else []
     overrides = list(db.scalars(select(ToolCorrection).order_by(ToolCorrection.updated_at.desc())))
     labels = {f: dict(c) for f, c in {**views.OVERRIDE_CHOICES, **views.TERM_CHOICES}.items()}
-    return templates.TemplateResponse(request, "admin_characters.html", {
-        "rows": rows, "overrides": overrides, "labels": labels, "field_labels": views.FIELD_LABELS,
+    return templates.TemplateResponse(request, "tool_corrections.html", {
+        "overrides": overrides, "labels": labels, "field_labels": views.FIELD_LABELS,
         "toast": request.session.pop("toast", None),
     })
 
@@ -42,7 +39,7 @@ def undo_override(request: Request, override_id: int, db: Session = Depends(get_
         db.delete(row)
         db.commit()
         request.session["toast"] = "Back to automatic"
-    return RedirectResponse("/admin/characters", status_code=303)
+    return RedirectResponse("/manage/tool-corrections", status_code=303)
 
 
 @router.post("/overrides/{override_id:int}/reason")
@@ -56,4 +53,4 @@ def override_reason(request: Request, override_id: int, reason: str = Form(""), 
         row.reason = " ".join(reason.split())[:300]
         db.commit()
         request.session["toast"] = "Saved"
-    return RedirectResponse("/admin/characters", status_code=303)
+    return RedirectResponse("/manage/tool-corrections", status_code=303)
