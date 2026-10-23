@@ -30,7 +30,9 @@ def _page_context(request: Request) -> dict:
         return {"dm": "DM", "reviewer": "Reviewer"}.get(access.role(user.get("email"), campaign_id) or "", "") if user else ""
 
     here = access.current_campaign() if user else None
-    return {"user": user, "is_admin": is_admin(user), "is_reviewer": is_reviewer(user), "is_dm": is_dm(user), "can_moderate": can_moderate(user),
+    viewing_as = user if request.session.get("real_user") and user else None  # app/view_as.py
+    viewing_role = access.ROLE_LABELS.get(access.role(user.get("email"))) if viewing_as else None
+    return {"user": user, "viewing_as": viewing_as, "viewing_role": viewing_role, "is_admin": is_admin(user), "is_reviewer": is_reviewer(user), "is_dm": is_dm(user), "can_moderate": can_moderate(user),
             "can_see_notes": can_see_character_notes(user), "path": request.url.path,
             "manage_pages": pages_for(user, request.url.path), "tablenav": tablenav, "campaign_role": campaign_role,
             "in_campaign": access.path_slug.get() is not None,  # the address names the campaign (/c/<campaign>/…)

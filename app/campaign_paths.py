@@ -80,7 +80,8 @@ class CampaignPaths:
                     here = access.current_campaign(email)
                     if here is None:
                         return await PlainTextResponse("That campaign isn't one of yours.", 404)(scope, receive, send)
-                    if (access._rows().get(email) or {}).get("current") != here["id"]:
+                    viewing = bool((scope.get("session") or {}).get("real_user"))  # View as: nothing in their name
+                    if not viewing and (access._rows().get(email) or {}).get("current") != here["id"]:
                         await anyio.to_thread.run_sync(remember, email, here["id"])
                 if scope["method"] == "GET" and not _header(scope, b"hx-request") and any(
                         rest == p or rest.startswith(p + "/") for p in ASKDND):

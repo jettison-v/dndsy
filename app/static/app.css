@@ -1821,3 +1821,6 @@ a.cx-node:hover { border-color: var(--text); }
   .cx .cx-list { display: block; }
 }
 
+
+/* View as (app/view_as.py): always on top while an admin sees askdnd as someone else */
+.view-as-bar { position: sticky; top: 0; z-index: 60; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--sp-2) var(--sp-3); padding: var(--sp-2) var(--sp-4); background: var(--bg-glass); border-bottom: 2px solid var(--amber); color: var(--amber); font-size: var(--fs-sm); }
