@@ -16,6 +16,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import view_as
 from app import access, config, ddb, web
 from app import characters as chars
 from app.auth import can_see_table, is_admin, is_reviewer
@@ -76,7 +77,8 @@ def page(request: Request, db: Session = Depends(get_db)):
         "accounts": [u for u in db.scalars(select(User).order_by(User.name))
                      if u.email.lower() not in in_campaign and access.level(u.email) is not None],
         "can_change": is_admin(user), "can_refresh": is_reviewer(user), "roles": access.ROLES, "role_labels": access.ROLE_LABELS,
-        "chart": access.chart(), "toast": request.session.pop("toast", None)})
+        "chart": access.chart(), "toast": request.session.pop("toast", None),
+        "can_view": {p["email"] for p in everyone if not view_as.refusal(user["email"], p["email"])}})
 
 
 def set_role(db: Session, user: User, campaign_id: int, role: str | None) -> None:

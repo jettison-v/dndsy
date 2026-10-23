@@ -63,7 +63,9 @@
           <option value="none">No role</option>
         </select>
         <button class="btn small" type="submit">Save</button>
+        {% if p.email in can_view %}<button class="btn small" type="submit" form="view-{{ loop.index }}" title="See askdnd as {{ p.name or p.email }} does, read-only">View as</button>{% endif %}
       </form>
+      {% if p.email in can_view %}<form id="view-{{ loop.index }}" method="post" action="/view-as" hidden><input type="hidden" name="email" value="{{ p.email }}"></form>{% endif %}
       {% else %}<span>{{ role_labels[p.role] }}</span>{% endif %}
     </div>
     {% else %}<p class="muted">Nobody has a role in {{ campaign.name }} yet.</p>{% endfor %}

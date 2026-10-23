@@ -7,6 +7,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import view_as
 from app import access, config, web
 from app.auth import is_admin
 from app.db import get_db
@@ -45,7 +46,8 @@ def page(request: Request, db: Session = Depends(get_db)):
     everyone = accounts(db)
     return templates.TemplateResponse(request, "manage_accounts.html", {
         "people": [p for p in everyone if p["invited"]], "away": [p for p in everyone if not p["invited"]],
-        "role_labels": access.ROLE_LABELS, "me": user["email"].lower(), "toast": request.session.pop("toast", None)})
+        "role_labels": access.ROLE_LABELS, "me": user["email"].lower(), "toast": request.session.pop("toast", None),
+        "can_view": {p["email"] for p in everyone if not view_as.refusal(user["email"], p["email"])}})
 
 
 def _save(db: Session, email: str, tool: str, name: str = "") -> User:

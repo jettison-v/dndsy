@@ -60,7 +60,9 @@ creations in the database, never the public repo) M core · 0.7 Finish the Railw
 Casting spends slots, upcasting, concentration M core · 1.3 Class resources and uses M core · 1.4 Short and long
 rests, party rest M core · 1.5 Inventory in play (quantities, potions, charges, ammo, coins, attunement, giving,
 loot) L core · 1.6 Conditions with durations, Exhaustion M core · 1.7 D&D Beyond merge (build in, play state kept,
-what changed) M core · 1.8 Party at a glance for the DM S core · 1.9 Level-up companion S nice.
+what changed) M core · 1.8 Party at a glance for the DM S core · 1.9 Level-up companion S nice · 1.10 House rules for
+what askdnd automates (each common table rule a switch on Manage › House rules, applied where askdnd does that
+thing: critical hit damage, potions as a bonus action, flanking, rest variants; added 2026-10-23) M core, partly built.
 Milestone: a whole session's bookkeeping in askdnd; D&D Beyond only for building and leveling.
 
 **Phase 2, Combat.** 2.1 Encounters (2024 DMG budget) L core · 2.2 Initiative and turns M core · 2.3 Clickable stat

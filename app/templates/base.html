@@ -18,6 +18,10 @@
 </head>
 <body data-toast="{{ toast or '' }}">
 {% block body %}
+{% if viewing_as %}{# View as (app/view_as.py): who you're seeing askdnd as, read-only #}
+<div class="view-as-bar" role="status"><span>Viewing as <b>{{ viewing_as.name }}</b>{% if viewing_role %}, {{ viewing_role }}{% if here %} in {{ here.name }}{% endif %}{% elif here %}, no role in {{ here.name }}{% endif %} · read-only</span>
+  <form method="post" action="/view-as/stop" class="inline"><button class="btn small" type="submit">Stop viewing</button></form></div>
+{% endif %}
 {# The menu bar (Option B, Brett 2026-10-22; docs/mockups/menu-bar.html): the campaign (its name, Story, Campaign),
    then the people at the table (your character, Party ▾), then Live, Manage and you. #}
 {% macro avatar(r) %}<span class="char-av" aria-hidden="true">{{ r.name[:1] | upper }}{% if r.portrait %}<img src="{{ r.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>{% endmacro %}

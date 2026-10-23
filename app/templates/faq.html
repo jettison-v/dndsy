@@ -207,6 +207,9 @@
     {% call q("How do I get someone signed in?") %}
       <p>An admin adds their Google email on Manage › Accounts (or straight to a campaign on its Manage › Table). While the Google sign-in is in testing, the admin also adds them as a test user in Google Cloud Console.</p>
     {% endcall %}
+    {% call q("Can an admin see askdnd the way someone else does?") %}
+      <p>Yes, to check what the DM or a player sees: <b>View as</b> on Manage › Accounts or a campaign's Table. A banner says who you're viewing as, and nothing can be changed until <b>Stop viewing</b>, so nothing happens in their name. An admin who is a campaign's DM can't view as its players, because that would show them their players' notes.</p>
+    {% endcall %}
   </section>
 </main>
 {% endblock %}

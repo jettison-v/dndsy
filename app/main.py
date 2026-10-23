@@ -21,6 +21,8 @@ from app.api import router as api_router
 from app.atlas import router as atlas_router
 from app.auth import current_user
 from app.auth import router as auth_router
+from app.view_as import ViewAs
+from app.view_as import router as view_as_router
 from app.character_pages import router as character_router
 from app.help_pages import router as help_router
 from app.live import router as live_router
@@ -62,7 +64,8 @@ def mark_interrupted_runs() -> None:
 
 
 app = FastAPI(title="askdnd", docs_url=None, redoc_url=None, lifespan=lifespan)
-app.add_middleware(CampaignPaths)  # inside the session middleware (added next), so it knows who's asking
+app.add_middleware(CampaignPaths)  # inside the session middleware (added last), so it knows who's asking
+app.add_middleware(ViewAs)  # between the two: an admin viewing as someone else (app/view_as.py)
 app.add_middleware(
     SessionMiddleware,
     secret_key=config.SESSION_SECRET,
@@ -73,6 +76,7 @@ app.add_middleware(
 )
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 app.include_router(auth_router)
+app.include_router(view_as_router)
 app.include_router(admin_router)
 app.include_router(admin_notes_router)
 app.include_router(manage_table_router)

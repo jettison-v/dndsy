@@ -16,6 +16,7 @@
       <span>{% if fixed and p.invited %}<span class="tag published">Admin</span>
         {% else %}<label class="check"><input type="checkbox" name="admin" value="1" form="acct-{{ p.email }}" {{ "checked" if p.level == "admin" }}> Admin</label>{% endif %}</span>
       <span class="actions">{% if not (fixed and p.invited) %}<button class="btn small" type="submit" form="acct-{{ p.email }}">{{ "Invite" if not p.invited else "Save" }}</button>{% endif %}
+        {% if p.email in can_view %}<form method="post" action="/view-as" class="inline"><input type="hidden" name="email" value="{{ p.email }}"><button class="btn small" type="submit" title="See askdnd as {{ p.name or p.email }} does, read-only">View as</button></form>{% endif %}
         {% if p.invited and not fixed %}<button class="btn link small danger" type="submit" name="remove" value="1" form="acct-{{ p.email }}">Remove</button>{% endif %}</span>
     </div>
     {% endmacro %}
