@@ -515,3 +515,26 @@ which deploys beta right away.
    change has one page explaining it.
 2. Make CI (lint and tests) run on every PR and require it before deploying, so a red check stops a bad merge.
 3. Write the PR description for the person who merges: what changed, how to try it, what's not done.
+
+## 2026-10-23: The database password, and the Railway cleanup is done
+
+The last open item from the Railway incident. Brett had already rotated the legacy service's keys that mattered.
+
+- **A fresh backup first.** The nightly backup was 10 hours old, so a new one was made inside beta (`railway ssh` runs
+  a command in the live app) and saved to `private/backups/` on the Mac (git ignores it).
+- **One setting feeds everything.** Railway's Postgres builds its address from `POSTGRES_PASSWORD`, and beta and the
+  backup service only *point to* that address (`${{Postgres.DATABASE_URL}}`), so changing it in one place updates both.
+- **Two steps that must both happen.** The database itself keeps its password (the setting only matters when the
+  database is first created), so the password was changed inside the database (`ALTER USER`, sent through
+  `railway ssh`), then the same value saved to Railway, then beta and the backup service redeployed. The value was
+  generated on the Mac and piped through; no one saw it.
+- **A hiccup.** One redeploy failed on Railway's side (its build machine dropped the connection); trying again worked.
+  Beta kept serving the old version meanwhile, so nobody noticed.
+- **Checked:** beta's startup step talks to the database (it couldn't have started with the old password), pages load,
+  and a fresh connection from inside Railway works.
+
+**For a new project:**
+1. Keep one source for each secret and have other services *reference* it, so rotating means one change, not several.
+2. Take a backup right before touching a database's credentials, and know how you'd get back in if something breaks
+   (here: from inside Railway the database doesn't need the password).
+3. If a deploy fails, read its log before assuming your change broke it; it may be the host.
