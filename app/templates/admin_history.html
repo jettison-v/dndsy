@@ -25,6 +25,8 @@
     <div class="import-diff one"><div><small>What was deleted</small><p>{{ x.old }}</p></div></div>
     {% elif x.long %}
     <div class="import-diff"><div><small>Before</small><p>{{ x.old }}</p></div><div><small>After</small><p>{{ x.new }}</p></div></div>
+    {% elif x.change %}
+    <p class="note hist-short">{{ x.change }}</p>
     {% else %}
     <p class="note hist-short">{{ x.old }} → <b>{{ x.new }}</b></p>
     {% endif %}

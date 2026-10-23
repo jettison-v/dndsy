@@ -17,11 +17,14 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import access, history, picks, web
+from app import access, history, house_rules, picks, web
+from app import character_views as views
+from app import characters as chars
+from app import roll_recipes as rr
 from app.admin import _guard
 from app.auth import can_see_character_notes, can_set_house_rules, is_admin, is_reviewer
 from app.db import get_db
-from app.models import Character, Revision
+from app.models import CampaignCharacter, Character, Revision, User
 from app.templating import templates
 
 router = APIRouter(prefix="/manage/history")
@@ -87,6 +90,31 @@ def _matching(db: Session, q, keep) -> list[Revision]:
     return out[:PAGE]
 
 
+def _present(db: Session, r: Revision, people: dict[int, str]) -> dict:
+    """A change in words people recognize (Brett, 2026-10-23): who plays a character by name, not account number;
+    Wild Shape keeps by item name, as what was added or removed; a removed house rule as the ruling it was."""
+    if r.field == "owner_id":
+        name = lambda v: people.get(v, ("someone", ""))[0] if v else "Nobody"  # noqa: E731
+        old, new = name(r.old), name(r.new)
+        if old == new and r.old and r.new:  # two accounts with one name (an old and a new sign-in): say which
+            old, new = f"{old} ({people[r.old][1]})", f"{new} ({people[r.new][1]})"
+        return {"old": old, "new": new}
+    if r.field == "wild_shape_keep":
+        cc = db.get(CampaignCharacter, r.row_id)
+        sheet = chars.character_summary(cc.character) if cc and cc.character else None
+        label = lambda ref: ((views.find(sheet, ref) or {}).get("name") if sheet else None) or ref.split(":", 1)[-1].replace("-", " ").capitalize()  # noqa: E731
+        before, after = set(r.old or []), set(r.new or [])
+        bits = [f"Added {', '.join(sorted(label(x) for x in after - before))}" if after - before else "",
+                f"removed {', '.join(sorted(label(x) for x in before - after))}" if before - after else ""]
+        text = "; ".join(b for b in bits if b)
+        return {"change": (text[:1].upper() + text[1:]) if text else "No change"}
+    if r.table == "house_rules" and r.field == "deleted" and isinstance(r.old, dict):
+        o = r.old
+        text = house_rules.describe(o.get("field", ""), o.get("value", ""), rr.spell(o.get("target_key", "")))
+        return {"old": f"{o.get('target_key', '')}: {text}" + (f" ({o['reason']})" if o.get("reason") else "")}
+    return {"old": history.shown(r.old, r.field), "new": history.shown(r.new, r.field)}
+
+
 @router.get("")
 def history_page(request: Request, show: str = "", table: str = "", row: int | None = None, batch: str = "",
                  db: Session = Depends(get_db)):
@@ -109,10 +137,11 @@ def history_page(request: Request, show: str = "", table: str = "", row: int | N
     else:
         revs = _matching(db, q, lambda r, c: c is None)
     days: dict[str, list] = defaultdict(list)
+    people = {u.id: (u.name if u.name and u.name != u.email else u.email, u.email) for u in db.scalars(select(User))}
     for r in revs:
         days[r.created_at.strftime("%A %-d %B %Y")].append({
             "r": r, "field": history.FIELD_LABELS.get(r.field, r.field), "source": history.SOURCES.get(r.source, r.source),
-            "old": history.shown(r.old, r.field), "new": history.shown(r.new, r.field),
+            **_present(db, r, people),
             "long": r.field in ("summary", "description", "data", "note", "deleted"),
             "restorable": may_restore(db, user, r) and history.can_restore(db, r)})
     shown_filters = ({k: v[0] for k, v in FILTERS.items() if not v[1] or set(v[1]) & set(allowed)} if in_campaign

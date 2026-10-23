@@ -4,14 +4,14 @@
 <main class="page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Campaigns</h1></div>
-  <p class="subtitle">Every campaign in askdnd, and which characters are in each. A character is in one campaign at a time, like on D&amp;D Beyond; moving it keeps what it did in its old campaign's story. Each campaign's people, characters and details are on its own Manage pages (Manage it). Only admins can see this page.</p>
+  <p class="subtitle">Every campaign in askdnd, and which characters are in each. A character is in one campaign at a time, like on D&amp;D Beyond; moving it keeps what it did in its old campaign's story. Each campaign's details are on its Settings, and its people and characters on its Table. Only admins can see this page.</p>
 
   <section class="section">
     <ul class="manage-list">
       {% for x in campaigns %}{% set c = x.c %}
       <li><span><b>{{ c.name }}</b>
           <span class="note"><a href="/c/{{ c.slug }}/">/c/{{ c.slug }}</a> · {% if x.dms %}DM {{ x.dms | join(", ") }}{% else %}no DM yet{% endif %} · {{ x.people }} {{ "person" if x.people == 1 else "people" }} · {{ x.characters | map(attribute="name") | join(", ") or "no characters yet" }}{% if c.ddb_campaign_id %} · D&amp;D Beyond: {{ x.ddb_name or c.ddb_campaign_id }}{% endif %}</span></span>
-        <a class="btn small" href="/c/{{ c.slug }}/manage">Manage it</a></li>
+        <span class="row"><a class="btn small" href="/c/{{ c.slug }}/manage/settings">Settings</a><a class="btn small" href="/c/{{ c.slug }}/manage/table">Table</a></span></li>
       {% endfor %}
     </ul>
   </section>
