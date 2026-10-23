@@ -186,12 +186,11 @@ def test_game_mode_away_from_play_keeps_the_copy_fresh(player, dm, db, monkeypat
         return real(db_, ch, *a, **kw)
 
     monkeypatch.setattr(live.chars, "refresh", counting)
-    pill = player.post("/live/sync").text  # no character on screen: your own
-    assert calls == ["Cole"] and 'id="live-pill"' in pill and "just now" in pill and "<html" not in pill
+    pill = player.post("/live/sync").text  # no character on screen: your own first, then the rest of the party
+    assert calls == ["Cole", "Trah"] and 'id="live-pill"' in pill and "just now" in pill and "<html" not in pill
     player.post("/live/sync")
-    assert calls == ["Cole"]  # throttled
-    dm.post("/live/sync")  # the DM plays no character: everyone linked
-    assert sorted(calls) == ["Cole", "Trah"]
+    dm.post("/live/sync")
+    assert calls == ["Cole", "Trah"]  # throttled, whoever asks
 
 
 def test_game_mode_on_play_swaps_the_body_and_the_pill(player, db):

@@ -4,7 +4,7 @@
 <div class="live-pop" role="dialog" aria-label="Live updates from D&amp;D Beyond">
   <div class="live-gm">
     <div><b>Game Mode</b>
-      <small>Keeps {{ f.name if f else "the party" }} fresh from D&amp;D Beyond every {{ "%g" | format(tn.every / 60) }} minutes while askdnd is open{% if f %}; on Battle the page updates itself{% endif %}. Remembered on this device.</small></div>
+      <small>Keeps the party fresh from D&amp;D Beyond every {{ "%g" | format(tn.every / 60) }} minutes while askdnd is open{% if f %}, {{ f.name }} first; on Battle the page updates itself{% endif %}. Remembered on this device.</small></div>
     <button class="switch" type="button" role="switch" aria-checked="false" data-game-mode aria-label="Game Mode"></button>
   </div>
   <div class="live-list">

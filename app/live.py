@@ -10,7 +10,8 @@
   (reviewers only).
 - While Game Mode is on, app.js asks every couple of minutes: on Battle it swaps in the updated
   page body (character_pages.game_mode_sync), elsewhere it calls /live/sync and swaps the pill.
-  The server fetches at most every AUTO_MIN_AGE per character, however many people watch.
+  Either way the whole party is kept fresh, the character on screen first (Brett, 2026-10-23), and
+  the server fetches at most every AUTO_MIN_AGE per character, however many people watch.
 
 The menu bar is on every page, so `loader` reads the rows with its own short session (like
 app/access.py); tests point it at their session.
@@ -120,6 +121,17 @@ def maybe_refresh(db: Session, ch: Character, min_age: timedelta) -> bool:
     return True
 
 
+def refresh_party(db: Session, user: dict, focus_id: int | None, skip: int | None = None) -> None:
+    """Game Mode: the character on screen (else your own) first, then everyone else linked in the campaign, each at
+    most every AUTO_MIN_AGE. `skip`: one the caller has just refreshed."""
+    tn = table(user, "", rows_from(db), focus_id)
+    first = [tn["focus"]["id"]] if tn["focus"] and tn["focus"]["linked"] else []
+    for i in first + [r["id"] for r in tn["linked"] if r["id"] not in first]:
+        ch = db.get(Character, i) if i != skip else None
+        if ch is not None:
+            maybe_refresh(db, ch, AUTO_MIN_AGE)
+
+
 def pill(db: Session, user: dict, focus_id: int | None) -> str:
     """The pill's HTML on its own (Game Mode's tick away from Battle swaps it in)."""
     return templates.get_template("_live_pill.html").render(tn=table(user, "", rows_from(db), focus_id))
@@ -144,15 +156,12 @@ def live_panel(request: Request, c: int = 0, db: Session = Depends(get_db)):
 
 @router.post("/live/sync")
 def live_sync(request: Request, c: int = 0, db: Session = Depends(get_db)):
-    """Game Mode away from Battle: keep the character on screen fresh (else your own, else
-    everyone's) and return the updated pill."""
+    """Game Mode away from Battle: keep the party fresh (the character on screen, else your own, first) and return
+    the updated pill."""
     user = current_user(request)
     if not user:
         return HTMLResponse("", status_code=401)
-    tn = table(user, "", rows_from(db), c or None)
-    ids = [tn["focus"]["id"]] if tn["focus"] else [r["id"] for r in tn["linked"]]
-    for ch in filter(None, (db.get(Character, i) for i in ids)):
-        maybe_refresh(db, ch, AUTO_MIN_AGE)
+    refresh_party(db, user, c or None)
     return HTMLResponse(pill(db, user, c or None))
 
 

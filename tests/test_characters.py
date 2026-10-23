@@ -322,16 +322,16 @@ def test_game_mode_sync_is_throttled(player, db, monkeypatch):
 
     monkeypatch.setattr(characters.refresh, "__defaults__", (counting,))
     body = player.post(f"/characters/{cole.id}/sync").text
-    assert 'id="battle-body"' in body and "<html" not in body and len(calls) == 1
+    assert 'id="battle-body"' in body and "<html" not in body and calls == [cole.ddb_id, "135831636"]  # then the party (Trah)
     player.post(f"/characters/{cole.id}/sync")
-    assert len(calls) == 1  # a second viewer moments later doesn't fetch again
+    assert len(calls) == 2  # a second viewer moments later doesn't fetch again
     player.post(f"/characters/{cole.id}/sync", data={"now": "1"})
-    assert len(calls) == 1  # "Refresh now" also waits at least 20 seconds
+    assert len(calls) == 2  # "Refresh now" also waits at least 20 seconds
     from datetime import timedelta
 
     cole.snapshot.attempted_at -= timedelta(minutes=3)
     player.post(f"/characters/{cole.id}/sync")
-    assert len(calls) == 2
+    assert calls.count(cole.ddb_id) == 2
 
 
 def test_no_character_notes_on_character_pages(dm, db):

@@ -118,7 +118,7 @@ body.gm-on .live-off { display: none; }
 .live-row.here > span:first-child { font-weight: 600; }
 .live-row .quiet-warn { text-align: right; }
 .live-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.live-actions .btn { flex: 1; }
+.live-actions .btn { flex: 1 1 auto; white-space: nowrap; }  /* the spinner never wraps the label */
 /* Phones: a bottom bar with the main pages; More holds the rest (base.html) */
 .bottom-nav { display: none; }
 
