@@ -473,3 +473,22 @@ pays for everything.
 2. One "current workspace" function that every page asks, instead of each page deciding, makes the switch a
    small change.
 3. Store "what I opened last" per person, not per browser, so it follows them between devices.
+
+## 2026-10-23: Finishing the Railway incident cleanup (roadmap step 12)
+
+- **Google client secret.** Brett added a second secret to askdnd's web client in Google Cloud Console (Google
+  Auth Platform › Clients) and copied it. `scripts/set-secret.sh GOOGLE_CLIENT_SECRET --clipboard` saved it to Railway
+  and the local `.env` without showing it; `railway redeploy --service askdnd-v2` put it into effect. Brett signed in
+  from a private window, then disabled the old secret. Google lets a client have two secrets at once, which is what
+  makes this a no-downtime swap.
+- **Database password: checked first.** The legacy service has no database settings, so only beta and the backup
+  service use this Postgres. It also has no public address (no TCP proxy), so the leaked password couldn't be used
+  from outside Railway's private network. That lowers the urgency; it gets rotated after a fresh backup.
+- **Legacy keys** are Brett's (legacy is never touched from here): its AWS key first, then OpenAI, Qdrant,
+  `SECRET_KEY` and `APP_PASSWORD`.
+
+**For a new project:**
+1. Rotate with an overlap when the provider allows two keys at once (Google client secrets, most API keys): add the
+   new one, deploy, test, then disable the old one.
+2. Before rotating a database password, check who uses the database and whether it's reachable from the internet at
+   all. A database with no public address is much less exposed by a leaked password.
