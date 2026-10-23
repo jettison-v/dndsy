@@ -284,28 +284,9 @@ details.conversation[open] > summary { margin-bottom: 12px; }
 .stat.attention { box-shadow: inset 3px 0 0 var(--red); }
 .stat.attention small { color: var(--red); }
 @media (max-width: 900px) { .stats { grid-template-columns: 1fr; } }
-/* Manage › Usage: the two settings side by side, then the calls full width */
-.usage-settings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4); align-items: stretch; margin-bottom: var(--sp-5); }
-.usage-settings .section { margin: 0; }
-.usage-settings .hint { margin: var(--sp-1) 0 var(--sp-3); }
-.usage-form { display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: flex-end; }
-.usage-form .field { flex: 0 1 160px; min-width: 0; }
-.usage-form .field.grow { flex: 1 1 200px; }
-.usage-topups { list-style: none; margin: 0 0 var(--sp-3); padding: 0; }
-.usage-topups li { display: flex; gap: var(--sp-3); align-items: baseline; padding: var(--sp-2) 0; border-bottom: 1px solid var(--line-soft); }
-.usage-topups li form { margin-left: auto; }
 .table-scroll { overflow-x: auto; }
-/* Manage › Tool corrections: what · why · Undo */
-.tc-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
-.tc-list li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) auto; gap: var(--sp-2) var(--sp-5); align-items: start; padding: var(--sp-3) 0; border-bottom: 1px solid var(--line-soft); }
-.tc-what .note { display: block; margin-top: 2px; }
-.tc-why { font-size: var(--fs-sm); min-width: 0; }
-.tc-why-form { display: flex; gap: var(--sp-2); align-items: center; }
-.tc-why-form input { flex: 1 1 auto; min-width: 0; }
-@media (max-width: 640px) { .tc-list li { grid-template-columns: minmax(0, 1fr) auto; } .tc-why { grid-column: 1 / -1; grid-row: 2; } }
 .usage-calls { width: 100%; margin-top: var(--sp-3); }
 .usage-calls .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-@media (max-width: 900px) { .usage-settings { grid-template-columns: 1fr; } }
 
 /* Tables and lists */
 table.list { width: 100%; border-collapse: collapse; }
@@ -468,11 +449,6 @@ details.feat > summary:hover { color: var(--text-strong); }
 }
 
 /* People */
-.people { list-style: none; margin: 12px 0 0; padding: 0; }
-.people li { display: flex; justify-content: space-between; align-items: center; gap: 10px 20px; flex-wrap: wrap; padding: 14px 0; }
-.people li + li { border-top: 1px solid var(--line); }
-.people li.removed .who b { color: var(--muted); }
-.people .who { display: grid; min-width: 0; overflow-wrap: anywhere; }
 
 /* Busy buttons (app.js): something is happening */
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -567,21 +543,6 @@ a.who { color: var(--text); font-weight: 600; text-decoration: underline; text-d
 }
 .econ h2, .lower h2, .sec-head h2 { flex: none; }
 details.opt .meta, .move .meta, .situ .meta, .poolrow .meta { margin-top: 2px; }
-/* People rows: the same columns on every row (person · plays · access · DM · buttons) */
-.people-head, .people li { display: grid; grid-template-columns: minmax(0, 1fr) 150px 120px 64px 160px; gap: 8px 14px; align-items: center; }
-.people-head { color: var(--muted); font-size: var(--fs-xs); margin-top: 12px; }
-.people-group { margin: 18px 0 0; font-size: var(--fs-sm); color: var(--muted); }
-.people-group .count { color: var(--faint); font-weight: 400; }
-.people-away { margin-top: 18px; }
-.person-form { display: contents; }
-.person-form select { width: 100%; }
-.person-actions { display: flex; gap: 4px; align-items: center; }
-.people li.house-rule { display: flex; }
-@media (max-width: 900px) {
-  .people-head { display: none; }
-  .people li { grid-template-columns: 1fr 1fr; }
-  .people li .who { grid-column: 1 / -1; }
-}
 .forget { list-style: none; margin: 6px 0 0; padding: 0; }
 .forget li { display: flex; gap: 10px; justify-content: space-between; align-items: baseline; padding: 7px 0; border-top: 1px solid var(--line); }
 .forget li:first-child { border-top: none; }
@@ -932,27 +893,7 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .manage-tabs a.on { color: var(--text); background: var(--surface-2); font-weight: 600; }
 .manage-tabs .manage-scope { font: 700 var(--fs-xs) var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); padding-right: var(--sp-2); }
 /* Manage lists and grids: Needs you, Table, Accounts, Campaigns, Sessions (Manage layout, 2026-10-23) */
-.manage-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
-.manage-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--sp-2) var(--sp-4); align-items: center; padding: var(--sp-3) 0; border-bottom: 1px solid var(--line-soft); }
-.manage-list li .note { display: block; }
-.manage-list li b { color: var(--text-strong); }
-.manage-grid { display: grid; gap: var(--sp-2) var(--sp-4); align-items: start; padding: var(--sp-3) 0; border-bottom: 1px solid var(--line-soft); font-size: var(--fs-sm); }
-.manage-grid > * { min-width: 0; overflow-wrap: anywhere; }
-.manage-grid .note { display: block; }
-.manage-grid.head { color: var(--muted); font: 700 var(--fs-xs) var(--cond); letter-spacing: .06em; text-transform: uppercase; border-bottom: 1px solid var(--line); padding-bottom: var(--sp-2); }
-.manage-grid select { width: 100%; }
-.manage-grid .actions { display: flex; gap: var(--sp-2); justify-content: flex-end; flex-wrap: wrap; }
-.manage-grid .pick { display: flex; gap: var(--sp-2); align-items: center; } .manage-grid .pick select { flex: 1; min-width: 0; max-width: 240px; }
-.grid-chars { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.2fr) auto; }
-.grid-people { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.2fr); }
 .grid-accounts { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.2fr) minmax(0, .8fr) auto; }
-@media (max-width: 640px) {
-  .grid-people, .grid-accounts { grid-template-columns: 1fr 1fr; }
-  .grid-chars { grid-template-columns: 1fr; }
-  .manage-grid.head { display: none; }
-  .manage-grid > :first-child { grid-column: 1 / -1; }
-  .manage-grid .actions { justify-content: flex-start; }
-}
 .sub-tabs { display: flex; gap: var(--sp-4); border-bottom: 1px solid var(--line); margin: 0 0 var(--sp-4); font-size: var(--fs-sm); }
 .sub-tabs a { padding-bottom: var(--sp-2); color: var(--muted); text-decoration: none; }
 .sub-tabs a.on { color: var(--text-strong); border-bottom: 2px solid var(--red); }
@@ -998,7 +939,6 @@ a.sheet-ref { text-decoration-style: dotted; }
 .access-chart .access-group th { text-align: left; font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); padding-top: 14px; border-top: none; }
 .ac-yes { color: var(--green); font-weight: 700; } .ac-no { color: var(--faint); } .ac-own { color: var(--violet); font-size: var(--fs-sm); }
 .access-chart .dm-col { border-left: 1px solid var(--line); font-size: var(--fs-sm); }
-.people li .access-summary { grid-column: 1 / -1; order: 10; margin-top: -4px; }
 
 /* Manage › Data: import preview */
 .import-summary { margin: 10px 0; padding-left: 18px; }
@@ -1013,8 +953,8 @@ a.sheet-ref { text-decoration-style: dotted; }
 @media (max-width: 640px) { .import-diff { grid-template-columns: 1fr; } }
 
 /* Manage › History */
-.hist-row { border-top: 1px solid var(--line); padding: 10px 0; display: grid; gap: 6px; }
-.hist-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.hist-row { border-top: 1px solid var(--line); padding: var(--sp-3) 0; display: grid; gap: var(--sp-2); }
+.hist-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
 .hist-head .hist-restore { margin-left: auto; }
 .hist-short { margin: 0; }
 .import-diff.one { grid-template-columns: 1fr; }
@@ -1824,3 +1764,64 @@ a.cx-node:hover { border-color: var(--text); }
 
 /* View as (app/view_as.py): always on top while an admin sees askdnd as someone else */
 .view-as-bar { position: sticky; top: 0; z-index: 60; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--sp-2) var(--sp-3); padding: var(--sp-2) var(--sp-4); background: var(--bg-glass); border-bottom: 2px solid var(--amber); color: var(--amber); font-size: var(--fs-sm); }
+
+/* ------------------------------------------------------------------ Manage components (Brett, 2026-10-23)
+   Every Manage page is built from these, with no one-off spacing (tests/test_design_system.py checks):
+   records (any list of people, characters, campaigns, rules…), form rows, narrow forms, inline edits, folds.
+   Shown on Manage › Design system › Manage. */
+/* Records: a list of things, one row each: what it is, optional fields, then its buttons */
+.records { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.record { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--sp-2) var(--sp-4); align-items: start; padding: var(--sp-3) 0; border-bottom: 1px solid var(--line-soft); font-size: var(--fs-sm); }
+.record > * { min-width: 0; overflow-wrap: anywhere; }
+.records.cols-3 > .record { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) auto; }
+.records.cols-3-even > .record { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.2fr); }
+.records.cols-4 > .record { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.2fr) auto; }
+.record-main b { color: var(--text-strong); font-size: var(--fs-md); }
+.record-main .note, .record-main .tag + .note { display: block; margin-top: 2px; }
+.record-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); justify-content: flex-end; align-items: center; }
+.record.faded .record-main b { color: var(--muted); }
+.records > .records-head { color: var(--muted); font: 700 var(--fs-xs) var(--cond); letter-spacing: .06em; text-transform: uppercase; padding: 0 0 var(--sp-2); border-bottom: 1px solid var(--line); }
+.records-head + .record { border-top: 0; }
+.records:has(> .records-head) { border-top: 0; }
+.record .pick { display: flex; gap: var(--sp-2); align-items: center; }
+.record .pick select { flex: 1 1 auto; min-width: 0; max-width: 240px; }
+.record select { width: 100%; }
+.record .pick select, .record-actions select { width: auto; }
+@media (max-width: 640px) {
+  .records.cols-3 > .record, .records.cols-3-even > .record, .records.cols-4 > .record { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .record > .record-main { grid-column: 1 / -1; }
+  .record-actions { justify-content: flex-start; }
+  .records > .records-head { display: none; }
+}
+/* Form row: fields side by side, bottom-aligned with their button */
+.form-row { display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: flex-end; }
+.form-row .field { flex: 0 1 180px; min-width: 0; }
+.form-row .field.grow { flex: 1 1 220px; }
+.form-row > input:not([type="hidden"]):not([type="checkbox"]), .form-row > select { flex: 1 1 220px; min-width: 0; }
+.row > .grow { flex: 1 1 240px; min-width: 0; }
+table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
+.manage-page details.section > summary { cursor: pointer; }
+.manage-page details.section[open] > :not(summary) { margin-top: var(--sp-3); }
+/* Narrow form: stacked fields at a readable width */
+.form-narrow { display: grid; gap: var(--sp-3); max-width: 520px; }
+/* Sections on Manage pages (main.manage-page): a heading, its hint, then content, always the same gaps */
+.manage-page .section > h2 { margin: 0; }
+.manage-page .section > h2 + .hint, .manage-page .section > .section-head + .hint { margin: var(--sp-1) 0 var(--sp-4); }
+.manage-page .section > h2 + :not(.hint) { margin-top: var(--sp-4); }
+.manage-page .section > h3 { margin: var(--sp-5) 0 var(--sp-1); }
+.manage-page .section > h3:first-child { margin-top: 0; }
+.manage-page .section > h3 + .hint { margin: 0 0 var(--sp-3); }
+.form-row + .note, .form-narrow + .note { margin-top: var(--sp-2); }
+.section-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4); align-items: stretch; margin-bottom: var(--sp-5); }
+.section-pair > .section { margin: 0; }
+@media (max-width: 900px) { .section-pair { grid-template-columns: 1fr; } }
+/* Folds ("+ Add a character"): the same gaps inside every one */
+.manage-page details.fold[open] > :not(summary) { margin-top: var(--sp-3); }
+.records + details.fold, .records + .note, .records + p, .records + form { margin-top: var(--sp-3); }
+/* Inline edit (macros in _manage.html): text with Edit, or the field with Save and Cancel */
+.inline-edit-form { display: flex; gap: var(--sp-2); align-items: center; }
+.inline-edit-form input { flex: 1 1 auto; min-width: 0; }
+/* A closing note under a page's content, and the title row's own button */
+.page-note { margin-top: var(--sp-5); }
+.title-row .title-action { margin-left: auto; }
+.all-clear + .records { margin-top: var(--sp-4); }

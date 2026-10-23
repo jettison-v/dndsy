@@ -39,3 +39,14 @@ def test_tokens_are_defined_once():
     assert len(names) == len(set(names))
     for t in ("--fs-xs", "--fs-sm", "--fs-md", "--fs-lg", "--fs-xl", "--fs-2xl", "--sp-1", "--r-md", "--control-h"):
         assert t in names
+
+
+def test_manage_pages_use_the_components_not_one_off_spacing():
+    """Brett, 2026-10-23: Manage pages are built from the Manage components (app.css), so no page carries its own
+    inline style. The Design system page is the exception: its samples draw each token."""
+    from pathlib import Path
+
+    templates = Path(__file__).resolve().parent.parent / "app" / "templates"
+    found = {p.name: len(re.findall(r'\sstyle="', p.read_text())) for p in templates.glob("*.html")
+             if "_manage_head.html" in p.read_text() and p.name != "design.html"}
+    assert not {k: v for k, v in found.items() if v}, f"Inline styles on Manage pages: {found}"

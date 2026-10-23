@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Sessions · Manage · askdnd{% endblock %}
 {% block content %}
-<main class="page" {% if running %}hx-get="{{ cbase }}/manage/sessions" hx-trigger="every 10s" hx-select="main" hx-swap="outerHTML"{% endif %}>
+<main class="page manage-page" {% if running %}hx-get="{{ cbase }}/manage/sessions" hx-trigger="every 10s" hx-select="main" hx-swap="outerHTML"{% endif %}>
   {% include "_manage_head.html" %}
-  <div class="title-row"><h1>Sessions</h1><a class="btn" href="{{ cbase }}/manage/sessions/new" style="margin-left:auto">+ Add session</a></div>
+  <div class="title-row"><h1>Sessions</h1><a class="btn title-action" href="{{ cbase }}/manage/sessions/new">+ Add session</a></div>
   {% include "_sessions_tabs.html" %}
   <p class="subtitle">Claude drafts each session's recap from the campaign doc or a transcript. Nothing reaches the table until you open a session and publish it. Spent on drafting so far: <b>${{ "%.2f" | format(spent) }}</b>.</p>
 
@@ -12,7 +12,7 @@
   {% if missing and not running %}
   <section class="section">
     <div class="row">
-      <div style="flex:1;min-width:240px"><b>{{ missing | length }} session{{ "s" if missing | length > 1 }} not drafted yet.</b>
+      <div class="grow"><b>{{ missing | length }} session{{ "s" if missing | length > 1 }} not drafted yet.</b>
         <div class="note">One at a time works best: draft the oldest, review and publish it, and the next one drafts by itself. Each draft then knows the people and places you accepted, so it doesn't suggest them again. About 13¢ a session.</div></div>
       <form method="post" action="{{ cbase }}/manage/sessions/draft">
         <input type="hidden" name="session_ids" value="{{ missing[0] }}">
@@ -36,7 +36,7 @@
         <td><a href="{{ cbase }}/manage/sessions/{{ r.s.id }}">{{ r.label }}</a>{% if r.s.title %}<div class="note">{{ r.s.title }}</div>{% endif %}</td>
         <td><span class="tag {{ {'draft': 'draft', 'published': 'published', 'edited': 'edited', 'drafting': 'working'}.get(r.status, '') }}">{{ {'draft': 'Draft', 'published': 'Published', 'edited': 'Edited since publishing', 'drafting': 'Drafting…', 'no draft': 'Not drafted'}[r.status] }}</span></td>
         <td class="note">{% if r.last_run %}{% if r.last_run.status == "error" %}<span class="tag error">Failed</span>{% elif r.last_run.status == "done" %}{{ "%.0f" | format(r.last_run.cost_usd * 100) }}¢{% endif %}{% endif %}</td>
-        <td style="text-align:right">
+        <td class="end">
           {% if r.has_notes and r.status == "no draft" and not running %}
           <form method="post" action="{{ cbase }}/manage/sessions/draft"><input type="hidden" name="session_ids" value="{{ r.s.id }}"><button class="btn" data-busy="Starting…">Draft from notes</button></form>
           {% elif r.status != "no draft" %}<a class="btn" href="{{ cbase }}/manage/sessions/{{ r.s.id }}">Review</a>

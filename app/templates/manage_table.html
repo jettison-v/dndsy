@@ -1,19 +1,20 @@
 {% extends "base.html" %}
 {% block title %}Table · Manage · askdnd{% endblock %}
 {% block content %}
-<main class="page">
+<main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Table</h1>
-    {% if can_refresh and characters | selectattr("ddb_id") | list %}<form method="post" action="{{ cbase }}/characters/refresh?from=table" class="inline" style="margin-left:auto" data-busy-note="refresh-note"><button class="btn" type="submit" data-busy="Refreshing from D&amp;D Beyond…">Refresh all from D&amp;D Beyond</button></form>{% endif %}</div>
+    {% if can_refresh and characters | selectattr("ddb_id") | list %}<form method="post" action="{{ cbase }}/characters/refresh?from=table" class="inline title-action" data-busy-note="refresh-note"><button class="btn" type="submit" data-busy="Refreshing from D&amp;D Beyond…">Refresh all from D&amp;D Beyond</button></form>{% endif %}</div>
   <p class="subtitle">Who plays in {{ campaign.name }} and with which character. {% if can_change %}Only admins change this page; the DM sees it. Who can sign in at all is on <a href="/manage/accounts">Accounts</a>.{% else %}An admin changes it.{% endif %}</p>
   <p class="busy-note" id="refresh-note" hidden>Fetching from D&amp;D Beyond. This takes a few seconds per character; the page reloads when it's done.</p>
 
   <section class="section">
     <h2>Characters</h2>
-    <div class="manage-grid grid-chars head" aria-hidden="true"><span>Character</span><span>Played by</span><span>D&amp;D Beyond</span><span></span></div>
+    <ul class="records cols-4">
+    <li class="records-head" aria-hidden="true"><span>Character</span><span>Played by</span><span>D&amp;D Beyond</span><span></span></li>
     {% for c in characters %}{% set snap = c.snapshot %}
-    <div class="manage-grid grid-chars">
-      <span><b><a href="/characters/{{ c.id }}">{{ c.name }}</a></b>{% if classes[c.id] %}<span class="note">{{ classes[c.id] }}</span>{% endif %}</span>
+    <li class="record">
+      <span class="record-main"><b><a href="/characters/{{ c.id }}">{{ c.name }}</a></b>{% if classes[c.id] %}<span class="note">{{ classes[c.id] }}</span>{% endif %}</span>
       {% if can_change %}
       <form method="post" action="{{ cbase }}/manage/table/characters/{{ c.id }}" class="pick">
         <select name="user_id" aria-label="Who plays {{ c.name }}">
@@ -26,34 +27,36 @@
       {% else %}<span>{{ names.get(c.owner_id) or c.player_name or "—" }}</span>{% endif %}
       <span>{% if not c.ddb_id %}<span class="note">Not linked yet</span>{% elif snap and snap.status == "error" %}<span class="quiet-warn">{{ snap.error }}</span>{% if snap.fetched_at %}<span class="note">Last good copy {{ snap.fetched_at | ago }}</span>{% endif %}{% elif snap and snap.fetched_at %}Linked · updated {{ snap.fetched_at | ago }}{% else %}<span class="note">Linked, not fetched yet</span>{% endif %}
         {% if can_change %}<details class="fold"><summary>{{ "Fix link" if c.ddb_id else "Link" }}</summary>
-          <form method="post" action="{{ cbase }}/characters/{{ c.id }}/link" class="stack" style="margin-top:8px">
+          <form method="post" action="{{ cbase }}/characters/{{ c.id }}/link" class="form-narrow">
             <input type="text" name="ddb_link" aria-label="D&amp;D Beyond link for {{ c.name }}" value="{{ 'https://www.dndbeyond.com/characters/' ~ c.ddb_id if c.ddb_id }}" placeholder="https://www.dndbeyond.com/characters/12345678" required>
             <div><button class="btn small{{ ' primary' if not c.ddb_id }}" type="submit" data-busy="Fetching…">{{ "Save and refresh" if c.ddb_id else "Link and fetch" }}</button></div>
           </form>
           <p class="note">The character must be set to Public on D&amp;D Beyond.</p></details>{% endif %}</span>
-      <span class="actions">{% if can_refresh and c.ddb_id %}<form method="post" action="{{ cbase }}/characters/{{ c.id }}/refresh?from=table" class="inline"><button class="btn small" type="submit" data-busy="Refreshing…">Refresh</button></form>{% endif %}</span>
-    </div>
-    {% else %}<p class="muted">No characters in {{ campaign.name }} yet.</p>{% endfor %}
+      <span class="record-actions">{% if can_refresh and c.ddb_id %}<form method="post" action="{{ cbase }}/characters/{{ c.id }}/refresh?from=table" class="inline"><button class="btn small" type="submit" data-busy="Refreshing…">Refresh</button></form>{% endif %}</span>
+    </li>
+    {% else %}<li class="record muted">No characters in {{ campaign.name }} yet.</li>{% endfor %}
+    </ul>
     {% if can_change %}
-    <details class="fold" style="margin-top:12px"><summary>+ Add a character</summary>
-      <form method="post" action="{{ cbase }}/manage/table/characters" class="stack" style="margin-top:8px;max-width:520px">
+    <details class="fold"><summary>+ Add a character</summary>
+      <form method="post" action="{{ cbase }}/manage/table/characters" class="form-narrow">
         <label class="field">Character's name<input type="text" name="name" maxlength="200" required></label>
         <label class="field">Played by<select name="user_id"><option value="">Nobody yet</option>{% for p in people if p.user %}<option value="{{ p.user.id }}">{{ p.name or p.email }}</option>{% endfor %}</select></label>
         <label class="field">D&amp;D Beyond link (optional)<input type="text" name="ddb_link" placeholder="https://www.dndbeyond.com/characters/12345678"></label>
         <div class="row"><button class="btn primary" type="submit">Add to {{ campaign.name }}</button></div>
       </form>
     </details>
-    <p class="note" style="margin-top:8px">Moving a character to another campaign is on <a href="/manage/campaigns">Campaigns</a>.</p>
+    <p class="note">Moving a character to another campaign is on <a href="/manage/campaigns">Campaigns</a>.</p>
     {% endif %}
   </section>
 
   <section class="section">
     <h2>People</h2>
-    <p class="hint" style="margin-top:6px"><b>Role here</b> is what someone does in {{ campaign.name }}: DM, Reviewer or Player. No role takes them out of it.</p>
-    <div class="manage-grid grid-people head" aria-hidden="true"><span>Person</span><span>Plays</span><span>Role here</span></div>
+    <p class="hint"><b>Role here</b> is what someone does in {{ campaign.name }}: DM, Reviewer or Player. No role takes them out of it.</p>
+    <ul class="records cols-3-even">
+    <li class="records-head" aria-hidden="true"><span>Person</span><span>Plays</span><span>Role here</span></li>
     {% for p in people %}
-    <div class="manage-grid grid-people">
-      <span><b>{{ p.name or p.email }}</b><span class="note">{% if p.name %}{{ p.email }}{% endif %}{% if p.from_railway %}{{ " · " if p.name }}Reviewer everywhere (Railway list){% endif %}</span>
+    <li class="record">
+      <span class="record-main"><b>{{ p.name or p.email }}</b><span class="note">{% if p.name %}{{ p.email }}{% endif %}{% if p.from_railway %}{{ " · " if p.name }}Reviewer everywhere (Railway list){% endif %}</span>
         <span class="note">{{ p.summary }}</span></span>
       <span>{{ p.plays | map(attribute="name") | join(", ") or "—" }}</span>
       {% if can_change %}
@@ -67,11 +70,12 @@
       </form>
       {% if p.email in can_view %}<form id="view-{{ loop.index }}" method="post" action="/view-as" hidden><input type="hidden" name="email" value="{{ p.email }}"></form>{% endif %}
       {% else %}<span>{{ role_labels[p.role] }}</span>{% endif %}
-    </div>
-    {% else %}<p class="muted">Nobody has a role in {{ campaign.name }} yet.</p>{% endfor %}
+    </li>
+    {% else %}<li class="record muted">Nobody has a role in {{ campaign.name }} yet.</li>{% endfor %}
+    </ul>
     {% if can_change %}
-    <details class="fold" style="margin-top:12px"><summary>+ Add someone to {{ campaign.name }}</summary>
-      <form method="post" action="{{ cbase }}/manage/table/people/add" class="stack" style="margin-top:8px;max-width:520px">
+    <details class="fold"><summary>+ Add someone to {{ campaign.name }}</summary>
+      <form method="post" action="{{ cbase }}/manage/table/people/add" class="form-narrow">
         {% if accounts %}<label class="field">Someone who already has an account<select name="email"><option value="">Pick someone</option>{% for u in accounts %}<option value="{{ u.email }}">{{ u.name if u.name and u.name != u.email else u.email }}{% if u.name and u.name != u.email %} ({{ u.email }}){% endif %}</option>{% endfor %}</select></label>
         {% else %}<p class="note">Everyone with an account is already in {{ campaign.name }}. To add someone new, enter their Google email.</p>{% endif %}
         <label class="field">{{ "Or someone new: their Google email" if accounts else "Their Google email" }}<input type="text" name="new_email" placeholder="name@gmail.com"></label>
@@ -86,7 +90,7 @@
 
   <details class="fold section">
     <summary>What each role can do</summary>
-    <div class="access-chart-wrap" style="margin-top:12px"><table class="access-chart">
+    <div class="access-chart-wrap"><table class="access-chart">
       <thead><tr><th></th>{% for l in chart.columns %}<th class="{{ 'dm-col' if loop.last }}">{{ l }}</th>{% endfor %}</tr></thead>
       <tbody>
       {% for group, rows in chart.groups %}
@@ -95,9 +99,9 @@
           {% for c in r.cells %}<td class="ac ac-{{ c }}{{ ' dm-col' if loop.last }}">{{ {"yes": "✓", "no": "✗", "own": "Own character"}[c] }}</td>{% endfor %}</tr>{% endfor %}
       {% endfor %}
       </tbody></table></div>
-    <details class="fold" style="margin-top:12px"><summary>Not included for anyone</summary>
+    <details class="fold"><summary>Not included for anyone</summary>
       <ul>{% for x in chart.not_included %}<li>{{ x }}</li>{% endfor %}</ul></details>
-    <p class="note" style="margin-top:8px">Player, Reviewer and DM are roles in one campaign. Admin is for askdnd as a whole and adds to any role, except that an admin who is a campaign's DM still never sees that campaign's players' notes. The owner (set on Railway) is always Admin and can't be removed. The DM's own corrections skip review.</p>
+    <p class="note">Player, Reviewer and DM are roles in one campaign. Admin is for askdnd as a whole and adds to any role, except that an admin who is a campaign's DM still never sees that campaign's players' notes. The owner (set on Railway) is always Admin and can't be removed. The DM's own corrections skip review.</p>
   </details>
 </main>
 {% endblock %}

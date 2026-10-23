@@ -4,7 +4,7 @@
    the same actions (Accept · Edit · Ask Claude to work it in · Dismiss), Claude's description drafts open the
    entry's Edit window, and session drafts link to their review page. #}
 {% block content %}
-<main class="page readable inbox">
+<main class="page manage-page readable inbox">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Inbox</h1>{% set n = items | length + drafts | length %}{% if n %}<span class="count">{{ n }} waiting</span>{% endif %}</div>
   <p class="subtitle">Everything waiting for an OK from the DM, a reviewer or an admin. Nothing reaches the table until one of you decides. Players see what happened to theirs: Added, Used or Not used.</p>

@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 {% block title %}Settings · Manage · askdnd{% endblock %}
 {% block content %}
-<main class="page">
+<main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Settings</h1></div>
   <p class="subtitle">{{ campaign.name }}'s own details. Its DM and admins can change them.</p>
-  <form method="post" action="{{ cbase }}/manage/settings" class="stack" style="max-width:520px">
+  <form method="post" action="{{ cbase }}/manage/settings" class="form-narrow">
     <label class="field">Campaign name<input type="text" name="name" value="{{ campaign.name }}" maxlength="200" required></label>
     <label class="field">DM's name (Claude uses it in recaps)<input type="text" name="dm_name" value="{{ campaign.dm_name }}" maxlength="200"></label>
     <label class="field">D&amp;D Beyond campaign id (optional){% if ddb_name %} · {{ ddb_name }}{% endif %}<input type="text" name="ddb_campaign_id" value="{{ campaign.ddb_campaign_id or '' }}" maxlength="40"></label>
     <p class="note">With the D&amp;D Beyond id, askdnd notices characters whose sheet says another campaign (admins see them on Campaigns).</p>
     <div class="row"><button class="btn primary" type="submit">Save</button></div>
   </form>
-  <p class="note" style="margin-top:24px">Its address stays <code>/c/{{ campaign.slug }}</code>, so links people saved keep working.</p>
+  <p class="note page-note">Its address stays <code>/c/{{ campaign.slug }}</code>, so links people saved keep working.</p>
 </main>
 {% endblock %}

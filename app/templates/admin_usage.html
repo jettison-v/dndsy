@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Usage · Manage · askdnd{% endblock %}
 {% block content %}
-<main class="page">
+<main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Usage</h1></div>
   <p class="subtitle">What askdnd has spent on Claude, from the exact token counts of every call. The <a href="https://console.anthropic.com/settings/billing" target="_blank" rel="noopener">Anthropic Console</a> has the official balance.</p>
@@ -14,12 +14,12 @@
   </div>
 
   {# Settings first and side by side, then every call full width (Brett, 2026-10-23: the old side column left the page half empty) #}
-  <div class="usage-settings">
+  <div class="section-pair">
     <section class="section">
       <h2>Monthly limit</h2>
       <p class="hint">askdnd stops calling Claude (drafts, account checks, descriptions) once this month's spending reaches it, until the 1st. Leave it empty for no limit. The Anthropic Console's own limit still applies.</p>
       {% if u.limit_reached %}<div class="flash warn">Reached: new drafts are paused until the 1st or until you raise the limit.</div>{% endif %}
-      <form method="post" action="/manage/usage/limit" class="usage-form">
+      <form method="post" action="/manage/usage/limit" class="form-row">
         <label class="field">Limit per month<input type="text" name="amount" inputmode="decimal" placeholder="None" value="{% if u.limit is not none %}{{ "%.2f" | format(u.limit) }}{% endif %}"></label>
         <button class="btn">Save limit</button>
       </form>
@@ -27,11 +27,11 @@
     <section class="section">
       <h2>Credit top-ups</h2>
       <p class="hint">What you've bought in the Anthropic Console, for the balance estimate.</p>
-      {% if topups %}<ul class="usage-topups">{% for t in topups %}
-        <li><b>${{ "%.2f" | format(t.amount_usd) }}</b><span class="note">{{ t.added_on.strftime("%b %-d, %Y") }}{% if t.note %} · {{ t.note }}{% endif %}</span>
-          <form class="inline" method="post" action="/manage/usage/topups/{{ t.id }}/delete" onsubmit="return confirm('Remove this top-up?')"><button class="btn link danger small">Remove</button></form></li>
+      {% if topups %}<ul class="records">{% for t in topups %}
+        <li class="record"><span class="record-main"><b>${{ "%.2f" | format(t.amount_usd) }}</b><span class="note">{{ t.added_on.strftime("%b %-d, %Y") }}{% if t.note %} · {{ t.note }}{% endif %}</span></span>
+          <form class="record-actions" method="post" action="/manage/usage/topups/{{ t.id }}/delete" onsubmit="return confirm('Remove this top-up?')"><button class="btn link danger small">Remove</button></form></li>
       {% endfor %}</ul>{% endif %}
-      <form method="post" action="/manage/usage/topups" class="usage-form">
+      <form method="post" action="/manage/usage/topups" class="form-row">
         <label class="field">Amount<input type="text" name="amount" inputmode="decimal" placeholder="$20.00" required></label>
         <label class="field">Date bought<input type="date" name="added_on" value="{{ today_iso }}" required></label>
         <label class="field grow">Note<input type="text" name="note" placeholder="Optional, e.g. Initial funding"></label>

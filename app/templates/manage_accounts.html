@@ -1,34 +1,36 @@
 {% extends "base.html" %}
 {% block title %}Accounts · Manage · askdnd{% endblock %}
 {% block content %}
-<main class="page">
+<main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Accounts</h1></div>
   <p class="subtitle">Who can sign in to askdnd at all, who's an admin, and which campaigns each person is in. Roles in a campaign (DM, reviewer, player) are set on that campaign's Table. Only admins can see this page.</p>
 
   <section class="section">
     {% macro person(p) %}{% set fixed = p.owner or p.email == me %}
-    <div class="manage-grid grid-accounts">
-      <span><b>{{ p.name or p.email }}</b>
+    <li class="record{{ ' faded' if not p.invited }}">
+      <span class="record-main"><b>{{ p.name or p.email }}</b>
         <span class="note">{% if p.name %}{{ p.email }} · {% endif %}{% if p.owner %}owner (set on Railway) · {% endif %}{% if p.removed %}removed · {% elif not p.invited %}not invited yet · {% elif p.from_railway and not p.owner %}from the Railway lists · {% endif %}{% if p.last_seen %}last signed in {{ p.last_seen | ago }}{% else %}hasn't signed in yet{% endif %}</span>
         <form id="acct-{{ p.email }}" method="post" action="/manage/accounts/update"><input type="hidden" name="email" value="{{ p.email }}"></form></span>
       <span>{% for c, r in p.campaigns %}<a href="/c/{{ c.slug }}/manage/table">{{ c.name }}</a> ({{ role_labels[r] | lower if r != "dm" else "DM" }}){{ ", " if not loop.last }}{% else %}<span class="note">No campaign yet</span>{% endfor %}</span>
       <span>{% if fixed and p.invited %}<span class="tag published">Admin</span>
         {% else %}<label class="check"><input type="checkbox" name="admin" value="1" form="acct-{{ p.email }}" {{ "checked" if p.level == "admin" }}> Admin</label>{% endif %}</span>
-      <span class="actions">{% if not (fixed and p.invited) %}<button class="btn small" type="submit" form="acct-{{ p.email }}">{{ "Invite" if not p.invited else "Save" }}</button>{% endif %}
+      <span class="record-actions">{% if not (fixed and p.invited) %}<button class="btn small" type="submit" form="acct-{{ p.email }}">{{ "Invite" if not p.invited else "Save" }}</button>{% endif %}
         {% if p.email in can_view %}<form method="post" action="/view-as" class="inline"><input type="hidden" name="email" value="{{ p.email }}"><button class="btn small" type="submit" title="See askdnd as {{ p.name or p.email }} does, read-only">View as</button></form>{% endif %}
         {% if p.invited and not fixed %}<button class="btn link small danger" type="submit" name="remove" value="1" form="acct-{{ p.email }}">Remove</button>{% endif %}</span>
-    </div>
+    </li>
     {% endmacro %}
-    <div class="manage-grid grid-accounts head" aria-hidden="true"><span>Person</span><span>Campaigns</span><span>Admin</span><span></span></div>
-    {% for p in people %}{{ person(p) }}{% endfor %}
-    {% if away %}<details class="fold people-away"><summary>Removed or not invited yet ({{ away | length }})</summary>
-      {% for p in away %}{{ person(p) }}{% endfor %}</details>{% endif %}
+    <ul class="records cols-4">
+      <li class="records-head" aria-hidden="true"><span>Person</span><span>Campaigns</span><span>Admin</span><span></span></li>
+      {% for p in people %}{{ person(p) }}{% endfor %}
+    </ul>
+    {% if away %}<details class="fold"><summary>Removed or not invited yet ({{ away | length }})</summary>
+      <ul class="records cols-4">{% for p in away %}{{ person(p) }}{% endfor %}</ul></details>{% endif %}
   </section>
 
   <section class="section">
     <h2>Add an account</h2>
-    <form method="post" action="/manage/accounts" class="stack" style="margin-top:12px;max-width:520px">
+    <form method="post" action="/manage/accounts" class="form-narrow">
       <label class="field">Google email<input type="text" name="email" placeholder="name@gmail.com" required></label>
       <label class="field">Name (optional)<input type="text" name="name"></label>
       <div class="row">
@@ -37,7 +39,7 @@
       </div>
       <p class="note">Then add them to a campaign on its Table.</p>
     </form>
-    <p class="hint" style="margin:16px 0 0">Google only lets people sign in to askdnd if they're on its test-user list (until the Google app is published). After adding someone here, also add their email in <a href="https://console.cloud.google.com/auth/audience" target="_blank" rel="noopener">Google Cloud Console → Google Auth Platform → Audience → Test users</a>.</p>
+    <p class="note page-note">Google only lets people sign in to askdnd if they're on its test-user list (until the Google app is published). After adding someone here, also add their email in <a href="https://console.cloud.google.com/auth/audience" target="_blank" rel="noopener">Google Cloud Console → Google Auth Platform → Audience → Test users</a>.</p>
   </section>
 </main>
 {% endblock %}

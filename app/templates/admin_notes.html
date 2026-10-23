@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Campaign doc · Sessions · askdnd{% endblock %}
 {% block content %}
-<main class="page">
+<main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Sessions</h1></div>
   {% include "_sessions_tabs.html" %}
@@ -18,13 +18,13 @@
     <div class="section-head"><h2>Synced doc</h2>
       {% if sources %}<form method="post" action="{{ cbase }}/manage/sessions/doc/sync"><button class="btn primary" data-busy="Opening Google…">Sync now</button></form>{% endif %}</div>
     {% if sources %}
-    <table class="list" style="margin-top:12px">
+    <table class="list">
       {% for s in sources %}{% set st = stats[s.id] %}
       <tr>
         <td><b>{{ s.title or s.google_doc_id }}</b>
           <div class="note">Campaign notes · visible to the table</div></td>
         <td class="note">{% if st.latest %}Synced {{ s.last_synced_at.strftime("%b %-d, %-I:%M %p") }} UTC<br>{{ "{:,}".format(st.words) }} words · {{ st.images }} images{% else %}Not synced yet{% endif %}</td>
-        <td style="text-align:right;white-space:nowrap">{% if st.latest %}<a class="btn" href="{{ cbase }}/manage/sessions/doc/snapshots/{{ st.latest.id }}">View</a>{% endif %}
+        <td class="end">{% if st.latest %}<a class="btn" href="{{ cbase }}/manage/sessions/doc/snapshots/{{ st.latest.id }}">View</a>{% endif %}
           <form class="inline" method="post" action="{{ cbase }}/manage/sessions/doc/sources/{{ s.id }}/delete" onsubmit="return confirm('Remove this doc? Its synced copies are deleted too.')"><button class="btn link danger">Remove</button></form></td>
       </tr>
       {% endfor %}
@@ -33,19 +33,19 @@
   </section>
   <section class="section">
     <h2>Add a doc</h2>
-    <form method="post" action="{{ cbase }}/manage/sessions/doc/sources" class="row" style="margin-top:12px">
-      <input type="url" name="url" placeholder="Paste a Google Docs link" required style="flex:1;min-width:220px">
+    <form method="post" action="{{ cbase }}/manage/sessions/doc/sources" class="form-row">
+      <input type="url" name="url" placeholder="Paste a Google Docs link" aria-label="Google Docs link" required>
       <button class="btn">Add</button>
     </form>
   </section>
   {% if retired %}
   <section class="section">
     <h2>Old character docs</h2>
-    <p class="hint" style="margin-top:6px">These no longer sync: player notes on each Character page replace them. Their last copy is kept until you remove it. Hidden from the DM.</p>
+    <p class="hint">These no longer sync: player notes on each Character page replace them. Their last copy is kept until you remove it. Hidden from the DM.</p>
     <table class="list">
       {% for s in retired %}{% set st = stats[s.id] %}
       <tr><td><b>{{ s.title or s.google_doc_id }}</b><div class="note">{{ s.character.name if s.character else "A character" }}'s notes</div></td>
-        <td style="text-align:right;white-space:nowrap">{% if st.latest %}<a class="btn" href="{{ cbase }}/manage/sessions/doc/snapshots/{{ st.latest.id }}">View last copy</a>{% endif %}
+        <td class="end">{% if st.latest %}<a class="btn" href="{{ cbase }}/manage/sessions/doc/snapshots/{{ st.latest.id }}">View last copy</a>{% endif %}
           <form class="inline" method="post" action="{{ cbase }}/manage/sessions/doc/sources/{{ s.id }}/delete" onsubmit="return confirm('Remove this doc and its saved copies?')"><button class="btn link danger">Remove</button></form></td></tr>
       {% endfor %}
     </table>

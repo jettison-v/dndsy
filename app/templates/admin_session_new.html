@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Add session · askdnd{% endblock %}
 {% block content %}
-<main class="page readable">
+<main class="page manage-page readable">
   {% include "_manage_head.html" %}
   <div class="crumbs"><a href="{{ cbase }}/manage/sessions">Sessions</a> › Add session</div>
   <div class="title-row"><h1>Add a session</h1></div>
@@ -9,9 +9,9 @@
   {% if error %}<div class="flash bad">{{ error }}</div>{% endif %}
   <section class="section">
     <form method="post" action="{{ cbase }}/manage/sessions/new" class="stack">
-      <div class="row" style="align-items:flex-start">
-        <label class="field" style="flex:1;min-width:180px">Date played <span class="note">(approximate is fine; it sets the order)</span><input type="date" name="played_on" required></label>
-        <label class="field" style="width:140px">Session number <span class="note">(optional)</span><input type="text" name="number" inputmode="numeric" placeholder="e.g. 30"></label>
+      <div class="form-row">
+        <label class="field grow">Date played <span class="note">(approximate is fine; it sets the order)</span><input type="date" name="played_on" required></label>
+        <label class="field">Session number <span class="note">(optional)</span><input type="text" name="number" inputmode="numeric" placeholder="e.g. 30"></label>
       </div>
       <label class="field">Title <span class="note">(optional)</span><input type="text" name="title" placeholder="e.g. Boarding the Leviathan"></label>
       <label class="field">What happened<textarea name="account" rows="14" required placeholder="Type or paste everything you remember: where the party went, who they met, fights, decisions, loot, how it ended. Rough notes are fine."></textarea></label>
@@ -21,8 +21,8 @@
     </form>
   </section>
   {% if sessions %}
-  <details class="section"><summary style="cursor:pointer">Sessions so far ({{ sessions | length }})</summary>
-    <ul class="note" style="margin-top:10px">{% for x, label in sessions %}<li>{{ label }}{% if x.title %}: {{ x.title }}{% endif %}</li>{% endfor %}</ul>
+  <details class="section"><summary>Sessions so far ({{ sessions | length }})</summary>
+    <ul class="note">{% for x, label in sessions %}<li>{{ label }}{% if x.title %}: {{ x.title }}{% endif %}</li>{% endfor %}</ul>
   </details>
   {% endif %}
 </main>
