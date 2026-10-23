@@ -13,7 +13,7 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import view_as
@@ -21,7 +21,7 @@ from app import access, config, ddb, web
 from app import characters as chars
 from app.auth import can_see_table, is_admin, is_reviewer
 from app.db import get_db
-from app.models import CampaignMember, Character, Role, User
+from app.models import Campaign, CampaignMember, Character, Role, User
 from app.templating import templates
 
 router = APIRouter(prefix="/manage/table")
@@ -74,11 +74,21 @@ def page(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(request, "manage_table.html", {
         "campaign": campaign, "characters": characters, "people": everyone, "names": names,
         "classes": {c.id: _classes(c) for c in characters},
+        # A test campaign (VTT 0.1) can add test copies of the table's characters
+        "copyable": chars.copy_candidates(db, campaign.id) if campaign.is_test else [],
+        "originals": {c.copy_of_id: _original(db, c.copy_of_id) for c in characters if c.copy_of_id},
         "accounts": [u for u in db.scalars(select(User).order_by(User.name))
                      if u.email.lower() not in in_campaign and access.level(u.email) is not None],
         "can_change": is_admin(user), "can_refresh": is_reviewer(user), "roles": access.ROLES, "role_labels": access.ROLE_LABELS,
         "chart": access.chart(), "toast": request.session.pop("toast", None),
         "can_view": {p["email"] for p in everyone if not view_as.refusal(user["email"], p["email"])}})
+
+
+def _original(db: Session, character_id: int) -> str:
+    """What a test copy is a copy of: "copy of Cole in The Adventure Begins"."""
+    o = db.get(Character, character_id)
+    there = db.get(Campaign, o.campaign_id) if o is not None and o.campaign_id else None
+    return f"copy of {o.name}" + (f" in {there.name}" if there else "") if o is not None else "test copy"
 
 
 def set_role(db: Session, user: User, campaign_id: int, role: str | None) -> None:
@@ -180,6 +190,27 @@ def save_player(request: Request, character_id: int, user_id: str = Form(""), db
     ch.owner_id = player.id if player else None
     db.commit()
     request.session["toast"] = f"{ch.name}: played by {player.name or player.email}" if player else f"{ch.name}: nobody plays it now"
+    return _back()
+
+
+@router.post("/test-copies")
+def add_test_copies(request: Request, character_ids: list[int] = Form([]), db: Session = Depends(get_db)):
+    """Test copies of the table's characters, into this test campaign (VTT 0.1). Admins only."""
+    user, denied = web.require(request, is_admin, DENIED)
+    if denied:
+        return denied
+    campaign = web.campaign(db)
+    if campaign is None or not campaign.is_test:
+        request.session["toast"] = "Test copies are only for a test campaign (Settings › Virtual tabletop)."
+        return _back()
+    can = {c.id: c for c, copied in chars.copy_candidates(db, campaign.id) if not copied}
+    # A copy keeps its player if they're in the test campaign, or are the admin making it (they play their own copy)
+    players = {m.user_id for m in db.scalars(select(CampaignMember).where(CampaignMember.campaign_id == campaign.id,
+                                                                            CampaignMember.left_on.is_(None)))}
+    me = db.scalar(select(User.id).where(func.lower(User.email) == user["email"].lower()))
+    made = [chars.test_copy(db, can[i], campaign.id, players | {me}).name for i in character_ids if i in can]
+    db.commit()
+    request.session["toast"] = (f"Added test copies of {', '.join(made)}." if made else "Pick at least one character.")
     return _back()
 
 

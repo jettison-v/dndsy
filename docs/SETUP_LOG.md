@@ -538,3 +538,25 @@ The last open item from the Railway incident. Brett had already rotated the lega
 2. Take a backup right before touching a database's credentials, and know how you'd get back in if something breaks
    (here: from inside Railway the database doesn't need the password).
 3. If a deploy fails, read its log before assuming your change broke it; it may be the host.
+
+## 2026-10-23: The VTT switch and a test campaign (VTT 0.1)
+
+How askdnd grows into a virtual tabletop without the table seeing unfinished work, on **one site** and **one `main`
+branch**.
+
+- **A switch per campaign, in the database.** Each VTT piece is listed in the code (`app/vtt.py`) and shows only where
+  a campaign has it on. This kind of switch is often called a **feature flag**: code ships early, hidden, and is turned
+  on per group of people. Turning one off again is a click, not a redeploy.
+- **A test campaign** (tagged **Test** everywhere) sees every piece, finished or not; Brett and the DM try things there.
+  The table's campaign gets a piece only when its DM or an admin switches it on in Manage › Settings.
+- **Test copies of characters.** VTT pieces will change things during play (hit points, slots), so the test campaign
+  uses copies that share the D&D Beyond sheet but keep their own state. The real characters are never touched.
+- **A database change done safely.** The new columns were *added* (never removed or renamed), with defaults, so the
+  running app and the new code both work during the deploy; Railway runs the migration before starting the new version.
+
+**For a new project:**
+1. Use feature flags instead of long-lived branches when building something big inside a live app: merge small pieces
+   to `main` often, hidden, and switch them on when ready.
+2. Keep a test space with realistic data (here a test campaign with copies of real characters) instead of testing on
+   the real thing.
+3. Make database changes "add first, remove later", so a deploy never breaks the version still running.

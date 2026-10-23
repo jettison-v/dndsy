@@ -16,5 +16,30 @@
   </form>
   <p class="note page-note">Its address stays <code>/c/{{ campaign.slug }}</code>, so links people saved keep working.</p>
   </section>
+
+  {# The VTT switch (VTT 0.1, docs/mockups/vtt-switch.html; app/vtt.py) #}
+  <section class="section" id="vtt">
+    <h2>Virtual tabletop</h2>
+    <p class="hint">askdnd is growing into our virtual tabletop. Each piece is built inside askdnd and stays hidden until a campaign switches it on.</p>
+    <form method="post" action="{{ cbase }}/manage/settings/test" class="vtt-test">
+      {% if not campaign.is_test %}<input type="hidden" name="is_test" value="1">{% endif %}
+      <button class="switch" type="submit" role="switch" aria-checked="{{ 'true' if campaign.is_test else 'false' }}" aria-label="Test campaign"{% if not can_set_test %} disabled{% endif %}></button>
+      <div><b>Test campaign: try every VTT piece here</b>
+        <span class="note">{% if campaign.is_test %}Shows each piece while it's still being built, so things may be unfinished or change. Never on for the table's campaign.{% else %}Off: its players see only the pieces switched on below.{% endif %}{% if not can_set_test %} Only admins change this.{% endif %}</span></div>
+    </form>
+    {% if vtt_rows %}
+    <ul class="records cols-4">
+      <li class="records-head" aria-hidden="true"><span>Piece</span><span>Phase</span><span>State</span><span>Here</span></li>
+      {% for r in vtt_rows %}{% set p = r.p %}
+      <li class="record{{ ' faded' if not p.ready and not campaign.is_test }}"><span class="record-main"><b>{{ p.name }}</b><span class="note">{{ p.about }}</span></span>
+        <span>{{ p.phase }}</span><span><span class="tag {{ 'done' if p.ready else 'draft' }}">{{ "Ready" if p.ready else "Being built" }}</span></span>
+        <span class="record-actions">{% if r.can_switch %}<form method="post" action="{{ cbase }}/manage/settings/vtt/{{ p.key }}">{% if not r.on %}<input type="hidden" name="on" value="1">{% endif %}
+          <button class="switch" type="submit" role="switch" aria-checked="{{ 'true' if r.on else 'false' }}" aria-label="{{ p.name }} on here"></button></form>
+          {% elif campaign.is_test %}<button class="switch" type="button" role="switch" aria-checked="true" aria-label="{{ p.name }} on here" disabled></button>{% endif %}</span>
+      </li>{% endfor %}
+    </ul>
+    <p class="note">{% if campaign.is_test %}On a test campaign every piece is on.{% else %}Switch a Ready piece on to give it to this table; switching it off puts that page back the way it was, and nothing the table did is lost.{% endif %}</p>
+    {% else %}<p class="muted">No VTT pieces yet. The first ones come in Phase 1: live character state.</p>{% endif %}
+  </section>
 </main>
 {% endblock %}

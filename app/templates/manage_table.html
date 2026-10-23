@@ -14,7 +14,8 @@
     <li class="records-head" aria-hidden="true"><span>Character</span><span>Played by</span><span>D&amp;D Beyond</span><span></span></li>
     {% for c in characters %}{% set snap = c.snapshot %}
     <li class="record">
-      <span class="record-main"><b><a href="/characters/{{ c.id }}">{{ c.name }}</a></b>{% if classes[c.id] %}<span class="note">{{ classes[c.id] }}</span>{% endif %}</span>
+      <span class="record-main"><b><a href="/characters/{{ c.id }}">{{ c.name }}</a>{% if c.copy_of_id %} <span class="tag faint" title="Same D&amp;D Beyond sheet, its own play state">Test copy</span>{% endif %}</b>
+        {%- if classes[c.id] or c.copy_of_id %}<span class="note">{{ [classes[c.id], originals.get(c.copy_of_id)] | select | join(" · ") }}</span>{% endif %}</span>
       {% if can_change %}
       <form method="post" action="{{ cbase }}/manage/table/characters/{{ c.id }}" class="pick">
         <select name="user_id" aria-label="Who plays {{ c.name }}">
@@ -45,6 +46,15 @@
         <div class="row"><button class="btn primary" type="submit">Add to {{ campaign.name }}</button></div>
       </form>
     </details>
+    {% if copyable %}
+    <details class="fold"{% if not characters %} open{% endif %}><summary>+ Add test copies</summary>
+      <form method="post" action="{{ cbase }}/manage/table/test-copies" class="form-narrow">
+        <p class="hint">Copies of the table's characters: the same D&amp;D Beyond sheet, their own play state, so trying VTT pieces never touches the real ones. Their players' notes, pins and reminders aren't copied.</p>
+        {% for ch, copied in copyable %}<label class="check"><input type="checkbox" name="character_ids" value="{{ ch.id }}"{{ ' checked disabled' if copied else ' checked' }}> {{ ch.name }}{% if copied %} (already here){% endif %}</label>{% endfor %}
+        <div class="row"><button class="btn primary" type="submit">Add test copies</button></div>
+      </form>
+    </details>
+    {% endif %}
     <p class="note">Moving a character to another campaign is on <a href="/manage/campaigns">Campaigns</a>.</p>
     {% endif %}
   </section>

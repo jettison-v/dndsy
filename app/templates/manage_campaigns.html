@@ -9,8 +9,8 @@
   <section class="section">
     <ul class="records">
       {% for x in campaigns %}{% set c = x.c %}
-      <li class="record"><span class="record-main"><b>{{ c.name }}</b>
-          <span class="note"><a href="/c/{{ c.slug }}/">/c/{{ c.slug }}</a> · {% if x.dms %}DM {{ x.dms | join(", ") }}{% else %}no DM yet{% endif %} · {{ x.people }} {{ "person" if x.people == 1 else "people" }} · {{ x.characters | map(attribute="name") | join(", ") or "no characters yet" }}{% if c.ddb_campaign_id %} · D&amp;D Beyond: {{ x.ddb_name or c.ddb_campaign_id }}{% endif %}</span></span>
+      <li class="record"><span class="record-main"><b>{{ c.name }}{% if c.is_test %} <span class="tag draft" title="A test campaign: every VTT piece shows here">Test</span>{% endif %}</b>
+          <span class="note"><a href="/c/{{ c.slug }}/">/c/{{ c.slug }}</a> · {% if x.dms %}DM {{ x.dms | join(", ") }}{% else %}no DM yet{% endif %} · {{ x.people }} {{ "person" if x.people == 1 else "people" }} · {{ x.characters | map(attribute="name") | join(", ") or "no characters yet" }}{% if c.ddb_campaign_id %} · D&amp;D Beyond: {{ x.ddb_name or c.ddb_campaign_id }}{% endif %}{% if c.is_test %} · every VTT piece shows here{% endif %}</span></span>
         <span class="record-actions"><a class="btn small" href="/c/{{ c.slug }}/manage/settings">Settings</a><a class="btn small" href="/c/{{ c.slug }}/manage/table">Table</a></span></li>
       {% endfor %}
     </ul>
@@ -23,6 +23,7 @@
       <label class="field">DM's name (optional)<input type="text" name="dm_name" maxlength="200"></label>
       {% if unmatched %}<label class="field">Its D&amp;D Beyond campaign
         <select name="ddb_campaign_id">{% for i, n in unmatched %}<option value="{{ i }}">{{ n or i }}</option>{% endfor %}<option value="">None</option></select></label>{% endif %}
+      <label class="check"><input type="checkbox" name="is_test" value="1"> Test campaign: try every VTT piece here</label>
       <div class="row"><button class="btn primary" type="submit">Create</button></div>
       <p class="note">Then add its people and characters on its Table, or move characters to it here.</p>
     </form>

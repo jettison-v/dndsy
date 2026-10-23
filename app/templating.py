@@ -2,7 +2,7 @@ from pathlib import Path
 
 from fastapi import Request
 
-from app import access
+from app import access, vtt
 from fastapi.templating import Jinja2Templates
 
 
@@ -39,7 +39,8 @@ def _page_context(request: Request) -> dict:
             # The campaign you're in, the start of its story addresses, and the campaigns you can switch to
             "here": here, "cbase": f"/c/{here['slug']}" if here else "",
             "my_campaigns": access.campaigns_for(user.get("email")) if user else [],
-            "switch_path": switch_path(request.url.path)}
+            "switch_path": switch_path(request.url.path),
+            "vtt_on": lambda key: vtt.on(here, key)}  # the VTT switch (app/vtt.py)
 
 
 # Pages that make sense in any campaign: switching campaigns keeps you on them (else you land on Story)
