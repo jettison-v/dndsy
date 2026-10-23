@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}House rules · Manage · askdnd{% endblock %}
 {% block content %}
-<main class="page" style="max-width:1000px">
+<main class="page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>House rules</h1></div>
   <p class="subtitle">Your rulings on how askdnd rolls things{% if campaign %} in {{ campaign.name }}{% endif %}. They apply only to this campaign and never change askdnd's own rules data: remove one and the spell works as the 2024 rules say again. The roll window shows <b>House rule</b> wherever one applies. Only the DM and admins can change these.</p>

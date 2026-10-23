@@ -13,52 +13,49 @@
     <div class="stat"><span>All time</span><b>${{ "%.2f" | format(u.total) }}</b><small>{{ u.drafts }} draft{{ "s" if u.drafts != 1 }}{% if u.average %} · about {{ "%.0f" | format(u.average * 100) }}¢ each{% endif %}</small></div>
   </div>
 
-  <div class="layout">
+  {# Settings first and side by side, then every call full width (Brett, 2026-10-23: the old side column left the page half empty) #}
+  <div class="usage-settings">
     <section class="section">
-      <h2>Recent Claude calls</h2>
-      {% if rows %}
-      <table class="list" style="margin-top:12px">
-        <tr><th>When</th><th>Session or page</th><th>Source</th><th style="text-align:right">Tokens in / out</th><th style="text-align:right">Cost</th></tr>
-        {% for row in rows %}{% set r = row.r %}
-        <tr>
-          <td class="note">{{ r.created_at.strftime("%b %-d, %-I:%M %p") }}</td>
-          <td>{% if row.href %}<a href="{{ row.href }}">{{ row.label }}</a>{% else %}{{ row.label }}{% endif %}</td>
-          <td class="note">{{ {"entity": "description", "conversation": "Add Session check"}.get(r.source, r.source) }}{% if r.status == "error" %} · <span class="tag error">failed</span>{% elif r.status == "running" %} · <span class="tag working">running</span>{% endif %}</td>
-          <td class="note" style="text-align:right">{{ "{:,}".format(r.input_tokens) }} / {{ "{:,}".format(r.output_tokens) }}</td>
-          <td style="text-align:right">${{ "%.2f" | format(r.cost_usd) }}</td>
-        </tr>
-        {% endfor %}
-      </table>
-      {% else %}<p class="muted">No Claude calls yet.</p>{% endif %}
+      <h2>Monthly limit</h2>
+      <p class="hint">askdnd stops calling Claude (drafts, account checks, descriptions) once this month's spending reaches it, until the 1st. Leave it empty for no limit. The Anthropic Console's own limit still applies.</p>
+      {% if u.limit_reached %}<div class="flash warn">Reached: new drafts are paused until the 1st or until you raise the limit.</div>{% endif %}
+      <form method="post" action="/manage/usage/limit" class="usage-form">
+        <label class="field">Limit per month<input type="text" name="amount" inputmode="decimal" placeholder="None" value="{% if u.limit is not none %}{{ "%.2f" | format(u.limit) }}{% endif %}"></label>
+        <button class="btn">Save limit</button>
+      </form>
     </section>
-
-    <aside>
-      <section class="section">
-        <h2>Monthly limit</h2>
-        <p class="hint" style="margin-top:6px">Once this month's spending reaches the limit, askdnd stops calling Claude (drafts, account checks, descriptions) and says why. It resets on the 1st. The Anthropic Console's own limit still applies.</p>
-        {% if u.limit_reached %}<div class="flash warn" style="margin-top:8px">Reached: new drafts are paused until the 1st or until you raise the limit.</div>{% endif %}
-        <form method="post" action="/manage/usage/limit" class="stack" style="margin-top:12px">
-          <label class="field">Limit per month <span class="note">(blank for none)</span><input type="text" name="amount" inputmode="decimal" placeholder="$10.00" value="{% if u.limit is not none %}{{ "%.2f" | format(u.limit) }}{% endif %}"></label>
-          <div><button class="btn">Save limit</button></div>
-        </form>
-      </section>
-      <section class="section">
-        <h2>Credit top-ups</h2>
-        <p class="hint" style="margin-top:6px">Record what you buy in the Anthropic Console, for the balance estimate.</p>
-        {% for t in topups %}
-        <div class="row" style="justify-content:space-between; padding:6px 0; flex-wrap:nowrap">
-          <span><b>${{ "%.2f" | format(t.amount_usd) }}</b><br><span class="note">{{ t.added_on.strftime("%b %-d, %Y") }}{% if t.note %} · {{ t.note }}{% endif %}</span></span>
-          <form class="inline" method="post" action="/manage/usage/topups/{{ t.id }}/delete" onsubmit="return confirm('Remove this top-up?')"><button class="btn link danger">Remove</button></form>
-        </div>
-        {% endfor %}
-        <form method="post" action="/manage/usage/topups" class="stack" style="margin-top:12px">
-          <label class="field">Amount<input type="text" name="amount" inputmode="decimal" placeholder="$20.00" required></label>
-          <label class="field">Date bought<input type="date" name="added_on" value="{{ today_iso }}" required></label>
-          <label class="field">Note <span class="note">(optional)</span><input type="text" name="note" placeholder="e.g. Initial funding"></label>
-          <div><button class="btn">Add top-up</button></div>
-        </form>
-      </section>
-    </aside>
+    <section class="section">
+      <h2>Credit top-ups</h2>
+      <p class="hint">What you've bought in the Anthropic Console, for the balance estimate.</p>
+      {% if topups %}<ul class="usage-topups">{% for t in topups %}
+        <li><b>${{ "%.2f" | format(t.amount_usd) }}</b><span class="note">{{ t.added_on.strftime("%b %-d, %Y") }}{% if t.note %} · {{ t.note }}{% endif %}</span>
+          <form class="inline" method="post" action="/manage/usage/topups/{{ t.id }}/delete" onsubmit="return confirm('Remove this top-up?')"><button class="btn link danger small">Remove</button></form></li>
+      {% endfor %}</ul>{% endif %}
+      <form method="post" action="/manage/usage/topups" class="usage-form">
+        <label class="field">Amount<input type="text" name="amount" inputmode="decimal" placeholder="$20.00" required></label>
+        <label class="field">Date bought<input type="date" name="added_on" value="{{ today_iso }}" required></label>
+        <label class="field grow">Note<input type="text" name="note" placeholder="Optional, e.g. Initial funding"></label>
+        <button class="btn">Add top-up</button>
+      </form>
+    </section>
   </div>
+
+  <section class="section">
+    <h2>Recent Claude calls</h2>
+    {% if rows %}
+    <div class="table-scroll"><table class="list usage-calls">
+      <tr><th>When</th><th>For</th><th>What</th><th class="num">Tokens in / out</th><th class="num">Cost</th></tr>
+      {% for row in rows %}{% set r = row.r %}
+      <tr>
+        <td class="note">{{ r.created_at.strftime("%b %-d, %-I:%M %p") }}</td>
+        <td>{% if row.href %}<a href="{{ row.href }}">{{ row.label }}</a>{% else %}{{ row.label }}{% endif %}</td>
+        <td class="note">{{ {"entity": "description", "conversation": "Add Session check", "notes": "draft from notes", "transcript": "draft from a recording", "account": "draft from a written account"}.get(r.source, r.source) }}{% if r.status == "error" %} · <span class="tag error">failed</span>{% elif r.status == "running" %} · <span class="tag working">running</span>{% endif %}</td>
+        <td class="note num">{{ "{:,}".format(r.input_tokens) }} / {{ "{:,}".format(r.output_tokens) }}</td>
+        <td class="num">{% if r.cost_usd and r.cost_usd < 0.005 %}&lt;1¢{% else %}${{ "%.2f" | format(r.cost_usd or 0) }}{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </table></div>
+    {% else %}<p class="muted">No Claude calls yet.</p>{% endif %}
+  </section>
 </main>
 {% endblock %}

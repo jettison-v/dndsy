@@ -70,6 +70,17 @@ def test_deleted_player_notes_come_back_and_stay_hidden_from_the_dm(db, cole, pl
     assert db.scalar(select(PlayerNote)).data == {"body": "Steal the egg."}
 
 
+def test_history_filters_and_restore_point_at_history(db, cole, admin):
+    """Brett, 2026-10-23: the filter buttons were broken (the page's "here" was the campaign, from every page's context)."""
+    import re
+
+    for url in ("/manage/history", "/c/main/manage/history"):
+        page = admin.get(url, follow_redirects=True).text
+        hrefs = re.findall(r'class="btn small[^"]*" href="([^"]+)"', page)
+        assert hrefs and all(h.startswith(("/manage/history", "/c/main/manage/history")) for h in hrefs), hrefs
+    assert 'action="/c/main/manage/history/' in admin.get("/c/main/manage/history").text or "Restore" not in admin.get("/c/main/manage/history").text
+
+
 def test_import_page_lists_imports_with_undo(db, admin):
     batch = history.new_batch()
     import_bundle(db, STORY)
