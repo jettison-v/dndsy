@@ -39,7 +39,7 @@
 }
 @media (max-width: 640px) { :root { --control-h: 44px; --control-h-sm: 36px; --chip-h: 36px; } }
 * { box-sizing: border-box; }
-html { color-scheme: dark; }
+html { color-scheme: dark; scrollbar-gutter: stable; }  /* pages that scroll and pages that don't line up (Brett, 2026-10-23) */
 body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--sans); }
 a { color: var(--link); }
 button { font: inherit; cursor: pointer; }
@@ -123,6 +123,8 @@ body.gm-on .live-off { display: none; }
 /* Page */
 .page { max-width: 1120px; margin: 0 auto; padding: 32px 24px 120px; }
 .page.narrow { max-width: 760px; }
+/* Manage pages share one width so the tab bar never jumps (Brett, 2026-10-23); reading pages keep a text column */
+.page.readable > :not(.manage-tabs) { max-width: 760px; }
 .crumbs { color: var(--muted); font-size: var(--fs-sm); }
 .crumbs a { color: var(--muted); text-decoration: none; }
 .crumbs a:hover { color: var(--text); }
@@ -282,6 +284,28 @@ details.conversation[open] > summary { margin-bottom: 12px; }
 .stat.attention { box-shadow: inset 3px 0 0 var(--red); }
 .stat.attention small { color: var(--red); }
 @media (max-width: 900px) { .stats { grid-template-columns: 1fr; } }
+/* Manage › Usage: the two settings side by side, then the calls full width */
+.usage-settings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4); align-items: stretch; margin-bottom: var(--sp-5); }
+.usage-settings .section { margin: 0; }
+.usage-settings .hint { margin: var(--sp-1) 0 var(--sp-3); }
+.usage-form { display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: flex-end; }
+.usage-form .field { flex: 0 1 160px; min-width: 0; }
+.usage-form .field.grow { flex: 1 1 200px; }
+.usage-topups { list-style: none; margin: 0 0 var(--sp-3); padding: 0; }
+.usage-topups li { display: flex; gap: var(--sp-3); align-items: baseline; padding: var(--sp-2) 0; border-bottom: 1px solid var(--line-soft); }
+.usage-topups li form { margin-left: auto; }
+.table-scroll { overflow-x: auto; }
+/* Manage › Tool corrections: what · why · Undo */
+.tc-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.tc-list li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) auto; gap: var(--sp-2) var(--sp-5); align-items: start; padding: var(--sp-3) 0; border-bottom: 1px solid var(--line-soft); }
+.tc-what .note { display: block; margin-top: 2px; }
+.tc-why { font-size: var(--fs-sm); min-width: 0; }
+.tc-why-form { display: flex; gap: var(--sp-2); align-items: center; }
+.tc-why-form input { flex: 1 1 auto; min-width: 0; }
+@media (max-width: 640px) { .tc-list li { grid-template-columns: minmax(0, 1fr) auto; } .tc-why { grid-column: 1 / -1; grid-row: 2; } }
+.usage-calls { width: 100%; margin-top: var(--sp-3); }
+.usage-calls .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (max-width: 900px) { .usage-settings { grid-template-columns: 1fr; } }
 
 /* Tables and lists */
 table.list { width: 100%; border-collapse: collapse; }

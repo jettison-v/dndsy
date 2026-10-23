@@ -8,9 +8,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import character_views as views
+from app import characters as chars
 from app.admin import _guard
 from app.db import get_db
-from app.models import ToolCorrection
+from app.models import Character, ToolCorrection
 from app.templating import templates
 
 router = APIRouter(prefix="/manage/tool-corrections")
@@ -24,9 +25,25 @@ def page(request: Request, db: Session = Depends(get_db)):
     overrides = list(db.scalars(select(ToolCorrection).order_by(ToolCorrection.updated_at.desc())))
     labels = {f: dict(c) for f, c in {**views.OVERRIDE_CHOICES, **views.TERM_CHOICES}.items()}
     return templates.TemplateResponse(request, "tool_corrections.html", {
-        "overrides": overrides, "labels": labels, "field_labels": views.FIELD_LABELS,
+        "overrides": overrides, "labels": labels, "field_labels": views.FIELD_LABELS, "names": _names(db, overrides),
         "toast": request.session.pop("toast", None),
     })
+
+
+KINDS = {"spell": "Spell", "item": "Item", "feature": "Feature", "action": "Action", "attack": "Attack", "creature": "Wild Shape form"}
+
+
+def _names(db: Session, overrides: list[ToolCorrection]) -> dict[str, dict]:
+    """What each correction is about, by name: an item's ref is its D&D Beyond number ("item:992695540"), so look it up
+    on the characters' sheets (Brett, 2026-10-23: the bare number meant nothing)."""
+    sheets = [sh for sh in (chars.character_summary(c) for c in db.scalars(select(Character))) if sh]
+    out = {}
+    for o in overrides:
+        kind, _, rest = o.ref.partition(":") if ":" in o.ref else ("", "", o.ref)
+        found = next((x for sh in sheets if (x := views.find(sh, o.ref))), None)
+        out[o.ref] = {"name": (found or {}).get("name") or (rest if not rest.isdigit() else f"Item {rest} (no character has it now)"),
+                      "kind": KINDS.get(kind, kind.capitalize())}
+    return out
 
 
 @router.post("/overrides/{override_id:int}/delete")

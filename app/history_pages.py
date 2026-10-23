@@ -119,7 +119,7 @@ def history_page(request: Request, show: str = "", table: str = "", row: int | N
                      else {k: FILTERS[k][0] for k in ("", "people", "characters")})
     return templates.TemplateResponse(request, "admin_history.html", {
         "days": list(days.items()), "show": show, "filters": shown_filters, "in_campaign": in_campaign, "campaign": campaign,
-        "here": f"{web.base()}/manage/history" if in_campaign else "/manage/history",
+        "page_url": f"{web.base()}/manage/history" if in_campaign else "/manage/history",  # not "here": every page already has that (the campaign)
         "focus": revs[0].label if (table and row is not None and revs) else "", "batch": batch,
         "toast": request.session.pop("toast", None)})
 

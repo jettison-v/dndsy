@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ snap.source.title or "Notes" }} · askdnd{% endblock %}
 {% block content %}
-<main class="page narrow">
+<main class="page readable">
   {% include "_manage_head.html" %}
   <div class="crumbs"><a href="{{ cbase }}/manage/sessions">Sessions</a> › <a href="{{ cbase }}/manage/sessions/doc">Campaign doc</a> › {{ snap.source.title or "Notes" }}</div>
   <div class="title-row"><h1>{{ snap.source.title or "Notes" }}</h1></div>

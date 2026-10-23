@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Campaigns · Manage · askdnd{% endblock %}
 {% block content %}
-<main class="page" style="max-width:1000px">
+<main class="page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Campaigns</h1></div>
   <p class="subtitle">Every campaign in askdnd, and which characters are in each. A character is in one campaign at a time, like on D&amp;D Beyond; moving it keeps what it did in its old campaign's story. Each campaign's people, characters and details are on its own Manage pages (Manage it). Only admins can see this page.</p>
@@ -38,7 +38,7 @@
           <span class="note">{% if ch.player_name %}{{ ch.player_name }} · {% endif %}{{ r.here.name if r.here else "Not in a campaign" }}</span>
           {% if r.mismatch %}<span class="note quiet-warn">On D&amp;D Beyond, {{ ch.name }} is in {{ ("“" ~ r.ddb_name ~ "”") if r.ddb_name else "another campaign" }}.{% if r.suggest %} That's {{ r.suggest.name }} here.{% endif %}</span>{% endif %}
         </div>
-        <form method="post" action="/manage/campaigns/characters/{{ ch.id }}/move" class="row inline">
+        <form method="post" action="/manage/campaigns/characters/{{ ch.id }}/move" class="row">
           {% if r.suggest %}<input type="hidden" name="campaign_id" value="{{ r.suggest.id }}"><button class="btn" type="submit">Move to {{ r.suggest.name }}</button>
           {% else %}<select name="campaign_id" aria-label="Campaign for {{ ch.name }}">
             {% for x in campaigns %}<option value="{{ x.c.id }}" {{ "selected" if r.here is sameas x.c }}>{{ x.c.name }}</option>{% endfor %}
