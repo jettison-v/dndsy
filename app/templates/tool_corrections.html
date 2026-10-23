@@ -2,25 +2,36 @@
 {% block title %}Tool corrections · Manage · askdnd{% endblock %}
 {% block content %}
 {% from "_manage.html" import inline_edit %}
+{# A fix list (Brett, 2026-10-23): each correction patches askdnd until askdnd's own code gets it right. When it does
+   (tool_corrections_pages.automatic), the correction moves to "Built into askdnd" and can be removed. #}
+{% macro row(o, built=False) %}{% set n = names[o.ref] %}
+<li class="record{{ ' faded' if built }}">
+  <div class="record-main"><b>{{ n.name }}</b>{% if n.kind %} <span class="tag">{{ n.kind }}</span>{% endif %}
+    <span class="note">{{ field_labels.get(o.field, o.field) }}: {{ labels.get(o.field, {}).get(o.value, o.value) }} · {{ o.updated_at | ago }}{% if o.id in unseen %} · no character has it now{% endif %}</span></div>
+  <div>{% if built %}{{ o.reason or "" }}{% else %}{{ inline_edit("why-" ~ o.id, o.reason, "/manage/tool-corrections/overrides/" ~ o.id ~ "/reason", "reason", "Why " ~ n.name ~ " was corrected", empty="No reason yet.", add_label="Add why", placeholder="What askdnd got wrong") }}{% endif %}</div>
+  <form method="post" action="/manage/tool-corrections/overrides/{{ o.id }}/delete" class="record-actions"><button class="btn small" type="submit">{{ "Remove" if built else "Undo" }}</button></form>
+</li>
+{% endmacro %}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Tool corrections</h1></div>
-  <p class="subtitle">Corrections to how askdnd reads D&amp;D Beyond, made from a character's side panel (the Admin box, or an underlined rule term's pop-up). Each applies to everything with that name on every character, in every campaign; a DM's rulings for one table are <a href="{{ cbase }}/manage/house-rules">House rules</a> instead. Add a few words on why, so the mistake can be fixed in askdnd itself. Undo returns it to askdnd's automatic choice. Only admins can see this page.</p>
+  <p class="subtitle">Fixes to how askdnd reads D&amp;D Beyond, made from a character's side panel (the Admin box, or an underlined rule term's pop-up). Each one patches askdnd for every character until askdnd's own code is fixed; then it moves to <b>Built into askdnd</b> and can be removed. A DM's rulings for one table are <a href="{{ cbase }}/manage/house-rules">House rules</a> instead. Only admins can see this page.</p>
 
   <section class="section">
-    {% if overrides %}
-    {# One row per correction: what and how, the why (Edit to change it), Undo (Brett, 2026-10-23) #}
-    <ul class="records cols-3">
-      {% for o in overrides %}{% set n = names[o.ref] %}
-      <li class="record">
-        <div class="record-main"><b>{{ n.name }}</b>{% if n.kind %} <span class="tag">{{ n.kind }}</span>{% endif %}
-          <span class="note">{{ field_labels.get(o.field, o.field) }}: {{ labels.get(o.field, {}).get(o.value, o.value) }} · {{ o.updated_at | ago }}</span></div>
-        <div>{{ inline_edit("why-" ~ o.id, o.reason, "/manage/tool-corrections/overrides/" ~ o.id ~ "/reason", "reason", "Why " ~ n.name ~ " was corrected", empty="No reason yet.", add_label="Add why", placeholder="What askdnd got wrong") }}</div>
-        <form method="post" action="/manage/tool-corrections/overrides/{{ o.id }}/delete" class="record-actions"><button class="btn small" type="submit">Undo</button></form>
-      </li>
-      {% endfor %}
-    </ul>
+    <div class="section-head"><h2>Needs a fix in askdnd</h2>{% if open %}<span class="count">{{ open | length }}</span>{% endif %}</div>
+    <p class="hint">Ask Claude to “build in the tool corrections”: each one becomes part of askdnd, with a test, and moves down here on its own. A few words on why help.</p>
+    {% if open %}
+    <ul class="records cols-3">{% for o in open %}{{ row(o) }}{% endfor %}</ul>
+    {% elif overrides %}<p class="all-clear">✓ askdnd gets everything here right on its own.</p>
     {% else %}<p class="muted">No corrections yet. Open any row on a Character page and use the Admin box at the bottom of the side panel, or click an underlined rule term to underline it or not.</p>{% endif %}
   </section>
+
+  {% if built %}
+  <section class="section">
+    <div class="section-head"><h2>Built into askdnd</h2><span class="count">{{ built | length }}</span></div>
+    <p class="hint">askdnd now chooses the same on its own, so these corrections change nothing. Remove them to tidy up.</p>
+    <ul class="records cols-3">{% for o in built %}{{ row(o, built=True) }}{% endfor %}</ul>
+  </section>
+  {% endif %}
 </main>
 {% endblock %}

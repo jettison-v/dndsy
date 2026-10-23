@@ -741,3 +741,34 @@ def test_battle_column_rules_are_a_chip(player, db):
     battle = player.get(f"/characters/{cole.id}/battle").text
     assert "Circle Forms change your Wild Shape" in battle  # still there, inside the pop-up
     assert 'class="tag rules-chip">Rules (' in battle and "econ-note" not in battle
+
+
+def test_tool_corrections_are_a_fix_list(admin, db):
+    """Brett, 2026-10-23: a correction patches askdnd until its code gets it right; then it shows as built in."""
+    from app.models import ToolCorrection
+
+    import_bundle(db, BUNDLE)
+    characters.refresh(db, char(db, "Cole"))
+    db.add_all([ToolCorrection(ref="item:Arrows", field="item_group", value="Weapons"),      # ammunition: built in
+                ToolCorrection(ref="spell:Healing Word", field="cost", value="Action"),      # still askdnd's mistake
+                ToolCorrection(ref="spell:Divine Smite", field="battle", value="common")])   # nobody here has it
+    db.flush()
+    page = admin.get("/manage/tool-corrections").text
+    needs, built = page.split("<h2>Built into askdnd</h2>")
+    assert "Healing Word" in needs and "Arrows" not in needs and "Arrows" in built and "Remove" in built
+    assert "Divine Smite" in needs and "no character has it now" in needs
+    assert "1 tool correction to build into askdnd" in admin.get("/manage", follow_redirects=True).text  # not the unseen one
+
+
+def test_smites_are_on_battle_and_ammunition_is_a_weapon():
+    """Tool corrections built into askdnd (2026-10-23)."""
+    from app import character_views as views
+    import app.models  # noqa: F401
+    from app import ddb
+
+    big_c = json.loads((Path(__file__).parent / "fixtures" / "ddb" / "big_c.json").read_text())["data"]
+    sheet = views.apply_overrides(ddb.parse_character(big_c), {})
+    smite = next(o for o in views.options(sheet) if o["name"] == "Divine Smite")
+    assert smite["common"] and smite["cost"] == "Bonus action"
+    cole = views.apply_overrides(ddb.parse_character(COLE), {})
+    assert next(i for i in cole["inventory"] if i["name"] == "Arrows")["group"] == "Weapons"
