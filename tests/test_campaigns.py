@@ -52,7 +52,7 @@ def two(monkeypatch, db):
     app.dependency_overrides.clear()
 
 
-def test_story_pages_live_at_their_campaigns_address(two):
+def test_story_pages_live_at_their_campaigns_address(two, db):
     pat, sam = two["pat"], two["sam"]
     r = pat.get("/", follow_redirects=False)
     assert r.status_code == 307 and r.headers["location"] == "/c/main/"
@@ -60,6 +60,10 @@ def test_story_pages_live_at_their_campaigns_address(two):
     assert sam.get("/campaign", follow_redirects=False).headers["location"] == "/c/strahd/campaign"
     assert "Ireena" in sam.get("/c/strahd/campaign").text and "Ireena" not in pat.get("/c/main/campaign").text
     assert pat.get("/c/strahd/campaign").status_code == 404  # not one of Pat's campaigns
+    # Another campaign's entry, by its number: not in Pat's Reader or side panel
+    ireena = db.scalar(select(Entity.id).where(Entity.name == "Ireena"))
+    assert "Ireena" not in pat.get(f"/c/main/campaign?open={ireena}").text
+    assert pat.get(f"/c/main/campaign/{ireena}/read").status_code == 404 and pat.get(f"/c/main/campaign/{ireena}/peek").status_code == 404
     assert pat.get("/c/nowhere/").status_code == 404
     assert pat.get("/campaign", headers={"HX-Request": "true"}, follow_redirects=False).status_code == 200  # page parts stay
 

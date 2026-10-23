@@ -209,8 +209,10 @@
   function openPeek(id, opener) { openPanel('/campaign/' + id + '/peek', opener, '/campaign/' + id); }
   // A link to an entry (/campaign/45) lands on /campaign?open=45: show the Campaign page with its panel open
   // (Brett, 2026-10-22: entries live in the side panel; no full page)
+  // The Campaign page's Reader already shows the entry it was asked for: then ?open= is that entry's address.
   { const id = /^(\/c\/[^/]+)?\/campaign$/.test(location.pathname) && new URLSearchParams(location.search).get('open');
-    if (id && /^\d+$/.test(id)) { history.replaceState(null, '', location.pathname + location.hash); openPanel('/campaign/' + id + '/peek', null, null); } }
+    const shown = document.getElementById('reader-article');
+    if (id && /^\d+$/.test(id) && !(shown && shown.dataset.readerId === id)) { history.replaceState(null, '', location.pathname + location.hash); openPanel('/campaign/' + id + '/peek', null, null); } }
 
   // Any element with data-panel-url opens that fragment in a side panel (Battle: "See all", an
   // option's details). data-modal-url opens a centered modal; data-modal-size="large" makes it wide
@@ -315,6 +317,9 @@
     const m = ENTITY_URL.exec(a.getAttribute('href') || a.getAttribute('xlink:href') || '');  // SVG links use xlink:href
     if (!m) return;
     e.preventDefault();
+    // On the Campaign page, a name in the Reader or the quests opens that entry in the Reader instead
+    const item = !a.closest('.peek') && document.querySelector('[data-rd-id="' + m[1] + '"]');
+    if (item) { item.click(); return; }
     openPeek(m[1], a);
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closePeek(); });
@@ -1830,5 +1835,35 @@
   document.addEventListener('click', e => {
     const k = e.target.closest('[data-close-details]');
     if (k) { const d = k.closest('details'); if (d) d.open = false; }
+  });
+})();
+
+// The Campaign page's Reader (campaign.html): picking a name or a quest swaps the entry in (HTMX) and marks it
+// in the list; ↑ ↓ move through the names that are showing. On narrow screens the entry sits below the list.
+(function () {
+  function mark() {
+    const art = document.getElementById('reader-article'); if (!art) return;
+    document.querySelectorAll('[data-rd-id]').forEach(n => n.classList.toggle('sel', n.dataset.rdId === art.dataset.readerId));
+  }
+  // Opening the page at an entry's address: show its name in the list
+  { const sel = document.querySelector('.rd-item.sel'), nav = sel && sel.closest('.reader-nav');
+    if (nav) nav.scrollTop = sel.offsetTop - nav.clientHeight / 3; }
+  document.body.addEventListener('htmx:afterSwap', e => {
+    if (!e.detail.target || e.detail.target.id !== 'reader-article') return;
+    mark();
+    const art = document.getElementById('reader-article');
+    if (art && matchMedia('(max-width: 900px)').matches) art.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    if (!document.getElementById('reader') || document.querySelector('.peek.open')) return;
+    const t = e.target;
+    if (t.matches && t.matches('textarea, select, input:not([data-ls-search]), [contenteditable]')) return;
+    if (document.getElementById('t-world').hidden) return;
+    const items = [...document.querySelectorAll('.rd-item')].filter(n => !n.hidden);
+    if (!items.length) return;
+    const i = items.findIndex(n => n.classList.contains('sel'));
+    const next = items[i < 0 ? 0 : Math.max(0, Math.min(items.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))];
+    if (next && !next.classList.contains('sel')) { e.preventDefault(); next.click(); next.scrollIntoView({ block: 'nearest' }); }
   });
 })();

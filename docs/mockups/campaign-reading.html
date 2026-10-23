@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Campaign page options · askdnd mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../app/static/app.css">
+<style>
+/* Mockup only: new pieces, tokens only. Made-up campaign (DESIGN.md: mockups use made-up content). */
+.mk-switch { position: sticky; top: 0; z-index: 9; background: var(--chrome); border-bottom: 1px solid var(--line); padding: var(--sp-2) var(--sp-5); display: flex; gap: var(--sp-4); align-items: center; flex-wrap: wrap; }
+.mk-switch .note { margin-right: auto; }
+.mk-why { color: var(--muted); font-size: var(--fs-sm); margin: -20px 0 var(--sp-5); max-width: 80ch; }
+.mk-why b { color: var(--text); }
+.mk-jump { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-4); font-size: var(--fs-sm); }
+.mk-jump a { color: var(--muted); text-decoration: none; }
+.mk-jump a:hover { color: var(--text); }
+.mk-bar { display: flex; gap: var(--sp-4); align-items: center; flex-wrap: wrap; margin-bottom: var(--sp-2); }
+.mk-bar .ls-search { flex: 1 1 320px; max-width: 460px; }
+/* A · Index */
+.mk-index { columns: 3 280px; column-gap: var(--sp-6); }
+.mk-line { break-inside: avoid; padding: var(--sp-1) var(--sp-2); margin: 0 calc(-1 * var(--sp-2)); border-radius: var(--r-sm); cursor: pointer; font-size: var(--fs-sm); line-height: 1.45; }
+.mk-line:hover, .mk-line.sel { background: var(--row-hover); }
+.mk-line b { font-size: var(--fs-md); font-weight: 600; color: var(--text); }
+.mk-line .mk-who { color: var(--muted); }
+.mk-line .note { font-size: var(--fs-xs); display: block; }
+/* B · Cards */
+.mk-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--sp-4); }
+.mk-card { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--r-lg); padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-2); cursor: pointer; }
+.mk-card:hover { border-color: var(--line-strong); }
+.mk-card-head { display: flex; gap: var(--sp-3); align-items: center; }
+.mk-mono { width: 44px; height: 44px; flex: none; border-radius: var(--r-md); display: grid; place-items: center; background: var(--surface-3); color: var(--story-link); font-family: var(--serif); font-size: var(--fs-lg); border: 1px solid var(--story-line); }
+.mk-card-head b { display: block; font-size: var(--fs-md); }
+.mk-card p { margin: 0; font-family: var(--serif); color: var(--story-text); font-size: var(--fs-md); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.mk-card-foot { margin-top: auto; display: flex; gap: var(--sp-2) var(--sp-3); flex-wrap: wrap; font-size: var(--fs-xs); color: var(--muted); border-top: 1px solid var(--line-soft); padding-top: var(--sp-2); }
+/* C · Up to now */
+.mk-quests { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--sp-3); }
+.mk-quest { background: var(--story-bg); border: 1px solid var(--story-line); border-radius: var(--r-lg); padding: var(--sp-3) var(--sp-4); cursor: pointer; }
+.mk-quest:hover { border-color: var(--line-strong); }
+.mk-quest.sel { border-color: var(--blue); }
+.mk-quest b { font-size: var(--fs-md); }
+.mk-quest p { margin: var(--sp-1) 0 0; font-family: var(--serif); color: var(--story-text); font-size: var(--fs-md); line-height: 1.55; }
+.mk-quest .note { display: block; margin-top: var(--sp-2); font-size: var(--fs-xs); }
+.mk-recent { display: flex; flex-direction: column; }
+.mk-recent-row { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: var(--sp-4); padding: var(--sp-2) var(--sp-2); border-top: 1px solid var(--line-soft); cursor: pointer; border-radius: var(--r-sm); }
+.mk-recent-row:hover { background: var(--row-hover); }
+.mk-recent-row .note { display: block; font-size: var(--fs-xs); }
+.mk-recent-row span.mk-moment { font-family: var(--serif); color: var(--story-text); }
+/* D · Reader */
+.mk-reader { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: var(--sp-5); align-items: start; }
+.mk-nav { position: sticky; top: 56px; max-height: calc(100vh - 80px); overflow-y: auto; background: var(--surface); border-radius: var(--r-lg); padding: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-1); }
+.mk-nav .ls-grouphead { padding: var(--sp-3) var(--sp-2) var(--sp-1); }
+.mk-nav-item { display: flex; justify-content: space-between; gap: var(--sp-2); padding: 5px var(--sp-2); border-radius: var(--r-sm); cursor: pointer; font-size: var(--fs-sm); color: var(--text); }
+.mk-nav-item:hover { background: var(--row-hover); }
+.mk-nav-item.sel { background: var(--selected-bg); color: var(--text-strong); box-shadow: inset 2px 0 0 var(--blue); }
+.mk-nav-item .note { font-size: var(--fs-xs); white-space: nowrap; }
+.mk-new { display: inline-block; width: 7px; height: 7px; border-radius: var(--r-pill); background: var(--blue); margin: 0 var(--sp-2) 1px 0; vertical-align: middle; }
+.mk-nav > * { flex: none; }
+.mk-navseg { display: flex; margin: var(--sp-2) 0 0; }
+.mk-navseg button { flex: 1; }
+.mk-nav .ls-grouphead .count { font-weight: 600; letter-spacing: 0; }
+.mk-article { background: var(--surface); border-radius: var(--r-lg); padding: var(--sp-6) 40px; min-height: 70vh; }
+.mk-article h2 { font-size: var(--fs-xl); margin: 2px 0 2px; }
+.mk-article .story { margin: var(--sp-4) 0; }
+.mk-article h3:not(.divider) { font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); margin: 26px 0 8px; }
+.mk-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-6); }
+.mk-timeline { list-style: none; padding: 0; margin: 0; border-left: 2px solid var(--story-line); }
+.mk-timeline li { padding: 0 0 var(--sp-3) var(--sp-4); position: relative; }
+.mk-timeline li::before { content: ""; position: absolute; left: -6px; top: 8px; width: 10px; height: 10px; border-radius: var(--r-pill); background: var(--story-line); }
+.mk-timeline .note { display: block; font-size: var(--fs-xs); }
+.mk-foot { display: flex; gap: var(--sp-2); margin-top: var(--sp-6); padding-top: var(--sp-4); border-top: 1px solid var(--line); }
+@media (max-width: 900px) {
+  .mk-reader { grid-template-columns: 1fr; }
+  .mk-nav { position: static; max-height: 260px; }
+  .mk-cols { grid-template-columns: 1fr; }
+  .mk-article { padding: var(--sp-5); }
+  .mk-recent-row { grid-template-columns: 1fr; gap: 0; }
+}
+</style>
+</head>
+<body>
+<div class="mk-switch">
+  <span class="note"><b>Mockup</b> · Campaign page options (made-up campaign). Click any entry.</span>
+  <div class="seg" role="group" aria-label="Option">
+    <button type="button" data-opt="a" aria-pressed="false">A · Index</button>
+    <button type="button" data-opt="b" aria-pressed="false">B · Cards</button>
+    <button type="button" data-opt="c" aria-pressed="false">C · Up to now</button>
+    <button type="button" data-opt="d" aria-pressed="false">D · Reader</button>
+    <button type="button" data-opt="e" aria-pressed="true">E · Quests + Reader</button>
+  </div>
+  <label class="ls-check"><input type="checkbox" id="dm" checked> DM view</label>
+</div>
+<header class="topbar" style="top: 49px"><div class="topbar-inner">
+  <a class="brand" href="#"><span class="brand-word">askdnd</span></a>
+  <nav class="nav"><a href="#">Recap</a><a href="#">Sessions</a><a href="#" class="active">Campaign</a><a href="#">Map</a></nav>
+  <span class="nav-sep"></span>
+  <nav class="nav table-nav"><div class="switcher"><a href="#" class="switcher-name">Thorne</a></div><a href="#">Party</a></nav>
+  <div class="bar-end"><div class="avatar">B</div></div>
+</div></header>
+
+<main class="page sheet wide">
+  <div class="title-row"><h1>The Drowned Bell</h1><a class="btn dm-only" href="#" style="margin-left:auto">+ New entry</a></div>
+  <p class="subtitle">People, places and things the party has met. Dungeon Master: Rowan.</p>
+  <p class="mk-why" id="why"></p>
+  <div class="tabbar" role="tablist"><button aria-selected="true">Entries <span class="count" id="total"></span></button><button aria-selected="false">Family tree</button><button aria-selected="false">Glossary <span class="count">9</span></button></div>
+  <div id="view"></div>
+</main>
+
+<div class="peek-backdrop" id="bd" hidden></div>
+<aside class="peek" id="peek" hidden aria-label="Entry"></aside>
+
+<script>
+const LAST = 12;
+const E = [
+  {id: 1, kind: "quest", name: "Ring the Drowned Bell", open: true, seen: 12, summary: "Brother Fennick believes the bell beneath Hollow Reef can calm the storms over Saltmere, if someone rings it at the spring tide. The party agreed to find a way down.",
+   moments: [[9, "Fennick showed the party the bell's rubbing in the Lantern Temple."], [12, "The party found the sea-cave entrance under Hollow Reef."]], rels: [], facts: ["The spring tide is in about three weeks."]},
+  {id: 2, kind: "quest", name: "Find Captain Orla's map", open: true, seen: 11, summary: "Orla Vane will trade passage past the reef for the chart her first mate stole. He was last seen at the Gulls' Rest.",
+   moments: [[11, "Orla offered the deal over a game of dice."]], rels: [], facts: []},
+  {id: 3, kind: "quest", name: "Clear the toll road", open: false, seen: 4, summary: "Bandits had closed the coast road into Saltmere. The party drove them off and Lord Tallow paid the bounty.", moments: [[4, "The bandit leader surrendered at the old bridge."]], rels: [], facts: []},
+  {id: 4, kind: "quest", name: "Where is Pip?", open: true, seen: 12, summary: "Mother Sorrel's son went out with the lamp-boats and didn't come back. Wren says she saw him on a black-sailed ship.",
+   moments: [[10, "Sorrel asked the party for help."], [12, "Wren saw Pip on a black-sailed ship."]], rels: [], facts: []},
+  {id: 10, kind: "npc", name: "Brother Fennick", aliases: ["the Lamplighter"], seen: 12, summary: "Priest of the Lantern Temple, keeper of the lighthouse flame. Kind, tired and more scared of the bell than he lets on.",
+   moments: [[9, "Showed the party the bell's rubbing."], [12, "Admitted he once tried to ring the bell himself."]], rels: [["Serves", 20]], facts: ["He can't swim."]},
+  {id: 11, kind: "npc", name: "Captain Orla Vane", aliases: ["Orla"], seen: 11, summary: "Smuggler captain of the Gull's Wager. Fair in a deal, ruthless out of one.", moments: [[11, "Offered passage for her stolen chart."]], rels: [], facts: []},
+  {id: 12, kind: "npc", name: "Mother Sorrel", seen: 10, summary: "Herbalist on the cliff path. Her tea fixes most things and she knows every family in Saltmere.", moments: [[10, "Asked the party to find Pip."]], rels: [["Mother of", 13]], facts: []},
+  {id: 13, kind: "npc", name: "Pip", seen: 12, summary: "Mother Sorrel's son, twelve, missing since the lamp-boats went out.", moments: [[12, "Seen on a black-sailed ship."]], rels: [["Son of", 12]], facts: []},
+  {id: 14, kind: "npc", name: "Lord Aubrec Tallow", seen: 7, summary: "Magistrate of Saltmere. Pays on time, asks no questions, and seems to know about the bell already.", moments: [[4, "Paid the toll-road bounty."], [7, "Hosted the party at Tallow Manor."]], rels: [["Lives at", 22]], facts: []},
+  {id: 15, kind: "npc", name: "Wren", seen: 12, summary: "Dockside urchin who sells news for copper. Usually right.", moments: [[12, "Told the party about the black-sailed ship."]], rels: [], facts: []},
+  {id: 16, kind: "npc", name: "Dalla Thorn", seen: 6, summary: "Dwarf smith by the harbor. Mended Thorne's shield and won't take payment from anyone who saved the toll road.", moments: [], rels: [], facts: []},
+  {id: 17, kind: "npc", name: "The Grey Widow", hidden: true, seen: null, summary: "Whoever commands the black-sailed ship. The table hasn't met her yet.", moments: [], rels: [], facts: []},
+  {id: 20, kind: "place", name: "The Lantern Temple", seen: 12, summary: "The lighthouse temple at the end of the mole; its flame is never allowed to go out.", moments: [[9, "The bell's rubbing hangs in the crypt."]], rels: [], facts: []},
+  {id: 21, kind: "place", name: "Saltmere", seen: 12, summary: "Fishing town on the storm coast, home base for the party.", moments: [], rels: [], facts: []},
+  {id: 22, kind: "place", name: "Tallow Manor", seen: 7, summary: "The magistrate's house above the harbor, with more guards than a magistrate needs.", moments: [], rels: [], facts: []},
+  {id: 23, kind: "place", name: "Hollow Reef", seen: 12, summary: "A ring of rocks off the point. The sea-cave beneath it leads down toward the bell.", moments: [[12, "The party found the sea-cave entrance."]], rels: [], facts: []},
+  {id: 24, kind: "place", name: "The Gulls' Rest", seen: 11, summary: "Harbor inn; loud, cheap and full of sailors who saw everything.", moments: [], rels: [], facts: []},
+  {id: 30, kind: "faction", name: "The Tidewardens", seen: 9, summary: "Old order sworn to keep the bell silent. Most people think they're a story.", moments: [], rels: [], facts: []},
+  {id: 31, kind: "faction", name: "The Ash Choir", seen: 12, summary: "Hooded singers seen at night on the cliffs. Wherever they sing, the storms get worse.", moments: [[12, "Heard singing above Hollow Reef."]], rels: [], facts: []},
+  {id: 40, kind: "item", name: "Moonglass shard", seen: 8, summary: "A sliver of pale glass that glows near seawater. Ilse carries it.", moments: [], rels: [], facts: []},
+  {id: 41, kind: "item", name: "Orla's chart", seen: 11, summary: "A reef chart with soundings no one else has. Stolen.", moments: [], rels: [], facts: []},
+  {id: 50, kind: "creature", name: "Reef hag", seen: 5, summary: "Something with long fingers lives in the kelp off Hollow Reef. Two divers vanished there last spring.", moments: [], rels: [], facts: []},
+];
+const KINDS = [["quest", "Quests", "Quest"], ["npc", "People", "Person"], ["place", "Places", "Place"], ["faction", "Factions", "Faction"], ["item", "Items", "Item"], ["creature", "Creatures", "Creature"]];
+const LABEL = Object.fromEntries(KINDS.map(k => [k[0], k[2]]));
+const byId = id => E.find(e => e.id === id);
+const who = e => e.summary.split(/(?<=[.!?])\s/)[0].replace(/\.$/, "");
+const tags = e => (e.hidden ? ' <span class="tag faint" title="Only the DM, reviewers and admins see it">Hidden</span>' : "") + (e.kind === "quest" ? ` <span class="tag ${e.open ? "draft" : "done"}">${e.open ? "Open" : "Done"}</span>` : "");
+const seenLine = e => e.seen ? `Last seen Session ${e.seen}` + (e.moments.length ? ` · ${e.moments.length} key moment${e.moments.length > 1 ? "s" : ""}` : "") : "Not seen yet";
+const dm = () => document.getElementById("dm").checked;
+const shown = () => E.filter(e => dm() || !e.hidden);
+let recentOnly = false, opt = "e", q = "", kind = "", sel = 10;
+const match = e => !q || (e.name + " " + (e.aliases || []).join(" ") + " " + e.summary).toLowerCase().includes(q);
+const search = ph => `<div class="ls-search"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input type="search" placeholder="${ph}" value="${q}" data-q></div>`;
+
+function body(e, inPanel) {
+  const rel = e.rels.map(([l, id]) => `<li><span class="muted">${l}</span> <a class="ent" href="#" data-open="${id}">${byId(id).name}</a></li>`).join("");
+  const facts = e.facts.length ? `<ul class="plain">${e.facts.map(f => `<li>${f}</li>`).join("")}</ul>` : '<p class="muted">Nothing yet. Add what the party learned below.</p>';
+  const tl = e.moments.length ? `<h3>Key moments</h3><ul class="mk-timeline">${e.moments.map(([s, t]) => `<li>${t}<span class="note">Session ${s}</span></li>`).join("")}</ul>` : "";
+  const add = `<form class="stack add-fact" onsubmit="return false"><textarea rows="2" placeholder="Something the party learned about ${e.name}, or what's wrong (type @ for a name)"></textarea><div class="row"><button class="btn small">Send</button><span class="note">The DM or a reviewer adds it.</span></div></form>`;
+  const desc = `<div class="story">${e.summary}</div>`;
+  const left = `${rel ? `<h3>Relationships</h3><ul class="plain">${rel}</ul>` : ""}<h3>What the table knows</h3>${facts}${add}`;
+  return inPanel ? desc + left + tl : desc + `<div class="mk-cols"><div>${left}</div><div>${tl || '<h3>Key moments</h3><p class="muted">No key moments mention it yet.</p>'}</div></div>`;
+}
+function openPanel(id) {
+  const e = byId(id), p = document.getElementById("peek");
+  if (opt === "d") { sel = id; render(); return; }
+  if (opt === "e") { sel = id; render(); if (byId(id).kind === "quest") document.getElementById("reader").scrollIntoView({ behavior: "smooth" }); return; }
+  p.innerHTML = `<div class="peek-head"><div><div class="note">${LABEL[e.kind]}${e.kind === "quest" ? " · " + (e.open ? "Open" : "Done") : ""}${e.hidden ? " · not published" : ""}</div><h2>${e.name}</h2>${e.aliases ? `<div class="note">Also: ${e.aliases.join(", ")}</div>` : ""}</div><button class="btn link peek-close" type="button" aria-label="Close" data-close>✕</button></div>
+    <div class="peek-body">${body(e, true)}</div><div class="peek-foot row">${dm() ? '<a class="btn primary" href="#">Edit</a>' : ""}${e.kind === "place" ? '<a class="btn" href="#">Show on map</a>' : ""}</div>`;
+  p.hidden = false; document.getElementById("bd").hidden = false; requestAnimationFrame(() => p.classList.add("open"));
+}
+function closePanel() { const p = document.getElementById("peek"); p.classList.remove("open"); document.getElementById("bd").hidden = true; setTimeout(() => { p.hidden = true; }, 180); }
+
+const WHY = {
+  a: "<b>A · Index.</b> Like the index of a book: every name with one line on who or what it is, grouped by kind, three columns, a search that narrows as you type. Fastest for “who was that again?” at the table. Details open in the side panel.",
+  b: "<b>B · Cards.</b> Today's cards, finished: a picture (or initial), the kind, three lines of the description in the story font, and when the party last saw it. Kinds are one row of choices, not a filter column. Best for browsing and for pictures; holds fewer entries per screen.",
+  c: "<b>C · Up to now.</b> What's live first: open quests with where they stand, then everything from the last session with its key moment, then the rest as a compact index. Best before a session; overlaps a little with Recap.",
+  e: "<b>E · Quests + Reader.</b> Quests are what the party is doing now, so they sit on top on their own: each open quest with where it stands and its latest key moment, and finished ones in a Done drawer. Below, the rest is reference, in the Reader: names down the left by kind, a dot on the ones from the last session (All · Last session narrows to them), and the entry on the page. Click a quest to read it in the Reader too.",
+  d: "<b>D · Reader.</b> A codex: names down the left (open quests and last session at the top, then each kind), and the entry itself on the page with room to read: description, relationships, what the table knows and a timeline of key moments. No side panel; each entry has its own address. Best for reading; on phones the list and the entry are two screens."
+};
+
+function indexHtml(list, small) {
+  return KINDS.map(([k, title]) => {
+    const rows = list.filter(e => e.kind === k);
+    if (!rows.length) return "";
+    const lines = rows.map(e => `<div class="mk-line" data-open="${e.id}"><b>${e.name}</b>${tags(e)} <span class="mk-who">— ${who(e)}</span>${e.aliases ? `<span class="note">also ${e.aliases.join(", ")}</span>` : ""}</div>`).join("");
+    return `<h3 class="divider" id="k-${k}">${title} <span class="count">${rows.length}</span></h3><div class="mk-index">${lines}</div>`;
+  }).join("");
+}
+function sortQuests(l) { return l.slice().sort((a, b) => (a.kind === "quest" && b.kind === "quest" ? (b.open - a.open) : 0) || a.name.localeCompare(b.name)); }
+
+function render() {
+  const all = sortQuests(shown()), list = all.filter(match);
+  document.getElementById("why").innerHTML = WHY[opt];
+  document.getElementById("total").textContent = all.length;
+  document.querySelectorAll(".dm-only").forEach(x => { x.hidden = !dm(); });
+  const v = document.getElementById("view");
+  const jump = `<nav class="mk-jump" aria-label="Jump to">${KINDS.filter(([k]) => list.some(e => e.kind === k)).map(([k, t]) => `<a href="#k-${k}">${t} ${list.filter(e => e.kind === k).length}</a>`).join("")}</nav>`;
+  if (opt === "a") {
+    v.innerHTML = `<section class="section"><div class="mk-bar">${search("Search names and descriptions")}${jump}</div>${indexHtml(list) || '<p class="muted">Nothing matches.</p>'}</section>`;
+  } else if (opt === "b") {
+    const kinds = [["", "All"], ...KINDS.map(([k, t]) => [k, t])];
+    const seg = `<div class="seg" role="group">${kinds.map(([k, t]) => `<button type="button" data-kind="${k}" aria-pressed="${kind === k}">${t} <span class="ls-n">${(k ? all.filter(e => e.kind === k) : all).length}</span></button>`).join("")}</div>`;
+    const cards = list.filter(e => !kind || e.kind === kind).map(e => `<div class="mk-card" data-open="${e.id}"><div class="mk-card-head"><span class="mk-mono" aria-hidden="true">${e.name.replace(/^The /, "")[0]}</span><div><span class="note">${LABEL[e.kind]}</span><b>${e.name}${tags(e)}</b>${e.aliases ? `<span class="note">also ${e.aliases.join(", ")}</span>` : ""}</div></div><p>${e.summary}</p><div class="mk-card-foot"><span>${seenLine(e)}</span>${e.rels[0] ? `<span>${e.rels[0][0]} ${byId(e.rels[0][1]).name}</span>` : ""}</div></div>`).join("");
+    v.innerHTML = `<section class="section"><div class="mk-bar">${seg}${search("Search")}</div><div class="mk-cards">${cards || '<p class="muted">Nothing matches.</p>'}</div></section>`;
+  } else if (opt === "c") {
+    const quests = list.filter(e => e.kind === "quest" && e.open);
+    const recent = list.filter(e => e.seen === LAST && e.kind !== "quest");
+    const qh = quests.map(e => `<div class="mk-quest" data-open="${e.id}"><b>${e.name}</b>${tags(e)}<p>${e.summary}</p>${e.moments.length ? `<span class="note">Latest · Session ${e.moments.at(-1)[0]}: ${e.moments.at(-1)[1]}</span>` : ""}</div>`).join("");
+    const rh = recent.map(e => `<div class="mk-recent-row" data-open="${e.id}"><div><b>${e.name}</b>${tags(e)}<span class="note">${LABEL[e.kind]}</span></div><span>${e.moments.filter(m => m[0] === LAST).map(m => `<span class="mk-moment">${m[1]}</span>`).join(" ") || `<span class="muted">${who(e)}</span>`}</span></div>`).join("");
+    const rest = list.filter(e => !(e.kind === "quest" && e.open) && e.seen !== LAST);
+    v.innerHTML = `<div class="mk-bar">${search("Search everything")}</div>
+      <section class="section"><h3 class="divider" style="margin-top:0">Open quests <span class="count">${quests.length}</span></h3><div class="mk-quests">${qh || '<p class="muted">No open quests match.</p>'}</div>
+      <h3 class="divider">In the last session · Session ${LAST} <span class="count">${recent.length}</span></h3><div class="mk-recent">${rh || '<p class="muted">Nothing matches.</p>'}</div></section>
+      <section class="section"><div class="mk-bar"><b>Everyone and everything else</b>${jump}</div>${indexHtml(rest)}</section>`;
+  } else if (opt === "e") {
+    const open = all.filter(e => e.kind === "quest" && e.open), done = all.filter(e => e.kind === "quest" && !e.open);
+    const ref = list.filter(e => e.kind !== "quest");
+    if (!all.some(e => e.id === sel)) sel = (ref[0] || all[0]).id;
+    const quest = e => `<div class="mk-quest${e.id === sel ? " sel" : ""}" data-open="${e.id}"><b>${e.name}</b>${tags(e)}<p>${e.summary}</p>${e.moments.length ? `<span class="note">Latest · Session ${e.moments.at(-1)[0]}: ${e.moments.at(-1)[1]}</span>` : ""}</div>`;
+    // No "Last session" group: each name appears once, under its kind. A dot marks the ones in the last session,
+    // and the Last session switch narrows the list to them.
+    const dot = e => e.seen === LAST ? `<span class="mk-new" title="In the last session (Session ${LAST})" aria-label="In the last session"></span>` : "";
+    const item = e => `<div class="mk-nav-item${e.id === sel ? " sel" : ""}" data-open="${e.id}"><span>${dot(e)}${e.name}${e.hidden ? ' <span class="tag faint">Hidden</span>' : ""}</span></div>`;
+    const inRef = ref.filter(e => !recentOnly || e.seen === LAST);
+    const seg = `<div class="seg mk-navseg" role="group" aria-label="Which ones"><button type="button" data-recent="0" aria-pressed="${!recentOnly}">All <span class="ls-n">${ref.length}</span></button><button type="button" data-recent="1" aria-pressed="${recentOnly}"><span class="mk-new" aria-hidden="true"></span>Last session <span class="ls-n">${ref.filter(e => e.seen === LAST).length}</span></button></div>`;
+    const groups = KINDS.filter(([k]) => k !== "quest").map(([k, t]) => [t, inRef.filter(e => e.kind === k)]);
+    const nav = groups.filter(g => g[1].length).map(([t, rows]) => `<div class="ls-grouphead">${t} <span class="count">${rows.length}</span></div>${rows.map(item).join("")}`).join("") || '<p class="note">Nothing matches.</p>';
+    const e = byId(sel);
+    const status = e.kind === "quest" && dm() ? `<a class="btn" href="#">${e.open ? "Mark done" : "Reopen"}</a>` : "";
+    const art = `<article class="mk-article"><div class="note">${LABEL[e.kind]}${e.kind === "quest" ? " · " + (e.open ? "Open" : "Done") : ""} · ${seenLine(e)}</div><h2>${e.name}${tags(e)}</h2>${e.aliases ? `<div class="note">Also: ${e.aliases.join(", ")}</div>` : ""}${body(e, false)}
+      <div class="mk-foot">${dm() ? '<a class="btn primary" href="#">Edit</a>' : ""}${status}${e.kind === "place" ? '<a class="btn" href="#">Show on map</a>' : ""}<span class="note" style="margin-left:auto">↑ ↓ move through the list</span></div></article>`;
+    v.innerHTML = `<section class="section"><div class="mk-bar"><h2 style="margin:0;font-size:var(--fs-lg)">Quests</h2><span class="count">${open.length} open</span>${dm() ? '<a href="#" class="note" style="margin-left:auto">+ New quest</a>' : ""}</div>
+      <div class="mk-quests">${open.map(quest).join("") || '<p class="muted">No open quests.</p>'}</div>
+      ${done.length ? `<details class="done" style="margin-top:var(--sp-3)"><summary>Done (${done.length})</summary><div class="mk-quests" style="margin-top:var(--sp-2)">${done.map(quest).join("")}</div></details>` : ""}</section>
+      <div class="mk-reader" id="reader"><aside class="mk-nav">${search("Search people, places and things")}${seg}${nav}</aside>${art}</div>`;
+  } else {
+    if (!list.some(e => e.id === sel) && list.length) sel = list[0].id;
+    const item = e => `<div class="mk-nav-item${e.id === sel ? " sel" : ""}" data-open="${e.id}"><span>${e.name}${e.hidden ? ' <span class="tag faint">Hidden</span>' : ""}</span><span class="note">${e.kind === "quest" ? "" : LABEL[e.kind]}</span></div>`;
+    const top = [["Open quests", list.filter(e => e.kind === "quest" && e.open)], ["Last session", list.filter(e => e.seen === LAST && e.kind !== "quest")]];
+    const groups = [...top, ...KINDS.filter(([k]) => k !== "quest").map(([k, t]) => [t, list.filter(e => e.kind === k)]), ["Done quests", list.filter(e => e.kind === "quest" && !e.open)]];
+    const nav = groups.filter(g => g[1].length).map(([t, rows]) => `<div class="ls-grouphead">${t}</div>${rows.map(item).join("")}`).join("");
+    const e = byId(sel);
+    const art = e ? `<article class="mk-article"><div class="note">${LABEL[e.kind]}${e.kind === "quest" ? " · " + (e.open ? "Open" : "Done") : ""} · ${seenLine(e)}</div><h2>${e.name}${tags(e)}</h2>${e.aliases ? `<div class="note">Also: ${e.aliases.join(", ")}</div>` : ""}${body(e, false)}
+      <div class="mk-foot">${dm() ? '<a class="btn primary" href="#">Edit</a>' : ""}${e.kind === "place" ? '<a class="btn" href="#">Show on map</a>' : ""}<span class="note" style="margin-left:auto">↑ ↓ move through the list</span></div></article>` : '<p class="muted">Nothing matches.</p>';
+    v.innerHTML = `<div class="mk-reader"><aside class="mk-nav">${search("Search")}${nav}</aside>${art}</div>`;
+  }
+  const s = v.querySelector("[data-q]"); if (s && document.activeElement !== s && q) { s.focus(); s.setSelectionRange(q.length, q.length); }
+}
+document.addEventListener("click", ev => {
+  const o = ev.target.closest("[data-opt]");
+  if (o) { opt = o.dataset.opt; document.querySelectorAll("[data-opt]").forEach(b => b.setAttribute("aria-pressed", b === o)); closePanel(); render(); return; }
+  const rc = ev.target.closest("[data-recent]"); if (rc) { recentOnly = rc.dataset.recent === "1"; render(); return; }
+  const k = ev.target.closest("[data-kind]"); if (k) { kind = k.dataset.kind; render(); return; }
+  const op = ev.target.closest("[data-open]"); if (op) { ev.preventDefault(); openPanel(+op.dataset.open); return; }
+  if (ev.target.closest("[data-close]") || ev.target.id === "bd") closePanel();
+});
+document.addEventListener("input", ev => { if (ev.target.matches("[data-q]")) { q = ev.target.value.toLowerCase(); render(); const s = document.querySelector("[data-q]"); s.focus(); s.setSelectionRange(q.length, q.length); } });
+document.getElementById("dm").addEventListener("change", render);
+document.addEventListener("keydown", ev => {
+  if (ev.key === "Escape") closePanel();
+  if ((opt === "d" || opt === "e") && (ev.key === "ArrowDown" || ev.key === "ArrowUp") && !ev.target.matches("input, textarea")) {
+    const ids = [...document.querySelectorAll(".mk-nav-item")].map(n => +n.dataset.open);
+    const i = ids.indexOf(sel) + (ev.key === "ArrowDown" ? 1 : -1);
+    if (ids[i]) { ev.preventDefault(); sel = ids[i]; render(); }
+  }
+});
+render();
+</script>
+</body>
+</html>

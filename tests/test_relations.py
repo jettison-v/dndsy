@@ -150,4 +150,4 @@ def test_entity_page_relationship_editing(admin, player, db):  # noqa: F811
     assert db.scalar(select(EntityRelation).where(EntityRelation.type == "member_of")) is None
     tree = admin.get("/campaign").text
     assert "Family tree" in tree and "class=\"mermaid\"" in tree and "flowchart TD" in tree
-    assert 'data-tab="t-family-tree">Family tree</button>' in tree and '<div id="t-family-tree" hidden>' in tree  # drawn when its tab opens
+    assert 'data-tab="t-family-tree">Family tree</button>' in tree and '<section class="section" id="t-family-tree" hidden>' in tree  # drawn when its tab opens

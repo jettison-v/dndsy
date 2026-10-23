@@ -408,6 +408,14 @@ def set_details(entity: Entity, kind: str, quest_open: str, published: bool) -> 
     entity.status = Status.PUBLISHED if published else Status.DRAFT
 
 
+def set_quest_open(entity: Entity, is_open: bool) -> str:
+    """Mark a quest done, or reopen it."""
+    if entity.kind != EntityKind.QUEST:
+        raise EntityError(f"{entity.name} isn't a quest.")
+    entity.quest_open = is_open
+    return "Reopened" if is_open else "Marked done"
+
+
 def _not_a_character(db: Session, entity: Entity, verb: str) -> None:
     from app.models import CampaignCharacter
 

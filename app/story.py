@@ -6,12 +6,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import web
-from app import atlas, pictures, review
+from app import review
 from app.auth import can_edit_entries, can_moderate, current_user
 from app.db import get_db
 from app.extraction import session_label, timeline
 from app.linking import Linker, entity_linker
-from app.models import Campaign, Correction, Entity, EntityKind, EventKind, GameSession, GlossaryTerm, Status, Suggestion
+from app.models import (Campaign, Correction, Entity, EntityKind, EventEntity, EventKind, GameSession, GlossaryTerm, Status, StoryEvent,
+                        Suggestion)
 from app.relations import family_graph
 from app.render import markdown_to_html
 from app.suggestions import waiting_count
@@ -140,36 +141,67 @@ def sessions(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(request, "sessions.html", {"items": items, "ln": _linker(db)})
 
 
+def seen_in_sessions(db: Session, campaign_id: int) -> tuple[int | None, dict[int, dict]]:
+    """The latest published session, and for each entry the published key moments that mention it: where it was
+    last seen, how many moments, and the latest one."""
+    sessions = timeline(db, campaign_id)
+    order = {s.id: i for i, s in enumerate(sessions)}
+    latest = next((s for s in reversed(sessions) if any(r.status == Status.PUBLISHED for r in s.recaps)), None)
+    rows = db.execute(
+        select(EventEntity.entity_id, StoryEvent)
+        .join(StoryEvent, StoryEvent.id == EventEntity.event_id)
+        .join(GameSession, GameSession.id == StoryEvent.session_id)
+        .where(GameSession.campaign_id == campaign_id, StoryEvent.status == Status.PUBLISHED)
+    ).all()
+    by_entity: dict[int, list[StoryEvent]] = {}
+    for entity_id, event in rows:
+        by_entity.setdefault(entity_id, []).append(event)
+    seen = {}
+    for entity_id, events in by_entity.items():
+        events.sort(key=lambda e: (order.get(e.session_id, 10**6), e.position, e.id))
+        last = events[-1]
+        seen[entity_id] = {"session_id": last.session_id, "label": session_label(last.session), "count": len(events), "latest": last.text}
+    return (latest.id if latest else None), seen
+
+
 @router.get("/campaign")
-def campaign_page(request: Request, db: Session = Depends(get_db)):
+def campaign_page(request: Request, open: str = "", db: Session = Depends(get_db)):
+    """The Campaign page (roadmap step 11, Brett 2026-10-22, option E): quests on top, then the Reader for
+    everything else (names down the left, the entry on the page). `?open=<id>` is an entry's own address."""
+    from app.entity_pages import entity_context
+
     user = current_user(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
     campaign = web.campaign(db)
     editor = can_edit_entries(user)  # the DM, reviewers and admins also see hidden entries, and get "+ New"
-    groups, glossary = [], []
+    quests, done, groups, glossary, seen, latest, tree, selected = [], [], [], [], {}, None, "", None
     if campaign:
         shown = (Entity.status == Status.PUBLISHED) if not editor else (Entity.id.is_not(None))
-        entities = list(
+        entries = list(
             db.scalars(
                 select(Entity)
                 .where(Entity.campaign_id == campaign.id, shown, Entity.kind != EntityKind.PC)
                 .order_by(Entity.name)
             )
         )
+        latest, seen = seen_in_sessions(db, campaign.id)
+        quests = [e for e in entries if e.kind == EntityKind.QUEST and e.quest_open is not False]
+        done = [e for e in entries if e.kind == EntityKind.QUEST and e.quest_open is False]
         for kind, title in GROUPS:
-            entries = [e for e in entities if e.kind == kind]
-            if kind == EntityKind.QUEST:
-                entries.sort(key=lambda e: (not e.quest_open, e.name))
-            if entries or editor:
-                groups.append((title, entries))
+            if kind != EntityKind.QUEST and (rows := [e for e in entries if e.kind == kind]):
+                groups.append((title, rows))
         glossary = list(db.scalars(select(GlossaryTerm).where(GlossaryTerm.campaign_id == campaign.id).order_by(GlossaryTerm.term)))
         graph = family_graph(db, campaign.id, visible=lambda e: e.status == Status.PUBLISHED)
+        tree = graph.mermaid() if graph.people else ""
+        # The entry to show: the one asked for, else something from the last session, else the first one
+        reference = [e for _, rows in groups for e in rows]
+        recent = [e for e in reference if latest and seen.get(e.id, {}).get("session_id") == latest]
+        selected = next((e for e in entries if open.isdigit() and e.id == int(open)), None) or next(iter(recent + reference + quests + done), None)
+    article = {**entity_context(db, selected, user), "where": "reader"} if selected else {}
     return templates.TemplateResponse(
-        request, "campaign.html", {"campaign": campaign, "groups": groups, "glossary": glossary, "tree": graph.mermaid() if campaign and graph.people else "",
-                                   "editor": editor, "group_kinds": {title: kind.value for kind, title in GROUPS},
-                                   "toast": request.session.pop("toast", None),
-                                   "pics": pictures.urls(db, [e.id for _, entries in groups for e in entries]),
-                                   "markers": {e.id: m for _, entries in groups for e in entries if (m := atlas.entity_marker(e))}}
+        request, "campaign.html", {"campaign": campaign, "quests": quests, "done_quests": done, "groups": groups, "glossary": glossary,
+                                   "tree": tree, "editor": editor, "seen": seen, "latest": latest, "selected": selected,
+                                   "toast": request.session.pop("toast", None), **article}
     )
 
