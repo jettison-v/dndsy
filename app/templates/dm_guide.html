@@ -57,7 +57,7 @@
       {% if b.to_record %}<li><b>Sessions waiting for a recording</b> <span class="tag">{{ b.to_record | length }}</span>
         <p>These need Brett to send the transcript from the Processor on his Mac. Nothing to do here until he does.</p></li>{% endif %}
       <li><b>Tidy as you go</b>{% if b.hidden %} <span class="tag faint">{{ b.hidden }} hidden {{ "entry" if b.hidden == 1 else "entries" }}</span>{% endif %}
-        <p>Drafts sometimes create the same person twice ("Capt Trager Grill" and "Captain Trager Grill"). Open one on the <a href="/campaign">Campaign</a> page, press <b>Edit</b>, and <b>Merge</b> it into the other. See <a href="#tidy">Tidying and undo</a>.</p></li>
+        <p>Drafts sometimes create the same person twice ("Capt Trager Grill" and "Captain Trager Grill"). Open one on the <a href="{{ cbase }}/campaign">Campaign</a> page, press <b>Edit</b>, and <b>Merge</b> it into the other. See <a href="#tidy">Tidying and undo</a>.</p></li>
       <li class="{{ 'done' if not b.suggestions }}"><b>Players' suggestions</b>{% if b.suggestions %} <span class="tag draft">{{ b.suggestions }} waiting</span>{% else %} <span class="tag done">None waiting</span>{% endif %}
         <p>On <a href="{{ cbase }}/manage/inbox">Manage › Inbox</a>. See <a href="#players">The inbox</a>.</p></li>
     </ol>
@@ -101,7 +101,7 @@
   <section class="section" id="write">
     <h2>Writing it yourself</h2>
     <ul class="guide-list">
-      <li><b>A new person, place, faction, item, quest or creature:</b> <b>+ New entry</b> on the <a href="/campaign">Campaign</a> page, or <b>+ New quest</b> on its Quests tab. Prepare an NPC before the party meets them by ticking <i>Hide from the table for now</i>.</li>
+      <li><b>A new person, place, faction, item, quest or creature:</b> <b>+ New entry</b> on the <a href="{{ cbase }}/campaign">Campaign</a> page, or <b>+ New quest</b> on its Quests tab. Prepare an NPC before the party meets them by ticking <i>Hide from the table for now</i>.</li>
       <li><b>Change an entry:</b> pick it on the Campaign page (or click its name anywhere), then <b>Edit</b>. You can rename it (the old name keeps working), write the description in your own words, add relationships, a picture or a key moment, or hide it.</li>
       <li><b>Quests:</b> each open quest on the <b>Quests</b> tab has <b>Edit</b> and <b>Mark done</b>; a done quest moves to <b>Done</b> (to reopen it, set it back to Open in Edit). To show who gave a quest, add the relationship <i>gave</i> on that person (or <i>given by</i> on the quest). The people and places on a quest's card come from its key moments, so tagging the quest in a key moment keeps the card current.</li>
       <li><b>Relationships</b> (parent of, married to, sibling of, member of, serves, ally of, enemy of, gave) are added in an entry's Edit window. The <b>Relationships</b> tab draws them as family trees and lists, and each entry in World shows its connections around it.</li>

@@ -52,11 +52,11 @@
     {% for c in board %}{% set q = c.q %}
     <section class="section quest-board-card{{ ' sel' if open_quest == q.id }}" id="quest-{{ q.id }}">
       <div class="qb-top"><h2>{{ q.name }}</h2> <span class="tag draft">Open</span>{% if q.status.value != "published" %} <span class="tag faint" title="Only the DM, reviewers and admins see it">Hidden</span>{% endif %}
-        <span class="note qb-meta">{% if c.givers %}Given by {% for g in c.givers %}<a class="ent" href="/campaign/{{ g.id }}">{{ g.name }}</a>{{ " and " if not loop.last }}{% endfor %}{% endif %}
+        <span class="note qb-meta">{% if c.givers %}Given by {% for g in c.givers %}<a class="ent" href="{{ entry_url(g.id) }}">{{ g.name }}</a>{{ " and " if not loop.last }}{% endfor %}{% endif %}
           {%- if c.givers and c.moments %} · {% endif %}{% if c.moments %}Since {{ c.moments[0].label }}{% endif %}</span></div>
       {% if q.summary %}<div class="story">{{ q.summary }}</div>{% endif %}
       {% if not (c.moments or c.who or c.facts) %}
-      <p class="muted">No key moments or facts yet. <a class="qb-add" href="/campaign/{{ q.id }}">Add what the party learned</a></p>
+      <p class="muted">No key moments or facts yet. <a class="qb-add" href="{{ entry_url(q.id) }}">Add what the party learned</a></p>
       {% else %}
       <div class="qb-cols">
         <div><h3>Progress</h3>
@@ -66,12 +66,12 @@
           {% else %}<p class="muted">No key moments yet.</p>{% endif %}
           {% if c.quiet %}<p class="note">No key moments since {{ c.quiet }}.</p>{% endif %}</div>
         <div><h3>Who and where</h3>
-          {% if c.who %}<div class="part-of">{% for e in c.who %}<a class="chip-link" href="/campaign/{{ e.id }}">{{ e.name }}</a>{% endfor %}</div>
+          {% if c.who %}<div class="part-of">{% for e in c.who %}<a class="chip-link" href="{{ entry_url(e.id) }}">{{ e.name }}</a>{% endfor %}</div>
           {% else %}<p class="muted">No one yet.</p>{% endif %}
           <h3>What the table knows</h3>
           {% if c.facts %}<ul class="plain">{% for f in c.facts %}<li>{% if f.kind == "correction" %}<span class="tag edited">Correction</span> {% endif %}{{ f.text }}</li>{% endfor %}</ul>
           {% else %}<p class="muted">Nothing yet.</p>{% endif %}
-          <a class="qb-add" href="/campaign/{{ q.id }}">Add what the party learned</a></div>
+          <a class="qb-add" href="{{ entry_url(q.id) }}">Add what the party learned</a></div>
       </div>
       {% endif %}
       {% if editor %}<div class="reader-foot row">
@@ -84,7 +84,7 @@
     <section class="section qb-done">
       <h3 class="divider" style="margin-top:0">Done <span class="count">{{ done_quests | length }}</span></h3>
       {% for q in done_quests %}{% set s = seen.get(q.id) %}
-      <a class="qb-done-row{{ ' sel' if open_quest == q.id }}" id="quest-{{ q.id }}" href="/campaign/{{ q.id }}"><span><b>{{ q.name }}</b>{% if q.summary %} <span class="muted">· {{ q.summary | truncate(110) }}</span>{% endif %}</span>
+      <a class="qb-done-row{{ ' sel' if open_quest == q.id }}" id="quest-{{ q.id }}" href="{{ entry_url(q.id) }}"><span><b>{{ q.name }}</b>{% if q.summary %} <span class="muted">· {{ q.summary | truncate(110) }}</span>{% endif %}</span>
         <span class="note">{% if s %}Last moment {{ s.label }}{% endif %}</span></a>
       {% endfor %}
     </section>
@@ -125,7 +125,7 @@
 
   <section class="section" id="t-glossary"{% if tab != "glossary" %} hidden{% endif %}>
     <p class="hint" style="margin:0 0 8px">Campaign names and words with their correct spelling. Click one for more, or to suggest a fix.</p>
-    {% if glossary %}<table class="list">{% for g in glossary %}<tr><td style="width:30%"><a href="/campaign/glossary/{{ g.id }}"><b>{{ g.term }}</b></a></td><td class="muted">{{ g.description }}</td></tr>{% endfor %}</table>
+    {% if glossary %}<table class="list">{% for g in glossary %}<tr><td style="width:30%"><a href="{{ cbase }}/campaign/glossary/{{ g.id }}"><b>{{ g.term }}</b></a></td><td class="muted">{{ g.description }}</td></tr>{% endfor %}</table>
     {% else %}<p class="muted">No terms yet.</p>{% endif %}
     {% if is_dm or is_reviewer %}
     <details class="suggest"><summary>Add a term</summary>

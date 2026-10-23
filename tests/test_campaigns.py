@@ -56,8 +56,8 @@ def test_story_pages_live_at_their_campaigns_address(two, db):
     pat, sam = two["pat"], two["sam"]
     r = pat.get("/", follow_redirects=False)
     assert r.status_code == 307 and r.headers["location"] == "/c/main/"
-    assert pat.get("/sessions?x=1", follow_redirects=False).headers["location"] == "/c/main/sessions?x=1"
-    assert sam.get("/campaign", follow_redirects=False).headers["location"] == "/c/strahd/campaign"
+    assert pat.get("/campaign", follow_redirects=False).status_code == 404  # only at the campaign's address (2026-10-23)
+    assert sam.get("/c/main/campaign", follow_redirects=False).status_code == 404  # not one of Sam's campaigns
     assert "Ireena" in sam.get("/c/strahd/campaign").text and "Ireena" not in pat.get("/c/main/campaign").text
     assert pat.get("/c/strahd/campaign").status_code == 404  # not one of Pat's campaigns
     # Another campaign's entry, by its number: not in Pat's Reader or side panel
@@ -65,7 +65,7 @@ def test_story_pages_live_at_their_campaigns_address(two, db):
     assert "Ireena" not in pat.get(f"/c/main/campaign?open={ireena}").text
     assert pat.get(f"/c/main/campaign/{ireena}/read").status_code == 404 and pat.get(f"/c/main/campaign/{ireena}/peek").status_code == 404
     assert pat.get("/c/nowhere/").status_code == 404
-    assert pat.get("/campaign", headers={"HX-Request": "true"}, follow_redirects=False).status_code == 200  # page parts stay
+    assert pat.get("/c/main/campaign", headers={"HX-Request": "true"}, follow_redirects=False).status_code == 200  # page parts stay
 
 
 def test_the_switcher_lists_your_campaigns_and_remembers_the_last(two, db):
@@ -98,10 +98,8 @@ def test_roles_are_per_campaign(two, db):
     set_role(db, "pat@example.com", "dm", campaign=two["strahd"])
     assert access.role("pat@example.com", two["strahd"].id) == "dm" and access.role("pat@example.com", two["main"].id) == "player"
     pat = two["pat"]
-    pat.get("/c/strahd/")
-    assert pat.get("/manage/house-rules").status_code == 200  # the DM of the campaign Pat is in now
-    pat.get("/c/main/")
-    assert pat.get("/manage/house-rules").status_code == 403  # just a player here
+    assert pat.get("/c/strahd/manage/house-rules").status_code == 200  # the DM in Strahd
+    assert pat.get("/c/main/manage/house-rules").status_code == 403  # just a player here
 
 
 def test_moving_a_character_keeps_its_story_in_the_old_campaign(two, db):
@@ -230,7 +228,7 @@ def test_a_campaigns_manage_pages_act_on_the_campaign_in_the_address(two, db):
 
 def test_story_holds_previously_on_and_all_sessions(two):
     pat = two["pat"]
-    assert pat.get("/c/main/sessions", follow_redirects=False).headers["location"] == "/c/main/?tab=sessions"
+    assert pat.get("/c/main/sessions").status_code == 404  # All sessions is Story's tab
     page = pat.get("/c/main/").text
     assert '<div id="t-previously">' in page and '<div id="t-sessions" hidden>' in page
     page = pat.get("/c/main/?tab=sessions").text

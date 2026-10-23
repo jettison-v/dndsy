@@ -5,9 +5,10 @@ This sits in front of every page. For /c/<slug>/rest it remembers the campaign f
 campaign this way also makes it the person's current campaign (users.current_campaign_id), so plain links on the
 page (/campaign/12) stay in it. A campaign the person can't open is "not found".
 
-Story pages and the campaign's Manage pages opened without the prefix (/, /sessions, /campaign, /map, /manage/inbox…)
-are sent to the same page in the person's current campaign, so the address says which campaign it is. Everything
-else (characters, Party, askdnd-wide Manage pages) keeps its address and shows the current campaign.
+Every page has one address (Brett, 2026-10-23). Story pages and the campaign's Manage pages live only at
+/c/<campaign>/…; opened without it they're Not found, except the home page (/), which opens your current campaign's
+Story. Everything else (characters, Party, Help, askdnd-wide Manage pages) has a plain address and shows the
+current campaign. Panels, forms and pictures a page asks for still work at plain addresses.
 """
 
 import re
@@ -83,21 +84,34 @@ class CampaignPaths:
                     viewing = bool((scope.get("session") or {}).get("real_user"))  # View as: nothing in their name
                     if not viewing and (access._rows().get(email) or {}).get("current") != here["id"]:
                         await anyio.to_thread.run_sync(remember, email, here["id"])
-                if scope["method"] == "GET" and not _header(scope, b"hx-request") and any(
-                        rest == p or rest.startswith(p + "/") for p in ASKDND):
-                    query = scope.get("query_string", b"").decode()
-                    return await RedirectResponse(rest + (f"?{query}" if query else ""), status_code=307)(scope, receive, send)
-            elif email and scope["method"] == "GET" and in_campaign(scope["path"]) and not _header(scope, b"hx-request"):
+                if is_page_visit(scope) and any(rest == p or rest.startswith(p + "/") for p in ASKDND):
+                    scope = {**scope, "path": GONE, "raw_path": GONE.encode()}  # askdnd's pages never name a campaign
+            elif email and scope["path"] == "/" and scope["method"] == "GET" and not _header(scope, b"hx-request"):
                 here = access.current_campaign(email) if access.level(email) else None
-                if here:
+                if here:  # the home page: the one plain address kept, opening your current campaign's Story
                     query = scope.get("query_string", b"").decode()
-                    path = "" if scope["path"] in ("/", "/story") else scope["path"]
-                    url = f"/c/{here['slug']}{path or '/'}" + (f"?{query}" if query else "")
-                    return await RedirectResponse(url, status_code=307)(scope, receive, send)
+                    return await RedirectResponse(f"/c/{here['slug']}/" + (f"?{query}" if query else ""), status_code=307)(scope, receive, send)
+            elif is_page_visit(scope) and is_campaign_page(scope["path"]):
+                scope = {**scope, "path": GONE, "raw_path": GONE.encode()}  # one address per page: /c/<campaign>/… (2026-10-23)
             await self.app(scope, receive, send)
         finally:
             access.viewer.reset(t_viewer)
             access.path_slug.reset(t_slug)
+
+
+GONE = "/__not-found"  # no route: the friendly Not found page (app/main.py)
+
+
+def is_page_visit(scope) -> bool:
+    """Someone opening a page (not a panel, a form or a picture the page asks for)."""
+    return scope["method"] == "GET" and not _header(scope, b"hx-request")
+
+
+def is_campaign_page(path: str) -> bool:
+    """A page that belongs to one campaign, opened without /c/<campaign>: its address is the prefixed one only."""
+    if path in ("/story", "/sessions", "/map", "/campaign", "/manage") or re.fullmatch(r"/campaign/(?:glossary/)?\d+", path):
+        return True
+    return any(path == p or path.startswith(p + "/") for p in MANAGE) and "/images/" not in path
 
 
 def _header(scope, name: bytes) -> bool:

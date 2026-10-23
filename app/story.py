@@ -93,7 +93,6 @@ def _linker(db: Session) -> Linker:
 
 
 @router.get("/")
-@router.get("/story")
 def story(request: Request, tab: str = "", db: Session = Depends(get_db)):
     """Story (menu bar Option B, Brett 2026-10-22): tabs Previously on… (questions for you, then the latest session's
     recap, key moments and open threads) and All sessions (every published session, newest first). ?tab=sessions."""
@@ -133,12 +132,6 @@ def answer_question(
         db.rollback()
         request.session["toast"] = str(e)
     return RedirectResponse("/", status_code=303)
-
-
-@router.get("/sessions")
-def sessions(request: Request):
-    """The old Sessions page is Story's All sessions tab."""
-    return RedirectResponse(f"{web.base()}/?tab=sessions", status_code=303)
 
 
 def seen_in_sessions(db: Session, campaign_id: int) -> tuple[int | None, dict[int, dict]]:

@@ -12,7 +12,7 @@
     {%- for t, x, y in cx.heads %}{% set p = cx.pct(x, y) %}<span class="cx-head" style="left: {{ p[0] }}%; top: {{ p[1] }}%">{{ t }}</span>{% endfor %}
     {%- for n in cx.nodes %}{% set p = cx.pct((cx.cx + n.x) / 2, (cx.cy + n.y) / 2) %}<span class="cx-label" style="left: {{ p[0] }}%; top: {{ p[1] }}%">{{ n.label }}</span>{% endfor %}
     {%- for n in cx.nodes %}{% set p = cx.pct(n.x, n.y) %}
-    <a class="cx-node {{ n.entity.kind.value }}" style="left: {{ p[0] }}%; top: {{ p[1] }}%" {% if mode == "window" %}href="#" hx-get="{{ cbase }}/campaign/{{ n.entity.id }}/connections" hx-target="closest .peek" hx-swap="innerHTML"{% else %}href="/campaign/{{ n.entity.id }}"{% endif %} title="{{ n.label | capitalize }} {{ n.entity.name }}">
+    <a class="cx-node {{ n.entity.kind.value }}" style="left: {{ p[0] }}%; top: {{ p[1] }}%" {% if mode == "window" %}href="#" hx-get="{{ cbase }}/campaign/{{ n.entity.id }}/connections" hx-target="closest .peek" hx-swap="innerHTML"{% else %}href="{{ entry_url(n.entity.id) }}"{% endif %} title="{{ n.label | capitalize }} {{ n.entity.name }}">
       <b>{{ n.entity.name }}</b><small>{{ kinds.get(n.entity.kind.value, "") }}{% if n.entity.status.value != "published" %} · Hidden{% endif %}</small></a>
     {%- endfor %}
     {% set p = cx.pct(cx.cx, cx.cy) %}<div class="cx-node cx-hub" style="left: {{ p[0] }}%; top: {{ p[1] }}%"><b>{{ cx.e.name }}</b><small>{{ cx.nodes | length }} tie{{ "s" if cx.nodes | length != 1 }}</small></div>
@@ -21,6 +21,6 @@
     {%- for g, t in [("family", "Family"), ("allegiance", "Factions and service"), ("ally", "Allies"), ("enemy", "Enemies"), ("quest", "Quests")] %}{% if cx.nodes | selectattr("group", "equalto", g) | first %}
     <span><svg width="24" height="6"><line class="e-{{ g }}" x1="0" y1="3" x2="24" y2="3"/></svg>{{ t }}</span>{% endif %}{% endfor %}
   </div>
-  <ul class="plain cx-list">{% for t, mine, o, label in cx.lines %}<li><span class="muted">{{ label | capitalize }}</span> <a class="ent" {% if mode == "window" %}href="#" hx-get="{{ cbase }}/campaign/{{ o.id }}/connections" hx-target="closest .peek" hx-swap="innerHTML"{% else %}href="/campaign/{{ o.id }}"{% endif %}>{{ o.name }}</a></li>{% endfor %}</ul>
+  <ul class="plain cx-list">{% for t, mine, o, label in cx.lines %}<li><span class="muted">{{ label | capitalize }}</span> <a class="ent" {% if mode == "window" %}href="#" hx-get="{{ cbase }}/campaign/{{ o.id }}/connections" hx-target="closest .peek" hx-swap="innerHTML"{% else %}href="{{ entry_url(o.id) }}"{% endif %}>{{ o.name }}</a></li>{% endfor %}</ul>
 </div>
 {%- endmacro %}

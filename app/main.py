@@ -4,6 +4,8 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
+from fastapi.exception_handlers import http_exception_handler
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import update
@@ -64,6 +66,17 @@ def mark_interrupted_runs() -> None:
 
 
 app = FastAPI(title="askdnd", docs_url=None, redoc_url=None, lifespan=lifespan)
+
+
+@app.exception_handler(StarletteHTTPException)
+async def not_found_page(request: Request, exc: StarletteHTTPException):
+    """A friendly Not found page for people (old bookmarks: every page has one address since 2026-10-23); the API and
+    other errors answer as before."""
+    if exc.status_code == 404 and not request.url.path.startswith("/api/") and "application/json" not in request.headers.get("accept", ""):
+        from app.web import not_found
+
+        return not_found(request, "There's no page at this address. If it's an old bookmark, open the page from the menu and save it again.")
+    return await http_exception_handler(request, exc)
 app.add_middleware(CampaignPaths)  # inside the session middleware (added last), so it knows who's asking
 app.add_middleware(ViewAs)  # between the two: an admin viewing as someone else (app/view_as.py)
 app.add_middleware(

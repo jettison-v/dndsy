@@ -64,9 +64,9 @@
     <p class="note">New descriptions Claude wrote from an entry's facts and key moments. Nothing changes until you use one.</p>
     {% for e in drafts %}
     <div class="item inbox-item">
-      <p class="item-title"><a href="/campaign?open={{ e.id }}" data-no-peek>{{ e.name }}</a> <span class="tag draft">New description</span></p>
+      <p class="item-title"><a href="{{ entry_url(e.id) }}" data-no-peek>{{ e.name }}</a> <span class="tag draft">New description</span></p>
       <div class="answer clamp markup">{% if e.summary %}{{ e.summary | diff(e.draft_summary) }}{% else %}{{ e.draft_summary }}{% endif %}</div>
-      <div class="row"><a class="btn primary" href="/campaign?open={{ e.id }}" data-modal-url="/campaign/{{ e.id }}/edit" data-modal-size="large">Check it</a>
+      <div class="row"><a class="btn primary" href="{{ entry_url(e.id) }}" data-modal-url="/campaign/{{ e.id }}/edit" data-modal-size="large">Check it</a>
         <span class="note">Opens the entry's Edit window: use it, edit it or discard it.</span></div>
     </div>
     {% endfor %}

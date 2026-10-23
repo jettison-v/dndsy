@@ -10,11 +10,9 @@ from functools import cache
 from pathlib import Path
 from urllib.parse import quote
 
-from fastapi import APIRouter, Request
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter
 
 from app import web
-from app.auth import current_user
 from app.models import Entity, EntityKind
 
 router = APIRouter()
@@ -64,11 +62,3 @@ def view(at: str = "") -> dict:
 def show_on_map(marker: str) -> str:
     """Where "Show on map" goes: the Campaign page's Map tab, centered on the marker."""
     return f"{web.base()}/campaign?tab=map&at={quote(marker)}"
-
-
-@router.get("/map")
-def map_page(request: Request, at: str = ""):
-    """The old Map page is the Campaign page's Map tab (menu bar Option B, Brett 2026-10-22)."""
-    if not current_user(request):
-        return RedirectResponse("/login", status_code=303)
-    return RedirectResponse(show_on_map(at) if at else f"{web.base()}/campaign?tab=map", status_code=303)

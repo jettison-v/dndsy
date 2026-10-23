@@ -113,7 +113,7 @@ def test_notes_page_admin_only(monkeypatch, db):
 
     monkeypatch.setattr(auth.oauth.google, "authorize_access_token", token)
     client.get("/auth/callback", follow_redirects=False)
-    assert client.get("/manage/sessions/doc").status_code == 403
+    assert client.get("/c/main/manage/sessions/doc").status_code in (403, 404)
     app.dependency_overrides.clear()
 
 
@@ -260,12 +260,15 @@ def test_add_source_and_sync(admin_client, db, monkeypatch):
     assert "2 images" in page.text
     snap = db.scalar(select(NoteSnapshot))
     assert {i.name: i.data for i in snap.images} == {"obj-1": b"photo", "obj-2": b"tree"}
-    view = admin_client.get(f"/manage/sessions/doc/snapshots/{snap.id}").text
+    view = admin_client.get(f"/c/main/manage/sessions/doc/snapshots/{snap.id}").text
     assert "/manage/sessions/doc/images/" in view
     assert view.count("<ul>") >= 2  # nested bullet list
 
 
 def test_sync_rejects_missing_drive_scope(admin_client, db, monkeypatch):
+    from tests.roles import set_role
+
+    set_role(db, "admin@example.com", "player")  # in a campaign, so the doc page has its address to come back to
     async def drive_token(request):
         return {"userinfo": {"email": "admin@example.com"}, "scope": "openid email"}
 

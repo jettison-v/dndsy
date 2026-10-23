@@ -61,7 +61,7 @@ def test_the_dm_adds_a_picture_everyone_sees_it(people, db):
     assert url["full"] in player.get(f"/campaign/{k.id}/peek").text
     k.status = Status.PUBLISHED
     db.flush()
-    assert url["full"].replace("&", "&amp;") in player.get(f"/campaign?open={k.id}").text  # in the Campaign page's Reader
+    assert url["full"].replace("&", "&amp;") in player.get(f"/c/main/campaign?open={k.id}").text  # in the Campaign page's Reader
     r = dm.post(f"/campaign/{k.id}/picture", files={"file": ("x.txt", b"not a picture", "text/plain")}, headers=HX)
     assert "isn't a picture" in r.headers["HX-Trigger"]
     dm.post(f"/campaign/{k.id}/picture/delete", headers=HX)

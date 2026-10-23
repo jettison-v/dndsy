@@ -63,7 +63,7 @@ def usage_page(request: Request, db: Session = Depends(get_db)):
             rows.append({"r": r, "label": session_label(s), "href": f"/c/{slugs.get(s.campaign_id)}/manage/sessions/{s.id}"})
         elif r.entity_id in ents:
             e = ents[r.entity_id]
-            rows.append({"r": r, "label": e.name, "href": f"/c/{slugs.get(e.campaign_id)}/campaign/{e.id}"})
+            rows.append({"r": r, "label": e.name, "href": f"/c/{slugs.get(e.campaign_id)}/campaign?open={e.id}"})
         else:
             rows.append({"r": r, "label": "—", "href": None})
     topups = list(db.scalars(select(CreditTopUp).order_by(CreditTopUp.added_on.desc())))

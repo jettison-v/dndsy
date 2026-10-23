@@ -79,15 +79,13 @@ def test_entity_page_shows_moments_in_story_order(player, db):
     import_bundle(db, BUNDLE)
     published_events(db)
     e = lillippi(db)
-    r = player.get(f"/campaign/{e.id}", follow_redirects=False)  # an old address: to the campaign's own
-    assert r.status_code == 307 and r.headers["location"] == f"/c/main/campaign/{e.id}"
-    r = player.get(f"/c/main/campaign/{e.id}", follow_redirects=False)  # no full page: the Campaign page opens its panel
-    assert r.status_code == 303 and r.headers["location"] == f"/c/main/campaign?open={e.id}"
+    assert player.get(f"/campaign/{e.id}").status_code == 404 and player.get(f"/c/main/campaign/{e.id}").status_code == 404
+    assert player.get(f"/c/main/campaign?open={e.id}").status_code == 200  # an entry's one address
     page = player.get(f"/campaign/{e.id}/peek").text  # everything is in the side panel now
     assert "Tiefling bard." in page and "Also: LL" in page
     assert page.index("The party met Lillippi.") < page.index("Lillippi sang in")
-    assert f'href="/c/main/campaign?open={e.id}"' in player.get("/campaign").text  # its name in the Reader's list
-    assert f'href="/campaign/{e.id}"' in player.get("/").text  # key-moment entity names link to the page
+    assert f'href="/c/main/campaign?open={e.id}"' in player.get("/c/main/campaign").text  # its name in the Reader's list
+    assert f'href="/c/main/campaign?open={e.id}"' in player.get("/").text  # key-moment entity names link to the page
     assert "/edit" not in page and player.get(f"/campaign/{e.id}/edit").status_code == 403  # editing: the DM, reviewers, admins
 
 
@@ -248,7 +246,7 @@ def test_linker_links_names_case_sensitively_and_longest_first(db):
     assert f'data-entity="{ids["Anger"]}">Anger</a> felt anger.' in out  # the word "anger" isn't linked
     assert f'data-entity="{ids["The Lich Queen\'s cult"]}">The Lich Queen&#39;s cult</a>' in out  # longest wins
     assert f'data-entity="{ids["Anger"]}">Anger&#39;s</a> sword' in str(ln.text("Anger's sword"))  # possessive is part of the link
-    assert f'the <a class="ent" href="/campaign/{ids["The Lich Queen"]}" data-entity="{ids["The Lich Queen"]}">Lich Queen</a>' in out
+    assert f'the <a class="ent" href="/c/main/campaign?open={ids["The Lich Queen"]}" data-entity="{ids["The Lich Queen"]}">Lich Queen</a>' in out
     assert "the queen." in out and out.count("<a ") == 3  # lowercase descriptive alias not linked
     html = str(ln.html('<p>Anger and <a href="/x">Anger</a></p>'))
     assert html.count("<a ") == 2  # no link nested inside an existing link
@@ -345,7 +343,7 @@ def test_dm_tools_create_tidy_and_add_moments(monkeypatch, db):
     import_bundle(db, BUNDLE)
     set_role(db, "dm@example.com")
     dm = client_for(monkeypatch, db, "dm@example.com")
-    assert "+ New entry" in dm.get("/campaign").text and "New entry" in dm.get("/campaign/new?kind=place").text
+    assert "+ New entry" in dm.get("/c/main/campaign").text and "New entry" in dm.get("/campaign/new?kind=place").text
     r = dm.post("/campaign/new", data={"kind": "npc", "name": "Captain Trager Grill", "summary": "Cult-marked captain."}, headers=HX)
     grill = db.scalar(select(Entity).where(Entity.name == "Captain Trager Grill"))
     assert r.headers["HX-Redirect"] == f"/c/main/campaign?open={grill.id}" and grill.status.value == "published"
@@ -353,7 +351,7 @@ def test_dm_tools_create_tidy_and_add_moments(monkeypatch, db):
     assert "already in the campaign record" in again  # by name or other name, any case
     dm.post("/campaign/new", data={"kind": "quest", "name": "Find the bell", "hidden": "1"}, headers=HX)
     bell = db.scalar(select(Entity).where(Entity.name == "Find the bell"))
-    assert bell.status.value == "draft" and bell.quest_open is True and "Hidden" in dm.get("/campaign").text
+    assert bell.status.value == "draft" and bell.quest_open is True and "Hidden" in dm.get("/c/main/campaign").text
 
     dm.post(f"/campaign/{bell.id}/details", data={"kind": "quest", "quest_open": "done", "published": "1"}, headers=HX)
     db.refresh(bell)
@@ -376,7 +374,7 @@ def test_dm_tools_create_tidy_and_add_moments(monkeypatch, db):
     assert "He carries a silver whistle." in facts and any("A captain on the road." in t for t in facts)  # nothing lost
 
     r = dm.post(f"/campaign/{bell.id}/delete", headers=HX)
-    assert r.headers["HX-Redirect"] == "/campaign" and db.get(Entity, bell.id) is None
+    assert r.headers["HX-Redirect"].endswith("/campaign") and db.get(Entity, bell.id) is None
 
 
 def test_player_characters_cant_be_deleted_or_merged_away(db):

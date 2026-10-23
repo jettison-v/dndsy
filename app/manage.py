@@ -5,7 +5,7 @@
 - **askdnd** (admins): pages that are the same for every campaign, at /manage/….
 
 Who may open each page is in app/access.py (`allows()`), through app/auth.py's checks. Old addresses (/admin/…,
-/suggestions) redirect to their new homes (`MOVED`, below).
+/suggestions) are gone: since 2026-10-23 every page has one address.
 """
 
 from datetime import UTC, datetime, timedelta
@@ -182,33 +182,6 @@ def needs_you(request: Request, db: Session = Depends(get_db)):
 
 
 # ------------------------------------------------------------------ old addresses (Manage layout, 2026-10-23)
-
-MOVED = (  # (old address, new address, a campaign page?, its sub-addresses move too)
-    ("/admin/sessions", "/manage/sessions", True, True),  # every session's review page too
-    ("/admin/notes/snapshots", "/manage/sessions/doc/snapshots", True, True),
-    ("/admin/notes/images", "/manage/sessions/doc/images", True, True),
-    ("/admin/notes", "/manage/sessions/doc", True, False),  # not /admin/notes/callback: Google sends people back there
-    ("/suggestions", "/manage/inbox", True, False),
-    ("/admin/history", "/manage/history", True, False),
-    ("/admin/people", "/manage/table", True, False),
-    ("/admin/characters", "/manage/table", True, False),
-    ("/admin/import", "/manage/backups", False, False),
-    ("/admin/usage", "/manage/usage", False, False),
-)
-
-
-def _mover(new: str, in_campaign: bool):
-    def moved(request: Request, rest: str = ""):
-        query = request.url.query
-        return RedirectResponse((web.base() if in_campaign else "") + new + (f"/{rest}" if rest else "") + (f"?{query}" if query else ""),
-                                status_code=307)
-    return moved
-
-
-for _old, _new, _here, _below in MOVED:
-    router.add_api_route(_old, _mover(_new, _here), methods=["GET"], include_in_schema=False)
-    if _below:
-        router.add_api_route(_old + "/{rest:path}", _mover(_new, _here), methods=["GET"], include_in_schema=False)
 
 
 # ------------------------------------------------------------------ design system (roadmap step 9)

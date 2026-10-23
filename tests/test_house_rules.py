@@ -72,17 +72,17 @@ def test_a_ruling_shows_in_the_roll_window_of_the_spell(player, db):
 
 def test_only_the_dm_and_admins_set_house_rules(player, admin, dm, db):
     import_bundle(db, BUNDLE)
-    assert player.get("/manage/house-rules").status_code == 403
-    assert dm.get("/manage/house-rules").status_code == 403  # a reviewer (dm@ is on the Railway reviewer list) isn't the DM
+    assert player.get("/c/main/manage/house-rules").status_code == 403
+    assert dm.get("/c/main/manage/house-rules").status_code == 403  # a reviewer (dm@ is on the Railway reviewer list) isn't the DM
     set_role(db, "dm@example.com", "dm")
-    page = dm.get("/manage/house-rules").text
+    page = dm.get("/c/main/manage/house-rules").text
     assert "No house rules yet" in page and "One roll for all darts" in page and ">Magic Missile<" in page
     assert player.post("/manage/house-rules", data={"spell": "Magic Missile", "field": "once"}).status_code == 403
     dm.post("/manage/house-rules", data={"spell": "Magic Missile", "field": "once", "reason": "Faster"})
     row = db.scalar(select(HouseRule))
     assert (row.target_key, row.field, row.value, row.reason, row.set_by) == ("Magic Missile", "once", "1", "Faster", "dm")
-    assert "One roll for all darts: every dart deals the same damage" in admin.get("/manage/house-rules").text
-    assert "House rules" in dm.get("/manage").text
+    assert "One roll for all darts: every dart deals the same damage" in admin.get("/c/main/manage/house-rules").text
+    assert "House rules" in dm.get("/c/main/manage").text
     dm.post("/manage/house-rules", data={"spell": "Scorching Ray", "field": "once"})  # refused: each ray has an attack roll
     dm.post("/manage/house-rules", data={"spell": "Shield", "field": "note", "value": ""})  # refused: no ruling written
     assert db.scalar(select(HouseRule).where(HouseRule.target_key != "Magic Missile")) is None
@@ -95,7 +95,7 @@ def test_removing_a_house_rule_brings_the_rules_back_and_history_can_restore_it(
     assert db.scalar(select(HouseRule)) is None and house_rules.spell("Magic Missile") is rr.spell("Magic Missile")
     rev = db.scalar(select(Revision).where(Revision.table == "house_rules", Revision.field == "deleted"))
     assert rev.label == "House rule: Magic Missile"
-    assert "House rule: Magic Missile" in admin.get("/admin/history?show=house").text
+    assert "House rule: Magic Missile" in admin.get("/c/main/manage/history?show=house").text
     history.restore(db, rev)
     assert house_rules.spell("Magic Missile")["house_rules"][0]["reason"] == "Faster"
 
