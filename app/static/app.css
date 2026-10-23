@@ -1738,14 +1738,14 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .tie-name:hover { color: var(--text-strong); text-decoration-color: var(--red); }
 
 /* Connections: one entry in the middle, everyone tied to it around it */
-.cx-diagram { position: relative; width: 100%; max-width: 900px; margin: 0 auto; }
+.cx-diagram { position: relative; margin: 0 auto; }  /* its width and shape come from the layout (campaign_views.connections) */
 .cx-diagram > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.cx-node { position: absolute; transform: translate(-50%, -50%); width: 17%; display: flex; flex-direction: column; align-items: center; padding: var(--sp-1) var(--sp-2); border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--line-strong); color: var(--text); text-decoration: none; text-align: center; line-height: 1.3; }
+.cx-node { position: absolute; transform: translate(-50%, -50%); width: 150px; max-width: 30%; display: flex; flex-direction: column; align-items: center; padding: var(--sp-1) var(--sp-2); border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--line-strong); color: var(--text); text-decoration: none; text-align: center; line-height: 1.3; }
 a.cx-node:hover { border-color: var(--text); }
 .cx-node b { font-size: var(--fs-sm); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cx-node small { font-size: var(--fs-xs); color: var(--muted); }
 .cx-node.faction, .cx-node.quest { background: var(--story-bg); border-color: var(--story-line); }
-.cx-hub { width: 21%; background: var(--selected-bg); border: 2px solid var(--blue); }
+.cx-hub { width: 170px; background: var(--selected-bg); border: 2px solid var(--blue); }
 .cx-hub b { font-size: var(--fs-md); }
 .cx-label { position: absolute; transform: translate(-50%, -50%); font-size: var(--fs-xs); color: var(--muted); background: var(--surface); padding: 0 var(--sp-1); border-radius: var(--r-sm); white-space: nowrap; }
 .peek .cx-label { background: var(--surface); }

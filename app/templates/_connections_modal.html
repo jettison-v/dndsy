@@ -9,5 +9,5 @@
   {% else %}<p class="muted">No relationships yet. The DM adds them in an entry's Edit window.</p>{% endif %}
 </div>
 <div class="peek-foot row">
-  <a class="btn" href="{{ cbase }}/campaign?{{ 'tab=quests&' if cx.e.kind.value == 'quest' }}open={{ cx.e.id }}">{{ "Open in Quests" if cx.e.kind.value == "quest" else "Read in World" }}</a>
+  <a class="btn" href="{{ cbase }}/campaign?{{ 'tab=quests&' if cx.e.kind.value == 'quest' }}open={{ cx.e.id }}">More about {{ cx.e.name }}</a>
 </div>

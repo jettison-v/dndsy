@@ -5,7 +5,7 @@
 {% macro connections_diagram(cx, mode="reader") -%}
 {%- set kinds = {"pc": "Player character", "npc": "Person", "place": "Place", "faction": "Faction", "quest": "Quest", "item": "Item", "creature": "Creature", "other": "Other"} -%}
 <div class="cx">
-  <div class="cx-diagram" style="aspect-ratio: {{ cx.w }} / {{ cx.h }}">
+  <div class="cx-diagram" style="aspect-ratio: {{ cx.w }} / {{ cx.h }}; width: min(100%, {{ cx.w }}px)">
     <svg viewBox="0 0 {{ cx.w }} {{ cx.h }}" preserveAspectRatio="none" aria-hidden="true">
       {%- for n in cx.nodes %}<line class="e-{{ n.group }}" x1="{{ cx.cx }}" y1="{{ cx.cy }}" x2="{{ n.x }}" y2="{{ n.y }}" vector-effect="non-scaling-stroke"/>{% endfor -%}
     </svg>
