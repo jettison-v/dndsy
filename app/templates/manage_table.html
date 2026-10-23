@@ -50,27 +50,29 @@
   <section class="section">
     <h2>People</h2>
     <p class="hint" style="margin-top:6px"><b>Role here</b> is what someone does in {{ campaign.name }}: DM, Reviewer or Player. No role takes them out of it.</p>
-    <div class="manage-grid grid-people head" aria-hidden="true"><span>Person</span><span>Role here</span><span>Plays</span><span></span></div>
+    <div class="manage-grid grid-people head" aria-hidden="true"><span>Person</span><span>Plays</span><span>Role here</span></div>
     {% for p in people %}
     <div class="manage-grid grid-people">
       <span><b>{{ p.name or p.email }}</b><span class="note">{% if p.name %}{{ p.email }}{% endif %}{% if p.from_railway %}{{ " · " if p.name }}Reviewer everywhere (Railway list){% endif %}</span>
-        <span class="note">{{ p.summary }}</span>
-        {% if can_change %}<form id="person-{{ loop.index }}" method="post" action="{{ cbase }}/manage/table/people"><input type="hidden" name="email" value="{{ p.email }}"></form>{% endif %}</span>
-      {% if can_change %}
-      <select name="role" form="person-{{ loop.index }}" aria-label="Role in {{ campaign.name }} for {{ p.email }}">
-        {% for r in roles %}<option value="{{ r }}" {{ "selected" if p.role == r }}>{{ role_labels[r] }}</option>{% endfor %}
-        <option value="none">No role</option>
-      </select>
-      {% else %}<span>{{ role_labels[p.role] }}</span>{% endif %}
+        <span class="note">{{ p.summary }}</span></span>
       <span>{{ p.plays | map(attribute="name") | join(", ") or "—" }}</span>
-      <span class="actions">{% if can_change %}<button class="btn small" type="submit" form="person-{{ loop.index }}">Save</button>{% endif %}</span>
+      {% if can_change %}
+      <form method="post" action="{{ cbase }}/manage/table/people" class="pick"><input type="hidden" name="email" value="{{ p.email }}">
+        <select name="role" aria-label="Role in {{ campaign.name }} for {{ p.email }}">
+          {% for r in roles %}<option value="{{ r }}" {{ "selected" if p.role == r }}>{{ role_labels[r] }}</option>{% endfor %}
+          <option value="none">No role</option>
+        </select>
+        <button class="btn small" type="submit">Save</button>
+      </form>
+      {% else %}<span>{{ role_labels[p.role] }}</span>{% endif %}
     </div>
     {% else %}<p class="muted">Nobody has a role in {{ campaign.name }} yet.</p>{% endfor %}
     {% if can_change %}
     <details class="fold" style="margin-top:12px"><summary>+ Add someone to {{ campaign.name }}</summary>
       <form method="post" action="{{ cbase }}/manage/table/people/add" class="stack" style="margin-top:8px;max-width:520px">
-        {% if accounts %}<label class="field">Someone with an account<select name="email"><option value="">Pick someone</option>{% for u in accounts %}<option value="{{ u.email }}">{{ u.name if u.name and u.name != u.email else u.email }}{% if u.name and u.name != u.email %} ({{ u.email }}){% endif %}</option>{% endfor %}</select></label>{% endif %}
-        <label class="field">{{ "Or a new Google email" if accounts else "Google email" }}<input type="text" name="new_email" placeholder="name@gmail.com"></label>
+        {% if accounts %}<label class="field">Someone who already has an account<select name="email"><option value="">Pick someone</option>{% for u in accounts %}<option value="{{ u.email }}">{{ u.name if u.name and u.name != u.email else u.email }}{% if u.name and u.name != u.email %} ({{ u.email }}){% endif %}</option>{% endfor %}</select></label>
+        {% else %}<p class="note">Everyone with an account is already in {{ campaign.name }}. To add someone new, enter their Google email.</p>{% endif %}
+        <label class="field">{{ "Or someone new: their Google email" if accounts else "Their Google email" }}<input type="text" name="new_email" placeholder="name@gmail.com"></label>
         <label class="field">Their name (optional, for a new email)<input type="text" name="name" maxlength="200"></label>
         <label class="field">Role here<select name="role">{% for r in roles %}<option value="{{ r }}" {{ "selected" if r == "player" }}>{{ role_labels[r] }}</option>{% endfor %}</select></label>
         <div class="row"><button class="btn primary" type="submit">Add</button></div>

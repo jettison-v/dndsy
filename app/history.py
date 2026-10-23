@@ -340,6 +340,19 @@ def campaigns_of(db: Session, revs: list[Revision]) -> dict[int, int | None]:
     return {rid: (i if kind == "campaign" else via.get((kind, i))) for rid, (kind, i) in pointers.items()}
 
 
+def _item(v, field: str) -> str:
+    """One entry of a list in a note: a step reads "Bonus action: Wild Shape", a turn "Turn 1 · Setup: …"."""
+    if not isinstance(v, dict):
+        return shown(v, field)
+    if "text" in v and set(v) <= {"kind", "text", "ref"}:
+        return f"{str(v.get('kind') or '').capitalize()}: {v['text']}" if v.get("kind") else str(v["text"])
+    if "label" in v:
+        rest = {k: x for k, x in v.items() if k != "label"}
+        body = shown(rest, field) if any(x not in ("", None, [], {}) for x in rest.values()) else ""
+        return f"{v['label']}: {body}" if body and body != "—" else str(v["label"])
+    return shown(v, field)
+
+
 def shown(value, field: str) -> str:
     """A value as the history page shows it."""
     if field == "quest_open":
@@ -354,7 +367,12 @@ def shown(value, field: str) -> str:
         return {"member": "Member", "admin": "Admin", "removed": "Removed"}.get(value, str(value))
     if value is None or value == "":
         return "—"
-    if isinstance(value, dict):
-        return ", ".join(f"{k}: {v}" for k, v in value.items() if v not in ("", None, [], {}))[:600]
+    if isinstance(value, dict):  # a deleted row or a note's content: what a person wrote, not the row's bookkeeping
+        hidden = {"position", "set_by", "target_kind"}
+        return " · ".join(f"{k.replace('_', ' ').capitalize()}: {shown(v, k)}" for k, v in value.items()
+                          if v not in ("", None, [], {}) and k not in hidden and not k.endswith("_id"))
+    if isinstance(value, list):  # e.g. a combo's turns, each with its steps
+        sep = " / " if any(isinstance(v, (dict, list)) for v in value) else ", "
+        return sep.join(_item(v, field) for v in value if v not in ("", None, [], {})) or "—"
     return str(value)
 
