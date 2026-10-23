@@ -123,8 +123,7 @@ body.gm-on .live-off { display: none; }
 /* Page */
 .page { max-width: 1120px; margin: 0 auto; padding: 32px 24px 120px; }
 .page.narrow { max-width: 760px; }
-/* Manage pages share one width so the tab bar never jumps (Brett, 2026-10-23); reading pages keep a text column */
-.page.readable > :not(.manage-tabs) { max-width: 760px; }
+/* Manage pages share one width so the tab bar never jumps; reading pages too (Brett, 2026-10-23) */
 .crumbs { color: var(--muted); font-size: var(--fs-sm); }
 .crumbs a { color: var(--muted); text-decoration: none; }
 .crumbs a:hover { color: var(--text); }

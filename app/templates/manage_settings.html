@@ -5,6 +5,8 @@
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Settings</h1></div>
   <p class="subtitle">{{ campaign.name }}'s own details. Its DM and admins can change them.</p>
+  <section class="section">
+  <h2>Campaign details</h2>
   <form method="post" action="{{ cbase }}/manage/settings" class="form-narrow">
     <label class="field">Campaign name<input type="text" name="name" value="{{ campaign.name }}" maxlength="200" required></label>
     <label class="field">DM's name (Claude uses it in recaps)<input type="text" name="dm_name" value="{{ campaign.dm_name }}" maxlength="200"></label>
@@ -13,5 +15,6 @@
     <div class="row"><button class="btn primary" type="submit">Save</button></div>
   </form>
   <p class="note page-note">Its address stays <code>/c/{{ campaign.slug }}</code>, so links people saved keep working.</p>
+  </section>
 </main>
 {% endblock %}
