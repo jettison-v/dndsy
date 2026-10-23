@@ -178,7 +178,7 @@ def campaign_page(request: Request, open: str = "", tab: str = "", at: str = "",
         entries = list(
             db.scalars(
                 select(Entity)
-                .where(Entity.campaign_id == campaign.id, Entity.kind != EntityKind.PC)
+                .where(Entity.campaign_id == campaign.id)
                 .order_by(Entity.name)
             )
         )
@@ -186,8 +186,9 @@ def campaign_page(request: Request, open: str = "", tab: str = "", at: str = "",
         latest, seen = seen_in_sessions(db, campaign.id)
         quests = [e for e in entries if e.kind == EntityKind.QUEST and e.quest_open is not False]
         done = [e for e in entries if e.kind == EntityKind.QUEST and e.quest_open is False]
-        for kind, title in GROUPS:
-            if kind != EntityKind.QUEST and (rows := [e for e in entries if e.kind == kind]):
+        for kind, title in GROUPS:  # player characters are people too (Brett, 2026-10-23)
+            kinds = (EntityKind.NPC, EntityKind.PC) if kind == EntityKind.NPC else (kind,)
+            if kind != EntityKind.QUEST and (rows := [e for e in entries if e.kind in kinds]):
                 groups.append((title, rows))
         glossary = list(db.scalars(select(GlossaryTerm).where(GlossaryTerm.campaign_id == campaign.id).order_by(GlossaryTerm.term)))
         board = campaign_views.quest_board(db, campaign.id, quests + done, visible, latest)

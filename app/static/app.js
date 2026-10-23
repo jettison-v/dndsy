@@ -1743,7 +1743,7 @@
     if (window.scrollY !== y) window.scrollTo(0, y);
     if (scroller && scroller.scrollTop !== sy) scroller.scrollTop = sy;
     const shown = rows.filter(r => !r.hidden).length, noun = root.dataset.noun || 'item';
-    const sum = root.querySelector('[data-ls-summary]'); if (sum) sum.textContent = shown + ' ' + noun + (shown === 1 ? '' : 's');
+    const sum = root.querySelector('[data-ls-summary]'); if (sum) sum.textContent = shown + ' ' + (shown === 1 ? noun : (root.dataset.nouns || noun + 's'));
     // Nothing to show: a view that's empty on its own says so (e.g. nothing shortlisted yet)
     const viewEmpty = !q && !picked.length && !rows.some(r => inView(r)) && root.querySelector('[data-ls-empty-view="' + st.view + '"]');
     root.querySelectorAll('[data-ls-empty-view]').forEach(m => { m.hidden = m !== viewEmpty; });

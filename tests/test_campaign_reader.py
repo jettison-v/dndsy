@@ -1,5 +1,5 @@
 """The Campaign page (roadmap step 11; Brett 2026-10-22): World is the Reader (names down the left, one entry on
-the page, ?open=<id> its address, the last session marked), Quests is the board, Relationships has the family trees
+the page, ?open=<id> its address, the last session marked), Quests is the quest log, Relationships has the family trees
 and anyone's connections."""
 
 from sqlalchemy import select
@@ -97,6 +97,20 @@ def test_the_quest_board(player, db):  # noqa: F811
     # A quest's address opens the Quests tab on its journal, picked in the quest log
     assert f'id="quest-{quest.id}" data-ql-journal="{quest.id}">' in page and '<div id="t-world" hidden>' in page
     assert f'class="ql-item open sel" data-ql-id="{quest.id}"' in page
+
+
+def test_player_characters_are_people_in_world(player, db):  # noqa: F811
+    """Characters have relationships too, so World lists them under People and opens them there (Brett, 2026-10-23)."""
+    from app.models import CampaignCharacter
+
+    import_bundle(db, {**BUNDLE, "entities": BUNDLE["entities"] + [{"kind": "pc", "name": "Cole", "character": {"player_name": "Pat"}}]})
+    cole = entry(db, "Cole")
+    page = player.get(f"/c/main/campaign?open={cole.id}").text
+    assert f'data-rd-id="{cole.id}"' in page and '"kind": "People"' in page[page.index(f'data-rd-id="{cole.id}"'):][:2000]
+    assert f'data-reader-id="{cole.id}"' in page and "Player character" in page  # its World entry, not the side panel
+    sheet = db.scalar(select(CampaignCharacter.character_id).where(CampaignCharacter.entity_id == cole.id))
+    assert f'href="/characters/{sheet}" data-no-peek>Character sheet</a>' in page
+    assert 'data-noun="entry" data-nouns="entries"' in page  # "43 entries shown", not names
 
 
 def test_relationships_and_connections(player, db):  # noqa: F811
