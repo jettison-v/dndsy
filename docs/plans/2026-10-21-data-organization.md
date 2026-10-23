@@ -1,6 +1,6 @@
 # How askdnd organizes its data: plan (DONE, 2026-10-23)
 
-Status: **done 2026-10-23**: decided 2026-10-22, all four steps built and on beta (the final organization is in `docs/ARCHITECTURE.md` › Data) (Brett's answers on the "askdnd campaigns and roles" page; see "Decisions" at the end).
+Status: **done 2026-10-23**: decided 2026-10-22, all four steps built, on beta and reviewed by Brett (the final organization is in `docs/ARCHITECTURE.md` › Data) (Brett's answers on the "askdnd campaigns and roles" page; see "Decisions" at the end).
 Built after roadmap step 11's Inventory and Features lists and a round of Brett's small feedback. Once decided, the final version of
 "The organization" below moves into `docs/ARCHITECTURE.md` (Data) with a line in `docs/DECISIONS.md`, and this file
 is marked as done.
