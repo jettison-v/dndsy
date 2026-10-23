@@ -78,6 +78,25 @@ Status colors are text on their `-soft` tint.
 
 - **Key-moment types** are colored words, not boxes: Event (muted), Reveal (lavender), Decision (blue), Loot (amber), Theory (italic, muted) so speculation never looks like fact.
 
+## Rules for every page (Brett's reviews, 2026-10-23)
+
+Read these before designing or building any page; sessions that skipped them produced rework.
+
+- **Mock up first** (`docs/mockups/`, made-up names: the repo is public), get Brett's OK, then build one piece at a time.
+- **Reuse the components below; no one-off layouts or inline spacing.** If something new is needed, add it to the
+  design system (and Manage › Design system) first.
+- **Full width.** Pages use their standard width (`.page`, or `.page.wide` for Story, Campaign, Party, Help). No
+  narrow reading columns on their own.
+- **One tab style:** the underline tabs (`.tabbar`) on the page itself, as on Story. Never a band wider than the content.
+- **Lists get filters.** Anything people browse (names, spells, items, quests) has search and chip filters with live
+  counts, not just a scroll.
+- **Size to the content.** Diagrams, windows and cards are as big as what's in them; no large empty frames.
+- **Quiet actions.** One primary (red) button per screen; repeated per-item actions (Edit, Mark done) are small
+  secondary buttons.
+- **Buttons say where they go** in plain words ("More about Alea"), not how the app works ("Read in World").
+- **Terse game words** ("1st-level", never "1st-level slot"); players know the terms.
+- **Check both widths** (desktop and phone) and every role (admin, DM, player; Manage › View as) before calling it done.
+
 ## Components
 
 Each one is on Manage › Design system with its class or macro. Use these; don't invent a near-copy.

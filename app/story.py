@@ -204,6 +204,7 @@ def campaign_page(request: Request, open: str = "", tab: str = "", at: str = "",
     return templates.TemplateResponse(
         request, "campaign.html", {"campaign": campaign, "quests": quests, "done_quests": done, "groups": groups, "glossary": glossary,
                                    "editor": editor, "seen": seen, "latest": latest, "selected": selected, "tab": tab,
+                                   "hidden_count": sum(1 for _, rows in groups for e in rows if e.status != Status.PUBLISHED),
                                    "board": board, "families": fams, "ties": tie, "open_quest": asked.id if asked is not None else None,
                                    "map": atlas.view(at if tab == "map" else ""),
                                    "toast": request.session.pop("toast", None), **article}
