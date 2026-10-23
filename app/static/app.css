@@ -1658,6 +1658,12 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .reader-nav-head { position: sticky; top: calc(-1 * var(--sp-3)); z-index: 1; display: flex; flex-direction: column; gap: var(--sp-2); margin: calc(-1 * var(--sp-3)) calc(-1 * var(--sp-3)) 0; padding: var(--sp-3); background: var(--surface); border-bottom: 1px solid var(--line-soft); }
 .reader-nav .ls-views { display: flex; }
 .reader-nav .ls-views button { flex: 1; }
+.reader-filters { display: grid; gap: var(--sp-2); }
+.reader-filters-head { display: flex; justify-content: space-between; align-items: baseline; font: 700 var(--fs-xs) var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.reader-filters .ls-chip { font-size: var(--fs-xs); min-height: var(--control-h-sm); padding: 0 var(--sp-2); }
+.reader-filters .note { margin: 0; }
+/* The Campaign page's tabs: Story's underline tabs on the page itself, still sticky (Brett, 2026-10-23) */
+.sheet.campaign-page .tabbar { background: var(--bg); margin: 0 0 var(--sp-4); padding: 0; }
 .reader-rows { display: flex; flex-direction: column; }
 .reader-rows .ls-grouphead { padding: var(--sp-3) var(--sp-2) var(--sp-1); }
 .rd-item { display: flex; align-items: center; gap: var(--sp-2); padding: 5px var(--sp-2); border-radius: var(--r-sm); color: var(--text); text-decoration: none; font-size: var(--fs-sm); }

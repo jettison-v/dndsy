@@ -7,7 +7,7 @@
    docs/mockups/campaign-tabs.html Q1, R1 with R2). Tabs: World (the Reader: names down the left, one entry on the
    page; the list uses the shared list engine, app.js "Lists"), Quests (the board: what the party is doing), Relationships
    (family trees, the other ties, anyone's connections in a window) and Glossary. ?tab= picks one. #}
-<main class="page sheet wide">
+<main class="page sheet wide campaign-page">
   <div class="title-row"><h1>{{ campaign.name if campaign else "Campaign" }}</h1>
     {% if editor %}<a class="btn" href="#" data-modal-url="/campaign/new" style="margin-left:auto">+ New entry</a>{% endif %}</div>
   <p class="subtitle">People, places and things the party has met.{% if campaign and campaign.dm_name %} Dungeon Master: {{ campaign.dm_name }}.{% endif %}</p>
@@ -19,18 +19,26 @@
 
   <div id="t-world"{% if tab != "world" %} hidden{% endif %}>
     <div class="reader" id="reader">
-      <aside class="reader-nav" data-list="campaign-reader" data-noun="entry" data-default-sort="default" aria-label="People, places and things">
+      <aside class="reader-nav" data-list="campaign-reader" data-noun="name" data-default-sort="default" aria-label="People, places and things">
         <div class="reader-nav-head">{# stays at the top while the names scroll #}
         <div class="ls-search">
           <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
           <input type="search" placeholder="Search people, places and things" aria-label="Search people, places and things" data-ls-search>
         </div>
         {{ view_switch([("all", "All"), ("recent", "Last session")], "Which ones") }}
+        {# Filters (Brett, 2026-10-23, docs/mockups/campaign-v2.html): kinds, and Hidden for the DM; they combine with the view #}
+        <div class="reader-filters">
+          <div class="reader-filters-head"><span>Kind</span><button type="button" class="btn link small" data-ls-clear>Clear</button></div>
+          <div class="ls-chips">{% for title, rows in groups %}<button type="button" class="ls-chip" data-ls-group="kind" data-ls-value="{{ title }}" aria-pressed="false">{{ title }} <span class="ls-n" data-ls-n></span></button>{% endfor %}
+            {%- if editor and hidden_count %}<button type="button" class="ls-chip" data-ls-group="status" data-ls-value="Hidden" aria-pressed="false">Hidden <span class="ls-n" data-ls-n></span></button>{% endif %}</div>
+          <p class="note"><span data-ls-summary></span> shown</p>
+        </div>
         </div>
         <div class="reader-rows" data-ls-rows>
           {% for title, rows in groups %}{% set gi = loop.index %}{% for e in rows %}{% set s = seen.get(e.id) %}{% set recent = latest and s and s.session_id == latest %}
           <a class="rd-item{{ ' sel' if selected and selected.id == e.id }}" data-ls-row data-rd-id="{{ e.id }}" data-views="{{ 'recent ' if recent }}all"
              data-name="{{ ([e.name] + (e.aliases | map(attribute='alias') | list) + [e.summary]) | join(' ') | lower }}" data-group-label="{{ title }}" data-sort-default="{{ gi * 10000 + loop.index }}"
+             data-f='{{ {"kind": title, "status": "Hidden" if e.status.value != "published" else ""} | tojson }}'
              href="{{ cbase }}/campaign?open={{ e.id }}" hx-get="{{ cbase }}/campaign/{{ e.id }}/read" hx-target="#reader-article" hx-swap="outerHTML" hx-push-url="{{ cbase }}/campaign?open={{ e.id }}">
             {%- if recent %}<span class="rd-dot" title="In the last session ({{ s.label }})" aria-label="In the last session"></span>{% endif %}<span class="rd-name">{{ e.name }}</span>
             {%- if e.status.value != "published" %} <span class="tag faint" title="Only the DM, reviewers and admins see it">Hidden</span>{% endif %}</a>

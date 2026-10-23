@@ -43,6 +43,9 @@ def test_world_is_the_reader_without_quests(player, db):  # noqa: F811
     published_events(db)
     page = player.get("/c/main/campaign").text
     assert 'data-tab="t-world">World</button>' in page and 'data-tab="t-quests">Quests <span class="count">1</span>' in page
+    # Filters (2026-10-23): a chip per kind, each name tagged with its kind; Hidden only for the DM and editors
+    assert 'data-ls-group="kind" data-ls-value="People"' in page and 'data-ls-group="kind" data-ls-value="Places"' in page
+    assert '"kind": "People"' in page and 'data-ls-value="Hidden"' not in page
     reader = page.index('class="reader"')
     names = page[reader:page.index('id="reader-article"')]
     assert "Lillippi Lemon" in names and "Saltmarsh" in names and "Reach the library" not in names  # quests have their own tab
