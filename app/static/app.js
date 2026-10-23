@@ -1886,21 +1886,38 @@
     const u = new URL(location.href); u.searchParams.set('tab', e.target.id.replace(/^t-/, ''));
     history.replaceState(null, '', u.pathname + u.search + u.hash);
   });
-  function showQuest(id) {
-    const card = document.getElementById('quest-' + id), btn = document.querySelector('[role=tab][data-tab="t-quests"]');
-    if (!card || !btn) return false;
+  // The quest log (Quests tab): Open or Done down the left, one quest's journal on the right
+  function questView(state) {
+    document.querySelectorAll('[data-ql-view]').forEach(b => b.setAttribute('aria-pressed', b.dataset.qlView === state ? 'true' : 'false'));
+    const items = [...document.querySelectorAll('[data-ql-state]')];
+    items.forEach(n => { n.hidden = n.dataset.qlState !== state; });
+    document.querySelectorAll('[data-ql-empty]').forEach(p => { p.hidden = p.dataset.qlEmpty !== state || items.some(n => !n.hidden); });
+    return items.filter(n => !n.hidden);
+  }
+  function showQuest(id, scroll) {
+    const journal = document.querySelector('[data-ql-journal="' + id + '"]'), btn = document.querySelector('[role=tab][data-tab="t-quests"]');
+    const item = document.querySelector('[data-ql-id="' + id + '"]');
+    if (!journal || !btn) return false;
     if (document.getElementById('t-quests').hidden) btn.click();
-    document.querySelectorAll('.quest-board .sel').forEach(n => n.classList.remove('sel'));
-    card.classList.add('sel');
-    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.querySelectorAll('[data-ql-journal]').forEach(j => { j.hidden = j !== journal; });
+    document.querySelectorAll('[data-ql-id]').forEach(n => n.classList.toggle('sel', n === item));
+    if (item && item.hidden) questView(item.dataset.qlState);
+    const u = new URL(location.href); u.searchParams.set('tab', 'quests'); u.searchParams.set('open', id);
+    history.replaceState(null, '', u.pathname + u.search + u.hash);
+    if (scroll || matchMedia('(max-width: 900px)').matches) journal.scrollIntoView({ behavior: 'smooth', block: 'start' });
     return true;
   }
   document.addEventListener('click', e => {
     const a = e.target.closest('[data-goto-quest]');
-    if (a && !a.closest('.peek') && !e.metaKey && !e.ctrlKey && showQuest(a.dataset.gotoQuest)) e.preventDefault();
+    if (a && !a.closest('.peek') && !e.metaKey && !e.ctrlKey && showQuest(a.dataset.gotoQuest, true)) { e.preventDefault(); return; }
+    const item = e.target.closest('[data-ql-id]');
+    if (item && !e.metaKey && !e.ctrlKey && showQuest(item.dataset.qlId)) { e.preventDefault(); return; }
+    const view = e.target.closest('[data-ql-view]');
+    if (view) {
+      const shown = questView(view.dataset.qlView), sel = document.querySelector('[data-ql-id].sel');
+      if (shown.length && !(sel && !sel.hidden)) showQuest(shown[0].dataset.qlId);
+    }
   });
-  { const sel = document.querySelector('.quest-board .sel');
-    if (sel && !document.getElementById('t-quests').hidden) sel.scrollIntoView({ block: 'start' }); }
   function mark() {
     const art = document.getElementById('reader-article'); if (!art) return;
     document.querySelectorAll('[data-rd-id]').forEach(n => n.classList.toggle('sel', n.dataset.rdId === art.dataset.readerId));

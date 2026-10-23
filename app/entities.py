@@ -113,7 +113,8 @@ def moments(db: Session, entity: Entity) -> list[dict]:
         return []
     order = {s.id: i for i, s in enumerate(timeline(db, entity.campaign_id))}
     events.sort(key=lambda e: (order.get(e.session_id, 10**6), e.position, e.id))
-    return [{"e": e, "label": session_label(e.session)} for e in events]
+    short = lambda s: f"Session {s.number}" if s.number is not None else session_label(s)  # noqa: E731
+    return [{"e": e, "label": session_label(e.session), "short": short(e.session)} for e in events]
 
 
 # --- Regenerate description (Claude) ----------------------------------------------
