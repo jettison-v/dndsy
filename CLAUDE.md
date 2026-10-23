@@ -19,8 +19,9 @@ A companion app for one D&D 2024 table (4 players + DM, playing on Zoom with D&D
 - v2 deploys to a **new Railway service** (in the existing `askdnd` Railway project) at `beta.askdnd.ai`. DNS is in Cloudflare (proxied records). askdnd.ai moves to v2 only when Brett says so.
 - Pushing to `main` deploys to beta. That's fine, but keep `main` working.
 
-## Where things are (as of 2026-10-19)
-- **Manage** (`/manage`, app/manage.py): one overview of admin and reviewer pages (DM guide, Inbox, Recaps, History, House rules, People with the access chart, Characters with tool corrections, Usage, Data, Design system). Access rules live only in `app/access.py` (`allows()`).
+## Where things are (as of 2026-10-23)
+- **Manage** (`/manage`, app/manage.py): one overview of admin and reviewer pages (DM guide, Inbox, Recaps, History, House rules, People with the access chart, Characters with tool corrections, Campaigns, Usage, Data, Design system). Access rules live only in `app/access.py` (`allows()`).
+- **Campaigns** (data organization, `docs/plans/2026-10-21-data-organization.md`): story pages live at `/c/<campaign>/…` (app/campaign_paths.py strips the prefix, so routes don't repeat it); `web.campaign(db)` is the campaign the person asking is in now (`access.current_campaign()`), the first one when no one is asking. Roles (DM, reviewer, player) are per campaign; characters join campaigns through `campaign_characters`; house rules in app/house_rules.py.
 - **Version history** (app/history.py): records edits automatically; Manage › History restores; imports are previewed and can be undone.
 - **Backups**: the `askdnd-backup` Railway cron service dumps the database to S3 `v2/backups/` nightly; `scripts/restore_db.py` restores into an empty database.
 - **Local data**: the local app uses `askdnd_beta`, a copy of beta from the newest backup (`scripts/pull_beta.sh` refreshes it; stop the server first). Local changes never reach beta. Automatic drafting is off locally (`AUTO_DRAFT`).

@@ -209,8 +209,8 @@
   function openPeek(id, opener) { openPanel('/campaign/' + id + '/peek', opener, '/campaign/' + id); }
   // A link to an entry (/campaign/45) lands on /campaign?open=45: show the Campaign page with its panel open
   // (Brett, 2026-10-22: entries live in the side panel; no full page)
-  { const id = location.pathname === '/campaign' && new URLSearchParams(location.search).get('open');
-    if (id && /^\d+$/.test(id)) { history.replaceState(null, '', '/campaign' + location.hash); openPanel('/campaign/' + id + '/peek', null, null); } }
+  { const id = /^(\/c\/[^/]+)?\/campaign$/.test(location.pathname) && new URLSearchParams(location.search).get('open');
+    if (id && /^\d+$/.test(id)) { history.replaceState(null, '', location.pathname + location.hash); openPanel('/campaign/' + id + '/peek', null, null); } }
 
   // Any element with data-panel-url opens that fragment in a side panel (Battle: "See all", an
   // option's details). data-modal-url opens a centered modal; data-modal-size="large" makes it wide
@@ -394,7 +394,7 @@
     const ids = ((e.detail && e.detail.ids) || []).map(String), body = document.getElementById('battle-body');
     const page = document.querySelector('[data-character]');
     if (body && ids.includes(body.dataset.character)) htmx.ajax('POST', '/characters/' + body.dataset.character + '/sync', { target: '#battle-body', swap: 'outerHTML' });
-    else if ((page && ids.includes(page.dataset.character)) || location.pathname === '/party') location.reload();
+    else if ((page && ids.includes(page.dataset.character)) || /^(\/c\/[^/]+)?\/party$/.test(location.pathname)) location.reload();
   });
   // Plan's Reminders and Shortlist tabs: fetch the page again and swap in just those tabs' contents
   // (each tab keeps whether it's open), after a mark or note changes.

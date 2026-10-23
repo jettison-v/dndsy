@@ -157,7 +157,10 @@
       </figure>
       <p>The rules knowledge is the same for everyone and changes only when askdnd is updated. The campaign holds what happened at the table, who plays which role there (DM, reviewer, player) and the DM's <b>house rules</b>. A character holds what's about the character: its D&amp;D Beyond copy and its player's own marks and notes, which the DM never sees. A character joins a campaign on a date and could later move to another, while what it did stays in the first one's story.</p>
       <p>Changes are layered, most specific last: askdnd's rules knowledge, then an admin's <b>tool correction</b> (fixing how askdnd reads D&amp;D Beyond, for everyone), then the DM's <b>house rule</b> (for this table only). Removing a correction or a house rule brings back what's underneath.</p>
-      <p>Coming next: more than one campaign, with a campaign switcher in the menu bar.</p>
+    {% endcall %}
+    {% call q("Can askdnd hold more than one campaign?", "campaigns") %}
+      <p>Yes. If you're in more than one, the campaign's name shows next to askdnd in the menu bar (under <b>More</b> on phones); pick another to switch. askdnd remembers the one you were in last. Story pages carry the campaign in their address, like <code>/c/main/sessions</code>, so a link you share opens the right campaign; old links open the campaign you're in.</p>
+      <p>Each campaign has its own recaps, Campaign pages, map, glossary, table rolls, house rules and roles: you can be the DM of one and a player in another, and you only see campaigns you have a role in (admins see them all). A character is in one campaign at a time, like on D&amp;D Beyond. If it moves, what it did stays in its old campaign's story; its D&amp;D Beyond copy, notes, pins and reminders go with it, and personal quests stay with the campaign they were written in. Admins set campaigns up on Manage › Campaigns.</p>
     {% endcall %}
   </section>
 

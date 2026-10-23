@@ -63,6 +63,10 @@ img { max-width: 100%; }
 .switcher > .switcher-caret { padding: 8px 8px 8px 4px; border-radius: 0 6px 6px 0; }
 .switcher > button { background: none; border: none; font-weight: 600; color: var(--text); }
 .switcher .menu { left: 0; right: auto; width: 220px; }
+.campaign-switch { position: relative; }
+.campaign-switch > button { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: var(--r-pill); padding: 4px 12px; font-size: var(--fs-sm); white-space: nowrap; }
+.campaign-switch > button:hover { color: var(--text); }
+.campaign-switch .menu { left: 0; right: auto; }
 .bar-end { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .manage { position: relative; }
 .manage > button { background: var(--surface); border: 1px solid var(--line); color: var(--text); border-radius: var(--r-sm); padding: 6px 12px; font-weight: 500; font-size: var(--fs-md); }
@@ -341,7 +345,7 @@ table.list td a:hover { color: var(--text-strong); text-decoration: underline; }
   .aside .publish-block { display: none; }
   .mobile-bar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--chrome); border-top: 2px solid var(--red); gap: 12px; align-items: center; z-index: 4; }
   .mobile-bar .btn.primary { flex: 1; min-height: 48px; }
-  .nav, .nav-sep, .party-link, .manage, .account, .brand-word { display: none; }
+  .nav, .nav-sep, .party-link, .manage, .account, .brand-word, .campaign-switch { display: none; }
   .table-nav { display: flex; }
   .bottom-nav { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--chrome); border-top: 1px solid var(--line); padding: 4px 4px env(safe-area-inset-bottom); }
   .bottom-nav > a, .bottom-nav > button { display: grid; place-items: center; min-height: 52px; color: var(--muted); text-decoration: none; font-size: var(--fs-xs); font-weight: 500; background: none; border: none; border-radius: var(--r-md); }

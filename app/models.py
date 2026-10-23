@@ -81,6 +81,8 @@ class User(Timestamped, Base):
     # Their tool role, set on Manage › People: member | admin, or "removed" (can't sign in). None = not set in the
     # app (people imported but never invited); the Railway lists decide. Roles at a table are in campaign_members.
     access: Mapped[str | None] = mapped_column(String(20))
+    # The campaign they last opened (the switcher in the menu bar, or a /c/<campaign>/ address); see app/access.py
+    current_campaign_id: Mapped[int | None] = mapped_column(ForeignKey("campaigns.id", ondelete="SET NULL"), nullable=True)
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     dismissed_help: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # help lines they pressed "Got it" on (help_pages.HELP)
 
@@ -91,9 +93,17 @@ class Campaign(Timestamped, Base):
     name: Mapped[str] = mapped_column(String(200))
     slug: Mapped[str] = mapped_column(String(100), unique=True)
     dm_name: Mapped[str] = mapped_column(String(200), default="", server_default="")
-    monthly_limit_usd: Mapped[float | None] = mapped_column(nullable=True)  # Claude spending cap (app/spending.py); blank = none
     ddb_campaign_id: Mapped[str | None] = mapped_column(String(40))  # the matching campaign on D&D Beyond, if known
     members: Mapped[list["CampaignMember"]] = relationship(back_populates="campaign")
+
+
+class ToolSetting(Base):
+    """A setting for the whole tool, e.g. the monthly Claude spending limit (one Anthropic account pays for every
+    campaign, so it isn't a campaign's)."""
+
+    __tablename__ = "tool_settings"
+    key: Mapped[str] = mapped_column(String(50), primary_key=True)
+    value: Mapped[str] = mapped_column(Text, default="", server_default="")
 
 
 class CampaignMember(Base):
@@ -287,7 +297,7 @@ class CampaignCharacter(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"), index=True)
     character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), index=True)
-    entity_id: Mapped[int] = mapped_column(ForeignKey("entities.id", ondelete="CASCADE"), unique=True)  # its story page
+    entity_id: Mapped[int] = mapped_column(ForeignKey("entities.id", ondelete="CASCADE"), index=True)  # its story page (again if it rejoins)
     joined_on: Mapped[date] = mapped_column(Date, server_default=func.current_date())
     left_on: Mapped[date | None] = mapped_column(Date)
     # What the DM lets it keep in Wild Shape (item and feature keys from the sheet's form_options), set by its player

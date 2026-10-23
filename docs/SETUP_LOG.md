@@ -457,3 +457,19 @@ id counter and constraints renamed too so the names stay consistent.
    copy and edit it.
 2. Work out the effective value in one place, in a fixed order (default → global fix → local override), so every
    screen agrees.
+
+## 2026-10-23: Data organization step 4, more than one campaign (step 10 done)
+
+**What was set up.** askdnd can now hold several campaigns. Story pages have the campaign in their address
+(`beta.askdnd.ai/c/main/sessions`), a small piece of code in front of the app reads that part of the address,
+and every page works in any campaign without being written twice. Old links still work: they open the campaign
+you were in last. Admins create campaigns and move characters on Manage › Campaigns; each person sees only the
+campaigns they have a role in. The monthly Claude limit moved to a tool-wide setting, since one Anthropic account
+pays for everything.
+
+**For a new project:**
+1. Put the workspace (team, project, campaign) in the address from the start (`/c/<name>/…`, like GitHub's
+   `/<owner>/<repo>`). Links then say where they point, and adding a second workspace later is far easier.
+2. One "current workspace" function that every page asks, instead of each page deciding, makes the switch a
+   small change.
+3. Store "what I opened last" per person, not per browser, so it follows them between devices.

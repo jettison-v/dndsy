@@ -78,10 +78,10 @@ def test_monthly_limit_blocks_new_claude_calls(db):
 
     runs(db)  # $0.12 this month
     assert spending.reached(db) is None  # no limit set
-    db.scalar(select(Campaign)).monthly_limit_usd = 0.50
+    spending.set_limit(db, 0.50)
     db.flush()
     assert spending.reached(db) is None and usage_summary(db)["limit_left"] == pytest.approx(0.38)
-    db.scalar(select(Campaign)).monthly_limit_usd = 0.10
+    spending.set_limit(db, 0.10)
     db.flush()
     assert "reached the $0.10 monthly limit" in spending.reached(db)
     assert usage_summary(db)["limit_reached"]
@@ -91,12 +91,12 @@ def test_monthly_limit_blocks_new_claude_calls(db):
 
 
 def test_usage_page_sets_and_clears_the_limit(client, db):
-    from app.models import Campaign
+    from app import spending
 
     runs(db)
     page = client.post("/admin/usage/limit", data={"amount": "$0.10"}).text
     assert "Monthly limit set to $0.10" in page and "limit of $0.10 reached" in page
-    assert db.scalar(select(Campaign)).monthly_limit_usd == 0.10
+    assert spending.limit(db) == 0.10
     assert "Enter a monthly limit" in client.post("/admin/usage/limit", data={"amount": "lots"}).text
     assert "Monthly limit removed" in client.post("/admin/usage/limit", data={"amount": ""}).text
-    assert db.scalar(select(Campaign)).monthly_limit_usd is None
+    assert spending.limit(db) is None

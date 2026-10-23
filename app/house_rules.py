@@ -10,7 +10,8 @@ A house rule is a row that points at what it changes (a spell's recipe, by name)
 the row brings the tool's value back. What a house rule can change is listed in FIELDS.
 
 Rules are read on every character page, so they're cached in memory for a few seconds and reloaded after any
-change on Manage › House rules (like app/access.py). Without a campaign id, the first campaign's rules apply.
+change on Manage › House rules (like app/access.py). Without a campaign id, the rules of the campaign the person
+asking is in apply.
 """
 
 import copy
@@ -40,15 +41,13 @@ def _load_from_db() -> dict:
 
 
 def rows_from(db) -> dict:
-    """{campaign id (None = the first campaign): {(kind, key): {field: {"value", "reason", "by"}}}}."""
-    from app.models import Campaign, HouseRule
+    """{campaign id: {(kind, key): {field: {"value", "reason", "by"}}}}."""
+    from app.models import HouseRule
 
-    first = db.scalar(select(Campaign.id).order_by(Campaign.id))
     out: dict = {}
     for r in db.scalars(select(HouseRule)):
         out.setdefault(r.campaign_id, {}).setdefault((r.target_kind, r.target_key), {})[r.field] = {
             "value": r.value, "reason": r.reason, "by": r.set_by}
-    out[None] = out.get(first, {})
     return out
 
 
@@ -61,6 +60,11 @@ def invalidate() -> None:
 
 
 def rules(campaign_id: int | None = None) -> dict:
+    """The campaign's house rules (the one the person asking is in now if none is given)."""
+    if campaign_id is None:
+        from app import access
+
+        campaign_id = access.current_campaign_id()
     if time.monotonic() - _cache["at"] > CACHE_SECONDS:
         try:
             _cache["rows"] = loader()

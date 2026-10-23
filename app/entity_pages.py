@@ -81,7 +81,7 @@ def entity_page(request: Request, entity_id: int, db: Session = Depends(get_db))
     entity = db.get(Entity, entity_id)
     if not _visible(entity, user):
         return _not_found(request)
-    return RedirectResponse(f"/campaign?open={entity_id}", status_code=303)
+    return RedirectResponse(f"{web.base()}/campaign?open={entity_id}", status_code=303)
 
 
 @router.get("/new")
@@ -111,7 +111,7 @@ def new_entry(request: Request, kind: str = Form(""), name: str = Form(""), summ
         kinds = [(k.value, label) for k, label in entities.KIND_LABELS.items() if k.value != "pc"]
         return templates.TemplateResponse(request, "_entity_new.html", {"kinds": kinds, "kind": kind, "error": str(e),
                                                                         "form": {"name": name, "summary": summary, "hidden": hidden}})
-    return Response(status_code=204, headers={"HX-Redirect": f"/campaign?open={entity.id}"})
+    return Response(status_code=204, headers={"HX-Redirect": f"{web.base()}/campaign?open={entity.id}"})
 
 
 @router.get("/{entity_id:int}/peek")
@@ -168,7 +168,7 @@ def _act(request: Request, db: Session, entity_id: int, action: Callable[[Entity
         response.headers["HX-Trigger"] = json.dumps({"toast": message})
         return response
     request.session["toast"] = message
-    return RedirectResponse(f"/campaign?open={entity_id}", status_code=303)
+    return RedirectResponse(f"{web.base()}/campaign?open={entity_id}", status_code=303)
 
 
 @router.post("/{entity_id:int}/facts")
@@ -318,7 +318,7 @@ def merge_entry(request: Request, entity_id: int, into: int = Form(0), db: Sessi
             raise entities.EntityError("Pick the entry to keep.")
         name = source.name
         entities.merge(db, source, target)
-        return f"Merged {name} into {target.name}", f"/campaign?open={target.id}"
+        return f"Merged {name} into {target.name}", f"{web.base()}/campaign?open={target.id}"
 
     return _leave(request, db, entity_id, act)
 

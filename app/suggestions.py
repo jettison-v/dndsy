@@ -205,7 +205,7 @@ def outcome(status: str) -> dict:
 def from_the_table(db: Session, campaign_id: int) -> list[dict]:
     """Every suggestion waiting for a decision, oldest first: facts on entries, and session or glossary suggestions."""
     items = [
-        {"type": "fact", "x": f, "label": e.name, "href": f"/campaign?open={e.id}", "entity": e}
+        {"type": "fact", "x": f, "label": e.name, "href": f"{web.base()}/campaign?open={e.id}", "entity": e}
         for f, e in db.execute(select(Fact, Entity).join(Entity, Fact.entity_id == Entity.id)
                                .where(Entity.campaign_id == campaign_id, Fact.status == "pending"))
     ]
@@ -272,7 +272,7 @@ def mine(request: Request, db: Session = Depends(get_db)):
     if not user:
         return RedirectResponse("/login", status_code=303)
     email = (user.get("email") or "").lower()
-    rows = [{"x": f, "label": e.name, "href": f"/campaign?open={e.id}"}
+    rows = [{"x": f, "label": e.name, "href": f"{web.base()}/campaign?open={e.id}"}
             for f, e in db.execute(select(Fact, Entity).join(Entity, Fact.entity_id == Entity.id)
                                    .where(func.lower(Fact.author_email) == email, Entity.status == Status.PUBLISHED))]
     for x in db.scalars(select(Suggestion).where(func.lower(Suggestion.author_email) == email)):

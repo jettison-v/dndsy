@@ -17,6 +17,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import access
 from app.auth import can_see_character_notes
 from app.models import Character, CharacterPick, User
 
@@ -30,9 +31,24 @@ def user_row(db: Session, user: dict | None) -> User | None:
 
 
 def my_character(db: Session, user: dict | None) -> Character | None:
-    """The character the signed-in person plays (set on Manage › People)."""
+    """The character the signed-in person plays (set on Manage › People): the one in the campaign they're in now,
+    else their first."""
     me = user_row(db, user)
-    return db.scalar(select(Character).where(Character.owner_id == me.id).order_by(Character.id)) if me else None
+    if not me:
+        return None
+    mine = list(db.scalars(select(Character).where(Character.owner_id == me.id).order_by(Character.id)))
+    here = access.current_campaign_id()
+    return next((c for c in mine if c.campaign_id == here), mine[0] if mine else None)
+
+
+def can_view(db: Session, user: dict | None, character: Character) -> bool:
+    """A character's pages: its player, admins, and everyone at the table of the campaign it's in now."""
+    email = (user or {}).get("email")
+    if not email:
+        return False
+    if access.level(email) == access.ADMIN or can_edit(db, user, character):
+        return True
+    return character.campaign_id in {c["id"] for c in access.campaigns_for(email)}
 
 
 def can_edit(db: Session, user: dict | None, character: Character) -> bool:

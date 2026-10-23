@@ -67,5 +67,8 @@ def db(db_engine, monkeypatch):
             monkeypatch.setattr(access, "loader", lambda: access.rows_from(session))
             monkeypatch.setattr(live, "loader", lambda: live.rows_from(session))
             monkeypatch.setattr(house_rules, "loader", lambda: house_rules.rows_from(session))
+            from app import campaign_paths
+
+            monkeypatch.setattr(campaign_paths, "remember", lambda email, cid: campaign_paths.remember_in(session, email, cid))
             yield session
         trans.rollback()

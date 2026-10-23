@@ -28,12 +28,14 @@ from app.manage import router as manage_router
 from app.player_notes import router as notes_router
 from app.history_pages import router as history_router
 from app.house_rules_pages import router as house_rules_router
+from app.campaigns_admin import router as campaigns_router
 from app.entity_pages import router as entity_router
 from app.db import SessionLocal
 from app.db import engine as db_engine
 from app.models import ExtractionRun
 from app.story import router as story_router
 from app.suggestions import router as suggestions_router
+from app.campaign_paths import CampaignPaths
 from app.templating import templates
 
 @asynccontextmanager
@@ -59,6 +61,7 @@ def mark_interrupted_runs() -> None:
 
 
 app = FastAPI(title="askdnd", docs_url=None, redoc_url=None, lifespan=lifespan)
+app.add_middleware(CampaignPaths)  # inside the session middleware (added next), so it knows who's asking
 app.add_middleware(
     SessionMiddleware,
     secret_key=config.SESSION_SECRET,
@@ -88,6 +91,7 @@ app.include_router(manage_router)
 app.include_router(notes_router)
 app.include_router(history_router)
 app.include_router(house_rules_router)
+app.include_router(campaigns_router)
 
 LOGIN_ERRORS = {
     "not_allowed": "That Google account isn't on the list for this table.",

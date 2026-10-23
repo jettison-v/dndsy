@@ -13,7 +13,7 @@ from app import web
 from app import admin_sessions, config
 from app.db import get_db
 from app.extraction import session_label
-from app.models import GameSession
+from app.models import Campaign, GameSession
 
 router = APIRouter(prefix="/api")
 
@@ -23,6 +23,7 @@ MAX_TRANSCRIPT_CHARS = 1_500_000  # ~4 hours of filtered speech is ~200k charact
 class TranscriptUpload(BaseModel):
     played_on: date
     text: str = Field(min_length=1, max_length=MAX_TRANSCRIPT_CHARS)
+    campaign: str | None = None  # the campaign's slug (its /c/<slug>/ address); none = the first campaign
 
 
 def _authorized(authorization: str | None) -> bool:
@@ -44,9 +45,10 @@ def upload_transcript(
         return JSONResponse({"error": "Uploads aren't set up on the server (UPLOAD_TOKEN)."}, status_code=503)
     if not _authorized(authorization):
         return JSONResponse({"error": "Wrong or missing upload token."}, status_code=401)
-    campaign = web.campaign(db)
+    campaign = db.scalar(select(Campaign).where(Campaign.slug == body.campaign)) if body.campaign else web.first_campaign(db)
     if campaign is None:
-        return JSONResponse({"error": "Import the campaign first."}, status_code=409)
+        return JSONResponse({"error": f"No campaign {body.campaign!r}." if body.campaign else "Import the campaign first."},
+                            status_code=404 if body.campaign else 409)
     session = db.scalar(
         select(GameSession).where(GameSession.campaign_id == campaign.id, GameSession.played_on == body.played_on)
     )

@@ -63,7 +63,7 @@ def test_bottom_bar_on_phones(player, db):
     bottom = page.split('class="bottom-nav"')[1].split("</nav>")[0]
     assert re.findall(r">(Recap|Campaign|Battle|Party|More)<", bottom) == ["Recap", "Campaign", "Battle", "Party", "More"]
     more = page.split('id="more-menu"')[1].split("</div>")[0]
-    assert 'href="/sessions"' in more and 'href="/map"' in more and "Sign out" in more
+    assert 'href="/c/main/sessions"' in more and 'href="/c/main/map"' in more and "Sign out" in more
 
 
 def test_live_pill_replaces_game_mode_and_refresh_buttons(player, db):

@@ -30,6 +30,7 @@ PAGES = (
     ("house", "House rules", "/manage/house-rules", "Your rulings on how askdnd rolls things at this table", "Table", can_set_house_rules, ()),
     ("people", "People", "/admin/people", "Who can sign in, their role at the table and character", "Party", is_admin, ()),
     ("characters", "Characters", "/admin/characters", "D&D Beyond links and tool corrections", "Party", is_admin, ()),
+    ("campaigns", "Campaigns", "/manage/campaigns", "Every campaign, and moving characters between them", "Admin", is_admin, ()),
     ("usage", "Usage", "/admin/usage", "Claude spending and balance", "Admin", is_admin, ()),
     ("data", "Data", "/admin/import", "Imports and nightly backups", "Admin", is_admin, ()),
     ("design", "Design system", "/manage/design", "Every component and token, for building and reviewing screens", "Admin", is_admin, ()),
@@ -103,6 +104,11 @@ def _status(db: Session, user: dict, keys: set[str]) -> dict[str, dict]:
         bits = [f"{unpublished} to review and publish" if unpublished else "", f"{undrafted} not drafted" if undrafted else ""]
         out["recaps"] = {"text": " · ".join(b for b in bits if b) or "All published", "attention": bool(unpublished),
                          "sub": f"Campaign doc synced {_ago(notes.source.last_synced_at) if notes else 'never'}"}
+    if "campaigns" in keys:
+        from app.models import Campaign
+
+        n = db.scalar(select(func.count()).select_from(Campaign)) or 0
+        out["campaigns"] = {"text": f"{n} campaign{'s' if n != 1 else ''}", "attention": False}
     if "people" in keys:
         people = db.scalar(select(func.count()).select_from(User)) or 0
         out["people"] = {"text": f"{people} {'person' if people == 1 else 'people'}", "attention": False}

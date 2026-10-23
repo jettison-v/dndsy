@@ -53,7 +53,7 @@ def test_places_on_the_map_link_to_it_by_name_or_other_name(player, db):
 def test_map_tab_centers_on_real_markers_only(player):
     r = player.get("/map?at=Star%20Mounts")
     assert r.status_code == 200 and 'src="https://www.aidedd.org/atlas/sword-coast@Star_Mounts"' in r.text
-    assert 'href="/map"' in r.text and "Mike Schley" in r.text
+    assert 'href="/c/main/map"' in r.text and "Mike Schley" in r.text
     r = player.get("/map?at=https://evil.example")
     assert 'src="https://www.aidedd.org/atlas/sword-coast"' in r.text
     assert TestClient(app).get("/map", follow_redirects=False).headers["location"] == "/login"

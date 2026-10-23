@@ -1,7 +1,8 @@
 """Small helpers every page module shares: the campaign, signing in with a
 permission check, and the plain "not available" / "not found" pages.
 
-askdnd serves one table, so "the campaign" is the first (and only) one.
+"The campaign" is the one the person asking is in now (app/access.py: the /c/<campaign>/ address, else the one
+they last opened); with no one asking (background work, the upload API), the first one.
 """
 
 from collections.abc import Callable
@@ -11,13 +12,28 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import access
 from app.auth import current_user
 from app.models import Campaign
 from app.templating import templates
 
 
 def campaign(db: Session) -> Campaign | None:
+    if not access.viewer.get():
+        return first_campaign(db)
+    cid = access.current_campaign_id()
+    return db.get(Campaign, cid) if cid else None
+
+
+def first_campaign(db: Session) -> Campaign | None:
     return db.scalar(select(Campaign).order_by(Campaign.id))
+
+
+def base(c: dict | Campaign | None = None) -> str:
+    """The start of a story page's address in a campaign ("/c/main"), the current one if none is given."""
+    c = c if c is not None else access.current_campaign()
+    slug = c["slug"] if isinstance(c, dict) else c.slug if c is not None else None
+    return f"/c/{slug}" if slug else ""
 
 
 def person_name(user: dict | None) -> str:

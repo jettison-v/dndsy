@@ -12,5 +12,7 @@
       {% if r.slots %}<div class="res-list slots"><span class="res-label">Slots</span>{% for x in r.slots %}<span class="res-item">{{ x.label }} {{ pips(x.uses) }}</span>{% endfor %}</div>{% endif %}</td>
     {% else %}<td colspan="5" class="muted">{{ "Not fetched from D&D Beyond yet" if r.c.ddb_id else "Not linked to D&D Beyond yet" }}</td>{% endif %}
   </tr>
+  {% else %}
+  <tr><td colspan="6" class="muted">No characters in this campaign yet. An admin adds them, or moves one here, on Manage › Campaigns.</td></tr>
   {% endfor %}
 </table></div>

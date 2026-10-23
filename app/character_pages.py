@@ -138,7 +138,7 @@ def _load(request: Request, db: Session, character_id: int):
     if not user:
         return None, None, RedirectResponse("/login", status_code=303)
     ch = db.get(Character, character_id)
-    if ch is None:
+    if ch is None or not picks.can_view(db, user, ch):
         return user, None, _not_found(request)
     return user, ch, None
 

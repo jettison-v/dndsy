@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import ddb
-from app.models import CampaignCharacter, Character, CharacterItemNote, CharacterSnapshot, Entity
+from app.models import CampaignCharacter, Character, CharacterItemNote, CharacterSnapshot, Entity, EntityKind
 
 Fetch = Callable[[str], dict]
 
@@ -50,6 +50,43 @@ def set_ddb_link(db: Session, character: Character, value: str) -> None:
         character.snapshot = None
     character.ddb_id = ddb_id
     db.flush()
+
+
+def move(db: Session, character: Character, campaign_id: int | None) -> CampaignCharacter | None:
+    """Move a character to another campaign (or out of every campaign): its membership ends today and its story,
+    events and recaps stay with the old campaign. In the new one it gets its story page from an earlier stay, or a
+    new one; the DM's Wild Shape ruling starts empty there (it's a ruling per campaign)."""
+    from datetime import date
+
+    from app.models import Status
+
+    old = character.membership
+    if old is not None and old.campaign_id == campaign_id:
+        return old
+    if old is not None:
+        old.left_on = date.today()
+        db.flush()
+    if campaign_id is None:
+        return None
+    before = next((m for m in reversed(character.memberships) if m.campaign_id == campaign_id), None)
+    entity = before.entity if before else None
+    if entity is None:
+        entity = Entity(campaign_id=campaign_id, kind=EntityKind.PC, name=character.name, status=Status.PUBLISHED)
+        db.add(entity)
+        db.flush()
+    m = CampaignCharacter(campaign_id=campaign_id, entity=entity)
+    character.memberships.append(m)
+    db.flush()
+    return m
+
+
+def ddb_campaigns(db: Session) -> dict[str, str]:
+    """{D&D Beyond campaign id: its name} for the campaigns the characters' D&D Beyond copies say they're in."""
+    out = {}
+    for ch in db.scalars(select(Character).where(Character.ddb_campaign_id.is_not(None))):
+        raw = (ch.snapshot.raw or {}) if ch.snapshot else {}
+        out.setdefault(ch.ddb_campaign_id, ((raw.get("campaign") or {}).get("name") or "").strip())
+    return out
 
 
 def refresh(db: Session, character: Character, fetch: Fetch = ddb.fetch_character) -> CharacterSnapshot:

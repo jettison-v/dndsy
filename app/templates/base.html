@@ -19,14 +19,23 @@
 <body data-toast="{{ toast or '' }}">
 {% block body %}
 <header class="topbar"><div class="topbar-inner">
-  <a class="brand" href="/"><img src="/static/icons/android-chrome-192x192.png" alt=""><span class="brand-word">askdnd</span></a>
+  <a class="brand" href="{{ cbase }}/"><img src="/static/icons/android-chrome-192x192.png" alt=""><span class="brand-word">askdnd</span></a>
+  {% if user and my_campaigns | length > 1 %}
+  <div class="campaign-switch">
+    <button data-menu="campaign-menu" aria-haspopup="true" aria-label="Campaign: {{ here.name if here else 'none' }}. Switch campaign">{{ here.name if here else "Pick a campaign" }} ▾</button>
+    <div class="menu" id="campaign-menu" hidden>
+      <div class="menu-group">Your campaigns</div>
+      {% for c in my_campaigns %}<a href="/c/{{ c.slug }}{{ switch_path }}" class="{{ 'active' if here and c.id == here.id }}">{{ c.name }}{% if here and c.id == here.id %}<small>You're here</small>{% endif %}</a>{% endfor %}
+    </div>
+  </div>
+  {% endif %}
   {% if user %}{% set tn = tablenav() %}{% set me = tn.here or tn.mine %}
   {# Story pages on the left, then your table (Brett, 2026-10-19: menu bar Option 1) #}
   <nav class="nav" aria-label="Story">
-    <a href="/" class="{{ 'active' if path in ('/', '/story') }}">Recap</a>
-    <a href="/sessions" class="{{ 'active' if path.startswith('/sessions') }}">Sessions</a>
-    <a href="/campaign" class="{{ 'active' if path.startswith('/campaign') }}">Campaign</a>
-    <a href="/map" class="{{ 'active' if path == '/map' }}">Map</a>
+    <a href="{{ cbase }}/" class="{{ 'active' if path in ('/', '/story') }}">Recap</a>
+    <a href="{{ cbase }}/sessions" class="{{ 'active' if path.startswith('/sessions') }}">Sessions</a>
+    <a href="{{ cbase }}/campaign" class="{{ 'active' if path.startswith('/campaign') }}">Campaign</a>
+    <a href="{{ cbase }}/map" class="{{ 'active' if path == '/map' }}">Map</a>
   </nav>
   <span class="nav-sep" aria-hidden="true"></span>
   <nav class="nav table-nav" aria-label="Your table">
@@ -70,15 +79,16 @@
 {% if user %}
 {# Phones: the main pages in a bottom bar; everything else under More. #}
 <nav class="bottom-nav" aria-label="Main">
-  <a href="/" class="{{ 'active' if path in ('/', '/story') }}">Recap</a>
-  <a href="/campaign" class="{{ 'active' if path.startswith('/campaign') }}">Campaign</a>
+  <a href="{{ cbase }}/" class="{{ 'active' if path in ('/', '/story') }}">Recap</a>
+  <a href="{{ cbase }}/campaign" class="{{ 'active' if path.startswith('/campaign') }}">Campaign</a>
   <a href="/battle" class="{{ 'active' if tn.mode == 'battle' }}">Battle</a>
   <a href="/party" class="{{ 'active' if path.startswith('/party') }}">Party</a>
   <button type="button" data-menu="more-menu" aria-haspopup="true" class="{{ 'active' if path.startswith('/sessions') or path == '/map' or path.startswith('/manage') or path.startswith('/admin') }}">More</button>
 </nav>
 <div class="menu more-menu" id="more-menu" hidden>
-  <a href="/sessions" class="{{ 'active' if path.startswith('/sessions') }}">Sessions</a>
-  <a href="/map" class="{{ 'active' if path == '/map' }}">Map</a>
+  {% if my_campaigns | length > 1 %}{% for c in my_campaigns if not (here and c.id == here.id) %}<a href="/c/{{ c.slug }}{{ switch_path }}">{{ c.name }}<small>Switch campaign</small></a>{% endfor %}{% endif %}
+  <a href="{{ cbase }}/sessions" class="{{ 'active' if path.startswith('/sessions') }}">Sessions</a>
+  <a href="{{ cbase }}/map" class="{{ 'active' if path == '/map' }}">Map</a>
   <a href="/your-suggestions" class="{{ 'active' if path == '/your-suggestions' }}">Your suggestions</a>
   {% if manage_pages %}<a href="/manage" class="{{ 'active' if path.startswith('/manage') }}">Manage<small>Admin and reviewer pages</small></a>{% endif %}
   <a href="/about" data-no-peek>About</a>

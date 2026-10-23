@@ -7,7 +7,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import spending, web
+from app import spending
 from app.admin import _guard
 from app.db import get_db
 from app.extraction import session_label
@@ -101,14 +101,11 @@ def set_limit(request: Request, amount: str = Form(""), db: Session = Depends(ge
     user, denied = _guard(request)
     if denied:
         return denied
-    campaign = web.campaign(db)
     value = parse_amount(amount) if amount.strip() else None
-    if campaign is None:
-        request.session["toast"] = "Import the campaign first."
-    elif amount.strip() and (value is None or value <= 0 or value > 10_000):
+    if amount.strip() and (value is None or value <= 0 or value > 10_000):
         request.session["toast"] = "Enter a monthly limit between $0 and $10,000, or leave it blank for none."
     else:
-        campaign.monthly_limit_usd = value
+        spending.set_limit(db, value)
         db.commit()
         request.session["toast"] = f"Monthly limit set to ${value:,.2f}" if value is not None else "Monthly limit removed"
     return RedirectResponse("/admin/usage", status_code=303)

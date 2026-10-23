@@ -1,6 +1,8 @@
 from pathlib import Path
 
 from fastapi import Request
+
+from app import access
 from fastapi.templating import Jinja2Templates
 
 
@@ -20,9 +22,24 @@ def _page_context(request: Request) -> dict:
             table["v"] = live_table(user, request.url.path)
         return table["v"]
 
+    here = access.current_campaign() if user else None
     return {"user": user, "is_admin": is_admin(user), "is_reviewer": is_reviewer(user), "is_dm": is_dm(user), "can_moderate": can_moderate(user),
             "can_see_notes": can_see_character_notes(user), "path": request.url.path,
-            "manage_pages": pages_for(user, request.url.path), "tablenav": tablenav}
+            "manage_pages": pages_for(user, request.url.path), "tablenav": tablenav,
+            # The campaign you're in, the start of its story addresses, and the campaigns you can switch to
+            "here": here, "cbase": f"/c/{here['slug']}" if here else "",
+            "my_campaigns": access.campaigns_for(user.get("email")) if user else [],
+            "switch_path": switch_path(request.url.path)}
+
+
+# Pages that make sense in any campaign: switching campaigns keeps you on them (else you land on the Recap)
+SWITCH_KEEPS = ("/", "/sessions", "/campaign", "/map", "/party", "/manage", "/suggestions", "/your-suggestions",
+                "/admin/sessions", "/admin/history", "/admin/people", "/admin/characters", "/manage/house-rules",
+                "/manage/dm-guide", "/manage/campaigns")
+
+
+def switch_path(path: str) -> str:
+    return path if path in SWITCH_KEEPS else "/"
 
 
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates", context_processors=[_page_context])

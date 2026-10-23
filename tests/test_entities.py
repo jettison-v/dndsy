@@ -79,8 +79,10 @@ def test_entity_page_shows_moments_in_story_order(player, db):
     import_bundle(db, BUNDLE)
     published_events(db)
     e = lillippi(db)
-    r = player.get(f"/campaign/{e.id}", follow_redirects=False)  # no full page: the Campaign page opens its panel
-    assert r.status_code == 303 and r.headers["location"] == f"/campaign?open={e.id}"
+    r = player.get(f"/campaign/{e.id}", follow_redirects=False)  # an old address: to the campaign's own
+    assert r.status_code == 307 and r.headers["location"] == f"/c/main/campaign/{e.id}"
+    r = player.get(f"/c/main/campaign/{e.id}", follow_redirects=False)  # no full page: the Campaign page opens its panel
+    assert r.status_code == 303 and r.headers["location"] == f"/c/main/campaign?open={e.id}"
     page = player.get(f"/campaign/{e.id}/peek").text  # everything is in the side panel now
     assert "Tiefling bard." in page and "Also: LL" in page
     assert page.index("The party met Lillippi.") < page.index("Lillippi sang in")
@@ -346,7 +348,7 @@ def test_dm_tools_create_tidy_and_add_moments(monkeypatch, db):
     assert "+ New entry" in dm.get("/campaign").text and "New entry" in dm.get("/campaign/new?kind=place").text
     r = dm.post("/campaign/new", data={"kind": "npc", "name": "Captain Trager Grill", "summary": "Cult-marked captain."}, headers=HX)
     grill = db.scalar(select(Entity).where(Entity.name == "Captain Trager Grill"))
-    assert r.headers["HX-Redirect"] == f"/campaign?open={grill.id}" and grill.status.value == "published"
+    assert r.headers["HX-Redirect"] == f"/c/main/campaign?open={grill.id}" and grill.status.value == "published"
     again = dm.post("/campaign/new", data={"kind": "npc", "name": "lillippi lemon"}, headers=HX).text
     assert "already in the campaign record" in again  # by name or other name, any case
     dm.post("/campaign/new", data={"kind": "quest", "name": "Find the bell", "hidden": "1"}, headers=HX)
@@ -365,7 +367,7 @@ def test_dm_tools_create_tidy_and_add_moments(monkeypatch, db):
     entities.add_fact(db, dup, "He carries a silver whistle.", {"email": "p@x"}, merged=True)
     db.commit()
     r = dm.post(f"/campaign/{dup.id}/merge", data={"into": grill.id}, headers=HX)
-    assert r.headers["HX-Redirect"] == f"/campaign?open={grill.id}"
+    assert r.headers["HX-Redirect"] == f"/c/main/campaign?open={grill.id}"
     db.expire_all()
     grill = db.get(Entity, grill.id)
     assert db.scalar(select(Entity).where(Entity.name == "Capt Trager Grill")) is None

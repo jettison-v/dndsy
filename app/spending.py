@@ -1,7 +1,7 @@
 """The monthly Claude spending limit (CLAUDE.md: "set and respect a monthly spend limit").
 
-The admin sets it on Manage › Usage (campaigns.monthly_limit_usd; blank means no
-limit). Every Claude call (drafting a session, checking a written account,
+The admin sets it on Manage › Usage (tool_settings "monthly_limit_usd": one limit for
+the whole tool, since one Anthropic account pays for every campaign; blank means no limit). Every Claude call (drafting a session, checking a written account,
 rewriting a description) calls check() first, so once this month's spending
 reaches the limit askdnd refuses new calls and says why, instead of spending
 more. The Anthropic workspace limit still applies on top of this.
@@ -12,8 +12,7 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import web
-from app.models import ExtractionRun
+from app.models import ExtractionRun, ToolSetting
 
 
 def month_start(now: datetime | None = None) -> datetime:
@@ -26,9 +25,22 @@ def spent_this_month(db: Session, now: datetime | None = None) -> float:
     return float(db.scalar(q) or 0.0)
 
 
+LIMIT_KEY = "monthly_limit_usd"
+
+
 def limit(db: Session) -> float | None:
-    c = web.campaign(db)
-    return c.monthly_limit_usd if c else None
+    row = db.get(ToolSetting, LIMIT_KEY)
+    try:
+        return float(row.value) if row and row.value else None
+    except ValueError:
+        return None
+
+
+def set_limit(db: Session, value: float | None) -> None:
+    row = db.get(ToolSetting, LIMIT_KEY) or ToolSetting(key=LIMIT_KEY)
+    row.value = "" if value is None else str(value)
+    db.add(row)
+    db.flush()
 
 
 def reached(db: Session, now: datetime | None = None) -> str | None:

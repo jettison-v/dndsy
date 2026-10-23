@@ -21,6 +21,7 @@ seconds and reloaded after any change made on the People page.
 
 import time
 from collections.abc import Callable
+from contextvars import ContextVar
 
 from sqlalchemy import select
 
@@ -47,16 +48,20 @@ def _load_from_db() -> dict[str, dict]:
 
 
 def rows_from(db) -> dict[str, dict]:
-    """{email: {"access": tool role, "roles": {campaign id: role}, "first": the first campaign's id}}."""
+    """{email: {"access": tool role, "roles": {campaign id: role}, "current": the campaign they last opened}}, plus
+    CAMPAIGNS: [{"id", "slug", "name"}] (every campaign, oldest first)."""
     from app.models import Campaign, CampaignMember, User
 
-    first = db.scalar(select(Campaign.id).order_by(Campaign.id))
     roles: dict[int, dict[int, str]] = {}
     for m in db.scalars(select(CampaignMember).where(CampaignMember.left_on.is_(None))):
         roles.setdefault(m.user_id, {})[m.campaign_id] = m.role.value
-    return {u.email.lower(): {"access": u.access, "roles": roles.get(u.id, {}), "first": first} for u in db.scalars(select(User))}
+    out: dict = {u.email.lower(): {"access": u.access, "roles": roles.get(u.id, {}), "current": u.current_campaign_id}
+                 for u in db.scalars(select(User))}
+    out[CAMPAIGNS] = [{"id": c.id, "slug": c.slug, "name": c.name} for c in db.scalars(select(Campaign).order_by(Campaign.id))]
+    return out
 
 
+CAMPAIGNS = "@campaigns"  # not an email, so it never matches a person
 loader: Callable[[], dict[str, dict]] = _load_from_db
 _cache: dict = {"rows": {}, "at": 0.0}
 
@@ -73,6 +78,53 @@ def _rows() -> dict[str, dict]:
             pass  # database unavailable: keep the last rows; the env lists still work
         _cache["at"] = time.monotonic()
     return _cache["rows"]
+
+
+# ------------------------------------------------------------------ the campaign you're in
+# Set for each request by app/campaign_paths.py: who is asking, and the campaign in the address (/c/<slug>/…).
+viewer: ContextVar[str] = ContextVar("viewer", default="")
+path_slug: ContextVar[str | None] = ContextVar("path_slug", default=None)
+
+
+def campaigns(rows: dict | None = None) -> list[dict]:
+    return list(((_rows() if rows is None else rows).get(CAMPAIGNS)) or [])
+
+
+def campaigns_for(email: str | None, rows: dict | None = None) -> list[dict]:
+    """The campaigns this person can open: those they have a role in; every campaign for admins. People on the
+    Railway lists with no role anywhere get the first campaign (as before there was more than one)."""
+    rows = _rows() if rows is None else rows
+    email = (email or "").strip().lower()
+    every = campaigns(rows)
+    if level(email, rows) is None:
+        return []
+    if level(email, rows) == ADMIN:
+        return every
+    mine = set(((rows.get(email) or {}).get("roles") or {}))
+    if not mine and (config.is_allowed(email, config.ALLOWED_EMAILS) or config.is_allowed(email, config.REVIEWER_EMAILS)):
+        return every[:1]
+    return [c for c in every if c["id"] in mine]
+
+
+def current_campaign(email: str | None = None, rows: dict | None = None) -> dict | None:
+    """The campaign this person is in now: the one in the address if they may open it (None if not), else the one
+    they last opened, else their first. None if they can't open any. With no one asking (background work, the
+    upload API), the first campaign."""
+    rows = _rows() if rows is None else rows
+    email = (email if email is not None else viewer.get()).strip().lower()
+    if not email:
+        return (campaigns(rows) or [None])[0]
+    mine = campaigns_for(email, rows)
+    slug = path_slug.get()
+    if slug is not None:
+        return next((c for c in mine if c["slug"] == slug), None)
+    last = (rows.get(email) or {}).get("current")
+    return next((c for c in mine if c["id"] == last), None) or (mine[0] if mine else None)
+
+
+def current_campaign_id(email: str | None = None) -> int | None:
+    c = current_campaign(email)
+    return c["id"] if c else None
 
 
 def is_owner(email: str | None) -> bool:
@@ -96,10 +148,14 @@ def level(email: str | None, rows: dict[str, dict] | None = None) -> str | None:
 
 
 def role(email: str | None, campaign_id: int | None = None, rows: dict[str, dict] | None = None) -> str | None:
-    """The person's role in a campaign (the first campaign if none is given), or None."""
+    """The person's role in a campaign (the one they're in now if none is given), or None."""
     email = (email or "").strip().lower()
-    row = (_rows() if rows is None else rows).get(email) or {}
-    r = (row.get("roles") or {}).get(campaign_id or row.get("first"))
+    rows = _rows() if rows is None else rows
+    row = rows.get(email) or {}
+    if campaign_id is None:
+        here = current_campaign(email, rows)
+        campaign_id = here["id"] if here else None
+    r = (row.get("roles") or {}).get(campaign_id)
     if r in (None, PLAYER) and config.is_allowed(email, config.REVIEWER_EMAILS):
         return REVIEWER
     return r
