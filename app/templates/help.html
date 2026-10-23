@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Help · askdnd{% endblock %}
+{% block content %}
+{# Help (Brett, 2026-10-23): the FAQ and About in one page with tabs, reached from the ? in the menu bar, the account
+   menu and More on phones. /faq and /about redirect here; /help#<question id> opens that answer. #}
+<main class="page wide help">
+  <div class="title-row"><h1>Help</h1></div>
+  <p class="subtitle">How askdnd works, so nothing comes as a surprise. The DM's own guide is under Manage.</p>
+  <div class="tabbar" role="tablist" data-tab-param>
+    <button role="tab" aria-selected="{{ 'true' if tab == 'faq' else 'false' }}" data-tab="t-faq">FAQ</button>
+    <button role="tab" aria-selected="{{ 'true' if tab == 'about' else 'false' }}" data-tab="t-about">About</button>
+  </div>
+  <div id="t-faq"{% if tab != "faq" %} hidden{% endif %}>
+{% include "_help_faq.html" %}
+  </div>
+  <div id="t-about"{% if tab != "about" %} hidden{% endif %}>
+{% include "_help_about.html" %}
+  </div>
+</main>
+{% endblock %}

@@ -54,6 +54,6 @@ Python (current stable) managed with **uv** · FastAPI serving server-rendered p
 
 ## Conventions
 - Small, focused commits with clear messages. Run `uv run ruff check app scripts tests` and `uv run pytest -q` before committing. GitHub Actions runs both on every push, and Railway waits for them before deploying beta.
-- When a feature or a visibility rule changes, update the About and FAQ pages (`app/templates/about.html`, `faq.html`) to match. When a campaign-content workflow changes (recaps, entries, suggestions, review), also update the DM guide (`app/templates/dm_guide.html`, Manage › DM guide), which the DM reads instead of the code.
+- When a feature or a visibility rule changes, update Help's About and FAQ tabs (`app/templates/_help_about.html`, `_help_faq.html`; the page is `/help`) to match. When a campaign-content workflow changes (recaps, entries, suggestions, review), also update the DM guide (`app/templates/dm_guide.html`, Manage › DM guide), which the DM reads instead of the code.
 - Tests for core logic (extraction parsing, visibility rules, D&D Beyond parsing). Don't test against live paid APIs by default.
 - Secrets come from environment variables (Railway variables in production, `.env` locally). Document every variable in `.env.example`.

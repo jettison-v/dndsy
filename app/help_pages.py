@@ -4,7 +4,7 @@ that person (remembered on their user row, so on every device) and "More" to the
 (DESIGN.md › Components › Help line, Brett 2026-10-22)."""
 
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 
 from app.auth import current_user
@@ -14,7 +14,7 @@ from app.templating import templates
 
 router = APIRouter()
 
-# Help line key -> the FAQ answer its "More" opens (faq.html q(..., id=...))
+# Help line key -> the FAQ answer its "More" opens (_help_faq.html q(..., id=...))
 HELP = {"battle": "modes", "sheet": "marks", "plan": "notes", "features": "modes", "situational": "modes",
         "background": "privacy", "spells": "spell-book", "forms": "wild-shape", "items": "items"}
 
@@ -41,11 +41,18 @@ def dismiss_help(request: Request, key: str = Form(...), db: Session = Depends(g
     return HTMLResponse("")
 
 
-@router.get("/about")
-def about(request: Request):
-    return templates.TemplateResponse(request, "about.html", {})
+@router.get("/help")
+def help_page(request: Request, tab: str = "faq"):
+    """FAQ and About in one page (Brett, 2026-10-23). /help#<id> opens that FAQ answer."""
+    return templates.TemplateResponse(request, "help.html", {"tab": "about" if tab == "about" else "faq",
+                                                             "game_mode_minutes": GAME_MODE_SECONDS / 60})
 
 
 @router.get("/faq")
-def faq(request: Request):
-    return templates.TemplateResponse(request, "faq.html", {"game_mode_minutes": GAME_MODE_SECONDS / 60})
+def faq():
+    return RedirectResponse("/help", status_code=301)  # the browser keeps #<id>, so old answer links still open
+
+
+@router.get("/about")
+def about():
+    return RedirectResponse("/help?tab=about", status_code=301)

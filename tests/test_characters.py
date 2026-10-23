@@ -720,7 +720,7 @@ def test_help_lines_hide_for_good_with_got_it(player, admin, db):
     characters.refresh(db, cole)
     owned_by(db, cole, "player@example.com")
     page = player.get(f"/characters/{cole.id}").text
-    assert 'id="help-sheet"' in page and 'href="/faq#marks"' in page and "Got it" in page
+    assert 'id="help-sheet"' in page and 'href="/help#marks"' in page and "Got it" in page
     r = player.post("/help/dismiss", data={"key": "sheet"})
     assert r.status_code == 200 and r.text == ""
     assert 'id="help-sheet"' not in player.get(f"/characters/{cole.id}").text  # gone for this person
@@ -730,7 +730,7 @@ def test_help_lines_hide_for_good_with_got_it(player, admin, db):
     assert me.dismissed_help == ["sheet"]
     assert player.post("/help/dismiss", data={"key": "nope"}).status_code == 400
     assert 'id="help-features"' in admin.get(f"/characters/{cole.id}").text  # other people still see theirs
-    assert 'id="marks"' in player.get("/faq").text  # "More" opens that answer
+    assert 'id="marks"' in player.get("/help").text  # "More" opens that answer
 
 
 def test_battle_column_rules_are_a_chip(player, db):
