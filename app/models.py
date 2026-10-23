@@ -19,6 +19,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    false,
     func,
 )
 from sqlalchemy import (
@@ -94,6 +95,9 @@ class Campaign(Timestamped, Base):
     slug: Mapped[str] = mapped_column(String(100), unique=True)
     dm_name: Mapped[str] = mapped_column(String(200), default="", server_default="")
     ddb_campaign_id: Mapped[str | None] = mapped_column(String(40))  # the matching campaign on D&D Beyond, if known
+    # The VTT switch (app/vtt.py): a test campaign sees every VTT piece; others only the finished ones switched on here
+    is_test: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+    vtt_pieces: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
     members: Mapped[list["CampaignMember"]] = relationship(back_populates="campaign")
 
 
@@ -248,6 +252,8 @@ class Character(Timestamped, Base):
     ddb_id: Mapped[str | None] = mapped_column(String(40))  # D&D Beyond character id
     ddb_campaign_id: Mapped[str | None] = mapped_column(String(40))  # the D&D Beyond campaign its sheet says it's in
     player_name: Mapped[str] = mapped_column(String(200), default="", server_default="")  # who plays it, before they have an account
+    # A test copy (VTT 0.1): the same D&D Beyond sheet as this character, with its own play state, in a test campaign
+    copy_of_id: Mapped[int | None] = mapped_column(ForeignKey("characters.id", ondelete="SET NULL"))
     wild_shape: Mapped[str | None] = mapped_column(String(200), nullable=True)  # the form they're in on Battle (app/wild_shape.py), set by their player
     # What they're concentrating on (app/spellbook.py), set by their player: {"spell", "key", "level", "round", "rounds"}
     concentration: Mapped[dict | None] = mapped_column(JSONB, nullable=True)

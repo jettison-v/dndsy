@@ -80,6 +80,34 @@ def move(db: Session, character: Character, campaign_id: int | None) -> Campaign
     return m
 
 
+def test_copy(db: Session, original: Character, campaign_id: int, players: set[int] = frozenset()) -> Character:
+    """A test copy of a character for a test campaign (VTT 0.1): the same D&D Beyond sheet and its last good copy, with
+    its own play state, so trying VTT pieces never touches the real character. Its player's notes, pins and
+    reminders stay with the original. It keeps its player only if they're among `players` (in the test campaign)."""
+    copy = Character(name=original.name, owner_id=original.owner_id if original.owner_id in players else None, player_name=original.player_name, ddb_id=original.ddb_id,
+                     ddb_campaign_id=original.ddb_campaign_id, copy_of_id=original.id)
+    db.add(copy)
+    db.flush()
+    if original.snapshot is not None:
+        o = original.snapshot
+        db.add(CharacterSnapshot(character_id=copy.id, fetched_at=o.fetched_at, raw=o.raw, summary=o.summary, status=o.status, error=o.error))
+    move(db, copy, campaign_id)
+    db.flush()
+    return copy
+
+
+def copy_candidates(db: Session, campaign_id: int) -> list[tuple[Character, bool]]:
+    """Characters in other campaigns that aren't test ones, each with whether this campaign has a test copy of it."""
+    from app.models import Campaign
+
+    copied = {c.copy_of_id for c in campaign_characters(db, campaign_id) if c.copy_of_id}
+    rows = db.scalars(select(Character).join(CampaignCharacter).join(Campaign, Campaign.id == CampaignCharacter.campaign_id)
+                      .where(CampaignCharacter.left_on.is_(None), CampaignCharacter.campaign_id != campaign_id,
+                             Campaign.is_test.is_(False), Character.copy_of_id.is_(None))
+                      .order_by(Character.name))
+    return [(c, c.id in copied) for c in rows]
+
+
 def ddb_campaigns(db: Session) -> dict[str, str]:
     """{D&D Beyond campaign id: its name} for the campaigns the characters' D&D Beyond copies say they're in."""
     out = {}

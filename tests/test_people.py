@@ -198,7 +198,7 @@ def test_access_chart_is_drawn_from_the_rules_the_app_uses():
     assert rows["Players' notes, pins, reminders and shortlists"]["cells"] == ["yes", "yes", "no", "yes"]
     assert rows["Table: roles, who plays which character, adding characters and D&D Beyond links"]["cells"] == ["no", "no", "no", "yes"]
     assert rows["See the Table: who plays which character, D&D Beyond links"]["cells"] == ["no", "no", "yes", "yes"]
-    assert rows["Settings: the campaign's name and the DM's name"]["cells"] == ["no", "no", "yes", "yes"]
+    assert rows["Settings: the campaign's name, the DM's name, which finished VTT pieces the table gets"]["cells"] == ["no", "no", "yes", "yes"]
     assert rows["Notes, pins, reminders, shortlists, the Wild Shape switch and table rolls"]["cells"] == ["own"] * 4
     for r in access.CHART:  # every rule in the chart is one the app checks
         if r[2] != "own":

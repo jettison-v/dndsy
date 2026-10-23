@@ -11,7 +11,7 @@
   <div class="char-head">
     {{ portrait(s, "md") }}
     <div class="char-title">
-      <h1>{{ c.name }}</h1>
+      <h1>{{ c.name }}{% if c.copy_of_id %} <span class="tag faint" title="A test copy: the same D&amp;D Beyond sheet, its own play state">Test copy</span>{% endif %}</h1>
       {% if s %}<div class="muted char-sub">{{ s.species }} · {% for k in s.classes %}{{ k.name }} {{ k.level }}{% if k.subclass %} ({{ k.subclass }}){% endif %}{{ " / " if not loop.last }}{% endfor %} · level {{ s.level }}{% if s.background %} · {{ s.background }}{% endif %}{% if c.player_name %} · played by {{ c.player_name }}{% endif %}{% if s.sheet_url %} · <a href="{{ s.sheet_url }}" target="_blank" rel="noopener">Open on D&amp;D Beyond ↗</a>{% endif %}</div>
       {% if failed %}<div class="note"><span class="quiet-warn">The latest refresh from D&amp;D Beyond didn't work, so this is the last good copy, from {{ fetched_at | ago }}. {{ error }}</span></div>{% endif %}{% endif %}
     </div>

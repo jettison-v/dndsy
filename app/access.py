@@ -50,7 +50,7 @@ def _load_from_db() -> dict[str, dict]:
 
 def rows_from(db) -> dict[str, dict]:
     """{email: {"access": tool role, "roles": {campaign id: role}, "current": the campaign they last opened}}, plus
-    CAMPAIGNS: [{"id", "slug", "name"}] (every campaign, oldest first)."""
+    CAMPAIGNS: [{"id", "slug", "name", "is_test", "vtt_pieces"}] (every campaign, oldest first)."""
     from app.models import Campaign, CampaignMember, User
 
     roles: dict[int, dict[int, str]] = {}
@@ -58,7 +58,7 @@ def rows_from(db) -> dict[str, dict]:
         roles.setdefault(m.user_id, {})[m.campaign_id] = m.role.value
     out: dict = {u.email.lower(): {"access": u.access, "roles": roles.get(u.id, {}), "current": u.current_campaign_id}
                  for u in db.scalars(select(User))}
-    out[CAMPAIGNS] = [{"id": c.id, "slug": c.slug, "name": c.name} for c in db.scalars(select(Campaign).order_by(Campaign.id))]
+    out[CAMPAIGNS] = [{"id": c.id, "slug": c.slug, "name": c.name, "is_test": c.is_test, "vtt_pieces": list(c.vtt_pieces or [])} for c in db.scalars(select(Campaign).order_by(Campaign.id))]
     return out
 
 
@@ -204,9 +204,9 @@ CHART = [
     ("Run the table", "Refresh characters from D&D Beyond", "review"),
     ("Run the table", "House rules: how askdnd rolls things at this table", "house_rules"),
     ("Run the table", "See the Table: who plays which character, D&D Beyond links", "see_table"),
-    ("Run the table", "Settings: the campaign's name and the DM's name", "settings"),
+    ("Run the table", "Settings: the campaign's name, the DM's name, which finished VTT pieces the table gets", "settings"),
     ("Set up askdnd", "Table: roles, who plays which character, adding characters and D&D Beyond links", "admin"),
-    ("Set up askdnd", "Accounts (who can sign in, admins), Campaigns, tool corrections", "admin"),
+    ("Set up askdnd", "Accounts (who can sign in, admins), Campaigns, test campaigns, tool corrections", "admin"),
     ("Set up askdnd", "Usage (Claude spending), backups and imports, the campaign doc", "admin"),
 ]
 # The chart's columns: the three campaign roles, then Admin (a tool role, on top of any campaign role)

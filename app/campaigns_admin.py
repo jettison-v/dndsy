@@ -1,6 +1,7 @@
 """Manage › Campaigns (admins, /manage/campaigns): every campaign, creating one, and moving characters between them
 (data organization step 4). And each campaign's Manage › Settings (/c/<campaign>/manage/settings): its name, the
-DM's name and its D&D Beyond campaign id, which its DM can change too (Manage layout, 2026-10-23). Who plays in a
+DM's name and its D&D Beyond campaign id, which its DM can change too (Manage layout, 2026-10-23), and its VTT switch
+(app/vtt.py: admins make a campaign a test one; its DM and admins switch finished pieces on). Who plays in a
 campaign, and adding characters to it, are on its Manage › Table (app/manage_table.py)."""
 
 import re
@@ -10,7 +11,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import access, web
+from app import access, vtt, web
 from app import characters as chars
 from app.auth import can_edit_settings, is_admin
 from app.db import get_db
@@ -46,7 +47,7 @@ def overview(db: Session) -> dict:
     for ch in everyone:
         here = next((c for c in campaigns if c.id == ch.campaign_id), None)
         # D&D Beyond says it's in another campaign: offer the matching askdnd campaign (never moved automatically)
-        theirs = ch.ddb_campaign_id
+        theirs = None if ch.copy_of_id else ch.ddb_campaign_id  # a test copy shares its original's D&D Beyond campaign
         mismatch = bool(theirs and here and here.ddb_campaign_id and theirs != here.ddb_campaign_id) or bool(theirs and not here)
         rows.append({"c": ch, "here": here, "mismatch": mismatch, "ddb_name": seen.get(theirs or "", ""),
                      "suggest": by_ddb.get(theirs) if mismatch else None})
@@ -67,7 +68,7 @@ def page(request: Request, db: Session = Depends(get_db)):
 
 @router.post(BACK)
 def create(request: Request, name: str = Form(""), dm_name: str = Form(""), ddb_campaign_id: str = Form(""),
-           db: Session = Depends(get_db)):
+           is_test: str = Form(""), db: Session = Depends(get_db)):
     user, denied = web.require(request, is_admin, DENIED)
     if denied:
         return denied
@@ -76,7 +77,7 @@ def create(request: Request, name: str = Form(""), dm_name: str = Form(""), ddb_
         request.session["toast"] = "Give the campaign a name."
         return RedirectResponse(BACK, status_code=303)
     c = Campaign(name=name, slug=slug_for(db, name), dm_name=" ".join(dm_name.split())[:200],
-                 ddb_campaign_id=ddb_campaign_id.strip()[:40] or None)
+                 ddb_campaign_id=ddb_campaign_id.strip()[:40] or None, is_test=bool(is_test))
     db.add(c)
     db.commit()
     access.invalidate()
@@ -94,7 +95,7 @@ def settings_page(request: Request, db: Session = Depends(get_db)):
         return web.not_found(request, "Pick a campaign first.")
     return templates.TemplateResponse(request, "manage_settings.html", {
         "campaign": campaign, "ddb_name": chars.ddb_campaigns(db).get(campaign.ddb_campaign_id or "", ""),
-        "toast": request.session.pop("toast", None)})
+        "vtt_rows": vtt.rows(campaign), "can_set_test": is_admin(user), "toast": request.session.pop("toast", None)})
 
 
 @router.post("/manage/settings")
@@ -115,6 +116,35 @@ def save_settings(request: Request, name: str = Form(""), dm_name: str = Form(""
     elif c is not None:
         request.session["toast"] = "Give the campaign a name."
     return RedirectResponse(f"{web.base(c)}/manage/settings", status_code=303)
+
+
+@router.post("/manage/settings/test")
+def set_test(request: Request, is_test: str = Form(""), db: Session = Depends(get_db)):
+    """Make the campaign in the address a test campaign (every VTT piece shows), or not. Admins only."""
+    user, denied = web.require(request, is_admin, "Only admins make a campaign a test one.")
+    if denied:
+        return denied
+    c = web.campaign(db)
+    if c is not None:
+        c.is_test = bool(is_test)
+        db.commit()
+        access.invalidate()
+        request.session["toast"] = f"{c.name} is {'a test campaign: every VTT piece shows here' if c.is_test else 'no longer a test campaign'}."
+    return RedirectResponse(f"{web.base(c)}/manage/settings#vtt", status_code=303)
+
+
+@router.post("/manage/settings/vtt/{key}")
+def switch_piece(request: Request, key: str, on: str = Form(""), db: Session = Depends(get_db)):
+    """Switch a finished VTT piece on or off for this campaign's table: its DM or an admin."""
+    user, denied = web.require(request, can_edit_settings, SETTINGS_DENIED)
+    if denied:
+        return denied
+    c = web.campaign(db)
+    if c is not None:
+        request.session["toast"] = vtt.switch(c, key, bool(on))
+        db.commit()
+        access.invalidate()
+    return RedirectResponse(f"{web.base(c)}/manage/settings#vtt", status_code=303)
 
 
 @router.post(BACK + "/characters/{character_id:int}/move")
