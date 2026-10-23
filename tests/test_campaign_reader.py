@@ -66,12 +66,14 @@ def test_the_quest_board(player, db):  # noqa: F811
         quest_moment(db, n, text)
     page = player.get("/c/main/campaign?tab=quests").text
     board = page[page.index('id="t-quests"'):page.index('id="t-relationships"')]
-    assert '<div id="t-world" hidden>' in page and 'id="t-quests" class="quest-board">' in page  # ?tab= picks the tab
+    assert '<div id="t-world" hidden>' in page and 'id="t-quests" class="quest-log">' in page  # ?tab= picks the tab
     card = board[board.index(f'id="quest-{quest.id}"'):]
-    assert f'Given by <a class="ent" href="/c/main/campaign?open={lil.id}">Lillippi Lemon</a>' in card and "Since Session 1" in card
-    assert "Climb the tower." in card and "1 earlier" in card and card.index("Lillippi asked for help.") < card.index("A key turned up.")
+    assert f'Given by <a class="ent" href="/c/main/campaign?open={lil.id}">Lillippi Lemon</a>' in card and "since Session 1" in card
+    # Progress, newest first: every key moment, the latest marked as where the quest stands now
+    assert "Climb the tower." in card and card.index("A key turned up.") < card.index("Lillippi asked for help.") and '<li class="now">' in card
+    assert '<span class="note">Session 4 · 4 updates · from Lillippi Lemon</span>' in board  # the quest log's list
     assert f'<a class="chip-link" href="/c/main/campaign?open={lil.id}">Lillippi Lemon</a>' in card  # who and where
-    assert "Clear the road" in board and "1 open · 1 done" in board  # done quests, one line each
+    assert "Clear the road" in board and 'data-ql-view="done" aria-pressed="false">Done <span class="ls-n">1</span>' in board  # done quests under Done
     # Sessions pass without it: after three, it says so (a fact, not advice)
     def quiet_session(n):
         s = db.scalar(select(GameSession).where(GameSession.number == n))
@@ -92,8 +94,9 @@ def test_the_quest_board(player, db):  # noqa: F811
     assert "No key moments since Session 4" in page
     # The Reader says which quests an entry is part of, linking to the board
     assert f'href="/c/main/campaign?tab=quests&amp;open={quest.id}" data-goto-quest="{quest.id}"' in player.get(f"/c/main/campaign?open={lil.id}").text
-    # A quest's address opens the Quests tab on its card
-    assert f'class="section quest-board-card sel" id="quest-{quest.id}"' in page and '<div id="t-world" hidden>' in page
+    # A quest's address opens the Quests tab on its journal, picked in the quest log
+    assert f'id="quest-{quest.id}" data-ql-journal="{quest.id}">' in page and '<div id="t-world" hidden>' in page
+    assert f'class="ql-item open sel" data-ql-id="{quest.id}"' in page
 
 
 def test_relationships_and_connections(player, db):  # noqa: F811
@@ -144,7 +147,8 @@ def test_hidden_entries_and_quest_status_are_for_the_dm(monkeypatch, db):
     r = dm.post(f"/campaign/{quest.id}/quest", data={"open": "0"}, follow_redirects=False)
     db.refresh(quest)
     assert quest.quest_open is False and r.headers["location"] == f"/c/main/campaign?open={quest.id}"
-    assert f'class="qb-done-row sel" id="quest-{quest.id}"' in dm.get(f"/c/main/campaign?open={quest.id}").text  # now under Done
+    done = dm.get(f"/c/main/campaign?open={quest.id}").text  # now under Done, which the quest log shows
+    assert f'class="ql-item done sel" data-ql-id="{quest.id}"' in done and 'data-ql-view="done" aria-pressed="true"' in done and "Reopen" in done
     dm.post(f"/campaign/{widow.id}/quest", data={"open": "0"})  # not a quest: nothing changes
     db.refresh(widow)
     assert widow.quest_open is None

@@ -160,7 +160,7 @@ def seen_in_sessions(db: Session, campaign_id: int) -> tuple[int | None, dict[in
 @router.get("/campaign")
 def campaign_page(request: Request, open: str = "", tab: str = "", at: str = "", db: Session = Depends(get_db)):
     """The Campaign page (roadmap step 11; Brett 2026-10-22): tabs World (the Reader: names down the left, one entry
-    on the page), Quests (the board), Relationships (family trees, other ties, anyone's connections), Glossary and
+    on the page), Quests (the quest log), Relationships (family trees, other ties, anyone's connections), Glossary and
     Map (app/atlas.py; menu bar Option B). `?open=<id>` is an entry's address (a quest's opens Quests); `?tab=` picks
     a tab; `?tab=map&at=<place>` centers the map on that place ("Show on map")."""
     from app import atlas
@@ -190,7 +190,7 @@ def campaign_page(request: Request, open: str = "", tab: str = "", at: str = "",
             if kind != EntityKind.QUEST and (rows := [e for e in entries if e.kind == kind]):
                 groups.append((title, rows))
         glossary = list(db.scalars(select(GlossaryTerm).where(GlossaryTerm.campaign_id == campaign.id).order_by(GlossaryTerm.term)))
-        board = campaign_views.quest_board(db, campaign.id, quests, visible, latest)
+        board = campaign_views.quest_board(db, campaign.id, quests + done, visible, latest)
         fams = campaign_views.families(db, campaign.id, visible)
         tie = campaign_views.ties(db, campaign.id, visible)
         # The entry to show: the one asked for, else something from the last session, else the first one
@@ -200,12 +200,14 @@ def campaign_page(request: Request, open: str = "", tab: str = "", at: str = "",
         selected = (asked if asked and asked.kind != EntityKind.QUEST else None) or next(iter(recent + reference), None)
     if tab not in ("world", "quests", "relationships", "glossary", "map"):
         tab = "quests" if asked is not None and asked.kind == EntityKind.QUEST else "world"
+    # The quest log shows one quest: the one asked for, else the first open one, else the first done one
+    quest = next((c for c in board if asked is not None and c["q"].id == asked.id), None) or next(iter(board), None)
     article = {**entity_context(db, selected, user), "where": "reader"} if selected else {}
     return templates.TemplateResponse(
         request, "campaign.html", {"campaign": campaign, "quests": quests, "done_quests": done, "groups": groups, "glossary": glossary,
                                    "editor": editor, "seen": seen, "latest": latest, "selected": selected, "tab": tab,
                                    "hidden_count": sum(1 for _, rows in groups for e in rows if e.status != Status.PUBLISHED),
-                                   "board": board, "families": fams, "ties": tie, "open_quest": asked.id if asked is not None else None,
+                                   "board": board, "families": fams, "ties": tie, "open_quest": quest["q"].id if quest else None,
                                    "map": atlas.view(at if tab == "map" else ""),
-                                   "toast": request.session.pop("toast", None), **article}
+                                   "toast": request.session.pop("toast", None), "qln": entity_linker(db, campaign.id, include_drafts=editor) if campaign else Linker(None, {}), **article}
     )

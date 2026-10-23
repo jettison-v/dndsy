@@ -5,7 +5,7 @@
 {% from "_lists.html" import view_switch %}
 {# The Campaign page (roadmap step 11; Brett 2026-10-22, docs/mockups/campaign-reading.html option E and
    docs/mockups/campaign-tabs.html Q1, R1 with R2). Tabs: World (the Reader: names down the left, one entry on the
-   page; the list uses the shared list engine, app.js "Lists"), Quests (the board: what the party is doing), Relationships
+   page; the list uses the shared list engine, app.js "Lists"), Quests (the quest log: the quests down the left, the one picked on the right), Relationships
    (family trees, the other ties, anyone's connections in a window) and Glossary. ?tab= picks one. #}
 <main class="page sheet wide campaign-page">
   <div class="title-row"><h1>{{ campaign.name if campaign else "Campaign" }}</h1>
@@ -53,50 +53,56 @@
     </div>
   </div>
 
-  {# Quests: the board (Q1). Everything about each open quest at once; finished ones one line each. #}
-  <div id="t-quests" class="quest-board"{% if tab != "quests" %} hidden{% endif %}>
-    <div class="quest-board-head"><span class="note">{{ quests | length }} open · {{ done_quests | length }} done</span>
-      {% if editor %}<a class="btn" href="#" data-modal-url="/campaign/new?kind=quest">+ New quest</a>{% endif %}</div>
-    {% for c in board %}{% set q = c.q %}
-    <section class="section quest-board-card{{ ' sel' if open_quest == q.id }}" id="quest-{{ q.id }}">
-      <div class="qb-top"><h2>{{ q.name }}</h2> <span class="tag draft">Open</span>{% if q.status.value != "published" %} <span class="tag faint" title="Only the DM, reviewers and admins see it">Hidden</span>{% endif %}
-        <span class="note qb-meta">{% if c.givers %}Given by {% for g in c.givers %}<a class="ent" href="{{ entry_url(g.id) }}">{{ g.name }}</a>{{ " and " if not loop.last }}{% endfor %}{% endif %}
-          {%- if c.givers and c.moments %} · {% endif %}{% if c.moments %}Since {{ c.moments[0].label }}{% endif %}</span></div>
-      {% if q.summary %}<div class="story">{{ q.summary }}</div>{% endif %}
-      {% if not (c.moments or c.who or c.facts) %}
-      <p class="muted">No key moments or facts yet. <a class="qb-add" href="{{ entry_url(q.id) }}">Add what the party learned</a></p>
-      {% else %}
-      <div class="qb-cols">
-        <div><h3>Progress</h3>
-          {% if c.moments | length > 3 %}<details class="qb-earlier"><summary class="note">{{ c.moments | length - 3 }} earlier</summary>
-            <ol class="moment-line">{% for m in c.moments[:-3] %}<li>{{ m.e.text }}<span class="note">{{ m.label }}</span></li>{% endfor %}</ol></details>{% endif %}
-          {% if c.moments %}<ol class="moment-line">{% for m in c.moments[-3:] %}<li>{{ m.e.text }}<span class="note">{{ m.label }}</span></li>{% endfor %}</ol>
-          {% else %}<p class="muted">No key moments yet.</p>{% endif %}
-          {% if c.quiet %}<p class="note">No key moments since {{ c.quiet }}.</p>{% endif %}</div>
-        <div><h3>Who and where</h3>
-          {% if c.who %}<div class="part-of">{% for e in c.who %}<a class="chip-link" href="{{ entry_url(e.id) }}">{{ e.name }}</a>{% endfor %}</div>
-          {% else %}<p class="muted">No one yet.</p>{% endif %}
-          <h3>What the table knows</h3>
-          {% if c.facts %}<ul class="plain">{% for f in c.facts %}<li>{% if f.kind == "correction" %}<span class="tag edited">Correction</span> {% endif %}{{ f.text }}</li>{% endfor %}</ul>
-          {% else %}<p class="muted">Nothing yet.</p>{% endif %}
-          <a class="qb-add" href="{{ entry_url(q.id) }}">Add what the party learned</a></div>
-      </div>
-      {% endif %}
-      {% if editor %}<div class="reader-foot row">
-        <a class="btn primary" href="#" data-modal-url="/campaign/{{ q.id }}/edit" data-modal-size="large">Edit</a>
-        <form method="post" action="/campaign/{{ q.id }}/quest"><input type="hidden" name="open" value="0"><button class="btn">Mark done</button></form>
-      </div>{% endif %}
-    </section>
-    {% else %}<section class="section"><p class="muted">No open quests.{% if editor %} Use <b>+ New quest</b> to add one.{% endif %}</p></section>{% endfor %}
-    {% if done_quests %}
-    <section class="section qb-done">
-      <h3 class="divider" style="margin-top:0">Done <span class="count">{{ done_quests | length }}</span></h3>
-      {% for q in done_quests %}{% set s = seen.get(q.id) %}
-      <a class="qb-done-row{{ ' sel' if open_quest == q.id }}" id="quest-{{ q.id }}" href="{{ entry_url(q.id) }}"><span><b>{{ q.name }}</b>{% if q.summary %} <span class="muted">· {{ q.summary | truncate(110) }}</span>{% endif %}</span>
-        <span class="note">{% if s %}Last moment {{ s.label }}{% endif %}</span></a>
-      {% endfor %}
-    </section>
-    {% endif %}
+  {# Quests: a quest log (Brett, 2026-10-23, docs/mockups/campaign-v2.html). The quests down the left (Open or Done), the one
+     picked on the right: what the party is trying to do, its progress newest first, who and where, what the table knows. #}
+  {% set shown_quest = board | selectattr("q.id", "equalto", open_quest) | first if open_quest else none %}
+  {% set shown_done = shown_quest and shown_quest.q.quest_open == false %}
+  <div id="t-quests" class="quest-log"{% if tab != "quests" %} hidden{% endif %}>
+    <div class="reader">
+      <aside class="reader-nav" aria-label="Quests">
+        <div class="seg ls-views" role="group" aria-label="Which quests">
+          <button type="button" data-ql-view="open" aria-pressed="{{ 'false' if shown_done else 'true' }}">Open <span class="ls-n">{{ quests | length }}</span></button>
+          <button type="button" data-ql-view="done" aria-pressed="{{ 'true' if shown_done else 'false' }}">Done <span class="ls-n">{{ done_quests | length }}</span></button>
+        </div>
+        <div class="reader-rows">
+          {% for c in board %}{% set q = c.q %}{% set state = "done" if q.quest_open == false else "open" %}
+          <a class="ql-item {{ state }}{{ ' sel' if open_quest == q.id }}" data-ql-id="{{ q.id }}" data-ql-state="{{ state }}" href="{{ cbase }}/campaign?tab=quests&amp;open={{ q.id }}"{% if state != ("done" if shown_done else "open") %} hidden{% endif %}>
+            <b>{{ q.name }}{% if q.status.value != "published" %} <span class="tag faint" title="Only the DM, reviewers and admins see it">Hidden</span>{% endif %}</b>
+            <span class="note">{% if c.moments %}{{ c.moments[-1].short }} · {{ c.moments | length }} update{{ "s" if c.moments | length != 1 }}{% else %}No progress yet{% endif %}
+              {%- if c.givers %} · from {{ c.givers | map(attribute="name") | join(" and ") }}{% endif %}</span></a>
+          {% endfor %}
+        </div>
+        <p class="note ls-empty" data-ql-empty="open"{% if quests or shown_done %} hidden{% endif %}>No open quests.</p>
+        <p class="note ls-empty" data-ql-empty="done"{% if done_quests or not shown_done %} hidden{% endif %}>No finished quests yet.</p>
+        {% if editor %}<a class="btn link small ql-new" href="#" data-modal-url="/campaign/new?kind=quest">+ New quest</a>{% endif %}
+      </aside>
+      {% for c in board %}{% set q = c.q %}{% set done = q.quest_open == false %}
+      <article class="reader-article quest-journal" id="quest-{{ q.id }}" data-ql-journal="{{ q.id }}"{% if open_quest != q.id %} hidden{% endif %}>
+        <div class="ql-head"><h2>{{ q.name }}</h2> <span class="tag {{ 'done' if done else 'draft' }}">{{ "Done" if done else "Open" }}</span>
+          {%- if q.status.value != "published" %} <span class="tag faint" title="Only the DM, reviewers and admins see it">Hidden</span>{% endif %}
+          {% if editor %}<span class="row">
+            <a class="btn small" href="#" data-modal-url="/campaign/{{ q.id }}/edit" data-modal-size="large">Edit</a>
+            <form method="post" action="/campaign/{{ q.id }}/quest"><input type="hidden" name="open" value="{{ '1' if done else '0' }}"><button class="btn small">{{ "Reopen" if done else "Mark done" }}</button></form>
+          </span>{% endif %}</div>
+        {% if c.givers or c.moments %}<p class="note">{% if c.givers %}Given by {% for g in c.givers %}<a class="ent" href="{{ entry_url(g.id) }}">{{ g.name }}</a>{{ " and " if not loop.last }}{% endfor %}{% endif %}
+          {%- if c.givers and c.moments %} · {% endif %}{% if c.moments %}{{ "since" if c.givers else "Since" }} {{ c.moments[0].short }}{% endif %}</p>{% endif %}
+        {% if q.summary %}<div class="story">{{ qln.text(q.summary) }}</div>{% endif %}
+        <div class="reader-cols">
+          <div><h3>Progress</h3>
+            {% if c.moments %}<ol class="ql-steps">{% for m in c.moments | reverse %}<li{% if loop.first and not done %} class="now"{% endif %}><b>{{ m.short }}</b> · {{ qln.text(m.e.text) }}</li>{% endfor %}</ol>
+            {% else %}<p class="muted">No key moments yet.</p>{% endif %}
+            {% if c.quiet %}<p class="note">No key moments since {{ c.quiet }}.</p>{% endif %}</div>
+          <div><h3>Who and where</h3>
+            {% if c.who %}<div class="part-of">{% for e in c.who %}<a class="chip-link" href="{{ entry_url(e.id) }}">{{ e.name }}</a>{% endfor %}</div>
+            {% else %}<p class="muted">No one yet.</p>{% endif %}
+            <h3>What the table knows</h3>
+            {% if c.facts %}<ul class="plain">{% for f in c.facts %}<li>{% if f.kind == "correction" %}<span class="tag edited">Correction</span> {% endif %}{{ qln.text(f.text) }}</li>{% endfor %}</ul>
+            {% else %}<p class="muted">Nothing yet.</p>{% endif %}
+            <p class="note"><a href="{{ entry_url(q.id) }}">+ Add what the party learned</a></p></div>
+        </div>
+      </article>
+      {% else %}<article class="reader-article"><p class="muted">No quests yet.{% if editor %} Use <b>+ New quest</b> to add one.{% endif %}</p></article>{% endfor %}
+    </div>
   </div>
 
   {# Relationships: a tree per family (R1), the other ties as lists; any name opens its connections (R2) #}

@@ -48,7 +48,7 @@ def givers(db: Session, quest: Entity, visible: Visible) -> list[Entity]:
 
 
 def quest_card(db: Session, quest: Entity, visible: Visible, order: dict[int, int], latest_index: int | None) -> dict:
-    """One quest on the board: who gave it, where it started, its key moments, who and where it involves, the
+    """One quest in the quest log: who gave it, its key moments (oldest first), who and where it involves, the
     table's facts, and whether it has gone quiet."""
     moments = entities.moments(db, quest)
     gave = givers(db, quest, visible)

@@ -1700,23 +1700,25 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .head-link { margin-left: var(--sp-2); font-size: var(--fs-xs); font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--link); }
 
 /* Quests: the board */
-.quest-board-head { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-3); }
-.quest-board-head .btn { margin-left: auto; }
-.quest-board-card { border-left: 3px solid var(--amber); scroll-margin-top: calc(var(--stick-top, 62px) + var(--tabs-h, 41px) + var(--sp-3)); }
-.quest-board-card.sel { box-shadow: 0 0 0 1px var(--blue); }
-.qb-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2) var(--sp-3); }
-.qb-top { margin-bottom: var(--sp-3); }
-.qb-top h2 { margin: 0; font-size: var(--fs-lg); flex: 0 1 auto; min-width: 0; }
-.qb-meta { margin-left: auto; }
-.quest-board-card .story { margin: var(--sp-3) 0 var(--sp-4); font-size: var(--fs-md); padding: var(--sp-3) var(--sp-4); }
-.qb-cols { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: var(--sp-6); }
-.quest-board h3:not(.divider) { font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); margin: 0 0 var(--sp-2); }
-.qb-cols > div > h3:not(:first-child) { margin-top: var(--sp-4); }
-.qb-earlier > summary { cursor: pointer; margin-bottom: var(--sp-2); }
-.qb-add { display: inline-block; margin-top: var(--sp-2); font-size: var(--fs-sm); }
-.qb-done-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--sp-4); padding: var(--sp-2); border-top: 1px solid var(--line-soft); border-radius: var(--r-sm); color: var(--text); text-decoration: none; scroll-margin-top: calc(var(--stick-top, 62px) + var(--tabs-h, 41px) + var(--sp-3)); }
-.qb-done-row:hover { background: var(--row-hover); }
-.qb-done-row.sel { background: var(--selected-bg); }
+/* Quests: a quest log (docs/mockups/campaign-v2.html), on the Reader's layout */
+.ql-item { display: grid; gap: 2px; padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); border-left: 3px solid var(--amber); color: var(--text); text-decoration: none; }
+.ql-item[hidden] { display: none; }
+.ql-item:hover { background: var(--row-hover); }
+.ql-item.done { border-left-color: var(--line-strong); }
+.ql-item.sel { background: var(--selected-bg); }
+.ql-item b { color: var(--text-strong); font-size: var(--fs-sm); }
+.ql-item .note { font-size: var(--fs-xs); }
+.ql-new { align-self: flex-start; }
+.ql-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); margin-bottom: var(--sp-1); }
+.ql-head h2 { margin: 0; font-size: var(--fs-xl); flex: 0 1 auto; }
+.ql-head .row { margin-left: auto; }
+.ql-head form { margin: 0; }
+.quest-journal .story { margin: var(--sp-4) 0; }
+.quest-journal h3 { font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); margin: 24px 0 8px; }
+.ql-steps { list-style: none; margin: 0; padding: 0 0 0 var(--sp-4); border-left: 2px solid var(--line); display: grid; gap: var(--sp-3); }
+.ql-steps li { position: relative; font-size: var(--fs-sm); }
+.ql-steps li::before { content: ""; position: absolute; left: calc(-1 * var(--sp-4) - 6px); top: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--surface); border: 2px solid var(--amber); }
+.ql-steps li.now::before { background: var(--amber); }
 
 /* Relationships: a tree per family, the other ties */
 .ft-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: var(--sp-4); }
@@ -1760,7 +1762,6 @@ a.cx-node:hover { border-color: var(--text); }
 .cx-legend svg { vertical-align: middle; margin-right: var(--sp-1); }
 .cx .cx-list { display: none; }
 @media (max-width: 900px) {
-  .qb-cols { grid-template-columns: 1fr; gap: var(--sp-4); }
   .ft-wrap { grid-template-columns: 1fr; }
 }
 @media (max-width: 640px) {
