@@ -16,22 +16,25 @@ record; the artifact is regenerated from it when it changes.
 This changes two lines of `docs/BRIEF.md` ("won't replace D&D Beyond as the character sheet or the VTT" and "no
 DM-only features"): askdnd now aims to be the VTT, and the DM gets their own tools.
 
-## How we build it: one codebase, a VTT switch, two sites (decided 2026-10-22)
+## How we build it: one site, a VTT switch, a test campaign (decided 2026-10-22)
 
 - **Table Assistant (TA)** is the name for askdnd as the table uses it today. It isn't a separate copy: it's askdnd
   with the VTT switched off. Small TA improvements keep coming as the table plays.
 - **One `main` branch, no long-lived VTT branch.** Phase 1 rewrites the pages TA uses every session (Battle, HP,
   slots), so two branches would drift and every TA fix would need copying by hand. Each TA fix or VTT step goes on a
   short branch (days, not weeks), opens a pull request, and merges into `main` after CI passes.
-- **A VTT switch per campaign.** VTT pieces merge early but stay hidden until switched on. Releasing a piece to the
-  table means switching it on for their campaign, and it can be switched back off.
-- **Two sites from the same code:**
-  - **Table site (TA):** what the table plays on, VTT off. beta.askdnd.ai now; **askdnd.ai once legacy retires**.
-  - **VTT preview:** its own Railway environment and database, filled from a copy of beta's data (like
-    `scripts/pull_beta.sh`), VTT on. Brett and the DM try VTT pieces there.
-- **Safety:** no deploys on game night; database changes add before they remove, so code on either site never
-  breaks on the other's schema; Railway rollback and the nightly backup are the safety net.
-- Set up as Phase 0 item 0.1, right after step 10 and the Railway cleanup. The step-by-step goes in
+- **One site** (beta.askdnd.ai now; **askdnd.ai once legacy retires**).
+- **A VTT switch per campaign.** VTT pieces merge early but stay hidden until switched on. The table's campaign keeps
+  it off; a **test campaign** for Brett and the DM has it on (multiple campaigns come with step 10). Releasing a piece
+  to the table means switching it on for their campaign, and it can be switched back off.
+- **Testing before it ships:** CI on every pull request, and each change tried on the local copy of beta's data
+  (`scripts/pull_beta.sh`).
+- **Safety:** no deploys on game night; database changes add before they remove; Railway rollback and the nightly
+  backup are the safety net.
+- **Considered and left for later: a VTT preview site** (a second Railway environment where code lands before the
+  table site). The tests, the local copy of real data and the switch cover most of what it would protect against;
+  add it if something ever slips through to the table.
+- Set up as Phase 0 item 0.1 (S), right after step 10 and the Railway cleanup. The step-by-step goes in
   `docs/SETUP_LOG.md` as it's built.
 
 ## Effort and priority
@@ -48,7 +51,7 @@ advise.
 
 ## Phases
 
-**Phase 0, Foundations.** 0.1 One codebase, a VTT switch, two sites (above) M core · 0.2 Finish data organization
+**Phase 0, Foundations.** 0.1 One site, a VTT switch, a test campaign (above) S core · 0.2 Finish data organization
 (step 10) L core, in progress · 0.3 Live table connection (WebSockets; changes within a second) M core · 0.4 Play log
 with undo M core · 0.5 File storage for the campaign (S3 `v2/`) M core · 0.6 Rules content as data (SRD 5.2; DM
 creations in the database, never the public repo) M core · 0.7 Finish the Railway cleanup (step 12) S core.
