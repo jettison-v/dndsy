@@ -1288,13 +1288,11 @@
   function showRolling(w) {
     w.classList.add('result');
     w.innerHTML = '<button type="button" class="rp-x" aria-label="Close">×</button><div class="rw-result">' + D20SVG + '<div class="rp-body"><div class="rp-res">Rolling…</div></div></div>';
-    const spin = animate();
-    if (spin) w.querySelector('.rp-die').classList.add('tumble');
-    w._ready = new Promise(res => { w._skip = res; setTimeout(res, spin ? 550 : 0); });
+    w._ready = Promise.resolve();  // with the animation on, the dice on stage (below) take the time instead
     place(w, w._anchor);
   }
   function showResult(w, e, focus) {
-    w._ready.then(() => {
+    w._ready.then(() => animate() ? stage(e, focus) : null).then(() => {
       if (!w.isConnected) return;
       w._entry = e;
       const dieEl = w.querySelector('.rp-die');
@@ -1318,6 +1316,90 @@
       place(w, w._anchor);
     });
   }
+  // ---------------------------------------------------------------- dice you can see
+  // (Brett, 2026-10-23; docs/mockups/dice-on-screen.html, option A) Faceted gem dice drawn with the roll's real
+  // values: your own roll tumbles into the middle of the page and lands, with a card saying what it was (click
+  // anywhere to skip); someone else's gets a small die in its notice. Gold for d20s, red for damage, green for
+  // healing; a natural 20 glows, a natural 1 goes dull. Only with the animation switch on (Table rolls sidebar).
+  const pt = (r, deg) => [50 + r * Math.cos(deg * Math.PI / 180), 50 + r * Math.sin(deg * Math.PI / 180)].map(n => n.toFixed(1)).join(',');
+  const GEM = {  // each die seen face-on, in a 100×100 box: [points, light] for each face, and where its number sits
+    20: { y: 55, faces: [['7,26 50,2 50,24', 'hi'], ['50,2 93,26 50,24', 'hi'], ['7,26 50,24 23,70', 'mid'], ['93,26 77,70 50,24', 'mid'],
+      ['7,26 23,70 7,74', 'lo'], ['93,26 93,74 77,70', 'lo'], ['7,74 23,70 50,98', 'lo'], ['93,74 50,98 77,70', 'lo'],
+      ['23,70 77,70 50,98', 'lo'], ['50,24 77,70 23,70', 'top']] },
+    12: { y: 52, faces: [0, 1, 2, 3, 4].map(i => [[pt(27, -90 + 72 * i), pt(48, -90 + 72 * i), pt(48, -54 + 72 * i), pt(48, -18 + 72 * i), pt(27, -18 + 72 * i)].join(' '),
+      ['hi', 'mid', 'lo', 'lo', 'hi'][i]]).concat([[[0, 1, 2, 3, 4].map(i => pt(27, -90 + 72 * i)).join(' '), 'top']]) },
+    10: { y: 40, faces: [['50,2 28,52 4,46', 'hi'], ['50,2 96,46 72,52', 'mid'], ['4,46 28,52 50,64 50,98', 'lo'], ['96,46 50,98 50,64 72,52', 'lo'], ['50,2 72,52 50,64 28,52', 'top']] },
+    8: { y: 40, faces: [['50,4 6,50 50,62', 'hi'], ['50,4 94,50 50,62', 'mid'], ['6,50 50,96 50,62', 'lo'], ['94,50 50,62 50,96', 'lo'], ['50,4 22,52 78,52', 'top']] },
+    6: { y: 50, faces: [['6,6 94,6 80,20 20,20', 'hi'], ['6,6 20,20 20,80 6,94', 'mid'], ['94,6 94,94 80,80 80,20', 'lo'], ['6,94 20,80 80,80 94,94', 'lo'], ['20,20 80,20 80,80 20,80', 'top']] },
+    4: { y: 64, faces: [['50,4 4,92 28,78 50,36', 'hi'], ['50,4 50,36 72,78 96,92', 'mid'], ['4,92 96,92 72,78 28,78', 'lo'], ['50,36 72,78 28,78', 'top']] },
+  };
+  const sidesOf = f => { const s = +((/d(\d+)/.exec(f || '') || [])[1] || 6); return GEM[s] ? s : s === 100 ? 10 : s > 12 ? 20 : s > 6 ? 8 : 6; };
+  function gem(sides, value, look, size) {
+    const g = GEM[GEM[sides] ? sides : 6], d = document.createElement('div');
+    d.className = 'gem ' + look + (size ? ' ' + size : '');
+    d.innerHTML = '<span class="gem-shadow"></span><span class="gem-body"><svg viewBox="0 0 100 100" aria-hidden="true">'
+      + g.faces.map(([p, t]) => '<polygon class="f-' + t + '" points="' + p + '"/>').join('') + '</svg><b class="gem-n" style="top:' + g.y + '%"></b></span>';
+    d._value = value; d._sides = sides;
+    return d;
+  }
+  // Spin a die in: its number flickers while it tumbles, then it lands on its value
+  function tumble(d, delay, ms) {
+    const n = d.querySelector('.gem-n');
+    d.style.setProperty('--delay', delay + 'ms');
+    d.classList.add('rolling');
+    const t = setInterval(() => { n.textContent = 1 + Math.floor(Math.random() * d._sides); }, 60);
+    return new Promise(res => { d._land = () => { clearInterval(t); n.textContent = d._value; d.classList.remove('rolling'); d.classList.add('landed'); res(); };
+      d._timer = setTimeout(d._land, ms + delay); });
+  }
+  function sparks(d) {
+    for (let i = 0; i < 10; i++) { const s = document.createElement('i'); s.className = 'gem-spark'; s.style.setProperty('--a', (i * 36) + 'deg'); d.append(s); }
+  }
+  // Which dice a result shows: the d20s (both, with Advantage; one per ray), or every damage or healing die
+  function diceFor(e, focus) {
+    const heal = ['heal', 'temp'].includes(e.kind);
+    if (focus === 'bonus' && e.bonus) return [{ s: sidesOf(e.bonus.formula), v: e.bonus.dice[0], look: 'gold' }];
+    const p = focus === 'damage' && e.damage ? e.damage : e.main;
+    if (p === e.main && D20.includes(e.kind)) {
+      const rays = (p.parts || []).filter(x => x.kept != null), src = rays.length > 1 ? rays : [p];
+      return src.flatMap(r => r.dice.map((v, i) => ({ s: 20, v, look: 'gold', off: r.dice.length > 1 && i !== r.kept_at,
+                                                      nat: r.dice.length > 1 && i !== r.kept_at ? null : v === 20 ? 20 : v === 1 ? 1 : null })));
+    }
+    const lines = p.parts && p.parts.length ? p.parts : [p];
+    return lines.flatMap(ln => ln.dice.map(v => ({ s: sidesOf(ln.formula), v, look: heal ? 'jade' : e.kind === 'dice' ? 'gold' : 'ruby' })));
+  }
+  let stageEl = null;
+  function stageClear() { if (stageEl) { stageEl.querySelectorAll('.gem').forEach(d => { clearTimeout(d._timer); if (d._land) d._land(); }); stageEl.remove(); stageEl = null; } }
+  function stage(e, focus) {
+    stageClear();
+    const all = diceFor(e, focus), dice = all.slice(0, 12);
+    if (!dice.length) return Promise.resolve();
+    const el = stageEl = document.createElement('div');
+    el.className = 'dice-stage';
+    el.setAttribute('aria-hidden', 'true');  // the roll window says the same in words
+    el.innerHTML = '<div class="ds-dice"></div><div class="ds-card"></div>';
+    const box = el.querySelector('.ds-dice');
+    const landing = dice.map((x, i) => {
+      const d = gem(x.s, x.v, x.look + (x.off ? ' off' : '') + (x.nat === 20 ? ' crit' : x.nat === 1 ? ' fumble' : ''), dice.length > 4 ? 'mid' : '');
+      d.style.setProperty('--fx', (180 + 70 * (i % 3)) + 'px'); d.style.setProperty('--fy', (140 - 50 * (i % 4)) + 'px');
+      d.style.setProperty('--spin', (540 + 180 * (i % 3)) + 'deg');
+      box.append(d);
+      return tumble(d, i * 90, 850).then(() => { if (x.nat === 20) sparks(d); });
+    });
+    document.body.append(el);
+    const done = Promise.all(landing).then(() => {
+      if (el !== stageEl) return;
+      const dmg = focus === 'damage' && e.damage, total = dmg ? e.damage.total : focus === 'bonus' && e.bonus ? e.bonus.total : e.total;
+      const what = dmg ? (e.damage.crit ? 'Critical damage' : 'Damage') : e.label + (KIND_WORDS[e.kind] || '');
+      el.querySelector('.ds-card').innerHTML = '<span class="ds-what">' + esc(what) + (all.length > dice.length ? ' · ' + all.length + ' dice' : '') + '</span><b class="ds-total' + (!dmg && e.nat === 20 ? ' nat20' : !dmg && e.nat === 1 ? ' nat1' : '') + '">' + total + '</b>'
+        + (!dmg && e.nat && e.kind !== 'death' ? '<span class="ds-what">Natural ' + e.nat + '</span>' : '');
+      el.classList.add('landed');
+      setTimeout(() => { if (el === stageEl) { el.classList.add('gone'); setTimeout(() => { if (el === stageEl) stageClear(); }, 400); } }, 2600);
+    });
+    return Promise.race([done, new Promise(res => { el._skip = res; })]);
+  }
+  // Click or a key anywhere: land now and clear the stage (the roll window keeps the result)
+  ['pointerdown', 'keydown'].forEach(t => document.addEventListener(t, () => { if (stageEl) { const s = stageEl._skip; stageClear(); if (s) s(); } }, true));
+
   function payload(go) {
     const p = new URLSearchParams();
     if (go.follow) {
@@ -1465,7 +1547,6 @@
   function loadLog() { if (gmOn() && !loaded && log && window.htmx) htmx.trigger(log, 'rolls:load'); }
   const logShown = () => gmOn() && side && (phone.matches ? current() === 'full' : current() === 'open');
   // Others' rolls are in view on a phone's sheet too, unless it's down to its bar.
-  const othersShown = () => gmOn() && side && current() !== 'rail';
 
   if (side) {
     side.querySelector('.rs-toggle').addEventListener('click', e => {
@@ -1615,7 +1696,7 @@
     [...log.querySelectorAll('.roll-item[data-seq]')].reverse().forEach(li => {
       if (+li.dataset.seq > before) fresh.add(li.dataset.person);
       if (+li.dataset.seq > before && !li.dataset.mine) {
-        if (!othersShown()) notice(li);
+        notice(li);  // with its small die, even while the sidebar shows the roll (Brett, 2026-10-23)
         li.classList.remove('fresh'); void li.offsetWidth; li.classList.add('fresh');
       }
     });
@@ -1631,6 +1712,16 @@
     const av = li.querySelector('.roll-av').cloneNode(true);
     av.className = 'roll-av ' + [...li.classList].filter(c => c.startsWith('hue')).join(' ');
     n.append(av);
+    if (total) {  // a small die: the d20 they kept, else the total, tumbling in when the animation is on
+      const d20 = D20.some(k => li.classList.contains('kind-' + k)), kept = li.querySelector('.roll-dice u');
+      const dmgLine = li.querySelector('.roll-dmg-line b') && +li.dataset.seq !== +li.dataset.id;
+      const v = d20 && kept && !dmgLine ? kept.textContent : (dmgLine ? li.querySelector('.roll-dmg-line b').textContent : total.textContent);
+      const d = gem(d20 && !dmgLine ? 20 : sidesOf(li.querySelector('.roll-dice') && li.querySelector('.roll-dice').textContent), v,
+                    (dmgLine || li.classList.contains('kind-damage') ? 'ruby' : li.classList.contains('kind-heal') ? 'jade' : 'gold')
+                    + (li.classList.contains('nat20') && !dmgLine ? ' crit' : li.classList.contains('nat1') && !dmgLine ? ' fumble' : ''), 'tiny');
+      n.append(d);
+      if (animate()) tumble(d, 150, 650); else { d.querySelector('.gem-n').textContent = v; d.classList.add('landed'); }
+    }
     const what = li.querySelector('.roll-what').textContent.trim().replace(/\s+/g, ' ');
     const dmg = li.querySelector('.roll-dmg-line b');
     const t = document.createElement('span');

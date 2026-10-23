@@ -17,6 +17,11 @@
   --shadow: rgba(0, 0, 0, .45); --backdrop: rgba(0, 0, 0, .45); --backdrop-strong: rgba(0, 0, 0, .55); --backdrop-soft: rgba(0, 0, 0, .35);
   /* Player colors in table rolls (background, then text), one per character */
   --p0-bg: #3a3226; --p1-bg: #2c2f3a; --p2-bg: #2a3329; --p3-bg: #332a33; --p3: #c4a0f0; --p4-bg: #3a2828; --p5-bg: #283536; --p5: #7fd0cf;
+  /* Dice you can see (Table rolls): gem sets, light to dark, then the number; a natural 20's glow */
+  --die-gold-hi: #f7d98f; --die-gold-mid: #d9a441; --die-gold-lo: #8a5f1c; --die-gold-ink: #2a1a05;
+  --die-ruby-hi: #f3a196; --die-ruby-mid: #c4473d; --die-ruby-lo: #6e1b17; --die-ruby-ink: #fff4f2;
+  --die-jade-hi: #aee9c3; --die-jade-mid: #4fae73; --die-jade-lo: #1f5a35; --die-jade-ink: #06180d;
+  --die-glow: rgba(91, 191, 127, .6);
   --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);  /* Reminders (the bell) */
   /* Action economy: the only colored headings (DESIGN.md › Section headings) */
   --k-action: #ef6b6b; --k-bonus: var(--amber); --k-reaction: #6fa8ff; --k-other: #b48ae8;
@@ -1207,6 +1212,54 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 @keyframes roll-note { from { transform: translateX(-12px); opacity: 0; } }
 @keyframes roll-tumble { 0% { transform: translateY(-40px) rotate(0) scale(.6); opacity: 0; } 40% { opacity: 1; } 70% { transform: translateY(6px) rotate(540deg) scale(1.05); } 100% { transform: none; } }
 @media (prefers-reduced-motion: reduce) { .roll-win, .roll-note, .roll-item.fresh { animation: none; } }
+/* Dice you can see (app.js "dice you can see"; docs/mockups/dice-on-screen.html, option A) */
+.gem { --size: 112px; --hi: var(--die-gold-hi); --mid: var(--die-gold-mid); --lo: var(--die-gold-lo); --ink: var(--die-gold-ink);
+  position: relative; width: var(--size); height: var(--size); perspective: 500px; flex: none; }
+.gem.ruby { --hi: var(--die-ruby-hi); --mid: var(--die-ruby-mid); --lo: var(--die-ruby-lo); --ink: var(--die-ruby-ink); }
+.gem.jade { --hi: var(--die-jade-hi); --mid: var(--die-jade-mid); --lo: var(--die-jade-lo); --ink: var(--die-jade-ink); }
+.gem.mid { --size: 76px; } .gem.tiny { --size: 30px; }
+.gem-body { position: absolute; inset: 0; display: block; filter: drop-shadow(0 6px 10px var(--shadow)); }
+.gem-body svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.gem polygon { stroke: var(--hi); stroke-width: 1.2; stroke-linejoin: round; stroke-opacity: .7; }
+.gem .f-hi { fill: var(--hi); } .gem .f-mid { fill: var(--mid); } .gem .f-lo { fill: var(--lo); }
+.gem .f-top { fill: color-mix(in srgb, var(--hi) 45%, var(--mid)); }
+.gem-n { position: absolute; left: 50%; transform: translate(-50%, -50%); font: 800 calc(var(--size) * .3) var(--sans); color: var(--ink);
+  font-variant-numeric: tabular-nums; line-height: 1; text-shadow: 0 1px 0 var(--hi); }
+.gem-shadow { position: absolute; left: 15%; right: 15%; bottom: -10%; height: 14%; border-radius: 50%; background: var(--backdrop-strong); filter: blur(4px); }
+.gem.tiny .gem-shadow, .gem.tiny .gem-body { filter: none; } .gem.tiny .gem-shadow { display: none; }
+.gem.tiny .gem-n { text-shadow: none; }
+.gem.rolling .gem-body { animation: gem-tumble .85s cubic-bezier(.2, .75, .3, 1) var(--delay, 0ms) both; }
+.gem.rolling .gem-shadow { animation: gem-shadow .85s ease-out var(--delay, 0ms) both; }
+.gem.landed .gem-body { animation: gem-land .28s ease-out; }
+.gem.crit .gem-body { filter: drop-shadow(0 0 16px var(--die-glow)) drop-shadow(0 6px 10px var(--shadow)); }
+.gem.crit.landed .gem-body { animation: gem-land .28s ease-out, gem-glow 1.4s ease-in-out .28s 2; }
+.gem.fumble.landed .gem-body { filter: grayscale(.7) brightness(.75); animation: gem-shake .4s ease-in-out; }
+.gem.off { opacity: .45; transform: scale(.82); }  /* the d20 not kept (Advantage or Disadvantage) */
+.gem-spark { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px; border-radius: 50%; background: var(--die-jade-hi); animation: gem-spark .7s ease-out forwards; }
+@keyframes gem-tumble {
+  0% { transform: translate(var(--fx, 200px), var(--fy, 120px)) rotateX(0) rotateY(0) rotateZ(0) scale(.45); opacity: 0; }
+  12% { opacity: 1; }
+  55% { transform: translate(-14px, 10px) rotateX(calc(var(--spin, 540deg) * .9)) rotateY(calc(var(--spin, 540deg) * .6)) rotateZ(var(--spin, 540deg)) scale(1.08); }
+  75% { transform: translate(5px, -8px) rotateX(360deg) rotateY(360deg) rotateZ(calc(var(--spin, 540deg) + 12deg)) scale(.97); }
+  100% { transform: translate(0, 0) rotateX(360deg) rotateY(360deg) rotateZ(var(--spin, 540deg)); } }
+@keyframes gem-shadow { 0% { opacity: 0; transform: scale(.3); } 55% { opacity: .5; transform: scale(.7); } 100% { opacity: 1; transform: none; } }
+@keyframes gem-land { 0% { transform: scale(1.14); } 100% { transform: none; } }
+@keyframes gem-glow { 50% { filter: drop-shadow(0 0 26px var(--die-glow)) drop-shadow(0 6px 10px var(--shadow)); } }
+@keyframes gem-shake { 25% { transform: translateX(-5px) rotate(-4deg); } 75% { transform: translateX(5px) rotate(4deg); } }
+@keyframes gem-spark { to { transform: rotate(var(--a)) translateY(calc(var(--size) * -.85)) scale(.3); opacity: 0; } }
+.dice-stage { position: fixed; inset: 0; z-index: 19; display: grid; place-items: center; align-content: center; gap: var(--sp-4); pointer-events: none;
+  background: radial-gradient(ellipse at center, var(--backdrop-soft), transparent 65%); animation: roll-note .2s ease-out; }
+.dice-stage.gone { opacity: 0; transition: opacity .4s; }
+.ds-dice { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-4); max-width: min(640px, 90vw); }
+.ds-card { display: grid; justify-items: center; gap: 2px; min-width: 220px; padding: var(--sp-3) var(--sp-5); background: var(--surface); border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg); box-shadow: 0 12px 32px var(--shadow); opacity: 0; transform: translateY(8px); transition: opacity .25s, transform .25s; }
+.dice-stage.landed .ds-card { opacity: 1; transform: none; }
+.ds-card:empty { display: none; }
+.ds-what { color: var(--muted); font-size: var(--fs-sm); }
+.ds-total { font-size: var(--fs-2xl); font-weight: 800; color: var(--text-strong); line-height: 1.1; }
+.ds-total.nat20 { color: var(--green); } .ds-total.nat1 { color: var(--red); }
+.roll-note .gem { margin: 0 -2px; }
+@media (max-width: 640px) { .gem { --size: 84px; } .gem.mid { --size: 60px; } .gem.tiny { --size: 28px; } }
 
 /* Phones: the log is a bottom sheet over the bottom bar: the newest rolls, its bar alone
    (collapsed), or every roll with the dice (tap or swipe up). Notices show under the menu bar. */
