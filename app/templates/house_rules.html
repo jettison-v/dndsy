@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}House rules · Manage · askdnd{% endblock %}
 {% block content %}
-<main class="page">
+<main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>House rules</h1></div>
   <p class="subtitle">Your rulings on how askdnd rolls things{% if campaign %} in {{ campaign.name }}{% endif %}. They apply only to this campaign and never change askdnd's own rules data: remove one and the spell works as the 2024 rules say again. The roll window shows <b>House rule</b> wherever one applies. Only the DM and admins can change these.</p>
@@ -9,12 +9,12 @@
   <section class="section">
     <h2>This table's house rules</h2>
     {% if rules %}
-    <ul class="people">
+    <ul class="records">
       {% for x in rules %}{% set r = x.r %}
-      <li class="house-rule">
-        <div class="who"><b>{{ r.target_key }}</b><span>{{ x.text }}</span>
+      <li class="record">
+        <div class="record-main"><b>{{ r.target_key }}</b><span class="note">{{ x.text }}</span>
           <span class="note">{% if r.reason %}{{ r.reason }} · {% endif %}{{ r.set_by }}, {{ r.updated_at | ago }}</span></div>
-        <form method="post" action="{{ cbase }}/manage/house-rules/{{ r.id }}/delete" class="inline"><button class="btn link danger" type="submit">Remove</button></form>
+        <form method="post" action="{{ cbase }}/manage/house-rules/{{ r.id }}/delete" class="record-actions"><button class="btn link small danger" type="submit">Remove</button></form>
       </li>
       {% endfor %}
     </ul>
@@ -24,22 +24,22 @@
   <section class="section">
     <h2>Add a house rule</h2>
     {% if once_spells %}
-    <form method="post" action="{{ cbase }}/manage/house-rules" class="stack" style="margin-top:12px">
+    <h3>One roll for all darts</h3>
+    <p class="hint">The rules roll each dart of Magic Missile on its own. Many tables roll once and every dart deals that damage.</p>
+    <form method="post" action="{{ cbase }}/manage/house-rules">
       <input type="hidden" name="field" value="once">
-      <h3>One roll for all darts</h3>
-      <p class="hint">The rules roll each dart of Magic Missile on its own. Many tables roll once and every dart deals that damage.</p>
-      <div class="row">
+      <div class="form-row">
         <select name="spell" aria-label="Spell">{% for s in once_spells %}<option>{{ s }}</option>{% endfor %}</select>
         <input type="text" name="reason" placeholder="Why (optional)" aria-label="Why" maxlength="500">
         <button class="btn primary" type="submit">Add</button>
       </div>
     </form>
     {% endif %}
-    <form method="post" action="{{ cbase }}/manage/house-rules" class="stack" style="margin-top:20px">
+    <h3>A ruling on a spell</h3>
+    <p class="hint">A short note the roll window shows whenever someone rolls this spell, e.g. "Fireball: the DM decides who is in the area on the Zoom map."</p>
+    <form method="post" action="{{ cbase }}/manage/house-rules">
       <input type="hidden" name="field" value="note">
-      <h3>A ruling on a spell</h3>
-      <p class="hint">A short note the roll window shows whenever someone rolls this spell, e.g. "Fireball: the DM decides who is in the area on the Zoom map."</p>
-      <div class="row">
+      <div class="form-row">
         <select name="spell" aria-label="Spell">{% for s in spells %}<option>{{ s }}</option>{% endfor %}</select>
         <input type="text" name="value" placeholder="The ruling" aria-label="The ruling" maxlength="500" required>
         <button class="btn primary" type="submit">Add</button>

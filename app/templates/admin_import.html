@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 {% block title %}Backups and imports · Manage · askdnd{% endblock %}
 {% block content %}
-<main class="page">
+<main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Backups and imports</h1></div>
   <p class="subtitle">askdnd's nightly backups, then importing campaign data. Only admins can see this page.</p>
   {% if backup is defined %}
   <section class="section" id="backups">
     <div class="section-head"><h2>Nightly backups</h2><span class="tag {{ 'draft' if backup.attention else 'done' }}">{{ backup.text }}</span></div>
-    <p class="hint" style="margin-top:6px">Every night at 10:00 UTC (3 am Pacific) the whole database is copied to S3 (<code>askdnd-ai/v2/backups/</code>), keeping 30 days. A failed or missed night shows on every campaign's Needs you page for admins.</p>
+    <p class="hint">Every night at 10:00 UTC (3 am Pacific) the whole database is copied to S3 (<code>askdnd-ai/v2/backups/</code>), keeping 30 days. A failed or missed night shows on every campaign's Needs you page for admins.</p>
     {% if backups %}<table class="list">{% for b in backups %}
       <tr><td><b>{{ b.finished_at.strftime("%-d %b %Y, %-I:%M %p") }} UTC</b><div class="note">{{ b.detail }}</div></td>
-        <td style="text-align:right"><span class="tag {{ 'done' if b.status == 'ok' else 'draft' }}">{{ "Worked" if b.status == "ok" else "Failed" }}</span></td></tr>
+        <td class="end"><span class="tag {{ 'done' if b.status == 'ok' else 'draft' }}">{{ "Worked" if b.status == "ok" else "Failed" }}</span></td></tr>
     {% endfor %}</table>{% else %}<p class="muted">No runs recorded yet. The next one is tonight.</p>{% endif %}
   </section>
   {% endif %}
@@ -24,7 +24,7 @@
   <section class="section import-preview">
     <div class="section-head"><h2>Preview: {{ filename }}</h2><span class="tag draft">Nothing saved yet</span></div>
     {% if pv.nothing %}
-    <p class="muted" style="margin-top:8px">Nothing would change: everything in this file is already here{% if pv.unchanged %} ({{ pv.unchanged }} entries the same){% endif %}.</p>
+    <p class="muted">Nothing would change: everything in this file is already here{% if pv.unchanged %} ({{ pv.unchanged }} entries the same){% endif %}.</p>
     {% else %}
     <ul class="import-summary">
       {% if pv.created %}<li><b>{{ pv.created | length }}</b> new {{ "entry" if pv.created | length == 1 else "entries" }}</li>{% endif %}
@@ -76,10 +76,10 @@
   {% if imports %}
   <section class="section">
     <h2>Recent imports</h2>
-    <p class="hint" style="margin-top:6px">Each import's changes are in <a href="/manage/history">History</a>. Undo puts back everything an import changed, except anything edited again since.</p>
+    <p class="hint">Each import's changes are in <a href="/manage/history">History</a>. Undo puts back everything an import changed, except anything edited again since.</p>
     <table class="list">{% for b in imports %}
       <tr><td><b>{{ b.at.strftime("%-d %b %Y, %-I:%M %p") }} UTC</b><div class="note">{{ b.actor or "someone" }} · {{ b.changes }} change{{ "s" if b.changes != 1 }} to {{ b.things }} thing{{ "s" if b.things != 1 }}</div></td>
-        <td style="text-align:right;white-space:nowrap"><a class="btn small" href="/manage/history?batch={{ b.batch }}">See changes</a>
+        <td class="end"><a class="btn small" href="/manage/history?batch={{ b.batch }}">See changes</a>
           <form method="post" action="/manage/history/undo-import" class="inline" onsubmit="return confirm('Undo this import? Its changes are put back to how they were before.')">
             <input type="hidden" name="batch" value="{{ b.batch }}"><button class="btn small">Undo</button></form></td></tr>
     {% endfor %}</table>

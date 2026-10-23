@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Tool corrections · Manage · askdnd{% endblock %}
 {% block content %}
-<main class="page">
+{% from "_manage.html" import inline_edit %}
+<main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Tool corrections</h1></div>
   <p class="subtitle">Corrections to how askdnd reads D&amp;D Beyond, made from a character's side panel (the Admin box, or an underlined rule term's pop-up). Each applies to everything with that name on every character, in every campaign; a DM's rulings for one table are <a href="{{ cbase }}/manage/house-rules">House rules</a> instead. Add a few words on why, so the mistake can be fixed in askdnd itself. Undo returns it to askdnd's automatic choice. Only admins can see this page.</p>
@@ -9,21 +10,13 @@
   <section class="section">
     {% if overrides %}
     {# One row per correction: what and how, the why (Edit to change it), Undo (Brett, 2026-10-23) #}
-    <ul class="tc-list">
+    <ul class="records cols-3">
       {% for o in overrides %}{% set n = names[o.ref] %}
-      <li>
-        <div class="tc-what"><b>{{ n.name }}</b>{% if n.kind %} <span class="tag">{{ n.kind }}</span>{% endif %}
+      <li class="record">
+        <div class="record-main"><b>{{ n.name }}</b>{% if n.kind %} <span class="tag">{{ n.kind }}</span>{% endif %}
           <span class="note">{{ field_labels.get(o.field, o.field) }}: {{ labels.get(o.field, {}).get(o.value, o.value) }} · {{ o.updated_at | ago }}</span></div>
-        <div class="tc-why">
-          <div id="why-{{ o.id }}-view">{% if o.reason %}{{ o.reason }}{% else %}<span class="muted">No reason yet.</span>{% endif %}
-            <button type="button" class="btn link small" data-show="why-{{ o.id }}-form" data-hide="why-{{ o.id }}-view">{{ "Edit" if o.reason else "Add why" }}</button></div>
-          <form id="why-{{ o.id }}-form" method="post" action="/manage/tool-corrections/overrides/{{ o.id }}/reason" class="tc-why-form" hidden>
-            <input type="text" name="reason" value="{{ o.reason }}" placeholder="What askdnd got wrong" aria-label="Why {{ n.name }} was corrected" maxlength="300">
-            <button class="btn small primary" type="submit">Save</button>
-            <button type="button" class="btn link small" data-cancel="why-{{ o.id }}-form" data-restore="why-{{ o.id }}-view">Cancel</button>
-          </form>
-        </div>
-        <form method="post" action="/manage/tool-corrections/overrides/{{ o.id }}/delete" class="inline tc-undo"><button class="btn small" type="submit">Undo</button></form>
+        <div>{{ inline_edit("why-" ~ o.id, o.reason, "/manage/tool-corrections/overrides/" ~ o.id ~ "/reason", "reason", "Why " ~ n.name ~ " was corrected", empty="No reason yet.", add_label="Add why", placeholder="What askdnd got wrong") }}</div>
+        <form method="post" action="/manage/tool-corrections/overrides/{{ o.id }}/delete" class="record-actions"><button class="btn small" type="submit">Undo</button></form>
       </li>
       {% endfor %}
     </ul>

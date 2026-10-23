@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_char.html" import pips, pin_icon, bookmark_icon, bell, ri, spends %}
 {% from "_lists.html" import search_box, chip_group, view_switch %}
+{% from "_manage.html" import inline_edit %}
 {% block title %}Design system · Manage · askdnd{% endblock %}
 {# The living component page (roadmap step 9): every token and component with the app's own classes and
    macros, so it changes when they do. Made-up content only. DESIGN.md explains when to use each. #}
@@ -9,7 +10,7 @@
   {%- if later %}<span class="ds-later">Planned: {{ later }}</span>{% endif %}</div>
 {%- endmacro %}
 {% block content %}
-<main class="page ds-page">
+<main class="page manage-page ds-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Design system</h1></div>
   <p class="subtitle">Every token and component askdnd is built from, drawn with the app's own styles, so this page changes when they do. Rules for when to use each: <code>docs/DESIGN.md</code>. A test blocks text sizes, colors and screen widths outside the tokens.</p>
@@ -17,7 +18,7 @@
   <nav class="ds-jump" aria-label="On this page">
     {% for id, label in [("colors", "Colors"), ("type", "Text sizes"), ("space", "Space and corners"), ("buttons", "Buttons"), ("pills", "Pills"),
                          ("headings", "Headings"), ("surfaces", "Sections and tiles"), ("lists", "Lists"), ("marks", "Marks and pips"),
-                         ("help", "Help and empty states"), ("panels", "Panels and toasts"), ("story", "Story text")] %}<a href="#{{ id }}">{{ label }}</a>{% endfor %}
+                         ("help", "Help and empty states"), ("panels", "Panels and toasts"), ("story", "Story text"), ("manage", "Manage pages")] %}<a href="#{{ id }}">{{ label }}</a>{% endfor %}
   </nav>
 
   <section class="section" id="colors">
@@ -196,6 +197,30 @@
     <h2>Story text</h2>
     {{ ds("Story block", ".story", "Recaps, descriptions and answers: warm parchment at night, in the serif.") }}
     <div class="story"><p>The party left Waterdeep at dawn, the dragon's map rolled tight in a waxed case. By dusk the road had turned to mud and the hired guide had quietly vanished.</p></div>
+  </section>
+  <section class="section" id="manage">
+    <h2>Manage pages</h2>
+    <p class="hint">Every Manage page is built from these and nothing else: a test fails on a Manage page with its own inline spacing (tests/test_design_system.py).</p>
+    {{ ds("Page head", ".title-row h1 · .title-action · .subtitle", "The page's name, one button on the right if the page has a main action, then one or two sentences on what the page is for.") }}
+    <div class="title-row"><h1>Table</h1><button class="btn title-action" type="button">Refresh all</button></div>
+    <p class="subtitle">Who plays in The Lost Mine and with which character.</p>
+    {{ ds("Section", ".section > h2 + .hint", "A card with a heading and, when it helps, one hint line. The gaps are fixed, so never add margins.") }}
+    {{ ds("Records", ".records.cols-2 | cols-3 | cols-3-even | cols-4 > .record", "Any list of things on Manage: the thing (bold name, then notes), optional fields, then its buttons on the right. A header row (.records-head) names the columns. On phones the fields wrap under the name.") }}
+    <ul class="records cols-4">
+      <li class="records-head" aria-hidden="true"><span>Character</span><span>Played by</span><span>D&amp;D Beyond</span><span></span></li>
+      <li class="record"><span class="record-main"><b>Brin</b><span class="note">Fighter 5</span></span>
+        <span class="pick"><select aria-label="Played by"><option>Sam</option></select><button class="btn small" type="button">Save</button></span>
+        <span>Linked · updated today</span><span class="record-actions"><button class="btn small" type="button">Refresh</button></span></li>
+      <li class="record faded"><span class="record-main"><b>Old Wren</b><span class="note">Removed</span></span><span>—</span><span>—</span><span class="record-actions"></span></li>
+    </ul>
+    {{ ds("Inline edit", "_manage.html inline_edit()", "Text you can change in place: the text with Edit; Edit swaps in the field with Save and Cancel.") }}
+    {{ inline_edit("ds-why", "Paladin smite is a bonus action spell", "#", "reason", "Why", empty="No reason yet.", add_label="Add why") }}
+    {{ ds("Form row", ".form-row", "Fields side by side, bottom-aligned with their button. .field.grow takes the spare width.") }}
+    <div class="form-row"><label class="field">Amount<input type="text" placeholder="$20.00"></label><label class="field grow">Note<input type="text" placeholder="Optional"></label><button class="btn" type="button">Add</button></div>
+    {{ ds("Narrow form", ".form-narrow", "Stacked fields at a readable width, for anything longer than a row.") }}
+    <div class="form-narrow"><label class="field">Campaign name<input type="text" value="The Lost Mine"></label><div><button class="btn primary" type="button">Save</button></div></div>
+    {{ ds("Fold", "details.fold", "Something you need now and then (+ Add a character, Removed accounts): folded until opened, with the same gaps inside.") }}
+    <details class="fold"><summary>+ Add a character</summary><p class="note">The form goes here.</p></details>
   </section>
 </main>
 {% endblock %}

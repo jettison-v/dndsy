@@ -1,0 +1,14 @@
+{# Manage components (app.css › Manage components): shared pieces so every Manage page is built the same way.
+   {% from "_manage.html" import inline_edit %} #}
+
+{# Text you can change in place: shows the text (or `empty`) with Edit, which swaps in the field with Save and
+   Cancel. `name` is the form field; the form posts to `action`. #}
+{% macro inline_edit(id, value, action, name, label, empty="Nothing yet.", add_label="Add", placeholder="", maxlength=300) -%}
+<div id="{{ id }}-view">{% if value %}{{ value }}{% else %}<span class="muted">{{ empty }}</span>{% endif %}
+  <button type="button" class="btn link small" data-show="{{ id }}-form" data-hide="{{ id }}-view">{{ "Edit" if value else add_label }}</button></div>
+<form id="{{ id }}-form" method="post" action="{{ action }}" class="inline-edit-form" hidden>
+  <input type="text" name="{{ name }}" value="{{ value }}" placeholder="{{ placeholder }}" aria-label="{{ label }}" maxlength="{{ maxlength }}">
+  <button class="btn small primary" type="submit">Save</button>
+  <button type="button" class="btn link small" data-cancel="{{ id }}-form" data-restore="{{ id }}-view">Cancel</button>
+</form>
+{%- endmacro %}

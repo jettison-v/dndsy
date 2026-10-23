@@ -1,21 +1,21 @@
 {% extends "base.html" %}
 {% block title %}Needs you · Manage · askdnd{% endblock %}
 {% block content %}
-<main class="page">
+<main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Needs you</h1></div>
   <p class="subtitle">What's waiting in {{ campaign.name if campaign else "the campaign" }}, most important first.</p>
   {% if items %}
-  <ul class="manage-list">
+  <ul class="records">
     {% for x in items %}
-    <li><span><b>{{ x.text }}</b>{% if x.admin %} <span class="tag faint">admins</span>{% endif %}<span class="note">{{ x.sub }}</span></span>
-      <a class="btn small{{ ' primary' if loop.first }}" href="{{ x.href }}">{{ x.go }}</a></li>
+    <li class="record"><span class="record-main"><b>{{ x.text }}</b>{% if x.admin %} <span class="tag faint">admins</span>{% endif %}<span class="note">{{ x.sub }}</span></span>
+      <span class="record-actions"><a class="btn small{{ ' primary' if loop.first }}" href="{{ x.href }}">{{ x.go }}</a></span></li>
     {% endfor %}
   </ul>
   {% else %}
   <p class="all-clear">✓ All caught up</p>
-  <ul class="manage-list" style="margin-top:var(--sp-4)">
-    {% for p in pages %}<li><span><a href="{{ p.href }}"><b>{{ p.label }}</b></a><span class="note">{{ p.about }}</span></span></li>{% endfor %}
+  <ul class="records">
+    {% for p in pages %}<li class="record"><span class="record-main"><a href="{{ p.href }}"><b>{{ p.label }}</b></a><span class="note">{{ p.about }}</span></span></li>{% endfor %}
   </ul>
   {% endif %}
 </main>

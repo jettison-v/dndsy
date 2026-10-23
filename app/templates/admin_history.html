@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}History · Manage · askdnd{% endblock %}
 {% block content %}
-<main class="page">
+<main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>History</h1></div>
   {% if in_campaign %}<p class="subtitle">Every change in {{ campaign.name if campaign else "this campaign" }}: entries, the glossary, sessions, house rules, its characters, roles and players' notes. What it was, what it became, who and how. <b>Restore</b> puts the earlier version back (and that's recorded too). Kept in askdnd's database on Railway.</p>
