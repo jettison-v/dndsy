@@ -52,8 +52,8 @@ def test_owner_adds_a_reviewer_who_can_then_review(env, monkeypatch, db):
     assert nia_row.access == "member" and access.role("new@example.com") == "reviewer"
     nia, r = sign_in(monkeypatch, "new@example.com")
     assert r.headers["location"] == "/"  # allowed in without being in ALLOWED_EMAILS
-    assert nia.get("/manage/sessions").status_code == 200
-    assert nia.get("/manage/accounts").status_code == 403 and nia.get("/manage/table").status_code == 403
+    assert nia.get("/c/main/manage/sessions").status_code == 200
+    assert nia.get("/manage/accounts").status_code == 403 and nia.get("/c/main/manage/table").status_code == 403
     owner.post("/manage/accounts/update", data={"email": "new@example.com", "admin": "1"})
     assert nia.get("/manage/accounts").status_code == 200 and access.role("new@example.com") == "reviewer"
 
@@ -80,7 +80,7 @@ def test_role_changes_keep_the_membership_and_no_role_ends_it(env, monkeypatch, 
     owner.post("/manage/table/people", data={"email": "nia@example.com", "role": "none"})
     db.expire_all()
     assert rows[0].left_on is not None and access.role("nia@example.com") is None
-    assert "nia@example.com" not in owner.get("/manage/table").text.split("<h2>People</h2>")[1].split("+ Add someone")[0]
+    assert "nia@example.com" not in owner.get("/c/main/manage/table").text.split("<h2>People</h2>")[1].split("+ Add someone")[0]
     owner.post("/manage/table/people", data={"email": "nia@example.com", "role": "player"})  # back: a new membership
     assert len(list(db.scalars(select(CampaignMember).join(User).where(User.email == "nia@example.com")))) == 2
 
@@ -132,9 +132,9 @@ def test_dm_never_sees_character_notes_even_as_admin(env, monkeypatch, db):
     src.snapshots.append(NoteSnapshot(content_hash="h", text="secret plan"))
     db.add(src)
     db.flush()
-    assert "Secret Cole doc" not in dm.get("/manage/sessions/doc").text and "Secret Cole doc" in owner.get("/manage/sessions/doc").text
-    assert "secret plan" not in dm.get(f"/manage/sessions/doc/snapshots/{src.snapshots[0].id}", follow_redirects=False).text
-    assert dm.get("/manage/sessions/doc").status_code == 200 and owner.get("/manage/sessions/doc").status_code == 200
+    assert "Secret Cole doc" not in dm.get("/c/main/manage/sessions/doc").text and "Secret Cole doc" in owner.get("/c/main/manage/sessions/doc").text
+    assert "secret plan" not in dm.get(f"/c/main/manage/sessions/doc/snapshots/{src.snapshots[0].id}", follow_redirects=False).text
+    assert dm.get("/c/main/manage/sessions/doc").status_code == 200 and owner.get("/c/main/manage/sessions/doc").status_code == 200
     assert dm.get(f"/characters/{char.id}/plan", follow_redirects=False).status_code == 303  # Plan is the players'
 
 
@@ -153,7 +153,7 @@ def test_a_dm_who_stops_dming_reads_the_notes_like_any_player(env, monkeypatch, 
 
 def test_players_cant_manage_people(env, monkeypatch, db):
     player, _ = sign_in(monkeypatch, "player@example.com")
-    assert player.get("/manage/accounts").status_code == 403 and player.get("/manage/table").status_code == 403
+    assert player.get("/manage/accounts").status_code == 403 and player.get("/c/main/manage/table").status_code in (403, 404)
     assert player.post("/manage/accounts", data={"email": "x@example.com", "admin": "1"}).status_code == 403
     assert player.post("/manage/table/people/add", data={"new_email": "x@example.com"}).status_code == 403
     assert db.scalar(select(User).where(User.email == "x@example.com")) is None
@@ -182,7 +182,7 @@ def test_who_plays_which_character_on_the_table(env, monkeypatch, db):
     owner, _ = sign_in(monkeypatch, "owner@example.com")
     add(owner, "player@example.com", "player")
     player = db.scalar(select(User).where(User.email == "player@example.com"))
-    assert f'<option value="{player.id}" >player@example.com</option>' in owner.get("/manage/table").text
+    assert f'<option value="{player.id}" >player@example.com</option>' in owner.get("/c/main/manage/table").text
     owner.post(f"/manage/table/characters/{cole.id}", data={"user_id": str(player.id)})
     assert cole.owner.email == "player@example.com"
     owner.post(f"/manage/table/characters/{trah.id}", data={"user_id": str(player.id)})  # one character each here
@@ -213,7 +213,7 @@ def test_table_lists_people_by_role_and_folds_the_chart(env, monkeypatch, db):
     add(owner, "pat@example.com", "player", "Pat")
     add(owner, "rev@example.com", "reviewer", "Rev")
     add(owner, "dm@example.com", "dm", "Dee")
-    page = owner.get("/manage/table").text
+    page = owner.get("/c/main/manage/table").text
     assert "What each role can do" in page and "Not included for anyone" in page
     assert page.index("<b>Dee</b>") < page.index("<b>Rev</b>") < page.index("<b>Pat</b>")  # DM, reviewers, players
     assert "Runs this campaign" in page  # the DM's row explains the role
@@ -227,7 +227,7 @@ def test_the_dm_sees_the_table_and_edits_settings_but_changes_no_roles(env, monk
     add(owner, "dm@example.com", "dm", "Dee")
     add(owner, "pat@example.com", "player", "Pat")
     dm, _ = sign_in(monkeypatch, "dm@example.com")
-    page = dm.get("/manage/table").text
+    page = dm.get("/c/main/manage/table").text
     assert "<b>Pat</b>" in page and 'name="role"' not in page and "+ Add a character" not in page  # sees, can't change
     assert dm.post("/manage/table/people", data={"email": "pat@example.com", "role": "dm"}).status_code == 403
     assert dm.get("/manage/accounts").status_code == 403
@@ -235,7 +235,7 @@ def test_the_dm_sees_the_table_and_edits_settings_but_changes_no_roles(env, monk
     main = db.scalar(select(Campaign))
     assert (main.name, main.dm_name, main.ddb_campaign_id, main.slug) == ("The Lost Mine", "Dee", "42", "main")
     pat, _ = sign_in(monkeypatch, "pat@example.com")
-    assert pat.get("/manage/settings").status_code == 403 and pat.get("/manage/table").status_code == 403
+    assert pat.get("/c/main/manage/settings").status_code == 403 and pat.get("/c/main/manage/table").status_code == 403
 
 
 def test_migration_moves_the_dm_tick_and_reviewer_into_campaign_roles(db_engine):

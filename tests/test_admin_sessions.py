@@ -62,7 +62,7 @@ def proposal(db, name):
 
 def test_review_list_and_draft_button(client, db, monkeypatch):
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "sessions": [{"number": 29}]})
-    page = client.get("/manage/sessions").text
+    page = client.get("/c/main/manage/sessions").text
     assert "Session 29" in page and "Not drafted" in page
     started = []
     monkeypatch.setattr(admin_sessions, "_draft_in_background", lambda ids: started.append(ids) or True)
@@ -73,7 +73,7 @@ def test_review_list_and_draft_button(client, db, monkeypatch):
 
 def test_review_page_shows_draft(client, db):
     s = drafted_session(db)
-    page = client.get(f"/manage/sessions/{s.id}").text
+    page = client.get(f"/c/main/manage/sessions/{s.id}").text
     assert "The party fought devils." in page
     assert "Check the imp count." in page and "2 to answer" in page
     assert "Horn Devil" in page and "Hellhound" in page
@@ -188,12 +188,12 @@ def test_public_pages_show_only_published(client, db):
     client.post(f"/manage/sessions/{s.id}/publish", headers=HX)
     home = client.get("/").text
     assert "The party fought devils." in home and "Big fight." in home and "Reach the library" in home
-    assert "The party fought devils." in client.get("/sessions").text
-    campaign = client.get("/campaign").text
+    assert "The party fought devils." in client.get("/c/main/?tab=sessions").text
+    campaign = client.get("/c/main/campaign").text
     assert "Lillippi Lemon" in campaign and "Reach the library" in campaign
     assert '1 open · 0 done' in campaign and '<main class="page sheet wide">' in campaign
     assert '<main class="page wide">' in home and '<aside class="session-side">' in home
-    assert client.get("/characters").status_code == 200
+    assert client.get("/party").status_code == 200
 
 
 def test_player_cannot_open_admin_review(monkeypatch, db):
@@ -206,7 +206,7 @@ def test_player_cannot_open_admin_review(monkeypatch, db):
 
     monkeypatch.setattr(auth.oauth.google, "authorize_access_token", token)
     c.get("/auth/callback", follow_redirects=False)
-    assert c.get("/manage/sessions").status_code == 403
+    assert c.get("/c/main/manage/sessions").status_code in (403, 404)  # not theirs to review
     assert "Manage" not in c.get("/").text
     app.dependency_overrides.clear()
 
@@ -214,7 +214,7 @@ def test_player_cannot_open_admin_review(monkeypatch, db):
 def test_next_session_button(client, db):
     s = drafted_session(db)
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "sessions": [{"number": 30}]})
-    page = client.get(f"/manage/sessions/{s.id}").text
+    page = client.get(f"/c/main/manage/sessions/{s.id}").text
     assert "Next: Session 30" in page
     assert "Draft next session" not in page  # no synced notes for session 30 in this test
 
@@ -285,7 +285,7 @@ def test_the_dms_words_are_kept(client, db):
     db.flush()
     p = proposal(db, "Lillippi Lemon")
     assert p.payload["written_by"] == lil.written_by_person and p.payload["old_summary"] == "A tiefling bard with a silver lute."
-    page = client.get(f"/manage/sessions/{s.id}").text
+    page = client.get(f"/c/main/manage/sessions/{s.id}").text
     assert "Keeps " in page and "lute<ins>, who fought devils</ins>." in page
 
     # Edited since the draft: accepting is refused until combined by hand
@@ -311,10 +311,10 @@ def test_the_dms_words_are_kept(client, db):
     store_result(db, s, run, {**RESULT, "recap": "We fought **devils** at the north gate."})
     db.commit()
     db.expire_all()
-    page = client.get(f"/manage/sessions/{s.id}").text
+    page = client.get(f"/c/main/manage/sessions/{s.id}").text
     assert "Claude redrafted" in page and "<ins>north</ins>" in page and "/recap/keep-mine" in page
     client.post(f"/manage/sessions/{s.id}/recap/keep-mine", headers=HX)
     db.expire_all()
     s = db.get(GameSession, s.id)
     assert s.recaps[-1].body == "We fought **devils** at the gate." and s.recaps[-1].author == "brett"
-    assert "Claude redrafted" not in client.get(f"/manage/sessions/{s.id}").text
+    assert "Claude redrafted" not in client.get(f"/c/main/manage/sessions/{s.id}").text

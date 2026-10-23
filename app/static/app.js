@@ -164,10 +164,11 @@
   window.addEventListener('resize', closeMention);
   document.body.addEventListener('htmx:beforeSwap', closeMention);
 
-  // Peek panel: clicking a name (any link to /campaign/<id>) opens a summary in a
+  // Peek panel: clicking a name (a link to an entry, /c/<campaign>/campaign?open=<id>) opens a summary in a
   // right-hand pane on desktop or a bottom sheet on phones. Cmd/Ctrl/Shift-click,
   // links marked data-no-peek and links in the panel's footer open the full page as usual.
-  const ENTITY_URL = /^\/campaign\/((?:glossary\/)?\d+)$/;  // people/places, or glossary terms
+  // An entry's address, /c/<campaign>/campaign?open=<id>, or a glossary term's, …/campaign/glossary/<id> (2026-10-23)
+  const ENTITY_URL = /^(?:\/c\/[a-z0-9-]+)?\/campaign(?:\/(glossary\/\d+)|\?open=(\d+))$/;
   // Two layers: the base panel (a side panel, or a centered modal such as the Spell Book) and a
   // top side panel that slides in from the modal's own right edge, inside it (Brett, 2026-10-21:
   // a spell's details open inside the Spell Book). Each layer keeps its own "← Back" history.
@@ -206,7 +207,7 @@
   // Escape and "close" take off the topmost layer first.
   function closePeek() { if (isOpen(layers.top)) closeLayer(layers.top); else closeLayer(layers.base); }
 
-  function openPeek(id, opener) { openPanel('/campaign/' + id + '/peek', opener, '/campaign/' + id); }
+  function openPeek(id, opener) { openPanel('/campaign/' + id + '/peek', opener, opener && opener.getAttribute('href')); }
   // A link to an entry (/campaign/45) lands on /campaign?open=45: show the Campaign page with its panel open
   // (Brett, 2026-10-22: entries live in the side panel; no full page)
   // The Campaign page's Reader already shows the entry it was asked for: then ?open= is that entry's address.
@@ -317,15 +318,16 @@
     const m = ENTITY_URL.exec(a.getAttribute('href') || a.getAttribute('xlink:href') || '');  // SVG links use xlink:href
     if (!m) return;
     e.preventDefault();
+    const ref = m[1] || m[2];
     // On the Campaign page, a name opens that entry in the Reader (World) instead
-    const item = !a.closest('.peek') && document.querySelector('[data-rd-id="' + m[1] + '"]');
+    const item = !a.closest('.peek') && document.querySelector('[data-rd-id="' + ref + '"]');
     if (item) {
       const tab = item.closest('[id^="t-"]'), btn = tab && tab.hidden && document.querySelector('[role=tab][data-tab="' + tab.id + '"]');
       if (btn) btn.click();
       item.click();
       return;
     }
-    openPeek(m[1], a);
+    openPeek(ref, a);
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closePeek(); });
 

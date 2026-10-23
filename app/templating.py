@@ -64,6 +64,16 @@ def _markdown(text: str) -> str:
 templates.env.filters["md"] = _markdown
 
 
+def _entry_url(entity_id) -> str:
+    """An entry's one address: the Campaign page with it open, in the campaign being looked at (2026-10-23)."""
+    from app import web
+
+    return f"{web.base()}/campaign?open={entity_id}"
+
+
+templates.env.globals["entry_url"] = _entry_url
+
+
 def _outcome(status: str) -> dict:
     from app.suggestions import outcome
 

@@ -30,7 +30,7 @@
 
   {% if relations and not reader %}
   <h3>Relationships{% if e.kind.value not in ("quest", "pc") %} <a class="head-link" href="{{ cbase }}/campaign?open={{ e.id }}">See connections</a>{% endif %}</h3>
-  <ul class="plain">{% for r in relations %}<li><span class="muted">{{ r.label | capitalize }}</span> <a class="ent" href="/campaign/{{ r.other.id }}" data-entity="{{ r.other.id }}">{{ r.other.name }}</a>{% if r.note %} <span class="note">· {{ r.note }}</span>{% endif %}</li>{% endfor %}</ul>
+  <ul class="plain">{% for r in relations %}<li><span class="muted">{{ r.label | capitalize }}</span> <a class="ent" href="{{ entry_url(r.other.id) }}" data-entity="{{ r.other.id }}">{{ r.other.name }}</a>{% if r.note %} <span class="note">· {{ r.note }}</span>{% endif %}</li>{% endfor %}</ul>
   {% endif %}
 
   <h3>What the table knows</h3>
@@ -42,7 +42,7 @@
     <p class="note" style="margin:-6px 0 8px">{{ f.author_name or f.author_email or "Someone" }} · {{ f.created_at.strftime("%b %-d") }}</p>
     <div class="row"><button class="btn primary small" hx-post="/campaign/facts/{{ f.id }}/merge?in={{ w }}" {{ px | safe }}>Accept</button>
       <button class="btn link small" hx-post="/campaign/facts/{{ f.id }}/reject?in={{ w }}" {{ px | safe }}>Dismiss</button>
-      <a class="btn link small" href="/suggestions#fact-{{ f.id }}" data-no-peek>Edit or ask Claude in the Inbox</a></div></div>
+      <a class="btn link small" href="{{ cbase }}/manage/inbox#fact-{{ f.id }}" data-no-peek>Edit or ask Claude in the Inbox</a></div></div>
   {% endfor %}
   {% if mine %}
   <h3>Your suggestions here</h3>

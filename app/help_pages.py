@@ -4,7 +4,7 @@ that person (remembered on their user row, so on every device) and "More" to the
 (DESIGN.md › Components › Help line, Brett 2026-10-22)."""
 
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, Response
 from sqlalchemy.orm import Session
 
 from app.auth import current_user
@@ -46,13 +46,3 @@ def help_page(request: Request, tab: str = "faq"):
     """FAQ and About in one page (Brett, 2026-10-23). /help#<id> opens that FAQ answer."""
     return templates.TemplateResponse(request, "help.html", {"tab": "about" if tab == "about" else "faq",
                                                              "game_mode_minutes": GAME_MODE_SECONDS / 60})
-
-
-@router.get("/faq")
-def faq():
-    return RedirectResponse("/help", status_code=301)  # the browser keeps #<id>, so old answer links still open
-
-
-@router.get("/about")
-def about():
-    return RedirectResponse("/help?tab=about", status_code=301)

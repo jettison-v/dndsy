@@ -75,10 +75,10 @@ def campaign_with_neighbors(db):
 
 def test_add_session_flow(client, db, monkeypatch):
     campaign_with_neighbors(db)
-    assert "Add a session" in client.get("/manage/sessions/new").text
+    assert "Add a session" in client.get("/c/main/manage/sessions/new").text
     r = client.post("/manage/sessions/new", data={"played_on": "2026-05-01", "title": "Boarding", "account": "We sailed to the Leviathan."}, follow_redirects=False)
     sid = int(r.headers["location"].split("?")[0].rsplit("/", 1)[1])
-    page = client.get(f"/manage/sessions/{sid}?check=1").text
+    page = client.get(f"/c/main/manage/sessions/{sid}?check=1").text
     assert "We sailed to the Leviathan." in page and 'hx-trigger="load"' in page
 
     seen = []
@@ -116,7 +116,7 @@ def test_conversation_runs_do_not_hide_review_questions(client, db, monkeypatch)
     db.add(run)
     db.add(ExtractionRun(session_id=s.id, source="conversation", status="done"))
     db.flush()
-    assert "Which ship?" in client.get(f"/manage/sessions/{s.id}").text
+    assert "Which ship?" in client.get(f"/c/main/manage/sessions/{s.id}").text
 
 
 def test_duplicate_number_and_missing_account_rejected(client, db):
@@ -148,6 +148,6 @@ def test_a_session_written_by_hand_needs_no_claude(client, db):
     s = db.scalar(select(GameSession).where(GameSession.title == "Ashore"))
     assert r.headers["location"] == f"/c/main/manage/sessions/{s.id}" and s.source == "manual"
     assert latest_recap(s).body == "We landed at Saltmarsh." and not s.messages
-    assert "written by hand" in client.get(f"/manage/sessions/{s.id}").text
+    assert "written by hand" in client.get(f"/c/main/manage/sessions/{s.id}").text
     r = client.post(f"/manage/sessions/{s.id}/redraft", headers={"HX-Request": "true"})
     assert "edit the recap directly" in r.headers.get("HX-Trigger", "") + r.text

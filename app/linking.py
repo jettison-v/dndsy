@@ -30,7 +30,9 @@ class Linker:
         entity_id = self.targets.get(key)
         if entity_id is None:
             return m.group(0)
-        return f'<a class="ent" href="/campaign/{entity_id}" data-entity="{entity_id}">{m.group(0)}</a>'
+        from app import web
+
+        return f'<a class="ent" href="{web.base()}/campaign?open={entity_id}" data-entity="{entity_id}">{m.group(0)}</a>'
 
     def html(self, html: str | Markup) -> Markup:
         """Link names in already-safe HTML, skipping tags and existing links."""

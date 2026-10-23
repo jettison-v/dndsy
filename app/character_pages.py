@@ -90,29 +90,6 @@ def _page(request: Request, name: str, ctx: dict):
 # ---------------------------------------------------------------- top-level
 
 
-@router.get("/battle")
-def my_battle(request: Request, db: Session = Depends(get_db)):
-    user = current_user(request)
-    if not user:
-        return RedirectResponse("/login", status_code=303)
-    ch = picks.my_character(db, user)
-    return RedirectResponse(f"/characters/{ch.id}/battle" if ch else "/party?pick=battle", status_code=303)
-
-
-@router.get("/character")
-def my_character(request: Request, db: Session = Depends(get_db)):
-    user = current_user(request)
-    if not user:
-        return RedirectResponse("/login", status_code=303)
-    ch = picks.my_character(db, user)
-    return RedirectResponse(f"/characters/{ch.id}" if ch else "/party?pick=character", status_code=303)
-
-
-@router.get("/characters")
-def old_list(request: Request):
-    return RedirectResponse("/party", status_code=303)
-
-
 @router.get("/party")
 def party_page(request: Request, pick: str = "", db: Session = Depends(get_db)):
     user = current_user(request)

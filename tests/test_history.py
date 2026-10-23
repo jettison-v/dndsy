@@ -63,9 +63,9 @@ def test_deleted_player_notes_come_back_and_stay_hidden_from_the_dm(db, cole, pl
     assert db.scalar(select(PlayerNote)) is None
     rev = db.scalar(select(Revision).where(Revision.field == "deleted"))
     assert rev.old["data"] == {"body": "Steal the egg."} and rev.character_id == cole.id
-    assert "Secret plan" not in dm.get("/admin/history").text  # the DM never sees players' notes, even in history
-    assert "Secret plan" in admin.get("/admin/history?show=notes").text
-    assert player.get("/admin/history").status_code == 403  # players don't open Manage
+    assert "Secret plan" not in dm.get("/c/main/manage/history").text  # the DM never sees players' notes, even in history
+    assert "Secret plan" in admin.get("/c/main/manage/history?show=notes").text
+    assert player.get("/c/main/manage/history").status_code == 403  # players don't open Manage
     admin.post(f"/manage/history/{rev.id}/restore")
     assert db.scalar(select(PlayerNote)).data == {"body": "Steal the egg."}
 

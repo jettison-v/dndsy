@@ -30,9 +30,9 @@ def dm_client(monkeypatch, db):
 def test_reviewer_can_review_but_not_see_admin_pages(dm_client, db):
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "sessions": [{"number": 29}]})
     sid = db.scalar(select(GameSession)).id
-    assert dm_client.get("/manage/sessions").status_code == 200
-    assert dm_client.get(f"/manage/sessions/{sid}").status_code == 200
-    for path in ("/manage/sessions/doc", "/manage/backups", "/manage/usage"):
+    assert dm_client.get("/c/main/manage/sessions").status_code == 200
+    assert dm_client.get(f"/c/main/manage/sessions/{sid}").status_code == 200
+    for path in ("/c/main/manage/sessions/doc", "/manage/backups", "/manage/usage"):
         assert dm_client.get(path).status_code == 403, path
     home = dm_client.get("/").text
     assert "Manage" in home and "/manage/sessions" in home

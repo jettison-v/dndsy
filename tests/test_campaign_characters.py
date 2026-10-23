@@ -70,7 +70,7 @@ def test_wild_shape_keeps_belong_to_the_campaign_and_keep_their_history(db, admi
     rev = db.scalar(select(Revision).where(Revision.field == "wild_shape_keep"))
     assert rev.table == "campaign_characters" and rev.row_id == ch.membership.id and rev.label == "Character: Cole"
     db.commit()
-    assert "Kept in Wild Shape" in admin.get("/admin/history?show=characters").text
+    assert "Kept in Wild Shape" in admin.get("/c/main/manage/history?show=characters").text
     history.restore(db, rev)
     assert ch.wild_shape_keep is None
 

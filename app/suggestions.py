@@ -146,7 +146,7 @@ def glossary_add(request: Request, term: str = Form(""), description: str = Form
 def glossary_peek(request: Request, term_id: int, db: Session = Depends(get_db)):
     ctx = _glossary_context(request, db, term_id)
     if ctx is None:
-        return RedirectResponse("/campaign", status_code=303)
+        return RedirectResponse(f"{web.base()}/campaign", status_code=303)
     return templates.TemplateResponse(request, "_glossary_peek.html", ctx)
 
 
@@ -154,7 +154,7 @@ def glossary_peek(request: Request, term_id: int, db: Session = Depends(get_db))
 def glossary_page(request: Request, term_id: int, db: Session = Depends(get_db)):
     ctx = _glossary_context(request, db, term_id)
     if ctx is None:
-        return RedirectResponse("/campaign", status_code=303)
+        return RedirectResponse(f"{web.base()}/campaign", status_code=303)
     return templates.TemplateResponse(request, "glossary_term.html", ctx)
 
 
@@ -165,7 +165,7 @@ def glossary_edit(
     user = current_user(request)
     g = db.get(GlossaryTerm, term_id)
     if not _can_edit_glossary(user) or g is None:
-        return RedirectResponse("/campaign", status_code=303)
+        return RedirectResponse(f"{web.base()}/campaign", status_code=303)
     new_term = " ".join(term.split())
     clash = db.scalar(select(GlossaryTerm).where(GlossaryTerm.campaign_id == g.campaign_id, GlossaryTerm.term == new_term, GlossaryTerm.id != g.id))
     if not new_term or clash:
@@ -220,7 +220,7 @@ def from_the_table(db: Session, campaign_id: int) -> list[dict]:
         elif x.target_type == "glossary":
             t = terms.get(x.target_id)
             items.append({"type": "glossary", "x": x, "label": f"Glossary: {t.term}" if t else "Glossary: new term",
-                          "href": f"/campaign/glossary/{t.id}" if t else "/campaign#glossary", "term": t})
+                          "href": f"{web.base()}/campaign/glossary/{t.id}" if t else f"{web.base()}/campaign?tab=glossary", "term": t})
     return sorted(items, key=lambda it: (it["x"].created_at, it["x"].id))
 
 
@@ -281,7 +281,7 @@ def mine(request: Request, db: Session = Depends(get_db)):
             rows.append({"x": x, "label": session_label(s) if s else "A session", "href": f"{web.base()}/?tab=sessions#s{s.id}" if s else f"{web.base()}/?tab=sessions"})
         else:
             t = db.get(GlossaryTerm, x.target_id) if x.target_id else None
-            rows.append({"x": x, "label": f"Glossary: {t.term}" if t else "Glossary: new term", "href": "/campaign#glossary"})
+            rows.append({"x": x, "label": f"Glossary: {t.term}" if t else "Glossary: new term", "href": f"{web.base()}/campaign?tab=glossary"})
     rows.sort(key=lambda r: (r["x"].created_at, r["x"].id), reverse=True)
     return templates.TemplateResponse(request, "suggestions_mine.html", {"rows": rows})
 

@@ -170,7 +170,7 @@ def test_party_page(player, db):
     assert f'data-modal-url="/characters/{char(db, "Cole").id}/brief"' in page
     assert "Healing and recovery" in page and "Healing Word" in page  # pooled spells
     assert "Potion of Healing" in page and "Cole ×2" in page  # pooled items
-    assert player.get("/characters", follow_redirects=False).headers["location"] == "/party"
+    assert player.get("/characters").status_code == 404  # the Party page is the list
     brief = player.get(f"/characters/{char(db, 'Cole').id}/brief").text
     assert "<html" not in brief and "Advantage on saving throws against being charmed" in brief
     assert '<div class="brief-group-title">Advantages</div>' in brief and "Already in the numbers above: +1 to saving throws" in brief
@@ -309,15 +309,6 @@ def test_dm_never_sees_reminders(dm, db):
     battle = dm.get(f"/characters/{cole.id}/battle").text
     assert "SECRET REMINDER" not in battle and "aren't shown to the DM" in battle
     assert "ico-pin" not in dm.get(f"/characters/{cole.id}/all/action").text
-
-
-def test_my_battle_and_character_open_my_character(player, db):
-    import_bundle(db, BUNDLE)
-    cole = char(db, "Cole")
-    assert player.get("/battle", follow_redirects=False).headers["location"] == "/party?pick=battle"
-    owned_by(db, cole, "player@example.com")
-    assert player.get("/battle", follow_redirects=False).headers["location"] == f"/characters/{cole.id}/battle"
-    assert player.get("/character", follow_redirects=False).headers["location"] == f"/characters/{cole.id}"
 
 
 def test_game_mode_sync_is_throttled(player, db, monkeypatch):
@@ -757,7 +748,7 @@ def test_tool_corrections_are_a_fix_list(admin, db):
     needs, built = page.split("<h2>Built into askdnd</h2>")
     assert "Healing Word" in needs and "Arrows" not in needs and "Arrows" in built and "Remove" in built
     assert "Divine Smite" in needs and "no character has it now" in needs
-    assert "1 tool correction to build into askdnd" in admin.get("/manage", follow_redirects=True).text  # not the unseen one
+    assert "1 tool correction to build into askdnd" in admin.get("/c/main/manage", follow_redirects=True).text  # not the unseen one
 
 
 def test_smites_are_on_battle_and_ammunition_is_a_weapon():

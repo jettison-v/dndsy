@@ -58,14 +58,11 @@ def test_map_is_a_campaign_tab_that_centers_on_real_markers_only(player):
     assert 'src="https://www.aidedd.org/atlas/sword-coast"' in r.text
     # On another tab the frame waits until Map is opened
     assert 'data-src="https://www.aidedd.org/atlas/sword-coast"' in player.get("/c/main/campaign").text
-    # The old Map address opens the tab, still centered
-    r = player.get("/map?at=Star%20Mounts", follow_redirects=False)
-    r = player.get(r.headers["location"], follow_redirects=False)
-    assert r.headers["location"] == "/c/main/campaign?tab=map&at=Star%20Mounts"
-    assert player.get("/c/main/map", follow_redirects=False).headers["location"] == "/c/main/campaign?tab=map"
-    assert TestClient(app).get("/map", follow_redirects=False).headers["location"] == "/login"
+    # The old Map address is gone: the map is the Campaign page's Map tab (one address per page, 2026-10-23)
+    assert player.get("/map?at=Star%20Mounts").status_code == 404 and player.get("/c/main/map").status_code == 404
+    assert TestClient(app).get("/c/main/campaign?tab=map", follow_redirects=False).headers["location"] == "/login"
 
 
 def test_places_in_the_campaign_reader_link_to_the_map(player, db):
     mounts = db.scalar(select(Entity).where(Entity.name == "Star Mounts"))
-    assert 'href="/c/main/campaign?tab=map&amp;at=Star%20Mounts"' in player.get(f"/campaign?open={mounts.id}").text
+    assert 'href="/c/main/campaign?tab=map&amp;at=Star%20Mounts"' in player.get(f"/c/main/campaign?open={mounts.id}").text

@@ -132,7 +132,7 @@ def test_accept_relationship_after_its_entity_and_undo(db):
 def test_review_page_shows_relationship_suggestion(admin, db):  # noqa: F811
     family(db)
     s = drafted(db, [{"from": "Tomas", "type": "enemy_of", "to": "Tidewardens", "note": ""}])
-    page = admin.get(f"/manage/sessions/{s.id}").text
+    page = admin.get(f"/c/main/manage/sessions/{s.id}").text
     assert "Relationship" in page and "enemy of" in page
 
 
@@ -145,6 +145,6 @@ def test_entity_page_relationship_editing(admin, player, db):  # noqa: F811
     assert rel.from_entity_id == E["Tomas"].id
     admin.post(f"/campaign/{E['Tomas'].id}/relationships/{rel.id}/delete", headers=HX)
     assert db.scalar(select(EntityRelation).where(EntityRelation.type == "member_of")) is None
-    page = admin.get("/campaign?tab=relationships").text
+    page = admin.get("/c/main/campaign?tab=relationships").text
     assert '<div id="t-relationships">' in page and "Aldric and Mira&#39;s family" in page
     assert f'data-modal-url="/c/main/campaign/{E["Pip"].id}/connections"' in page  # anyone opens their connections

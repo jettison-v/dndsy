@@ -79,18 +79,6 @@ def _sessions(db: Session, campaign_id: int) -> list[tuple[int, str]]:
     return [(s.id, session_label(s)) for s in reversed(timeline(db, campaign_id))]
 
 
-@router.get("/{entity_id:int}")
-def entity_page(request: Request, entity_id: int, db: Session = Depends(get_db)):
-    """No full page any more (Brett, 2026-10-22): a link to an entry opens the Campaign page with its side panel."""
-    user = current_user(request)
-    if not user:
-        return RedirectResponse("/login", status_code=303)
-    entity = db.get(Entity, entity_id)
-    if not _visible(entity, user):
-        return _not_found(request)
-    return RedirectResponse(f"{web.base()}/campaign?open={entity_id}", status_code=303)
-
-
 @router.get("/new")
 def new_entry_form(request: Request, kind: str = "npc", db: Session = Depends(get_db)):
     """The DM's "+ New": a small window to add a person, place, faction, item, quest or creature by hand."""
@@ -193,7 +181,7 @@ def _act(request: Request, db: Session, entity_id: int, action: Callable[[Entity
     db.expire_all()
     entity = db.get(Entity, entity_id)
     if entity is None:  # e.g. removed while acting
-        return RedirectResponse("/campaign", status_code=303)
+        return RedirectResponse(f"{web.base()}/campaign", status_code=303)
     if request.headers.get("HX-Request"):
         where = request.query_params.get("in", "")  # the side panel, the Campaign page's Reader, or the edit window
         context = {**entity_context(db, entity, user), "where": where}
@@ -218,7 +206,7 @@ def add_fact(request: Request, entity_id: int, text: str = Form(""), kind: str =
 def _fact_action(request: Request, db: Session, fact_id: int, fn: Callable[[Fact], str]):
     fact = db.get(Fact, fact_id)
     if fact is None:
-        return RedirectResponse("/campaign", status_code=303)
+        return RedirectResponse(f"{web.base()}/campaign", status_code=303)
     return _act(request, db, fact.entity_id, lambda entity, user: fn(fact), allowed=can_moderate)
 
 
@@ -346,7 +334,7 @@ def _leave(request: Request, db: Session, entity_id: int, fn: Callable[[Entity],
 
 @router.post("/{entity_id:int}/delete")
 def delete_entry(request: Request, entity_id: int, db: Session = Depends(get_db)):
-    return _leave(request, db, entity_id, lambda e: (f"Deleted {entities.delete(db, e)}. Manage › History can bring it back.", "/campaign"))
+    return _leave(request, db, entity_id, lambda e: (f"Deleted {entities.delete(db, e)}. Manage › History can bring it back.", f"{web.base()}/campaign"))
 
 
 @router.post("/{entity_id:int}/merge")
