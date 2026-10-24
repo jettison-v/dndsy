@@ -2,7 +2,7 @@
 
 Runs nightly on Railway (the "backup" service, see docs/SETUP_LOG.md). Needs:
 DATABASE_URL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET_NAME,
-AWS_REGION (optional).
+AWS_REGION (optional), SENTRY_DSN (optional: failures are reported, app/errors.py).
 
 Files (pictures, later maps and handouts) aren't in the database, so they aren't in the backup; its stored_files
 table lists them. After the backup is saved, files.sweep() checks every listed file is in S3 (v2/files/; a missing
@@ -45,6 +45,9 @@ def record(engine, started, status: str, detail: str) -> None:
 
 
 def main() -> None:
+    from app import errors
+
+    errors.setup("backup")  # a failed night reaches Sentry and Brett, not just the Manage overview
     engine = create_engine(engine_url())
     started = datetime.now(UTC)
     try:

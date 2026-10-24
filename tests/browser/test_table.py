@@ -104,3 +104,21 @@ def test_a_dm_only_roll_reaches_everyone_but_only_the_dm_sees_it(people, server)
     hidden = newest(other.page)
     assert "Rolled for the DM" in hidden and "Cha save" not in hidden
     assert player.errors == [] and other.errors == [] and dm.errors == []
+
+
+def test_a_pages_javascript_error_is_sent_home(people, server):
+    """app.js "page errors": an error in askdnd's own page goes to /errors/page (app/errors.py), once."""
+    player = people("player")
+    page = player.open("/c/main/")
+    # Playwright can't read a beacon's body, so keep a copy of what the page hands the browser
+    page.evaluate("""window.__sent = []; const send = navigator.sendBeacon.bind(navigator);
+        navigator.sendBeacon = (url, data) => { data.text().then(t => window.__sent.push(JSON.parse(t))); return send(url, data); }; 0""")  # (0: so Playwright doesn't call the function as the result)
+    # A live-update message with nothing in it makes app.js's own listener fail: a real error in askdnd's script
+    with page.expect_response(lambda r: r.url.endswith("/errors/page")) as answered:
+        page.evaluate("setTimeout(() => document.dispatchEvent(new CustomEvent('askdnd:live')))")
+    assert answered.value.status == 204
+    page.wait_for_function("window.__sent.length")
+    got = page.evaluate("window.__sent")
+    assert got and all("/static/app.js" in g["source"] and g["page"] == "/c/main/" and g["message"] for g in got)
+    assert len({(g["message"], g["line"]) for g in got}) == len(got)  # each distinct error once
+    assert player.errors  # (the error itself, expected here)
