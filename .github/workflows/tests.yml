@@ -42,9 +42,12 @@ jobs:
           enable-cache: true
       - run: uv python install
       - run: uv sync --frozen
+      # A throwaway database: no waiting for the disk on every write (it only matters after a crash)
+      - name: Fast test database
+        run: psql "postgresql://askdnd:askdnd@localhost:5432/askdnd_test" -c "ALTER SYSTEM SET fsync = off" -c "ALTER SYSTEM SET synchronous_commit = off" -c "ALTER SYSTEM SET full_page_writes = off" -c "SELECT pg_reload_conf()"
       - name: Lint (unused imports, undefined names)
         run: uv run ruff check app scripts tests
-      - run: uv run pytest -q --ignore=tests/browser
+      - run: uv run pytest -q --durations=15 --ignore=tests/browser
 
   browser:
     name: Browser tests
@@ -74,5 +77,8 @@ jobs:
       - name: Install the test browser's system libraries
         if: steps.browser-cache.outputs.cache-hit == 'true'
         run: uv run playwright install-deps chromium
+      # A throwaway database: no waiting for the disk on every write (it only matters after a crash)
+      - name: Fast test database
+        run: psql "postgresql://askdnd:askdnd@localhost:5432/askdnd_test" -c "ALTER SYSTEM SET fsync = off" -c "ALTER SYSTEM SET synchronous_commit = off" -c "ALTER SYSTEM SET full_page_writes = off" -c "SELECT pg_reload_conf()"
       # One server per file: these run one after another (-n 0), in the order they're written
-      - run: uv run pytest -q -n 0 tests/browser
+      - run: uv run pytest -q --durations=5 -n 0 tests/browser
