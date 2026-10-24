@@ -16,7 +16,7 @@
   <script src="{{ static('app.js') }}" defer></script>
   {% block head %}{% endblock %}
 </head>
-<body data-toast="{{ toast or '' }}">
+<body data-toast="{{ toast or '' }}"{% if user %} data-dice='{{ my_dice() | tojson }}'{% if vtt_on("table_dice") %} data-dice-all{% endif %}{% endif %}>
 {% block body %}
 {% if viewing_as %}{# View as (app/view_as.py): who you're seeing askdnd as, read-only #}
 <div class="view-as-bar" role="status"><span>Viewing as <b>{{ viewing_as.name }}</b>{% if viewing_role %}, {{ viewing_role }}{% if here %} in {{ here.name }}{% endif %}{% elif here %}, no role in {{ here.name }}{% endif %} · read-only</span>
@@ -83,6 +83,7 @@
       <div class="menu" id="account-menu" hidden>
         <a href="#" style="pointer-events:none">{{ user.name }}<small>{{ user.email }}</small></a>
         <a href="/your-suggestions" class="{{ 'active' if path == '/your-suggestions' }}">Your suggestions<small>What happened to each one</small></a>
+        <a href="#" data-modal-url="/dice" data-modal-size="large">Your dice<small>How your rolls look to the table</small></a>
         <a href="/help" class="{{ 'active' if path == '/help' }}" data-no-peek>Help<small>The FAQ and About askdnd</small></a>
         <form method="post" action="/logout"><button type="submit">Sign out</button></form>
       </div>
@@ -103,6 +104,7 @@
 <div class="menu more-menu sheet-menu" id="more-menu" hidden>
   {% if my_campaigns | length > 1 %}{% for c in my_campaigns if not (here and c.id == here.id) %}<a href="/c/{{ c.slug }}{{ switch_path }}">{{ c.name }}{% if c.is_test %} <span class="tag draft campaign-test">Test</span>{% endif %}<small>Switch campaign</small></a>{% endfor %}{% endif %}
   <a href="/your-suggestions" class="{{ 'active' if path == '/your-suggestions' }}">Your suggestions</a>
+  <a href="#" data-modal-url="/dice" data-modal-size="large">Your dice</a>
   {% if manage_pages %}<a href="{{ manage_pages[0].href }}" class="{{ 'active' if path.startswith('/manage') }}">Manage<small>Running the campaign and askdnd</small></a>{% endif %}
   <a href="/help" class="{{ 'active' if path == '/help' }}" data-no-peek>Help<small>The FAQ and About askdnd</small></a>
   <form method="post" action="/logout"><button type="submit">Sign out <small class="note">{{ user.email }}</small></button></form>

@@ -560,3 +560,21 @@ branch**.
 2. Keep a test space with realistic data (here a test campaign with copies of real characters) instead of testing on
    the real thing.
 3. Make database changes "add first, remove later", so a deploy never breaks the version still running.
+
+## 2026-10-23: A third-party library, vendored (the 3D dice)
+
+The thrown dice use an open-source library (@3d-dice/dice-box-threejs, MIT license) with its textures and sounds,
+about 3 MB.
+
+- **Vendored, not loaded from a CDN.** The files are copied into `app/static/vendor/dice-box-threejs-0.0.12/`, so
+  askdnd serves them itself: a game night never depends on someone else's server, and the version can't change
+  under us. The folder name carries the version, so an upgrade is a new folder.
+- **Checked on the way in.** Each downloaded file was compared with the checksum the package registry publishes, so
+  what's in the repo is exactly what the authors released. The library's LICENSE file is kept next to it (MIT asks
+  for that).
+- **Loaded only when needed.** Pages don't download it until the first roll or the dice picker.
+
+**For a new project:**
+1. Check a library's license before using it (MIT, BSD and Apache are friendly), and keep its LICENSE file.
+2. Pin an exact version; vendor the files when the app must keep working even if the CDN or the package disappears.
+3. Verify downloads against published checksums.

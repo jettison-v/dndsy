@@ -1292,7 +1292,7 @@
     place(w, w._anchor);
   }
   function showResult(w, e, focus) {
-    w._ready.then(() => animate() ? stage(e, focus) : null).then(() => {
+    w._ready.then(() => animate() ? throwMine(e, focus).catch(() => stage(e, focus)) : null).then(() => {
       if (!w.isConnected) return;
       w._entry = e;
       const dieEl = w.querySelector('.rp-die');
@@ -1397,8 +1397,172 @@
     });
     return Promise.race([done, new Promise(res => { el._skip = res; })]);
   }
+  // ---------------------------------------------------------------- thrown dice
+  // (Brett, 2026-10-23; docs/mockups/dice-two-ways.html; app/dice.py) Real 3D dice (@3d-dice/dice-box-threejs, vendored)
+  // made to land on askdnd's numbers, in the roller's own set. Your roll: thrown across the page, which dims behind it.
+  // Someone else's: a small tray in the bottom-left corner, or thrown like yours where the VTT piece "table_dice" is on
+  // (body[data-dice-all]). If the dice can't load (an old browser, no WebGL), the gem stage above stands in.
+  const LIB = '/static/vendor/dice-box-threejs-0.0.12/';
+  const TYPE_SETS = { fire: 'fire', cold: 'ice', radiant: 'radiant', necrotic: 'necrotic', poison: 'poison', acid: 'acid',
+                      thunder: 'thunder', lightning: 'lightning', force: 'force', psychic: 'psychic' };
+  let libP = null;
+  const lib = () => libP || (libP = import(LIB + 'dice-box-threejs.es.js').then(m => m.default));
+  const diceOf = el => { try { return JSON.parse(el.dataset.dice || '{}'); } catch (e) { return {}; } };
+  const soundOn = () => store.get('askdnd.diceSound') === 'on';
+  // Every die a result shows, with its real sides and value, and the damage type it belongs to
+  function throwList(e, focus) {
+    const sides = f => +((/d(\d+)/.exec(f || '') || [])[1] || 6);
+    if (focus === 'bonus' && e.bonus) return e.bonus.dice.map(v => ({ s: sides(e.bonus.formula), v }));
+    const p = focus === 'damage' && e.damage ? e.damage : e.main;
+    if (!p) return [];
+    if (p === e.main && D20.includes(e.kind)) {
+      const rays = (p.parts || []).filter(x => x.kept != null), src = rays.length > 1 ? rays : [p];
+      return src.flatMap(r => r.dice.map(v => ({ s: 20, v })));
+    }
+    const lines = p.parts && p.parts.length ? p.parts : [p];
+    return lines.flatMap(ln => ln.dice.map(v => ({ s: sides(ln.formula), v, type: ln.kind })));
+  }
+  // "1d8+2d6@5,4,2": the library merges dice of a size, so each size's values go together, in order
+  function notation(list) {
+    const order = [], by = {};
+    list.slice(0, 20).forEach(d => { if (!by[d.s]) { by[d.s] = []; order.push(d.s); } by[d.s].push(d.v); });
+    return order.map(s => by[s].length + 'd' + s).join('+') + '@' + order.flatMap(s => by[s]).join(',');
+  }
+  function colorset(list, dice) {
+    if (dice.by_type !== false) {
+      const typed = list.map(d => TYPE_SETS[(d.type || '').toLowerCase()]).filter(Boolean);
+      if (typed.length) return typed[0];
+    }
+    return dice.set || 'white';
+  }
+  // A dice box in an element of the page: measured again before each throw (it may have been hidden), one throw at a time
+  function diceBox(host, opts) {
+    if (!host.id) host.id = 'dice-box-' + Math.random().toString(36).slice(2);
+    let box = null, queue = Promise.resolve();
+    const ready = lib().then(DiceBox => { box = new DiceBox('#' + host.id, { assetPath: LIB, theme_surface: 'green-felt', theme_colorset: 'white',
+      theme_material: 'glass', shadows: true, sounds: false, ...opts }); return box.initialize(); });
+    async function go(list, dice) {
+      await ready;
+      const c = box.renderer.domElement;
+      if (host.clientWidth && (c.width !== host.clientWidth || c.height !== host.clientHeight)) box.setDimensions({ x: host.clientWidth, y: host.clientHeight });
+      await box.updateConfig({ theme_colorset: colorset(list, dice), theme_material: dice.material || 'glass', sounds: soundOn() });
+      return box.roll(notation(list));
+    }
+    return { ready, clear: () => box && box.clearDice(),
+      throw: (list, dice, before, after) => (queue = queue.catch(() => {}).then(async () => { if (before) await before(); await go(list, dice); if (after) await after(); })) };
+  }
+  // The page-wide layer: dim, dice, who rolled (others' rolls), and the result card
+  let throwEl = null, throwBox = null, throwTimer = null;
+  function thrower() {
+    if (throwEl) return throwBox;
+    throwEl = document.createElement('div');
+    throwEl.className = 'dice-throw';
+    throwEl.setAttribute('aria-hidden', 'true');  // the roll window and Table rolls say the same in words
+    throwEl.innerHTML = '<div class="dt-dim"></div><div class="dt-box"></div><div class="dt-who"></div><div class="dt-card"></div>';
+    document.body.append(throwEl);
+    throwBox = diceBox(throwEl.querySelector('.dt-box'), { gravity_multiplier: 300, strength: 1.4, baseScale: 95 });
+    return throwBox;
+  }
+  function throwDone() { if (!throwEl) return; clearTimeout(throwTimer); throwEl.classList.remove('on', 'landed'); throwTimer = setTimeout(() => { if (throwBox && !throwEl.classList.contains('on')) throwBox.clear(); }, 400); }
+  function throwCard(what, total, nat, sub) {
+    throwEl.querySelector('.dt-card').innerHTML = '<span class="ds-what">' + esc(what) + '</span><b class="ds-total' + (nat === 20 ? ' nat20' : nat === 1 ? ' nat1' : '') + '">' + total + '</b>'
+      + (sub ? '<span class="ds-what">' + esc(sub) + '</span>' : '');
+    throwEl.classList.add('landed');
+    clearTimeout(throwTimer);
+    throwTimer = setTimeout(throwDone, 3200);
+  }
+  function throwMine(e, focus) {
+    const list = throwList(e, focus);
+    if (!list.length) return Promise.resolve();
+    const box = thrower();
+    return box.ready.then(() => box.throw(list, diceOf(document.body), () => {
+      clearTimeout(throwTimer);
+      throwEl.classList.remove('landed', 'others');
+      throwEl.classList.add('on');
+    }, () => {
+      const dmg = focus === 'damage' && e.damage;
+      const total = dmg ? e.damage.total : focus === 'bonus' && e.bonus ? e.bonus.total : e.total;
+      throwCard(dmg ? (e.damage.crit ? 'Critical damage' : 'Damage') : e.label + (KIND_WORDS[e.kind] || ''), total, dmg ? null : e.nat,
+                !dmg && e.nat && e.kind !== 'death' ? 'Natural ' + e.nat : '');
+    }));
+  }
+  // Someone else's roll: on the whole page (the VTT piece), else in the corner tray
+  let trayEl = null, trayBox = null;
+  function tray() {
+    if (trayEl) return trayBox;
+    trayEl = document.createElement('div');
+    trayEl.className = 'dice-tray';
+    trayEl.setAttribute('aria-hidden', 'true');
+    trayEl.innerHTML = '<div class="dtr-felt"><div class="dtr-box"></div></div><div class="dtr-foot"></div>';
+    document.body.append(trayEl);
+    trayBox = diceBox(trayEl.querySelector('.dtr-box'), { baseScale: 60, shadows: false });
+    return trayBox;
+  }
+  function throwOthers(li) {
+    let t; try { t = JSON.parse(li.dataset.throw || '{}'); } catch (err) { return Promise.reject(err); }
+    t.damage = t.dmg;  // (named dmg in the markup)
+    const followUp = +li.dataset.seq !== +li.dataset.id && t.damage;
+    const list = throwList({ ...t, kind: t.kind }, followUp ? 'damage' : null);
+    if (!list.length) return Promise.reject(new Error('nothing to throw'));
+    const name = li.querySelector('.roll-who b').textContent, what = li.querySelector('.roll-what').textContent.trim().replace(/\s+/g, ' ');
+    const total = followUp ? li.querySelector('.roll-dmg-line b').textContent : (li.querySelector('.roll-total') || {}).textContent;
+    const nat = followUp ? null : li.classList.contains('nat20') ? 20 : li.classList.contains('nat1') ? 1 : null;
+    const dice = diceOf(li);
+    const swatch = '<i class="sw-' + esc(dice.set || 'white') + '"></i>';
+    if (document.body.hasAttribute('data-dice-all')) {
+      const box = thrower();
+      return box.ready.then(() => box.throw(list, dice, () => {
+        clearTimeout(throwTimer);
+        throwEl.classList.remove('landed');
+        throwEl.classList.add('on', 'others');
+        throwEl.querySelector('.dt-who').innerHTML = swatch + '<b>' + esc(name) + '</b> · ' + esc(followUp ? 'damage' : what);
+      }, () => throwCard(name + ' · ' + (followUp ? 'damage' : what), total, nat, nat ? 'Natural ' + nat : '')));
+    }
+    const box = tray();
+    return box.ready.then(() => box.throw(list, dice, async () => {
+      trayEl.querySelector('.dtr-foot').innerHTML = swatch + '<span class="dtr-what"><b>' + esc(name) + '</b> · ' + esc(followUp ? 'damage' : what) + '</span><b class="dtr-total">…</b>';
+      trayEl.classList.add('up');
+      await new Promise(res => setTimeout(res, 250));
+    }, async () => {
+      const tot = trayEl.querySelector('.dtr-total');
+      tot.textContent = total; tot.classList.toggle('nat20', nat === 20); tot.classList.toggle('nat1', nat === 1);
+      await new Promise(res => setTimeout(res, 2600));
+      trayEl.classList.remove('up');
+      await new Promise(res => setTimeout(res, 350));
+      box.clear();
+    }));
+  }
+  // Your dice changed (the picker saved): use them from now on
+  document.body.addEventListener('diceChanged', ev => {
+    const d = ev.detail || {};  // htmx adds the form (elt) to it: keep only the dice
+    if (d.set) document.body.dataset.dice = JSON.stringify({ set: d.set, material: d.material, by_type: d.by_type });
+    const x = document.querySelector('.peek.open .peek-close'); if (x) x.click();
+  });
+  // The picker: throw a d20 in the preview whenever the set or material changes; sounds are per device
+  let pickBox = null;
+  function pickPreview(form) {
+    const host = form.querySelector('[data-dice-preview]');
+    if (!host) return;
+    if (!pickBox || !host.isConnected || pickBox.host !== host) { pickBox = diceBox(host, { baseScale: 110 }); pickBox.host = host;
+      pickBox.ready.then(() => { const l = host.querySelector('.dp-loading'); if (l) l.remove(); }, () => { const l = host.querySelector('.dp-loading'); if (l) l.textContent = "The dice couldn't load in this browser."; }); }
+    const val = n => (form.querySelector('[name=' + n + ']:checked') || {}).value;
+    pickBox.throw([{ s: 20, v: 1 + Math.floor(Math.random() * 20) }], { set: val('set'), material: val('material'), by_type: false });
+  }
+  document.addEventListener('panel:loaded', ev => {
+    const form = ev.target.querySelector && ev.target.querySelector('[data-dice-picker]');
+    if (!form) return;
+    const snd = form.querySelector('[data-dice-sound]');
+    snd.checked = soundOn();
+    snd.addEventListener('change', () => store.set('askdnd.diceSound', snd.checked ? 'on' : 'off'));
+    form.addEventListener('change', ev2 => { if (ev2.target.name === 'set' || ev2.target.name === 'material') pickPreview(form); });
+    pickPreview(form);
+  });
+
   // Click or a key anywhere: land now and clear the stage (the roll window keeps the result)
-  ['pointerdown', 'keydown'].forEach(t => document.addEventListener(t, () => { if (stageEl) { const s = stageEl._skip; stageClear(); if (s) s(); } }, true));
+  ['pointerdown', 'keydown'].forEach(t => document.addEventListener(t, () => {
+    if (stageEl) { const s = stageEl._skip; stageClear(); if (s) s(); }
+    if (throwEl && throwEl.classList.contains('landed')) throwDone();  // thrown dice: once they've landed, a click clears them
+  }, true));
 
   function payload(go) {
     const p = new URLSearchParams();
@@ -1696,7 +1860,8 @@
     [...log.querySelectorAll('.roll-item[data-seq]')].reverse().forEach(li => {
       if (+li.dataset.seq > before) fresh.add(li.dataset.person);
       if (+li.dataset.seq > before && !li.dataset.mine) {
-        notice(li);  // with its small die, even while the sidebar shows the roll (Brett, 2026-10-23)
+        if (animate() && !li.classList.contains('hidden-roll')) throwOthers(li).catch(() => notice(li));  // thrown dice (Brett, 2026-10-23)
+        else notice(li);
         li.classList.remove('fresh'); void li.offsetWidth; li.classList.add('fresh');
       }
     });

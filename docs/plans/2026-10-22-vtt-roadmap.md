@@ -73,7 +73,8 @@ Milestone: a whole fight in askdnd.
 
 **Phase 3, Maps and tokens.** 3.1 Map canvas L core · 3.2 Tokens L core · 3.3 Movement and measuring M core · 3.4
 Fog of war M core · 3.5 Spell areas M core · 3.6 Scenes M core · 3.7 Walls, doors and vision XL nice · 3.8 Import
-.dd2vtt maps M nice · 3.9 Draw and ping S nice · 3.10 Story map M nice.
+.dd2vtt maps M nice · 3.9 Draw and ping S nice · 3.10 Story map M nice · 3.11 Table dice: everyone's rolls thrown across the
+screen in each player's own dice (built 2026-10-23 behind the VTT switch, piece `table_dice`) S nice.
 Milestone: a session on askdnd's maps instead of D&D Beyond Maps.
 
 **Phase 4, The DM's table tools.** 4.1 Show to the table S core · 4.2 Music and ambience M nice · 4.3 Sound effects S

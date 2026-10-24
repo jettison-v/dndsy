@@ -40,7 +40,8 @@ def _page_context(request: Request) -> dict:
             "here": here, "cbase": f"/c/{here['slug']}" if here else "",
             "my_campaigns": access.campaigns_for(user.get("email")) if user else [],
             "switch_path": switch_path(request.url.path),
-            "vtt_on": lambda key: vtt.on(here, key)}  # the VTT switch (app/vtt.py)
+            "vtt_on": lambda key: vtt.on(here, key),  # the VTT switch (app/vtt.py)
+            "my_dice": _my_dice}  # your dice (app/dice.py), for thrown rolls
 
 
 # Pages that make sense in any campaign: switching campaigns keeps you on them (else you land on Story)
@@ -51,6 +52,12 @@ SWITCH_KEEPS = ("/", "/campaign", "/party", "/your-suggestions", "/manage", "/ma
 
 def switch_path(path: str) -> str:
     return path if path in SWITCH_KEEPS else "/"
+
+
+def _my_dice() -> dict:
+    from app.dice import mine
+
+    return mine()
 
 
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates", context_processors=[_page_context])
