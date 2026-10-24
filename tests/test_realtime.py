@@ -2,6 +2,7 @@
 something changed (a roll, a character), never what it was, and only after it's saved."""
 
 import pytest
+from starlette.websockets import WebSocketDisconnect
 
 from app import characters, realtime
 from app import table_rolls as tr
@@ -28,12 +29,12 @@ def test_only_your_own_campaigns_and_only_signed_in(table, db):  # noqa: F811
     from app.main import app
 
     cole = char(db, "Cole")
-    with pytest.raises(Exception):
-        with TestClient(app).websocket_connect(f"/live/connect?c={cole.campaign_id}"):
-            pass
-    with pytest.raises(Exception):
-        with table["player"].websocket_connect(f"/live/connect?c={cole.campaign_id + 999}"):
-            pass
+    for client, campaign_id in ((TestClient(app), cole.campaign_id), (table["player"], cole.campaign_id + 999)):
+        with client.websocket_connect(f"/live/connect?c={campaign_id}") as ws:
+            with pytest.raises(WebSocketDisconnect) as refused:
+                ws.receive_text()
+        assert refused.value.code == 4403  # the code the page knows means "stop retrying"
+    assert realtime.connected(cole.campaign_id) == 0
 
 
 def test_announced_after_commit_never_after_rollback(db, monkeypatch):
