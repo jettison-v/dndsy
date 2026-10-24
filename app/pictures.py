@@ -2,9 +2,12 @@
 
 The DM, reviewers and admins add them from an entity page. Uploads are checked,
 resized and re-encoded with Pillow (which also strips camera metadata such as
-GPS), then stored in the database: one picture per entity, up to 1200 px plus a
-square thumbnail. Player characters without an uploaded picture use their
-D&D Beyond portrait.
+GPS), then kept in file storage (app/files.py): one picture per entity, up to
+1200 px plus a square thumbnail. Player characters without an uploaded picture
+use their D&D Beyond portrait.
+
+Until the old copies in the database are removed (VTT 0.5), pictures are written
+to both, and read from file storage first.
 """
 
 import io
@@ -14,7 +17,7 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 from sqlalchemy import select
 from sqlalchemy.orm import Session, load_only
 
-from app import access
+from app import access, files
 from app.models import CampaignCharacter, Entity, EntityPicture
 
 MAX_UPLOAD = 15 * 1024 * 1024
@@ -65,7 +68,18 @@ def save(db: Session, entity: Entity, raw: bytes, user: dict) -> EntityPicture:
         pic = EntityPicture(entity_id=entity.id)
         db.add(pic)
     pic.data, pic.thumb, pic.content_type, pic.added_by = full, thumb, "image/webp", (user.get("email") or "")[:320]
+    pic.file_key = pic.thumb_key = None
+    if files.ready():
+        pic.file_key = files.put(db, entity.campaign_id, full, "image/webp")
+        pic.thumb_key = files.put(db, entity.campaign_id, thumb, "image/webp")
     return pic
+
+
+def serve(pic: EntityPicture, size: str = "full"):
+    """The picture (or its thumbnail) for a route that has checked who may see it."""
+    if size == "thumb":
+        return files.serve(pic.thumb_key, pic.content_type, lambda: pic.thumb)
+    return files.serve(pic.file_key, pic.content_type, lambda: pic.data)
 
 
 def remove(db: Session, entity: Entity) -> None:
@@ -91,9 +105,11 @@ def urls(db: Session, entity_ids) -> dict[int, dict]:
         if portrait:
             out[m.entity_id] = {"thumb": portrait, "full": ddb_full(portrait), "uploaded": False}
     pics = db.scalars(select(EntityPicture).where(EntityPicture.entity_id.in_(ids))
-                      .options(load_only(EntityPicture.entity_id, EntityPicture.updated_at)))
+                      .options(load_only(EntityPicture.entity_id, EntityPicture.updated_at, EntityPicture.file_key, EntityPicture.thumb_key)))
     for p in pics:
-        v = int(p.updated_at.timestamp()) if p.updated_at else 0
+        # ?v= changes with the picture, so the browser keeps each copy for good (files.CACHE_FOREVER)
+        old = str(int(p.updated_at.timestamp()) if p.updated_at else 0)
         base = f"/campaign/{p.entity_id}/picture"
-        out[p.entity_id] = {"thumb": f"{base}?size=thumb&v={v}", "full": f"{base}?v={v}", "uploaded": True}
+        out[p.entity_id] = {"thumb": f"{base}?size=thumb&v={files.version(p.thumb_key) or old}",
+                            "full": f"{base}?v={files.version(p.file_key) or old}", "uploaded": True}
     return out

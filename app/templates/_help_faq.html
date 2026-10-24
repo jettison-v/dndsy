@@ -184,7 +184,7 @@
       <p>Player, Reviewer and DM are roles in a campaign, so someone can run one campaign and play in another. Admin is about askdnd as a whole. Admins set who can sign in (and who's an admin) on Manage › Accounts, and each campaign's roles and characters on its Manage › Table. The DM can see their campaign's Table and change its name and their own name (as Claude writes it in recaps) on Manage › Settings, where they also switch finished virtual tabletop pieces on for their table.</p>
     {% endcall %}
     {% call q("Where do the pictures come from?") %}
-      <p>Player characters show their D&amp;D Beyond portrait. The DM, reviewers and admins can add a picture to any person, place, faction or other entry from its page (Add a picture). Uploads are shrunk, and hidden information such as a phone photo's location is removed.</p>
+      <p>Player characters show their D&amp;D Beyond portrait. The DM, reviewers and admins can add a picture to any person, place, faction or other entry from its page (Add a picture). Uploads are shrunk, and hidden information such as a phone photo's location is removed. Pictures are kept in askdnd's private file storage (Amazon S3) and are only shown through askdnd, to people who can see that entry; there are no public links to them.</p>
     {% endcall %}
     {% call q("Are session recordings or transcripts stored?") %}
       <p>No. Transcripts are filtered on the admin's own computer, only game content is sent to Claude, and only the extracted story (recaps, key moments, the campaign record) is kept.</p>
@@ -195,6 +195,7 @@
     {% endcall %}
     {% call q("Is askdnd backed up?") %}
       <p>Yes. Every night (3 am Pacific) the whole database is copied to a private Amazon S3 storage bucket, and the last 30 days of copies are kept. That copy lives outside Railway, where askdnd runs, so even a problem there wouldn't lose the campaign. The backup job has its own key that can only reach its backups folder. Restoring one is a deliberate step the admin takes with the restore script; it's been tested. If a night's backup fails or doesn't run, it shows on <b>Manage › Needs you</b> for admins.</p>
+      <p>Pictures aren't in that nightly copy: they stay in askdnd's private file storage, and the copy lists them. Each night the backup job also checks every listed picture is still there (a missing one shows on Needs you too), and a picture that's replaced or removed is kept for 35 days, so any kept backup can be restored with all its pictures.</p>
     {% endcall %}
     {% call q("Does using askdnd cost anything?") %}
       <p>Not for players. Claude is paid per use by the admin, with a monthly limit: drafting a recap costs a few cents, and regenerating a Campaign description about 1–2¢. Admins see spending on Manage › Usage and can set askdnd's own monthly limit there: once a month's spending reaches it, askdnd pauses drafts and description rewrites until the 1st (or until the limit is raised) and says so.</p>

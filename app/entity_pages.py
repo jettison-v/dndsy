@@ -222,9 +222,7 @@ def picture(request: Request, entity_id: int, size: str = "full", db: Session = 
     pic = db.scalar(select(EntityPicture).where(EntityPicture.entity_id == entity_id)) if user and _visible(entity, user) else None
     if pic is None:
         return Response(status_code=404)
-    # URLs carry ?v=<updated time>, so a browser can keep a copy until the picture changes.
-    return Response(pic.thumb if size == "thumb" else pic.data, media_type=pic.content_type,
-                    headers={"Cache-Control": "private, max-age=31536000, immutable", "X-Content-Type-Options": "nosniff"})
+    return pictures.serve(pic, size)
 
 
 def _picture_action(request: Request, db: Session, entity_id: int, fn: Callable[[Entity, dict], str]):

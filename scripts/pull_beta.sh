@@ -1,7 +1,7 @@
 #!/bin/sh
 # Copy beta's data into a local database (askdnd_beta) from the newest nightly backup in S3, for testing on real
-# data. Beta itself is never touched: the backup is downloaded with the backup service's key, which Railway lends
-# to that one command. The copy stays on this Mac (private/ is never committed). Stop the local server first.
+# data. Beta itself is never touched: the backup and its files are downloaded with the backup service's key, which
+# Railway lends to those commands. The copy stays on this Mac (private/ is never committed). Stop the local server first.
 #
 #   scripts/pull_beta.sh
 #
@@ -13,6 +13,8 @@ DB=askdnd_beta
 URL=postgresql+psycopg://localhost/$DB
 
 FILE=$(railway run --service askdnd-backup -- uv run python scripts/fetch_backup.py)
+# The pictures (and later maps and handouts) the backup lists, into private/files/ (only ones not there yet)
+railway run --service askdnd-backup -- uv run python scripts/fetch_files.py "$FILE"
 VERSION=$(uv run python -c "import gzip, json, sys; print(json.loads(gzip.decompress(open(sys.argv[1], 'rb').read()))['alembic'])" "$FILE")
 
 dropdb --if-exists --force "$DB"

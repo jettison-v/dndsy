@@ -2,7 +2,14 @@
 
 Runs nightly on Railway (the "backup" service, see docs/SETUP_LOG.md). Needs:
 DATABASE_URL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET_NAME,
-AWS_REGION (optional), SENTRY_DSN (optional: failures are reported, app/errors.py). With --out it writes a local file instead of uploading:
+AWS_REGION (optional), SENTRY_DSN (optional: failures are reported, app/errors.py).
+
+Files (pictures, later maps and handouts) aren't in the database, so they aren't in the backup; its stored_files
+table lists them. After the backup is saved, files.sweep() checks every listed file is in S3 (v2/files/; a missing
+one fails the run, so the Manage overview shows it) and deletes files nothing has used for longer than backups are
+kept, so every kept backup can still be restored with all its files (docs/DECISIONS.md, 2026-10-24).
+
+With --out it writes a local file instead of uploading, and leaves files alone:
 
     uv run python scripts/backup_db.py --out private/backups/test.json.gz
 """
@@ -15,8 +22,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from sqlalchemy import create_engine  # noqa: E402
+from sqlalchemy.orm import Session  # noqa: E402
 
-from app import backup  # noqa: E402
+from app import backup, files  # noqa: E402
 
 
 def engine_url() -> str:
@@ -75,7 +83,16 @@ def run(engine) -> str:
     for old in backup.old_keys([o["Key"] for o in listed], today):
         s3.delete_object(Bucket=bucket, Key=old)
         print(f"Removed old backup {old}")
-    return f"{key} · {len(raw) / 1e6:.1f} MB · {rows:,} rows"
+    detail = f"{key} · {len(raw) / 1e6:.1f} MB · {rows:,} rows"
+    with Session(engine) as db:
+        swept = files.sweep(db, files.S3(bucket, os.environ.get("AWS_REGION")))
+    detail += f" · {swept['files']:,} files" + "".join(f", {n} {what}" for what, n in (("deleted unused", swept["deleted"]),
+                                                                                   ("leftovers deleted", swept["leftovers"])) if n)
+    print(detail)
+    if swept["missing"]:
+        raise RuntimeError(f"Backup saved ({key}), but {len(swept['missing'])} files listed in the database aren't in "
+                           f"storage: {', '.join(swept['missing'][:5])}")
+    return detail
 
 
 if __name__ == "__main__":

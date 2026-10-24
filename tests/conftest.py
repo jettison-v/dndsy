@@ -86,6 +86,16 @@ def _no_background_drafts(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def file_store(monkeypatch, tmp_path):
+    """File storage (app/files.py) is a fresh folder per test, never private/files or S3."""
+    from app import files
+
+    store = files.LocalFolder(tmp_path / "files")
+    monkeypatch.setattr(files, "storage", lambda: store)
+    return store
+
+
+@pytest.fixture(autouse=True)
 def _access_rows(monkeypatch):
     """Access checks (app/access.py) read people from the database. Tests never see
     the local dev database: no rows unless the test uses `db`, and no caching."""

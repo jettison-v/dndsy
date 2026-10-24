@@ -16,7 +16,7 @@ from fastapi.responses import RedirectResponse, Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import web
+from app import files, web
 from app import config
 from app.admin import _guard as _admin_guard
 from app.auth import can_see_character_notes, is_admin
@@ -246,8 +246,9 @@ def view_snapshot(request: Request, snapshot_id: int, db: Session = Depends(get_
     snap = db.get(NoteSnapshot, snapshot_id)
     if snap is None or not _visible(snap.source, user):
         return _back()
-    ids = {img.name: img.id for img in snap.images}
-    body = markdown_to_html(snap.text, lambda name: f"{web.base()}{DOC}/images/{ids[name]}" if name in ids else None)
+    urls = {img.name: f"{web.base()}{DOC}/images/{img.id}" + (f"?v={files.version(img.file_key)}" if img.file_key else "")
+            for img in snap.images}
+    body = markdown_to_html(snap.text, urls.get)
     return templates.TemplateResponse(request, "admin_snapshot.html", {"user": user, "snap": snap, "body": body})
 
 
@@ -259,4 +260,5 @@ def image(request: Request, image_id: int, db: Session = Depends(get_db)):
     img = db.get(NoteImage, image_id)
     if img is None or not _visible(db.get(NoteSnapshot, img.snapshot_id).source, user):
         return Response(status_code=404)
-    return Response(img.data, media_type=img.content_type, headers={"Cache-Control": "private, max-age=3600"})
+    return files.serve(img.file_key, img.content_type, lambda: img.data,
+                       cache_control=files.CACHE_FOREVER if img.file_key else "private, max-age=3600")

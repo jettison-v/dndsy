@@ -43,6 +43,10 @@ def main() -> None:
     with create_engine(into).begin() as conn:
         counts = backup.load(conn, data)
     print(f"Restored backup from {data['made_at']} (database version {data['alembic']}): {sum(counts.values()):,} rows")
+    if listed := data["tables"].get("stored_files"):
+        print(f"It lists {len(listed):,} files (pictures and the like). They aren't in the backup: they stay in file storage "
+              "(S3 v2/files/), which keeps every file a kept backup names. For a local database, scripts/fetch_files.py "
+              "copies them into private/files/.")
 
 
 if __name__ == "__main__":

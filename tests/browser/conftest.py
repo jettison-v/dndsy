@@ -78,11 +78,12 @@ def browser_db():
 
 
 @pytest.fixture(scope="module")  # per file: torn down before the server tests run
-def server(browser_db):
+def server(browser_db, tmp_path_factory):
     """askdnd itself, as it runs on beta (uvicorn, its startup and the Postgres listener), on a free port."""
     database_url, ids = browser_db
     port = _free_port()
     env = {**os.environ, "DATABASE_URL": database_url, "APP_ENV": "development", "SESSION_SECRET": "browser-tests",
+           "FILE_STORAGE": str(tmp_path_factory.mktemp("files")),
            "DEV_LOGIN_EMAIL": PEOPLE["admin"], "ADMIN_EMAILS": PEOPLE["admin"], "ALLOWED_EMAILS": ",".join(PEOPLE.values()),
            "AUTO_DRAFT": "0", "HTTP_PROXY": "http://127.0.0.1:9", "HTTPS_PROXY": "http://127.0.0.1:9",  # never D&D Beyond
            "NO_PROXY": "127.0.0.1,localhost"}

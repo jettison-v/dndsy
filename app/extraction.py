@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 
 from app.characters import campaign_characters
 
-from app import spending
+from app import files, spending
 from app.relations import TYPES as REL_TYPES
 from app.relations import find as find_relation
 from app.models import (
@@ -239,7 +239,8 @@ def _image_block(img: NoteImage, label: str) -> list[dict]:
         {"type": "text", "text": f"Image {label}:"},
         {
             "type": "image",
-            "source": {"type": "base64", "media_type": img.content_type, "data": base64.b64encode(img.data).decode()},
+            "source": {"type": "base64", "media_type": img.content_type,
+                       "data": base64.b64encode(files.read(img.file_key, lambda: img.data)).decode()},
         },
     ]
 
