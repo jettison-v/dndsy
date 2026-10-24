@@ -10,7 +10,7 @@
 3. If a build failed because of Railway itself ("build daemon returned an error", the build machine dropping the
    connection), builds it again from source, up to twice. Any other failure is ours: it prints the end of the log
    and stops. Beta keeps running the previous version either way.
-4. Checks beta answers.
+4. Checks beta answers (a miss right after a switchover is tried again for about a minute and a half).
 
 Needs the GitHub (`gh`) and Railway (`railway`) CLIs, signed in. Prints no secrets.
 """
@@ -145,14 +145,21 @@ def set_backup_watch() -> None:
     say(f"{SERVICES[1]} rebuilds only when these change: {', '.join(now['data']['serviceInstance']['watchPatterns'])}")
 
 
-def beta_answers() -> bool:
-    try:
-        # Cloudflare turns away Python's default user agent
-        req = urllib.request.Request(f"{BETA}?check={int(time.time())}", headers={"User-Agent": "askdnd-deploy-check"})
-        with urllib.request.urlopen(req, timeout=20) as r:
-            return r.status == 200
-    except Exception:
-        return False
+def beta_answers(tries: int = 6, wait: float = 15) -> bool:
+    """Beta's sign-in page loads. Railway marks a deploy done a moment before the new copy takes over, so a miss is
+    tried again (for about a minute and a half) before it counts."""
+    for attempt in range(tries):
+        try:
+            # Cloudflare turns away Python's default user agent
+            req = urllib.request.Request(f"{BETA}?check={int(time.time())}", headers={"User-Agent": "askdnd-deploy-check"})
+            with urllib.request.urlopen(req, timeout=20) as r:
+                if r.status == 200:
+                    return True
+        except Exception:
+            pass
+        if attempt < tries - 1:
+            time.sleep(wait)
+    return False
 
 
 def main() -> None:

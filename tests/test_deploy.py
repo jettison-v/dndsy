@@ -63,3 +63,32 @@ def test_a_railway_glitch_is_built_again_and_our_own_failure_is_not(monkeypatch)
     monkeypatch.setattr(check, "run", lambda *cmd, check=True: (calls.append(cmd[:3]), "error: No solution found for pillow==99")[1])
     assert not check.follow("askdnd-v2", "abc1234", appear=60)
     assert ("railway", "redeploy", "--service") not in calls
+
+
+def test_beta_gets_a_moment_to_switch_over(monkeypatch):
+    """Right after a deploy, beta can miss once while the new copy takes over; that isn't "beta is down"."""
+    import urllib.request
+
+    answers = iter([OSError("switching over"), OSError("still switching"), 200])
+
+    class Page:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    def urlopen(req, timeout):
+        got = next(answers)
+        if isinstance(got, Exception):
+            raise got
+        return Page()
+
+    deploy_check = _deploy_check()
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(deploy_check.time, "sleep", lambda s: None)
+    assert deploy_check.beta_answers()
+    monkeypatch.setattr(urllib.request, "urlopen", lambda req, timeout: (_ for _ in ()).throw(OSError("down")))
+    assert not deploy_check.beta_answers(tries=3)
