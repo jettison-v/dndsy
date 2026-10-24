@@ -1,25 +1,22 @@
 """Wild Shape for druids (2024 Player's Handbook): which Beasts a druid can learn,
 and what a form looks like with the druid's own stats carried over.
 
-The Beast list is app/data/beasts_2024.json (SRD 5.2 stat blocks, CC-BY-4.0, with
-pictures linked from D&D Beyond; refresh with scripts/wild_shape_beasts.py). Forms
-the druid already knows come from D&D Beyond (sheet["creatures"]); their stat block
-from the list is used when the names match, D&D Beyond's otherwise.
+The Beast list is the SRD's Beasts (app/rules_data.py, SRD 5.2.1 stat blocks), with pictures
+linked from D&D Beyond (app/data/monster_pictures.json). Forms the druid already knows come
+from D&D Beyond (sheet["creatures"]); their stat block from the list is used when the names
+match, D&D Beyond's otherwise (in the same shape, app/ddb_sheet.py).
 
 The rules applied are the Druid's Wild Shape feature and, for Circle of the Moon,
 Circle Forms and Improved Circle Forms, as their text reads on the sheet. They
 inform; the DM makes every ruling (e.g. which other class features work in a form).
 """
 
-import json
 import re
 from functools import cache
-from pathlib import Path
 
-from app import advantage
+from app import advantage, rules_data
 from app import character_views as views
 
-DATA = Path(__file__).parent / "data" / "beasts_2024.json"
 ABILITIES = (("str", "Strength", "Str"), ("dex", "Dexterity", "Dex"), ("con", "Constitution", "Con"),
              ("int", "Intelligence", "Int"), ("wis", "Wisdom", "Wis"), ("cha", "Charisma", "Cha"))
 ABILITY_NAMES = {k: name for k, name, _ in ABILITIES}
@@ -51,11 +48,20 @@ def cr_label(cr: float) -> str:
 
 @cache
 def _catalog() -> tuple[dict, ...]:
-    return tuple(json.loads(DATA.read_text(encoding="utf-8"))["beasts"])
+    """The SRD's Beasts (swarms of Beasts too) with their pictures, by CR then name."""
+    pics = rules_data.pictures()
+    beasts = [{**m, **pics.get(m["key"], {})} for m in rules_data.srd("monster") if m["type"] == "Beast"]
+    return tuple(sorted(beasts, key=lambda b: (b["cr"], b["name"])))
 
 
-def credit() -> str:
-    return json.loads(DATA.read_text(encoding="utf-8"))["credit"]
+def credit(beast: dict) -> str:
+    """The note under an SRD form (the SRD's attribution itself is on Help › About)."""
+    return "Stat block from the SRD 5.2.1 (see Help › About); picture from D&D Beyond." if beast.get("source") == rules_data.SOURCE else ""
+
+
+def senses_text(beast: dict) -> str:
+    """{"darkvision": 60} -> "Darkvision 60 ft." """
+    return ", ".join(f"{k.title()} {v} ft." for k, v in (beast.get("senses") or {}).items())
 
 
 def catalog_beast(name: str) -> dict | None:
@@ -220,7 +226,6 @@ def _clip(text: str, n: int = 110) -> str:
 
 
 NUMBERS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5}
-CONDITIONS = ("Grappled", "Restrained", "Prone", "Poisoned", "Blinded", "Frightened", "Stunned", "Paralyzed", "Incapacitated", "Charmed", "Deafened")
 
 
 def _damages(text: str) -> list[tuple[str, str, str]]:
@@ -343,7 +348,7 @@ def card(sheet: dict, beast: dict, keep=None) -> dict:
     if d.get("fury") == "Primal Strike":
         extra.append(f"+{d['primal_strike']} elemental once per turn")
     texts = " ".join(e["text"] for k in ("actions", "bonus_actions", "reactions") for e in beast.get(k) or [])
-    effects = [c for c in CONDITIONS if re.search(rf"\b{c}\b", texts)]
+    effects = [c for c in rules_data.condition_names() if re.search(rf"\b{c}\b", texts)]
     saves = {s["key"]: s for s in f["saves"]}
     skills = [s for s in f["skills"] if s["name"] in ("Perception", "Stealth", "Athletics", "Acrobatics", "Survival")]
     attack_adv = []
@@ -353,8 +358,8 @@ def card(sheet: dict, beast: dict, keep=None) -> dict:
     return {
         "ac": f["ac"], "ac_moon": d.get("moon") and f["ac"] > beast["ac"], "temp_hp": f["temp_hp"],
         "attack": t["text"], "hit": t["hit"], "hit_value": t["hit_value"], "per_turn": t["per_turn"], "radiant": d.get("lunar_radiance", False), "extra": extra,
-        "speed": _speed_text(speed), "fastest": max(speed.values(), default=0), "senses": beast.get("senses", ""),
-        "resist": ", ".join(x for x in (beast.get("resist"), beast.get("immune")) if x),
+        "speed": _speed_text(speed), "fastest": max(speed.values(), default=0), "senses": senses_text(beast),
+        "resist": ", ".join((beast.get("resistances") or []) + (beast.get("immunities") or [])),
         "saves": [saves[k] for k in ("str", "dex", "con")], "skills": skills,
         "traits": [x["name"] for x in beast.get("traits") or []],
         "bonus": [x["name"] for x in beast.get("bonus_actions") or []], "reactions": [x["name"] for x in beast.get("reactions") or []],
@@ -474,7 +479,7 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
     init_parts = ([("Dexterity modifier (form)", _mod(scores["dex"]))] + [(n, v) for n, v in sheet.get("initiative_kept") or []]
                   + [(f"{n} (kept)", v) for n, v in kp["by"]["initiative"]])
 
-    ac_parts = [(f"The {beast['name']}'s AC" + (f" ({beast['ac_note']})" if beast.get("ac_note") else ""), beast["ac"])]
+    ac_parts = [(f"The {beast['name']}'s AC", beast["ac"])]
     ac = beast["ac"]
     if d["moon"]:
         moon_ac = 13 + wis
@@ -618,7 +623,7 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
 
     return {
         "beast": beast, "druid": d, "ac": ac, "ac_parts": ac_parts, "temp_hp": d["temp_hp"], "hp": hp,
-        "speed": _speed_text(speed), "speed_dict": speed, "abilities": abilities, "saves": saves, "skills": skills,
+        "speed": _speed_text(speed), "speed_dict": speed, "senses": senses_text(beast), "abilities": abilities, "saves": saves, "skills": skills,
         "passive_perception": 10 + perception, "initiative": _signed(sum(v for _, v in init_parts)), "initiative_parts": init_parts,
         "initiative_adv": advantage.initiative(advs), "save_adv_all": advantage.all_saves(advs), "speed_parts": speed_parts,
         "kept": kp,

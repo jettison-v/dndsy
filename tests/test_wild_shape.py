@@ -92,6 +92,7 @@ def test_wild_shape_tab_panel_and_battle_switch(db, cole, player, dm):
     assert 'data-modal-url="/characters/%d/form?name=Polar%%20Bear" data-modal-size="large"' % cole.id in page  # opens in the large modal
     panel = player.get(f"/characters/{cole.id}/form?name=Polar Bear").text
     assert "Circle Forms" in panel and "Shift into it on Battle" in panel and "dndbeyond.com/avatars" in panel
+    assert "Darkvision 60 ft. Resists Cold." in panel and "Stat block from the SRD 5.2.1 (see Help › About)" in panel
     assert player.get(f"/characters/{cole.id}/form?name=Unicorn").status_code == 404
 
     assert dm.post(f"/characters/{cole.id}/wild-shape", data={"form": "Polar Bear"}).status_code == 403  # their player only

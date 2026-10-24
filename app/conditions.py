@@ -9,7 +9,8 @@ start them (roadmap step 7; Brett 2026-10-22: one Status row for every condition
 - Effects on rolls (roll_effects): listed in the roll window with the reason, never chosen for you:
   "while the source is in sight", "unless the target can see you" and the like are the DM's call.
 
-Summaries are ours, from the 2024 Rules Glossary (rules_terms holds the full short text).
+The conditions themselves (which there are, in the rules' order) are the SRD's Rules Glossary (app/rules_data.py);
+what each does to your rolls is askdnd's reading of them, below. Summaries are ours (rules_terms holds the short text).
 """
 
 import json
@@ -17,7 +18,7 @@ import re
 from functools import cache
 from pathlib import Path
 
-from app import rules_terms
+from app import rules_data, rules_terms
 
 DATA = Path(__file__).parent / "data" / "item_actions.json"
 
@@ -25,13 +26,10 @@ ADV, DIS, NOTE = "adv", "dis", "note"
 STR_DEX = {"save:str": (NOTE, "you automatically fail Strength saving throws"), "save:dex": (NOTE, "you automatically fail Dexterity saving throws")}
 INCAPACITATED = {"initiative": (DIS, "Disadvantage on Initiative (Incapacitated)")}
 
-# The official conditions, in the order the rules list them, and what each does to your own rolls.
+# What a condition does to your own rolls (Charmed, Deafened: nothing; Exhaustion goes by level, see roll_effects).
 # Keys: attack, check, check:str (one ability), save:dex…, initiative, d20 (every d20 Test).
-CONDITIONS: dict[str, dict] = {
+ON_ROLLS: dict[str, dict] = {
     "Blinded": {"attack": (DIS, "Disadvantage on your attack rolls")},
-    "Charmed": {},
-    "Deafened": {},
-    "Exhaustion": {},  # by level: see roll_effects
     "Frightened": {"attack": (DIS, "Disadvantage on your attack rolls while the source of your fear is in sight"),
                    "check": (DIS, "Disadvantage on ability checks while the source of your fear is in sight")},
     "Grappled": {"attack": (DIS, "Disadvantage on attack rolls against anyone other than the grappler")},
@@ -46,6 +44,10 @@ CONDITIONS: dict[str, dict] = {
     "Stunned": {**STR_DEX, **INCAPACITATED},
     "Unconscious": {**STR_DEX, **INCAPACITATED},
 }
+# Every official condition, in the order the rules list them, with what it does to your rolls
+CONDITIONS: dict[str, dict] = {name: ON_ROLLS.get(name, {}) for name in rules_data.condition_names()}
+if set(ON_ROLLS) - set(CONDITIONS):
+    raise ValueError(f"not conditions in the SRD: {sorted(set(ON_ROLLS) - set(CONDITIONS))}")
 # Effects that aren't conditions but change what you can do, from items the party has or may find
 EFFECTS: dict[str, dict] = {
     "Enlarged": {"check:str": (ADV, "Advantage on Strength checks"), "save:str": (ADV, "Advantage on Strength saving throws"),

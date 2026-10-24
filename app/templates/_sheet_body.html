@@ -142,7 +142,7 @@
     {% if ws_other_uses %}<details class="fold ws-other"{% if not d.moon and d.level >= 3 %} open{% endif %}><summary>Other ways to use Wild Shape ({{ ws_other_uses | length }})</summary>
       <ul class="plain">{% for u in ws_other_uses %}<li><b>{{ u.name }}</b> <span class="muted">{{ u.summary }}</span></li>{% endfor %}</ul></details>{% endif %}
     {{ form_list(c, forms, picks, can_pick, show_picks, "sheet-forms", [("ready", "Known"), ("all", "All you can learn")], help_off) }}
-    <p class="note">Beast stat blocks: System Reference Document 5.2 (Wizards of the Coast, CC-BY-4.0). Pictures from D&amp;D Beyond.</p>
+    <p class="note">Beast stat blocks from the SRD 5.2.1 (see Help › About). Pictures from D&amp;D Beyond.</p>
   </div>
   {% elif s.creatures %}
   <div id="t-forms" hidden>

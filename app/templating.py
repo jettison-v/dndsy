@@ -2,7 +2,7 @@ from pathlib import Path
 
 from fastapi import Request
 
-from app import access, vtt
+from app import access, rules_data, vtt
 from fastapi.templating import Jinja2Templates
 
 
@@ -201,4 +201,5 @@ def _combo_steps(turn: dict) -> list[dict]:
 
 
 templates.env.filters["combo_steps"] = _combo_steps
+templates.env.globals["SRD_ATTRIBUTION"] = rules_data.ATTRIBUTION  # Help › About; the SRD's license asks for it word for word
 templates.env.globals["STEP_KINDS"] = {"bonus": "Bonus action", "action": "Action", "reaction": "Reaction", "move": "Movement", "free": "Free"}

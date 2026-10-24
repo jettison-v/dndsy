@@ -167,7 +167,7 @@
    "events": []
   },
   "Conjure Celestial": {
-   "why": "Open5e's copy lacks the dice; checked against the 2024 Player's Handbook",
+   "why": "two effects, each named, and both upcast (the reader misses Searing Light's); checked against the 2024 Player's Handbook",
    "events": [
     {
      "name": "Healing Light",
@@ -277,7 +277,7 @@
    ]
   },
   "Dissonant Whispers": {
-   "why": "Open5e's copy lacks the upcast line; the 2024 Player's Handbook adds 1d6 per slot level",
+   "why": "adds the note that a failed save spends the target's Reaction; checked against the 2024 Player's Handbook",
    "events": [
     {
      "name": "Dissonant Whispers",

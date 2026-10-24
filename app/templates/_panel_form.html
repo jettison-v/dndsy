@@ -63,7 +63,7 @@
           <span class="pm {{ sk.level }}" aria-label="{{ {'proficient': 'proficient', 'expertise': 'expertise', 'form': 'the form is proficient'}.get(sk.level, 'not proficient') }}">{{ {"proficient": "●", "expertise": "◆", "form": "●"}.get(sk.level, "○") }}</span>
           <span class="save-name">{{ sk.name }}</span><b>{{ sk.label }}</b><span class="save-adv">{{ adv(sk.adv) }}</span>
         </div>{% endfor %}</div>{% endif %}
-      {% if b.senses or b.resist or b.immune or b.condition_immune %}<p class="note fm-small">{% if b.senses %}{{ b.senses.rstrip(".") }}. {% endif %}{% if b.resist %}Resists {{ b.resist }}. {% endif %}{% if b.immune %}Immune to {{ b.immune }}. {% endif %}{% if b.condition_immune %}Can't be {{ b.condition_immune }}.{% endif %}</p>{% endif %}
+      {% if f.senses or b.resistances or b.immunities or b.condition_immunities %}<p class="note fm-small">{% if f.senses %}{{ f.senses.rstrip(".") }}. {% endif %}{% if b.resistances %}Resists {{ b.resistances | join(", ") }}. {% endif %}{% if b.immunities %}Immune to {{ b.immunities | join(", ") }}. {% endif %}{% if b.condition_immunities %}Can't be {{ b.condition_immunities | join(", ") }}.{% endif %}</p>{% endif %}
     </aside>
 
     <div class="fm-main">
