@@ -70,7 +70,9 @@ def for_commit(service: str, sha: str, after: str = "") -> dict | None:
 def wait_ci(sha: str) -> None:
     say(f"Waiting for GitHub's tests on {sha[:7]}…")
     for _ in range(60):
-        runs = json.loads(run("gh", "run", "list", "--branch", "main", "--limit", "10", "--json", "headSha,databaseId,status,conclusion"))
+        # Only the tests' workflow: Dependabot's "Graph Update" also runs on main's commits
+        runs = json.loads(run("gh", "run", "list", "--workflow", "tests.yml", "--branch", "main", "--limit", "10",
+                              "--json", "headSha,databaseId,status,conclusion"))
         match = next((r for r in runs if r["headSha"].startswith(sha)), None)
         if match:
             if match["status"] != "completed":
