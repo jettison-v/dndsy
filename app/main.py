@@ -35,6 +35,7 @@ from app.history_pages import router as history_router
 from app.house_rules_pages import router as house_rules_router
 from app.campaigns_admin import router as campaigns_router
 from app.dice import router as dice_router
+from app.realtime import router as realtime_router
 from app.entity_pages import router as entity_router
 from app.db import SessionLocal
 from app.db import engine as db_engine
@@ -113,6 +114,7 @@ app.include_router(history_router)
 app.include_router(house_rules_router)
 app.include_router(campaigns_router)
 app.include_router(dice_router)
+app.include_router(realtime_router)
 
 LOGIN_ERRORS = {
     "not_allowed": "That Google account isn't on the list for this table.",

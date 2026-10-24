@@ -31,7 +31,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app import picks, web
+from app import picks, realtime, web
 from app import roll_recipes as rr
 from app.auth import current_user, is_dm
 from app.db import get_db
@@ -458,6 +458,7 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
     row = TableRoll(campaign_id=campaign.id, character_id=ch.id if ch else None, user_id=me.id, label=label, kind=kind,
                     mode=mode, visibility=to, damage=damage, spec=spec, extras=rolled, who=who, **result)
     db.add(row)
+    realtime.announce(db, campaign.id, "rolls")  # every page at the table asks for it (app/realtime.py)
     db.commit()
     db.refresh(row)
     return _reply(request, db, row, me.id, is_dm(user))
@@ -510,6 +511,7 @@ def _follow_up(request, db, campaign_id, me_id, dm, parent_id, action, label, ex
     else:
         return _error("That roll is missing something.")
     db.add(row)
+    realtime.announce(db, campaign_id, "rolls")
     db.commit()
     db.refresh(root)
     return _reply(request, db, root, me_id, dm)
