@@ -49,6 +49,7 @@ PAGES = (
     ("backups", "Backups and imports", "/manage/backups", "Nightly backups, then imports", ASKDND, is_admin, ()),
     ("askdnd-history", "History", "/manage/history", "Changes to accounts and askdnd as a whole", ASKDND, is_admin, ()),
     ("design", "Design system", "/manage/design", "Every component and token, for building askdnd", ASKDND, is_admin, ()),
+    ("dice", "Dice tuning", "/manage/dice", "How thrown dice move and how long they stay, for everyone", ASKDND, is_admin, ()),
 )
 
 
