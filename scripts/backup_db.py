@@ -2,7 +2,7 @@
 
 Runs nightly on Railway (the "backup" service, see docs/SETUP_LOG.md). Needs:
 DATABASE_URL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET_NAME,
-AWS_REGION (optional). With --out it writes a local file instead of uploading:
+AWS_REGION (optional), SENTRY_DSN (optional: failures are reported, app/errors.py). With --out it writes a local file instead of uploading:
 
     uv run python scripts/backup_db.py --out private/backups/test.json.gz
 """
@@ -37,6 +37,9 @@ def record(engine, started, status: str, detail: str) -> None:
 
 
 def main() -> None:
+    from app import errors
+
+    errors.setup("backup")  # a failed night reaches Sentry and Brett, not just the Manage overview
     engine = create_engine(engine_url())
     started = datetime.now(UTC)
     try:

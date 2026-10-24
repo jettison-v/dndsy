@@ -653,6 +653,31 @@ pages.
 2. Give the test server its own database and block it from calling outside services, so tests are repeatable and free.
 3. When you fix a bug a test should have caught, add the test and check it fails with the bug put back.
 
+## 2026-10-24: Error reporting (Sentry)
+
+Until now, if something broke on beta, we found out when someone at the table hit it. Now errors report themselves.
+
+- **Sentry** (sentry.io) collects errors and emails Brett the first time each new one happens. It's the standard tool;
+  the free Developer plan covers a table our size. Brett created the account and project; the project's address (its
+  "DSN") is a secret, set on Railway and in `.env` with `scripts/set-secret.sh`.
+- **What it sees:** the error, the page and the line of code. Not notes, recaps, transcripts, form contents, emails or
+  names. That's switched off in Sentry's settings and scrubbed again before sending, and a test checks it.
+- **Errors in the browser** (a button that throws, for example) are sent back to askdnd, which forwards them, so no
+  outside script runs in players' browsers.
+- **The nightly backup** reports its failures the same way.
+
+**For a new project:**
+1. Add error reporting before real people use it; the free tiers are enough to start.
+2. Decide what must never leave your app, and turn it off in the reporting tool's settings, not just in your code.
+3. Send a test error once it's set up, so you know the alert actually reaches you.
+
+## 2026-10-24: Working in parallel
+
+To move faster without cutting corners, independent pieces with little design (file storage, rules data, faster
+checks) run as separate Claude sessions, each in its own copy of the code (a git "worktree"), each ending in a pull
+request Brett approves. Lesson learned on day one: they also need their own **test databases**, because two test runs
+on one database block each other.
+
 ## 2026-10-24: Openly licensed game data (the SRD)
 
 askdnd now keeps the free part of the 2024 rules, the System Reference Document 5.2.1, as data: every monster, spell,

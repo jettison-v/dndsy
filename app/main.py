@@ -36,7 +36,8 @@ from app.history_pages import router as history_router
 from app.house_rules_pages import router as house_rules_router
 from app.campaigns_admin import router as campaigns_router
 from app.dice import router as dice_router
-from app import realtime
+from app import errors, realtime
+from app.errors import router as errors_router
 from app.realtime import router as realtime_router
 from app.entity_pages import router as entity_router
 from app.db import SessionLocal
@@ -73,6 +74,7 @@ def mark_interrupted_runs() -> None:
         pass  # database not ready; the page will still load
 
 
+errors.setup()  # errors on beta reach Sentry (app/errors.py); before the app, so Sentry can wrap it
 app = FastAPI(title="askdnd", docs_url=None, redoc_url=None, lifespan=lifespan)
 
 
@@ -121,6 +123,7 @@ app.include_router(house_rules_router)
 app.include_router(campaigns_router)
 app.include_router(dice_router)
 app.include_router(realtime_router)
+app.include_router(errors_router)
 
 LOGIN_ERRORS = {
     "not_allowed": "That Google account isn't on the list for this table.",
