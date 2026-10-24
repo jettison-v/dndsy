@@ -73,10 +73,10 @@ async def connect(ws: WebSocket, c: int = 0):
     """A page's connection to its campaign's table: signed in, and the campaign one of theirs. The page sends a
     keep-alive now and then (proxies close quiet connections); nothing else comes in."""
     user = current_user(ws)
+    await ws.accept()  # then refuse with our own code: closed before accepting, browsers only see 1006 and retry
     if not user or not any(x["id"] == c for x in access.campaigns_for(user.get("email"))):
-        await ws.close(code=4403)
+        await ws.close(code=4403)  # the page stops reconnecting (app.js "live connection")
         return
-    await ws.accept()
     me = (asyncio.get_running_loop(), asyncio.Queue())
     with _lock:
         _pages.setdefault(c, set()).add(me)
