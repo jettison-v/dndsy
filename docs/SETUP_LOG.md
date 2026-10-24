@@ -678,3 +678,40 @@ To move faster without cutting corners, independent pieces with little design (f
 checks) run as separate Claude sessions, each in its own copy of the code (a git "worktree"), each ending in a pull
 request Brett approves. Lesson learned on day one: they also need their own **test databases**, because two test runs
 on one database block each other.
+
+## 2026-10-24: Faster checks (same tests)
+
+Every merge waited about 4 minutes for GitHub's checks before Railway even started building. Now it's about 1 minute,
+with the same 454 tests and the same rule: Railway deploys only when every check passes.
+
+- **Measured first.** The time wasn't the browser download or a few broken tests: it was 450 ordinary tests run one
+  at a time, and one thing inside them. Tests turned off a small memory of "who has which role" that the real app
+  keeps, so every page reloaded it from the database dozens of times. The link checker (which opens about 300 pages
+  as each kind of person) spent most of its minute doing that.
+- **Two jobs side by side.** GitHub now runs "Server tests" and "Browser tests" at the same time, on separate machines.
+  You wait for the slower one, not both added together. They show as two checks on a pull request.
+- **Parallel tests** (pytest-xdist): the server tests are split across the machine's processors. Each "worker" gets
+  its own test database (askdnd_test_gw0, _gw1, …) so they never trip over each other. Locally, `uv run pytest` does
+  the same on your Mac's cores: about 25 seconds instead of 100.
+- **Cached browser**: the test copy of Chromium is saved between runs and downloaded again only when Playwright is
+  upgraded.
+- **Safety net kept:** on GitHub, a test that skips (because something is missing, like the database or the browser)
+  now fails the run, so nothing quietly stops being tested.
+- **Railway's build** (1–3 minutes) is unchanged: the slow parts are on Railway's side (it reinstalls packages and
+  pushes the finished image every time), and the settings that could change that would also apply to the backup
+  service.
+
+| | Before | After |
+|---|---|---|
+| GitHub checks, whole run | 2.5–4.5 min | about 1 min |
+| Tests (on GitHub) | 2:20–3:40, one at a time | 32 s server + 24 s browser, side by side |
+| Browser install | 20–24 s | about 11 s (cached) |
+| Railway build | 1–3 min | unchanged |
+
+**For a new project:**
+1. Time each step before changing anything; the slow part is often not the one you'd guess.
+2. Split checks into jobs that run side by side, and make sure your deploy waits for all of them.
+3. Run tests in parallel early, giving each worker its own database; it's much harder to add once tests depend on
+   each other.
+4. Make your test settings match production's where you can: here, a cache the tests had switched off was the main
+   cost.

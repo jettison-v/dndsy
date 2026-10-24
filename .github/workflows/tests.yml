@@ -1,5 +1,5 @@
 # Runs the test suite on every push and pull request. Railway's "Wait for CI" setting holds the beta deploy until
-# every job here passes, so a failing test never ships.
+# this workflow passes (it judges the whole run, and the run fails if either job fails), so a failing test never ships.
 #
 # Two jobs side by side, so the wait is the slower one, not the sum (docs/SETUP_LOG.md, 2026-10-24):
 # - Server tests: everything outside tests/browser, in parallel (pytest-xdist, one worker per CPU, each with its own
@@ -42,9 +42,6 @@ jobs:
           enable-cache: true
       - run: uv python install
       - run: uv sync --frozen
-      # A throwaway database: no waiting for the disk on every write (it only matters after a crash)
-      - name: Fast test database
-        run: psql "postgresql://askdnd:askdnd@localhost:5432/askdnd_test" -c "ALTER SYSTEM SET fsync = off" -c "ALTER SYSTEM SET synchronous_commit = off" -c "ALTER SYSTEM SET full_page_writes = off" -c "SELECT pg_reload_conf()"
       - name: Lint (unused imports, undefined names)
         run: uv run ruff check app scripts tests
       - run: uv run pytest -q --durations=15 --ignore=tests/browser
@@ -77,8 +74,5 @@ jobs:
       - name: Install the test browser's system libraries
         if: steps.browser-cache.outputs.cache-hit == 'true'
         run: uv run playwright install-deps chromium
-      # A throwaway database: no waiting for the disk on every write (it only matters after a crash)
-      - name: Fast test database
-        run: psql "postgresql://askdnd:askdnd@localhost:5432/askdnd_test" -c "ALTER SYSTEM SET fsync = off" -c "ALTER SYSTEM SET synchronous_commit = off" -c "ALTER SYSTEM SET full_page_writes = off" -c "SELECT pg_reload_conf()"
       # One server per file: these run one after another (-n 0), in the order they're written
       - run: uv run pytest -q --durations=5 -n 0 tests/browser
