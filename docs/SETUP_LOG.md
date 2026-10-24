@@ -587,10 +587,13 @@ setting in the database, and deploying works exactly as before (merge → GitHub
 - **What failed.** On 2026-10-23, 3 of about 26 deploys failed, all with Railway's build machines dropping the
   connection ("build daemon returned an error"), before our code even ran. Each time beta kept running the previous
   version, so nobody saw a broken site; a rebuild fixed it. GitHub shows those as red "deployment failed" marks.
-- **Fewer builds.** The nightly backup service was rebuilding on every merge, though it only runs one script. Its
-  Railway settings now live in the repo (`railway.backup.json`, "config as code") with **watch paths**: it rebuilds
-  only when a file the backup uses changes. Half the builds means half the chances to hit a Railway glitch. A test
-  checks that every file the backup script loads is on that list.
+- **Fewer builds.** The nightly backup service was rebuilding on every merge, though it only runs one script. It now
+  has **watch paths**: it rebuilds only when a file the backup uses changes. Half the builds means half the chances to
+  hit a Railway glitch. The list lives in the repo (`BACKUP_WATCH` in `scripts/deploy_check.py`, which copies it to
+  Railway with `--set-backup-watch`), and a test checks every file the backup script loads is on it.
+- **A road not taken.** Railway's settings files ("config as code") turned out to be deprecated. Their replacement
+  describes the *whole project* in one file, and anything left out gets deleted, including the legacy askdnd.ai
+  service we must never touch. Too much risk for one setting, so we set just the watch paths through Railway's API.
 - **Retrying the right failures.** `scripts/deploy_check.py` follows a merge to beta: it waits for the tests, then for
   each service's deploy, and if Railway's build machine failed it builds again from source (twice at most). If the
   failure is ours (a bad package, a crash on start) it prints the end of the log and stops instead of retrying.
@@ -600,5 +603,6 @@ setting in the database, and deploying works exactly as before (merge → GitHub
 **For a new project:**
 1. Read the failure log before blaming your change: "build daemon", "buildkit" and similar mean the host failed.
 2. Give each service watch paths, so a change rebuilds only what it affects.
-3. Keep host settings as code in the repo where the host allows it: they're versioned, reviewed and testable.
+3. Keep host settings in the repo where you safely can (versioned, reviewed, testable), but read what a tool manages
+   before adopting it: "the whole project in one file" also means "delete what isn't in the file".
 4. Retry only failures you've identified as the host's; retrying your own errors just hides them.

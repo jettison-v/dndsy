@@ -2,10 +2,11 @@
 
     uv run python scripts/deploy_check.py            # the newest commit on main
     uv run python scripts/deploy_check.py --sha abc1234
+    uv run python scripts/deploy_check.py --set-backup-watch   # after changing BACKUP_WATCH below
 
 1. Waits for GitHub's tests on that commit (Railway waits for them too).
 2. Waits for each Railway service to deploy it. The backup service only rebuilds when a file it runs changed
-   (railway.backup.json), so it may be skipped.
+   (BACKUP_WATCH, its Railway watch paths), so it may be skipped.
 3. If a build failed because of Railway itself ("build daemon returned an error", the build machine dropping the
    connection), builds it again from source, up to twice. Any other failure is ours: it prints the end of the log
    and stops. Beta keeps running the previous version either way.
@@ -16,6 +17,7 @@ Needs the GitHub (`gh`) and Railway (`railway`) CLIs, signed in. Prints no secre
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -24,6 +26,12 @@ import urllib.request
 from datetime import datetime
 
 SERVICES = ["askdnd-v2", "askdnd-backup"]
+# The backup service's watch paths: it rebuilds only when one of these changes. Every app module the backup script loads
+# must be here (tests/test_deploy.py checks), so a new column in app/models.py still reaches the nightly backup.
+# Railway keeps this list in the service's settings; --set-backup-watch copies it there. (Railway's config files are
+# deprecated, and its replacement manages the whole project, the legacy service included, so we set just this.)
+BACKUP_WATCH = ["scripts/backup_db.py", "app/__init__.py", "app/backup.py", "app/config.py", "app/db.py", "app/history.py",
+                "app/models.py", "pyproject.toml", "uv.lock", ".python-version"]
 BETA = "https://beta.askdnd.ai/login"
 DONE = {"SUCCESS", "SLEEPING", "FAILED", "CRASHED", "REMOVED", "SKIPPED"}
 # Railway's build machines failing, not our code: worth building again
@@ -115,6 +123,28 @@ def follow(service: str, sha: str, appear: int) -> bool:
     return False
 
 
+def set_backup_watch() -> None:
+    """Copy BACKUP_WATCH to the backup service's settings on Railway (signed in with the Railway CLI's login)."""
+    status = json.loads(run("railway", "status", "--json"))
+    env = next(e["node"]["id"] for e in status["environments"]["edges"] if e["node"]["name"] == "production")
+    service = next(e["node"]["id"] for e in status["services"]["edges"] if e["node"]["name"] == SERVICES[1])
+    user = json.load(open(os.path.expanduser("~/.railway/config.json")))["user"]
+
+    def gql(query: str, variables: dict) -> dict:
+        req = urllib.request.Request("https://backboard.railway.com/graphql/v2", json.dumps({"query": query, "variables": variables}).encode(),
+                                     {"Authorization": "Bearer " + (user.get("accessToken") or user["token"]),
+                                      "Content-Type": "application/json", "User-Agent": "askdnd-deploy-check"})
+        return json.load(urllib.request.urlopen(req, timeout=30))
+
+    ids = {"s": service, "e": env}
+    out = gql("mutation($s:String!,$e:String!,$i:ServiceInstanceUpdateInput!){serviceInstanceUpdate(serviceId:$s,environmentId:$e,input:$i)}",
+              {**ids, "i": {"watchPatterns": BACKUP_WATCH}})
+    if out.get("errors"):
+        sys.exit(f"Railway refused: {out['errors'][0]['message']}")
+    now = gql("query($s:String!,$e:String!){serviceInstance(serviceId:$s,environmentId:$e){watchPatterns}}", ids)
+    say(f"{SERVICES[1]} rebuilds only when these change: {', '.join(now['data']['serviceInstance']['watchPatterns'])}")
+
+
 def beta_answers() -> bool:
     try:
         # Cloudflare turns away Python's default user agent
@@ -129,7 +159,10 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     p.add_argument("--sha", help="the commit to follow (default: the newest on main)")
     p.add_argument("--no-ci", action="store_true", help="don't wait for GitHub's tests")
+    p.add_argument("--set-backup-watch", action="store_true", help="copy BACKUP_WATCH to the backup service on Railway, then stop")
     args = p.parse_args()
+    if args.set_backup_watch:
+        return set_backup_watch()
     run("git", "fetch", "-q", "origin", "main")
     sha = args.sha or run("git", "rev-parse", "origin/main").strip()
     if not args.no_ci:
