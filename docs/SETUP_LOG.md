@@ -578,3 +578,27 @@ about 3 MB.
 1. Check a library's license before using it (MIT, BSD and Apache are friendly), and keep its LICENSE file.
 2. Pin an exact version; vendor the files when the app must keep working even if the CDN or the package disappears.
 3. Verify downloads against published checksums.
+
+## 2026-10-24: Deploy failures, and making deploys sturdier
+
+Brett saw failed deploys and asked whether the VTT switch made deploying too complicated. It didn't: the switch is a
+setting in the database, and deploying works exactly as before (merge → GitHub's tests → Railway builds → beta).
+
+- **What failed.** On 2026-10-23, 3 of about 26 deploys failed, all with Railway's build machines dropping the
+  connection ("build daemon returned an error"), before our code even ran. Each time beta kept running the previous
+  version, so nobody saw a broken site; a rebuild fixed it. GitHub shows those as red "deployment failed" marks.
+- **Fewer builds.** The nightly backup service was rebuilding on every merge, though it only runs one script. Its
+  Railway settings now live in the repo (`railway.backup.json`, "config as code") with **watch paths**: it rebuilds
+  only when a file the backup uses changes. Half the builds means half the chances to hit a Railway glitch. A test
+  checks that every file the backup script loads is on that list.
+- **Retrying the right failures.** `scripts/deploy_check.py` follows a merge to beta: it waits for the tests, then for
+  each service's deploy, and if Railway's build machine failed it builds again from source (twice at most). If the
+  failure is ours (a bad package, a crash on start) it prints the end of the log and stops instead of retrying.
+- **Why it beat a separate VTT branch or environment.** A second branch or preview site would mean twice the deploys
+  and twice the places for this to happen; the switch keeps one pipeline.
+
+**For a new project:**
+1. Read the failure log before blaming your change: "build daemon", "buildkit" and similar mean the host failed.
+2. Give each service watch paths, so a change rebuilds only what it affects.
+3. Keep host settings as code in the repo where the host allows it: they're versioned, reviewed and testable.
+4. Retry only failures you've identified as the host's; retrying your own errors just hides them.
