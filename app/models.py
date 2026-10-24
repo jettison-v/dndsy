@@ -161,14 +161,33 @@ class Entity(Timestamped, Base):
         return [a for a in self.aliases if not a.misspelling]
 
 
+class StoredFile(Base):
+    """One file in askdnd's file storage (app/files.py): S3 under v2/files/ on beta, a folder locally.
+
+    Its key is "<campaign id>/<sha256 of the bytes>.<ext>", so what a key holds never changes. Rows that use a file
+    point here with a foreign key (named *_key). Nightly, after the backup, files.sweep() notes which files nothing
+    uses and deletes them once no kept backup could need them; this table is the backup's list of files."""
+
+    __tablename__ = "stored_files"
+    key: Mapped[str] = mapped_column(String(200), primary_key=True)
+    campaign_id: Mapped[int | None] = mapped_column(ForeignKey("campaigns.id", ondelete="SET NULL"), index=True, nullable=True)
+    content_type: Mapped[str] = mapped_column(String(100))
+    size: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    unused_since: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 class EntityPicture(Timestamped, Base):
-    """A picture on an entity page (portrait, map, banner), added by the DM or a reviewer.
-    Stored resized (app/pictures.py) in the database, like note images."""
+    """A picture on an entity page (portrait, map, banner), added by the DM or a reviewer, resized by
+    app/pictures.py. The files are in file storage (file_key, thumb_key); data and thumb are the old copies in the
+    database, still written and read when a key is missing until they're removed (VTT 0.5)."""
 
     __tablename__ = "entity_pictures"
     id: Mapped[int] = mapped_column(primary_key=True)
     entity_id: Mapped[int] = mapped_column(ForeignKey("entities.id", ondelete="CASCADE"), unique=True)
     content_type: Mapped[str] = mapped_column(String(100), default="image/webp", server_default="image/webp")
+    file_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), index=True, nullable=True)  # up to 1200 px
+    thumb_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), index=True, nullable=True)  # 320 px square
     data: Mapped[bytes] = mapped_column(LargeBinary, deferred=True)  # up to 1200 px
     thumb: Mapped[bytes] = mapped_column(LargeBinary, deferred=True)  # 320 px square crop
     added_by: Mapped[str] = mapped_column(String(320), default="", server_default="")
@@ -552,7 +571,9 @@ class NoteImage(Base):
     snapshot_id: Mapped[int] = mapped_column(ForeignKey("note_snapshots.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column(String(300))
     content_type: Mapped[str] = mapped_column(String(100))
-    data: Mapped[bytes] = mapped_column(LargeBinary)
+    # In file storage (app/files.py); data is the old copy in the database, kept until it's removed (VTT 0.5)
+    file_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), index=True, nullable=True)
+    data: Mapped[bytes] = mapped_column(LargeBinary, deferred=True)
 
 
 # ExtractionRun sources that are not session drafts (they never hold Claude's questions).

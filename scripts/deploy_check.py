@@ -30,7 +30,7 @@ SERVICES = ["askdnd-v2", "askdnd-backup"]
 # must be here (tests/test_deploy.py checks), so a new column in app/models.py still reaches the nightly backup.
 # Railway keeps this list in the service's settings; --set-backup-watch copies it there. (Railway's config files are
 # deprecated, and its replacement manages the whole project, the legacy service included, so we set just this.)
-BACKUP_WATCH = ["scripts/backup_db.py", "app/__init__.py", "app/backup.py", "app/config.py", "app/db.py", "app/history.py",
+BACKUP_WATCH = ["scripts/backup_db.py", "app/__init__.py", "app/backup.py", "app/config.py", "app/db.py", "app/files.py", "app/history.py",
                 "app/models.py", "pyproject.toml", "uv.lock", ".python-version"]
 BETA = "https://beta.askdnd.ai/login"
 DONE = {"SUCCESS", "SLEEPING", "FAILED", "CRASHED", "REMOVED", "SKIPPED"}

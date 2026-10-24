@@ -60,3 +60,9 @@ def sqlalchemy_url(raw: str | None) -> str:
 DATABASE_URL = sqlalchemy_url(os.getenv("DATABASE_URL")) or (
     "" if IS_PRODUCTION else "postgresql+psycopg://localhost/askdnd_dev"
 )
+
+# File storage (app/files.py): "s3" keeps files in S3 under v2/files/ (the default on beta; it needs the bucket and
+# an AWS key that may use v2/files/), anything else is a folder, relative to the repo (private/files locally).
+FILE_STORAGE = os.getenv("FILE_STORAGE", "").strip() or ("s3" if IS_PRODUCTION else "private/files")
+AWS_S3_BUCKET_NAME = os.getenv("AWS_S3_BUCKET_NAME", "").strip()
+AWS_REGION = os.getenv("AWS_REGION", "").strip()

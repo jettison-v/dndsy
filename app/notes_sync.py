@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
+from app import files
 from app.gdocs import ExportedDoc
 from app.models import NoteImage, NoteSnapshot, NoteSource
 
@@ -18,9 +19,19 @@ def store_export(db: Session, source: NoteSource, doc: ExportedDoc, title: str |
     if latest and latest.content_hash == doc.content_hash:
         return False
     snap = NoteSnapshot(content_hash=doc.content_hash, text=doc.text)
-    snap.images = [NoteImage(name=n, content_type=t, data=d) for n, (t, d) in doc.images.items()]
+    snap.images = [NoteImage(name=n, content_type=t, data=d, file_key=_store(db, source, t, d)) for n, (t, d) in doc.images.items()]
     source.snapshots.append(snap)
     return True
+
+
+def _store(db: Session, source: NoteSource, content_type: str, data: bytes) -> str | None:
+    """The image's key in file storage. Kinds file storage won't keep stay in the database only, for now (VTT 0.5)."""
+    if not files.ready():
+        return None
+    try:
+        return files.put(db, source.campaign_id, data, content_type)
+    except files.FileError:
+        return None
 
 
 def sync_sources(

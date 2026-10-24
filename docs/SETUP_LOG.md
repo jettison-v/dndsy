@@ -652,3 +652,37 @@ pages.
    for the flows that matter most, not hundreds.
 2. Give the test server its own database and block it from calling outside services, so tests are repeatable and free.
 3. When you fix a bug a test should have caught, add the test and check it fails with the bug put back.
+
+## 2026-10-24: File storage (VTT 0.5)
+
+Pictures were stored inside the database. That's fine for a handful, but maps, handouts, tokens and music won't fit,
+so askdnd now has proper file storage.
+
+- **Where files live.** Amazon S3, in the same bucket as before but only under `v2/files/` (legacy uses the rest of the
+  bucket and is never touched). On the Mac and in tests, files go to a folder instead (`private/files/`, never
+  committed), so nothing local ever writes to the real bucket.
+- **Names that never change.** Each file is named by a fingerprint of its contents (a "content hash") inside its
+  campaign's folder: `v2/files/<campaign>/<fingerprint>.webp`. The same picture uploaded twice is stored once, and a
+  name always means the same bytes, so browsers can keep a copy for good and load pages faster.
+- **Still private.** There are no public links to the bucket. Pictures are served through askdnd, which checks who's
+  asking first, exactly as before.
+- **Limits.** Only listed kinds of files (pictures for now) and up to 20 MB each.
+- **Moving the old pictures, safely.** Add before you remove: (1) a new column for each picture's storage name;
+  (2) askdnd writes pictures to both places and reads storage first, falling back to the database; (3) a script copies
+  every existing picture and checks each copy byte for byte; (4) only after that's checked on beta does a later change
+  remove the database copies. At every step beta keeps working, and undoing a step loses nothing.
+- **Backups.** The nightly backup is of the database, so it no longer contains the pictures. Instead the database
+  lists every file, and after each backup the job checks they're all there and only deletes a file once nothing has
+  used it for 35 days. Backups are kept 30 days, so any backup can still be restored with all its pictures.
+- **Keys.** The website gets its own AWS user (`askdnd-v2-files`) that can read and write `v2/files/` but not delete.
+  The backup job's user can also list and delete there, because it's the one that tidies up.
+
+**For a new project:**
+1. Keep files (uploads, images, audio) in object storage like S3, not the database, and serve them through your app
+   when they're private. Use a local folder for development so tests never touch the real bucket.
+2. Name files by their content hash: duplicates disappear, and you can cache them forever.
+3. When moving data, add the new place first, write to both, copy the old data with a script that checks every copy,
+   and remove the old place in a separate, later change.
+4. A database backup doesn't cover files. Decide how files are protected: here, nothing is deleted until every kept
+   backup is past needing it, and the backup job checks the files are there.
+5. Give the website only the permissions it needs (no delete), and let one scheduled job do the cleanup.

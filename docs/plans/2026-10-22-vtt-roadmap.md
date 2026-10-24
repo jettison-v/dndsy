@@ -96,7 +96,8 @@ Status as of 2026-10-24. **Needs:** says what must exist first.
 organization (step 10) L core, **done 2026-10-23** · 0.3 Live table connection M core, **done 2026-10-24**
 (app/realtime.py: WebSockets through Postgres, so it holds with several copies of the app) · 0.4 Play state and the
 play log with undo M core, *designed with 1.7, built with 1.1* · 0.5 File storage for the campaign (S3 `v2/`; moves
-today's pictures out of the database) M core, *before Phase 3* · 0.6 Rules content as data (SRD 5.2; DM creations in
+today's pictures out of the database) M core, *before Phase 3*; **built 2026-10-24** (app/files.py; pictures are written to both
+until beta's backfill is checked, then a later PR removes the database copies) · 0.6 Rules content as data (SRD 5.2; DM creations in
 the database, never the public repo; rules answers are built on it, Brett 2026-10-23) M core, *before Phase 2* · 0.7
 Finish the Railway cleanup (step 12) S core, **done 2026-10-23** · 0.8 Browser tests for the table's core flows (two
 pages at once, on every pull request) S core, **done 2026-10-24** (tests/browser) · 0.9 Know when something breaks
