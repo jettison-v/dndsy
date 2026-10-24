@@ -411,7 +411,8 @@
   // ---------------------------------------------------------------- live connection
   // (VTT 0.3, app/realtime.py) One WebSocket per page to its campaign's table. askdnd says what changed ("rolls", or
   // "character" with its id) and the page asks for it the usual way; each message goes out as a document event
-  // `askdnd:live` (Table rolls listen for "rolls"). Reconnects on its own; while it's down, polling carries on.
+  // `askdnd:live` (Table rolls listen for "rolls"). Reconnects on its own with growing waits, then sends "resync":
+  // anything may have changed meanwhile. While it's down, polling carries on. Refused (4403): it stops.
   const live = window.askdndLive = { up: false };
   (function connectLive(wait) {
     const c = document.body.dataset.campaign;
@@ -421,21 +422,23 @@
     ws.onopen = () => {
       live.up = live.seen = true; wait = 1;
       ping = setInterval(() => ws.readyState === 1 && ws.send('ping'), 25000);  // proxies close quiet connections
-      if (was) document.dispatchEvent(new CustomEvent('askdnd:live', { detail: { type: 'rolls' } }));  // catch up after a gap
+      if (was) document.dispatchEvent(new CustomEvent('askdnd:live', { detail: { type: 'resync' } }));  // catch up after a gap
     };
     ws.onmessage = e => { try { document.dispatchEvent(new CustomEvent('askdnd:live', { detail: JSON.parse(e.data) })); } catch (err) { /* not ours */ } };
     ws.onclose = ev => {
       live.up = false; clearInterval(ping);
-      if (ev.code !== 4403) setTimeout(() => connectLive(Math.min(wait * 2, 30)), wait * 1000);  // 4403: not this person's campaign
+      // 4403: refused. Otherwise try again, a little later each time and spread out, so a deploy's reconnects don't all land at once
+      if (ev.code !== 4403) setTimeout(() => connectLive(Math.min(wait * 2, 30)), wait * (500 + Math.random() * 1000));
     };
   })(1);
   // Someone's character changed (a D&D Beyond refresh found something new): in Game Mode, Battle showing them swaps in
-  // the new copy and the Live pill catches up. A burst ("Refresh everyone") is taken once.
+  // the new copy and the Live pill catches up. A burst ("Refresh everyone") is taken once; after a gap, any of them.
   let liveTick = null;
   document.addEventListener('askdnd:live', e => {
-    if (e.detail.type !== 'character' || !gmIsOn() || !window.htmx) return;
+    const t = e.detail.type;
+    if ((t !== 'character' && t !== 'resync') || !gmIsOn() || !window.htmx) return;
     const body = document.getElementById('battle-body');
-    if (body && body.dataset.character !== String(e.detail.id)) return;
+    if (t === 'character' && body && body.dataset.character !== String(e.detail.id)) return;
     clearTimeout(liveTick);
     liveTick = setTimeout(gmTick, 400);
   });
@@ -2002,7 +2005,9 @@
     poll: () => gmOn() && loaded && document.visibilityState === 'visible' && (!(window.askdndLive || {}).up || ++polls % 10 === 0),
     since: () => (loaded ? lastId : -1),  // -1: the whole recent log
   };
-  document.addEventListener('askdnd:live', e => { if (e.detail.type === 'rolls' && gmOn() && loaded && log && window.htmx) htmx.trigger(log, 'rolls:load'); });
+  document.addEventListener('askdnd:live', e => {
+    if ((e.detail.type === 'rolls' || e.detail.type === 'resync') && gmOn() && loaded && log && window.htmx) htmx.trigger(log, 'rolls:load');
+  });
   // Only polled rows move `lastId` on: your own roll can land before someone else's earlier one.
   let before = 0;
   if (log) log.addEventListener('htmx:beforeSwap', e => {

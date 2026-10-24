@@ -68,3 +68,71 @@ def test_a_character_is_announced_only_when_dnd_beyond_changed_it(db, monkeypatc
     characters.refresh(db, cole)  # the same sheet again
     db.commit()
     assert len(sent) == 1
+
+
+def test_other_sites_pages_are_refused(table, db):  # noqa: F811
+    cole = char(db, "Cole")
+    with table["other"].websocket_connect(f"/live/connect?c={cole.campaign_id}", headers={"origin": "https://elsewhere.example"}) as ws:
+        with pytest.raises(WebSocketDisconnect) as refused:
+            ws.receive_text()
+    assert refused.value.code == realtime.REFUSED
+    with table["other"].websocket_connect(f"/live/connect?c={cole.campaign_id}", headers={"origin": "http://testserver"}):
+        assert realtime.connected(cole.campaign_id) == 1  # askdnd's own page
+
+
+def test_someone_removed_from_the_campaign_is_cut_off(table, db, monkeypatch):  # noqa: F811
+    cole = char(db, "Cole")
+    monkeypatch.setattr(realtime, "RECHECK_SECONDS", 0.05)
+    with table["other"].websocket_connect(f"/live/connect?c={cole.campaign_id}") as ws:
+        monkeypatch.setattr(realtime, "_allowed", lambda email, campaign_id: False)  # removed meanwhile
+        with pytest.raises(WebSocketDisconnect) as cut:
+            ws.receive_text()
+    assert cut.value.code == realtime.REFUSED and realtime.connected(cole.campaign_id) == 0
+
+
+def test_a_slow_page_holds_each_message_once():
+    async def run():
+        page = realtime._Page()
+        for msg in ('{"type": "rolls"}', '{"type": "character", "id": 7}', '{"type": "rolls"}'):
+            page.offer(msg)
+        assert page.wake.is_set()
+        return page.take(), page.wake.is_set()
+
+    import asyncio
+
+    assert asyncio.run(run()) == (['{"type": "rolls"}', '{"type": "character", "id": 7}'], False)
+
+
+def test_every_copy_of_the_app_hears_a_change_through_postgres(db_engine, monkeypatch):
+    """Two copies (or a deploy's old and new) each LISTEN; a change published on one reaches pages on both."""
+    import asyncio
+    import threading
+    import time
+
+    from tests.conftest import TEST_DATABASE_URL
+
+    got, loop = [], asyncio.new_event_loop()
+    monkeypatch.setattr(realtime, "deliver", lambda campaign_id, msg: got.append((campaign_id, msg)))
+    monkeypatch.setattr("app.db.engine", db_engine)
+    task = loop.create_task(realtime.listen(TEST_DATABASE_URL.replace("postgresql+psycopg://", "postgresql://")))
+    def run():
+        try:
+            loop.run_until_complete(task)
+        except asyncio.CancelledError:
+            pass
+
+    thread = threading.Thread(target=run, daemon=True)
+    try:
+        thread.start()
+        end = time.monotonic() + 5
+        while not realtime._bus["up"] and time.monotonic() < end:
+            time.sleep(0.02)
+        assert realtime._bus["up"]
+        realtime.publish(5, "character", id=9)
+        while not got and time.monotonic() < end:
+            time.sleep(0.02)
+        assert got == [(5, '{"type": "character", "id": 9}')]
+    finally:
+        loop.call_soon_threadsafe(task.cancel)
+        thread.join(5)
+    assert not realtime._bus["up"]  # stopped: a copy delivers to its own pages directly again
