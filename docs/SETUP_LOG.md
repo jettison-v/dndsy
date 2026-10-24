@@ -620,10 +620,14 @@ everyone's screen in a few hundredths of a second instead of up to 3 seconds.
   seconds.
 - **Deploys.** A deploy restarts the app, which drops every connection; pages reconnect on their own (waiting a little
   longer each try) and catch up on anything they missed. Slow polling stays on as a safety net.
-- **One process for now.** The open connections live in the app's memory, which works because askdnd runs one copy.
-  If it ever runs several, they'd need a shared message channel (Postgres can do this with LISTEN/NOTIFY).
+- **Ready for more than one copy.** Each copy of the app keeps its own pages' connections, so copies need a shared
+  channel to tell each other about changes. Postgres has one built in (LISTEN/NOTIFY): every copy listens, and a change
+  on any copy reaches every page. No new service to run or pay for. It also covers a deploy, when the old and new copies
+  overlap for a moment.
 
 **For a new project:**
 1. Start with polling; switch to WebSockets when "a few seconds late" starts to matter.
 2. Send "something changed" on the socket and let the page fetch the details: one place enforces permissions.
 3. Keep polling as a slow fallback and reconnect with growing waits, so a dropped connection costs speed, not data.
+4. Build the shared channel from day one (Postgres LISTEN/NOTIFY if you already have Postgres): adding a second copy of
+   the app later then needs no rewrite.

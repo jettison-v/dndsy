@@ -6,41 +6,101 @@ added die) or {"type": "character", "id": 7} (a character's D&D Beyond copy chan
 usual addresses, which decide who may see what, so a DM-only roll's number never travels on the connection. Pages
 still poll now and then (app.js "live connection"), so a dropped connection costs speed, never a roll.
 
-Changes are announced after their database commit (`announce()` waits for it; a rollback drops them), so a page never
-asks before the change is there. One process holds the connections (the app runs one uvicorn worker). During a
-deploy the old and new copies overlap for a moment; pages reconnect to the new one and catch up as they do.
+How a change travels:
+1. `announce(db, …)` during the change; it goes out only after the database commit (a rollback drops it), so a page
+   never asks before the change is there.
+2. `publish()` sends it on Postgres's NOTIFY channel (`CHANNEL`). Every copy of the app LISTENs there (`listen()`,
+   started with the app), so it reaches pages connected to any copy: several workers, several Railway replicas, or the
+   old and new copies overlapping during a deploy. If the listener is down, a copy delivers to its own pages directly.
+3. Each copy hands it to its pages for that campaign (`deliver()`). A page's outbox keeps each distinct message once,
+   so a slow page holds at most one of each, never a growing backlog.
+
+A page is checked when it connects (signed in, its own campaign, from askdnd's own pages) and again every
+`RECHECK_SECONDS`, so someone removed from a campaign is cut off.
 """
 
 import asyncio
 import json
+import logging
 import threading
+import time
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from sqlalchemy import event
+from sqlalchemy import event, text
 from sqlalchemy.orm import Session
 
-from app import access
+from app import access, config
 from app.auth import current_user
 
 router = APIRouter()
+log = logging.getLogger(__name__)
+
+CHANNEL = "askdnd_table"
+RECHECK_SECONDS = 60  # how often an open connection checks its person may still see the campaign
+REFUSED = 4403  # closing code app.js takes as "don't reconnect"
+
+
+# ------------------------------------------------------------------ pages connected to this copy
+class _Page:
+    """One open page: its event loop and the distinct messages waiting for it."""
+
+    def __init__(self) -> None:
+        self.loop = asyncio.get_running_loop()
+        self.waiting: dict[str, None] = {}  # in order, each message once
+        self.wake = asyncio.Event()
+
+    def offer(self, msg: str) -> None:  # on the page's own loop
+        self.waiting[msg] = None
+        self.wake.set()
+
+    def take(self) -> list[str]:
+        out, self.waiting = list(self.waiting), {}
+        self.wake.clear()
+        return out
+
 
 _lock = threading.Lock()
-# campaign id → the pages connected to it: (their event loop, their outbox)
-_pages: dict[int, set[tuple[asyncio.AbstractEventLoop, asyncio.Queue]]] = {}
+_pages: dict[int, set[_Page]] = {}  # campaign id → its pages connected here
+
+
+def deliver(campaign_id: int, msg: str) -> None:
+    """Hand a message to this copy's pages in the campaign. Safe from any thread."""
+    with _lock:
+        pages = list(_pages.get(campaign_id, ()))
+    for page in pages:
+        try:
+            page.loop.call_soon_threadsafe(page.offer, msg)
+        except RuntimeError:
+            pass  # that page's connection has just closed
+
+
+def connected(campaign_id: int) -> int:
+    with _lock:
+        return len(_pages.get(campaign_id, ()))
+
+
+# ------------------------------------------------------------------ announcing a change
+_bus = {"up": False}  # this copy's listener is on the channel
 
 
 def publish(campaign_id: int | None, kind: str, **data) -> None:
-    """Tell every page open in this campaign that `kind` changed. Safe from any thread."""
+    """Tell every page open in this campaign, on any copy of the app, that `kind` changed."""
     if campaign_id is None:
         return
     msg = json.dumps({"type": kind, **data})
-    with _lock:
-        pages = list(_pages.get(campaign_id, ()))
-    for loop, outbox in pages:
+    if _bus["up"]:
         try:
-            loop.call_soon_threadsafe(outbox.put_nowait, msg)
-        except RuntimeError:
-            pass  # that page's connection has just closed
+            from app.db import engine
+
+            with engine.connect() as conn:
+                conn.execute(text("SELECT pg_notify(:channel, :payload)"),
+                             {"channel": CHANNEL, "payload": json.dumps({"c": campaign_id, "m": msg})})
+                conn.commit()
+            return
+        except Exception:
+            log.warning("Couldn't send a live update through Postgres; delivering it on this copy only", exc_info=True)
+    deliver(campaign_id, msg)
 
 
 def announce(db: Session, campaign_id: int | None, kind: str, **data) -> None:
@@ -63,35 +123,86 @@ def _after_rollback(db: Session, previous_transaction) -> None:
     db.info.pop("announce", None)
 
 
-def connected(campaign_id: int) -> int:
-    with _lock:
-        return len(_pages.get(campaign_id, ()))
+# ------------------------------------------------------------------ the listener (one per copy, started with the app)
+async def listen(url: str | None = None) -> None:
+    """LISTEN on CHANNEL and deliver what arrives to this copy's pages; reconnect with growing waits if the
+    connection drops, and check it's alive whenever it's been quiet (a dead connection can look idle)."""
+    import psycopg
+
+    url = url or config.DATABASE_URL.replace("postgresql+psycopg://", "postgresql://", 1)
+    wait = 1
+    while True:
+        try:
+            async with await psycopg.AsyncConnection.connect(url, autocommit=True) as conn:
+                await conn.execute(f"LISTEN {CHANNEL}")
+                _bus["up"], wait = True, 1
+                while True:
+                    async for note in conn.notifies(timeout=30):
+                        try:
+                            got = json.loads(note.payload)
+                            deliver(int(got["c"]), got["m"])
+                        except (ValueError, KeyError, TypeError):
+                            log.warning("Ignored a malformed live update: %r", note.payload[:200])
+                    await conn.execute("SELECT 1")  # quiet for 30 s: make sure the connection is still there
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            log.warning("The live update listener lost Postgres; reconnecting in %s s", wait, exc_info=True)
+        finally:
+            _bus["up"] = False
+        await asyncio.sleep(wait)
+        wait = min(wait * 2, 30)
+
+
+# ------------------------------------------------------------------ a page's connection
+def _allowed(email: str, campaign_id: int) -> bool:
+    return any(x["id"] == campaign_id for x in access.campaigns_for(email))
+
+
+def _same_site(ws: WebSocket) -> bool:
+    """Only askdnd's own pages connect (browsers send the page's Origin; another site's page can't pose as ours)."""
+    origin = ws.headers.get("origin")
+    return not origin or urlparse(origin).netloc == ws.headers.get("host", "")
 
 
 @router.websocket("/live/connect")
 async def connect(ws: WebSocket, c: int = 0):
-    """A page's connection to its campaign's table: signed in, and the campaign one of theirs. The page sends a
-    keep-alive now and then (proxies close quiet connections); nothing else comes in."""
+    """A page's connection to its campaign's table. The page sends a keep-alive now and then (proxies close quiet
+    connections); nothing else comes in."""
     user = current_user(ws)
-    await ws.accept()  # then refuse with our own code: closed before accepting, browsers only see 1006 and retry
-    if not user or not any(x["id"] == c for x in access.campaigns_for(user.get("email"))):
-        await ws.close(code=4403)  # the page stops reconnecting (app.js "live connection")
+    email = (user or {}).get("email", "")
+    ok = bool(user) and _same_site(ws) and await asyncio.to_thread(_allowed, email, c)
+    page = _Page()
+    if ok:  # listed before the page hears it's connected, so nothing announced after that can miss it
+        with _lock:
+            _pages.setdefault(c, set()).add(page)
+    await ws.accept()  # refused too: closed before accepting, browsers only see 1006 and retry
+    if not ok:
+        await ws.close(code=REFUSED)
         return
-    me = (asyncio.get_running_loop(), asyncio.Queue())
-    with _lock:
-        _pages.setdefault(c, set()).add(me)
 
     async def send():
         while True:
-            await ws.send_text(await me[1].get())
+            await page.wake.wait()
+            for msg in page.take():
+                await ws.send_text(msg)
 
     sender = asyncio.create_task(send())
+    checked = time.monotonic()
     try:
         while True:
-            await ws.receive_text()
+            try:
+                await asyncio.wait_for(ws.receive_text(), timeout=RECHECK_SECONDS)
+            except TimeoutError:
+                pass
+            if time.monotonic() - checked >= RECHECK_SECONDS:
+                if not await asyncio.to_thread(_allowed, email, c):
+                    await ws.close(code=REFUSED)
+                    return
+                checked = time.monotonic()
     except WebSocketDisconnect:
         pass
     finally:
         sender.cancel()
         with _lock:
-            _pages.get(c, set()).discard(me)
+            _pages.get(c, set()).discard(page)

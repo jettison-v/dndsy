@@ -1,5 +1,6 @@
 """askdnd v2 web app."""
 
+import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -35,6 +36,7 @@ from app.history_pages import router as history_router
 from app.house_rules_pages import router as house_rules_router
 from app.campaigns_admin import router as campaigns_router
 from app.dice import router as dice_router
+from app import realtime
 from app.realtime import router as realtime_router
 from app.entity_pages import router as entity_router
 from app.db import SessionLocal
@@ -48,7 +50,11 @@ from app.templating import templates
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     mark_interrupted_runs()
+    # The live table connection: this copy hears every copy's changes through Postgres (app/realtime.py)
+    listener = asyncio.create_task(realtime.listen()) if db_engine is not None and db_engine.dialect.name == "postgresql" else None
     yield
+    if listener:
+        listener.cancel()
 
 
 def mark_interrupted_runs() -> None:
