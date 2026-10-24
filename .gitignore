@@ -21,6 +21,8 @@ notes/
 *.m4a
 *.mp3
 *.wav
+# ...except the dice sounds that ship with the 3D dice library (no recordings live there)
+!app/static/vendor/dice-box-threejs-*/sounds/**/*.mp3
 
 # --- Python ---
 __pycache__/
