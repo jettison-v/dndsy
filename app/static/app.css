@@ -22,6 +22,10 @@
   --die-ruby-hi: #f3a196; --die-ruby-mid: #c4473d; --die-ruby-lo: #6e1b17; --die-ruby-ink: #fff4f2;
   --die-jade-hi: #aee9c3; --die-jade-mid: #4fae73; --die-jade-lo: #1f5a35; --die-jade-ink: #06180d;
   --die-glow: rgba(91, 191, 127, .6);
+  /* Thrown dice (app/dice.py): each set's swatch in the dice picker and on who-rolled tags, and the dice tray's felt */
+  --set-astralsea: #e8e6f0; --set-bloodmoon: #6f0000; --set-dragons: #7e934e; --set-starynight: #233660; --set-glitterparty: #c9a0ff;
+  --set-bronze: #7a4e06; --set-fire: #f43c04; --set-ice: #9fd8f0; --set-radiant: #fff2cc; --set-necrotic: #4a0000; --set-poison: #504099;
+  --set-black: #111111; --set-white: #eeeeee; --set-rainbow: #e05a9a; --felt-hi: #2c3a2c; --felt-lo: #171c17;
   --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);  /* Reminders (the bell) */
   /* Action economy: the only colored headings (DESIGN.md › Section headings) */
   --k-action: #ef6b6b; --k-bonus: var(--amber); --k-reaction: #6fa8ff; --k-other: #b48ae8;
@@ -1259,6 +1263,51 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .ds-total { font-size: var(--fs-2xl); font-weight: 800; color: var(--text-strong); line-height: 1.1; }
 .ds-total.nat20 { color: var(--green); } .ds-total.nat1 { color: var(--red); }
 .roll-note .gem { margin: 0 -2px; }
+/* Thrown dice (app.js "thrown dice"): your roll across the page, which dims; others' in the corner tray */
+.dice-throw { position: fixed; inset: 0; z-index: 19; pointer-events: none; visibility: hidden; opacity: 0; transition: opacity .3s, visibility 0s .3s; }
+.dice-throw.on { visibility: visible; opacity: 1; transition: opacity .2s; }
+.dt-dim { position: absolute; inset: 0; background: var(--backdrop-strong); backdrop-filter: blur(2px); }
+.dice-throw.others .dt-dim { background: var(--backdrop-soft); backdrop-filter: none; }
+.dt-box { position: absolute; inset: 0; }
+.dt-who { position: absolute; top: calc(var(--stick-top, 62px) + 12px); left: 50%; transform: translateX(-50%); display: none; align-items: center; gap: 8px; padding: 5px 14px 5px 8px;
+  border-radius: var(--r-pill); background: var(--surface); border: 1px solid var(--line-strong); font-size: var(--fs-sm); white-space: nowrap; box-shadow: 0 6px 18px var(--shadow); }
+.dice-throw.others .dt-who { display: flex; }
+.dt-who b { color: var(--text-strong); }
+.dt-card { position: absolute; left: 50%; bottom: 28px; transform: translate(-50%, 8px); display: grid; justify-items: center; gap: 2px; min-width: 220px; padding: var(--sp-3) var(--sp-5);
+  background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-lg); box-shadow: 0 12px 32px var(--shadow); opacity: 0; transition: opacity .25s, transform .25s; }
+.dice-throw.landed .dt-card { opacity: 1; transform: translate(-50%, 0); }
+.dice-tray { position: fixed; z-index: 9; left: calc(var(--rolls-w, 0px) + 16px); bottom: 16px; width: 300px; height: 150px; overflow: hidden; pointer-events: none;
+  background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-lg); box-shadow: 0 10px 28px var(--shadow);
+  transform: translateY(calc(100% + 24px)); transition: transform .3s ease; }
+.dice-tray.up { transform: none; }
+.dtr-felt { position: absolute; inset: 0 0 46px; background: radial-gradient(ellipse at center, var(--felt-hi), var(--felt-lo)); }
+.dtr-box { position: absolute; inset: 0; }
+.dtr-foot { position: absolute; left: 0; right: 0; bottom: 0; height: 46px; display: flex; align-items: center; gap: 8px; padding: 0 12px; font-size: var(--fs-sm); border-top: 1px solid var(--line); }
+.dtr-what { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+.dtr-what b { color: var(--text-strong); }
+.dtr-total { margin-left: auto; font-size: var(--fs-lg); color: var(--text-strong); }
+.dtr-total.nat20 { color: var(--green); } .dtr-total.nat1 { color: var(--red); }
+/* A dice set's swatch: a small diamond */
+[class^="sw-"] { display: inline-block; width: 14px; height: 14px; border-radius: 3px; transform: rotate(45deg); flex: none; background: var(--sw); border: 1px solid var(--line-strong); }
+.sw-astralsea { --sw: var(--set-astralsea); } .sw-bloodmoon { --sw: var(--set-bloodmoon); } .sw-dragons { --sw: var(--set-dragons); } .sw-starynight { --sw: var(--set-starynight); }
+.sw-glitterparty { --sw: var(--set-glitterparty); } .sw-bronze { --sw: var(--set-bronze); } .sw-fire { --sw: var(--set-fire); } .sw-ice { --sw: var(--set-ice); }
+.sw-radiant { --sw: var(--set-radiant); } .sw-necrotic { --sw: var(--set-necrotic); } .sw-poison { --sw: var(--set-poison); } .sw-black { --sw: var(--set-black); }
+.sw-white { --sw: var(--set-white); } .sw-rainbow { --sw: var(--set-rainbow); }
+/* The dice picker (_dice_picker.html) */
+.dice-picker h3 { margin: var(--sp-4) 0 var(--sp-2); font-size: var(--fs-xs); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); }
+.dice-picker h3:first-child { margin-top: 0; }
+.dp-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--sp-5); align-items: start; }
+.dp-sets { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--sp-2); }
+.dp-set, .dp-mat { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); cursor: pointer; font-size: var(--fs-sm); }
+.dp-set input, .dp-mat input { position: absolute; opacity: 0; pointer-events: none; }
+.dp-set:has(input:checked), .dp-mat:has(input:checked) { border-color: var(--blue); background: var(--selected-bg); color: var(--text-strong); }
+.dp-set:has(input:focus-visible), .dp-mat:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: 2px; }
+.dp-mats { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-bottom: var(--sp-3); }
+.dp-preview { position: relative; height: 320px; border-radius: var(--r-lg); overflow: hidden; background: radial-gradient(ellipse at center, var(--felt-hi), var(--felt-lo)); display: grid; place-items: center; }
+.dp-loading { position: absolute; }
+.dice-picker .check { margin-top: var(--sp-2); }
+@media (max-width: 640px) { .dp-grid { grid-template-columns: 1fr; } .dp-preview { height: 220px; order: -1; }
+  .dice-tray { left: 8px; right: 8px; width: auto; bottom: calc(var(--bottom-nav-h, 64px) + 8px); } }
 @media (max-width: 640px) { .gem { --size: 84px; } .gem.mid { --size: 60px; } .gem.tiny { --size: 28px; } }
 
 /* Phones: the log is a bottom sheet over the bottom bar: the newest rolls, its bar alone

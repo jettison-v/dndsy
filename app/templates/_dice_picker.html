@@ -1,0 +1,25 @@
+{# Choose your dice (app/dice.py; docs/mockups/dice-two-ways.html › Choose your dice). app.js throws a d20 in the
+   preview whenever the set or material changes; sound is per device (localStorage), the rest is saved to you. #}
+<div class="peek-head">
+  <div><div class="note">Table rolls</div><h2 id="peek-title">Your dice</h2></div>
+  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
+</div>
+<form class="peek-body dice-picker" hx-post="/dice" hx-swap="none" data-dice-picker>
+  <div class="dp-grid">
+    <div>
+      <h3>Dice set</h3>
+      <div class="dp-sets" role="radiogroup" aria-label="Dice set">
+        {% for k, n in sets %}<label class="dp-set"><input type="radio" name="set" value="{{ k }}"{{ ' checked' if d.set == k }}><i class="sw-{{ k }}" aria-hidden="true"></i>{{ n }}</label>{% endfor %}
+      </div>
+      <h3>Material</h3>
+      <div class="dp-mats" role="radiogroup" aria-label="Material">
+        {% for m in materials %}<label class="dp-mat"><input type="radio" name="material" value="{{ m }}"{{ ' checked' if d.material == m }}>{{ m | capitalize }}</label>{% endfor %}
+      </div>
+      <label class="check"><input type="checkbox" name="by_type" value="1"{{ ' checked' if d.by_type }}> Damage dice take their damage type's look (fire, cold, radiant…)</label>
+      <label class="check"><input type="checkbox" data-dice-sound> Dice sounds <span class="note">(this device)</span></label>
+      <p class="note">Everyone sees your rolls in your dice. Dice animation in the Table rolls sidebar turns the throwing off on a device.</p>
+    </div>
+    <div class="dp-preview" data-dice-preview><span class="note dp-loading">Loading the dice…</span></div>
+  </div>
+  <div class="peek-foot row"><button class="btn primary" type="submit">Save</button><button class="btn link peek-close" type="button">Cancel</button></div>
+</form>

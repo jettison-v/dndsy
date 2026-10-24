@@ -22,7 +22,10 @@ class Piece:
 
 # Every VTT piece, in roadmap order. Add one here when its work starts (ready=False), and set ready=True when the table
 # can have it.
-PIECES: list[Piece] = []
+PIECES: list[Piece] = [
+    Piece("table_dice", "Everyone's rolls thrown across the screen", "3.11",
+          "Others' rolls are thrown across the page like your own, instead of the small tray (app/dice.py)"),
+]
 
 
 def piece(key: str) -> Piece | None:

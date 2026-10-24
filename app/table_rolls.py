@@ -35,7 +35,7 @@ from app import picks, web
 from app import roll_recipes as rr
 from app.auth import current_user, is_dm
 from app.db import get_db
-from app.models import Character, CharacterSnapshot, TableRoll
+from app.models import Character, CharacterSnapshot, TableRoll, User
 from app.templating import templates
 
 router = APIRouter()
@@ -276,6 +276,10 @@ def entries(db: Session, roots: list[TableRoll], kids: list[TableRoll], viewer_i
             names[ch.id] = ch.name
         pics = dict(db.execute(select(CharacterSnapshot.character_id, CharacterSnapshot.summary["portrait"].astext)
                                .where(CharacterSnapshot.character_id.in_(ids))).all())
+    from app.dice import prefs
+
+    rollers = {r.user_id for r in roots if r.user_id}
+    dice = {u.id: prefs(u) for u in db.scalars(select(User).where(User.id.in_(rollers)))} if rollers else {}
     seq = {r.id: max([r.id] + [k.id for k in by_root.get(r.id, [])]) for r in roots}
     out, newest_mine = [], True
     for r in sorted(roots, key=lambda r: seq[r.id], reverse=True):
@@ -286,7 +290,7 @@ def entries(db: Session, roots: list[TableRoll], kids: list[TableRoll], viewer_i
         name = names.get(r.character_id) or r.who or "Someone"
         e = {"id": r.id, "seq": seq[r.id], "character_id": r.character_id or 0, "name": name, "initial": name[:1].upper(),
              "portrait": pics.get(r.character_id) or "", "hue": (r.character_id or 0) % 6 if r.character_id else 6,
-             "mine": mine, "to": r.visibility, "hidden": how == "hidden",
+             "mine": mine, "to": r.visibility, "hidden": how == "hidden", "dice": dice.get(r.user_id) or prefs(None),
              "at": r.created_at.isoformat() if r.created_at else "", "ago": _ago(r.created_at),
              "hidden_text": "Rolled for the DM" if r.character_id else "Rolled behind the screen"}
         if how == "full":

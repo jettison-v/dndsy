@@ -86,6 +86,7 @@ class User(Timestamped, Base):
     current_campaign_id: Mapped[int | None] = mapped_column(ForeignKey("campaigns.id", ondelete="SET NULL"), nullable=True)
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     dismissed_help: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # help lines they pressed "Got it" on (help_pages.HELP)
+    dice: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # their dice: set, material, by_type (app/dice.py)
 
 
 class Campaign(Timestamped, Base):
