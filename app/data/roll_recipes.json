@@ -1,5 +1,5 @@
 {
- "credit": "Roll recipes for spells in the System Reference Document 5.2 by Wizards of the Coast LLC, licensed under CC-BY-4.0 (https://creativecommons.org/licenses/by/4.0/), written by askdnd from the rules text.",
+ "credit": "Roll recipes for spells in the SRD 5.2.1 (attribution in app/data/srd/README.md), written by askdnd from the rules text.",
  "items": {
   "Acid": {
    "checked": "by hand",

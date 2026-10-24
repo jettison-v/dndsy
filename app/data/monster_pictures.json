@@ -1,0 +1,455 @@
+{
+ "_about": "Links to D&D Beyond's 2024 Monster Manual art for SRD monsters, by the monster's key (app/rules_data.py pictures()). Links only, never the pictures; refreshed by scripts/monster_pictures.py.",
+ "pictures": {
+  "allosaurus": {
+   "image": "https://www.dndbeyond.com/avatars/47138/575/638741963717916049.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5194879-allosaurus",
+   "ddb_id": 5194879
+  },
+  "ankylosaurus": {
+   "image": "https://www.dndbeyond.com/avatars/47144/532/638742152318979105.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5194898-ankylosaurus",
+   "ddb_id": 5194898
+  },
+  "ape": {
+   "image": "https://www.dndbeyond.com/avatars/43938/888/638607408671951647.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775801-ape",
+   "ddb_id": 4775801
+  },
+  "archelon": {
+   "image": "https://www.dndbeyond.com/avatars/47144/568/638742153406085942.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5194901-archelon",
+   "ddb_id": 5194901
+  },
+  "baboon": {
+   "image": "https://www.dndbeyond.com/avatars/47144/596/638742154065775180.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5194910-baboon",
+   "ddb_id": 5194910
+  },
+  "badger": {
+   "image": "https://www.dndbeyond.com/avatars/43938/901/638607409155512331.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775802-badger",
+   "ddb_id": 4775802
+  },
+  "bat": {
+   "image": "https://www.dndbeyond.com/avatars/43938/917/638607409598192740.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775803-bat",
+   "ddb_id": 4775803
+  },
+  "black-bear": {
+   "image": "https://www.dndbeyond.com/avatars/43938/929/638607409966263242.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775804-black-bear",
+   "ddb_id": 4775804
+  },
+  "blood-hawk": {
+   "image": "https://www.dndbeyond.com/avatars/47144/684/638742156672357007.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5194927-blood-hawk",
+   "ddb_id": 5194927
+  },
+  "boar": {
+   "image": "https://www.dndbeyond.com/avatars/58415/682/639226665173293120.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775805-boar",
+   "ddb_id": 4775805
+  },
+  "brown-bear": {
+   "image": "https://www.dndbeyond.com/avatars/43939/59/638607413476883184.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775806-brown-bear",
+   "ddb_id": 4775806
+  },
+  "camel": {
+   "image": "https://www.dndbeyond.com/avatars/43939/72/638607413886651586.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775807-camel",
+   "ddb_id": 4775807
+  },
+  "cat": {
+   "image": "https://www.dndbeyond.com/avatars/43939/80/638607414146520300.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775808-cat",
+   "ddb_id": 4775808
+  },
+  "constrictor-snake": {
+   "image": "https://www.dndbeyond.com/avatars/47158/791/638742830746745538.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775809-constrictor-snake",
+   "ddb_id": 4775809
+  },
+  "crab": {
+   "image": "https://www.dndbeyond.com/avatars/58416/245/639226684526660187.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775810-crab",
+   "ddb_id": 4775810
+  },
+  "crocodile": {
+   "image": "https://www.dndbeyond.com/avatars/43939/130/638607415523410034.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775811-crocodile",
+   "ddb_id": 4775811
+  },
+  "deer": {
+   "image": "https://www.dndbeyond.com/avatars/47138/754/638741963967346077.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5194966-deer",
+   "ddb_id": 5194966
+  },
+  "dire-wolf": {
+   "image": "https://www.dndbeyond.com/avatars/47158/803/638742831345964759.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775812-dire-wolf",
+   "ddb_id": 4775812
+  },
+  "draft-horse": {
+   "image": "https://www.dndbeyond.com/avatars/43939/171/638607416540430468.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775813-draft-horse",
+   "ddb_id": 4775813
+  },
+  "eagle": {
+   "image": "https://www.dndbeyond.com/avatars/47138/781/638741964002529266.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5194979-eagle",
+   "ddb_id": 5194979
+  },
+  "elephant": {
+   "image": "https://www.dndbeyond.com/avatars/43939/192/638607417002130871.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775814-elephant",
+   "ddb_id": 4775814
+  },
+  "elk": {
+   "image": "https://www.dndbeyond.com/avatars/47158/815/638742831953623664.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775815-elk",
+   "ddb_id": 4775815
+  },
+  "frog": {
+   "image": "https://www.dndbeyond.com/avatars/43939/207/638607417426081315.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775816-frog",
+   "ddb_id": 4775816
+  },
+  "giant-ape": {
+   "image": "https://www.dndbeyond.com/avatars/47138/843/638741964090199887.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195010-giant-ape",
+   "ddb_id": 5195010
+  },
+  "giant-badger": {
+   "image": "https://www.dndbeyond.com/avatars/58417/79/639226713415789129.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775817-giant-badger",
+   "ddb_id": 4775817
+  },
+  "giant-bat": {
+   "image": "https://www.dndbeyond.com/avatars/47138/847/638741964094408428.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195012-giant-bat",
+   "ddb_id": 5195012
+  },
+  "giant-boar": {
+   "image": "https://www.dndbeyond.com/avatars/47138/851/638741964097222858.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195013-giant-boar",
+   "ddb_id": 5195013
+  },
+  "giant-centipede": {
+   "image": "https://www.dndbeyond.com/avatars/47138/853/638741964100543394.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195014-giant-centipede",
+   "ddb_id": 5195014
+  },
+  "giant-constrictor-snake": {
+   "image": "https://www.dndbeyond.com/avatars/47138/855/638741964102900581.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195015-giant-constrictor-snake",
+   "ddb_id": 5195015
+  },
+  "giant-crab": {
+   "image": "https://www.dndbeyond.com/avatars/43939/239/638607418420731717.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775818-giant-crab",
+   "ddb_id": 4775818
+  },
+  "giant-crocodile": {
+   "image": "https://www.dndbeyond.com/avatars/47138/857/638741964105864539.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195016-giant-crocodile",
+   "ddb_id": 5195016
+  },
+  "giant-fire-beetle": {
+   "image": "https://www.dndbeyond.com/avatars/47138/863/638741964114019332.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195019-giant-fire-beetle",
+   "ddb_id": 5195019
+  },
+  "giant-frog": {
+   "image": "https://www.dndbeyond.com/avatars/58417/100/639226714222029707.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195020-giant-frog",
+   "ddb_id": 5195020
+  },
+  "giant-goat": {
+   "image": "https://www.dndbeyond.com/avatars/47158/876/638742834565228980.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775819-giant-goat",
+   "ddb_id": 4775819
+  },
+  "giant-hyena": {
+   "image": "https://www.dndbeyond.com/avatars/58417/105/639226714458279789.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195021-giant-hyena",
+   "ddb_id": 5195021
+  },
+  "giant-lizard": {
+   "image": "https://www.dndbeyond.com/avatars/47138/869/638741964123576361.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195022-giant-lizard",
+   "ddb_id": 5195022
+  },
+  "giant-octopus": {
+   "image": "https://www.dndbeyond.com/avatars/47138/871/638741964126227949.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195023-giant-octopus",
+   "ddb_id": 5195023
+  },
+  "giant-rat": {
+   "image": "https://www.dndbeyond.com/avatars/47138/875/638741964132622849.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195025-giant-rat",
+   "ddb_id": 5195025
+  },
+  "giant-scorpion": {
+   "image": "https://www.dndbeyond.com/avatars/58417/122/639226714850570064.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195026-giant-scorpion",
+   "ddb_id": 5195026
+  },
+  "giant-seahorse": {
+   "image": "https://www.dndbeyond.com/avatars/43939/258/638607418888752666.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775820-giant-seahorse",
+   "ddb_id": 4775820
+  },
+  "giant-shark": {
+   "image": "https://www.dndbeyond.com/avatars/58417/129/639226715028380172.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195027-giant-shark",
+   "ddb_id": 5195027
+  },
+  "giant-spider": {
+   "image": "https://www.dndbeyond.com/avatars/43939/569/638607426458975567.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775821-giant-spider",
+   "ddb_id": 4775821
+  },
+  "giant-toad": {
+   "image": "https://www.dndbeyond.com/avatars/58417/133/639226715205880356.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195029-giant-toad",
+   "ddb_id": 5195029
+  },
+  "giant-venomous-snake": {
+   "image": "https://www.dndbeyond.com/avatars/58416/927/639226707690077622.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195030-giant-venomous-snake",
+   "ddb_id": 5195030
+  },
+  "giant-wasp": {
+   "image": "https://www.dndbeyond.com/avatars/47138/889/638741964154679528.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195032-giant-wasp",
+   "ddb_id": 5195032
+  },
+  "giant-weasel": {
+   "image": "https://www.dndbeyond.com/avatars/43939/589/638607426812885808.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775822-giant-weasel",
+   "ddb_id": 4775822
+  },
+  "giant-wolf-spider": {
+   "image": "https://www.dndbeyond.com/avatars/47138/891/638741964156568682.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195033-giant-wolf-spider",
+   "ddb_id": 5195033
+  },
+  "goat": {
+   "image": "https://www.dndbeyond.com/avatars/47158/903/638742835857217408.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775823-goat",
+   "ddb_id": 4775823
+  },
+  "hawk": {
+   "image": "https://www.dndbeyond.com/avatars/43939/626/638607427375996839.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775824-hawk",
+   "ddb_id": 4775824
+  },
+  "hippopotamus": {
+   "image": "https://www.dndbeyond.com/avatars/47138/978/638741964277308105.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195076-hippopotamus",
+   "ddb_id": 5195076
+  },
+  "hunter-shark": {
+   "image": "https://www.dndbeyond.com/avatars/47138/993/638741964297895187.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195083-hunter-shark",
+   "ddb_id": 5195083
+  },
+  "hyena": {
+   "image": "https://www.dndbeyond.com/avatars/58416/991/639226710164858261.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195085-hyena",
+   "ddb_id": 5195085
+  },
+  "jackal": {
+   "image": "https://www.dndbeyond.com/avatars/47139/9/638741964320110052.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195091-jackal",
+   "ddb_id": 5195091
+  },
+  "killer-whale": {
+   "image": "https://www.dndbeyond.com/avatars/47139/18/638741964331361137.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195095-killer-whale",
+   "ddb_id": 5195095
+  },
+  "lion": {
+   "image": "https://www.dndbeyond.com/avatars/43939/665/638607428015267243.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775826-lion",
+   "ddb_id": 4775826
+  },
+  "lizard": {
+   "image": "https://www.dndbeyond.com/avatars/58415/744/639226667170988945.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775827-lizard",
+   "ddb_id": 4775827
+  },
+  "mammoth": {
+   "image": "https://www.dndbeyond.com/avatars/47139/52/638741964376303354.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195112-mammoth",
+   "ddb_id": 5195112
+  },
+  "mastiff": {
+   "image": "https://www.dndbeyond.com/avatars/43939/692/638607428415948051.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775828-mastiff",
+   "ddb_id": 4775828
+  },
+  "mule": {
+   "image": "https://www.dndbeyond.com/avatars/43939/703/638607428703028777.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775829-mule",
+   "ddb_id": 4775829
+  },
+  "octopus": {
+   "image": "https://www.dndbeyond.com/avatars/47158/936/638742837128618852.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775830-octopus",
+   "ddb_id": 4775830
+  },
+  "owl": {
+   "image": "https://www.dndbeyond.com/avatars/47158/950/638742837729688628.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775831-owl",
+   "ddb_id": 4775831
+  },
+  "panther": {
+   "image": "https://www.dndbeyond.com/avatars/58415/950/639226674869669547.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775832-panther",
+   "ddb_id": 4775832
+  },
+  "piranha": {
+   "image": "https://www.dndbeyond.com/avatars/47139/153/638741964514881866.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195160-piranha",
+   "ddb_id": 5195160
+  },
+  "plesiosaurus": {
+   "image": "https://www.dndbeyond.com/avatars/47139/165/638741964533176362.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195166-plesiosaurus",
+   "ddb_id": 5195166
+  },
+  "polar-bear": {
+   "image": "https://www.dndbeyond.com/avatars/47139/167/638741964536449881.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195167-polar-bear",
+   "ddb_id": 5195167
+  },
+  "pony": {
+   "image": "https://www.dndbeyond.com/avatars/43939/741/638607429634189821.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775833-pony",
+   "ddb_id": 4775833
+  },
+  "pteranodon": {
+   "image": "https://www.dndbeyond.com/avatars/47139/179/638741964550977965.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195173-pteranodon",
+   "ddb_id": 5195173
+  },
+  "rat": {
+   "image": "https://www.dndbeyond.com/avatars/47158/969/638742838302908263.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775836-rat",
+   "ddb_id": 4775836
+  },
+  "raven": {
+   "image": "https://www.dndbeyond.com/avatars/47158/984/638742838862827460.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775837-raven",
+   "ddb_id": 4775837
+  },
+  "reef-shark": {
+   "image": "https://www.dndbeyond.com/avatars/43939/786/638607431062581096.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775838-reef-shark",
+   "ddb_id": 4775838
+  },
+  "rhinoceros": {
+   "image": "https://www.dndbeyond.com/avatars/47139/199/638741964578412102.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195183-rhinoceros",
+   "ddb_id": 5195183
+  },
+  "riding-horse": {
+   "image": "https://www.dndbeyond.com/avatars/43939/798/638607431384220950.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775839-riding-horse",
+   "ddb_id": 4775839
+  },
+  "saber-toothed-tiger": {
+   "image": "https://www.dndbeyond.com/avatars/47139/207/638741964591244625.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195187-saber-toothed-tiger",
+   "ddb_id": 5195187
+  },
+  "scorpion": {
+   "image": "https://www.dndbeyond.com/avatars/43939/815/638607431887331936.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775840-scorpion",
+   "ddb_id": 4775840
+  },
+  "seahorse": {
+   "image": "https://www.dndbeyond.com/avatars/58416/470/639226691459844727.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195199-seahorse",
+   "ddb_id": 5195199
+  },
+  "spider": {
+   "image": "https://www.dndbeyond.com/avatars/43939/861/638607433376132965.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775844-spider",
+   "ddb_id": 4775844
+  },
+  "swarm-of-bats": {
+   "image": "https://www.dndbeyond.com/avatars/47139/278/638741964690510112.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195222-swarm-of-bats",
+   "ddb_id": 5195222
+  },
+  "swarm-of-insects": {
+   "image": "https://www.dndbeyond.com/avatars/47139/282/638741964695991712.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195224-swarm-of-insects",
+   "ddb_id": 5195224
+  },
+  "swarm-of-piranhas": {
+   "image": "https://www.dndbeyond.com/avatars/47139/288/638741964704765770.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195227-swarm-of-piranhas",
+   "ddb_id": 5195227
+  },
+  "swarm-of-rats": {
+   "image": "https://www.dndbeyond.com/avatars/47139/290/638741964708043285.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195228-swarm-of-rats",
+   "ddb_id": 5195228
+  },
+  "swarm-of-ravens": {
+   "image": "https://www.dndbeyond.com/avatars/47139/292/638741964712252487.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195229-swarm-of-ravens",
+   "ddb_id": 5195229
+  },
+  "swarm-of-venomous-snakes": {
+   "image": "https://www.dndbeyond.com/avatars/47139/296/638741964718648534.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195231-swarm-of-venomous-snakes",
+   "ddb_id": 5195231
+  },
+  "tiger": {
+   "image": "https://www.dndbeyond.com/avatars/43939/898/638607434270663754.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775846-tiger",
+   "ddb_id": 4775846
+  },
+  "triceratops": {
+   "image": "https://www.dndbeyond.com/avatars/47139/310/638741964736650195.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195238-triceratops",
+   "ddb_id": 5195238
+  },
+  "tyrannosaurus-rex": {
+   "image": "https://www.dndbeyond.com/avatars/47139/320/638741964750280660.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195243-tyrannosaurus-rex",
+   "ddb_id": 5195243
+  },
+  "venomous-snake": {
+   "image": "https://www.dndbeyond.com/avatars/58416/781/639226703389754100.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775847-venomous-snake",
+   "ddb_id": 4775847
+  },
+  "vulture": {
+   "image": "https://www.dndbeyond.com/avatars/47139/349/638741964788173651.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/5195256-vulture",
+   "ddb_id": 5195256
+  },
+  "warhorse": {
+   "image": "https://www.dndbeyond.com/avatars/43939/914/638607434778564331.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775848-warhorse",
+   "ddb_id": 4775848
+  },
+  "weasel": {
+   "image": "https://www.dndbeyond.com/avatars/58416/835/639226704577624798.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775849-weasel",
+   "ddb_id": 4775849
+  },
+  "wolf": {
+   "image": "https://www.dndbeyond.com/avatars/43939/947/638607435567745183.jpeg",
+   "ddb_url": "https://www.dndbeyond.com/monsters/4775850-wolf",
+   "ddb_id": 4775850
+  }
+ }
+}

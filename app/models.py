@@ -382,6 +382,28 @@ class HouseRule(Timestamped, Base):
     set_by: Mapped[str] = mapped_column(String(200), default="", server_default="")  # the DM's (or an admin's) name
 
 
+class CampaignContent(Timestamped, Base):
+    """A campaign's own monster, spell or magic item (app/rules_data.py): the DM's creation, or one copied in from
+    a book the DM owns, kept here and never in the public repo. It's read together with the SRD (rules_data.catalog);
+    one with an SRD entry's key replaces that entry for this campaign. `data` is the entry in its kind's shape
+    (rules_data.CAMPAIGN_KINDS) without key, name and source, which are columns. Who may see one is for the page
+    showing it to decide (what players see of monsters is VTT 2.6); no page shows them yet."""
+
+    __tablename__ = "campaign_content"
+    __table_args__ = (UniqueConstraint("campaign_id", "kind", "key"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(20))  # "monster" | "spell" | "magic_item"
+    key: Mapped[str] = mapped_column(String(120))  # "goblin-boss"; an SRD key replaces that SRD entry
+    name: Mapped[str] = mapped_column(String(200))
+    source: Mapped[str] = mapped_column(String(200), default="Homebrew", server_default="Homebrew")  # or a book's title
+    data: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
+    created_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    def entry(self) -> dict:
+        return {**(self.data or {}), "key": self.key, "name": self.name, "source": self.source}
+
+
 class PlayerNote(Timestamped, Base):
     """A player's own structured note on their character (app/player_notes.py): a battle
     combo, a leveling strategy, a personal quest or a general note. Replaces syncing

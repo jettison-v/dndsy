@@ -718,3 +718,26 @@ with the same 454 tests and the same rule: Railway deploys only when every check
    each other.
 4. Make your test settings match production's where you can: here, a cache the tests had switched off was the main
    cost.
+
+## 2026-10-24: Openly licensed game data (the SRD)
+
+askdnd now keeps the free part of the 2024 rules, the System Reference Document 5.2.1, as data: every monster, spell,
+magic item and condition. It's published by Wizards of the Coast under **CC-BY-4.0**, a license that lets anyone copy
+and reuse it, even in a public repository, as long as they credit it.
+
+- **The license's own wording.** The SRD's first page gives the exact sentence to include and asks for no other credit
+  to Wizards. It's on Help › About word for word and in `app/data/srd/README.md`; other places just say "SRD 5.2.1".
+- **From the original, not a copy of a copy.** A script reads Wizards' PDF itself (the fonts show which text is a
+  monster's name, a field or an action) and writes one JSON file per kind. A free conversion (Open5e) is used only as a
+  second opinion: a check lists every number where the two disagree, and each was settled by looking at the PDF.
+  That turned up several mistakes in the conversion, and a few misreadings in our script, fixed before saving.
+- **Public and private kept apart.** What's openly licensed lives in the repo; anything from the books Brett bought, or
+  a DM's own creations, goes in the database, per campaign. The app reads both as one list.
+- **Checked when loaded.** Each kind has a schema (the fields it must have and their types). A file or database row
+  that doesn't fit fails loudly instead of showing up wrong on a page.
+
+**For a new project:**
+1. Read the license before using "free" data, and copy its attribution exactly where it asks.
+2. Prefer the publisher's own file; use a community version as a cross-check, not the source.
+3. Keep a script that rebuilds the data from the source instead of editing the data by hand.
+4. Decide early what may be public (licensed data, code) and what must stay private (purchased content, user data).

@@ -1166,8 +1166,9 @@ def _stat_entries(html: str | None) -> list[dict]:
 
 
 def _creature_block(df: dict) -> dict:
-    """A Wild Shape form's stat block from D&D Beyond, in the same shape as
-    app/data/beasts_2024.json (used when the form isn't in that list)."""
+    """A Wild Shape form's stat block from D&D Beyond, in the same shape as an SRD monster
+    (app/rules_data.py Monster; used when the form isn't an SRD Beast). Only the parts Wild
+    Shape reads: D&D Beyond's data has no saves, skills or resistances for it."""
     cr = df.get("challengeRatingId")
     label = CR.get(cr, str(cr - 4) if isinstance(cr, int) and cr > 4 else "")
     value = {"0": 0.0, "1/8": 0.125, "1/4": 0.25, "1/2": 0.5}.get(label)
@@ -1178,14 +1179,14 @@ def _creature_block(df: dict) -> dict:
         "cr_label": label,
         "size": {2: "Tiny", 3: "Small", 4: "Medium", 5: "Large", 6: "Huge", 7: "Gargantuan"}.get(df.get("sizeId"), ""),
         "ac": df.get("armorClass"),
-        "ac_note": df.get("armorClassDescription") or "",
         "hp": df.get("averageHitPoints"),
         "hit_dice": (df.get("hitPointDice") or {}).get("diceString", ""),
         "speed": {MOVES[m["movementId"]]: m["speed"] for m in df.get("movements") or [] if m.get("movementId") in MOVES and m.get("speed")},
         "abilities": abilities,
         "saves": {},
         "skills": {},
-        "senses": ", ".join(f"{SENSE_NAMES[x['senseId']]} {x.get('notes') or ''}".strip() for x in df.get("senses") or [] if x.get("senseId") in SENSE_NAMES),
+        "senses": {SENSE_NAMES[x["senseId"]].lower(): int(m.group(1)) for x in df.get("senses") or []
+                   if x.get("senseId") in SENSE_NAMES and (m := re.search(r"(\d+)", x.get("notes") or ""))},
         "passive_perception": df.get("passivePerception"),
         "traits": _stat_entries(df.get("specialTraitsDescription")),
         "actions": _stat_entries(df.get("actionsDescription")),

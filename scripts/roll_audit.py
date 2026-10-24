@@ -1,7 +1,7 @@
 """Audit how askdnd rolls things, and store the result (app/data/roll_recipes.json).
 
-Sources (openly licensed, CC-BY-4.0): every spell and magic item in the System Reference Document 5.2
-(fetched from Open5e into private/srd/, which isn't committed) and the Beasts in app/data/beasts_2024.json.
+Sources (openly licensed, CC-BY-4.0): every spell and Beast in the System Reference Document 5.2.1, as
+app/rules_data.py reads it (app/data/srd/).
 
 For each spell, the rules text is read sentence by sentence: every dice expression must end up in the
 recipe (damage, healing, Temporary Hit Points, upcasting, cantrip growth) or be marked as not a roll you
@@ -10,8 +10,7 @@ right on its own are written by hand in scripts/roll_overrides.json, each with t
 checked against the same text. The report, docs/rules/rolls-audit.md, lists every spell, Beast attack
 and item with its recipe and how it was checked.
 
-    uv run python scripts/roll_audit.py           # rebuild from the cache
-    uv run python scripts/roll_audit.py --fetch   # refresh the cache from Open5e first
+    uv run python scripts/roll_audit.py              # rebuild
     uv run python scripts/roll_audit.py --campaign   # also list the table's own spells (local database)
 
 Exits 1 when a dice expression isn't accounted for, so a change to the rules data can't slip through.
@@ -19,7 +18,6 @@ Exits 1 when a dice expression isn't accounted for, so a change to the rules dat
 
 import json
 import re
-import subprocess
 import sys
 from pathlib import Path
 
@@ -27,13 +25,12 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from app import roll_recipes as rr  # noqa: E402
+from app import rules_data  # noqa: E402
 
-CACHE = ROOT / "private" / "srd"
 OUT = ROOT / "app" / "data" / "roll_recipes.json"
 OVERRIDES = ROOT / "scripts" / "roll_overrides.json"
 REPORT = ROOT / "docs" / "rules" / "rolls-audit.md"
-CREDIT = ("Roll recipes for spells in the System Reference Document 5.2 by Wizards of the Coast LLC, licensed under "
-          "CC-BY-4.0 (https://creativecommons.org/licenses/by/4.0/), written by askdnd from the rules text.")
+CREDIT = "Roll recipes for spells in the SRD 5.2.1 (attribution in app/data/srd/README.md), written by askdnd from the rules text."
 
 TYPES = "Acid|Bludgeoning|Cold|Fire|Force|Lightning|Necrotic|Piercing|Poison|Psychic|Radiant|Slashing|Thunder"
 DICE = re.compile(r"(\d+)d(\d+)(?:\s*([+−-])\s*(\d+)(?!\s*d))?")
@@ -52,18 +49,6 @@ NOT_ROLLS = [
     (re.compile(r"(\d+d\d+)\s+(?:hours|minutes|days|rounds|miles)|\d+d\d+\s*×\s*\d+", re.I), "a duration or distance"),
     (re.compile(r"\(\d+d\d+\)"), "the cantrip's damage at a higher level, as listed"),
 ]
-
-
-def fetch() -> None:
-    CACHE.mkdir(parents=True, exist_ok=True)
-    for kind in ("spells", "items"):
-        url, out = f"https://api.open5e.com/v2/{kind}/?document__key=srd-2024&limit=100", []
-        while url:
-            d = json.loads(subprocess.run(["curl", "-s", "-m", "60", url], capture_output=True, text=True, check=True).stdout)
-            out += d["results"]
-            url = d["next"]
-        (CACHE / f"{kind}.json").write_text(json.dumps(out))
-        print(f"fetched {len(out)} {kind}")
 
 
 def sentences(text: str) -> list[str]:
@@ -190,7 +175,9 @@ def phb_text(name: str) -> str | None:
 
 
 def build() -> int:
-    spells = json.loads((CACHE / "spells.json").read_text())
+    # the text the reader reads: the description and what a higher slot or level adds
+    spells = [{"name": s["name"], "level": s["level"], "desc": s["text"], "higher_level": s["higher_levels"] or s["cantrip_upgrade"]}
+              for s in rules_data.srd("spell")]
     hand = json.loads(OVERRIDES.read_text()) if OVERRIDES.exists() else {}
     overrides = hand.get("spells") or {}
     out, report, problems = {}, [], 0
@@ -208,7 +195,7 @@ def build() -> int:
             how = "read from the text"
         if phb is not None:
             ours, theirs = dice_in(text), dice_in(phb)
-            how += "; same dice as the 2024 PHB" if ours == theirs else f"; the PHB also has {', '.join(sorted(theirs - ours)) or '-'} (Open5e: {', '.join(sorted(ours - theirs)) or '-'})"
+            how += "; same dice as the 2024 PHB" if ours == theirs else f"; the PHB also has {', '.join(sorted(theirs - ours)) or '-'} (the SRD: {', '.join(sorted(ours - theirs)) or '-'})"
         if left:
             problems += 1
             how = f"**check: dice not accounted for: {', '.join(sorted(set(left)))}**"
@@ -241,7 +228,7 @@ def beast_rows() -> list[tuple]:
     from app import wild_shape as ws
 
     rows = []
-    for b in json.loads((ROOT / "app" / "data" / "beasts_2024.json").read_text())["beasts"]:
+    for b in ws._catalog():
         for k in ("actions", "bonus_actions", "reactions"):
             for e in b.get(k) or []:
                 dice = dice_in(e["text"])
@@ -302,8 +289,8 @@ def describe(recipe: dict) -> str:
 
 def write_report(rows, phb_rows=(), item_rows=(), beast_rows_=(), campaign=None) -> None:
     lines = ["# Roll audit", "",
-             "How askdnd rolls each SRD 5.2 spell that has dice, generated by `scripts/roll_audit.py` from the 2024 rules",
-             "text (Open5e's copy of the SRD, CC-BY-4.0). \"read from the text\": every dice expression in the description",
+             "How askdnd rolls each SRD 5.2.1 spell that has dice, generated by `scripts/roll_audit.py` from the 2024 rules",
+             "text (the SRD, CC-BY-4.0, in `app/data/srd/`). \"read from the text\": every dice expression in the description",
              "is used by the recipe or is not a roll you make (a target's bonus die, a duration). \"by hand\": written in",
              "`scripts/roll_overrides.json` because the text needs judgment; the reason is given. Don't edit this file: run",
              "the script.", "", "| Spell | Level | How it rolls | Checked |", "|---|---|---|---|"]
@@ -317,7 +304,7 @@ def write_report(rows, phb_rows=(), item_rows=(), beast_rows_=(), campaign=None)
     lines += ["", "## Items", "", "| Item | How it rolls | From |", "|---|---|---|"]
     lines += [f"| {n} | {describe(r)} | {h} |" for n, _, r, h in item_rows]
     lines += ["", "## Beast actions (Wild Shape)", "",
-              "Every Beast action with dice in `app/data/beasts_2024.json`, as askdnd rolls it in a form (`wild_shape.beast_recipe`).",
+              "Every SRD Beast action with dice (`app/data/srd/monsters.json`), as askdnd rolls it in a form (`wild_shape.beast_recipe`).",
               "Alternatives (\"or … if the swarm is Bloodied\") and conditional extras (\"if it moved 20+ feet straight toward it\")",
               "are separate choices, never added to every hit.", "", "| Action | How it rolls | Checked |", "|---|---|---|"]
     lines += [f"| {n} | {describe(r)} | {h} |" for n, _, r, h in beast_rows_]
@@ -331,6 +318,4 @@ def write_report(rows, phb_rows=(), item_rows=(), beast_rows_=(), campaign=None)
 
 
 if __name__ == "__main__":
-    if "--fetch" in sys.argv:
-        fetch()
     sys.exit(build())
