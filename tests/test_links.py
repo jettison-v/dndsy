@@ -11,7 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from app import access, auth, characters, config, ddb, house_rules
+from app import auth, characters, config, ddb
 from app.config import parse_allowlist
 from app.db import get_db
 from app.importer import import_bundle
@@ -90,11 +90,6 @@ def crawl(c, start=("/",), limit=400) -> dict[str, str]:
 @pytest.mark.parametrize("email", ["admin@example.com", "dm@example.com", "player@example.com"])
 def test_every_link_goes_straight_to_its_page(world, monkeypatch, email):
     c = client(monkeypatch, world, email)
-    # The crawl only reads: cache who-has-which-role as beta does (tests/conftest.py turns it off), or reloading it on
-    # every check is most of this test's time
-    for cached in (access, house_rules):
-        monkeypatch.setattr(cached, "CACHE_SECONDS", 60)
-        cached.invalidate()
     problems = crawl(c)
     assert not problems, f"Links that don't go straight to a page, as {email}: " + json.dumps(problems, indent=1)
 

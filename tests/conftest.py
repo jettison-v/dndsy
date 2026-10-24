@@ -1,7 +1,7 @@
 import os
 
 import pytest
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
@@ -95,6 +95,33 @@ def _access_rows(monkeypatch):
     house_rules.invalidate()
 
 
+def _count_writes(conn) -> list[int]:
+    """[how many statements other than reads this test's connection has run so far]"""
+    writes = [0]
+
+    @event.listens_for(conn, "before_cursor_execute")
+    def _count(conn, cursor, statement, *args):
+        if not statement.lstrip()[:6].upper() == "SELECT":
+            writes[0] += 1
+
+    return writes
+
+
+def _until_changed(session, writes, load):
+    """The access rows (and house rules) as the app's cache would hold them, reloaded after every write or unsaved
+    change, so a test always sees its own changes. Loading them afresh on each of a page's dozens of checks was most
+    of the time of the page tests."""
+    last = {"at": None}
+
+    def loader():
+        if last["at"] != writes[0] or session.new or session.dirty or session.deleted:
+            last["rows"] = load()  # its query saves the unsaved changes first, as before
+            last["at"] = writes[0]
+        return last["rows"]
+
+    return loader
+
+
 @pytest.fixture
 def db(db_engine, monkeypatch):
     """A session whose changes are rolled back after each test."""
@@ -103,9 +130,10 @@ def db(db_engine, monkeypatch):
     with db_engine.connect() as conn:
         trans = conn.begin()
         with Session(bind=conn, join_transaction_mode="create_savepoint") as session:
-            monkeypatch.setattr(access, "loader", lambda: access.rows_from(session))
+            writes = _count_writes(conn)
+            monkeypatch.setattr(access, "loader", _until_changed(session, writes, lambda: access.rows_from(session)))
             monkeypatch.setattr(live, "loader", lambda: live.rows_from(session))
-            monkeypatch.setattr(house_rules, "loader", lambda: house_rules.rows_from(session))
+            monkeypatch.setattr(house_rules, "loader", _until_changed(session, writes, lambda: house_rules.rows_from(session)))
             from app import campaign_paths
 
             monkeypatch.setattr(campaign_paths, "remember", lambda email, cid: campaign_paths.remember_in(session, email, cid))
