@@ -1,8 +1,8 @@
 """Deploying (docs/SETUP_LOG.md, 2026-10-24): the nightly backup service rebuilds only when a file it runs changes
-(railway.backup.json's watchPatterns), and scripts/deploy_check.py retries Railway's own build-machine errors."""
+(deploy_check.BACKUP_WATCH, its Railway watch paths), and scripts/deploy_check.py retries Railway's own build-machine
+errors."""
 
 import importlib.util
-import json
 import subprocess
 import sys
 from pathlib import Path
@@ -20,15 +20,13 @@ def _deploy_check():
 def test_the_backup_service_rebuilds_when_anything_it_runs_changes():
     """Every app module the backup script loads is on the watch list, so a change to one rebuilds the backup service
     (a new column in app/models.py must reach the nightly backup)."""
-    config = json.loads((ROOT / "railway.backup.json").read_text())
-    watched = set(config["build"]["watchPatterns"])
+    watched = set(_deploy_check().BACKUP_WATCH)
     code = ("import importlib.util, sys; sys.argv = ['x', '--help']; s = importlib.util.spec_from_file_location('b', 'scripts/backup_db.py');"
             "m = importlib.util.module_from_spec(s)\ntry: s.loader.exec_module(m)\nexcept SystemExit: pass\n"
             "print('\\n'.join(sorted(v.__file__ for k, v in sys.modules.items() if (k == 'app' or k.startswith('app.')) and getattr(v, '__file__', None))))")
     loaded = subprocess.run([sys.executable, "-c", code], cwd=ROOT, capture_output=True, text=True, check=True).stdout.split()
     missing = [str(Path(f).relative_to(ROOT)) for f in loaded if str(Path(f).relative_to(ROOT)) not in watched]
-    assert not missing, f"Add to railway.backup.json's watchPatterns: {missing}"
-    assert config["deploy"]["startCommand"] == "python scripts/backup_db.py" and config["deploy"]["cronSchedule"]
+    assert not missing, f"Add to BACKUP_WATCH in scripts/deploy_check.py, then run it with --set-backup-watch: {missing}"
 
 
 def test_only_railways_own_build_errors_are_retried():
