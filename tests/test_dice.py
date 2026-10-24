@@ -37,3 +37,33 @@ def test_the_vtt_piece_throws_everyones_rolls(two, db):  # noqa: F811
     db.flush()
     access.invalidate()
     assert "data-dice-all" in admin.get("/c/strahd/").text
+
+
+def test_tuning_is_kept_in_range():
+    assert dice.clean_tuning(None) == dice.TUNING  # askdnd's own until an admin saves
+    t = dice.clean_tuning({"mine": {"gravity": "5000", "stay": "2.04", "shadows": "yes", "dim": "x"}, "tray": "nope", "elsewhere": {}})
+    assert t["mine"]["gravity"] == 800 and t["mine"]["stay"] == 2.0 and t["mine"]["shadows"] is True and t["mine"]["dim"] == 55
+    assert t["tray"] == dice.TUNING["tray"] and set(t) == {"mine", "tray", "vtt"}
+    assert dice.shown(1, "x") == "1.0×" and dice.shown(0.7, "pct") == "70%" and dice.shown(0.25, "s") == "0.25 s" and dice.shown(2, "px") == "2 px"
+    for place, _, _, groups in dice.PLACES:  # every knob a place has is on its tab, once
+        assert sorted(k for _, keys in groups for k in keys) == sorted(dice.TUNING[place])
+
+
+def test_admins_tune_the_dice_for_everyone(two, db):  # noqa: F811
+    admin, pat = two["admin"], two["pat"]
+    assert pat.get("/manage/dice").status_code == 403
+    assert pat.post("/manage/dice", data={"mine.gravity": "200"}).status_code == 403
+    page = admin.get("/manage/dice").text
+    assert 'aria-current="page">Dice tuning' in page and page.count('class="tn-row"') == 10 + 7 + 10
+    assert 'name="mine.gravity" min="100" max="800" step="10" value="300"' in page and "now 1.4×" in page
+    # Save: the shadows switch posts "1" when on, nothing when off
+    form = {f"{p}.{k}": ("1" if v else "") if isinstance(v, bool) else str(v) for p, knobs in dice.TUNING.items() for k, v in knobs.items()}
+    admin.post("/manage/dice", data={**form, "mine.gravity": "200", "tray.shadows": "1", "vtt.stay": "5"})
+    saved = dice.tuning_from(db)
+    assert saved["mine"]["gravity"] == 200 and saved["tray"]["shadows"] is True and saved["vtt"]["stay"] == 5
+    assert saved["mine"]["shadows"] is True and saved["vtt"]["blur"] == 0
+    # Every signed-in page carries it for the dice
+    tuned = pat.get("/c/main/").text.split("data-dice-tuning='")[1].split("'")[0]
+    assert json.loads(tuned)["mine"]["gravity"] == 200
+    admin.post("/manage/dice", data={"reset": "1"})
+    assert dice.tuning_from(db) == dice.TUNING

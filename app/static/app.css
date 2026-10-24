@@ -15,6 +15,7 @@
   --spell-bg: #1b1e2a; --spell-line: #3a4260;  /* the spell bar on Battle */
   /* Shadows and dimming behind panels */
   --shadow: rgba(0, 0, 0, .45); --backdrop: rgba(0, 0, 0, .45); --backdrop-strong: rgba(0, 0, 0, .55); --backdrop-soft: rgba(0, 0, 0, .35);
+  --backdrop-dark: #000;  /* thrown dice: Dice tuning's Darkness mixes it in (app/dice.py) */
   /* Player colors in table rolls (background, then text), one per character */
   --p0-bg: #3a3226; --p1-bg: #2c2f3a; --p2-bg: #2a3329; --p3-bg: #332a33; --p3: #c4a0f0; --p4-bg: #3a2828; --p5-bg: #283536; --p5: #7fd0cf;
   /* Dice you can see (Table rolls): gem sets, light to dark, then the number; a natural 20's glow */
@@ -1264,10 +1265,10 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .ds-total.nat20 { color: var(--green); } .ds-total.nat1 { color: var(--red); }
 .roll-note .gem { margin: 0 -2px; }
 /* Thrown dice (app.js "thrown dice"): your roll across the page, which dims; others' in the corner tray */
-.dice-throw { position: fixed; inset: 0; z-index: 19; pointer-events: none; visibility: hidden; opacity: 0; transition: opacity .3s, visibility 0s .3s; }
-.dice-throw.on { visibility: visible; opacity: 1; transition: opacity .2s; }
-.dt-dim { position: absolute; inset: 0; background: var(--backdrop-strong); backdrop-filter: blur(2px); }
-.dice-throw.others .dt-dim { background: var(--backdrop-soft); backdrop-filter: none; }
+/* Timing and the backdrop come from Dice tuning (app/dice.py; app.js sets --dt-in, --dt-out, --dt-dim, --dt-blur) */
+.dice-throw { position: fixed; inset: 0; z-index: 19; pointer-events: none; visibility: hidden; opacity: 0; transition: opacity var(--dt-out, .3s), visibility 0s var(--dt-out, .3s); }
+.dice-throw.on { visibility: visible; opacity: 1; transition: opacity var(--dt-in, .2s); }
+.dt-dim { position: absolute; inset: 0; background: color-mix(in srgb, var(--backdrop-dark) var(--dt-dim, 55%), transparent); backdrop-filter: blur(var(--dt-blur, 2px)); }
 .dt-box { position: absolute; inset: 0; }
 .dt-who { position: absolute; top: calc(var(--stick-top, 62px) + 12px); left: 50%; transform: translateX(-50%); display: none; align-items: center; gap: 8px; padding: 5px 14px 5px 8px;
   border-radius: var(--r-pill); background: var(--surface); border: 1px solid var(--line-strong); font-size: var(--fs-sm); white-space: nowrap; box-shadow: 0 6px 18px var(--shadow); }
@@ -1278,7 +1279,7 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .dice-throw.landed .dt-card { opacity: 1; transform: translate(-50%, 0); }
 .dice-tray { position: fixed; z-index: 9; left: calc(var(--rolls-w, 0px) + 16px); bottom: 16px; width: 300px; height: 150px; overflow: hidden; pointer-events: none;
   background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-lg); box-shadow: 0 10px 28px var(--shadow);
-  transform: translateY(calc(100% + 24px)); transition: transform .3s ease; }
+  transform: translateY(calc(100% + 24px)); transition: transform var(--dtr-slide, .3s) ease; }
 .dice-tray.up { transform: none; }
 .dtr-felt { position: absolute; inset: 0 0 46px; background: radial-gradient(ellipse at center, var(--felt-hi), var(--felt-lo)); }
 .dtr-box { position: absolute; inset: 0; }
@@ -1287,6 +1288,78 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .dtr-what b { color: var(--text-strong); }
 .dtr-total { margin-left: auto; font-size: var(--fs-lg); color: var(--text-strong); }
 .dtr-total.nat20 { color: var(--green); } .dtr-total.nat1 { color: var(--red); }
+/* Manage › Dice tuning (manage_dice.html; docs/mockups/dice-tuning.html): sliders on the left, a preview that throws on the right */
+.tn-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: var(--sp-5); align-items: start; margin-bottom: var(--sp-5); }
+.section.tn-controls { padding: var(--sp-4) var(--sp-5) 0; margin: 0; }
+.tn-controls .sub-tabs { margin-bottom: var(--sp-2); }
+.tn-why { font-size: var(--fs-sm); color: var(--muted); margin: 0 0 var(--sp-2); }
+.tn-group h3 { margin: var(--sp-4) 0 0; font-size: var(--fs-xs); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); }
+.tn-row { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 2px var(--sp-4); padding: var(--sp-3) 0; border-bottom: 1px solid var(--line-soft); align-items: center; }
+.tn-row:last-child { border-bottom: 0; }
+.tn-label b { display: block; color: var(--text-strong); font-weight: 600; font-size: var(--fs-sm); }
+.tn-label .note { font-size: var(--fs-xs); }
+.tn-ctl { display: flex; align-items: center; gap: var(--sp-2); }
+.tn-range { position: relative; flex: 1; display: flex; }
+.tn-range input { width: 100%; accent-color: var(--red); margin: 0; }
+/* a small tick under the slider: the saved value */
+.tn-range::after { content: ""; position: absolute; left: calc(8px + (100% - 16px) * var(--now, 0)); bottom: -7px; width: 2px; height: 6px; margin-left: -1px; background: var(--faint); border-radius: 1px; }
+.tn-ctl output { min-width: 56px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-strong); font-size: var(--fs-sm); font-weight: 600; }
+.tn-now { grid-column: 2; display: flex; justify-content: space-between; font-size: var(--fs-xs); color: var(--faint); min-height: 18px; }
+.tn-row.changed output { color: var(--amber); }
+.tn-reset { background: none; border: 0; padding: 0; color: var(--link); font: inherit; cursor: pointer; }
+.tn-save { position: sticky; bottom: 0; display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; background: var(--surface); border-top: 1px solid var(--line);
+  margin: var(--sp-3) calc(-1 * var(--sp-5)) 0; padding: var(--sp-3) var(--sp-5); border-radius: 0 0 var(--r-lg) var(--r-lg); }
+.tn-save .note { margin-right: auto; }
+.tn-preview { position: sticky; top: calc(var(--stick-top, 62px) + 8px); display: grid; gap: var(--sp-2); }
+.tn-throws { display: flex; gap: var(--sp-2); flex-wrap: wrap; align-items: center; }
+.tn-throws .spacer { flex: 1; }
+.tn-throws [data-full][aria-pressed=true] { border-color: var(--blue); background: var(--selected-bg); color: var(--text-strong); }
+.tn-read { display: flex; gap: var(--sp-2) var(--sp-4); flex-wrap: wrap; font-size: var(--fs-sm); color: var(--muted); padding: 0 2px; }
+.tn-read b { color: var(--text-strong); font-variant-numeric: tabular-nums; }
+.tn-stage { position: relative; height: 430px; border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; background: var(--bg); }
+.tn-loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); z-index: 8; pointer-events: none; }
+/* Stand-ins: a character's Battle page (your roll, the tray), a map (the VTT) */
+.tn-stage .stand-in { display: none; }
+.tn-stage:not([data-stage="vtt"]) .tn-sheet, .tn-stage[data-stage="vtt"] .tn-map { display: grid; }
+.tn-sheet { position: absolute; inset: 0; padding: var(--sp-4); gap: var(--sp-3); align-content: start; font-size: var(--fs-sm); color: var(--muted); }
+.tn-sheet-head { display: flex; gap: var(--sp-3); align-items: center; } .tn-sheet-head b { font-size: var(--fs-xl); color: var(--text-strong); } .tn-sheet-head .note { margin-left: auto; }
+.tn-av, .tn-tok { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: var(--fs-xs); color: var(--text-strong); background: var(--set-dragons); border: 2px solid var(--line-strong); }
+.tn-tiles, .tn-cols { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-2); }
+.tn-cols { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tn-tiles > div { display: flex; justify-content: space-between; align-items: center; padding: var(--sp-2) var(--sp-3); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); }
+.tn-tiles b { color: var(--text-strong); font-size: var(--fs-lg); }
+.tn-cols > div { background: var(--surface); border-radius: var(--r-md); padding: var(--sp-3); min-height: 170px; }
+.tn-cols h4 { margin: 0 0 var(--sp-2); color: var(--amber); font-size: var(--fs-xs); letter-spacing: .1em; text-transform: uppercase; }
+.tn-cols p { display: flex; justify-content: space-between; margin: 0; padding: 5px 0; border-bottom: 1px solid var(--line-soft); }
+.tn-map { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent 0 47px, var(--line-soft) 47px 48px), repeating-linear-gradient(90deg, transparent 0 47px, var(--line-soft) 47px 48px),
+  radial-gradient(ellipse at 40% 45%, var(--felt-hi), var(--felt-lo) 70%); }
+.tn-room { position: absolute; left: 12%; top: 18%; width: 60%; height: 55%; background: var(--surface-3); border: 6px solid var(--line-strong); box-shadow: inset 0 0 40px var(--shadow); }
+.tn-tok { position: absolute; width: 40px; height: 40px; font-size: var(--fs-sm); border: 3px solid var(--text-strong); box-shadow: 0 3px 8px var(--shadow); }
+.tn-tok:nth-of-type(1) { left: 30%; top: 40%; } .tn-tok:nth-of-type(2) { left: 38%; top: 52%; background: var(--set-starynight); }
+.tn-tok:nth-of-type(3) { left: 25%; top: 60%; background: var(--set-bronze); } .tn-tok:nth-of-type(4) { left: 62%; top: 34%; background: var(--set-bloodmoon); }
+/* The preview's throw: the same look as .dice-throw and .dice-tray, inside the stage (or across the window: Full screen) */
+.tn-layer { position: absolute; inset: 0; z-index: 5; pointer-events: none; opacity: 0; transition: opacity var(--dt-out, .3s); }
+.tn-layer.on { opacity: 1; transition: opacity var(--dt-in, .2s); }
+.tn-dice { position: absolute; inset: 0; }
+.tn-layer .tn-who { top: 14px; }
+.tn-stage[data-stage="vtt"] .tn-who { display: flex; }
+.tn-layer.landed .tn-card { opacity: 1; transform: translate(-50%, 0); }
+.tn-tray { position: absolute; z-index: 7; left: 14px; bottom: 14px; width: 300px; height: 150px; overflow: hidden; background: var(--surface); border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg); box-shadow: 0 10px 28px var(--shadow); transform: translateY(190px); transition: transform var(--dtr-slide, .3s) ease; }
+.tn-tray.up { transform: none; }
+.tn-stage[data-stage="tray"] .tn-layer, .tn-stage:not([data-stage="tray"]) .tn-tray { display: none; }
+.tn-stage.full .tn-layer, .tn-stage.full .tn-tray { position: fixed; z-index: 30; }
+.tn-stage.full .tn-tray { left: 16px; bottom: 16px; }
+.tn-stage.full .tn-layer .tn-who { top: calc(var(--stick-top, 62px) + 12px); }
+@media (max-width: 900px) {
+  .tn-grid { grid-template-columns: 1fr; }
+  .tn-preview { position: static; order: -1; }
+  .tn-stage { height: 320px; }
+  .tn-row { grid-template-columns: 1fr; }
+  .tn-now { grid-column: 1; }
+  .tn-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tn-cols { grid-template-columns: 1fr; } .tn-cols > div { min-height: 0; }
+}
 /* A dice set's swatch: a small diamond */
 [class^="sw-"] { display: inline-block; width: 14px; height: 14px; border-radius: 3px; transform: rotate(45deg); flex: none; background: var(--sw); border: 1px solid var(--line-strong); }
 .sw-astralsea { --sw: var(--set-astralsea); } .sw-bloodmoon { --sw: var(--set-bloodmoon); } .sw-dragons { --sw: var(--set-dragons); } .sw-starynight { --sw: var(--set-starynight); }
