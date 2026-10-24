@@ -2,13 +2,50 @@ import os
 
 import pytest
 from sqlalchemy import create_engine, text
+from sqlalchemy.engine import make_url
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "postgresql+psycopg://localhost/askdnd_test")
+# The tests run in parallel (pytest-xdist, `-n auto` in pyproject.toml): each worker gets a database of its own
+# (askdnd_test_gw0, askdnd_test_gw1, …), so one worker dropping its tables never pulls them from under another.
+if WORKER := os.getenv("PYTEST_XDIST_WORKER"):
+    _url = make_url(TEST_DATABASE_URL)
+    TEST_DATABASE_URL = _url.set(database=f"{_url.database}_{WORKER}").render_as_string(hide_password=False)
 # The app's own database connection (app.db) also points at the test database, so no test
 # ever touches a development or production database (set before the app is imported).
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
+
+
+@pytest.hookimpl(tryfirst=True)  # before pytest-xdist reads the groups
+def pytest_collection_modifyitems(items):
+    """The browser tests share one server per file: keep them together on one worker."""
+    for item in items:
+        if "browser" in item.path.parts:
+            item.add_marker(pytest.mark.xdist_group("browser"))
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_sessionfinish(session):
+    """On GitHub every test must run: a skip there means missing tooling (the database, Chromium), so it fails."""
+    reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+    skipped = reporter.stats.get("skipped", []) if reporter else []
+    if os.getenv("CI") and not WORKER and skipped and session.exitstatus == 0:
+        reporter.write_sep("=", f"{len(skipped)} skipped on GitHub, where every test must run", red=True)
+        for report in skipped:
+            reporter.write_line(f"  {report.nodeid}: {report.longrepr[-1] if isinstance(report.longrepr, tuple) else ''}")
+        session.exitstatus = pytest.ExitCode.TESTS_FAILED
+
+
+def _ensure_database(url) -> None:
+    """Create this worker's test database the first time it's needed."""
+    admin = create_engine(url.set(database="postgres"), isolation_level="AUTOCOMMIT")
+    try:
+        with admin.connect() as conn:
+            if not conn.scalar(text("SELECT 1 FROM pg_database WHERE datname = :d"), {"d": url.database}):
+                conn.execute(text(f'CREATE DATABASE "{url.database}"'))
+    finally:
+        admin.dispose()
 
 
 @pytest.fixture(scope="session")
@@ -19,6 +56,8 @@ def db_engine():
 
     engine = create_engine(TEST_DATABASE_URL)
     try:
+        if WORKER:
+            _ensure_database(engine.url)
         with engine.connect() as conn:
             conn.execute(text("select 1"))
     except OperationalError:

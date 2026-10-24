@@ -1,5 +1,12 @@
-# Runs the test suite on every push and pull request. Railway's "Wait for CI"
-# setting holds the beta deploy until this passes, so a failing test never ships.
+# Runs the test suite on every push and pull request. Railway's "Wait for CI" setting holds the beta deploy until
+# every job here passes, so a failing test never ships.
+#
+# Two jobs side by side, so the wait is the slower one, not the sum (docs/SETUP_LOG.md, 2026-10-24):
+# - Server tests: everything outside tests/browser, in parallel (pytest-xdist, one worker per CPU, each with its own
+#   database) after the lint.
+# - Browser tests: tests/browser, real Chromium pages against a real askdnd server. Chromium comes from a cache
+#   keyed by Playwright's version, so it downloads only when Playwright is upgraded.
+# Together they run every test. On GitHub a skip fails the run (tests/conftest.py): missing tooling must fail here.
 name: Tests
 
 on:
@@ -7,12 +14,18 @@ on:
     branches: [main]
   pull_request:
 
+env:
+  CI: "1"
+  TEST_DATABASE_URL: postgresql+psycopg://askdnd:askdnd@localhost:5432/askdnd_test
+  APP_ENV: development
+
 jobs:
-  pytest:
+  server:
+    name: Server tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
-      postgres:
+      postgres: &postgres
         image: postgres:18
         env:
           POSTGRES_USER: askdnd
@@ -21,11 +34,7 @@ jobs:
         ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U askdnd"
-          --health-interval 5s --health-timeout 5s --health-retries 10
-    env:
-      CI: "1"
-      TEST_DATABASE_URL: postgresql+psycopg://askdnd:askdnd@localhost:5432/askdnd_test
-      APP_ENV: development
+          --health-interval 2s --health-timeout 5s --health-retries 30
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -33,9 +42,37 @@ jobs:
           enable-cache: true
       - run: uv python install
       - run: uv sync --frozen
-      # The browser tests (tests/browser) drive real Chromium pages against a real askdnd server
-      - name: Install the test browser
-        run: uv run playwright install --with-deps chromium
       - name: Lint (unused imports, undefined names)
         run: uv run ruff check app scripts tests
-      - run: uv run pytest -q
+      - run: uv run pytest -q --ignore=tests/browser
+
+  browser:
+    name: Browser tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres: *postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv python install
+      - run: uv sync --frozen
+      - name: Playwright's version
+        id: playwright
+        run: echo "version=$(uv run python -c 'import importlib.metadata as m; print(m.version("playwright"))')" >> "$GITHUB_OUTPUT"
+      - name: Cached test browser
+        id: browser-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      - name: Install the test browser
+        if: steps.browser-cache.outputs.cache-hit != 'true'
+        run: uv run playwright install --with-deps --only-shell chromium
+      - name: Install the test browser's system libraries
+        if: steps.browser-cache.outputs.cache-hit == 'true'
+        run: uv run playwright install-deps chromium
+      # One server per file: these run one after another (-n 0), in the order they're written
+      - run: uv run pytest -q -n 0 tests/browser
