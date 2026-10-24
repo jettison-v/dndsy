@@ -606,3 +606,24 @@ setting in the database, and deploying works exactly as before (merge → GitHub
 3. Keep host settings in the repo where you safely can (versioned, reviewed, testable), but read what a tool manages
    before adopting it: "the whole project in one file" also means "delete what isn't in the file".
 4. Retry only failures you've identified as the host's; retrying your own errors just hides them.
+
+## 2026-10-24: A live connection to every page (WebSockets)
+
+Until now each page asked the server "anything new?" every few seconds (polling). Now each page keeps one open
+connection, a **WebSocket**, and the server tells it the moment something changes at its table: a roll shows up on
+everyone's screen in a few hundredths of a second instead of up to 3 seconds.
+
+- **What travels on it.** Only "what changed" ("a roll", "Cole's sheet"), never the roll itself. The page then fetches
+  it the normal way, so the rules about who may see a DM-only roll stay in one place.
+- **Hosting.** Railway and Cloudflare both pass WebSockets through with no settings to change (Cloudflare's proxy
+  supports them by default). Proxies do close connections that stay quiet, so each page sends a tiny "ping" every 25
+  seconds.
+- **Deploys.** A deploy restarts the app, which drops every connection; pages reconnect on their own (waiting a little
+  longer each try) and catch up on anything they missed. Slow polling stays on as a safety net.
+- **One process for now.** The open connections live in the app's memory, which works because askdnd runs one copy.
+  If it ever runs several, they'd need a shared message channel (Postgres can do this with LISTEN/NOTIFY).
+
+**For a new project:**
+1. Start with polling; switch to WebSockets when "a few seconds late" starts to matter.
+2. Send "something changed" on the socket and let the page fetch the details: one place enforces permissions.
+3. Keep polling as a slow fallback and reconnect with growing waits, so a dropped connection costs speed, not data.
