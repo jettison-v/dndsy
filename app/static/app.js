@@ -1210,9 +1210,6 @@
     win.setAttribute('aria-label', 'Roll');
     document.body.appendChild(win);
     win._anchor = anchor;
-    win.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !e.target.matches('button')) { e.preventDefault(); const go = win.querySelector('[data-go]'); if (go) go.click(); }
-    });
     return win;
   }
 
@@ -1830,8 +1827,19 @@
     if (e.shiftKey) { const w = openWin(el); roll(w, { ...spec, mode: spec.adv ? 'adv' : 'normal', extras: [], ctx: ctxFor(spec.cid) }); }
     else chooser(el, spec);
   });
+  // While the roll window is open, Enter rolls and Esc closes it (only it, not a side panel behind it), wherever focus
+  // is: on an option just clicked (Advantage, a die, Just me), in its fields, on the roll button that opened it, or
+  // nowhere (clicking its text leaves the page focused). Space still presses a focused option; Enter in a field
+  // elsewhere on the page is left alone. Capture phase: before a focused button's own Enter.
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && win) { closeWin(); return; }
+    if (!win || e.isComposing || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); closeWin(); return; }
+    const go = win.querySelector('[data-go]'), t = e.target, a = win._anchor;
+    if (e.key !== 'Enter' || !go) return;
+    if (!win.contains(t) && t !== document.body && t !== document.documentElement && !(a && a.contains && a.contains(t))) return;
+    e.preventDefault(); e.stopImmediatePropagation(); go.click();
+  }, true);
+  document.addEventListener('keydown', e => {
     const el = e.target.closest && e.target.closest('[data-roll][tabindex]');
     if (el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); el.click(); }
   });

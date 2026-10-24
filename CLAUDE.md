@@ -11,6 +11,7 @@ A companion app for one D&D 2024 table (4 players + DM, playing on Zoom with D&D
 - He works in the **Code tab of the Claude desktop app** (local folder `~/Code/dndsy`) in Auto mode. Handle the code; don't explain it line by line. Planning and product discussion happen in a separate Claude Project chat; decisions from there land in `docs/`.
 - At each setup milestone, give a **short plain-English recap**: what was set up, why, and anything he'd do the same way on a new project. Append the recap to `docs/SETUP_LOG.md`.
 - When something needs Brett (a dashboard click, a login, a DNS record), say exactly where to click and what to enter. Then wait.
+- After a user-visible piece reaches beta, end with **Try it yourself**: 3–6 concrete steps Brett runs on beta (where to click, what he should see, the edge case worth trying), and say what you couldn't test yourself (Brett, 2026-10-24: so he understands each change and can help verify it).
 - Prefer CLIs (`railway`, `gh`) over dashboards when they can do the job.
 
 ## Repo and environments
