@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Dice tuning · Manage · askdnd{% endblock %}
+{% block content %}
+{# Manage › askdnd › Dice tuning (app/dice.py; docs/mockups/dice-tuning.html): app.js "Dice tuning" runs the sliders and the preview. #}
+<main class="page manage-page">
+  {% include "_manage_head.html" %}
+  <div class="title-row"><h1>Dice tuning</h1></div>
+  <p class="subtitle">How thrown dice move and how long they stay, for everyone in every campaign. Players only choose their own dice (Your dice).</p>
+
+  <div class="tn-grid" data-dice-tuner>
+    <form class="section tn-controls" method="post" action="/manage/dice">
+      <nav class="sub-tabs" aria-label="Where the dice are thrown">
+        {% for key, name, _, _ in places %}<a href="#{{ key }}" class="{{ 'on' if loop.first }}" data-place="{{ key }}">{{ name }}</a>{% endfor %}
+      </nav>
+      {% for key, name, why, groups in places %}
+      <div class="tn-place" data-place-panel="{{ key }}"{% if not loop.first %} hidden{% endif %}>
+        <p class="tn-why">{{ why }}</p>
+        {% for title, keys in groups %}
+        <div class="tn-group"><h3>{{ title }}</h3>
+          {% for k in keys %}{% set label, hint, lo, hi, step, how = knobs[k] %}{% set v = now[key][k] %}
+          <div class="tn-row" data-k="{{ k }}" data-how="{{ how }}" data-saved="{{ v | tojson | e }}" data-original="{{ original[key][k] | tojson | e }}">
+            <div class="tn-label"><b>{{ label }}</b><span class="note">{{ hint }}</span></div>
+            <div class="tn-ctl">
+              {% if how == "toggle" %}
+              <input type="hidden" name="{{ key }}.{{ k }}" value="{{ '1' if v }}">
+              <button type="button" class="switch" role="switch" aria-checked="{{ 'true' if v else 'false' }}" aria-label="{{ label }}"></button>
+              {% else %}
+              <span class="tn-range"><input type="range" name="{{ key }}.{{ k }}" min="{{ lo }}" max="{{ hi }}" step="{{ step }}" value="{{ v }}" aria-label="{{ label }}"></span>
+              <output>{{ shown(v, how) }}</output>
+              {% endif %}
+            </div>
+            <div class="tn-now"><span>now {{ shown(v, how) }}</span><button type="button" class="tn-reset" hidden>Reset</button></div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+      <div class="tn-save">
+        <span class="note" data-changes>No changes</span>
+        <button class="btn" type="button" data-undo disabled>Undo changes</button>
+        <button class="btn primary" type="submit" data-save disabled>Save for everyone</button>
+      </div>
+    </form>
+
+    <div class="tn-preview">
+      <div class="tn-throws">
+        <button class="btn primary" type="button" data-throw="d20">Throw a d20</button>
+        <button class="btn" type="button" data-throw="adv">Advantage</button>
+        <button class="btn" type="button" data-throw="fireball">Fireball 8d6</button>
+        <span class="spacer"></span>
+        <button class="btn" type="button" data-full aria-pressed="false" title="Throw across the whole window, the real size">Full screen</button>
+      </div>
+      <div class="tn-stage" data-stage="mine">
+        <div class="tn-sheet stand-in" aria-hidden="true">
+          <div class="tn-sheet-head"><span class="tn-av">R</span><b>Rowan</b><span class="note">Druid 7 · Battle</span></div>
+          <div class="tn-tiles"><div>HP <b>51</b></div><div>AC <b>16</b></div><div>Speed <b>30</b></div><div>Init <b>+3</b></div></div>
+          <div class="tn-cols"><div><h4>Action</h4><p>Shillelagh <span>+7</span></p><p>Moonbeam <span>2d10</span></p><p>Fireball <span>8d6</span></p></div>
+            <div><h4>Bonus action</h4><p>Healing Word <span>2d4</span></p></div><div><h4>Reaction</h4><p>Opportunity attack</p></div></div>
+        </div>
+        <div class="tn-map stand-in" aria-hidden="true"><div class="tn-room"></div>
+          <span class="tn-tok">R</span><span class="tn-tok">I</span><span class="tn-tok">B</span><span class="tn-tok">G</span></div>
+        <div class="tn-layer" aria-hidden="true">
+          <div class="dt-dim"></div>
+          <div class="tn-dice" id="tn-dice-page"></div>
+          <div class="dt-who tn-who"><i class="sw-starynight"></i><b>Ilsa</b> · <span></span></div>
+          <div class="dt-card tn-card"></div>
+        </div>
+        <div class="tn-tray" aria-hidden="true"><div class="dtr-felt"><div class="dtr-box" id="tn-dice-tray"></div></div><div class="dtr-foot"></div></div>
+        <div class="tn-loading">Loading the dice…</div>
+      </div>
+      <div class="tn-read" data-read><span>Press Throw to time it.</span></div>
+    </div>
+  </div>
+
+  <section class="section">
+    <h2>askdnd's own tuning</h2>
+    <p class="note">Puts every slider back to what askdnd used before this page, for everyone.</p>
+    <form method="post" action="/manage/dice" onsubmit="return confirm('Put every slider back to askdnd\'s own tuning, for everyone?')">
+      <input type="hidden" name="reset" value="1"><button class="btn" type="submit">Back to askdnd's own</button>
+    </form>
+  </section>
+</main>
+{% endblock %}

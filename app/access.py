@@ -51,7 +51,8 @@ def _load_from_db() -> dict[str, dict]:
 def rows_from(db) -> dict[str, dict]:
     """{email: {"access": tool role, "roles": {campaign id: role}, "current": the campaign they last opened, "dice": their
     dice (app/dice.py)}}, plus
-    CAMPAIGNS: [{"id", "slug", "name", "is_test", "vtt_pieces"}] (every campaign, oldest first)."""
+    CAMPAIGNS: [{"id", "slug", "name", "is_test", "vtt_pieces"}] (every campaign, oldest first), and TUNING: the dice
+    tuning (app/dice.py)."""
     from app.models import Campaign, CampaignMember, User
 
     roles: dict[int, dict[int, str]] = {}
@@ -61,11 +62,15 @@ def rows_from(db) -> dict[str, dict]:
 
     out: dict = {u.email.lower(): {"access": u.access, "roles": roles.get(u.id, {}), "current": u.current_campaign_id,
                                    "dice": prefs(u)} for u in db.scalars(select(User))}
+    from app.dice import tuning_from
+
+    out[TUNING] = tuning_from(db)
     out[CAMPAIGNS] = [{"id": c.id, "slug": c.slug, "name": c.name, "is_test": c.is_test, "vtt_pieces": list(c.vtt_pieces or [])} for c in db.scalars(select(Campaign).order_by(Campaign.id))]
     return out
 
 
 CAMPAIGNS = "@campaigns"  # not an email, so it never matches a person
+TUNING = "@dice_tuning"
 loader: Callable[[], dict[str, dict]] = _load_from_db
 _cache: dict = {"rows": {}, "at": 0.0}
 
