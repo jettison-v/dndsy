@@ -693,6 +693,9 @@ with the same 454 tests and the same rule: Railway deploys only when every check
 - **Parallel tests** (pytest-xdist): the server tests are split across the machine's processors. Each "worker" gets
   its own test database (askdnd_test_gw0, _gw1, …) so they never trip over each other. Locally, `uv run pytest` does
   the same on your Mac's cores: about 25 seconds instead of 100.
+- **One test database per copy of the code.** Each folder (the main one, each session's worktree) now tests on its own
+  database named after the folder (askdnd_test_dndsy, …), made automatically. Several sessions testing at once on the
+  Mac no longer block each other on one shared database.
 - **Cached browser**: the test copy of Chromium is saved between runs and downloaded again only when Playwright is
   upgraded.
 - **Safety net kept:** on GitHub, a test that skips (because something is missing, like the database or the browser)

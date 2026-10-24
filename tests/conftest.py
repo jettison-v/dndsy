@@ -1,4 +1,6 @@
 import os
+import re
+from pathlib import Path
 
 import pytest
 from sqlalchemy import create_engine, event, text
@@ -6,9 +8,13 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
-TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "postgresql+psycopg://localhost/askdnd_test")
+# Each copy of the code (the main folder, each session's worktree) tests on its own database, named after its folder
+# (askdnd_test_dndsy, askdnd_test_blissful_mestorf_689aef, …), so test runs in different copies never block each other.
+# TEST_DATABASE_URL overrides it (GitHub sets it).
+_CHECKOUT = re.sub(r"[^a-z0-9]+", "_", Path(__file__).resolve().parents[1].name.lower()).strip("_")[:30]
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL") or f"postgresql+psycopg://localhost/askdnd_test_{_CHECKOUT}"
 # The tests run in parallel (pytest-xdist, `-n auto` in pyproject.toml): each worker gets a database of its own
-# (askdnd_test_gw0, askdnd_test_gw1, …), so one worker dropping its tables never pulls them from under another.
+# (…_gw0, …_gw1), so one worker dropping its tables never pulls them from under another.
 if WORKER := os.getenv("PYTEST_XDIST_WORKER"):
     _url = make_url(TEST_DATABASE_URL)
     TEST_DATABASE_URL = _url.set(database=f"{_url.database}_{WORKER}").render_as_string(hide_password=False)
@@ -38,7 +44,7 @@ def pytest_sessionfinish(session):
 
 
 def _ensure_database(url) -> None:
-    """Create this worker's test database the first time it's needed."""
+    """Create this copy's (or worker's) test database the first time it's needed."""
     admin = create_engine(url.set(database="postgres"), isolation_level="AUTOCOMMIT")
     try:
         with admin.connect() as conn:
@@ -56,8 +62,7 @@ def db_engine():
 
     engine = create_engine(TEST_DATABASE_URL)
     try:
-        if WORKER:
-            _ensure_database(engine.url)
+        _ensure_database(engine.url)
         with engine.connect() as conn:
             conn.execute(text("select 1"))
     except OperationalError:

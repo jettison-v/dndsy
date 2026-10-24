@@ -14,8 +14,9 @@ Requires [uv](https://docs.astral.sh/uv/) and Postgres 18 (Homebrew):
 ```bash
 brew install postgresql@18 && brew services start postgresql@18
 /opt/homebrew/opt/postgresql@18/bin/createdb askdnd_dev
-/opt/homebrew/opt/postgresql@18/bin/createdb askdnd_test
 ```
+
+The tests make their own databases (named after the folder, one per parallel worker).
 
 Then:
 
