@@ -631,3 +631,24 @@ everyone's screen in a few hundredths of a second instead of up to 3 seconds.
 3. Keep polling as a slow fallback and reconnect with growing waits, so a dropped connection costs speed, not data.
 4. Build the shared channel from day one (Postgres LISTEN/NOTIFY if you already have Postgres): adding a second copy of
    the app later then needs no rewrite.
+
+## 2026-10-24: Browser tests
+
+Until now every automated test talked to the server directly. That can't see what happens *in a page*: the roll
+window's Enter key stopped working after a click and no test noticed. Now a second kind of test drives real browser
+pages.
+
+- **Playwright** (from Microsoft) controls a real Chrome-like browser (Chromium) with no window. The tests start askdnd
+  itself on a spare port with its own throwaway database, sign several people in at once (each in a separate
+  "context", like separate browsers), click, press keys and read what each person sees.
+- **What they cover:** the main pages load with no errors; the roll window's keys; a player's roll reaching the DM's
+  screen in under 1.5 seconds; a DM-only roll's number staying hidden from other players.
+- **On GitHub** the checks install the browser first (about 30 seconds), then run these with the rest. A pull request
+  that breaks one of these flows can't merge.
+- **Proved, not assumed:** with the Enter-key bug put back, the test fails.
+
+**For a new project:**
+1. Server tests check rules and data; browser tests check what people actually do. You want a few of the second kind
+   for the flows that matter most, not hundreds.
+2. Give the test server its own database and block it from calling outside services, so tests are repeatable and free.
+3. When you fix a bug a test should have caught, add the test and check it fails with the bug put back.

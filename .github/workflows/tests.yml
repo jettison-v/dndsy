@@ -33,6 +33,9 @@ jobs:
           enable-cache: true
       - run: uv python install
       - run: uv sync --frozen
+      # The browser tests (tests/browser) drive real Chromium pages against a real askdnd server
+      - name: Install the test browser
+        run: uv run playwright install --with-deps chromium
       - name: Lint (unused imports, undefined names)
         run: uv run ruff check app scripts tests
       - run: uv run pytest -q

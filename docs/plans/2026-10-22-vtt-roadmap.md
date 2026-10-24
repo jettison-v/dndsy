@@ -99,7 +99,7 @@ play log with undo M core, *designed with 1.7, built with 1.1* · 0.5 File stora
 today's pictures out of the database) M core, *before Phase 3* · 0.6 Rules content as data (SRD 5.2; DM creations in
 the database, never the public repo; rules answers are built on it, Brett 2026-10-23) M core, *before Phase 2* · 0.7
 Finish the Railway cleanup (step 12) S core, **done 2026-10-23** · 0.8 Browser tests for the table's core flows (two
-pages at once, on every pull request) S core, *before Phase 1 ships to the table* · 0.9 Know when something breaks
+pages at once, on every pull request) S core, **done 2026-10-24** (tests/browser) · 0.9 Know when something breaks
 (errors on beta reported to Brett, not found by the table) S core, *before Phase 1 ships to the table*.
 
 **Phase 1, Live character state (first).** 1.1 Hit points askdnd owns, typed damage with resistances M core (needs
