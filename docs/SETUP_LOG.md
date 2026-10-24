@@ -659,7 +659,8 @@ Until now, if something broke on beta, we found out when someone at the table hi
 
 - **Sentry** (sentry.io) collects errors and emails Brett the first time each new one happens. It's the standard tool;
   the free Developer plan covers a table our size. Brett created the account and project; the project's address (its
-  "DSN") is a secret, set on Railway and in `.env` with `scripts/set-secret.sh`.
+  "DSN") is a secret, set on Railway only (`scripts/set-secret.sh SENTRY_DSN --clipboard --railway-only`), so testing
+  on a laptop never alerts him. A deliberate test error sent from beta arrived in Sentry as the first issue.
 - **What it sees:** the error, the page and the line of code. Not notes, recaps, transcripts, form contents, emails or
   names. That's switched off in Sentry's settings and scrubbed again before sending, and a test checks it.
 - **Errors in the browser** (a button that throws, for example) are sent back to askdnd, which forwards them, so no

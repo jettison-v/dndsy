@@ -100,7 +100,7 @@ today's pictures out of the database) M core, *before Phase 3* · 0.6 Rules cont
 the database, never the public repo; rules answers are built on it, Brett 2026-10-23) M core, *before Phase 2* · 0.7
 Finish the Railway cleanup (step 12) S core, **done 2026-10-23** · 0.8 Browser tests for the table's core flows (two
 pages at once, on every pull request) S core, **done 2026-10-24** (tests/browser) · 0.9 Know when something breaks
-(errors on beta reported to Brett, not found by the table) S core, *before Phase 1 ships to the table*.
+(errors on beta reported to Brett, not found by the table) S core, **done 2026-10-24** (app/errors.py, Sentry).
 
 **Phase 1, Live character state (first).** 1.1 Hit points askdnd owns, typed damage with resistances M core (needs
 0.4) · 1.2 Casting spends slots, upcasting, concentration M core (needs 1.1's play state) · 1.3 Class resources and
@@ -162,7 +162,6 @@ group L nice · 7.3 Accounts and costs per group L nice.
 
 1. **Brett:** list the table's frustrations with D&D Beyond Maps, Foundry and Roll20; each is attached to the item
    that fixes it (still open).
-2. **0.8 and 0.9**, small and quick, so Phase 1 is tested and watched from its first piece.
-3. **The play state foundation:** a written design (0.4 + 1.7: what askdnd owns, the merge rules, the play log,
+2. **The play state foundation:** a written design (0.4 + 1.7: what askdnd owns, the merge rules, the play log,
    two people at once) and a mockup of the play log and "what changed", reviewed by Brett; then 1.1 Hit points as
    the first piece, in the test campaign.
