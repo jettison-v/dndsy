@@ -2,6 +2,26 @@
 (function () {
   const $ = (s, el = document) => el.querySelector(s);
 
+  // ---------------------------------------------------------------- page errors
+  // (VTT 0.9, app/errors.py) A JavaScript error in one of askdnd's own scripts goes home to askdnd, which passes it to
+  // Sentry. Errors from browser extensions and other sites' scripts are left out; each error is sent once per page,
+  // at most five per page.
+  const sentErrors = new Set();
+  function reportError(message, source, line, column, stack) {
+    if (!document.body || !document.body.dataset.dice) return;  // signed in (the server checks too)
+    if (!source || new URL(source, location.href).origin !== location.origin) return;
+    const key = message + '|' + source + '|' + line;
+    if (sentErrors.has(key) || sentErrors.size >= 5) return;
+    sentErrors.add(key);
+    const body = JSON.stringify({ message, source, line, column, stack: String(stack || '').slice(0, 2000), page: location.pathname });
+    try { navigator.sendBeacon('/errors/page', new Blob([body], { type: 'application/json' })); } catch (e) { /* never break the page over it */ }
+  }
+  addEventListener('error', e => { if (e.error || e.message) reportError(e.message, e.filename, e.lineno, e.colno, e.error && e.error.stack); });
+  addEventListener('unhandledrejection', e => {
+    const r = e.reason || {}, at = /(https?:\/\/[^\s)]+?):(\d+):(\d+)/.exec(String(r.stack || ''));
+    reportError('Unhandled: ' + (r.message || String(r)).slice(0, 300), at ? at[1] : '', at ? +at[2] : 0, at ? +at[3] : 0, r.stack);
+  });
+
   function toast(message) {
     const t = $('#toast');
     if (!t || !message) return;
