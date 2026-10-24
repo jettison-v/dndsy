@@ -1,14 +1,57 @@
 import os
+import re
+from pathlib import Path
 
 import pytest
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, event, text
+from sqlalchemy.engine import make_url
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
-TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "postgresql+psycopg://localhost/askdnd_test")
+# Each copy of the code (the main folder, each session's worktree) tests on its own database, named after its folder
+# (askdnd_test_dndsy, askdnd_test_blissful_mestorf_689aef, …), so test runs in different copies never block each other.
+# TEST_DATABASE_URL overrides it (GitHub sets it).
+_CHECKOUT = re.sub(r"[^a-z0-9]+", "_", Path(__file__).resolve().parents[1].name.lower()).strip("_")[:30]
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL") or f"postgresql+psycopg://localhost/askdnd_test_{_CHECKOUT}"
+# The tests run in parallel (pytest-xdist, `-n auto` in pyproject.toml): each worker gets a database of its own
+# (…_gw0, …_gw1), so one worker dropping its tables never pulls them from under another.
+if WORKER := os.getenv("PYTEST_XDIST_WORKER"):
+    _url = make_url(TEST_DATABASE_URL)
+    TEST_DATABASE_URL = _url.set(database=f"{_url.database}_{WORKER}").render_as_string(hide_password=False)
 # The app's own database connection (app.db) also points at the test database, so no test
 # ever touches a development or production database (set before the app is imported).
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
+
+
+@pytest.hookimpl(tryfirst=True)  # before pytest-xdist reads the groups
+def pytest_collection_modifyitems(items):
+    """The browser tests share one server per file: keep them together on one worker."""
+    for item in items:
+        if "browser" in item.path.parts:
+            item.add_marker(pytest.mark.xdist_group("browser"))
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_sessionfinish(session):
+    """On GitHub every test must run: a skip there means missing tooling (the database, Chromium), so it fails."""
+    reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+    skipped = reporter.stats.get("skipped", []) if reporter else []
+    if os.getenv("CI") and not WORKER and skipped and session.exitstatus == 0:
+        reporter.write_sep("=", f"{len(skipped)} skipped on GitHub, where every test must run", red=True)
+        for report in skipped:
+            reporter.write_line(f"  {report.nodeid}: {report.longrepr[-1] if isinstance(report.longrepr, tuple) else ''}")
+        session.exitstatus = pytest.ExitCode.TESTS_FAILED
+
+
+def _ensure_database(url) -> None:
+    """Create this copy's (or worker's) test database the first time it's needed."""
+    admin = create_engine(url.set(database="postgres"), isolation_level="AUTOCOMMIT")
+    try:
+        with admin.connect() as conn:
+            if not conn.scalar(text("SELECT 1 FROM pg_database WHERE datname = :d"), {"d": url.database}):
+                conn.execute(text(f'CREATE DATABASE "{url.database}"'))
+    finally:
+        admin.dispose()
 
 
 @pytest.fixture(scope="session")
@@ -19,6 +62,7 @@ def db_engine():
 
     engine = create_engine(TEST_DATABASE_URL)
     try:
+        _ensure_database(engine.url)
         with engine.connect() as conn:
             conn.execute(text("select 1"))
     except OperationalError:
@@ -66,6 +110,33 @@ def _access_rows(monkeypatch):
     house_rules.invalidate()
 
 
+def _count_writes(conn) -> list[int]:
+    """[how many statements other than reads this test's connection has run so far]"""
+    writes = [0]
+
+    @event.listens_for(conn, "before_cursor_execute")
+    def _count(conn, cursor, statement, *args):
+        if not statement.lstrip()[:6].upper() == "SELECT":
+            writes[0] += 1
+
+    return writes
+
+
+def _until_changed(session, writes, load):
+    """The access rows (and house rules) as the app's cache would hold them, reloaded after every write or unsaved
+    change, so a test always sees its own changes. Loading them afresh on each of a page's dozens of checks was most
+    of the time of the page tests."""
+    last = {"at": None}
+
+    def loader():
+        if last["at"] != writes[0] or session.new or session.dirty or session.deleted:
+            last["rows"] = load()  # its query saves the unsaved changes first, as before
+            last["at"] = writes[0]
+        return last["rows"]
+
+    return loader
+
+
 @pytest.fixture
 def db(db_engine, monkeypatch):
     """A session whose changes are rolled back after each test."""
@@ -74,9 +145,10 @@ def db(db_engine, monkeypatch):
     with db_engine.connect() as conn:
         trans = conn.begin()
         with Session(bind=conn, join_transaction_mode="create_savepoint") as session:
-            monkeypatch.setattr(access, "loader", lambda: access.rows_from(session))
+            writes = _count_writes(conn)
+            monkeypatch.setattr(access, "loader", _until_changed(session, writes, lambda: access.rows_from(session)))
             monkeypatch.setattr(live, "loader", lambda: live.rows_from(session))
-            monkeypatch.setattr(house_rules, "loader", lambda: house_rules.rows_from(session))
+            monkeypatch.setattr(house_rules, "loader", _until_changed(session, writes, lambda: house_rules.rows_from(session)))
             from app import campaign_paths
 
             monkeypatch.setattr(campaign_paths, "remember", lambda email, cid: campaign_paths.remember_in(session, email, cid))

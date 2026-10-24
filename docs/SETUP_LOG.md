@@ -659,7 +659,8 @@ Until now, if something broke on beta, we found out when someone at the table hi
 
 - **Sentry** (sentry.io) collects errors and emails Brett the first time each new one happens. It's the standard tool;
   the free Developer plan covers a table our size. Brett created the account and project; the project's address (its
-  "DSN") is a secret, set on Railway and in `.env` with `scripts/set-secret.sh`.
+  "DSN") is a secret, set on Railway only (`scripts/set-secret.sh SENTRY_DSN --clipboard --railway-only`), so testing
+  on a laptop never alerts him. A deliberate test error sent from beta arrived in Sentry as the first issue.
 - **What it sees:** the error, the page and the line of code. Not notes, recaps, transcripts, form contents, emails or
   names. That's switched off in Sentry's settings and scrubbed again before sending, and a test checks it.
 - **Errors in the browser** (a button that throws, for example) are sent back to askdnd, which forwards them, so no
@@ -677,6 +678,70 @@ To move faster without cutting corners, independent pieces with little design (f
 checks) run as separate Claude sessions, each in its own copy of the code (a git "worktree"), each ending in a pull
 request Brett approves. Lesson learned on day one: they also need their own **test databases**, because two test runs
 on one database block each other.
+
+## 2026-10-24: Faster checks (same tests)
+
+Every merge waited about 4 minutes for GitHub's checks before Railway even started building. Now it's about 1 minute,
+with the same 454 tests and the same rule: Railway deploys only when every check passes.
+
+- **Measured first.** The time wasn't the browser download or a few broken tests: it was 450 ordinary tests run one
+  at a time, and one thing inside them. Tests turned off a small memory of "who has which role" that the real app
+  keeps, so every page reloaded it from the database dozens of times. The link checker (which opens about 300 pages
+  as each kind of person) spent most of its minute doing that.
+- **Two jobs side by side.** GitHub now runs "Server tests" and "Browser tests" at the same time, on separate machines.
+  You wait for the slower one, not both added together. They show as two checks on a pull request.
+- **Parallel tests** (pytest-xdist): the server tests are split across the machine's processors. Each "worker" gets
+  its own test database (askdnd_test_gw0, _gw1, …) so they never trip over each other. Locally, `uv run pytest` does
+  the same on your Mac's cores: about 25 seconds instead of 100.
+- **One test database per copy of the code.** Each folder (the main one, each session's worktree) now tests on its own
+  database named after the folder (askdnd_test_dndsy, …), made automatically. Several sessions testing at once on the
+  Mac no longer block each other on one shared database.
+- **Cached browser**: the test copy of Chromium is saved between runs and downloaded again only when Playwright is
+  upgraded.
+- **Safety net kept:** on GitHub, a test that skips (because something is missing, like the database or the browser)
+  now fails the run, so nothing quietly stops being tested.
+- **Railway's build** (1–3 minutes) is unchanged: the slow parts are on Railway's side (it reinstalls packages and
+  pushes the finished image every time), and the settings that could change that would also apply to the backup
+  service.
+
+| | Before | After |
+|---|---|---|
+| GitHub checks, whole run | 2.5–4.5 min | about 1 min |
+| Tests (on GitHub) | 2:20–3:40, one at a time | 32 s server + 24 s browser, side by side |
+| Browser install | 20–24 s | about 11 s (cached) |
+| Railway build | 1–3 min | unchanged |
+
+**For a new project:**
+1. Time each step before changing anything; the slow part is often not the one you'd guess.
+2. Split checks into jobs that run side by side, and make sure your deploy waits for all of them.
+3. Run tests in parallel early, giving each worker its own database; it's much harder to add once tests depend on
+   each other.
+4. Make your test settings match production's where you can: here, a cache the tests had switched off was the main
+   cost.
+
+## 2026-10-24: Openly licensed game data (the SRD)
+
+askdnd now keeps the free part of the 2024 rules, the System Reference Document 5.2.1, as data: every monster, spell,
+magic item and condition. It's published by Wizards of the Coast under **CC-BY-4.0**, a license that lets anyone copy
+and reuse it, even in a public repository, as long as they credit it.
+
+- **The license's own wording.** The SRD's first page gives the exact sentence to include and asks for no other credit
+  to Wizards. It's on Help › About word for word and in `app/data/srd/README.md`; other places just say "SRD 5.2.1".
+- **From the original, not a copy of a copy.** A script reads Wizards' PDF itself (the fonts show which text is a
+  monster's name, a field or an action) and writes one JSON file per kind. A free conversion (Open5e) is used only as a
+  second opinion: a check lists every number where the two disagree, and each was settled by looking at the PDF.
+  That turned up several mistakes in the conversion, and a few misreadings in our script, fixed before saving.
+- **Public and private kept apart.** What's openly licensed lives in the repo; anything from the books Brett bought, or
+  a DM's own creations, goes in the database, per campaign. The app reads both as one list.
+- **Checked when loaded.** Each kind has a schema (the fields it must have and their types). A file or database row
+  that doesn't fit fails loudly instead of showing up wrong on a page.
+
+**For a new project:**
+1. Read the license before using "free" data, and copy its attribution exactly where it asks.
+2. Prefer the publisher's own file; use a community version as a cross-check, not the source.
+3. Keep a script that rebuilds the data from the source instead of editing the data by hand.
+4. Decide early what may be public (licensed data, code) and what must stay private (purchased content, user data).
+
 ## 2026-10-24: File storage (VTT 0.5)
 
 Pictures were stored inside the database. That's fine for a handful, but maps, handouts, tokens and music won't fit,

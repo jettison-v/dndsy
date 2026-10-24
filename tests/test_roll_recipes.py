@@ -9,7 +9,7 @@ import pytest
 from app import roll_recipes as rr
 from app import wild_shape as ws
 
-BEASTS = {b["name"]: b for b in json.loads((Path(__file__).parent.parent / "app" / "data" / "beasts_2024.json").read_text())["beasts"]}
+BEASTS = {b["name"]: b for b in ws._catalog()}
 
 
 def action(beast, name):

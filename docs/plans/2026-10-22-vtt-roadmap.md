@@ -96,12 +96,13 @@ Status as of 2026-10-24. **Needs:** says what must exist first.
 organization (step 10) L core, **done 2026-10-23** · 0.3 Live table connection M core, **done 2026-10-24**
 (app/realtime.py: WebSockets through Postgres, so it holds with several copies of the app) · 0.4 Play state and the
 play log with undo M core, *designed with 1.7, built with 1.1* · 0.5 File storage for the campaign (S3 `v2/`; moves
-today's pictures out of the database) M core, *before Phase 3*; **built 2026-10-24** (app/files.py; pictures are written to both
-until beta's backfill is checked, then a later PR removes the database copies) · 0.6 Rules content as data (SRD 5.2; DM creations in
-the database, never the public repo; rules answers are built on it, Brett 2026-10-23) M core, *before Phase 2* · 0.7
+today's pictures out of the database) M core, **built 2026-10-24** (app/files.py; pictures are written to both until
+beta's backfill is checked, then a later PR removes the database copies) · 0.6 Rules content as data (SRD 5.2; DM
+creations in the database, never the public repo; rules answers are built on it, Brett 2026-10-23) M core, **done
+2026-10-24** (app/rules_data.py: the SRD 5.2.1 from the official PDF, plus each campaign's own in `campaign_content`) · 0.7
 Finish the Railway cleanup (step 12) S core, **done 2026-10-23** · 0.8 Browser tests for the table's core flows (two
 pages at once, on every pull request) S core, **done 2026-10-24** (tests/browser) · 0.9 Know when something breaks
-(errors on beta reported to Brett, not found by the table) S core, *before Phase 1 ships to the table*.
+(errors on beta reported to Brett, not found by the table) S core, **done 2026-10-24** (app/errors.py, Sentry).
 
 **Phase 1, Live character state (first).** 1.1 Hit points askdnd owns, typed damage with resistances M core (needs
 0.4) · 1.2 Casting spends slots, upcasting, concentration M core (needs 1.1's play state) · 1.3 Class resources and
@@ -163,7 +164,6 @@ group L nice · 7.3 Accounts and costs per group L nice.
 
 1. **Brett:** list the table's frustrations with D&D Beyond Maps, Foundry and Roll20; each is attached to the item
    that fixes it (still open).
-2. **0.8 and 0.9**, small and quick, so Phase 1 is tested and watched from its first piece.
-3. **The play state foundation:** a written design (0.4 + 1.7: what askdnd owns, the merge rules, the play log,
+2. **The play state foundation:** a written design (0.4 + 1.7: what askdnd owns, the merge rules, the play log,
    two people at once) and a mockup of the play log and "what changed", reviewed by Brett; then 1.1 Hit points as
    the first piece, in the test campaign.

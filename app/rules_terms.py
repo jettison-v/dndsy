@@ -16,6 +16,8 @@ from dataclasses import dataclass, field
 
 from markupsafe import Markup, escape
 
+from app import rules_data
+
 GLOSSARY = "Player's Handbook (2024), Rules Glossary"
 LANGUAGES = "Player's Handbook (2024), chapter 2: Languages"
 
@@ -45,23 +47,31 @@ def _language(name, speakers, rare=True, *forms):
               *forms, where=LANGUAGES)
 
 
+# Our short summary of each condition (which conditions there are is the SRD's: rules_data.condition_names()),
+# and other spellings beyond "<name>" and "<name> condition"
+CONDITION_SUMMARIES = {
+    "Blinded": "You can't see, and you automatically fail any ability check that needs sight. Attack rolls against you have Advantage; your attack rolls have Disadvantage.",
+    "Charmed": "You can't attack the charmer or target them with damaging abilities or magical effects. The charmer has Advantage on ability checks to interact with you socially.",
+    "Deafened": "You can't hear, and you automatically fail any ability check that needs hearing.",
+    "Exhaustion": "Comes in levels (1 to 6), which add up. Each level gives −2 to every d20 Test and −5 feet of Speed. At level 6 you die. Finishing a Long Rest removes one level.",
+    "Frightened": "You have Disadvantage on ability checks and attack rolls while the source of your fear is within line of sight, and you can't willingly move closer to it.",
+    "Grappled": "Your Speed is 0 and can't increase. You have Disadvantage on attack rolls against anyone other than the grappler. The grappler can drag or carry you (each foot costs it 1 extra foot unless you're Tiny or two or more sizes smaller). To escape, use your action for a Strength (Athletics) or Dexterity (Acrobatics) check against the grapple's escape DC. It also ends if the grappler is Incapacitated or you end up out of its reach.",
+    "Incapacitated": "You can't take any action, Bonus Action or Reaction, and you can't speak. Your Concentration is broken. If you're Incapacitated when you roll Initiative, you have Disadvantage on it.",
+    "Invisible": "You can't be seen, so effects that need to see their target don't affect you (unless the creator can somehow see you). Attack rolls against you have Disadvantage and yours have Advantage, except against a creature that can see you. You have Advantage on Initiative.",
+    "Paralyzed": "You're Incapacitated and your Speed is 0. You automatically fail Strength and Dexterity saving throws. Attack rolls against you have Advantage, and a hit from within 5 feet is a Critical Hit.",
+    "Petrified": "You're turned to stone with your gear. You're Incapacitated, your Speed is 0, and you automatically fail Strength and Dexterity saves. Attack rolls against you have Advantage. You have Resistance to all damage and can't be Poisoned.",
+    "Poisoned": "You have Disadvantage on attack rolls and ability checks.",
+    "Prone": "You can only crawl, or spend half your Speed (round down) to stand up; with a Speed of 0 you can't stand. You have Disadvantage on attack rolls. Attacks against you have Advantage from within 5 feet and Disadvantage from farther away.",
+    "Restrained": "Your Speed is 0 and can't increase. Attack rolls against you have Advantage; your attack rolls have Disadvantage. You have Disadvantage on Dexterity saving throws.",
+    "Stunned": "You're Incapacitated. You automatically fail Strength and Dexterity saving throws, and attack rolls against you have Advantage.",
+    "Unconscious": "You're Incapacitated and Prone, you drop what you're holding, your Speed is 0, and you're unaware of your surroundings. You automatically fail Strength and Dexterity saves. Attack rolls against you have Advantage, and a hit from within 5 feet is a Critical Hit.",
+}
+CONDITION_FORMS = {"Exhaustion": ("Exhausted",), "Invisible": ("Invisibility condition",)}
+
 TERMS: list[Term] = [
-    # Conditions
-    _t("Blinded", "Condition", "You can't see, and you automatically fail any ability check that needs sight. Attack rolls against you have Advantage; your attack rolls have Disadvantage.", "Blinded condition"),
-    _t("Charmed", "Condition", "You can't attack the charmer or target them with damaging abilities or magical effects. The charmer has Advantage on ability checks to interact with you socially.", "Charmed condition"),
-    _t("Deafened", "Condition", "You can't hear, and you automatically fail any ability check that needs hearing.", "Deafened condition"),
-    _t("Exhaustion", "Condition", "Comes in levels (1 to 6), which add up. Each level gives −2 to every d20 Test and −5 feet of Speed. At level 6 you die. Finishing a Long Rest removes one level.", "Exhaustion condition", "Exhausted"),
-    _t("Frightened", "Condition", "You have Disadvantage on ability checks and attack rolls while the source of your fear is within line of sight, and you can't willingly move closer to it.", "Frightened condition"),
-    _t("Grappled", "Condition", "Your Speed is 0 and can't increase. You have Disadvantage on attack rolls against anyone other than the grappler. The grappler can drag or carry you (each foot costs it 1 extra foot unless you're Tiny or two or more sizes smaller). To escape, use your action for a Strength (Athletics) or Dexterity (Acrobatics) check against the grapple's escape DC. It also ends if the grappler is Incapacitated or you end up out of its reach.", "Grappled condition"),
-    _t("Incapacitated", "Condition", "You can't take any action, Bonus Action or Reaction, and you can't speak. Your Concentration is broken. If you're Incapacitated when you roll Initiative, you have Disadvantage on it.", "Incapacitated condition"),
-    _t("Invisible", "Condition", "You can't be seen, so effects that need to see their target don't affect you (unless the creator can somehow see you). Attack rolls against you have Disadvantage and yours have Advantage, except against a creature that can see you. You have Advantage on Initiative.", "Invisible condition", "Invisibility condition"),
-    _t("Paralyzed", "Condition", "You're Incapacitated and your Speed is 0. You automatically fail Strength and Dexterity saving throws. Attack rolls against you have Advantage, and a hit from within 5 feet is a Critical Hit.", "Paralyzed condition"),
-    _t("Petrified", "Condition", "You're turned to stone with your gear. You're Incapacitated, your Speed is 0, and you automatically fail Strength and Dexterity saves. Attack rolls against you have Advantage. You have Resistance to all damage and can't be Poisoned.", "Petrified condition"),
-    _t("Poisoned", "Condition", "You have Disadvantage on attack rolls and ability checks.", "Poisoned condition"),
-    _t("Prone", "Condition", "You can only crawl, or spend half your Speed (round down) to stand up; with a Speed of 0 you can't stand. You have Disadvantage on attack rolls. Attacks against you have Advantage from within 5 feet and Disadvantage from farther away.", "Prone condition"),
-    _t("Restrained", "Condition", "Your Speed is 0 and can't increase. Attack rolls against you have Advantage; your attack rolls have Disadvantage. You have Disadvantage on Dexterity saving throws.", "Restrained condition"),
-    _t("Stunned", "Condition", "You're Incapacitated. You automatically fail Strength and Dexterity saving throws, and attack rolls against you have Advantage.", "Stunned condition"),
-    _t("Unconscious", "Condition", "You're Incapacitated and Prone, you drop what you're holding, your Speed is 0, and you're unaware of your surroundings. You automatically fail Strength and Dexterity saves. Attack rolls against you have Advantage, and a hit from within 5 feet is a Critical Hit.", "Unconscious condition"),
+    # Conditions (a condition without a summary fails here, so a new one can't go unexplained)
+    *(_t(name, "Condition", CONDITION_SUMMARIES[name], f"{name} condition", *CONDITION_FORMS.get(name, ()))
+      for name in rules_data.condition_names()),
 
     # Actions
     _t("Attack action", "Action", "Make one attack with a weapon or an Unarmed Strike (more if a feature like Extra Attack says so).", "Attack actions", basic=True),

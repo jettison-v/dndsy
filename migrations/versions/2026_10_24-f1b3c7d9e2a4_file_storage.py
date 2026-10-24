@@ -6,7 +6,7 @@ stay, still written, until scripts/backfill_files.py has copied every one and th
 them is a later migration.
 
 Revision ID: f1b3c7d9e2a4
-Revises: ef0a2b6c9d15
+Revises: f1b3c5d7e9a2
 Create Date: 2026-10-24 12:00:00.000000
 
 """
@@ -17,7 +17,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = 'f1b3c7d9e2a4'
-down_revision: Union[str, Sequence[str], None] = 'ef0a2b6c9d15'
+down_revision: Union[str, Sequence[str], None] = 'f1b3c5d7e9a2'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

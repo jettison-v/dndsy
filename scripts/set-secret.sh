@@ -5,11 +5,11 @@
 #   scripts/set-secret.sh ANTHROPIC_API_KEY            # prompts (hidden input)
 #   scripts/set-secret.sh ANTHROPIC_API_KEY --clipboard  # reads from clipboard
 #   scripts/set-secret.sh ANTHROPIC_API_KEY --local-only
+#   scripts/set-secret.sh SENTRY_DSN --clipboard --railway-only   # beta only: never in local .env
 #   scripts/set-secret.sh AWS_SECRET_ACCESS_KEY --service askdnd-backup   # another Railway service
-#   scripts/set-secret.sh AWS_ACCESS_KEY_ID --railway-only   # Railway only; local .env keeps its own value
 set -euo pipefail
 
-name="${1:?usage: scripts/set-secret.sh NAME [--clipboard] [--local-only]}"
+name="${1:?usage: scripts/set-secret.sh NAME [--clipboard] [--local-only | --railway-only] [--service NAME]}"
 shift
 from_clipboard=false
 local_only=false
@@ -39,7 +39,9 @@ value="$(printf '%s' "$value" | tr -d '\r\n')"
 
 cd "$(dirname "$0")/.."
 
-# Local .env: replace the line if present, otherwise append.
+if $local_only && $railway_only; then echo "--local-only and --railway-only can't both be set" >&2; exit 1; fi
+
+# Local .env: replace the line if present, otherwise append (not for --railway-only settings, which must stay off locally)
 if ! $railway_only; then
   touch .env
   grep -v "^${name}=" .env > .env.tmp || true

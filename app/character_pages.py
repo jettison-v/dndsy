@@ -444,7 +444,7 @@ def form_panel(request: Request, character_id: int, name: str, db: Session = Dep
     return templates.TemplateResponse(request, "_panel_form.html", {
         **ctx, "f": ws.shaped(ctx["sheet"], beast, keep=ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep)), "ref": f"form:{beast['name']}", "known": known,
         "keep_options": ws.options_for(ctx["sheet"] or {}, ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep)), "beast_name": beast["name"],
-        "why_not": ws.why_not(ctx["druid"], beast), "credit": ws.credit() if beast.get("source") == "SRD 5.2" else "",
+        "why_not": ws.why_not(ctx["druid"], beast), "credit": ws.credit(beast),
         "current": (ch.wild_shape or "").lower() == beast["name"].lower()})
 
 
