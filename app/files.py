@@ -18,6 +18,7 @@ kept backup finds every file it names (docs/DECISIONS.md, 2026-10-24).
 import hashlib
 import logging
 import os
+import threading
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -101,9 +102,15 @@ class S3:
 
     def __init__(self, bucket: str, region: str | None = None):
         import boto3
+        from botocore.config import Config
 
         self.bucket = bucket
-        self.s3 = boto3.client("s3", region_name=region or None)
+        # One client for the whole app (it's thread-safe once made). Room for a page of pictures at once, and timeouts
+        # so a slow answer from S3 fails in seconds instead of holding a request (2026-10-24: 23 pictures at once,
+        # with no timeouts and a client made per first request, held the database's connections until they ran out).
+        self.s3 = boto3.client("s3", region_name=region or None,
+                               config=Config(max_pool_connections=50, connect_timeout=5, read_timeout=20,
+                                             retries={"max_attempts": 3, "mode": "standard"}))
 
     def put(self, key: str, data: bytes, content_type: str) -> None:
         self.s3.put_object(Bucket=self.bucket, Key=PREFIX + key, Body=data, ContentType=content_type,
@@ -134,9 +141,21 @@ def from_config():
     return S3(config.AWS_S3_BUCKET_NAME, config.AWS_REGION)
 
 
+_making = threading.Lock()
+
+
 @cache
-def storage():
+def _made():
     return from_config()
+
+
+def storage():
+    """The storage, made once: the first requests can arrive together, and boto3 isn't safe to set up in parallel."""
+    with _making:
+        return _made()
+
+
+storage.cache_clear = _made.cache_clear  # (tests reset it)
 
 
 def ready() -> bool:
@@ -204,11 +223,18 @@ def read(key: str | None, fallback: Callable[[], bytes] | None = None) -> bytes 
     return fallback() if fallback else None
 
 
-def serve(key: str | None, content_type: str, fallback: Callable[[], bytes] | None = None, cache_control: str = CACHE_FOREVER):
+def serve(key: str | None, content_type: str, fallback: Callable[[], bytes] | None = None, cache_control: str = CACHE_FOREVER,
+          release: Session | None = None):
     """A response with the file, for a route that has already checked who may see it. Addresses carry the key's
-    version (?v=), so the response can be cached for good."""
+    version (?v=), so the response can be cached for good.
+
+    `release`: the route's database session. Its read-only transaction ends before the download, which hands its
+    connection back, so a page of pictures never holds the database's connections while S3 answers. (A `fallback`
+    that needs the database takes a connection again, briefly.)"""
     from fastapi import Response
 
+    if release is not None:
+        release.commit()  # nothing to save: ending the transaction is what returns the connection
     data = read(key, fallback)
     if data is None:
         return Response(status_code=404)

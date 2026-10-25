@@ -222,7 +222,7 @@ def picture(request: Request, entity_id: int, size: str = "full", db: Session = 
     pic = db.scalar(select(EntityPicture).where(EntityPicture.entity_id == entity_id)) if user and _visible(entity, user) else None
     if pic is None:
         return Response(status_code=404)
-    return pictures.serve(pic, size)
+    return pictures.serve(db, pic, size)
 
 
 def _picture_action(request: Request, db: Session, entity_id: int, fn: Callable[[Entity, dict], str]):

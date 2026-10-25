@@ -229,3 +229,25 @@ def test_entities_merged_keep_their_picture_file(db, file_store):
     entities.merge(db, k, w)
     assert db.scalar(select(EntityPicture)).entity_id == w.id and db.get(Entity, k.id) is None
     assert files.sweep(db, file_store)["files"] == 1 and db.get(StoredFile, key).unused_since is None
+
+
+def test_the_database_connection_goes_back_before_the_download(monkeypatch):
+    """2026-10-24 on beta: a page of 23 pictures held the database's 15 connections while S3 answered, and the last
+    ones waited 30 s and failed. The connection must go back before the file is fetched."""
+    order = []
+
+    class Session:
+        def commit(self):
+            order.append("connection back")
+
+    monkeypatch.setattr(files, "read", lambda key, fallback=None: order.append("download") or b"RIFF")
+    assert files.serve("1/abc.webp", "image/webp", release=Session()).body == b"RIFF"
+    assert order == ["connection back", "download"]
+
+
+def test_s3_has_timeouts_and_room_for_a_page_of_pictures(monkeypatch):
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "test")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "test")
+    s3 = files.S3("bucket", "us-east-2").s3
+    assert s3.meta.config.max_pool_connections >= 30
+    assert s3.meta.config.connect_timeout <= 10 and s3.meta.config.read_timeout <= 30
