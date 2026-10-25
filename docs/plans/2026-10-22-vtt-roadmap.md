@@ -168,6 +168,6 @@ group L nice · 7.3 Accounts and costs per group L nice.
 
 1. **Brett:** list the table's frustrations with D&D Beyond Maps, Foundry and Roll20; each is attached to the item
    that fixes it (still open).
-2. **The play state foundation:** a written design (0.4 + 1.7: what askdnd owns, the merge rules, the play log,
-   two people at once) and a mockup of the play log and "what changed", reviewed by Brett; then 1.1 Hit points as
-   the first piece, in the test campaign.
+2. **The play state foundation:** drafted 2026-10-24 for Brett's review: `docs/plans/2026-10-24-play-state.md` and
+   `docs/mockups/play-state.html` (what askdnd owns, the merge rules, the play log, two people at once, 1.1 hit points);
+   then 1.1 Hit points as the first piece, in the test campaign.
