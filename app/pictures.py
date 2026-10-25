@@ -75,11 +75,12 @@ def save(db: Session, entity: Entity, raw: bytes, user: dict) -> EntityPicture:
     return pic
 
 
-def serve(pic: EntityPicture, size: str = "full"):
-    """The picture (or its thumbnail) for a route that has checked who may see it."""
+def serve(db: Session, pic: EntityPicture, size: str = "full"):
+    """The picture (or its thumbnail) for a route that has checked who may see it. The database connection goes back
+    before the download (files.serve `release`)."""
     if size == "thumb":
-        return files.serve(pic.thumb_key, pic.content_type, lambda: pic.thumb)
-    return files.serve(pic.file_key, pic.content_type, lambda: pic.data)
+        return files.serve(pic.thumb_key, pic.content_type, lambda: pic.thumb, release=db)
+    return files.serve(pic.file_key, pic.content_type, lambda: pic.data, release=db)
 
 
 def remove(db: Session, entity: Entity) -> None:

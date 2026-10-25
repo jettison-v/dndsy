@@ -81,6 +81,10 @@ than inventing its own.
 - **Files (0.5).** Maps, handouts and tokens are too large for the database. Pictures live in the database today
   (`entity_pictures`, `note_images`); 0.5 moves them to S3 (`v2/` prefix), served through askdnd with the same access
   checks, cached by Cloudflare, with size limits on upload. Built before Phase 3, which depends on it.
+  *Before Phase 3–4 (maps, audio):* files that size shouldn't pass through the app. After askdnd's access check, send
+  a short-lived signed S3 link instead (with the same caching), so the app never holds a request while a large file
+  downloads (2026-10-24: a page of 23 pictures through the app showed the limits; fixed for pictures by giving the
+  database connection back before each download).
 - **Rules content as data (0.6).** SRD 5.2 monsters, spells, items and conditions as data in `app/data/` (public,
   licensed); the DM's own creations and anything from purchased books in the database, never in the public repo.
   Stat blocks (2.3), resolving attacks (2.4) and rules answers in play (5.1) all read from it.

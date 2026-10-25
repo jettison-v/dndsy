@@ -260,5 +260,5 @@ def image(request: Request, image_id: int, db: Session = Depends(get_db)):
     img = db.get(NoteImage, image_id)
     if img is None or not _visible(db.get(NoteSnapshot, img.snapshot_id).source, user):
         return Response(status_code=404)
-    return files.serve(img.file_key, img.content_type, lambda: img.data,
-                       cache_control=files.CACHE_FOREVER if img.file_key else "private, max-age=3600")
+    return files.serve(img.file_key, img.content_type, lambda: img.data,  # the connection goes back before the download
+                       cache_control=files.CACHE_FOREVER if img.file_key else "private, max-age=3600", release=db)

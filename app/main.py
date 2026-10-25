@@ -51,6 +51,12 @@ from app.templating import templates
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     mark_interrupted_runs()
+    try:  # file storage's S3 client, made before the first page of pictures asks for it (app/files.py)
+        from app import files
+
+        files.storage()
+    except Exception:  # noqa: BLE001 - storage problems show where files are read, not at startup
+        pass
     # The live table connection: this copy hears every copy's changes through Postgres (app/realtime.py)
     listener = asyncio.create_task(realtime.listen()) if db_engine is not None and db_engine.dialect.name == "postgresql" else None
     yield
