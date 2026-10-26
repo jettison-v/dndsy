@@ -4,7 +4,7 @@
 {% set s = sheet %}
 {# Character › Battle (character_pages._battle_ctx). Game Mode and the Wild Shape switch swap this whole block. #}
 <div id="battle-body" data-character="{{ c.id }}" data-name="{{ c.name }}" data-fetched="{{ fetched_at.isoformat() if fetched_at else '' }}" data-cond-adv='{{ cond_adv | tojson }}'>
-  <div class="battlebar">
+  <div class="battlebar" data-tour="roll">
     {% if s %}{{ resource_row(s, slots=not spellbar, skip=(["Wild Shape"] if known_forms else [])) }}{% endif %}
     {% if form %}{% set fb = form.beast %}
     <div class="ws-form" data-modal-url="/characters/{{ c.id }}/form?name={{ fb.name | urlencode }}" data-modal-size="large" tabindex="0" role="button">
@@ -69,7 +69,7 @@
   <div class="econ-tabs" role="tablist" aria-label="Action, bonus action or reaction">
     {% for cost, sub, slug in econ %}<button type="button" role="tab" class="k-{{ slug }}" data-econ="{{ slug }}" aria-selected="{{ 'true' if loop.first else 'false' }}">{{ {"Bonus action": "Bonus"}.get(cost, cost) }} <span class="count">{{ columns[cost].shown | length }}</span></button>{% endfor %}
   </div>
-  <div class="econ" data-econ-show="action">
+  <div class="econ" data-econ-show="action" data-tour="battle">
     {% for cost, sub, slug in econ %}
     {% set col = columns[cost] %}
     <div class="section" data-econ-col="{{ slug }}">

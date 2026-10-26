@@ -1,6 +1,6 @@
 {# Reminders: the player's reminders, in their order. On Battle (where they're used) and Plan (where they're
    made, as a tab: set `bare` to leave out the box). #}
-<div class="{{ 'forget-tab' if bare else 'section' }}">
+<div class="{{ 'forget-tab' if bare else 'section' }}"{% if not bare %} data-tour="reminders"{% endif %}>
   <div class="sec-head"><h2>Reminders</h2>{% if can_pick %}<a href="/characters/{{ c.id }}">Choose on Sheet →</a>{% endif %}</div>
   {% if not show_picks %}
   <p class="muted">Reminders belong to each player and aren't shown to the DM.</p>

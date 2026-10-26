@@ -63,7 +63,7 @@
     </div>
   </nav>
   <div class="bar-end">
-    <div class="live">{% include "_live_pill.html" %}<div class="menu live-menu" id="live-menu" data-keep-open hidden></div></div>
+    <div class="live" data-tour="live">{% include "_live_pill.html" %}<div class="menu live-menu" id="live-menu" data-keep-open hidden></div></div>
     {% if manage_pages %}
     <div class="manage">
       <button class="{{ 'active' if manage_pages | selectattr('here') | list }}" data-menu="manage-menu" aria-haspopup="true">Manage ▾</button>
@@ -76,8 +76,17 @@
       </div>
     </div>
     {% endif %}
-    {# Help: the FAQ and About, one quiet icon instead of another word in the bar (Brett, 2026-10-23) #}
-    <a href="/help" class="help-btn{{ ' active' if path == '/help' }}" aria-label="Help" data-tip="Help" data-no-peek>?</a>
+    {# Help: one quiet icon instead of another word in the bar (Brett, 2026-10-23), opening the tour, What askdnd adds,
+       the FAQ and About (2026-10-26; app/tour.py) #}
+    <div class="help-menu" data-tour="help">
+      <button type="button" class="help-btn{{ ' active' if path == '/help' }}" data-menu="help-menu" aria-haspopup="true" aria-controls="help-menu" aria-label="Help" data-tip="Help">?</button>
+      <div class="menu" id="help-menu" hidden>
+        <a href="#" data-tour-start>Take the tour<small>A few minutes: what askdnd adds, and why</small></a>
+        <a href="/help?tab=adds" data-no-peek>What askdnd adds<small>The same, to read</small></a>
+        <a href="/help" data-no-peek>FAQ<small>How each feature works</small></a>
+        <a href="/help?tab=about" data-no-peek>About<small>What askdnd keeps, and who sees it</small></a>
+      </div>
+    </div>
     <div class="account">
       <button class="avatar" data-menu="account-menu" aria-label="Account">{% if user.picture %}<img src="{{ user.picture }}" alt="" referrerpolicy="no-referrer">{% else %}{{ (user.name or user.email)[:1] | upper }}{% endif %}</button>
       <div class="menu" id="account-menu" hidden>

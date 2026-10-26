@@ -4,7 +4,7 @@
 {% from "_spell_list.html" import spell_list %}
 {% from "_form_list.html" import form_list %}
 {% from "_notes_macros.html" import note_summary %}
-<section class="section">
+<section class="section" data-tour="plan">
   {% call help("plan", help_off, "notes") %}{% if can_pick %}Your plans for {{ c.name }}. Players can read them; the DM can't. Names become links.{% else %}{{ c.name }}'s player's plans. The DM can't see these.{% endif %}{% endcall %}
   <div class="tabbar" role="tablist">
     {% for kind, meta, notes in player_notes %}<button role="tab" aria-selected="{{ 'true' if loop.first else 'false' }}" data-tab="t-{{ kind }}" title="{{ meta.plural }}">{{ meta.tab }}{% if notes %} <span class="count">{{ notes | length }}</span>{% endif %}</button>

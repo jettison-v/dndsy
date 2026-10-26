@@ -2395,3 +2395,123 @@
     if (next && !next.classList.contains('sel')) { e.preventDefault(); next.click(); next.scrollIntoView({ block: 'nearest' }); }
   });
 })();
+
+// The new-player tour (? › Take the tour, and Show me on Help › What askdnd adds; app/tour.py). It walks this
+// person's stops across pages: each dims the page, lights one thing and says what it is and why. It only reads, and
+// clicks a tab to show the right part, so nothing changes. Where it is lives in sessionStorage, so it carries on after
+// each page change; Esc or ✕ ends it.
+(function () {
+  const KEY = 'askdnd-tour';
+  let tour = null, spot = null, card = null, lit = null;
+  const keep = () => { try { if (tour) sessionStorage.setItem(KEY, JSON.stringify(tour)); else sessionStorage.removeItem(KEY); } catch (e) { /* private window: the tour still works page by page */ } };
+  const visible = sel => [...document.querySelectorAll(sel)].find(el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  async function start(group) {
+    const res = await fetch('/tour', { headers: { Accept: 'application/json' } });
+    if (!res.ok) return;
+    const stops = (await res.json()).stops;
+    if (!stops.length) return;
+    tour = { stops, i: 0 };
+    go(group ? Math.max(0, stops.findIndex(s => s.group === group)) : 0);
+  }
+  function go(i) {
+    if (i >= tour.stops.length) return end();
+    tour.i = Math.max(0, i);
+    const s = tour.stops[tour.i];
+    if (s.url && new URL(s.url, location.href).pathname !== location.pathname) {
+      tour.arriving = true; keep(); location.href = s.url; return;  // carries on when the page has loaded
+    }
+    tour.arriving = false; keep(); show(s);
+  }
+  function end() {
+    tour = null; keep(); lit = null;
+    if (spot) spot.remove(); if (card) card.remove(); spot = card = null;
+  }
+  // A target taller than most of the screen (a recap, a sheet) is lit from its top down to just under half the screen,
+  // with the card below, so the dimming still shows where to look.
+  const tall = r => r.height > innerHeight * 0.55;
+  function rect() {
+    if (!lit) return null;
+    const r = lit.getBoundingClientRect();
+    if (!tall(r)) return r;
+    const bottom = Math.min(r.bottom, Math.max(r.top, 0) + innerHeight * 0.45);
+    return { top: r.top, left: r.left, right: r.right, width: r.width, bottom, height: bottom - r.top };
+  }
+  function place() {
+    if (!tour || !card) return;
+    const r = rect(), pad = 6;
+    spot.hidden = !r;
+    card.classList.toggle('alone', !r);
+    if (!r) { card.style.top = card.style.left = ''; return; }
+    Object.assign(spot.style, { top: r.top - pad + 'px', left: r.left - pad + 'px', width: r.width + pad * 2 + 'px', height: r.height + pad * 2 + 'px' });
+    if (matchMedia('(max-width: 640px)').matches) return;  // phones: the card sits at the bottom (app.css)
+    const h = card.offsetHeight, w = card.offsetWidth;
+    let top = r.bottom + 14 + h < innerHeight ? r.bottom + 14 : r.top - h - 14;  // below the lit thing if it fits, else above
+    let left = Math.min(Math.max(12, r.left), innerWidth - w - 12);
+    if (top < 12) {  // too tall either way: beside it, or over its bottom corner
+      top = Math.min(Math.max(12, r.top), innerHeight - h - 12);
+      left = r.right + 18 + w < innerWidth ? r.right + 18 : r.left - w - 18 >= 12 ? r.left - w - 18 : innerWidth - w - 12;
+    }
+    card.style.top = top + 'px'; card.style.left = left + 'px';
+  }
+  function show(s) {
+    if (s.open) { const tab = document.querySelector(s.open); if (tab && tab.getAttribute('aria-selected') !== 'true') tab.click(); }
+    if (!spot) {
+      spot = document.createElement('div'); spot.className = 'tour-spot';
+      card = document.createElement('div'); card.className = 'tour-card'; card.setAttribute('role', 'dialog'); card.setAttribute('aria-label', 'Tour');
+      document.body.append(spot, card);
+    }
+    const groups = [...new Set(tour.stops.map(x => x.group))], parts = tour.stops.filter(x => x.group === s.group), last = tour.i === tour.stops.length - 1;
+    card.innerHTML = `<h3>${esc(s.title)}</h3>`
+      + (parts.length > 1 ? `<span class="tour-parts" aria-label="Part ${parts.indexOf(s) + 1} of ${parts.length}">${parts.map(x => `<i${x === s ? ' class="on"' : ''}></i>`).join('')}</span>` : '')
+      + `<p>${s.what}</p><p class="why">${s.why}</p>`  // the words are askdnd's own (app/tour.py), with <b> for names
+      + `<div class="tour-foot"><span class="count">${groups.indexOf(s.group) + 1} of ${groups.length}</span>`
+      + (tour.i ? '<button type="button" class="btn small" data-tour-go="-1">Back</button>' : '')
+      + `<button type="button" class="btn small primary" data-tour-go="1">${last ? 'Done' : 'Next'}</button>`
+      + '<button type="button" class="btn small link" data-tour-end aria-label="End the tour">✕</button></div>';
+    lit = visible(s.at) || null;
+    if (lit) {
+      const r = lit.getBoundingClientRect(), bar = document.querySelector('.topbar');
+      if (tall(r)) {  // its top just under the menu bar and any bar that sticks below it (Battle's numbers)
+        const top = margin => { lit.style.scrollMarginTop = margin + 'px'; lit.scrollIntoView({ block: 'start' }); lit.style.scrollMarginTop = ''; };
+        const m = (bar ? bar.offsetHeight : 0) + 16;
+        top(m);
+        card.style.visibility = 'hidden';
+        const t = lit.getBoundingClientRect(), over = document.elementFromPoint(t.left + Math.min(40, t.width / 2), t.top + 2);
+        card.style.visibility = '';
+        let stuck = over && !lit.contains(over) ? over : null;
+        while (stuck && !['sticky', 'fixed'].includes(getComputedStyle(stuck).position)) stuck = stuck.parentElement;
+        if (stuck && stuck !== bar) top(m + stuck.offsetHeight);
+      } else lit.scrollIntoView({ block: 'center' });
+    }
+    requestAnimationFrame(() => { if (!card) return; place(); card.querySelector('[data-tour-go="1"]').focus({ preventScroll: true }); });  // (ended meanwhile)
+  }
+
+  document.addEventListener('click', e => {
+    const a = e.target.closest('[data-tour-start]');
+    if (a) { e.preventDefault(); start(a.dataset.tourStart || ''); return; }
+    if (!tour) return;
+    const b = e.target.closest('[data-tour-go]');
+    if (b) go(tour.i + +b.dataset.tourGo);
+    else if (e.target.closest('[data-tour-end]')) end();
+  });
+  document.addEventListener('keydown', e => {
+    if (!tour || !card || e.target.matches('input, textarea, select, [contenteditable]')) return;
+    if (e.key === 'Escape') end();
+    else if (e.key === 'ArrowRight') go(tour.i + 1);
+    else if (e.key === 'ArrowLeft' && tour.i > 0) go(tour.i - 1);
+    else return;
+    e.preventDefault();
+  });
+  addEventListener('resize', place);
+  addEventListener('scroll', place, { passive: true });
+  try { tour = JSON.parse(sessionStorage.getItem(KEY)); } catch (e) { tour = null; }
+  if (tour && tour.stops && tour.stops[tour.i]) {
+    const s = tour.stops[tour.i];
+    // Arrived on the stop's page (or the address redirected): carry on here. Otherwise this is a page the person
+    // opened themselves mid-tour, so the tour ends instead of pulling them back.
+    if (tour.arriving || !s.url || new URL(s.url, location.href).pathname === location.pathname) { tour.arriving = false; keep(); show(s); }
+    else end();
+  } else tour = null;
+})();

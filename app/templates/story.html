@@ -12,7 +12,7 @@
     <button role="tab" aria-selected="{{ 'true' if tab == 'sessions' else 'false' }}" data-tab="t-sessions">All sessions{% if items %} <span class="count">{{ items | length }}</span>{% endif %}</button>
   </div>
 
-  <div id="t-previously"{% if tab != "previously" %} hidden{% endif %}>
+  <div id="t-previously" data-tour="previously"{% if tab != "previously" %} hidden{% endif %}>
   {% if questions %}
   <section class="section ask-card" id="questions-for-you">
     <div class="section-head"><h2>Questions for you</h2><span class="count">{{ questions | length }}</span></div>

@@ -45,6 +45,12 @@
     {% call q("Can askdnd roll dice or change things on D&D Beyond?") %}
       <p>No. It only reads your public character. D&amp;D Beyond's terms don't allow other apps to act on it, so rolls, HP and spell slots are still done in D&amp;D Beyond.</p>
     {% endcall %}
+    {% call q("Is there a quick way to see what askdnd adds?", "tour") %}
+      Yes: <b>?</b> in the menu bar › <b>Take the tour</b>. It walks through your own pages (Story, Campaign, your character's
+      Battle, Sheet and Plan, and Party), lighting one thing at a time with what it is and why. It only shows things;
+      nothing on your character changes. Use Next or the arrow keys, and Esc to stop. <b>What askdnd adds</b> (the first
+      tab here) is the same to read, with <b>Show me</b> to start the tour at that part.
+    {% endcall %}
     {% call q("What are Battle, Sheet, Plan and Party?", "modes") %}
       <p>Each character has one page with three modes, switched at the top right of the page: <b>Battle</b>, <b>Sheet</b> and <b>Plan</b>. Your character (portrait and name) in the menu bar is one click to it, in the mode you used last. <b>Party ▾</b> lists every character with class, level and HP; pick one to open it in the mode you're in, or <b>Everyone at a glance</b> for the Party page. The DM has no character, so only Party shows for them. On a phone, the bar at the bottom has Story, Campaign, your character, Party and More.</p>
       <ul>
