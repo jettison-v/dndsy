@@ -4,6 +4,7 @@ A companion app for one D&D 2024 table (4 players + DM, playing on Zoom with D&D
 
 - `docs/BRIEF.md`: what we're building and why (the product)
 - `docs/ARCHITECTURE.md`: stack, data, build plan
+- `docs/stack.html`: the stack map, a diagram of how the services connect and who changes each one (Claude, Brett, or both), with where every key lives. **Update it** whenever a service, a key or who does what changes, and republish it (its private artifact link is in the file's footer).
 - `docs/DECISIONS.md`: running decision log. **Append to it** whenever a meaningful decision is made in a session (one line: date, decision, why).
 
 ## Working with Brett
