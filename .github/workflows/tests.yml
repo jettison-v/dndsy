@@ -4,8 +4,10 @@
 # Two jobs side by side, so the wait is the slower one, not the sum (docs/SETUP_LOG.md, 2026-10-24):
 # - Server tests: everything outside tests/browser, in parallel (pytest-xdist, one worker per CPU, each with its own
 #   database) after the lint.
-# - Browser tests: tests/browser, real Chromium pages against a real askdnd server. Chromium comes from a cache
-#   keyed by Playwright's version, so it downloads only when Playwright is upgraded.
+# - Browser tests: tests/browser, real Chromium pages against a real askdnd server, inside Playwright's own image
+#   (Chromium and its system libraries already installed; its tag matches uv.lock's Playwright, tests/test_deploy.py).
+#   Installing those libraries on GitHub's machine usually took seconds but sometimes 8-12 minutes (2026-10-26),
+#   holding up every deploy.
 # Together they run every test. On GitHub a skip fails the run (tests/conftest.py): missing tooling must fail here.
 name: Tests
 
@@ -50,6 +52,12 @@ jobs:
     name: Browser tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright/python:v1.64.1-noble
+      options: --ipc=host  # Chromium's shared memory (Playwright's advice for Docker)
+    env:
+      # Inside a container, the database service is reached by its name
+      TEST_DATABASE_URL: postgresql+psycopg://askdnd:askdnd@postgres:5432/askdnd_test
     services:
       postgres: *postgres
     steps:
@@ -59,20 +67,5 @@ jobs:
           enable-cache: true
       - run: uv python install
       - run: uv sync --frozen
-      - name: Playwright's version
-        id: playwright
-        run: echo "version=$(uv run python -c 'import importlib.metadata as m; print(m.version("playwright"))')" >> "$GITHUB_OUTPUT"
-      - name: Cached test browser
-        id: browser-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ runner.os }}-${{ steps.playwright.outputs.version }}
-      - name: Install the test browser
-        if: steps.browser-cache.outputs.cache-hit != 'true'
-        run: uv run playwright install --with-deps --only-shell chromium
-      - name: Install the test browser's system libraries
-        if: steps.browser-cache.outputs.cache-hit == 'true'
-        run: uv run playwright install-deps chromium
       # One server per file: these run one after another (-n 0), in the order they're written
       - run: uv run pytest -q --durations=5 -n 0 tests/browser
