@@ -92,3 +92,15 @@ def test_beta_gets_a_moment_to_switch_over(monkeypatch):
     assert deploy_check.beta_answers()
     monkeypatch.setattr(urllib.request, "urlopen", lambda req, timeout: (_ for _ in ()).throw(OSError("down")))
     assert not deploy_check.beta_answers(tries=3)
+
+
+def test_the_browser_tests_image_matches_playwright():
+    """The browser tests run in Playwright's image (.github/workflows/tests.yml), whose Chromium fits one Playwright
+    version: upgrading Playwright in uv.lock means moving the image's tag with it."""
+    import re
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent
+    lock = re.search(r'name = "playwright"\nversion = "([\d.]+)"', (root / "uv.lock").read_text()).group(1)
+    image = re.search(r"mcr\.microsoft\.com/playwright/python:v([\d.]+)-", (root / ".github/workflows/tests.yml").read_text()).group(1)
+    assert image == lock, f"tests.yml uses Playwright's v{image} image but uv.lock has Playwright {lock}"
