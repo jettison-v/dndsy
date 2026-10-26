@@ -2368,8 +2368,7 @@ function show(i) {
     const r = el.getBoundingClientRect(), pad = 6, spot = $('spot'), card = $('card');
     Object.assign(spot.style, { top: r.top - pad + 'px', left: r.left - pad + 'px', width: r.width + pad * 2 + 'px', height: r.height + pad * 2 + 'px' }); spot.hidden = false;
     const inGroup = STOPS.filter(x => x.group === s.group), part = inGroup.indexOf(s);
-    card.innerHTML = (s.tag ? `<span class="tag ${s.tag[0]}">${s.tag[1]}</span>` : '')
-      + `<h3>${s.title || s.group}</h3>${inGroup.length > 1 ? `<span class="parts">${inGroup.map((x, k) => `<i class="${k === part ? 'on' : ''}"></i>`).join('')}</span>` : ''}`
+    card.innerHTML = `<h3>${s.title || s.group}</h3>${inGroup.length > 1 ? `<span class="parts">${inGroup.map((x, k) => `<i class="${k === part ? 'on' : ''}"></i>`).join('')}</span>` : ''}`
       + `<p>${s.what}</p><p class="why">${s.why}</p>${s.only ? `<p class="only">Shown because ${s.only}.</p>` : ''}`
       + `<div class="foot"><span class="count">${GROUPS.indexOf(s.group) + 1} of ${GROUPS.length}</span>${i ? '<button class="btn small" type="button" data-t="back">Back</button>' : ''}`
       + `<button class="btn small primary" type="button" data-t="next">${i === STOPS.length - 1 ? 'Done' : 'Next'}</button><button class="btn small link" type="button" data-t="end" aria-label="End the tour">✕</button></div>`;
@@ -2403,7 +2402,7 @@ document.addEventListener('keydown', e => {
 });
 addEventListener('resize', () => { if (step >= 0) show(step); });
 $('adds').innerHTML = ADDS.map(([title, rows]) => `<section><h3>${title}</h3>${rows.map(([name, tag, text, grp]) =>
-  `<div class="add"><b>${name}</b><span class="side"><span class="tag ${tag[0]}">${tag[1]}</span>${grp ? `<button class="btn small link" type="button" data-show="${grp}">Show me</button>` : ''}</span><p>${text}</p></div>`).join('')}</section>`).join('');
+  `<div class="add"><b>${name}</b><span class="side">${grp ? `<button class="btn small link" type="button" data-show="${grp}">Show me</button>` : ''}</span><p>${text}</p></div>`).join('')}</section>`).join('');
 </script>
 </body>
 </html>
