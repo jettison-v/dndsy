@@ -58,6 +58,8 @@ SPELLBOOK = "#spell-bar .spellbook-btn"  # opens the Spell Book, full window (it
 # /characters/<id>/battle/preview: nothing is saved or announced, and the tour puts the real Battle back.
 # needs: "character", "caster" (has the Spell Book) or "druid" (knows a form); without it, the stop is left out.
 # all: light every match of `at` together (a column: its heading and each row's cell).
+# head: for a target taller than the screen, what inside it gets the light (the page stays dimmed and the whole of it
+# outlined); without it, its first row of headings.
 STOPS = [
     {"group": "previously", "page": "story", "open": '[data-tab="t-previously"]', "at": '[data-tour="previously"]',
      "what": "Last session's recap, its key moments and the threads still open. <b>All sessions</b> has every session so"
@@ -69,7 +71,7 @@ STOPS = [
      "why": "askdnd builds it from each session and the DM checks it. Spot a mistake? <b>Suggest a correction</b> on "
             "any entry sends it to the DM."},
     {"group": "battle", "title": "Battle: your turn on one screen", "page": "battle", "needs": "character",
-     "at": '[data-tour="battle"]',
+     "at": '[data-tour="battle"]', "head": ".econ-top",
      "what": "Your Actions, Bonus actions and Reactions, showing only what you chose to put here. Need something else "
              "mid-fight? <b>See all</b> at the bottom of each column lists everything you can do.",
      "why": "D&D Beyond lists everything you have. Battle is your plan for a fight, so a whole turn fits on one screen."},
@@ -212,6 +214,6 @@ def stops_for(db: Session, user: dict | None) -> list[dict]:
         opens = [s["open"]] if isinstance(s.get("open"), str) else s.get("open") or []
         out.append({"group": s["group"], "name": GROUP_NAMES[s["group"]], "title": s.get("title") or GROUP_NAMES[s["group"]],
                     "url": pages[s["page"]], "at": s["at"], "open": opens, "panel": s.get("panel", False),
-                    "example": s.get("example"), "all": s.get("all", False), "swap": swaps.get(s.get("swap")), "restore": swaps.get("own") if s.get("swap") else None,
+                    "example": s.get("example"), "all": s.get("all", False), "head": s.get("head"), "swap": swaps.get(s.get("swap")), "restore": swaps.get("own") if s.get("swap") else None,
                     "what": s["what"], "why": s["why"]})
     return out

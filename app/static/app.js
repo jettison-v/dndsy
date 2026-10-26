@@ -2414,7 +2414,7 @@
 // each page change; Esc or ✕ asks before ending it.
 (function () {
   const KEY = 'askdnd-tour';
-  let tour = null, spot = null, card = null, lit = null, lits = [], asking = false;
+  let tour = null, spot = null, card = null, area = null, lit = null, lits = [], heads = [], asking = false;
   const keep = () => { try { if (tour) sessionStorage.setItem(KEY, JSON.stringify(tour)); else sessionStorage.removeItem(KEY); } catch (e) { /* private window: the tour still works page by page */ } };
   const visible = sel => [...document.querySelectorAll(sel)].find(el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -2454,8 +2454,8 @@
     if (window.htmx) htmx.process(next);
   }
   function end() {
-    tidy(); tour = null; keep(); lit = null; lits = []; asking = false;
-    if (spot) spot.remove(); if (card) card.remove(); spot = card = null;
+    tidy(); tour = null; keep(); lit = null; lits = []; heads = []; asking = false;
+    if (spot) spot.remove(); if (card) card.remove(); if (area) area.remove(); spot = card = area = null;
   }
   // A target taller than most of the screen (a recap, a sheet) is lit from its top down to just under half the screen,
   // with the card below, so the dimming still shows where to look.
@@ -2463,10 +2463,7 @@
   function box() {  // the lit thing, or for an `all` stop every match together (a column: its heading and cells)
     if (lits.length < 2) return lit.getBoundingClientRect();
     const rs = lits.map(el => el.getBoundingClientRect()).filter(r => r.width && r.height);
-    if (!rs.length) return lit.getBoundingClientRect();
-    const top = Math.min(...rs.map(r => r.top)), left = Math.min(...rs.map(r => r.left));
-    const right = Math.max(...rs.map(r => r.right)), bottom = Math.max(...rs.map(r => r.bottom));
-    return { top, left, right, bottom, width: right - left, height: bottom - top };
+    return rs.length ? union(rs) : lit.getBoundingClientRect();
   }
   // Bars that stick across the top of the page (the menu bar, Battle's numbers, Sheet's tabs): found once per stop, so
   // the light never sits under them (Brett, 2026-10-26: Battle's columns were lit from behind its numbers).
@@ -2485,8 +2482,25 @@
     const r = el.getBoundingClientRect();
     return r.top < innerHeight * 0.3 && r.bottom < innerHeight * 0.5 ? Math.max(m, r.bottom) : m;
   }, 0);
+  // A large section (taller than most of the screen) keeps the page dimmed, a little less, and a dashed outline round
+  // the whole section, with the light on its heading: one row of headings, or a column's heading (Brett, 2026-10-26:
+  // a very large box was awkward at every size). Its heading is a stop's `head`, or the first heading inside it.
+  function findHeads(s) {
+    if (s.all) return lits.slice(0, 1);
+    const all = [...lit.querySelectorAll(s.head || '.subtitle, .econ-head, [role=tablist], .sec-head, h2, h3')].filter(el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
+    if (!all.length) return [];
+    const top = all[0].getBoundingClientRect().top;
+    return all.filter(el => Math.abs(el.getBoundingClientRect().top - top) < 8);  // the first row of them
+  }
+  const union = rs => { const top = Math.min(...rs.map(r => r.top)), left = Math.min(...rs.map(r => r.left)), right = Math.max(...rs.map(r => r.right)), bottom = Math.max(...rs.map(r => r.bottom));
+    return { top, left, right, bottom, width: right - left, height: bottom - top }; };
+  function areaRect() {  // the large section, as much of it as is on screen below the stuck bars
+    const b = box(), top = Math.max(b.top, lit.closest('.peek') ? 0 : covered()), bottom = Math.min(b.bottom, innerHeight - 8);
+    return { top, left: b.left, right: b.right, bottom, width: b.width, height: bottom - top };
+  }
   function rect() {
     if (!lit) return null;
+    if (heads.length) return union(heads.map(el => el.getBoundingClientRect()));
     const b = box(), top = lit.closest('.peek') ? b.top : Math.max(b.top, covered());
     const r = { top, left: b.left, right: b.right, width: b.width, bottom: b.bottom, height: b.bottom - top };
     if (!tall(r)) return r;
@@ -2500,8 +2514,21 @@
     card.classList.toggle('alone', !r);
     if (!r) { card.style.top = card.style.left = ''; return; }
     Object.assign(spot.style, { top: r.top - pad + 'px', left: r.left - pad + 'px', width: r.width + pad * 2 + 'px', height: r.height + pad * 2 + 'px' });
+    spot.classList.toggle('soft', !!heads.length);
+    if (heads.length) {
+      if (!area) { area = document.createElement('div'); area.className = 'tour-area'; document.body.append(area); }
+      const a = areaRect();
+      Object.assign(area.style, { top: a.top - pad + 'px', left: a.left - pad + 'px', width: a.width + pad * 2 + 'px', height: Math.max(a.height, 0) + pad * 2 + 'px' });
+    }
+    if (area) area.hidden = !heads.length;
     if (matchMedia('(max-width: 640px)').matches) return;  // phones: the card sits at the bottom (app.css)
     const h = card.offsetHeight, w = card.offsetWidth;
+    if (heads.length) {  // just under the heading, at the section's right edge, so its start stays readable
+      const a = areaRect();
+      card.style.top = Math.min(r.bottom + 14, innerHeight - h - 12) + 'px';
+      card.style.left = Math.min(Math.max(12, a.right - w), innerWidth - w - 12) + 'px';
+      return;
+    }
     let top = r.bottom + 14 + h < innerHeight ? r.bottom + 14 : r.top - h - 14;  // below the lit thing if it fits, else above
     let left = Math.min(Math.max(12, r.left), innerWidth - w - 12);
     if (top < 12) {  // too tall either way: beside it, or over its bottom corner
@@ -2565,6 +2592,7 @@
     render(s);
     lit = found || null;
     lits = s.all && lit ? [...document.querySelectorAll(s.at)] : [];
+    heads = [];
     const row = lit && lit.closest('.ri');  // a row in the side panel: its name is the example on Battle next
     if (row && row.querySelector('.ri-name')) { tour.example = row.querySelector('.ri-name').textContent.trim(); keep(); }
     if (lit) {
@@ -2577,6 +2605,7 @@
           lit.style.scrollMarginTop = want + 'px'; lit.scrollIntoView({ block: 'start' }); lit.style.scrollMarginTop = '';
         }
       } else lit.scrollIntoView({ block: s.all ? 'nearest' : 'center' });
+      if (tall(box())) heads = findHeads(s);
     }
     requestAnimationFrame(() => { if (!card || asking) return; place(); card.querySelector('[data-tour-go="1"]').focus({ preventScroll: true }); });  // (ended meanwhile)
     follow();
@@ -2634,7 +2663,8 @@
     following = true;
     const tick = () => {
       if (!tour || !card) { following = false; was = ''; return; }
-      const r = rect(), now = r ? [r.left, r.top, r.width, r.height].map(Math.round).join() : '';
+      const r = rect(), a = heads.length ? areaRect() : null;
+      const now = r ? [r.left, r.top, r.width, r.height, ...(a ? [a.top, a.height, a.right] : [])].map(Math.round).join() : '';
       if (now !== was) { was = now; place(); }
       requestAnimationFrame(tick);
     };
