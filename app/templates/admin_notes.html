@@ -18,7 +18,7 @@
     <div class="section-head"><h2>Synced doc</h2>
       {% if sources %}<form method="post" action="{{ cbase }}/manage/sessions/doc/sync"><button class="btn primary" data-busy="Opening Google…">Sync now</button></form>{% endif %}</div>
     {% if sources %}
-    <table class="list">
+    <div class="table-scroll"><table class="list">
       {% for s in sources %}{% set st = stats[s.id] %}
       <tr>
         <td><b>{{ s.title or s.google_doc_id }}</b>
@@ -28,7 +28,7 @@
           <form class="inline" method="post" action="{{ cbase }}/manage/sessions/doc/sources/{{ s.id }}/delete" onsubmit="return confirm('Remove this doc? Its synced copies are deleted too.')"><button class="btn link danger">Remove</button></form></td>
       </tr>
       {% endfor %}
-    </table>
+    </table></div>
     {% else %}<p class="muted">No docs yet. Add one below.</p>{% endif %}
   </section>
   <section class="section">
@@ -42,13 +42,13 @@
   <section class="section">
     <h2>Old character docs</h2>
     <p class="hint">These no longer sync: player notes on each Character page replace them. Their last copy is kept until you remove it. Hidden from the DM.</p>
-    <table class="list">
+    <div class="table-scroll"><table class="list">
       {% for s in retired %}{% set st = stats[s.id] %}
       <tr><td><b>{{ s.title or s.google_doc_id }}</b><div class="note">{{ s.character.name if s.character else "A character" }}'s notes</div></td>
         <td class="end">{% if st.latest %}<a class="btn" href="{{ cbase }}/manage/sessions/doc/snapshots/{{ st.latest.id }}">View last copy</a>{% endif %}
           <form class="inline" method="post" action="{{ cbase }}/manage/sessions/doc/sources/{{ s.id }}/delete" onsubmit="return confirm('Remove this doc and its saved copies?')"><button class="btn link danger">Remove</button></form></td></tr>
       {% endfor %}
-    </table>
+    </table></div>
   </section>
   {% endif %}
   {% endif %}

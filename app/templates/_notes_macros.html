@@ -21,10 +21,10 @@
   {% if n.kind == "combo" %}{{ combo_body(n, nl) }}
   {% elif n.kind == "leveling" %}
     {% if d.goal %}<p>{{ nl.text(d.goal) }}</p>{% endif %}
-    {% if d.steps %}<table class="list level-plan"><thead><tr><th>Level</th><th>Class</th><th>Take</th><th>Why</th><th></th></tr></thead><tbody>
+    {% if d.steps %}<div class="table-scroll"><table class="list level-plan"><thead><tr><th>Level</th><th>Class</th><th>Take</th><th>Why</th><th></th></tr></thead><tbody>
       {% for st in d.steps %}<tr class="{{ 'done' if st.done }}"><td><b>{{ st.level }}</b></td><td>{{ st["class"] }}</td><td>{{ nl.text(st.take) }}</td><td class="muted">{{ nl.text(st.why) }}</td>
         <td>{% if st.done %}<span class="tag done">Done</span>{% else %}<span class="tag">Planned</span>{% endif %}</td></tr>{% endfor %}
-    </tbody></table>{% endif %}
+    </tbody></table></div>{% endif %}
   {% elif n.kind == "quest" %}
     <dl class="mech note-mech">
       {% if d.goal %}<dt>Goal</dt><dd>{{ nl.text(d.goal) }}</dd>{% endif %}

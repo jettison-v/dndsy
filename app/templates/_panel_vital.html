@@ -1,10 +1,10 @@
 {# Side panel for one number at the top of Battle / Character: what it means and how it adds up. #}
 {% set s = sheet %}
 {% macro sum(parts, total, unit="", signed=true) -%}
-<table class="calc">
+<div class="table-scroll"><table class="calc">
   {% for label, v in parts %}<tr><td>{{ label }}</td><td class="num">{{ ("+" if v >= 0 else "−") ~ (v | abs) if (signed and not loop.first) else v }}{{ unit }}</td></tr>{% endfor %}
   <tr class="total"><td>Total</td><td class="num">{{ total }}{{ unit }}</td></tr>
-</table>
+</table></div>
 {%- endmacro %}
 {% macro explain(text) %}<p class="detail-what">{{ text | terms(underline, []) }}</p>{% endmacro %}
 <div class="peek-head">

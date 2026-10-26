@@ -18,7 +18,7 @@
   <nav class="ds-jump" aria-label="On this page">
     {% for id, label in [("colors", "Colors"), ("type", "Text sizes"), ("space", "Space and corners"), ("buttons", "Buttons"), ("pills", "Pills"),
                          ("headings", "Headings"), ("surfaces", "Sections and tiles"), ("lists", "Lists"), ("marks", "Marks and pips"),
-                         ("help", "Help and empty states"), ("panels", "Panels and toasts"), ("story", "Story text"), ("manage", "Manage pages")] %}<a href="#{{ id }}">{{ label }}</a>{% endfor %}
+                         ("help", "Help and empty states"), ("panels", "Panels and toasts"), ("narrow", "Narrow screens"), ("story", "Story text"), ("manage", "Manage pages")] %}<a href="#{{ id }}">{{ label }}</a>{% endfor %}
   </nav>
 
   <section class="section" id="colors">
@@ -136,7 +136,7 @@
   <section class="section" id="panels">
     <h2>Panels and toasts</h2>
     {{ ds("Four sizes", "--panel-w · --modal-w · --modal-lg-w · --modal-full-w", "Pick by what's inside, never by page. On phones every one is a sheet from the bottom.") }}
-    <div class="tbl ds-sizes"><table class="list">
+    <div class="table-scroll ds-sizes"><table class="list">
       <thead><tr><th>Size</th><th>Desktop</th><th>For</th><th>Open with</th><th></th></tr></thead>
       <tbody>
         <tr><td><b>Side panel</b></td><td>420px wide, full height, from the right edge</td><td>Details for one thing (a spell, an item, a note), next to the list it came from</td><td><code>data-panel-url</code></td><td><button class="btn small" type="button" data-panel-url="/manage/design/panel">Open</button></td></tr>
@@ -193,6 +193,28 @@
       });
     })();
     </script>
+  </section>
+
+  <section class="section" id="narrow">
+    <h2>Narrow screens</h2>
+    <p class="hint">From 375px phones to wide monitors, nothing scrolls sideways, one-line controls stay on one line, and text stays in its box. Each part decides what gives way first. A browser test checks every page at 375, 768, 1000 and 1280px on every change (<code>tests/browser/test_layout.py</code>); <code>docs/DESIGN.md</code> › Narrow screens has the rules.</p>
+    <div class="table-scroll"><table class="list">
+      <thead><tr><th>Part</th><th>As the room runs out</th></tr></thead>
+      <tbody>
+        <tr><td><b>Menu bar</b></td><td>Below 1240px Live shortens to "● Live"; then the campaign's name ends in "…"; below 1100px the word askdnd goes; at 900px and below, the bottom bar takes over. Manage, your character, Party, ? and you never wrap.</td></tr>
+        <tr><td><b>Menus</b></td><td>Their own width, never wider than the window; text wraps inside. Party's opens leftward.</td></tr>
+        <tr><td><b>Side panel</b></td><td>Beside the page on wide screens; a sheet from the bottom at 900px and below.</td></tr>
+        <tr><td><b>Lists with columns</b></td><td>Compact rows whenever the list's own box is narrower than its columns need (Spells 920px, Wild Shape 740, Features 700, Inventory 680), whatever the screen.</td></tr>
+        <tr><td><b>Tab bars in sections</b></td><td>Reach the section's edges: 30px out on wide screens, 18px from tablet down.</td></tr>
+        <tr><td><b>Buttons</b></td><td>One line always (<code>.btn</code> is <code>nowrap</code>); the row around them wraps.</td></tr>
+        <tr><td><b>Long words</b></td><td>Break rather than widen the page (a web address in a note).</td></tr>
+      </tbody>
+    </table></div>
+    {{ ds("Menu", ".menu", "Drops from the menu bar: a fixed width, text that wraps, a small line under each item.") }}
+    <div class="ds-sample"><div class="menu" style="position:static">
+      <a href="#narrow">Take the tour<small>A few minutes: what askdnd adds, and why</small></a>
+      <a href="#narrow">What askdnd adds<small>The same, to read</small></a>
+    </div></div>
   </section>
 
   <section class="section" id="story">

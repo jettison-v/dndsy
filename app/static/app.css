@@ -50,7 +50,7 @@
 @media (max-width: 640px) { :root { --control-h: 44px; --control-h-sm: 36px; --chip-h: 36px; } }
 * { box-sizing: border-box; }
 html { color-scheme: dark; scrollbar-gutter: stable; }  /* pages that scroll and pages that don't line up (Brett, 2026-10-23) */
-body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--sans); }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--sans); overflow-wrap: break-word; }  /* a long web address breaks rather than widening the page */
 a { color: var(--link); }
 button { font: inherit; cursor: pointer; }
 :focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
@@ -88,7 +88,7 @@ a.char-btn > span:last-child { overflow: hidden; text-overflow: ellipsis; }
 .char-av img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .party-switch { position: relative; }
 @media (max-width: 1100px) { .brand-word { display: none; } }
-.menu.party-menu { left: 0; right: auto; width: 290px; max-width: calc(100vw - 24px); }
+.menu.party-menu { left: auto; right: 0; width: 290px; max-width: calc(100vw - 24px); }  /* opens leftward: Party sits right of center, so it never runs off the screen */
 .menu a.party-row { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: center; }
 .party-row .char-av { grid-row: span 2; width: 32px; height: 32px; font-size: var(--fs-sm); }
 .party-row .party-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -179,7 +179,7 @@ h3 { font-size: var(--fs-md); font-weight: 600; margin: 1.4em 0 .5em; }
 .tag.error { background: var(--red-soft); color: var(--link); }
 
 /* Buttons and forms */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2); border: 1px solid var(--line); background: var(--surface-2); color: var(--text); border-radius: var(--r-md); padding: 0 var(--sp-4); font-size: var(--fs-sm); font-weight: 500; min-height: var(--control-h); text-decoration: none; line-height: 1.25; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2); border: 1px solid var(--line); background: var(--surface-2); color: var(--text); border-radius: var(--r-md); padding: 0 var(--sp-4); font-size: var(--fs-sm); font-weight: 500; min-height: var(--control-h); text-decoration: none; line-height: 1.25; white-space: nowrap; }  /* a button's label stays on one line; the row around it wraps instead */
 .btn:hover { border-color: var(--line-strong); }
 .btn.primary { background: var(--red); border-color: var(--red); color: var(--text-strong); font-weight: 600; }
 .btn.primary:hover { background: var(--red-hover); }
@@ -194,7 +194,7 @@ textarea, input[type=text], input[type=url], input[type=date], select { width: 1
 input[type=text], input[type=url], input[type=date], select { min-height: var(--control-h); }
 @media (max-width: 640px) { textarea, input[type=text], input[type=url], input[type=date], input[type=search], select { font-size: var(--fs-md); } }
 textarea:focus, input:focus, select:focus { border-color: var(--red); outline: none; }
-select { width: auto; padding: 0 var(--sp-2); }
+select { width: auto; max-width: 100%; padding: 0 var(--sp-2); }  /* a long option (a campaign's name) never pushes the page wider */
 input[type=file] { color: var(--muted); }
 label.field { display: grid; gap: 4px; font-size: var(--fs-sm); color: var(--muted); }
 label.check { display: inline-flex; gap: 8px; align-items: center; color: var(--muted); font-size: var(--fs-sm); }
@@ -303,7 +303,7 @@ details.conversation[open] > summary { margin-bottom: 12px; }
 .stat.attention { box-shadow: inset 3px 0 0 var(--red); }
 .stat.attention small { color: var(--red); }
 @media (max-width: 900px) { .stats { grid-template-columns: 1fr; } }
-.table-scroll { overflow-x: auto; }
+.table-scroll { overflow-x: auto; }  /* every wide table sits in one: it scrolls inside its own frame, never the page (DESIGN.md › Narrow screens) */
 .usage-calls { width: 100%; margin-top: var(--sp-3); }
 .usage-calls .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
@@ -489,7 +489,7 @@ details.feat > summary:hover { color: var(--text-strong); }
 .abilities-row { padding: 16px 18px; }
 .abil6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
 .ab { background: var(--surface-2); border-radius: 10px; padding: 8px 10px; }
-.ab .top { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+.ab .top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0 6px; }  /* a long name (Intelligence) puts the number under it, not past the tile's edge */
 .ab small { color: var(--muted); font-size: var(--fs-xs); } .ab b { font-size: var(--fs-lg); }
 .ab .sv { font-size: var(--fs-sm); color: var(--muted); } .ab .sv.prof { color: var(--text); }
 .ab .sv.prof::before { content: "● "; color: var(--green); font-size: var(--fs-xs); }
@@ -546,10 +546,10 @@ button.switch { cursor: pointer; }
 .seeall { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line); }
 .lower { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
 .lower .section { margin: 0; }
-.tablewrap { overflow-x: auto; }
 table.party { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
 table.party th { text-align: left; color: var(--muted); font-weight: 500; font-size: var(--fs-xs); padding: 0 10px 6px; white-space: nowrap; }
 table.party td { border-top: 1px solid var(--line); padding: 10px; vertical-align: top; }
+table.party .who { white-space: nowrap; }  /* a name stays whole (No Name); its classes wrap under it */
 a.who { color: var(--text); font-weight: 600; text-decoration: underline; text-decoration-color: var(--red-line); text-underline-offset: 3px; }
 .pool { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
 .pool .section { margin: 0; }
@@ -714,7 +714,7 @@ details.faq[open] > summary::before { transform: rotate(90deg); }
    --stick-top (the top bar) and --tabs-h are measured by app.js. */
 .sheet .tabbar { position: sticky; top: var(--stick-top, 62px); z-index: 4; background: var(--surface); margin: 0 -30px 12px; padding: 0 30px; }
 .sheet [id^=t-] h3.divider { scroll-margin-top: calc(var(--stick-top, 62px) + var(--tabs-h, 41px) + 8px); position: sticky; top: calc(var(--stick-top, 62px) + var(--tabs-h, 41px)); z-index: 3; background: var(--surface); padding: 8px 0 6px; margin-bottom: 4px; }
-@media (max-width: 640px) { .sheet .tabbar { margin: 0 -18px 12px; padding: 0 18px; } }
+@media (max-width: 900px) { .sheet .tabbar { margin: 0 -18px 12px; padding: 0 18px; } }  /* sections' own padding from tablet down */
 /* Resources: one line for limited uses, one for spell slots, with dividers between items */
 .res-row .res { padding: 0 14px; border-left: 1px solid var(--line); }
 .res-row .res:first-child, .res-row .res-label + .res { border-left: none; padding-left: 0; }
@@ -752,9 +752,13 @@ table.calc tr.total td { border-bottom: none; border-top: 2px solid var(--line-s
 .peek-back:hover { color: var(--text); }
 /* Party: resources as dots; spells and items in tabs with jump links */
 .res-cell { min-width: 280px; }
-.res-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 0; align-items: center; }
-.res-list .res-item { white-space: nowrap; padding: 0 12px; border-left: 1px solid var(--line); font-size: var(--fs-sm); }
-.res-list .res-item:first-child, .res-list .res-label + .res-item { border-left: none; padding-left: 0; }
+.nowrap { white-space: nowrap; }  /* a phrase that reads wrong split ("Warlock 2", "Int +7 Adv"); the line breaks between them */
+/* Party at a glance: each resource after a divider; the list starts just left of its box, cut off there, so the
+   item that begins each line hides its divider (no "| Luck Points" indent when a row wraps) */
+.res-list { list-style: none; margin: 0 0 0 -13px; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 0; align-items: center; overflow: hidden; }
+.res-list .res-item, .res-list .res-label { white-space: nowrap; padding: 0 12px; border-left: 1px solid var(--line); font-size: var(--fs-sm); }
+.res-list .res-label { margin-right: 0; border-left-color: transparent; }
+.res-list .res-label + .res-item { border-left-color: transparent; }
 .res-list.slots { margin-top: 4px; }
 .pool-tabs .poolrow b { font-weight: 600; }
 .jump { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; }
@@ -957,7 +961,7 @@ a.sheet-ref { text-decoration-style: dotted; }
 @media (max-width: 640px) { .form-2 { grid-template-columns: 1fr; } .level-edit { grid-template-columns: 60px minmax(0, 1fr) auto; } .level-edit input[name=step_take], .level-edit input[name=step_why] { grid-column: 1 / -1; } }
 
 /* Manage › People: the access chart, and a line under each person saying what their access allows */
-.access-chart-wrap { overflow-x: auto; margin-top: 10px; }
+.access-chart-wrap { margin-top: 10px; }
 .access-chart { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); min-width: 620px; }
 .access-chart th, .access-chart td { padding: 7px 10px; border-top: 1px solid var(--line); text-align: center; }
 .access-chart thead th { border-top: none; color: var(--muted); font-size: var(--fs-xs); font-weight: 600; }
@@ -1038,7 +1042,7 @@ a.sheet-ref { text-decoration-style: dotted; }
 .st.prof small { color: var(--text); }
 .st.prof small::before { content: "● "; color: var(--green); font-size: var(--fs-xs); }
 .st b { font-size: var(--fs-lg); font-variant-numeric: tabular-nums; margin-left: auto; }
-.st .adv-badge { position: absolute; top: -7px; right: 8px; font-size: var(--fs-xs); padding: 0 4px; line-height: 1.35; background: var(--bg); }
+.st .adv-badge { position: absolute; top: -12px; right: 8px; font-size: var(--fs-xs); padding: 0 4px; line-height: 1.35; background: var(--bg); }
 .save-tiles .save-all { grid-column: 1 / -1; margin: 0; }
 .ws-form .save-tiles { margin-top: 8px; }
 @media (max-width: 640px) { .save-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
@@ -1506,7 +1510,10 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .ls-more { border-top: 1px solid var(--line); padding-top: 10px; }
 .ls-more > summary { cursor: pointer; font-weight: 600; font-size: var(--fs-sm); }
 .ls-more-body { display: flex; flex-direction: column; gap: 14px; margin-top: 12px; }
-.ls-main { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ls-main { display: flex; flex-direction: column; gap: 8px; min-width: 0; container: list / inline-size; }
+/* Each list's columns need some room (Spells about 900px, Wild Shape 720, Features 680); when the list's own box is
+   narrower (a phone, a tablet, or a laptop with the filters beside it), its rows switch to the compact layout below
+   each table, whatever the screen width (container queries, 2026-10-26) */
 .ls-search { display: flex; align-items: center; gap: var(--sp-2); background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-md); height: var(--control-h); padding: 0 var(--sp-3); color: var(--muted); }
 .ls-search:focus-within { border-color: var(--blue); }
 .ls-search input { flex: 1; min-width: 0; min-height: 0; padding: 0; background: none; border: 0; color: var(--text); font: inherit; font-size: var(--fs-sm); outline: none; }
@@ -1551,7 +1558,7 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .sh-status.off { color: var(--faint); }
 .tag.sh-always { color: var(--green); background: var(--green-soft); }
 .ls-views button[aria-pressed="true"] { background: var(--selected-bg); color: var(--text); }
-@media (max-width: 900px) {
+@container list (max-width: 920px) {
   .sh-cols { display: block; }
   .sh-cols > .ls-head { display: none; }
   .sh-cols > .ls-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
@@ -1574,7 +1581,7 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .sb-range { color: var(--muted); }
 .sb-actions { display: inline-flex; gap: 6px; justify-content: flex-end; }
 .sb-foot-note { margin-top: 14px; }
-@media (max-width: 900px) {  /* narrow: name and actions on top, the numbers on one line under them */
+@container list (max-width: 920px) {  /* narrow: name and actions on top, the numbers on one line under them */
   .sb-cols { display: block; }
   .sb-cols > .ls-head { display: none; }
   .sb-cols > .ls-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
@@ -1645,7 +1652,7 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .fm-pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .ls-marks.two { grid-template-columns: repeat(2, 22px); }
 .form-row.not-ready .ls-name b { color: var(--muted); font-weight: 500; }
-@media (max-width: 900px) {
+@container list (max-width: 740px) {
   .fm-cols { display: block; }
   .fm-cols > .ls-head { display: none; }
   .fm-cols > .ls-row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; }
@@ -1657,7 +1664,9 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
    columns and on Battle combos. Muted until hovered, so the headings stay the loudest thing. */
 .head-add { font-size: var(--fs-sm); font-weight: 500; color: var(--muted); text-decoration: none; }
 .head-add:hover, .head-add:focus-visible { color: var(--text); text-decoration: underline; }
-.econ-tools { position: absolute; top: 16px; right: 18px; display: flex; align-items: center; gap: var(--sp-3); }
+.econ-top { display: flex; align-items: flex-start; gap: var(--sp-3); }
+.econ-top > .econ-head { flex: 1; min-width: 0; }
+.econ-tools { flex: none; display: flex; align-items: center; gap: var(--sp-3); }
 /* "Rules (n)" on a Battle column: rules from classes and feats that change it (app/class_rules.py), on hover or tap */
 .rules-pop { position: relative; display: inline-flex; outline: none; }
 .rules-chip { cursor: help; border: 1px dashed var(--line-strong); background: none; }
@@ -1767,7 +1776,7 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .it-cols > .ls-head, .it-cols > .ls-row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
 .it-cols > .ls-grouphead { grid-column: 1 / -1; }
 .it-cols .it-rarity { display: block; font-size: var(--fs-xs); }
-@media (max-width: 900px) {
+@container list (max-width: 680px) {
   .it-cols { display: block; }
   .it-cols > .ls-head { display: none; }
   .it-cols > .ls-row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; }
@@ -1780,7 +1789,7 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .ft-cols > .ls-head, .ft-cols > .ls-row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
 .ft-cols > .ls-grouphead { grid-column: 1 / -1; }
 .feature-row.not-ready b { font-weight: 500; }
-@media (max-width: 900px) {
+@container list (max-width: 700px) {
   .ft-cols { display: block; }
   .ft-cols > .ls-head { display: none; }
   .ft-cols > .ls-row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; }

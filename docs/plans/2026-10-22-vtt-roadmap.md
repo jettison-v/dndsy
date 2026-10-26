@@ -33,8 +33,12 @@ DM-only features"); the brief says so.
   every piece; releasing a piece to the table means its DM or an admin switches it on in Manage › Settings, and it can
   be switched back off. An item is **built** when its piece works in the test campaign and **released** when the
   table's campaign has it on.
-- **Testing before it ships:** CI on every pull request, each change tried on the local copy of beta's data
+- **Testing before it ships:** CI on every pull request (including the width check: every main page at 375, 768,
+  1000 and 1280px, tests/browser/test_layout.py), each change tried on the local copy of beta's data
   (`scripts/pull_beta.sh`), and the piece tried in the test campaign on beta.
+- **A layout sweep at the end of each phase** (Brett, 2026-10-26): `scripts/layout_sweep.py` over every page of the
+  local copy of real data, as each role, at five widths, plus a look over its screenshots; fixes go in before the next
+  phase starts, so new work isn't built on layout problems.
 - **Safety:** no deploys on game night; database changes add before they remove; Railway rollback and the nightly
   backup are the safety net.
 - **Considered and left for later: a VTT preview site** (a second Railway environment). The tests, the local copy of
