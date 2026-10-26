@@ -36,14 +36,21 @@ def test_without_a_character_the_tour_leaves_out_character_pages(table):  # noqa
 
 
 def test_every_stop_has_a_target_in_the_templates():
+    """Every attribute and class a stop names is made somewhere: a template, or app.js (the side panel's .peek)."""
     html = "\n".join(p.read_text() for p in TEMPLATES.glob("*.html"))
+    js = (TEMPLATES.parent / "static" / "app.js").read_text()
     for s in tour.STOPS:
-        for sel in filter(None, (s["at"], s.get("open"))):
-            attr, value = re.fullmatch(r'\[(data-tour|data-tab)="([\w-]+)"\]', sel).groups()
-            if attr == "data-tab" and value in ("t-combo", "t-leveling", "t-quest", "t-general"):
-                assert value[2:] in KINDS and 'data-tab="t-{{ kind }}"' in html  # Plan's note tabs, one per kind
-                continue
-            assert f'{attr}="{value}"' in html, sel
+        opens = [s["open"]] if isinstance(s.get("open"), str) else s.get("open") or []
+        for sel in [s["at"], *opens]:
+            for attr, value in re.findall(r'\[([\w-]+)(?:="([^"]*)")?\]', sel):
+                if attr == "data-tab" and value in ("t-combo", "t-leveling", "t-quest", "t-general"):
+                    assert value[2:] in KINDS and 'data-tab="t-{{ kind }}"' in html  # Plan's note tabs, one per kind
+                elif value:
+                    assert f'{attr}="{value}"' in html or f'{attr}="{{{{' in html and attr == "data-econ-col", sel
+                else:
+                    assert attr in html, sel
+            for cls in re.findall(r"\.([\w-]+)", sel):
+                assert re.search(rf'class="[^"]*\b{cls}\b', html) or f"'{cls}'" in js or f"'{cls} " in js, (cls, sel)
 
 
 def test_the_words_are_plain_with_bold_names_only():
