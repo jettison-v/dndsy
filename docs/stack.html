@@ -1,0 +1,314 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>askdnd Stack Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column; the diagram may run wider and scrolls inside its own frame on phones.
+   Who can change a piece is the one color code used everywhere: teal = Claude, amber = Brett, split = both. */
+:root {
+  --bg: #f4f6f8; --card: #ffffff; --region: #eaeef2; --fg: #18202b; --muted: #576274; --line: #c6ced8;
+  --edge: #6b7686;
+  --me: #0e7f81; --me-fill: #d5eeee;
+  --brett: #a8670f; --brett-fill: #f6e5c6;
+  --font-body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11151b; --card: #19202a; --region: #161c24; --fg: #e3e8ef; --muted: #9aa5b5; --line: #343e4c;
+  --edge: #8a96a8;
+  --me: #4cc2c3; --me-fill: #153a3c;
+  --brett: #e2a84d; --brett-fill: #3b2e17;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #11151b; --card: #19202a; --region: #161c24; --fg: #e3e8ef; --muted: #9aa5b5; --line: #343e4c;
+  --edge: #8a96a8;
+  --me: #4cc2c3; --me-fill: #153a3c;
+  --brett: #e2a84d; --brett-fill: #3b2e17;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--font-body); }
+.page { max-width: 1080px; margin: 0 auto; padding-block: 32px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 40px; }
+.prose { max-width: 68ch; }
+h1 { font-size: 2rem; line-height: 1.15; margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+h2 { font-size: 1.25rem; margin: 0 0 6px; text-wrap: balance; }
+h3 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0; font-weight: 600; }
+p { margin: 0; }
+.lede { color: var(--muted); font-size: 1.05rem; }
+code { font-family: var(--font-mono); font-size: 0.86em; background: var(--region); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+a { color: var(--me); }
+
+.key { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 16px; font-size: 0.9rem; }
+.key span { display: inline-flex; align-items: center; gap: 8px; }
+.sw { width: 22px; height: 14px; border-radius: 3px; border: 1.5px solid; display: inline-block; }
+.sw.me { background: var(--me-fill); border-color: var(--me); }
+.sw.brett { background: var(--brett-fill); border-color: var(--brett); }
+.sw.both { background: linear-gradient(90deg, var(--me-fill) 50%, var(--brett-fill) 50%); border-color: var(--muted); }
+.sw.out { background: var(--card); border-color: var(--line); border-style: dashed; }
+
+figure { margin: 0; display: grid; gap: 12px; }
+.frame { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.frame svg { display: block; width: 100%; min-width: 760px; height: auto; font-family: var(--font-body); }
+figcaption { color: var(--muted); font-size: 0.92rem; max-width: 80ch; }
+
+/* diagram parts */
+.reg { fill: var(--region); stroke: var(--line); stroke-dasharray: 5 4; }
+.rl { fill: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 0.1em; }
+.bx rect { stroke-width: 1.5; }
+.me rect { fill: var(--me-fill); stroke: var(--me); }
+.brett rect { fill: var(--brett-fill); stroke: var(--brett); }
+.both rect { fill: url(#split); stroke: var(--muted); }
+.out rect { fill: var(--card); stroke: var(--line); stroke-dasharray: 4 3; }
+.bt { fill: var(--fg); font-size: 13px; font-weight: 600; }
+.bs { fill: var(--muted); font-size: 11px; }
+.edge { fill: none; stroke: var(--edge); stroke-width: 1.4; marker-end: url(#arrow); }
+.el { fill: var(--muted); font-size: 11px; paint-order: stroke; stroke: var(--card); stroke-width: 4px; stroke-linejoin: round; }
+.tip { fill: var(--edge); }
+.split-a { stop-color: var(--me-fill); }
+.split-b { stop-color: var(--brett-fill); }
+
+section { display: grid; gap: 14px; }
+.groups { display: grid; gap: 22px; }
+.group { display: grid; gap: 8px; }
+.group h3 { display: flex; align-items: center; gap: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+.tw { overflow-x: auto; }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px 9px 0; border-bottom: 1px solid var(--line); }
+th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; }
+td:first-child { font-weight: 600; white-space: nowrap; }
+td { min-width: 0; }
+.pill { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 1px 8px; border-radius: 99px; border: 1px solid; white-space: nowrap; }
+.pill.yes { color: var(--me); border-color: var(--me); background: var(--me-fill); }
+.pill.no { color: var(--muted); border-color: var(--line); }
+.foot { color: var(--muted); font-size: 0.88rem; border-top: 1px solid var(--line); padding-top: 14px; }
+@media (max-width: 640px) { td:first-child { white-space: normal; } h1 { font-size: 1.6rem; } }
+</style>
+
+<main class="page">
+  <header class="prose">
+    <h1>askdnd Stack Map</h1>
+    <p class="lede">How askdnd's pieces connect, and who can change each one: Claude from the terminal, Brett in a
+      dashboard, or the two together.</p>
+    <div class="key" aria-label="Color key">
+      <span><i class="sw me"></i>Claude changes it</span>
+      <span><i class="sw brett"></i>Brett changes it</span>
+      <span><i class="sw both"></i>Both: Claude prepares, Brett does one step</span>
+      <span><i class="sw out"></i>Nobody: people or outside data</span>
+    </div>
+  </header>
+
+  <figure>
+    <div class="frame">
+      <svg viewBox="0 0 1120 520" role="img" aria-label="askdnd's pieces and how they connect. Code goes from Claude Code on Brett's Mac to GitHub, where checks run and then Railway deploys the website. The table reaches the website through Cloudflare. The website uses Postgres, Sentry, Anthropic, Google, D&amp;D Beyond and S3. A nightly backup copies Postgres to S3, and the newest backup becomes the local test copy.">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path class="tip" d="M0 0 L10 5 L0 10 z"/>
+          </marker>
+          <linearGradient id="split" x1="0" x2="1" y1="0" y2="0">
+            <stop class="split-a" offset="0.5"/><stop class="split-b" offset="0.5"/>
+          </linearGradient>
+        </defs>
+
+        <!-- regions -->
+        <rect class="reg" x="16" y="40" width="236" height="420" rx="10"/>
+        <text class="rl" x="30" y="58">BRETT'S MAC</text>
+        <rect class="reg" x="300" y="40" width="220" height="160" rx="10"/>
+        <text class="rl" x="314" y="58">GITHUB</text>
+        <rect class="reg" x="570" y="116" width="230" height="344" rx="10"/>
+        <text class="rl" x="584" y="134">RAILWAY</text>
+
+        <!-- edges first, so boxes sit on top -->
+        <path class="edge" d="M134 70 V24 H685 V114"/>
+        <text class="el" x="410" y="19" text-anchor="middle">railway CLI: logs, settings, ssh into beta</text>
+        <path class="edge" d="M685 24 H1000 V58"/>
+        <text class="el" x="845" y="19" text-anchor="middle">Sentry connection: reads, resolves</text>
+
+        <path class="edge" d="M232 92 H318"/>
+        <text class="el" x="275" y="85" text-anchor="middle">branches, PRs</text>
+
+        <path class="edge" d="M410 114 V138"/>
+        <text class="el" x="418" y="130">every push</text>
+
+        <path class="edge" d="M500 162 H588"/>
+        <text class="el" x="544" y="155" text-anchor="middle">deploys main</text>
+
+        <path class="edge" d="M134 214 V258"/>
+        <text class="el" x="142" y="233">raw transcript,</text>
+        <text class="el" x="142" y="247">stays here</text>
+
+        <path class="edge" d="M232 282 H540 V190 H588"/>
+        <text class="el" x="386" y="276" text-anchor="middle">filtered transcript only</text>
+
+        <path class="edge" d="M410 400 V346"/>
+        <text class="el" x="418" y="377">https + live</text>
+
+        <path class="edge" d="M500 322 H560 V214 H588"/>
+        <text class="el" x="530" y="315" text-anchor="middle">forwards</text>
+
+        <path class="edge" d="M685 230 V278"/>
+        <text class="el" x="693" y="258">reads, writes</text>
+
+        <path class="edge" d="M685 324 V388"/>
+        <text class="el" x="693" y="360">copied nightly</text>
+
+        <path class="edge" d="M780 158 L898 82"/>
+        <text class="el" x="836" y="116" text-anchor="middle">errors</text>
+        <path class="edge" d="M780 172 L898 146"/>
+        <text class="el" x="840" y="154" text-anchor="middle">asks Claude</text>
+        <path class="edge" d="M780 186 L898 210"/>
+        <text class="el" x="840" y="193" text-anchor="middle">sign-in</text>
+        <path class="edge" d="M780 200 L898 274"/>
+        <text class="el" x="842" y="232" text-anchor="middle">sheets</text>
+        <path class="edge" d="M780 214 L898 334"/>
+        <text class="el" x="826" y="282" text-anchor="middle">pictures</text>
+        <path class="edge" d="M780 412 L898 366"/>
+        <text class="el" x="842" y="399" text-anchor="middle">nightly copy</text>
+
+        <path class="edge" d="M1000 380 V490 H134 V426"/>
+        <text class="el" x="560" y="485" text-anchor="middle">newest backup, copied for local testing (scripts/pull_beta.sh)</text>
+
+        <!-- Brett's Mac -->
+        <g class="bx me"><rect x="36" y="70" width="196" height="44" rx="6"/>
+          <text class="bt" x="48" y="88">Claude Code</text><text class="bs" x="48" y="104">code, tests, docs, CLIs</text></g>
+        <g class="bx brett"><rect x="36" y="170" width="196" height="44" rx="6"/>
+          <text class="bt" x="48" y="188">MacWhisper</text><text class="bs" x="48" y="204">records the session</text></g>
+        <g class="bx both"><rect x="36" y="260" width="196" height="44" rx="6"/>
+          <text class="bt" x="48" y="278">Processor</text><text class="bs" x="48" y="294">cuts banter with Ollama</text></g>
+        <g class="bx me"><rect x="36" y="380" width="196" height="44" rx="6"/>
+          <text class="bt" x="48" y="398">Local askdnd</text><text class="bs" x="48" y="414">test copy; never reaches beta</text></g>
+
+        <!-- GitHub -->
+        <g class="bx both"><rect x="320" y="70" width="180" height="44" rx="6"/>
+          <text class="bt" x="332" y="88">Code + pull requests</text><text class="bs" x="332" y="104">Brett presses Merge</text></g>
+        <g class="bx me"><rect x="320" y="140" width="180" height="44" rx="6"/>
+          <text class="bt" x="332" y="158">Checks</text><text class="bs" x="332" y="174">lint + tests, about 1 min</text></g>
+
+        <!-- the way in -->
+        <g class="bx brett"><rect x="320" y="300" width="180" height="44" rx="6"/>
+          <text class="bt" x="332" y="318">Cloudflare</text><text class="bs" x="332" y="334">DNS: beta.askdnd.ai</text></g>
+        <g class="bx out"><rect x="320" y="400" width="180" height="44" rx="6"/>
+          <text class="bt" x="332" y="418">The table</text><text class="bs" x="332" y="434">players' and DM's browsers</text></g>
+
+        <!-- Railway -->
+        <g class="bx both"><rect x="590" y="150" width="190" height="80" rx="6"/>
+          <text class="bt" x="602" y="170">askdnd-v2</text><text class="bs" x="602" y="186">the website</text>
+          <text class="bs" x="602" y="202">code: Claude</text><text class="bs" x="602" y="218">secrets: Brett</text></g>
+        <g class="bx me"><rect x="590" y="280" width="190" height="44" rx="6"/>
+          <text class="bt" x="602" y="298">Postgres</text><text class="bs" x="602" y="314">everything except files</text></g>
+        <g class="bx me"><rect x="590" y="390" width="190" height="44" rx="6"/>
+          <text class="bt" x="602" y="408">askdnd-backup</text><text class="bs" x="602" y="424">nightly, 10:00 UTC</text></g>
+
+        <!-- outside services -->
+        <g class="bx both"><rect x="900" y="60" width="200" height="44" rx="6"/>
+          <text class="bt" x="912" y="78">Sentry</text><text class="bs" x="912" y="94">emails Brett; Claude reads</text></g>
+        <g class="bx brett"><rect x="900" y="124" width="200" height="44" rx="6"/>
+          <text class="bt" x="912" y="142">Anthropic</text><text class="bs" x="912" y="158">Claude: recaps, answers</text></g>
+        <g class="bx brett"><rect x="900" y="188" width="200" height="44" rx="6"/>
+          <text class="bt" x="912" y="206">Google</text><text class="bs" x="912" y="222">sign-in, the campaign doc</text></g>
+        <g class="bx out"><rect x="900" y="252" width="200" height="44" rx="6"/>
+          <text class="bt" x="912" y="270">D&amp;D Beyond</text><text class="bs" x="912" y="286">public character sheets</text></g>
+        <g class="bx brett"><rect x="900" y="316" width="200" height="64" rx="6"/>
+          <text class="bt" x="912" y="334">AWS S3 · askdnd-ai</text><text class="bs" x="912" y="350">v2/files: pictures</text>
+          <text class="bs" x="912" y="366">v2/backups: nightly copies</text></g>
+      </svg>
+    </div>
+    <figcaption>Code travels left to right: written on the Mac, checked on GitHub, deployed by Railway. The table
+      reaches the website through Cloudflare, and the website calls five outside services. Transcripts are filtered
+      on the Mac first, so only game content ever leaves it.</figcaption>
+  </figure>
+
+  <section>
+    <div class="prose">
+      <h2>Who changes what</h2>
+      <p>Claude works through the command-line tools signed in on this Mac (<code>gh</code> for GitHub,
+        <code>railway</code> for Railway) and the Sentry connection, and has no login to the others, by design.</p>
+    </div>
+    <div class="groups">
+      <div class="group">
+        <h3><i class="sw me"></i>Claude, from here (you approve each merge)</h3>
+        <div class="tw"><table>
+          <thead><tr><th>Piece</th><th>Where</th><th>How it changes</th></tr></thead>
+          <tbody>
+            <tr><td>Code, tests, docs</td><td>GitHub</td><td>On a short branch, opened as a pull request with what to try.</td></tr>
+            <tr><td>Checks</td><td>GitHub Actions</td><td>The workflow file in the repo. Railway waits for them before deploying.</td></tr>
+            <tr><td>askdnd-v2's code</td><td>Railway</td><td>Deploys itself when <code>main</code> changes. Claude follows it with <code>scripts/deploy_check.py</code> and reads its logs.</td></tr>
+            <tr><td>Postgres</td><td>Railway</td><td>Its shape changes through migrations that ship with the code. Claude can look inside beta (<code>railway ssh</code>), and changes data there only with your OK.</td></tr>
+            <tr><td>askdnd-backup</td><td>Railway (cron)</td><td>Same code as the website; rebuilt when a file it runs changes.</td></tr>
+            <tr><td>Local askdnd</td><td>Your Mac</td><td>A copy of beta's data for testing. Nothing here reaches beta.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="group">
+        <h3><i class="sw both"></i>Together: Claude prepares, you do one step</h3>
+        <div class="tw"><table>
+          <thead><tr><th>Piece</th><th>Your step</th><th>Claude's part</th></tr></thead>
+          <tbody>
+            <tr><td>Merging</td><td>Press Merge on the PR, or say "merge it".</td><td>Opens the PR, waits for checks, follows the deploy, gives you Try it yourself.</td></tr>
+            <tr><td>Secrets</td><td>Copy the value from the provider's dashboard, then run <code>scripts/set-secret.sh NAME --clipboard</code>.</td><td>Says which key, where to click, and which flags. Never sees the value.</td></tr>
+            <tr><td>Processor</td><td>Run it after a session; review the cuts; Send to askdnd.</td><td>Maintains its code and the filter.</td></tr>
+            <tr><td>Sentry</td><td>Keep the account, alert emails and privacy settings. When an alert arrives, say "check Sentry".</td><td>Reads the error with its page and line, fixes it, marks it resolved.</td></tr>
+            <tr><td>Railway dashboard</td><td>The few settings the CLI can't reach (Wait for CI, the cron schedule).</td><td>Says exactly where to click.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="group">
+        <h3><i class="sw brett"></i>Only you: accounts, money, the outside world</h3>
+        <div class="tw"><table>
+          <thead><tr><th>Service</th><th>What you control there</th><th>When you'd go there</th></tr></thead>
+          <tbody>
+            <tr><td>Cloudflare</td><td>DNS for askdnd.ai (beta.askdnd.ai points at Railway).</td><td>Moving askdnd.ai to v2 at launch.</td></tr>
+            <tr><td>AWS</td><td>Two narrow keys: <code>askdnd-v2-files</code> (website: read and write <code>v2/files/</code>) and <code>askdnd-v2-backups</code> (backup: <code>v2/backups/</code>, tidying <code>v2/files/</code>).</td><td>Rotating a key, or a new kind of storage.</td></tr>
+            <tr><td>Google Cloud</td><td>The sign-in client and its secret; the test-user list (Testing mode until launch).</td><td>Adding a player: here <em>and</em> on Manage › Accounts.</td></tr>
+            <tr><td>Anthropic Console</td><td>The API key and the prepaid balance (auto-reload off).</td><td>Topping up. askdnd's own limit is on Manage › Usage.</td></tr>
+            <tr><td>GitHub, Railway</td><td>Your accounts and the CLI logins Claude borrows.</td><td>If a login expires.</td></tr>
+            <tr><td>MacWhisper</td><td>Recording each session.</td><td>Game night.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="prose">
+      <h2>Where the keys live</h2>
+      <p>Every key is a Railway variable; the full list of names is in <code>.env.example</code>. Values are never
+        shown on screen, in chat or in git.</p>
+    </div>
+    <div class="tw"><table>
+      <thead><tr><th>Key</th><th>Used by</th><th>Made in</th><th>Who</th></tr></thead>
+      <tbody>
+        <tr><td><code>ANTHROPIC_API_KEY</code></td><td>website</td><td>Anthropic Console › askdnd workspace</td><td>Brett</td></tr>
+        <tr><td><code>GOOGLE_CLIENT_ID</code>, <code>_SECRET</code></td><td>website</td><td>Google Cloud › Google Auth Platform › Clients</td><td>Brett</td></tr>
+        <tr><td><code>AWS_ACCESS_KEY_ID</code>, <code>_SECRET_ACCESS_KEY</code></td><td>website and backup, each its own user</td><td>AWS › IAM › Users › Security credentials</td><td>Brett</td></tr>
+        <tr><td><code>SENTRY_DSN</code></td><td>website and backup (Railway only)</td><td>Sentry › askdnd-v2 › Client Keys</td><td>Brett</td></tr>
+        <tr><td><code>SESSION_SECRET</code>, <code>UPLOAD_TOKEN</code></td><td>website (the token also in your <code>.env</code> for the Processor)</td><td>Random, generated on the Mac</td><td>Either</td></tr>
+        <tr><td><code>DATABASE_URL</code></td><td>website and backup</td><td>A Railway reference to Postgres, never copied</td><td>Automatic</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="prose">
+      <h2>Connections for Claude</h2>
+      <p>A connection (an MCP server) lets Claude use a service directly. Each one is another login to keep safe, so
+        add one only where the command line falls short.</p>
+    </div>
+    <div class="tw"><table>
+      <thead><tr><th>Service</th><th></th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Sentry</td><td><span class="pill yes">Connected</span></td><td>Claude reads each error, its page and line, and marks it resolved, instead of you sending screenshots. Signed in with your Sentry account (organization brett-vw); sees only what Sentry already holds, which is scrubbed.</td></tr>
+        <tr><td>Railway</td><td><span class="pill no">Skip</span></td><td>The <code>railway</code> CLI already covers logs, deploys and variables.</td></tr>
+        <tr><td>GitHub</td><td><span class="pill no">Skip</span></td><td>The <code>gh</code> CLI already covers pull requests, checks and merges.</td></tr>
+        <tr><td>AWS</td><td><span class="pill no">Skip</span></td><td>It would need a broad key. Key changes are rare, and keeping them in your hands is part of what keeps each key narrow.</td></tr>
+        <tr><td>Cloudflare</td><td><span class="pill no">Skip</span></td><td>One change left (askdnd.ai at launch), and it's a few clicks.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <p class="foot">Kept in the repo at <code>docs/stack.html</code> and updated whenever a service, a key or who does
+    what changes; published privately at <code>claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr</code>. Last updated 2026-10-26.</p>
+</main>
