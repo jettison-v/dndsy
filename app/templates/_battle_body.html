@@ -9,7 +9,7 @@
     {% if form %}{% set fb = form.beast %}
     <div class="ws-form" data-modal-url="/characters/{{ c.id }}/form?name={{ fb.name | urlencode }}" data-modal-size="large" tabindex="0" role="button">
       {% if fb.image %}<img class="ws-pic" src="{{ fb.image }}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}
-      <div class="ws-form-main"><b>In Wild Shape: {{ fb.name }}</b> <span class="note">CR {{ fb.cr_label }} · {{ fb.size }}</span>
+      <div class="ws-form-main"><b>In Wild Shape: {{ fb.name }}</b>{% if previewing %} <span class="tag">Preview: nothing changes</span>{% endif %} <span class="note">CR {{ fb.cr_label }} · {{ fb.size }}</span>
         <div class="vitals">
           <div class="vital"><small>AC</small><b>{{ form.ac }}</b></div>
           <div class="vital"><small>HP</small><b>{{ s.hit_points.current }}</b><span class="note"> +{{ form.temp_hp }} temp on shifting</span></div>

@@ -356,3 +356,21 @@ def test_the_form_window_shows_your_options_only_for_known_forms(db, cole, playe
     known = player.get(f"/characters/{cole.id}/form", params={"name": "Polar Bear"}).text  # known: everything you can do
     cards = known.split("Battle cards")[1].split("<h3>Traits</h3>")[0]
     assert "Rend" in cards and "Unarmed Strike" in cards and "Dash, Disengage" in cards
+
+
+def test_the_tours_preview_shows_a_form_and_saves_nothing(db, cole, player):
+    """The tour's Wild Shape stops (app/tour.py): Battle drawn in a known form, labelled a preview; the character's
+    form doesn't change, and with no form it's Battle as it really is. An unknown form is refused."""
+    r = player.get(f"/characters/{cole.id}/battle/preview?form=Polar Bear")
+    assert r.status_code == 200 and "In Wild Shape: Polar Bear" in r.text and "Preview: nothing changes" in r.text
+    db.refresh(cole)
+    assert cole.wild_shape is None
+    own = player.get(f"/characters/{cole.id}/battle/preview").text
+    assert "In Wild Shape" not in own and 'id="battle-body"' in own
+    assert player.get(f"/characters/{cole.id}/battle/preview?form=Tiger").status_code == 400
+    stops = player.get("/tour").json()["stops"]
+    groups = [s["group"] for s in stops]
+    assert "spellbook" in groups and "wildshape" in groups  # Cole casts spells and knows forms
+    swap = next(s for s in stops if s["group"] == "wildshape")
+    assert swap["swap"].startswith(f"/characters/{cole.id}/battle/preview?form=")
+    assert swap["restore"] == f"/characters/{cole.id}/battle/preview"

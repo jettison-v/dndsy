@@ -2453,13 +2453,26 @@
     tour.i = Math.max(0, i);
     const s = tour.stops[tour.i];
     if (s.url && new URL(s.url, location.href).pathname !== location.pathname) {
-      tour.arriving = true; keep(); location.href = s.url; return;  // carries on when the page has loaded
+      tour.arriving = true; tour.shown = null; keep(); location.href = s.url; return;  // carries on when the page has loaded (a new page is the real one)
     }
     tour.arriving = false; keep(); show(s);
   }
-  function tidy() {  // what a stop showed, put back: examples go, and a side panel the tour opened closes
+  function tidy() {  // what a stop showed, put back: examples go, a side panel the tour opened closes, Battle is itself again
     document.querySelectorAll('.tour-example').forEach(x => x.remove());
     if (tour && tour.panel) { const x = document.querySelector('.peek.open .peek-close'); if (x) x.click(); tour.panel = false; }
+    if (tour && tour.shown && tour.restore) { swapBattle(tour.restore); tour.shown = null; }
+  }
+  // Wild Shape's stops show Battle in a form: the server draws it (/characters/<id>/battle/preview, nothing saved or
+  // announced) and it replaces Battle on this page only; `restore` draws the real one back.
+  async function swapBattle(url) {
+    const res = await fetch(url, { headers: { 'HX-Request': 'true' } });
+    const cur = document.getElementById('battle-body');
+    if (!res.ok || !cur) return;
+    const box = document.createElement('div'); box.innerHTML = await res.text();
+    const next = box.querySelector('#battle-body');
+    if (!next) return;
+    cur.replaceWith(next);
+    if (window.htmx) htmx.process(next);
   }
   function end() {
     tidy(); tour = null; keep(); lit = null;
@@ -2505,6 +2518,10 @@
   async function prepare(s) {
     document.querySelectorAll('.tour-example').forEach(x => x.remove());
     if (!s.panel && tour.panel) tidy();
+    if (s.swap && tour.shown !== s.swap) {  // ("own" is the real Battle: nothing left to put back after it)
+      await swapBattle(s.swap); tour.shown = s.swap === s.restore ? null : s.swap; tour.restore = s.restore; keep();
+    }
+    else if (!s.swap && tour.shown) { await swapBattle(tour.restore); tour.shown = null; keep(); }
     const opens = [].concat(s.open || []);  // (a tour saved before opens were lists: one selector)
     if (opens.length && !(s.panel && visible(s.at))) {  // the panel already showing what this stop lights: leave it
       for (const sel of opens) {
