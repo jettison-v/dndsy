@@ -76,6 +76,7 @@ img { max-width: 100%; }
 /* When the bar runs short, nothing wraps onto two lines: the Live pill shortens first (below), then the campaign's
    name gives up room (it's the one item that shrinks, with "…") */
 .nav a, .char-btn, .bar-end > * { white-space: nowrap; flex-shrink: 0; }
+.topbar .menu { white-space: normal; }  /* the menus they open wrap as usual (the Live popover's text) */
 .nav, .table-nav, .bar-end { flex-shrink: 0; }
 .table-nav { display: flex; gap: 6px; align-items: center; }
 .char-btn { display: inline-flex; align-items: center; gap: 8px; min-height: var(--control-h); padding: 4px 12px; background: none; border: 1px solid var(--line); border-radius: var(--r-sm); color: var(--text); text-decoration: none; font-weight: 500; font-size: var(--fs-md); white-space: nowrap; }
