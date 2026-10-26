@@ -2033,7 +2033,7 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
 <body>
 <style>
 /* Mockup only (Brett, 2026-10-24: A + C): a short tour started from the ? menu, and a "What askdnd adds" tab on Help
-   with the why. For new players on the TA; it covers what isn't on D&D Beyond or works differently. Made-up names. */
+   with the why. For new players on the TA; it covers what isn't on D&D Beyond or works differently. Revised 2026-10-26 from Brett's stop list, with Cole. */
 body { background: var(--bg); }
 .mk-switch { position: sticky; top: 0; z-index: 60; background: var(--chrome); border-bottom: 1px solid var(--line); padding: var(--sp-2) var(--sp-5); display: flex; gap: var(--sp-3); align-items: center; flex-wrap: wrap; font-size: var(--fs-sm); }
 .mk-switch .note { margin-right: auto; }
@@ -2076,24 +2076,61 @@ body { background: var(--bg); }
 .add .side { grid-row: 1 / span 2; grid-column: 2; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .add .tag { font-size: var(--fs-xs); white-space: nowrap; }
 @media (max-width: 640px) { .add { grid-template-columns: 1fr; } .add .side { grid-row: auto; grid-column: 1; flex-direction: row; align-items: center; } }
+/* Stand-ins for the real pages (Cole's numbers from his sheet); the tour lights up their parts */
+.live-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: var(--fs-sm); }
+.live-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+.mk-char { display: grid; gap: var(--sp-3); }
+.char-top { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--sp-3); flex-wrap: wrap; }
+.char-top h1 { margin: 0; }
+.modes { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.modes a { padding: 6px 14px; color: var(--muted); text-decoration: none; font-size: var(--fs-sm); }
+.modes a.on { background: var(--red); color: #fff; }
+.ws-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: var(--fs-sm); }
+.ws-row .lbl { color: var(--muted); font-size: var(--fs-xs); letter-spacing: .08em; text-transform: uppercase; margin-right: 4px; }
+.ws-banner { background: var(--surface); border: 1px solid var(--green); border-radius: var(--r-md); padding: 8px 12px; font-size: var(--fs-sm); }
+.vital b.changed { color: var(--green); }
+.sb-bar { display: flex; gap: var(--sp-3); align-items: center; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 8px 12px; }
+.head-add { float: right; text-transform: none; letter-spacing: 0; color: var(--muted); font-weight: 500; text-decoration: none; }
+.cols3 .opt.example { background: var(--selected-bg); border-radius: var(--r-sm); padding: 6px; }
+.cols3 .opt span { display: flex; flex-direction: column; }
+.mine-note { color: var(--amber); font-size: var(--fs-xs); }
+.sheet-rows { margin-top: var(--sp-2); font-size: var(--fs-sm); }
+.sheet-rows .opt { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+.bell { font-style: normal; opacity: .45; margin-left: 8px; } .bell.on { opacity: 1; }
+.plan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--sp-3); }
+.mk-panel { position: fixed; z-index: 70; top: 120px; right: 16px; width: min(340px, calc(100vw - 32px)); max-height: calc(100vh - 140px); overflow: auto; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-lg); padding: var(--sp-4); display: grid; gap: var(--sp-2); font-size: var(--fs-sm); box-shadow: 0 12px 30px var(--shadow); }
+.mk-panel h3 { margin: 0; }
+.mk-panel .opt { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
+.mk-panel .pin { font-style: normal; margin-right: 6px; }
+.mk-panel .marks { display: flex; gap: var(--sp-3); flex-wrap: wrap; padding: 6px 0; }
+.mk-panel .note-box { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-md); padding: 8px 10px; }
+.mk-modal { position: fixed; z-index: 80; inset: 64px 24px 24px; background: var(--bg); border: 1px solid var(--line-strong); border-radius: var(--r-lg); overflow: auto; box-shadow: 0 20px 50px var(--shadow); }
+.mk-modal-in { padding: var(--sp-5); display: grid; gap: var(--sp-3); }
+.mk-modal h2 { margin: 0; }
+.sb-grid { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: var(--sp-3); align-items: start; }
+.sb-table { display: grid; gap: 4px; font-size: var(--fs-sm); }
+.sb-table > div { display: grid; grid-template-columns: minmax(0, 1.2fr) repeat(3, minmax(0, 1fr)); gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+@media (max-width: 760px) { .sb-grid { grid-template-columns: 1fr; } .mk-modal { inset: 56px 8px 8px; } }
+.tour-card .parts { display: inline-flex; gap: 4px; } .tour-card .parts i { width: 18px; height: 3px; border-radius: 2px; background: var(--line); } .tour-card .parts i.on { background: var(--amber); }
+.tour-card .only { color: var(--faint); font-size: var(--fs-xs); }
 </style>
 
-<div class="mk-switch"><span class="note">Mockup · the tour (from the <b>?</b> menu) and Help › What askdnd adds · made-up names. Try: <b>?</b> → Take the tour, then Help → What askdnd adds → Show me.</span></div>
+<div class="mk-switch"><span class="note">Mockup · the tour (from the <b>?</b> menu) and Help › What askdnd adds · as Cole's player. Try: <b>?</b> → Take the tour, then Help → What askdnd adds → Show me.</span></div>
 
 <div class="mk-app">
 <header class="topbar"><div class="topbar-inner">
   <a class="brand" href="#" data-go="story"><span class="brand-word">askdnd</span></a>
-  <span class="campaign-name">The Sunken Crown</span>
+  <span class="campaign-name">The Adventure Begins</span>
   <span class="nav-sep" aria-hidden="true"></span>
   <nav class="nav" aria-label="The campaign"><a href="#" data-go="story" class="active">Story</a><a href="#" data-go="campaign">Campaign</a></nav>
   <span class="nav-sep" aria-hidden="true"></span>
-  <nav class="table-nav" aria-label="Your table"><a href="#" class="char-btn" data-go="battle"><span>Rowan</span></a><button type="button" class="char-btn">Party ▾</button></nav>
+  <nav class="table-nav" aria-label="Your table"><a href="#" class="char-btn" data-go="battle"><span>Cole</span></a><a href="#" class="char-btn" data-go="party" id="t-party-btn"><span>Party ▾</span></a></nav>
   <div class="bar-end">
-    <span class="live-pill" id="t-live" style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border:1px solid var(--line);border-radius:999px;font-size:var(--fs-sm)"><span style="width:8px;height:8px;border-radius:50%;background:var(--green)"></span>Live</span>
+    <span class="live-pill" id="t-live"><span class="dot"></span>Live</span>
     <div class="help-wrap">
       <button type="button" class="help-btn" id="t-help" aria-haspopup="true" aria-controls="help-menu" aria-label="Help">?</button>
       <div class="menu" id="help-menu" hidden>
-        <a href="#" data-tour-start="0"><b>Take the tour</b><small>Two minutes: what askdnd adds, and why</small></a>
+        <a href="#" data-tour-start="0"><b>Take the tour</b><small>A few minutes: what askdnd adds, and why</small></a>
         <a href="#" data-go="help" data-help="adds">What askdnd adds<small>The same, to read</small></a>
         <a href="#" data-go="help" data-help="faq">FAQ<small>How each feature works</small></a>
         <a href="#" data-go="help" data-help="about">About<small>What askdnd keeps, and who sees it</small></a>
@@ -2104,25 +2141,61 @@ body { background: var(--bg); }
 
 <main class="page" data-p="story">
   <div class="title-row"><h1>Story</h1></div>
-  <div class="stand" id="t-previously"><h3>Previously on…</h3><p>Session 12 · The party reaches the drowned chapel; Brother Aldric's letter changes everything. Key moments · Open threads · All sessions</p></div>
+  <div class="stand" id="t-previously"><h3>Previously on…</h3><p>The last session's recap · Key moments · Open threads · All sessions</p></div>
 </main>
 <main class="page mk-page" data-p="campaign" hidden>
   <div class="title-row"><h1>Campaign</h1></div>
-  <div class="stand" id="t-world"><h3>World · Quests · Relationships · Glossary · Map</h3><p>People, places, factions, items: everyone and everywhere the party has met, each with its key moments. <a href="#">Suggest a correction</a></p></div>
+  <div class="stand" id="t-world"><h3>World · Quests · Relationships · Glossary · Map</h3><p>Everyone and everywhere the party has met (NPC 1, NPC 2…), each with its key moments. <a href="#">Suggest a correction</a></p></div>
 </main>
-<main class="page mk-page" data-p="battle" hidden>
-  <div class="title-row"><h1>Rowan</h1><span class="note">Wood Elf · Druid 7 · Battle</span></div>
-  <div class="vitals"><div class="vital"><small>HP</small><b>51</b></div><div class="vital"><small>AC</small><b>16</b></div><div class="vital" id="t-save" style="cursor:pointer"><small>Dex save</small><b>+3</b></div><div class="vital"><small>Initiative</small><b>+3</b></div></div>
-  <div class="cols3" id="t-columns" style="margin-top:16px">
-    <div><h4 style="color:var(--k-action)">Action</h4><div class="opt" id="t-option"><span>Moonbeam</span><span>2d10</span></div><div class="opt"><span>Shillelagh</span><span>+7</span></div><p class="note">Attack, Dash, Dodge… what anyone can do</p></div>
-    <div><h4 style="color:var(--k-bonus)">Bonus action</h4><div class="opt"><span>Wild Shape</span><span>2 left</span></div><div class="opt"><span>Healing Word</span><span>2d4</span></div></div>
-    <div><h4 style="color:var(--k-reaction)">Reaction</h4><div class="opt"><span>Opportunity attack</span><span></span></div></div>
+
+<main class="page mk-page mk-char" data-p="battle" hidden>
+  <div class="char-top"><div><h1>Cole</h1><span class="note">Wood Elf · Druid 6 (Circle of the Moon) / Monk 2 · level 8</span></div>
+    <span class="modes"><a href="#" class="on" data-go="battle">Battle</a><a href="#" data-go="sheet">Sheet</a><a href="#" data-go="plan">Plan</a></span></div>
+  <div class="vitals" id="t-vitals">
+    <div class="vital"><small>Hit points</small><b data-n="hp">51</b></div><div class="vital"><small>Armor class</small><b data-n="ac">16</b></div>
+    <div class="vital"><small>Speed</small><b data-n="speed">45 ft</b></div><div class="vital" id="t-save"><small>Dex save</small><b data-n="dex">+3</b></div><div class="vital"><small>Initiative</small><b>+3</b></div>
+  </div>
+  <div class="ws-row" id="t-ws"><span class="lbl">Wild Shape ●●●</span><button type="button" class="ws-chip on" id="t-ws-normal">Normal</button><button type="button" class="ws-chip" id="t-ws-form">Giant Constrictor Snake</button><button type="button" class="ws-chip">Spider</button><button type="button" class="ws-chip">Polar Bear</button></div>
+  <div class="ws-banner" id="t-ws-banner" hidden><span>In Wild Shape: <b>Giant Constrictor Snake</b>. Your own features carry over. <a href="#" id="t-ws-page">Its full page</a></span></div>
+  <div class="sb-bar" id="t-sb-btn"><span class="btn small">Spell Book</span><span class="note">1st ●●●● · 2nd ●●● · 3rd ●●● · Pinned: Starry Wisp, Healing Word, Cure Wounds</span></div>
+  <div class="cols3" id="t-columns">
+    <div id="t-col-action"><h4 style="color:var(--k-action)">Action <a href="#" class="head-add" id="t-add">+ Add</a></h4>
+      <div class="opt" data-cole><span>Speak with Animals</span><span></span></div><div class="opt" data-cole><span>Starry Wisp</span><span>+7</span></div><div class="opt" data-cole><span>Cure Wounds</span><span>Heal</span></div>
+      <div class="opt" data-snake hidden><span>Bite</span><span>+6</span></div><div class="opt" data-snake hidden><span>Constrict</span><span>DC 14</span></div>
+      <div class="opt example" id="t-example" hidden><span>Thorn Whip <span class="tag">Example</span></span><span>+7</span></div>
+      <div class="opt example" id="t-example-note" hidden><span>Guidance <span class="tag">Example</span><small class="mine-note">Before Wis checks at the shrine</small></span><span></span></div>
+    </div>
+    <div><h4 style="color:var(--k-bonus)">Bonus action <a href="#" class="head-add">+ Add</a></h4><div class="opt" data-cole><span>Flurry of Blows</span><span>+6</span></div><div class="opt" data-cole><span>Healing Word</span><span>Heal</span></div><div class="opt" data-snake hidden><span>Unarmed Strike (kept)</span><span>+6</span></div></div>
+    <div><h4 style="color:var(--k-reaction)">Reaction <a href="#" class="head-add">+ Add</a></h4><div class="opt"><span>Opportunity attack</span><span></span></div></div>
+  </div>
+  <div class="stand" id="t-reminders" style="margin-top:12px"><h3>Reminders</h3><p>Adv. against being Charmed (Fey Ancestry) · Ask the DM about the map</p></div>
+</main>
+
+<main class="page mk-page mk-char" data-p="sheet" hidden>
+  <div class="char-top"><div><h1>Cole</h1><span class="note">Wood Elf · Druid 6 (Circle of the Moon) / Monk 2 · level 8</span></div>
+    <span class="modes"><a href="#" data-go="battle">Battle</a><a href="#" class="on" data-go="sheet">Sheet</a><a href="#" data-go="plan">Plan</a></span></div>
+  <div class="stand" id="t-sheet"><h3>Actions · Spells · Wild Shape · Inventory · Features · Skills &amp; situational · Background</h3>
+    <div class="sheet-rows"><div class="opt"><span>📌 Unarmed Strike</span><span>+6 <i class="bell" id="t-bell">🔔</i></span></div><div class="opt"><span>📌 Thorn Whip</span><span>+7 <i class="bell">🔔</i></span></div><div class="opt"><span>📌 Fey Ancestry: Adv. against being Charmed</span><span><i class="bell on">🔔</i></span></div></div></div>
+</main>
+
+<main class="page mk-page mk-char" data-p="plan" hidden>
+  <div class="char-top"><div><h1>Cole</h1><span class="note">Plan</span></div>
+    <span class="modes"><a href="#" data-go="battle">Battle</a><a href="#" data-go="sheet">Sheet</a><a href="#" class="on" data-go="plan">Plan</a></span></div>
+  <div class="plan-grid">
+    <div class="stand" id="t-combos"><h3>Battle combos</h3><p>Turn 1: Spike Growth (action), move away · Turn 2: Thorn Whip pulls them through it. Shows on Battle.</p></div>
+    <div class="stand" id="t-leveling"><h3>Leveling strategy</h3><p>Level 9: Druid 7 · take: … · why: …, planned or done.</p></div>
+    <div class="stand" id="t-quests"><h3>Personal quests</h3><p>Goal, why, who and where, steps you tick off; open, done or abandoned.</p></div>
+    <div class="stand" id="t-notes"><h3>General notes</h3><p>Anything else, freeform.</p></div>
+    <div class="stand" id="t-shortlist"><h3>Spells and Wild Shapes</h3><p>Your Shortlist beside All: spells you're weighing and forms you might learn, with your notes, side by side.</p></div>
   </div>
 </main>
-<main class="page mk-page" data-p="plan" hidden>
-  <div class="title-row"><h1>Rowan</h1><span class="note">Plan</span></div>
-  <div class="stand" id="t-plan"><h3>Shortlist · Reminders · Combos · Leveling · Notes</h3><p>Spells and Wild Shape forms you're weighing up, reminders for next session, turn combos, ideas for your next level, and notes.</p></div>
+
+<main class="page mk-page" data-p="party" hidden>
+  <div class="title-row"><h1>Party</h1></div>
+  <div class="stand" id="t-party-top"><h3>Big C · Cole · No Name · Trah</h3><p>HP, AC, saves, resources: everyone's key numbers in one table.</p></div>
+  <div class="stand" id="t-party-pool" style="margin-top:12px"><h3>Spells · Items, pooled</h3><p>Grouped by what they do: Healing (Cure Wounds ×2, Healing Word, Potion of Healing ×3) · Control · Damage · Utility. Who carries what, and what the party can cover between you.</p></div>
 </main>
+
 <main class="page mk-page" data-p="help" hidden>
   <div class="title-row"><h1>Help</h1></div>
   <div class="tabbar" role="tablist">
@@ -2135,59 +2208,129 @@ body { background: var(--bg); }
   <div data-hpanel="faq" hidden><p class="note" style="margin-top:16px">(Today's FAQ, unchanged.)</p></div>
   <div data-hpanel="about" hidden><p class="note" style="margin-top:16px">(Today's About, unchanged.)</p></div>
 </main>
+
+<!-- The side panel (+ Add, and one thing's details), as on Battle today -->
+<aside class="mk-panel" id="t-panel" hidden>
+  <div data-pv="list"><p class="note">Cole · not pinned yet</p><h3>Actions</h3>
+    <div class="opt"><span><i class="pin" id="t-pin">📌</i> Thorn Whip <span class="tag">cantrip</span></span><span>+7</span></div>
+    <div class="opt" id="t-row"><span><i class="pin">📌</i> Guidance <span class="tag">cantrip</span></span><span></span></div>
+    <div class="opt"><span><i class="pin">📌</i> Heat Metal</span><span>Con 15</span></div></div>
+  <div data-pv="detail" hidden id="t-detail"><p class="note">Cole · Spell</p><h3>Guidance</h3>
+    <div class="marks" id="t-marks"><span>📌 Pin to Battle</span><span>🔖 Shortlist</span><span>🔔 Remind me</span></div>
+    <label class="note">Your note</label><div class="note-box" id="t-note">Before Wis checks at the shrine</div>
+    <p class="note">Touch · Concentration · You touch a willing creature and choose a skill…</p></div>
+</aside>
+
+<!-- The Spell Book and a Wild Shape form's page open large, as today -->
+<div class="mk-modal" id="t-sb" hidden><div class="mk-modal-in">
+  <h2>Spell Book</h2>
+  <div class="sb-grid"><div class="stand" id="t-sb-filters"><h3>Filters</h3><p>Level · Effect (Damage, Heal, Control, Support, Utility) · Casting time · Concentration · More filters</p></div>
+    <div class="stand"><div class="sb-table" id="t-sb-dmg"><div><b>Spell</b><b>1st</b><b>2nd</b><b>3rd</b></div><div><span>Cure Wounds</span><span>heals 2d8+4 (13)</span><span>4d8+4 (22)</span><span>6d8+4 (31)</span></div><div><span>Moonbeam</span><span></span><span>2d10 (11)</span><span>3d10 (16.5)</span></div><div><span>Thorn Whip</span><span colspan="3">2d6 (7)</span><span></span><span></span></div></div></div></div>
+</div></div>
+<div class="mk-modal" id="t-ws-modal" hidden><div class="mk-modal-in">
+  <h2>Giant Constrictor Snake</h2><p class="note">Large Beast · CR 2 · with Cole's own features carried over</p>
+  <div class="stand"><p>HP 60 · AC 12 · Speed 30 ft, Swim 30 ft · Str +4 · Bite +6, 2d6+4 piercing · Constrict, DC 14 · Your Wisdom, Intelligence and Charisma, proficiencies and features stay yours.</p></div>
+</div></div>
 </div>
 
 <div class="tour-spot" id="spot" hidden></div>
 <div class="tour-card" id="card" role="dialog" aria-live="polite" hidden></div>
 
 <script>
-// The tour's stops: the page, what to light up, what it is and why (vs D&D Beyond)
+// The tour's stops, in groups. A stop names the page, what to light up, what it is and why (vs D&D Beyond), and
+// what to show first (open the panel, an example tile, the Wild Shape preview). Nothing the tour shows is saved.
 const NOT = ['new', 'Not on D&D Beyond'], DIF = ['dif', 'Different from D&D Beyond'];
 const STOPS = [
-  { page: 'story', at: '#t-previously', title: 'Previously on…', tag: NOT,
+  { group: 'Previously on…', page: 'story', at: '#t-previously', tag: NOT,
     what: "The last session's recap, its key moments and the threads still open. <b>All sessions</b> has every one.",
     why: "D&D Beyond doesn't remember your campaign. Read this before you play: sessions can be weeks apart." },
-  { page: 'campaign', at: '#t-world', title: "The campaign's memory", tag: NOT,
+  { group: "The campaign's memory", page: 'campaign', at: '#t-world', tag: NOT,
     what: 'Everyone and everywhere the party has met, with Quests, Relationships and the Map beside it.',
     why: "It's built from each session, and the DM keeps it right. Spot a mistake? <b>Suggest a correction</b> sends it to the DM." },
-  { page: 'battle', at: '#t-columns', title: 'Battle: your turn on one screen', tag: DIF,
-    what: 'What you can do, sorted into Action, Bonus action and Reaction, with what anyone can do.',
-    why: "D&D Beyond lists everything you have. Battle shows what you've pinned, so your turn fits on one screen." },
-  { page: 'battle', at: '#t-option', title: 'Pin, bookmark, Remind me', tag: NOT,
-    what: 'Click any option, spell or item for its rules text, your note, and the marks: <b>Pin</b> puts it on Battle, the <b>bookmark</b> adds it to your Shortlist, <b>Remind me</b> to your Reminders.',
-    why: "You choose what's in front of you, and your note shows wherever that thing does." },
-  { page: 'battle', at: '#t-save', title: 'Rolling', tag: DIF,
+  { group: 'Battle', title: 'Battle: your turn on one screen', page: 'battle', at: '#t-columns', tag: DIF,
+    what: 'Action, Bonus action and Reaction, showing only what you chose to put here.',
+    why: "D&D Beyond lists everything you have. Battle shows your plan for a fight, so your turn fits on one screen." },
+  { group: 'Battle', title: '+ Add', page: 'battle', at: '#t-panel', show: 'panel',
+    what: "<b>+ Add</b> on a column opens the side panel with everything you could put in it.",
+    why: 'Everything stays one click away; only what you pick takes up room.' },
+  { group: 'Battle', title: 'Pin it straight onto Battle', page: 'battle', at: '#t-pin', show: 'panel pinned',
+    what: 'The <b>pin</b> on a row puts it on the column right away (lit, as an example: the tour saves nothing).',
+    why: 'Pin what you use in a fight; unpin it any time.' },
+  { group: 'Battle', title: 'Open one: Pin and Notes', page: 'battle', at: '#t-detail', show: 'detail',
+    what: 'Click a row for its rules, and the marks: <b>Pin to Battle</b>, <b>Shortlist</b>, <b>Remind me</b>, and <b>Your note</b>.',
+    why: 'Your note shows under it on Battle and wherever it appears. Other players can read it; the DM never sees it.' },
+  { group: 'Battle', title: 'On Battle, with your note', page: 'battle', at: '#t-col-action', show: 'noted',
+    what: 'Pinned with a note, it sits in its column with the note under it.',
+    why: 'The why and when stay next to the thing itself, in the middle of a fight.' },
+  { group: 'Spell Book', only: 'you cast spells', page: 'battle', at: '#t-sb-filters', show: 'spellbook', tag: DIF,
+    what: '<b>Spell Book</b> opens your prepared spells with filters: Effect (Damage, Heal, Control…), Casting time, Concentration and more.',
+    why: "Find the right spell for this moment without scrolling a list." },
+  { group: 'Spell Book', only: 'you cast spells', page: 'battle', at: '#t-sb-dmg', show: 'spellbook',
+    what: 'The damage and healing columns: the average at each slot level, worked out from your sheet.',
+    why: 'See what upcasting gets you. Averages inform; they never recommend.' },
+  { group: 'Wild Shape', only: "you're a druid", page: 'battle', at: '#t-vitals', show: 'snake', tag: DIF,
+    what: 'Pick a form: HP, AC, speed and saves are worked out for it, and the columns switch to its actions, with your own features kept.',
+    why: 'D&D Beyond shows the beast\'s stat block; askdnd shows <b>you</b> as the beast. (A preview: the tour saves nothing and tells no one.)' },
+  { group: 'Wild Shape', only: "you're a druid", page: 'battle', at: '#t-ws-modal', show: 'snake form',
+    what: "The form's full page opens large: everything it can do, as your character.",
+    why: 'Like a second character sheet, for as long as you hold the shape.' },
+  { group: 'Wild Shape', only: "you're a druid", page: 'battle', at: '#t-ws-normal', show: '',
+    what: '<b>Normal</b> brings you back: your own numbers and columns return.',
+    why: 'One click each way, mid-fight.' },
+  { group: 'Rolling', page: 'battle', at: '#t-save', tag: DIF,
     what: 'Click any number to roll it, with Advantage and extra dice in one window. <b>Enter</b> rolls, <b>Esc</b> closes, <b>Shift-click</b> skips the window.',
     why: 'With Game Mode on, rolls land in <b>Table rolls</b> for everyone, in your own 3D dice. Pick <b>DM only</b> or <b>Just me</b> when it\'s private.' },
-  { page: 'battle', at: '#t-live', title: 'Game Mode and Live', tag: DIF,
+  { group: 'Game Mode and Live', page: 'battle', at: '#t-live', tag: DIF,
     what: 'Turn on Game Mode for the session: your rolls are shared, and askdnd re-reads everyone\'s D&D Beyond sheet every few minutes. <b>Refresh now</b> after you change something there.',
     why: 'Build and level up on D&D Beyond as always. askdnd lays your sheet out for play, and never changes it.' },
-  { page: 'plan', at: '#t-plan', title: 'Plan, between sessions', tag: NOT,
-    what: 'Shortlists of spells and Wild Shape forms, reminders, turn combos, leveling ideas and notes.',
-    why: 'Your planning in one place. Other players can read your notes; <b>the DM never sees them</b>.' },
-  { page: null, at: '#t-help', title: 'Help, any time', tag: null,
+  { group: 'Your character', title: 'Sheet: your whole character', page: 'sheet', at: '#t-sheet', tag: DIF,
+    what: 'Everything from D&D Beyond in one view, laid out for play: every row opens its rules and your note.',
+    why: 'Your holistic character view: actions, spells, forms, items and features, in the same place as your plans.' },
+  { group: 'Your character', title: 'Reminders', page: 'battle', at: '#t-reminders', tag: NOT,
+    what: 'The <b>bell</b> on anything adds it to your Reminders on Battle; or write your own ("Ask the DM about the map").',
+    why: 'Never forget anything mid-battle: an Advantage, a resistance, a promise.' },
+  { group: 'Plan', title: 'Battle combos', page: 'plan', at: '#t-combos', tag: NOT,
+    what: 'Plan a few turns together, each split into action, bonus action, reaction and movement.',
+    why: 'Work it out between sessions; it shows on Battle when the moment comes.' },
+  { group: 'Plan', title: 'Leveling strategy', page: 'plan', at: '#t-leveling',
+    what: 'Level by level: what you\'ll take and why, planned or done.',
+    why: 'Your build plan next to your character, not in a separate doc.' },
+  { group: 'Plan', title: 'Personal quests', page: 'plan', at: '#t-quests',
+    what: 'Your character\'s own goals, with steps you tick off.',
+    why: "So your story doesn't get lost between sessions." },
+  { group: 'Plan', title: 'General notes', page: 'plan', at: '#t-notes',
+    what: 'Anything else, freeform.',
+    why: 'Other players can read your notes; <b>the DM never sees them</b>.' },
+  { group: 'Plan', title: 'Shortlists', page: 'plan', at: '#t-shortlist',
+    what: 'Spells and Wild Shape forms you\'re weighing up, beside everything you could pick.',
+    why: 'Nothing is lost when you unprepare a spell: it stays on your Shortlist with your note, ready for next time.' },
+  { group: 'Party', page: 'party', at: '#t-party-pool', tag: DIF,
+    what: "Everyone's key numbers, then the party's spells and items pooled together, grouped by what they do.",
+    why: 'Spread the potions and scrolls around, and see what the party covers between you (healing, control…) before you prepare.' },
+  { group: 'Help, any time', page: null, at: '#t-help', tag: null,
     what: '<b>What askdnd adds</b> is this tour to read, the <b>FAQ</b> says how each feature works, and <b>About</b> says what askdnd keeps and who sees it.',
     why: 'Take the tour again from this menu whenever you like.' },
 ];
-// Help › What askdnd adds: the same, plus the parts too small for the tour; "Show me" opens the tour at that stop
+const GROUPS = [...new Set(STOPS.map(s => s.group))];
+const firstOf = g => STOPS.findIndex(s => s.group === g);
+// Help › What askdnd adds: the same, to read; "Show me" opens the tour at that group
 const ADDS = [
   ['Before you play', [
-    ['Previously on…', NOT, "The last session's recap, key moments and open threads; every session under All sessions. D&D Beyond doesn't remember your campaign.", 0],
-    ["The campaign's memory", NOT, 'People, places, factions, items, quests and how everyone is connected, built from each session and kept right by the DM.', 1],
-    ['Suggest a correction', NOT, "Something's wrong or missing? Your suggestion goes to the DM, who decides. Nothing you suggest changes the story directly.", 1]]],
+    ['Previously on…', NOT, "The last session's recap, key moments and open threads; every session under All sessions.", 'Previously on…'],
+    ["The campaign's memory", NOT, 'People, places, quests and how everyone is connected, built from each session and kept right by the DM. Suggest a correction sends a fix to the DM.', "The campaign's memory"]]],
   ['On your turn', [
-    ['Battle', DIF, "Your options by Action, Bonus action and Reaction, showing what you've pinned instead of everything you have.", 2],
-    ['Pin, bookmark, Remind me', NOT, 'Choose what\'s on Battle, on your Shortlist and in your Reminders; add a note that shows wherever that thing does.', 3],
-    ['Spell Book', DIF, 'Your prepared spells with filters (effect, casting time, Concentration, damage type…) and their average damage at any slot level. Averages inform; they never recommend.', null],
-    ['Wild Shape', DIF, 'Every form you can take, with your own features carried over, side by side (druids).', null],
+    ['Battle', DIF, 'Your plan for a fight by Action, Bonus action and Reaction. + Add and the pin put things on it; open one for Pin, Shortlist, Remind me and your note.', 'Battle'],
+    ['Spell Book', DIF, 'Your prepared spells with filters, and the average damage or healing at each slot level. Averages inform; they never recommend.', 'Spell Book'],
+    ['Wild Shape', DIF, 'You as the beast: numbers and actions worked out for the form, its full page, and Normal to come back (druids).', 'Wild Shape'],
     ['Conditions and effects', DIF, 'Invisible, Poisoned, Bless and the rest: what each does to your rolls, offered in the roll window with its reason. The DM rules.', null]]],
   ['Rolling', [
-    ['Table rolls and Game Mode', NOT, 'With Game Mode on, everyone\'s rolls in one place, with damage, rerolls and added dice kept together. DM only and Just me keep a roll private.', 4],
-    ['Your dice', DIF, 'Thrown 3D dice in the set you choose; the table sees your rolls in your dice.', 4]]],
-  ['Your sheet', [
-    ['D&D Beyond stays where you build', DIF, 'askdnd re-reads your sheet during play (Live) and lays it out for play. It can\'t change anything on D&D Beyond.', 5],
-    ['Plan', NOT, 'Shortlists, reminders, combos, leveling ideas and notes, between sessions. The DM never sees your notes.', 6],
-    ['Party', DIF, "Everyone's character at a glance: HP, AC, saves and what they can do.", null]]],
+    ['Table rolls and Game Mode', NOT, 'With Game Mode on, everyone\'s rolls in one place. DM only and Just me keep a roll private; Live re-reads D&D Beyond.', 'Rolling'],
+    ['Your dice', DIF, 'Thrown 3D dice in the set you choose; the table sees your rolls in your dice.', 'Rolling']]],
+  ['Your character', [
+    ['Sheet', DIF, 'Your whole character from D&D Beyond in one view, laid out for play.', 'Your character'],
+    ['Reminders', NOT, 'The bell, or your own words: never forget anything mid-battle.', 'Your character'],
+    ['Plan', NOT, 'Battle combos, leveling strategy, personal quests, notes and shortlists. Nothing is lost when you unprepare. The DM never sees your notes.', 'Plan'],
+    ['Party', DIF, "Everyone's numbers, and the party's spells and items pooled by what they do.", 'Party']]],
 ];
 
 const $ = id => document.getElementById(id);
@@ -2199,27 +2342,48 @@ function go(p) {
   $('help-menu').hidden = true;
 }
 function helpTab(t) {
-  document.querySelectorAll('[data-htab]').forEach(b => b.setAttribute('aria-selected', b.dataset.htab === t));
   document.querySelectorAll('[data-hpanel]').forEach(p => { p.hidden = p.dataset.hpanel !== t; });
+  document.querySelectorAll('[data-htab]').forEach(b => b.setAttribute('aria-selected', b.dataset.htab === t));
+}
+// What a stop shows first. Everything is put back when the stop changes or the tour ends.
+function stage(show = '') {
+  const has = w => show.split(' ').includes(w), panel = has('panel') || has('detail');
+  $('t-panel').hidden = !panel;
+  document.querySelector('[data-pv=list]').hidden = has('detail'); document.querySelector('[data-pv=detail]').hidden = !has('detail');
+  $('t-example').hidden = !has('pinned'); $('t-example-note').hidden = !has('noted');
+  $('t-sb').hidden = !has('spellbook');
+  const snake = has('snake');
+  $('t-ws-form').classList.toggle('on', snake); $('t-ws-normal').classList.toggle('on', !snake); $('t-ws-banner').hidden = !snake;
+  document.querySelectorAll('[data-cole]').forEach(e => { e.hidden = snake; }); document.querySelectorAll('[data-snake]').forEach(e => { e.hidden = !snake; });
+  const n = snake ? { hp: '60', ac: '12', speed: '30 ft', dex: '+2' } : { hp: '51', ac: '16', speed: '45 ft', dex: '+3' };
+  Object.entries(n).forEach(([k, v]) => { const b = document.querySelector(`[data-n=${k}]`); b.classList.toggle('changed', snake && b.textContent !== v); b.textContent = v; });
+  $('t-ws-modal').hidden = !has('form');
 }
 function show(i) {
   step = i; const s = STOPS[i];
   if (s.page && s.page !== page) go(s.page);
+  stage(s.show);
   const el = document.querySelector(s.at); el.scrollIntoView({ block: 'center' });
   requestAnimationFrame(() => {
     const r = el.getBoundingClientRect(), pad = 6, spot = $('spot'), card = $('card');
     Object.assign(spot.style, { top: r.top - pad + 'px', left: r.left - pad + 'px', width: r.width + pad * 2 + 'px', height: r.height + pad * 2 + 'px' }); spot.hidden = false;
-    card.innerHTML = (s.tag ? `<span class="tag ${s.tag[0]}">${s.tag[1]}</span>` : '') + `<h3>${s.title}</h3><p>${s.what}</p><p class="why">${s.why}</p>`
-      + `<div class="foot"><span class="count">${i + 1} of ${STOPS.length}</span>${i ? '<button class="btn small" type="button" data-t="back">Back</button>' : ''}`
+    const inGroup = STOPS.filter(x => x.group === s.group), part = inGroup.indexOf(s);
+    card.innerHTML = (s.tag ? `<span class="tag ${s.tag[0]}">${s.tag[1]}</span>` : '')
+      + `<h3>${s.title || s.group}</h3>${inGroup.length > 1 ? `<span class="parts">${inGroup.map((x, k) => `<i class="${k === part ? 'on' : ''}"></i>`).join('')}</span>` : ''}`
+      + `<p>${s.what}</p><p class="why">${s.why}</p>${s.only ? `<p class="only">Shown because ${s.only}.</p>` : ''}`
+      + `<div class="foot"><span class="count">${GROUPS.indexOf(s.group) + 1} of ${GROUPS.length}</span>${i ? '<button class="btn small" type="button" data-t="back">Back</button>' : ''}`
       + `<button class="btn small primary" type="button" data-t="next">${i === STOPS.length - 1 ? 'Done' : 'Next'}</button><button class="btn small link" type="button" data-t="end" aria-label="End the tour">✕</button></div>`;
     card.hidden = false;
-    const below = r.bottom + 12 + card.offsetHeight < innerHeight;  // under the lit thing if it fits, else above
-    card.style.top = (below ? r.bottom + 12 : Math.max(12, r.top - card.offsetHeight - 12)) + 'px';
-    card.style.left = Math.min(Math.max(12, r.left), innerWidth - card.offsetWidth - 12) + 'px';
+    const below = r.bottom + 12 + card.offsetHeight < innerHeight;  // under the lit thing if it fits, else above, else beside
+    let top = below ? r.bottom + 12 : r.top - card.offsetHeight - 12, left = Math.min(Math.max(12, r.left), innerWidth - card.offsetWidth - 12);
+    if (top < 12) { top = 12; left = r.left > card.offsetWidth + 24 ? r.left - card.offsetWidth - 18 : Math.min(r.right + 18, innerWidth - card.offsetWidth - 12); }
+    const panel = el.closest('.mk-panel');  // inside the side panel: beside it, so the panel stays readable
+    if (panel) { const pr = panel.getBoundingClientRect(); left = Math.max(12, pr.left - card.offsetWidth - 18); top = Math.min(Math.max(12, r.top), innerHeight - card.offsetHeight - 12); }
+    card.style.top = top + 'px'; card.style.left = left + 'px';
     card.querySelector('[data-t=next]').focus();
   });
 }
-function end() { step = -1; $('spot').hidden = $('card').hidden = true; }
+function end() { step = -1; stage(''); $('spot').hidden = $('card').hidden = true; }
 document.addEventListener('click', e => {
   const t = e.target.closest('a, button'); if (!t) return;
   if (t.id === 't-help') { e.preventDefault(); if (step < 0) $('help-menu').hidden = !$('help-menu').hidden; return; }
@@ -2229,7 +2393,7 @@ document.addEventListener('click', e => {
   if (t.dataset.t === 'next') return step === STOPS.length - 1 ? end() : show(step + 1);
   if (t.dataset.t === 'back') return show(step - 1);
   if (t.dataset.t === 'end') return end();
-  if (t.dataset.show != null) return show(+t.dataset.show);
+  if (t.dataset.show != null) return show(firstOf(t.dataset.show));
 });
 document.addEventListener('keydown', e => {
   if (step < 0) return;
@@ -2238,8 +2402,8 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'ArrowLeft' && step > 0) show(step - 1);
 });
 addEventListener('resize', () => { if (step >= 0) show(step); });
-$('adds').innerHTML = ADDS.map(([title, rows]) => `<section><h3>${title}</h3>${rows.map(([name, tag, text, stop]) =>
-  `<div class="add"><b>${name}</b><span class="side"><span class="tag ${tag[0]}">${tag[1]}</span>${stop != null ? `<button class="btn small link" type="button" data-show="${stop}">Show me</button>` : ''}</span><p>${text}</p></div>`).join('')}</section>`).join('');
+$('adds').innerHTML = ADDS.map(([title, rows]) => `<section><h3>${title}</h3>${rows.map(([name, tag, text, grp]) =>
+  `<div class="add"><b>${name}</b><span class="side"><span class="tag ${tag[0]}">${tag[1]}</span>${grp ? `<button class="btn small link" type="button" data-show="${grp}">Show me</button>` : ''}</span><p>${text}</p></div>`).join('')}</section>`).join('');
 </script>
 </body>
 </html>
