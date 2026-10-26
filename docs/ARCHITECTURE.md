@@ -15,6 +15,8 @@ _Last updated 2026-10-19 · Pairs with [BRIEF.md](BRIEF.md)_
 
 ## The stack (recommendation)
 
+The diagram of how these connect, and who changes each piece, is `docs/stack.html`.
+
 | Piece | Choice | Why |
 |---|---|---|
 | App | **Python (FastAPI)**: one app serving both the web pages and the API | Python is best for PDF and AI work and is what v1 used. One codebase and one deploy. |
