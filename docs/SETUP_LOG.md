@@ -786,7 +786,8 @@ the site calls, and, by color, who can change each piece: Claude from the termin
   Google Cloud, Cloudflare, Anthropic and Sentry stay Brett's; that's deliberate, since whoever holds the master
   login can make any key, and keeping that with a person keeps every app key narrow.
 - **Connections (MCP servers)** let Claude use a service directly. Worth adding only where the CLI falls short: Sentry
-  (read and resolve errors without screenshots). Railway and GitHub are already covered by their CLIs.
+  (read and resolve errors without screenshots), which Brett connected the same day, signing in with his Sentry
+  account so no key was pasted anywhere. Railway and GitHub are already covered by their CLIs.
 
 **For a new project:**
 1. Draw the stack early and keep it in the repo: every service, the arrows between them, and who holds each login.

@@ -124,6 +124,8 @@ td { min-width: 0; }
         <!-- edges first, so boxes sit on top -->
         <path class="edge" d="M134 70 V24 H685 V114"/>
         <text class="el" x="410" y="19" text-anchor="middle">railway CLI: logs, settings, ssh into beta</text>
+        <path class="edge" d="M685 24 H1000 V58"/>
+        <text class="el" x="845" y="19" text-anchor="middle">Sentry connection: reads, resolves</text>
 
         <path class="edge" d="M232 92 H318"/>
         <text class="el" x="275" y="85" text-anchor="middle">branches, PRs</text>
@@ -201,8 +203,8 @@ td { min-width: 0; }
           <text class="bt" x="602" y="408">askdnd-backup</text><text class="bs" x="602" y="424">nightly, 10:00 UTC</text></g>
 
         <!-- outside services -->
-        <g class="bx brett"><rect x="900" y="60" width="200" height="44" rx="6"/>
-          <text class="bt" x="912" y="78">Sentry</text><text class="bs" x="912" y="94">error alerts; emails Brett</text></g>
+        <g class="bx both"><rect x="900" y="60" width="200" height="44" rx="6"/>
+          <text class="bt" x="912" y="78">Sentry</text><text class="bs" x="912" y="94">emails Brett; Claude reads</text></g>
         <g class="bx brett"><rect x="900" y="124" width="200" height="44" rx="6"/>
           <text class="bt" x="912" y="142">Anthropic</text><text class="bs" x="912" y="158">Claude: recaps, answers</text></g>
         <g class="bx brett"><rect x="900" y="188" width="200" height="44" rx="6"/>
@@ -223,7 +225,7 @@ td { min-width: 0; }
     <div class="prose">
       <h2>Who changes what</h2>
       <p>Claude works through the command-line tools signed in on this Mac (<code>gh</code> for GitHub,
-        <code>railway</code> for Railway) and has no login to the others, by design.</p>
+        <code>railway</code> for Railway) and the Sentry connection, and has no login to the others, by design.</p>
     </div>
     <div class="groups">
       <div class="group">
@@ -248,6 +250,7 @@ td { min-width: 0; }
             <tr><td>Merging</td><td>Press Merge on the PR, or say "merge it".</td><td>Opens the PR, waits for checks, follows the deploy, gives you Try it yourself.</td></tr>
             <tr><td>Secrets</td><td>Copy the value from the provider's dashboard, then run <code>scripts/set-secret.sh NAME --clipboard</code>.</td><td>Says which key, where to click, and which flags. Never sees the value.</td></tr>
             <tr><td>Processor</td><td>Run it after a session; review the cuts; Send to askdnd.</td><td>Maintains its code and the filter.</td></tr>
+            <tr><td>Sentry</td><td>Keep the account, alert emails and privacy settings. When an alert arrives, say "check Sentry".</td><td>Reads the error with its page and line, fixes it, marks it resolved.</td></tr>
             <tr><td>Railway dashboard</td><td>The few settings the CLI can't reach (Wait for CI, the cron schedule).</td><td>Says exactly where to click.</td></tr>
           </tbody>
         </table></div>
@@ -261,7 +264,6 @@ td { min-width: 0; }
             <tr><td>AWS</td><td>Two narrow keys: <code>askdnd-v2-files</code> (website: read and write <code>v2/files/</code>) and <code>askdnd-v2-backups</code> (backup: <code>v2/backups/</code>, tidying <code>v2/files/</code>).</td><td>Rotating a key, or a new kind of storage.</td></tr>
             <tr><td>Google Cloud</td><td>The sign-in client and its secret; the test-user list (Testing mode until launch).</td><td>Adding a player: here <em>and</em> on Manage › Accounts.</td></tr>
             <tr><td>Anthropic Console</td><td>The API key and the prepaid balance (auto-reload off).</td><td>Topping up. askdnd's own limit is on Manage › Usage.</td></tr>
-            <tr><td>Sentry</td><td>The account, alert emails, privacy settings.</td><td>When an alert arrives (or connect it for Claude, below).</td></tr>
             <tr><td>GitHub, Railway</td><td>Your accounts and the CLI logins Claude borrows.</td><td>If a login expires.</td></tr>
             <tr><td>MacWhisper</td><td>Recording each session.</td><td>Game night.</td></tr>
           </tbody>
@@ -298,7 +300,7 @@ td { min-width: 0; }
     <div class="tw"><table>
       <thead><tr><th>Service</th><th></th><th>Why</th></tr></thead>
       <tbody>
-        <tr><td>Sentry</td><td><span class="pill yes">Connect</span></td><td>Claude reads each error, its page and line, and marks it resolved, instead of you sending screenshots. Signs in with your Sentry account; sees only what Sentry already holds, which is scrubbed.</td></tr>
+        <tr><td>Sentry</td><td><span class="pill yes">Connected</span></td><td>Claude reads each error, its page and line, and marks it resolved, instead of you sending screenshots. Signed in with your Sentry account (organization brett-vw); sees only what Sentry already holds, which is scrubbed.</td></tr>
         <tr><td>Railway</td><td><span class="pill no">Skip</span></td><td>The <code>railway</code> CLI already covers logs, deploys and variables.</td></tr>
         <tr><td>GitHub</td><td><span class="pill no">Skip</span></td><td>The <code>gh</code> CLI already covers pull requests, checks and merges.</td></tr>
         <tr><td>AWS</td><td><span class="pill no">Skip</span></td><td>It would need a broad key. Key changes are rare, and keeping them in your hands is part of what keeps each key narrow.</td></tr>
