@@ -18,13 +18,13 @@ def pinned(page) -> list[str]:
 
 
 def test_a_player_walks_every_stop_and_each_lights_something(people, server):
-    """Including Battle's hands-on stops: + Add opens the side panel, a row opens its marks and note, and the examples
-    on Battle are only on the page: afterwards nothing new is pinned."""
+    """Including Battle's hands-on stops (+ Add opens the side panel, a row opens its marks and note, examples only on
+    the page), the Spell Book's, and Wild Shape's preview: afterwards nothing new is pinned and Cole is in no form."""
     player = people("player")
     before = pinned(player.open(f"/characters/{server['cole']}/battle"))
     page = player.open("/c/main/")
     stops = page.evaluate("fetch('/tour').then(r => r.json()).then(d => d.stops)")
-    assert len(stops) > 10
+    assert len(stops) > 10 and {"spellbook", "wildshape"} <= {s["group"] for s in stops}  # Cole casts and shifts
     page.click("[data-tour=help] .help-btn")
     page.click("#help-menu [data-tour-start]")
     for i, stop in enumerate(stops):
@@ -43,6 +43,7 @@ def test_a_player_walks_every_stop_and_each_lights_something(people, server):
     page.wait_for_selector(".tour-card", state="detached")
     assert page.evaluate("sessionStorage.getItem('askdnd-tour')") is None
     assert pinned(player.open(f"/characters/{server['cole']}/battle")) == before
+    assert player.page.locator("#battle-body .ws-form").count() == 0  # the Wild Shape stops were a preview
     assert player.errors == []
 
 
@@ -62,4 +63,18 @@ def test_show_me_starts_at_its_group_and_esc_ends_it(people, server):
     page.reload()  # ended means ended: it doesn't come back with the page
     page.wait_for_load_state("networkidle")
     assert page.locator(".tour-card").count() == 0
+    assert player.errors == []
+
+
+def test_leaving_mid_wild_shape_puts_battle_back(people, server):
+    """Esc while the tour shows Battle in a form: Battle is drawn as it really is again, and nothing was saved."""
+    player = people("player")
+    page = player.open("/help?tab=adds")
+    page.click('[data-tour-start="wildshape"]')
+    page.wait_for_url(f"**/characters/{server['cole']}/battle")
+    page.wait_for_selector("#battle-body .ws-form")
+    page.keyboard.press("Escape")
+    page.wait_for_selector("#battle-body .ws-form", state="detached")
+    player.open(f"/characters/{server['cole']}/battle")
+    assert page.locator("#battle-body .ws-form").count() == 0
     assert player.errors == []
