@@ -2052,7 +2052,6 @@ body { background: var(--bg); }
 /* The Table rolls sidebar, as it is, with the play log's changes in it */
 .mk-side { background: var(--chrome); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
 .mk-side .rs-head { padding-bottom: 6px; }
-.mk-filters { display: flex; gap: var(--sp-1); padding: 0 12px 10px; flex-wrap: wrap; }
 .mk-side .rs-log { overflow-y: auto; }
 /* A change in the play log: the same row as a roll, its number is the HP after, with before → after under it */
 .roll-item.change .roll-what { font-size: var(--fs-sm); }
@@ -2129,7 +2128,7 @@ body { background: var(--bg); }
 </style>
 
 <div class="mk-switch">
-  <span class="note">Mockup · VTT Phase 1 foundation · made-up characters · everything here is clickable</span>
+  <span class="note">Mockup · VTT Phase 1 foundation · your table's characters, made-up enemies · everything here is clickable</span>
   <div class="mk-seg" role="tablist" aria-label="Which view">
     <button type="button" class="on" data-view="hp">1 · Hit points</button>
     <button type="button" data-view="log">2 · The play log</button>
@@ -2140,65 +2139,55 @@ body { background: var(--bg); }
 </div>
 
 <div data-v="hp">
-  <p class="mk-why"><b>1 · askdnd keeps hit points.</b> Click Ilsa's HP. Pick Damage, Heal or Temporary HP, an amount and, for damage, its type. askdnd applies the 2024 rules in order and shows its working before you confirm: resistance (from her sheet), then temporary HP, then HP. Concentrating? It offers the Constitution save with its DC. At 0 HP: Unconscious and death saves. Every change goes in the play log (left) and reaches every screen at the table within a second.</p>
-  <p class="mk-ask">Temporary HP: the 2024 rules say they don't add up (you keep the ones you have or take the new ones). Your 28 + 28 = 56 is a house rule, so it's a switch on Manage › House rules, on for your campaign. Try both with "28 temporary HP", twice.</p>
+  <p class="mk-why"><b>1 · askdnd keeps hit points.</b> Click Big C's HP. Pick Damage, Heal or Temporary HP, an amount and, for damage, its type. askdnd does the bookkeeping and shows its working before you confirm: resistance (from his sheet, and the DM can ignore it), then temporary HP, then HP. Checks and rulings stay at the table: concentrating means a <b>reminder</b> to make the Constitution save with its DC, not an automatic save, and at 0 HP a reminder about death saves. Every change goes in the play log (left) and reaches every screen within a second.</p>
   <div class="mk-ctl"><span class="note">Try:</span>
-    <button class="btn" type="button" data-try="fireball">Fireball hits Ilsa: 28 fire</button>
+    <button class="btn" type="button" data-try="fireball">Fireball hits Big C: 28 fire</button>
     <button class="btn" type="button" data-try="arrow">An arrow: 6 piercing</button>
-    <button class="btn" type="button" data-try="heal">Cure Wounds: heal 9</button>
-    <button class="btn" type="button" data-try="down">A huge hit: 60 bludgeoning</button>
-    <button class="btn" type="button" data-try="temp">28 temporary HP</button>
-    <label class="check"><input type="checkbox" id="conc" checked> Ilsa is concentrating on Bless</label>
-    <label class="check"><input type="checkbox" id="hr-temp"> House rule: temporary HP add up</label>
+    <button class="btn" type="button" data-try="heal">Cure Wounds from Cole: heal 9</button>
+    <button class="btn" type="button" data-try="temp">Armor of Agathys at 3rd level: 15 temporary HP</button>
+    <button class="btn" type="button" data-try="down">A huge hit: 80 bludgeoning</button>
+    <label class="check"><input type="checkbox" id="conc" checked> Big C is concentrating on Bless</label>
   </div>
 </div>
 <div data-v="log" hidden>
-  <p class="mk-why"><b>2 · The play log is in Table rolls.</b> One card per thing that happened: a roll with everything it did (Fireball's <b>Apply to…</b> adds each target as a line), or a run of changes to one character, with its Con save. Each line says what changed, before → after and why. <b>Undo is the DM's</b>, one line at a time, behind the <b>⋯</b> on that line; players never see it. Undoing applies the reverse, and the line stays, crossed out.</p>
-  <p class="mk-ask">For you: a name for the third filter. Pick one below and look at the chips; Characters is my suggestion.</p>
+  <p class="mk-why"><b>2 · The play log is in Table rolls.</b> One card per thing that happened: a roll with everything it did (Fireball's <b>Apply to…</b> adds each target as a line), or a run of changes to one character. Each line says what changed, before → after and why. <b>Undo is the DM's</b>, one line at a time, behind the <b>⋯</b> on that line; players never see it. Undoing applies the reverse, and the line stays, crossed out. One feed, no filters for now.</p>
   <div class="mk-ctl"><span class="note">You are:</span>
-    <span class="mk-seg" role="group" aria-label="Viewer"><button type="button" class="on" data-viewer="sam">Sam, who plays Ilsa</button><button type="button" data-viewer="mary">Mary, the DM</button></span>
-    <span class="note">Third filter:</span>
-    <span class="mk-seg" role="group" aria-label="Name for the third filter"><button type="button" class="on" data-name="characters">Characters</button><button type="button" data-name="status">Status</button><button type="button" data-name="effects">HP &amp; effects</button></span>
-    <span class="note">As Mary, open ⋯ on the Greatclub's Rowan line. Apply Fireball to Rowan and Bram.</span>
+    <span class="mk-seg" role="group" aria-label="Viewer"><button type="button" class="on" data-viewer="player">Big C's player</button><button type="button" data-viewer="dm">The DM</button></span>
+    <span class="note">As the DM, open ⋯ on the Greatclub's No Name line. Apply Fireball to Cole and Trah.</span>
   </div>
 </div>
 <div data-v="ddb" hidden>
-  <p class="mk-why"><b>3 · D&amp;D Beyond changed the sheet.</b> Characters are still built and leveled on D&amp;D Beyond. When a refresh finds build changes (level, max HP, spells, items), they come in and play stays askdnd's: HP lost, temporary HP, slots and uses spent, conditions. Battle lists what changed once, and the play log keeps it. When max HP goes up, current HP goes up by the same amount (decided).</p>
-  <div class="mk-ctl"><button class="btn primary" type="button" data-try="levelup">Ilsa levels up on D&amp;D Beyond (5 → 6)</button></div>
+  <p class="mk-why"><b>3 · D&amp;D Beyond changed the sheet.</b> Characters are still built and leveled on D&amp;D Beyond. When a refresh finds build changes (level, max HP, spells, items), they come in and play stays askdnd's: HP lost, temporary HP, slots and uses spent, conditions. Battle lists what changed once, and the play log keeps it. When max HP goes up, current HP goes up by the same amount.</p>
+  <div class="mk-ctl"><button class="btn primary" type="button" data-try="levelup">Big C levels up on D&amp;D Beyond (Paladin 6 → 7)</button></div>
 </div>
 <div data-v="both" hidden>
-  <p class="mk-why"><b>4 · Two people at once.</b> The DM and a player can both change Ilsa's HP. Every change says which version it started from; if someone else got there first, yours isn't applied, and you see what's there now with one click to apply yours on top. Nothing is silently overwritten.</p>
-  <div class="mk-ctl"><button class="btn primary" type="button" data-try="race">Open Damage, then Mary applies 8 first</button></div>
+  <p class="mk-why"><b>4 · Two people at once.</b> The DM and a player can both change Big C's HP. Every change says which version it started from; if someone else got there first, yours isn't applied, and you see what's there now with one click to apply yours on top. Nothing is silently overwritten.</p>
+  <div class="mk-ctl"><button class="btn primary" type="button" data-try="race">Open Damage, then the DM applies 8 first</button></div>
 </div>
 
 <div class="mk-stage" id="stage">
   <aside class="mk-side" aria-label="Table rolls">
     <div class="rs-head"><svg class="rs-icon" width="22" height="22" viewBox="0 0 30 30" aria-hidden="true"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="none" stroke="currentColor" stroke-width="2"/></svg><span class="rs-title">Table rolls</span></div>
-    <div class="mk-filters" role="group" aria-label="Show">
-      <button type="button" class="ls-chip" aria-pressed="true" data-filter="all">All</button>
-      <button type="button" class="ls-chip" aria-pressed="false" data-filter="rolls">Rolls</button>
-      <button type="button" class="ls-chip" aria-pressed="false" data-filter="changes" id="f-third">Characters</button>
-    </div>
     <ol class="rs-log" id="log"></ol>
   </aside>
   <main class="mk-main" id="battle">
     <div class="ddb-card" id="ddb-card" hidden></div>
-    <div class="mk-head"><span class="av">I</span><div><h2>Ilsa</h2><span class="note">Tiefling · Paladin <span id="lvl">5</span> · played by Sam</span></div></div>
+    <div class="mk-head"><span class="av">B</span><div><h2>Big C</h2><span class="note">Tiefling · Paladin <span id="lvl">6</span> · Sorcerer 2</span></div></div>
     <div class="vitals">
-      <div class="vital hp" id="hp-tile" role="button" tabindex="0" title="Change Ilsa's hit points"><small>HP</small><b id="hp-now">38</b><span class="note" id="hp-of"> / 44</span><span class="note" id="hp-temp"> +5 temp</span><div class="hp-bar" aria-hidden="true"><i id="bar-hp"></i><i class="t" id="bar-temp"></i></div></div>
-      <div class="vital"><small>AC</small><b>18</b></div>
+      <div class="vital hp" id="hp-tile" role="button" tabindex="0" title="Change Big C's hit points"><small>HP</small><b id="hp-now">63</b><span class="note" id="hp-of"> / 72</span><span class="note" id="hp-temp"> +10 temp</span><div class="hp-bar" aria-hidden="true"><i id="bar-hp"></i><i class="t" id="bar-temp"></i></div></div>
+      <div class="vital"><small>AC</small><b>19</b></div>
       <div class="vital"><small>Speed</small><b>30</b><span class="note"> ft</span></div>
       <div class="vital"><small>Initiative</small><b>+0</b></div>
-      <div class="vital"><small>Spell DC / attack</small><b>13</b><span class="note"> / +5</span></div>
+      <div class="vital"><small>Spell DC / attack</small><b>14</b><span class="note"> / +6</span></div>
     </div>
     <div class="mk-status" id="status"></div>
     <div class="prompt" id="conc-prompt" hidden></div>
     <div class="prompt" id="death" hidden></div>
-    <p class="note">Resistances from her sheet: <b>fire</b> (Fiendish Legacy). The rest of Battle is unchanged.</p>
+    <p class="note">Resistances from his sheet: <b>fire</b> (Infernal Legacy). The rest of Battle is unchanged.</p>
 
-    <div class="roll-win hp-win" id="hp-win" role="dialog" aria-label="Ilsa's hit points" hidden>
+    <div class="roll-win hp-win" id="hp-win" role="dialog" aria-label="Big C's hit points" hidden>
       <button type="button" class="rp-x" aria-label="Close" data-close>×</button>
-      <div class="rw-title">Ilsa's hit points <span class="roll-sub" id="w-now"></span></div>
+      <div class="rw-title">Big C's hit points <span class="roll-sub" id="w-now"></span></div>
       <div class="rw-row rw-mode"><span class="roll-modes" role="group" aria-label="What happened">
         <button type="button" data-mode="damage" aria-pressed="true">Damage</button><button type="button" data-mode="heal" aria-pressed="false">Heal</button><button type="button" data-mode="temp" aria-pressed="false">Temporary HP</button></span></div>
       <div class="conflict" id="w-conflict" hidden></div>
@@ -2206,7 +2195,7 @@ body { background: var(--bg); }
       <div class="rw-row" id="w-keep" hidden><span class="rw-label">Keep</span><span class="types"><button type="button" class="chip" data-keep="old" id="w-keep-old">Keep</button><button type="button" class="chip" data-keep="new" id="w-keep-new">Take</button></span></div>
       <div class="rw-row" id="w-types-row"><span class="rw-label">Type</span><span class="types" id="w-types"></span></div>
       <div class="rw-row"><span class="rw-label">From</span><input class="rw-text" id="w-from" placeholder="What did it (optional)" maxlength="60"></div>
-      <div class="rw-row" id="w-opts"><label class="check"><input type="checkbox" id="w-crit"> A critical hit</label><label class="check"><input type="checkbox" id="w-nores"> Ignore resistance (the DM's call)</label></div>
+      <div class="rw-row" id="w-opts"><label class="check"><input type="checkbox" id="w-nores"> Ignore resistance (the DM's call)</label></div>
       <ul class="rw-notes working" id="w-work"></ul>
       <p class="after" id="w-after"></p>
       <div class="rw-go"><button type="button" class="btn primary" data-apply>Apply</button><span class="note">Enter applies · Esc closes</span></div>
@@ -2220,58 +2209,56 @@ body { background: var(--bg); }
 </div>
 <div class="toast" id="toast"></div>
 <script>
-// ---- State: Ilsa (made up), and the play log (newest first). A card is one thing that happened: a roll and
-// everything it did, or a run of changes to one character by one person. Each line is one play log entry, and the
-// DM undoes lines one at a time. ----
-const S = { max: 44, dmg: 6, temp: 5, conc: true, ok: 0, bad: 0, dead: false, version: 7, lvl: 5 };
-const RES = { fire: 'Fiendish Legacy' };
+// ---- State: Big C (the table's character), and the play log (newest first). A card is one thing that happened: a
+// roll and everything it did, or a run of changes to one character by one person. Each line is one play log entry,
+// and the DM undoes lines one at a time. askdnd keeps the numbers; checks and rulings are reminders, not automatic. ----
+const S = { max: 72, dmg: 9, temp: 10, conc: true, ok: 0, bad: 0, version: 7, lvl: 6 };
+const RES = { fire: 'Infernal Legacy' };
+const CON = 6;  // Big C's Con save, with Aura of Protection
 const TYPES = ['Acid', 'Bludgeoning', 'Cold', 'Fire', 'Force', 'Lightning', 'Necrotic', 'Piercing', 'Poison', 'Psychic', 'Radiant', 'Slashing', 'Thunder'];
-const PEOPLE = { Ilsa: { hue: 1, player: 'Sam' }, Rowan: { hue: 2, player: 'Kai' }, Bram: { hue: 0, player: 'Jo' }, DM: { hue: 6, player: 'Mary' } };
-let viewer = 'sam', filter = 'all', mode = 'damage', type = '', keep = '', openedAt = null, into = null, concCard = null, menuFor = null, nextId = 100;
+const PEOPLE = { 'Big C': { hue: 1, player: "Big C's player" }, Cole: { hue: 2, player: "Cole's player" }, Trah: { hue: 3, player: "Trah's player" }, 'No Name': { hue: 0, player: "No Name's player" }, DM: { hue: 6, player: 'DM' } };
+const HP = { Cole: 44, Trah: 46, 'No Name': 63 };  // the others' HP now, for Apply to…
+let viewer = 'player', mode = 'damage', type = '', keep = '', openedAt = null, into = null, concCard = null, menuFor = null, nextId = 100;
 let log = [
-  { id: 1, kind: 'roll', who: 'DM', what: 'Fireball', sub: 'damage · Goblin Shaman', dice: '8d6: 6 2 5 4 3 6 1 1', total: 28, dmg: { n: 28, type: 'Fire', from: 'Fireball (Goblin Shaman)' }, done: [], ago: 'now', lines: [] },
-  { id: 2, kind: 'change', who: 'Ilsa', by: 'Sam', ago: '1 min', lines: [
-    { id: 21, who: 'Ilsa', what: 'gained temporary HP', sub: 'Heroism', tempWas: 0, temp: 5, undo: { tempWas: 0 } }] },
-  { id: 3, kind: 'change', who: 'Rowan', by: 'Kai', ago: '2 min', lines: [
-    { id: 31, who: 'Rowan', what: 'took 7 piercing', sub: "Goblin's shortbow", was: 33, now: 26 }] },
-  { id: 4, kind: 'change', who: 'Ilsa', by: 'Mary', ago: '4 min', lines: [
-    { id: 41, who: 'Ilsa', what: 'took 6 slashing', sub: "Hobgoblin's longsword", was: 44, now: 38, undo: { dmg: 6, temp: 0 } },
-    { id: 42, who: 'Ilsa', roll: true, what: 'Con save 15 vs DC 10', sub: 'Concentration on Bless holds', dice: 'd20 13 +2' }] },
-  { id: 5, kind: 'roll', who: 'DM', what: 'Greatclub', sub: 'damage · Ogre', dice: '2d8+4: 5 3', total: 12, dmg: { n: 12, type: 'Bludgeoning', from: "Ogre's greatclub" }, done: ['Bram', 'Rowan'], ago: '6 min', lines: [
-    { id: 51, who: 'Bram', what: 'took 12 bludgeoning', was: 38, now: 26, undone: 'Mary' },
-    { id: 52, who: 'Rowan', what: 'took 12 bludgeoning', was: 45, now: 33 }] },
-  { id: 6, kind: 'ddb', who: 'Bram', by: 'D&D Beyond', ago: '9 min', lines: [
-    { id: 61, who: 'Bram', ddb: true, what: 'Level 4 → 5', sub: 'max HP 36 → 44 · new: Extra Attack', was: 30, now: 38 }] },
+  { id: 1, kind: 'roll', who: 'DM', what: 'Fireball', sub: 'damage · Enemy 1', dice: '8d6: 6 2 5 4 3 6 1 1', total: 28, dmg: { n: 28, type: 'Fire', from: 'Fireball (Enemy 1)' }, done: [], ago: 'now', lines: [] },
+  { id: 2, kind: 'change', who: 'Big C', by: "Big C's player", ago: '1 min', lines: [
+    { id: 21, who: 'Big C', what: 'gained temporary HP', sub: 'Armor of Agathys', tempWas: 0, temp: 10, undo: { tempWas: 0 } }] },
+  { id: 3, kind: 'change', who: 'Cole', by: "Cole's player", ago: '2 min', lines: [
+    { id: 31, who: 'Cole', what: 'took 7 piercing', sub: "Enemy 2's shortbow", was: 51, now: 44 }] },
+  { id: 4, kind: 'change', who: 'Big C', by: 'DM', ago: '4 min', lines: [
+    { id: 41, who: 'Big C', what: 'took 9 slashing', sub: "Enemy 3's longsword", was: 72, now: 63, undo: { dmg: 9, temp: 0 } },
+    { id: 42, who: 'Big C', roll: true, what: 'Con save 17 (DC 10)', sub: 'Concentration on Bless', dice: 'd20 11 +6' }] },
+  { id: 5, kind: 'roll', who: 'DM', what: 'Greatclub', sub: 'damage · Enemy 4', dice: '2d8+4: 5 3', total: 12, dmg: { n: 12, type: 'Bludgeoning', from: "Enemy 4's greatclub" }, done: ['Trah', 'No Name'], ago: '6 min', lines: [
+    { id: 51, who: 'Trah', what: 'took 12 bludgeoning', was: 46, now: 34, undone: 'DM' },
+    { id: 52, who: 'No Name', what: 'took 12 bludgeoning', was: 75, now: 63 }] },
+  { id: 6, kind: 'ddb', who: 'Trah', by: 'D&D Beyond', ago: '9 min', lines: [
+    { id: 61, who: 'Trah', ddb: true, what: 'Level 7 → 8', sub: 'Fighter 1 · max HP 46 → 52', was: 40, now: 46 }] },
 ];
 const $ = id => document.getElementById(id);
 const cur = () => Math.max(0, S.max - S.dmg);
-const me = () => viewer === 'mary' ? 'Mary' : 'Sam';
-const stack = () => $('hr-temp').checked;  // the campaign's house rule: temporary HP add up
+const me = () => viewer === 'dm' ? 'DM' : "Big C's player";
+const byName = b => b === 'DM' ? 'the DM' : b;
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const conDC = taken => Math.min(30, Math.max(10, Math.floor(taken / 2)));
 function toast(html) { const t = $('toast'); t.innerHTML = html; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 4200); }
 
-// ---- The 2024 rules, in order: resistance, temporary HP, HP; at 0, death saves; concentration ----
-function damage(n, typ, crit, ignoreRes) {
+// ---- The bookkeeping, by the 2024 rules: resistance, temporary HP, HP. What follows from it (a Con save, death
+// saves, massive damage) is shown as a reminder for the table; nothing is rolled or ruled for them. ----
+function damage(n, typ, ignoreRes) {
   const lines = []; let taken = n;
   const res = RES[(typ || '').toLowerCase()];
   if (res && !ignoreRes && n) { taken = Math.floor(n / 2); lines.push(['res', `${typ}: resistant (${res}), so ${n} is halved to <b>${taken}</b>`]); }
   const fromTemp = Math.min(S.temp, taken), rest = taken - fromTemp, before = cur(), after = Math.max(0, before - rest);
   if (fromTemp) lines.push(['', `Temporary HP take <b>${fromTemp}</b> first (${S.temp} → ${S.temp - fromTemp})`]);
-  if (before === 0 && rest > 0) lines.push(['conc', crit ? 'Already at 0 HP: a critical hit is <b>two</b> failed death saves' : 'Already at 0 HP: <b>one</b> failed death save']);
-  else if (rest) lines.push(['', `<b>${rest}</b> off HP`]);
-  const over = rest - before, massive = before > 0 && after === 0 && over >= S.max;
-  if (before > 0 && after === 0) lines.push(['conc', massive ? `Massive damage: ${over} left over is at least her max HP (${S.max}). <b>She dies.</b> The DM rules on what happens next.` : 'She drops to <b>0 HP</b>: Unconscious, and death saves start']);
-  if (S.conc && taken > 0 && after > 0) lines.push(['conc', `Concentrating on Bless: Constitution save, <b>DC ${Math.min(30, Math.max(10, Math.floor(taken / 2)))}</b>`]);
-  if (S.conc && after === 0 && taken > 0) lines.push(['', 'Concentration on Bless ends (Unconscious)']);
-  return { lines, taken, fromTemp, rest, before, after, massive };
+  if (rest) lines.push(['', `<b>${rest}</b> off HP`]);
+  if (before === 0 && rest > 0) lines.push(['conc', 'Reminder: damage at 0 HP is a failed death save (a critical hit, two)']);
+  const over = rest - before;
+  if (before > 0 && after === 0) lines.push(['conc', over >= S.max ? `Reminder: ${over} left over is at least his max HP (${S.max}), which is massive damage. The DM rules.` : 'Reminder: at 0 HP he is Unconscious and makes death saves']);
+  if (S.conc && taken > 0) lines.push(['conc', after === 0 ? 'Reminder: Unconscious ends concentration on Bless' : `Reminder: concentrating on Bless, so a Constitution save, <b>DC ${conDC(taken)}</b>`]);
+  return { lines, taken, fromTemp, rest, before, after };
 }
-// Temporary HP: by the 2024 rules they don't add up (keep the ones you have or take the new ones); a campaign's
-// house rule can make them add up.
-function tempAfter(n) {
-  if (!S.temp) return n;
-  if (stack()) return S.temp + n;
-  return (keep || (n > S.temp ? 'new' : 'old')) === 'new' ? n : S.temp;
-}
+// Temporary HP don't add up (2024 rules): keep the ones you have or take the new ones. The higher is picked.
+const tempAfter = n => !S.temp ? n : (keep || (n > S.temp ? 'new' : 'old')) === 'new' ? n : S.temp;
 
 // ---- Rendering ----
 function render() {
@@ -2281,20 +2268,18 @@ function render() {
   $('hp-temp').textContent = S.temp ? ` +${S.temp} temp` : '';
   const span = S.max + S.temp; $('bar-hp').style.width = (100 * c / span) + '%'; $('bar-temp').style.width = (100 * S.temp / span) + '%';
   $('lvl').textContent = S.lvl;
-  $('status').innerHTML = (S.conc ? '<span class="tag">Concentrating: Bless</span>' : '') + (c === 0 && !S.dead ? '<span class="tag draft">Unconscious</span>' : '') + (S.dead ? '<span class="tag draft">Dead</span>' : '');
-  const d = $('death');
-  d.hidden = c !== 0;
-  if (c === 0) d.innerHTML = S.dead ? '<span class="grow"><b>Ilsa died</b> (massive damage, or three failed death saves). The DM rules on what happens next, and can undo the hit from the play log.</span>'
-    : `<span class="grow"><b>Ilsa is at 0 HP.</b> Death saves: <span class="deaths"><span class="marks ok">${'<i class="on"></i>'.repeat(S.ok)}${'<i></i>'.repeat(3 - S.ok)}</span> <span class="marks bad">${'<i class="on"></i>'.repeat(S.bad)}${'<i></i>'.repeat(3 - S.bad)}</span></span></span><button class="btn small" type="button" data-deathsave>Roll death save</button>`;
+  $('status').innerHTML = (S.conc ? '<span class="tag">Concentrating: Bless</span> <button class="btn small link" type="button" data-endconc>End concentration</button>' : '') + (c === 0 ? '<span class="tag draft">Unconscious</span>' : '');
+  const d = $('death'); d.hidden = c !== 0;
+  if (c === 0) d.innerHTML = `<span class="grow"><b>Big C is at 0 HP.</b> Death saves on his turns (roll as usual, then mark them): <span class="deaths"><span class="marks ok">${[0, 1, 2].map(i => `<i role="button" tabindex="0" title="Success" data-mark="ok" class="${i < S.ok ? 'on' : ''}"></i>`).join('')}</span> <span class="marks bad">${[0, 1, 2].map(i => `<i role="button" tabindex="0" title="Failure" data-mark="bad" class="${i < S.bad ? 'on' : ''}"></i>`).join('')}</span></span></span>`;
   renderLog();
 }
-const canUndo = l => viewer === 'mary' && !l.undone && !l.roll && !l.ddb;  // the DM only, one line at a time
+const canUndo = l => viewer === 'dm' && !l.undone && !l.roll && !l.ddb;  // the DM only, one line at a time
 function lineHtml(l, named) {
   const n = l.roll ? '' : l.temp != null ? `temp ${l.tempWas} → ${l.temp}` : l.now != null ? `${l.was} → ${l.now}` : '';
   const more = canUndo(l) ? `<button type="button" class="cl-more" data-more="${l.id}" aria-label="More for this line" aria-expanded="${menuFor === l.id}">⋯</button>` : '<span></span>';
   const menu = menuFor === l.id ? `<span class="cl-menu"><button type="button" class="btn small" data-undo="${l.id}">Undo this line</button><button type="button" class="btn small link" data-more="${l.id}">Cancel</button></span>` : '';
   return `<li class="cl ${l.undone ? 'undone' : ''} ${l.roll ? 'is-roll' : ''}">
-    <span class="cl-main"><span class="cl-what">${named ? `<b>${esc(l.who)}</b> ` : ''}${esc(l.what)}</span>${l.sub ? `<span class="cl-sub">${esc(l.sub)}</span>` : ''}${l.dice ? `<span class="cl-sub">${esc(l.dice)}</span>` : ''}${l.undone ? `<span class="cl-sub">Undone by ${esc(l.undone)}</span>` : ''}${menu}</span>
+    <span class="cl-main"><span class="cl-what">${named ? `<b>${esc(l.who)}</b> ` : ''}${esc(l.what)}</span>${l.sub ? `<span class="cl-sub">${esc(l.sub)}</span>` : ''}${l.dice ? `<span class="cl-sub">${esc(l.dice)}</span>` : ''}${l.undone ? `<span class="cl-sub">Undone by ${esc(byName(l.undone))}</span>` : ''}${menu}</span>
     <span class="cl-n">${n}</span>${more}</li>`;
 }
 function cardHtml(c) {
@@ -2306,19 +2291,17 @@ function cardHtml(c) {
     if (hp.length) right = `<span class="roll-right"><b class="roll-total">${live.length ? live[live.length - 1].now : hp[0].was}</b><span class="hp-was">HP</span></span>`;
     else if (tmp.length) right = `<span class="roll-right"><b class="roll-total">${tmp[tmp.length - 1].temp}</b><span class="hp-was">temp HP</span></span>`;
   }
-  const by = c.kind === 'ddb' ? ' <span class="roll-to">D&amp;D Beyond</span>' : c.by && c.by !== p.player ? ` <span class="roll-to">by ${esc(c.by)}</span>` : '';
+  const by = c.kind === 'ddb' ? ' <span class="roll-to">D&amp;D Beyond</span>' : c.by && c.by !== p.player ? ` <span class="roll-to">by ${esc(byName(c.by))}</span>` : '';
   const head = roll ? `<span class="roll-what">${esc(c.what)}</span><span class="roll-dice">${esc(c.sub)}</span><span class="roll-dice">${esc(c.dice)}</span>` : '';
   const targets = roll && c.dmg ? Object.keys(PEOPLE).filter(k => k !== 'DM' && !c.done.includes(k)) : [];
   const apply = targets.length ? `<span class="roll-acts"><button type="button" class="btn small" data-applyto="${c.id}">Apply to…</button></span><span class="apply-menu" data-menu="${c.id}" hidden></span>` : '';
   const lines = c.lines.length ? `<ol class="card-lines">${c.lines.map(l => lineHtml(l, roll)).join('')}</ol>` : '';
-  return `<li class="roll-item hue${p.hue} ${roll ? '' : 'change'} ${c.kind === 'ddb' ? 'ddb' : ''} ${c.who === 'Ilsa' ? 'mine' : ''}" data-id="${c.id}">
+  return `<li class="roll-item hue${p.hue} ${roll ? '' : 'change'} ${c.kind === 'ddb' ? 'ddb' : ''} ${c.who === 'Big C' ? 'mine' : ''}" data-id="${c.id}">
     <span class="roll-av" aria-hidden="true">${c.kind === 'ddb' ? 'DDB' : c.who[0]}</span>
     <span class="roll-main"><span class="roll-who"><b>${esc(c.who)}</b> <time>${c.ago}</time>${by}</span>${head}${apply}</span>
     ${right}${lines}</li>`;
 }
-function renderLog() {
-  $('log').innerHTML = log.filter(c => filter === 'all' || (filter === 'rolls' ? c.kind === 'roll' : c.kind !== 'roll' || c.lines.length)).map(cardHtml).join('');
-}
+function renderLog() { $('log').innerHTML = log.map(cardHtml).join(''); }
 function addCard(c) { log.forEach(x => { if (x.ago === 'now') x.ago = '1 min'; }); const card = { lines: [], ago: 'now', ...c, id: nextId++ }; log.unshift(card); return card; }
 // A line joins the card it belongs to: the roll it came from, the hit whose save it is, or the newest card when
 // that's a run of changes to the same character by the same person. Otherwise it starts a card.
@@ -2327,7 +2310,7 @@ function addLine(l, by, cardId) {
   const top = log[0];
   if (!c && top && top.kind === 'change' && top.who === l.who && top.by === by && top.ago === 'now') c = top;
   if (!c) c = addCard({ kind: 'change', who: l.who, by });
-  const line = { ...l, id: nextId++ }; c.lines.push(line); return c;
+  c.lines.push({ ...l, id: nextId++ }); return c;
 }
 function findLine(id) { for (const c of log) { const l = c.lines.find(x => x.id === +id); if (l) return [c, l]; } return []; }
 
@@ -2335,7 +2318,7 @@ function findLine(id) { for (const c of log) { const l = c.lines.find(x => x.id 
 const win = $('hp-win');
 function openWin(m, amt, typ, from, card) {
   mode = m || 'damage'; type = typ || ''; keep = ''; into = card ?? null; openedAt = S.version;
-  $('w-amt').value = amt || ''; $('w-from').value = from || ''; $('w-crit').checked = false; $('w-nores').checked = false; $('w-conflict').hidden = true;
+  $('w-amt').value = amt || ''; $('w-from').value = from || ''; $('w-nores').checked = false; $('w-conflict').hidden = true;
   $('w-types').innerHTML = TYPES.map(t => `<button type="button" class="chip" data-type="${t}" aria-pressed="${t === type}">${t}</button>`).join('');
   const tile = $('hp-tile'); win.style.top = (tile.offsetTop + tile.offsetHeight + 8) + 'px'; win.style.left = tile.offsetLeft + 'px';  // just below the HP it came from
   win.hidden = false; update(); setTimeout(() => $('w-amt').focus(), 0);
@@ -2346,16 +2329,14 @@ function update() {
   $('w-types-row').hidden = $('w-opts').hidden = mode !== 'damage';
   $('w-now').textContent = `${cur()} / ${S.max}` + (S.temp ? ` · ${S.temp} temp` : '');
   const n = Math.max(0, +$('w-amt').value || 0); let lines = [], after = '';
-  const choosing = mode === 'temp' && n > 0 && S.temp > 0 && n !== S.temp && !stack();
-  $('w-keep').hidden = !choosing;
-  if (mode === 'damage') { const r = damage(n, type, $('w-crit').checked, $('w-nores').checked); lines = r.lines; after = n ? `HP ${r.before} → ${r.after}` + (r.fromTemp ? ` · temp ${S.temp} → ${S.temp - r.fromTemp}` : '') : ''; if (!type && n) lines.unshift(['', 'No type picked: no resistance is checked']); }
-  else if (mode === 'heal') { const c = cur(), a = Math.min(S.max, c + n); after = n ? `HP ${c} → ${a}` : ''; if (n && c + n > S.max) lines.push(['', `Up to her max (${S.max}): ${c + n - S.max} more does nothing`]); if (c === 0 && n) lines.push(['', 'Any healing from 0 HP: conscious again, death saves cleared']); }
+  $('w-keep').hidden = !(mode === 'temp' && n > 0 && S.temp > 0 && n !== S.temp);
+  if (mode === 'damage') { const r = damage(n, type, $('w-nores').checked); lines = r.lines; after = n ? `HP ${r.before} → ${r.after}` + (r.fromTemp ? ` · temp ${S.temp} → ${S.temp - r.fromTemp}` : '') : ''; if (!type && n) lines.unshift(['', 'No type picked: no resistance is checked']); }
+  else if (mode === 'heal') { const c = cur(), a = Math.min(S.max, c + n); after = n ? `HP ${c} → ${a}` : ''; if (n && c + n > S.max) lines.push(['', `Up to his max (${S.max}): ${c + n - S.max} more does nothing`]); if (c === 0 && n) lines.push(['', 'Healing from 0 HP: conscious again, death saves cleared']); }
   else if (n) {
-    const a = tempAfter(n); after = a === S.temp ? `Keeps her ${S.temp} temporary HP` : `Temporary HP ${S.temp} → ${a}`;
-    if (S.temp && stack()) lines.push(['hr', `House rule: temporary HP add up, so ${S.temp} + ${n} = <b>${a}</b>`]);
-    else if (S.temp === n) lines.push(['', `She already has ${n}: nothing changes (temporary HP don't add up)`]);
+    const a = tempAfter(n); after = a === S.temp ? `Keeps his ${S.temp} temporary HP` : `Temporary HP ${S.temp} → ${a}`;
+    if (S.temp === n) lines.push(['', `He already has ${n}: nothing changes (temporary HP don't add up)`]);
     else if (S.temp) {
-      lines.push(['', `Temporary HP don't add up: she keeps her ${S.temp} or takes the new ${n}. The higher is picked; Sam can choose.`]);
+      lines.push(['', `Temporary HP don't add up: he keeps his ${S.temp} or takes the new ${n}. The higher is picked; he can choose.`]);
       $('w-keep-old').textContent = `Keep ${S.temp}`; $('w-keep-new').textContent = `Take ${n}`;
       const k = keep || (n > S.temp ? 'new' : 'old');
       win.querySelectorAll('[data-keep]').forEach(b => b.setAttribute('aria-pressed', b.dataset.keep === k));
@@ -2366,47 +2347,47 @@ function update() {
 }
 function apply(force) {
   const n = Math.max(0, +$('w-amt').value || 0); if (!n) return;
-  if (!force && openedAt !== S.version) {  // someone else changed her first: show what's there now
-    const last = log.find(c => c.who === 'Ilsa' && c.kind !== 'roll');
+  if (!force && openedAt !== S.version) {  // someone else changed him first: show what's there now
+    const last = log.find(c => c.who === 'Big C' && c.kind !== 'roll');
     $('w-conflict').hidden = false;
-    $('w-conflict').innerHTML = `<b>${esc(last.by)} changed Ilsa's HP a moment ago</b> (${esc(last.lines[last.lines.length - 1].what)}): she's at ${cur()} now. Yours wasn't applied.
+    $('w-conflict').innerHTML = `<b>${esc(byName(last.by))} changed Big C's HP a moment ago</b> (${esc(last.lines[last.lines.length - 1].what)}): he's at ${cur()} now. Yours wasn't applied.
       <div class="row" style="margin-top:6px"><button type="button" class="btn small primary" data-ontop>Apply mine to ${cur()}</button><button type="button" class="btn small" data-close>Cancel</button></div>`;
     openedAt = S.version; update(); return;
   }
   const from = $('w-from').value.trim(), was = cur();
-  $('conc-prompt').hidden = true;  // a new change replaces any earlier prompt
+  $('conc-prompt').hidden = true;  // a new change replaces any earlier reminder
   if (mode === 'damage') {
-    const r = damage(n, type, $('w-crit').checked, $('w-nores').checked);
+    const r = damage(n, type, $('w-nores').checked);
     S.temp -= r.fromTemp;
-    if (r.before === 0 && r.rest > 0) { S.bad = Math.min(3, S.bad + ($('w-crit').checked ? 2 : 1)); if (S.bad >= 3) S.dead = true; }
-    const lost = Math.min(S.max, S.dmg + r.rest) - S.dmg;  // what she actually lost (HP stops at 0): Undo gives back this, not the hit's size
-    S.dmg += lost; if (r.massive) S.dead = true;
+    const lost = Math.min(S.max, S.dmg + r.rest) - S.dmg;  // what he actually lost (HP stops at 0): Undo gives back this, not the hit's size
+    S.dmg += lost;
     const why = [into == null ? from : from.includes('saved: half') ? 'saved: half' : '', r.taken !== n ? `${n}, halved: resistant` : '', r.fromTemp ? `${r.fromTemp} from temp HP` : ''].filter(Boolean).join(' · ');
-    const c = addLine({ who: 'Ilsa', what: `took ${r.taken}${type ? ' ' + type.toLowerCase() : ''}`, sub: why, was, now: cur(), undo: { dmg: lost, temp: r.fromTemp } }, me(), into);
-    if (S.conc && r.after === 0) { S.conc = false; $('conc').checked = false; }
-    else if (S.conc && r.taken > 0) { concCard = c.id; showConc(Math.min(30, Math.max(10, Math.floor(r.taken / 2)))); }
-    toast(`Ilsa took ${r.taken}${type ? ' ' + type.toLowerCase() : ''}: HP ${was} → ${cur()}.`);
+    const c = addLine({ who: 'Big C', what: `took ${r.taken}${type ? ' ' + type.toLowerCase() : ''}`, sub: why, was, now: cur(), undo: { dmg: lost, temp: r.fromTemp } }, me(), into);
+    if (S.conc && r.taken > 0) { concCard = c.id; showConc(r.after === 0 ? 0 : conDC(r.taken)); }
+    toast(`Big C took ${r.taken}${type ? ' ' + type.toLowerCase() : ''}: HP ${was} → ${cur()}.`);
   } else if (mode === 'heal') {
-    const a = Math.min(S.max, was + n); S.dmg = S.max - a; if (was === 0) { S.ok = S.bad = 0; S.dead = false; }
-    addLine({ who: 'Ilsa', what: `healed ${a - was}`, sub: from, was, now: a, undo: { heal: a - was } }, me());
-    toast(`Ilsa healed ${a - was}: HP ${was} → ${a}.`);
+    const a = Math.min(S.max, was + n); S.dmg = S.max - a; if (was === 0) S.ok = S.bad = 0;
+    addLine({ who: 'Big C', what: `healed ${a - was}`, sub: from, was, now: a, undo: { heal: a - was } }, me());
+    toast(`Big C healed ${a - was}: HP ${was} → ${a}.`);
   } else {
-    const before = S.temp, a = tempAfter(n), added = before && stack();
+    const before = S.temp, a = tempAfter(n);
     S.temp = a;
-    addLine({ who: 'Ilsa', what: a === before ? `kept her temporary HP (offered ${n})` : 'gained temporary HP', sub: [from, added ? 'House rule: they add up' : ''].filter(Boolean).join(' · '), tempWas: before, temp: a, undo: { tempWas: before } }, me());
-    toast(a === before ? `Ilsa keeps her ${a} temporary HP.` : `Ilsa's temporary HP: ${before} → ${a}.`);
+    addLine({ who: 'Big C', what: a === before ? `kept his temporary HP (offered ${n})` : 'gained temporary HP', sub: from, tempWas: before, temp: a, undo: { tempWas: before } }, me());
+    toast(a === before ? `Big C keeps his ${a} temporary HP.` : `Big C's temporary HP: ${before} → ${a}.`);
   }
   S.version++; closeWin(); render(); $('hp-tile').classList.remove('flash'); void $('hp-tile').offsetWidth; $('hp-tile').classList.add('flash');
 }
+// The reminder: what the rules call for, with the DC. Rolling is the usual roll; ending concentration is the player's or the DM's call.
 function showConc(dc) {
   const p = $('conc-prompt'); p.hidden = false;
-  p.innerHTML = `<span class="grow"><b>Concentrating on Bless.</b> Ilsa took damage: Constitution save, DC ${dc}.</span><button class="btn small primary" type="button" data-concroll="${dc}">Roll Con save +2</button>`;
+  p.innerHTML = dc ? `<span class="grow"><b>Concentration check.</b> Big C took damage while concentrating on Bless: Constitution save, <b>DC ${dc}</b>.</span><button class="btn small" type="button" data-concroll="${dc}">Roll Con save +${CON}</button><button class="btn small link" type="button" data-endconc>End concentration</button><button class="btn small link" type="button" data-dismiss>Dismiss</button>`
+    : `<span class="grow"><b>Concentration.</b> Big C is Unconscious, which ends concentration on Bless.</span><button class="btn small" type="button" data-endconc>End concentration</button><button class="btn small link" type="button" data-dismiss>Dismiss</button>`;
 }
 function undo(id) {
-  const [c, l] = findLine(id); if (!l || l.undone) return;
-  l.undone = 'Mary'; menuFor = null; $('conc-prompt').hidden = true;
-  if (l.who === 'Ilsa' && l.undo) {
-    if (l.undo.dmg != null) { S.dmg = Math.max(0, S.dmg - l.undo.dmg); S.temp += l.undo.temp || 0; if (cur() > 0) S.dead = false; }
+  const [, l] = findLine(id); if (!l || l.undone) return;
+  l.undone = 'DM'; menuFor = null; $('conc-prompt').hidden = true;
+  if (l.who === 'Big C' && l.undo) {
+    if (l.undo.dmg != null) { S.dmg = Math.max(0, S.dmg - l.undo.dmg); S.temp += l.undo.temp || 0; }
     if (l.undo.heal != null) S.dmg = Math.min(S.max, S.dmg + l.undo.heal);
     if (l.undo.tempWas != null) S.temp = l.undo.tempWas;
   }
@@ -2430,9 +2411,10 @@ document.addEventListener('click', ev => {
   if (t.hasAttribute('data-close')) return closeWin();
   if (t.dataset.more) { menuFor = menuFor === +t.dataset.more ? null : +t.dataset.more; return renderLog(); }
   if (t.dataset.undo) { ev.preventDefault(); return undo(t.dataset.undo); }
-  if (t.dataset.filter) { filter = t.dataset.filter; document.querySelectorAll('[data-filter]').forEach(b => b.setAttribute('aria-pressed', b === t)); return renderLog(); }
-  if (t.dataset.name) { $('f-third').textContent = t.textContent; document.querySelectorAll('[data-name]').forEach(b => b.classList.toggle('on', b === t)); return; }
   if (t.dataset.viewer) { viewer = t.dataset.viewer; menuFor = null; document.querySelectorAll('[data-viewer]').forEach(b => b.classList.toggle('on', b === t)); return renderLog(); }
+  if (t.dataset.mark) { const k = t.dataset.mark, on = t.classList.contains('on'); S[k] = Math.max(0, Math.min(3, S[k] + (on ? -1 : 1))); return render(); }
+  if (t.hasAttribute('data-endconc')) { S.conc = false; $('conc').checked = false; $('conc-prompt').hidden = true; addLine({ who: 'Big C', what: 'ended concentration: Bless', sub: '' }, me(), concCard); return render(); }
+  if (t.hasAttribute('data-dismiss')) { $('conc-prompt').hidden = true; return; }
   if (t.dataset.applyto) {
     const r = log.find(x => x.id === +t.dataset.applyto), m = document.querySelector(`[data-menu="${r.id}"]`); m.hidden = !m.hidden;
     m.innerHTML = Object.keys(PEOPLE).filter(k => k !== 'DM' && !r.done.includes(k)).map(k => `<button type="button" class="btn small" data-target="${k}" data-roll="${r.id}">${k}</button>`).join('')
@@ -2441,23 +2423,14 @@ document.addEventListener('click', ev => {
   if (t.dataset.target) {
     const r = log.find(x => x.id === +t.dataset.roll), who = t.dataset.target, half = $('half-' + r.id)?.checked;
     const n = half ? Math.floor(r.dmg.n / 2) : r.dmg.n; r.done.push(who);  // a save for half, the way the DM calls it
-    if (who === 'Ilsa') { renderLog(); return openWin('damage', n, r.dmg.type, r.dmg.from + (half ? ', saved: half' : ''), r.id); }
-    const was = who === 'Rowan' ? 26 : 38;
-    addLine({ who, what: `took ${n} ${r.dmg.type.toLowerCase()}`, sub: half ? 'saved: half' : '', was, now: Math.max(0, was - n) }, me(), r.id);
+    if (who === 'Big C') { renderLog(); return openWin('damage', n, r.dmg.type, r.dmg.from + (half ? ', saved: half' : ''), r.id); }
+    const was = HP[who]; HP[who] = Math.max(0, was - n);
+    addLine({ who, what: `took ${n} ${r.dmg.type.toLowerCase()}`, sub: half ? 'saved: half' : '', was, now: HP[who] }, me(), r.id);
     return render();
   }
-  if (t.dataset.concroll) {
-    const dc = +t.dataset.concroll, d = 1 + Math.floor(Math.random() * 20), tot = d + 2, ok = tot >= dc;
-    addLine({ who: 'Ilsa', roll: true, what: `Con save ${tot} vs DC ${dc}`, sub: ok ? 'Concentration on Bless holds' : 'Concentration on Bless ends', dice: `d20 ${d} +2` }, 'Sam', concCard);
-    if (!ok) { S.conc = false; $('conc').checked = false; }
-    $('conc-prompt').hidden = true; render(); toast(ok ? `Con save ${tot}: Bless holds.` : `Con save ${tot}: Bless ends.`); return;
-  }
-  if (t.hasAttribute('data-deathsave')) {
-    const d = 1 + Math.floor(Math.random() * 20);
-    if (d === 20) { S.dmg = S.max - 1; S.ok = S.bad = 0; } else if (d === 1) S.bad = Math.min(3, S.bad + 2); else if (d >= 10) S.ok++; else S.bad++;
-    if (S.bad >= 3) S.dead = true;
-    if (S.ok >= 3) { S.ok = S.bad = 0; toast('Three successes: Ilsa is stable (still at 0 HP).'); }
-    addCard({ kind: 'roll', who: 'Ilsa', what: 'Death save', sub: d === 20 ? 'natural 20: back up with 1 HP' : d === 1 ? 'natural 1: two failures' : d >= 10 ? 'success' : 'failure', dice: `d20 ${d}`, total: d });
+  if (t.dataset.concroll) {  // the usual roll, shown with the DC; whether concentration holds is read by the table
+    const dc = +t.dataset.concroll, d = 1 + Math.floor(Math.random() * 20), tot = d + CON;
+    addLine({ who: 'Big C', roll: true, what: `Con save ${tot} (DC ${dc})`, sub: 'Concentration on Bless', dice: `d20 ${d} +${CON}` }, "Big C's player", concCard);
     return render();
   }
   if (t.dataset.try) return tryIt(t.dataset.try);
@@ -2472,32 +2445,31 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'Enter' && !e.target.matches('button')) { e.preventDefault(); apply(false); }
 });
 $('conc').addEventListener('change', e => { S.conc = e.target.checked; $('conc-prompt').hidden = true; render(); });
-$('hr-temp').addEventListener('change', () => { if (!win.hidden) update(); });
 
 function tryIt(k) {
-  if (k === 'fireball') return openWin('damage', 28, 'Fire', 'Fireball (Goblin Shaman)');
-  if (k === 'arrow') return openWin('damage', 6, 'Piercing', "Goblin's shortbow");
-  if (k === 'heal') return openWin('heal', 9, '', 'Cure Wounds (Rowan)');
-  if (k === 'down') return openWin('damage', 60, 'Bludgeoning', "Ogre's greatclub");
-  if (k === 'temp') return openWin('temp', 28, '', '');
+  if (k === 'fireball') return openWin('damage', 28, 'Fire', 'Fireball (Enemy 1)');
+  if (k === 'arrow') return openWin('damage', 6, 'Piercing', "Enemy 2's shortbow");
+  if (k === 'heal') return openWin('heal', 9, '', 'Cure Wounds (Cole)');
+  if (k === 'temp') return openWin('temp', 15, '', 'Armor of Agathys, 3rd level');
+  if (k === 'down') return openWin('damage', 80, 'Bludgeoning', "Enemy 4's greatclub");
   if (k === 'levelup') {
-    if (S.lvl === 6) return;
-    const was = cur(); S.lvl = 6; S.max = 53;
-    addCard({ kind: 'ddb', who: 'Ilsa', by: 'D&D Beyond', lines: [{ id: nextId++, who: 'Ilsa', ddb: true, what: 'Level 5 → 6', sub: 'max HP 44 → 53 · new: Aura of Protection', was, now: cur() }] });
+    if (S.lvl === 7) return;
+    const was = cur(); S.lvl = 7; S.max = 81;
+    addCard({ kind: 'ddb', who: 'Big C', by: 'D&D Beyond', lines: [{ id: nextId++, who: 'Big C', ddb: true, what: 'Level 8 → 9', sub: 'Paladin 7 · max HP 72 → 81 · new: Aura of Conquest', was, now: cur() }] });
     const c = $('ddb-card'); c.hidden = false;
-    c.innerHTML = `<h3>D&amp;D Beyond changed Ilsa's sheet</h3>
-      <ul><li><b>Level 5 → 6</b> (Paladin)</li><li><b>Max HP 44 → 53</b>, so HP ${was} → ${cur()} (the damage she'd taken stays the same)</li><li>New feature: <b>Aura of Protection</b></li><li>Spell slots: no change</li></ul>
+    c.innerHTML = `<h3>D&amp;D Beyond changed Big C's sheet</h3>
+      <ul><li><b>Level 8 → 9</b> (Paladin 6 → 7)</li><li><b>Max HP 72 → 81</b>, so HP ${was} → ${cur()} (the damage he'd taken stays the same)</li><li>New feature: <b>Aura of Conquest</b></li><li>Spell slots: no change</li></ul>
       <p class="kept">Kept from play: HP lost (${S.dmg}), temporary HP (${S.temp}), slots spent, concentration${S.conc ? ' (Bless)' : ''}. askdnd keeps these now: the HP box on D&amp;D Beyond won't change them.</p>
       <div class="row"><button class="btn small" type="button" data-gotit>Got it</button><span class="note">The play log keeps this list.</span></div>`;
     S.version++; return render();
   }
   if (k === 'race') {
-    openWin('damage', 14, 'Slashing', "Bugbear's morningstar");
+    openWin('damage', 14, 'Slashing', "Enemy 3's longsword");
     setTimeout(() => {
       if (win.hidden) return;
       const was = cur(); S.dmg = Math.min(S.max, S.dmg + 8); S.version++;
-      addLine({ who: 'Ilsa', what: 'took 8 bludgeoning', sub: "Ogre's greatclub", was, now: cur(), undo: { dmg: 8, temp: 0 } }, 'Mary');
-      render(); toast('Mary (the DM) just applied 8 to Ilsa on her screen. Now press Apply.');
+      addLine({ who: 'Big C', what: 'took 8 bludgeoning', sub: "Enemy 4's greatclub", was, now: cur(), undo: { dmg: 8, temp: 0 } }, 'DM');
+      render(); toast('The DM just applied 8 to Big C on their screen. Now press Apply.');
     }, 1200);
   }
 }
@@ -2507,7 +2479,7 @@ const FIXES = [
   ['Damage math out loud: "28 fire, I\'m resistant, so 14, minus my 5 temp…"', 'D&D Beyond\'s sheet takes a number, not a typed hit', '1.1 Hit points', 'Phase 1'],
   ['Nobody knows who changed what, and a mis-click means fixing three numbers by hand', 'D&D Beyond and Roll20: changes are silent, no undo', '0.4 Play log (the DM can undo)', 'Phase 1'],
   ['The DM asks "how\'s everyone\'s HP?" every round', 'Each sheet is in its own tab', '1.8 Party at a glance', 'Phase 1'],
-  ['Concentration forgotten after taking damage', 'Nothing prompts the save', '1.1 + 1.2 (the save, with its DC)', 'Phase 1'],
+  ['Concentration forgotten after taking damage', 'Nothing prompts the save', '1.1: a reminder with the DC', 'Phase 1'],
   ['Two places for one number: D&D Beyond and askdnd, out of step', 'askdnd reads D&D Beyond every 2–3 minutes', 'Play state askdnd owns', 'Phase 1'],
   ['A level-up muddles current HP and slots', 'Re-importing a sheet resets play', '1.7 D&D Beyond merge', 'Phase 1'],
   ['Rests: resetting every resource by hand, forgetting some', 'Per-resource checkboxes', '1.4 Rests', 'Phase 1'],

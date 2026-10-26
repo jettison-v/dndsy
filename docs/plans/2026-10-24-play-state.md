@@ -59,8 +59,9 @@ changed (before → after), and why in words ("Fireball from the Goblin Shaman, 
 Legacy)"). A damage entry from a table roll links to that roll.
 
 - **Where it shows:** in the **Table rolls** sidebar, interleaved with the rolls: one feed of what happened at the
-  table, not another place to look (Brett). Filters: All · Rolls · a third for changes to characters, its name
-  Brett's pick from the mockup (Characters suggested; Brett found "Changes" didn't sound right).
+  table, not another place to look (Brett). **No filters for now**: cards already keep a roll with what it did, and
+  "who's hurt" is better answered by 1.8 Party at a glance. Filters come back if playtests show the feed is hard to
+  scan.
 - **Cards group, lines stay separate** (Brett: group more, keep undo granular). A card is one thing that happened:
   a roll and everything it did (each **Apply to…** target is a line in the roll's card), a hit and its Con save, or a
   run of changes to one character by one person. Each line is one log entry with before → after and why.
@@ -101,14 +102,14 @@ On each refresh, askdnd compares the build (left column above) with the last cop
   askdnd applies the 2024 rules in order and shows its working before you confirm:
   1. Resistance halves (rounded down), vulnerability doubles, immunity makes it 0, with the reason from the sheet.
   2. Temporary HP absorbs first; the rest comes off HP.
-  - **Gaining temporary HP:** by the 2024 rules they don't add up; you keep the ones you have or take the new ones
-    (askdnd picks the higher; the player can choose). Brett's table adds them up (28 + 28 = 56), so that's a house
-    rule, **"Temporary HP add up"**, a switch on Manage › House rules (1.10), on for his campaign; the HP window then
-    says "House rule" in its working, like the roll window does.
-  3. At 0 HP: Unconscious and death saves; damage at 0 is a failed death save (a critical hit, two); damage that
-     leaves you at 0 with at least your max HP left over is death (massive damage). Any healing from 0 clears the
-     death saves.
-  4. Concentrating: "Make a Constitution save, DC 10" (or half the damage, up to 30) with a Roll button.
+  - **Gaining temporary HP:** by the 2024 rules (and on D&D Beyond) they don't add up; you keep the ones you have or
+    take the new ones. askdnd picks the higher and the player can choose (Brett: rules as written, no house rule).
+  3. What follows is a **reminder**, not done for the table (Brett: don't over-automate): at 0 HP, Unconscious and
+     death saves (the player rolls as usual and marks them; damage at 0 is a failed death save, a critical hit two);
+     massive damage (at least the max HP left over) is pointed out for the DM to rule. Healing from 0 clears the marks.
+  4. Concentrating: a reminder, "Constitution save, DC 10" (or half the damage, up to 30), with the usual roll
+     button and End concentration. Nothing ends concentration on its own, not even a failed save or 0 HP; the
+     player or the DM does. An automatic check waits for playtest feedback.
 - **From a roll:** a damage result in Table rolls gets **Apply to…** (any character in the campaign), carrying the
   type and amount, with **Saved: half** for a save-for-half spell like Fireball. Phase 2 does this automatically
   against targets; Phase 1 is one click by a person (Brett).
@@ -137,8 +138,11 @@ On each refresh, askdnd compares the build (left column above) with the last cop
 3. Undo is the DM's only for now, one line at a time, out of the way; players don't see it.
 4. "Apply to…" on a damage roll in Phase 1.
 5. Cards group more (a roll with what it did, a run of changes); undo stays per line.
-6. "Changes" is renamed: the third filter's name is Brett's pick in the mockup.
-7. Temporary HP add up at Brett's table: a house rule switch, since the 2024 rules say they don't.
+6. No filters on the play log for now (they'd only split rolls from changes, which cards already keep together).
+7. Temporary HP follow the 2024 rules (no stacking), as on D&D Beyond; no house rule.
+8. Don't over-automate: checks and rulings are reminders (the Concentration save and its DC, death saves); people
+   roll and decide. Automation follows real playtest feedback.
+9. Mockups use the table's own characters (Big C, Cole, Trah, No Name) and "Enemy 1", "NPC 1" for everyone else.
 
 ## Built in buckets
 
@@ -148,11 +152,11 @@ Try it yourself) before the next starts. The table sees none of it until the pie
 | # | Bucket | What it adds | Size |
 |---|---|---|---|
 | 1 | Play state underneath | `play_state` and `play_log`, `app/play.py` (`apply()` with the version check), starting from D&D Beyond's numbers; Battle, Sheet and Party read HP from it. Nothing new to click. | S |
-| 2 | The HP window | Damage · Heal · Temporary HP on Battle, with the 2024 rules as one tested function (resistance, temporary HP, 0 HP), the "Temporary HP add up" house rule, live on every screen | M |
-| 3 | The play log | Cards and lines in Table rolls, All · Rolls · (third filter) | S |
+| 2 | The HP window | Damage · Heal · Temporary HP on Battle, with the 2024 rules as one tested function (resistance, temporary HP, 0 HP), live on every screen | M |
+| 3 | The play log | Cards and lines in Table rolls, one feed | S |
 | 4 | Apply to… | From a damage roll to any character, with Saved: half | S |
 | 5 | The DM's undo | ⋯ on a line, the reverse of what was lost | S |
-| 6 | Concentration and death saves | The Con save prompt with its DC, death saves at 0, massive damage; concentration moves into play state | M |
+| 6 | Concentration and death save reminders | The Concentration reminder with its DC and End concentration, death save marks at 0, the massive damage note; concentration moves into play state | S |
 | 7 | D&D Beyond merge (1.7) | Build changes in, play kept, the "what changed" card | M |
 
 Then 1.2 (slots) builds on the same play state and log.

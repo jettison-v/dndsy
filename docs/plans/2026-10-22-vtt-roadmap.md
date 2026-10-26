@@ -52,6 +52,11 @@ One place instead of five tabs · automation the DM can overrule (the DM makes e
 silently (play log with undo) · no setup tax · the story remembers itself (play feeds recaps) · inform, don't
 advise · built to scale, kept clean.
 
+**Don't over-automate** (Brett, 2026-10-26). askdnd does the bookkeeping (numbers, what's left, what changed) and
+**reminds** the table of the checks and rulings that follow, with what's needed (a Concentration save and its DC,
+death saves at 0 HP); people roll and decide. A reminder becomes automatic only after playtests on beta show the
+table wants it. The DM controls the game.
+
 ## How the VTT is built (the shared foundations; added 2026-10-24)
 
 Each phase leans on the same few foundations. They're built once, in Phase 0, and every later item uses them rather
