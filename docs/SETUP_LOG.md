@@ -775,3 +775,22 @@ so askdnd now has proper file storage.
 4. A database backup doesn't cover files. Decide how files are protected: here, nothing is deleted until every kept
    backup is past needing it, and the backup job checks the files are there.
 5. Give the website only the permissions it needs (no delete), and let one scheduled job do the cleanup.
+
+## 2026-10-26: A map of the stack
+
+askdnd now has one picture of all its moving parts: `docs/stack.html` (also published as a private page). It shows
+how a change travels (Mac → GitHub → Railway), how the table reaches the site (Cloudflare), the five outside services
+the site calls, and, by color, who can change each piece: Claude from the terminal, Brett in a dashboard, or both.
+
+- **Claude's reach is the command-line tools signed in on this Mac** (`gh`, `railway`), not the dashboards. AWS,
+  Google Cloud, Cloudflare, Anthropic and Sentry stay Brett's; that's deliberate, since whoever holds the master
+  login can make any key, and keeping that with a person keeps every app key narrow.
+- **Connections (MCP servers)** let Claude use a service directly. Worth adding only where the CLI falls short: Sentry
+  (read and resolve errors without screenshots), which Brett connected the same day, signing in with his Sentry
+  account so no key was pasted anywhere. Railway and GitHub are already covered by their CLIs.
+
+**For a new project:**
+1. Draw the stack early and keep it in the repo: every service, the arrows between them, and who holds each login.
+2. List every secret's name, which service uses it, and where it's made, never its value.
+3. Give an assistant the narrowest access that does the job: CLIs or connections for daily work, account-level
+   dashboards (billing, IAM, DNS) kept with a person.
