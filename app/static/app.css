@@ -70,9 +70,13 @@ img { max-width: 100%; }
 .nav-sep { width: 1px; height: 24px; background: var(--line); flex: none; }
 .campaign-name { font-weight: 600; font-size: var(--fs-md); color: var(--text-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
 .campaign-switch { position: relative; min-width: 0; }
-.campaign-switch > button { background: none; border: none; padding: 6px 8px; border-radius: var(--r-sm); display: block; }
+.campaign-switch > button { background: none; border: none; padding: 6px 8px; border-radius: var(--r-sm); display: block; max-width: 100%; }
 .campaign-switch > button:hover { background: var(--surface); }
 .campaign-switch .menu { left: 0; right: auto; }
+/* When the bar runs short, nothing wraps onto two lines: the Live pill shortens first (below), then the campaign's
+   name gives up room (it's the one item that shrinks, with "…") */
+.nav a, .char-btn, .bar-end > * { white-space: nowrap; flex-shrink: 0; }
+.nav, .table-nav, .bar-end { flex-shrink: 0; }
 .table-nav { display: flex; gap: 6px; align-items: center; }
 .char-btn { display: inline-flex; align-items: center; gap: 8px; min-height: var(--control-h); padding: 4px 12px; background: none; border: 1px solid var(--line); border-radius: var(--r-sm); color: var(--text); text-decoration: none; font-weight: 500; font-size: var(--fs-md); white-space: nowrap; }
 a.char-btn { padding-left: 5px; max-width: 200px; }
@@ -91,7 +95,7 @@ a.char-btn > span:last-child { overflow: hidden; text-overflow: ellipsis; }
 .menu .menu-note { margin: 0; padding: 8px 10px; color: var(--muted); font-size: var(--fs-sm); }
 .bar-end { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .manage { position: relative; }
-.manage > button { background: var(--surface); border: 1px solid var(--line); color: var(--text); border-radius: var(--r-sm); padding: 6px 12px; font-weight: 500; font-size: var(--fs-md); }
+.manage > button { background: var(--surface); border: 1px solid var(--line); color: var(--text); border-radius: var(--r-sm); padding: 6px 12px; font-weight: 500; font-size: var(--fs-md); white-space: nowrap; }
 .manage > button.active { border-color: var(--red); }
 .menu { position: absolute; right: 0; top: 44px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 6px; width: 240px; box-shadow: 0 10px 30px var(--shadow); }
 .menu a { display: block; color: var(--text); text-decoration: none; padding: 8px 10px; border-radius: var(--r-sm); }
@@ -118,6 +122,7 @@ body.gm-on .live-word, body.gm-on .live-on { display: inline; }
 body.gm-on .live-off { display: none; }
 .live-pill.warn .live-dot { background: var(--amber); }
 .live-pill.htmx-request { opacity: .7; }
+@media (max-width: 1240px) { .live-ago { display: none; } .live-word { display: inline; } }  /* "● Live"; the popover says when */
 @keyframes gm-pulse { 0% { box-shadow: 0 0 0 0 var(--green-line); } 70% { box-shadow: 0 0 0 8px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
 .menu.live-menu { width: 360px; max-width: calc(100vw - 24px); padding: 0; }
 .live-menu:empty { display: none; }
