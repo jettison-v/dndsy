@@ -934,8 +934,8 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .combo-turns { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 10px; margin: 6px 0; }
 .combo-turn { background: var(--surface); border-radius: 10px; padding: 8px 12px; }
 .combo-turn-label { font-weight: 700; margin-bottom: 4px; }
-.combo-step { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 8px; padding: 3px 0; border-top: 1px solid var(--line); font-size: var(--fs-sm); }
-.combo-k { font-size: var(--fs-xs); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--k, var(--muted)); padding-top: 2px; }
+.combo-step { display: grid; grid-template-columns: 136px minmax(0, 1fr); gap: 8px; padding: 3px 0; border-top: 1px solid var(--line); font-size: var(--fs-sm); }
+.combo-k { white-space: nowrap; font-size: var(--fs-xs); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--k, var(--muted)); padding-top: 2px; }
 .combo-k::before { content: var(--k-glyph, ""); margin-right: 4px; }
 .combo-payoff, .combo-risks { margin: 6px 0 0; } .combo-payoff b, .combo-risks b { color: var(--muted); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .06em; margin-right: 6px; }
 .combo-fold { border-top: 1px solid var(--line); padding: 8px 0; } .combo-fold summary { cursor: pointer; }
@@ -2028,9 +2028,8 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
 .tour-card p { margin: 0; font-size: var(--fs-sm); }
 .tour-card .why { color: var(--muted); }
 .tour-card .why b { color: var(--text); }
-.tour-parts { display: inline-flex; gap: 4px; }
-.tour-parts i { width: 18px; height: 3px; border-radius: 2px; background: var(--line); }
-.tour-parts i.on { background: var(--amber); }
+.tour-progress { height: 3px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.tour-progress i { display: block; height: 100%; background: var(--amber); transition: width .2s ease; }
 .tour-foot { display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-1); }
 .tour-foot .count { margin-right: auto; color: var(--faint); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) {

@@ -1,5 +1,5 @@
 """The new-player tour in a real browser (app/tour.py, app.js "the tour"): started from the ? menu, it walks every
-stop across pages, lighting a target that's really there on each one, and Esc ends it. A page change that loses a
+stop across pages, lighting a target that's really there on each one, and Esc asks before ending it. A page change that loses a
 stop's target fails here, so the tour can't quietly break."""
 
 
@@ -37,6 +37,7 @@ def test_a_player_walks_every_stop_and_each_lights_something(people, server):
             assert page.locator(".tour-example").count() == 1, stop["title"]
         if stop["panel"]:
             assert page.locator(".peek.open").count() == 1, stop["title"]
+        assert page.locator(".tour-foot .count").inner_text() == f"{i + 1} of {len(stops)}"  # every stop, not groups
         page.keyboard.press("ArrowRight")
         if i + 1 < len(stops) and stops[i + 1]["url"] and stops[i + 1]["url"] != stop["url"]:
             page.wait_for_url(f"**{stops[i + 1]['url']}")
@@ -47,18 +48,25 @@ def test_a_player_walks_every_stop_and_each_lights_something(people, server):
     assert player.errors == []
 
 
-def test_show_me_starts_at_its_group_and_esc_ends_it(people, server):
+def test_show_me_starts_at_its_group_and_ending_asks_first(people, server):
     player = people("player")
     page = player.open("/help?tab=adds")
     page.click('[data-tour-start="plan"]')
     page.wait_for_url(f"**/characters/{server['cole']}/plan")
     page.wait_for_selector(".tour-card")
+    page.wait_for_selector(".peek.open")  # a combo's window (or a new one's), unsaved
     assert card_title(page) == "Battle combos" and lit(page)
     assert page.locator('[data-tab="t-combo"]').get_attribute("aria-selected") == "true"
     page.keyboard.press("ArrowRight")
-    assert card_title(page) == "Leveling strategy"
+    page.wait_for_function("() => document.querySelector('.tour-card h3')?.textContent === 'Leveling strategy'")
     assert page.locator('[data-tab="t-leveling"]').get_attribute("aria-selected") == "true"
+    assert page.locator(".peek.open").count() == 0
+    page.keyboard.press("Escape")  # asks; Esc again is Keep going
+    assert card_title(page) == "End the tour?"
     page.keyboard.press("Escape")
+    page.wait_for_function("() => document.querySelector('.tour-card h3')?.textContent === 'Leveling strategy'")
+    page.click(".tour-card [data-tour-end]")
+    page.click(".tour-card [data-tour-end-now]")
     assert page.locator(".tour-card").count() == 0
     page.reload()  # ended means ended: it doesn't come back with the page
     page.wait_for_load_state("networkidle")
@@ -74,6 +82,7 @@ def test_leaving_mid_wild_shape_puts_battle_back(people, server):
     page.wait_for_url(f"**/characters/{server['cole']}/battle")
     page.wait_for_selector("#battle-body .ws-form")
     page.keyboard.press("Escape")
+    page.keyboard.press("Enter")  # End tour
     page.wait_for_selector("#battle-body .ws-form", state="detached")
     player.open(f"/characters/{server['cole']}/battle")
     assert page.locator("#battle-body .ws-form").count() == 0
