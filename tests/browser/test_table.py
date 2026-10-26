@@ -122,3 +122,17 @@ def test_a_pages_javascript_error_is_sent_home(people, server):
     assert got and all("/static/app.js" in g["source"] and g["page"] == "/c/main/" and g["message"] for g in got)
     assert len({(g["message"], g["line"]) for g in got}) == len(got)  # each distinct error once
     assert player.errors  # (the error itself, expected here)
+
+
+def test_the_menu_bars_menus_fit_their_text(people, server):
+    """Each menu from the menu bar wraps its text inside its box (a "keep the bar on one line" rule once leaked
+    into the Live popover, 2026-10-26)."""
+    admin = people("admin")
+    page = admin.open(f"/characters/{server['cole']}/battle")
+    page.click("#live-pill")
+    page.wait_for_selector("#live-menu .live-pop")
+    for menu in ("live-menu", "manage-menu", "help-menu", "account-menu"):
+        spill = page.evaluate(f"""() => {{ const m = document.getElementById('{menu}'), was = m.hidden; m.hidden = false;
+          const s = m.scrollWidth - m.clientWidth; m.hidden = was; return s; }}""")
+        assert spill <= 1, f"{menu} is {spill}px wider than its box"
+    assert admin.errors == []
