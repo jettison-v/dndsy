@@ -130,15 +130,18 @@ def _known_forms(sheet: dict | None) -> list[dict]:
     return out
 
 
-def _battle_ctx(db: Session, ch: Character, user: dict) -> dict:
-    """Battle mode's body (also swapped in by Game Mode and the Wild Shape switch)."""
+def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None) -> dict:
+    """Battle mode's body (also swapped in by Game Mode and the Wild Shape switch). `shape` shows it in that form
+    instead of the character's own (the tour's preview: nothing is saved)."""
     ctx = _view(db, ch, user)
     ctx["form"] = None
+    ctx["previewing"] = shape is not None
+    wild = shape if shape is not None else ch.wild_shape
     if ctx["sheet"]:
         ctx["columns"] = views.battle_columns(ctx["sheet"], ctx["picks"]["star"], ctx["picks"]["order"], pinned_only=ctx["show_picks"])
         ctx["riders"] = class_rules.turn(ctx["sheet"])["riders"]
         ctx["known_forms"] = _known_forms(ctx["sheet"]) if ctx["druid"] else []
-        beast = ws.beast_for(ctx["sheet"], ch.wild_shape) if ch.wild_shape and ctx["druid"] else None
+        beast = ws.beast_for(ctx["sheet"], wild) if wild and ctx["druid"] else None
         if beast:
             ctx["form"] = ws.shaped(ctx["sheet"], beast, keep=ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep))
             ctx["columns"] = ctx["form"]["columns"]
@@ -485,6 +488,19 @@ def set_wild_shape(request: Request, character_id: int, form: str = Form(""), db
         resp.headers["HX-Trigger"] = json.dumps({"toast": f"Wild Shape: {ch.wild_shape}" if ch.wild_shape else "Back to normal form"})
         return resp
     return RedirectResponse(f"/characters/{ch.id}/battle", status_code=303)
+
+
+@router.get("/characters/{character_id:int}/battle/preview")
+def battle_preview(request: Request, character_id: int, form: str = "", db: Session = Depends(get_db)):
+    """Battle's body as if in a Wild Shape form (one the druid knows), or in the character's own state with no
+    form given: for the tour, which shows a transformation and then puts the real one back. Nothing is saved or
+    announced (app/tour.py)."""
+    user, ch, stop = _load(request, db, character_id)
+    if stop:
+        return stop
+    if form and form.lower() not in {f["name"].lower() for f in _known_forms(chars.character_summary(ch))}:
+        return HTMLResponse("", status_code=400)
+    return templates.TemplateResponse(request, "_battle_body.html", _battle_ctx(db, ch, user, shape=form or None))
 
 
 @router.get("/characters/{character_id:int}/spellbook")
