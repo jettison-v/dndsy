@@ -18,24 +18,33 @@
       <button role="tab" aria-selected="true" data-tab="t-pool-spells">Party spells <span class="count">{{ n_spells }}</span></button>
       <button role="tab" aria-selected="false" data-tab="t-pool-items">Party items <span class="count">{{ n_items }}</span></button>
     </div>
-    {% macro pool(id, groups, empty, hint) %}
-    <div id="{{ id }}"{% if id != "t-pool-spells" %} hidden{% endif %}>
+    {# Filters as in Battle's side panel (app.js optFilter): search, and chips that show only those groups (Brett,
+       2026-10-26: they used to jump down the page, unlike every other filter) #}
+    {% macro pool(id, groups, empty, hint, noun) %}
+    <div id="{{ id }}" data-opt-panel{% if id != "t-pool-spells" %} hidden{% endif %}>
       {% if groups %}
       <p class="hint" style="margin:0 0 6px">{{ hint }}</p>
-      <nav class="jump" aria-label="Sections">{% for title, list in groups %}<a href="#{{ id }}-{{ loop.index }}" data-no-peek>{{ title }} <span class="count">{{ list | length }}</span></a>{% endfor %}</nav>
+      <div class="pool-tools">
+        <div class="ls-search"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <input type="search" data-opt-search placeholder="Search {{ noun }}" aria-label="Search {{ noun }}" autocomplete="off"></div>
+        <div class="ls-chips" role="group" aria-label="Show only">{% for title, list in groups %}<button type="button" class="ls-chip" data-opt-kind="g{{ loop.index }}" aria-pressed="false">{{ title }} <span class="ls-n">{{ list | length }}</span></button>{% endfor %}</div>
+      </div>
       {% for title, list in groups %}
-      <h3 class="divider" id="{{ id }}-{{ loop.index }}">{{ title }} <span class="count">{{ list | length }}</span></h3>
-      <div class="pool-grid">{% for x in list %}{{ caller(x) }}{% endfor %}</div>
+      <div class="opt-group" data-kind="g{{ loop.index }}">
+        <h3 class="divider">{{ title }} <span class="count">{{ list | length }}</span></h3>
+        <div class="pool-grid">{% for x in list %}{{ caller(x) }}{% endfor %}</div>
+      </div>
       {% endfor %}
+      <p class="muted" data-opt-none hidden>Nothing matches.</p>
       {% else %}<p class="muted">{{ empty }}</p>{% endif %}
     </div>
     {% endmacro %}
-    {% call(sp) pool("t-pool-spells", spells, "No spells yet.", "Spells the party has prepared or knows right now, grouped by what they do. Click one for details, or a name to see that character's.") %}
-      <div class="poolrow" data-panel-url="{{ sp.url }}" tabindex="0" role="button"><span><b>{{ sp.name }}</b> <span class="meta">{{ "cantrip" if not sp.level else sp.level | ordinal }} · {{ sp.casting_time | lower }}{% if sp.concentration %} · Conc.{% endif %}{% if sp.healing %} · heals {{ sp.healing }}{% elif sp.damage %} · {{ sp.damage }}{% endif %}</span></span>
+    {% call(sp) pool("t-pool-spells", spells, "No spells yet.", "Spells the party has prepared or knows right now, grouped by what they do. Click one for details, or a name to see that character's.", "party spells") %}
+      <div class="poolrow" data-opt-row data-panel-url="{{ sp.url }}" tabindex="0" role="button"><span><b>{{ sp.name }}</b> <span class="meta">{{ "cantrip" if not sp.level else sp.level | ordinal }} · {{ sp.casting_time | lower }}{% if sp.concentration %} · Conc.{% endif %}{% if sp.healing %} · heals {{ sp.healing }}{% elif sp.damage %} · {{ sp.damage }}{% endif %}</span></span>
         <span class="chips">{% for w in sp.who %}<span class="chip" data-panel-url="{{ w.url }}" tabindex="0" role="button" title="Open {{ w.label }}'s">{{ w.label }}</span>{% endfor %}</span></div>
     {% endcall %}
-    {% call(it) pool("t-pool-items", items, "No magic items yet.", "Magic items and consumables across the party" ~ (", and about " ~ "{:,}".format(coins) ~ " gp in coins" if coins else "") ~ ". Click one for details, or a name to see that character's copy.") %}
-      <div class="poolrow" data-panel-url="{{ it.url }}" tabindex="0" role="button"><span><b>{{ it.name }}</b>{% if it.summary %} <span class="meta">{{ it.summary[:110] }}{{ "…" if it.summary | length > 110 }}</span>{% endif %}</span>
+    {% call(it) pool("t-pool-items", items, "No magic items yet.", "Magic items and consumables across the party" ~ (", and about " ~ "{:,}".format(coins) ~ " gp in coins" if coins else "") ~ ". Click one for details, or a name to see that character's copy.", "party items") %}
+      <div class="poolrow" data-opt-row data-panel-url="{{ it.url }}" tabindex="0" role="button"><span><b>{{ it.name }}</b>{% if it.summary %} <span class="meta">{{ it.summary[:110] }}{{ "…" if it.summary | length > 110 }}</span>{% endif %}</span>
         <span class="chips">{% for w in it.who %}<span class="chip" data-panel-url="{{ w.url }}" tabindex="0" role="button" title="Open {{ w.label }}'s">{{ w.label }}</span>{% endfor %}</span></div>
     {% endcall %}
   </section>

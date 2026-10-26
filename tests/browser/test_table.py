@@ -136,3 +136,21 @@ def test_the_menu_bars_menus_fit_their_text(people, server):
           const s = m.scrollWidth - m.clientWidth; m.hidden = was; return s; }}""")
         assert spill <= 1, f"{menu} is {spill}px wider than its box"
     assert admin.errors == []
+
+
+def test_party_filters_work_like_the_rest(people, server):
+    """Party's pooled spells: a chip shows only its group, a second chip adds one, search looks at names (as in
+    Battle's side panel), and nothing matching says so."""
+    page = people("player").open("/party")
+    pool = page.locator("#t-pool-spells")
+    groups = pool.locator(".opt-group")
+    total = groups.count()
+    assert total > 1
+    pool.locator("[data-opt-kind=g1]").click()
+    assert pool.locator(".opt-group:visible").count() == 1
+    pool.locator("[data-opt-kind=g1]").click()
+    assert pool.locator(".opt-group:visible").count() == total
+    pool.locator("[data-opt-search]").fill("zzzz")
+    assert pool.locator("[data-opt-none]").is_visible()
+    pool.locator("[data-opt-search]").fill("")
+    assert pool.locator(".opt-group:visible").count() == total

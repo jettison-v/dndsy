@@ -753,18 +753,15 @@ table.calc tr.total td { border-bottom: none; border-top: 2px solid var(--line-s
 /* Party: resources as dots; spells and items in tabs with jump links */
 .res-cell { min-width: 280px; }
 .nowrap { white-space: nowrap; }  /* a phrase that reads wrong split ("Warlock 2", "Int +7 Adv"); the line breaks between them */
-/* Party at a glance: each resource after a divider; the list starts just left of its box, cut off there, so the
-   item that begins each line hides its divider (no "| Luck Points" indent when a row wraps) */
-.res-list { list-style: none; margin: 0 0 0 -13px; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 0; align-items: center; overflow: hidden; }
+/* Party at a glance: each resource after a divider. The list starts 13px left of where it shows and its own first
+   13px are clipped away, so the item that begins each line hides its divider (no "| Luck Points" when a row wraps) */
+.res-list { list-style: none; margin: 0 0 0 -13px; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 0; align-items: center; clip-path: inset(0 0 0 13px); }
 .res-list .res-item, .res-list .res-label { white-space: nowrap; padding: 0 12px; border-left: 1px solid var(--line); font-size: var(--fs-sm); }
 .res-list .res-label { margin-right: 0; border-left-color: transparent; }
 .res-list .res-label + .res-item { border-left-color: transparent; }
 .res-list.slots { margin-top: 4px; }
 .pool-tabs .poolrow b { font-weight: 600; }
-.jump { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; }
-.jump a { font-size: var(--fs-sm); color: var(--muted); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 2px 10px; text-decoration: none; }
-.jump a:hover { color: var(--text); border-color: var(--line-strong); }
-.jump .count { color: var(--faint); font-size: var(--fs-xs); }
+.pool-tools { display: grid; gap: var(--sp-2); margin: 0 0 var(--sp-2); }  /* Party's search and show-only chips (as in Battle's side panel) */
 .pool-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; }
 @media (max-width: 900px) { .pool-grid { grid-template-columns: 1fr; } }
 /* Character quick view (Party › name) */
