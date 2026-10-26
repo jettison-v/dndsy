@@ -585,7 +585,8 @@
     const open = c.classList.toggle('open'); c.setAttribute('aria-expanded', open ? 'true' : 'false'); c.title = open ? 'Show less' : 'Show all';
   });
   // Battle's "See all" / "+ Add" panels: chips show one kind (attacks, features, spells…), search looks at names
-  // and descriptions; groups with nothing left hide (Brett, 2026-10-22)
+  // and descriptions; groups with nothing left hide (Brett, 2026-10-22); Party's pooled spells and items use the same (rows marked
+  // data-opt-row, 2026-10-26)
   function optFilter(panel) {
     const on = [...panel.querySelectorAll('[data-opt-kind][aria-pressed=true]')].map(b => b.dataset.optKind);
     const q = ((panel.querySelector('[data-opt-search]') || {}).value || '').toLowerCase().trim();
@@ -593,7 +594,7 @@
     panel.querySelectorAll('.opt-group').forEach(g => {
       const kindOk = !on.length || on.includes(g.dataset.kind);
       let shown = 0;
-      g.querySelectorAll('.ri').forEach(r => { const ok = kindOk && (!q || r.textContent.toLowerCase().includes(q)); r.hidden = !ok; if (ok) shown++; });
+      g.querySelectorAll('.ri, [data-opt-row]').forEach(r => { const ok = kindOk && (!q || r.textContent.toLowerCase().includes(q)); r.hidden = !ok; if (ok) shown++; });
       g.hidden = !shown; any = any || shown > 0;
     });
     const none = panel.querySelector('[data-opt-none]'); if (none) none.hidden = any;
@@ -2534,7 +2535,7 @@
       } else lit.scrollIntoView({ block: 'center' });
     }
     requestAnimationFrame(() => { if (!card) return; place(); card.querySelector('[data-tour-go="1"]').focus({ preventScroll: true }); });  // (ended meanwhile)
-    setTimeout(place, 400);  // and again once anything still settling (a panel, a tab's content) has
+    follow();
   }
 
   document.addEventListener('click', e => {
@@ -2554,7 +2555,21 @@
     e.preventDefault();
   });
   addEventListener('resize', place);
-  document.addEventListener('transitionend', () => { if (tour && card) place(); });  // a panel finished sliding in
+  // Keep the light and the card on their target while anything on the page still moves or loads (a panel sliding in,
+  // the Table rolls rail settling, a scrollbar coming or going, a picture loading), not only on scroll and resize:
+  // every frame, re-place if the target moved. One rect read per frame, only while the tour is open.
+  let following = false, was = '';
+  function follow() {
+    if (following) return;
+    following = true;
+    const tick = () => {
+      if (!tour || !card) { following = false; was = ''; return; }
+      const r = rect(), now = r ? [r.left, r.top, r.width, r.height].map(Math.round).join() : '';
+      if (now !== was) { was = now; place(); }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
   addEventListener('scroll', place, { passive: true });
   try { tour = JSON.parse(sessionStorage.getItem(KEY)); } catch (e) { tour = null; }
   if (tour && tour.stops && tour.stops[tour.i]) {

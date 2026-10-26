@@ -19,8 +19,9 @@ SECTIONS = [
                                             "the DM. Suggest a correction sends a fix to the DM."),
     ]),
     ("On your turn", [
-        ("battle", "Battle", "Your plan for a fight by Action, Bonus action and Reaction: only what you chose to put there. + Add and "
-                             "the pin put things on it; open one for Pin, Shortlist, Remind me and your note."),
+        ("battle", "Battle", "Your plan for a fight by Action, Bonus action and Reaction: what you chose to put there, with See all "
+                             "for everything else. + Add and the pin put things on it; open one for Pin, Shortlist, Remind me and "
+                             "your note."),
         (None, "Spell Book", "Your prepared spells with filters, and the average damage or healing at each slot level. Averages "
                              "inform; they never recommend."),
         (None, "Wild Shape", "You as the beast: your numbers and actions worked out for the form, its full page, and Normal to "
@@ -63,11 +64,12 @@ STOPS = [
             "sends it to the DM."},
     {"group": "battle", "title": "Battle: your turn on one screen", "page": "battle", "needs": "character",
      "at": '[data-tour="battle"]',
-     "what": "Action, Bonus action and Reaction, showing only what you chose to put here.",
+     "what": "Action, Bonus action and Reaction, showing what you chose to put here. Need something else mid-fight? "
+             "<b>See all</b> at the bottom of a column lists everything you can do.",
      "why": "D&D Beyond lists everything you have. Battle is your plan for a fight, so your turn fits on one screen."},
     {"group": "battle", "title": "+ Add", "page": "battle", "needs": "character", "panel": True,
      "open": [ADD], "at": ".peek.open",
-     "what": "<b>+ Add</b> on a column opens the side panel with everything you could put in it that isn't there yet.",
+     "what": "To put something on Battle, <b>+ Add</b> on its column opens the side panel with what isn't there yet.",
      "why": "Everything stays one click away; only what you pick takes up room on Battle."},
     {"group": "battle", "title": "The pin", "page": "battle", "needs": "character", "panel": True,
      "open": [ADD], "at": ".peek.open [data-opt-panel] .pick.star",

@@ -161,10 +161,10 @@ def test_party_page(player, db):
     import_bundle(db, BUNDLE)
     characters.refresh(db, char(db, "Cole"))
     page = player.get("/party").text
-    assert "Party at a glance" in page and "Druid 6 / Monk 2" in page and 'Wild Shape <span class="pips" aria-label="3 of 3 left">' in page
+    assert "Party at a glance" in page and '<span class="nowrap">Druid 6</span> / <span class="nowrap">Monk 2</span>' in page and 'Wild Shape <span class="pips" aria-label="3 of 3 left">' in page
     assert "Pass. Perc." not in page and '<span class="res-label">Slots</span><span class="res-item">1st' in page
     assert 'data-tab="t-pool-spells">Party spells' in page and 'data-tab="t-pool-items">Party items' in page
-    assert '<nav class="jump"' in page and 'id="t-pool-spells-1">Healing and recovery' in page
+    assert 'data-opt-kind="g1" aria-pressed="false">Healing and recovery' in page and "data-opt-search" in page  # show-only chips, search
     assert "Not linked to D&amp;D Beyond yet" in page  # Big C
     assert "Refresh all" not in page  # players can't refresh
     assert f'data-modal-url="/characters/{char(db, "Cole").id}/brief"' in page
