@@ -1505,7 +1505,11 @@
       built = sig;
       const physics = t ? { gravity_multiplier: t.gravity, baseScale: t.size, shadows: t.shadows, light_intensity: t.light, strength: t.strength } : {};
       ready = lib().then(DiceBox => { host.innerHTML = ''; box = new DiceBox('#' + host.id, { assetPath: LIB, theme_surface: 'green-felt', theme_colorset: 'white',
-        theme_material: 'glass', shadows: true, sounds: false, ...opts, ...physics }); return box.initialize(); });
+        theme_material: 'glass', shadows: true, sounds: false, ...opts, ...physics });
+        // The library draws at one pixel per screen point, so on a Retina screen (2 pixels per point) the dice were
+        // drawn at half resolution and stretched, looking soft (Brett, 2026-10-26). Draw at the screen's own
+        // resolution, up to 2x: sharper, without the cost of 3x phones or very large screens.
+        return box.initialize().then(() => { if (box.renderer) box.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); }); });
       return ready;
     }
     make(tune);
