@@ -24,7 +24,8 @@ def offenders() -> dict[str, list[str]]:
     sizes = [v.strip() for v in re.findall(r"font-size:\s*([^;}]+)", css)
              if not re.match(r"(var\(--fs-|inherit|calc\(var\(--fs-|[\d.]+em$)", v.strip())]  # em: relative to a token
     colors = re.findall(r"#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\([^)]*\)", css)
-    widths = [w for w in re.findall(r"\((?:max|min)-width:\s*(\d+)px\)", css) if int(w) not in SCREEN_WIDTHS]
+    # Screen widths in media queries; a list's own width in a container query is its columns' need, not a screen size
+    widths = [w for w in re.findall(r"@media[^{]*\((?:max|min)-width:\s*(\d+)px\)", css) if int(w) not in SCREEN_WIDTHS]
     return {"text sizes": sizes, "colors": colors, "screen widths": widths}
 
 
@@ -50,3 +51,14 @@ def test_manage_pages_use_the_components_not_one_off_spacing():
     found = {p.name: len(re.findall(r'\sstyle="', p.read_text())) for p in templates.glob("*.html")
              if "_manage_head.html" in p.read_text() and p.name != "design.html"}
     assert not {k: v for k, v in found.items() if v}, f"Inline styles on Manage pages: {found}"
+
+
+def test_every_table_scrolls_in_its_own_frame():
+    """A table can be wider than a phone; it scrolls inside .table-scroll, never the whole page (DESIGN.md › Narrow screens)."""
+    import re
+
+    templates = Path(__file__).parent.parent / "app" / "templates"
+    for f in templates.glob("*.html"):
+        for m in re.finditer(r"<table\b", f.read_text()):
+            before = f.read_text()[max(0, m.start() - 120):m.start()]
+            assert 'class="table-scroll' in before, f"{f.name}: a <table> outside <div class=\"table-scroll\">"

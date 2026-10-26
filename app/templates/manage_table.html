@@ -100,7 +100,7 @@
 
   <details class="fold section">
     <summary>What each role can do</summary>
-    <div class="access-chart-wrap"><table class="access-chart">
+    <div class="table-scroll access-chart-wrap"><table class="access-chart">
       <thead><tr><th></th>{% for l in chart.columns %}<th class="{{ 'dm-col' if loop.last }}">{{ l }}</th>{% endfor %}</tr></thead>
       <tbody>
       {% for group, rows in chart.groups %}

@@ -29,7 +29,7 @@
   {% if waiting %}<p class="flash" id="from-the-table">{{ waiting }} suggestion{{ "s" if waiting != 1 }} or draft{{ "s" if waiting != 1 }} waiting for your OK. <a href="{{ cbase }}/manage/inbox">Open the inbox →</a></p>{% endif %}
 
   <section class="section">
-    <table class="list">
+    <div class="table-scroll"><table class="list">
       <tr><th>Session</th><th>Status</th><th>Last draft</th><th></th></tr>
       {% for r in rows %}
       <tr>
@@ -45,7 +45,7 @@
         </td>
       </tr>
       {% endfor %}
-    </table>
+    </table></div>
   </section>
 </main>
 {% endblock %}

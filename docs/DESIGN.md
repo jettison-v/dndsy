@@ -74,7 +74,7 @@ Status colors are text on their `-soft` tint.
 
 **Panels and modals** (four sizes, chosen by what's inside): side panel `--panel-w` 420px (details for one thing; also inside a modal) · modal `--modal-w` 720px (a form or short content) · large `--modal-lg-w` 1180px (rich content in columns: a Wild Shape form, a combo, a leveling plan) · full window `--modal-full-w` 95% (a whole tool with its own list, the Spell Book). On phones each is a sheet from the bottom.
 
-**Screen widths:** phone ≤ 640px, tablet ≤ 900px, wide ≥ 1100px, and the full menu bar > 1240px (below it the Live pill shortens to "● Live", 2026-10-26) (media queries can't use variables; the test allows only these).
+**Screen widths:** phone ≤ 640px, tablet ≤ 900px, wide ≥ 1100px, and the full menu bar > 1240px (below it the Live pill shortens to "● Live", 2026-10-26) (media queries can't use variables; the test allows only these). A list's own width (container queries) is its columns' need instead; see Narrow screens.
 
 - **Key-moment types** are colored words, not boxes: Event (muted), Reveal (lavender), Decision (blue), Loot (amber), Theory (italic, muted) so speculation never looks like fact.
 
@@ -82,7 +82,7 @@ Status colors are text on their `-soft` tint.
 
 Read these before designing or building any page; sessions that skipped them produced rework.
 
-- **Mock up first** (`docs/mockups/`, made-up names: the repo is public), get Brett's OK, then build one piece at a time.
+- **Mock up first** (`docs/mockups/`; the table's own characters, "Enemy 1" and "NPC 1" for the rest, Brett 2026-10-26), get Brett's OK, then build one piece at a time. Mockups show phone and an in-between width (about 1000px), not just desktop.
 - **Reuse the components below; no one-off layouts or inline spacing.** If something new is needed, add it to the
   design system (and Manage › Design system) first.
 - **Full width.** Pages use their standard width (`.page`, or `.page.wide` for Story, Campaign, Party, Help). No
@@ -95,7 +95,40 @@ Read these before designing or building any page; sessions that skipped them pro
   secondary buttons.
 - **Buttons say where they go** in plain words ("More about Alea"), not how the app works ("Read in World").
 - **Terse game words** ("1st-level", never "1st-level slot"); players know the terms.
-- **Check both widths** (desktop and phone) and every role (admin, DM, player; Manage › View as) before calling it done.
+- **Check every width** (phone, tablet, about 1000px, wide) and every role (admin, DM, player; Manage › View as) before
+  calling it done. The width check (tests/browser/test_layout.py) does the measurable part on every pull request; see
+  Narrow screens below for what it checks and how each part of a page gives way.
+
+## Narrow screens (2026-10-26)
+
+Pages are used from 375px phones to wide monitors, and the in-between widths (a laptop with a side panel, a half-screen
+window) are where things break. The rules:
+
+- **Nothing scrolls sideways.** The page is never wider than the window. A wide table scrolls inside its own box, or
+  (better) switches to its compact layout.
+- **One-line controls stay on one line.** Buttons, tabs, chips, tags and the menu bar's controls never break onto two
+  lines (`.btn` is `nowrap`); the row around them wraps instead.
+- **Text stays in its box.** Menus, panels, cards and buttons hold their text; long words (a web address) break
+  (`overflow-wrap` on `body`), and names that must stay on one line end in "…".
+- **Decide what gives way, in order, for anything that shares a row.** Write it next to the component's CSS.
+
+How each part gives way:
+
+| Part | As the room runs out |
+|---|---|
+| Menu bar | Below 1240px the Live pill shortens to "● Live"; then the campaign's name ends in "…"; below 1100px the word "askdnd" goes; at 900px and below, the bottom bar takes over Story, Campaign, your character, Party and More. Manage, your character, Party, ? and you never wrap or shrink. |
+| Menus from the menu bar | Their own width (240-360px, never wider than the window less 24px); text wraps inside. Party's opens leftward. |
+| Side panel | Beside the page on wide screens; a sheet from the bottom at 900px and below. |
+| Lists with columns (Sheet's Spells, Wild Shape, Inventory, Features; the Spell Book) | Switch to compact rows when the list's own box is narrower than its columns need, whatever the screen (container queries: Spells and the Spell Book 920px, Wild Shape 740, Features 700, Inventory 680). Filters sit beside the list, above it on phones. |
+| Sections with tab bars | The sticky tab bar reaches the section's edges: 30px wide, 18px from tablet down. |
+| Battle's columns | Three side by side; on phones one at a time with Action / Bonus / Reaction tabs. |
+| The tour's card | Beside what it lights (beside the side panel when lighting inside it); at the bottom on phones. |
+
+**Checking:** `tests/browser/test_layout.py` opens every main page (player and admin, with long names on purpose),
+each tab, the menu bar's menus and Battle's side panel at 375, 768, 1000 and 1280px, and fails on anything that
+scrolls sideways, spills, wraps or overlaps (`tests/browser/layout_check.js`). At the end of each roadmap phase,
+`scripts/layout_sweep.py` runs the same check over every page of a copy of real data, as each role, and saves a
+screenshot of each page at each width for a look-over.
 
 ## Components
 

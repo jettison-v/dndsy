@@ -794,3 +794,21 @@ the site calls, and, by color, who can change each piece: Claude from the termin
 2. List every secret's name, which service uses it, and where it's made, never its value.
 3. Give an assistant the narrowest access that does the job: CLIs or connections for daily work, account-level
    dashboards (billing, IAM, DNS) kept with a person.
+
+## 2026-10-26: Checking every screen width
+
+Two resizing bugs reached beta in one day, because every browser test ran at one window size. Now:
+
+- **A width check on every pull request.** A browser test opens each main page (as a player and as an admin, with
+  deliberately long names) at phone, tablet, laptop and wide widths, plus each tab, the menus and the side panel, and
+  fails if anything scrolls sideways, spills out of its box, breaks a button onto two lines, or covers text. Its first
+  runs found real problems on Sheet, Battle, Party, Help and two Manage pages.
+- **A sweep at the end of each phase.** The same check over every page of a copy of real data, as each role, with a
+  screenshot of each page at each width to look over for what can't be measured (cramped, hard to read).
+- **Rules written down.** The design notes now say, for each part of a page, what gives way first as the room runs out.
+
+**For a new project:**
+1. Test layouts at several widths from the start, not just desktop and phone; the in-between widths break most.
+2. Check measurable things (sideways scrolling, text spilling, wrapping) automatically; save human review for taste.
+3. Use long, realistic names in test data; short placeholders hide layout bugs.
+4. Let a component respond to its own space (container queries), not only the screen's, when it sits beside others.

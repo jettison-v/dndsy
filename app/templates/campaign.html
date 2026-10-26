@@ -139,7 +139,7 @@
 
   <section class="section" id="t-glossary"{% if tab != "glossary" %} hidden{% endif %}>
     <p class="hint" style="margin:0 0 8px">Campaign names and words with their correct spelling. Click one for more, or to suggest a fix.</p>
-    {% if glossary %}<table class="list">{% for g in glossary %}<tr><td style="width:30%"><a href="{{ cbase }}/campaign/glossary/{{ g.id }}"><b>{{ g.term }}</b></a></td><td class="muted">{{ g.description }}</td></tr>{% endfor %}</table>
+    {% if glossary %}<div class="table-scroll"><table class="list">{% for g in glossary %}<tr><td style="width:30%"><a href="{{ cbase }}/campaign/glossary/{{ g.id }}"><b>{{ g.term }}</b></a></td><td class="muted">{{ g.description }}</td></tr>{% endfor %}</table></div>
     {% else %}<p class="muted">No terms yet.</p>{% endif %}
     {% if is_dm or is_reviewer %}
     <details class="suggest"><summary>Add a term</summary>
