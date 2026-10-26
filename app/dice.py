@@ -40,7 +40,7 @@ DEFAULTS = ["dragons", "starynight", "bloodmoon", "bronze", "astralsea", "glitte
 KNOBS = {
     "strength": ("Throw strength", "How hard the dice are thrown. Higher bounces further and tumbles longer.", 0.4, 3, 0.1, "x"),
     "gravity": ("Gravity", "Lower is floatier: the dice hang and take longer to settle (suspense). Higher drops them fast.", 100, 800, 10, ""),
-    "size": ("Dice size", "How big the dice look.", 40, 160, 5, "%"),
+    "size": ("Dice size", "How big the dice look. Thrown across the page, this is the size in a 1440×900 window; bigger and smaller windows scale it.", 40, 160, 5, "%"),
     "shadows": ("Shadows under the dice", "Off is lighter work for slower computers.", None, None, None, "toggle"),
     "light": ("Light", "How brightly the dice are lit.", 0.3, 1.5, 0.05, "pct"),
     "dim": ("Darkness", "How much the page darkens behind the dice. 0 leaves it as it is.", 0, 90, 5, "%"),

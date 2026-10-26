@@ -1496,21 +1496,38 @@
   }
   // A dice box in an element of the page, one throw at a time: built again when its tuning's gravity, size or light
   // changes (the library sets those up once), and measured again before each throw (it may have been hidden)
-  function diceBox(host, opts, tune) {
+  // Dice thrown across the page are sized to the space they're thrown in (Brett, 2026-10-26: the library draws them
+  // a fixed number of points across, small on a big display and big on a phone). Dice tuning's Size is the size at
+  // 900 points of room (a 1440×900 window), scaled by the box's shorter side, from 0.55× (phones) to 1.8×.
+  const roomFor = host => {
+    const side = Math.min(host.clientWidth || innerWidth, host.clientHeight || innerHeight);
+    return Math.round(Math.min(1.8, Math.max(0.55, side / 900)) * 20) / 20;  // in steps of 5%, so a small resize doesn't rebuild
+  };
+  function diceBox(host, opts, tune, relative) {
     if (!host.id) host.id = 'dice-box-' + Math.random().toString(36).slice(2);
     let box = null, built = null, ready = null, queue = Promise.resolve();
     function make(t) {
-      const sig = t ? [t.gravity, t.size, t.shadows, t.light].join() : '';
+      const room = relative ? roomFor(host) : 1;
+      const sig = t ? [t.gravity, t.size, t.shadows, t.light, room].join() : '';
       if (ready && sig === built) return ready;
       built = sig;
-      const physics = t ? { gravity_multiplier: t.gravity, baseScale: t.size, shadows: t.shadows, light_intensity: t.light, strength: t.strength } : {};
+      const physics = t ? { gravity_multiplier: t.gravity, baseScale: Math.round(t.size * room), shadows: t.shadows, light_intensity: t.light, strength: t.strength } : {};
       ready = lib().then(DiceBox => { host.innerHTML = ''; box = new DiceBox('#' + host.id, { assetPath: LIB, theme_surface: 'green-felt', theme_colorset: 'white',
         theme_material: 'glass', shadows: true, sounds: false, ...opts, ...physics });
         // The library draws at one pixel per screen point, so on a Retina screen (2 pixels per point) the dice were
         // drawn at half resolution and stretched, looking soft (Brett, 2026-10-26). Draw at the screen's own
         // resolution, up to 2x: sharper, without the cost of 3x phones or very large screens.
-        return box.initialize().then(() => { if (box.renderer) box.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); }); });
+        return box.initialize().then(() => { if (box.renderer) box.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); sound(); }); });
       return ready;
+    }
+    // Sounds (Your dice › Dice sounds, per device). The library loads its sound files only if sound is on when it
+    // starts, and its updateConfig can't switch sound on later (it uses Object.apply, not Object.assign), so the
+    // dice were silent even with the box ticked (Brett, 2026-10-26). Set it here, and load the files for the dice's
+    // material in the background (cached per material; a throw never waits for them).
+    function sound() {
+      if (!box) return;
+      box.sounds = soundOn();
+      if (box.sounds) box.loadSounds().catch(() => {});
     }
     make(tune);
     async function go(list, dice, t) {
@@ -1518,7 +1535,8 @@
       if (t) box.strength = t.strength;
       const c = box.renderer.domElement;
       if (host.clientWidth && (c.width !== host.clientWidth || c.height !== host.clientHeight)) box.setDimensions({ x: host.clientWidth, y: host.clientHeight });
-      await box.updateConfig({ theme_colorset: colorset(list, dice), theme_material: dice.material || 'glass', sounds: soundOn() });
+      await box.updateConfig({ theme_colorset: colorset(list, dice), theme_material: dice.material || 'glass' });
+      sound();
       return box.roll(notation(list));
     }
     return { get ready() { return ready; }, clear: () => box && box.clearDice(),
@@ -1533,7 +1551,7 @@
     throwEl.setAttribute('aria-hidden', 'true');  // the roll window and Table rolls say the same in words
     throwEl.innerHTML = '<div class="dt-dim"></div><div class="dt-box"></div><div class="dt-who"></div><div class="dt-card"></div>';
     document.body.append(throwEl);
-    throwBox = diceBox(throwEl.querySelector('.dt-box'), {}, tuning('mine'));
+    throwBox = diceBox(throwEl.querySelector('.dt-box'), {}, tuning('mine'), true);
     return throwBox;
   }
   // The page-wide layer takes this throw's tuning: its fades and the backdrop behind the dice
@@ -1688,7 +1706,7 @@
       read.innerHTML = '<span>Press Throw to time it.</span>';
     }));
     // The preview: the same dice and steps as the real throws above, with the sliders' values
-    const pageBox = diceBox(stage.querySelector('.tn-dice'), {}, values('mine')), trayBox = diceBox(stage.querySelector('#tn-dice-tray'), {}, values('tray'));
+    const pageBox = diceBox(stage.querySelector('.tn-dice'), {}, values('mine'), true), trayBox = diceBox(stage.querySelector('#tn-dice-tray'), {}, values('tray'));
     const loading = stage.querySelector('.tn-loading');
     pageBox.ready.then(() => loading.remove(), () => { loading.textContent = "The dice couldn't load in this browser."; });
     const timed = (parts) => { read.innerHTML = parts.map(([w, s]) => '<span>' + w + ' <b>' + s.toFixed(1) + ' s</b></span>').join(''); };
