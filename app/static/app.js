@@ -1951,9 +1951,12 @@
     document.addEventListener('click', e => {
       if (narrow() && current() === 'open' && e.target.isConnected && !side.contains(e.target) && !e.target.closest('[data-roll], .roll-win, .peek')) setState('closed');
     });
+    // Crossing a width (the phone's sheet to the side panel, or WIDE) moves the sidebar to another place, not open or
+    // closed: no slide, which would flash it across the page (Brett, 2026-10-26).
+    const snap = () => { const b = document.body.classList; b.add('rolls-snap'); layout(); requestAnimationFrame(() => requestAnimationFrame(() => b.remove('rolls-snap'))); };
     let wasWide = innerWidth >= WIDE;
-    addEventListener('resize', () => { const wide = innerWidth >= WIDE; if (wide !== wasWide) { wasWide = wide; layout(); } });
-    phone.addEventListener('change', layout);
+    addEventListener('resize', () => { const wide = innerWidth >= WIDE; if (wide !== wasWide) { wasWide = wide; snap(); } });
+    phone.addEventListener('change', snap);
     document.addEventListener('askdnd:gamemode', () => { layout(); loadLog(); });
     const anim = side.querySelector('[data-roll-anim]');
     anim.checked = animate();
@@ -2465,12 +2468,30 @@
     const right = Math.max(...rs.map(r => r.right)), bottom = Math.max(...rs.map(r => r.bottom));
     return { top, left, right, bottom, width: right - left, height: bottom - top };
   }
+  // Bars that stick across the top of the page (the menu bar, Battle's numbers, Sheet's tabs): found once per stop, so
+  // the light never sits under them (Brett, 2026-10-26: Battle's columns were lit from behind its numbers).
+  let bars = [];
+  function findBars() {
+    bars = [...document.body.querySelectorAll('*')].filter(el => {
+      const p = getComputedStyle(el).position;
+      if ((p !== 'sticky' && p !== 'fixed') || el.closest('.peek, .tour-card, .tour-spot, .rolls-side, .roll-pops, .dice-tray, .menu, .rs-edge')) return false;
+      const r = el.getBoundingClientRect();
+      return r.width > innerWidth * 0.4 && r.top < innerHeight * 0.3;
+    });
+  }
+  // How far down the page those bars reach now (a bar holding the lit thing, or inside it, doesn't count)
+  const covered = () => bars.reduce((m, el) => {
+    if (!lit || el.contains(lit) || lit.contains(el)) return m;
+    const r = el.getBoundingClientRect();
+    return r.top < innerHeight * 0.3 && r.bottom < innerHeight * 0.5 ? Math.max(m, r.bottom) : m;
+  }, 0);
   function rect() {
     if (!lit) return null;
-    const r = box();
+    const b = box(), top = lit.closest('.peek') ? b.top : Math.max(b.top, covered());
+    const r = { top, left: b.left, right: b.right, width: b.width, bottom: b.bottom, height: b.bottom - top };
     if (!tall(r)) return r;
     const bottom = Math.min(r.bottom, Math.max(r.top, 0) + innerHeight * 0.45);
-    return { top: r.top, left: r.left, right: r.right, width: r.width, bottom, height: bottom - r.top };
+    return { ...r, bottom, height: bottom - r.top };
   }
   function place() {
     if (!tour || !card) return;
@@ -2547,17 +2568,14 @@
     const row = lit && lit.closest('.ri');  // a row in the side panel: its name is the example on Battle next
     if (row && row.querySelector('.ri-name')) { tour.example = row.querySelector('.ri-name').textContent.trim(); keep(); }
     if (lit) {
-      const r = lit.getBoundingClientRect(), bar = document.querySelector('.topbar');
-      if (tall(r)) {  // its top just under the menu bar and any bar that sticks below it (Battle's numbers)
-        const top = margin => { lit.style.scrollMarginTop = margin + 'px'; lit.scrollIntoView({ block: 'start' }); lit.style.scrollMarginTop = ''; };
-        const m = (bar ? bar.offsetHeight : 0) + 16;
-        top(m);
-        card.style.visibility = 'hidden';
-        const t = lit.getBoundingClientRect(), over = document.elementFromPoint(t.left + Math.min(40, t.width / 2), t.top + 2);
-        card.style.visibility = '';
-        let stuck = over && !lit.contains(over) ? over : null;
-        while (stuck && !['sticky', 'fixed'].includes(getComputedStyle(stuck).position)) stuck = stuck.parentElement;
-        if (stuck && stuck !== bar) top(m + stuck.offsetHeight);
+      findBars();
+      if (tall(lit.getBoundingClientRect())) {  // its top just under the bars stuck across the top of the page
+        // (a few tries: a bar can stick, or change height, only once the page has scrolled)
+        for (let k = 0; k < 4; k++) {
+          const want = covered() + 16, at = lit.getBoundingClientRect().top;
+          if (Math.abs(at - want) < 2) break;
+          lit.style.scrollMarginTop = want + 'px'; lit.scrollIntoView({ block: 'start' }); lit.style.scrollMarginTop = '';
+        }
       } else lit.scrollIntoView({ block: s.all ? 'nearest' : 'center' });
     }
     requestAnimationFrame(() => { if (!card || asking) return; place(); card.querySelector('[data-tour-go="1"]').focus({ preventScroll: true }); });  // (ended meanwhile)
