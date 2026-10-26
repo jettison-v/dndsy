@@ -232,6 +232,6 @@ def test_story_holds_previously_on_and_all_sessions(two):
     pat = two["pat"]
     assert pat.get("/c/main/sessions").status_code == 404  # All sessions is Story's tab
     page = pat.get("/c/main/").text
-    assert '<div id="t-previously">' in page and '<div id="t-sessions" hidden>' in page
+    assert '<div id="t-previously" data-tour="previously">' in page and '<div id="t-sessions" hidden>' in page
     page = pat.get("/c/main/?tab=sessions").text
-    assert '<div id="t-previously" hidden>' in page and '<div id="t-sessions">' in page
+    assert '<div id="t-previously" data-tour="previously" hidden>' in page and '<div id="t-sessions">' in page

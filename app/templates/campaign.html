@@ -12,7 +12,7 @@
     {% if editor %}<a class="btn" href="#" data-modal-url="/campaign/new" style="margin-left:auto">+ New entry</a>{% endif %}</div>
   <p class="subtitle">People, places and things the party has met.{% if campaign and campaign.dm_name %} Dungeon Master: {{ campaign.dm_name }}.{% endif %}</p>
   {% if campaign %}
-  <div class="tabbar" role="tablist" data-tab-param>
+  <div class="tabbar" role="tablist" data-tab-param data-tour="campaign">
     {% for key, label, n in [("world", "World", none), ("quests", "Quests", quests | length), ("relationships", "Relationships", none), ("glossary", "Glossary", glossary | length), ("map", "Map", none)] %}
     <button role="tab" aria-selected="{{ 'true' if tab == key else 'false' }}" data-tab="t-{{ key }}">{{ label }}{% if n is not none %} <span class="count">{{ n }}</span>{% endif %}</button>{% endfor %}
   </div>

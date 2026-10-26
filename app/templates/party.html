@@ -13,7 +13,7 @@
   </section>
 
   {% set n_spells = spells | map(attribute=1) | map("length") | sum %}{% set n_items = items | map(attribute=1) | map("length") | sum %}
-  <section class="section pool-tabs">
+  <section class="section pool-tabs" data-tour="party">
     <div class="tabbar" role="tablist">
       <button role="tab" aria-selected="true" data-tab="t-pool-spells">Party spells <span class="count">{{ n_spells }}</span></button>
       <button role="tab" aria-selected="false" data-tab="t-pool-items">Party items <span class="count">{{ n_items }}</span></button>

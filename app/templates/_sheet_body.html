@@ -31,7 +31,7 @@
 </section>
 
 {# Row 3: everything else, in tabs #}
-<section class="section">
+<section class="section" data-tour="sheet">
   {% if can_pick %}{% call help("sheet", help_off, "marks") %}<span class="pick star on static">{{ pin_icon() }}</span> Battle · <span class="pick fav on static">{{ bookmark_icon() }}</span> Shortlist · <span class="pick remind on static">{{ bell(true) }}</span> Reminders. Click anything for details and your note. The DM can't see these.{% endcall %}{% endif %}
   <div class="tabbar" role="tablist">
     <button role="tab" aria-selected="true" data-tab="t-actions">Actions</button>
