@@ -16,19 +16,17 @@
   <script src="{{ static('app.js') }}" defer></script>
   {% block head %}{% endblock %}
 </head>
-<body data-toast="{{ toast or '' }}"{% if user and path.startswith('/characters/') and path.endswith('/battle') %} data-battle{% endif %}{% if user %}{% if here %} data-campaign="{{ here.id }}"{% endif %} data-dice='{{ my_dice() | tojson }}' data-dice-tuning='{{ dice_tuning() | tojson }}'{% if vtt_on("table_dice") %} data-dice-all{% endif %}{% endif %}>
+<body data-toast="{{ toast or '' }}"{% if user %}{% if here %} data-campaign="{{ here.id }}"{% endif %} data-dice='{{ my_dice() | tojson }}' data-dice-tuning='{{ dice_tuning() | tojson }}'{% if vtt_on("table_dice") %} data-dice-all{% endif %}{% endif %}>
 {% if user %}<script>
 /* The Table rolls sidebar's place, before the page is drawn, so pages don't shift sideways as they load (Brett,
    2026-10-26). The same rules as app.js "the sidebar's state", which takes over once it runs: Game Mode on this
-   device; open or the rail as last chosen (Battle and elsewhere apart), the rail below 1100px; and the rail slid away
-   if this device hasn't seen a roll for 3 minutes. */
+   device; open unless closed on this device, and closed between 901 and 1099px. */
 (function (b) { try {
   var ls = localStorage, on = ls.getItem('askdnd.gameMode') === 'on' || Object.keys(ls).some(function (k) { return k.indexOf('askdnd.gameMode.') === 0 && ls.getItem(k) === 'on'; });
   if (!on) return;
-  var battle = b.hasAttribute('data-battle'), phone = matchMedia('(max-width: 800px)').matches;
-  var state = !phone && innerWidth < 1100 ? 'rail' : ls.getItem('askdnd.rollsSide.' + (battle ? 'play' : 'other')) || (battle ? 'open' : 'rail');
-  b.classList.add('gm-on', 'rolls-on', state === 'rail' ? 'rolls-rail' : 'rolls-open');
-  if (state === 'rail' && Date.now() - (Number(ls.getItem('askdnd.rollsSeen')) || 0) > 180000) b.classList.add('rolls-quiet');
+  var phone = matchMedia('(max-width: 900px)').matches;
+  var closed = (!phone && innerWidth < 1100) || ls.getItem('askdnd.rollsSide') === 'closed';
+  b.classList.add('gm-on', 'rolls-on', closed ? 'rolls-closed' : 'rolls-open');
 } catch (e) { /* private window: app.js places it */ } })(document.body);
 </script>{% endif %}
 {% block body %}

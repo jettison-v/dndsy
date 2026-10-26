@@ -1,15 +1,14 @@
 {# The Table rolls sidebar (app/table_rolls.py, app.js "Rolls"). Shown only while Game Mode is on
-   (body.gm-on): open on Battle and a rail elsewhere, remembered per device; a bottom sheet on phones.
-   The rail shows each person's latest roll and slides away when nobody has rolled for a few minutes.
-   The log loads and then polls for new rolls only while it's shown. #}
-<aside id="table-rolls" class="rolls-side" aria-label="Table rolls" data-mine="{{ tn.mine.id if tn and tn.mine else '' }}" data-battle="{{ '1' if tn and tn.mode == 'battle' }}">
+   (body.gm-on): open or closed to an edge tab, one choice per device for every page; a bottom sheet on
+   phones, whose closed bar shows each person's latest roll. The log loads and then polls for new rolls
+   only while it's shown. #}
+<aside id="table-rolls" class="rolls-side" aria-label="Table rolls" data-mine="{{ tn.mine.id if tn and tn.mine else '' }}">
   <div class="rs-head">
     <span class="rs-grip" aria-hidden="true"></span>
-    <svg class="rs-icon" width="22" height="22" viewBox="0 0 30 30" aria-hidden="true"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="15,8 21,19 9,19" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
     <span class="rs-title">Table rolls</span>
     <button type="button" class="rs-toggle" aria-expanded="true" aria-controls="roll-log" title="Collapse or open the rolls"><span aria-hidden="true">«</span><span class="sr">Collapse or open the rolls</span></button>
   </div>
-  {# Collapsed: one avatar per person with their latest roll (built by app.js from the log) #}
+  {# A phone's closed bar: one avatar per person with their latest roll (built by app.js from the log) #}
   <div class="rs-people" role="list" aria-label="Each person's latest roll"></div>
   <ol id="roll-log" class="rs-log" aria-live="polite" hx-get="/rolls" hx-swap="afterbegin"
       hx-trigger="load[window.askdndRolls && askdndRolls.wanted()], rolls:load, every 3s[window.askdndRolls && askdndRolls.poll()]" hx-vals="js:{since: askdndRolls.since()}"></ol>
@@ -24,6 +23,6 @@
     <a class="rs-row rs-dice" href="#" data-modal-url="/dice" data-modal-size="large">Your dice <span class="note">set, material, sounds</span></a>
   </div>
 </aside>
-{# When the collapsed rail has slid away (no rolls for a few minutes): bring it back #}
-<button type="button" class="rs-edge" hidden aria-label="Show the table's rolls" title="Table rolls"><svg width="18" height="18" viewBox="0 0 30 30" aria-hidden="true"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="15,8 21,19 9,19" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
+{# Closed on a wider screen: open it again #}
+<button type="button" class="rs-edge" aria-controls="table-rolls" aria-expanded="false" aria-label="Show the table's rolls" title="Table rolls"><svg width="18" height="18" viewBox="0 0 30 30" aria-hidden="true"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="15,8 21,19 9,19" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
 <div class="roll-pops" aria-live="polite"></div>

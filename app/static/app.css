@@ -1121,20 +1121,16 @@ a.sheet-ref { text-decoration-style: dotted; }
 .roll-x { color: var(--faint); }
 
 /* Table rolls (app.js, _table_rolls.html): a left sidebar while Game Mode is on. Open, it pushes
-   the page over (wide windows) or lies over it (narrower); collapsed, it's a 64 px rail.
+   the page over (wide windows) or lies over it (narrower); closed, only the edge tab shows.
    Phones: a bottom sheet above the bottom bar. Under the side panel and windows (z-index 4). */
 .rolls-side { display: none; }
 body.gm-on .rolls-side { display: flex; flex-direction: column; position: fixed; z-index: 4; left: 0; top: var(--stick-top, 62px); bottom: 0; width: 340px; background: var(--chrome); border-right: 1px solid var(--line); transition: transform .25s ease, visibility 0s; }
-body.gm-on.rolls-rail .rolls-side { width: 64px; }
-body.gm-on.rolls-rail { --rolls-w: 64px; }
 body.gm-on.rolls-open { --rolls-w: 340px; }
-body.gm-on.rolls-over { --rolls-w: 64px; }
-body.gm-on.rolls-over .rolls-side { box-shadow: 12px 0 30px var(--shadow); }
+@media (max-width: 1099px) and (min-width: 901px) { body.gm-on.rolls-open { --rolls-w: 0px; } body.gm-on.rolls-open .rolls-side { box-shadow: 12px 0 30px var(--shadow); } }
 body.gm-on { padding-left: var(--rolls-w, 0); }
 body.gm-on .topbar { margin-left: calc(-1 * var(--rolls-w, 0px)); }
 .rs-head { display: flex; align-items: center; gap: 8px; padding: 12px 12px 10px 16px; color: var(--amber); }
 .rs-grip { display: none; }
-.rs-icon { flex: none; display: none; }
 .rs-title { flex: 1; font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; }
 .rs-toggle { flex: none; width: 30px; height: 30px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); border-radius: var(--r-sm); line-height: 1; }
 .rs-toggle:hover { color: var(--text); }
@@ -1190,15 +1186,14 @@ body.gm-on .topbar { margin-left: calc(-1 * var(--rolls-w, 0px)); }
 .rc:hover { border-color: var(--amber); color: var(--text); }
 .rs-anim { cursor: pointer; }
 .rs-anim .note { font-size: var(--fs-xs); }
-/* The rail: portraits with each roll's total */
-body.rolls-rail .rs-head { flex-direction: column; padding: 12px 0 10px; }
-body.rolls-rail .rs-title, body.rolls-rail .roll-main, body.rolls-rail .roll-empty, body.rolls-rail .roll-pending, body.rolls-rail .rs-controls { display: none; }
-body.rolls-rail .rs-icon { display: block; order: 2; }
-body.rolls-rail .rs-toggle span[aria-hidden] { display: inline-block; transform: scaleX(-1); }
-/* …one avatar per person with their latest roll (app.js buildPeople), pulsing on a new one */
-body.rolls-rail .rs-log { display: none; }
+/* Closed: the sidebar slides away and the edge tab brings it back; on phones the sheet's bar stays, with one
+   avatar per person and their latest roll (app.js buildPeople), pulsing on a new one */
+body.gm-on.rolls-closed { --rolls-w: 0px; }
+body.gm-on.rolls-closed .rolls-side { transform: translateX(-100%); visibility: hidden; transition: transform .25s ease, visibility 0s .25s; }
+.rs-edge { display: none; }
+body.gm-on.rolls-closed .rs-edge { position: fixed; z-index: 4; left: 0; top: calc(var(--stick-top, 62px) + 12px); width: 28px; height: 44px; display: grid; place-items: center; background: var(--chrome); color: var(--amber); border: 1px solid var(--line); border-left: 0; border-radius: 0 10px 10px 0; }
+.rs-edge:hover { color: var(--text); }
 .rs-people { display: none; }
-body.rolls-rail .rs-people { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 4px 0 12px; overflow-y: auto; flex: 1; scrollbar-width: none; }
 .rs-person { display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: 0; padding: 0; color: var(--text); font: inherit; cursor: pointer; }
 .rs-person .roll-av { width: 38px; height: 38px; }
 .rs-p-total { font-size: var(--fs-md); font-variant-numeric: tabular-nums; line-height: 1.2; }
@@ -1208,12 +1203,6 @@ body.rolls-rail .rs-people { display: flex; flex-direction: column; align-items:
 .rs-person.pulse .roll-av { animation: rs-pulse 1.2s ease-out 2; }
 @keyframes rs-pulse { 0% { box-shadow: 0 0 0 0 var(--amber-glow); } 100% { box-shadow: 0 0 0 10px transparent; } }
 .rs-tip { position: fixed; z-index: 12; max-width: 260px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 6px 10px; font-size: var(--fs-sm); box-shadow: 0 6px 20px var(--shadow); }
-/* …and slides away when nobody has rolled for a few minutes; the edge tab brings it back */
-body.gm-on.rolls-quiet { --rolls-w: 0px; }
-body.gm-on.rolls-quiet .rolls-side { transform: translateX(-100%); visibility: hidden; transition: transform .25s ease, visibility 0s .25s; }
-.rs-edge { position: fixed; z-index: 4; left: 0; top: calc(var(--stick-top, 62px) + 12px); width: 28px; height: 44px; display: grid; place-items: center; background: var(--chrome); color: var(--amber); border: 1px solid var(--line); border-left: 0; border-radius: 0 10px 10px 0; }
-.rs-edge:hover { color: var(--text); }
-@media (max-width: 1099px) and (min-width: 901px) { body.gm-on.rolls-open:not(.rolls-over) { --rolls-w: 64px; } }
 
 /* Others' rolls as small notices that fade, near the bottom left */
 .roll-pops { position: fixed; left: calc(var(--rolls-w, 0px) + 16px); bottom: 16px; z-index: 9; display: flex; flex-direction: column-reverse; align-items: flex-start; gap: 8px; pointer-events: none; }
@@ -1397,22 +1386,18 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 @media (max-width: 900px) {
   body.gm-on { padding-left: 0; --rolls-w: 0px; }
   body.gm-on .topbar { margin-left: 0; }
-  body.gm-on .rolls-side, body.gm-on.rolls-rail .rolls-side { top: auto; bottom: calc(60px + env(safe-area-inset-bottom)); width: auto; right: 0; max-height: 210px; border-right: 0; border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; box-shadow: 0 -10px 30px var(--shadow); }
+  body.gm-on .rolls-side, body.gm-on.rolls-closed .rolls-side { transform: none; visibility: visible; top: auto; bottom: calc(60px + env(safe-area-inset-bottom)); width: auto; right: 0; max-height: 210px; border-right: 0; border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; box-shadow: 0 -10px 30px var(--shadow); }
   body.gm-on.rolls-full .rolls-side { max-height: 80vh; }
   body.gm-on.rolls-open { padding-bottom: calc(270px + env(safe-area-inset-bottom)); }
-  body.gm-on.rolls-rail { padding-bottom: calc(150px + env(safe-area-inset-bottom)); }
-  body.gm-on.rolls-quiet { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
-  body.gm-on.rolls-quiet .rolls-side { transform: translateY(120%); }
-  body.rolls-rail .rs-people { flex-direction: row; justify-content: flex-start; padding: 0 14px 10px; gap: 14px; overflow-x: auto; flex: none; }
+  body.gm-on.rolls-closed { padding-bottom: calc(150px + env(safe-area-inset-bottom)); }
+  body.gm-on.rolls-closed .rs-edge { display: none; }
+  body.rolls-closed .rs-people { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; padding: 0 14px 10px; gap: 14px; overflow-x: auto; flex: none; scrollbar-width: none; }
   .rs-person .roll-av { width: 32px; height: 32px; }
-  .rs-edge { top: auto; bottom: calc(68px + env(safe-area-inset-bottom)); left: 8px; width: 40px; height: 40px; border: 1px solid var(--line); border-radius: var(--r-pill); }
-  .rs-head, body.rolls-rail .rs-head { position: relative; flex-direction: row; padding: 14px 14px 6px; cursor: pointer; }
+  .rs-head { position: relative; padding: 14px 14px 6px; cursor: pointer; }
   .rs-grip { display: block; position: absolute; top: 6px; left: calc(50% - 20px); width: 40px; height: 4px; border-radius: 2px; background: var(--line); }
-  body.rolls-rail .rs-title { display: block; }
-  body.rolls-rail .rs-icon { display: none; }
   .rs-toggle span[aria-hidden] { display: inline-block; transform: rotate(-90deg); }
-  body.rolls-rail .rs-toggle span[aria-hidden] { transform: rotate(90deg); }
-  body.rolls-rail .rs-log { display: none; }
+  body.rolls-closed .rs-toggle span[aria-hidden] { transform: rotate(90deg); }
+  body.rolls-closed :is(.rs-log, .rs-controls) { display: none; }
   body.gm-on.rolls-open:not(.rolls-full) .rs-controls { display: none; }
   .rs-controls { max-height: none; }
   .roll-item { grid-template-columns: 32px minmax(0, 1fr) auto; padding: 8px 10px; }
