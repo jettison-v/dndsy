@@ -1170,6 +1170,7 @@ body.gm-on .topbar { margin-left: calc(-1 * var(--rolls-w, 0px)); }
 /* Closed: the sidebar slides away and the edge tab brings it back; on phones the sheet's bar stays, with one
    avatar per person and their latest roll (app.js buildPeople), pulsing on a new one */
 body.gm-on.rolls-closed { --rolls-w: 0px; }
+body.rolls-snap .rolls-side { transition: none !important; }
 body.gm-on.rolls-closed .rolls-side { transform: translateX(-100%); visibility: hidden; transition: transform .25s ease, visibility 0s .25s; }
 .rs-edge { display: none; }
 body.gm-on.rolls-closed .rs-edge { position: fixed; z-index: 4; left: 0; top: calc(var(--stick-top, 62px) + 12px); width: 28px; height: 44px; display: grid; place-items: center; background: var(--chrome); color: var(--amber); border: 1px solid var(--line); border-left: 0; border-radius: 0 10px 10px 0; }
