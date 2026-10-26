@@ -40,7 +40,10 @@ GLITCH = re.compile(r"build daemon returned an error|failed to solve: frontend g
 
 
 def railway_glitch(log: str) -> bool:
-    return bool(GLITCH.search(log or ""))
+    """A known build-machine error, or a build that never started: the log ends at Railway's own banner, before any
+    step of ours ran (2026-10-26, the deploy after the repo went private; a fresh build passed)."""
+    lines = [x for x in (log or "").splitlines() if x.strip()]
+    return bool(GLITCH.search(log or "")) or (len(lines) <= 2 and all("All aboard" in x or "builder" in x for x in lines))
 
 
 def run(*cmd: str, check: bool = True) -> str:
