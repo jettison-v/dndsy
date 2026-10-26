@@ -46,7 +46,12 @@ SECTIONS = [
 GROUP_NAMES = {key: name for _, groups in SECTIONS for key, name, _ in groups if key}
 GROUP_NAMES["help"] = "Help, any time"
 
+# Battle's + Add in the Action column: opens the side panel with what isn't pinned yet (it only reads)
+ADD = '[data-tour="battle"] [data-econ-col="action"] .head-add'
+
 # The stops, in order. page: story, campaign, battle, sheet, plan, party, or None (wherever you are).
+# open: selectors clicked in turn first (a tab; + Add, then a row). panel: the stop shows the side panel the tour
+# opened (other stops close it). example: an example row on Battle, only on the page ("pin", or "note" with a note).
 # needs: "character" (your own character in this campaign); without one, those stops are left out.
 STOPS = [
     {"group": "previously", "page": "story", "open": '[data-tab="t-previously"]', "at": '[data-tour="previously"]',
@@ -58,8 +63,29 @@ STOPS = [
             "sends it to the DM."},
     {"group": "battle", "title": "Battle: your turn on one screen", "page": "battle", "needs": "character",
      "at": '[data-tour="battle"]',
-     "what": "Action, Bonus action and Reaction, showing only what you chose to put here. <b>+ Add</b> on a column lists the rest.",
+     "what": "Action, Bonus action and Reaction, showing only what you chose to put here.",
      "why": "D&D Beyond lists everything you have. Battle is your plan for a fight, so your turn fits on one screen."},
+    {"group": "battle", "title": "+ Add", "page": "battle", "needs": "character", "panel": True,
+     "open": [ADD], "at": ".peek.open",
+     "what": "<b>+ Add</b> on a column opens the side panel with everything you could put in it that isn't there yet.",
+     "why": "Everything stays one click away; only what you pick takes up room on Battle."},
+    {"group": "battle", "title": "The pin", "page": "battle", "needs": "character", "panel": True,
+     "open": [ADD], "at": ".peek.open [data-opt-panel] .pick.star",
+     "what": "The <b>pin</b> on a row puts it in its column right away.",
+     "why": "Pin what you use in a fight; unpin it any time."},
+    {"group": "battle", "title": "Pinned: it's on Battle", "page": "battle", "needs": "character", "example": "pin",
+     "at": '[data-tour="battle"] [data-econ-col="action"]',
+     "what": "There it is, at the top of its column. (An example: the tour doesn't pin anything for you.)",
+     "why": "Drag the rows to put a column in the order you use it."},
+    {"group": "battle", "title": "Open one: Pin and Notes", "page": "battle", "needs": "character", "panel": True,
+     "open": [ADD, ".peek.open [data-opt-panel] .ri"], "at": ".peek.open .detail-marks",
+     "what": "Click a row for its rules and its marks: <b>Pin</b> to Battle, <b>Shortlist</b>, <b>Remind me</b>, and "
+             "<b>Your note</b>.",
+     "why": "Your note is for the why and when (\"save it for the boss\"). Other players can read it; the DM never sees it."},
+    {"group": "battle", "title": "Your note on Battle", "page": "battle", "needs": "character", "example": "note",
+     "at": '[data-tour="battle"] [data-econ-col="action"]',
+     "what": "Pinned with a note, it sits in its column with your note under it. (An example again.)",
+     "why": "The why and when stay next to the thing itself, in the middle of a fight."},
     {"group": "rolling", "page": "battle", "needs": "character", "at": '[data-tour="roll"]',
      "what": "Click any number to roll it, with Advantage and extra dice in one window. <b>Enter</b> rolls, <b>Esc</b> closes, "
              "<b>Shift-click</b> skips the window.",
@@ -121,6 +147,8 @@ def stops_for(db: Session, user: dict | None) -> list[dict]:
     for s in STOPS:
         if s.get("needs") == "character" and not mine:
             continue
+        opens = [s["open"]] if isinstance(s.get("open"), str) else s.get("open") or []
         out.append({"group": s["group"], "name": GROUP_NAMES[s["group"]], "title": s.get("title") or GROUP_NAMES[s["group"]],
-                    "url": pages[s["page"]], "at": s["at"], "open": s.get("open"), "what": s["what"], "why": s["why"]})
+                    "url": pages[s["page"]], "at": s["at"], "open": opens, "panel": s.get("panel", False),
+                    "example": s.get("example"), "what": s["what"], "why": s["why"]})
     return out
