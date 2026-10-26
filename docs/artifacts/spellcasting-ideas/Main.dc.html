@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spell bar on Play</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Roboto+Condensed:wght@700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#e8b34b}a:hover{color:#f3c96f}
+</style>
+</helmet>
+<div style="width: 1440px; height: 560px; box-sizing: border-box; background: #15171a; color: #ebe7df; font-family: Inter, system-ui, sans-serif; font-size: 14px; padding: 22px 32px; display: flex; flex-direction: column; gap: 12px">
+  <div style="display: flex; align-items: center; gap: 14px">
+    <span style="width: 44px; height: 44px; border-radius: 50%; background: #272b30"></span>
+    <span style="font-size: 24px; font-weight: 700">Cole</span><span style="color: #a29d93">Druid 6 (Moon) / Monk 2</span>
+    <div role="group" aria-label="Mode" style="margin-left: auto; display: flex; background: #1f2226; border: 1px solid #34383e; border-radius: 10px; padding: 3px">
+      <button type="button" aria-pressed="true" style="background: #d64545; color: #ffffff; border: 0; border-radius: 8px; padding: 6px 14px; font: inherit; font-weight: 600">Play</button>
+      <button type="button" aria-pressed="false" style="background: none; color: #a29d93; border: 0; border-radius: 8px; padding: 6px 14px; font: inherit">Sheet</button>
+      <button type="button" aria-pressed="false" style="background: none; color: #a29d93; border: 0; border-radius: 8px; padding: 6px 14px; font: inherit">Plan</button>
+    </div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px">
+    <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px"><div style="color: #a29d93; font-size: 12px">Hit points</div><b style="font-size: 20px">51</b></div>
+    <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px"><div style="color: #a29d93; font-size: 12px">Armor class</div><b style="font-size: 20px">16</b></div>
+    <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px"><div style="color: #a29d93; font-size: 12px">Speed</div><b style="font-size: 20px">45 ft</b></div>
+    <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px"><div style="color: #a29d93; font-size: 12px">Initiative</div><b style="font-size: 20px">+3</b></div>
+    <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px"><div style="color: #a29d93; font-size: 12px">Spell DC / attack</div><b style="font-size: 20px">15 <span style="font-size: 13px; color: #a29d93; font-weight: 400">/ +7</span></b></div>
+    <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px; box-shadow: inset 0 0 0 1px #e8b34b"><div style="color: #a29d93; font-size: 12px">Heroic Inspiration</div><b style="font-size: 20px; color: #e8b34b">Yes</b></div>
+  </div>
+
+  <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; background: #1b1e2a; border: 1px solid #3a4260; border-radius: 12px; padding: 10px 14px">
+    <button type="button" style="display: flex; align-items: center; gap: 8px; background: #7ea6e0; color: #0f1113; border: 0; border-radius: 9px; padding: 9px 14px; font: inherit; font-weight: 700">
+      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z" fill="none" stroke="#0f1113" stroke-width="2" stroke-linejoin="round"></path></svg>Spell Book</button>
+    <span style="font-size: 13px">Slots <span style="color: #a29d93">1st</span> <span style="color: #7ea6e0">●●●●</span> <span style="color: #a29d93">2nd</span> <span style="color: #7ea6e0">●●●</span> <span style="color: #a29d93">3rd</span> <span style="color: #7ea6e0">●●○</span></span>
+    <span style="position: relative; display: inline-flex">
+    <span title="Concentrating on Moonbeam (3rd level), round 2 of 10" style="font-size: 13px; display: flex; align-items: center; gap: 10px; background: #272b30; border-radius: 999px; padding: 4px 6px 4px 12px">
+      <span style="color: #a29d93; font-size: 12px">Conc.</span><b>Moonbeam</b><span style="color: #a29d93; font-size: 12px">3rd · round 2/10</span>
+      <button type="button" aria-expanded="true" title="Roll a Concentration save" style="background: #7ea6e0; color: #0f1113; border: 0; border-radius: 999px; padding: 3px 10px; font: inherit; font-size: 12px; font-weight: 700">Save +2 Adv</button>
+      <button type="button" aria-label="Drop Concentration" title="Drop Concentration" style="background: none; border: 0; color: #a29d93; font: inherit; font-size: 14px; width: 24px">✕</button></span>
+      <div role="dialog" aria-label="Concentration save" style="position: absolute; top: calc(100% + 8px); left: 0; z-index: 2; width: 300px; background: #1f2226; border: 1px solid #7ea6e0; border-radius: 12px; padding: 12px 14px; box-shadow: 0 12px 30px rgba(0,0,0,.5); display: flex; flex-direction: column; gap: 10px; font-size: 13px">
+        <div style="display: flex; justify-content: space-between; align-items: baseline"><b>Concentration save</b><span style="color: #a29d93; font-size: 12px">Moonbeam</span></div>
+        <label style="display: flex; align-items: center; justify-content: space-between; gap: 8px">Damage you just took <input type="number" value="18" min="0" style="width: 56px; background: #111315; color: #ebe7df; border: 1px solid #34383e; border-radius: 6px; padding: 4px 6px; font: inherit; font-size: 13px"></label>
+        <div style="display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; color: #a29d93; font-size: 12px">
+          <span>DC</span><span style="color: #ebe7df"><b>10</b> (10, or half the damage if higher)</span>
+          <span>Bonus</span><span style="color: #ebe7df">Con +2</span>
+          <span>Advantage</span><span style="color: #ebe7df">War Caster</span>
+        </div>
+        <button type="button" style="background: #7ea6e0; color: #0f1113; border: 0; border-radius: 8px; padding: 8px; font: inherit; font-weight: 700">Roll Con save · Adv</button>
+      </div>
+      <div role="alertdialog" aria-label="End Concentration?" style="position: absolute; top: calc(100% + 8px); left: 316px; z-index: 2; width: 270px; background: #1f2226; border: 1px solid #d64545; border-radius: 12px; padding: 12px 14px; box-shadow: 0 12px 30px rgba(0,0,0,.5); display: flex; flex-direction: column; gap: 10px; font-size: 13px">
+        <b>End Concentration on Moonbeam?</b>
+        <span style="color: #a29d93; font-size: 12px">The beam disappears now. The 3rd-level slot stays spent.</span>
+        <div style="display: flex; gap: 8px"><button type="button" style="flex: 1; background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 8px; padding: 7px; font: inherit">Keep it</button><button type="button" style="flex: 1; background: #d64545; color: #ffffff; border: 0; border-radius: 8px; padding: 7px; font: inherit; font-weight: 700">End it</button></div>
+      </div>
+    </span>
+    <span style="margin-left: auto; font-size: 13px; color: #a29d93" title="Spells you've starred (★) in the Spell Book or on Sheet">★ Starred:<button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 3px 10px; font: inherit; font-size: 12px">Healing Word</button> <button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 3px 10px; font: inherit; font-size: 12px">Starry Wisp</button> <button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 3px 10px; font: inherit; font-size: 12px">Absorb Elements</button></span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px">
+    <section style="background: #1f2226; border-radius: 12px; padding: 14px 16px">
+      <h2 style="margin: 0; font-size: 13px; letter-spacing: .12em; color: #ef6b6b">◆ ACTION</h2>
+      <div style="color: #a29d93; font-size: 12px; margin-bottom: 8px">One per turn</div>
+      <div style="border-top: 1px solid #34383e; padding: 8px 0; display: flex; justify-content: space-between"><span><b>Unarmed Strike</b><br><span style="color: #a29d93; font-size: 12px">5 ft · 1d6+3 bludgeoning</span></span><b>+6</b></div>
+      <div style="border-top: 1px solid #34383e; padding: 8px 0; display: flex; justify-content: space-between"><span><b>Starry Wisp</b> <span style="color: #7ea6e0; font-size: 12px">spell ★</span><br><span style="color: #a29d93; font-size: 12px">60 ft · 2d8 radiant</span></span><b>+7</b></div>
+      <div style="border-top: 1px solid #34383e; padding: 8px 0; color: #7ea6e0; font-size: 13px">+ 13 more spells → Spell Book</div>
+    </section>
+    <section style="background: #1f2226; border-radius: 12px; padding: 14px 16px">
+      <h2 style="margin: 0; font-size: 13px; letter-spacing: .12em; color: #e8b34b">▲ BONUS ACTION</h2>
+      <div style="color: #a29d93; font-size: 12px; margin-bottom: 8px">One per turn, before or after your Action</div>
+      <div style="border-top: 1px solid #34383e; padding: 8px 0"><b>Wild Shape</b> <span style="color: #5bbf7f">●●●</span></div>
+      <div style="border-top: 1px solid #34383e; padding: 8px 0; display: flex; justify-content: space-between"><b>Unarmed Strike</b><b>+6</b></div>
+      <div style="border-top: 1px solid #34383e; padding: 8px 0"><b>Healing Word</b> <span style="color: #7ea6e0; font-size: 12px">spell ★</span></div>
+    </section>
+    <section style="background: #1f2226; border-radius: 12px; padding: 14px 16px">
+      <h2 style="margin: 0; font-size: 13px; letter-spacing: .12em; color: #6fa8ff">↺ REACTION</h2>
+      <div style="color: #a29d93; font-size: 12px; margin-bottom: 8px">One per round</div>
+      <div style="border-top: 1px solid #34383e; padding: 8px 0"><b>Absorb Elements</b> <span style="color: #7ea6e0; font-size: 12px">spell ★</span></div>
+      <div style="border-top: 1px solid #34383e; padding: 8px 0; display: flex; justify-content: space-between"><b>Opportunity Attack</b><b>+6</b></div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":560}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Roll pop-up with dice animation</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#e8b34b}a:hover{color:#f3c96f}
+@keyframes tumble{0%{transform:translateY(-40px) rotate(0deg) scale(.6);opacity:0}40%{opacity:1}70%{transform:translateY(6px) rotate(540deg) scale(1.05)}100%{transform:translateY(0) rotate(720deg) scale(1)}}
+@keyframes pop{0%{transform:translateY(16px);opacity:0}100%{transform:none;opacity:1}}
+@keyframes fadein{0%{opacity:0;transform:translateX(-12px)}100%{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){*{animation:none !important}}
+</style>
+</helmet>
+<div style="width: 900px; height: 600px; box-sizing: border-box; position: relative; overflow: hidden; background: #15171a; color: #ebe7df; font-family: Inter, system-ui, sans-serif; font-size: 14px; padding: 24px 28px">
+  <div style="display: flex; align-items: center; gap: 12px">
+    <span style="font-size: 22px; font-weight: 700">Cole</span><span style="color: #a29d93">Sheet mode · the rolls sidebar is hidden here</span>
+    <label style="margin-left: auto; display: flex; align-items: center; gap: 8px; color: #a29d93; font-size: 13px"><input type="checkbox" checked="{{ animate }}" onChange="{{ toggleAnimate }}"> Dice animation</label>
+  </div>
+
+  <div style="margin-top: 22px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; max-width: 560px">
+    <button type="button" onClick="{{ rollWis }}" style="background: #272b30; color: #ebe7df; border: 1px solid #e8b34b; border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; font: inherit; cursor: pointer"><span style="font-size: 13px"><span style="color: #5bbf7f">●</span> Wis save</span><b style="font-size: 18px">+8</b></button>
+    <button type="button" onClick="{{ rollInit }}" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; font: inherit; cursor: pointer"><span style="font-size: 13px">Initiative</span><b style="font-size: 18px">+3</b></button>
+    <button type="button" onClick="{{ rollStrike }}" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; font: inherit; cursor: pointer"><span style="font-size: 13px">Unarmed Strike</span><b style="font-size: 18px">+6</b></button>
+  </div>
+  <p style="color: #a29d93; font-size: 13px; max-width: 560px">Click one to roll. The d20 tumbles for about half a second (or not at all with the animation off or reduced motion), then the result settles into a card near the bottom left. A moment later another player's roll arrives as a smaller notice.</p>
+
+  <sc-if value="{{ rolling }}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; left: 28px; bottom: 28px; width: 300px; background: #1f2226; border: 1px solid #34383e; border-radius: 14px; padding: 16px; display: flex; align-items: center; gap: 14px; animation: pop .15s ease-out">
+      <svg width="56" height="56" viewBox="0 0 30 30" aria-hidden="true" style="animation: tumble .55s ease-out"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="#2b2f35" stroke="#e8b34b" stroke-width="1.5"></polygon><polygon points="15,7 22,19 8,19" fill="none" stroke="#e8b34b" stroke-width="1"></polygon></svg>
+      <div><div style="color: #a29d93; font-size: 12px">{{ label }}</div><div style="font-size: 15px">Rolling…</div></div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ done }}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="position: absolute; left: 28px; bottom: 28px; width: 300px; background: #1f2226; border: 1px solid {{ ring }}; border-radius: 14px; padding: 14px 16px; animation: pop .18s ease-out">
+      <div style="display: flex; align-items: center; gap: 14px">
+        <svg width="56" height="56" viewBox="0 0 30 30" aria-hidden="true"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="#2b2f35" stroke="{{ ring }}" stroke-width="1.5"></polygon><text x="15" y="18.5" text-anchor="middle" font-size="9" font-weight="700" fill="#ebe7df" font-family="Inter, sans-serif">{{ die }}</text></svg>
+        <div style="flex: 1">
+          <div style="color: #a29d93; font-size: 12px">{{ label }} · to the table</div>
+          <div><b style="font-size: 30px">{{ total }}</b> <span style="color: #a29d93; font-size: 13px">d20 {{ die }} {{ modText }}</span></div>
+          <div style="color: {{ ring }}; font-size: 12px">{{ flag }}</div>
+        </div>
+      </div>
+      <sc-if value="{{ showDamage }}" hint-placeholder-val="{{ false }}">
+        <button type="button" style="margin-top: 10px; background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 8px; padding: 6px 10px; font: inherit; font-size: 13px">Roll damage (1d6+3)</button>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ other }}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="position: absolute; left: 344px; bottom: 32px; background: #1f2226; border: 1px solid #34383e; border-radius: 10px; padding: 8px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; animation: fadein .25s ease-out">
+      <span style="width: 26px; height: 26px; border-radius: 50%; background: #2c2f3a; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #7ea6e0; font-size: 12px">B</span>
+      <span><b>Big C</b> rolled <b>17</b> · Athletics</span>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":900,"height":600}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { phase: 'idle', label: '', mod: 0, die: 0, attack: false, other: false, animate: true };
+  }
+  roll(label, mod, attack) {
+    const die = 1 + Math.floor(Math.random() * 20);
+    clearTimeout(this.t1); clearTimeout(this.t2);
+    const settle = () => {
+      this.setState({ phase: 'done' });
+      this.t2 = setTimeout(() => this.setState({ other: true }), 900);
+    };
+    this.setState({ phase: this.state.animate ? 'rolling' : 'done', label, mod, die, attack, other: false });
+    if (this.state.animate) this.t1 = setTimeout(settle, 600); else this.t2 = setTimeout(() => this.setState({ other: true }), 900);
+  }
+  componentWillUnmount() { clearTimeout(this.t1); clearTimeout(this.t2); }
+  renderVals() {
+    const s = this.state;
+    const nat20 = s.die === 20, nat1 = s.die === 1;
+    return {
+      rolling: s.phase === 'rolling',
+      done: s.phase === 'done',
+      other: s.other,
+      label: s.label,
+      die: s.die,
+      total: s.die + s.mod,
+      modText: (s.mod >= 0 ? '+' : '−') + Math.abs(s.mod),
+      ring: nat20 ? '#5bbf7f' : nat1 ? '#d64545' : '#34383e',
+      flag: s.attack ? (nat20 ? 'Natural 20: critical hit' : nat1 ? 'Natural 1: miss' : '') : (nat20 ? 'Natural 20' : nat1 ? 'Natural 1' : ''),
+      showDamage: s.attack && !nat1,
+      animate: s.animate,
+      toggleAnimate: () => this.setState({ animate: !s.animate }),
+      rollWis: () => this.roll('Wis save', 8, false),
+      rollInit: () => this.roll('Initiative', 3, false),
+      rollStrike: () => this.roll('Unarmed Strike to hit', 6, true),
+    };
+  }
+}
+</script>
+</body>
+</html>

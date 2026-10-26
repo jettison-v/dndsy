@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Character page, Play mode</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Roboto+Condensed:wght@700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#15171a}
+a{color:#e8b34b}a:hover{color:#f3c96f}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 900px; background: #15171a; color: #ebe7df; font-family: Inter, system-ui, sans-serif; font-size: 14px">
+  <header style="background: #0f1113; border-bottom: 2px solid #d64545">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 0 24px; min-height: 60px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px">
+      <a href="#" style="display: flex; align-items: center; gap: 10px; color: #ffffff; text-decoration: none; font-family: 'Roboto Condensed', sans-serif; font-weight: 700; font-size: 20px">
+        <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="none" stroke="#d64545" stroke-width="2"></polygon><polygon points="15,8 21,19 9,19" fill="#d64545"></polygon></svg>askdnd</a>
+      <nav aria-label="Story" style="display: flex; gap: 2px">
+        <a href="#" style="color: #a29d93; text-decoration: none; padding: 8px 10px; border-radius: 6px">Recap</a>
+        <a href="#" style="color: #a29d93; text-decoration: none; padding: 8px 10px; border-radius: 6px">Sessions</a>
+        <a href="#" style="color: #a29d93; text-decoration: none; padding: 8px 10px; border-radius: 6px">Campaign</a>
+        <a href="#" style="color: #a29d93; text-decoration: none; padding: 8px 10px; border-radius: 6px">Map</a>
+      </nav>
+      <span style="width: 1px; height: 24px; background: #34383e"></span>
+      <nav aria-label="Table" style="display: flex; gap: 2px">
+        <a href="#" style="color: #ffffff; background: #1f2226; text-decoration: none; padding: 8px 10px; border-radius: 6px; font-weight: 600">Cole ▾</a>
+        <a href="#" style="color: #a29d93; text-decoration: none; padding: 8px 10px; border-radius: 6px">Party</a>
+      </nav>
+      <div style="margin-left: auto; display: flex; align-items: center; gap: 10px">
+        <button type="button" style="display: flex; align-items: center; gap: 8px; background: rgba(91,191,127,.15); color: #ebe7df; border: 1px solid #5bbf7f; border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #5bbf7f"></span>Live · updated 1 min ago</button>
+        <button type="button" style="background: #1f2226; color: #ebe7df; border: 1px solid #34383e; border-radius: 8px; padding: 7px 12px; font: inherit; font-size: 13px">Manage ▾</button>
+        <span style="width: 34px; height: 34px; border-radius: 50%; background: #272b30; display: flex; align-items: center; justify-content: center; color: #a29d93; font-weight: 600">B</span>
+      </div>
+    </div>
+  </header>
+
+  <main style="max-width: 1200px; margin: 0 auto; padding: 18px 24px 32px">
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px">
+      <span style="width: 48px; height: 48px; border-radius: 50%; background: #272b30; border: 2px solid #34383e"></span>
+      <div>
+        <div style="display: flex; align-items: baseline; gap: 10px"><span style="font-size: 24px; font-weight: 700">Cole</span><span style="color: #a29d93">Druid 6 (Moon) / Monk 2</span></div>
+        <a href="#" style="font-size: 12px">Open on D&amp;D Beyond ↗</a>
+      </div>
+      <div role="group" aria-label="Mode" style="margin-left: auto; display: flex; background: #1f2226; border: 1px solid #34383e; border-radius: 10px; padding: 3px">
+        <button type="button" aria-pressed="true" style="background: #d64545; color: #ffffff; border: 0; border-radius: 8px; padding: 7px 16px; font: inherit; font-weight: 600">Play</button>
+        <button type="button" aria-pressed="false" style="background: none; color: #a29d93; border: 0; border-radius: 8px; padding: 7px 16px; font: inherit">Sheet</button>
+        <button type="button" aria-pressed="false" style="background: none; color: #a29d93; border: 0; border-radius: 8px; padding: 7px 16px; font: inherit">Plan</button>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-top: 14px">
+      <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px"><div style="color: #a29d93; font-size: 12px">Hit points</div><div style="font-size: 20px; font-weight: 700">51</div></div>
+      <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px"><div style="color: #a29d93; font-size: 12px">Armor class</div><div style="font-size: 20px; font-weight: 700">16</div></div>
+      <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px"><div style="color: #a29d93; font-size: 12px">Speed</div><div style="font-size: 20px; font-weight: 700">45 ft</div></div>
+      <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px"><div style="color: #a29d93; font-size: 12px">Initiative</div><div style="font-size: 20px; font-weight: 700">+3</div></div>
+      <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px"><div style="color: #a29d93; font-size: 12px">Spell DC / attack</div><div style="font-size: 20px; font-weight: 700">15 <span style="font-size: 13px; color: #a29d93; font-weight: 400">/ +7</span></div></div>
+      <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px; box-shadow: inset 0 0 0 1px #e8b34b"><div style="color: #a29d93; font-size: 12px">Heroic Inspiration</div><div style="font-size: 20px; font-weight: 700; color: #e8b34b">Yes</div></div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-top: 8px">
+      <div style="background: #272b30; border-radius: 10px; padding: 5px 12px; display: flex; justify-content: space-between"><span style="color: #a29d93; font-size: 12px">Str save</span><b>+0</b></div>
+      <div style="background: #272b30; border-radius: 10px; padding: 5px 12px; display: flex; justify-content: space-between"><span style="color: #a29d93; font-size: 12px">Dex save</span><b>+3</b></div>
+      <div style="background: #272b30; border-radius: 10px; padding: 5px 12px; display: flex; justify-content: space-between"><span style="color: #a29d93; font-size: 12px">Con save</span><b>+2</b></div>
+      <div style="background: #272b30; border-radius: 10px; padding: 5px 12px; display: flex; justify-content: space-between"><span style="font-size: 12px"><span style="color: #5bbf7f">●</span> Int save</span><b>+4</b></div>
+      <div style="background: #272b30; border-radius: 10px; padding: 5px 12px; display: flex; justify-content: space-between"><span style="font-size: 12px"><span style="color: #5bbf7f">●</span> Wis save</span><b>+8</b></div>
+      <div style="background: #272b30; border-radius: 10px; padding: 5px 12px; display: flex; justify-content: space-between"><span style="color: #a29d93; font-size: 12px">Cha save</span><b>+3</b></div>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; font-size: 13px; color: #ebe7df">
+      <span>Focus Points <span style="color: #5bbf7f">●●</span></span><span>Luck Points <span style="color: #5bbf7f">●●●</span></span><span>Slots 1st <span style="color: #5bbf7f">●●●●</span> 2nd <span style="color: #5bbf7f">●●●</span> 3rd <span style="color: #5bbf7f">●●●</span></span>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; padding: 10px 0; border-top: 1px solid #34383e; border-bottom: 1px solid #34383e">
+      <span style="font-family: 'Roboto Condensed', sans-serif; font-size: 12px; letter-spacing: .08em; color: #e8b34b">WILD SHAPE <span style="color: #5bbf7f">●●●</span></span>
+      <button type="button" style="background: rgba(91,191,127,.15); color: #ebe7df; border: 1px solid #5bbf7f; border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 13px">Normal</button>
+      <button type="button" style="background: #1f2226; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 13px">Polar Bear</button>
+      <button type="button" style="background: #1f2226; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 13px">Giant Octopus</button>
+      <button type="button" style="background: #1f2226; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 13px">Hunter Shark</button>
+      <button type="button" style="background: #1f2226; color: #a29d93; border: 1px solid #34383e; border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 13px">+3 more</button>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 14px">
+      <section style="background: #1f2226; border-radius: 12px; padding: 14px 16px">
+        <h2 style="margin: 0; font-size: 13px; letter-spacing: .12em; color: #ef6b6b">◆ ACTION</h2>
+        <div style="color: #a29d93; font-size: 12px; margin-bottom: 8px">One per turn</div>
+        <div style="border-top: 1px solid #34383e; padding: 8px 0; display: flex; justify-content: space-between"><span><b>Starry Wisp</b><br><span style="color: #a29d93; font-size: 12px">60 ft · 2d8 radiant</span></span><b>+7</b></div>
+        <div style="border-top: 1px solid #34383e; padding: 8px 0; display: flex; justify-content: space-between"><span><b>Unarmed Strike</b><br><span style="color: #a29d93; font-size: 12px">5 ft · 1d6+3 bludgeoning</span></span><b>+6</b></div>
+        <div style="border-top: 1px solid #34383e; padding: 8px 0; display: flex; justify-content: space-between"><span><b>Moonbeam</b><br><span style="color: #a29d93; font-size: 12px">120 ft · 2d10 radiant</span></span><b>Con 15</b></div>
+      </section>
+      <section style="background: #1f2226; border-radius: 12px; padding: 14px 16px">
+        <h2 style="margin: 0; font-size: 13px; letter-spacing: .12em; color: #e8b34b">▲ BONUS ACTION</h2>
+        <div style="color: #a29d93; font-size: 12px; margin-bottom: 8px">One per turn</div>
+        <div style="border-top: 1px solid #34383e; padding: 8px 0"><b>Wild Shape</b> <span style="color: #5bbf7f">●●●</span></div>
+        <div style="border-top: 1px solid #34383e; padding: 8px 0; display: flex; justify-content: space-between"><span><b>Unarmed Strike</b><br><span style="color: #a29d93; font-size: 12px">1d6+3 bludgeoning</span></span><b>+6</b></div>
+        <div style="border-top: 1px solid #34383e; padding: 8px 0"><b>Healing Word</b> <span style="color: #a29d93; font-size: 12px">1st-level slot</span></div>
+      </section>
+      <section style="background: #1f2226; border-radius: 12px; padding: 14px 16px">
+        <h2 style="margin: 0; font-size: 13px; letter-spacing: .12em; color: #6fa8ff">↺ REACTION</h2>
+        <div style="color: #a29d93; font-size: 12px; margin-bottom: 8px">One per round</div>
+        <div style="border-top: 1px solid #34383e; padding: 8px 0"><b>Absorb Elements</b></div>
+        <div style="border-top: 1px solid #34383e; padding: 8px 0"><b>Reactive Spell</b> <span style="color: #a29d93; font-size: 12px">War Caster</span></div>
+        <div style="border-top: 1px solid #34383e; padding: 8px 0; display: flex; justify-content: space-between"><b>Opportunity Attack</b><b>+6</b></div>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

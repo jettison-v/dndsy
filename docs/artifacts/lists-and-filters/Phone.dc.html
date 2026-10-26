@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone filters sheet</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#e8b34b}a:hover{color:#f3c96f}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #1a1d21; font-family: Inter, system-ui, sans-serif; font-size: 14px; color: #ebe7df">
+  <div style="padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; opacity: .5">
+    <div style="display: flex; align-items: center"><h2 style="margin: 0; font-size: 20px; flex: 1">Spell Book</h2><span style="color: #a29d93">✕</span></div>
+    <div style="display: flex; gap: 8px">
+      <div style="flex: 1; background: #111315; border: 1px solid #34383e; border-radius: 10px; padding: 9px 12px; color: #a29d93">Search all your spells</div>
+      <div style="background: #2a3550; border: 1px solid #7ea6e0; border-radius: 10px; padding: 9px 12px">Filters (3)</div>
+    </div>
+    <div style="border-top: 1px solid #2c3036; padding: 8px 0; display: flex; justify-content: space-between"><span><b>Moonbeam</b><br><span style="color: #a29d93; font-size: 12px">2nd · Action · Con 15</span></span><b>11</b></div>
+    <div style="border-top: 1px solid #2c3036; padding: 8px 0; display: flex; justify-content: space-between"><span><b>Heat Metal</b><br><span style="color: #a29d93; font-size: 12px">2nd · Action · Con 15</span></span><b>9</b></div>
+  </div>
+  <section role="dialog" aria-label="Filters" style="position: absolute; left: 0; right: 0; bottom: 0; height: 600px; box-sizing: border-box; background: #1f2226; border-top: 3px solid #7ea6e0; border-radius: 16px 16px 0 0; padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 -12px 30px rgba(0,0,0,.5)">
+    <div style="width: 40px; height: 4px; border-radius: 2px; background: #34383e; margin: 0 auto"></div>
+    <div style="display: flex; justify-content: space-between; align-items: center"><b>Filters</b><button type="button" style="background: none; border: 0; color: #e8b34b; font: inherit; text-decoration: underline">Clear all</button></div>
+    <div style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 12px; color: #a29d93">Level</span>
+      <div style="display: flex; flex-wrap: wrap; gap: 6px">
+        <button type="button" style="background: #1f2226; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 8px 12px; font: inherit; font-size: 13px">Cantrip 1</button>
+        <button type="button" style="background: #1f2226; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 8px 12px; font: inherit; font-size: 13px">1st 1</button>
+        <button type="button" aria-pressed="true" style="background: #2a3550; color: #ebe7df; border: 1px solid #7ea6e0; border-radius: 999px; padding: 8px 12px; font: inherit; font-size: 13px">2nd 4</button>
+        <button type="button" style="background: #1f2226; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 8px 12px; font: inherit; font-size: 13px">3rd 1</button>
+      </div></div>
+    <div style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 12px; color: #a29d93">Casting time</span>
+      <div style="display: flex; flex-wrap: wrap; gap: 6px">
+        <button type="button" aria-pressed="true" style="background: #2a3550; color: #ebe7df; border: 1px solid #7ea6e0; border-radius: 999px; padding: 8px 12px; font: inherit; font-size: 13px">Action 4</button>
+        <button type="button" style="background: #1f2226; color: #6f6b64; border: 1px solid #34383e; border-radius: 999px; padding: 8px 12px; font: inherit; font-size: 13px">Bonus 0</button>
+        <button type="button" style="background: #1f2226; color: #6f6b64; border: 1px solid #34383e; border-radius: 999px; padding: 8px 12px; font: inherit; font-size: 13px">Reaction 0</button>
+        <button type="button" style="background: #1f2226; color: #6f6b64; border: 1px solid #34383e; border-radius: 999px; padding: 8px 12px; font: inherit; font-size: 13px">Longer 0</button>
+      </div></div>
+    <div style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 12px; color: #a29d93">Concentration</span>
+      <div style="display: flex; flex-wrap: wrap; gap: 6px">
+        <button type="button" aria-pressed="true" style="background: #2a3550; color: #ebe7df; border: 1px solid #7ea6e0; border-radius: 999px; padding: 8px 12px; font: inherit; font-size: 13px">Conc. 4</button>
+        <button type="button" style="background: #1f2226; color: #6f6b64; border: 1px solid #34383e; border-radius: 999px; padding: 8px 12px; font: inherit; font-size: 13px">No Conc. 0</button>
+      </div></div>
+    <button type="button" style="text-align: left; background: none; border: 0; border-top: 1px solid #34383e; padding: 10px 0 0; color: #ebe7df; font: inherit; font-weight: 600">▸ More filters</button>
+    <button type="button" style="margin-top: auto; background: #7ea6e0; color: #0f1113; border: 0; border-radius: 10px; padding: 12px; font: inherit; font-weight: 700">Show 4 spells</button>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

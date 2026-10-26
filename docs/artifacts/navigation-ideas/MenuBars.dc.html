@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Menu bar options</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Roboto+Condensed:wght@700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#e8b34b}a:hover{color:#f3c96f}
+</style>
+</helmet>
+<div style="width: 1280px; height: 700px; box-sizing: border-box; background: #15171a; color: #ebe7df; font-family: Inter, system-ui, sans-serif; font-size: 14px; padding: 32px 40px; display: flex; flex-direction: column; gap: 22px">
+  <div>
+    <div style="color: #a29d93; font-size: 12px; letter-spacing: .1em">TODAY</div>
+    <div style="margin-top: 8px; background: #0f1113; border-bottom: 2px solid #d64545; border-radius: 10px 10px 0 0; height: 56px; display: flex; align-items: center; gap: 6px; padding: 0 18px">
+      <b style="font-family: 'Roboto Condensed', sans-serif; font-size: 18px; margin-right: 14px">askdnd</b>
+      <a href="#" style="color: #a29d93; text-decoration: none; padding: 6px 10px">Previously on…</a>
+      <a href="#" style="color: #a29d93; text-decoration: none; padding: 6px 10px">Sessions</a>
+      <a href="#" style="color: #ffffff; background: #1f2226; text-decoration: none; padding: 6px 10px; border-radius: 6px">Battle</a>
+      <a href="#" style="color: #a29d93; text-decoration: none; padding: 6px 10px">Character</a>
+      <a href="#" style="color: #a29d93; text-decoration: none; padding: 6px 10px">Party</a>
+      <a href="#" style="color: #a29d93; text-decoration: none; padding: 6px 10px">Campaign</a>
+      <a href="#" style="color: #a29d93; text-decoration: none; padding: 6px 10px">Map</a>
+      <span style="margin-left: auto; border: 1px solid #34383e; border-radius: 8px; padding: 6px 10px">Manage ▾</span>
+    </div>
+    <div style="color: #a29d93; font-size: 12px; margin-top: 6px">Seven items, no grouping. Game Mode and Refresh live inside pages (Battle, Character, Party).</div>
+  </div>
+
+  <div>
+    <div style="color: #e8b34b; font-size: 12px; letter-spacing: .1em">OPTION 1 · STORY AND TABLE, GROUPED</div>
+    <div style="margin-top: 8px; background: #0f1113; border-bottom: 2px solid #d64545; border-radius: 10px 10px 0 0; height: 56px; display: flex; align-items: center; gap: 6px; padding: 0 18px">
+      <b style="font-family: 'Roboto Condensed', sans-serif; font-size: 18px; margin-right: 14px">askdnd</b>
+      <a href="#" style="color: #a29d93; text-decoration: none; padding: 6px 10px">Recap</a>
+      <a href="#" style="color: #a29d93; text-decoration: none; padding: 6px 10px">Sessions</a>
+      <a href="#" style="color: #a29d93; text-decoration: none; padding: 6px 10px">Campaign</a>
+      <a href="#" style="color: #a29d93; text-decoration: none; padding: 6px 10px">Map</a>
+      <span style="width: 1px; height: 22px; background: #34383e; margin: 0 6px"></span>
+      <a href="#" style="color: #ffffff; background: #1f2226; text-decoration: none; padding: 6px 10px; border-radius: 6px; font-weight: 600">Cole ▾</a>
+      <a href="#" style="color: #a29d93; text-decoration: none; padding: 6px 10px">Party</a>
+      <span style="margin-left: auto; display: flex; align-items: center; gap: 8px; border: 1px solid #5bbf7f; background: rgba(91,191,127,.15); border-radius: 999px; padding: 5px 12px; font-size: 13px"><span style="width: 8px; height: 8px; border-radius: 50%; background: #5bbf7f"></span>Live</span>
+      <span style="border: 1px solid #34383e; border-radius: 8px; padding: 6px 10px">Manage ▾</span>
+    </div>
+    <div style="color: #a29d93; font-size: 12px; margin-top: 6px">Story pages on the left, your table on the right. "Cole ▾" is one Character page (Play / Sheet / Plan) and switches characters. Live replaces Game Mode and Refresh.</div>
+  </div>
+
+  <div>
+    <div style="color: #e8b34b; font-size: 12px; letter-spacing: .1em">OPTION 2 · PLAY FIRST, STORY IN ONE MENU</div>
+    <div style="margin-top: 8px; background: #0f1113; border-bottom: 2px solid #d64545; border-radius: 10px 10px 0 0; height: 56px; display: flex; align-items: center; gap: 6px; padding: 0 18px">
+      <b style="font-family: 'Roboto Condensed', sans-serif; font-size: 18px; margin-right: 14px">askdnd</b>
+      <a href="#" style="color: #ffffff; background: #1f2226; text-decoration: none; padding: 6px 10px; border-radius: 6px; font-weight: 600">Play</a>
+      <a href="#" style="color: #a29d93; text-decoration: none; padding: 6px 10px">Sheet</a>
+      <a href="#" style="color: #a29d93; text-decoration: none; padding: 6px 10px">Party</a>
+      <a href="#" style="color: #a29d93; text-decoration: none; padding: 6px 10px">Story ▾</a>
+      <a href="#" style="color: #a29d93; text-decoration: none; padding: 6px 10px">Map</a>
+      <span style="margin-left: auto; color: #a29d93; font-size: 13px">Playing as</span>
+      <span style="border: 1px solid #34383e; border-radius: 8px; padding: 6px 10px">Cole ▾</span>
+      <span style="display: flex; align-items: center; gap: 8px; border: 1px solid #5bbf7f; background: rgba(91,191,127,.15); border-radius: 999px; padding: 5px 12px; font-size: 13px"><span style="width: 8px; height: 8px; border-radius: 50%; background: #5bbf7f"></span>Live</span>
+      <span style="border: 1px solid #34383e; border-radius: 8px; padding: 6px 10px">⋯</span>
+    </div>
+    <div style="color: #a29d93; font-size: 12px; margin-top: 6px">Built for game night: the modes are the menu. Story ▾ holds Recap, Sessions and Campaign; ⋯ holds Manage, FAQ and sign-out. Better for players, slower for reviewing story.</div>
+  </div>
+
+  <div>
+    <div style="color: #e8b34b; font-size: 12px; letter-spacing: .1em">OPTION 3 · KEEP TODAY'S PAGES, TIDY THE BAR</div>
+    <div style="margin-top: 8px; background: #0f1113; border-bottom: 2px solid #d64545; border-radius: 10px 10px 0 0; height: 56px; display: flex; align-items: center; gap: 6px; padding: 0 18px">
+      <b style="font-family: 'Roboto Condensed', sans-serif; font-size: 18px; margin-right: 14px">askdnd</b>
+      <a href="#" style="color: #a29d93; text-decoration: none; padding: 6px 10px">Previously on…</a>
+      <a href="#" style="color: #a29d93; text-decoration: none; padding: 6px 10px">Campaign ▾</a>
+      <a href="#" style="color: #ffffff; background: #1f2226; text-decoration: none; padding: 6px 10px; border-radius: 6px">Battle</a>
+      <a href="#" style="color: #a29d93; text-decoration: none; padding: 6px 10px">Character</a>
+      <a href="#" style="color: #a29d93; text-decoration: none; padding: 6px 10px">Party</a>
+      <span style="margin-left: auto; display: flex; align-items: center; gap: 8px; border: 1px solid #34383e; border-radius: 999px; padding: 5px 12px; font-size: 13px; color: #a29d93"><span style="width: 8px; height: 8px; border-radius: 50%; background: #6f6b64"></span>Updated 3 h ago</span>
+      <span style="border: 1px solid #34383e; border-radius: 8px; padding: 6px 10px">Manage ▾</span>
+    </div>
+    <div style="color: #a29d93; font-size: 12px; margin-top: 6px">Smallest change: Sessions and Map fold into a Campaign menu, Battle and Character stay separate pages, and the Live control still moves Game Mode and Refresh out of the pages.</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":700}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

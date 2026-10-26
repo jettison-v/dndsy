@@ -1,0 +1,329 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>askdnd content workflows</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one reading column: today's workflows, the gaps, the proposal and its order (diagrams first), then the
+   decisions as answer cards. askdnd's own colors, light and dark. */
+:root{
+  --bg:#f6f3ee;--surface:#fffdf9;--surface-2:#efe9e0;--line:#ddd5c9;
+  --text:#24211d;--muted:#6b655c;--faint:#9a9389;
+  --red:#b83232;--amber:#9a6a10;--green:#2f8a52;--blue:#3a6db3;--violet:#7a55b8;
+  --tint-red:rgba(184,50,50,.10);--tint-green:rgba(47,138,82,.12);--tint-blue:rgba(58,109,179,.12);--tint-amber:rgba(154,106,16,.12);--tint-violet:rgba(122,85,184,.12);
+  --ui:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15171a;--surface:#1f2226;--surface-2:#272b30;--line:#34383e;
+  --text:#ebe7df;--muted:#a29d93;--faint:#6f6b64;
+  --red:#e06363;--amber:#e8b34b;--green:#5bbf7f;--blue:#7ea6e0;--violet:#b9a3e3;
+  --tint-red:rgba(214,69,69,.15);--tint-green:rgba(91,191,127,.15);--tint-blue:rgba(126,166,224,.15);--tint-amber:rgba(232,179,75,.14);--tint-violet:rgba(185,163,227,.15);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15171a;--surface:#1f2226;--surface-2:#272b30;--line:#34383e;
+  --text:#ebe7df;--muted:#a29d93;--faint:#6f6b64;
+  --red:#e06363;--amber:#e8b34b;--green:#5bbf7f;--blue:#7ea6e0;--violet:#b9a3e3;
+  --tint-red:rgba(214,69,69,.15);--tint-green:rgba(91,191,127,.15);--tint-blue:rgba(126,166,224,.15);--tint-amber:rgba(232,179,75,.14);--tint-violet:rgba(185,163,227,.15);
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--ui);font-size:16px;line-height:1.6}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:900px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 80px;display:flex;flex-direction:column;gap:26px}
+header h1{font-size:1.9rem;line-height:1.2;margin:0 0 6px;text-wrap:balance}
+header p{margin:0;color:var(--muted);max-width:68ch}
+nav.toc{display:flex;flex-wrap:wrap;gap:6px}
+nav.toc a{font-size:14px;color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:2px 12px}
+nav.toc a:hover{color:var(--text)}
+section.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px 24px;display:flex;flex-direction:column;gap:14px;scroll-margin-top:16px}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--amber)}
+section.panel h2{margin:0;font-size:1.3rem;line-height:1.3;text-wrap:balance}
+section.panel p,section.panel li{max-width:70ch}
+section.panel p{margin:0}
+.muted{color:var(--muted)}
+figure{margin:0;display:flex;flex-direction:column;gap:8px}
+.fig{overflow-x:auto;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px}
+.fig svg{display:block;width:100%;min-width:640px;height:auto;color:var(--text)}
+figcaption{font-size:14px;color:var(--muted)}
+/* diagram parts, styled from the page's tokens */
+.dg .box{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.dg .band{fill:var(--surface-2);stroke:none}
+.dg .code{fill:var(--tint-violet);stroke:var(--violet);stroke-width:1.5}
+.dg .camp{fill:var(--tint-blue);stroke:var(--blue);stroke-width:1.5}
+.dg .char{fill:var(--tint-green);stroke:var(--green);stroke-width:1.5}
+.dg .warn{fill:var(--tint-amber);stroke:var(--amber);stroke-width:1.5}
+.dg .bad{stroke:var(--red)}
+.dg text{fill:currentColor;font-family:var(--ui);font-size:13px}
+.dg .t{font-weight:700;font-size:14px}
+.dg .s{fill:var(--muted);font-size:12px}
+.dg .lab{fill:var(--muted);font-size:12px;font-style:italic}
+.dg .labr{fill:var(--red);font-size:12px;font-weight:600}
+.dg .laya{fill:var(--amber);font-size:11px;font-weight:700;letter-spacing:.1em}
+.dg .ln{stroke:currentColor;stroke-width:1.5;fill:none}
+.dg .lnd{stroke:currentColor;stroke-width:1.5;fill:none;stroke-dasharray:5 4;opacity:.7}
+.dg .lnr{stroke:var(--red);stroke-width:1.8;fill:none}
+.dg .head{fill:currentColor}
+.dg .headr{fill:var(--red)}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+.tbl{overflow-x:auto}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.role{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:1px 9px;white-space:nowrap}
+.r-dm{background:var(--tint-red);color:var(--red)} .r-rev{background:var(--tint-amber);color:var(--amber)}
+.r-pl{background:var(--tint-green);color:var(--green)} .r-tool{background:var(--tint-violet);color:var(--violet)}
+.r-none{color:var(--faint)}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.steps li{display:grid;grid-template-columns:32px 1fr;gap:12px;align-items:start}
+.steps .n{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);font-weight:700;font-variant-numeric:tabular-nums}
+.steps b{display:block}
+.steps .vis{font-size:13px;color:var(--muted)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.card h3{margin:0 0 6px;font-size:15px}
+.card dl{margin:0;display:grid;grid-template-columns:max-content 1fr;gap:4px 12px;font-size:14px}
+.card dt{color:var(--muted)} .card dd{margin:0}
+/* questions */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar-in{max-width:900px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.meter{flex:1;min-width:140px;height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--green);width:0;transition:width .3s}
+.count{font-variant-numeric:tabular-nums;font-weight:600;font-size:14px}
+.save{font-size:13px;color:var(--muted)}
+.btn{font:inherit;font-size:14px;border-radius:8px;padding:6px 12px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);cursor:pointer}
+.btn:hover{border-color:var(--faint)}
+.btn:focus-visible,.opt input:focus-visible+span,textarea:focus-visible,a:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:12px}
+.q.done{border-color:color-mix(in srgb,var(--green) 45%,var(--line))}
+.q-head{display:flex;gap:12px;align-items:baseline}
+.q-num{color:var(--red);font-weight:700;font-variant-numeric:tabular-nums;min-width:1.6em}
+.q h3{margin:0;font-size:1.05rem;line-height:1.4;flex:1;min-width:0}
+.q-state{font-size:12px;padding:2px 9px;border-radius:999px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.q.done .q-state{background:var(--tint-green);color:var(--green)}
+.why{margin:0;color:var(--muted);font-size:14.5px;max-width:68ch}
+.why b{color:var(--text);font-weight:600}
+.opts{display:flex;flex-direction:column;gap:6px}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:9px 12px;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:var(--bg)}
+.opt:hover{border-color:var(--faint)}
+.opt input{margin:4px 0 0;accent-color:var(--red)}
+.opt span{display:flex;flex-direction:column;min-width:0}
+.opt b{font-weight:600}
+.opt small{color:var(--muted);font-size:13.5px;line-height:1.45}
+.opt.on{border-color:var(--blue);background:var(--tint-blue)}
+.rec{font-size:11px;font-weight:600;color:var(--green);background:var(--tint-green);border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:1px}
+textarea{font:inherit;font-size:14.5px;width:100%;min-height:44px;resize:vertical;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);padding:8px 10px}
+textarea::placeholder{color:var(--faint)}
+.offline{border:1px solid var(--amber);border-radius:10px;padding:12px 14px;background:var(--surface)}
+.group{display:flex;flex-direction:column;gap:14px}
+@media (max-width:600px){section.panel,.q{padding:16px}.q-head{flex-wrap:wrap}}
+@media (prefers-reduced-motion:reduce){.meter i{transition:none}}
+</style>
+<div class="bar"><div class="bar-in">
+  <span class="count" id="count">0 of 0 answered</span>
+  <div class="meter" aria-hidden="true"><i id="meter"></i></div>
+  <span class="save" id="save" aria-live="polite">Loading saved answers…</span>
+  <a class="btn" href="#decisions" style="text-decoration:none">Go to the decisions</a>
+</div></div>
+
+<div class="wrap">
+  <header>
+    <h1>Who writes the campaign: an audit of askdnd's content workflows</h1>
+    <p>You asked for the DM to own accurate content, helped by three inputs: their own writing, transcripts (most of the work) and players' corrections. This page maps how content gets in today, where the DM is left out, and what I'd change. The decisions at the bottom save as you answer.</p>
+  </header>
+  <nav class="toc" aria-label="On this page"><a href="#today">Today</a><a href="#gaps">What's missing</a><a href="#proposed">Proposed</a><a href="#actions">One way to act on any input</a><a href="#order">Order</a><a href="#decisions">Decisions</a></nav>
+
+  <section class="panel" id="today" aria-labelledby="today-h">
+    <span class="eyebrow">Today</span>
+    <h2 id="today-h">Three inputs, three different pipes, and the DM writes the least</h2>
+    <figure>
+      <div class="fig"><svg class="dg" viewBox="0 0 760 430" role="img" aria-label="Today: transcripts go through a reviewer's session review into recaps, key moments and entries; players' entry suggestions become facts; players' recap and glossary suggestions go to an inbox and feed a redraft; the DM can only edit existing entries and the glossary.">
+        <defs><marker id="b1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0,0 L10,5 L0,10 z"/></marker>
+              <marker id="b1r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="headr" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+        <text class="laya" x="20" y="24">INPUTS</text><text class="laya" x="270" y="24">WHERE THEY GO</text><text class="laya" x="560" y="24">WHAT THE TABLE READS</text>
+        <!-- inputs -->
+        <rect class="code" x="20" y="40" width="200" height="70" rx="10"/><text class="t" x="36" y="64">Transcripts</text><text class="s" x="36" y="84">filtered on your Mac,</text><text class="s" x="36" y="100">drafted by Claude</text>
+        <rect class="box" x="20" y="150" width="200" height="70" rx="10"/><text class="t" x="36" y="174">Your campaign doc</text><text class="s" x="36" y="194">synced Google Doc,</text><text class="s" x="36" y="210">"Draft from notes"</text>
+        <rect class="char" x="20" y="260" width="200" height="70" rx="10"/><text class="t" x="36" y="284">Players</text><text class="s" x="36" y="304">"Suggest a correction</text><text class="s" x="36" y="320">or addition"</text>
+        <rect class="warn" x="20" y="350" width="200" height="66" rx="10"/><text class="t" x="36" y="374">The DM</text><text class="s" x="36" y="394">edits existing entries,</text><text class="s" x="36" y="410">glossary, pictures</text>
+        <!-- middle -->
+        <rect class="box" x="270" y="40" width="230" height="120" rx="10"/><text class="t" x="286" y="64">Session review (reviewers)</text>
+        <text class="s" x="286" y="86">recap · key moments</text><text class="s" x="286" y="104">Claude's questions</text><text class="s" x="286" y="122">suggested entry updates:</text><text class="labr" x="286" y="142">Accept replaces the description</text>
+        <rect class="box" x="270" y="190" width="230" height="70" rx="10"/><text class="t" x="286" y="214">Suggestions inbox</text><text class="s" x="286" y="234">recap and glossary ideas:</text><text class="s" x="286" y="250">Use in redraft · Done · Dismiss</text>
+        <rect class="box" x="270" y="282" width="230" height="58" rx="10"/><text class="t" x="286" y="306">Facts on the entry</text><text class="s" x="286" y="326">Merge · Reject · Done</text>
+        <!-- outputs -->
+        <rect class="camp" x="560" y="40" width="180" height="70" rx="10"/><text class="t" x="576" y="64">Recaps and</text><text class="t" x="576" y="82">key moments</text><text class="s" x="576" y="100">per session</text>
+        <rect class="camp" x="560" y="150" width="180" height="120" rx="10"/><text class="t" x="576" y="174">Entries</text><text class="s" x="576" y="196">people, places, factions,</text><text class="s" x="576" y="212">items, quests: description,</text><text class="s" x="576" y="228">facts, relationships,</text><text class="s" x="576" y="244">aliases, picture</text>
+        <rect class="camp" x="560" y="300" width="180" height="56" rx="10"/><text class="t" x="576" y="324">Glossary</text><text class="s" x="576" y="342">spellings, terms</text>
+        <!-- arrows -->
+        <path class="ln" d="M220 75 H 268" marker-end="url(#b1)"/>
+        <path class="ln" d="M220 185 C 245 185 245 120 268 120" marker-end="url(#b1)"/>
+        <path class="ln" d="M500 75 H 558" marker-end="url(#b1)"/>
+        <path class="ln" d="M500 130 C 530 130 530 190 558 190" marker-end="url(#b1)"/>
+        <path class="ln" d="M220 285 C 245 285 245 228 268 228" marker-end="url(#b1)"/><text class="lab" x="226" y="262">recaps</text>
+        <path class="ln" d="M220 305 H 268" marker-end="url(#b1)"/><text class="lab" x="226" y="300">entries</text>
+        <path class="ln" d="M500 225 C 530 225 530 100 558 100" marker-end="url(#b1)"/><text class="lab" x="506" y="190">next redraft</text>
+        <path class="ln" d="M500 310 C 530 310 530 250 558 250" marker-end="url(#b1)"/>
+        <path class="lnd" d="M220 385 C 400 385 420 260 558 260" marker-end="url(#b1)"/><text class="lab" x="380" y="378">edits only</text>
+      </svg></div>
+      <figcaption>Transcripts carry most of the load, as intended. But the DM can only touch what a transcript already created, and each input has its own buttons and its own place to act.</figcaption>
+    </figure>
+  </section>
+
+  <section class="panel" id="gaps" aria-labelledby="gaps-h">
+    <span class="eyebrow">What's missing</span>
+    <h2 id="gaps-h">Seven gaps, most of them about the DM</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Gap</th><th>Today</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><b>1. Nothing can be created by hand</b></td><td>New people, places, factions, items and quests only come from a transcript or a data import. No "+ New" anywhere; no key moment or session without Claude.</td><td>The DM can't prepare an NPC before the party meets them, or add something a transcript missed.</td></tr>
+        <tr><td><b>2. A transcript can overwrite the DM's words</b></td><td>A suggested entry update replaces the whole description when accepted (Undo exists). Regenerate does the same.</td><td>A hand-written description is one click from being lost, and nothing says who wrote it.</td></tr>
+        <tr><td><b>3. Two suggestion pipes</b></td><td>Entry suggestions become facts (Merge · Reject). Recap and glossary suggestions go to an inbox (Use in redraft · Done · Dismiss).</td><td>Different buttons for the same job; the facts list keeps growing.</td></tr>
+        <tr><td><b>4. Recaps belong to reviewers</b></td><td>Editing recaps and key moments needs Reviewer access; the DM tick alone doesn't allow it.</td><td>Works for your table (Mary has both), not for a DM who is only a DM.</td></tr>
+        <tr><td><b>5. No housekeeping</b></td><td>No change of kind, quest open or done, publish or hide, merge duplicates ("Capt Trager Grill" next to "Captain Trager Grill"), or delete.</td><td>Transcript mistakes pile up and only an import can fix them.</td></tr>
+        <tr><td><b>6. Published recaps can't take a correction</b></td><td>A player's correction on a published recap shows under it; the recap text doesn't change unless a reviewer redrafts.</td><td>The mistake stays in the story.</td></tr>
+        <tr><td><b>7. Players don't hear back</b></td><td>After sending, a player sees "waiting"; nothing tells them it was used.</td><td>Less reason to keep suggesting.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="panel" id="proposed" aria-labelledby="prop-h">
+    <span class="eyebrow">Proposed</span>
+    <h2 id="prop-h">The DM writes the canon; everything else proposes</h2>
+    <figure>
+      <div class="fig"><svg class="dg" viewBox="0 0 760 330" role="img" aria-label="Proposed: the DM writes directly to the canon; transcripts, players and Claude all send proposals to one DM inbox, where each is accepted, edited, worked in by Claude, or dismissed.">
+        <defs><marker id="b2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+        <rect class="code" x="20" y="30" width="190" height="56" rx="10"/><text class="t" x="36" y="54">Transcripts</text><text class="s" x="36" y="74">most of the work</text>
+        <rect class="char" x="20" y="110" width="190" height="56" rx="10"/><text class="t" x="36" y="134">Players</text><text class="s" x="36" y="154">corrections, additions</text>
+        <rect class="box" x="20" y="190" width="190" height="56" rx="10"/><text class="t" x="36" y="214">Claude</text><text class="s" x="36" y="234">redrafts on request</text>
+        <rect class="warn" x="270" y="60" width="220" height="160" rx="10"/><text class="t" x="286" y="86">The DM's inbox</text>
+        <text class="s" x="286" y="110">one list, one set of buttons:</text>
+        <text x="286" y="134">Accept</text><text x="286" y="156">Edit, then accept</text><text x="286" y="178">Ask Claude to work it in</text><text x="286" y="200">Dismiss</text>
+        <rect class="camp" x="550" y="60" width="190" height="160" rx="10"/><text class="t" x="566" y="86">The canon</text>
+        <text class="s" x="566" y="110">what the table reads:</text><text class="s" x="566" y="130">recaps, key moments,</text><text class="s" x="566" y="150">entries, glossary</text><text class="s" x="566" y="176">each piece says who</text><text class="s" x="566" y="194">wrote it last</text>
+        <rect class="warn" x="270" y="262" width="470" height="52" rx="10"/><text class="t" x="286" y="286">The DM writes directly</text><text class="s" x="286" y="304">+ New entry · edit any text · add a key moment · add a session by hand · merge duplicates</text>
+        <path class="ln" d="M210 58 C 240 58 240 110 268 110" marker-end="url(#b2)"/>
+        <path class="ln" d="M210 138 H 268" marker-end="url(#b2)"/>
+        <path class="ln" d="M210 218 C 240 218 240 170 268 170" marker-end="url(#b2)"/>
+        <path class="ln" d="M490 140 H 548" marker-end="url(#b2)"/><text class="lab" x="496" y="132">only on OK</text>
+        <path class="ln" d="M645 262 V 222" marker-end="url(#b2)"/>
+      </svg></div>
+      <figcaption>Nothing reaches the table without the DM's OK, except what the DM writes themselves. The DM decides when Claude helps. Transcripts keep doing the bulk, but as proposals: a suggested change to a DM-written description arrives as a marked-up edit, never a replacement.</figcaption>
+    </figure>
+  </section>
+
+  <section class="panel" id="actions" aria-labelledby="act-h">
+    <span class="eyebrow">Proposed · in practice</span>
+    <h2 id="act-h">One way to act on any input</h2>
+    <div class="cols">
+      <div class="card"><h3>A player: "Kieran is Cole's father, not uncle"</h3><dl>
+        <dt>Inbox shows</dt><dd>the suggestion next to Kieran's description</dd>
+        <dt>Accept</dt><dd>adds it to "What the table knows"</dd>
+        <dt>Edit</dt><dd>opens Kieran's description with the suggestion beside it</dd>
+        <dt>Work it in</dt><dd>Claude redrafts the description with it; you see the change first</dd>
+        <dt>Then</dt><dd>the player's suggestion shows "Used"</dd></dl></div>
+      <div class="card"><h3>A transcript: session 22</h3><dl>
+        <dt>Inbox shows</dt><dd>the session's draft: recap, key moments, new and changed entries</dd>
+        <dt>New entry</dt><dd>Accept or Edit as today</dd>
+        <dt>Changed entry</dt><dd>shown as a marked-up edit of the current description; if you wrote it, Claude's version keeps your words and adds the new facts</dd>
+        <dt>Publish</dt><dd>as today</dd></dl></div>
+      <div class="card"><h3>The DM, between sessions</h3><dl>
+        <dt>+ New</dt><dd>on each Campaign tab: person, place, faction, item, quest, creature</dd>
+        <dt>Edit</dt><dd>any entry, recap or key moment, in your words</dd>
+        <dt>Tidy</dt><dd>merge duplicates, change kind, open or close a quest, hide or delete</dd>
+        <dt>By hand</dt><dd>add a session with no transcript and no Claude</dd></dl></div>
+    </div>
+  </section>
+
+  <section class="panel" id="order" aria-labelledby="order-h">
+    <span class="eyebrow">Order</span>
+    <h2 id="order-h">Before step 10, except the role change</h2>
+    <ol class="steps">
+      <li><span class="n">1</span><div><b>DM creation and housekeeping</b>+ New entries, change kind and quest status, publish or hide, merge duplicates, delete (with History to restore), add a key moment to an entry.<span class="vis">Small, independent, visible right away.</span></div></li>
+      <li><span class="n">2</span><div><b>One inbox</b>Facts and suggestions become one list on Manage with the four buttons; entry, recap and glossary suggestions all work the same; players see "Used".<span class="vis">Replaces Manage › Suggestions.</span></div></li>
+      <li><span class="n">3</span><div><b>Protect the DM's words</b>Each description and recap records who wrote it last; transcript updates and redrafts of DM-written text arrive as marked-up edits that keep the DM's words.<span class="vis">Changes the session review's suggested updates.</span></div></li>
+      <li><span class="n">4</span><div><b>DM owns recaps</b>Comes with step 10's per-campaign roles: in their campaign the DM can do everything a reviewer can.<span class="vis">Part of step 10.2.</span></div></li>
+    </ol>
+  </section>
+
+  <section class="group" id="decisions" aria-labelledby="dec-h" style="scroll-margin-top:60px">
+    <span class="eyebrow">Your decisions</span>
+    <h2 id="dec-h" style="margin:-6px 0 0;font-size:1.3rem">Eight questions</h2>
+    <div class="offline" id="offline" hidden>Answers can't be saved in this view. You can still read everything; answer in chat instead.</div>
+    <div id="qs"></div>
+  </section>
+</div>
+<script>
+const QS = [
+  {id:"canon", q:"Is \"the DM writes the canon; everything else proposes\" the right rule?",
+   why:"Nothing a transcript, a player or Claude produces reaches the table without the DM's (or a reviewer's) OK; what the DM writes goes straight on.",
+   opts:[["Yes","The DM's OK is the only way in, apart from their own writing.",1],["Mostly, but player facts go on the page as before","A player's fact shows as soon as the DM merges it, without being folded into the description."]]},
+  {id:"dm-roles", q:"In their own campaign, should the DM be able to do everything a reviewer can?",
+   why:"Recaps, key moments and transcript review need Reviewer access today. This would come with step 10's per-campaign roles.",
+   opts:[["Yes, the DM includes Reviewer","Reviewers stay as helpers who draft and review.",1],["No, keep them separate","A DM who should edit recaps also needs Reviewer."]]},
+  {id:"inbox", q:"One inbox for every suggestion?",
+   why:"Entry suggestions (facts), recap and glossary suggestions, and transcript drafts waiting for review, in one list on Manage, each with Accept · Edit · Work it in · Dismiss.",
+   opts:[["Yes, one inbox","Transcript reviews still open their own page, but are listed there.",1],["Keep facts on each entry, suggestions in the inbox","As today, with the same four buttons in both places."]]},
+  {id:"facts", q:"What should \"What the table knows\" be?",
+   why:"Today merged facts stay listed under the description until worked in or marked Done.",
+   opts:[["Visible until worked in","As now: the table sees new facts right away; the DM folds them into the description over time.",1],["Only an input for the DM","The table reads the description only; facts wait in the inbox until worked in."],["Visible, but never folded in","Facts and description stay separate for good."]]},
+  {id:"protect", q:"When a transcript or redraft suggests changes to a description the DM wrote:",
+   opts:[["Show a marked-up edit that keeps the DM's words","You accept, edit or dismiss it; nothing is replaced wholesale.",1],["Only offer new facts","Transcripts never touch a DM-written description; they add facts instead."],["Replace with Undo, as today",""]]},
+  {id:"create", q:"Which DM tools do you want first?", multi:true,
+   why:"All are small. Pick any; I'd do all of them in one step before the inbox.",
+   opts:[["+ New entry on each Campaign tab","",1],["Merge duplicate entries","",1],["Change kind, open or close a quest, publish or hide","",1],["Delete an entry (History can restore it)","",1],["Add a key moment to an entry","",1],["Add a session by hand, no transcript or Claude","",1]]},
+  {id:"recap-fix", q:"A player corrects a published recap. Then:",
+   opts:[["The DM edits the recap, or asks Claude to redraft with it, then republishes","The correction is marked Used.",1],["It shows under the recap, as today",""]]},
+  {id:"tell", q:"Should players see what happened to their suggestions?",
+   opts:[["Yes: Used, Added, or Not used, on the entry and in their list","No notifications, just the status where they look.",1],["No, keep it quiet",""]]},
+];
+const answers = {}; let db = null;
+const el = (t, cls, html) => { const e = document.createElement(t); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+function render(){ const root = document.getElementById("qs"); root.innerHTML = ""; QS.forEach((q, i) => root.append(card(q, i + 1))); progress(); }
+function card(q, n){
+  const box = el("article", "q"); box.id = "q-" + q.id;
+  const head = el("div", "q-head"); head.append(el("span", "q-num", n), el("h3", null, q.q), el("span", "q-state", "Open")); box.append(head);
+  if (q.why) box.append(el("p", "why", q.why));
+  const opts = el("div", "opts"); opts.setAttribute("role", q.multi ? "group" : "radiogroup"); opts.setAttribute("aria-label", q.q);
+  q.opts.forEach(([label, hint, rec], i) => {
+    const id = q.id + "-" + i, lab = el("label", "opt"); lab.htmlFor = id;
+    const inp = document.createElement("input"); inp.type = q.multi ? "checkbox" : "radio"; inp.name = q.id; inp.id = id; inp.value = label;
+    const span = el("span"), b = el("b"); b.textContent = label; if (rec) b.append(el("span", "rec", "Recommended"));
+    span.append(b); if (hint) { const s = el("small"); s.textContent = hint; span.append(s); }
+    lab.append(inp, span); opts.append(lab);
+    inp.addEventListener("change", () => {
+      const cur = answers[q.id] || (answers[q.id] = {choice: q.multi ? [] : "", note: ""});
+      cur.choice = q.multi ? [...opts.querySelectorAll("input:checked")].map(x => x.value) : label; paint(q); save(q.id);
+    });
+  });
+  box.append(opts);
+  const ta = document.createElement("textarea"); ta.id = q.id + "-note"; ta.rows = 1; ta.placeholder = "Note (optional): your own answer, or why"; ta.setAttribute("aria-label", "Note for: " + q.q);
+  let t; ta.addEventListener("input", () => { const cur = answers[q.id] || (answers[q.id] = {choice: q.multi ? [] : "", note: ""}); cur.note = ta.value; paint(q); clearTimeout(t); t = setTimeout(() => save(q.id), 700); });
+  box.append(ta); setTimeout(() => paint(q)); return box;
+}
+const answered = q => { const a = answers[q.id]; return !!a && ((Array.isArray(a.choice) ? a.choice.length : !!a.choice) || !!(a.note || "").trim()); };
+function paint(q){
+  const box = document.getElementById("q-" + q.id); if (!box) return;
+  const a = answers[q.id] || {}; const chosen = Array.isArray(a.choice) ? a.choice : [a.choice];
+  box.querySelectorAll(".opt").forEach(lab => { const inp = lab.querySelector("input"); inp.checked = chosen.includes(inp.value); lab.classList.toggle("on", inp.checked); });
+  const ta = box.querySelector("textarea"); if (document.activeElement !== ta) ta.value = a.note || "";
+  const done = answered(q); box.classList.toggle("done", done); box.querySelector(".q-state").textContent = done ? "Answered" : "Open"; progress();
+}
+function progress(){ const n = QS.filter(answered).length; document.getElementById("count").textContent = n + " of " + QS.length + " answered"; document.getElementById("meter").style.width = (100 * n / QS.length) + "%"; }
+const status = t => { document.getElementById("save").textContent = t; };
+async function save(id){
+  if (!db) { status("Not saved (offline view)"); return; }
+  status("Saving…");
+  try { const a = answers[id]; await db.doc("answers/" + id).set({choice: a.choice, note: a.note || "", updated: new Date().toISOString()}); status("All answers saved"); }
+  catch (e) { status("Couldn't save: " + (e && e.message || "try again")); }
+}
+render();
+(async () => {
+  try { db = window.claude && await window.claude.use("db"); } catch (e) { db = null; }
+  if (!db) { status("Not saved"); document.getElementById("offline").hidden = false; return; }
+  status("Answers save as you go");
+  db.collection("answers").onSnapshot(snap => {
+    snap.docs.forEach(d => { if (!d.metadata.hasPendingWrites) { const v = d.data() || {}; answers[d.id] = {choice: v.choice ?? "", note: v.note || ""}; } });
+    QS.forEach(paint);
+  }, () => status("Couldn't load saved answers"));
+})();
+</script>
+
+</body></html>

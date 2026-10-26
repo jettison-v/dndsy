@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spells by effect, with filters</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#e8b34b}a:hover{color:#f3c96f}
+</style>
+</helmet>
+<div style="width: 1200px; height: 820px; box-sizing: border-box; background: rgba(8,9,10,.85); font-family: Inter, system-ui, sans-serif; font-size: 14px; color: #ebe7df; padding: 24px">
+  <div role="dialog" aria-label="Spell Book" style="height: 100%; box-sizing: border-box; background: #1a1d21; border: 1px solid #34383e; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden">
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 14px 20px; border-bottom: 1px solid #34383e">
+      <div><div style="color: #a29d93; font-size: 12px">Cole · DC 15 · +7 to hit</div><h2 style="margin: 0; font-size: 22px">Spell Book</h2></div>
+      <div role="tablist" aria-label="Effect" style="display: flex; gap: 4px; margin-left: 10px">
+        <sc-for list="{{ effects }}" as="e" hint-placeholder-count="5">
+          <button type="button" role="tab" aria-selected="{{ e.selected }}" onClick="{{ e.pick }}" style="background: none; border: 0; border-bottom: 2px solid {{ e.line }}; color: {{ e.color }}; padding: 8px 10px; font: inherit; font-weight: 600; cursor: pointer">{{ e.label }} <span style="color: #a29d93; font-weight: 400">{{ e.count }}</span></button>
+        </sc-for>
+      </div>
+      <button type="button" aria-label="Close" style="margin-left: auto; background: none; border: 0; color: #a29d93; font-size: 20px">✕</button>
+    </div>
+    <div style="flex: 1; display: grid; grid-template-columns: 220px minmax(0, 1fr); overflow: hidden">
+      <aside aria-label="Filters" style="border-right: 1px solid #34383e; padding: 14px; display: flex; flex-direction: column; gap: 14px">
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #a29d93">Search<input type="search" placeholder="Spell name" onInput="{{ onSearch }}" style="background: #111315; color: #ebe7df; border: 1px solid #34383e; border-radius: 8px; padding: 7px 9px; font: inherit; font-size: 13px"></label>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div style="font-size: 12px; color: #a29d93">Cast at (averages follow)</div>
+          <sc-for list="{{ slots }}" as="s" hint-placeholder-count="4">
+            <button type="button" aria-pressed="{{ s.pressed }}" onClick="{{ s.pick }}" style="display: flex; justify-content: space-between; align-items: center; background: {{ s.bg }}; color: #ebe7df; border: 1px solid {{ s.ring }}; border-radius: 8px; padding: 6px 10px; font: inherit; font-size: 13px; cursor: pointer"><span>{{ s.label }}</span><span style="color: #7ea6e0; letter-spacing: 1px; font-size: 12px">{{ s.pips }}</span></button>
+          </sc-for>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div style="font-size: 12px; color: #a29d93">Casting time</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 4px">
+            <sc-for list="{{ times }}" as="t" hint-placeholder-count="4">
+              <button type="button" aria-pressed="{{ t.pressed }}" onClick="{{ t.pick }}" style="background: {{ t.bg }}; color: #ebe7df; border: 1px solid {{ t.ring }}; border-radius: 999px; padding: 3px 9px; font: inherit; font-size: 12px; cursor: pointer">{{ t.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div style="font-size: 12px; color: #a29d93">Concentration</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 4px">
+            <sc-for list="{{ concs }}" as="c" hint-placeholder-count="3">
+              <button type="button" aria-pressed="{{ c.pressed }}" onClick="{{ c.pick }}" style="background: {{ c.bg }}; color: #ebe7df; border: 1px solid {{ c.ring }}; border-radius: 999px; padding: 3px 9px; font: inherit; font-size: 12px; cursor: pointer">{{ c.label }}</button>
+            </sc-for>
+          </div>
+          <div style="font-size: 11px; color: #a29d93">You're concentrating on Moonbeam: a new Concentration spell ends it.</div>
+        </div>
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px"><input type="checkbox" checked="{{ ws }}" onChange="{{ toggleWs }}"> Castable in Wild Shape</label>
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #a29d93">Sort
+          <select onChange="{{ onSort }}" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 6px; font: inherit; font-size: 13px; padding: 4px 6px"><option value="avg">Average (high first)</option><option value="level">Spell level</option><option value="name">Name</option></select></label>
+      </aside>
+      <div style="padding: 14px 18px; overflow: hidden; display: flex; flex-direction: column; gap: 10px">
+        <div style="font-size: 12px; color: #a29d93">{{ summary }}</div>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+          <sc-for list="{{ cards }}" as="sp" hint-placeholder-count="6">
+            <div style="background: #1f2226; border: 1px solid #34383e; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px; opacity: {{ sp.opacity }}">
+              <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px"><b>{{ sp.name }}</b><span style="font-size: 12px; color: #a29d93">{{ sp.levelTag }}</span></div>
+              <div style="display: flex; align-items: baseline; gap: 8px"><b style="font-size: 28px">{{ sp.avg }}</b><span style="color: #a29d93; font-size: 12px">{{ sp.avgNote }}</span></div>
+              <div style="font-size: 12px; color: #ebe7df">{{ sp.dice }} <span style="color: #e8b34b">{{ sp.upcast }}</span></div>
+              <div style="font-size: 12px; color: #a29d93">{{ sp.line }}</div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px">
+                <span style="font-size: 12px; color: {{ sp.costColor }}">{{ sp.cost }}</span>
+                <button type="button" style="background: {{ sp.btnBg }}; color: {{ sp.btnColor }}; border: 1px solid #34383e; border-radius: 8px; padding: 5px 12px; font: inherit; font-size: 13px; font-weight: 700">{{ sp.cta }}</button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":820}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { effect: 'damage', slot: 3, time: 'all', conc: 'any', ws: false, q: '', sort: 'avg' };
+  }
+  renderVals() {
+    const SPELLS = [
+      { name: 'Starry Wisp', level: 0, effect: 'damage', time: 'Action', n: 2, d: 8, per: 0, kind: 'attack', type: 'radiant', area: 'One target, 60 ft', ws: true },
+      { name: 'Thorn Whip', level: 0, effect: 'damage', time: 'Action', n: 2, d: 6, per: 0, kind: 'attack', type: 'piercing', area: 'One target, 30 ft · pull 10 ft' },
+      { name: 'Moonbeam', level: 2, effect: 'damage', time: 'Action', n: 2, d: 10, per: 1, kind: 'save', save: 'Con 15', type: 'radiant', conc: true, area: '5-ft cylinder, 120 ft · each turn', ws: true, active: true },
+      { name: 'Heat Metal', level: 2, effect: 'damage', time: 'Action', n: 2, d: 8, per: 1, kind: 'save', save: 'Con 15', type: 'fire', conc: true, area: 'One metal object, 60 ft · each turn' },
+      { name: 'Conjure Animals', level: 3, effect: 'damage', time: 'Action', n: 3, d: 10, per: 1, kind: 'save', save: 'Dex 15', type: 'slashing', conc: true, area: 'Creatures near the pack · each turn', ws: true },
+      { name: 'Depth Charge', level: 3, effect: 'damage', time: 'Action', n: 7, d: 6, per: 1, kind: 'save', save: 'Con 15', type: 'thunder', area: '20-ft sphere, 90 ft · half on a save' },
+      { name: 'Healing Word', level: 1, effect: 'heal', time: 'Bonus action', n: 2, d: 4, per: 2, bonus: 4, kind: 'heal', area: 'One creature, 60 ft' },
+      { name: 'Cure Wounds', level: 1, effect: 'heal', time: 'Action', n: 2, d: 8, per: 2, bonus: 4, kind: 'heal', area: 'One creature, touch', ws: true },
+      { name: 'Faerie Fire', level: 1, effect: 'control', time: 'Action', kind: 'save', save: 'Dex 15', conc: true, area: '20-ft cube · attacks against them have Advantage' },
+      { name: 'Thorn Whip (pull)', level: 0, effect: 'control', time: 'Action', kind: 'attack', area: 'Pull a Large or smaller target 10 ft' },
+      { name: 'Dispel Magic', level: 3, effect: 'control', time: 'Action', kind: 'none', area: 'Ends one spell of level 3 or lower; higher needs a check' },
+      { name: 'Absorb Elements', level: 1, effect: 'protect', time: 'Reaction', kind: 'none', area: 'Resistance to the triggering damage' },
+      { name: 'Warding Wind', level: 2, effect: 'protect', time: 'Action', kind: 'none', conc: true, area: '10-ft wind around you' },
+      { name: 'Guidance', level: 0, effect: 'utility', time: 'Action', kind: 'none', conc: true, area: '+1d4 to one skill' },
+      { name: 'Message', level: 0, effect: 'utility', time: 'Action', kind: 'none', area: 'Whisper, 120 ft' },
+      { name: 'Locate Object', level: 2, effect: 'utility', time: 'Action', kind: 'none', conc: true, area: 'Sense an object, 1,000 ft' },
+      { name: 'Water Breathing', level: 3, effect: 'utility', time: 'Action', kind: 'none', area: 'Up to ten creatures, 24 hours' },
+    ];
+    const SLOTS = [{ level: 0, label: 'Cantrips only', max: 0, left: 0 }, { level: 1, label: '1st', max: 4, left: 4 }, { level: 2, label: '2nd', max: 3, left: 3 }, { level: 3, label: '3rd', max: 3, left: 2 }];
+    const ORD = ['cantrip', '1st', '2nd', '3rd'];
+    const s = this.state;
+    const pill = (on) => ({ bg: on ? '#2a3550' : '#1f2226', ring: on ? '#7ea6e0' : '#34383e', pressed: on ? 'true' : 'false' });
+    const matchFilters = (x) => (s.time === 'all' || x.time === s.time) && (s.conc === 'any' || (s.conc === 'no' ? !x.conc : !!x.conc))
+      && (!s.ws || x.ws) && (!s.q || x.name.toLowerCase().includes(s.q.toLowerCase()));
+    const EFFECTS = [['damage', 'Damage'], ['heal', 'Heal'], ['control', 'Control'], ['protect', 'Protect'], ['utility', 'Utility']];
+    const effects = EFFECTS.map(([k, label]) => ({ label, count: SPELLS.filter(x => x.effect === k && matchFilters(x)).length,
+      selected: s.effect === k ? 'true' : 'false', line: s.effect === k ? '#d64545' : 'transparent', color: s.effect === k ? '#ffffff' : '#a29d93',
+      pick: () => this.setState({ effect: k }) }));
+    const at = (x) => x.level === 0 ? 0 : Math.max(x.level, s.slot);
+    const count = (x) => x.n + (x.level > 0 ? x.per * (at(x) - x.level) : 0);
+    const avgOf = (x) => x.n ? count(x) * (x.d + 1) / 2 + (x.bonus || 0) : null;
+    let list = SPELLS.filter(x => x.effect === s.effect && matchFilters(x));
+    list = list.slice().sort((a, b) => s.sort === 'name' ? a.name.localeCompare(b.name) : s.sort === 'level' ? a.level - b.level : (avgOf(b) || 0) - (avgOf(a) || 0));
+    const cards = list.map(x => {
+      const blocked = x.level > s.slot;
+      const avg = avgOf(x);
+      const up = x.level > 0 && at(x) > x.level && x.n;
+      return {
+        name: x.name,
+        levelTag: ORD[x.level] + (x.conc ? ' · Conc.' : '') + (x.active ? ' · active' : ''),
+        avg: avg === null ? '—' : (Math.round(avg * 10) / 10),
+        avgNote: avg === null ? (x.kind === 'save' ? x.save + ' save' : 'no dice') : x.kind === 'heal' ? 'healed on average' : x.kind === 'attack' ? 'on a hit' : 'on a failed save',
+        dice: x.n ? count(x) + 'd' + x.d + (x.bonus ? '+' + x.bonus : '') + (x.type ? ' ' + x.type : '') + (x.kind === 'attack' ? ' · +7 to hit' : x.kind === 'save' ? ' · ' + x.save : '') : (x.kind === 'save' ? x.save : ''),
+        upcast: up ? 'upcast to ' + ORD[at(x)] : '',
+        line: x.time + ' · ' + x.area,
+        cost: x.level === 0 ? 'free' : blocked ? 'needs a ' + ORD[x.level] + ' slot' : ORD[at(x)] + ' slot',
+        costColor: x.level === 0 ? '#5bbf7f' : blocked ? '#d64545' : '#a29d93',
+        opacity: blocked ? '0.5' : '1',
+        cta: x.active ? 'Active' : x.kind === 'attack' ? 'Roll +7' : 'Cast',
+        btnBg: x.active ? '#272b30' : '#7ea6e0', btnColor: x.active ? '#a29d93' : '#0f1113',
+      };
+    });
+    return {
+      effects,
+      slots: SLOTS.map(x => ({ label: x.label, pips: x.max ? '●'.repeat(x.left) + '○'.repeat(x.max - x.left) : '', ...pill(s.slot === x.level), pick: () => this.setState({ slot: x.level }) })),
+      times: [['all', 'Any'], ['Action', 'Action'], ['Bonus action', 'Bonus'], ['Reaction', 'Reaction']].map(([k, l]) => ({ label: l, ...pill(s.time === k), pick: () => this.setState({ time: k }) })),
+      concs: [['any', 'Any'], ['no', 'Not Conc.'], ['yes', 'Conc. only']].map(([k, l]) => ({ label: l, ...pill(s.conc === k), pick: () => this.setState({ conc: k }) })),
+      ws: s.ws,
+      toggleWs: () => this.setState({ ws: !s.ws }),
+      onSearch: (e) => this.setState({ q: e.target.value }),
+      onSort: (e) => this.setState({ sort: e.target.value }),
+      cards,
+      summary: cards.length + ' spell' + (cards.length === 1 ? '' : 's') + (s.slot ? ' · averages at a ' + ORD[s.slot] + '-level slot where a spell can be upcast' : ' · cantrips only'),
+    };
+  }
+}
+</script>
+</body>
+</html>

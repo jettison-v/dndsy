@@ -1,0 +1,20 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-10-21T16:00:00Z"},
+  "title": "askdnd lists and filters",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 920, "title": "1 · Spell Book: the filter pattern with compact rows (clickable)", "is_interactive": true},
+    "SheetSpells.dc.html": {"x": 1520, "y": 0, "w": 1440, "h": 920, "title": "2 · Sheet › Spells: same pattern, a Ready / All view"},
+    "PlanShortlist.dc.html": {"x": 0, "y": 1040, "w": 1440, "h": 720, "title": "3 · Plan › Spells shortlist: same rows plus your note"},
+    "WildShape.dc.html": {"x": 1520, "y": 1040, "w": 1440, "h": 920, "title": "4 · Wild Shape forms: rows with pictures (left) vs today's cards (right)"},
+    "SpellBar.dc.html": {"x": 0, "y": 2080, "w": 1440, "h": 640, "title": "5 · Spell bar: slot segments that scale to 9 levels; starred chips shrink, then fold into +N"},
+    "Phone.dc.html": {"x": 1520, "y": 2080, "w": 390, "h": 844, "title": "6 · Phone: Filters (3) opens the same column as a sheet"}
+  },
+  "order": ["Main.dc.html", "SheetSpells.dc.html", "PlanShortlist.dc.html", "WildShape.dc.html", "SpellBar.dc.html", "Phone.dc.html"],
+  "notes": {
+    "title": {"x": 0, "y": -300, "text": "askdnd lists and filters: one pattern everywhere (exploration)", "kind": "title1", "maxW": 2960}
+  },
+  "designSystems": []
+}

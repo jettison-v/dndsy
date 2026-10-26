@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spell Book on a phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#e8b34b}a:hover{color:#f3c96f}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #1a1d21; color: #ebe7df; font-family: Inter, system-ui, sans-serif; font-size: 14px; display: flex; flex-direction: column; overflow: hidden">
+  <div style="padding: 14px 16px 10px; border-bottom: 1px solid #34383e; display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center"><h2 style="margin: 0; font-size: 20px; flex: 1">Spell Book</h2><button type="button" aria-label="Close" style="background: none; border: 0; color: #a29d93; font-size: 20px; width: 44px; height: 44px">✕</button></div>
+    <div style="display: flex; gap: 6px; overflow: hidden">
+      <button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 10px; padding: 6px 10px; font: inherit; font-size: 12px; min-height: 44px">Cantrips</button>
+      <button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 10px; padding: 6px 10px; font: inherit; font-size: 12px">1st <span style="color: #7ea6e0">●●●●</span></button>
+      <button type="button" style="background: #2a3550; color: #ebe7df; border: 1px solid #7ea6e0; border-radius: 10px; padding: 6px 10px; font: inherit; font-size: 12px">2nd <span style="color: #7ea6e0">●●●</span></button>
+      <button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 10px; padding: 6px 10px; font: inherit; font-size: 12px">3rd <span style="color: #7ea6e0">●●○</span></button>
+    </div>
+    <div style="font-size: 12px; background: #2a2620; border: 1px solid #e8b34b; border-radius: 8px; padding: 6px 10px">Concentrating on <b>Moonbeam</b> · <button type="button" style="background: none; border: 0; color: #e8b34b; font: inherit; font-size: 12px; text-decoration: underline; padding: 0">Drop</button></div>
+  </div>
+  <div style="flex: 1; padding: 10px 16px; display: flex; flex-direction: column; gap: 8px; overflow: hidden">
+    <div style="color: #a29d93; font-size: 11px; letter-spacing: .1em">WITH A 2ND-LEVEL SLOT</div>
+    <div style="background: #2a3550; border: 1px solid #7ea6e0; border-radius: 12px; padding: 12px">
+      <div style="display: flex; justify-content: space-between"><b>Moonbeam</b><span style="font-size: 12px">Con 15</span></div>
+      <div style="color: #a29d93; font-size: 12px">Action · Conc. · 120 ft · 2d10 radiant</div>
+      <div style="display: flex; gap: 8px; margin-top: 10px"><button type="button" style="flex: 1; background: #7ea6e0; color: #0f1113; border: 0; border-radius: 8px; padding: 10px; font: inherit; font-weight: 700">Cast</button><button type="button" style="flex: 1; background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 8px; padding: 10px; font: inherit">Roll 2d10</button></div>
+    </div>
+    <div style="background: #1f2226; border: 1px solid #34383e; border-radius: 12px; padding: 12px"><div style="display: flex; justify-content: space-between"><b>Heat Metal</b><span style="font-size: 12px">Con 15</span></div><div style="color: #a29d93; font-size: 12px">Action · Conc. · 60 ft · 2d8 fire</div></div>
+    <div style="background: #1f2226; border: 1px solid #34383e; border-radius: 12px; padding: 12px"><div style="display: flex; justify-content: space-between"><b>Healing Word</b><span style="font-size: 12px; color: #a29d93">upcast</span></div><div style="color: #a29d93; font-size: 12px">Bonus action · 60 ft · heals 4d4+4</div></div>
+    <div style="background: #1f2226; border: 1px solid #34383e; border-radius: 12px; padding: 12px"><div style="display: flex; justify-content: space-between"><b>Cure Wounds</b><span style="font-size: 12px; color: #a29d93">upcast</span></div><div style="color: #a29d93; font-size: 12px">Action · Touch · heals 4d8+4</div></div>
+    <div style="background: #1f2226; border: 1px solid #34383e; border-radius: 12px; padding: 12px"><div style="display: flex; justify-content: space-between"><b>Faerie Fire</b><span style="font-size: 12px">Dex 15</span></div><div style="color: #a29d93; font-size: 12px">Action · Conc. · 20-ft cube</div></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

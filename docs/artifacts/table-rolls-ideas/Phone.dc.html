@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Table rolls on a phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Roboto+Condensed:wght@700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#e8b34b}a:hover{color:#f3c96f}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; background: #15171a; color: #ebe7df; font-family: Inter, system-ui, sans-serif; font-size: 14px; display: flex; flex-direction: column; overflow: hidden">
+  <header style="background: #0f1113; border-bottom: 2px solid #d64545; height: 56px; display: flex; align-items: center; gap: 10px; padding: 0 14px; flex: none">
+    <b style="font-family: 'Roboto Condensed', sans-serif; font-size: 18px">askdnd</b>
+    <button type="button" style="background: #1f2226; color: #ebe7df; border: 1px solid #34383e; border-radius: 8px; padding: 5px 10px; font: inherit; font-weight: 600">Cole ▾</button>
+    <button type="button" aria-label="Live" style="margin-left: auto; display: flex; align-items: center; gap: 6px; background: rgba(91,191,127,.15); color: #ebe7df; border: 1px solid #5bbf7f; border-radius: 999px; padding: 5px 10px; font: inherit; font-size: 12px"><span style="width: 8px; height: 8px; border-radius: 50%; background: #5bbf7f"></span>Live</button>
+  </header>
+  <main style="flex: 1; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; opacity: .55">
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+      <div style="background: #1f2226; border-radius: 10px; padding: 5px 8px"><div style="color: #a29d93; font-size: 11px">Hit points</div><b style="font-size: 18px">51</b></div>
+      <div style="background: #1f2226; border-radius: 10px; padding: 5px 8px"><div style="color: #a29d93; font-size: 11px">Armor class</div><b style="font-size: 18px">16</b></div>
+      <div style="background: #1f2226; border-radius: 10px; padding: 5px 8px"><div style="color: #a29d93; font-size: 11px">Initiative</div><b style="font-size: 18px">+3</b></div>
+    </div>
+    <div style="background: #1f2226; border-radius: 12px; padding: 4px 12px">
+      <div style="border-bottom: 1px solid #34383e; padding: 9px 0; display: flex; justify-content: space-between"><b>Starry Wisp</b><b>+7</b></div>
+      <div style="padding: 9px 0; display: flex; justify-content: space-between"><b>Unarmed Strike</b><b>+6</b></div>
+    </div>
+  </main>
+
+  <div role="status" style="position: absolute; left: 14px; right: 14px; top: 140px; background: #1f2226; border: 1px solid #5bbf7f; border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.5)">
+    <svg width="48" height="48" viewBox="0 0 30 30" aria-hidden="true"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="#2b2f35" stroke="#5bbf7f" stroke-width="1.5"></polygon><text x="15" y="18.5" text-anchor="middle" font-size="9" font-weight="700" fill="#ebe7df" font-family="Inter, sans-serif">20</text></svg>
+    <div style="flex: 1"><div style="color: #a29d93; font-size: 12px">Starry Wisp to hit · to the table</div><div><b style="font-size: 26px">27</b> <span style="color: #5bbf7f; font-size: 12px">critical hit</span></div></div>
+    <button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 12px">Damage</button>
+  </div>
+
+  <section aria-label="Table rolls" style="position: absolute; left: 0; right: 0; bottom: 64px; background: #111315; border-top: 1px solid #34383e; border-radius: 16px 16px 0 0; padding: 8px 14px 12px; box-shadow: 0 -10px 30px rgba(0,0,0,.45)">
+    <div style="width: 40px; height: 4px; border-radius: 2px; background: #34383e; margin: 0 auto 8px"></div>
+    <div style="display: flex; align-items: center; margin-bottom: 6px"><span style="font-size: 12px; font-weight: 800; letter-spacing: .12em; color: #e8b34b; flex: 1">TABLE ROLLS</span><span style="font-size: 12px; color: #a29d93">swipe up for all</span></div>
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <div style="display: flex; align-items: center; gap: 10px"><span style="width: 26px; height: 26px; border-radius: 50%; background: #3a3226; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #e8b34b; font-size: 12px">C</span><span style="flex: 1; font-size: 13px">Cole · Starry Wisp</span><b style="color: #5bbf7f">27</b></div>
+      <div style="display: flex; align-items: center; gap: 10px"><span style="width: 26px; height: 26px; border-radius: 50%; background: #2c2f3a; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #7ea6e0; font-size: 12px">B</span><span style="flex: 1; font-size: 13px">Big C · Athletics</span><b>17</b></div>
+      <div style="display: flex; align-items: center; gap: 10px"><span style="width: 26px; height: 26px; border-radius: 50%; background: #2a3329; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #5bbf7f; font-size: 12px">T</span><span style="flex: 1; font-size: 13px; color: #a29d93">Trah · rolled for the DM</span><span style="color: #a29d93; font-size: 12px">hidden</span></div>
+    </div>
+  </section>
+
+  <nav aria-label="Main" style="position: absolute; left: 0; right: 0; bottom: 0; height: 64px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); background: #0f1113; border-top: 1px solid #34383e; text-align: center; font-size: 11px; align-items: center">
+    <a href="#" style="color: #a29d93; text-decoration: none">Recap</a>
+    <a href="#" style="color: #a29d93; text-decoration: none">Campaign</a>
+    <a href="#" style="color: #ffffff; text-decoration: none; font-weight: 700">Play</a>
+    <a href="#" style="color: #a29d93; text-decoration: none">Party</a>
+    <a href="#" style="color: #a29d93; text-decoration: none">More</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

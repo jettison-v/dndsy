@@ -1,0 +1,19 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-10-19T21:10:00Z"},
+  "title": "askdnd navigation ideas",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1280, "h": 900, "title": "A · One Character page, Play mode", "expand": "fill"},
+    "SheetMode.dc.html": {"x": 1360, "y": 0, "w": 1280, "h": 900, "title": "A · Same page, Sheet mode", "expand": "fill"},
+    "MenuBars.dc.html": {"x": 0, "y": 1020, "w": 1280, "h": 700, "title": "B · Three ways to organize the menu bar"},
+    "LiveMenu.dc.html": {"x": 1360, "y": 1020, "w": 640, "h": 520, "title": "C · Live control: Game Mode + refresh"},
+    "Phone.dc.html": {"x": 2080, "y": 1020, "w": 390, "h": 844, "title": "D · Phone: Play mode with a bottom bar"}
+  },
+  "order": ["Main.dc.html", "SheetMode.dc.html", "MenuBars.dc.html", "LiveMenu.dc.html", "Phone.dc.html"],
+  "notes": {
+    "title": {"x": 0, "y": -300, "text": "askdnd navigation ideas (exploration, nothing built)", "kind": "title1", "maxW": 2640}
+  },
+  "designSystems": []
+}

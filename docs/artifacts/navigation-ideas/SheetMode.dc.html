@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Character page, Sheet mode</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Roboto+Condensed:wght@700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#15171a}
+a{color:#e8b34b}a:hover{color:#f3c96f}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 900px; background: #15171a; color: #ebe7df; font-family: Inter, system-ui, sans-serif; font-size: 14px">
+  <header style="background: #0f1113; border-bottom: 2px solid #d64545">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 0 24px; min-height: 60px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px">
+      <a href="#" style="display: flex; align-items: center; gap: 10px; color: #ffffff; text-decoration: none; font-family: 'Roboto Condensed', sans-serif; font-weight: 700; font-size: 20px">
+        <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="none" stroke="#d64545" stroke-width="2"></polygon><polygon points="15,8 21,19 9,19" fill="#d64545"></polygon></svg>askdnd</a>
+      <nav aria-label="Story" style="display: flex; gap: 2px">
+        <a href="#" style="color: #a29d93; text-decoration: none; padding: 8px 10px; border-radius: 6px">Recap</a>
+        <a href="#" style="color: #a29d93; text-decoration: none; padding: 8px 10px; border-radius: 6px">Sessions</a>
+        <a href="#" style="color: #a29d93; text-decoration: none; padding: 8px 10px; border-radius: 6px">Campaign</a>
+        <a href="#" style="color: #a29d93; text-decoration: none; padding: 8px 10px; border-radius: 6px">Map</a>
+      </nav>
+      <span style="width: 1px; height: 24px; background: #34383e"></span>
+      <nav aria-label="Table" style="display: flex; gap: 2px">
+        <a href="#" style="color: #ffffff; background: #1f2226; text-decoration: none; padding: 8px 10px; border-radius: 6px; font-weight: 600">Cole ▾</a>
+        <a href="#" style="color: #a29d93; text-decoration: none; padding: 8px 10px; border-radius: 6px">Party</a>
+      </nav>
+      <div style="margin-left: auto; display: flex; align-items: center; gap: 10px">
+        <button type="button" style="display: flex; align-items: center; gap: 8px; background: #1f2226; color: #a29d93; border: 1px solid #34383e; border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #6f6b64"></span>Updated 3 hours ago</button>
+        <button type="button" style="background: #1f2226; color: #ebe7df; border: 1px solid #34383e; border-radius: 8px; padding: 7px 12px; font: inherit; font-size: 13px">Manage ▾</button>
+        <span style="width: 34px; height: 34px; border-radius: 50%; background: #272b30; display: flex; align-items: center; justify-content: center; color: #a29d93; font-weight: 600">B</span>
+      </div>
+    </div>
+  </header>
+
+  <main style="max-width: 1200px; margin: 0 auto; padding: 18px 24px 32px">
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px">
+      <span style="width: 48px; height: 48px; border-radius: 50%; background: #272b30; border: 2px solid #34383e"></span>
+      <div>
+        <div style="display: flex; align-items: baseline; gap: 10px"><span style="font-size: 24px; font-weight: 700">Cole</span><span style="color: #a29d93">Wood Elf · Druid 6 (Moon) / Monk 2 · level 8 · Wayfarer · played by Brett</span></div>
+        <a href="#" style="font-size: 12px">Open on D&amp;D Beyond ↗</a>
+      </div>
+      <div role="group" aria-label="Mode" style="margin-left: auto; display: flex; background: #1f2226; border: 1px solid #34383e; border-radius: 10px; padding: 3px">
+        <button type="button" aria-pressed="false" style="background: none; color: #a29d93; border: 0; border-radius: 8px; padding: 7px 16px; font: inherit">Play</button>
+        <button type="button" aria-pressed="true" style="background: #d64545; color: #ffffff; border: 0; border-radius: 8px; padding: 7px 16px; font: inherit; font-weight: 600">Sheet</button>
+        <button type="button" aria-pressed="false" style="background: none; color: #a29d93; border: 0; border-radius: 8px; padding: 7px 16px; font: inherit">Plan</button>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; margin-top: 14px">
+      <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px"><div style="color: #a29d93; font-size: 12px">Hit points</div><div style="font-size: 20px; font-weight: 700">51</div></div>
+      <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px"><div style="color: #a29d93; font-size: 12px">Armor class</div><div style="font-size: 20px; font-weight: 700">16</div></div>
+      <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px"><div style="color: #a29d93; font-size: 12px">Speed</div><div style="font-size: 20px; font-weight: 700">45 ft</div></div>
+      <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px"><div style="color: #a29d93; font-size: 12px">Initiative</div><div style="font-size: 20px; font-weight: 700">+3</div></div>
+      <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px"><div style="color: #a29d93; font-size: 12px">Proficiency</div><div style="font-size: 20px; font-weight: 700">+3</div></div>
+      <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px"><div style="color: #a29d93; font-size: 12px">Passive Perc.</div><div style="font-size: 20px; font-weight: 700">17</div></div>
+      <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px"><div style="color: #a29d93; font-size: 12px">Spell DC</div><div style="font-size: 20px; font-weight: 700">15</div></div>
+      <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px; box-shadow: inset 0 0 0 1px #e8b34b"><div style="color: #a29d93; font-size: 12px">Inspiration</div><div style="font-size: 20px; font-weight: 700; color: #e8b34b">Yes</div></div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-top: 8px">
+      <div style="background: #272b30; border-radius: 10px; padding: 8px 12px"><div style="display: flex; justify-content: space-between"><span style="color: #a29d93; font-size: 12px">Strength 10</span><b style="font-size: 18px">+0</b></div><div style="color: #a29d93; font-size: 12px">Save +0</div></div>
+      <div style="background: #272b30; border-radius: 10px; padding: 8px 12px"><div style="display: flex; justify-content: space-between"><span style="color: #a29d93; font-size: 12px">Dexterity 16</span><b style="font-size: 18px">+3</b></div><div style="color: #a29d93; font-size: 12px">Save +3</div></div>
+      <div style="background: #272b30; border-radius: 10px; padding: 8px 12px"><div style="display: flex; justify-content: space-between"><span style="color: #a29d93; font-size: 12px">Constitution 14</span><b style="font-size: 18px">+2</b></div><div style="color: #a29d93; font-size: 12px">Save +2</div></div>
+      <div style="background: #272b30; border-radius: 10px; padding: 8px 12px"><div style="display: flex; justify-content: space-between"><span style="color: #a29d93; font-size: 12px">Intelligence 10</span><b style="font-size: 18px">+0</b></div><div style="font-size: 12px"><span style="color: #5bbf7f">●</span> Save +4</div></div>
+      <div style="background: #272b30; border-radius: 10px; padding: 8px 12px"><div style="display: flex; justify-content: space-between"><span style="color: #a29d93; font-size: 12px">Wisdom 19</span><b style="font-size: 18px">+4</b></div><div style="font-size: 12px"><span style="color: #5bbf7f">●</span> Save +8</div></div>
+      <div style="background: #272b30; border-radius: 10px; padding: 8px 12px"><div style="display: flex; justify-content: space-between"><span style="color: #a29d93; font-size: 12px">Charisma 14</span><b style="font-size: 18px">+2</b></div><div style="color: #a29d93; font-size: 12px">Save +3</div></div>
+    </div>
+
+    <div role="tablist" style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 18px; border-bottom: 1px solid #34383e">
+      <button type="button" role="tab" aria-selected="true" style="background: none; border: 0; border-bottom: 2px solid #d64545; color: #ffffff; padding: 8px 12px; font: inherit; font-weight: 600">Actions</button>
+      <button type="button" role="tab" aria-selected="false" style="background: none; border: 0; color: #a29d93; padding: 8px 12px; font: inherit">Spells</button>
+      <button type="button" role="tab" aria-selected="false" style="background: none; border: 0; color: #a29d93; padding: 8px 12px; font: inherit">Wild Shape</button>
+      <button type="button" role="tab" aria-selected="false" style="background: none; border: 0; color: #a29d93; padding: 8px 12px; font: inherit">Inventory</button>
+      <button type="button" role="tab" aria-selected="false" style="background: none; border: 0; color: #a29d93; padding: 8px 12px; font: inherit">Features</button>
+      <button type="button" role="tab" aria-selected="false" style="background: none; border: 0; color: #a29d93; padding: 8px 12px; font: inherit">Skills &amp; situational</button>
+      <button type="button" role="tab" aria-selected="false" style="background: none; border: 0; color: #a29d93; padding: 8px 12px; font: inherit">Background</button>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 28px; margin-top: 8px">
+      <div style="border-bottom: 1px solid #34383e; padding: 9px 0; display: flex; justify-content: space-between"><span><b>Unarmed Strike</b> <span style="color: #a29d93; font-size: 12px">Action · 5 ft · 1d6+3</span></span><b>+6</b></div>
+      <div style="border-bottom: 1px solid #34383e; padding: 9px 0; display: flex; justify-content: space-between"><span><b>Flurry of Blows</b> <span style="color: #a29d93; font-size: 12px">Bonus action · 1 Focus Point</span></span></div>
+      <div style="border-bottom: 1px solid #34383e; padding: 9px 0; display: flex; justify-content: space-between"><span><b>Thorn Whip</b> <span style="color: #a29d93; font-size: 12px">Action · 30 ft · 2d6</span></span><b>+7</b></div>
+      <div style="border-bottom: 1px solid #34383e; padding: 9px 0; display: flex; justify-content: space-between"><span><b>Patient Defense</b> <span style="color: #a29d93; font-size: 12px">Bonus action · Disengage</span></span></div>
+      <div style="border-bottom: 1px solid #34383e; padding: 9px 0; display: flex; justify-content: space-between"><span><b>Use an item: Potion of Healing</b> <span style="color: #a29d93; font-size: 12px">×2</span></span></div>
+      <div style="border-bottom: 1px solid #34383e; padding: 9px 0; display: flex; justify-content: space-between"><span><b>Step of the Wind</b> <span style="color: #a29d93; font-size: 12px">Bonus action · Dash</span></span></div>
+    </div>
+    <p style="color: #a29d93; font-size: 12px; margin-top: 16px">Plan mode would hold the Notes tab (battle combos, leveling strategy, personal quest), spell and Wild Shape shortlists, and Easy to forget.</p>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
