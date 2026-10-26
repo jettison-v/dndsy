@@ -78,3 +78,29 @@ def test_manage_pages_hold_together_at_every_width(people, server, long_names):
     found = check(admin, server, PAGES["admin"])
     assert not found, "\n".join(found)
     assert admin.errors == []
+
+
+
+SHIFTS = """new PerformanceObserver(l => { window.__shifts = (window.__shifts || []).concat(
+  l.getEntries().filter(e => !e.hadRecentInput).map(e => ({ value: e.value, nodes: (e.sources || []).map(s => s.node && (s.node.id || s.node.className || s.node.nodeName)) }))); })
+  .observe({ type: 'layout-shift', buffered: true });"""
+
+
+def test_pages_dont_shift_as_they_load(people, server):
+    """With Game Mode on, the Table rolls sidebar takes its place before the page is drawn (base.html's first script),
+    so nothing moves sideways while the page loads and the log arrives (Brett, 2026-10-26: every page jumped)."""
+    player = people("player")
+    player.context.add_init_script(SHIFTS)
+    found = []
+    for width in (1400, 1000):
+        player.page.set_viewport_size({"width": width, "height": 900})
+        for path in ("/c/main/", "/c/main/campaign", f"/characters/{server['cole']}/battle", f"/characters/{server['cole']}", "/party"):
+            player.open(path)
+            player.page.wait_for_load_state("networkidle")
+            player.page.wait_for_timeout(800)  # the log's first load, and anything it moves
+            shifts = player.page.evaluate("window.__shifts || []")
+            total = sum(s["value"] for s in shifts)
+            if total > 0.005:  # (none at all, today)
+                found.append(f"{path} at {width}px moved {total:.3f}: {shifts[:3]}")
+    assert not found, "\n".join(found)
+    assert player.errors == []

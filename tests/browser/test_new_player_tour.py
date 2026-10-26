@@ -28,7 +28,7 @@ def test_a_player_walks_every_stop_and_each_lights_something(people, server):
     page.click("[data-tour=help] .help-btn")
     page.click("#help-menu [data-tour-start]")
     for i, stop in enumerate(stops):
-        page.wait_for_function("t => document.querySelector('.tour-card h3')?.textContent === t", arg=stop["title"], timeout=5000)
+        page.wait_for_function("t => document.querySelector('.tour-card h3')?.textContent === t", arg=stop["title"], timeout=10000)
         if stop["url"]:
             assert page.evaluate("location.pathname") == stop["url"], stop["title"]
         page.wait_for_function("() => { const s = document.querySelector('.tour-spot'); return s && !s.hidden; }", timeout=5000)

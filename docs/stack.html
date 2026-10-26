@@ -12,6 +12,7 @@
   --edge: #6b7686;
   --me: #0e7f81; --me-fill: #d5eeee;
   --brett: #a8670f; --brett-fill: #f6e5c6;
+  --warn: #b42318; --warn-fill: #fde8e7;
   --font-body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
@@ -20,6 +21,7 @@
   --edge: #8a96a8;
   --me: #4cc2c3; --me-fill: #153a3c;
   --brett: #e2a84d; --brett-fill: #3b2e17;
+  --warn: #f97066; --warn-fill: #3d1a19;
   color-scheme: dark;
 } }
 :root[data-theme="dark"] {
@@ -27,6 +29,7 @@
   --edge: #8a96a8;
   --me: #4cc2c3; --me-fill: #153a3c;
   --brett: #e2a84d; --brett-fill: #3b2e17;
+  --warn: #f97066; --warn-fill: #3d1a19;
   color-scheme: dark;
 }
 body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--font-body); }
@@ -49,6 +52,10 @@ a { color: var(--me); }
 .sw.brett { background: var(--brett-fill); border-color: var(--brett); }
 .sw.both { background: linear-gradient(90deg, var(--me-fill) 50%, var(--brett-fill) 50%); border-color: var(--muted); }
 .sw.out { background: var(--card); border-color: var(--line); border-style: dashed; }
+.sw.prv { background: var(--me-fill); border-color: var(--me); }
+.sw.pub { background: var(--card); border-color: var(--fg); }
+.sw.warn { background: var(--warn-fill); border-color: var(--warn); }
+#data { display: grid; gap: 14px; }
 
 figure { margin: 0; display: grid; gap: 12px; }
 .frame { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
@@ -63,6 +70,10 @@ figcaption { color: var(--muted); font-size: 0.92rem; max-width: 80ch; }
 .brett rect { fill: var(--brett-fill); stroke: var(--brett); }
 .both rect { fill: url(#split); stroke: var(--muted); }
 .out rect { fill: var(--card); stroke: var(--line); stroke-dasharray: 4 3; }
+.prv rect { fill: var(--me-fill); stroke: var(--me); }
+.pub rect { fill: var(--card); stroke: var(--fg); }
+.warn rect { fill: var(--warn-fill); stroke: var(--warn); stroke-width: 2; }
+.edge.bad { stroke: var(--warn); stroke-dasharray: 5 4; }
 .bt { fill: var(--fg); font-size: 13px; font-weight: 600; }
 .bs { fill: var(--muted); font-size: 11px; }
 .edge { fill: none; stroke: var(--edge); stroke-width: 1.4; marker-end: url(#arrow); }
@@ -221,6 +232,98 @@ td { min-width: 0; }
       on the Mac first, so only game content ever leaves it.</figcaption>
   </figure>
 
+  <section id="data">
+    <div class="prose">
+      <h2>Where the data lives</h2>
+      <p>What askdnd keeps, where, and who can see it. Colors here mean who can see it, not who changes it.</p>
+      <div class="key" aria-label="Color key for this diagram">
+        <span><i class="sw prv"></i>Private: you and your table</span>
+        <span><i class="sw out"></i>An outside service</span>
+        <span><i class="sw pub"></i>Public: anyone</span>
+        <span><i class="sw warn"></i>Needs fixing</span>
+      </div>
+    </div>
+    <figure>
+      <div class="frame">
+        <svg viewBox="0 0 1140 540" role="img" aria-label="Where askdnd's data lives. Raw transcripts stay on Brett's Mac; only filtered game text reaches the private Postgres database on Railway, which holds the story, characters, notes, rolls and history, with pictures in S3 and a nightly backup in S3. D&amp;D Beyond, Anthropic, Sentry and Google are outside services. The public GitHub repository holds code, docs and openly licensed SRD data, and test copies of character sheets that include rulebook text, which needs fixing.">
+          <rect class="reg" x="16" y="40" width="250" height="476" rx="10"/><text class="rl" x="30" y="58">ONLY ON BRETT'S MAC</text>
+          <rect class="reg" x="300" y="40" width="300" height="476" rx="10"/><text class="rl" x="314" y="58">PRIVATE · RAILWAY AND S3</text>
+          <rect class="reg" x="636" y="40" width="228" height="352" rx="10"/><text class="rl" x="650" y="58">OUTSIDE SERVICES</text>
+          <rect class="reg" x="898" y="40" width="226" height="282" rx="10"/><text class="rl" x="912" y="58">PUBLIC · GITHUB</text>
+          <rect class="reg" x="898" y="352" width="226" height="164" rx="10"/><text class="rl" x="912" y="370">EACH BROWSER</text>
+
+          <!-- arrows -->
+          <path class="edge" d="M141 128 V154"/><text class="el" x="149" y="146">raw, stays here</text>
+          <path class="edge" d="M246 182 H318"/><text class="el" x="282" y="175" text-anchor="middle">game text only</text>
+          <path class="edge" d="M653 102 H582"/><text class="el" x="617" y="95" text-anchor="middle">sheet copies</text>
+          <path class="edge" d="M582 182 H653"/><text class="el" x="617" y="175" text-anchor="middle">asks</text>
+          <path class="edge" d="M582 262 H653"/><text class="el" x="617" y="255" text-anchor="middle">errors</text>
+          <path class="edge" d="M382 320 V350"/><text class="el" x="390" y="340">pictures</text>
+          <path class="edge" d="M517 320 V350"/><text class="el" x="525" y="340">nightly</text>
+          <path class="edge" d="M517 430 V500 H141 V454"/><text class="el" x="330" y="494" text-anchor="middle">newest backup, copied for testing</text>
+          <path class="edge bad" d="M845 102 H880 V256 H912"/><text class="el" x="884" y="190" transform="rotate(90 884 190)" text-anchor="middle">trimmed for tests</text>
+
+          <!-- Mac -->
+          <g class="bx prv"><rect x="36" y="76" width="210" height="52" rx="6"/><text class="bt" x="48" y="96">Raw transcripts</text><text class="bs" x="48" y="114">MacWhisper; never leave the Mac</text></g>
+          <g class="bx prv"><rect x="36" y="156" width="210" height="52" rx="6"/><text class="bt" x="48" y="176">Processor</text><text class="bs" x="48" y="194">cuts the banter with Ollama</text></g>
+          <g class="bx prv"><rect x="36" y="290" width="210" height="72" rx="6"/><text class="bt" x="48" y="310">private/ (never in git)</text><text class="bs" x="48" y="328">the rule books, pulled backups,</text><text class="bs" x="48" y="344">.env (local keys)</text></g>
+          <g class="bx prv"><rect x="36" y="400" width="210" height="52" rx="6"/><text class="bt" x="48" y="420">Local copy of beta</text><text class="bs" x="48" y="438">for testing; never goes back</text></g>
+
+          <!-- Private cloud -->
+          <g class="bx prv"><rect x="320" y="70" width="260" height="250" rx="6"/>
+            <text class="bt" x="332" y="92">Postgres (on Railway)</text>
+            <text class="bs" x="332" y="116">· Story: recaps, entries, quests, glossary</text>
+            <text class="bs" x="332" y="136">· Characters: D&amp;D Beyond copies</text>
+            <text class="bs" x="332" y="156">· Players' notes, pins, reminders</text>
+            <text class="bs" x="344" y="172">(other players see them; the DM never)</text>
+            <text class="bs" x="332" y="194">· Table rolls (each with who may see it)</text>
+            <text class="bs" x="332" y="214">· Accounts and roles per campaign</text>
+            <text class="bs" x="332" y="234">· Version history of every edit</text>
+            <text class="bs" x="332" y="254">· House rules, tool corrections</text>
+            <text class="bs" x="332" y="274">· The list of stored files</text>
+            <text class="bs" x="332" y="300">No raw transcripts, ever.</text></g>
+          <g class="bx prv"><rect x="320" y="350" width="125" height="80" rx="6"/><text class="bt" x="330" y="370">S3 v2/files</text><text class="bs" x="330" y="388">pictures; only</text><text class="bs" x="330" y="404">through askdnd</text></g>
+          <g class="bx prv"><rect x="455" y="350" width="125" height="80" rx="6"/><text class="bt" x="465" y="370">S3 v2/backups</text><text class="bs" x="465" y="388">the whole database,</text><text class="bs" x="465" y="404">kept 30 days</text></g>
+
+          <!-- Outside -->
+          <g class="bx out"><rect x="655" y="76" width="190" height="52" rx="6"/><text class="bt" x="667" y="96">D&amp;D Beyond</text><text class="bs" x="667" y="114">builds; the original sheet</text></g>
+          <g class="bx out"><rect x="655" y="156" width="190" height="52" rx="6"/><text class="bt" x="667" y="176">Anthropic (Claude)</text><text class="bs" x="667" y="194">sent what each draft needs</text></g>
+          <g class="bx out"><rect x="655" y="236" width="190" height="52" rx="6"/><text class="bt" x="667" y="256">Sentry</text><text class="bs" x="667" y="274">errors; no names or notes</text></g>
+          <g class="bx out"><rect x="655" y="316" width="190" height="52" rx="6"/><text class="bt" x="667" y="336">Google</text><text class="bs" x="667" y="354">sign-in; the campaign doc</text></g>
+
+          <!-- Public -->
+          <g class="bx pub"><rect x="914" y="76" width="194" height="52" rx="6"/><text class="bt" x="926" y="96">Code and docs</text><text class="bs" x="926" y="114">the app; these notes</text></g>
+          <g class="bx pub"><rect x="914" y="146" width="194" height="52" rx="6"/><text class="bt" x="926" y="166">SRD data</text><text class="bs" x="926" y="184">openly licensed (CC-BY)</text></g>
+          <g class="bx warn"><rect x="914" y="216" width="194" height="86" rx="6"/><text class="bt" x="926" y="236">Test copies of sheets</text><text class="bs" x="926" y="254">numbers, plus rules text</text><text class="bs" x="926" y="270">from the books, which</text><text class="bs" x="926" y="286">shouldn't be public</text></g>
+
+          <!-- Browser -->
+          <g class="bx prv"><rect x="914" y="388" width="194" height="70" rx="6"/><text class="bt" x="926" y="408">This device's settings</text><text class="bs" x="926" y="426">Game Mode, the sidebar,</text><text class="bs" x="926" y="442">dice animation</text></g>
+          <text class="bs" x="926" y="490">Never sent anywhere.</text>
+        </svg>
+      </div>
+      <figcaption>Raw transcripts never leave the Mac; only the filtered game text reaches askdnd, which keeps the
+        story Claude drafts from it. Everything the table writes lives in one private database, backed up nightly; pictures
+        live in S3 behind askdnd's own access checks. The one thing out of place: test copies of character sheets in the
+        public repository carry rules text from the books.</figcaption>
+    </figure>
+    <div class="tw"><table>
+      <thead><tr><th>Data</th><th>Where</th><th>Who can see it</th><th>Backed up</th></tr></thead>
+      <tbody>
+        <tr><td>Story: recaps, entries, quests</td><td>Postgres</td><td>Everyone in that campaign</td><td>Nightly, 30 days</td></tr>
+        <tr><td>Characters</td><td>Postgres (a copy)</td><td>Everyone in the campaign</td><td>Nightly; D&amp;D Beyond has the original</td></tr>
+        <tr><td>Players' notes, pins, reminders</td><td>Postgres</td><td>The player and other players; never the DM</td><td>Nightly</td></tr>
+        <tr><td>Table rolls</td><td>Postgres</td><td>Per roll: the table, the DM, or just you</td><td>Nightly</td></tr>
+        <tr><td>Pictures</td><td>S3 <code>v2/files/</code></td><td>The campaign, through askdnd only</td><td>Kept 35 days past last use; listed in each backup</td></tr>
+        <tr><td>Raw transcripts</td><td>Your Mac</td><td>You</td><td>Yours to keep</td></tr>
+        <tr><td>Filtered game text</td><td>Sent to Claude once, to draft</td><td>Not stored</td><td>—</td></tr>
+        <tr><td>Errors</td><td>Sentry</td><td>You (and Claude, through its connection)</td><td>—</td></tr>
+        <tr><td>Code, docs, SRD data</td><td>GitHub</td><td>Anyone (public repo)</td><td>GitHub and your Mac</td></tr>
+        <tr><td>Test copies of sheets</td><td>GitHub</td><td>Anyone: <b>the rules text in them shouldn't be</b></td><td>GitHub and your Mac</td></tr>
+        <tr><td>This device's settings</td><td>The browser</td><td>That device</td><td>No</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
   <section>
     <div class="prose">
       <h2>Who changes what</h2>
@@ -310,5 +413,5 @@ td { min-width: 0; }
   </section>
 
   <p class="foot">Kept in the repo at <code>docs/stack.html</code> and updated whenever a service, a key or who does
-    what changes; published privately at <code>claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr</code>. Last updated 2026-10-26.</p>
+    what changes; published privately at <code>claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr</code>. Last updated 2026-10-26 (where the data lives added).</p>
 </main>

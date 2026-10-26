@@ -1878,6 +1878,8 @@
   }
 
   // ---------------------------------------------------------------- the sidebar's state
+  // (base.html's first script applies the same rules before the page is drawn, so pages don't shift sideways as
+  // they load; keep the two in step: tests/browser/test_layout.py checks nothing moves after the first paint.)
   // Desktop: "open" or "rail", remembered per device for Battle and for everywhere else; below
   // WIDE it starts as the rail and opening it lays it over the page. Phones: a bottom sheet
   // ("open" shows the newest rolls, "rail" just its bar, "full" the whole log and the dice).
@@ -2012,9 +2014,15 @@
     setTimeout(() => { if (tipEl === mine) { mine.remove(); tipEl = null; } }, 3500);
   }
   if (people) people.addEventListener('click', e => { const b = e.target.closest('.rs-person'); if (b) { e.stopPropagation(); showTip(b); } });
-  function activity(at) { lastActivity = Math.max(lastActivity, at || Date.now()); quietCheck(); }
+  // When this device last saw a roll: base.html's first script reads it to place the rail before the page is drawn
+  const SEEN = 'askdnd.rollsSeen';
+  function activity(at) { lastActivity = Math.max(lastActivity, at || Date.now()); store.set(SEEN, String(lastActivity)); quietCheck(); }
   function quietCheck() {
-    const quiet = gmOn() && !!side && loaded && current() === 'rail' && Date.now() - lastActivity > QUIET;
+    if (!loaded) {  // until the log says otherwise, keep what base.html decided before the first paint (no jump)
+      if (edge) edge.hidden = !document.body.classList.contains('rolls-quiet');
+      return;
+    }
+    const quiet = gmOn() && !!side && current() === 'rail' && Date.now() - lastActivity > QUIET;
     document.body.classList.toggle('rolls-quiet', quiet);
     if (edge) edge.hidden = !quiet;
   }
@@ -2050,6 +2058,7 @@
     if (first) {  // quiet already? The newest roll's time says
       buildPeople();
       log.querySelectorAll('time[data-at]').forEach(t => { lastActivity = Math.max(lastActivity, Date.parse(t.dataset.at) || 0); });
+      store.set(SEEN, String(lastActivity));
       return quietCheck();
     }
     const fresh = new Set();
