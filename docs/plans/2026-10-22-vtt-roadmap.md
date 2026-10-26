@@ -117,7 +117,8 @@ changed) M core, *designed first, with 0.4* · 1.8 Party at a glance for the DM 
 · 1.10 House rules for what askdnd automates (each common table rule a switch on Manage › House rules, applied where
 askdnd does that thing: critical hit damage, potions as a bonus action, flanking, rest variants; added 2026-10-23) M
 core, partly built (one roll for all, such as Magic Missile's darts, and the DM's rulings on a spell).
-Order: design 0.4 + 1.7 together (mockup of the play log and "what changed"), then 1.1, 1.2, 1.3, 1.6, 1.4, 1.5,
+Order: design 0.4 + 1.7 together (mockup of the play log and "what changed", reviewed by Brett 2026-10-26; built
+in seven small buckets, `docs/plans/2026-10-24-play-state.md`), then 1.1, 1.2, 1.3, 1.6, 1.4, 1.5,
 1.8, 1.9; 1.10's switches arrive with the item each one changes.
 Milestone: a whole session's bookkeeping in askdnd; D&D Beyond only for building and leveling.
 
