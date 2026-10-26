@@ -33,7 +33,7 @@
       </div>
       {# One grid for the header and every row (CSS subgrid): each column is as wide as its widest cell #}
       <div class="ls-rows sb-cols" data-ls-rows>
-        <div class="ls-head" aria-hidden="true"><span></span><span>Spell</span><span>Time</span><span>Range</span><span>Roll</span><span>Damage / Healing</span><span></span></div>
+        <div class="ls-head" aria-hidden="true"><span></span><span>Spell</span><span>Time</span><span>Range</span><span>Roll</span><span class="sb-avg-col">Damage / Healing</span><span></span></div>
         {% for e in spells %}{% set note = picks.notes.get(e.key) if show_picks else "" %}
         <div class="ls-row" data-ls-row data-ref="{{ e.key }}" data-f='{{ e.f | tojson }}' data-name="{{ e.name | lower }}" data-level="{{ e.level }}"
           data-group-label="{{ 'Cantrips' if not e.level else (e.level | ordinal) ~ ' level' }}" data-avgs='{{ e.avgs | tojson }}'

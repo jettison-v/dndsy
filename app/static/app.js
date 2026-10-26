@@ -1533,7 +1533,7 @@
       await make(t || tune);
       if (t) box.strength = t.strength;
       const c = box.renderer.domElement;
-      if (host.clientWidth && (c.width !== host.clientWidth || c.height !== host.clientHeight)) box.setDimensions({ x: host.clientWidth, y: host.clientHeight });
+      if (host.clientWidth && (c.clientWidth !== host.clientWidth || c.clientHeight !== host.clientHeight)) box.setDimensions({ x: host.clientWidth, y: host.clientHeight });
       await box.updateConfig({ theme_colorset: colorset(list, dice), theme_material: dice.material || 'glass' });
       sound();
       return box.roll(notation(list));
@@ -1904,9 +1904,9 @@
   // Desktop: "open" or "closed" (just the edge tab), one choice per device for every page: open until you close
   // it, and nothing changes it on its own (Brett, 2026-10-26). Below WIDE it starts closed and opens over the
   // page until a click elsewhere. Phones: a bottom sheet ("closed" is its bar with each person's latest roll,
-  // "open" the newest rolls, "full" the whole log and the dice).
+  // "open" the newest rolls, "full" the whole log and the dice; closed until you open it, as it covers a third of a phone).
   const narrow = () => !phone.matches && innerWidth < WIDE;
-  const pref = () => (store.get(SIDE) === 'closed' ? 'closed' : 'open');
+  const pref = () => { const v = store.get(SIDE); return v === 'open' || v === 'closed' ? v : phone.matches ? 'closed' : 'open'; };  // phones: the bar until opened
   ['askdnd.rollsSide.play', 'askdnd.rollsSide.other', 'askdnd.rollsSeen'].forEach(k => { try { localStorage.removeItem(k); } catch (e) { /* private window */ } });  // the old rules' keys
   function setState(state, remember) {
     if (!side) return;
@@ -1949,7 +1949,7 @@
     });
     // Clicking outside an over-the-page sidebar closes it
     document.addEventListener('click', e => {
-      if (narrow() && current() === 'open' && e.target.isConnected && !side.contains(e.target) && !e.target.closest('[data-roll], .roll-win')) setState('closed');
+      if (narrow() && current() === 'open' && e.target.isConnected && !side.contains(e.target) && !e.target.closest('[data-roll], .roll-win, .peek')) setState('closed');
     });
     let wasWide = innerWidth >= WIDE;
     addEventListener('resize', () => { const wide = innerWidth >= WIDE; if (wide !== wasWide) { wasWide = wide; layout(); } });

@@ -8,7 +8,7 @@ on the person's own pages and changes nothing: app.js ("the tour") walks the sto
 
 from sqlalchemy.orm import Session
 
-from app import web
+from app import web, wild_shape
 from app.live import rows_from
 
 # Help › What askdnd adds: sections, each a list of groups (a group key starts the tour there; None has no stops yet)
@@ -102,7 +102,7 @@ STOPS = [
      "what": "Filters narrow the list down: Effect (Damage, Heal, Control…), Casting time, Concentration and more.",
      "why": "Find the spell for this moment without scrolling through all of them."},
     {"group": "spellbook", "title": "Damage and healing", "page": "battle", "needs": "caster", "panel": True, "all": True,
-     "open": [SPELLBOOK], "at": ".peek.open [data-spellbook] :is(.ls-head > :nth-child(6), .sb-avg-col)",
+     "open": [SPELLBOOK], "at": ".peek.open [data-spellbook] .sb-avg-col",
      "what": "<b>Damage / Healing</b> is each spell's average, worked out from its dice and your sheet.",
      "why": "Compare spells at a glance. An average informs; it doesn't decide."},
     {"group": "spellbook", "title": "Cast at", "page": "battle", "needs": "caster", "panel": True,
@@ -178,7 +178,6 @@ def stops_for(db: Session, user: dict | None) -> list[dict]:
     from urllib.parse import quote
 
     from app import characters
-    from app.character_pages import _known_forms
     from app.models import Character
 
     email = ((user or {}).get("email") or "").lower()
@@ -195,7 +194,7 @@ def stops_for(db: Session, user: dict | None) -> list[dict]:
         sheet = characters.character_summary(ch) if ch else None
         if sheet and sheet.get("spells"):  # Battle shows the Spell Book (character_pages._spellbar)
             has.add("caster")
-        forms = _known_forms(sheet)
+        forms = wild_shape.known_forms(sheet)
         if forms:
             has.add("druid")
             swaps = {"form": f"/characters/{cid}/battle/preview?form={quote(forms[0]['name'])}",
