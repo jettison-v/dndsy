@@ -10,7 +10,7 @@ import re
 from pathlib import Path
 
 CSS = (Path(__file__).parent.parent / "app" / "static" / "app.css").read_text()
-SCREEN_WIDTHS = {640, 641, 900, 901, 1099, 1100}  # phone, tablet, wide (and the pixel either side)
+SCREEN_WIDTHS = {640, 641, 900, 901, 1099, 1100, 1240}  # phone, tablet, wide (and the pixel either side), full menu bar
 
 
 

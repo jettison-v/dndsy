@@ -74,7 +74,7 @@ Status colors are text on their `-soft` tint.
 
 **Panels and modals** (four sizes, chosen by what's inside): side panel `--panel-w` 420px (details for one thing; also inside a modal) · modal `--modal-w` 720px (a form or short content) · large `--modal-lg-w` 1180px (rich content in columns: a Wild Shape form, a combo, a leveling plan) · full window `--modal-full-w` 95% (a whole tool with its own list, the Spell Book). On phones each is a sheet from the bottom.
 
-**Screen widths:** phone ≤ 640px, tablet ≤ 900px, wide ≥ 1100px (media queries can't use variables; the test allows only these).
+**Screen widths:** phone ≤ 640px, tablet ≤ 900px, wide ≥ 1100px, and the full menu bar > 1240px (below it the Live pill shortens to "● Live", 2026-10-26) (media queries can't use variables; the test allows only these).
 
 - **Key-moment types** are colored words, not boxes: Event (muted), Reveal (lavender), Decision (blue), Loot (amber), Theory (italic, muted) so speculation never looks like fact.
 
