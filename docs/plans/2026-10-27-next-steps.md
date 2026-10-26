@@ -24,12 +24,43 @@ Try it yourself, once merged:
 5. Press **Esc** mid-tour. It asks **End the tour?**: Esc again keeps going, **End tour** ends it.
 6. On a phone, turn Live on. The rolls sheet starts as its bar; tap the arrow to open it.
 
-## 2. Decide the content-sources design (Brett: four answers; about 10 minutes)
+## 2. Settle the data strategy (Brett: decide; about 20 minutes, before anything is built)
 
-`docs/plans/2026-10-26-content-sources.md` on PR #52. It answers "the DM buys a book, then stops using it": a book is
-a source in the DM's library, switched on per campaign, adding options, never rules. The four decisions are at its end.
-Once they're answered, build the model while the table it replaces (`campaign_content`) is still empty. That's about
-a day, with no visible change yet. Getting a book's contents in is a later decision.
+Brett, Oct 26: leaning toward an abstracted data model, without adding complexity. The content-sources design
+(`docs/plans/2026-10-26-content-sources.md`, PR #52) is the starting point. Tomorrow's job is to walk through it in plain
+terms and settle it.
+
+**Recommendation: abstract the *content*, keep everything else concrete.** One shape holds every piece of rules content
+(monster, spell, item, rule, Wild Shape form): a **source** (the SRD, a book the DM owns, the DM's own creations) holds
+**entries**, each with a kind, a name and its details as one document. A campaign switches sources on in its own
+order. The SRD becomes just the first source, read from its files as today. That's two tables and one lookup function
+(`rules_data.find`, which already exists), not a table per kind.
+
+What stays concrete, because it's read and changed constantly and an abstraction would only hide it: characters, play
+state (HP, slots, conditions), rolls, the story. Those keep their own tables.
+
+What to avoid, because it is the extra complexity: a general "anything" model (attributes as rows), plug-ins, or
+versioned schemas per book. The details document per entry covers a new kind of thing without a new table.
+
+The questions to answer together:
+1. Is "content is abstract, play and story are concrete" the right line?
+2. The design's four decisions: sources belong to a person (the DM's library); switching a book off hides it but keeps
+   copies already in play; a book's optional rules become house rules; build the model now, the import later.
+3. Where a book's text may live (the private database only), and what a second group could see later.
+
+Once settled, build the model while the table it replaces (`campaign_content`) is still empty: about a day, with no
+visible change yet.
+
+## 2b. The private repository (Brett: two settings; about 5 minutes)
+
+Brett made the repo private on Oct 26. Two things change:
+- **GitHub Actions minutes.** Private repos get 2,000 minutes a month on GitHub Free (3,000 on Pro). Last week's pace
+  (about 210 test runs at roughly 4-5 billed minutes each) is about 4,000 a month. When minutes run out with no
+  spending limit, the tests stop running, and Railway won't deploy beta without them. Recommendation: GitHub Pro
+  ($4 a month, which also brings branch protection to a private repo) plus an Actions spending limit of about $10, and
+  Claude adds a setting that cancels an older run when a newer push replaces it (fewer wasted minutes).
+- **Railway** reads the repo through its GitHub app. Today's deploy after the switch is the check that it still has
+  access.
 
 ## 3. Mock up the fight screen (Brett: review the mockup; design stays in this session)
 
@@ -40,12 +71,12 @@ in the test campaign. Close draft #40 then, since its play-state ideas fold into
 ## 4. The test characters, and book text in the test fixtures (no Brett step)
 
 Push the four test characters, with `scripts/ddb_fixture.py` also stripping rules text (descriptions) so new
-fixtures carry numbers only. Then re-make the four existing fixtures the same way, so the public repo stops holding
-book text. Rewriting git history to remove the old copies is optional and Brett's call. Known gap to fix while there:
+fixtures carry numbers only. Then re-make the four existing fixtures the same way, so the repo stops holding book text
+(it's private for now; this keeps it safe to make public again). Rewriting git history to remove the old copies is
+optional and Brett's call. Known gap to fix while there:
 the Artificer's Eldritch Cannon shows "50/50".
 
 ## Later, already planned
 
 - The layout sweep (`scripts/layout_sweep.py`) at the end of Phase 1.
 - Rules answers stay later in the roadmap (Brett, Oct 26).
-- Optional: make the repo private (GitHub Pro adds branch protection there), once Railway's GitHub access is checked.
