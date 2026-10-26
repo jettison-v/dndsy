@@ -313,12 +313,8 @@ table.list th { text-align: left; font-size: var(--fs-sm); font-weight: 600; col
 table.list td { padding: 14px 10px; border-top: 1px solid var(--line); vertical-align: top; }
 table.list td a { color: var(--text); font-weight: 500; text-decoration: none; }
 table.list td a:hover { color: var(--text-strong); text-decoration: underline; }
-.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
-.card-grid .entry { background: var(--surface-2); border-radius: 10px; padding: 14px 16px; }
 .entry b { display: block; }
 .entry p { margin: 4px 0 0; color: var(--muted); font-size: var(--fs-sm); }
-.entry-link { color: var(--text); text-decoration: none; }
-.entry-link:hover b { text-decoration: underline; }
 .ev-text small a { color: var(--muted); text-decoration: none; }
 .ev-text small a:hover { color: var(--text); text-decoration: underline; }
 
@@ -423,18 +419,12 @@ ul.plain { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
 }
 
 /* Family tree diagram */
-.family-graph { overflow-x: auto; margin-top: 12px; }
-.family-graph pre.mermaid { margin: 0; background: transparent; color: transparent; text-align: center; min-height: 120px; }
-.family-graph svg { max-width: 100%; height: auto; }
-.family-graph .node rect { rx: 8; ry: 8; }
-.family-graph a { cursor: pointer; }
 
 /* Suggest a correction or addition */
 details.suggest { margin-top: 14px; }
 details.suggest > summary { cursor: pointer; color: var(--muted); font-size: var(--fs-sm); }
 details.suggest > summary:hover { color: var(--text); }
 details.suggest[open] > summary { margin-bottom: 10px; }
-.peek-suggest { padding: 0 22px 12px; }
 .suggest-thanks { margin: 10px 0; }
 
 /* Characters */
@@ -636,9 +626,6 @@ dl.mech dt { color: var(--muted); } dl.mech dd { margin: 0; }
 .insp small { display: block; } .insp.on b { color: var(--amber); }
 .strip .insp.on { box-shadow: inset 0 0 0 1px var(--amber); }
 .vital.insp.on { box-shadow: inset 0 0 0 1px var(--amber); }
-.char-link-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) !important; }
-.link-form { flex-wrap: nowrap; } .link-form input { flex: 1; min-width: 0; }
-@media (max-width: 900px) { .char-link-row { grid-template-columns: 1fr !important; } .link-form { flex-wrap: wrap; } }
 .admin-move form.row { display: grid; grid-template-columns: 130px minmax(0, 1fr) auto; gap: 8px; align-items: center; flex-wrap: nowrap; }
 .admin-move form.row select { width: 100%; }
 /* Admin regrouping in the side panel: option buttons that save on click */
@@ -681,7 +668,6 @@ dl.mech dt { color: var(--muted); } dl.mech dd { margin: 0; }
 .pic-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .pic-form label.btn { cursor: pointer; white-space: nowrap; }
 .peek-pic { width: 100%; max-height: 240px; object-fit: cover; border-radius: 10px; margin-bottom: 12px; border: 1px solid var(--line); }
-.entry-pic { float: right; width: 56px; height: 56px; border-radius: 10px; object-fit: cover; margin: 0 0 6px 12px; border: 1px solid var(--line); }
 @media (max-width: 640px) { .entity-head { flex-direction: column-reverse; } .entity-pic { width: 100%; } .entity-pic img { max-height: 280px; } }
 .dm-notes { margin-top: 14px; border-left: 3px solid var(--amber); background: var(--amber-soft); border-radius: 0 10px 10px 0; padding: 10px 14px; }
 .dm-notes p { margin: 6px 0 0; }
@@ -836,9 +822,6 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .map-head .map-open { margin-left: auto; }
 .map-frame { display: block; width: 100%; height: calc(100vh - 300px); min-height: 420px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
 @media (max-width: 640px) { .map-frame { height: calc(100vh - 260px); } }
-.entry-map { display: inline-block; margin-top: 8px; font-size: var(--fs-sm); font-weight: 500; color: var(--blue); text-decoration: none; }
-.entry-map::before { content: "⌖ "; }
-.entry-map:hover { text-decoration: underline; }
 
 /* Notes on shortlist picks and reminders */
 .detail-marks { display: grid; gap: 6px; margin-bottom: 14px; }
@@ -912,7 +895,6 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 
 /* Manage: grouped menu, tabs on every Manage page, and the overview cards */
 .menu .menu-group { padding: 8px 12px 2px; font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); }
-.menu .menu-home { border-bottom: 1px solid var(--line); }
 .menu a + .menu-group { border-top: 1px solid var(--line); margin-top: var(--sp-1); padding-top: var(--sp-3); }
 .manage-tabs { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 0 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--line); font-size: var(--fs-sm); }
 .manage-tabs a { color: var(--muted); text-decoration: none; padding: 4px 10px; border-radius: var(--r-pill); }
@@ -920,7 +902,6 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .manage-tabs a.on { color: var(--text); background: var(--surface-2); font-weight: 600; }
 .manage-tabs .manage-scope { font: 700 var(--fs-xs) var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); padding-right: var(--sp-2); }
 /* Manage lists and grids: Needs you, Table, Accounts, Campaigns, Sessions (Manage layout, 2026-10-23) */
-.grid-accounts { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.2fr) minmax(0, .8fr) auto; }
 .sub-tabs { display: flex; gap: var(--sp-4); border-bottom: 1px solid var(--line); margin: 0 0 var(--sp-4); font-size: var(--fs-sm); }
 .sub-tabs a { padding-bottom: var(--sp-2); color: var(--muted); text-decoration: none; }
 .sub-tabs a.on { color: var(--text-strong); border-bottom: 2px solid var(--red); }
@@ -1824,7 +1805,6 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .guide-steps > li > p { margin: var(--sp-1) 0 0; }
 .guide-steps > li.done > b { color: var(--muted); text-decoration: line-through; }
 .guide-sub { padding-left: var(--sp-5); display: grid; gap: var(--sp-1); margin: var(--sp-2) 0 0; }
-.guide-warn { display: block; margin-top: var(--sp-1); padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); background: var(--amber-soft); font-size: var(--fs-sm); }
 .guide-tips { margin-top: var(--sp-3); padding: var(--sp-3) var(--sp-4); border-radius: var(--r-lg); background: var(--surface-2); }
 .guide-tips ul { margin: var(--sp-1) 0 0; padding-left: var(--sp-5); }
 .guide-list { padding-left: var(--sp-5); display: grid; gap: var(--sp-2); }
