@@ -190,10 +190,10 @@ def test_the_rolls_sidebar_stays_as_you_left_it(people, server):
     page.set_viewport_size({"width": 1300, "height": 900})
     player.open("/c/main/")
     assert page.evaluate(state) == "open"  # what you chose at full width still holds
-    # Phones: closed is the sheet's bar, still in view, with no edge tab
+    # Phones: closed (the sheet's bar, still in view, no edge tab) until opened, since it covers a third of the screen
+    page.evaluate("localStorage.removeItem('askdnd.rollsSide')")
     page.set_viewport_size({"width": 390, "height": 812})
     player.open("/c/main/")
-    page.click(".rs-toggle")
     assert page.evaluate(state) == "closed"
     assert page.locator("#table-rolls").is_visible() and not page.locator(".rs-edge").is_visible()
     assert player.errors == []

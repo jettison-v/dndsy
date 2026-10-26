@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Plan spell shortlist in the filter pattern</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#e8b34b}a:hover{color:#f3c96f}
+</style>
+</helmet>
+<div style="width: 1440px; height: 720px; box-sizing: border-box; background: #15171a; font-family: Inter, system-ui, sans-serif; font-size: 14px; color: #ebe7df; padding: 18px 32px; display: flex; flex-direction: column; gap: 12px">
+  <div style="display: flex; align-items: center; gap: 14px">
+    <b style="font-size: 22px">Cole</b><span style="color: #a29d93">Plan</span>
+    <div role="tablist" style="display: flex; gap: 4px; margin-left: 16px">
+      <button type="button" style="background: none; border: 0; color: #a29d93; padding: 6px 10px; font: inherit">Combos</button>
+      <button type="button" style="background: none; border: 0; color: #a29d93; padding: 6px 10px; font: inherit">Leveling</button>
+      <button type="button" style="background: none; border: 0; color: #a29d93; padding: 6px 10px; font: inherit">Quests</button>
+      <button type="button" style="background: none; border: 0; color: #a29d93; padding: 6px 10px; font: inherit">Notes</button>
+      <button type="button" style="background: none; border: 0; color: #a29d93; padding: 6px 10px; font: inherit">Reminders</button>
+      <button type="button" aria-selected="true" style="background: none; border: 0; border-bottom: 2px solid #d64545; color: #ffffff; padding: 6px 10px; font: inherit; font-weight: 600">Spells</button>
+      <button type="button" style="background: none; border: 0; color: #a29d93; padding: 6px 10px; font: inherit">Wild Shapes</button>
+    </div>
+  </div>
+  <div style="flex: 1; display: grid; grid-template-columns: 228px minmax(0, 1fr); background: #1a1d21; border: 1px solid #34383e; border-radius: 12px; overflow: hidden">
+    <aside aria-label="Filters" style="border-right: 1px solid #34383e; padding: 14px 16px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; align-items: center; gap: 10px"><h3 style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #e8b34b">Filters</h3><span aria-hidden="true" style="flex: 1; height: 1px; background: linear-gradient(90deg, #4a4f57, transparent)"></span><button type="button" style="background: none; border: 0; color: #a29d93; font: inherit; font-size: 12px; text-decoration: underline">Clear all</button></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; color: #a29d93">Level</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 5px">
+          <button type="button" style="background: #1f2226; color: #6f6b64; border: 1px solid #34383e; border-radius: 999px; padding: 3px 9px; font: inherit; font-size: 12px">Cantrip <span style="font-size: 11px">0</span></button>
+          <button type="button" style="background: #1f2226; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 3px 9px; font: inherit; font-size: 12px">1st <span style="color: #a29d93; font-size: 11px">1</span></button>
+          <button type="button" style="background: #1f2226; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 3px 9px; font: inherit; font-size: 12px">2nd <span style="color: #a29d93; font-size: 11px">4</span></button>
+          <button type="button" style="background: #1f2226; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 3px 9px; font: inherit; font-size: 12px">3rd <span style="color: #a29d93; font-size: 11px">1</span></button>
+        </div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; color: #a29d93">Casting time</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 5px">
+          <button type="button" style="background: #1f2226; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 3px 9px; font: inherit; font-size: 12px">Action <span style="color: #a29d93; font-size: 11px">6</span></button>
+          <button type="button" style="background: #1f2226; color: #6f6b64; border: 1px solid #34383e; border-radius: 999px; padding: 3px 9px; font: inherit; font-size: 12px">Bonus <span style="font-size: 11px">0</span></button>
+        </div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; color: #a29d93">Concentration</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 5px">
+          <button type="button" aria-pressed="true" style="background: #2a3550; color: #ebe7df; border: 1px solid #7ea6e0; border-radius: 999px; padding: 3px 9px; font: inherit; font-size: 12px">Conc. <span style="color: #a29d93; font-size: 11px">5</span></button>
+          <button type="button" style="background: #1f2226; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 3px 9px; font: inherit; font-size: 12px">No Conc. <span style="color: #a29d93; font-size: 11px">1</span></button>
+        </div></div>
+      <button type="button" style="text-align: left; background: none; border: 0; border-top: 1px solid #34383e; padding: 10px 0 0; color: #ebe7df; font: inherit; font-size: 13px; font-weight: 600">▸ More filters</button>
+    </aside>
+    <div style="display: flex; flex-direction: column; min-width: 0">
+      <div style="padding: 12px 18px 0; display: flex; flex-direction: column; gap: 8px">
+        <label style="display: flex; align-items: center; gap: 8px; background: #111315; border: 1px solid #34383e; border-radius: 10px; padding: 7px 12px; color: #a29d93">
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"></circle><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+          <input type="search" placeholder="Search your shortlist" aria-label="Search your shortlist" style="flex: 1; background: none; border: 0; color: #ebe7df; font: inherit; font-size: 15px; outline: none">
+        </label>
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #a29d93">Showing 5 of 6 on your shortlist
+          <button type="button" style="background: #2a3550; color: #ebe7df; border: 1px solid #7ea6e0; border-radius: 999px; padding: 2px 8px; font: inherit; font-size: 12px">Conc. ×</button>
+          <span style="margin-left: auto; font-size: 12px">Sort <select style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 6px; font: inherit; font-size: 12px"><option>Level</option></select></span>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 22px minmax(0, 1.3fr) 56px 74px minmax(0, 1fr) 70px minmax(0, 2fr) 96px; gap: 0 12px; padding: 8px 18px 6px; border-bottom: 1px solid #34383e; font-size: 11px; color: #a29d93; letter-spacing: .04em">
+        <span></span><span>SPELL</span><span>LEVEL</span><span>TIME</span><span>RANGE · AREA</span><span>ROLL</span><span>YOUR NOTE (WHY IT'S HERE)</span><span style="text-align: right">STATUS</span>
+      </div>
+      <div style="padding: 0 18px; font-size: 13.5px">
+        <div style="display: grid; grid-template-columns: 22px minmax(0, 1.3fr) 56px 74px minmax(0, 1fr) 70px minmax(0, 2fr) 96px; gap: 0 12px; align-items: center; padding: 8px 0; border-top: 1px solid #2c3036"><span style="color: #e86b8a">♥</span><span><b>Faerie Fire</b> <span style="color: #a29d93; font-size: 12px">Conc.</span></span><span style="color: #a29d93">1st</span><span>Action</span><span style="color: #a29d93">60 ft · 20-ft cube</span><span>Dex 15</span><span style="color: #ebe7df">Party has lots of attacks; Advantage for everyone on invisible things</span><span style="text-align: right; color: #5bbf7f">● Prepared</span></div>
+        <div style="display: grid; grid-template-columns: 22px minmax(0, 1.3fr) 56px 74px minmax(0, 1fr) 70px minmax(0, 2fr) 96px; gap: 0 12px; align-items: center; padding: 8px 0; border-top: 1px solid #2c3036"><span style="color: #e86b8a">♥</span><span><b>Flaming Sphere</b> <span style="color: #a29d93; font-size: 12px">Conc.</span></span><span style="color: #a29d93">2nd</span><span>Action</span><span style="color: #a29d93">60 ft · 5-ft sphere</span><span>Dex 15</span><span style="color: #ebe7df">Bonus Action ram each turn while I'm in Wild Shape? Check with DM</span><span style="text-align: right; color: #a29d93">Not prepared</span></div>
+        <div style="display: grid; grid-template-columns: 22px minmax(0, 1.3fr) 56px 74px minmax(0, 1fr) 70px minmax(0, 2fr) 96px; gap: 0 12px; align-items: center; padding: 8px 0; border-top: 1px solid #2c3036"><span style="color: #e86b8a">♥</span><span><b>Hold Person</b> <span style="color: #a29d93; font-size: 12px">Conc.</span></span><span style="color: #a29d93">2nd</span><span>Action</span><span style="color: #a29d93">60 ft</span><span>Wis 15</span><span style="color: #a29d93; font-style: italic">Add a note…</span><span style="text-align: right; color: #a29d93">Not prepared</span></div>
+        <div style="display: grid; grid-template-columns: 22px minmax(0, 1.3fr) 56px 74px minmax(0, 1fr) 70px minmax(0, 2fr) 96px; gap: 0 12px; align-items: center; padding: 8px 0; border-top: 1px solid #2c3036"><span style="color: #e86b8a">♥</span><span><b>Pass without Trace</b> <span style="color: #a29d93; font-size: 12px">Conc.</span></span><span style="color: #a29d93">2nd</span><span>Action</span><span style="color: #a29d93">Self · 30-ft aura</span><span>—</span><span style="color: #ebe7df">For the stealth heist the DM hinted at</span><span style="text-align: right; color: #a29d93">Not prepared</span></div>
+        <div style="display: grid; grid-template-columns: 22px minmax(0, 1.3fr) 56px 74px minmax(0, 1fr) 70px minmax(0, 2fr) 96px; gap: 0 12px; align-items: center; padding: 8px 0; border-top: 1px solid #2c3036"><span style="color: #e86b8a">♥</span><span><b>Spike Growth</b> <span style="color: #a29d93; font-size: 12px">Conc.</span></span><span style="color: #a29d93">2nd</span><span>Action</span><span style="color: #a29d93">150 ft · 20-ft radius</span><span>—</span><span style="color: #ebe7df">Combo with Thorn Whip: pull enemies through the spikes</span><span style="text-align: right; color: #a29d93">Not prepared</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":720}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

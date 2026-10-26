@@ -16,13 +16,13 @@
   {% for kind, meta, notes in player_notes %}
   <div id="t-{{ kind }}"{% if not loop.first %} hidden{% endif %}>
     <div class="sec-head"><p class="muted" style="margin:0">{{ meta.about }}</p>
-      {% if can_pick %}<a class="btn small" href="#" data-modal-url="/characters/{{ c.id }}/notes/new?kind={{ kind }}" data-modal-size="large">+ {{ meta.label }}</a>{% endif %}</div>
+      {% if can_pick %}<a class="btn small" href="#" data-modal-url="/characters/{{ c.id }}/notes/new?kind={{ kind }}" data-modal-size="large"{% if kind == "combo" and not notes %} data-tour="combo"{% endif %}>+ {{ meta.label }}</a>{% endif %}</div>
     {% if notes %}
     {# Compact rows (tiles for general notes), the full note in the side panel; drag to reorder (roadmap step 6) #}
     <div class="{{ 'note-tiles' if kind == 'general' else 'note-rows' }}"{% if can_pick %} data-sort-column="{{ kind }}" data-sort-url="/characters/{{ c.id }}/notes/order" data-sort-item=".note-item"{% endif %}>
       {% for n in notes %}
       {# Combos and Leveling are dense (turns, level tables): they open in a large window; quests and notes in the side panel #}
-      <div class="note-item {{ 'note-tile' if kind == 'general' else 'note-row' }}" data-key="{{ n.id }}" {% if kind in ('combo', 'leveling') %}data-modal-url="/characters/{{ c.id }}/notes/{{ n.id }}" data-modal-size="large"{% else %}data-panel-url="/characters/{{ c.id }}/notes/{{ n.id }}"{% endif %} tabindex="0" role="button" aria-label="{{ n.title }}: open">
+      <div class="note-item {{ 'note-tile' if kind == 'general' else 'note-row' }}" data-key="{{ n.id }}"{% if kind == "combo" and loop.first %} data-tour="combo"{% endif %} {% if kind in ('combo', 'leveling') %}data-modal-url="/characters/{{ c.id }}/notes/{{ n.id }}" data-modal-size="large"{% else %}data-panel-url="/characters/{{ c.id }}/notes/{{ n.id }}"{% endif %} tabindex="0" role="button" aria-label="{{ n.title }}: open">
         {% if can_pick %}<span class="drag-handle" aria-hidden="true" title="Drag to reorder">⋮⋮</span>{% endif %}
         <div class="note-item-main">
           <div class="note-item-head"><b>{{ n.title }}</b>

@@ -129,8 +129,8 @@
     <p class="note">Updated Oct 19. Every player can read this; the DM can't.</p>
     {{ ds("Empty state", ".muted", "Says what goes here and how to add the first one.") }}
     <p class="muted">Nothing pinned yet. Use <b>+ Add</b> to pin what you'd use on your turn.</p>
-    {{ ds("Tour card", ".tour-card, .tour-spot (app.js the tour)", "One stop of the tour: what it is and why, the group's parts, Back and Next. The page dims around .tour-spot; on phones the card sits at the bottom.") }}
-    <div class="ds-sample"><div class="tour-card" style="position:static"><h3>Battle combos</h3><span class="tour-parts"><i class="on"></i><i></i><i></i></span><p>Plan a few turns together, each split into action, bonus action, reaction and movement.</p><p class="why">Work it out between sessions; it shows on Battle when the moment comes.</p><div class="tour-foot"><span class="count">7 of 9</span><button type="button" class="btn small">Back</button><button type="button" class="btn small primary">Next</button><button type="button" class="btn small link">✕</button></div></div></div>
+    {{ ds("Tour card", ".tour-card, .tour-spot (app.js the tour)", "One stop of the tour: how far along it is, what it is and why, Back and Next; ✕ or Esc asks before ending. The page dims around .tour-spot; on phones the card sits at the bottom.") }}
+    <div class="ds-sample"><div class="tour-card" style="position:static"><div class="tour-progress"><i style="width:60%"></i></div><h3>Battle combos</h3><p>Plan a few turns together, each split into action, bonus action, reaction and movement.</p><p class="why">Work it out between sessions; it shows on Battle when the moment comes.</p><div class="tour-foot"><span class="count">18 of 30</span><button type="button" class="btn small">Back</button><button type="button" class="btn small primary">Next</button><button type="button" class="btn small link">✕</button></div></div></div>
   </section>
 
   <section class="section" id="panels">
@@ -210,7 +210,7 @@
         <tr><td><b>Long words</b></td><td>Break rather than widen the page (a web address in a note).</td></tr>
       </tbody>
     </table></div>
-    {{ ds("Menu", ".menu", "Drops from the menu bar: a fixed width, text that wraps, a small line under each item.") }}
+    {{ ds("Menu", ".menu", "Drops from the menu bar (Party, Manage, the ? Help menu below): a fixed width, text that wraps, a small line under each item.") }}
     <div class="ds-sample"><div class="menu" style="position:static">
       <a href="#narrow">Take the tour<small>A few minutes: what askdnd adds, and why</small></a>
       <a href="#narrow">What askdnd adds<small>The same, to read</small></a>

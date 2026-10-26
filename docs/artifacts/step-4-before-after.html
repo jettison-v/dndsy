@@ -1,0 +1,139 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>askdnd step 4 before and after</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: a short list of what changed, a strip of views to pick, then one big comparison (slider or side by side).
+   Single dark look on purpose: askdnd itself is dark only. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e;
+  --text: #ebe7df; --muted: #a29d93; --faint: #6f6b64;
+  --red: #d64545; --amber: #e8b34b; --blue: #7ea6e0; --selected: #2a3550;
+  --ui: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: var(--ui); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 64px; display: flex; flex-direction: column; gap: 20px; }
+header h1 { margin: 0 0 4px; font-size: 1.75rem; line-height: 1.2; text-wrap: balance; }
+header p { margin: 0; color: var(--muted); max-width: 72ch; }
+header code { font-size: .85em; background: var(--surface-2); padding: 1px 6px; border-radius: 6px; color: var(--text); }
+.changes { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; }
+.changes h2 { margin: 0 0 8px; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); }
+.changes ul { margin: 0; padding-left: 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4px 28px; }
+.changes li { color: var(--muted); } .changes li b { color: var(--text); font-weight: 600; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+.views { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: inherit; font-size: 14px; min-height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); cursor: pointer; }
+.chip:hover { border-color: var(--faint); }
+.chip[aria-pressed="true"] { background: var(--selected); border-color: var(--blue); }
+.mode { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.mode button { font: inherit; font-size: 14px; background: none; border: 0; color: var(--muted); padding: 0 12px; min-height: 30px; cursor: pointer; }
+.mode button + button { border-left: 1px solid var(--line); }
+.mode button[aria-pressed="true"] { background: var(--red); color: #fff; }
+.note { color: var(--muted); font-size: 14px; margin: 0; max-width: 90ch; }
+.labels { display: flex; justify-content: space-between; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.labels b { color: var(--text); }
+/* Slider: the "after" image clipped from the left by the handle */
+.slide { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: var(--surface); user-select: none; touch-action: pan-y; }
+.slide img { display: block; width: 100%; height: auto; }
+.slide .after { position: absolute; inset: 0; clip-path: inset(0 0 0 var(--cut, 50%)); }
+.slide .after img { width: 100%; }
+.handle { position: absolute; top: 0; bottom: 0; left: var(--cut, 50%); width: 2px; background: var(--amber); transform: translateX(-1px); pointer-events: none; }
+.handle::after { content: "⟷"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 34px; height: 34px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--amber); color: var(--bg); font-weight: 700; font-size: 16px; }
+.slide input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; margin: 0; }
+.slide input:focus-visible + .handle { outline: 2px solid var(--blue); outline-offset: 2px; }
+/* Side by side */
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.pair figure { margin: 0; min-width: 0; }
+.pair figcaption { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.pair img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); }
+.phone .slide, .phone.pair { max-width: 820px; margin: 0 auto; }
+.phone .slide { max-width: 400px; }
+@media (max-width: 700px) { .pair { grid-template-columns: 1fr; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Step 4: story, campaign and Manage pages, before and after</h1>
+    <p>Same data, same window size. Drag the handle (or use the arrow keys) to wipe between today's look and the new one, or switch to side by side. To click around yourself, open the same page on <code>localhost:8000</code> (today) and <code>localhost:8001</code> (new).</p>
+  </header>
+
+  <section class="changes" aria-labelledby="ch-h">
+    <h2 id="ch-h">What changed</h2>
+    <ul>
+      <li><b>Six text sizes everywhere</b>: page titles 30px, section headings 19px, menus and body 16px</li>
+      <li><b>Story text</b> on the scale too (19px serif, a touch larger than before)</li>
+      <li><b>Buttons, fields and chips</b> already shared from step 3 now show on these pages too</li>
+      <li><b>Every color and screen width</b> comes from the token list; layouts change at 640, 900 and 1100px</li>
+      <li><b>The check is strict now</b>: any one-off size, color or width fails the tests</li>
+      <li><b>Also on main</b>: Battle's sticky header re-measures the top bar, so it shouldn't load in the wrong place</li>
+    </ul>
+  </section>
+
+  <div class="bar">
+    <div class="views" id="views" role="group" aria-label="Which page"></div>
+    <div class="mode" role="group" aria-label="How to compare">
+      <button type="button" id="m-slide" aria-pressed="true">Slider</button><button type="button" id="m-pair" aria-pressed="false">Side by side</button>
+    </div>
+  </div>
+  <p class="note" id="about"></p>
+  <div id="stage"></div>
+</div>
+
+<script>
+const VIEWS = [
+  ["recap", "Recap", "Your local copy has no published recaps, so this shows the empty state; the story text is on the Campaign page."],
+  ["sessions", "Sessions", ""],
+  ["campaign", "Campaign", "Tabs, chips and the list on the new sizes."],
+  ["entity", "A campaign page", "Story text (the parchment block) is on the scale now."],
+  ["party", "Party", ""],
+  ["manage", "Manage", ""],
+  ["people", "Manage › People", "The access chart and the forms below it."],
+  ["recaps", "Manage › Recaps", ""],
+  ["review", "A recap review", ""],
+  ["usage", "Manage › Usage", "Big numbers in the stat tiles use the 30px title size."],
+  ["faq", "FAQ", ""],
+  ["recap-phone", "Recap on a phone", ""],
+  ["campaign-phone", "Campaign on a phone", ""],
+];
+let view = "campaign", mode = "slide", cut = 50;
+try { view = localStorage.getItem("cmp4-view") || view; mode = localStorage.getItem("cmp4-mode") || mode; } catch (e) {}
+if (location.hash.length > 1 && VIEWS.some(v => v[0] === location.hash.slice(1))) view = location.hash.slice(1);
+
+const viewsEl = document.getElementById("views");
+VIEWS.forEach(([key, label]) => {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "chip"; b.textContent = label; b.dataset.key = key;
+  b.addEventListener("click", () => { view = key; save(); render(); });
+  viewsEl.append(b);
+});
+document.getElementById("m-slide").addEventListener("click", () => { mode = "slide"; save(); render(); });
+document.getElementById("m-pair").addEventListener("click", () => { mode = "pair"; save(); render(); });
+function save() { try { localStorage.setItem("cmp4-view", view); localStorage.setItem("cmp4-mode", mode); } catch (e) {} }
+
+function render() {
+  viewsEl.querySelectorAll(".chip").forEach(b => b.setAttribute("aria-pressed", b.dataset.key === view ? "true" : "false"));
+  document.getElementById("m-slide").setAttribute("aria-pressed", mode === "slide" ? "true" : "false");
+  document.getElementById("m-pair").setAttribute("aria-pressed", mode === "pair" ? "true" : "false");
+  const v = VIEWS.find(x => x[0] === view);
+  document.getElementById("about").textContent = v[2];
+  const before = `shots/${view}-before.jpg`, after = `shots/${view}-after.jpg`, phone = view.endsWith("-phone");
+  const stage = document.getElementById("stage");
+  if (mode === "pair") {
+    stage.innerHTML = `<div class="pair${phone ? " phone" : ""}"><figure><figcaption>Today</figcaption><img src="${before}" alt="${v[1]} today"></figure>`
+      + `<figure><figcaption>New</figcaption><img src="${after}" alt="${v[1]} with the design system"></figure></div>`;
+    return;
+  }
+  stage.innerHTML = `<div class="${phone ? "phone" : ""}"><div class="labels"><span><b>Today</b> ← left</span><span>right → <b>New</b></span></div>`
+    + `<div class="slide" style="--cut:${cut}%"><img src="${before}" alt="${v[1]} today"><div class="after"><img src="${after}" alt="${v[1]} with the design system"></div>`
+    + `<input type="range" id="cut" min="0" max="100" value="${cut}" aria-label="Wipe between today and new"><div class="handle"></div></div></div>`;
+  const slide = stage.querySelector(".slide"), range = stage.querySelector("#cut");
+  range.addEventListener("input", () => { cut = +range.value; slide.style.setProperty("--cut", cut + "%"); });
+}
+render();
+</script>
+
+</body></html>

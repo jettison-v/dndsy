@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Slot-first spellcasting window</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#e8b34b}a:hover{color:#f3c96f}
+</style>
+</helmet>
+<div style="width: 1200px; height: 780px; box-sizing: border-box; background: rgba(8,9,10,.85); font-family: Inter, system-ui, sans-serif; font-size: 14px; color: #ebe7df; padding: 24px">
+  <div role="dialog" aria-label="Spell Book" style="height: 100%; box-sizing: border-box; background: #1a1d21; border: 1px solid #34383e; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden">
+    <div style="display: flex; align-items: center; gap: 16px; padding: 16px 20px; border-bottom: 1px solid #34383e">
+      <div><div style="color: #a29d93; font-size: 12px">Cole · DC 15 · +7 to hit</div><h2 style="margin: 0; font-size: 22px">Spell Book</h2></div>
+      <span style="font-size: 13px; background: #272b30; border-radius: 999px; padding: 4px 10px">Concentrating: <b>Moonbeam</b></span>
+      <button type="button" aria-label="Close" style="margin-left: auto; background: none; border: 0; color: #a29d93; font-size: 20px">✕</button>
+    </div>
+    <div style="flex: 1; display: grid; grid-template-columns: 200px minmax(0, 1fr) 380px; overflow: hidden">
+      <nav aria-label="Slot level" style="border-right: 1px solid #34383e; padding: 14px; display: flex; flex-direction: column; gap: 8px">
+        <div style="color: #a29d93; font-size: 12px; letter-spacing: .1em">CAST WITH</div>
+        <sc-for list="{{ slots }}" as="s" hint-placeholder-count="4">
+          <button type="button" onClick="{{ s.pick }}" aria-pressed="{{ s.pressed }}" style="text-align: left; background: {{ s.bg }}; color: #ebe7df; border: 1px solid {{ s.ring }}; border-radius: 10px; padding: 10px 12px; font: inherit; cursor: pointer">
+            <div style="font-weight: 700">{{ s.label }}</div><div style="color: #7ea6e0; font-size: 13px; letter-spacing: 2px">{{ s.pips }}</div><div style="color: #a29d93; font-size: 12px">{{ s.left }}</div>
+          </button>
+        </sc-for>
+      </nav>
+      <div style="padding: 14px 18px; display: flex; flex-direction: column; gap: 6px; overflow: hidden">
+        <div style="color: #a29d93; font-size: 12px; letter-spacing: .1em">{{ listTitle }}</div>
+        <sc-for list="{{ list }}" as="sp" hint-placeholder-count="6">
+          <button type="button" onClick="{{ sp.pick }}" style="display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; text-align: left; background: {{ sp.bg }}; color: #ebe7df; border: 1px solid {{ sp.ring }}; border-radius: 10px; padding: 8px 12px; font: inherit; cursor: pointer">
+            <span><b>{{ sp.name }}</b> <span style="color: #a29d93; font-size: 12px">{{ sp.tag }}</span><br><span style="color: #a29d93; font-size: 12px">{{ sp.line }}</span></span>
+            <span style="font-size: 12px; color: {{ sp.costColor }}; align-self: center">{{ sp.cost }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <aside aria-label="Selected spell" style="border-left: 1px solid #34383e; background: #1f2226; padding: 18px; display: flex; flex-direction: column; gap: 10px">
+        <div style="color: #a29d93; font-size: 12px">{{ d.kicker }}</div>
+        <h3 style="margin: 0; font-size: 24px">{{ d.name }}</h3>
+        <dl style="margin: 0; display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 6px 10px; font-size: 13px">
+          <dt style="color: #a29d93">Casting time</dt><dd style="margin: 0">{{ d.time }}</dd>
+          <dt style="color: #a29d93">Range</dt><dd style="margin: 0">{{ d.range }}</dd>
+          <dt style="color: #a29d93">Effect</dt><dd style="margin: 0"><b>{{ d.effect }}</b></dd>
+          <dt style="color: #a29d93">Roll</dt><dd style="margin: 0">{{ d.roll }}</dd>
+          <dt style="color: #a29d93">Duration</dt><dd style="margin: 0">{{ d.duration }}</dd>
+        </dl>
+        <p style="margin: 0; color: #a29d93; font-size: 13px">{{ d.note }}</p>
+        <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px">
+          <button type="button" style="background: #7ea6e0; color: #0f1113; border: 0; border-radius: 10px; padding: 12px; font: inherit; font-weight: 700">{{ d.cta }}</button>
+          <div style="display: flex; gap: 8px"><button type="button" style="flex: 1; background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 8px; padding: 8px; font: inherit; font-size: 13px">{{ d.rollBtn }}</button><button type="button" style="flex: 1; background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 8px; padding: 8px; font: inherit; font-size: 13px">Full text</button></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":780}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { slot: 2, spell: 'Moonbeam' };
+  }
+  renderVals() {
+    const SLOTS = [
+      { level: 0, label: 'Cantrips', max: 0, used: 0 },
+      { level: 1, label: '1st level', max: 4, used: 0 },
+      { level: 2, label: '2nd level', max: 3, used: 0 },
+      { level: 3, label: '3rd level', max: 3, used: 1 },
+    ];
+    const SPELLS = [
+      { name: 'Starry Wisp', level: 0, time: 'Action', range: '60 ft', base: [2, 8], per: 0, kind: 'attack', type: 'radiant', duration: 'Instant', note: 'On a hit the target sheds light and can’t be Invisible until your next turn.' },
+      { name: 'Thorn Whip', level: 0, time: 'Action', range: '30 ft', base: [2, 6], per: 0, kind: 'attack', type: 'piercing', duration: 'Instant', note: 'On a hit you can pull a Large or smaller target up to 10 ft toward you.' },
+      { name: 'Healing Word', level: 1, time: 'Bonus action', range: '60 ft', base: [2, 4], per: 2, kind: 'heal', bonus: 4, duration: 'Instant', note: '+2d4 for each slot level above 1st.' },
+      { name: 'Cure Wounds', level: 1, time: 'Action', range: 'Touch', base: [2, 8], per: 2, kind: 'heal', bonus: 4, duration: 'Instant', note: '+2d8 for each slot level above 1st.' },
+      { name: 'Faerie Fire', level: 1, time: 'Action', range: '60 ft (20-ft cube)', kind: 'save', save: 'Dex 15', conc: true, duration: 'Concentration, 1 minute', note: 'Creatures that fail are outlined; attacks against them have Advantage.' },
+      { name: 'Moonbeam', level: 2, time: 'Action', range: '120 ft (5-ft cylinder)', base: [2, 10], per: 1, kind: 'save', save: 'Con 15', type: 'radiant', conc: true, duration: 'Concentration, 1 minute', note: '+1d10 for each slot level above 2nd. Move the beam 60 ft as a Magic action.' },
+      { name: 'Heat Metal', level: 2, time: 'Action', range: '60 ft', base: [2, 8], per: 1, kind: 'save', save: 'Con 15', type: 'fire', conc: true, duration: 'Concentration, 1 minute', note: '+1d8 for each slot level above 2nd. Bonus Action on later turns to repeat the damage.' },
+      { name: 'Conjure Animals', level: 3, time: 'Action', range: '60 ft', base: [3, 10], per: 1, kind: 'save', save: 'Dex 15', type: 'slashing', conc: true, duration: 'Concentration, 10 minutes', note: '+1d10 for each slot level above 3rd.' },
+      { name: 'Depth Charge', level: 3, time: 'Action', range: '90 ft (20-ft sphere)', base: [7, 6], per: 1, kind: 'save', save: 'Con 15', type: 'thunder', duration: 'Instant', note: '+1d6 for each slot level above 3rd. From a book outside the 2024 core rules.' },
+    ];
+    const s = this.state;
+    const slot = SLOTS[s.slot];
+    const castable = SPELLS.filter(x => s.slot === 0 ? x.level === 0 : x.level > 0 && x.level <= s.slot);
+    const chosen = castable.find(x => x.name === s.spell) || castable[0];
+    const dice = (x, lvl) => {
+      if (!x.base) return '';
+      const n = x.base[0] + (x.level > 0 ? x.per * (lvl - x.level) * (x.kind === 'heal' ? 1 : 1) : 0);
+      const count = x.kind === 'heal' ? x.base[0] + x.per * (lvl - x.level) : n;
+      return count + 'd' + x.base[1] + (x.bonus ? '+' + x.bonus : '');
+    };
+    const lvl = s.slot;
+    const effect = chosen.kind === 'heal' ? 'Heals ' + dice(chosen, lvl) : chosen.base ? dice(chosen, lvl) + ' ' + chosen.type : 'No damage';
+    const slots = SLOTS.map(x => {
+      const on = x.level === s.slot;
+      return {
+        label: x.label,
+        pips: x.max ? '●'.repeat(x.max - x.used) + '○'.repeat(x.used) : '∞',
+        left: x.max ? (x.max - x.used) + ' of ' + x.max + ' left' : 'No slot needed',
+        bg: on ? '#2a3550' : '#1f2226', ring: on ? '#7ea6e0' : '#34383e', pressed: on ? 'true' : 'false',
+        pick: () => this.setState({ slot: x.level }),
+      };
+    });
+    const list = castable.map(x => {
+      const on = x.name === chosen.name;
+      const up = x.level > 0 && x.level < lvl;
+      return {
+        name: x.name,
+        tag: (x.level === 0 ? 'cantrip' : (['', '1st', '2nd', '3rd'][x.level])) + (x.conc ? ' · Conc.' : '') + (up ? ' · upcast' : ''),
+        line: x.time + ' · ' + x.range + (x.base ? ' · ' + (x.kind === 'heal' ? 'heals ' : '') + dice(x, lvl) : ''),
+        cost: x.level === 0 ? 'free' : 'uses a ' + slot.label.replace(' level', '') + ' slot',
+        costColor: x.level === 0 ? '#5bbf7f' : '#a29d93',
+        bg: on ? '#2a3550' : '#1f2226', ring: on ? '#7ea6e0' : '#34383e',
+        pick: () => this.setState({ spell: x.name }),
+      };
+    });
+    const d = {
+      kicker: (chosen.level === 0 ? 'Cantrip' : 'Cast at ' + slot.label + (chosen.level < lvl ? ' (it’s a ' + ['', '1st', '2nd', '3rd'][chosen.level] + '-level spell)' : '')),
+      name: chosen.name,
+      time: chosen.time,
+      range: chosen.range,
+      effect,
+      roll: chosen.kind === 'attack' ? 'Spell attack +7' : chosen.kind === 'save' ? chosen.save + ' save' : 'No roll to hit',
+      duration: chosen.duration,
+      note: (chosen.conc ? 'Casting this ends your Concentration on Moonbeam. ' : '') + chosen.note,
+      cta: chosen.level === 0 ? 'Cast ' + chosen.name : 'Cast with a ' + slot.label.replace(' level', '') + '-level slot',
+      rollBtn: chosen.kind === 'attack' ? 'Roll to hit' : chosen.base ? 'Roll ' + dice(chosen, lvl) : 'Nothing to roll',
+    };
+    return { slots, list, d, listTitle: s.slot === 0 ? 'CANTRIPS' : 'SPELLS YOU CAN CAST WITH A ' + slot.label.toUpperCase() + ' SLOT' };
+  }
+}
+</script>
+</body>
+</html>

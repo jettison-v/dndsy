@@ -120,16 +120,6 @@ def _load(request: Request, db: Session, character_id: int):
     return user, ch, None
 
 
-def _known_forms(sheet: dict | None) -> list[dict]:
-    """The forms a druid can shift into right now (known on D&D Beyond), with pictures."""
-    out = []
-    for c in (sheet or {}).get("creatures") or []:
-        if c.get("group") == "Wild Shape form":
-            b = ws.catalog_beast(c["kind"]) or {}
-            out.append({"name": c["kind"], "cr": c["cr"], "image": b.get("image", "")})
-    return out
-
-
 def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None) -> dict:
     """Battle mode's body (also swapped in by Game Mode and the Wild Shape switch). `shape` shows it in that form
     instead of the character's own (the tour's preview: nothing is saved)."""
@@ -140,7 +130,7 @@ def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None
     if ctx["sheet"]:
         ctx["columns"] = views.battle_columns(ctx["sheet"], ctx["picks"]["star"], ctx["picks"]["order"], pinned_only=ctx["show_picks"])
         ctx["riders"] = class_rules.turn(ctx["sheet"])["riders"]
-        ctx["known_forms"] = _known_forms(ctx["sheet"]) if ctx["druid"] else []
+        ctx["known_forms"] = ws.known_forms(ctx["sheet"]) if ctx["druid"] else []
         beast = ws.beast_for(ctx["sheet"], wild) if wild and ctx["druid"] else None
         if beast:
             ctx["form"] = ws.shaped(ctx["sheet"], beast, keep=ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep))
@@ -443,7 +433,7 @@ def form_panel(request: Request, character_id: int, name: str, db: Session = Dep
     beast = ws.beast_for(ctx["sheet"] or {}, name) if ctx["druid"] else None
     if beast is None:
         return HTMLResponse("", status_code=404)
-    known = any(f["name"].lower() == beast["name"].lower() for f in _known_forms(ctx["sheet"]))
+    known = any(f["name"].lower() == beast["name"].lower() for f in ws.known_forms(ctx["sheet"]))
     return templates.TemplateResponse(request, "_panel_form.html", {
         **ctx, "f": ws.shaped(ctx["sheet"], beast, keep=ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep)), "ref": f"form:{beast['name']}", "known": known,
         "keep_options": ws.options_for(ctx["sheet"] or {}, ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep)), "beast_name": beast["name"],
@@ -478,7 +468,7 @@ def set_wild_shape(request: Request, character_id: int, form: str = Form(""), db
         return stop
     if not picks.can_edit(db, user, ch):
         return _forbidden(request, "Only this character's player can do that.")
-    known = {f["name"].lower(): f["name"] for f in _known_forms(chars.character_summary(ch))}
+    known = {f["name"].lower(): f["name"] for f in ws.known_forms(chars.character_summary(ch))}
     if form and form.lower() not in known:
         return HTMLResponse("", status_code=400)
     ch.wild_shape = known[form.lower()] if form else None
@@ -498,9 +488,10 @@ def battle_preview(request: Request, character_id: int, form: str = "", db: Sess
     user, ch, stop = _load(request, db, character_id)
     if stop:
         return stop
-    if form and form.lower() not in {f["name"].lower() for f in _known_forms(chars.character_summary(ch))}:
+    ctx = _battle_ctx(db, ch, user, shape=form or None)
+    if form and form.lower() not in {f["name"].lower() for f in ctx.get("known_forms", [])}:
         return HTMLResponse("", status_code=400)
-    return templates.TemplateResponse(request, "_battle_body.html", _battle_ctx(db, ch, user, shape=form or None))
+    return templates.TemplateResponse(request, "_battle_body.html", ctx)
 
 
 @router.get("/characters/{character_id:int}/spellbook")

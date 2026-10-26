@@ -71,6 +71,16 @@ def catalog_beast(name: str) -> dict | None:
 # ------------------------------------------------------------------ the druid
 
 
+
+def known_forms(sheet: dict | None) -> list[dict]:
+    """The forms a druid can shift into right now (known on D&D Beyond), with pictures."""
+    out = []
+    for c in (sheet or {}).get("creatures") or []:
+        if c.get("group") == "Wild Shape form":
+            b = catalog_beast(c["kind"]) or {}
+            out.append({"name": c["kind"], "cr": c["cr"], "image": b.get("image", "")})
+    return out
+
 def druid(sheet: dict | None) -> dict | None:
     """What this character's Wild Shape allows, or None if they don't have it yet."""
     if not sheet:

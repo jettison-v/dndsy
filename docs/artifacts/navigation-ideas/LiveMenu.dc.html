@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Live control</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#e8b34b}a:hover{color:#f3c96f}
+</style>
+</helmet>
+<div style="width: 640px; height: 520px; box-sizing: border-box; background: #15171a; color: #ebe7df; font-family: Inter, system-ui, sans-serif; font-size: 14px; display: flex; flex-direction: column">
+  <div style="background: #0f1113; border-bottom: 2px solid #d64545; height: 56px; display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 0 18px">
+    <button type="button" aria-expanded="true" style="display: flex; align-items: center; gap: 8px; background: rgba(91,191,127,.15); color: #ebe7df; border: 1px solid #5bbf7f; border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px">
+      <span style="width: 8px; height: 8px; border-radius: 50%; background: #5bbf7f"></span>Live · updated 1 min ago ▾</button>
+    <span style="border: 1px solid #34383e; border-radius: 8px; padding: 6px 10px; font-size: 13px">Manage ▾</span>
+    <span style="width: 32px; height: 32px; border-radius: 50%; background: #272b30"></span>
+  </div>
+  <div style="display: flex; justify-content: flex-end; padding: 8px 18px 0">
+    <div role="dialog" aria-label="Live updates" style="width: 360px; background: #1f2226; border: 1px solid #34383e; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; align-items: center; gap: 12px">
+        <div style="flex: 1">
+          <div style="font-weight: 600">Game Mode</div>
+          <div style="color: #a29d93; font-size: 12px">Keeps characters fresh from D&amp;D Beyond every 2–3 minutes while askdnd is open. Remembered on this device.</div>
+        </div>
+        <button type="button" role="switch" aria-checked="true" aria-label="Game Mode" style="width: 46px; height: 26px; border-radius: 999px; border: 0; background: #5bbf7f; position: relative; flex: none">
+          <span style="position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border-radius: 50%; background: #ffffff"></span></button>
+      </div>
+      <div style="border-top: 1px solid #34383e; padding-top: 12px; display: flex; flex-direction: column; gap: 8px">
+        <div style="color: #a29d93; font-size: 12px; letter-spacing: .08em">D&amp;D BEYOND COPIES</div>
+        <div style="display: flex; justify-content: space-between"><span>Cole</span><span style="color: #a29d93">1 min ago</span></div>
+        <div style="display: flex; justify-content: space-between"><span>Big C</span><span style="color: #a29d93">2 min ago</span></div>
+        <div style="display: flex; justify-content: space-between"><span>No Name</span><span style="color: #a29d93">2 min ago</span></div>
+        <div style="display: flex; justify-content: space-between"><span>Trah</span><span style="color: #e8b34b">couldn't refresh · showing 3 h ago</span></div>
+      </div>
+      <div style="display: flex; gap: 8px">
+        <button type="button" style="flex: 1; background: #d64545; color: #ffffff; border: 0; border-radius: 8px; padding: 9px 12px; font: inherit; font-weight: 600">Refresh Cole now</button>
+        <button type="button" style="flex: 1; background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 8px; padding: 9px 12px; font: inherit">Refresh everyone</button>
+      </div>
+      <div style="color: #a29d93; font-size: 12px">"Refresh everyone" shows for reviewers only, as today.</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":640,"height":520}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

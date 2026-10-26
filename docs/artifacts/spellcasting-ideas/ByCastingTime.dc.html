@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spellbook by casting time</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#e8b34b}a:hover{color:#f3c96f}
+</style>
+</helmet>
+<div style="width: 1200px; height: 780px; box-sizing: border-box; background: rgba(8,9,10,.85); font-family: Inter, system-ui, sans-serif; font-size: 14px; color: #ebe7df; padding: 24px">
+  <div role="dialog" aria-label="Spell Book" style="height: 100%; box-sizing: border-box; background: #1a1d21; border: 1px solid #34383e; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden">
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 16px 20px; border-bottom: 1px solid #34383e">
+      <div><div style="color: #a29d93; font-size: 12px">Cole · Druid spells · DC 15 · +7 to hit</div><h2 style="margin: 0; font-size: 22px">Spell Book</h2></div>
+      <span style="font-size: 13px">Slots <span style="color: #a29d93">1st</span> <span style="color: #7ea6e0">●●●●</span> <span style="color: #a29d93">2nd</span> <span style="color: #7ea6e0">●●●</span> <span style="color: #a29d93">3rd</span> <span style="color: #7ea6e0">●●○</span></span>
+      <span style="font-size: 13px; background: #272b30; border-radius: 999px; padding: 4px 10px">Concentrating: <b>Moonbeam</b> <span style="color: #a29d93">(a new Concentration spell ends it)</span></span>
+      <label style="margin-left: auto; display: flex; align-items: center; gap: 6px; background: #111315; border: 1px solid #34383e; border-radius: 8px; padding: 6px 10px; color: #a29d93"><span>Search</span><input type="search" placeholder="Spell name" style="background: none; border: 0; color: #ebe7df; font: inherit; width: 140px"></label>
+      <button type="button" aria-label="Close" style="background: none; border: 0; color: #a29d93; font-size: 20px">✕</button>
+    </div>
+    <div style="flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; padding: 16px 20px; overflow: hidden">
+      <section style="display: flex; flex-direction: column; gap: 8px">
+        <h3 style="margin: 0; font-size: 12px; letter-spacing: .12em; color: #ef6b6b">◆ ACTION <span style="color: #a29d93; letter-spacing: 0; font-weight: 400">· 12</span></h3>
+        <div style="background: #1f2226; border: 1px solid #34383e; border-radius: 10px; padding: 9px 11px"><div style="display: flex; justify-content: space-between"><b>Starry Wisp</b><button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 6px; padding: 1px 8px; font: inherit; font-weight: 700">+7</button></div><div style="color: #a29d93; font-size: 12px">Cantrip · 60 ft · 2d8 radiant</div></div>
+        <div style="background: #1f2226; border: 1px solid #34383e; border-radius: 10px; padding: 9px 11px"><div style="display: flex; justify-content: space-between"><b>Thorn Whip</b><button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 6px; padding: 1px 8px; font: inherit; font-weight: 700">+7</button></div><div style="color: #a29d93; font-size: 12px">Cantrip · 30 ft · 2d6 piercing, pull 10 ft</div></div>
+        <div style="background: #1f2226; border: 1px solid #7ea6e0; border-radius: 10px; padding: 9px 11px"><div style="display: flex; justify-content: space-between"><b>Moonbeam</b><span style="font-size: 12px; color: #ebe7df">Con 15</span></div><div style="color: #a29d93; font-size: 12px">2nd · Conc. · 120 ft · 2d10 radiant</div>
+          <div style="display: flex; gap: 4px; margin-top: 6px; font-size: 11px"><button type="button" style="background: #2a3550; color: #ebe7df; border: 1px solid #7ea6e0; border-radius: 6px; padding: 2px 6px; font: inherit">2nd · 2d10</button><button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 6px; padding: 2px 6px; font: inherit">3rd · 3d10</button></div></div>
+        <div style="background: #1f2226; border: 1px solid #34383e; border-radius: 10px; padding: 9px 11px"><div style="display: flex; justify-content: space-between"><b>Cure Wounds</b><button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 6px; padding: 1px 8px; font: inherit; font-size: 12px">Roll</button></div><div style="color: #a29d93; font-size: 12px">1st · Touch · heals 2d8+4</div></div>
+        <div style="background: #1f2226; border: 1px solid #34383e; border-radius: 10px; padding: 9px 11px"><div style="display: flex; justify-content: space-between"><b>Depth Charge</b><span style="font-size: 12px">Con 15</span></div><div style="color: #a29d93; font-size: 12px">3rd · 90 ft, 20-ft sphere · 7d6 thunder</div></div>
+        <div style="color: #a29d93; font-size: 12px">+ Faerie Fire, Heat Metal, Conjure Animals, Dispel Magic…</div>
+      </section>
+      <section style="display: flex; flex-direction: column; gap: 8px">
+        <h3 style="margin: 0; font-size: 12px; letter-spacing: .12em; color: #e8b34b">▲ BONUS ACTION <span style="color: #a29d93; letter-spacing: 0; font-weight: 400">· 1</span></h3>
+        <div style="background: #1f2226; border: 1px solid #34383e; border-radius: 10px; padding: 9px 11px"><div style="display: flex; justify-content: space-between"><b>Healing Word</b><button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 6px; padding: 1px 8px; font: inherit; font-size: 12px">Roll</button></div><div style="color: #a29d93; font-size: 12px">1st · 60 ft · heals 2d4+4</div>
+          <div style="display: flex; gap: 4px; margin-top: 6px; font-size: 11px"><button type="button" style="background: #2a3550; color: #ebe7df; border: 1px solid #7ea6e0; border-radius: 6px; padding: 2px 6px; font: inherit">1st · 2d4</button><button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 6px; padding: 2px 6px; font: inherit">2nd · 4d4</button><button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 6px; padding: 2px 6px; font: inherit">3rd · 6d4</button></div></div>
+        <p style="margin: 4px 0 0; color: #a29d93; font-size: 12px">A Bonus Action spell doesn't stop you casting a cantrip with your Action, but you can't use a slot for both on one turn.</p>
+      </section>
+      <section style="display: flex; flex-direction: column; gap: 8px">
+        <h3 style="margin: 0; font-size: 12px; letter-spacing: .12em; color: #6fa8ff">↺ REACTION <span style="color: #a29d93; letter-spacing: 0; font-weight: 400">· 1</span></h3>
+        <div style="background: #1f2226; border: 1px solid #34383e; border-radius: 10px; padding: 9px 11px"><div style="display: flex; justify-content: space-between"><b>Absorb Elements</b><span style="font-size: 12px; color: #a29d93">1st</span></div><div style="color: #a29d93; font-size: 12px">When you take acid, cold, fire, lightning or thunder damage: Resistance, then +1d6 on your next melee hit</div></div>
+      </section>
+      <section style="display: flex; flex-direction: column; gap: 8px">
+        <h3 style="margin: 0; font-size: 12px; letter-spacing: .12em; color: #b48ae8">● LONGER &amp; RITUALS <span style="color: #a29d93; letter-spacing: 0; font-weight: 400">· 6</span></h3>
+        <div style="background: #1f2226; border: 1px solid #34383e; border-radius: 10px; padding: 9px 11px"><b>Find Familiar</b><div style="color: #a29d93; font-size: 12px">1st · 1 hour · Ritual</div></div>
+        <div style="background: #1f2226; border: 1px solid #34383e; border-radius: 10px; padding: 9px 11px"><b>Augury</b><div style="color: #a29d93; font-size: 12px">2nd · 1 minute · Ritual</div></div>
+        <div style="background: #1f2226; border: 1px solid #34383e; border-radius: 10px; padding: 9px 11px"><b>Water Breathing</b><div style="color: #a29d93; font-size: 12px">3rd · Action · Ritual (+10 min)</div></div>
+        <div style="color: #a29d93; font-size: 12px">+ Mending, Speak with Animals…</div>
+      </section>
+    </div>
+    <div style="border-top: 1px solid #34383e; padding: 10px 20px; display: flex; gap: 14px; color: #a29d93; font-size: 12px">
+      <span>Showing prepared spells</span><button type="button" style="background: none; border: 0; color: #e8b34b; font: inherit; font-size: 12px; text-decoration: underline">Include unprepared</button><span style="margin-left: auto">★ a spell to keep it on Play</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":780}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

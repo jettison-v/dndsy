@@ -812,3 +812,17 @@ Two resizing bugs reached beta in one day, because every browser test ran at one
 2. Check measurable things (sideways scrolling, text spilling, wrapping) automatically; save human review for taste.
 3. Use long, realistic names in test data; short placeholders hide layout bugs.
 4. Let a component respond to its own space (container queries), not only the screen's, when it sits beside others.
+
+## 2026-10-26: Artifacts live in the repo
+
+**What:** every page Claude published on claude.ai for askdnd (plans, explorations, before-and-after comparisons) now
+has its source in `docs/artifacts/`, with an index (`docs/artifacts/README.md`) linking each one. CLAUDE.md tells
+every future session to save new pages there.
+
+**Why:** a page that lives only in one service is one account change away from gone. In git, it's on GitHub, on
+your Mac and in every copy of the repo, next to the code it describes. Screenshots of real pages stayed out, because
+the repo is public and they show the campaign.
+
+**For a new project:**
+1. Keep the source of every planning page and diagram in the repo from day one, and link the hosted copy from it.
+2. Decide early what may go in a public repo; screenshots of real data usually can't.

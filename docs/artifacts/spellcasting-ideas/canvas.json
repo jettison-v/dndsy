@@ -1,0 +1,20 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-10-21T18:00:00Z"},
+  "title": "askdnd spellcasting ideas",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 560, "title": "Launching it from Play: a spell bar under the header"},
+    "ByCastingTime.dc.html": {"x": 0, "y": 680, "w": 1200, "h": 780, "title": "A · Spellbook by casting time"},
+    "SlotFirst.dc.html": {"x": 1280, "y": 680, "w": 1200, "h": 780, "title": "B · Slot first, with a cast panel (click a slot or spell)", "is_interactive": true},
+    "ByNeed.dc.html": {"x": 2560, "y": 680, "w": 1200, "h": 780, "title": "C · What do you need? (by effect)"},
+    "Phone.dc.html": {"x": 3840, "y": 680, "w": 390, "h": 844, "title": "Phone: full-screen sheet"},
+    "ByNeedFiltered.dc.html": {"x": 2560, "y": 1580, "w": 1200, "h": 820, "title": "C2 · By effect, with filters and upcast averages (click to filter)", "is_interactive": true}
+  },
+  "order": ["Main.dc.html", "ByCastingTime.dc.html", "SlotFirst.dc.html", "ByNeed.dc.html", "Phone.dc.html", "ByNeedFiltered.dc.html"],
+  "notes": {
+    "title": {"x": 0, "y": -300, "text": "askdnd spellcasting window (exploration, nothing built)", "kind": "title1", "maxW": 4230}
+  },
+  "designSystems": []
+}

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spells by effect</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#e8b34b}a:hover{color:#f3c96f}
+</style>
+</helmet>
+<div style="width: 1200px; height: 780px; box-sizing: border-box; background: rgba(8,9,10,.85); font-family: Inter, system-ui, sans-serif; font-size: 14px; color: #ebe7df; padding: 24px">
+  <div role="dialog" aria-label="Spell Book" style="height: 100%; box-sizing: border-box; background: #1a1d21; border: 1px solid #34383e; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden">
+    <div style="padding: 16px 20px 12px; border-bottom: 1px solid #34383e; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; align-items: center; gap: 14px">
+        <div><div style="color: #a29d93; font-size: 12px">Cole · DC 15 · +7 to hit</div><h2 style="margin: 0; font-size: 22px">Spell Book</h2></div>
+        <div role="status" style="margin-left: 12px; display: flex; align-items: center; gap: 10px; background: #2a2620; border: 1px solid #e8b34b; border-radius: 10px; padding: 6px 12px; font-size: 13px">
+          <span>Concentrating on <b>Moonbeam</b> (3rd level, 3d10)</span><span style="color: #a29d93">Moving the beam is a Magic action</span>
+          <button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 6px; padding: 3px 8px; font: inherit; font-size: 12px">Roll 3d10</button>
+          <button type="button" style="background: none; border: 0; color: #e8b34b; font: inherit; font-size: 12px; text-decoration: underline">Drop it</button>
+        </div>
+        <button type="button" aria-label="Close" style="margin-left: auto; background: none; border: 0; color: #a29d93; font-size: 20px">✕</button>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+        <div role="group" aria-label="Effect" style="display: flex; flex-wrap: wrap; gap: 6px">
+          <button type="button" aria-pressed="true" style="background: #d64545; color: #ffffff; border: 0; border-radius: 999px; padding: 6px 14px; font: inherit; font-weight: 600">Damage · 6</button>
+          <button type="button" aria-pressed="false" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 6px 14px; font: inherit">Heal · 2</button>
+          <button type="button" aria-pressed="false" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 6px 14px; font: inherit">Control · 3</button>
+          <button type="button" aria-pressed="false" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 6px 14px; font: inherit">Protect · 2</button>
+          <button type="button" aria-pressed="false" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 6px 14px; font: inherit">Utility · 7</button>
+        </div>
+        <label style="margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 13px; color: #a29d93"><input type="checkbox" checked> Castable now (slot left)</label>
+        <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #a29d93"><input type="checkbox"> Castable in Wild Shape</label>
+        <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #a29d93">Sort <select style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 6px; font: inherit; font-size: 13px; padding: 3px 6px"><option>Average damage</option><option>Level</option><option>Range</option></select></label>
+      </div>
+    </div>
+    <div style="flex: 1; padding: 14px 20px; overflow: hidden">
+      <div style="display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr); gap: 0 12px; font-size: 13px">
+        <span style="color: #a29d93; font-size: 12px; padding-bottom: 6px">Spell</span><span style="color: #a29d93; font-size: 12px">Average</span><span style="color: #a29d93; font-size: 12px">Targets</span><span style="color: #a29d93; font-size: 12px">Roll</span><span style="color: #a29d93; font-size: 12px">Costs</span><span style="color: #a29d93; font-size: 12px"></span>
+
+        <span style="border-top: 1px solid #34383e; padding: 10px 0"><b>Depth Charge</b> <span style="color: #a29d93">3rd · 7d6 thunder</span></span><span style="border-top: 1px solid #34383e; padding: 10px 0"><b>24.5</b> <span style="color: #a29d93">half on save</span></span><span style="border-top: 1px solid #34383e; padding: 10px 0">20-ft sphere, 90 ft</span><span style="border-top: 1px solid #34383e; padding: 10px 0">Con 15</span><span style="border-top: 1px solid #34383e; padding: 10px 0">3rd slot ●●○</span><span style="border-top: 1px solid #34383e; padding: 8px 0; text-align: right"><button type="button" style="background: #7ea6e0; color: #0f1113; border: 0; border-radius: 8px; padding: 6px 12px; font: inherit; font-weight: 700">Cast</button></span>
+
+        <span style="border-top: 1px solid #34383e; padding: 10px 0"><b>Conjure Animals</b> <span style="color: #a29d93">3rd · Conc. · 3d10 slashing</span></span><span style="border-top: 1px solid #34383e; padding: 10px 0"><b>16.5</b> <span style="color: #a29d93">each turn</span></span><span style="border-top: 1px solid #34383e; padding: 10px 0">Creatures near the pack</span><span style="border-top: 1px solid #34383e; padding: 10px 0">Dex 15</span><span style="border-top: 1px solid #34383e; padding: 10px 0">3rd slot ●●○</span><span style="border-top: 1px solid #34383e; padding: 8px 0; text-align: right"><button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 8px; padding: 6px 12px; font: inherit">Cast</button></span>
+
+        <span style="border-top: 1px solid #34383e; padding: 10px 0"><b>Moonbeam</b> <span style="color: #e8b34b">active at 3rd</span> <span style="color: #a29d93">Conc. · 3d10</span></span><span style="border-top: 1px solid #34383e; padding: 10px 0"><b>16.5</b> <span style="color: #a29d93">each turn</span></span><span style="border-top: 1px solid #34383e; padding: 10px 0">5-ft cylinder, 120 ft</span><span style="border-top: 1px solid #34383e; padding: 10px 0">Con 15</span><span style="border-top: 1px solid #34383e; padding: 10px 0">2nd slot ●●●</span><span style="border-top: 1px solid #34383e; padding: 8px 0; text-align: right; color: #a29d93; font-size: 12px">already up</span>
+
+        <span style="border-top: 1px solid #34383e; padding: 10px 0"><b>Heat Metal</b> <span style="color: #a29d93">2nd · Conc. · 2d8 fire</span></span><span style="border-top: 1px solid #34383e; padding: 10px 0"><b>9</b> <span style="color: #a29d93">each turn</span></span><span style="border-top: 1px solid #34383e; padding: 10px 0">One metal object</span><span style="border-top: 1px solid #34383e; padding: 10px 0">Con 15</span><span style="border-top: 1px solid #34383e; padding: 10px 0">2nd slot ●●●</span><span style="border-top: 1px solid #34383e; padding: 8px 0; text-align: right"><button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 8px; padding: 6px 12px; font: inherit">Cast</button></span>
+
+        <span style="border-top: 1px solid #34383e; padding: 10px 0"><b>Starry Wisp</b> <span style="color: #a29d93">cantrip · 2d8 radiant</span></span><span style="border-top: 1px solid #34383e; padding: 10px 0"><b>9</b> <span style="color: #a29d93">on a hit</span></span><span style="border-top: 1px solid #34383e; padding: 10px 0">One target, 60 ft</span><span style="border-top: 1px solid #34383e; padding: 10px 0">+7 to hit</span><span style="border-top: 1px solid #34383e; padding: 10px 0; color: #5bbf7f">free</span><span style="border-top: 1px solid #34383e; padding: 8px 0; text-align: right"><button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 8px; padding: 6px 12px; font: inherit">Roll +7</button></span>
+
+        <span style="border-top: 1px solid #34383e; padding: 10px 0"><b>Thorn Whip</b> <span style="color: #a29d93">cantrip · 2d6 piercing</span></span><span style="border-top: 1px solid #34383e; padding: 10px 0"><b>7</b> <span style="color: #a29d93">on a hit, pull 10 ft</span></span><span style="border-top: 1px solid #34383e; padding: 10px 0">One target, 30 ft</span><span style="border-top: 1px solid #34383e; padding: 10px 0">+7 to hit</span><span style="border-top: 1px solid #34383e; padding: 10px 0; color: #5bbf7f">free</span><span style="border-top: 1px solid #34383e; padding: 8px 0; text-align: right"><button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 8px; padding: 6px 12px; font: inherit">Roll +7</button></span>
+      </div>
+    </div>
+    <div style="border-top: 1px solid #34383e; padding: 10px 20px; color: #a29d93; font-size: 12px">Averages are the dice's average at the slot level shown. Upcasting changes them; a spell's full text is one click away.</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":780}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

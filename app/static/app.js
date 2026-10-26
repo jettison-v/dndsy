@@ -1533,7 +1533,7 @@
       await make(t || tune);
       if (t) box.strength = t.strength;
       const c = box.renderer.domElement;
-      if (host.clientWidth && (c.width !== host.clientWidth || c.height !== host.clientHeight)) box.setDimensions({ x: host.clientWidth, y: host.clientHeight });
+      if (host.clientWidth && (c.clientWidth !== host.clientWidth || c.clientHeight !== host.clientHeight)) box.setDimensions({ x: host.clientWidth, y: host.clientHeight });
       await box.updateConfig({ theme_colorset: colorset(list, dice), theme_material: dice.material || 'glass' });
       sound();
       return box.roll(notation(list));
@@ -1904,9 +1904,9 @@
   // Desktop: "open" or "closed" (just the edge tab), one choice per device for every page: open until you close
   // it, and nothing changes it on its own (Brett, 2026-10-26). Below WIDE it starts closed and opens over the
   // page until a click elsewhere. Phones: a bottom sheet ("closed" is its bar with each person's latest roll,
-  // "open" the newest rolls, "full" the whole log and the dice).
+  // "open" the newest rolls, "full" the whole log and the dice; closed until you open it, as it covers a third of a phone).
   const narrow = () => !phone.matches && innerWidth < WIDE;
-  const pref = () => (store.get(SIDE) === 'closed' ? 'closed' : 'open');
+  const pref = () => { const v = store.get(SIDE); return v === 'open' || v === 'closed' ? v : phone.matches ? 'closed' : 'open'; };  // phones: the bar until opened
   ['askdnd.rollsSide.play', 'askdnd.rollsSide.other', 'askdnd.rollsSeen'].forEach(k => { try { localStorage.removeItem(k); } catch (e) { /* private window */ } });  // the old rules' keys
   function setState(state, remember) {
     if (!side) return;
@@ -1949,7 +1949,7 @@
     });
     // Clicking outside an over-the-page sidebar closes it
     document.addEventListener('click', e => {
-      if (narrow() && current() === 'open' && e.target.isConnected && !side.contains(e.target) && !e.target.closest('[data-roll], .roll-win')) setState('closed');
+      if (narrow() && current() === 'open' && e.target.isConnected && !side.contains(e.target) && !e.target.closest('[data-roll], .roll-win, .peek')) setState('closed');
     });
     let wasWide = innerWidth >= WIDE;
     addEventListener('resize', () => { const wide = innerWidth >= WIDE; if (wide !== wasWide) { wasWide = wide; layout(); } });
@@ -2408,10 +2408,10 @@
 // person's stops across pages: each dims the page, lights one thing and says what it is and why. It only reads: it
 // clicks a tab, or + Add and a row to open the side panel, and shows example rows on Battle that exist only on the
 // page (class tour-example), so nothing changes. Where it is lives in sessionStorage, so it carries on after
-// each page change; Esc or ✕ ends it.
+// each page change; Esc or ✕ asks before ending it.
 (function () {
   const KEY = 'askdnd-tour';
-  let tour = null, spot = null, card = null, lit = null;
+  let tour = null, spot = null, card = null, lit = null, lits = [], asking = false;
   const keep = () => { try { if (tour) sessionStorage.setItem(KEY, JSON.stringify(tour)); else sessionStorage.removeItem(KEY); } catch (e) { /* private window: the tour still works page by page */ } };
   const visible = sel => [...document.querySelectorAll(sel)].find(el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -2451,15 +2451,23 @@
     if (window.htmx) htmx.process(next);
   }
   function end() {
-    tidy(); tour = null; keep(); lit = null;
+    tidy(); tour = null; keep(); lit = null; lits = []; asking = false;
     if (spot) spot.remove(); if (card) card.remove(); spot = card = null;
   }
   // A target taller than most of the screen (a recap, a sheet) is lit from its top down to just under half the screen,
   // with the card below, so the dimming still shows where to look.
   const tall = r => r.height > innerHeight * 0.55;
+  function box() {  // the lit thing, or for an `all` stop every match together (a column: its heading and cells)
+    if (lits.length < 2) return lit.getBoundingClientRect();
+    const rs = lits.map(el => el.getBoundingClientRect()).filter(r => r.width && r.height);
+    if (!rs.length) return lit.getBoundingClientRect();
+    const top = Math.min(...rs.map(r => r.top)), left = Math.min(...rs.map(r => r.left));
+    const right = Math.max(...rs.map(r => r.right)), bottom = Math.max(...rs.map(r => r.bottom));
+    return { top, left, right, bottom, width: right - left, height: bottom - top };
+  }
   function rect() {
     if (!lit) return null;
-    const r = lit.getBoundingClientRect();
+    const r = box();
     if (!tall(r)) return r;
     const bottom = Math.min(r.bottom, Math.max(r.top, 0) + innerHeight * 0.45);
     return { top: r.top, left: r.left, right: r.right, width: r.width, bottom, height: bottom - r.top };
@@ -2527,21 +2535,15 @@
   }
   async function show(s) {
     const i = tour.i, found = await prepare(s);
-    if (!tour || tour.i !== i) return;  // moved on (or ended) while the panel loaded
+    if (!tour || tour.i !== i || asking) return;  // moved on, ended or asked to end while the panel loaded
     if (!spot) {
       spot = document.createElement('div'); spot.className = 'tour-spot';
       card = document.createElement('div'); card.className = 'tour-card'; card.setAttribute('role', 'dialog'); card.setAttribute('aria-label', 'Tour');
       document.body.append(spot, card);
     }
-    const groups = [...new Set(tour.stops.map(x => x.group))], parts = tour.stops.filter(x => x.group === s.group), last = tour.i === tour.stops.length - 1;
-    card.innerHTML = `<h3>${esc(s.title)}</h3>`
-      + (parts.length > 1 ? `<span class="tour-parts" aria-label="Part ${parts.indexOf(s) + 1} of ${parts.length}">${parts.map(x => `<i${x === s ? ' class="on"' : ''}></i>`).join('')}</span>` : '')
-      + `<p>${s.what}</p><p class="why">${s.why}</p>`  // the words are askdnd's own (app/tour.py), with <b> for names
-      + `<div class="tour-foot"><span class="count">${groups.indexOf(s.group) + 1} of ${groups.length}</span>`
-      + (tour.i ? '<button type="button" class="btn small" data-tour-go="-1">Back</button>' : '')
-      + `<button type="button" class="btn small primary" data-tour-go="1">${last ? 'Done' : 'Next'}</button>`
-      + '<button type="button" class="btn small link" data-tour-end aria-label="End the tour">✕</button></div>';
+    render(s);
     lit = found || null;
+    lits = s.all && lit ? [...document.querySelectorAll(s.at)] : [];
     const row = lit && lit.closest('.ri');  // a row in the side panel: its name is the example on Battle next
     if (row && row.querySelector('.ri-name')) { tour.example = row.querySelector('.ri-name').textContent.trim(); keep(); }
     if (lit) {
@@ -2556,11 +2558,34 @@
         let stuck = over && !lit.contains(over) ? over : null;
         while (stuck && !['sticky', 'fixed'].includes(getComputedStyle(stuck).position)) stuck = stuck.parentElement;
         if (stuck && stuck !== bar) top(m + stuck.offsetHeight);
-      } else lit.scrollIntoView({ block: 'center' });
+      } else lit.scrollIntoView({ block: s.all ? 'nearest' : 'center' });
     }
-    requestAnimationFrame(() => { if (!card) return; place(); card.querySelector('[data-tour-go="1"]').focus({ preventScroll: true }); });  // (ended meanwhile)
+    requestAnimationFrame(() => { if (!card || asking) return; place(); card.querySelector('[data-tour-go="1"]').focus({ preventScroll: true }); });  // (ended meanwhile)
     follow();
   }
+  // The card: a bar for how far along the tour is, the stop's words, and Back, Next and ✕
+  function render(s) {
+    const n = tour.stops.length, last = tour.i === n - 1;
+    asking = false;
+    card.innerHTML = `<div class="tour-progress" role="progressbar" aria-label="Tour progress" aria-valuemin="1" aria-valuemax="${n}" aria-valuenow="${tour.i + 1}"><i style="width:${((tour.i + 1) / n * 100).toFixed(1)}%"></i></div>`
+      + `<h3>${esc(s.title)}</h3><p>${s.what}</p><p class="why">${s.why}</p>`  // the words are askdnd's own (app/tour.py), with <b> for names
+      + `<div class="tour-foot"><span class="count">${tour.i + 1} of ${n}</span>`
+      + (tour.i ? '<button type="button" class="btn small" data-tour-go="-1">Back</button>' : '')
+      + `<button type="button" class="btn small primary" data-tour-go="1">${last ? 'Done' : 'Next'}</button>`
+      + '<button type="button" class="btn small link" data-tour-end aria-label="End the tour">✕</button></div>';
+  }
+  // ✕ or Esc asks first, in the card (Brett, 2026-10-26); Done on the last stop just ends
+  function askEnd() {
+    asking = true;
+    card.querySelector('h3').textContent = 'End the tour?';
+    card.querySelectorAll('p').forEach(x => x.remove());
+    card.querySelector('h3').insertAdjacentHTML('afterend', '<p>Take it again any time from <b>?</b> › Take the tour.</p>');
+    card.querySelector('.tour-foot').innerHTML = '<span class="count"></span><button type="button" class="btn small" data-tour-resume>Keep going</button>'
+      + '<button type="button" class="btn small primary" data-tour-end-now>End tour</button>';
+    place();
+    card.querySelector('[data-tour-end-now]').focus({ preventScroll: true });
+  }
+  const resume = () => { asking = false; show(tour.stops[tour.i]); };  // (Esc may have closed the stop's side panel too: show opens it again)
 
   document.addEventListener('click', e => {
     const a = e.target.closest('[data-tour-start]');
@@ -2568,11 +2593,14 @@
     if (!tour) return;
     const b = e.target.closest('[data-tour-go]');
     if (b) go(tour.i + +b.dataset.tourGo);
-    else if (e.target.closest('[data-tour-end]')) end();
+    else if (e.target.closest('[data-tour-end]')) askEnd();
+    else if (e.target.closest('[data-tour-end-now]')) end();
+    else if (e.target.closest('[data-tour-resume]')) resume();
   });
   document.addEventListener('keydown', e => {
     if (!tour || !card || e.target.matches('input, textarea, select, [contenteditable]')) return;
-    if (e.key === 'Escape') end();
+    if (e.key === 'Escape') { if (asking) resume(); else askEnd(); }
+    else if (asking) return;  // (Enter presses the focused End tour or Keep going)
     else if (e.key === 'ArrowRight') go(tour.i + 1);
     else if (e.key === 'ArrowLeft' && tour.i > 0) go(tour.i - 1);
     else return;

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Table rolls sidebar, collapsed</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Roboto+Condensed:wght@700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#15171a}
+a{color:#e8b34b}a:hover{color:#f3c96f}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 900px; background: #15171a; color: #ebe7df; font-family: Inter, system-ui, sans-serif; font-size: 14px">
+  <header style="background: #0f1113; border-bottom: 2px solid #d64545">
+    <div style="padding: 0 20px; min-height: 60px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px">
+      <a href="#" style="display: flex; align-items: center; gap: 10px; color: #ffffff; text-decoration: none; font-family: 'Roboto Condensed', sans-serif; font-weight: 700; font-size: 20px">
+        <svg width="28" height="28" viewBox="0 0 30 30" aria-hidden="true"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="none" stroke="#d64545" stroke-width="2"></polygon><polygon points="15,8 21,19 9,19" fill="#d64545"></polygon></svg>askdnd</a>
+      <nav aria-label="Story" style="display: flex; gap: 2px"><a href="#" style="color: #a29d93; text-decoration: none; padding: 8px 10px">Recap</a><a href="#" style="color: #a29d93; text-decoration: none; padding: 8px 10px">Sessions</a><a href="#" style="color: #a29d93; text-decoration: none; padding: 8px 10px">Campaign</a><a href="#" style="color: #a29d93; text-decoration: none; padding: 8px 10px">Map</a></nav>
+      <span style="width: 1px; height: 24px; background: #34383e"></span>
+      <nav aria-label="Table" style="display: flex; gap: 2px"><a href="#" style="color: #ffffff; background: #1f2226; text-decoration: none; padding: 8px 10px; border-radius: 6px; font-weight: 600">Cole ▾</a><a href="#" style="color: #a29d93; text-decoration: none; padding: 8px 10px">Party</a></nav>
+      <div style="margin-left: auto; display: flex; align-items: center; gap: 10px">
+        <button type="button" style="display: flex; align-items: center; gap: 8px; background: rgba(91,191,127,.15); color: #ebe7df; border: 1px solid #5bbf7f; border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px"><span style="width: 8px; height: 8px; border-radius: 50%; background: #5bbf7f"></span>Live</button>
+        <button type="button" style="background: #1f2226; color: #ebe7df; border: 1px solid #34383e; border-radius: 8px; padding: 7px 12px; font: inherit; font-size: 13px">Manage ▾</button>
+      </div>
+    </div>
+  </header>
+
+  <div style="display: flex; align-items: stretch">
+    <aside aria-label="Table rolls, collapsed" style="flex: none; width: 64px; min-height: 838px; background: #111315; border-right: 1px solid #34383e; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 12px 0">
+      <button type="button" aria-label="Open the rolls sidebar" style="background: #1f2226; border: 1px solid #34383e; color: #a29d93; border-radius: 6px; width: 32px; height: 28px; font: inherit">»</button>
+      <svg width="26" height="26" viewBox="0 0 30 30" role="img" aria-label="Table rolls"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="none" stroke="#e8b34b" stroke-width="2"></polygon><polygon points="15,8 21,19 9,19" fill="none" stroke="#e8b34b" stroke-width="1.5"></polygon></svg>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 3px">
+        <span style="position: relative; width: 38px; height: 38px; border-radius: 50%; background: #2c2f3a; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #7ea6e0">B<span style="position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; border-radius: 50%; background: #d64545; border: 2px solid #111315"></span></span>
+        <b style="font-size: 15px; color: #5bbf7f">31</b><span style="font-size: 10px; color: #a29d93">nat 20</span>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 3px">
+        <span style="width: 38px; height: 38px; border-radius: 50%; background: #3a3226; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #e8b34b; box-shadow: 0 0 0 2px #e8b34b">C</span>
+        <b style="font-size: 15px">22</b><span style="font-size: 10px; color: #a29d93">Wis</span>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 3px">
+        <span style="width: 38px; height: 38px; border-radius: 50%; background: #332a33; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #b48ae8">N</span>
+        <b style="font-size: 15px">15</b><span style="font-size: 10px; color: #a29d93">Init</span>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 3px">
+        <span style="width: 38px; height: 38px; border-radius: 50%; background: #2a3329; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #5bbf7f">T</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" role="img" aria-label="Hidden roll for the DM"><rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="#a29d93" stroke-width="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="#a29d93" stroke-width="2"></path></svg>
+      </div>
+      <div style="margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 6px">
+        <span style="writing-mode: vertical-rl; transform: rotate(180deg); font-size: 11px; color: #a29d93; letter-spacing: .08em">AUTO-COLLAPSES BELOW 1100 PX</span>
+      </div>
+    </aside>
+
+    <main style="flex: 1; min-width: 0; padding: 18px 24px 32px">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px">
+        <span style="width: 44px; height: 44px; border-radius: 50%; background: #272b30"></span>
+        <span style="font-size: 24px; font-weight: 700">Cole</span><span style="color: #a29d93">Druid 6 (Moon) / Monk 2</span>
+        <div role="group" aria-label="Mode" style="margin-left: auto; display: flex; background: #1f2226; border: 1px solid #34383e; border-radius: 10px; padding: 3px">
+          <button type="button" aria-pressed="true" style="background: #d64545; color: #ffffff; border: 0; border-radius: 8px; padding: 6px 14px; font: inherit; font-weight: 600">Play</button>
+          <button type="button" aria-pressed="false" style="background: none; color: #a29d93; border: 0; border-radius: 8px; padding: 6px 14px; font: inherit">Sheet</button>
+          <button type="button" aria-pressed="false" style="background: none; color: #a29d93; border: 0; border-radius: 8px; padding: 6px 14px; font: inherit">Plan</button>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-top: 14px">
+        <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px"><div style="color: #a29d93; font-size: 12px">Hit points</div><b style="font-size: 20px">51</b></div>
+        <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px"><div style="color: #a29d93; font-size: 12px">Armor class</div><b style="font-size: 20px">16</b></div>
+        <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px"><div style="color: #a29d93; font-size: 12px">Speed</div><b style="font-size: 20px">45 ft</b></div>
+        <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px"><div style="color: #a29d93; font-size: 12px">Initiative</div><b style="font-size: 20px">+3</b></div>
+        <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px"><div style="color: #a29d93; font-size: 12px">Spell DC</div><b style="font-size: 20px">15</b></div>
+        <div style="background: #1f2226; border-radius: 10px; padding: 6px 12px; box-shadow: inset 0 0 0 1px #e8b34b"><div style="color: #a29d93; font-size: 12px">Inspiration</div><b style="font-size: 20px; color: #e8b34b">Yes</b></div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 18px">
+        <section style="background: #1f2226; border-radius: 12px; padding: 14px 16px; min-height: 220px">
+          <h2 style="margin: 0; font-size: 13px; letter-spacing: .12em; color: #ef6b6b">◆ ACTION</h2>
+          <div style="color: #a29d93; font-size: 12px; margin-bottom: 8px">One per turn</div>
+          <div style="border-top: 1px solid #34383e; padding: 8px 0; display: flex; justify-content: space-between"><b>Starry Wisp</b><b>+7</b></div>
+          <div style="border-top: 1px solid #34383e; padding: 8px 0; display: flex; justify-content: space-between"><b>Unarmed Strike</b><b>+6</b></div>
+        </section>
+        <section style="background: #1f2226; border-radius: 12px; padding: 14px 16px">
+          <h2 style="margin: 0; font-size: 13px; letter-spacing: .12em; color: #e8b34b">▲ BONUS ACTION</h2>
+          <div style="color: #a29d93; font-size: 12px; margin-bottom: 8px">One per turn, before or after your Action</div>
+          <div style="border-top: 1px solid #34383e; padding: 8px 0"><b>Wild Shape</b> <span style="color: #5bbf7f">●●●</span></div>
+        </section>
+        <section style="background: #1f2226; border-radius: 12px; padding: 14px 16px">
+          <h2 style="margin: 0; font-size: 13px; letter-spacing: .12em; color: #6fa8ff">↺ REACTION</h2>
+          <div style="color: #a29d93; font-size: 12px; margin-bottom: 8px">One per round</div>
+          <div style="border-top: 1px solid #34383e; padding: 8px 0; display: flex; justify-content: space-between"><b>Opportunity Attack</b><b>+6</b></div>
+        </section>
+      </div>
+      <div role="status" style="margin-top: 18px; display: inline-flex; align-items: center; gap: 10px; background: #1f2226; border: 1px solid #34383e; border-radius: 10px; padding: 8px 12px; font-size: 13px">
+        <span style="width: 26px; height: 26px; border-radius: 50%; background: #2c2f3a; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #7ea6e0; font-size: 12px">B</span>
+        <span><b>Big C</b> rolled <b style="color: #5bbf7f">31</b> to hit · natural 20</span>
+        <span style="color: #a29d93; font-size: 12px">fades in 4 s</span>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spell bar: slots and starred chips</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#e8b34b}a:hover{color:#f3c96f}
+</style>
+</helmet>
+<div style="width: 1440px; height: 640px; box-sizing: border-box; background: #15171a; font-family: Inter, system-ui, sans-serif; font-size: 14px; color: #ebe7df; padding: 24px 32px; display: flex; flex-direction: column; gap: 20px">
+
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <span style="font-size: 12px; color: #a29d93; letter-spacing: .06em">COLE TODAY (3 SLOT LEVELS), WIDE: EACH LEVEL ITS OWN SEGMENT, LABEL ABOVE ITS PIPS</span>
+    <div style="display: flex; align-items: center; gap: 14px; padding: 8px 12px; background: #1b1e2a; border: 1px solid #3a4260; border-radius: 12px">
+      <button type="button" style="background: #7ea6e0; color: #0f1113; border: 0; border-radius: 9px; padding: 8px 14px; font: inherit; font-weight: 700; flex: none">Spell Book</button>
+      <div role="group" aria-label="Spell slots" style="display: flex; align-items: stretch; background: #111315; border: 1px solid #34383e; border-radius: 9px; flex: none">
+        <span style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 10px"><span style="font-size: 10px; color: #a29d93; letter-spacing: .06em">1ST</span><span style="color: #5bbf7f; font-size: 13px; letter-spacing: 1px">●●●●</span></span>
+        <span style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 10px; border-left: 1px solid #34383e"><span style="font-size: 10px; color: #a29d93; letter-spacing: .06em">2ND</span><span style="color: #5bbf7f; font-size: 13px; letter-spacing: 1px">●●●</span></span>
+        <span style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 10px; border-left: 1px solid #34383e"><span style="font-size: 10px; color: #a29d93; letter-spacing: .06em">3RD</span><span style="font-size: 13px; letter-spacing: 1px"><span style="color: #5bbf7f">●●</span><span style="color: #4a4e55">●</span></span></span>
+      </div>
+      <span style="font-size: 13px; background: #272b30; border-radius: 999px; padding: 4px 10px; flex: none">Conc. <b>Moonbeam</b> <span style="color: #a29d93">3rd · round 2/10</span></span>
+      <span style="margin-left: auto; display: flex; align-items: center; gap: 6px; min-width: 0"><span style="color: #a29d93; font-size: 12px">★</span>
+        <button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 3px 10px; font: inherit; font-size: 12.5px; white-space: nowrap">Moonbeam</button>
+        <button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 3px 10px; font: inherit; font-size: 12.5px; white-space: nowrap">Healing Word</button>
+        <button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 3px 10px; font: inherit; font-size: 12.5px; white-space: nowrap">Starry Wisp</button>
+        <button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 3px 10px; font: inherit; font-size: 12.5px; white-space: nowrap">Absorb Elements</button>
+        <button type="button" style="background: none; color: #a29d93; border: 1px dashed #34383e; border-radius: 999px; padding: 3px 8px; font: inherit; font-size: 12px">+2</button></span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <span style="font-size: 12px; color: #a29d93; letter-spacing: .06em">LEVEL 17 DRUID (9 SLOT LEVELS): SAME SEGMENTS, NARROWER; SPENT LEVELS DIM</span>
+    <div style="display: flex; align-items: center; gap: 14px; padding: 8px 12px; background: #1b1e2a; border: 1px solid #3a4260; border-radius: 12px">
+      <button type="button" style="background: #7ea6e0; color: #0f1113; border: 0; border-radius: 9px; padding: 8px 14px; font: inherit; font-weight: 700; flex: none">Spell Book</button>
+      <div role="group" aria-label="Spell slots" style="display: flex; align-items: stretch; background: #111315; border: 1px solid #34383e; border-radius: 9px; flex: none">
+        <span style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 8px"><span style="font-size: 10px; color: #a29d93">1</span><span style="color: #5bbf7f; font-size: 12px; letter-spacing: 1px">●●●●</span></span>
+        <span style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 8px; border-left: 1px solid #34383e"><span style="font-size: 10px; color: #a29d93">2</span><span style="color: #5bbf7f; font-size: 12px; letter-spacing: 1px">●●●</span></span>
+        <span style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 8px; border-left: 1px solid #34383e"><span style="font-size: 10px; color: #a29d93">3</span><span style="color: #5bbf7f; font-size: 12px; letter-spacing: 1px">●●●</span></span>
+        <span style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 8px; border-left: 1px solid #34383e"><span style="font-size: 10px; color: #a29d93">4</span><span style="font-size: 12px; letter-spacing: 1px"><span style="color: #5bbf7f">●●</span><span style="color: #4a4e55">●</span></span></span>
+        <span style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 8px; border-left: 1px solid #34383e"><span style="font-size: 10px; color: #a29d93">5</span><span style="color: #5bbf7f; font-size: 12px; letter-spacing: 1px">●●</span></span>
+        <span style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 8px; border-left: 1px solid #34383e"><span style="font-size: 10px; color: #a29d93">6</span><span style="color: #5bbf7f; font-size: 12px">●</span></span>
+        <span style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 8px; border-left: 1px solid #34383e; opacity: .45"><span style="font-size: 10px; color: #a29d93">7</span><span style="color: #4a4e55; font-size: 12px">●</span></span>
+        <span style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 8px; border-left: 1px solid #34383e"><span style="font-size: 10px; color: #a29d93">8</span><span style="color: #5bbf7f; font-size: 12px">●</span></span>
+        <span style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 8px; border-left: 1px solid #34383e"><span style="font-size: 10px; color: #a29d93">9</span><span style="color: #5bbf7f; font-size: 12px">●</span></span>
+      </div>
+      <span style="font-size: 13px; background: #272b30; border-radius: 999px; padding: 4px 10px; flex: none">Conc. <b>Conjure Animals</b> <span style="color: #a29d93">5th · round 4/100</span></span>
+      <span style="margin-left: auto; display: flex; align-items: center; gap: 5px; min-width: 0"><span style="color: #a29d93; font-size: 12px">★</span>
+        <button type="button" style="max-width: 110px; overflow: hidden; text-overflow: ellipsis; background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 3px 9px; font: inherit; font-size: 12.5px; white-space: nowrap">Sunbeam</button>
+        <button type="button" style="max-width: 110px; overflow: hidden; text-overflow: ellipsis; background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 3px 9px; font: inherit; font-size: 12.5px; white-space: nowrap">Healing Word</button>
+        <button type="button" style="max-width: 110px; overflow: hidden; text-overflow: ellipsis; background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 3px 9px; font: inherit; font-size: 12.5px; white-space: nowrap">Starry Wisp</button>
+        <button type="button" style="background: none; color: #a29d93; border: 1px dashed #34383e; border-radius: 999px; padding: 3px 8px; font: inherit; font-size: 12px">+5</button></span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 6px; width: 860px">
+    <span style="font-size: 12px; color: #a29d93; letter-spacing: .06em">LEVEL 17, NARROW (860 PX): SLOTS BECOME NUMBERS (LEFT / TOTAL); HOVER OR CLICK FOR THE PIPS</span>
+    <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #1b1e2a; border: 1px solid #3a4260; border-radius: 12px">
+      <button type="button" style="background: #7ea6e0; color: #0f1113; border: 0; border-radius: 9px; padding: 8px 12px; font: inherit; font-weight: 700; flex: none">Spell Book</button>
+      <button type="button" aria-label="Spell slots: left of total per level" style="display: flex; align-items: stretch; background: #111315; border: 1px solid #34383e; border-radius: 9px; padding: 0; font: inherit; color: #ebe7df; flex: none">
+        <span style="display: flex; flex-direction: column; align-items: center; padding: 3px 6px"><span style="font-size: 9px; color: #a29d93">1</span><span style="font-size: 12px; font-weight: 600">4</span></span>
+        <span style="display: flex; flex-direction: column; align-items: center; padding: 3px 6px; border-left: 1px solid #2c3036"><span style="font-size: 9px; color: #a29d93">2</span><span style="font-size: 12px; font-weight: 600">3</span></span>
+        <span style="display: flex; flex-direction: column; align-items: center; padding: 3px 6px; border-left: 1px solid #2c3036"><span style="font-size: 9px; color: #a29d93">3</span><span style="font-size: 12px; font-weight: 600">3</span></span>
+        <span style="display: flex; flex-direction: column; align-items: center; padding: 3px 6px; border-left: 1px solid #2c3036"><span style="font-size: 9px; color: #a29d93">4</span><span style="font-size: 12px; font-weight: 600">2</span></span>
+        <span style="display: flex; flex-direction: column; align-items: center; padding: 3px 6px; border-left: 1px solid #2c3036"><span style="font-size: 9px; color: #a29d93">5</span><span style="font-size: 12px; font-weight: 600">2</span></span>
+        <span style="display: flex; flex-direction: column; align-items: center; padding: 3px 6px; border-left: 1px solid #2c3036"><span style="font-size: 9px; color: #a29d93">6</span><span style="font-size: 12px; font-weight: 600">1</span></span>
+        <span style="display: flex; flex-direction: column; align-items: center; padding: 3px 6px; border-left: 1px solid #2c3036; opacity: .45"><span style="font-size: 9px; color: #a29d93">7</span><span style="font-size: 12px; font-weight: 600">0</span></span>
+        <span style="display: flex; flex-direction: column; align-items: center; padding: 3px 6px; border-left: 1px solid #2c3036"><span style="font-size: 9px; color: #a29d93">8</span><span style="font-size: 12px; font-weight: 600">1</span></span>
+        <span style="display: flex; flex-direction: column; align-items: center; padding: 3px 6px; border-left: 1px solid #2c3036"><span style="font-size: 9px; color: #a29d93">9</span><span style="font-size: 12px; font-weight: 600">1</span></span>
+      </button>
+      <span style="font-size: 13px; background: #272b30; border-radius: 999px; padding: 4px 10px; flex: none">Conc. <b>Conjure Animals</b></span>
+      <span style="margin-left: auto; display: flex; align-items: center; gap: 5px; min-width: 0"><span style="color: #a29d93; font-size: 12px">★</span>
+        <button type="button" style="max-width: 90px; overflow: hidden; text-overflow: ellipsis; background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 999px; padding: 3px 9px; font: inherit; font-size: 12.5px; white-space: nowrap">Sunbeam</button>
+        <button type="button" style="background: none; color: #a29d93; border: 1px dashed #34383e; border-radius: 999px; padding: 3px 8px; font: inherit; font-size: 12px">+7</button></span>
+    </div>
+  </div>
+
+  <p style="margin: 0; color: #a29d93; font-size: 13px">Starred chips: most recently used first; long names cut with … and shown in full on hover; the least recently used fold into +N before the bar would wrap. Slots: pips while they fit, numbers when space is tight; a level with nothing left dims. The level 17 slots and spells are an example, not Cole.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":640}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spell Book filter pattern</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#e8b34b}a:hover{color:#f3c96f}
+</style>
+</helmet>
+<div style="width: 1440px; height: 920px; box-sizing: border-box; background: rgba(8,9,10,.88); font-family: Inter, system-ui, sans-serif; font-size: 14px; color: #ebe7df; padding: 20px 28px">
+  <div role="dialog" aria-label="Spell Book" style="height: 100%; box-sizing: border-box; background: #1a1d21; border: 1px solid #34383e; border-top: 3px solid #d64545; border-radius: 14px; display: flex; flex-direction: column; overflow: hidden">
+    <div style="display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid #34383e">
+      <div><div style="color: #a29d93; font-size: 12px">Cole · Druid spells · DC 15 · +7 to hit</div><h2 style="margin: 0; font-size: 21px">Spell Book</h2></div>
+      <span style="font-size: 13px; color: #a29d93; margin-left: 10px">Slots 1st <span style="color: #5bbf7f">●●●●</span> 2nd <span style="color: #5bbf7f">●●●</span> 3rd <span style="color: #5bbf7f">●●●</span></span>
+      <button type="button" aria-label="Close" style="margin-left: auto; background: none; border: 0; color: #a29d93; font-size: 20px">✕</button>
+    </div>
+    <div style="flex: 1; display: grid; grid-template-columns: 228px minmax(0, 1fr); overflow: hidden">
+
+      <aside aria-label="Filters" style="border-right: 1px solid #34383e; padding: 14px 16px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; opacity: {{ asideOpacity }}">
+        <div style="display: flex; align-items: center; gap: 10px"><h3 style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #e8b34b">Filters</h3><span aria-hidden="true" style="flex: 1; height: 1px; background: linear-gradient(90deg, #4a4f57, transparent)"></span><button type="button" onClick="{{ clearAll }}" style="background: none; border: 0; color: #a29d93; font: inherit; font-size: 12px; text-decoration: underline; cursor: pointer">Clear all</button></div>
+        <sc-for list="{{ primary }}" as="g" hint-placeholder-count="3">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 12px; color: #a29d93">{{ g.label }}</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 5px">
+              <sc-for list="{{ g.chips }}" as="ch" hint-placeholder-count="4">
+                <button type="button" onClick="{{ ch.toggle }}" aria-pressed="{{ ch.pressed }}" style="display: inline-flex; align-items: center; gap: 5px; background: {{ ch.bg }}; color: {{ ch.color }}; border: 1px solid {{ ch.ring }}; border-radius: 999px; padding: 3px 9px; font: inherit; font-size: 12px; cursor: pointer">{{ ch.label }} <span style="color: #a29d93; font-size: 11px">{{ ch.count }}</span></button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+        <button type="button" onClick="{{ toggleMore }}" aria-expanded="{{ moreOpen }}" style="text-align: left; background: none; border: 0; border-top: 1px solid #34383e; padding: 10px 0 0; color: #ebe7df; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer">{{ moreLabel }}</button>
+        <sc-if value="{{ moreShown }}" hint-placeholder-val="{{ true }}">
+          <sc-for list="{{ more }}" as="g" hint-placeholder-count="4">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <span style="font-size: 12px; color: #a29d93">{{ g.label }}</span>
+              <div style="display: flex; flex-wrap: wrap; gap: 5px">
+                <sc-for list="{{ g.chips }}" as="ch" hint-placeholder-count="4">
+                  <button type="button" onClick="{{ ch.toggle }}" aria-pressed="{{ ch.pressed }}" style="display: inline-flex; align-items: center; gap: 5px; background: {{ ch.bg }}; color: {{ ch.color }}; border: 1px solid {{ ch.ring }}; border-radius: 999px; padding: 3px 9px; font: inherit; font-size: 12px; cursor: pointer">{{ ch.label }} <span style="color: #a29d93; font-size: 11px">{{ ch.count }}</span></button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </sc-if>
+      </aside>
+
+      <div style="display: flex; flex-direction: column; min-width: 0; overflow: hidden">
+        <div style="padding: 12px 18px 0; display: flex; flex-direction: column; gap: 8px">
+          <label style="display: flex; align-items: center; gap: 8px; background: #111315; border: 1px solid {{ searchRing }}; border-radius: 10px; padding: 8px 12px; color: #a29d93">
+            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"></circle><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+            <input type="search" placeholder="Search all your spells" value="{{ q }}" onInput="{{ onSearch }}" aria-label="Search all your spells" style="flex: 1; background: none; border: 0; color: #ebe7df; font: inherit; font-size: 15px; outline: none">
+          </label>
+          <sc-if value="{{ searching }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; align-items: center; gap: 10px; background: rgba(232,179,75,.14); border-radius: 8px; padding: 6px 10px; font-size: 13px">Searching all spells: filters are paused, not lost. <button type="button" onClick="{{ clearSearch }}" style="background: none; border: 0; color: #e8b34b; font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer">Clear search</button></div>
+          </sc-if>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 26px">
+            <span style="font-size: 13px; color: #a29d93">{{ showing }}</span>
+            <sc-for list="{{ active }}" as="a" hint-placeholder-count="2">
+              <button type="button" onClick="{{ a.remove }}" style="display: inline-flex; align-items: center; gap: 6px; background: #2a3550; color: #ebe7df; border: 1px solid #7ea6e0; border-radius: 999px; padding: 2px 8px; font: inherit; font-size: 12px; cursor: pointer; opacity: {{ activeOpacity }}">{{ a.label }} <span aria-hidden="true">×</span></button>
+            </sc-for>
+            <span style="margin-left: auto; display: flex; gap: 12px; align-items: center; font-size: 12px; color: #a29d93">
+              <label style="display: flex; align-items: center; gap: 6px">Averages at <select onChange="{{ onLens }}" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 6px; font: inherit; font-size: 12px; padding: 2px 4px"><option value="base">Base level</option><option value="2">2nd-level slot</option><option value="3">3rd-level slot</option></select></label>
+              <label style="display: flex; align-items: center; gap: 6px">Group <select onChange="{{ onGroup }}" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 6px; font: inherit; font-size: 12px; padding: 2px 4px"><option value="effect">By effect</option><option value="level">By level</option><option value="none">None</option></select></label>
+              <label style="display: flex; align-items: center; gap: 6px">Sort <select onChange="{{ onSort }}" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 6px; font: inherit; font-size: 12px; padding: 2px 4px"><option value="avg">Average</option><option value="level">Level</option><option value="name">Name</option></select></label>
+            </span>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 22px minmax(0, 1.7fr) 60px 82px minmax(0, 1.3fr) 112px 120px 92px; gap: 0 12px; padding: 8px 18px 6px; border-bottom: 1px solid #34383e; font-size: 11px; color: #a29d93; letter-spacing: .04em">
+          <span></span><span>SPELL</span><span>LEVEL</span><span>TIME</span><span>RANGE · AREA</span><span>ROLL</span><span>AVERAGE</span><span></span>
+        </div>
+        <div style="flex: 1; overflow: hidden; padding: 0 18px 12px">
+          <sc-for list="{{ groups }}" as="grp" hint-placeholder-count="3">
+            <div style="display: flex; align-items: baseline; gap: 8px; padding: 10px 0 4px; font-size: 11px; font-weight: 800; letter-spacing: .1em; color: #e8b34b">{{ grp.label }} <span style="color: #a29d93; font-weight: 500; letter-spacing: 0">{{ grp.count }}</span></div>
+            <sc-for list="{{ grp.rows }}" as="r" hint-placeholder-count="4">
+              <div style="border-top: 1px solid #2c3036">
+                <button type="button" onClick="{{ r.toggle }}" aria-expanded="{{ r.expanded }}" style="width: 100%; display: grid; grid-template-columns: 22px minmax(0, 1.7fr) 60px 82px minmax(0, 1.3fr) 112px 120px 92px; gap: 0 12px; align-items: center; padding: 7px 0; background: {{ r.bg }}; border: 0; color: #ebe7df; font: inherit; font-size: 13.5px; text-align: left; cursor: pointer">
+                  <span style="color: #e8b34b">{{ r.star }}</span>
+                  <span style="min-width: 0"><span style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis"><b>{{ r.name }}</b> <span style="color: #a29d93; font-size: 12px">{{ r.tags }}</span></span>
+                    <sc-if value="{{ r.hasNote }}" hint-placeholder-val="{{ false }}"><span title="Your note from Plan" style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #d8c9a8; font-size: 12px; font-style: italic">✎ {{ r.note }}</span></sc-if></span>
+                  <span style="color: #a29d93">{{ r.level }}</span>
+                  <span>{{ r.time }}</span>
+                  <span style="color: #a29d93; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ r.range }}</span>
+                  <span style="min-width: 0"><span style="display: block">{{ r.roll }}</span><sc-if value="{{ r.hasOk }}" hint-placeholder-val="{{ false }}"><span title="{{ r.okTitle }}" style="display: block; font-size: 11.5px; color: {{ r.okColor }}">{{ r.ok }}</span></sc-if></span>
+                  <span><b style="font-size: 15px">{{ r.avg }}</b> <span style="color: #a29d93; font-size: 12px">{{ r.dice }}</span></span>
+                  <span style="text-align: right; color: #7ea6e0; font-size: 12px">{{ r.cta }}</span>
+                </button>
+                <sc-if value="{{ r.open }}" hint-placeholder-val="{{ false }}">
+                  <div style="display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; padding: 4px 0 12px 34px; font-size: 13px">
+                    <div style="display: flex; flex-direction: column; gap: 6px">
+                      <span style="color: #ebe7df">{{ r.summary }}</span>
+                      <span style="color: #a29d93">{{ r.detail }}</span>
+                      <div style="display: flex; gap: 8px; margin-top: 4px">
+                        <button type="button" style="background: #7ea6e0; color: #0f1113; border: 0; border-radius: 8px; padding: 6px 12px; font: inherit; font-weight: 700">{{ r.rollLabel }}</button>
+                        <sc-if value="{{ r.isConc }}" hint-placeholder-val="{{ false }}"><button type="button" style="background: #272b30; color: #ebe7df; border: 1px solid #34383e; border-radius: 8px; padding: 6px 12px; font: inherit">Concentrate</button></sc-if>
+                        <button type="button" style="background: none; color: #a29d93; border: 1px solid #34383e; border-radius: 8px; padding: 6px 12px; font: inherit">Full text</button>
+                      </div>
+                    </div>
+                    <div style="background: #111315; border: 1px solid #2c3036; border-radius: 8px; padding: 8px 10px">
+                      <div style="font-size: 11px; color: #a29d93; letter-spacing: .06em; margin-bottom: 4px">BY SLOT LEVEL (AVERAGE)</div>
+                      <sc-for list="{{ r.table }}" as="t" hint-placeholder-count="3">
+                        <div style="display: flex; justify-content: space-between; font-size: 12.5px; padding: 2px 0"><span style="color: #a29d93">{{ t.label }}</span><span>{{ t.dice }} · <b>{{ t.avg }}</b><span style="color: #a29d93">{{ t.save }}</span></span></div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </sc-for>
+          <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}"><p style="color: #a29d93">No spells match. <button type="button" onClick="{{ clearAll }}" style="background: none; border: 0; color: #e8b34b; font: inherit; text-decoration: underline; cursor: pointer">Clear all</button></p></sc-if>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":920}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: {}, q: '', more: false, lens: 'base', group: 'effect', sort: 'avg', open: 'Moonbeam' };
+  }
+  data() {
+    // Cole's spells (askdnd's parsed D&D Beyond sheet and audited roll recipes)
+    const S = (n, l, eff, time, range, rng, conc, roll, dmg, targets, avgs, extra) => Object.assign({ n, l, eff, time, range, rng, conc, roll, dmg, targets, avgs }, extra || {});
+    return [
+      S('Guidance', 0, 'Support', 'Action', 'Touch', 'Touch / self', true, '—', '', 'One', {}, { sum: 'A willing creature adds 1d4 to one skill of your choice.' }),
+      S('Mending', 0, 'Utility', 'Longer', 'Touch', 'Touch / self', false, '—', '', 'One', {}, { sum: 'Repairs a single break or tear in an object.' }),
+      S('Message', 0, 'Utility', 'Action', '120 ft', '90 ft +', false, '—', '', 'One', {}, { sum: 'Whisper a message a creature can answer.' }),
+      S('Starry Wisp', 0, 'Damage', 'Action', '60 ft', '60 ft', false, '+7', 'Radiant', 'One', { 0: [9, '2d8'] }, { star: true, sum: 'A mote of light; on a hit the target sheds light and can’t be Invisible.' }),
+      S('Thorn Whip', 0, 'Damage', 'Action', '30 ft', 'Up to 30 ft', false, '+7', 'Piercing', 'One', { 0: [7, '2d6'] }, { sum: 'On a hit, pull a Large or smaller target 10 ft toward you.' }),
+      S('Absorb Elements', 1, 'Support', 'Reaction', 'Self', 'Touch / self', false, '—', 'Acid', 'One', { 1: [3.5, '1d6'], 2: [7, '2d6'], 3: [10.5, '3d6'] }, { star: true, sum: 'Resistance to the triggering damage; +1d6 of that type on your next melee hit.' }),
+      S('Cure Wounds', 1, 'Heal', 'Action', 'Touch', 'Touch / self', false, 'heal', '', 'One', { 1: [13, '2d8+4'], 2: [22, '4d8+4'], 3: [31, '6d8+4'] }, { sum: 'A creature you touch regains Hit Points.' }),
+      S('Faerie Fire', 1, 'Control', 'Action', '60 ft · 20-ft cube', '60 ft', true, 'Dex 15', '', 'Area', {}, { ok: 'none', note: 'Party has lots of attacks; Advantage for everyone on invisible things', sum: 'Creatures that fail are outlined; attacks against them have Advantage.' }),
+      S('Find Familiar', 1, 'Utility', 'Longer', '10 ft', 'Up to 30 ft', false, '—', '', 'One', {}, { ritual: true, sum: 'A spirit familiar in animal form.' }),
+      S('Healing Word', 1, 'Heal', 'Bonus', '60 ft', '60 ft', false, 'heal', '', 'One', { 1: [9, '2d4+4'], 2: [14, '4d4+4'], 3: [19, '6d4+4'] }, { star: true, note: 'Bonus Action: my Action is still free for a cantrip or an attack', sum: 'A creature you can see regains Hit Points.' }),
+      S('Speak with Animals', 1, 'Utility', 'Action', 'Self', 'Touch / self', false, '—', '', 'One', {}, { ritual: true, sum: 'Talk with Beasts for 10 minutes.' }),
+      S('Augury', 2, 'Utility', 'Longer', 'Self', 'Touch / self', false, '—', '', 'One', {}, { ritual: true, sum: 'An omen about a course of action in the next 30 minutes.' }),
+      S('Heat Metal', 2, 'Damage', 'Action', '60 ft', '60 ft', true, 'Con 15', 'Fire', 'One', { 2: [9, '2d8'], 3: [13.5, '3d8'] }, { ok: 'auto', sum: 'A metal object glows red-hot. The damage needs no save; the Con save is only to keep holding the object. Repeat the damage as a Bonus Action.' }),
+      S('Locate Object', 2, 'Utility', 'Action', 'Self', 'Touch / self', true, '—', '', 'One', {}, { sum: 'Sense the direction of a familiar object within 1,000 ft.' }),
+      S('Moonbeam', 2, 'Damage', 'Action', '120 ft · 5-ft cylinder', '90 ft +', true, 'Con 15', 'Radiant', 'Area', { 2: [11, '2d10'], 3: [16.5, '3d10'] }, { ok: 'half', star: true, note: 'Opener vs. groups; I can move it 60 ft as a Magic action', sum: 'A beam of moonlight; move it 60 ft as a Magic action. Half on a success.' }),
+      S('Warding Wind', 2, 'Control', 'Action', 'Self · 10-ft sphere', 'Touch / self', true, '—', '', 'Area', {}, { sum: 'Strong wind around you: Deafened inside, ranged attacks through it have Disadvantage.' }),
+      S('Conjure Animals', 3, 'Damage', 'Action', '60 ft', '60 ft', true, 'Dex 15', 'Slashing', 'Area', { 3: [16.5, '3d10'] }, { ok: 'none', sum: 'A pack of spectral animals; creatures near it save each turn.' }),
+      S('Depth Charge', 3, 'Damage', 'Action', '90 ft · 20-ft sphere', '90 ft +', false, 'Con 15', 'Thunder', 'Area', { 3: [24.5, '7d6'] }, { ok: 'half', sum: 'A booming blast; half on a success. From a book outside the 2024 core rules.' }),
+      S('Dispel Magic', 3, 'Control', 'Action', '120 ft', '90 ft +', false, '—', '', 'One', {}, { sum: 'Ends spells of level 3 or lower on a target; higher needs a check.' }),
+      S('Water Breathing', 3, 'Support', 'Action', '30 ft', 'Up to 30 ft', false, '—', '', 'Several', {}, { ritual: true, sum: 'Up to ten creatures breathe underwater for 24 hours.' }),
+    ];
+  }
+  renderVals() {
+    const s = this.state, all = this.data();
+    const ORD = { 0: 'Cantrip', 1: '1st', 2: '2nd', 3: '3rd' };
+    const GROUPS = [
+      { key: 'level', label: 'Level', of: x => ORD[x.l], values: ['Cantrip', '1st', '2nd', '3rd'], primary: true },
+      { key: 'time', label: 'Casting time', of: x => x.time, values: ['Action', 'Bonus', 'Reaction', 'Longer'], primary: true },
+      { key: 'conc', label: 'Concentration', of: x => x.conc ? 'Conc.' : 'No Conc.', values: ['Conc.', 'No Conc.'], primary: true },
+      { key: 'save', label: 'Roll', of: x => x.roll === '+7' ? 'Attack roll' : x.roll.startsWith('Dex') ? 'Dex save' : x.roll.startsWith('Con') ? 'Con save' : x.roll === 'heal' ? 'Healing' : 'None', values: ['Attack roll', 'Dex save', 'Con save', 'Healing', 'None'] },
+      { key: 'ok', label: 'On a successful save', of: x => ({ half: 'Half damage', none: 'Nothing', auto: 'Damage still lands' })[x.ok] || 'No save', values: ['Half damage', 'Nothing', 'Damage still lands', 'No save'] },
+      { key: 'targets', label: 'Targets', of: x => x.targets, values: ['One', 'Area', 'Several'] },
+      { key: 'dmg', label: 'Damage type', of: x => x.dmg || 'None', values: ['Radiant', 'Fire', 'Thunder', 'Slashing', 'Piercing', 'Acid', 'None'] },
+      { key: 'rng', label: 'Range', of: x => x.rng, values: ['Touch / self', 'Up to 30 ft', '60 ft', '90 ft +'] },
+    ];
+    const sel = s.sel, q = s.q.trim().toLowerCase(), searching = !!q;
+    const passes = (x, skip) => GROUPS.every(g => g.key === skip || !(sel[g.key] || []).length || sel[g.key].includes(g.of(x)));
+    const visible = searching ? all.filter(x => x.n.toLowerCase().includes(q)) : all.filter(x => passes(x));
+    const toggle = (k, v) => () => {
+      const cur = (this.state.sel[k] || []).slice(), i = cur.indexOf(v);
+      if (i >= 0) cur.splice(i, 1); else cur.push(v);
+      this.setState({ sel: Object.assign({}, this.state.sel, { [k]: cur }) });
+    };
+    const chipsFor = g => ({ label: g.label, chips: g.values.map(v => {
+      const on = (sel[g.key] || []).includes(v);
+      const count = all.filter(x => passes(x, g.key) && g.of(x) === v).length;
+      return { label: v, count, pressed: on ? 'true' : 'false', toggle: toggle(g.key, v),
+        bg: on ? '#2a3550' : '#1f2226', ring: on ? '#7ea6e0' : '#34383e', color: count || on ? '#ebe7df' : '#6f6b64' };
+    }) });
+    const active = [];
+    GROUPS.forEach(g => (sel[g.key] || []).forEach(v => active.push({ label: v, remove: toggle(g.key, v) })));
+    const moreActive = GROUPS.filter(g => !g.primary).reduce((n, g) => n + (sel[g.key] || []).length, 0);
+    const lensAt = x => x.l === 0 ? 0 : (s.lens === 'base' ? x.l : Math.max(x.l, +s.lens));
+    const avgOf = x => (x.avgs[lensAt(x)] || x.avgs[x.l] || [null])[0];
+    const sorted = visible.slice().sort((a, b) => s.sort === 'name' ? a.n.localeCompare(b.n) : s.sort === 'level' ? a.l - b.l : (avgOf(b) ?? -1) - (avgOf(a) ?? -1));
+    const row = x => {
+      const at = lensAt(x), a = x.avgs[at] || x.avgs[x.l];
+      const open = s.open === x.n;
+      const OK = { half: ['Half on a save', '#7ea6e0', 'A target that succeeds takes half damage'], none: ['Nothing on a save', '#e8b34b', 'A target that succeeds takes no damage and no effect'], auto: ['Damage needs no save', '#d64545', 'The damage always lands; the save avoids only the side effect'] }[x.ok];
+      const saveAvg = v => x.ok === 'half' ? ' · ' + Math.floor(v / 2) + ' on save' : x.ok === 'none' ? ' · 0 on save' : '';
+      return {
+        hasOk: !!OK, ok: OK ? OK[0] : '', okColor: OK ? OK[1] : '', okTitle: OK ? OK[2] : '',
+        name: x.n, star: x.star ? '★' : '', note: x.note || '', hasNote: !!x.note, tags: [x.conc ? 'Conc.' : '', x.ritual ? 'Ritual' : ''].filter(Boolean).join(' · '),
+        level: ORD[x.l], time: x.time, range: x.range, roll: x.roll === 'heal' ? 'Healing' : x.roll,
+        avg: a ? a[0] : '—', dice: a ? a[1] + (x.l && at > x.l ? ' ↑' : '') : '', cta: open ? 'Close' : 'Details',
+        bg: open ? '#20242a' : 'transparent', open, expanded: open ? 'true' : 'false', isConc: x.conc,
+        summary: x.sum, detail: x.time + ' · ' + x.range + (x.dmg ? ' · ' + x.dmg + ' damage' : ''),
+        rollLabel: x.roll === '+7' ? 'Roll to hit +7' : x.roll === 'heal' ? 'Roll healing' : a ? 'Roll ' + (a[1]) : 'Cast',
+        table: Object.keys(x.avgs).length ? Object.keys(x.avgs).map(k => ({ label: k === '0' ? 'Cantrip (your level)' : ORD[k] + '-level slot', dice: x.avgs[k][1], avg: x.avgs[k][0], save: saveAvg(x.avgs[k][0]) })) : [{ label: 'No dice to roll', dice: '', avg: '', save: '' }],
+        toggle: () => this.setState({ open: open ? null : x.n }),
+      };
+    };
+    let groups;
+    if (s.group === 'none' || searching) groups = [{ label: searching ? 'RESULTS' : 'ALL SPELLS', count: sorted.length, rows: sorted.map(row) }];
+    else {
+      const keyOf = s.group === 'level' ? (x => ORD[x.l].toUpperCase() + (x.l ? ' LEVEL' : 'S')) : (x => x.eff.toUpperCase());
+      const order = s.group === 'level' ? ['CANTRIPS', '1ST LEVEL', '2ND LEVEL', '3RD LEVEL'] : ['DAMAGE', 'HEAL', 'CONTROL', 'SUPPORT', 'UTILITY'];
+      groups = order.map(k => ({ label: k, rows: sorted.filter(x => keyOf(x) === k).map(row) })).filter(g => g.rows.length).map(g => Object.assign(g, { count: g.rows.length }));
+    }
+    return {
+      primary: GROUPS.filter(g => g.primary).map(chipsFor),
+      more: GROUPS.filter(g => !g.primary).map(chipsFor),
+      moreShown: s.more, moreOpen: s.more ? 'true' : 'false',
+      moreLabel: (s.more ? '▾ ' : '▸ ') + 'More filters' + (moreActive ? ' (' + moreActive + ' on)' : ''),
+      toggleMore: () => this.setState({ more: !this.state.more }),
+      clearAll: () => this.setState({ sel: {}, q: '' }),
+      q: s.q, searching, onSearch: e => this.setState({ q: e.target.value }), clearSearch: () => this.setState({ q: '' }),
+      searchRing: searching ? '#e8b34b' : '#34383e', asideOpacity: searching ? '0.4' : '1', activeOpacity: searching ? '0.45' : '1',
+      active, showing: 'Showing ' + visible.length + ' of ' + all.length,
+      onLens: e => this.setState({ lens: e.target.value }), onGroup: e => this.setState({ group: e.target.value }), onSort: e => this.setState({ sort: e.target.value }),
+      groups, empty: !visible.length,
+    };
+  }
+}
+</script>
+</body>
+</html>

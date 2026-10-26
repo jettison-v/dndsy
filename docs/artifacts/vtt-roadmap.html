@@ -1,0 +1,463 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>askdnd VTT Roadmap</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one reading column; a phase track up top, then each phase as a ruled list of items with effort and
+   priority chips on the right. Colors and faces are askdnd's own (app/static/app.css), dark first. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e; --line-soft: #2c3036;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #6f6b64;
+  --story-bg: #221f1a; --story-line: #3b3428; --story-text: #f0e7d4;
+  --red: #d64545; --red-soft: rgba(214, 69, 69, .16); --red-text: #f08a8a;
+  --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .15);
+  --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f4ef; --surface: #ffffff; --surface-2: #efece5; --line: #dcd7cd; --line-soft: #e8e4dc;
+  --text: #2a2723; --strong: #111111; --muted: #6b655c; --faint: #918a7f;
+  --story-bg: #f7f0e2; --story-line: #e6d9bf; --story-text: #3b3020;
+  --red: #b83232; --red-soft: rgba(184, 50, 50, .10); --red-text: #a62a2a;
+  --amber: #9a6a07; --amber-soft: rgba(201, 145, 30, .14);
+  --green: #2f7d4c; --green-soft: rgba(47, 125, 76, .12);
+  --blue: #2f5f9e; --blue-soft: rgba(47, 95, 158, .10);
+  --violet: #6b4fa3; --violet-soft: rgba(107, 79, 163, .10);
+  color-scheme: light;
+} }
+:root[data-theme="light"] {
+  --bg: #f6f4ef; --surface: #ffffff; --surface-2: #efece5; --line: #dcd7cd; --line-soft: #e8e4dc;
+  --text: #2a2723; --strong: #111111; --muted: #6b655c; --faint: #918a7f;
+  --story-bg: #f7f0e2; --story-line: #e6d9bf; --story-text: #3b3020;
+  --red: #b83232; --red-soft: rgba(184, 50, 50, .10); --red-text: #a62a2a;
+  --amber: #9a6a07; --amber-soft: rgba(201, 145, 30, .14);
+  --green: #2f7d4c; --green-soft: rgba(47, 125, 76, .12);
+  --blue: #2f5f9e; --blue-soft: rgba(47, 95, 158, .10);
+  --violet: #6b4fa3; --violet-soft: rgba(107, 79, 163, .10);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.6 var(--sans); }
+.wrap { max-width: 1000px; margin: 0 auto; padding-block: 40px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { color: var(--strong); text-wrap: balance; margin: 0; }
+h1 { font: 600 2.4rem/1.15 var(--serif); letter-spacing: -.01em; }
+h2 { font: 600 1.6rem/1.2 var(--serif); }
+h3 { font: 600 1rem/1.35 var(--sans); }
+p { margin: 0; }
+a { color: var(--red-text); }
+.eyebrow { font: 700 .78rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red-text); }
+.lead { font-size: 1.06rem; color: var(--text); max-width: 68ch; }
+.muted { color: var(--muted); }
+header.top { display: grid; gap: 14px; margin-bottom: 28px; }
+
+/* Legend and filters */
+.controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 12px; }
+.controls .group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.controls .label { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+.filter { font: 500 .85rem/1 var(--sans); color: var(--text); background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 7px 12px; cursor: pointer; }
+.filter[aria-pressed="true"] { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.filter:focus-visible, summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .82rem; color: var(--muted); }
+.legend span { display: inline-flex; gap: 6px; align-items: center; }
+.pace { margin: 0 0 36px; font-size: .85rem; }
+
+/* Chips */
+.chip { display: inline-flex; align-items: center; justify-content: center; font: 700 .74rem/1 var(--cond); letter-spacing: .06em; text-transform: uppercase; border-radius: 999px; padding: 5px 9px; white-space: nowrap; }
+.eff { min-width: 30px; background: var(--surface-2); color: var(--strong); border: 1px solid var(--line); }
+.core { background: var(--red-soft); color: var(--red-text); }
+.nice { background: var(--blue-soft); color: var(--blue); }
+.req { background: var(--amber-soft); color: var(--amber); }
+.st-done { background: var(--green-soft); color: var(--green); }
+.st-now { background: var(--amber-soft); color: var(--amber); }
+.st-part { background: var(--violet-soft); color: var(--violet); }
+.st-built { background: var(--blue-soft); color: var(--blue); }
+
+/* Phase track */
+.track { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 44px; }
+.track a { text-decoration: none; color: inherit; display: grid; gap: 6px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.track a:hover { border-color: var(--faint); }
+.track .n { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.track .t { font-weight: 600; color: var(--strong); line-height: 1.3; }
+.track .m { font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.track a.first { border-color: var(--red); box-shadow: inset 0 0 0 1px var(--red); }
+@media (max-width: 820px) { .track { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Sections */
+section { margin-bottom: 52px; scroll-margin-top: 16px; }
+.sec-head { display: grid; gap: 8px; margin-bottom: 16px; }
+.sec-head .why { max-width: 70ch; color: var(--muted); }
+.cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 820px) { .cols { grid-template-columns: 1fr; } }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.box ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; color: var(--text); font-size: .92rem; }
+.principles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 720px) { .principles { grid-template-columns: 1fr; } }
+.principle { padding: 14px 16px; border-left: 3px solid var(--story-line); background: var(--story-bg); border-radius: 0 10px 10px 0; display: grid; gap: 4px; }
+.principle b { color: var(--story-text); font: 600 1.02rem/1.35 var(--serif); }
+.principle span { color: var(--muted); font-size: .9rem; }
+
+/* Foundations: what every phase is built on */
+.found { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 720px) { .found { grid-template-columns: 1fr; } }
+.found .box p { font-size: .92rem; }
+.found .box .used { font-size: .84rem; color: var(--muted); }
+.found .head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.found .wide { grid-column: 1 / -1; }
+
+/* Items */
+.items { border-top: 1px solid var(--line); }
+.item { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; gap: 6px 16px; padding: 16px 0; border-bottom: 1px solid var(--line-soft); }
+.item .id { font: 700 .82rem/1.6 var(--cond); color: var(--faint); letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+.item .body { display: grid; gap: 5px; min-width: 0; }
+.item .desc { color: var(--text); font-size: .93rem; }
+.item .better { font-size: .87rem; color: var(--story-text); background: var(--story-bg); border-radius: 6px; padding: 6px 10px; justify-self: start; }
+.item .better::before { content: "Better: "; font-weight: 600; }
+.item .needs { font-size: .84rem; color: var(--muted); }
+.item .needs::before { content: "Needs: "; font-weight: 600; color: var(--text); }
+.item.is-done h3 { color: var(--muted); }
+.item .tags { display: flex; gap: 6px; align-items: flex-start; flex-wrap: wrap; justify-content: flex-end; max-width: 210px; }
+@media (max-width: 640px) {
+  .item { grid-template-columns: 40px minmax(0, 1fr); }
+  .item .tags { grid-column: 2; justify-content: flex-start; max-width: none; }
+}
+.order { font-size: .88rem; color: var(--muted); max-width: 70ch; }
+.order b { color: var(--text); font-weight: 600; }
+.milestone { margin-top: 18px; display: flex; gap: 12px; align-items: baseline; padding: 12px 16px; border: 1px dashed var(--green); border-radius: 10px; background: var(--green-soft); }
+.milestone .k { font: 700 .74rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--green); white-space: nowrap; }
+.milestone p { color: var(--strong); font-weight: 500; }
+.sum { font-size: .85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.empty-note { padding: 14px 0; color: var(--muted); font-size: .9rem; }
+.ask { background: var(--surface); border: 1px solid var(--red); border-radius: 12px; padding: 18px 20px; display: grid; gap: 10px; }
+.ask ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.decisions { display: grid; gap: 0; border-top: 1px solid var(--line); }
+.decision { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto; gap: 6px 18px; padding: 12px 0; border-bottom: 1px solid var(--line-soft); font-size: .92rem; align-items: start; }
+.decision b { color: var(--strong); font-weight: 600; }
+.decision .when { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 720px) { .decision { grid-template-columns: 1fr; } .decision .when { justify-content: flex-start; } }
+footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--line); padding-top: 16px; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">askdnd · plan · Oct 22, 2026 · reviewed Oct 24</div>
+    <h1>From table companion to virtual tabletop</h1>
+    <p class="lead">How askdnd grows from today's recaps, character pages and table rolls into a full virtual tabletop for our table: live character state, combat, maps and tokens, the DM's media tools, and eventually voice and video. Each piece is built behind the VTT switch, tried in the test campaign, then switched on for the table.</p>
+    <p class="muted">Decided before this plan: it's for our table, without ruling out other groups later. Live character state comes first. D&D Beyond stays where characters are built and leveled, and askdnd runs everything during play. Voice and video come later, as a nice to have. And every piece is built to scale and kept clean, even when that takes more effort.</p>
+  </header>
+
+  <div class="controls" role="group" aria-label="Show items">
+    <div class="group"><span class="label">Show</span>
+      <button class="filter" type="button" aria-pressed="true" data-filter="all">Everything</button>
+      <button class="filter" type="button" aria-pressed="false" data-filter="core">Core only</button>
+      <button class="filter" type="button" aria-pressed="false" data-filter="nice">Nice to have</button>
+      <button class="filter" type="button" aria-pressed="false" data-filter="todo">Still to build</button>
+    </div>
+    <div class="legend" aria-label="Effort sizes">
+      <span><span class="chip eff">S</span> a day or two</span>
+      <span><span class="chip eff">M</span> about a week</span>
+      <span><span class="chip eff">L</span> 2–3 weeks</span>
+      <span><span class="chip eff">XL</span> a month or more</span>
+    </div>
+  </div>
+  <p class="muted pace">Sizes are at today's pace: Claude builds, you review on beta, then the next step starts. They're for comparing items, not promises.</p>
+
+  <nav class="track" id="track" aria-label="Phases"></nav>
+
+  <section id="today">
+    <div class="sec-head">
+      <div class="eyebrow">Where we are · Oct 24</div>
+      <h2>A strong base to build on</h2>
+      <p class="why">A lot of what a virtual tabletop needs already exists, and Phase 0's first half is done. The biggest gap is unchanged: D&amp;D Beyond still owns hit points, spell slots and inventory during play, so askdnd can show them but not change them. That's Phase 1.</p>
+    </div>
+    <div class="cols">
+      <div class="box"><h3>The story</h3><ul>
+        <li>Recaps and key moments from notes and recordings</li>
+        <li>Campaign record: World, Quests, Relationships, Glossary, Map</li>
+        <li>DM tools, one inbox, and the DM's words protected</li>
+        <li>Version history with restore, nightly backups</li>
+      </ul></div>
+      <div class="box"><h3>Characters</h3><ul>
+        <li>D&amp;D Beyond sync, every 2–3 minutes in Game Mode</li>
+        <li>Battle, Sheet, Plan, Spell Book, Wild Shape forms</li>
+        <li>Inventory and Features lists with pins and notes</li>
+        <li>Conditions, concentration and item effects like Invisible</li>
+      </ul></div>
+      <div class="box"><h3>The table</h3><ul>
+        <li>Table rolls on the server, on every screen within a second</li>
+        <li>Thrown 3D dice in each player's own set, tuned by admins</li>
+        <li>Several campaigns, roles per campaign, house rules</li>
+        <li>The VTT switch and a test campaign with test copies</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section id="principles">
+    <div class="sec-head">
+      <div class="eyebrow">What makes it better</div>
+      <h2>What every piece should get right</h2>
+      <p class="why">These run through every phase. They're aimed at what tends to frustrate tables on D&amp;D Beyond Maps, Foundry and Roll20, and at our own habits. Your own list of frustrations will sharpen them (see the end).</p>
+    </div>
+    <div class="principles">
+      <div class="principle"><b>One place, not five tabs</b><span>Sheet, map, story, rules and media together, instead of Zoom, D&amp;D Beyond's sheet, its map, askdnd and MacWhisper side by side.</span></div>
+      <div class="principle"><b>Automation the DM can overrule</b><span>A roll compares to AC and damage applies itself, but the DM sees it first and can change it. The DM makes every ruling.</span></div>
+      <div class="principle"><b>Nothing changes silently</b><span>Every hit point, slot, item and move is in a play log with who did it, and anything can be undone.</span></div>
+      <div class="principle"><b>No setup tax</b><span>Nothing to install, host or keep updated, and no add-on hunting. It opens in a browser and works.</span></div>
+      <div class="principle"><b>The story remembers itself</b><span>Fights, loot and reveals flow into the session's recap, so nobody takes notes and transcripts matter less.</span></div>
+      <div class="principle"><b>Inform, don't advise</b><span>Show what you can do and how it works at the right moment. Never tell anyone what to do.</span></div>
+      <div class="principle"><b>Built to scale, kept clean</b><span>Each piece is built to hold up with more copies of the app, more tables and more data, and whatever a change makes unnecessary is removed in the same change.</span></div>
+    </div>
+  </section>
+
+  <section id="foundations">
+    <div class="sec-head">
+      <div class="eyebrow">How it's built · added Oct 24</div>
+      <h2>Five foundations every phase stands on</h2>
+      <p class="why">Each is built once, in Phase 0, and every later item uses it rather than inventing its own. Reworking the live connection showed why: a shortcut in a foundation turns into rework in everything built on it.</p>
+    </div>
+    <div class="found">
+      <div class="box">
+        <div class="head"><h3>Live connection</h3><span class="chip st-done">Done</span></div>
+        <p>Every open page keeps a connection to its campaign. A change goes through Postgres to every copy of the app and every screen at the table, within a second. It says only <i>what</i> changed; the page fetches it the usual way, which decides who sees what.</p>
+        <p class="used">Rule: every item that changes something the table sees announces it. For maps, token moves will carry their position, and hidden monsters go on a DM-only channel.</p>
+      </div>
+      <div class="box">
+        <div class="head"><h3>Play state and the play log</h3><span class="chip eff">0.4 + 1.7</span></div>
+        <p>One home for what askdnd owns during play (HP, slots, resources, conditions, Wild Shape, item counts), per character per campaign. Every change is a log entry with who, what and why, and Undo applies the reverse. D&amp;D Beyond refreshes never overwrite play state; where they meet, the rule is written per field.</p>
+        <p class="used">Replaces today's three scattered fields (Wild Shape, concentration, conditions), which don't reach other screens yet. Two people editing at once can't overwrite each other.</p>
+      </div>
+      <div class="box">
+        <div class="head"><h3>Files</h3><span class="chip st-part">Built · moving pictures next</span></div>
+        <p>Maps, handouts and tokens in private storage (S3), served through askdnd with the same access checks, cached, with upload limits.</p>
+        <p class="used">Today's pictures move out of the database too. Needed before maps (Phase 3) and Show to the table (4.1).</p>
+      </div>
+      <div class="box">
+        <div class="head"><h3>Rules content as data</h3><span class="chip st-done">Done</span></div>
+        <p>The free 2024 rules content (SRD 5.2) as data; the DM's own creations and anything from purchased books in the database, never in the public code.</p>
+        <p class="used">Stat blocks, attacks that resolve, and rules answers in play all read from it.</p>
+      </div>
+      <div class="box wide">
+        <div class="head"><h3>Testing the table, and knowing when it breaks</h3><span class="chip st-done">Done</span></div>
+        <p>Pages now update each other live, which server tests can't see: a few browser tests drive a player's page and the DM's at once on every change. And errors on beta reach you before the table finds them mid-game.</p>
+      </div>
+    </div>
+  </section>
+
+  <div id="phases"></div>
+
+  <section id="decisions">
+    <div class="sec-head">
+      <div class="eyebrow">Along the way</div>
+      <h2>Decisions, made and to make</h2>
+      <p class="why">None of the open ones block the next step. Each comes up at the phase shown.</p>
+    </div>
+    <div class="decisions">
+      <div class="decision"><b>How screens update live</b><span>A connection to every open page (WebSockets), shared between copies of the app through Postgres, so it scales without a new service.</span><span class="when"><span class="chip st-done">Decided Oct 24</span><span class="chip eff">Phase 0</span></span></div>
+      <div class="decision"><b>Play state and the D&amp;D Beyond merge</b><span>The foundation above is the proposal. The rule for each field and how the play log looks are decided when you review the mockup, before hit points are built.</span><span class="when"><span class="chip eff">Phase 1</span></span></div>
+      <div class="decision"><b>Where monsters come from</b><span>The free 2024 rules content (SRD 5.2) is built in. Creatures from books the DM owns are entered or pasted by the DM and stay in the database, never in the public code.</span><span class="when"><span class="chip eff">Phase 2</span></span></div>
+      <div class="decision"><b>How much map automation</b><span>Walls, light and line of sight are a lot of work, and many tables play fine with fog the DM reveals by hand. Decide after using simple maps.</span><span class="when"><span class="chip eff">Phase 3</span></span></div>
+      <div class="decision"><b>Where music comes from</b><span>Tracks the DM uploads or has rights to. Streaming services generally can't be played to a group through another app.</span><span class="when"><span class="chip eff">Phase 4</span></span></div>
+      <div class="decision"><b>Video service and the privacy rule</b><span>Video would run on a hosted service. Today's rule is that raw transcripts never go to a cloud service, so recording either stays on your Mac or the rule changes. Your call.</span><span class="when"><span class="chip eff">Phase 6</span></span></div>
+      <div class="decision"><b>Opening to other groups</b><span>Needs a content and licensing check first: what book content another group may see.</span><span class="when"><span class="chip eff">Phase 7</span></span></div>
+      <div class="decision"><b>When askdnd.ai moves to v2</b><span>The old app retires and askdnd.ai points at this one. Not tied to a phase.</span><span class="when"><span class="chip eff">Any time</span></span></div>
+    </div>
+  </section>
+
+  <section id="next">
+    <div class="ask">
+      <div class="eyebrow">Next</div>
+      <h2>What comes next</h2>
+      <ol>
+        <li><b>You:</b> list what has frustrated you and the players in D&amp;D Beyond Maps, Foundry and Roll20 (and what each does well). I'll attach each one to the item that fixes it, or add an item.</li>
+        <li><b>The play state foundation:</b> a written design and a mockup of the play log and “what changed” for you to review, then hit points as the first piece, in the test campaign.</li>
+      </ol>
+    </div>
+  </section>
+
+  <footer>askdnd · this plan lives in the repo as docs/plans/2026-10-22-vtt-roadmap.md (reviewed Oct 24, 2026) · sizes and order change as we learn</footer>
+</div>
+
+<script>
+// Each item: [id, name, what it is, why it's better ("" for none), size, priority, status ("" | done | built | part | now), what it needs first ("")]
+const PHASES = [
+  { id: "p0", n: "Phase 0", title: "Foundations", why: "The plumbing every later phase stands on (see the five foundations above). The first half is done; the rest is built just before the phase that needs it.",
+    order: "<b>Order:</b> 0.8 and 0.9 next, then 0.4 with Phase 1, 0.6 before Phase 2, 0.5 before Phase 3.",
+    items: [
+      ["0.1", "One site, a VTT switch, a test campaign", "Table Assistant (TA) and the VTT are the same code on one site (beta.askdnd.ai now, askdnd.ai once legacy retires). Each VTT piece stays hidden behind a switch per campaign: the test campaign sees every piece, and a piece reaches the table when its DM switches it on.", "TA fixes are made once and are in the VTT automatically. Releasing a piece means switching it on, and it can be switched back off.", "S", "core", "done", ""],
+      ["0.2", "Data organization", "Characters separate from campaigns, roles per campaign, house rules, more than one campaign (roadmap step 10).", "Keeps other groups possible later without a rebuild.", "L", "core", "done", ""],
+      ["0.3", "Live table connection", "Changes reach every open screen within a second, through Postgres, so it holds with several copies of the app. Pages reconnect after a deploy and catch up.", "Everyone sees the same roll, HP and turn at the same moment.", "M", "core", "done", ""],
+      ["0.7", "Finish the Railway cleanup", "Google secret, database password, legacy keys, backups confirmed (roadmap step 12).", "", "S", "core", "done", ""],
+      ["0.8", "Browser tests for the table", "A few tests drive a player's page and the DM's at once through the table's core flows, on every change.", "Live updates are checked before they reach the table, not at it.", "S", "core", "done", ""],
+      ["0.9", "Know when something breaks", "Errors on beta are reported to you as they happen (Sentry), with nothing private in them: no notes, recaps, transcripts, emails or names.", "You hear about a problem before the table does.", "S", "core", "done", ""],
+      ["0.4", "Play state and the play log", "One home for what askdnd owns during play. Every change to hit points, slots, items, conditions and token moves is a log entry with who made it and why. The DM can undo a mistake or a whole turn.", "Fixing a mis-click doesn't mean editing three numbers by hand.", "M", "core", "", "Designed with 1.7, built with 1.1"],
+      ["0.6", "Rules content as data", "The free 2024 rules content (SRD 5.2: monsters, spells, items, conditions) built in. The DM's own creations live in the database, never in the public code.", "", "M", "core", "done", ""],
+      ["0.5", "File storage for the campaign", "Images, maps, tokens and audio in the campaign's private storage, with size limits. Today's pictures move out of the database.", "", "M", "core", "part", ""],
+    ] },
+  { id: "p1", n: "Phase 1", title: "Live character state", first: true, why: "askdnd takes over the numbers that change during play. D&D Beyond remains where characters are built and leveled; its changes merge in without overwriting what happened at the table.",
+    order: "<b>Order:</b> design the play log and the D&amp;D Beyond merge together (with a mockup for you), then hit points, slots, resources, conditions, rests, inventory. House rules switches arrive with the item each one changes.",
+    milestone: "A whole session's bookkeeping happens in askdnd. D&D Beyond is only for building and leveling.",
+    items: [
+      ["1.7", "D&D Beyond merge", "On sync, build changes (level, max HP, new spells, purchases) come in and play state stays askdnd's, with a short list of what changed on D&D Beyond. The rule for each field is written down.", "No double bookkeeping: the sheet you play from is the one that counts.", "M", "core", "", "Designed first, with 0.4"],
+      ["1.1", "Hit points askdnd owns", "Damage, healing, temporary HP, death saves. Damage has a type, and resistance, immunity and vulnerability apply with the reason shown.", "“Halved: resistant to fire (Tiefling)” instead of everyone doing the math aloud.", "M", "core", "", "0.4, 1.7"],
+      ["1.2", "Casting spends slots", "Cast from Battle or the Spell Book, pick the slot level (upcasting shows what changes), pact slots, free rituals. Concentration starts by itself and warns before replacing another.", "", "M", "core", "", "1.1"],
+      ["1.3", "Class resources and uses", "Wild Shape, Focus Points, Channel Divinity, Bardic Inspiration and per-rest feats, counted down as they're used.", "", "M", "core", "", "1.1"],
+      ["1.6", "Conditions with durations", "Rounds, minutes, until the end of your next turn, or until a save. Conditions and 2024 Exhaustion change the rolls they affect. Today's conditions and concentration move into play state.", "", "M", "core", "part", "1.1"],
+      ["1.4", "Short and long rests", "Spend Hit Dice and heal on a short rest. A long rest lists what comes back before you confirm. The DM can call a rest for the whole party.", "", "M", "core", "", "1.1–1.3"],
+      ["1.5", "Inventory in play", "Quantities, using a potion (rolls the healing and removes it), charges that return at dawn, ammunition, coins, attunement, handing an item to another character. Loot from the DM lands straight in inventories.", "“I always forget my hat and my cloak”: unused items keep showing up where you'll see them.", "L", "core", "part", "1.1"],
+      ["1.8", "Party at a glance for the DM", "HP, AC, passive Perception and Insight, conditions and slots left for every character on one screen.", "", "S", "core", "", "1.1–1.6"],
+      ["1.10", "House rules for what askdnd automates", "Each common table rule becomes a switch on Manage › House rules, applied wherever askdnd does that thing: how critical hit damage works, drinking a potion as a bonus action, flanking, rest variants. Today it covers one roll for all of Magic Missile's darts and the DM's notes on spells in the roll window.", "The DM's rulings are built in, instead of everyone remembering them.", "M", "core", "part", "Each switch arrives with its item"],
+      ["1.9", "Level-up companion", "After leveling on D&D Beyond: what's new and how it works, with a prompt to write down why you chose it.", "", "S", "nice", "", "1.7"],
+    ] },
+  { id: "p2", n: "Phase 2", title: "Combat", why: "Fights run in askdnd from start to finish, without a map first. Initiative runs itself, the DM prepares encounters, and rolls resolve against their targets.",
+    order: "<b>Order:</b> initiative first (useful even before monsters are in askdnd), then stat blocks, what players see, resolving attacks and encounters.",
+    milestone: "A whole fight, start to finish, runs in askdnd.",
+    items: [
+      ["2.2", "Initiative and turns", "Everyone's initiative rolled at once (players can roll their own), turn order, round count, a clear “your turn”, and durations counting down. Delay and Ready are handled.", "", "M", "core", "", ""],
+      ["2.3", "Stat blocks the DM can click", "Roll a monster's attacks, damage and saves from its block. Recharge, legendary and lair actions tracked. Several of the same monster are numbered.", "", "L", "core", "", "0.6"],
+      ["2.6", "What players see of monsters", "A name or “unknown creature”, Bloodied instead of hit points, and only the traits the party has learned.", "", "S", "core", "", "2.3"],
+      ["2.4", "Attacks and saves that resolve", "Pick a target: the roll is compared to AC and damage applies once the DM confirms. For a save spell: pick targets, everyone rolls, and half damage on a success applies.", "One click from roll to result, and the DM can still change it before it lands.", "L", "core", "", "1.1, 2.3"],
+      ["2.1", "Encounters", "The DM prepares fights from built-in monsters and their own stat blocks, with difficulty from the 2024 DMG's budget. Hidden until they start.", "", "L", "core", "", "2.3"],
+      ["2.5", "Reactions at the right moment", "When you're hit, you see the reactions you could use (Shield, Uncanny Dodge) and what each would do. You decide.", "Fewer “oh, I could have used…” moments, without telling anyone what to do.", "M", "nice", "", "2.4"],
+      ["2.7", "Fights flow into the recap", "Critical hits, knockouts, defeats and loot go into the session's draft recap automatically, read from the play log.", "", "S", "nice", "", "0.4"],
+    ] },
+  { id: "p3", n: "Phase 3", title: "Maps and tokens", why: "Battle maps with tokens tied to the same characters and monsters as Phase 2, so moving, measuring and spell areas feed straight into combat. Needs file storage (0.5), and the live connection extended: token moves carry their position, and hidden monsters and fog go on a DM-only channel.",
+    milestone: "A whole session played on askdnd's maps instead of D&D Beyond Maps.",
+    items: [
+      ["3.1", "Map canvas", "Upload a battle map, line up its grid (squares or hexes), pan and zoom, smooth on a laptop.", "", "L", "core", "", "0.5"],
+      ["3.2", "Tokens", "Player characters from their sheets, monsters from the encounter, NPCs from the campaign record. Players move their own. HP and conditions show on the token.", "The token is the character: damage on the map is damage on the sheet.", "L", "core", "", "3.1"],
+      ["3.3", "Movement and measuring", "Ruler, movement left this turn, difficult terrain, and reach and range shown when you pick an attack or spell.", "", "M", "core", "", "3.2"],
+      ["3.4", "Fog of war", "The DM reveals rooms or areas; players see only what's revealed.", "", "M", "core", "", "3.1"],
+      ["3.5", "Spell areas", "Place a sphere, cone, line or cube. Everyone inside becomes a target for the save in 2.4.", "No more counting squares to see who's in the Fireball.", "M", "core", "", "2.4, 3.2"],
+      ["3.6", "Scenes", "Several maps prepared per session, the table switched to one, token positions kept per scene.", "", "M", "core", "", "3.2"],
+      ["3.7", "Walls, doors and vision", "Line of sight, darkvision, light sources and doors that open.", "Optional: it never gets in the way of running a simple map.", "XL", "nice", "", "3.4"],
+      ["3.8", "Import maps with walls", "Universal VTT files (.dd2vtt) from Dungeondraft and other map makers bring their walls and lights.", "", "M", "nice", "", "3.7"],
+      ["3.9", "Draw and ping", "Draw, point and ping on the map for everyone.", "", "S", "nice", "", "3.1"],
+      ["3.10", "Story map", "Places from the campaign record pinned on our own world or region map, revealed as the party discovers them. Replaces the external Sword Coast frame.", "", "M", "nice", "", "0.5"],
+      ["3.11", "Table dice", "Everyone's rolls thrown across the screen in each player's own dice, with a light tag saying who rolled.", "", "S", "nice", "built", ""],
+    ] },
+  { id: "p4", n: "Phase 4", title: "The DM's table tools", why: "The DM shows things to the table, sets the mood and prepares content without leaving askdnd.",
+    milestone: "The DM runs a session's images, music and prepared content from askdnd.",
+    items: [
+      ["4.1", "Show to the table", "Push an image, handout, NPC portrait or campaign entry to everyone's screen, or to chosen players, and close it for everyone.", "", "S", "core", "", "0.5"],
+      ["4.2", "Music and ambience", "Playlists per scene with crossfades, in sync for everyone, each player setting their own volume. The DM uploads the tracks.", "", "M", "nice", "", "0.5"],
+      ["4.3", "Sound effects", "A soundboard of one-shot sounds: thunder, a door, a dragon's roar.", "", "S", "nice", "", "0.5"],
+      ["4.4", "Asset library", "Maps, tokens, handouts and music in one place, tagged and reusable across sessions and campaigns.", "", "M", "core", "", "0.5"],
+      ["4.5", "Make stat blocks and items", "Start from a built-in creature or item, change it and save it as the DM's own.", "", "L", "core", "", "0.6"],
+      ["4.6", "Session prep", "One page to plan encounters, scenes, handouts and secrets. Reveal NPCs, places and quests from the campaign record when the party meets them.", "Prep and play live in the same place, so nothing gets lost between them.", "M", "core", "", ""],
+      ["4.7", "Secret rolls and whispers", "Hidden DM rolls and rolls only the DM sees are in already; private messages or handouts to one player remain.", "", "S", "nice", "part", ""],
+      ["4.8", "Paste-in import", "Paste a stat block's text and Claude turns it into askdnd's format for the DM to check. It stays private in the database.", "", "M", "nice", "", "0.6"],
+    ] },
+  { id: "p5", n: "Phase 5", title: "During play, for everyone", why: "Smaller pieces that make play smoother once the table lives in askdnd.",
+    items: [
+      ["5.1", "Rules answers in play", "Ask from any page and get the 2024 rule with the book and page, using your character and the situation. The DM rules. (Planned since the original brief.)", "A rules question settled in under a minute, with the page on screen.", "L", "core", "", "0.6"],
+      ["5.2", "Table chat with rolls", "One feed of rolls, results and messages, kept with the session. Table rolls are its start.", "", "M", "nice", "", ""],
+      ["5.3", "Phones and tablets", "The map and combat from a phone or tablet (today's pages already work on phones).", "", "M", "nice", "", "Phase 3"],
+      ["5.4", "Start-of-turn summary", "At the start of your turn: what you have left (action, bonus action, reaction, movement, unused items). Never what to do with it.", "", "S", "nice", "", "2.2"],
+      ["5.5", "Dice you can watch", "Thrown 3D dice in each player's own set, landing on askdnd's numbers; admins tune how they move and how long they stay.", "", "S", "nice", "done", ""],
+    ] },
+  { id: "p6", n: "Phase 6", title: "Voice and video", why: "Later, and a nice to have: the call happens inside askdnd, and recording gets much better because each person is on their own track.",
+    milestone: "A whole session with no Zoom and no MacWhisper.",
+    items: [
+      ["6.1", "Voice and video in askdnd", "A call built into the table page, on a hosted video service (a few dollars per session).", "", "L", "nice", "", ""],
+      ["6.2", "One recording track per person", "Clean transcripts with real speaker names and no Zoom echo, which are today's two biggest transcript problems. Needs the privacy decision below.", "", "L", "nice", "", "6.1"],
+      ["6.3", "Recording straight to recap", "Session ends, the transcript is filtered, and a draft recap waits in the inbox. Replaces MacWhisper and the Processor.", "", "L", "nice", "", "6.2"],
+      ["6.4", "Live captions and catch-up", "Captions, and “what just happened” for anyone who stepped away.", "", "M", "nice", "", "6.1"],
+    ] },
+  { id: "p7", n: "Phase 7", title: "Other groups", why: "Not planned. Kept possible: each earlier piece is built so another group could use it later.",
+    items: [
+      ["7.1", "Content and licensing check", "What book content another group may see, before anyone outside our table uses askdnd.", "", "S", "req", "", ""],
+      ["7.2", "Invite another group", "Their own campaign, roles and storage, building on step 10.", "", "L", "nice", "", "7.1"],
+      ["7.3", "Accounts and costs per group", "Sign-up beyond the invite list, storage and Claude costs per campaign.", "", "L", "nice", "", "7.2"],
+    ] },
+];
+
+const STATUS = { done: ["Done", "st-done"], built: ["Built · not released", "st-built"], now: ["In progress", "st-now"], part: ["Partly built", "st-part"] };
+const PRIORITY = { core: ["Core", "core"], nice: ["Nice to have", "nice"], req: ["Before sharing", "req"] };
+const SIZE_WORDS = { S: "A day or two", M: "About a week", L: "2–3 weeks", XL: "A month or more" };
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const finished = i => i[6] === "done" || i[6] === "built";
+
+function sizes(items) {
+  const count = { S: 0, M: 0, L: 0, XL: 0 };
+  items.forEach(i => count[i[4]]++);
+  return Object.entries(count).filter(([, n]) => n).map(([k, n]) => `${n}${k}`).join(" · ");
+}
+
+function renderTrack() {
+  const track = document.getElementById("track");
+  PHASES.forEach(p => {
+    const a = el("a", p.first ? "first" : "");
+    a.href = "#" + p.id;
+    const done = p.items.filter(finished).length;
+    const core = p.items.filter(i => i[5] !== "nice").length;
+    a.append(el("span", "n", p.n + (p.first ? " · next" : "")), el("span", "t", p.title),
+             el("span", "m", (done ? `${done} of ${p.items.length} done · ` : `${core} core · ${p.items.length - core} nice · `) + sizes(p.items.filter(i => !finished(i))) ));
+    track.append(a);
+  });
+}
+
+function keep(i, filter) {
+  if (filter === "core") return i[5] !== "nice";
+  if (filter === "nice") return i[5] === "nice";
+  if (filter === "todo") return !finished(i);
+  return true;
+}
+
+function renderPhases(filter) {
+  const root = document.getElementById("phases");
+  root.textContent = "";
+  PHASES.forEach(p => {
+    const s = el("section"); s.id = p.id;
+    const head = el("div", "sec-head");
+    head.append(el("div", "eyebrow", p.n + (p.first ? " · next up" : "")), el("h2", null, p.title), el("p", "why", p.why));
+    if (p.order) { const o = el("p", "order"); o.innerHTML = p.order; head.append(o); }
+    const shown = p.items.filter(i => keep(i, filter));
+    head.append(el("p", "sum", `${shown.length} of ${p.items.length} items shown · still to build ${sizes(p.items.filter(i => !finished(i))) || "nothing"}`));
+    s.append(head);
+    const list = el("div", "items");
+    shown.forEach(([id, name, desc, better, eff, pri, st, needs]) => {
+      const row = el("div", "item" + (st === "done" ? " is-done" : ""));
+      const body = el("div", "body");
+      body.append(el("h3", null, name), el("p", "desc", desc));
+      if (better) body.append(el("p", "better", better));
+      if (needs && !st) body.append(el("p", "needs", needs));
+      const tags = el("div", "tags");
+      const e = el("span", "chip eff", eff); e.title = SIZE_WORDS[eff];
+      tags.append(e, el("span", "chip " + PRIORITY[pri][1], PRIORITY[pri][0]));
+      if (st) tags.append(el("span", "chip " + STATUS[st][1], STATUS[st][0]));
+      row.append(el("span", "id", id), body, tags);
+      list.append(row);
+    });
+    if (!shown.length) list.append(el("p", "empty-note", { core: "No core items in this phase.", nice: "No nice-to-haves in this phase.", todo: "Everything in this phase is built." }[filter] || ""));
+    s.append(list);
+    if (p.milestone) {
+      const m = el("div", "milestone");
+      m.append(el("span", "k", "Milestone"), el("p", null, p.milestone));
+      s.append(m);
+    }
+    root.append(s);
+  });
+}
+
+document.querySelectorAll(".filter").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll(".filter").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  renderPhases(b.dataset.filter);
+  try { localStorage.setItem("vtt-filter", b.dataset.filter); } catch (e) {}
+}));
+
+renderTrack();
+let start = "all";
+try { start = localStorage.getItem("vtt-filter") || "all"; } catch (e) {}
+if (!["all", "core", "nice", "todo"].includes(start)) start = "all";
+document.querySelectorAll(".filter").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.filter === start)));
+renderPhases(start);
+if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+</script>
+
+</body></html>

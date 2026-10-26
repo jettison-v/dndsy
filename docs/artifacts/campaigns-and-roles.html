@@ -1,0 +1,393 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>askdnd campaigns and roles</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one reading column. Explanations with diagrams first (today, proposed, house rules, roles), then the
+   build steps, then step 11, then the decisions as answer cards. askdnd's own colors, light and dark. */
+:root{
+  --bg:#f6f3ee;--surface:#fffdf9;--surface-2:#efe9e0;--line:#ddd5c9;
+  --text:#24211d;--muted:#6b655c;--faint:#9a9389;
+  --red:#b83232;--amber:#9a6a10;--green:#2f8a52;--blue:#3a6db3;--violet:#7a55b8;
+  --tint-red:rgba(184,50,50,.10);--tint-green:rgba(47,138,82,.12);--tint-blue:rgba(58,109,179,.12);--tint-amber:rgba(154,106,16,.12);--tint-violet:rgba(122,85,184,.12);
+  --ui:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15171a;--surface:#1f2226;--surface-2:#272b30;--line:#34383e;
+  --text:#ebe7df;--muted:#a29d93;--faint:#6f6b64;
+  --red:#e06363;--amber:#e8b34b;--green:#5bbf7f;--blue:#7ea6e0;--violet:#b9a3e3;
+  --tint-red:rgba(214,69,69,.15);--tint-green:rgba(91,191,127,.15);--tint-blue:rgba(126,166,224,.15);--tint-amber:rgba(232,179,75,.14);--tint-violet:rgba(185,163,227,.15);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15171a;--surface:#1f2226;--surface-2:#272b30;--line:#34383e;
+  --text:#ebe7df;--muted:#a29d93;--faint:#6f6b64;
+  --red:#e06363;--amber:#e8b34b;--green:#5bbf7f;--blue:#7ea6e0;--violet:#b9a3e3;
+  --tint-red:rgba(214,69,69,.15);--tint-green:rgba(91,191,127,.15);--tint-blue:rgba(126,166,224,.15);--tint-amber:rgba(232,179,75,.14);--tint-violet:rgba(185,163,227,.15);
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--ui);font-size:16px;line-height:1.6}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:900px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 80px;display:flex;flex-direction:column;gap:26px}
+header h1{font-size:1.9rem;line-height:1.2;margin:0 0 6px;text-wrap:balance}
+header p{margin:0;color:var(--muted);max-width:68ch}
+nav.toc{display:flex;flex-wrap:wrap;gap:6px}
+nav.toc a{font-size:14px;color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:2px 12px}
+nav.toc a:hover{color:var(--text)}
+section.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px 24px;display:flex;flex-direction:column;gap:14px;scroll-margin-top:16px}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--amber)}
+section.panel h2{margin:0;font-size:1.3rem;line-height:1.3;text-wrap:balance}
+section.panel p,section.panel li{max-width:70ch}
+section.panel p{margin:0}
+.muted{color:var(--muted)}
+figure{margin:0;display:flex;flex-direction:column;gap:8px}
+.fig{overflow-x:auto;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px}
+.fig svg{display:block;width:100%;min-width:640px;height:auto;color:var(--text)}
+figcaption{font-size:14px;color:var(--muted)}
+/* diagram parts, styled from the page's tokens */
+.dg .box{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.dg .band{fill:var(--surface-2);stroke:none}
+.dg .code{fill:var(--tint-violet);stroke:var(--violet);stroke-width:1.5}
+.dg .camp{fill:var(--tint-blue);stroke:var(--blue);stroke-width:1.5}
+.dg .char{fill:var(--tint-green);stroke:var(--green);stroke-width:1.5}
+.dg .warn{fill:var(--tint-amber);stroke:var(--amber);stroke-width:1.5}
+.dg .bad{stroke:var(--red)}
+.dg text{fill:currentColor;font-family:var(--ui);font-size:13px}
+.dg .t{font-weight:700;font-size:14px}
+.dg .s{fill:var(--muted);font-size:12px}
+.dg .lab{fill:var(--muted);font-size:12px;font-style:italic}
+.dg .labr{fill:var(--red);font-size:12px;font-weight:600}
+.dg .laya{fill:var(--amber);font-size:11px;font-weight:700;letter-spacing:.1em}
+.dg .ln{stroke:currentColor;stroke-width:1.5;fill:none}
+.dg .lnd{stroke:currentColor;stroke-width:1.5;fill:none;stroke-dasharray:5 4;opacity:.7}
+.dg .lnr{stroke:var(--red);stroke-width:1.8;fill:none}
+.dg .head{fill:currentColor}
+.dg .headr{fill:var(--red)}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+.tbl{overflow-x:auto}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.role{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:1px 9px;white-space:nowrap}
+.r-dm{background:var(--tint-red);color:var(--red)} .r-rev{background:var(--tint-amber);color:var(--amber)}
+.r-pl{background:var(--tint-green);color:var(--green)} .r-tool{background:var(--tint-violet);color:var(--violet)}
+.r-none{color:var(--faint)}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.steps li{display:grid;grid-template-columns:32px 1fr;gap:12px;align-items:start}
+.steps .n{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);font-weight:700;font-variant-numeric:tabular-nums}
+.steps b{display:block}
+.steps .vis{font-size:13px;color:var(--muted)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.card h3{margin:0 0 6px;font-size:15px}
+.card dl{margin:0;display:grid;grid-template-columns:max-content 1fr;gap:4px 12px;font-size:14px}
+.card dt{color:var(--muted)} .card dd{margin:0}
+/* questions */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar-in{max-width:900px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.meter{flex:1;min-width:140px;height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--green);width:0;transition:width .3s}
+.count{font-variant-numeric:tabular-nums;font-weight:600;font-size:14px}
+.save{font-size:13px;color:var(--muted)}
+.btn{font:inherit;font-size:14px;border-radius:8px;padding:6px 12px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);cursor:pointer}
+.btn:hover{border-color:var(--faint)}
+.btn:focus-visible,.opt input:focus-visible+span,textarea:focus-visible,a:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:12px}
+.q.done{border-color:color-mix(in srgb,var(--green) 45%,var(--line))}
+.q-head{display:flex;gap:12px;align-items:baseline}
+.q-num{color:var(--red);font-weight:700;font-variant-numeric:tabular-nums;min-width:1.6em}
+.q h3{margin:0;font-size:1.05rem;line-height:1.4;flex:1;min-width:0}
+.q-state{font-size:12px;padding:2px 9px;border-radius:999px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.q.done .q-state{background:var(--tint-green);color:var(--green)}
+.why{margin:0;color:var(--muted);font-size:14.5px;max-width:68ch}
+.why b{color:var(--text);font-weight:600}
+.opts{display:flex;flex-direction:column;gap:6px}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:9px 12px;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:var(--bg)}
+.opt:hover{border-color:var(--faint)}
+.opt input{margin:4px 0 0;accent-color:var(--red)}
+.opt span{display:flex;flex-direction:column;min-width:0}
+.opt b{font-weight:600}
+.opt small{color:var(--muted);font-size:13.5px;line-height:1.45}
+.opt.on{border-color:var(--blue);background:var(--tint-blue)}
+.rec{font-size:11px;font-weight:600;color:var(--green);background:var(--tint-green);border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:1px}
+textarea{font:inherit;font-size:14.5px;width:100%;min-height:44px;resize:vertical;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);padding:8px 10px}
+textarea::placeholder{color:var(--faint)}
+.offline{border:1px solid var(--amber);border-radius:10px;padding:12px 14px;background:var(--surface)}
+.group{display:flex;flex-direction:column;gap:14px}
+@media (max-width:600px){section.panel,.q{padding:16px}.q-head{flex-wrap:wrap}}
+@media (prefers-reduced-motion:reduce){.meter i{transition:none}}
+</style>
+
+<div class="bar"><div class="bar-in">
+  <span class="count" id="count">0 of 0 answered</span>
+  <div class="meter" aria-hidden="true"><i id="meter"></i></div>
+  <span class="save" id="save" aria-live="polite">Loading saved answers…</span>
+  <a class="btn" href="#decisions" style="text-decoration:none">Go to the decisions</a>
+</div></div>
+
+<div class="wrap">
+  <header>
+    <h1>Campaigns and roles: what steps 10 and 11 change</h1>
+    <p>Step 10 reorganizes the data so a character can belong to more than one campaign over time, roles become per campaign, and a DM's rulings stop editing the tool. Step 11 brings Inventory, Features and then the Campaign pages onto the list pattern. Read the pictures first; the decisions are at the bottom and save as you answer.</p>
+  </header>
+  <nav class="toc" aria-label="On this page"><a href="#today">Today</a><a href="#proposed">Proposed</a><a href="#rules">House rules</a><a href="#roles">Roles and who sees what</a><a href="#build">How step 10 is built</a><a href="#lists">Step 11</a><a href="#decisions">Decisions</a></nav>
+
+  <section class="panel" id="today" aria-labelledby="today-h">
+    <span class="eyebrow">Step 10 · where things stand</span>
+    <h2 id="today-h">Today everything hangs off one campaign</h2>
+    <figure>
+      <div class="fig"><svg class="dg" viewBox="0 0 760 300" role="img" aria-label="Today: accounts carry roles for the whole tool; a character reaches its campaign only through its story page; sheet corrections apply to every campaign.">
+        <defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0,0 L10,5 L0,10 z"/></marker>
+              <marker id="a1r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="headr" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+        <!-- accounts -->
+        <rect class="box" x="20" y="40" width="200" height="200" rx="10"/>
+        <text class="t" x="36" y="66">Accounts</text>
+        <text x="36" y="96">Brett · Admin</text><text class="s" x="36" y="114">plays Cole</text>
+        <text x="36" y="146">The DM · Player + DM tick</text>
+        <text x="36" y="178">A reviewer · Reviewer</text>
+        <text class="labr" x="36" y="222">roles count everywhere</text>
+        <!-- campaign -->
+        <rect class="camp" x="280" y="40" width="220" height="200" rx="10"/>
+        <text class="t" x="296" y="66">The campaign</text>
+        <rect class="box" x="296" y="82" width="188" height="44" rx="8"/><text x="310" y="102">Story page: Cole</text><text class="s" x="310" y="118">aliases, history</text>
+        <text class="s" x="296" y="152">sessions · recaps · events</text>
+        <text class="s" x="296" y="172">people · places · glossary</text>
+        <text class="s" x="296" y="192">table rolls · suggestions</text>
+        <!-- character -->
+        <rect class="char" x="560" y="120" width="180" height="120" rx="10"/>
+        <text class="t" x="576" y="146">Character: Cole</text>
+        <text class="s" x="576" y="170">D&amp;D Beyond copy</text><text class="s" x="576" y="188">notes · pins · reminders</text><text class="s" x="576" y="206">Wild Shape keeps</text>
+        <!-- sheet corrections -->
+        <rect class="warn" x="560" y="30" width="180" height="56" rx="10"/>
+        <text class="t" x="576" y="54">Sheet corrections</text><text class="s" x="576" y="72">Manage › Characters</text>
+        <!-- arrows -->
+        <path class="ln" d="M560 160 H 484" marker-end="url(#a1)"/><text class="lab" x="490" y="152">its only link</text>
+        <path class="lnr" d="M650 86 V 116" marker-end="url(#a1r)"/><text class="labr" x="660" y="106">every campaign</text>
+        <path class="lnd" d="M220 140 H 278" marker-end="url(#a1)"/><text class="lab" x="226" y="132">the first one</text>
+      </svg></div>
+      <figcaption>The character knows its campaign only through its story page, so moving Cole would mean moving his story page and its history. The DM tick and Reviewer sit on the account, so they'd apply to every campaign. About 25 places in the code simply use "the first campaign".</figcaption>
+    </figure>
+  </section>
+
+  <section class="panel" id="proposed" aria-labelledby="prop-h">
+    <span class="eyebrow">Step 10 · the proposal</span>
+    <h2 id="prop-h">Four layers; each points only upward</h2>
+    <figure>
+      <div class="fig"><svg class="dg" viewBox="0 0 760 520" role="img" aria-label="Proposed: tool knowledge in the code; tool-wide data; campaigns with dated memberships for people and characters; characters on their own. Lower layers point at higher ones.">
+        <defs><marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+        <!-- bands -->
+        <rect class="band" x="10" y="10" width="740" height="90" rx="10"/>
+        <rect class="band" x="10" y="112" width="740" height="90" rx="10"/>
+        <rect class="band" x="10" y="214" width="740" height="176" rx="10"/>
+        <rect class="band" x="10" y="402" width="740" height="108" rx="10"/>
+        <text class="laya" x="24" y="32">1 · TOOL KNOWLEDGE (CODE)</text>
+        <text class="laya" x="24" y="134">2 · TOOL-WIDE DATA</text>
+        <text class="laya" x="24" y="236">3 · CAMPAIGNS</text>
+        <text class="laya" x="24" y="424">4 · CHARACTERS</text>
+        <!-- layer 1 -->
+        <rect class="code" x="200" y="22" width="530" height="66" rx="8"/>
+        <text class="t" x="216" y="48">Same for everyone, reviewed like code</text>
+        <text class="s" x="216" y="70">roll recipes · Beasts · rules terms · class rules · places</text>
+        <!-- layer 2 -->
+        <rect class="box" x="200" y="124" width="170" height="66" rx="8"/><text class="t" x="214" y="148">People</text><text class="s" x="214" y="170">tool role: owner, admin, member</text>
+        <rect class="warn" x="384" y="124" width="170" height="66" rx="8"/><text class="t" x="398" y="148">Tool corrections</text><text class="s" x="398" y="170">how askdnd reads D&amp;D Beyond</text>
+        <rect class="box" x="568" y="124" width="162" height="66" rx="8"/><text class="t" x="582" y="148">Spending limit</text><text class="s" x="582" y="170">one Anthropic account</text>
+        <!-- layer 3 -->
+        <rect class="camp" x="200" y="226" width="250" height="152" rx="8"/>
+        <text class="t" x="214" y="250">Waterdeep (today's)</text>
+        <text class="s" x="214" y="272">story, sessions, recaps, rolls</text>
+        <rect class="warn" x="214" y="282" width="222" height="26" rx="6"/><text x="224" y="300">House rules</text>
+        <rect class="box" x="214" y="314" width="222" height="26" rx="6"/><text x="224" y="332">Members: person, role, joined</text>
+        <rect class="box" x="214" y="346" width="222" height="26" rx="6"/><text x="224" y="364">Characters: joined, left</text>
+        <rect class="camp" x="480" y="226" width="250" height="152" rx="8" style="opacity:.6"/>
+        <text class="t" x="494" y="250">A second campaign (later)</text>
+        <text class="s" x="494" y="272">its own story and house rules</text>
+        <rect class="box" x="494" y="314" width="222" height="26" rx="6"/><text x="504" y="332">Members: person, role, joined</text>
+        <rect class="box" x="494" y="346" width="222" height="26" rx="6"/><text x="504" y="364">Characters: joined, left</text>
+        <!-- layer 4 -->
+        <rect class="char" x="200" y="414" width="250" height="84" rx="8"/>
+        <text class="t" x="214" y="438">Cole</text>
+        <text class="s" x="214" y="460">D&amp;D Beyond copy · notes · pins</text>
+        <text class="s" x="214" y="478">reminders · combos · leveling</text>
+        <rect class="char" x="480" y="414" width="250" height="84" rx="8"/>
+        <text class="t" x="494" y="438">Trah, No Name, Big C</text>
+        <text class="s" x="494" y="460">each the same way</text>
+        <!-- arrows: lower layers point up -->
+        <path class="ln" d="M325 414 V 374" marker-end="url(#a2)"/><text class="lab" x="332" y="400">member since Oct</text>
+        <path class="lnd" d="M450 450 C 560 450 600 410 605 374" marker-end="url(#a2)"/><text class="lab" x="560" y="404">could move</text>
+        <path class="ln" d="M436 295 C 470 295 470 190 469 192" marker-end="url(#a2)"/>
+        <path class="ln" d="M300 282 C 300 240 170 160 190 90" marker-end="url(#a2)"/><text class="lab" x="118" y="196">points at a rule</text><text class="lab" x="118" y="212">by key</text>
+        <path class="ln" d="M469 124 V 92" marker-end="url(#a2)"/><text class="lab" x="476" y="112">points at</text>
+      </svg></div>
+      <figcaption>A campaign owns what happened in it (story pages, recaps, rolls). A character owns what's about the character (the D&amp;D Beyond copy, notes, pins). Memberships keep dates instead of being deleted, so if Cole moves, Waterdeep still knows he was there in session 12. House rules and tool corrections are rows that point at the rule they change; the tool's own knowledge is never edited.</figcaption>
+    </figure>
+  </section>
+
+  <section class="panel" id="rules" aria-labelledby="rules-h">
+    <span class="eyebrow">Step 10 · DM rulings</span>
+    <h2 id="rules-h">A house rule changes one table, and removing it brings the rule back</h2>
+    <figure>
+      <div class="fig"><svg class="dg" viewBox="0 0 760 210" role="img" aria-label="The value askdnd uses is the tool's rule, then a tool-wide correction if any, then the campaign's house rule if any; the most specific wins.">
+        <defs><marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+        <text class="laya" x="20" y="26">WATERDEEP (HAS A HOUSE RULE)</text>
+        <rect class="code" x="20" y="38" width="170" height="56" rx="8"/><text class="t" x="34" y="60">Tool rule</text><text class="s" x="34" y="80">Magic Missile: roll each dart</text>
+        <rect class="box" x="220" y="38" width="150" height="56" rx="8"/><text class="t" x="234" y="60">Tool correction</text><text class="s" x="234" y="80">none</text>
+        <rect class="warn" x="400" y="38" width="170" height="56" rx="8"/><text class="t" x="414" y="60">House rule</text><text class="s" x="414" y="80">roll once for all darts</text>
+        <rect class="camp" x="600" y="38" width="140" height="56" rx="8"/><text class="t" x="614" y="60">Roll window</text><text class="s" x="614" y="80">once · "House rule"</text>
+        <path class="ln" d="M190 66 H 218" marker-end="url(#a3)"/><path class="ln" d="M370 66 H 398" marker-end="url(#a3)"/><path class="ln" d="M570 66 H 598" marker-end="url(#a3)"/>
+        <text class="laya" x="20" y="132">A SECOND CAMPAIGN (NO HOUSE RULE)</text>
+        <rect class="code" x="20" y="144" width="170" height="56" rx="8"/><text class="t" x="34" y="166">Tool rule</text><text class="s" x="34" y="186">Magic Missile: roll each dart</text>
+        <rect class="box" x="220" y="144" width="150" height="56" rx="8"/><text class="t" x="234" y="166">Tool correction</text><text class="s" x="234" y="186">none</text>
+        <rect class="box" x="400" y="144" width="170" height="56" rx="8" style="opacity:.5"/><text class="s" x="414" y="176">no house rule</text>
+        <rect class="camp" x="600" y="144" width="140" height="56" rx="8"/><text class="t" x="614" y="166">Roll window</text><text class="s" x="614" y="186">each dart (the rule)</text>
+        <path class="ln" d="M190 172 H 218" marker-end="url(#a3)"/><path class="ln" d="M370 172 H 598" marker-end="url(#a3)"/>
+      </svg></div>
+      <figcaption>Tool corrections fix how askdnd reads D&amp;D Beyond, so they're right for everyone (today's Manage › Characters regrouping). House rules are a DM's ruling for one table: what a Druid keeps in Wild Shape, how Magic Missile rolls. Each row records who, when and why.</figcaption>
+    </figure>
+  </section>
+
+  <section class="panel" id="roles" aria-labelledby="roles-h">
+    <span class="eyebrow">Step 10 · permissions</span>
+    <h2 id="roles-h">Roles move from the account to each campaign</h2>
+    <p>The account keeps only what's about the whole tool: <span class="role r-tool">Owner</span> and <span class="role r-tool">Admin</span> set up people, characters and billing. Everything about running a table becomes a role <b>in a campaign</b>: <span class="role r-dm">DM</span>, <span class="role r-rev">Reviewer</span> or <span class="role r-pl">Player</span>. An example with a second campaign that Brett runs:</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Person</th><th>Tool role</th><th>In Waterdeep</th><th>In Brett's second campaign</th></tr></thead>
+      <tbody>
+        <tr><td><b>Brett</b></td><td><span class="role r-tool">Owner</span></td><td><span class="role r-pl">Player</span> plays Cole · <span class="role r-rev">Reviewer</span></td><td><span class="role r-dm">DM</span></td></tr>
+        <tr><td><b>Waterdeep's DM</b></td><td><span class="role r-none">Member</span></td><td><span class="role r-dm">DM</span></td><td><span class="role r-none">not a member</span></td></tr>
+        <tr><td><b>Trah's player</b></td><td><span class="role r-none">Member</span></td><td><span class="role r-pl">Player</span> plays Trah</td><td><span class="role r-pl">Player</span> a new character</td></tr>
+      </tbody>
+    </table></div>
+    <div class="cols">
+      <div class="card"><h3>What follows from that</h3>
+        <ul style="margin:0;padding-left:18px;font-size:14.5px;display:grid;gap:4px">
+          <li>In Waterdeep, Brett reads every player's notes (he's a player there) and reviews recaps.</li>
+          <li>In his own campaign Brett is the DM, so he can't read the notes of characters there, and if a character moves in from elsewhere, he can't read its notes either.</li>
+          <li>Waterdeep's DM sees nothing of the second campaign, and never sees Waterdeep's players' notes.</li>
+        </ul></div>
+      <div class="card"><h3>The notes rule, precisely</h3>
+        <p style="font-size:14.5px;margin:0">A person can't read a character's notes if they DM, or ever DMed, a campaign that character is or was in (decision 3). Story pages, recaps and the D&amp;D Beyond Background stay visible to everyone at the table, as today.</p></div>
+    </div>
+  </section>
+
+  <section class="panel" id="build" aria-labelledby="build-h">
+    <span class="eyebrow">Step 10 · build order</span>
+    <h2 id="build-h">Four steps, each shippable and reversible</h2>
+    <p class="muted">Each: a manual backup first, a migration that copies today's data into the new shape (one campaign, four characters), tests, and a check on beta.</p>
+    <ol class="steps">
+      <li><span class="n">1</span><div><b>Characters separate from campaigns</b>Characters get their own name; a dated membership links each to its campaign and story page; Wild Shape keeps move to the membership.<span class="vis">You see: nothing changes. The largest step (about 33 places in the code).</span></div></li>
+      <li><span class="n">2</span><div><b>Roles per campaign</b>The DM tick and Reviewer move to campaign membership; Manage › People shows tool roles and campaign roles.<span class="vis">You see: a reshaped access chart on Manage › People.</span></div></li>
+      <li><span class="n">3</span><div><b>Tool corrections and house rules</b>Today's sheet corrections become tool corrections; a new Manage › House rules page; the roll window says "House rule" when one applies.<span class="vis">You see: the first DM rulings, e.g. Magic Missile rolled once.</span></div></li>
+      <li><span class="n">4</span><div><b>More than one campaign</b>A campaign switcher in the menu bar; story addresses carry the campaign (<code>/c/waterdeep/sessions/20</code>); create a campaign, add people and characters, move a character.<span class="vis">You see: the second campaign appears.</span></div></li>
+    </ol>
+  </section>
+
+  <section class="panel" id="lists" aria-labelledby="lists-h">
+    <span class="eyebrow">Step 11</span>
+    <h2 id="lists-h">More lists on the Spell Book pattern</h2>
+    <p>Same rows, filters, views, search, Shortlist and notes as Spells and Wild Shape. Inventory and Features don't depend on step 10. The Campaign lists do, because the campaign switcher decides which campaign's people and places they show.</p>
+    <div class="cols">
+      <div class="card"><h3>Inventory (Sheet)</h3><dl>
+        <dt>Views</dt><dd>Equipped · Shortlist · All</dd>
+        <dt>Filters</dt><dd>Kind (weapon, armor, potion, scroll, wondrous…), Magic, Attunement, Rarity, Has an action</dd>
+        <dt>Columns</dt><dd>Item · Uses · Weight · Cost</dd>
+        <dt>Row opens</dt><dd>The item's side panel (actions, charges, notes)</dd></dl></div>
+      <div class="card"><h3>Features (Sheet)</h3><dl>
+        <dt>Views</dt><dd>All · Shortlist</dd>
+        <dt>Filters</dt><dd>From (class, subclass, species, feat, background), Used as (action, bonus, reaction, passive), Limited uses</dd>
+        <dt>Columns</dt><dd>Feature · Level · Uses</dd></dl></div>
+      <div class="card"><h3>Campaign (after step 10)</h3><dl>
+        <dt>Lists</dt><dd>People, places, factions, items, quests</dd>
+        <dt>Filters</dt><dd>Kind, Status (alive, missing…), Seen in session, Has open threads</dd>
+        <dt>Needs</dt><dd>The campaign switcher (step 10.4)</dd></dl></div>
+    </div>
+  </section>
+
+  <section class="group" id="decisions" aria-labelledby="dec-h" style="scroll-margin-top:60px">
+    <span class="eyebrow">Your decisions</span>
+    <h2 id="dec-h" style="margin:-6px 0 0;font-size:1.3rem">Eight for step 10, one about order</h2>
+    <div class="offline" id="offline" hidden>Answers can't be saved in this view. You can still read everything; answer in chat instead.</div>
+    <div id="qs"></div>
+  </section>
+</div>
+
+<script>
+const QS = [
+  {id:"char-name", q:"A character's name: one name everywhere, or one per campaign?",
+   why:"Story aliases (Sarkas → No Name, misheard spellings) stay on each campaign's story page either way, because they come from that campaign's transcripts.",
+   opts:[["One name on the character","Shown in every campaign it joins.",1],["A name per campaign","Useful if a character goes by another name at another table."]]},
+  {id:"reviewer", q:"Reviewer: per campaign or for the whole tool?",
+   why:"Reviewers draft and publish recaps and answer Claude's questions. Today it's on the account.",
+   opts:[["Per campaign","Reviewing recaps is part of running a table.",1],["Tool-wide, as today","A reviewer reviews every campaign."]]},
+  {id:"notes-dm", q:"Which notes can't a DM read?",
+   why:"See the notes rule above. The question is whether DMing a campaign in the past still hides its characters' notes.",
+   opts:[["Characters in any campaign they DM now or ever did","Safest: a DM never sees a former table's notes later.",1],["Only characters in campaigns they DM now","A former DM could read notes after stepping down."]]},
+  {id:"quests", q:"Personal quests: tied to the campaign, or to the character?",
+   why:"Combos and leveling plans stay with the character everywhere. A personal quest is usually about one campaign's story.",
+   opts:[["The campaign they were written in","They don't follow the character to another table.",1],["The character, everywhere",""]]},
+  {id:"keeps", q:"Wild Shape keeps (what a Druid keeps in a form): a DM ruling or the character's?",
+   opts:[["Per campaign (a DM ruling)","A new table starts from keeping everything, until the player or DM changes it.",1],["On the character","Travels with the character."]]},
+  {id:"address", q:"Should story addresses include the campaign?",
+   why:"For example /c/waterdeep/sessions/20. Old addresses would open your current campaign.",
+   opts:[["Yes","A shared link always opens the right campaign.",1],["No, just a remembered switcher","Shorter addresses; links may open the wrong campaign."]]},
+  {id:"spend", q:"Spending limit on Claude: one for the tool, or one per campaign?",
+   opts:[["One for the tool","One Anthropic account pays for everything.",1],["Per campaign","Each table gets its own cap."]]},
+  {id:"order10", q:"Order of step 10's four parts?",
+   opts:[["As listed: characters, roles, house rules, more campaigns","Foundations first; the second campaign comes last.",1],["House rules first","The smallest visible win; the rest after."]]},
+  {id:"order-10-11", q:"Which first: step 10 or step 11's Inventory and Features?",
+   why:"Inventory and Features don't depend on step 10; the Campaign lists wait for it either way.",
+   opts:[["Inventory and Features first","Visible improvements while the step 10 decisions settle.",1],["Step 10 first","The structural work before more screens."],["Alternate","One part of step 10, then one list, and so on."]]},
+];
+const answers = {}; let db = null;
+const el = (t, cls, html) => { const e = document.createElement(t); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+function render(){
+  const root = document.getElementById("qs"); root.innerHTML = "";
+  QS.forEach((q, i) => root.append(card(q, i + 1)));
+  progress();
+}
+function card(q, n){
+  const box = el("article", "q"); box.id = "q-" + q.id;
+  const head = el("div", "q-head"); head.append(el("span", "q-num", n), el("h3", null, q.q), el("span", "q-state", "Open")); box.append(head);
+  if (q.why) box.append(el("p", "why", q.why));
+  const opts = el("div", "opts"); opts.setAttribute("role", "radiogroup"); opts.setAttribute("aria-label", q.q);
+  q.opts.forEach(([label, hint, rec], i) => {
+    const id = q.id + "-" + i, lab = el("label", "opt"); lab.htmlFor = id;
+    const inp = document.createElement("input"); inp.type = "radio"; inp.name = q.id; inp.id = id; inp.value = label;
+    const span = el("span"), b = el("b"); b.textContent = label; if (rec) b.append(el("span", "rec", "Recommended"));
+    span.append(b); if (hint) { const s = el("small"); s.textContent = hint; span.append(s); }
+    lab.append(inp, span); opts.append(lab);
+    inp.addEventListener("change", () => { const cur = answers[q.id] || (answers[q.id] = {choice: "", note: ""}); cur.choice = label; paint(q); save(q.id); });
+  });
+  box.append(opts);
+  const ta = document.createElement("textarea"); ta.id = q.id + "-note"; ta.rows = 1; ta.placeholder = "Note (optional): your own answer, or why"; ta.setAttribute("aria-label", "Note for: " + q.q);
+  let t; ta.addEventListener("input", () => { const cur = answers[q.id] || (answers[q.id] = {choice: "", note: ""}); cur.note = ta.value; paint(q); clearTimeout(t); t = setTimeout(() => save(q.id), 700); });
+  box.append(ta); setTimeout(() => paint(q)); return box;
+}
+const answered = q => { const a = answers[q.id]; return !!a && (!!a.choice || !!(a.note || "").trim()); };
+function paint(q){
+  const box = document.getElementById("q-" + q.id); if (!box) return;
+  const a = answers[q.id] || {};
+  box.querySelectorAll(".opt").forEach(lab => { const inp = lab.querySelector("input"); inp.checked = inp.value === a.choice; lab.classList.toggle("on", inp.checked); });
+  const ta = box.querySelector("textarea"); if (document.activeElement !== ta) ta.value = a.note || "";
+  const done = answered(q); box.classList.toggle("done", done); box.querySelector(".q-state").textContent = done ? "Answered" : "Open"; progress();
+}
+function progress(){ const n = QS.filter(answered).length; document.getElementById("count").textContent = n + " of " + QS.length + " answered"; document.getElementById("meter").style.width = (100 * n / QS.length) + "%"; }
+const status = t => { document.getElementById("save").textContent = t; };
+async function save(id){
+  if (!db) { status("Not saved (offline view)"); return; }
+  status("Saving…");
+  try { const a = answers[id]; await db.doc("answers/" + id).set({choice: a.choice, note: a.note || "", updated: new Date().toISOString()}); status("All answers saved"); }
+  catch (e) { status("Couldn't save: " + (e && e.message || "try again")); }
+}
+render();
+(async () => {
+  try { db = window.claude && await window.claude.use("db"); } catch (e) { db = null; }
+  if (!db) { status("Not saved"); document.getElementById("offline").hidden = false; return; }
+  status("Answers save as you go");
+  db.collection("answers").onSnapshot(snap => {
+    snap.docs.forEach(d => { if (!d.metadata.hasPendingWrites) { const v = d.data() || {}; answers[d.id] = {choice: v.choice || "", note: v.note || ""}; } });
+    QS.forEach(paint);
+  }, () => status("Couldn't load saved answers"));
+})();
+</script>
+
+</body></html>
