@@ -2397,8 +2397,9 @@
 })();
 
 // The new-player tour (? › Take the tour, and Show me on Help › What askdnd adds; app/tour.py). It walks this
-// person's stops across pages: each dims the page, lights one thing and says what it is and why. It only reads, and
-// clicks a tab to show the right part, so nothing changes. Where it is lives in sessionStorage, so it carries on after
+// person's stops across pages: each dims the page, lights one thing and says what it is and why. It only reads: it
+// clicks a tab, or + Add and a row to open the side panel, and shows example rows on Battle that exist only on the
+// page (class tour-example), so nothing changes. Where it is lives in sessionStorage, so it carries on after
 // each page change; Esc or ✕ ends it.
 (function () {
   const KEY = 'askdnd-tour';
@@ -2424,8 +2425,12 @@
     }
     tour.arriving = false; keep(); show(s);
   }
+  function tidy() {  // what a stop showed, put back: examples go, and a side panel the tour opened closes
+    document.querySelectorAll('.tour-example').forEach(x => x.remove());
+    if (tour && tour.panel) { const x = document.querySelector('.peek.open .peek-close'); if (x) x.click(); tour.panel = false; }
+  }
   function end() {
-    tour = null; keep(); lit = null;
+    tidy(); tour = null; keep(); lit = null;
     if (spot) spot.remove(); if (card) card.remove(); spot = card = null;
   }
   // A target taller than most of the screen (a recap, a sheet) is lit from its top down to just under half the screen,
@@ -2453,10 +2458,51 @@
       top = Math.min(Math.max(12, r.top), innerHeight - h - 12);
       left = r.right + 18 + w < innerWidth ? r.right + 18 : r.left - w - 18 >= 12 ? r.left - w - 18 : innerWidth - w - 12;
     }
+    const peek = lit.closest('.peek');  // in the side panel: beside the panel, so its rows stay readable
+    if (peek) {
+      const p = peek.getBoundingClientRect();
+      if (p.left - w - 18 >= 12) { left = p.left - w - 18; top = Math.min(Math.max(12, r.top), innerHeight - h - 12); }
+    }
     card.style.top = top + 'px'; card.style.left = left + 'px';
   }
-  function show(s) {
-    if (s.open) { const tab = document.querySelector(s.open); if (tab && tab.getAttribute('aria-selected') !== 'true') tab.click(); }
+  async function waitFor(sel, ms) {  // the side panel loads after a click
+    for (const t0 = Date.now(); Date.now() - t0 < ms; await new Promise(r => setTimeout(r, 80))) { const el = visible(sel); if (el) return el; }
+    return null;
+  }
+  // Get the page ready for a stop: click what it opens, in turn, and add its example row
+  async function prepare(s) {
+    document.querySelectorAll('.tour-example').forEach(x => x.remove());
+    if (!s.panel && tour.panel) tidy();
+    const opens = [].concat(s.open || []);  // (a tour saved before opens were lists: one selector)
+    if (opens.length && !(s.panel && visible(s.at))) {  // the panel already showing what this stop lights: leave it
+      for (const sel of opens) {
+        const el = await waitFor(sel, 3000); if (!el) break;
+        if (el.getAttribute('aria-selected') !== 'true') el.click();
+        if (s.panel) { tour.panel = true; keep(); }
+      }
+      if (s.panel) {  // let the panel finish sliding in: until it stays put for a moment
+        const el = await waitFor(s.at, 4000), panel = el && el.closest('.peek');
+        for (let k = 0, x = NaN; panel && k < 25; k++) {  // (it can wait a frame or two before it starts to move)
+          await new Promise(r => setTimeout(r, 60));
+          const r = panel.getBoundingClientRect(), at = r.left + ',' + r.top;  // sliding in from the side, or up on phones
+          if (at === x && r.left < innerWidth - 40 && r.top < innerHeight - 40) break; x = at;
+        }
+      }
+    }
+    if (s.example) {
+      const col = visible('[data-tour="battle"] [data-econ-col="action"] .moves');
+      if (col) {
+        const row = document.createElement('div'); row.className = 'move tour-example';
+        row.innerHTML = `<b>${esc(tour.example || 'Your pick')}</b> <span class="tag">Example</span>`
+          + (s.example === 'note' ? '<div class="meta move-note">✎ Your note shows here</div>' : '');
+        col.prepend(row);
+      }
+    }
+    return s.panel ? waitFor(s.at, 4000) : visible(s.at);
+  }
+  async function show(s) {
+    const i = tour.i, found = await prepare(s);
+    if (!tour || tour.i !== i) return;  // moved on (or ended) while the panel loaded
     if (!spot) {
       spot = document.createElement('div'); spot.className = 'tour-spot';
       card = document.createElement('div'); card.className = 'tour-card'; card.setAttribute('role', 'dialog'); card.setAttribute('aria-label', 'Tour');
@@ -2470,7 +2516,9 @@
       + (tour.i ? '<button type="button" class="btn small" data-tour-go="-1">Back</button>' : '')
       + `<button type="button" class="btn small primary" data-tour-go="1">${last ? 'Done' : 'Next'}</button>`
       + '<button type="button" class="btn small link" data-tour-end aria-label="End the tour">✕</button></div>';
-    lit = visible(s.at) || null;
+    lit = found || null;
+    const row = lit && lit.closest('.ri');  // a row in the side panel: its name is the example on Battle next
+    if (row && row.querySelector('.ri-name')) { tour.example = row.querySelector('.ri-name').textContent.trim(); keep(); }
     if (lit) {
       const r = lit.getBoundingClientRect(), bar = document.querySelector('.topbar');
       if (tall(r)) {  // its top just under the menu bar and any bar that sticks below it (Battle's numbers)
@@ -2486,6 +2534,7 @@
       } else lit.scrollIntoView({ block: 'center' });
     }
     requestAnimationFrame(() => { if (!card) return; place(); card.querySelector('[data-tour-go="1"]').focus({ preventScroll: true }); });  // (ended meanwhile)
+    setTimeout(place, 400);  // and again once anything still settling (a panel, a tab's content) has
   }
 
   document.addEventListener('click', e => {
@@ -2505,6 +2554,7 @@
     e.preventDefault();
   });
   addEventListener('resize', place);
+  document.addEventListener('transitionend', () => { if (tour && card) place(); });  // a panel finished sliding in
   addEventListener('scroll', place, { passive: true });
   try { tour = JSON.parse(sessionStorage.getItem(KEY)); } catch (e) { tour = null; }
   if (tour && tour.stops && tour.stops[tour.i]) {
