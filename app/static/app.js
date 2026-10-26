@@ -892,21 +892,20 @@
 //   small notices while the sidebar is collapsed.
 // - Otherwise: a private roll in this browser only (crypto random).
 (function () {
-  const SIDE = 'askdnd.rollsSide.', ANIM = 'askdnd.rollsAnim', TO = 'askdnd.rollsTo';
-  const WIDE = 1100;  // narrower than this, the sidebar collapses to its rail
+  const SIDE = 'askdnd.rollsSide', ANIM = 'askdnd.rollsAnim', TO = 'askdnd.rollsTo';
+  const WIDE = 1100;  // narrower than this, the sidebar starts closed and opens over the page
   const D20 = ['save', 'check', 'attack', 'death'];
-  const phone = matchMedia('(max-width: 800px)'), calm = matchMedia('(prefers-reduced-motion: reduce)');
+  const phone = matchMedia('(max-width: 900px)'), calm = matchMedia('(prefers-reduced-motion: reduce)');
   const side = document.getElementById('table-rolls'), log = document.getElementById('roll-log');
   const pops = document.querySelector('.roll-pops');
   const store = {
     get: (k, s) => { try { return (s ? sessionStorage : localStorage).getItem(k); } catch (e) { return null; } },
     set: (k, v, s) => { try { (s ? sessionStorage : localStorage).setItem(k, v); } catch (e) { /* private window */ } },
   };
-  const QUIET = 3 * 60 * 1000;  // the collapsed rail slides away after this long with no rolls
   const people = side && side.querySelector('.rs-people'), edge = document.querySelector('.rs-edge');
-  let lastActivity = 0, tipEl = null;
+  let tipEl = null;
   let to = store.get(TO, true) || 'table';  // who sees your rolls; kept for this tab only, so it starts at Table
-  let lastId = 0, loaded = false, overlay = false, win = null;
+  let lastId = 0, loaded = false, win = null;
 
   const num = s => parseInt(String(s || '0').replace('−', '-'), 10) || 0;
   const signed = n => (n >= 0 ? '+' : '−') + Math.abs(n);
@@ -1902,25 +1901,26 @@
   // ---------------------------------------------------------------- the sidebar's state
   // (base.html's first script applies the same rules before the page is drawn, so pages don't shift sideways as
   // they load; keep the two in step: tests/browser/test_layout.py checks nothing moves after the first paint.)
-  // Desktop: "open" or "rail", remembered per device for Battle and for everywhere else; below
-  // WIDE it starts as the rail and opening it lays it over the page. Phones: a bottom sheet
-  // ("open" shows the newest rolls, "rail" just its bar, "full" the whole log and the dice).
-  const where = () => (side && side.dataset.battle ? 'play' : 'other');  // 'play': the stored key from before the rename
-  function pref() { return store.get(SIDE + where()) || (where() === 'play' ? 'open' : 'rail'); }
+  // Desktop: "open" or "closed" (just the edge tab), one choice per device for every page: open until you close
+  // it, and nothing changes it on its own (Brett, 2026-10-26). Below WIDE it starts closed and opens over the
+  // page until a click elsewhere. Phones: a bottom sheet ("closed" is its bar with each person's latest roll,
+  // "open" the newest rolls, "full" the whole log and the dice).
+  const narrow = () => !phone.matches && innerWidth < WIDE;
+  const pref = () => (store.get(SIDE) === 'closed' ? 'closed' : 'open');
+  ['askdnd.rollsSide.play', 'askdnd.rollsSide.other', 'askdnd.rollsSeen'].forEach(k => { try { localStorage.removeItem(k); } catch (e) { /* private window */ } });  // the old rules' keys
   function setState(state, remember) {
     if (!side) return;
     const b = document.body.classList;
     b.toggle('rolls-on', gmOn());
     b.toggle('rolls-open', state === 'open' || state === 'full');
-    b.toggle('rolls-rail', state === 'rail');
+    b.toggle('rolls-closed', state === 'closed');
     b.toggle('rolls-full', state === 'full');
-    b.toggle('rolls-over', overlay && state === 'open');
-    side.querySelector('.rs-toggle').setAttribute('aria-expanded', state === 'rail' ? 'false' : 'true');
-    if (remember && state !== 'full') store.set(SIDE + where(), state);
-    quietCheck();
+    side.querySelector('.rs-toggle').setAttribute('aria-expanded', state === 'closed' ? 'false' : 'true');
+    if (edge) edge.setAttribute('aria-expanded', state === 'closed' ? 'false' : 'true');
+    if (remember && state !== 'full') store.set(SIDE, state);
   }
-  function current() { const b = document.body.classList; return b.contains('rolls-full') ? 'full' : b.contains('rolls-open') ? 'open' : 'rail'; }
-  function layout() { overlay = false; setState(!phone.matches && innerWidth < WIDE ? 'rail' : pref()); }
+  function current() { const b = document.body.classList; return b.contains('rolls-full') ? 'full' : b.contains('rolls-open') ? 'open' : 'closed'; }
+  function layout() { setState(narrow() ? 'closed' : pref()); }
   // The log's first fetch: htmx's "load" trigger on a page that opens with Game Mode on, this
   // when it's turned on later.
   function loadLog() { if (gmOn() && !loaded && log && window.htmx) htmx.trigger(log, 'rolls:load'); }
@@ -1930,11 +1930,9 @@
   if (side) {
     side.querySelector('.rs-toggle').addEventListener('click', e => {
       e.stopPropagation();
-      const now = current();
-      if (phone.matches) setState(now === 'rail' ? 'open' : 'rail', true);
-      else if (innerWidth < WIDE) { overlay = now === 'rail'; setState(overlay ? 'open' : 'rail'); }
-      else setState(now === 'rail' ? 'open' : 'rail', true);
+      setState(current() === 'closed' ? 'open' : 'closed', !narrow());
     });
+    if (edge) edge.addEventListener('click', e => { e.stopPropagation(); setState('open', !narrow()); });
     // Phones: tap the sheet's bar to see every roll and the dice (or back), or swipe it up and down.
     const head = side.querySelector('.rs-head');
     head.addEventListener('click', () => { if (phone.matches) setState(current() === 'full' ? 'open' : 'full'); });
@@ -1946,12 +1944,12 @@
       y0 = null;
       if (Math.abs(dy) < 30) return;
       e.preventDefault();  // not a tap
-      if (dy < 0) setState(now === 'rail' ? 'open' : 'full', now === 'rail');
-      else setState(now === 'full' ? 'open' : 'rail', now !== 'full');
+      if (dy < 0) setState(now === 'closed' ? 'open' : 'full', now === 'closed');
+      else setState(now === 'full' ? 'open' : 'closed', now !== 'full');
     });
     // Clicking outside an over-the-page sidebar closes it
     document.addEventListener('click', e => {
-      if (overlay && current() === 'open' && e.target.isConnected && !side.contains(e.target) && !e.target.closest('[data-roll], .roll-win')) { overlay = false; setState('rail'); }
+      if (narrow() && current() === 'open' && e.target.isConnected && !side.contains(e.target) && !e.target.closest('[data-roll], .roll-win')) setState('closed');
     });
     let wasWide = innerWidth >= WIDE;
     addEventListener('resize', () => { const wide = innerWidth >= WIDE; if (wide !== wasWide) { wasWide = wide; layout(); } });
@@ -1987,13 +1985,11 @@
     const li = log.firstElementChild;
     if (li) { li.classList.remove('fresh'); void li.offsetWidth; li.classList.add('fresh'); }
     buildPeople(li ? new Set([li.dataset.person]) : null);
-    activity();
   }
 
-  // ---------------------------------------------------------------- the rail: each person's latest roll
-  // Collapsed, the sidebar shows one avatar per person (their newest roll in the log) with its total,
-  // colored on a natural 20 or 1; a new roll pulses it; hover (or tap) says what it was. After QUIET
-  // with no rolls the rail slides away, and comes back with the next roll; the edge tab brings it back.
+  // ---------------------------------------------------------------- a phone's closed bar: each person's latest roll
+  // One avatar per person (their newest roll in the log) with its total, colored on a natural 20 or 1; a new roll
+  // pulses it; a tap says what it was.
   function whatOf(li) {
     const name = li.querySelector('.roll-who b').textContent.trim(), total = li.querySelector('.roll-total');
     const what = li.querySelector('.roll-what').textContent.trim().replace(/\s+/g, ' ');
@@ -2036,20 +2032,6 @@
     setTimeout(() => { if (tipEl === mine) { mine.remove(); tipEl = null; } }, 3500);
   }
   if (people) people.addEventListener('click', e => { const b = e.target.closest('.rs-person'); if (b) { e.stopPropagation(); showTip(b); } });
-  // When this device last saw a roll: base.html's first script reads it to place the rail before the page is drawn
-  const SEEN = 'askdnd.rollsSeen';
-  function activity(at) { lastActivity = Math.max(lastActivity, at || Date.now()); store.set(SEEN, String(lastActivity)); quietCheck(); }
-  function quietCheck() {
-    if (!loaded) {  // until the log says otherwise, keep what base.html decided before the first paint (no jump)
-      if (edge) edge.hidden = !document.body.classList.contains('rolls-quiet');
-      return;
-    }
-    const quiet = gmOn() && !!side && current() === 'rail' && Date.now() - lastActivity > QUIET;
-    document.body.classList.toggle('rolls-quiet', quiet);
-    if (edge) edge.hidden = !quiet;
-  }
-  setInterval(quietCheck, 15000);
-  if (edge) edge.addEventListener('click', () => activity());
   function placeholder(label) {
     const li = document.createElement('li');
     li.className = 'roll-pending';
@@ -2077,12 +2059,7 @@
     const first = !loaded;
     tidy();
     loaded = true;
-    if (first) {  // quiet already? The newest roll's time says
-      buildPeople();
-      log.querySelectorAll('time[data-at]').forEach(t => { lastActivity = Math.max(lastActivity, Date.parse(t.dataset.at) || 0); });
-      store.set(SEEN, String(lastActivity));
-      return quietCheck();
-    }
+    if (first) return buildPeople();
     const fresh = new Set();
     [...log.querySelectorAll('.roll-item[data-seq]')].reverse().forEach(li => {
       if (+li.dataset.seq > before) fresh.add(li.dataset.person);
@@ -2093,7 +2070,6 @@
       }
     });
     buildPeople(fresh);
-    if (fresh.size) activity();
   });
   function notice(li) {
     if (!pops) return;

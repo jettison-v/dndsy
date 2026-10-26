@@ -154,3 +154,46 @@ def test_party_filters_work_like_the_rest(people, server):
     assert pool.locator("[data-opt-none]").is_visible()
     pool.locator("[data-opt-search]").fill("")
     assert pool.locator(".opt-group:visible").count() == total
+
+
+def test_the_rolls_sidebar_stays_as_you_left_it(people, server):
+    """Open or closed (to the edge tab), one choice for every page, and nothing changes it on its own (Brett,
+    2026-10-26: the sidebar's three desktop states came and went as he moved around). Narrower windows start
+    closed and open it over the page; phones keep their sheet, whose closed bar stays in view."""
+    player = people("player")
+    page = player.page
+    state = "document.body.classList.contains('rolls-open') ? 'open' : document.body.classList.contains('rolls-closed') ? 'closed' : ''"
+    pad = "getComputedStyle(document.body).paddingLeft"
+    page.set_viewport_size({"width": 1300, "height": 900})
+    for path in ("/c/main/", f"/characters/{server['cole']}/battle", "/party"):
+        player.open(path)
+        assert page.evaluate(state) == "open", path  # open everywhere until you close it
+    assert page.locator("#table-rolls").is_visible() and not page.locator(".rs-edge").is_visible()
+    page.click(".rs-toggle")
+    page.wait_for_function("getComputedStyle(document.getElementById('table-rolls')).visibility === 'hidden'")
+    assert page.locator(".rs-edge").is_visible() and page.evaluate(pad) == "0px"
+    for path in (f"/characters/{server['cole']}/battle", "/c/main/campaign"):
+        player.open(path)
+        assert page.evaluate(state) == "closed", path  # Battle too
+    page.click(".rs-edge")
+    assert page.evaluate(state) == "open" and page.evaluate(pad) == "340px"
+    player.open("/c/main/")
+    assert page.evaluate(state) == "open"
+    # A narrower window: closed at first; the tab opens it over the page, and a click elsewhere closes it
+    page.set_viewport_size({"width": 1000, "height": 900})
+    player.open("/c/main/")
+    assert page.evaluate(state) == "closed"
+    page.click(".rs-edge")
+    assert page.evaluate(state) == "open" and page.evaluate(pad) == "0px"
+    page.mouse.click(700, 500)
+    assert page.evaluate(state) == "closed"
+    page.set_viewport_size({"width": 1300, "height": 900})
+    player.open("/c/main/")
+    assert page.evaluate(state) == "open"  # what you chose at full width still holds
+    # Phones: closed is the sheet's bar, still in view, with no edge tab
+    page.set_viewport_size({"width": 390, "height": 812})
+    player.open("/c/main/")
+    page.click(".rs-toggle")
+    assert page.evaluate(state) == "closed"
+    assert page.locator("#table-rolls").is_visible() and not page.locator(".rs-edge").is_visible()
+    assert player.errors == []
