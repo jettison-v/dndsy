@@ -33,6 +33,7 @@ def test_only_railways_own_build_errors_are_retried():
     check = _deploy_check()
     assert check.railway_glitch('Build Failed: build daemon returned an error < listing workers for Build: failed to list workers >')
     assert check.railway_glitch("Build Failed: build daemon returned an error < failed to solve: frontend grpc server closed unexpectedly >")
+    assert check.railway_glitch("🚂 All aboard, next stop: builder v4")  # a build that never started
     assert not check.railway_glitch("error: Failed to install: pillow==99 not found")  # our own mistake: no retry
     assert not check.railway_glitch("sqlalchemy.exc.ProgrammingError: column users.dice does not exist")
 

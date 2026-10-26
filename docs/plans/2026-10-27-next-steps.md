@@ -59,8 +59,8 @@ Brett made the repo private on Oct 26. Two things change:
   spending limit, the tests stop running, and Railway won't deploy beta without them. Recommendation: GitHub Pro
   ($4 a month, which also brings branch protection to a private repo) plus an Actions spending limit of about $10, and
   Claude adds a setting that cancels an older run when a newer push replaces it (fewer wasted minutes).
-- **Railway** reads the repo through its GitHub app. Today's deploy after the switch is the check that it still has
-  access.
+- **Railway** reads the repo through its GitHub app, and still can: the first deploy after the switch stalled before
+  building (Railway's side), and a fresh one passed. The deploy check now builds such a stall again by itself.
 
 ## 3. Mock up the fight screen (Brett: review the mockup; design stays in this session)
 
