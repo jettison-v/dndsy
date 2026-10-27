@@ -90,6 +90,12 @@ D&D Beyond never sees. Each lands in a bucket, so there's no gap:
   that item's copy.
 - **An unidentified item** (a potion the party hasn't tried): the DM hands out the real entry and players see only what
   they've learned, like monsters (2.6).
+- **Back to D&D Beyond:** D&D Beyond can't be written to officially. Other tabletops either copy the character and own
+  play from then on (Foundry's DDB Importer, whose write-back is limited, paid and needs each player's D&D Beyond login
+  cookie) or leave inventory on D&D Beyond (Owlbear Rodeo and Roll20 with Beyond20 only pass rolls along). askdnd copies
+  and owns play, and keeps a **Copy to D&D Beyond** checklist per character: every inventory change made in askdnd
+  ("Add Flame Tongue · 2 fewer Potions of Healing · +150 gp"), for the player to make on D&D Beyond, typically at
+  level-up. When a change shows up on the sheet, the merge ticks it off. No write-back and no stored D&D Beyond logins.
 
 ## Decisions for Brett
 
@@ -106,6 +112,9 @@ D&D Beyond never sees. Each lands in a bucket, so there's no gap:
    later, when the DM first wants one. *Recommended.*
 9. **What askdnd puts into play is campaign data with its own copy;** what's on a D&D Beyond sheet gets only its play
    numbers in askdnd, and the merge links the two when an item reaches the sheet. *Recommended.*
+10. **A Copy to D&D Beyond checklist instead of write-back:** inventory changes made in askdnd collect per character
+    for the player to copy onto D&D Beyond; the merge ticks each off when it appears. No storing D&D Beyond logins.
+    Write-back can be revisited if the checklist proves a chore. *Recommended.*
 
 Open for later: how a book's content gets in (typed, imported from a file made on the Mac, or read from D&D Beyond), and
 what a second group could see (VTT 7.1).
