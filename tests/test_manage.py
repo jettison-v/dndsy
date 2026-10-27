@@ -38,9 +38,12 @@ def test_admin_sees_both_groups_in_the_menu(monkeypatch, db):
     side = page.split('class="manage-side"')[1].split("</nav>")[0]
     order = [x.split("<")[0] for x in side.split("/manage")[1:]]
     assert [s.split('class="manage-sec">')[1].split("<")[0] for s in side.split("<span")[1:] if 'manage-sec"' in s] == ["Every week", "The table", "Setup"]
-    assert 'aria-current="page">Needs you' in side and ">askdnd admin →<" in side and order
+    assert 'aria-current="page">Needs you' in side and order
+    switch = side.split('class="seg manage-switch"')[1].split("</span>")[0]  # which half of Manage, and the other
+    assert 'href="/c/main/manage" aria-current="true"><b>The Lost Mine</b>' in switch and 'href="/manage/askdnd"><b>askdnd admin</b>' in switch
     side = admin.get("/manage/usage").text.split('class="manage-side"')[1].split("</nav>")[0]
     assert 'aria-current="page">Usage' in side and "Inbox" not in side and ">askdnd history<" in side
+    assert 'href="/manage/askdnd" aria-current="true"><b>askdnd admin</b>' in side
     assert side.index(">Overview<") < side.index(">Accounts<") < side.index(">Usage<") < side.index(">Design system<")
 
     overview = admin.get("/manage/askdnd").text

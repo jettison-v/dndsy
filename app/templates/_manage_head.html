@@ -1,19 +1,24 @@
 {# Top of every Manage page (Brett, 2026-10-27, docs/mockups/manage-menu.html): its group's pages (this campaign, or
    askdnd as a whole) in a list down the left, in small sections; on narrower screens the same list opens from a
-   "jump to" control. Needs you and Inbox get their counts from /manage/counts (app.js "Manage counts"). #}
+   "jump to" control. Someone who can open both groups switches between them with the two-way switch at the top
+   (Brett: switching between askdnd admin and the campaign must be clear). Needs you and Inbox get their counts from
+   /manage/counts (app.js "Manage counts"). #}
 {% set on = manage_pages | selectattr("here") | first %}{% set grp = on.group if on else ("campaign" if in_campaign else "askdnd") %}
-{% set scope = (here.name if here else "This campaign") if grp == "campaign" else "askdnd" %}
+{% set camp = here.name if here else "This campaign" %}
 {% set mine = manage_pages | selectattr("group", "equalto", grp) | list %}
-{% set other = manage_pages | rejectattr("group", "equalto", grp) | first %}
+{% set camp_home = manage_pages | selectattr("group", "equalto", "campaign") | first %}
+{% set admin_home = manage_pages | selectattr("group", "equalto", "askdnd") | first %}
 {% macro manage_list() %}
+  {% if camp_home and admin_home %}<span class="seg manage-switch" role="group" aria-label="Manage">
+    <a href="{{ camp_home.href }}"{% if grp == "campaign" %} aria-current="true"{% endif %}><b>{{ camp }}</b><small>This campaign</small></a>
+    <a href="{{ admin_home.href }}"{% if grp == "askdnd" %} aria-current="true"{% endif %}><b>askdnd admin</b><small>Every campaign</small></a></span>
+  {% else %}<span class="manage-scope">{{ camp if grp == "campaign" else "askdnd admin" }}</span>{% endif %}
   {% for p in mine %}{% if p.section and loop.changed(p.section) %}<span class="manage-sec">{{ p.section }}</span>{% endif %}<a href="{{ p.href }}" class="{{ 'on' if p.here }}"{% if p.here %} aria-current="page"{% endif %}>{{ p.label }}{% if p.counted and cbase %}<span class="mcount" data-manage-count="{{ p.key }}" hidden></span>{% endif %}</a>{% endfor %}
-  {% if other %}<a class="manage-other" href="{{ other.href }}">{{ ("askdnd admin" if other.group == "askdnd" else (here.name if here else "The campaign") + " · Manage") }} →</a>{% endif %}
 {% endmacro %}
-<nav class="manage-side" aria-label="Manage: {{ scope }}"{% if cbase %} data-manage-counts="{{ cbase }}/manage/counts"{% endif %}>
-  <span class="manage-scope"><b>{{ scope }}</b> {{ "Campaign" if grp == "campaign" else "Admins" }}</span>
+<nav class="manage-side" aria-label="Manage: {{ camp if grp == 'campaign' else 'askdnd' }}"{% if cbase %} data-manage-counts="{{ cbase }}/manage/counts"{% endif %}>
   {{ manage_list() }}
 </nav>
 <details class="manage-jump">
-  <summary><b>{{ on.label if on else "Manage" }}</b><span>{{ scope }} ▾</span></summary>
-  <nav class="manage-jump-list" aria-label="Manage: {{ scope }}">{{ manage_list() }}</nav>
+  <summary><b>{{ on.label if on else "Manage" }}</b><span>{{ camp if grp == "campaign" else "askdnd admin" }} ▾</span></summary>
+  <nav class="manage-jump-list" aria-label="Manage: {{ camp if grp == 'campaign' else 'askdnd' }}">{{ manage_list() }}</nav>
 </details>
