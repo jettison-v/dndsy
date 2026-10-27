@@ -41,7 +41,7 @@ SECTIONS = [
                                              "anything in your Reminders on Battle."),
         ("plan", "Plan", "Battle combos, leveling strategy, personal quests, notes and shortlists. Nothing is lost when you unprepare. "
                          "The DM never sees your notes."),
-        ("party", "Party", "Everyone's numbers, and the party's spells and items pooled by what they do."),
+        ("party", "Party", "Everyone's numbers at a glance, and the party's spells and items pooled, filtered by what they do and who has them."),
     ]),
 ]
 GROUP_NAMES = {key: name for _, groups in SECTIONS for key, name, _ in groups if key}
@@ -173,7 +173,8 @@ STOPS = [
              "and on Sheet, next to the pin.",
      "why": "Bookmark a spell while you read about it; decide later what to prepare."},
     {"group": "party", "page": "party", "at": '[data-tour="party"]',
-     "what": "Everyone's key numbers, then the party's spells and items pooled together and grouped by what they do.",
+     "what": "<b>At a glance</b> has everyone's key numbers; <b>Spells</b> and <b>Items</b> pool the party's, filtered by what "
+             "they do and who has them.",
      "why": "See who carries which potions and scrolls, and what the party covers between you (healing, control…)."},
     {"group": "help", "page": None, "at": '[data-tour="help"]',
      "what": "<b>What askdnd adds</b> is this tour as a page to read, the <b>FAQ</b> explains each feature, and "

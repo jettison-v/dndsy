@@ -98,11 +98,12 @@ def party_page(request: Request, pick: str = "", db: Session = Depends(get_db)):
     rows = [{**r, "sheet": views.apply_overrides(r["sheet"], _overrides(db))} for r in _party_rows(db, user)]
     return _page(request, "party.html", {
         "rows": rows,
-        "spells": views.pooled_spells(rows),
-        "items": views.pooled_items(rows),
+        "spells": views.party_spell_list(rows),
+        "items": views.party_item_list(rows),
         "coins": views.party_coins(rows),
         "reviewer": is_reviewer(user),
         "pick": pick if pick in ("battle", "character") else "",
+        "help_off": help_pages.dismissed(db, user),
         "oldest": min((r["c"].snapshot.fetched_at for r in rows if r["c"].snapshot and r["c"].snapshot.fetched_at), default=None),
     })
 

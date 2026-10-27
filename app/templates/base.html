@@ -39,11 +39,12 @@
 {% macro avatar(r) %}<span class="char-av" aria-hidden="true">{{ r.name[:1] | upper }}{% if r.portrait %}<img src="{{ r.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>{% endmacro %}
 {% macro party_menu(id, tn, cls="") %}
 <div class="menu party-menu {{ cls }}" id="{{ id }}" hidden>
-  <div class="menu-group">The party</div>
+  {# The Party page first: the whole party matters more than any one character (Brett, 2026-10-26) #}
+  <a href="/party" class="party-all{{ ' active' if path.startswith('/party') }}">Everyone at a glance<small>Numbers, spells and items</small></a>
+  <div class="menu-group">Characters</div>
   {# A character opens in the mode you're in (Battle, Sheet or Plan) #}
   {% for r in tn.characters %}<a href="/characters/{{ r.id }}{{ tn.suffix }}" class="party-row{{ ' active' if tn.here and r.id == tn.here.id }}">{{ avatar(r) }}<span class="party-name">{{ r.name }}</span><small>{{ ["You" if r.mine, r.classes, r.hp] | select | join(" · ") }}</small></a>
   {% else %}<p class="menu-note">No characters in this campaign yet.</p>{% endfor %}
-  <a href="/party" class="party-all{{ ' active' if path.startswith('/party') }}">Everyone at a glance</a>
 </div>
 {% endmacro %}
 <header class="topbar"><div class="topbar-inner">

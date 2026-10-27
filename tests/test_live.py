@@ -42,7 +42,7 @@ def test_plan_is_never_shown_to_the_dm(dm, db):
 
 
 def party_menu(page: str, id: str = "party-menu") -> str:
-    return page.split(f'id="{id}"')[1].split('class="party-all')[0]
+    return page.split(f'id="{id}"')[1].split("\n</div>")[0]  # the whole menu (Everyone at a glance, then each character)
 
 
 def topbar(page: str) -> str:
@@ -62,7 +62,8 @@ def test_party_menu_keeps_the_mode(player, db):
     assert f"You · {cole.snapshot.summary['classes'][0]['name']}" in menu("/party")
     assert f"{hp['current']}/{hp['max']} HP" in menu("/party")
     bar = topbar(player.get("/party").text)
-    assert ">Everyone at a glance</a>" in bar and 'href="/party"' in bar
+    assert ">Everyone at a glance<small>" in bar and 'href="/party"' in bar
+    assert bar.index("Everyone at a glance") < bar.index('class="party-row')  # first, above the characters (Brett, 2026-10-26)
     for label in ("Story", "Campaign"):
         assert f">{label}</a>" in bar
     for gone in ("Recap", "Sessions", "Map", "Previously on…", "Battle"):
@@ -104,7 +105,7 @@ def test_bottom_bar_on_phones(player, db):
     bottom = page.split('class="bottom-nav"')[1].split("</nav>")[0]
     assert re.findall(r">(Story|Campaign|Cole|Party|More)<", bottom) == ["Story", "Campaign", "Cole", "Party", "More"]
     assert f'href="/characters/{cole.id}/battle"' in bottom and 'data-menu="party-menu-m"' in bottom
-    assert ">Everyone at a glance</a>" in page.split('id="party-menu-m"')[1]
+    assert ">Everyone at a glance<small>" in page.split('id="party-menu-m"')[1]
     more = page.split('id="more-menu"')[1].split("</div>")[0]
     assert "/sessions" not in more and "/map" not in more and "Sign out" in more
 
