@@ -826,3 +826,17 @@ the repo is public and they show the campaign.
 **For a new project:**
 1. Keep the source of every planning page and diagram in the repo from day one, and link the hosted copy from it.
 2. Decide early what may go in a public repo; screenshots of real data usually can't.
+
+## 2026-10-26: Try changes locally before deploying
+
+**What:** a user-visible change is tried on the local server first, on the local copy of beta's data, from a link that
+signs you in and opens the page (`http://localhost:8000/dev/login?next=/characters/1/battle`). It's merged and
+deployed once it looks right.
+
+**Why:** a beta deploy takes several minutes (tests on GitHub, then Railway's build), so each round of "still broken"
+cost one. Locally a fix is a page reload away. The local copy can't show what only the cloud does: Google sign-in,
+Railway's settings, pictures in S3, Sentry, the deploy itself, or several people on different devices.
+
+**For a new project:**
+1. Keep a local copy of real (or realistic) data and a one-click local sign-in that only works on your own computer.
+2. Review on local first; use the hosted environment for what only it can show.
