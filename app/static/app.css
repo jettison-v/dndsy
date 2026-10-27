@@ -92,7 +92,7 @@ a.char-btn > span:last-child { overflow: hidden; text-overflow: ellipsis; }
 .menu a.party-row { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: center; }
 .party-row .char-av { grid-row: span 2; width: 32px; height: 32px; font-size: var(--fs-sm); }
 .party-row .party-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.menu a.party-all { border-top: 1px solid var(--line); margin-top: var(--sp-1); padding-top: var(--sp-3); font-weight: 600; border-radius: 0 0 var(--r-sm) var(--r-sm); }
+.menu a.party-all { border-bottom: 1px solid var(--line); margin-bottom: var(--sp-1); padding-bottom: var(--sp-3); font-weight: 600; border-radius: var(--r-sm) var(--r-sm) 0 0; }
 .menu .menu-note { margin: 0; padding: 8px 10px; color: var(--muted); font-size: var(--fs-sm); }
 .bar-end { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .manage { position: relative; }
