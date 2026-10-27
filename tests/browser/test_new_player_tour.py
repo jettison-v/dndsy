@@ -5,7 +5,7 @@ stop's target fails here, so the tour can't quietly break."""
 import pytest
 
 
-# Is the top of what a stop lights covered by something stuck across the page (Battle's numbers, the menu bar)? Looks
+# Is the top of what a stop lights covered by something stuck across the page (the menu bar, Sheet's tabs)? Looks
 # at what's drawn just inside its top edge, left of the card: the name of the cover, or "" when the target shows.
 TOP_HIDDEN = """sel => { const t = [...document.querySelectorAll(sel)].find(e => e.getBoundingClientRect().height > 0);
   if (!t || t.closest('.peek')) return '';
@@ -116,8 +116,9 @@ def test_leaving_mid_wild_shape_puts_battle_back(people, server):
 
 @pytest.mark.parametrize("size", [(1000, 540), (1300, 950)])  # short, where Battle's columns are tall; a laptop, where they fit
 def test_a_large_section_is_lit_below_the_bars_stuck_over_it(people, server, size):
-    """Battle's numbers stick across the top of the screen (over half of a short one); the columns' tops (their
-    headings) are shown and lit below them, not behind, whether the columns fit on screen or not (Brett, 2026-10-26)."""
+    """The menu bar sticks across the top of the screen; Battle's columns' tops (their headings) are shown and lit below
+    it, not behind, whether the columns fit on screen or not, and still after Battle is redrawn taller (Brett,
+    2026-10-26; Battle's own numbers scroll with the page since 2026-10-27)."""
     player = people("player")
     player.page.set_viewport_size({"width": size[0], "height": size[1]})
     page = player.open("/help?tab=adds")
@@ -125,7 +126,7 @@ def test_a_large_section_is_lit_below_the_bars_stuck_over_it(people, server, siz
     page.wait_for_url(f"**/characters/{server['cole']}/battle")
     page.wait_for_function("() => document.querySelector('.tour-card h3')?.textContent.startsWith('Battle:')", timeout=10000)
     page.wait_for_timeout(600)  # the page settling, and the light following
-    got = page.evaluate("""() => { const bar = document.querySelector('.battlebar').getBoundingClientRect(),
+    got = page.evaluate("""() => { const bar = document.querySelector('.topbar').getBoundingClientRect(),
         head = document.querySelector('[data-tour="battle"] .econ-head').getBoundingClientRect(),
         spot = document.querySelector('.tour-spot').getBoundingClientRect();
       return { bar: bar.bottom, head: head.top, spot: spot.top }; }""")
@@ -137,7 +138,7 @@ def test_a_large_section_is_lit_below_the_bars_stuck_over_it(people, server, siz
     page.evaluate("""() => { const b = document.getElementById('battle-body'); b.replaceWith(b.cloneNode(true));
       const d = document.createElement('div'); d.style.height = '70px'; document.querySelector('.battlebar').prepend(d); }""")
     page.wait_for_timeout(600)
-    got = page.evaluate("""() => { const bar = document.querySelector('.battlebar').getBoundingClientRect(),
+    got = page.evaluate("""() => { const bar = document.querySelector('.topbar').getBoundingClientRect(),
         head = document.querySelector('[data-tour="battle"] .econ-head').getBoundingClientRect(),
         spot = document.querySelector('.tour-spot').getBoundingClientRect();
       return { bar: bar.bottom, head: head.top, spot: spot.top }; }""")
