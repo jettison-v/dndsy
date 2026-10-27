@@ -11,6 +11,7 @@ screenshots of real pages (they show the campaign).
 
 | Page | Link on claude.ai | Here | What it was |
 |---|---|---|---|
+| askdnd Data Strategy | [PWXtaunHcp3MEEJyJpLWoe](https://claude.ai/artifact/PWXtaunHcp3MEEJyJpLWoe) | `data-strategy.html` | Where askdnd's data lives: four buckets, books checked once (for approval, Oct 27); the record is `../plans/2026-10-27-data-strategy.md` |
 | askdnd Stack Map | [AYYGdebsBtPND4HoTq5uyr](https://claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr) | `../stack.html` | How the services connect, who changes each, where the data lives (kept current) |
 | Party Redesign | [EJmFmzbXoV15HKjpJiJ18a](https://claude.ai/artifact/EJmFmzbXoV15HKjpJiJ18a) | `../mockups/party.html` | The Party page built from the rest of askdnd's pieces (proposal, Oct 26) |
 | askdnd VTT Roadmap | [EtCBFsKNwLK5LNhQjcbzS3](https://claude.ai/artifact/EtCBFsKNwLK5LNhQjcbzS3) | `vtt-roadmap.html` | The roadmap, fight screen first (Oct 27); the record is `../plans/2026-10-22-vtt-roadmap.md` |
