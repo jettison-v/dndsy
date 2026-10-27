@@ -104,6 +104,7 @@ def admin_client(monkeypatch, db):
 
 
 def test_notes_page_admin_only(monkeypatch, db):
+    """A standing rule: the campaign doc's sync settings are for admins."""
     monkeypatch.setattr(config, "ALLOWED_EMAILS", parse_allowlist("player@example.com"))
     app.dependency_overrides[get_db] = lambda: db
     client = TestClient(app)
@@ -200,6 +201,7 @@ def test_links_become_clickable_in_text_and_tables():
 
 
 def test_render_is_sanitized_and_swaps_images():
+    """Synced notes are shown as HTML, so they're cleaned first: nothing in a document can run on a page."""
     from app.render import markdown_to_html
 
     md = "# Title\n\n- a\n  - b\n\n<table><tr><td colspan=\"2\">x</td></tr></table>\n\n[image: obj-1] <script>alert(1)</script>"

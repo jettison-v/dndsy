@@ -9,8 +9,10 @@ from sqlalchemy import select
 from app import table_rolls as tr
 from app.importer import import_bundle
 from app.models import TableRoll
-from tests.test_characters import BUNDLE, char, no_network, owned_by  # noqa: F401
+from tests.table_setup import BUNDLE, char, owned_by
 from tests.roles import set_role
+
+pytestmark = pytest.mark.usefixtures("no_network")  # D&D Beyond is never called (tests/conftest.py)
 
 
 def seq(*values):
@@ -52,6 +54,8 @@ def test_real_dice_stay_in_range():
 # ------------------------------------------------------------------ visibility
 
 def test_who_sees_what():
+    """A standing rule: a DM-only roll shows in full to its roller and the DM, and other players see only that a roll
+    happened; a just-you roll reaches no one else, not even the DM."""
     def roll(to, user_id=1):
         return TableRoll(visibility=to, user_id=user_id)
     # (viewer id, viewer is the DM) -> what they get
@@ -262,6 +266,7 @@ def test_the_log_shows_each_viewer_only_what_they_may_see(table, db, monkeypatch
 
 
 def test_a_hidden_roll_stays_hidden_with_its_damage(table, db, monkeypatch):
+    """A standing rule: the DM's hidden rolls stay hidden, damage included."""
     monkeypatch.setattr(tr, "die", lambda sides: 12)
     attack = post(table["player"], character=char(db, "Cole").id, kind="attack", label="Rend", mod="6", dmg="2d6+4", to="dm").json()["roll"]
     post(table["player"], parent=attack["id"], action="damage")

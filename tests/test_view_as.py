@@ -65,6 +65,8 @@ def test_an_admin_sees_what_the_dm_and_a_player_see_and_changes_nothing(setup, m
 
 
 def test_only_admins_and_never_a_dm_into_their_players_notes(setup, monkeypatch):
+    """A standing rule (CLAUDE.md › Privacy): character notes are visible to players but never the DM. View as is for
+    admins, and never shows a DM their players' notes."""
     db = setup
     player = client_for(monkeypatch, db, "mark@example.com")
     player.post("/view-as", data={"email": "dm@example.com"})

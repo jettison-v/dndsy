@@ -154,3 +154,39 @@ def db(db_engine, monkeypatch):
             monkeypatch.setattr(campaign_paths, "remember", lambda email, cid: campaign_paths.remember_in(session, email, cid))
             yield session
         trans.rollback()
+
+
+# The table's characters and signed-in clients (tests/table_setup.py), for any test file. Imported inside each fixture:
+# the app must load only after DATABASE_URL above points at the test database.
+@pytest.fixture
+def no_network(monkeypatch):
+    """D&D Beyond is never called: fetches and refreshes use the fixtures' fake."""
+    from app import characters, ddb
+    from tests.table_setup import fake_fetch
+
+    monkeypatch.setattr(ddb, "fetch_character_json", fake_fetch)
+    monkeypatch.setattr(characters.refresh, "__defaults__", (fake_fetch,))
+    monkeypatch.setattr(characters.refresh_all, "__defaults__", (fake_fetch,))
+
+
+def _signed_in(monkeypatch, db, email):
+    from app.main import app
+    from tests.table_setup import sign_in
+
+    yield sign_in(monkeypatch, db, email)
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def admin(monkeypatch, db):
+    yield from _signed_in(monkeypatch, db, "admin@example.com")
+
+
+@pytest.fixture
+def dm(monkeypatch, db):
+    yield from _signed_in(monkeypatch, db, "dm@example.com")
+
+
+@pytest.fixture
+def player(monkeypatch, db):
+    yield from _signed_in(monkeypatch, db, "player@example.com")

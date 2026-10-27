@@ -7,7 +7,10 @@ from sqlalchemy import select
 from app import history
 from app.importer import import_bundle
 from app.models import Entity, PlayerNote, Revision
-from tests.test_characters import BUNDLE, admin, char, characters, dm, no_network, owned_by, player  # noqa: F401
+from app import characters
+from tests.table_setup import BUNDLE, char, owned_by
+
+pytestmark = pytest.mark.usefixtures("no_network")  # D&D Beyond is never called (tests/conftest.py)
 
 STORY = {"campaign": {"slug": "main", "name": "Main"},
          "entities": [{"kind": "place", "name": "Star Mounts", "summary": "Peaks in the High Forest."},
@@ -56,6 +59,8 @@ def cole(db, player):
 
 
 def test_deleted_player_notes_come_back_and_stay_hidden_from_the_dm(db, cole, player, dm, admin):
+    """A standing rule (CLAUDE.md › Privacy): character notes are visible to players but never the DM. Restoring one
+    from Manage › History keeps it that way."""
     url = f"/characters/{cole.id}"
     player.post(f"{url}/notes", data={"kind": "general", "title": "Secret plan", "body": "Steal the egg."})
     note = db.scalar(select(PlayerNote))

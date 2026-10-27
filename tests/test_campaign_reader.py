@@ -147,6 +147,8 @@ def test_an_entry_has_its_own_address_and_swaps_in(player, db):  # noqa: F811
 
 
 def test_hidden_entries_and_quest_status_are_for_the_dm(monkeypatch, db):
+    """A standing rule: an entry the DM keeps hidden shows only to the DM, and only the DM adds quests or marks them
+    done."""
     import_bundle(db, BUNDLE)
     import_bundle(db, QUESTS)
     set_role(db, "dm@example.com")

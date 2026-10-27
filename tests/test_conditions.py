@@ -1,12 +1,15 @@
 """Magic items on Battle (app/conditions.py): item actions, conditions and their Advantage."""
 
+import pytest
 import json
 
 from app import characters
 from app import conditions as cd
 from app.importer import import_bundle
-from tests.test_characters import BUNDLE, admin, char, dm, no_network, owned_by, player  # noqa: F401
+from tests.table_setup import BUNDLE, char, owned_by
 from tests.test_suggestions import HX
+
+pytestmark = pytest.mark.usefixtures("no_network")  # D&D Beyond is never called (tests/conftest.py)
 
 RING = {"key": "item:9", "name": "Ring of Invisibility", "base_name": "Ring of Invisibility", "magic": True, "equipped": True,
         "attunement": "attuned", "battle": False, "summary": "While wearing this ring, you can take a Magic action to…"}

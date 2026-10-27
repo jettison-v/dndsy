@@ -1,11 +1,14 @@
 """The Spell Book and Concentration (app/spellbook.py): effect groups, averages with upcasting,
 the Concentration save, and who can start or end Concentration."""
 
+import pytest
 from app import roll_recipes as rr
 from app import spellbook as sb
-from tests.test_characters import BUNDLE, COLE, admin, char, dm, no_network, owned_by, player  # noqa: F401
+from tests.table_setup import BUNDLE, COLE, char, owned_by
 from tests.test_suggestions import HX
 from tests.test_wild_shape import cole, cole_sheet  # noqa: F401
+
+pytestmark = pytest.mark.usefixtures("no_network")  # D&D Beyond is never called (tests/conftest.py)
 
 
 def test_effect_groups():

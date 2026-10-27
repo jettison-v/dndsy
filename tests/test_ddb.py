@@ -151,6 +151,8 @@ def test_proficiencies_and_skills(cole):
 
 
 def test_sanitize_drops_player_notes_but_keeps_the_backstory():
+    """A standing rule (CLAUDE.md › Privacy, Brett 2026-10-17): of D&D Beyond's Notes tab only the backstory is stored
+    (everyone sees it); allies, enemies, organizations and other notes never are."""
     raw = {"name": "X", "notes": {"backstory": "Born at sea.", "allies": "secret", "otherNotes": "secret"},
            "traits": {"bonds": "My ship."},
            "characterValues": [{"typeId": 9, "value": "secret item note"}, {"typeId": 8, "value": "Custom name"}]}
@@ -165,6 +167,8 @@ def test_sanitize_drops_player_notes_but_keeps_the_backstory():
 
 
 def test_sanitize_keeps_only_which_items_have_notes():
+    """A standing rule (CLAUDE.md › Privacy): the stored copy of a sheet keeps only which items have notes; the notes
+    themselves live in character_item_notes."""
     raw = {"name": "X", "inventory": [{"id": 7, "definition": {"name": "Flask"}}],
            "characterValues": [{"typeId": 9, "valueId": 7, "value": "secret item note"}],
            "customItems": [{"id": 1, "name": "Egg", "description": "Golden.", "notes": "secret custom note"}]}

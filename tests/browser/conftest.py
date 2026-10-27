@@ -57,7 +57,7 @@ def browser_db():
     from app.db import Base
     from app.importer import import_bundle
     from tests.roles import set_role
-    from tests.test_characters import BUNDLE, char, fake_fetch, owned_by
+    from tests.table_setup import BUNDLE, char, fake_fetch, owned_by
 
     engine = create_engine(url)
     Base.metadata.create_all(engine)
