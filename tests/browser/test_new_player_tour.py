@@ -104,4 +104,14 @@ def test_a_large_section_is_lit_below_the_bars_stuck_over_it(people, server):
         spot = document.querySelector('.tour-spot').getBoundingClientRect();
       return { bar: bar.bottom, head: head.top, spot: spot.top }; }""")
     assert got["head"] >= got["bar"] and got["spot"] >= got["bar"] - 8, got
+    # Seconds later Battle is redrawn (Game Mode's fresh sheet) and its numbers grow: the headings are kept clear
+    page.wait_for_timeout(2500)
+    page.evaluate("""() => { const b = document.getElementById('battle-body'); b.replaceWith(b.cloneNode(true));
+      const d = document.createElement('div'); d.style.height = '70px'; document.querySelector('.battlebar').prepend(d); }""")
+    page.wait_for_timeout(600)
+    got = page.evaluate("""() => { const bar = document.querySelector('.battlebar').getBoundingClientRect(),
+        head = document.querySelector('[data-tour="battle"] .econ-head').getBoundingClientRect(),
+        spot = document.querySelector('.tour-spot').getBoundingClientRect();
+      return { bar: bar.bottom, head: head.top, spot: spot.top }; }""")
+    assert got["head"] >= got["bar"] and got["spot"] >= got["bar"] - 8, got
     assert player.errors == []

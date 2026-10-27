@@ -2576,7 +2576,7 @@
       findBars();
       if (tall(lit.getBoundingClientRect())) alignTop();
       else lit.scrollIntoView({ block: s.all ? 'nearest' : 'center' });
-      settling = Date.now() + 2500;
+      shownAt = Date.now(); holding = true;
     }
     requestAnimationFrame(() => { if (!card || asking) return; place(); card.querySelector('[data-tour-go="1"]').focus({ preventScroll: true }); });  // (ended meanwhile)
     follow();
@@ -2629,11 +2629,11 @@
   // the Table rolls rail settling, a scrollbar coming or going, a picture loading), not only on scroll and resize:
   // every frame, re-place if the target moved. One rect read per frame, only while the tour is open.
   // A tall target's top sits just under the bars stuck across the top of the page (a few tries: a bar can stick, or
-  // change height, only once the page has scrolled). For a moment after each stop, while the page is still loading
-  // (the rolls log, a picture, Game Mode's fresh sheet), its top is put back if it slips under them (Brett,
-  // 2026-10-26: Battle's column headings ended up behind its numbers).
-  let settling = 0;
-  ['wheel', 'touchmove'].forEach(t => addEventListener(t, () => { settling = 0; }, { passive: true }));  // the person scrolls: leave it
+  // change height, only once the page has scrolled). While the stop shows, its top is put back whenever it slips under
+  // them (a picture loading, Game Mode redrawing Battle with a fresh sheet), until the person scrolls the page
+  // themselves (Brett, 2026-10-26: Battle's column headings ended up behind its numbers).
+  let holding = false, shownAt = 0;
+  ['wheel', 'touchmove'].forEach(t => addEventListener(t, () => { if (Date.now() - shownAt > 800) holding = false; }, { passive: true }));  // (not the last page's momentum)
   function alignTop() {
     for (let k = 0; k < 4; k++) {
       const want = covered() + 16, at = lit.getBoundingClientRect().top;
@@ -2647,7 +2647,11 @@
     following = true;
     const tick = () => {
       if (!tour || !card) { following = false; was = ''; return; }
-      if (lit && Date.now() < settling && !lit.closest('.peek') && tall(lit.getBoundingClientRect()) && lit.getBoundingClientRect().top < covered() + 4) alignTop();
+      if (lit && !lit.isConnected) {  // redrawn under the stop (Game Mode's fresh sheet): light the new one
+        const s = tour.stops[tour.i], now = s && visible(s.at);
+        if (now) { lit = now; if (s.all) lits = [...document.querySelectorAll(s.at)]; }
+      }
+      if (lit && holding && !lit.closest('.peek') && tall(lit.getBoundingClientRect()) && lit.getBoundingClientRect().top < covered() + 4) alignTop();
       const r = rect(), now = r ? [r.left, r.top, r.width, r.height].map(Math.round).join() : '';
       if (now !== was) { was = now; place(); }
       requestAnimationFrame(tick);
