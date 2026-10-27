@@ -12,6 +12,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -725,4 +726,59 @@ class TableRoll(Base):
 
 
 # Record changes to tracked fields as Revisions on every flush (app/history.py).
+class BridgeIntent(Timestamped, Base):
+    """The D&D Beyond bridge (app/ddb_bridge.py, a local proof): something a person did that D&D Beyond should hold
+    ("drank a Potion of Healing, rolled 7"), kept until D&D Beyond has it. `data` is the intent, never totals: those are
+    worked out from D&D Beyond's numbers when it's sent. state: waiting, sending, live, not_yet, dismissed."""
+
+    __tablename__ = "bridge_intents"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(20))  # drink | hp | item
+    data: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
+    label: Mapped[str] = mapped_column(String(300))
+    state: Mapped[str] = mapped_column(String(20), default="waiting", server_default="waiting", index=True)
+    error: Mapped[str] = mapped_column(String(400), default="", server_default="")
+
+
+class BridgeBatch(Timestamped, Base):
+    """One character's waiting intents as the D&D Beyond requests that make them (end state only), with what D&D
+    Beyond held when it was built (`before`) and what it should hold after (`target`), so the read-back can tell made,
+    dropped and someone else's change apart. state: sending, ready (to send again), done, replanned, stopped."""
+
+    __tablename__ = "bridge_batches"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+    intents: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
+    ops: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
+    before: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
+    target: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
+    names: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
+    state: Mapped[str] = mapped_column(String(20), default="sending", server_default="sending", index=True)
+    attempts: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    sent_at: Mapped[float] = mapped_column(Float, default=0, server_default="0")  # epoch seconds
+    next_at: Mapped[float] = mapped_column(Float, default=0, server_default="0")
+    check: Mapped[str] = mapped_column(String(10), default="", server_default="")  # the round trip's "out" or "back"
+    error: Mapped[str] = mapped_column(String(400), default="", server_default="")
+
+
+class BridgeLog(Base):
+    """What changed, per character: made by askdnd (live) or seen changed on D&D Beyond itself (seen)."""
+
+    __tablename__ = "bridge_log"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+    text: Mapped[str] = mapped_column(String(400))
+    state: Mapped[str] = mapped_column(String(10))
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class BridgeKey(Timestamped, Base):
+    """The extension's key to askdnd, given by an askdnd page the person is signed in to; only its hash is kept."""
+
+    __tablename__ = "bridge_keys"
+    key_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    email: Mapped[str] = mapped_column(String(320), index=True)
+
+
 from app import history  # noqa: E402,F401

@@ -1,0 +1,97 @@
+// On a D&D Beyond character sheet: puts ddb-page.js into the page, passes messages between it and the extension, and
+// draws askdnd's panel beside the sheet (in its own shadow root, so neither page's styles reach the other). The panel only
+// shows: changes are made in askdnd or on the sheet itself, never by a button sitting over D&D Beyond's own controls.
+(() => {
+  const s = document.createElement('script');
+  s.src = chrome.runtime.getURL('ddb-page.js');
+  (document.head || document.documentElement).appendChild(s);
+  s.onload = () => s.remove();
+  const sheetId = () => (location.pathname.match(/\/characters\/(\d+)/) || [])[1];
+
+  window.addEventListener('message', e => {
+    if (e.source !== window || !e.data || e.data.askdndBridge !== 'from-page') return;
+    chrome.runtime.sendMessage({ ...e.data, type: e.data.type === 'saved' ? 'ddb-saved' : 'ddb-applied' });  // (the page's own type last would win)
+  });
+  chrome.runtime.onMessage.addListener((m, sender, reply) => {
+    if (m.type === 'apply') { window.postMessage({ askdndBridge: 'apply', batch: m.batch }, location.origin); reply({ took: true }); }  // (so the extension knows this tab is alive)
+    if (m.type === 'panel-state') draw(m.state, m.error);
+  });
+
+  // ---- the panel: askdnd's colors (app.css tokens), the four states
+  let host, root, open = sessionStorage.getItem('askdnd-panel') !== 'closed';
+  const LABEL = { live: 'Live with D&D Beyond', waiting: 'Waiting for D&D Beyond', not_yet: 'Not on D&D Beyond yet', seen: 'Changed on D&D Beyond' };
+  const CLS = { live: 'live', waiting: 'wait', not_yet: 'off', seen: 'seen' };
+  const esc = v => String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const CSS = `:host { all: initial; } * { box-sizing: border-box; }
+    .tab { position: fixed; top: 140px; right: var(--beside, 0px); z-index: 2147483000; background: #d64545; color: #fff; font: 700 12px/1 Inter, system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; writing-mode: vertical-rl; padding: 12px 7px; border: 0; border-radius: 8px 0 0 8px; cursor: pointer; }
+    .panel { position: fixed; top: 0; right: var(--beside, 0px); bottom: 0; width: 320px; z-index: 2147483001; background: #15171a; color: #ebe7df; border-left: 1px solid #34383e; font: 14px/1.5 Inter, system-ui, sans-serif; display: flex; flex-direction: column; box-shadow: -8px 0 24px rgba(0,0,0,.45); }
+    .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 14px; border-bottom: 2px solid #d64545; background: #0f1113; }
+    .head b { color: #fff; } .logo { color: #f08a8a; font-weight: 700; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+    .x { background: none; border: 0; color: #a29d93; font-size: 18px; cursor: pointer; }
+    .body { padding: 14px; display: grid; gap: 14px; overflow: auto; }
+    .st { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 4px 10px; white-space: nowrap; justify-self: start; }
+    .st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .live { background: rgba(91,191,127,.15); color: #5bbf7f; } .wait { background: rgba(232,179,75,.14); color: #e8b34b; }
+    .off { background: rgba(214,69,69,.14); color: #f08a8a; } .seen { background: rgba(126,166,224,.15); color: #7ea6e0; }
+    .tile { background: #1f2226; border: 1px solid #34383e; border-radius: 8px; padding: 8px 10px; } .tile small { color: #a29d93; display: block; font-size: 12px; } .tile b { color: #fff; font-size: 20px; }
+    .tile.wait { border-color: #e8b34b; background: #1f2226; } .tile.off { border-color: #d64545; background: #1f2226; }
+    h3 { margin: 0; font: 700 11px/1 'Roboto Condensed', Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #e8b34b; }
+    .item { display: flex; justify-content: space-between; align-items: center; gap: 8px; background: #1f2226; border: 1px solid #34383e; border-radius: 8px; padding: 8px 10px; }
+    .note { color: #a29d93; font-size: 12px; }
+    a.btn { font: 600 13px/1 Inter, system-ui, sans-serif; border-radius: 8px; padding: 8px 11px; border: 1px solid #34383e; background: #272b30; color: #ebe7df; cursor: pointer; text-decoration: none; display: inline-block; }
+    .change { display: grid; gap: 6px; padding: 10px 12px; border-radius: 10px; border: 1px solid #34383e; }
+    .change.wait { border-color: #e8b34b; } .change.off { border-color: #d64545; } .change.live { border-color: #5bbf7f; }
+    ul { list-style: none; margin: 0; padding: 0; } li { padding: 6px 0; border-top: 1px solid #2c3036; font-size: 13px; }`;
+  function mount() {
+    if (host) return;
+    host = document.createElement('div'); host.id = 'askdnd-bridge';
+    root = host.attachShadow({ mode: 'open' });
+    document.documentElement.appendChild(host);
+    // D&D Beyond opens its own pane on the right (an item, a spell, hit points): the panel moves left to sit beside it
+    // instead of covering it (2026-10-27: it hid the potion's quantity buttons)
+    const beside = () => {
+      const pane = document.querySelector('.ct-sidebar');
+      const w = pane && getComputedStyle(pane).display !== 'none' ? Math.round(pane.getBoundingClientRect().width) : 0;
+      host.style.setProperty('--beside', (w > 0 && w < innerWidth / 2 ? w : 0) + 'px');
+    };
+    let queued = false;  // at most once a frame: the sheet changes its page often
+    new MutationObserver(() => { if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; beside(); }); } }).observe(document.documentElement, { childList: true, subtree: true });
+    addEventListener('resize', beside);
+    beside();
+    root.addEventListener('click', e => {
+      const t = e.target.closest('[data-act]'); if (!t) return;
+      const act = t.dataset.act;
+      if (act === 'toggle') { open = !open; sessionStorage.setItem('askdnd-panel', open ? 'open' : 'closed'); chrome.runtime.sendMessage({ type: 'panel-refresh' }); }
+    });
+  }
+  let again = null;
+  function draw(st, error) {
+    mount();
+    clearTimeout(again);  // while something waits, ask again every second and a half
+    if (st && st.changes.some(c => c.state !== 'not_yet')) again = setTimeout(() => chrome.runtime.sendMessage({ type: 'panel-refresh' }), 1500);
+    if (!open) { root.innerHTML = `<style>${CSS}</style><button class="tab" data-act="toggle" aria-label="Open askdnd">askdnd</button>`; return; }
+    let body;
+    if (error) body = `<span class="st off">Not connected</span><p class="note">${esc(error)}</p>`;
+    else {
+      const waiting = st.changes.filter(c => c.state !== 'not_yet').length, notYet = st.changes.filter(c => c.state === 'not_yet').length;
+      const pill = notYet ? ['off', notYet + ' to make by hand'] : waiting ? ['wait', waiting + ' waiting'] : ['live', 'Live with D&D Beyond'];
+      body = `<span class="st ${pill[0]}">${pill[1]}</span>
+        <div class="tile ${waiting ? 'wait' : notYet ? 'off' : ''}"><small>Hit points</small><b>${esc(st.hp.current)}</b> <span class="note">/ ${esc(st.hp.max)}</span></div>
+        ${st.items.length ? '<h3>Healing potions</h3>' : ''}
+        ${st.items.map(it => `<div class="item"><div><b>${esc(it.name)}</b> <span class="note">×${it.quantity}</span><div class="note">Heals ${esc(it.heals)}</div></div></div>`).join('')}
+        ${st.to_make.length ? `<div class="change off"><b>Make these on D&amp;D Beyond</b><div>${st.to_make.map(esc).join('<br>')}</div><span class="note">askdnd ticks them off when D&amp;D Beyond has them.</span></div>` : ''}
+        ${st.changes.map(c => `<div class="change ${CLS[c.state === 'sending' ? 'waiting' : c.state]}"><span class="st ${CLS[c.state === 'sending' ? 'waiting' : c.state]}">${LABEL[c.state === 'sending' ? 'waiting' : c.state]}</span><div>${esc(c.label)}</div>${c.error ? `<div class="note">${esc(c.error)}</div>` : ''}${c.state === 'not_yet' ? '<div class="note">Try again or undo it in askdnd.</div>' : ''}</div>`).join('')}
+        <h3>What changed</h3>
+        <ul>${st.log.map(l => `<li><span class="st ${CLS[l.state]}">${l.state === 'seen' ? 'On D&D Beyond' : 'From askdnd'}</span> ${esc(l.text)}</li>`).join('') || '<li class="note">Nothing yet.</li>'}</ul>
+        <a class="btn" href="http://localhost:8000/characters/${esc(st.character.id)}/bridge" target="_blank" rel="noopener">Open in askdnd</a>`;
+    }
+    root.innerHTML = `<style>${CSS}</style><aside class="panel" aria-label="askdnd"><div class="head"><span><b>${esc(st ? st.character.name : 'askdnd')}</b><span class="logo">askdnd</span></span><button class="x" data-act="toggle" aria-label="Close askdnd">✕</button></div><div class="body">${body}</div></aside>`;
+  }
+  const hello = () => chrome.runtime.sendMessage({ type: 'ddb-tab', ddbId: sheetId() });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hello); else hello();
+  // Someone using the sheet keeps the bridge awake (at most once a minute; its saves are heard on their own)
+  let usedAt = Date.now();
+  ['pointerdown', 'keydown'].forEach(k => document.addEventListener(k, () => {
+    if (Date.now() - usedAt > 60000) { usedAt = Date.now(); chrome.runtime.sendMessage({ type: 'ddb-active' }); }
+  }, { passive: true, capture: true }));
+})();

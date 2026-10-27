@@ -14,6 +14,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app import config
 from app.admin import router as admin_router
+from app.ddb_bridge import router as ddb_bridge_router
 from app.admin_notes import router as admin_notes_router
 from app.manage_table import router as manage_table_router
 from app.manage_accounts import router as manage_accounts_router
@@ -130,6 +131,7 @@ app.include_router(campaigns_router)
 app.include_router(dice_router)
 app.include_router(realtime_router)
 app.include_router(errors_router)
+app.include_router(ddb_bridge_router)  # a local proof: refused in production (app/ddb_bridge.py)
 
 LOGIN_ERRORS = {
     "not_allowed": "That Google account isn't on the list for this table.",

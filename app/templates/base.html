@@ -113,6 +113,7 @@
   </div>
   {% endif %}
 </div></header>
+{% if bridge_on and user %}<button type="button" class="br-st br-wait br-pill" data-bridge-health title="The D&amp;D Beyond bridge (a local proof): click to run the check">D&amp;D Beyond · …</button>{% endif %}
 {% if user %}
 {# Phones: the same groups in a bottom bar (Story · Campaign · your character · Party · More); the rest under More. #}
 <nav class="bottom-nav" aria-label="Main">

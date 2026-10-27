@@ -13,6 +13,7 @@ screenshots of real pages (they show the campaign).
 |---|---|---|---|
 | askdnd Stack Map | [AYYGdebsBtPND4HoTq5uyr](https://claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr) | `../stack.html` | How the services connect, who changes each, where the data lives (kept current) |
 | Battle Slim Header | [CXkXguKnGmrPMnPXDYjwP2](https://claude.ai/artifact/CXkXguKnGmrPMnPXDYjwP2) | `../mockups/battle-header.html` | Battle's header shrinking to one row as you scroll (Oct 27). Not built: Brett chose to let the header scroll with the page |
+| askdnd D&D Beyond Bridge | [9H59RDNi99gVa7bNwmjp6G](https://claude.ai/artifact/9H59RDNi99gVa7bNwmjp6G) | `ddb-bridge.html` | How the bridge proof works and repairs itself, and the real run on Vi (Oct 27) |
 | Party Redesign | [EJmFmzbXoV15HKjpJiJ18a](https://claude.ai/artifact/EJmFmzbXoV15HKjpJiJ18a) | `../mockups/party.html` | The Party page built from the rest of askdnd's pieces (proposal, Oct 26) |
 | askdnd VTT Roadmap | [EtCBFsKNwLK5LNhQjcbzS3](https://claude.ai/artifact/EtCBFsKNwLK5LNhQjcbzS3) | `vtt-roadmap.html` | The roadmap, fight screen first (Oct 27); the record is `../plans/2026-10-22-vtt-roadmap.md` |
 | askdnd content workflows | [MPiEDh3KMNmB2NoCtuq52U](https://claude.ai/artifact/MPiEDh3KMNmB2NoCtuq52U) | `content-workflows.html` | Recaps, entries and suggestions, start to finish (Oct 22) |

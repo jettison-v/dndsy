@@ -35,6 +35,15 @@
         "cd ../dndsy-design && uv run --env-file ../dndsy/.env uvicorn app.main:app --port 8001"
       ],
       "port": 8001
+    },
+    {
+      "name": "web-spellbar",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "cd ../dndsy-spellbar && uv run --env-file ../dndsy/.env uvicorn app.main:app --port 8010"
+      ],
+      "port": 8010
     }
   ]
 }

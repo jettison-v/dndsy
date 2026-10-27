@@ -22,13 +22,20 @@
     reportError('Unhandled: ' + (r.message || String(r)).slice(0, 300), at ? at[1] : '', at ? +at[2] : 0, at ? +at[3] : 0, r.stack);
   });
 
-  function toast(message) {
+  function toast(message, action) {  // action: {label, run}: a button in the toast, which then stays a while
     const t = $('#toast');
     if (!t || !message) return;
     t.textContent = message;
+    if (action) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'btn small toast-act'; b.textContent = action.label;
+      b.addEventListener('click', () => { t.classList.remove('show'); action.run(); });
+      t.append(' ', b);
+    }
+    t.classList.toggle('acts', !!action);
     t.classList.add('show');
     clearTimeout(t._hide);
-    t._hide = setTimeout(() => t.classList.remove('show'), 2200);
+    t._hide = setTimeout(() => t.classList.remove('show'), action ? 20000 : 2200);
   }
   window.askdndToast = toast;
 
@@ -417,6 +424,7 @@
     const on = !gmIsOn();
     gmStore(on);
     gmSetup();
+    document.dispatchEvent(new CustomEvent('askdnd:gamemode-switched', { detail: { on } }));  // (the D&D Beyond bridge wakes or sleeps)
     if (on) gmTick();
     toast(on ? 'Game Mode on: updating from D&D Beyond every 2–3 minutes' : 'Game Mode off');
   });
@@ -2679,4 +2687,126 @@
     if (tour.arriving || !s.url || new URL(s.url, location.href).pathname === location.pathname) { tour.arriving = false; keep(); show(s); }
     else end();
   } else tour = null;
+})();
+
+// ---------------------------------------------------------------- the D&D Beyond bridge (a local proof)
+// Character › with D&D Beyond (bridge.html, app/ddb_bridge.py): every number comes from D&D Beyond; a change made here
+// is an intent askdnd keeps until the extension (extension/askdnd-bridge/) has made it on D&D Beyond and askdnd has
+// read it back. This page talks to the extension with window messages ({askdndBridge: ...}). Phones read only (Brett,
+// 2026-10-27: askdnd on a phone is for reading and planning). The menu bar's pill is the bridge's health.
+(function () {
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const CLS = { live: 'br-live', waiting: 'br-wait', sending: 'br-wait', not_yet: 'br-off', seen: 'br-seen' };  // (not .wait: app.css's loading line)
+  const LABEL = { waiting: 'Waiting for D&D Beyond', sending: 'Waiting for D&D Beyond', not_yet: 'Not on D&D Beyond yet' };
+
+  // The pill on every page
+  const pill = document.querySelector('[data-bridge-health]');
+  let health = null, healthTimer = null;
+  async function checkHealth() {  // (one loop, however often it's called)
+    if (!pill) return;
+    clearTimeout(healthTimer);
+    try { const r = await fetch('/bridge/health', { headers: { Accept: 'application/json' } }); if (r.ok) health = await r.json(); } catch (e) { /* offline */ }
+    if (health) {
+      pill.className = 'br-st br-pill ' + ({ live: 'br-live', wait: 'br-wait', off: 'br-off', asleep: 'br-asleep' }[health.state] || 'br-wait');
+      pill.textContent = health.text;
+      pill.title = health.state === 'asleep' ? (health.awake.why || 'Asleep') + ' Wakes as soon as someone opens or uses askdnd or a sheet; click to run the check.'
+        : 'D&D Beyond read ' + (health.read_check.ok ? 'OK' : 'failed: ' + health.read_check.error) + (health.round_trip && health.round_trip.error ? ' · check: ' + health.round_trip.error : '');
+      gameTimer(health.awake);
+    }
+    healthTimer = setTimeout(checkHealth, health && health.state === 'wait' ? 3000 : 30000);
+  }
+  // Game Mode keeps the bridge awake for the game (6 hours unless an admin changed it): a warning with Keep going
+  // shortly before, and a word when it's up (it then follows what people do, as it does without Game Mode)
+  const clock = s => new Date(s * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const toast = (message, action) => window.askdndToast && window.askdndToast(message, action);
+  const once = key => { try { if (sessionStorage.getItem(key)) return false; sessionStorage.setItem(key, '1'); } catch (e) {} return true; };
+  let gameWas = null;
+  function gameTimer(a) {
+    const until = a && a.game_until, left = until ? until - Date.now() / 1000 : 0;
+    if (until && left < a.warn && once('askdnd.bridgeWarn.' + until))
+      toast("Game Mode's D&D Beyond sync ends at " + clock(until) + '.', { label: 'Keep going', run: () => startGame(true) });
+    if (gameWas && !until && document.body.classList.contains('gm-on') && once('askdnd.bridgeEnded.' + gameWas))
+      toast("Game Mode's time is up: D&D Beyond stays in sync while anyone is using askdnd or a sheet.");
+    gameWas = until || null;
+  }
+  async function startGame(on) {
+    try {
+      const r = await fetch('/bridge/game', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ on }) });
+      health = await r.json();
+      if (on) { window.postMessage({ askdndBridge: 'wake' }, location.origin); toast('Game Mode on: D&D Beyond stays in sync until ' + clock(health.awake.game_until) + '.'); }
+      gameWas = health.awake.game_until || null;
+    } catch (e) { /* offline */ }
+    checkHealth();
+  }
+  if (pill) {
+    // Awake whenever someone is using askdnd (app/ddb_bridge.py): opening this page, and using it (at most once a
+    // minute), keeps it awake 30 more minutes; the extension starts its pulls at once
+    let usedAt = 0;
+    const used = () => {
+      usedAt = Date.now();
+      fetch('/bridge/active', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+        .then(r => r.json()).then(h => { const slept = !health || health.state === 'asleep'; health = h; if (slept) window.postMessage({ askdndBridge: 'wake' }, location.origin); checkHealth(); })
+        .catch(() => {});
+    };
+    ['click', 'keydown', 'change'].forEach(k => document.addEventListener(k, () => { if (Date.now() - usedAt > 60000) used(); }, { passive: true }));
+    used();
+    document.addEventListener('askdnd:gamemode-switched', e => startGame(e.detail.on));
+    pill.addEventListener('click', async () => {  // run the pre-game round trip on the test character
+      pill.textContent = 'D&D Beyond · checking…';
+      const r = await fetch('/bridge/check', { method: 'POST', headers: { Accept: 'application/json' } });
+      if (r.ok) { window.postMessage({ askdndBridge: 'deliver', ddbId: (await r.json()).test_ddb_id }, location.origin); }
+      else pill.textContent = 'D&D Beyond · open the test character\'s sheet to check';
+      checkHealth();
+    });
+  }
+
+  const root = document.querySelector('[data-bridge]');
+  if (!root) return;
+  const id = root.dataset.bridge, ddbId = root.dataset.ddbId, canAct = root.dataset.canAct === 'true';
+  const $ = sel => root.querySelector(sel);
+  const phone = matchMedia('(max-width: 640px)');
+  let extension = false, st = JSON.parse(document.getElementById('br-initial').textContent), timer = null;
+  function render() {
+    const waiting = st.changes.filter(c => c.state !== 'not_yet').length, notYet = st.changes.filter(c => c.state === 'not_yet').length;
+    const status = $('[data-br-status]');
+    const [cls, text] = !extension ? ['br-off', 'Extension off'] : notYet ? ['br-off', notYet + ' to make by hand'] : waiting ? ['br-wait', waiting + ' waiting'] : ['br-live', 'Live with D&D Beyond'];
+    status.className = 'br-st title-action ' + cls; status.textContent = text;
+    const help = $('[data-br-help]');
+    help.hidden = extension || phone.matches;
+    help.textContent = 'Turn on the askdnd extension in Chrome (chrome://extensions › Load unpacked › extension/askdnd-bridge), then open ' + st.character.name + "'s D&D Beyond sheet in this browser.";
+    $('[data-br-hp]').className = waiting ? 'br-wait' : notYet ? 'br-off' : '';
+    $('[data-br-hp-v]').textContent = st.hp.current;
+    $('[data-br-read]').textContent = st.read_at ? 'Read from D&D Beyond ' + new Date(st.read_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' }) + '.' : 'Not read from D&D Beyond yet.';
+    const act = canAct && !phone.matches;
+    $('[data-br-acts]').innerHTML = act ? '<button type="button" class="btn small" data-br-hp-amount="-1">Take 1 hit point</button><button type="button" class="btn small" data-br-hp-amount="1">Heal 1</button>' : '';
+    $('[data-br-items]').innerHTML = st.items.map(it => `<div class="br-item"><div><b>${esc(it.name)}</b> <span class="note">×${it.quantity}</span><div class="note">Heals ${esc(it.heals)}</div></div>${act ? `<button type="button" class="btn primary small" data-br-drink="${it.id}"${!it.quantity ? ' disabled' : ''}>Drink</button>` : ''}</div>`).join('');
+    $('[data-br-hand]').hidden = !st.to_make.length;
+    $('[data-br-to-make]').innerHTML = st.to_make.map(l => `<li>${esc(l)}</li>`).join('');
+    $('[data-br-changes]').innerHTML = st.changes.map(c => `<div class="br-change ${CLS[c.state]}"><span class="br-st ${CLS[c.state]}">${LABEL[c.state]}</span><div>${esc(c.label)}</div>${c.error ? `<div class="note">${esc(c.error)}</div>` : ''}${c.state === 'not_yet' && act ? `<div class="row tight"><button type="button" class="btn primary small" data-br-retry="${c.id}">Try again</button><a class="btn small" href="https://www.dndbeyond.com/characters/${esc(ddbId)}" target="_blank" rel="noopener">Open in D&amp;D Beyond</a><button type="button" class="btn small" data-br-undo="${c.id}">Undo</button></div>` : ''}</div>`).join('');
+    $('[data-br-none]').hidden = st.changes.length > 0;
+    $('[data-br-log]').innerHTML = st.log.map(l => `<li><span class="br-st ${CLS[l.state]}">${l.state === 'seen' ? 'On D&D Beyond' : 'From askdnd'}</span> ${esc(l.text)} <time class="note">${new Date(l.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</time></li>`).join('');
+    $('[data-br-log-none]').hidden = st.log.length > 0;
+    clearTimeout(timer);
+    timer = setTimeout(() => load(), waiting ? 1000 : 5000);  // quicker while something waits; the extension also pings
+  }
+  async function load(method = 'GET', url = '/bridge/state/' + id, body) {
+    const r = await fetch(url, { method, headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+    if (method === 'GET' && r.ok) { st = await r.json(); render(); return; }
+    if (method !== 'GET') { window.postMessage({ askdndBridge: 'deliver', ddbId }, location.origin); load(); }
+  }
+  root.addEventListener('click', e => {
+    const d = e.target.closest('[data-br-drink]'), h = e.target.closest('[data-br-hp-amount]'), r = e.target.closest('[data-br-retry]'), u = e.target.closest('[data-br-undo]');
+    if (d) { d.disabled = true; load('POST', `/bridge/drink/${id}/${d.dataset.brDrink}`); }
+    if (h) load('POST', '/bridge/hp/' + id, { amount: +h.dataset.brHpAmount });
+    if (r) load('POST', '/bridge/retry/' + r.dataset.brRetry);
+    if (u) load('POST', '/bridge/dismiss/' + u.dataset.brUndo);
+  });
+  addEventListener('message', e => {
+    if (e.source !== window || !e.data || !e.data.askdndBridge) return;
+    if (e.data.askdndBridge === 'hello') { if (!extension) { extension = true; render(); } }
+    if (e.data.askdndBridge === 'update') load();
+  });
+  window.postMessage({ askdndBridge: 'ping' }, location.origin);
+  phone.addEventListener('change', render);
+  render();
 })();

@@ -1,0 +1,86 @@
+<title>askdnd D&amp;D Beyond Bridge</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* One screen: what it promises, when it's on, what happens when something goes wrong. askdnd is dark only, so this
+   page is too: its colors are askdnd's tokens, set explicitly. The detail is in app/ddb_bridge.py and DECISIONS.md. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --sleep: #191b1e; --line: #34383e; --line-soft: #2c3036;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #6f6b64;
+  --red-soft: rgba(214, 69, 69, .14); --red-text: #f08a8a;
+  --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .15);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 880px; margin: 0 auto; padding-block: 36px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+h1, h2 { color: var(--strong); text-wrap: balance; margin: 0; }
+h1 { font: 600 2.1rem/1.15 var(--serif); }
+h2 { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red-text); margin-bottom: 10px; }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+header { display: grid; gap: 12px; }
+.lead { font-size: 1.05rem; max-width: 66ch; }
+.rule { padding: 14px 16px; border-left: 3px solid var(--green); background: var(--surface); border-radius: 0 12px 12px 0; }
+.rule span { color: var(--muted); }
+
+.st { display: inline-flex; align-items: center; gap: 6px; font: 600 .78rem/1 var(--sans); border-radius: 999px; padding: 5px 10px; white-space: nowrap; }
+.st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.wait { background: var(--amber-soft); color: var(--amber); }
+.off { background: var(--red-soft); color: var(--red-text); } .seen { background: var(--blue-soft); color: var(--blue); }
+
+.table { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); }
+.tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 4px 20px; padding: 12px 16px; border-top: 1px solid var(--line-soft); }
+.tr:first-child { border-top: 0; }
+.tr > :first-child { color: var(--strong); font-weight: 600; }
+.tr > :last-child { color: var(--muted); }
+.tr.game { background: var(--blue-soft); }
+.tr.sleep { background: var(--sleep); }
+@media (max-width: 620px) { .tr { grid-template-columns: 1fr; } }
+
+.wrong { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.wrong li { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 14px; align-items: start; }
+.wrong li .st { justify-self: start; }
+@media (max-width: 560px) { .wrong li { grid-template-columns: 1fr; gap: 4px; } }
+footer { color: var(--faint); font-size: .84rem; border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 6px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>The D&amp;D Beyond bridge</h1>
+    <p class="lead">A small Chrome extension in each player's own D&amp;D Beyond tab. It hears every change the sheet saves, and makes askdnd's changes there, as that player.</p>
+    <p class="rule"><b>The two never quietly disagree.</b> <span>askdnd counts a change only once it reads it back from D&amp;D Beyond. Anything it can't make is listed to make by hand.</span></p>
+  </header>
+
+  <section>
+    <h2>When it's on</h2>
+    <div class="table">
+      <div class="tr"><span>An askdnd page opens, or someone uses one</span><span>On for 30 more minutes. A character's page also reads D&amp;D Beyond first if askdnd's copy is more than 2 minutes old.</span></div>
+      <div class="tr"><span>A D&amp;D Beyond sheet opens, or someone changes it</span><span>On for 30 more minutes. A change saved on D&amp;D Beyond is always recorded, even if the bridge was asleep.</span></div>
+      <div class="tr game"><span>Game Mode switched on</span><span>On for the whole game, 6 hours, however quiet. A message 10 minutes before the end offers Keep going.</span></div>
+      <div class="tr sleep"><span>No one around for 30 minutes</span><span>Asleep: it stops checking D&amp;D Beyond in the background. The next page or click wakes it.</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>When something goes wrong</h2>
+    <ul class="wrong">
+      <li><span class="st wait">Tries again</span><span>D&amp;D Beyond says OK but drops a change, or a sheet tab doesn't answer: sent again, up to 3 times.</span></li>
+      <li><span class="st wait">Works it out again</span><span>Someone changed the sheet a moment before: the change is worked out again from the new numbers.</span></li>
+      <li><span class="st off">Make by hand</span><span>A number askdnd can't explain, or 3 failed tries: nothing is written over, and askdnd lists the end state to make.</span></li>
+      <li><span class="st wait">Waits</span><span>No sheet open, or a phone: the change waits and goes out when a sheet opens (6 hours at most).</span></li>
+      <li><span class="st seen">Changed on D&amp;D Beyond</span><span>Changes made on D&amp;D Beyond itself show in askdnd within seconds.</span></li>
+    </ul>
+  </section>
+
+  <footer>
+    <span>Tested on Vi in Brett's Chrome against the real D&amp;D Beyond, plus 521 automated tests. Still a local proof (branch ddb-bridge-proof), not on beta.</span>
+    <span>Admins change the timers on Manage › askdnd › D&amp;D Beyond bridge. D&amp;D Beyond's terms don't allow tools like this: nothing is disguised, Brett accepts the risk and tells the table, and if D&amp;D Beyond blocks it, askdnd falls back to make by hand.</span>
+  </footer>
+</div>
