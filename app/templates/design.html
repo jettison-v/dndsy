@@ -89,6 +89,16 @@
     <div class="stats"><div class="stat"><span>This month</span><b>$4.20</b><small>$15.80 left of $20.00</small></div><div class="stat attention"><span>Backups</span><b>2 days</b><small>Last backup failed</small></div><div class="stat"><span>All time</span><b>$31.06</b><small>48 drafts</small></div></div>
     {{ ds("Number tiles", ".strip.compact", "Battle's header: label above, number below; each opens how it adds up.") }}
     <div class="strip compact"><div><small>Hit points</small><b>51</b></div><div><small>Armor class</small><b>16</b></div><div><small>Speed</small><b>45 ft</b></div><div><small>Initiative</small><b>+3</b></div><div><small>Spell DC / attack</small><b>15</b><span class="note"> / +7</span></div><div><small>Heroic Inspiration</small><b>—</b></div></div>
+    {{ ds("Character card", ".pt-card (party.html)", "One character on Party › At a glance: portrait, name and classes, three number tiles, best saves, resources and slots; a click opens a short version.") }}
+    <div class="ds-narrow"><article class="section pt-card">
+      <header class="pt-head"><span class="roll-av hue0">C</span><div class="pt-id"><h2 class="pt-name">Cole</h2><p class="note">Druid 6 / Monk 2</p></div></header>
+      <div class="strip compact pt-tiles"><div><small>Hit points</small><b>51</b><span class="note"> / 51</span></div><div><small>Armor class</small><b>16</b></div><div><small>Speed</small><b>45 ft</b></div></div>
+      <p class="pt-line"><span class="note">Best saves</span> <span class="nowrap">Wis <b>+8</b></span> · <span class="nowrap">Int <b>+4</b></span></p>
+      <div class="pt-res"><span>Wild Shape {{ pips({"max": 3, "left": 3}) }}</span><span>Focus Points {{ pips({"max": 2, "left": 2}) }}</span></div>
+      <p class="pt-line"><span class="note">Slots</span> <span class="nowrap">1st {{ pips({"max": 4, "left": 4}) }}</span> <span class="nowrap">2nd {{ pips({"max": 3, "left": 3}) }}</span></p>
+    </article></div>
+    {{ ds("Who has it", ".pt-who > .pt-w (party.html)", "On Party's lists: each character who has it, by portrait (or initial, in their table-rolls color), with a short note; a click opens their copy.") }}
+    <div class="ds-row"><span class="pt-who"><span class="pt-w" tabindex="0" role="button" aria-label="Open Cole's"><span class="roll-av hue0">C</span></span><span class="pt-w" tabindex="0" role="button" aria-label="Open Big C's (item)"><span class="roll-av hue1">B</span><small class="note">item</small></span><span class="pt-w" tabindex="0" role="button" aria-label="Open No Name's (1/Long Rest)"><span class="roll-av hue3">N</span><small class="note">1/Long Rest</small></span></span></div>
     {{ ds("Resources row", ".res-row", "Limited uses with pips, most uses first.") }}
     <div class="res-row"><span class="res-label">Resources</span><span class="res">Luck Points {{ pips({"max": 3, "left": 3}) }}</span><span class="res">Focus Points {{ pips({"max": 2, "left": 1}) }}</span><span class="res">Wild Shape {{ pips({"max": 3, "left": 0}) }}</span></div>
   </section>

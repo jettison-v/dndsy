@@ -414,6 +414,14 @@ def _panel_url(character, key: str) -> str:
     return f"/characters/{character.id}/detail?ref={quote(key, safe='')}"
 
 
+def _who(r: dict, note: str, url: str) -> dict:
+    """One character holding a spell or an item, for Party's lists: a portrait (or their initial, in their table-rolls
+    color), a short note ("item", "1/Long Rest", "×2 3/7") and their side panel for it."""
+    c = r["c"]
+    return {"name": c.name, "note": note, "url": url, "portrait": (r["sheet"] or {}).get("portrait") or "", "hue": c.id % 6,
+            "label": f"{c.name} ({note})" if note else c.name}
+
+
 def pooled_spells(rows: list[dict]) -> list[tuple[str, list[dict]]]:
     """Everyone's spells for planning: each spell once, with who can cast it.
     `url` opens the first caster's side panel; each `who` opens that caster's."""
@@ -421,12 +429,11 @@ def pooled_spells(rows: list[dict]) -> list[tuple[str, list[dict]]]:
     for r in rows:
         if not r["sheet"]:
             continue
-        who = r["c"].name
         for sp in r["sheet"]["spells"]:
             entry = spells.setdefault(sp["name"], {**sp, "who": [], "url": _panel_url(r["c"], sp["key"])})
             note = f"{sp['uses']['max']}/{sp['uses']['reset']}" if sp["uses"] and not sp["uses_slot"] else (
                 "item" if sp["sources"] == ["Item"] else "")
-            entry["who"].append({"label": f"{who} ({note})" if note else who, "url": _panel_url(r["c"], sp["key"])})
+            entry["who"].append(_who(r, note, _panel_url(r["c"], sp["key"])))
     groups, placed = [], set()
     for title, test in SPELL_GROUPS:
         found = [s for n, s in sorted(spells.items(), key=lambda kv: (kv[1]["level"], kv[0])) if n not in placed and test(s)]
@@ -445,7 +452,6 @@ def pooled_items(rows: list[dict]) -> list[tuple[str, list[dict]]]:
     for r in rows:
         if not r["sheet"]:
             continue
-        who = r["c"].name
         for it in r["sheet"]["inventory"]:
             if not (it["magic"] or it["battle"]):
                 continue
@@ -464,13 +470,47 @@ def pooled_items(rows: list[dict]) -> list[tuple[str, list[dict]]]:
                 group = "Other magic items"
             entry = items.setdefault((group, it["name"]), {"name": it["name"], "summary": it["summary"], "who": [],
                                                            "url": _panel_url(r["c"], it["key"])})
-            label = who + (f" ×{it['quantity']}" if it["quantity"] > 1 else "")
-            if ch and ch["reset"] != "Used up":
-                label += f" {ch['left']}/{ch['max']}"
-            entry["who"].append({"label": label, "url": _panel_url(r["c"], it["key"])})
+            note = (f"×{it['quantity']}" if it["quantity"] > 1 else "") + (f" {ch['left']}/{ch['max']}" if ch and ch["reset"] != "Used up" else "")
+            entry["who"].append(_who(r, note.strip(), _panel_url(r["c"], it["key"])))
     order = ["Healing", "One use", "Charges", "Needs attunement", "Other magic items"]
     return [(g, sorted((v for (gg, _), v in items.items() if gg == g), key=lambda v: v["name"])) for g in order
             if any(gg == g for gg, _ in items)]
+
+
+def _spell_does(sp: dict) -> str:
+    return f"heals {sp['healing']}" if sp["healing"] else sp["damage"] or ""
+
+
+def party_spell_list(rows: list[dict]) -> dict:
+    """Party › Spells in the shared list (DESIGN.md › Lists and filters): each spell once, under the group of what it does,
+    filtered by that, who has it, Concentration, and (under More filters) level and casting time."""
+    out = []
+    for title, spells in pooled_spells(rows):
+        for sp in spells:
+            time = {"Action": "Action", "Bonus action": "Bonus", "Reaction": "Reaction"}.get(sp["casting_time"], "Longer")
+            level = "Cantrip" if not sp["level"] else ordinal(sp["level"])
+            out.append({**sp, "group": title, "level_label": level, "time": time, "does": _spell_does(sp),
+                        "f": {"does": title.split(" (")[0], "who": [w["name"] for w in sp["who"]], "conc": "Conc." if sp["concentration"] else "No Conc.",
+                              "level": level, "time": time}})
+    names = [r["c"].name for r in rows if r["sheet"]]
+    levels = sorted({s["level"] for s in out})
+    groups = [{"key": "does", "label": "What it does", "values": list(dict.fromkeys(s["f"]["does"] for s in out))},  # (Rituals, not its heading's note)
+              {"key": "who", "label": "Who has it", "values": names},
+              {"key": "conc", "label": "Concentration", "values": ["Conc.", "No Conc."]},
+              {"key": "level", "label": "Level", "values": ["Cantrip" if not n else ordinal(n) for n in levels], "more": True},
+              {"key": "time", "label": "Casting time", "values": [t for t in ("Action", "Bonus", "Reaction", "Longer") if any(s["time"] == t for s in out)], "more": True}]
+    return {"rows": out, "groups": groups if out else []}
+
+
+def party_item_list(rows: list[dict]) -> dict:
+    """Party › Items in the shared list: magic items and consumables, grouped by what they are, filtered by that and who
+    carries them."""
+    out = [{**it, "group": title, "f": {"kind": title, "who": [w["name"] for w in it["who"]]}}
+           for title, items in pooled_items(rows) for it in items]
+    names = [r["c"].name for r in rows if r["sheet"]]
+    groups = [{"key": "kind", "label": "What it is", "values": list(dict.fromkeys(i["group"] for i in out))},
+              {"key": "who", "label": "Who has it", "values": names}]
+    return {"rows": out, "groups": groups if out else []}
 
 
 def party_coins(rows: list[dict]) -> int:

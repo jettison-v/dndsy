@@ -139,21 +139,27 @@ def test_the_menu_bars_menus_fit_their_text(people, server):
 
 
 def test_party_filters_work_like_the_rest(people, server):
-    """Party's pooled spells: a chip shows only its group, a second chip adds one, search looks at names (as in
-    Battle's side panel), and nothing matching says so."""
+    """Party's spells use the shared list (DESIGN.md › Lists and filters): a chip shows only its group, Who has it narrows
+    to that character's, search looks at names, and nothing matching says so."""
     page = people("player").open("/party")
-    pool = page.locator("#t-pool-spells")
-    groups = pool.locator(".opt-group")
-    total = groups.count()
+    page.click('[data-tab="t-spells"]')
+    pool = page.locator("#t-spells")
+    rows = pool.locator("[data-ls-row]")
+    total = rows.count()
     assert total > 1
-    pool.locator("[data-opt-kind=g1]").click()
-    assert pool.locator(".opt-group:visible").count() == 1
-    pool.locator("[data-opt-kind=g1]").click()
-    assert pool.locator(".opt-group:visible").count() == total
-    pool.locator("[data-opt-search]").fill("zzzz")
-    assert pool.locator("[data-opt-none]").is_visible()
-    pool.locator("[data-opt-search]").fill("")
-    assert pool.locator(".opt-group:visible").count() == total
+    pool.locator('[data-ls-group="does"]').first.click()
+    some = pool.locator("[data-ls-row]:visible").count()
+    assert 0 < some < total
+    assert pool.locator("[data-ls-active]").is_visible()  # Showing only: … ×
+    pool.locator("[data-ls-clear]").click()
+    assert pool.locator("[data-ls-row]:visible").count() == total
+    pool.locator('[data-ls-group="who"][data-ls-value="Cole"]').click()
+    assert 0 < pool.locator("[data-ls-row]:visible").count() <= total
+    pool.locator("[data-ls-clear]").click()
+    pool.locator("[data-ls-search]").fill("zzzz")
+    assert pool.locator("[data-ls-empty]").is_visible()
+    pool.locator("[data-ls-search]").fill("")
+    assert pool.locator("[data-ls-row]:visible").count() == total
 
 
 def test_the_rolls_sidebar_stays_as_you_left_it(people, server):

@@ -161,15 +161,16 @@ def test_party_page(player, db):
     import_bundle(db, BUNDLE)
     characters.refresh(db, char(db, "Cole"))
     page = player.get("/party").text
-    assert "Party at a glance" in page and '<span class="nowrap">Druid 6</span> / <span class="nowrap">Monk 2</span>' in page and 'Wild Shape <span class="pips" aria-label="3 of 3 left">' in page
-    assert "Pass. Perc." not in page and '<span class="res-label">Slots</span><span class="res-item">1st' in page
-    assert 'data-tab="t-pool-spells">Party spells' in page and 'data-tab="t-pool-items">Party items' in page
-    assert 'data-opt-kind="g1" aria-pressed="false">Healing and recovery' in page and "data-opt-search" in page  # show-only chips, search
+    assert 'data-tab="t-glance">At a glance' in page and 'data-tab="t-spells">Spells' in page and 'data-tab="t-items">Items' in page
+    assert "Druid 6 / Monk 2" in page and '<span>Wild Shape <span class="pips" aria-label="3 of 3 left">' in page  # Cole's card
+    assert "Pass. Perc." not in page and '<span class="note">Slots</span> <span class="nowrap">1st' in page
+    assert 'data-list="party-spell"' in page and 'data-ls-group="does" data-ls-value="Healing and recovery"' in page  # the shared list
+    assert 'data-ls-group="who" data-ls-value="Cole"' in page and "data-ls-search" in page
     assert "Not linked to D&amp;D Beyond yet" in page  # Big C
     assert "Refresh all" not in page  # players can't refresh
     assert f'data-modal-url="/characters/{char(db, "Cole").id}/brief"' in page
     assert "Healing and recovery" in page and "Healing Word" in page  # pooled spells
-    assert "Potion of Healing" in page and "Cole ×2" in page  # pooled items
+    assert "Potion of Healing" in page and '<small class="note">×2</small>' in page  # pooled items, Cole's two
     assert player.get("/characters").status_code == 404  # the Party page is the list
     brief = player.get(f"/characters/{char(db, 'Cole').id}/brief").text
     assert "<html" not in brief and "Advantage on saving throws against being charmed" in brief

@@ -1,52 +1,87 @@
 {% extends "base.html" %}
+{% from "_char.html" import pips, adv %}
+{% from "_help.html" import help %}
+{% from "_lists.html" import filter_column, search_box, active_row %}
 {% block title %}Party · askdnd{% endblock %}
 {% block content %}
-<main class="page sheet wide">
+{# Party (character_pages.party_page; Brett, 2026-10-26, docs/mockups/party.html): the same pieces as Sheet and Campaign.
+   Tabs: At a glance (a card per character, Battle's number tiles), then the party's spells and items in the shared list
+   (DESIGN.md › Lists and filters), who has each shown by portrait. #}
+{% macro who(list) -%}
+<span class="pt-who">{% for w in list %}<span class="pt-w" data-panel-url="{{ w.url }}" tabindex="0" role="button" title="{{ w.label }}" aria-label="Open {{ w.label }}'s"><span class="roll-av hue{{ w.hue }}">{% if w.portrait %}<img src="{{ w.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ w.name[:1] }}</span>{% if w.note %}<small class="note">{{ w.note }}</small>{% endif %}</span>{% endfor %}</span>
+{%- endmacro %}
+<main class="page wide">
   <div class="title-row"><h1>Party</h1></div>
-  <p class="subtitle">Everyone at a glance, then the party's spells and items pooled for planning. Click a spell or item for details, or a name to see that character's.{% if oldest %} Oldest copy from D&amp;D Beyond: {{ oldest | ago }} (refresh from Live in the menu bar).{% endif %}</p>
-  {% if pick %}<p class="flash warn">You aren't set as playing a character yet, so pick one below. (An admin can set who plays which character on Manage › People.)</p>{% endif %}
+  <p class="subtitle">{% if here %}{{ here.name }} · {% endif %}{{ rows | length }} character{{ "s" if rows | length != 1 }}{% if oldest %} · from D&amp;D Beyond {{ oldest | ago }}{% endif %}</p>
+  {% if pick %}<p class="flash warn">You aren't set as playing a character yet, so pick one below. (An admin can set who plays which character on Manage › Table.)</p>{% endif %}
+  {% call help("party", help_off, "modes") %}Click a character, a spell or an item for details; a portrait opens that character's.{% endcall %}
 
-  <section class="section">
-    <h2>Party at a glance</h2>
-    {% set party = rows %}{% include "_party_table.html" %}
-    <p class="note" style="margin:10px 0 0">Click a name for a short version of that character.{% if pick %} Open their {% for r in rows %}<a href="/characters/{{ r.c.id }}{{ '/battle' if pick == 'battle' }}">{{ r.c.name }}</a>{{ ", " if not loop.last }}{% endfor %}.{% endif %}</p>
-  </section>
+  <div data-tour="party">
+  <div class="tabbar" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="t-glance">At a glance</button>
+    <button role="tab" aria-selected="false" data-tab="t-spells">Spells <span class="count">{{ spells.rows | length }}</span></button>
+    <button role="tab" aria-selected="false" data-tab="t-items">Items <span class="count">{{ items.rows | length }}</span></button>
+  </div>
 
-  {% set n_spells = spells | map(attribute=1) | map("length") | sum %}{% set n_items = items | map(attribute=1) | map("length") | sum %}
-  <section class="section pool-tabs" data-tour="party">
-    <div class="tabbar" role="tablist">
-      <button role="tab" aria-selected="true" data-tab="t-pool-spells">Party spells <span class="count">{{ n_spells }}</span></button>
-      <button role="tab" aria-selected="false" data-tab="t-pool-items">Party items <span class="count">{{ n_items }}</span></button>
-    </div>
-    {# Filters as in Battle's side panel (app.js optFilter): search, and chips that show only those groups (Brett,
-       2026-10-26: they used to jump down the page, unlike every other filter) #}
-    {% macro pool(id, groups, empty, hint, noun) %}
-    <div id="{{ id }}" data-opt-panel{% if id != "t-pool-spells" %} hidden{% endif %}>
-      {% if groups %}
-      <p class="hint" style="margin:0 0 6px">{{ hint }}</p>
-      <div class="pool-tools">
-        <div class="ls-search"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <input type="search" data-opt-search placeholder="Search {{ noun }}" aria-label="Search {{ noun }}" autocomplete="off"></div>
-        <div class="ls-chips" role="group" aria-label="Show only">{% for title, list in groups %}<button type="button" class="ls-chip" data-opt-kind="g{{ loop.index }}" aria-pressed="false">{{ title }} <span class="ls-n">{{ list | length }}</span></button>{% endfor %}</div>
-      </div>
-      {% for title, list in groups %}
-      <div class="opt-group" data-kind="g{{ loop.index }}">
-        <h3 class="divider">{{ title }} <span class="count">{{ list | length }}</span></h3>
-        <div class="pool-grid">{% for x in list %}{{ caller(x) }}{% endfor %}</div>
-      </div>
+  <div id="t-glance">
+    {% if rows %}<div class="pt-cards">
+      {% for r in rows %}
+      <article class="section pt-card"{% if not pick %} data-modal-url="/characters/{{ r.c.id }}/brief" tabindex="0" role="button" aria-label="{{ r.c.name }}: a short version"{% endif %}>
+        <header class="pt-head"><span class="roll-av hue{{ r.c.id % 6 }}">{% if r.sheet and r.sheet.portrait %}<img src="{{ r.sheet.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ r.c.name[:1] }}</span>
+          <div class="pt-id"><h2 class="pt-name">{% if pick %}<a href="/characters/{{ r.c.id }}{{ '/battle' if pick == 'battle' }}">{{ r.c.name }}</a>{% else %}{{ r.c.name }}{% endif %}</h2>{% if r.sheet %}<p class="note">{{ r.classes }}</p>{% endif %}</div></header>
+        {% if r.sheet %}{% set s = r.sheet %}
+        <div class="strip compact pt-tiles"><div><small>Hit points</small><b>{{ s.hit_points.current }}</b><span class="note"> / {{ s.hit_points.max }}</span></div><div><small>Armor class</small><b>{{ s.armor_class }}</b></div><div><small>Speed</small><b>{{ s.speed.walk }} ft</b></div></div>
+        {% if r.top_saves %}<p class="pt-line"><span class="note">Best saves</span> {% for sv in r.top_saves %}<span class="nowrap">{{ sv.short }} <b>{{ sv.label }}</b>{% if sv.adv %} {{ adv(sv.adv) }}{% endif %}</span>{{ " ·" if not loop.last }} {% endfor %}</p>{% endif %}
+        {% if r.resources %}<div class="pt-res">{% for x in r.resources %}<span>{{ x.name }} {{ pips(x.uses) }}</span>{% endfor %}</div>{% endif %}
+        {% if r.slots %}<p class="pt-line"><span class="note">Slots</span> {% for x in r.slots %}<span class="nowrap">{{ x.label }} {{ pips(x.uses) }}</span> {% endfor %}</p>{% endif %}
+        {% else %}<p class="muted">{{ "Not fetched from D&D Beyond yet" if r.c.ddb_id else "Not linked to D&D Beyond yet" }}</p>{% endif %}
+      </article>
       {% endfor %}
-      <p class="muted" data-opt-none hidden>Nothing matches.</p>
-      {% else %}<p class="muted">{{ empty }}</p>{% endif %}
+    </div>{% else %}<p class="muted">No characters in this campaign yet. An admin adds them, or moves one here, on Manage › Campaigns.</p>{% endif %}
+  </div>
+
+  {% macro pool(id, data, noun, nouns, empty, cols) %}
+  <div id="{{ id }}" hidden>
+    {% if data.rows %}
+    <section class="section pt-list" data-list="party-{{ noun }}" data-noun="{{ noun }}" data-nouns="{{ nouns }}" data-default-sort="default">
+      <div class="ls-layout">
+        {{ filter_column(data.groups) }}
+        <div class="ls-main">
+          {{ search_box("Search the party's " ~ nouns) }}
+          {{ active_row() }}
+          <div class="ls-toolbar"><span class="note" data-ls-summary></span></div>
+          <div class="ls-rows pt-rows {{ cols }}" data-ls-rows>
+            {{ caller() }}
+          </div>
+          <p class="muted" data-ls-empty hidden>Nothing matches. Clear a filter to see more.</p>
+          {% if noun == "item" and coins %}<p class="note pt-coins">And about {{ "{:,}".format(coins) }} gp in coins across the party.</p>{% endif %}
+        </div>
+      </div>
+    </section>
+    {% else %}<p class="muted">{{ empty }}</p>{% endif %}
+  </div>
+  {% endmacro %}
+
+  {% call pool("t-spells", spells, "spell", "spells", "No spells yet: nobody in the party has spellcasting on D&D Beyond.", "pt-spells") %}
+    <div class="pt-row pt-headrow" aria-hidden="true"><span>Spell</span><span>Level</span><span>Time</span><span>Does</span><span>Who has it</span></div>
+    {% for sp in spells.rows %}
+    <div class="pt-row" data-ls-row data-f='{{ sp.f | tojson }}' data-name="{{ sp.name | lower }}" data-group-label="{{ sp.group }}" data-sort-default="{{ loop.index }}"
+      data-panel-url="{{ sp.url }}" tabindex="0" role="button" aria-label="{{ sp.name }}: details">
+      <span class="pt-nm"><b>{{ sp.name }}</b>{% if sp.concentration %} <span class="tag">Conc.</span>{% endif %}{% if sp.ritual %} <span class="tag">Ritual</span>{% endif %}</span>
+      <span>{{ sp.level_label }}</span><span>{{ sp.time }}</span><span class="note">{{ sp.does }}</span>{{ who(sp.who) }}
     </div>
-    {% endmacro %}
-    {% call(sp) pool("t-pool-spells", spells, "No spells yet.", "Spells the party has prepared or knows right now, grouped by what they do. Click one for details, or a name to see that character's.", "party spells") %}
-      <div class="poolrow" data-opt-row data-panel-url="{{ sp.url }}" tabindex="0" role="button"><span><b>{{ sp.name }}</b> <span class="meta">{{ "cantrip" if not sp.level else sp.level | ordinal }} · {{ sp.casting_time | lower }}{% if sp.concentration %} · Conc.{% endif %}{% if sp.healing %} · heals {{ sp.healing }}{% elif sp.damage %} · {{ sp.damage }}{% endif %}</span></span>
-        <span class="chips">{% for w in sp.who %}<span class="chip" data-panel-url="{{ w.url }}" tabindex="0" role="button" title="Open {{ w.label }}'s">{{ w.label }}</span>{% endfor %}</span></div>
-    {% endcall %}
-    {% call(it) pool("t-pool-items", items, "No magic items yet.", "Magic items and consumables across the party" ~ (", and about " ~ "{:,}".format(coins) ~ " gp in coins" if coins else "") ~ ". Click one for details, or a name to see that character's copy.", "party items") %}
-      <div class="poolrow" data-opt-row data-panel-url="{{ it.url }}" tabindex="0" role="button"><span><b>{{ it.name }}</b>{% if it.summary %} <span class="meta">{{ it.summary[:110] }}{{ "…" if it.summary | length > 110 }}</span>{% endif %}</span>
-        <span class="chips">{% for w in it.who %}<span class="chip" data-panel-url="{{ w.url }}" tabindex="0" role="button" title="Open {{ w.label }}'s">{{ w.label }}</span>{% endfor %}</span></div>
-    {% endcall %}
-  </section>
+    {% endfor %}
+  {% endcall %}
+
+  {% call pool("t-items", items, "item", "items", "No magic items or consumables yet.", "pt-items") %}
+    <div class="pt-row pt-headrow" aria-hidden="true"><span>Item</span><span>What it does</span><span>Who has it</span></div>
+    {% for it in items.rows %}
+    <div class="pt-row" data-ls-row data-f='{{ it.f | tojson }}' data-name="{{ it.name | lower }}" data-group-label="{{ it.group }}" data-sort-default="{{ loop.index }}"
+      data-panel-url="{{ it.url }}" tabindex="0" role="button" aria-label="{{ it.name }}: details">
+      <span class="pt-nm"><b>{{ it.name }}</b></span><span class="note pt-sum">{{ it.summary }}</span>{{ who(it.who) }}
+    </div>
+    {% endfor %}
+  {% endcall %}
+  </div>
 </main>
 {% endblock %}
