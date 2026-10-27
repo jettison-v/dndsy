@@ -1,4 +1,4 @@
-# Data strategy: four buckets, books checked once (for Brett's approval, 2026-10-27)
+# Data strategy: four buckets, books checked once (decided by Brett, 2026-10-27)
 
 Brett's notes (2026-10-27) set the buckets and the constraint: keep data properly separated so each campaign sees only
 what it should, without adding overhead ("I do not want to have to check access to the books every time the game
@@ -118,6 +118,9 @@ From the questions on the data strategy page and the overlay mockup (`docs/mocku
   - **Phones read and plan only:** no changes to sheet numbers there; a phone is the story and planning companion.
   - **Party Inventory later:** the table hasn't started using it; loot through it waits until they do.
   - Unofficial (D&D Beyond offers no way to write), so a one-day proof on Cole comes before any roadmap change.
+  - **Proven (2026-10-27):** the bridge proof works against the real D&D Beyond (app/ddb_bridge.py,
+    extension/askdnd-bridge/, `docs/artifacts/ddb-bridge.html`); it's merged switched off, local only, until Brett
+    decides to bring it to the table.
 
 ## Decisions for Brett
 
