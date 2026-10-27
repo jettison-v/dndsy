@@ -126,7 +126,7 @@ def test_dm_never_sees_character_notes_even_as_admin(env, monkeypatch, db):
     add(owner, "dm@example.com", "dm", admin=True)
     dm, _ = sign_in(monkeypatch, "dm@example.com")
     assert dm.get("/manage/usage").status_code == 200
-    assert "/manage/accounts" in dm.get("/").text
+    assert "/manage/askdnd" in dm.get("/").text  # an admin: the menu leads to askdnd's Overview
     # The campaign doc is for the whole table; an old character doc stays hidden from the DM
     campaign = db.scalar(select(Campaign))
     char = db.scalar(select(Character))

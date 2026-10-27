@@ -16,9 +16,9 @@
   <p class="subtitle">Every token and component askdnd is built from, drawn with the app's own styles, so this page changes when they do. Rules for when to use each: <code>docs/DESIGN.md</code>. A test blocks text sizes, colors and screen widths outside the tokens.</p>
 
   <nav class="ds-jump" aria-label="On this page">
-    {% for id, label in [("colors", "Colors"), ("type", "Text sizes"), ("space", "Space and corners"), ("buttons", "Buttons"), ("pills", "Pills"),
+    {% for id, label in [("colors", "Colors"), ("type", "Text sizes"), ("space", "Space and corners"), ("buttons", "Buttons"), ("switches", "Switches"), ("pills", "Pills"),
                          ("headings", "Headings"), ("surfaces", "Sections and tiles"), ("lists", "Lists"), ("marks", "Marks and pips"),
-                         ("help", "Help and empty states"), ("panels", "Panels and toasts"), ("narrow", "Narrow screens"), ("story", "Story text"), ("manage", "Manage pages")] %}<a href="#{{ id }}">{{ label }}</a>{% endfor %}
+                         ("help", "Help and empty states"), ("panels", "Panels and toasts"), ("narrow", "Narrow screens"), ("story", "Story text"), ("manage", "Manage pages"), ("ddb", "D&D Beyond states")] %}<a href="#{{ id }}">{{ label }}</a>{% endfor %}
   </nav>
 
   <section class="section" id="colors">
@@ -54,6 +54,12 @@
     <div class="ds-row"><button class="btn primary small" type="button">Save</button><button class="btn small" type="button">+ Add a step</button><button class="btn link small" type="button">Clear all</button><button class="btn link danger small" type="button">Remove</button></div>
   </section>
 
+  <section class="section" id="switches">
+    <h2>Switches</h2>
+    {{ ds("Two-way switch", ".seg > button[aria-pressed]", "Two or three choices side by side that change something on the page (By level · By name); the one that's on is red.") }}
+    <div class="ds-row"><span class="seg" role="group" aria-label="Sort"><button type="button" aria-pressed="true">By level</button><button type="button" aria-pressed="false">By name</button></span></div>
+  </section>
+
   <section class="section" id="pills">
     <h2>Pills</h2>
     {{ ds("Tag", ".tag", "Labels something; never clickable. Status tags use a status color.") }}
@@ -62,6 +68,8 @@
     <div class="ds-row"><button class="ls-chip" type="button" aria-pressed="false">Concentration <span class="ls-n">4</span></button><button class="ls-chip" type="button" aria-pressed="true">1st level <span class="ls-n">3</span></button><button class="ws-chip" type="button">Normal</button><button class="ws-chip on" type="button">Polar Bear</button><button class="spell-chip" type="button">Healing Word</button><span class="chip">Bonus</span></div>
     {{ ds("Count", ".count", "A number next to a tab or heading.") }}
     <div class="ds-row"><span>Combos <span class="count">3</span></span><span>Reminders <span class="count">2</span></span></div>
+    {{ ds("Waiting count", ".mcount", "How many things wait for you, red, beside Needs you and Inbox in the Manage menu and on Manage pages. Asked for when the menu opens (/manage/counts), so no page waits for it; hidden at zero.") }}
+    <div class="ds-row"><span>Needs you <span class="mcount">3</span></span><span>Inbox <span class="mcount">5</span></span></div>
     {{ ds("Roll chip", ".roll-chip · .roll-hit", "Rolls dice (to hit, damage, healing); amber on hover. Kept separate from Chips (Brett, 2026-10-22).") }}
     <div class="ds-row"><span class="hit"><button class="roll-hit" type="button">+7</button></span><button class="roll-chip" type="button">Roll</button><button class="roll-chip" type="button">Heal</button></div>
   </section>
@@ -158,7 +166,9 @@
     </table></div>
     <p class="note">A side panel opened from inside a modal slides out from the modal's own right edge, inside it.</p>
     {{ ds("Toast", "#toast", "A short message after an action: \"Saved\", \"Wild Shape: Polar Bear\", \"Couldn't save the order\".") }}
-    <div class="ds-row"><button class="btn" type="button" onclick="window.askdndToast && askdndToast('Saved')">Today's toast</button></div>
+    <div class="ds-row"><button class="btn" type="button" onclick="window.askdndToast && askdndToast('Saved')">Today's toast</button>
+      <button class="btn" type="button" onclick="window.askdndToast && askdndToast('Game Mode\'s D&amp;D Beyond sync ends at 11:40 PM.', { label: 'Keep going', run: () => askdndToast('Kept going') })">With a button</button></div>
+    {{ ds("Toast with a button", "toast(message, {label, run})", "When the message offers one thing to do (Keep going). It stays 20 seconds instead of two, and the button closes it.") }}
     <h3 class="divider">Toast options (pick one)</h3>
     <p class="hint">Each shows a success, an error and one with Undo. Errors stay until closed in B and D; the others fade after a few seconds.</p>
     <div class="ds-toasts">
@@ -236,6 +246,13 @@
   <section class="section" id="manage">
     <h2>Manage pages</h2>
     <p class="hint">Every Manage page is built from these and nothing else: a test fails on a Manage page with its own inline spacing (tests/test_design_system.py).</p>
+    {{ ds("Two doors", "Manage ▾ · ⚙ Admin ▾ · .menu-head.camp | .tool", "Manage is this campaign's (the DM, reviewers, admins), red; Admin is askdnd's as a whole (admins only), blue. Each menu opens with a head saying which, lists what's opened most, the rest on one line, and Manage lists your other campaigns.") }}
+    {{ ds("Band", "_manage_head.html · .manage-band.camp | .tool", "The top of every Manage and Admin page, in its half's colour, with the way to the other half on the right.") }}
+    <div class="manage-band camp"><b>The Lost Mine</b><span>This campaign's Manage</span><a href="#manage">⚙ askdnd admin →</a></div>
+    <div class="manage-band tool"><b>⚙ askdnd admin</b><span>The same in every campaign</span><a href="#manage">The Lost Mine's Manage →</a></div>
+    {{ ds("Section list", "_manage_head.html · .manage-side · .manage-sec · .manage-jump", "The page's half down the left, in sections, most often opened first (this page has one at 1240px and wider). Narrower, the same list opens from the jump control under the band. The list sits in the page's left padding, so the page keeps its width.") }}
+    {{ ds("Overview card", ".ov-cards > a.ov-card · .ov-state.ok | .warn", "One per page on askdnd's Overview: its name, how it stands (green when fine, amber when it needs a look), and what the page is for. The whole card opens the page.") }}
+    <div class="ov-cards"><a class="ov-card" href="#manage"><b>Usage</b><span class="ov-state ok">$4.10 of $20.00 this month</span><span class="note">Claude spending and balance</span></a><a class="ov-card" href="#manage"><b>Backups and imports</b><span class="ov-state warn">Last backup failed (2 days ago)</span><span class="note">Nightly backups, then imports</span></a></div>
     {{ ds("Page head", ".title-row h1 · .title-action · .subtitle", "The page's name, one button on the right if the page has a main action, then one or two sentences on what the page is for.") }}
     <div class="title-row"><h1>Table</h1><button class="btn title-action" type="button">Refresh all</button></div>
     <p class="subtitle">Who plays in The Lost Mine and with which character.</p>
@@ -256,6 +273,14 @@
     <div class="form-narrow"><label class="field">Campaign name<input type="text" value="The Lost Mine"></label><div><button class="btn primary" type="button">Save</button></div></div>
     {{ ds("Fold", "details.fold", "Something you need now and then (+ Add a character, Removed accounts): folded until opened, with the same gaps inside.") }}
     <details class="fold"><summary>+ Add a character</summary><p class="note">The form goes here.</p></details>
+  </section>
+
+  <section class="section" id="ddb">
+    <h2>D&amp;D Beyond states</h2>
+    <p class="hint">For anything askdnd changes on D&amp;D Beyond (the bridge, a local proof for now; docs/artifacts/ddb-bridge.html). A number shows as changed only once D&amp;D Beyond has it.</p>
+    {{ ds("State", ".br-st.br-live | .br-wait | .br-off | .br-seen | .br-asleep", "Live: D&D Beyond has it. Waiting: on its way. Not on D&D Beyond yet: askdnd couldn't make it, and lists the end state to make by hand. Changed on D&D Beyond: someone changed it there. Asleep: no one is using askdnd or a sheet.") }}
+    <div class="ds-row"><span class="br-st br-live">Live with D&amp;D Beyond</span><span class="br-st br-wait">Waiting for D&amp;D Beyond</span><span class="br-st br-off">Not on D&amp;D Beyond yet</span><span class="br-st br-seen">Changed on D&amp;D Beyond</span><span class="br-st br-asleep">D&amp;D Beyond bridge · asleep</span></div>
+    {{ ds("Status badge", ".br-st.br-pill", "The bridge's health in the corner of every page, where it's switched on; a click runs the check. Hidden on phones.") }}
   </section>
 </main>
 {% endblock %}

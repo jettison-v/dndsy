@@ -24,10 +24,10 @@ STORY = ("/sessions", "/campaign", "/map")
 # The campaign's Manage pages (app/manage.py), plus /manage itself (Needs you). /manage/history without a campaign
 # is the admins' askdnd-wide History, so it isn't here.
 MANAGE = ("/manage/inbox", "/manage/sessions", "/manage/proposals", "/manage/table", "/manage/house-rules",
-          "/manage/settings", "/manage/dm-guide")
+          "/manage/settings", "/manage/dm-guide", "/manage/counts")
 
 # askdnd-wide Manage pages: the same in every campaign, so their address never names one (/c/x/manage/usage → /manage/usage)
-ASKDND = ("/manage/campaigns", "/manage/accounts", "/manage/tool-corrections", "/manage/usage", "/manage/backups", "/manage/design")
+ASKDND = ("/manage/askdnd", "/manage/campaigns", "/manage/accounts", "/manage/tool-corrections", "/manage/usage", "/manage/backups", "/manage/design")
 
 
 def is_story(path: str) -> bool:

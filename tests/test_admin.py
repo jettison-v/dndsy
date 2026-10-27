@@ -56,7 +56,7 @@ def test_admin_can_import(client, monkeypatch, db):
 
     sign_in(client, monkeypatch, "admin@example.com")
     page = client.get("/")
-    assert "Manage" in page.text and "/manage/backups" in page.text
+    assert "Manage" in page.text and "/manage/askdnd" in page.text  # (the Overview leads to Backups and imports)
     r = upload(client, {"campaign": {"slug": "x", "name": "X"}, "entities": [{"kind": "npc", "name": "Uni"}]})
     assert "Preview: bundle.json" in r.text and "Nothing saved yet" in r.text and "Uni" in r.text
     assert db.scalar(select(Entity)) is None  # nothing written by the preview

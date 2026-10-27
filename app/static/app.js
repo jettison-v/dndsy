@@ -2713,6 +2713,7 @@
         : 'D&D Beyond read ' + (health.read_check.ok ? 'OK' : 'failed: ' + health.read_check.error) + (health.round_trip && health.round_trip.error ? ' · check: ' + health.round_trip.error : '');
       gameTimer(health.awake);
     }
+    clearTimeout(healthTimer);  // (again: another call may have finished while this one waited)
     healthTimer = setTimeout(checkHealth, health && health.state === 'wait' ? 3000 : 30000);
   }
   // Game Mode keeps the bridge awake for the game (6 hours unless an admin changed it): a warning with Keep going
@@ -2809,4 +2810,21 @@
   window.postMessage({ askdndBridge: 'ping' }, location.origin);
   phone.addEventListener('change', render);
   render();
+})();
+
+// ---------------------------------------------------------------- Manage counts
+// Beside Needs you and Inbox (app/manage.py counts): asked for once, when the Manage menu opens or a Manage page
+// loads, so no other page waits for them
+(function () {
+  let asked = false;
+  function fill() {
+    const src = document.querySelector('[data-manage-counts]');
+    if (asked || !src) return;
+    asked = true;
+    fetch(src.dataset.manageCounts, { headers: { Accept: 'application/json' } }).then(r => (r.ok ? r.json() : {})).then(c => {
+      document.querySelectorAll('[data-manage-count]').forEach(el => { const n = c[el.dataset.manageCount]; el.textContent = n || ''; el.hidden = !n; });
+    }).catch(() => {});
+  }
+  if (document.querySelector('.manage-side')) fill();
+  document.addEventListener('click', e => { if (e.target.closest('[data-menu="manage-menu"]')) fill(); });
 })();

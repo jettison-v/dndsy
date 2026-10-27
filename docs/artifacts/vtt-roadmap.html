@@ -146,10 +146,10 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
 
 <div class="wrap">
   <header class="top">
-    <div class="eyebrow">askdnd · plan · Oct 22, 2026 · reordered Oct 26 · updated Oct 27</div>
+    <div class="eyebrow">askdnd · plan · Oct 22, 2026 · reordered Oct 26 · updated Oct 27 (two-way sync)</div>
     <h1>From table companion to virtual tabletop</h1>
     <p class="lead">How askdnd grows from today's recaps, character pages and table rolls into a full virtual tabletop for our table: live character state, combat, maps and tokens, the DM's media tools, and eventually voice and video. Each piece is built behind the VTT switch, tried in the test campaign, then switched on for the table.</p>
-    <p class="muted">Decided before this plan: it's for our table, without ruling out other groups later. The fight screen comes first (Brett, Oct 26), with hit points and the play log on it, then the rest of live character state. D&D Beyond stays where characters are built and leveled, and askdnd runs everything during play. Voice and video come later, as a nice to have. And every piece is built to scale and kept clean, even when that takes more effort.</p>
+    <p class="muted">Decided before this plan: it's for our table, without ruling out other groups later. The fight screen comes first (Brett, Oct 26), with hit points and the play log on it, then the rest of live character state. askdnd runs play and D&amp;D Beyond stays where characters are built and leveled, and the two stay in step both ways: a change made in either one reaches the other (Oct 27). Voice and video come later, as a nice to have. And every piece is built to scale and kept clean, even when that takes more effort.</p>
   </header>
 
   <div class="controls" role="group" aria-label="Show items">
@@ -174,7 +174,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     <div class="sec-head">
       <div class="eyebrow">Where we are · Oct 27</div>
       <h2>A strong base to build on</h2>
-      <p class="why">A lot of what a virtual tabletop needs already exists, and most of Phase 0 is done. The biggest gap is unchanged: D&amp;D Beyond still owns hit points, spell slots and inventory during play, so askdnd can show them but not change them. The play state design was reviewed on Oct 26; next it shows on the fight screen, Phase 1.</p>
+      <p class="why">A lot of what a virtual tabletop needs already exists, and most of Phase 0 is done. The biggest gap is closing: the D&amp;D Beyond bridge (a working proof, Oct 27) changes hit points and item counts on D&amp;D Beyond from askdnd and confirms each by reading it back, and hears changes made on D&amp;D Beyond as they save. Spell slots, resources and the rest of inventory come next, then the fight screen.</p>
     </div>
     <div class="cols">
       <div class="box"><h3>The story</h3><ul>
@@ -231,8 +231,8 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
         <p class="used">Rule: every item that changes something the table sees announces it. For maps, token moves will carry their position, and hidden monsters go on a DM-only channel.</p>
       </div>
       <div class="box">
-        <div class="head"><h3>Play state and the play log</h3><span class="chip st-part">Designed · reviewed Oct 26</span></div>
-        <p>One home for what askdnd owns during play (HP, slots, resources, conditions, Wild Shape, item counts), per character per campaign. Every change is a log entry with who, what and why, and Undo applies the reverse. D&amp;D Beyond refreshes never overwrite play state; where they meet, the rule is written per field.</p>
+        <div class="head"><h3>Play state and the play log</h3><span class="chip st-part">Designed · to update for the bridge</span></div>
+        <p>One home for what askdnd owns during play (HP, slots, resources, conditions, Wild Shape, item counts), per character per campaign. Every change is a log entry with who, what and why, and Undo applies the reverse. Each change is made on D&amp;D Beyond too and counts once it's read back; a change made on D&amp;D Beyond comes in the same way, so the two never disagree.</p>
         <p class="used">Replaces today's three scattered fields (Wild Shape, concentration, conditions), which don't reach other screens yet. Two people editing at once can't overwrite each other. It shows on the fight screen (Phase 1).</p>
       </div>
       <div class="box">
@@ -263,7 +263,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     <div class="decisions">
       <div class="decision"><b>How screens update live</b><span>A connection to every open page (WebSockets), shared between copies of the app through Postgres, so it scales without a new service.</span><span class="when"><span class="chip st-done">Decided Oct 24</span><span class="chip eff">Phase 0</span></span></div>
       <div class="decision"><b>Play state and the D&amp;D Beyond merge</b><span>Reviewed with the mockup: what askdnd owns, the rule for each field, the DM's undo per line, temporary HP by the 2024 rules. Where it shows moved to the fight screen the same day.</span><span class="when"><span class="chip st-done">Decided Oct 26</span><span class="chip eff">Phase 1</span></span></div>
-      <div class="decision"><b>Where the data lives</b><span>Rules content (the SRD, books the DM buys, homebrew) and how it's organized, with play and story kept as they are. You're writing up your notes first; the recommendation and a content-sources draft are ready to compare.</span><span class="when"><span class="chip st-now">Open</span><span class="chip eff">Before 2b</span></span></div>
+      <div class="decision"><b>Where the data lives</b><span>Four buckets (campaign data, public rules, books the DM owns, askdnd's own additions), a campaign's books checked once, and D&amp;D Beyond kept in step both ways instead of a partial sync.</span><span class="when"><span class="chip st-done">Decided Oct 27</span><span class="chip eff">Before 2b</span></span></div>
       <div class="decision"><b>Where monsters come from</b><span>The free 2024 rules content (SRD 5.2) is built in. Creatures from books the DM owns are entered or pasted by the DM and stay in the database, never in the code.</span><span class="when"><span class="chip eff">Phase 2</span></span></div>
       <div class="decision"><b>How much map automation</b><span>Walls, light and line of sight are a lot of work, and many tables play fine with fog the DM reveals by hand. Decide after using simple maps.</span><span class="when"><span class="chip eff">Phase 3</span></span></div>
       <div class="decision"><b>Where music comes from</b><span>Tracks the DM uploads or has rights to. Streaming services generally can't be played to a group through another app.</span><span class="when"><span class="chip eff">Phase 4</span></span></div>
@@ -278,10 +278,12 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
       <div class="eyebrow">Next</div>
       <h2>What comes next</h2>
       <ol>
-        <li><b>You:</b> list what has frustrated you and the players in D&amp;D Beyond Maps, Foundry and Roll20 (and what each does well). I'll attach each one to the item that fixes it, or add an item.</li>
-        <li><b>The data strategy:</b> your notes, then a decision on where rules content, play and story live.</li>
-        <li><b>The fight screen:</b> a mockup for you to review, then built in small pieces in the test campaign.</li>
-        <li>Rules answers (5.1) stay later.</li>
+        <li><b>A shorter Manage menu</b> (approved, built).</li>
+        <li><b>Bridge polish:</b> no reloading the D&amp;D Beyond sheet after askdnd changes it.</li>
+        <li><b>The bridge's changes</b> for everything a player changes in play: death saves, Heroic Inspiration, conditions and Exhaustion, hit dice, spell slots, prepared spells, class resources, and inventory (equipped, attuned, charges, coins, adding, removing, containers); and rolls made on D&amp;D Beyond coming into Table rolls.</li>
+        <li><b>The bridge for the table:</b> on for beta, and the extension shared as an unlisted Chrome Web Store listing.</li>
+        <li><b>The fight screen</b>, then live character state on top of the bridge.</li>
+        <li><b>You, whenever:</b> the table's frustrations with D&amp;D Beyond Maps, Foundry and Roll20.</li>
       </ol>
     </div>
   </section>
@@ -311,12 +313,12 @@ const PHASES = [
     items: [
       ["2.2", "Initiative and turns", "Everyone's initiative rolled at once (players can roll their own), turn order, round count, a clear “your turn”, and durations counting down. Delay and Ready are handled. The party and the DM's enemies (\u201cEnemy 1\u201d…), each with their hit points.", "", "M", "core", "", "A mockup first"],
       ["1.1", "Hit points askdnd owns", "On the fight screen: damage, healing, temporary HP (2024 rules), death saves, and the Concentration reminder. Damage has a type, and resistance, immunity and vulnerability apply with the reason shown.", "“Halved: resistant to fire (Tiefling)” instead of everyone doing the math aloud.", "M", "core", "", "0.4, 2.2"],
-      ["1.7", "D&D Beyond merge", "On sync, build changes (level, max HP, new spells, purchases) come in and play state stays askdnd's, with a short list of what changed on D&D Beyond. The rule for each field is written down.", "No double bookkeeping: the sheet you play from is the one that counts.", "M", "core", "", "Arrives with 1.1"],
+      ["1.7", "In step with D&D Beyond, both ways", "Every change askdnd makes is made on D&D Beyond through the bridge and counts once it's read back; anything changed on D&D Beyond, by accident or on purpose, comes into askdnd within seconds, build changes (level, max HP, new spells, purchases) included. If the two can't agree, askdnd shows the difference instead of guessing.", "One set of numbers the table can trust, wherever someone changed it.", "M", "core", "part", "The bridge (proof done Oct 27)"],
       ["1.8", "Party at a glance for the DM", "HP, AC, passive Perception and Insight, conditions and slots left for every character on one screen: the fight screen outside a fight. The Party page already shows everyone's numbers.", "", "S", "core", "part", "2.2"],
     ] },
-  { id: "p2", n: "Phase 2", title: "Live character state", why: "askdnd takes over the rest of the numbers that change during play. D&D Beyond remains where characters are built and leveled; its changes merge in without overwriting what happened at the table. Each shows on the fight screen where it matters, and on the character's own pages.",
+  { id: "p2", n: "Phase 2", title: "Live character state", why: "askdnd takes over the numbers that change during play, as a true two-way integration with D&D Beyond: a change made in askdnd is made on D&D Beyond and confirmed, and a change made on D&D Beyond, by accident or on purpose, comes into askdnd within seconds. Both always agree, or the difference is shown, so the table can trust either one. D&D Beyond stays where characters are built and leveled. Each shows on the fight screen where it matters, and on the character's own pages.",
     order: "<b>Order:</b> slots, resources, conditions, rests, inventory, then the level-up companion. House rules switches arrive with the item each one changes.",
-    milestone: "A whole session's bookkeeping happens in askdnd. D&D Beyond is only for building and leveling.",
+    milestone: "A whole session's bookkeeping happens in askdnd, and D&D Beyond agrees with every number.",
     items: [
       ["1.2", "Casting spends slots", "Cast from Battle or the Spell Book, pick the slot level (upcasting shows what changes), pact slots, free rituals. Concentration starts by itself and warns before replacing another.", "", "M", "core", "", "1.1"],
       ["1.3", "Class resources and uses", "Wild Shape, Focus Points, Channel Divinity, Bardic Inspiration and per-rest feats, counted down as they're used.", "", "M", "core", "", "1.1"],

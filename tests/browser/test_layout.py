@@ -16,7 +16,7 @@ PAGES = {
                "/characters/{cole}/plan", "/party", "/help", "/your-suggestions"),
     "admin": tuple(f"/c/main/manage{p}" for p in ("", "/inbox", "/sessions", "/table", "/house-rules", "/history", "/settings",
                                                   "/dm-guide"))
-             + tuple(f"/manage/{p}" for p in ("campaigns", "accounts", "tool-corrections", "usage", "backups", "history",
+             + tuple(f"/manage/{p}" for p in ("askdnd", "campaigns", "accounts", "tool-corrections", "usage", "backups", "history",
                                                "design", "dice")),
 }
 
