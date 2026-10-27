@@ -2088,5 +2088,8 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
 .br-change.br-live { border-color: var(--green); background: var(--green-soft); }
 .br-log { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
 .br-log li { padding: var(--sp-2) 0; border-top: 1px solid var(--line-soft); display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: baseline; }
+/* the bridge's health, bottom right on every page (bottom left is Table rolls' pop-ups and tray); phones read only */
+.br-pill { position: fixed; right: 16px; bottom: 16px; z-index: 8; cursor: pointer; border: 0; font-family: inherit; box-shadow: 0 4px 14px var(--shadow); max-width: min(420px, calc(100vw - 32px)); overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 640px) { .br-pill { display: none; } }
 .br-phone { display: none; }
 @media (max-width: 640px) { .br-phone { display: block; } }

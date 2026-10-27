@@ -45,6 +45,8 @@ UPLOAD_TOKEN = os.getenv("UPLOAD_TOKEN", "").strip()
 # Local development only: /dev/login signs in as this email without Google.
 # Ignored in production and for requests that don't come from this machine.
 DEV_LOGIN_EMAIL = "" if IS_PRODUCTION else os.getenv("DEV_LOGIN_EMAIL", "").strip().lower()
+# The D&D Beyond bridge proof (app/ddb_bridge.py, extension/askdnd-bridge): on only where DDB_BRIDGE=1, never in production
+DDB_BRIDGE = not IS_PRODUCTION and os.getenv("DDB_BRIDGE", "").strip() == "1"
 
 
 def sqlalchemy_url(raw: str | None) -> str:

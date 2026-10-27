@@ -1,215 +1,521 @@
 """The D&D Beyond bridge, a proof (Brett, 2026-10-27; docs/mockups/ddb-overlay.html, docs/plans/2026-10-27-data-strategy.md).
 
 askdnd's browser extension (extension/askdnd-bridge/) runs in a person's own signed-in D&D Beyond tab. It tells askdnd
-the moment the sheet saves a change, and makes askdnd's changes there, as that person, with the same requests the
-sheet itself sends. The rule: **D&D Beyond confirms every change.** askdnd shows a number as changed only after it has
-read the change back from D&D Beyond (characters.refresh); until then the change is "waiting", and if it can't be made
-it's "not on D&D Beyond yet". Four states, everywhere: live, waiting, not_yet, seen (changed on D&D Beyond itself).
+the moment the sheet saves, and makes askdnd's changes there, as that person, with the requests the sheet itself sends.
+It works like middleware between askdnd and D&D Beyond, and repairs itself:
 
-The proof covers one action, drinking a Potion of Healing (its count and hit points), for the character's own player.
-It's local only (refused in production) and keeps its changes and log in this process's memory: a restart forgets
-them, and a second copy of the app wouldn't see them. Built for real, both go in the database (play log, VTT 0.4).
+1. **What you did, not numbers.** askdnd keeps intents ("drank a Potion of Healing, rolled 7"). The D&D Beyond totals
+   are worked out from a fresh read of D&D Beyond when they're sent, so a sheet that changed meanwhile is built on, not
+   written over.
+2. **One outbox per character, end state only.** Everything waiting for a character goes as one batch of final totals
+   (the newest absolute value is the only one that matters), one batch at a time per character.
+3. **Delivered on its own.** Whenever the extension has the character's sheet open it collects the outbox: when the
+   sheet opens, after every save, and every 30 seconds. A batch that fails is tried again later, by itself.
+4. **Read back, field by field.** D&D Beyond can drop a write and still answer OK (DDB Importer, src/updater/
+   syncQueue.ts), so a change counts only once askdnd reads it back. A field still at its old value is sent again, up to
+   MAX_ATTEMPTS times. Just before writing, the extension reads the sheet itself: a field already at its new value is
+   skipped (no double drink), and if D&D Beyond changed in the moment since askdnd read it, the batch is worked out
+   again from the new numbers.
+5. **Never a guess.** A field D&D Beyond holds at a value askdnd can't explain after writing to it isn't written over:
+   the change stops as "not on D&D Beyond yet", with the end state to make by hand.
+6. **Health.** The extension reports in every minute; askdnd reads the test character every hour (no sign-in needed);
+   a round trip on the test character (1 hit point and a Candle out and back) runs from the status pill before a game;
+   every page's menu bar shows how it stands.
 
-askdnd decides the D&D Beyond requests (`ops`), and the extension makes only the two it knows (OPS), so a page can't
-ask it to change anything else. Each op says what askdnd believes D&D Beyond has now (`from`); the extension reads the
-sheet fresh first and makes nothing if D&D Beyond has changed since, so askdnd never writes over a change it hadn't seen
-(2026-10-27: a drink worked out from a copy read an hour earlier would have put hit points back to 51).
+States for a change: waiting (and sending), live (D&D Beyond has it), not_yet (can't be made; the end state is listed
+to make by hand), plus seen in the log (changed on D&D Beyond itself). The outbox, the batches, the log and the
+extension's key are in the database (BridgeIntent, BridgeBatch, BridgeLog, BridgeKey), so a restart, a crash or a
+second copy of the app loses and doubles nothing; each character's row is locked while its batch is built or settled,
+so two copies never build two batches for one character. Only the extension's heartbeat is kept in memory (it comes
+back within 30 seconds). Local only: on where DDB_BRIDGE=1, never in production.
 
-The extension calls askdnd with a key it got from an askdnd page you're signed in to (`/bridge/connect`), not with
-askdnd's cookie: to Chrome the extension is a third party, and a browser that blocks third-party cookies sends none.
+The extension makes only the two requests it knows (OPS), so a page can't ask it to change anything else; it calls
+askdnd with a key from an askdnd page you're signed in to (`/bridge/connect`), since to Chrome it's a third party and a
+browser blocking third-party cookies sends it no cookie.
 """
 
-import itertools
+import hashlib
 import secrets
-import threading
 import time
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import access, config, picks, table_rolls
+from app import access, config, ddb, picks, table_rolls
 from app import characters as chars
 from app.auth import current_user
 from app.db import get_db
-from app.models import Character
+from app.models import BridgeBatch, BridgeIntent, BridgeKey, BridgeLog, Character
 from app.templating import templates
 
 router = APIRouter()
 
-# The D&D Beyond requests the extension may make (character-service.dndbeyond.com), and what each body holds. Learned
-# from the sheet's own saves (2026-10-27): both send new totals, not +1/-1, so repeating one can't double it.
-OPS = {
-    "/character/v5/life/hp/damage-taken": ("characterId", "removedHitPoints", "temporaryHitPoints"),
-    "/character/v5/inventory/item/quantity": ("characterId", "id", "quantity"),
-}
+HP_PATH = "/character/v5/life/hp/damage-taken"
+ITEM_PATH = "/character/v5/inventory/item/quantity"
+OPS = {HP_PATH: ("characterId", "removedHitPoints", "temporaryHitPoints"), ITEM_PATH: ("characterId", "id", "quantity")}
 HEALING = {"Potion of Healing": "2d4+2", "Potion of Greater Healing": "4d4+4", "Potion of Superior Healing": "8d4+8",
            "Potion of Supreme Healing": "10d4+20"}  # SRD 5.2.1
-WAIT_SECONDS = 20  # a change D&D Beyond hasn't confirmed by then is "not on D&D Beyond yet"
-MIN_REFRESH_SECONDS = 2  # the sheet saves in bursts; one read of D&D Beyond per burst
-
-_lock = threading.Lock()
-_ids = itertools.count(1)
-_changes: dict[int, dict] = {}  # change id -> {character_id, state, label, expect, ops, at, error}
-_logs: dict[int, list[dict]] = {}  # character id -> newest first: {text, state, at}
-_seen: dict[int, dict] = {}  # character id -> the numbers last read from D&D Beyond
-_refreshed: dict[int, float] = {}
-_keys: dict[str, dict] = {}  # the extension's key -> who gave it (the signed-in person on an askdnd page)
+TEST_DDB_ID = "172836541"  # Vi, Brett's test character on D&D Beyond (not in the table's campaign)
+TEST_ITEM = "Candle"  # the round trip takes one and puts it back
+MAX_ATTEMPTS = 3
+RETRY_SECONDS = (0, 5, 20)  # how long a batch that didn't land waits before it's sent again
+SENDING_SECONDS = 30  # a batch the extension took but never answered for is offered again
+EXTENSION_FRESH_SECONDS = 90  # the extension reports every 30 seconds
+READ_CHECK_SECONDS = 3600
+OPEN = ("waiting", "sending", "not_yet")
+_health = {"extension_at": 0.0, "sheets": [], "heard_at": 0.0, "read_check": None, "round_trip": None}  # a heartbeat, in memory
 
 
 def _local_only():
-    if config.IS_PRODUCTION:
+    if not config.DDB_BRIDGE:  # (never in production: app/config.py)
         raise HTTPException(404)
 
 
-def _numbers(summary: dict | None) -> dict:
-    """The numbers the proof follows: hit points and each item's count."""
-    if not summary:
+def _now() -> str:
+    return datetime.now(UTC).isoformat()
+
+
+def _lock(db: Session, character_id: int) -> None:
+    """Hold this character's row until the transaction ends: one copy of the app at a time builds or settles its batch."""
+    db.execute(select(Character.id).where(Character.id == character_id).with_for_update())
+
+
+def _log(db: Session, character_id: int, text: str, state: str) -> None:
+    db.add(BridgeLog(character_id=character_id, text=text[:400], state=state))
+
+
+# ------------------------------------------------------------------ the numbers askdnd follows
+
+
+def numbers(character: Character) -> dict:
+    """Hit points (as D&D Beyond keeps them: damage taken and temporary) and each item's count, exactly as D&D Beyond
+    has them, from its saved copy (not askdnd's display summary, which shows a count of 0 as 1)."""
+    summary = chars.character_summary(character)
+    raw = character.snapshot.raw if character.snapshot else None
+    if not summary or not raw:
         return {}
-    hp = summary["hit_points"]
-    return {"hp": hp["current"], "max": hp["max"], "temp": hp["temp"], "removed": hp["damage"],
-            "items": {it["key"]: it["quantity"] for it in summary["inventory"] if it["key"].startswith("item:")}}
+    inv = [i for i in raw.get("inventory") or [] if isinstance(i, dict) and i.get("id") is not None]
+    return {"max": summary["hit_points"]["max"], "removed": raw.get("removedHitPoints") or 0, "temp": raw.get("temporaryHitPoints") or 0,
+            "items": {i["id"]: i.get("quantity") or 0 for i in inv}, "names": {i["id"]: (i.get("definition") or {}).get("name", "Item") for i in inv}}
 
 
-def _log(character_id: int, text: str, state: str) -> None:
-    _logs.setdefault(character_id, []).insert(0, {"text": text, "state": state, "at": datetime.now(UTC).isoformat()})
-    del _logs[character_id][20:]
+def fields(n: dict) -> dict:
+    """The values askdnd writes, keyed as a batch's ops are: "hp" and "item:<id>"."""
+    return {"hp": [n["removed"], n["temp"]], **{f"item:{i}": q for i, q in n["items"].items()}}
 
 
-def _diff(name: str, before: dict, after: dict, summary: dict) -> list[str]:
-    names = {it["key"]: it["name"] for it in summary["inventory"]}
+def plan(intents: list[dict], n: dict) -> tuple[dict, list[str], list[tuple[dict, str]]]:
+    """The end state of these intents built on what D&D Beyond has now (`n`): the final value of each field they touch,
+    one line per field to show, and any intent that can't happen any more (with why)."""
+    removed, temp, items = n["removed"], n["temp"], dict(n["items"])
+    impossible, touched = [], []
+    for it in intents:
+        d = it["data"]
+        if it["kind"] == "drink":
+            if items.get(d["item"], 0) < 1:
+                impossible.append((it, f"No {d['name']} left on D&D Beyond."))
+                continue
+            items[d["item"]] -= 1
+            removed = max(0, removed - d["heal"])
+            touched += ["hp", f"item:{d['item']}"]
+        elif it["kind"] == "hp":  # + heals, - damage; temporary hit points take damage first (2024 rules)
+            if d["amount"] >= 0:
+                removed = max(0, removed - d["amount"])
+            else:
+                soak = min(temp, -d["amount"])
+                temp, removed = temp - soak, min(n["max"], removed + (-d["amount"] - soak))
+            touched.append("hp")
+        elif it["kind"] == "item":
+            if items.get(d["item"]) is None or items[d["item"]] + d["delta"] < 0:
+                impossible.append((it, f"D&D Beyond doesn't have enough {d['name']}."))
+                continue
+            items[d["item"]] += d["delta"]
+            touched.append(f"item:{d['item']}")
+    target, lines = {}, []
+    for f in dict.fromkeys(touched):
+        if f == "hp":
+            target[f] = [removed, temp]
+            lines.append(f"Hit points {n['max'] - removed}" + (f" + {temp} temporary" if temp else "")
+                         + f" (D&D Beyond has {n['max'] - n['removed']})")
+        else:
+            i = int(f[5:])
+            target[f] = items[i]
+            lines.append(f"{n['names'].get(i, 'Item')} ×{items[i]} (D&D Beyond has ×{n['items'].get(i)})")
+    return target, lines, impossible
+
+
+def _ops(character: Character, target: dict, n: dict) -> list[dict]:
+    did = int(character.ddb_id)
     out = []
-    if before.get("hp") != after.get("hp"):
-        out.append(f"hit points {before.get('hp')} → {after.get('hp')}")
-    for key, n in after.get("items", {}).items():
-        if key in before.get("items", {}) and before["items"][key] != n:
-            out.append(f"{names.get(key, 'an item')} ×{before['items'][key]} → ×{n}")
+    for f, value in target.items():
+        if f == "hp":
+            out.append({"field": f, "path": HP_PATH, "body": {"characterId": did, "removedHitPoints": value[0], "temporaryHitPoints": value[1]},
+                        "from": {"removedHitPoints": n["removed"], "temporaryHitPoints": n["temp"]},
+                        "to": {"removedHitPoints": value[0], "temporaryHitPoints": value[1]}})
+        else:
+            i = int(f[5:])
+            out.append({"field": f, "path": ITEM_PATH, "body": {"characterId": did, "id": i, "quantity": value},
+                        "from": {"item": i, "quantity": n["items"][i]}, "to": {"item": i, "quantity": value}})
     return out
 
 
-def reconcile(db: Session, character: Character) -> None:
-    """Read the character from D&D Beyond, then settle every change that was waiting on it: confirmed when D&D Beyond
-    now has what askdnd asked for, and anything else that changed there is "seen" (changed on D&D Beyond itself)."""
-    chars.refresh(db, character)  # announces the character when it changed (app/realtime.py), so open pages update
-    summary = chars.character_summary(character)
-    now = _numbers(summary)
-    with _lock:
-        before = _seen.get(character.id)
-        confirmed = False
-        for ch in _changes.values():
-            if ch["character_id"] == character.id and ch["state"] in ("waiting", "not_yet") and _matches(now, ch["expect"]):
-                ch["state"] = "live"
-                _log(character.id, ch["label"], "live")
-                confirmed = True
-        if before and not confirmed:
-            changed = _diff(character.name, before, now, summary) if summary else []
-            if changed:
-                _log(character.id, f"{character.name} (on D&D Beyond): " + ", ".join(changed), "seen")
-        _seen[character.id] = now
+# ------------------------------------------------------------------ the outbox
 
 
-def _matches(now: dict, expect: dict) -> bool:
-    return now.get("hp") == expect["hp"] and all(now.get("items", {}).get(k) == v for k, v in expect["items"].items())
+def add(db: Session, character: Character, kind: str, data: dict, label: str) -> int:
+    it = BridgeIntent(character_id=character.id, kind=kind, data=data, label=label[:300])
+    db.add(it)
+    db.flush()
+    return it.id
 
 
-def _expire() -> None:
-    for ch in _changes.values():
-        if ch["state"] == "waiting" and time.time() - ch["at"] > WAIT_SECONDS:
-            ch["state"], ch["error"] = "not_yet", "D&D Beyond didn't confirm it in time."
+def _as_dict(it: BridgeIntent) -> dict:
+    return {"kind": it.kind, "data": it.data}
+
+
+def outbox(db: Session, character: Character) -> dict | None:
+    """The batch the extension should make on this character's sheet now, or None. A new batch is built on a fresh read
+    of D&D Beyond, so its totals sit on whatever D&D Beyond has this moment."""
+    _lock(db, character.id)
+    now = time.time()
+    live = db.scalars(select(BridgeBatch).where(BridgeBatch.character_id == character.id,
+                                                BridgeBatch.state.in_(("ready", "sending"))).order_by(BridgeBatch.id)).first()
+    if live:
+        if (live.state == "sending" and now - live.sent_at < SENDING_SECONDS) or now < live.next_at:
+            return None  # the extension is on it, or it waits before trying again
+        live.state, live.sent_at = "sending", now
+        return {"id": live.id, "ops": live.ops}
+    waiting = list(db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == character.id, BridgeIntent.state == "waiting")
+                              .order_by(BridgeIntent.id)))
+    if not waiting:
+        return None
+    chars.refresh(db, character)
+    n = numbers(character)
+    if not n:
+        return None
+    dicts = [_as_dict(i) for i in waiting]
+    target, _lines, impossible = plan(dicts, n)
+    for d, why in impossible:  # (by identity: two drinks of the same potion are equal dicts)
+        it = waiting[next(k for k, x in enumerate(dicts) if x is d)]
+        it.state, it.error = "not_yet", why
+    keep = [i for i in waiting if i.state == "waiting"]
+    if not keep or not target:
+        return None
+    batch = BridgeBatch(character_id=character.id, intents=[i.id for i in keep], ops=_ops(character, target, n), before=fields(n),
+                        target=target, state="sending", attempts=1, sent_at=now, next_at=0, check=keep[0].data.get("check", ""),
+                        names={f: ("hit points" if f == "hp" else n["names"].get(int(f[5:]), "an item")) for f in target})
+    db.add(batch)
+    for i in keep:
+        i.state = "sending"
+    db.flush()
+    return {"id": batch.id, "ops": batch.ops}
+
+
+def _intents_of(db: Session, b: BridgeBatch) -> list[BridgeIntent]:
+    return list(db.scalars(select(BridgeIntent).where(BridgeIntent.id.in_(b.intents)).order_by(BridgeIntent.id)))
+
+
+def _settle(db: Session, b: BridgeBatch) -> None:
+    b.state = "done"
+    for it in _intents_of(db, b):
+        it.state = "live"
+        _log(db, b.character_id, it.label, "live")
+    _check_step(db, b, True)
+
+
+def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: list[str] | None = None) -> None:
+    """The extension's answer for a batch, then the read-back that decides it, field by field."""
+    b = db.get(BridgeBatch, batch_id)
+    if not b:
+        return
+    _lock(db, b.character_id)
+    db.refresh(b)
+    if b.state != "sending":
+        return  # settled already (a pull got there first), or offered again
+    character = db.get(Character, b.character_id)
+    if conflicts:  # D&D Beyond changed in the moment since askdnd read it, and the extension wrote nothing
+        replans = max((it.data.get("replans", 0) for it in _intents_of(db, b)), default=0)
+        if b.attempts == 1 and replans < MAX_ATTEMPTS:  # nothing of it was written: work it out again from the new numbers
+            b.state = "replanned"
+            for it in _intents_of(db, b):
+                it.state, it.data = "waiting", {**it.data, "replans": it.data.get("replans", 0) + 1}
+        else:
+            _stop(db, b, f"D&D Beyond's {_say(conflicts, b)} changed while askdnd was writing it.")
+        return
+    if not ok:  # couldn't reach the sheet or D&D Beyond: try again later, on its own
+        _again(db, b, error or "The change couldn't be made.")
+        return
+    now = {}
+    for attempt in range(4):  # D&D Beyond can take a moment to serve what it just saved
+        if attempt:
+            time.sleep(1)
+        chars.refresh(db, character)
+        now = fields(numbers(character))
+        missing = [f for f, v in b.target.items() if now.get(f) != v]
+        if not missing:
+            break
+    if not missing:
+        _settle(db, b)
+    elif any(now.get(f) != b.before.get(f) for f in missing):
+        _stop(db, b, f"D&D Beyond's {_say(missing, b)} isn't what askdnd wrote or what it had before.")
+    else:
+        _again(db, b, "D&D Beyond answered OK but didn't keep it.")
+
+
+def _say(fs: list[str], b: BridgeBatch) -> str:
+    return " and ".join(dict.fromkeys(b.names.get(f, "numbers") for f in fs))
+
+
+def _again(db: Session, b: BridgeBatch, why: str) -> None:
+    if b.attempts >= MAX_ATTEMPTS:
+        _stop(db, b, f"{why} Tried {MAX_ATTEMPTS} times.")
+        return
+    b.state, b.error = "ready", why[:400]
+    b.next_at = time.time() + RETRY_SECONDS[min(b.attempts, len(RETRY_SECONDS) - 1)]
+    b.attempts += 1
+
+
+def _stop(db: Session, b: BridgeBatch, why: str) -> None:
+    b.state, b.error = "stopped", why[:400]
+    for it in _intents_of(db, b):
+        it.state, it.error = "not_yet", (why + " Nothing was written over.")[:400]
+    _check_step(db, b, False, why)
+
+
+def heard(db: Session, character: Character, saved: bool = True) -> None:
+    """A read of the sheet, after the extension heard it save (`saved`) or on its every-30-seconds pull: it settles any
+    batch D&D Beyond now holds the totals of (so a lost "done" from the extension still gets confirmed), and logs what
+    D&D Beyond changed itself (not what askdnd is writing)."""
+    if saved:
+        _health["heard_at"] = time.time()
+    _lock(db, character.id)
+    before = numbers(character)  # the last copy askdnd read
+    chars.refresh(db, character)
+    n = numbers(character)
+    if not n:
+        return
+    now = fields(n)
+    open_batches = list(db.scalars(select(BridgeBatch).where(BridgeBatch.character_id == character.id, BridgeBatch.state.in_(("sending", "ready")))))
+    for b in open_batches:
+        if all(now.get(f) == v for f, v in b.target.items()):
+            _settle(db, b)
+    recent = db.scalars(select(BridgeBatch).where(BridgeBatch.character_id == character.id,
+                                                  BridgeBatch.sent_at > time.time() - 60)).all()
+    ours = {f for b in recent for f in b.target}  # what askdnd is writing (or just wrote) isn't "changed on D&D Beyond"
+    if before:
+        changed = []
+        if before["removed"] != n["removed"] and "hp" not in ours:
+            changed.append(f"hit points {before['max'] - before['removed']} → {n['max'] - n['removed']}")
+        for i, q in n["items"].items():
+            if before["items"].get(i) not in (None, q) and f"item:{i}" not in ours:
+                changed.append(f"{n['names'].get(i, 'an item')} ×{before['items'][i]} → ×{q}")
+        if changed:
+            _log(db, character.id, f"{character.name} (on D&D Beyond): " + ", ".join(changed), "seen")
+
+
+def retry(db: Session, intent_id: int) -> None:
+    it = db.get(BridgeIntent, intent_id)
+    if it and it.state == "not_yet":
+        it.state, it.error = "waiting", ""
+
+
+def dismiss(db: Session, intent_id: int) -> None:
+    it = db.get(BridgeIntent, intent_id)
+    if it and it.state in ("waiting", "not_yet"):
+        it.state = "dismissed"
+
+
+# ------------------------------------------------------------------ health
+
+
+def round_trip(db: Session, character: Character) -> None:
+    """The pre-game check on the test character: 1 hit point and one Candle out, then back, each confirmed by
+    read-back. Queued like any change; the extension delivers it from the test character's open sheet. Putting them
+    back depends only on the batch (its `check`), so a restart mid-check still puts Vi back."""
+    n = numbers(character) or {}
+    item = next((i for i, name in (n.get("names") or {}).items() if name == TEST_ITEM and n["items"][i] > 0), None)
+    _health["round_trip"] = {"state": "running", "at": _now(), "error": ""}
+    add(db, character, "hp", {"amount": -1, "check": "out"}, "Check: 1 hit point taken")
+    if item:
+        add(db, character, "item", {"item": item, "delta": -1, "name": TEST_ITEM, "check": "out"}, f"Check: one {TEST_ITEM} taken")
+
+
+def _check_step(db: Session, b: BridgeBatch, ok: bool, why: str = "") -> None:
+    if not b.check:
+        return
+    rt = _health.get("round_trip") or {"state": "running", "at": _now(), "error": ""}
+    _health["round_trip"] = rt
+    if not ok:
+        rt.update(state="failed", error=why, done_at=_now())
+        b.check = ""  # (nothing goes back on its own: the stopped change waits to be made by hand or undone)
+        return
+    if b.check == "out":
+        for it in _intents_of(db, b):
+            back = {"amount": -it.data["amount"]} if it.kind == "hp" else {"item": it.data["item"], "delta": -it.data["delta"], "name": it.data["name"]}
+            add(db, db.get(Character, b.character_id), it.kind, {**back, "check": "back"}, it.label.replace("taken", "back"))
+    elif b.check == "back":
+        rt.update(state="passed", done_at=_now())
+
+
+def read_check() -> dict:
+    """Server-side, no sign-in: D&D Beyond still serves the test character with every field the bridge relies on."""
+    try:
+        d = ddb.fetch_character_json(TEST_DDB_ID)
+        missing = [k for k in ("removedHitPoints", "temporaryHitPoints", "inventory") if k not in d]
+        if "inventory" in d and not all({"id", "quantity"} <= set(i) for i in d["inventory"]):
+            missing.append("each item's id and quantity")
+        result = {"ok": not missing, "error": ("missing " + ", ".join(missing)) if missing else "", "at": _now(), "t": time.time()}
+    except ddb.DdbError as e:
+        result = {"ok": False, "error": str(e), "at": _now(), "t": time.time()}
+    _health["read_check"] = result
+    return result
+
+
+def health(db: Session) -> dict:
+    """One status for every page."""
+    rc = _health["read_check"]
+    if not rc or time.time() - rc["t"] > READ_CHECK_SECONDS:
+        rc = read_check()
+    rt = _health["round_trip"]
+    extension = time.time() - _health["extension_at"] < EXTENSION_FRESH_SECONDS
+    rows = db.execute(select(BridgeIntent.state, BridgeIntent.data).where(BridgeIntent.state.in_(OPEN))).all()
+    stuck = sum(1 for s, _ in rows if s == "not_yet")
+    waiting = sum(1 for s, d in rows if s != "not_yet" and not d.get("check"))
+    when = (lambda iso: datetime.fromisoformat(iso).astimezone().strftime("%-I:%M %p"))
+    if not rc["ok"]:
+        state, text = "off", "D&D Beyond · problem: " + rc["error"]
+    elif rt and rt["state"] == "failed":
+        state, text = "off", "D&D Beyond · check failed"
+    elif stuck:
+        state, text = "off", f"D&D Beyond · {stuck} to make by hand"
+    elif rt and rt["state"] == "running":
+        state, text = "wait", "D&D Beyond · checking…"
+    elif waiting:
+        state, text = "wait", f"D&D Beyond · {waiting} waiting"
+    elif not extension:
+        state, text = "wait", "D&D Beyond · extension not connected"
+    elif rt and rt["state"] == "passed":
+        state, text = "live", f"D&D Beyond · working (checked {when(rt['done_at'])})"
+    else:
+        state, text = "live", "D&D Beyond · connected, not checked yet"
+    return {"state": state, "text": text, "read_check": {k: rc[k] for k in ("ok", "error", "at")}, "round_trip": rt,
+            "extension": extension, "sheets": _health["sheets"] if extension else [], "test_ddb_id": TEST_DDB_ID,
+            "heard_at": datetime.fromtimestamp(_health["heard_at"], UTC).isoformat() if _health["heard_at"] else None}
+
+
+# ------------------------------------------------------------------ what pages show
 
 
 def state(db: Session, character: Character, user: dict | None) -> dict:
-    """What the panel and the page show: the numbers as D&D Beyond last had them, every change still open, the log."""
     summary = chars.character_summary(character)
-    with _lock:
-        _expire()
-        if character.id not in _seen and summary:
-            _seen[character.id] = _numbers(summary)
-        open_changes = [{"id": i, **{k: c[k] for k in ("state", "label", "lines", "ops", "error")}}
-                        for i, c in sorted(_changes.items(), reverse=True)
-                        if c["character_id"] == character.id and c["state"] in ("waiting", "not_yet")]
-        log = list(_logs.get(character.id, []))
+    n = numbers(character)
+    mine = list(db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == character.id, BridgeIntent.state.in_(OPEN))
+                           .order_by(BridgeIntent.id.desc())))
+    changes = [{"id": i.id, "label": i.label, "state": i.state, "error": i.error} for i in mine]
+    by_hand = [_as_dict(i) for i in reversed(mine) if i.state == "not_yet"]
+    to_make = plan(by_hand, n)[1] if by_hand and n else []  # the end state only, one line per number
+    log = [{"text": r.text, "state": r.state, "at": r.at.isoformat() if r.at else _now()}
+           for r in db.scalars(select(BridgeLog).where(BridgeLog.character_id == character.id).order_by(BridgeLog.id.desc()).limit(30))]
     hp = (summary or {}).get("hit_points") or {}
-    items = [{"id": int(it["key"].split(":")[1]), "key": it["key"], "name": it["name"], "quantity": it["quantity"],
-              "heals": HEALING.get(it["name"], "")}
-             for it in (summary or {}).get("inventory", []) if it["name"] in HEALING]
+    items = [{"id": i, "name": name, "quantity": n["items"][i], "heals": HEALING[name]}
+             for i, name in (n.get("names") or {}).items() if name in HEALING]  # exact counts (0 is 0)
     snap = character.snapshot
-    return {"character": {"id": character.id, "name": character.name, "ddb_id": character.ddb_id},
+    return {"character": {"id": character.id, "name": character.name, "ddb_id": character.ddb_id, "test": character.ddb_id == TEST_DDB_ID},
             "can_act": picks.can_edit(db, user, character),
             "hp": {"current": hp.get("current"), "max": hp.get("max"), "temp": hp.get("temp")},
-            "items": items, "changes": open_changes, "log": log,
+            "items": items, "changes": changes, "to_make": to_make, "log": log,
             "read_at": snap.fetched_at.isoformat() if snap and snap.fetched_at else None}
-
-
-def drink(db: Session, character: Character, item_id: int, roll=None) -> dict:
-    """Drink a healing potion: roll it, then ask D&D Beyond for one fewer and the hit points it restores. Nothing in
-    askdnd changes until D&D Beyond confirms both (reconcile)."""
-    chars.refresh(db, character)  # work it out from what D&D Beyond has now, not an old copy
-    summary = chars.character_summary(character)
-    item = next((it for it in (summary or {}).get("inventory", []) if it["key"] == f"item:{item_id}"), None)
-    if not item or item["name"] not in HEALING or item["quantity"] < 1:
-        raise HTTPException(400, "That isn't a healing potion this character has.")
-    hp = summary["hit_points"]
-    rolled = table_rolls.roll_formula(HEALING[item["name"]], roll=roll)
-    heal = rolled["total"]
-    removed = max(0, hp["damage"] - heal)
-    new_hp = hp["max"] - removed
-    ddb_id = int(character.ddb_id)
-    ops = [{"path": "/character/v5/inventory/item/quantity", "body": {"characterId": ddb_id, "id": item_id, "quantity": item["quantity"] - 1},
-            "from": {"item": item_id, "quantity": item["quantity"]}},
-           {"path": "/character/v5/life/hp/damage-taken", "body": {"characterId": ddb_id, "removedHitPoints": removed, "temporaryHitPoints": hp["temp"]},
-            "from": {"removedHitPoints": hp["damage"], "temporaryHitPoints": hp["temp"]}}]
-    lines = [f"{item['name']} ×{item['quantity']} → ×{item['quantity'] - 1}",
-             f"Hit points {hp['current']} → {new_hp} (rolled {heal}: {rolled['formula']})"]
-    change = {"character_id": character.id, "state": "waiting", "ops": ops, "lines": lines, "at": time.time(), "error": "",
-              "label": f"{character.name} drank a {item['name']}: hit points {hp['current']} → {new_hp}, ×{item['quantity']} → ×{item['quantity'] - 1}",
-              "expect": {"hp": new_hp, "items": {item["key"]: item["quantity"] - 1}}}
-    with _lock:
-        cid = next(_ids)
-        _changes[cid] = change
-    return {"id": cid, "ops": ops, "lines": lines}
 
 
 # ------------------------------------------------------------------ routes
 
 
-def _who(request: Request) -> dict | None:
-    """The signed-in person: askdnd's own pages by their cookie, the extension by its key (checked again each time, so
-    removing someone locks the extension out too)."""
+def _hash(key: str) -> str:
+    return hashlib.sha256(key.encode()).hexdigest()
+
+
+def _who(request: Request, db: Session) -> dict | None:
+    """askdnd's own pages by their cookie, the extension by its key (checked again each time)."""
     user = current_user(request)
     if user:
         return user
-    key = _keys.get(request.headers.get("x-askdnd-bridge", ""))
-    return key if key and access.level(key.get("email")) else None
+    key = request.headers.get("x-askdnd-bridge", "")
+    row = db.get(BridgeKey, _hash(key)) if key else None
+    return {"email": row.email, "name": ""} if row and access.level(row.email) else None
+
+
+def _signed_in(request: Request, db: Session) -> dict:
+    _local_only()
+    user = _who(request, db)
+    if not user:
+        raise HTTPException(401, "Open askdnd (localhost:8000) once in this browser to connect the extension.")
+    return user
 
 
 def _mine(db: Session, request: Request, character_id: int) -> tuple[Character, dict]:
-    _local_only()
-    user = _who(request)
+    user = _signed_in(request, db)
     character = db.get(Character, character_id)
-    if not user or not character or not picks.can_view(db, user, character):
+    if not character or not picks.can_view(db, user, character):
         raise HTTPException(404)
     return character, user
 
 
+def _by_ddb(db: Session, request: Request, ddb_id: str) -> tuple[Character, dict]:
+    user = _signed_in(request, db)
+    character = db.scalar(select(Character).where(Character.ddb_id == ddb_id, Character.copy_of_id.is_(None)).order_by(Character.id))
+    if not character or not picks.can_view(db, user, character):
+        raise HTTPException(404, "askdnd doesn't know this character.")
+    return character, user
+
+
 def _json(body: dict, status: int = 200) -> JSONResponse:
-    # The extension's panel on dndbeyond.com reads these through its own background page, so no CORS is opened
     return JSONResponse(body, status_code=status, headers={"Cache-Control": "no-store"})
 
 
 @router.post("/bridge/connect")
-def bridge_connect(request: Request):
-    """An askdnd page you're signed in to hands the extension its key (askdnd.js); one per person while the app runs."""
+def bridge_connect(request: Request, db: Session = Depends(get_db)):
+    """An askdnd page you're signed in to hands the extension a key (askdnd.js); only its hash is stored."""
     _local_only()
     user = current_user(request)
     if not user:
         return _json({"error": "Sign in to askdnd first."}, 401)
-    with _lock:
-        key = next((k for k, u in _keys.items() if u["email"] == user["email"]), None) or secrets.token_urlsafe(32)
-        _keys[key] = {"email": user["email"], "name": user.get("name", "")}
+    key, email = secrets.token_urlsafe(32), user["email"].lower()
+    db.add(BridgeKey(key_hash=_hash(key), email=email))
+    db.flush()
+    for old in db.scalars(select(BridgeKey).where(BridgeKey.email == email).order_by(BridgeKey.created_at.desc()).offset(5)):
+        db.delete(old)  # each browser's newest few; an older key stops working
+    db.commit()
     return _json({"key": key})
+
+
+@router.post("/bridge/hello")
+async def bridge_hello(request: Request, db: Session = Depends(get_db)):
+    """The extension's report every 30 seconds: it's on, and which D&D Beyond sheets are open."""
+    _signed_in(request, db)
+    body = await request.json()
+    _health["extension_at"], _health["sheets"] = time.time(), [str(s) for s in body.get("sheets", [])][:20]
+    return _json(await run_in_threadpool(health, db))  # (its hourly read reaches D&D Beyond)
+
+
+@router.get("/bridge/health")
+def bridge_health(request: Request, db: Session = Depends(get_db)):
+    _signed_in(request, db)
+    return _json(health(db))
+
+
+@router.post("/bridge/check")
+def bridge_check(request: Request, db: Session = Depends(get_db)):
+    """Run the pre-game round trip on the test character (the extension delivers it from its open sheet)."""
+    character, user = _by_ddb(db, request, TEST_DDB_ID)
+    if not picks.can_edit(db, user, character):
+        raise HTTPException(403, "Only the test character's player runs the check.")
+    round_trip(db, character)
+    db.commit()
+    return _json(health(db))
 
 
 @router.get("/bridge/state/{character_id:int}")
@@ -220,26 +526,42 @@ def bridge_state(character_id: int, request: Request, db: Session = Depends(get_
 
 @router.get("/bridge/by-ddb/{ddb_id}")
 def bridge_by_ddb(ddb_id: str, request: Request, db: Session = Depends(get_db)):
-    """The extension knows a sheet by its D&D Beyond number; askdnd says which character that is here."""
-    _local_only()
-    user = _who(request)
-    if not user:
-        return _json({"error": "Open askdnd (localhost:8000) once in this browser to connect the extension."}, 401)
-    character = db.scalar(select(Character).where(Character.ddb_id == ddb_id, Character.copy_of_id.is_(None)))
-    if not character or not picks.can_view(db, user, character):
-        return _json({"error": "askdnd doesn't know this character."}, 404)
+    try:
+        character, user = _by_ddb(db, request, ddb_id)
+    except HTTPException as e:
+        return _json({"error": e.detail}, e.status_code)
     return _json(state(db, character, user))
 
 
-@router.post("/bridge/changed/{character_id:int}")
-def bridge_changed(character_id: int, request: Request, db: Session = Depends(get_db)):
-    """The extension saw the sheet save a change: read the character from D&D Beyond and settle what was waiting."""
-    character, user = _mine(db, request, character_id)
-    last = _refreshed.get(character.id, 0)
-    if time.time() - last >= MIN_REFRESH_SECONDS:
-        _refreshed[character.id] = time.time()
-        reconcile(db, character)
+@router.post("/bridge/outbox/{ddb_id}")
+def bridge_outbox(ddb_id: str, request: Request, db: Session = Depends(get_db)):
+    """The extension, with this character's sheet open, collects what to make there now (or nothing)."""
+    character, user = _by_ddb(db, request, ddb_id)
+    if not picks.can_edit(db, user, character):
+        return _json({"batch": None})  # only the character's own player's browser writes their sheet
+    batch = outbox(db, character)
+    db.commit()
+    return _json({"batch": batch})
+
+
+@router.post("/bridge/delivered/{batch_id:int}")
+async def bridge_delivered(batch_id: int, request: Request, db: Session = Depends(get_db)):
+    _signed_in(request, db)
+    body = await request.json()
+
+    def settle():  # off the event loop: the read-back waits on D&D Beyond, a second at a time
+        delivered(db, batch_id, bool(body.get("ok")), str(body.get("error") or "")[:200], [str(c) for c in body.get("conflicts") or []])
         db.commit()
+    await run_in_threadpool(settle)
+    return _json({"ok": True})
+
+
+@router.post("/bridge/heard/{ddb_id}")
+def bridge_heard(ddb_id: str, request: Request, pull: int = 0, db: Session = Depends(get_db)):
+    """The sheet saved a change (the extension heard it), or the extension's regular pull (`?pull=1`)."""
+    character, user = _by_ddb(db, request, ddb_id)
+    heard(db, character, saved=not pull)
+    db.commit()
     return _json(state(db, character, user))
 
 
@@ -248,48 +570,46 @@ def bridge_drink(character_id: int, item_id: int, request: Request, db: Session 
     character, user = _mine(db, request, character_id)
     if not picks.can_edit(db, user, character):
         raise HTTPException(403, "Only the character's player drinks their potions.")
-    return _json(drink(db, character, item_id))
-
-
-@router.post("/bridge/result/{change_id:int}")
-async def bridge_result(change_id: int, request: Request, db: Session = Depends(get_db)):
-    """The extension's answer: it made the requests (askdnd then reads them back), or it couldn't and why."""
-    _local_only()
-    body = await request.json()
-    with _lock:
-        ch = _changes.get(change_id)
-        if not ch:
-            raise HTTPException(404)
-        if not body.get("ok"):
-            ch["state"], ch["error"] = "not_yet", str(body.get("error") or "The change couldn't be made.")[:200]
-    character, user = _mine(db, request, ch["character_id"])
-    if body.get("ok"):  # read it back; D&D Beyond can take a moment to serve what it just saved
-        for attempt in range(4):
-            if attempt:
-                time.sleep(1)
-            _refreshed[character.id] = time.time()
-            reconcile(db, character)
-            db.commit()
-            if _changes[change_id]["state"] == "live":
-                break
+    name = (numbers(character).get("names") or {}).get(item_id)
+    if name not in HEALING:
+        raise HTTPException(400, "That isn't a healing potion this character has.")
+    rolled = table_rolls.roll_formula(HEALING[name])
+    add(db, character, "drink", {"item": item_id, "name": name, "heal": rolled["total"]},
+        f"{character.name} drank a {name} (rolled {rolled['total']}: {rolled['formula']})")
+    db.commit()
     return _json(state(db, character, user))
 
 
-@router.post("/bridge/dismiss/{change_id:int}")
-def bridge_dismiss(change_id: int, request: Request, db: Session = Depends(get_db)):
-    """Undo: drop a change that never reached D&D Beyond (nothing to put back: askdnd never applied it)."""
-    _local_only()
-    with _lock:
-        ch = _changes.get(change_id)
-        if not ch or ch["state"] == "live":
-            raise HTTPException(404)
-        ch["state"] = "dismissed"
-    character, user = _mine(db, request, ch["character_id"])
+@router.post("/bridge/hp/{character_id:int}")
+async def bridge_hp(character_id: int, request: Request, db: Session = Depends(get_db)):
+    """Take damage or heal (+ heals, - damage), for trying the bridge on any character."""
+    character, user = _mine(db, request, character_id)
+    if not picks.can_edit(db, user, character):
+        raise HTTPException(403)
+    amount = int((await request.json()).get("amount", 0))
+    if amount:
+        add(db, character, "hp", {"amount": amount}, f"{character.name} {'healed' if amount > 0 else 'took'} {abs(amount)}")
+        db.commit()
     return _json(state(db, character, user))
+
+
+@router.post("/bridge/retry/{intent_id:int}")
+def bridge_retry(intent_id: int, request: Request, db: Session = Depends(get_db)):
+    _signed_in(request, db)
+    retry(db, intent_id)
+    db.commit()
+    return _json({"ok": True})
+
+
+@router.post("/bridge/dismiss/{intent_id:int}")
+def bridge_dismiss(intent_id: int, request: Request, db: Session = Depends(get_db)):
+    _signed_in(request, db)
+    dismiss(db, intent_id)
+    db.commit()
+    return _json({"ok": True})
 
 
 @router.get("/characters/{character_id:int}/bridge")
 def bridge_page(character_id: int, request: Request, db: Session = Depends(get_db)):
-    """askdnd's own tab for the proof: the same panel as beside the D&D Beyond sheet."""
     character, user = _mine(db, request, character_id)
     return templates.TemplateResponse(request, "bridge.html", {"c": character, "state": state(db, character, user)})

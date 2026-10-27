@@ -2,7 +2,7 @@ from pathlib import Path
 
 from fastapi import Request
 
-from app import access, rules_data, vtt
+from app import access, config, rules_data, vtt
 from fastapi.templating import Jinja2Templates
 
 
@@ -201,5 +201,7 @@ def _combo_steps(turn: dict) -> list[dict]:
 
 
 templates.env.filters["combo_steps"] = _combo_steps
+# The D&D Beyond bridge proof (app/ddb_bridge.py): only where DDB_BRIDGE=1 (a developer's own computer)
+templates.env.globals["bridge_on"] = config.DDB_BRIDGE
 templates.env.globals["SRD_ATTRIBUTION"] = rules_data.ATTRIBUTION  # Help › About; the SRD's license asks for it word for word
 templates.env.globals["STEP_KINDS"] = {"bonus": "Bonus action", "action": "Action", "reaction": "Reaction", "move": "Movement", "free": "Free"}

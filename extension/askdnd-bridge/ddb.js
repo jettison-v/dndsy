@@ -12,7 +12,7 @@
     chrome.runtime.sendMessage({ ...e.data, type: e.data.type === 'saved' ? 'ddb-saved' : 'ddb-applied' });  // (the page's own type last would win)
   });
   chrome.runtime.onMessage.addListener(m => {
-    if (m.type === 'apply') window.postMessage({ askdndBridge: 'apply', change: m.change, ops: m.ops }, location.origin);
+    if (m.type === 'apply') window.postMessage({ askdndBridge: 'apply', batch: m.batch }, location.origin);
     if (m.type === 'panel-state') draw(m.state, m.error);
   });
 
@@ -64,6 +64,8 @@
       const act = t.dataset.act;
       if (act === 'toggle') { open = !open; sessionStorage.setItem('askdnd-panel', open ? 'open' : 'closed'); chrome.runtime.sendMessage({ type: 'panel-refresh' }); }
       if (act === 'drink') { t.disabled = true; chrome.runtime.sendMessage({ type: 'drink', itemId: +t.dataset.item }); }
+      if (act === 'hp') { t.disabled = true; chrome.runtime.sendMessage({ type: 'hp', amount: +t.dataset.amount }); }
+      if (act === 'check') { t.disabled = true; chrome.runtime.sendMessage({ type: 'check' }); }
       if (act === 'retry') chrome.runtime.sendMessage({ type: 'retry', change: +t.dataset.change });
       if (act === 'undo') chrome.runtime.sendMessage({ type: 'undo', change: +t.dataset.change });
     });
@@ -71,19 +73,21 @@
   let again = null;
   function draw(st, error) {
     mount();
-    clearTimeout(again);  // while a change waits, ask again every second and a half
-    if (st && st.changes.some(c => c.state === 'waiting')) again = setTimeout(() => chrome.runtime.sendMessage({ type: 'panel-refresh' }), 1500);
+    clearTimeout(again);  // while something waits, ask again every second and a half
+    if (st && st.changes.some(c => c.state !== 'not_yet')) again = setTimeout(() => chrome.runtime.sendMessage({ type: 'panel-refresh' }), 1500);
     if (!open) { root.innerHTML = `<style>${CSS}</style><button class="tab" data-act="toggle" aria-label="Open askdnd">askdnd</button>`; return; }
     let body;
     if (error) body = `<span class="st off">Not connected</span><p class="note">${esc(error)}</p>`;
     else {
-      const waiting = st.changes.filter(c => c.state === 'waiting').length, notYet = st.changes.filter(c => c.state === 'not_yet').length;
-      const pill = waiting ? ['wait', waiting + ' waiting'] : notYet ? ['off', notYet + ' not on D&D Beyond'] : ['live', 'Live with D&D Beyond'];
+      const waiting = st.changes.filter(c => c.state !== 'not_yet').length, notYet = st.changes.filter(c => c.state === 'not_yet').length;
+      const pill = notYet ? ['off', notYet + ' to make by hand'] : waiting ? ['wait', waiting + ' waiting'] : ['live', 'Live with D&D Beyond'];
       body = `<span class="st ${pill[0]}">${pill[1]}</span>
         <div class="tile ${waiting ? 'wait' : notYet ? 'off' : ''}"><small>Hit points</small><b>${esc(st.hp.current)}</b> <span class="note">/ ${esc(st.hp.max)}</span></div>
-        <h3>Healing potions</h3>
-        ${st.items.map(it => `<div class="item"><div><b>${esc(it.name)}</b> <span class="note">×${it.quantity}</span><div class="note">Heals ${esc(it.heals)}</div></div>${st.can_act ? `<button class="btn primary" data-act="drink" data-item="${it.id}"${waiting || !it.quantity ? ' disabled' : ''}>Drink</button>` : ''}</div>`).join('') || '<p class="note">No healing potions on the sheet.</p>'}
-        ${st.changes.map(c => `<div class="change ${CLS[c.state]}"><span class="st ${CLS[c.state]}">${LABEL[c.state]}</span><div>${c.lines.map(esc).join('<br>')}</div>${c.error ? `<div class="note">${esc(c.error)}</div>` : ''}${c.state === 'not_yet' ? `<div class="acts"><button class="btn primary" data-act="retry" data-change="${c.id}">Try again</button><button class="btn" data-act="undo" data-change="${c.id}">Undo</button></div>` : ''}</div>`).join('')}
+        ${st.can_act ? `<div class="acts"><button class="btn" data-act="hp" data-amount="-1">Take 1</button><button class="btn" data-act="hp" data-amount="1">Heal 1</button>${st.character.test ? '<button class="btn" data-act="check">Run the check</button>' : ''}</div>` : ''}
+        ${st.items.length ? '<h3>Healing potions</h3>' : ''}
+        ${st.items.map(it => `<div class="item"><div><b>${esc(it.name)}</b> <span class="note">×${it.quantity}</span><div class="note">Heals ${esc(it.heals)}</div></div>${st.can_act ? `<button class="btn primary" data-act="drink" data-item="${it.id}"${!it.quantity ? ' disabled' : ''}>Drink</button>` : ''}</div>`).join('')}
+        ${st.to_make.length ? `<div class="change off"><b>Make these on D&amp;D Beyond</b><div>${st.to_make.map(esc).join('<br>')}</div><span class="note">askdnd ticks them off when D&amp;D Beyond has them.</span></div>` : ''}
+        ${st.changes.map(c => `<div class="change ${CLS[c.state === 'sending' ? 'waiting' : c.state]}"><span class="st ${CLS[c.state === 'sending' ? 'waiting' : c.state]}">${LABEL[c.state === 'sending' ? 'waiting' : c.state]}</span><div>${esc(c.label)}</div>${c.error ? `<div class="note">${esc(c.error)}</div>` : ''}${c.state === 'not_yet' ? `<div class="acts"><button class="btn primary" data-act="retry" data-change="${c.id}">Try again</button><button class="btn" data-act="undo" data-change="${c.id}">Undo</button></div>` : ''}</div>`).join('')}
         <h3>What changed</h3>
         <ul>${st.log.map(l => `<li><span class="st ${CLS[l.state]}">${l.state === 'seen' ? 'On D&D Beyond' : 'From askdnd'}</span> ${esc(l.text)}</li>`).join('') || '<li class="note">Nothing yet.</li>'}</ul>
         <a class="btn" href="http://localhost:8000/characters/${esc(st.character.id)}/bridge" target="_blank" rel="noopener">Open in askdnd</a>`;
