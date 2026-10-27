@@ -1,4 +1,4 @@
-# From table companion to virtual tabletop (2026-10-22, reviewed 2026-10-24)
+# From table companion to virtual tabletop (2026-10-22, reviewed 2026-10-24, reordered 2026-10-26, statuses 2026-10-27)
 
 The long-range plan for growing askdnd into a full virtual tabletop (VTT) for our table. The readable version, with
 filters, is the "askdnd VTT Roadmap" artifact: https://claude.ai/artifact/EtCBFsKNwLK5LNhQjcbzS3. This file is the
@@ -56,6 +56,11 @@ One place instead of five tabs · automation the DM can overrule (the DM makes e
 silently (play log with undo) · no setup tax · the story remembers itself (play feeds recaps) · inform, don't
 advise · built to scale, kept clean.
 
+**Don't over-automate** (Brett, 2026-10-26). askdnd does the bookkeeping (numbers, what's left, what changed) and
+**reminds** the table of the checks and rulings that follow, with what's needed (a Concentration save and its DC,
+death saves at 0 HP); people roll and decide. A reminder becomes automatic only after playtests on beta show the
+table wants it. The DM controls the game.
+
 ## How the VTT is built (the shared foundations; added 2026-10-24)
 
 Each phase leans on the same few foundations. They're built once, in Phase 0, and every later item uses them rather
@@ -90,7 +95,7 @@ than inventing its own.
   downloads (2026-10-24: a page of 23 pictures through the app showed the limits; fixed for pictures by giving the
   database connection back before each download).
 - **Rules content as data (0.6).** SRD 5.2 monsters, spells, items and conditions as data in `app/data/` (public,
-  licensed); the DM's own creations and anything from purchased books in the database, never in the public repo.
+  licensed); the DM's own creations and anything from purchased books in the database, never in git.
   Stat blocks (2.3), resolving attacks (2.4) and rules answers in play (5.1) all read from it.
 - **Testing the table, not just the server (0.8).** Pages now update each other live, which server tests can't see.
   A few browser tests drive two pages at once (a player and the DM) through the table's core flows on every pull
@@ -98,37 +103,54 @@ than inventing its own.
 
 ## Phases
 
-Status as of 2026-10-24. **Needs:** says what must exist first.
+Status as of 2026-10-27. **Needs:** says what must exist first.
 
 **Phase 0, Foundations.** 0.1 One site, a VTT switch, a test campaign S core, **done 2026-10-23** · 0.2 Finish data
 organization (step 10) L core, **done 2026-10-23** · 0.3 Live table connection M core, **done 2026-10-24**
 (app/realtime.py: WebSockets through Postgres, so it holds with several copies of the app) · 0.4 Play state and the
 play log with undo M core, *designed with 1.7, built with 1.1* · 0.5 File storage for the campaign (S3 `v2/`; moves
-today's pictures out of the database) M core, **built 2026-10-24** (app/files.py; pictures are written to both until
-beta's backfill is checked, then a later PR removes the database copies) · 0.6 Rules content as data (SRD 5.2; DM
-creations in the database, never the public repo; rules answers are built on it, Brett 2026-10-23) M core, **done
+today's pictures out of the database) M core, **built 2026-10-24** (app/files.py; pictures are still written to both,
+and a later PR removes the database copies once beta's backfill is checked: still open 2026-10-27) · 0.6 Rules content as data (SRD 5.2; DM
+creations in the database, never in git; rules answers are built on it, Brett 2026-10-23) M core, **done
 2026-10-24** (app/rules_data.py: the SRD 5.2.1 from the official PDF, plus each campaign's own in `campaign_content`) · 0.7
 Finish the Railway cleanup (step 12) S core, **done 2026-10-23** · 0.8 Browser tests for the table's core flows (two
 pages at once, on every pull request) S core, **done 2026-10-24** (tests/browser) · 0.9 Know when something breaks
 (errors on beta reported to Brett, not found by the table) S core, **done 2026-10-24** (app/errors.py, Sentry).
 
-**Phase 1, Live character state (first).** 1.1 Hit points askdnd owns, typed damage with resistances M core (needs
-0.4) · 1.2 Casting spends slots, upcasting, concentration M core (needs 1.1's play state) · 1.3 Class resources and
-uses M core · 1.4 Short and long rests, party rest M core (needs 1.1–1.3) · 1.5 Inventory in play (quantities,
-potions, charges, ammo, coins, attunement, giving, loot) L core · 1.6 Conditions with durations, Exhaustion M core
-(moves today's conditions and concentration into play state) · 1.7 D&D Beyond merge (build in, play state kept, what
-changed) M core, *designed first, with 0.4* · 1.8 Party at a glance for the DM S core · 1.9 Level-up companion S nice
-· 1.10 House rules for what askdnd automates (each common table rule a switch on Manage › House rules, applied where
-askdnd does that thing: critical hit damage, potions as a bonus action, flanking, rest variants; added 2026-10-23) M
-core, partly built (one roll for all, such as Magic Missile's darts, and the DM's rulings on a spell).
-Order: design 0.4 + 1.7 together (mockup of the play log and "what changed"), then 1.1, 1.2, 1.3, 1.6, 1.4, 1.5,
-1.8, 1.9; 1.10's switches arrive with the item each one changes.
+**Table Assistant since 2026-10-24** (not VTT items; on for everyone): the new-player tour and Help › What askdnd
+adds (?), the Party page rebuilt (a card per character, then the party's spells and items with the shared filters),
+a simpler Table rolls sidebar (open or closed on a computer), a width check on every pull request, and no inline
+styles on any page.
+
+**Reordered 2026-10-26 (Brett).** The play state was first designed as screens of its own (an HP window, a play log
+in Table rolls) before the table had anywhere to play together, which made each interaction a trip into one
+character's page. So the fight screen comes first, and hit points and the play log live on it. Item numbers stay as
+they were, so earlier notes still match.
+
+**Phase 1, The fight screen (first).** 2.2 Initiative and turns as the table's shared fight screen M core: the party
+and the DM's enemies ("Enemy 1"…) in turn order, whose turn it is, each one's HP; everyone sees it live (0.3). On it:
+1.1 Hit points askdnd owns (damage with its type and resistance, healing, temporary HP by the 2024 rules), the
+Concentration and death save reminders, and 0.4's play log as the fight's log (the DM undoes a line). A damage roll
+in Table rolls can go to someone on the screen. The play state design (`docs/plans/2026-10-24-play-state.md`: what
+askdnd owns, damage taken, a version per change, the D&D Beyond merge rules) is unchanged; only where it shows moves.
+1.8 Party at a glance for the DM S core is the same screen outside a fight (the Party page, rebuilt 2026-10-26,
+already shows everyone's numbers; the DM's live version with conditions comes with the fight screen). 1.7 D&D Beyond merge M core arrives with
+1.1 (a level-up mid-campaign must not muddle HP). Mock up the fight screen first.
+Milestone: a fight's turn order and HP in askdnd, with the table watching the same screen.
+
+**Phase 2, Live character state.** 1.2 Casting spends slots, upcasting, concentration M core · 1.3 Class resources
+and uses M core · 1.6 Conditions with durations, Exhaustion M core (moves today's conditions and concentration into
+play state) · 1.4 Short and long rests, party rest M core (needs 1.2, 1.3) · 1.5 Inventory in play (quantities,
+potions, charges, ammo, coins, attunement, giving, loot) L core · 1.9 Level-up companion S nice · 1.10 House rules
+for what askdnd automates M core, partly built (each switch arrives with the item it changes).
+Order: 1.2, 1.3, 1.6, 1.4, 1.5, 1.9. Each shows on the fight screen where it matters (slots, conditions) and on the
+character's own pages.
 Milestone: a whole session's bookkeeping in askdnd; D&D Beyond only for building and leveling.
 
-**Phase 2, Combat.** 2.2 Initiative and turns M core (first: useful even before monsters are in askdnd) · 2.3
-Clickable stat blocks L core (needs 0.6) · 2.6 What players see of monsters S core (needs 2.3) · 2.4 Attacks and saves
-that resolve, DM confirms L core (needs 1.1, 2.3) · 2.1 Encounters (2024 DMG budget) L core (needs 2.3) · 2.5
-Reactions at the right moment M nice · 2.7 Fights flow into the recap S nice (reads the play log).
+**Phase 2b, The rest of combat.** 2.3 Clickable stat blocks L core (needs 0.6) · 2.6 What players see of monsters S
+core (needs 2.3) · 2.4 Attacks and saves that resolve, DM confirms L core (needs 1.1, 2.3) · 2.1 Encounters (2024
+DMG budget) L core (needs 2.3) · 2.5 Reactions at the right moment M nice · 2.7 Fights flow into the recap S nice
+(reads the play log).
 Milestone: a whole fight in askdnd.
 
 **Phase 3, Maps and tokens** (needs 0.5, and the live connection's data-carrying and DM channels above). 3.1 Map
@@ -159,8 +181,11 @@ group L nice · 7.3 Accounts and costs per group L nice.
 ## Decisions along the way
 
 - **How screens update live** (phase 0): decided 2026-10-24, WebSockets through Postgres NOTIFY/LISTEN (above).
-- **Play state and the D&D Beyond merge** (phase 1): the design above is the proposal; the per-field merge rules
-  and the play log's look are decided with Brett's mockup review before 1.1 is built.
+- **Play state and the D&D Beyond merge** (phase 1): reviewed by Brett 2026-10-26 (`docs/plans/2026-10-24-play-state.md`,
+  mockup `docs/mockups/play-state.html`); where it shows moved to the fight screen the same day.
+- **Where the data lives** (before 2.3): rules content as sources and entries (SRD, books the DM buys, homebrew),
+  play and story kept concrete, is the recommendation in `docs/plans/2026-10-27-next-steps.md`; Brett is writing up
+  his own notes first (2026-10-27). The content-sources draft (closed PR #52, branch `roadmap-fight-first`) feeds it.
 - **Where monsters come from** (phase 2): SRD built in, DM-owned books entered by the DM and kept in the database.
 - **How much map automation** (phase 3).
 - **Music sources** (phase 4).
@@ -172,6 +197,10 @@ group L nice · 7.3 Accounts and costs per group L nice.
 
 1. **Brett:** list the table's frustrations with D&D Beyond Maps, Foundry and Roll20; each is attached to the item
    that fixes it (still open).
-2. **The play state foundation:** a written design (0.4 + 1.7: what askdnd owns, the merge rules, the play log,
-   two people at once) and a mockup of the play log and "what changed", reviewed by Brett; then 1.1 Hit points as
-   the first piece, in the test campaign.
+2. **The data strategy** (Brett's notes, then a decision): where rules content, play and story live; it shapes
+   2.3 stat blocks and rules answers.
+3. **The fight screen:** a mockup of 2.2 with hit points and the play log on it (the play state design stands;
+   `docs/plans/2026-10-24-play-state.md`), reviewed by Brett; then built in small pieces in the test campaign.
+4. Rules answers (5.1) stay later (Brett, 2026-10-26).
+
+Done since 2026-10-24: the tour (all three parts), the play state review.
