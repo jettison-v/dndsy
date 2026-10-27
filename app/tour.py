@@ -140,12 +140,16 @@ STOPS = [
     {"group": "character", "title": "Reminders", "page": "battle", "needs": "character", "at": '[data-tour="reminders"]',
      "what": "Everything you rang the bell for waits here on Battle. Write your own below (\"Ask the DM about the map\").",
      "why": "Your Reminders sit beside your turn, so they're in front of you when they matter."},
-    {"group": "plan", "title": "Battle combos", "page": "plan", "needs": "character", "panel": True,
-     "open": ['[data-tab="t-combo"]', '#t-combo [data-tour="combo"]'],
-     "at": ".peek.open",
-     "what": "Plan a few turns together, each split into action, bonus action, reaction and movement. Click one to "
-             "read it; <b>Edit</b> changes it.",
+    {"group": "plan", "title": "Battle combos", "page": "plan", "needs": "character", "open": '[data-tab="t-combo"]',
+     "at": '[data-tour="plan"]',
+     "what": "<b>Combos</b> are your plans for a few turns together: the setup, then the payoff. <b>+ Battle combo</b> "
+             "starts a new one.",
      "why": "Work it out between sessions; your combos show on Battle, ready for the fight."},
+    {"group": "plan", "title": "A combo, turn by turn", "page": "plan", "needs": "character", "panel": True,
+     "open": ['[data-tab="t-combo"]', '#t-combo [data-tour="combo"]'], "at": ".peek.open",
+     "what": "Click a combo to read it: when to use it, what it needs, and each turn split into action, bonus action, "
+             "reaction and movement. <b>Edit</b> changes it.",
+     "why": "Everything you worked out, in the order you'll do it."},
     {"group": "plan", "title": "Leveling strategy", "page": "plan", "needs": "character", "open": '[data-tab="t-leveling"]',
      "at": '[data-tour="plan"]',
      "what": "Level by level: what you'll take and why, planned ahead or already done.",

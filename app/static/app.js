@@ -2484,12 +2484,18 @@
       return r.width > innerWidth * 0.4 && at < innerHeight * 0.3;
     });
   }
-  // How far down the page those bars reach now (a bar holding the lit thing, or inside it, doesn't count)
-  const covered = () => bars.reduce((m, el) => {
-    if (!lit || el.contains(lit) || lit.contains(el)) return m;
-    const r = el.getBoundingClientRect();
-    return r.top < innerHeight * 0.3 && r.bottom < innerHeight * 0.75 ? Math.max(m, r.bottom) : m;  // (Battle's numbers fill over half a short window)
-  }, 0);
+  // How far down the page those bars reach now, over the lit thing: none when it's in a bar itself (the Live pill in the
+  // menu bar sits over everything), and only bars that start above its bottom (Brett, 2026-10-26: Live was lit below Battle's
+  // numbers, an empty box mid-page)
+  const covered = () => {
+    if (!lit || bars.some(el => el.contains(lit))) return 0;
+    const end = lit.getBoundingClientRect().bottom;
+    return bars.reduce((m, el) => {
+      if (lit.contains(el)) return m;
+      const r = el.getBoundingClientRect();
+      return r.top < end && r.top < innerHeight * 0.3 && r.bottom < innerHeight * 0.75 ? Math.max(m, r.bottom) : m;  // (Battle's numbers fill over half a short window)
+    }, 0);
+  };
   function rect() {
     if (!lit) return null;
     const b = box(), top = lit.closest('.peek') ? b.top : Math.max(b.top, covered());
@@ -2574,9 +2580,8 @@
     if (row && row.querySelector('.ri-name')) { tour.example = row.querySelector('.ri-name').textContent.trim(); keep(); }
     if (lit) {
       findBars();
-      if (tall(lit.getBoundingClientRect())) alignTop();
-      else lit.scrollIntoView({ block: s.all ? 'nearest' : 'center' });
-      settling = Date.now() + 2500;
+      frame(s);
+      shownAt = Date.now(); holding = true; scrolled = 0;
     }
     requestAnimationFrame(() => { if (!card || asking) return; place(); card.querySelector('[data-tour-go="1"]').focus({ preventScroll: true }); });  // (ended meanwhile)
     follow();
@@ -2628,17 +2633,25 @@
   // Keep the light and the card on their target while anything on the page still moves or loads (a panel sliding in,
   // the Table rolls rail settling, a scrollbar coming or going, a picture loading), not only on scroll and resize:
   // every frame, re-place if the target moved. One rect read per frame, only while the tour is open.
-  // A tall target's top sits just under the bars stuck across the top of the page (a few tries: a bar can stick, or
-  // change height, only once the page has scrolled). For a moment after each stop, while the page is still loading
-  // (the rolls log, a picture, Game Mode's fresh sheet), its top is put back if it slips under them (Brett,
-  // 2026-10-26: Battle's column headings ended up behind its numbers).
-  let settling = 0;
-  ['wheel', 'touchmove'].forEach(t => addEventListener(t, () => { settling = 0; }, { passive: true }));  // the person scrolls: leave it
-  function alignTop() {
+  // Every stop is framed in the part of the screen the bars stuck across the top leave free: centered there when it fits,
+  // else its top just under them (a few tries: a bar can stick, or change height, only once the page has scrolled).
+  // While the stop shows, it's framed again whenever its top slips under them (fonts arriving, a picture, Game Mode
+  // redrawing Battle), until the person scrolls the page themselves (Brett, 2026-10-26: Battle's column headings kept
+  // ending up behind its numbers; centering on the whole screen ignored them).
+  // Something inside a stuck bar (Live, in the menu bar) or in the side panel isn't scrolled into place by the page.
+  // Only a real scroll counts: not the last page's momentum, nor a finger resting on a trackpad (tiny wheel events; Brett,
+  // 2026-10-26, on his laptop)
+  let holding = false, shownAt = 0, scrolled = 0;
+  addEventListener('wheel', e => { if (Date.now() - shownAt > 800 && (scrolled += Math.abs(e.deltaY)) > 60) holding = false; }, { passive: true });
+  addEventListener('touchmove', () => { if (Date.now() - shownAt > 800) holding = false; }, { passive: true });
+  function frame(s) {
+    if (lit.closest('.peek')) { lit.scrollIntoView({ block: s.all ? 'nearest' : 'center' }); return; }
+    if (bars.some(el => el.contains(lit))) return;
     for (let k = 0; k < 4; k++) {
-      const want = covered() + 16, at = lit.getBoundingClientRect().top;
-      if (Math.abs(at - want) < 2) break;
-      lit.style.scrollMarginTop = want + 'px'; lit.scrollIntoView({ block: 'start' }); lit.style.scrollMarginTop = '';
+      const r = box(), free = covered(), room = innerHeight - free;
+      const want = r.height + 32 <= room ? free + (room - r.height) / 2 : free + 16;
+      if (Math.abs(r.top - want) < 2) break;
+      scrollBy(0, r.top - want);
     }
   }
   let following = false, was = '';
@@ -2647,7 +2660,11 @@
     following = true;
     const tick = () => {
       if (!tour || !card) { following = false; was = ''; return; }
-      if (lit && Date.now() < settling && !lit.closest('.peek') && tall(lit.getBoundingClientRect()) && lit.getBoundingClientRect().top < covered() + 4) alignTop();
+      if (lit && !lit.isConnected) {  // redrawn under the stop (Game Mode's fresh sheet): light the new one
+        const s = tour.stops[tour.i], now = s && visible(s.at);
+        if (now) { lit = now; if (s.all) lits = [...document.querySelectorAll(s.at)]; }
+      }
+      if (lit && holding && !lit.closest('.peek') && box().top < covered() + 4) frame(tour.stops[tour.i]);
       const r = rect(), now = r ? [r.left, r.top, r.width, r.height].map(Math.round).join() : '';
       if (now !== was) { was = now; place(); }
       requestAnimationFrame(tick);
