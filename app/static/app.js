@@ -2484,12 +2484,18 @@
       return r.width > innerWidth * 0.4 && at < innerHeight * 0.3;
     });
   }
-  // How far down the page those bars reach now (a bar holding the lit thing, or inside it, doesn't count)
-  const covered = () => bars.reduce((m, el) => {
-    if (!lit || el.contains(lit) || lit.contains(el)) return m;
-    const r = el.getBoundingClientRect();
-    return r.top < innerHeight * 0.3 && r.bottom < innerHeight * 0.75 ? Math.max(m, r.bottom) : m;  // (Battle's numbers fill over half a short window)
-  }, 0);
+  // How far down the page those bars reach now, over the lit thing: none when it's in a bar itself (the Live pill in the
+  // menu bar sits over everything), and only bars that start above its bottom (Brett, 2026-10-26: Live was lit below Battle's
+  // numbers, an empty box mid-page)
+  const covered = () => {
+    if (!lit || bars.some(el => el.contains(lit))) return 0;
+    const end = lit.getBoundingClientRect().bottom;
+    return bars.reduce((m, el) => {
+      if (lit.contains(el)) return m;
+      const r = el.getBoundingClientRect();
+      return r.top < end && r.top < innerHeight * 0.3 && r.bottom < innerHeight * 0.75 ? Math.max(m, r.bottom) : m;  // (Battle's numbers fill over half a short window)
+    }, 0);
+  };
   function rect() {
     if (!lit) return null;
     const b = box(), top = lit.closest('.peek') ? b.top : Math.max(b.top, covered());

@@ -38,6 +38,10 @@ def test_a_player_walks_every_stop_and_each_lights_something(people, server):
         if stop["panel"]:
             assert page.locator(".peek.open").count() == 1, stop["title"]
         assert page.locator(".tour-foot .count").inner_text() == f"{i + 1} of {len(stops)}"  # every stop, not groups
+        if stop["at"] == '[data-tour="live"]':  # in the menu bar, over everything: lit where it is
+            page.wait_for_function("""() => { const s = document.querySelector('.tour-spot').getBoundingClientRect(),
+                p = document.querySelector('[data-tour="live"]').getBoundingClientRect();
+              return s.top <= p.top && s.bottom >= p.bottom && s.height < 80; }""", timeout=3000)
         page.keyboard.press("ArrowRight")
         if i + 1 < len(stops) and stops[i + 1]["url"] and stops[i + 1]["url"] != stop["url"]:
             page.wait_for_url(f"**{stops[i + 1]['url']}")
@@ -54,9 +58,11 @@ def test_show_me_starts_at_its_group_and_ending_asks_first(people, server):
     page.click('[data-tour-start="plan"]')
     page.wait_for_url(f"**/characters/{server['cole']}/plan")
     page.wait_for_selector(".tour-card")
-    page.wait_for_selector(".peek.open")  # a combo's window (or a new one's), unsaved
     assert card_title(page) == "Battle combos" and lit(page)
     assert page.locator('[data-tab="t-combo"]').get_attribute("aria-selected") == "true"
+    page.keyboard.press("ArrowRight")  # then a combo's window (or a new one's), unsaved
+    page.wait_for_function("() => document.querySelector('.tour-card h3')?.textContent === 'A combo, turn by turn'")
+    page.wait_for_selector(".peek.open")
     page.keyboard.press("ArrowRight")
     page.wait_for_function("() => document.querySelector('.tour-card h3')?.textContent === 'Leveling strategy'")
     assert page.locator('[data-tab="t-leveling"]').get_attribute("aria-selected") == "true"
