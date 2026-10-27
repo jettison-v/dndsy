@@ -111,14 +111,142 @@ tr.grp td { background: #191b1e; font: 700 var(--fs-xs) var(--cond); letter-spac
 .q { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; display: grid; gap: 4px; }
 .q b { color: var(--text-strong); }
 .q span { color: var(--muted); font-size: var(--fs-sm); }
+
+/* Round 2 (Brett, 2026-10-27): which half of Manage you're in, and switching campaigns */
+.opts { display: grid; gap: 28px; }
+.opt { display: grid; gap: 12px; padding: 18px; border: 1px solid var(--line); border-radius: var(--r-lg); background: #17191c; }
+.opt.rec { border-color: var(--green); }
+.opt-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 14px; }
+.opt-head h3 { font: 600 1.15rem/1.25 var(--serif); }
+.opt-head p { color: var(--muted); font-size: var(--fs-sm); flex-basis: 100%; max-width: 76ch; }
+.pair { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 820px) { .pair { grid-template-columns: 1fr; } }
+.gear { color: var(--muted); padding: 6px 9px; border-radius: var(--r-sm); white-space: nowrap; border: 1px solid var(--line); }
+.gear.on { color: var(--text-strong); background: var(--blue-soft); border-color: var(--blue); }
+.nv.camp-on { color: var(--text-strong); background: var(--red-soft); border: 1px solid var(--red); }
+.mhead { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px; margin: -6px -6px 4px; border-bottom: 1px solid var(--line); border-radius: var(--r-md) var(--r-md) 0 0; font-size: var(--fs-sm); }
+.mhead b { color: var(--text-strong); }
+.mhead.camp { background: var(--red-soft); }
+.mhead.tool { background: var(--blue-soft); }
+.mhead span { color: var(--muted); font-size: var(--fs-xs); }
+.camps { display: grid; gap: 2px; padding: 4px 0; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.camps a { font-size: var(--fs-xs) !important; }
+.tabs2 { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; margin-bottom: 6px; }
+.tabs2 span { text-align: center; padding: 7px 4px; font-size: var(--fs-xs); font-weight: 600; color: var(--muted); }
+.tabs2 span.on { background: var(--red); color: var(--text-strong); }
+.blk { border-left: 3px solid var(--red); padding-left: 6px; margin: 4px 0 6px; }
+.blk.tool { border-left-color: var(--blue); }
+.blk .grp { padding-left: 4px; }
+.band { display: flex; align-items: center; gap: 10px; padding: 8px 26px; font-size: var(--fs-sm); border-bottom: 1px solid var(--line); }
+.band b { color: var(--text-strong); }
+.band span { color: var(--muted); }
+.band.camp { background: var(--red-soft); }
+.band.tool { background: var(--blue-soft); }
+.band .sw { margin-left: auto; color: var(--link); white-space: nowrap; }
+.mini { min-height: 0 !important; }
+.mini .main { padding: 16px 22px; }
+.mini .side { padding: 12px 10px; }
+.verdict { font-size: var(--fs-sm); color: var(--text); display: grid; gap: 4px; }
+.verdict b { color: var(--text-strong); }
+.verdict span { color: var(--muted); }
 </style>
 
 <div class="wrap">
   <header class="head">
-    <div class="eyebrow">askdnd · mockup · Oct 27, 2026</div>
+    <div class="eyebrow">askdnd · mockup · Oct 27, 2026 · round 2</div>
     <h1>A shorter Manage menu</h1>
-    <p class="lead">The menu keeps only what a DM or admin opens every week. Everything else is one click further, in a section list down the left of every Manage page, so nothing wraps and nothing is lost. Each page keeps its own address.</p>
+    <p class="lead">The plan stands: a short menu, a list down the left of every Manage page, and an Overview for askdnd. Round 2 is about one thing it didn't make clear: which half of Manage you're in (this campaign, or askdnd as a whole, the same for every campaign), and how to get to the other half, or to another campaign.</p>
   </header>
+
+  <section class="sec">
+    <h2>Round 2 · This campaign or askdnd: three ways</h2>
+    <p>Each option shows the menu, then the top of a Manage page. The campaign half is red, askdnd's half is blue in all three, so the colour alone tells you where you are. Switching campaigns works the same in each: the campaign name at the top left (it keeps you on the same Manage page), and the campaign's own menu lists your other campaigns.</p>
+    <div class="opts">
+
+      <div class="opt rec">
+        <div class="opt-head"><span class="label">A</span><h3>Two menus: Manage for the campaign, Admin for askdnd</h3><span class="pick">Recommended</span>
+          <p>Two places with two names. <b>Manage ▾</b> is always this campaign's (what the DM and reviewers use); <b>Admin ▾</b>, with a gear, is askdnd as a whole and only admins see it. You never have to work out which half you're in: the menu you opened says so, and the page carries a band in that menu's colour.</p></div>
+        <div class="screen"><div class="bar"><span class="brand">askdnd</span><span class="nv">VTT test ▾</span><span class="nv">Story</span><span class="nv">Campaign</span><span class="end"><span class="nv">Live</span><span class="nv camp-on">Manage ▾</span><span class="gear">⚙ Admin ▾</span><span class="av">D</span></span></div></div>
+        <div class="pair">
+          <div class="menu-card">
+            <span class="label">Manage ▾</span>
+            <div class="menu">
+              <div class="mhead camp"><b>VTT test</b><span>This campaign</span></div>
+              <a>Needs you <span class="count">3</span></a><a>Inbox <span class="count amber">5</span></a><a>Sessions</a><a>Table</a>
+              <a class="all">House rules · Settings · History · DM guide</a>
+              <div class="camps"><div class="grp">Your other campaigns</div><a>Manage The Adventure Begins <small>DM</small></a></div>
+            </div>
+          </div>
+          <div class="menu-card">
+            <span class="label">⚙ Admin ▾ · admins only</span>
+            <div class="menu">
+              <div class="mhead tool"><b>askdnd admin</b><span>Every campaign</span></div>
+              <a>Overview</a><a>Accounts</a><a>Campaigns</a><a>Usage</a><a>Backups and imports</a>
+              <a class="all">askdnd history · Tool corrections · Dice tuning · Design system</a>
+            </div>
+          </div>
+        </div>
+        <div class="screen">
+          <div class="band tool"><b>⚙ askdnd admin</b><span>The same in every campaign</span><span class="sw">Back to VTT test's Manage →</span></div>
+          <div class="page mini"><nav class="side"><div class="grp">People</div><a>Accounts</a><a>Campaigns</a><div class="grp">Running askdnd</div><a class="on">Usage</a><a>Backups and imports</a></nav><div class="main"><h3 class="pt">Usage</h3><p class="note">What askdnd has spent on Claude.</p></div></div>
+        </div>
+        <p class="verdict"><b>Why this one:</b> <span>the two halves are for different people (the DM runs the campaign; admins run askdnd), so they get different doors. The DM never sees Admin at all. One more item in the menu bar on a computer; on phones both sit in More.</span></p>
+      </div>
+
+      <div class="opt">
+        <div class="opt-head"><span class="label">B</span><h3>One menu, two tabs at its top</h3>
+          <p><b>Manage ▾</b> opens on the half you're in, with a two-way switch at the top: <b>VTT test | askdnd admin</b>. Clicking the other tab changes what the menu lists. The page has the same switch at the top of its list (as built today).</p></div>
+        <div class="pair">
+          <div class="menu-card">
+            <span class="label">Manage ▾</span>
+            <div class="menu">
+              <div class="tabs2"><span class="on">VTT test</span><span>askdnd admin</span></div>
+              <a>Needs you <span class="count">3</span></a><a>Inbox <span class="count amber">5</span></a><a>Sessions</a><a>Table</a>
+              <a class="all">House rules · Settings · History · DM guide</a>
+            </div>
+          </div>
+          <div class="screen">
+            <div class="band camp"><b>VTT test</b><span>This campaign's Manage</span></div>
+            <div class="page mini"><nav class="side"><div class="tabs2"><span class="on">VTT test</span><span>askdnd admin</span></div><a class="on">Needs you <span class="count">3</span></a><a>Inbox</a><a>Sessions</a></nav><div class="main"><h3 class="pt">Needs you</h3></div></div>
+          </div>
+        </div>
+        <p class="verdict"><b>Trade-off:</b> <span>one door, but you still read a switch to know where you are, and the menu changes under you when you click a tab.</span></p>
+      </div>
+
+      <div class="opt">
+        <div class="opt-head"><span class="label">C</span><h3>One menu, two coloured blocks</h3>
+          <p>The menu as approved, but each half is a block with its own colour edge and a heading that says what it covers: <b>VTT test · this campaign</b> in red, <b>askdnd admin · every campaign</b> in blue. Pages carry the band in their half's colour.</p></div>
+        <div class="pair">
+          <div class="menu-card">
+            <span class="label">Manage ▾</span>
+            <div class="menu">
+              <div class="blk"><div class="grp">VTT test · this campaign</div><a>Needs you <span class="count">3</span></a><a>Inbox <span class="count amber">5</span></a><a>Sessions</a><a>Table</a><a class="all">House rules · Settings · History · DM guide</a></div>
+              <div class="blk tool"><div class="grp">askdnd admin · every campaign</div><a>Overview</a></div>
+            </div>
+          </div>
+          <div class="screen">
+            <div class="band camp"><b>VTT test</b><span>This campaign's Manage</span><span class="sw">askdnd admin →</span></div>
+            <div class="page mini"><nav class="side"><a class="on">Needs you <span class="count">3</span></a><a>Inbox</a><a>Sessions</a></nav><div class="main"><h3 class="pt">Needs you</h3></div></div>
+          </div>
+        </div>
+        <p class="verdict"><b>Trade-off:</b> <span>the smallest change from what's built, but the two halves still share one door, so a DM who is also an admin opens the same menu for two different jobs.</span></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <h2>Round 2 · Questions for you</h2>
+    <div class="qs">
+      <div class="q"><b>1. A, B or C?</b><span>Recommended: A, two menus.</span></div>
+      <div class="q"><b>2. The page band in the half's colour (red for the campaign, blue for askdnd)?</b><span>Recommended: yes, on every Manage and Admin page, with the way to the other half at its right.</span></div>
+      <div class="q"><b>3. Other campaigns in the Manage menu?</b><span>Recommended: yes, below the campaign's pages, for anyone who runs more than one. The campaign name at the top left keeps working too.</span></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <h2>Round 1 · approved</h2>
+    <p>What you approved earlier today, kept for the record. Round 2 changes only how the two halves are told apart.</p>
+  </section>
 
   <section class="sec">
     <h2>1 · The menu: today and proposed</h2>
