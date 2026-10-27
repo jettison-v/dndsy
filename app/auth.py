@@ -136,10 +136,11 @@ def _record_sign_in(db: Session, email: str, name: str) -> None:
 
 
 @router.get("/dev/login")
-def dev_login(request: Request, as_: str = Query("", alias="as")):
+def dev_login(request: Request, as_: str = Query("", alias="as"), next_: str = Query("/", alias="next")):
     """Local-only shortcut for previewing pages without Google (see DEV_LOGIN_EMAIL).
     `?as=<email>` previews as someone else who can sign in (two people at once: one tab on
-    localhost, another on 127.0.0.1, since each keeps its own cookie)."""
+    localhost, another on 127.0.0.1, since each keeps its own cookie). `?next=/a/page` opens that page after (a path on
+    this site only), so a link Claude gives Brett to try a change lands on it."""
     local = request.client is not None and request.client.host in ("127.0.0.1", "::1", "testclient")
     if config.IS_PRODUCTION or not config.DEV_LOGIN_EMAIL or not local:
         return RedirectResponse("/login", status_code=303)
@@ -147,7 +148,8 @@ def dev_login(request: Request, as_: str = Query("", alias="as")):
     if not access.level(email):
         return RedirectResponse("/login", status_code=303)
     request.session["user"] = {"email": email, "name": "Dev preview", "picture": None}
-    return RedirectResponse("/", status_code=303)
+    here = next_ if next_.startswith("/") and not next_.startswith(("//", "/\\")) else "/"
+    return RedirectResponse(here, status_code=303)
 
 
 @router.post("/logout")
