@@ -21,7 +21,6 @@ def test_a_player_walks_every_stop_and_each_lights_something(people, server):
     """Including Battle's hands-on stops (+ Add opens the side panel, a row opens its marks and note, examples only on
     the page), the Spell Book's, and Wild Shape's preview: afterwards nothing new is pinned and Cole is in no form."""
     player = people("player")
-    player.page.set_viewport_size({"width": 1280, "height": 640})  # a laptop: Battle's columns are a large section
     before = pinned(player.open(f"/characters/{server['cole']}/battle"))
     page = player.open("/c/main/")
     stops = page.evaluate("fetch('/tour').then(r => r.json()).then(d => d.stops)")
@@ -39,9 +38,6 @@ def test_a_player_walks_every_stop_and_each_lights_something(people, server):
         if stop["panel"]:
             assert page.locator(".peek.open").count() == 1, stop["title"]
         assert page.locator(".tour-foot .count").inner_text() == f"{i + 1} of {len(stops)}"  # every stop, not groups
-        if stop["title"] == "Battle: your turn on one screen":  # a large section: its column tops lit, the whole outlined
-            spot, area = (page.locator(sel).bounding_box() for sel in (".tour-spot", ".tour-area:not([hidden])"))
-            assert area and spot["height"] < 160 < area["height"], (spot, area)
         page.keyboard.press("ArrowRight")
         if i + 1 < len(stops) and stops[i + 1]["url"] and stops[i + 1]["url"] != stop["url"]:
             page.wait_for_url(f"**{stops[i + 1]['url']}")

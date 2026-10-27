@@ -2003,8 +2003,6 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
 /* The new-player tour (app.js "the tour", app/tour.py): everything else dims, one thing stays lit, a card says what
    it is and why. The page underneath still works; the tour only reads. Phones: the card sits at the bottom. */
 .tour-spot { position: fixed; z-index: 190; border-radius: var(--r-lg); box-shadow: 0 0 0 9999px var(--backdrop-strong), 0 0 0 2px var(--amber); pointer-events: none; transition: top .2s ease, left .2s ease, width .2s ease, height .2s ease; }
-.tour-spot.soft { box-shadow: 0 0 0 9999px var(--backdrop-soft), 0 0 0 2px var(--amber); }
-.tour-area { position: fixed; z-index: 190; border: 2px dashed var(--amber); border-radius: var(--r-lg); pointer-events: none; transition: top .2s ease, left .2s ease, width .2s ease, height .2s ease; }
 .tour-card { position: fixed; z-index: 191; width: min(380px, calc(100vw - 24px)); background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-lg); padding: var(--sp-4); box-shadow: 0 16px 40px var(--shadow); display: grid; gap: var(--sp-2); }
 .tour-card.alone { top: 50% !important; left: 50% !important; transform: translate(-50%, -50%); box-shadow: 0 0 0 9999px var(--backdrop-strong), 0 16px 40px var(--shadow); }
 .tour-card h3 { margin: 0; font-size: var(--fs-lg); }
@@ -2018,7 +2016,7 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
 @media (max-width: 640px) {
   .tour-card, .tour-card.alone { left: 8px !important; right: 8px; top: auto !important; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); width: auto; transform: none; }
 }
-@media (prefers-reduced-motion: reduce) { .tour-spot, .tour-area { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .tour-spot { transition: none; } }
 
 /* Help › What askdnd adds (help.html): the tour's groups to read, each with Show me */
 .adds > .hint { margin: var(--sp-3) 0 var(--sp-4); }
