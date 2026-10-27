@@ -389,7 +389,6 @@ def party_row(character, sheet: dict | None) -> dict:
         "c": character,
         "sheet": sheet,
         "classes": " / ".join(f"{k['name']} {k['level']}" for k in sheet["classes"]),
-        "best_saves": ", ".join(f"{s['short']} {s['label']}" for s in saves),
         "top_saves": saves,
         # limited uses (Wild Shape, Focus Points…) and spell slots, each with dots for what's left
         "resources": [{"name": a["name"], "uses": a["uses"]} for a in sheet.get("actions") or []
@@ -477,6 +476,12 @@ def pooled_items(rows: list[dict]) -> list[tuple[str, list[dict]]]:
             if any(gg == g for gg, _ in items)]
 
 
+def _holders(rows: list[dict], out: list[dict]) -> list[str]:
+    """Who has it: the characters holding at least one of these, in the party's order (no chip that matches nothing)."""
+    held = {n for x in out for n in x["f"]["who"]}
+    return [r["c"].name for r in rows if r["c"].name in held]
+
+
 def _spell_does(sp: dict) -> str:
     return f"heals {sp['healing']}" if sp["healing"] else sp["damage"] or ""
 
@@ -492,10 +497,9 @@ def party_spell_list(rows: list[dict]) -> dict:
             out.append({**sp, "group": title, "level_label": level, "time": time, "does": _spell_does(sp),
                         "f": {"does": title.split(" (")[0], "who": [w["name"] for w in sp["who"]], "conc": "Conc." if sp["concentration"] else "No Conc.",
                               "level": level, "time": time}})
-    names = [r["c"].name for r in rows if r["sheet"]]
     levels = sorted({s["level"] for s in out})
     groups = [{"key": "does", "label": "What it does", "values": list(dict.fromkeys(s["f"]["does"] for s in out))},  # (Rituals, not its heading's note)
-              {"key": "who", "label": "Who has it", "values": names},
+              {"key": "who", "label": "Who has it", "values": _holders(rows, out)},
               {"key": "conc", "label": "Concentration", "values": ["Conc.", "No Conc."]},
               {"key": "level", "label": "Level", "values": ["Cantrip" if not n else ordinal(n) for n in levels], "more": True},
               {"key": "time", "label": "Casting time", "values": [t for t in ("Action", "Bonus", "Reaction", "Longer") if any(s["time"] == t for s in out)], "more": True}]
@@ -507,9 +511,8 @@ def party_item_list(rows: list[dict]) -> dict:
     carries them."""
     out = [{**it, "group": title, "f": {"kind": title, "who": [w["name"] for w in it["who"]]}}
            for title, items in pooled_items(rows) for it in items]
-    names = [r["c"].name for r in rows if r["sheet"]]
     groups = [{"key": "kind", "label": "What it is", "values": list(dict.fromkeys(i["group"] for i in out))},
-              {"key": "who", "label": "Who has it", "values": names}]
+              {"key": "who", "label": "Who has it", "values": _holders(rows, out)}]
     return {"rows": out, "groups": groups if out else []}
 
 

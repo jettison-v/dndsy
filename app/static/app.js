@@ -585,8 +585,7 @@
     const open = c.classList.toggle('open'); c.setAttribute('aria-expanded', open ? 'true' : 'false'); c.title = open ? 'Show less' : 'Show all';
   });
   // Battle's "See all" / "+ Add" panels: chips show one kind (attacks, features, spells…), search looks at names
-  // and descriptions; groups with nothing left hide (Brett, 2026-10-22); Party's pooled spells and items use the same (rows marked
-  // data-opt-row, 2026-10-26)
+  // and descriptions; groups with nothing left hide (Brett, 2026-10-22)
   function optFilter(panel) {
     const on = [...panel.querySelectorAll('[data-opt-kind][aria-pressed=true]')].map(b => b.dataset.optKind);
     const q = ((panel.querySelector('[data-opt-search]') || {}).value || '').toLowerCase().trim();
@@ -594,7 +593,7 @@
     panel.querySelectorAll('.opt-group').forEach(g => {
       const kindOk = !on.length || on.includes(g.dataset.kind);
       let shown = 0;
-      g.querySelectorAll('.ri, [data-opt-row]').forEach(r => { const ok = kindOk && (!q || r.textContent.toLowerCase().includes(q)); r.hidden = !ok; if (ok) shown++; });
+      g.querySelectorAll('.ri').forEach(r => { const ok = kindOk && (!q || r.textContent.toLowerCase().includes(q)); r.hidden = !ok; if (ok) shown++; });
       g.hidden = !shown; any = any || shown > 0;
     });
     const none = panel.querySelector('[data-opt-none]'); if (none) none.hidden = any;

@@ -44,6 +44,7 @@
     <p class="hint">Padding, margins and gaps come from a 4px scale. Controls are <code>--control-h</code> tall: 32px on desktop, 44px on phones. Layouts change at 640px (phone), 900px (tablet) and 1100px (wide).</p>
     <div class="ds-space">{% for name, px in space %}<div><span style="width:var({{ name }}); height:var({{ name }})"></span><code>{{ name }}</code> {{ px }}px</div>{% endfor %}</div>
     <div class="ds-corners">{% for name, px, use in corners %}<div><span style="border-radius:var({{ name }})"></span><code>{{ name }}</code> {{ px }}<small class="muted">{{ use }}</small></div>{% endfor %}</div>
+    <p class="hint mt-4">Inline spacing isn't used on any page. Where a block's parent isn't a <code>.row</code> or <code>.stack</code> (whose <code>gap</code> spaces it), a helper does: <code>.mt-1</code>…<code>.mt-5</code> space above, <code>.mb-1</code>…<code>.mb-3</code> below, <code>.m-0</code> none, <code>.byline</code> a note tucked under what it's about ("Added by Big C · Oct 26"), <code>.push</code> a button at the far end of its row, <code>.grow</code> the part of a row that takes the room left, <code>.row.tight</code> small controls that belong together.</p>
   </section>
 
   <section class="section" id="buttons">

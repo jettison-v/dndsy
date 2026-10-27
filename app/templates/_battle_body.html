@@ -53,7 +53,7 @@
       <div class="cond-box">
         <div class="ls-label">Conditions</div>
         <div class="ls-chips">{% for n in all_conditions if n not in active_conditions %}<button class="ls-chip" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": n, "level": 1} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">{{ n }}</button>{% endfor %}</div>
-        <div class="ls-label" style="margin-top:8px">Effects</div>
+        <div class="ls-label mt-2">Effects</div>
         <div class="ls-chips">{% for n in all_effects if n not in active_conditions %}<button class="ls-chip" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": n} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">{{ n }}</button>{% endfor %}</div>
       </div>
     </details>

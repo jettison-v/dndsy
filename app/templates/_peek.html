@@ -16,7 +16,7 @@
   {% if not reader %}<button class="btn link peek-close" type="button" aria-label="Close">✕</button>{% endif %}
 </div>
 <div class="{{ 'reader-body' if reader else 'peek-body' }}">
-  {% if picture %}<img class="peek-pic" src="{{ picture.full }}" alt="{{ e.name }}" referrerpolicy="no-referrer">{% if not picture.uploaded %}<p class="note" style="margin:-4px 0 8px">From D&amp;D Beyond</p>{% endif %}{% endif %}
+  {% if picture %}<img class="peek-pic" src="{{ picture.full }}" alt="{{ e.name }}" referrerpolicy="no-referrer">{% if not picture.uploaded %}<p class="note byline">From D&amp;D Beyond</p>{% endif %}{% endif %}
   {% if e.summary %}<div class="story">{{ ln.text(e.summary) }}</div>{% else %}<p class="muted">No description yet.{% if can_edit %} Use <b>Edit</b> to write one.{% endif %}</p>{% endif %}
   {% if part_of %}
   <h3>Part of</h3>
@@ -39,7 +39,7 @@
   {% else %}<p class="muted">Nothing yet. Add what the party learned below.</p>{% endif %}
   {% for f in pending %}
   <div class="item peek-pending"><p class="item-title">{{ f.text }}</p>
-    <p class="note" style="margin:-6px 0 8px">{{ f.author_name or f.author_email or "Someone" }} · {{ f.created_at.strftime("%b %-d") }}</p>
+    <p class="note byline">{{ f.author_name or f.author_email or "Someone" }} · {{ f.created_at.strftime("%b %-d") }}</p>
     <div class="row"><button class="btn primary small" hx-post="/campaign/facts/{{ f.id }}/merge?in={{ w }}" {{ px | safe }}>Accept</button>
       <button class="btn link small" hx-post="/campaign/facts/{{ f.id }}/reject?in={{ w }}" {{ px | safe }}>Dismiss</button>
       <a class="btn link small" href="{{ cbase }}/manage/inbox#fact-{{ f.id }}" data-no-peek>Edit or ask Claude in the Inbox</a></div></div>

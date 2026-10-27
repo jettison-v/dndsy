@@ -100,6 +100,7 @@ a.char-btn > span:last-child { overflow: hidden; text-overflow: ellipsis; }
 .manage > button.active { border-color: var(--red); }
 .menu { position: absolute; right: 0; top: 44px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 6px; width: 240px; box-shadow: 0 10px 30px var(--shadow); }
 .menu a { display: block; color: var(--text); text-decoration: none; padding: 8px 10px; border-radius: var(--r-sm); }
+.menu .menu-me { pointer-events: none; }  /* the account menu's name and email: a label, not a link */
 .menu a small { display: block; color: var(--muted); font-size: var(--fs-xs); }
 .menu a:hover, .menu a.active { background: var(--surface); }
 .account { position: relative; }
@@ -180,6 +181,7 @@ h3 { font-size: var(--fs-md); font-weight: 600; margin: 1.4em 0 .5em; }
 
 /* Buttons and forms */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2); border: 1px solid var(--line); background: var(--surface-2); color: var(--text); border-radius: var(--r-md); padding: 0 var(--sp-4); font-size: var(--fs-sm); font-weight: 500; min-height: var(--control-h); text-decoration: none; line-height: 1.25; white-space: nowrap; }  /* a button's label stays on one line; the row around it wraps instead */
+.btn.block { width: 100%; }  /* the one action of a small card (Sign in, Publish) */
 .btn:hover { border-color: var(--line-strong); }
 .btn.primary { background: var(--red); border-color: var(--red); color: var(--text-strong); font-weight: 600; }
 .btn.primary:hover { background: var(--red-hover); }
@@ -189,6 +191,18 @@ h3 { font-size: var(--fs-md); font-weight: 600; margin: 1.4em 0 .5em; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .stack { display: grid; gap: 10px; }
+/* Spacing helpers on the space scale (DESIGN.md › Space), for a block whose parent isn't a .row or .stack: space above or
+   below it, or none. They win over component rules, as the inline styles they replaced did (2026-10-27: no inline spacing
+   on any page; tests/test_design_system.py) */
+.m-0 { margin: 0 !important; }
+.mt-1 { margin-top: var(--sp-1) !important; } .mt-2 { margin-top: var(--sp-2) !important; } .mt-3 { margin-top: var(--sp-3) !important; }
+.mt-4 { margin-top: var(--sp-4) !important; } .mt-5 { margin-top: var(--sp-5) !important; }
+.mb-1 { margin-bottom: var(--sp-1) !important; } .mb-2 { margin-bottom: var(--sp-2) !important; } .mb-3 { margin-bottom: var(--sp-3) !important; }
+.byline { margin: calc(-1 * var(--sp-1)) 0 var(--sp-2) !important; }  /* who added it and when, tucked under what it's about */
+.push { margin-left: auto !important; }  /* a button at the far end of its row */
+.grow { flex: 1; min-width: 0; }  /* the part of a row that takes the room left */
+.row.tight { gap: 6px; }  /* small controls that belong together (Keep it / Forget, uses and pips) */
+summary { cursor: pointer; }
 form.inline { display: inline; }
 textarea, input[type=text], input[type=url], input[type=date], select { width: 100%; font: inherit; font-size: var(--fs-sm); color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-md); padding: 6px 10px; }
 input[type=text], input[type=url], input[type=date], select { min-height: var(--control-h); }
@@ -197,6 +211,7 @@ textarea:focus, input:focus, select:focus { border-color: var(--red); outline: n
 select { width: auto; max-width: 100%; padding: 0 var(--sp-2); }  /* a long option (a campaign's name) never pushes the page wider */
 input[type=file] { color: var(--muted); }
 label.field { display: grid; gap: 4px; font-size: var(--fs-sm); color: var(--muted); }
+label.field.short { max-width: 220px; }  /* a choice of a few words (a status) */
 label.check { display: inline-flex; gap: 8px; align-items: center; color: var(--muted); font-size: var(--fs-sm); }
 input[type=checkbox] { accent-color: var(--red); width: 16px; height: 16px; }
 
@@ -222,6 +237,7 @@ details.done[open] > summary::before { transform: rotate(90deg); }
 .waiting h3 { margin: 0 0 2px; color: var(--amber); }
 .waiting .count { font-weight: 400; }
 .callout { margin-top: 16px; padding: 16px; background: var(--amber-soft); border-radius: 10px; }
+.callout.ready { background: var(--green-soft); }  /* Claude has enough to draft */
 
 /* Add Session conversation */
 .messages { display: grid; gap: 12px; margin: 8px 0 16px; }
@@ -309,6 +325,7 @@ details.conversation[open] > summary { margin-bottom: 12px; }
 
 /* Tables and lists */
 table.list { width: 100%; border-collapse: collapse; }
+table.list td.term { width: 30%; }  /* Campaign › Glossary: the word, then what it means */
 table.list th { text-align: left; font-size: var(--fs-sm); font-weight: 600; color: var(--muted); padding: 0 10px 8px; }
 table.list td { padding: 14px 10px; border-top: 1px solid var(--line); vertical-align: top; }
 table.list td a { color: var(--text); font-weight: 500; text-decoration: none; }
@@ -370,6 +387,9 @@ table.list td a:hover { color: var(--text-strong); text-decoration: underline; }
 .login { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
 .login .section { width: 100%; max-width: 400px; text-align: center; }
 .login img { width: 72px; height: 72px; border-radius: 14px; }
+.login h1 { margin: var(--sp-4) 0 6px; }
+.login .tagline { margin: 0 0 var(--sp-5); }
+.login .flash { text-align: left; }
 
 @media (max-width: 900px) {
   .layout { grid-template-columns: 1fr; }
@@ -536,16 +556,12 @@ button.switch { cursor: pointer; }
 .seeall { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line); }
 .lower { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
 .lower .section { margin: 0; }
-a.who { color: var(--text); font-weight: 600; text-decoration: underline; text-decoration-color: var(--red-line); text-underline-offset: 3px; }
-.pool { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
-.pool .section { margin: 0; }
-.chips { display: inline-flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
 .peek.modal { top: 50%; left: 50%; right: auto; bottom: auto; width: min(var(--modal-w), calc(100% - 32px)); max-height: 86vh; overflow: hidden; transform: translate(-50%, -46%); opacity: 0; border: none; border-top: 3px solid var(--red); border-radius: 14px; transition: transform .18s ease, opacity .18s ease; }
 .peek.modal.open { transform: translate(-50%, -50%); opacity: 1; }
 .peek-backdrop.dim { background: var(--backdrop-strong); }
 .peek-foot.row { display: flex; gap: 8px; }
 @media (max-width: 900px) {
-  .econ, .lower, .pool { grid-template-columns: 1fr; }
+  .econ, .lower { grid-template-columns: 1fr; }
   .abil6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .battlebar { position: static; }
   .peek.modal { top: auto; left: 0; bottom: 0; width: 100%; transform: translateY(100%); border-radius: 14px 14px 0 0; }
@@ -2035,7 +2051,7 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
 .pt-spells .pt-row { grid-template-columns: minmax(0, 2fr) 64px 72px minmax(0, 1.4fr) minmax(0, 1.3fr); }
 .pt-items .pt-row { grid-template-columns: minmax(0, 1.4fr) minmax(0, 2fr) minmax(0, 1.2fr); }
 .pt-row[data-panel-url] { cursor: pointer; border-radius: var(--r-sm); }
-.pt-row[data-panel-url]:hover { background: var(--row-hover); }
+.pt-row[data-panel-url]:hover, .pt-row[data-panel-url]:focus-visible { background: var(--row-hover); }
 .pt-headrow { border-top: 0; color: var(--muted); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .06em; }
 .pt-nm { min-width: 0; }
 .pt-sum { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
