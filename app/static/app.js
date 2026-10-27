@@ -2680,3 +2680,64 @@
     else end();
   } else tour = null;
 })();
+
+// ---------------------------------------------------------------- the D&D Beyond bridge (a local proof)
+// Character › with D&D Beyond (bridge.html, app/ddb_bridge.py): every number comes from D&D Beyond, and a change made
+// here is "waiting" until D&D Beyond has it. The askdnd extension (extension/askdnd-bridge/) makes the change in the
+// person's own D&D Beyond tab; this page talks to it with window messages ({askdndBridge: ...}). Phones read only
+// (Brett, 2026-10-27: askdnd on a phone is for reading and planning).
+(function () {
+  const root = document.querySelector('[data-bridge]');
+  if (!root) return;
+  const id = root.dataset.bridge, ddbId = root.dataset.ddbId, canAct = root.dataset.canAct === 'true';
+  const $ = sel => root.querySelector(sel);
+  const phone = matchMedia('(max-width: 640px)');
+  let extension = false, st = JSON.parse(document.getElementById('br-initial').textContent), timer = null;
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const LABEL = { live: 'Live with D&D Beyond', waiting: 'Waiting for D&D Beyond', not_yet: 'Not on D&D Beyond yet', seen: 'Changed on D&D Beyond' };
+  const CLS = { live: 'br-live', waiting: 'br-wait', not_yet: 'br-off', seen: 'br-seen' };  // (not .wait: app.css's loading line)
+  function render() {
+    const waiting = st.changes.filter(c => c.state === 'waiting').length, notYet = st.changes.filter(c => c.state === 'not_yet').length;
+    const pill = $('[data-br-status]');
+    const [cls, text] = !extension ? ['br-off', 'Extension off'] : waiting ? ['br-wait', waiting + ' waiting'] : notYet ? ['br-off', notYet + ' not on D&D Beyond'] : ['br-live', 'Live with D&D Beyond'];
+    pill.className = 'br-st title-action ' + cls; pill.textContent = text;
+    const help = $('[data-br-help]');
+    help.hidden = extension || phone.matches;
+    help.textContent = 'Turn on the askdnd extension in Chrome (chrome://extensions › Load unpacked › extension/askdnd-bridge), then open ' + st.character.name + "'s D&D Beyond sheet in this browser.";
+    const tile = $('[data-br-hp]');
+    tile.className = waiting ? 'br-wait' : notYet ? 'br-off' : '';
+    $('[data-br-hp-v]').textContent = st.hp.current;
+    $('[data-br-read]').textContent = st.read_at ? 'Read from D&D Beyond ' + new Date(st.read_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' }) + '.' : 'Not read from D&D Beyond yet.';
+    const act = canAct && !phone.matches;
+    $('[data-br-items]').innerHTML = st.items.length ? st.items.map(it => `<div class="br-item"><div><b>${esc(it.name)}</b> <span class="note">×${it.quantity}</span><div class="note">Heals ${esc(it.heals)}</div></div>${act ? `<button type="button" class="btn primary small" data-br-drink="${it.id}"${!extension || waiting || !it.quantity ? ' disabled' : ''}>Drink</button>` : ''}</div>`).join('') : '<p class="muted">No healing potions on the sheet.</p>';
+    $('[data-br-changes]').innerHTML = st.changes.map(c => `<div class="br-change ${CLS[c.state]}"><span class="br-st ${CLS[c.state]}">${LABEL[c.state]}</span><div>${c.lines.map(esc).join('<br>')}</div>${c.error ? `<div class="note">${esc(c.error)}</div>` : ''}${c.state === 'not_yet' && act ? `<div class="row tight"><button type="button" class="btn primary small" data-br-retry="${c.id}">Try again</button><a class="btn small" href="https://www.dndbeyond.com/characters/${esc(ddbId)}" target="_blank" rel="noopener">Open in D&amp;D Beyond</a><button type="button" class="btn small" data-br-undo="${c.id}">Undo</button></div>` : ''}</div>`).join('');
+    $('[data-br-none]').hidden = st.changes.length > 0;
+    $('[data-br-log]').innerHTML = st.log.map(l => `<li><span class="br-st ${CLS[l.state]}">${l.state === 'seen' ? 'On D&D Beyond' : 'From askdnd'}</span> ${esc(l.text)} <time class="note">${new Date(l.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</time></li>`).join('');
+    $('[data-br-log-none]').hidden = st.log.length > 0;
+    schedule();
+  }
+  const load = async (method = 'GET', url = '/bridge/state/' + id) => {
+    const r = await fetch(url, { method, headers: { Accept: 'application/json' } });
+    if (r.ok) { const body = await r.json(); if (body.character) { st = body; render(); } return body; }
+    return null;
+  };
+  function schedule() {  // quicker while a change is waiting; the extension also pings on every save
+    clearTimeout(timer);
+    timer = setTimeout(() => load(), st.changes.some(c => c.state === 'waiting') ? 1000 : 5000);
+  }
+  const apply = (change, ops) => window.postMessage({ askdndBridge: 'apply-request', change, ddbId, ops }, location.origin);
+  root.addEventListener('click', async e => {
+    const d = e.target.closest('[data-br-drink]'), r = e.target.closest('[data-br-retry]'), u = e.target.closest('[data-br-undo]');
+    if (d) { d.disabled = true; const ch = await load('POST', `/bridge/drink/${id}/${d.dataset.brDrink}`); if (ch && ch.ops) { apply(ch.id, ch.ops); load(); } }
+    if (r) { const c = st.changes.find(x => String(x.id) === r.dataset.brRetry); if (c) apply(c.id, c.ops); }
+    if (u) load('POST', '/bridge/dismiss/' + u.dataset.brUndo);
+  });
+  addEventListener('message', e => {
+    if (e.source !== window || !e.data || !e.data.askdndBridge) return;
+    if (e.data.askdndBridge === 'hello') { if (!extension) { extension = true; render(); } }
+    if (e.data.askdndBridge === 'update') load();
+  });
+  window.postMessage({ askdndBridge: 'ping' }, location.origin);
+  phone.addEventListener('change', render);
+  render();
+})();

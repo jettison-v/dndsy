@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ c.name }} with D&amp;D Beyond · askdnd{% endblock %}
+{% block content %}
+{# The D&D Beyond bridge, askdnd's own tab (app/ddb_bridge.py, a local proof; docs/mockups/ddb-overlay.html). app.js
+   "the D&D Beyond bridge" draws it from /bridge/state and talks to the askdnd extension; the same panel shows beside
+   the D&D Beyond sheet. #}
+<main class="page" data-bridge="{{ c.id }}" data-ddb-id="{{ c.ddb_id }}" data-can-act="{{ 'true' if state.can_act else 'false' }}">
+  <div class="title-row"><h1>{{ c.name }} with D&amp;D Beyond</h1><span class="br-st br-off title-action" data-br-status>Extension off</span></div>
+  <p class="subtitle">A proof, on this computer only. Every number comes from D&amp;D Beyond, and a change you make here counts only once D&amp;D Beyond has it.</p>
+  <p class="flash warn" data-br-help hidden></p>
+
+  <section class="section">
+    <h2>Numbers on D&amp;D Beyond</h2>
+    <div class="strip compact br-tiles"><div data-br-hp><small>Hit points</small><b data-br-hp-v>{{ state.hp.current }}</b><span class="note"> / {{ state.hp.max }}</span></div></div>
+    <p class="note mt-2" data-br-read></p>
+  </section>
+
+  <section class="section">
+    <h2>Healing potions</h2>
+    <div class="br-items" data-br-items></div>
+    <p class="note mt-2 br-phone">On a phone, askdnd is for reading and planning: make changes from a computer.</p>
+  </section>
+
+  <section class="section" data-br-changes-sec>
+    <h2>Waiting on D&amp;D Beyond</h2>
+    <div class="stack" data-br-changes></div>
+    <p class="muted" data-br-none>Nothing waiting.</p>
+  </section>
+
+  <section class="section">
+    <h2>What changed</h2>
+    <ul class="br-log" data-br-log></ul>
+    <p class="muted" data-br-log-none>Nothing yet. Change something here or on D&amp;D Beyond.</p>
+  </section>
+</main>
+<script type="application/json" id="br-initial">{{ state | tojson }}</script>
+{% endblock %}
