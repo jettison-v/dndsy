@@ -2,6 +2,8 @@
 stop across pages, lighting a target that's really there on each one, and Esc asks before ending it. A page change that loses a
 stop's target fails here, so the tour can't quietly break."""
 
+import pytest
+
 
 def card_title(page) -> str:
     return page.locator(".tour-card h3").inner_text()
@@ -95,11 +97,12 @@ def test_leaving_mid_wild_shape_puts_battle_back(people, server):
     assert player.errors == []
 
 
-def test_a_large_section_is_lit_below_the_bars_stuck_over_it(people, server):
-    """On a short window Battle's numbers stick over half the screen; the columns' tops (their headings) are lit and
-    shown below them, not behind (Brett, 2026-10-26)."""
+@pytest.mark.parametrize("size", [(1000, 540), (1300, 950)])  # short, where Battle's columns are tall; a laptop, where they fit
+def test_a_large_section_is_lit_below_the_bars_stuck_over_it(people, server, size):
+    """Battle's numbers stick across the top of the screen (over half of a short one); the columns' tops (their
+    headings) are shown and lit below them, not behind, whether the columns fit on screen or not (Brett, 2026-10-26)."""
     player = people("player")
-    player.page.set_viewport_size({"width": 1000, "height": 540})
+    player.page.set_viewport_size({"width": size[0], "height": size[1]})
     page = player.open("/help?tab=adds")
     page.click('[data-tour-start="battle"]')
     page.wait_for_url(f"**/characters/{server['cole']}/battle")
