@@ -66,6 +66,27 @@ What changes in the code is small: `campaign_content` (empty; nothing writes to 
 campaign gets its list of books, `CORE_SOURCES` gives way to that list, and `catalog/find` keep their signatures. About
 a day, with Manage › Settings › Books the only visible change.
 
+## When askdnd runs inventory and spells (Brett's question, 2026-10-27)
+
+Once askdnd keeps play state (1.2 casting spends slots, 1.5 inventory in play), things change during a session that
+D&D Beyond never sees. Each lands in a bucket, so there's no gap:
+
+- **What's on the sheet** (D&D Beyond's spells and items): their text comes with the sheet, as today. askdnd stores only
+  the play numbers against D&D Beyond's own id: slots spent, charges left, potions used, who holds it. No book text is
+  copied, and the books toggle doesn't apply (it's already the player's).
+- **What askdnd puts into play** (loot the DM hands out, an item from homebrew): picked from the campaign's books, so
+  the toggle applies at that moment. It becomes campaign data: a **copy in play** with its book and entry, a copy of the
+  entry's details, and its numbers (quantity, charges, attuned). Private book text in it stays in that campaign, in the
+  database, never in git. Switching the book off later keeps the copy, labelled with its book.
+- **Given to another character:** the copy, or the play numbers, move to them. D&D Beyond can't be written to, so askdnd
+  reminds both players to update their sheets there. When the item shows up on a sheet later, the D&D Beyond merge
+  (1.7) links it to askdnd's copy instead of counting it twice, and lists it under "what changed".
+- **Spells:** spells known and prepared stay D&D Beyond's (they change when you level up or prepare). askdnd spends slots
+  and tracks concentration. The only spells that arrive through askdnd come on items (a scroll, a wand): they're part of
+  that item's copy.
+- **An unidentified item** (a potion the party hasn't tried): the DM hands out the real entry and players see only what
+  they've learned, like monsters (2.6).
+
 ## Decisions for Brett
 
 1. **The four buckets** as above. *Recommended.*
@@ -79,6 +100,8 @@ a day, with Manage › Settings › Books the only visible change.
 7. **A book's optional rules become house rules** the DM switches on, not rules that apply by themselves. *Recommended.*
 8. **Build the model now** (about a day, while `campaign_content` is empty); getting a book's content in is decided
    later, when the DM first wants one. *Recommended.*
+9. **What askdnd puts into play is campaign data with its own copy;** what's on a D&D Beyond sheet gets only its play
+   numbers in askdnd, and the merge links the two when an item reaches the sheet. *Recommended.*
 
 Open for later: how a book's content gets in (typed, imported from a file made on the Mac, or read from D&D Beyond), and
 what a second group could see (VTT 7.1).

@@ -105,6 +105,7 @@ section { margin-bottom: 52px; }
 .caution b { color: var(--story-text); font: 600 1.02rem/1.35 var(--serif); }
 .caution span { color: var(--muted); font-size: .92rem; }
 .small-list { margin: 0; padding-left: 18px; display: grid; gap: 5px; font-size: .93rem; max-width: 72ch; }
+.small-list.mt { margin-top: 14px; }
 
 /* Decisions */
 .decisions { border-top: 1px solid var(--line); }
@@ -230,6 +231,25 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     </div>
   </section>
 
+  <section id="play">
+    <div class="sec-head">
+      <div class="eyebrow">Your question</div>
+      <h2>When askdnd runs inventory and spells</h2>
+      <p class="why">Once askdnd keeps play state (casting spends slots, inventory in play), things change during a session that D&amp;D Beyond never sees. Each lands in a bucket, so there's no gap.</p>
+    </div>
+    <div class="two">
+      <div class="panel"><div><span class="chip c-blue">From the sheet</span></div><h3>D&amp;D Beyond's spells and items</h3>
+        <ul><li>Their text comes with the sheet, as today.</li><li>askdnd stores only the play numbers: slots spent, charges left, potions used, who holds it.</li><li>No book text is copied, and the books toggle doesn't apply: it's already the player's.</li></ul></div>
+      <div class="panel"><div><span class="chip c-amber">Put into play by askdnd</span></div><h3>Loot the DM hands out, homebrew</h3>
+        <ul><li>Picked from the campaign's books, so the toggle applies at that moment.</li><li>It becomes campaign data: a copy with its book and entry, its details, and its numbers (quantity, charges, attuned).</li><li>Book text in it stays in that campaign's data, never in the code. Switching the book off later keeps the copy, labelled.</li></ul></div>
+    </div>
+    <ul class="small-list mt">
+      <li><b>Given to another character:</b> the copy, or the play numbers, move to them. D&amp;D Beyond can't be written to, so askdnd reminds both players to update their sheets. When the item reaches a sheet later, the D&amp;D Beyond merge links it to askdnd's copy instead of counting it twice, and lists it under "what changed".</li>
+      <li><b>Spells:</b> spells known and prepared stay D&amp;D Beyond's. askdnd spends slots and tracks concentration. The only spells that arrive through askdnd come on items (a scroll, a wand), as part of that item's copy.</li>
+      <li><b>An unidentified item</b> (a potion the party hasn't tried): the DM hands out the real entry, and players see only what they've learned, as with monsters.</li>
+    </ul>
+  </section>
+
   <section id="build">
     <div class="sec-head">
       <div class="eyebrow">What it takes</div>
@@ -260,6 +280,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
       <div class="decision"><span class="n">6</span><div class="body"><b>A book belongs to a person</b><span>The DM's library, usable in any campaign they DM, the way D&amp;D Beyond shares a DM's books.</span></div><span class="chip c-green">Recommended</span></div>
       <div class="decision"><span class="n">7</span><div class="body"><b>A book's optional rules become house rules</b><span>The DM switches each one on; they don't apply by themselves. The DM makes every ruling.</span></div><span class="chip c-green">Recommended</span></div>
       <div class="decision"><span class="n">8</span><div class="body"><b>Build the model now, the import later</b><span>About a day, while the table is empty. How a book's content gets in (typed, imported from a file made on your Mac, or read from D&amp;D Beyond) is decided when the DM first wants one.</span></div><span class="chip c-green">Recommended</span></div>
+      <div class="decision"><span class="n">9</span><div class="body"><b>What askdnd puts into play is campaign data with its own copy</b><span>What's on a D&amp;D Beyond sheet gets only its play numbers in askdnd; the merge links the two when an item reaches the sheet.</span></div><span class="chip c-green">Recommended</span></div>
     </div>
     <div class="ask"><b>Open for later</b><span class="muted">How a book's content gets in, and what a second group could see (roadmap 7.1, only if askdnd is ever shared).</span></div>
   </section>
