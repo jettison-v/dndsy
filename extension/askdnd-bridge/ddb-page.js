@@ -39,9 +39,15 @@
     token = j.token; until = Date.now() + Math.max(30, (j.ttl || 60) - 30) * 1000;
     return token;
   }
-  window.addEventListener('message', async e => {
+  // One change at a time for this sheet: D&D Beyond can drop writes that reach a character at the same moment while
+  // still answering OK to each (DDB Importer's experience, its src/updater/syncQueue.ts); the read-back catches a
+  // dropped one, and this stops causing them.
+  let queue = Promise.resolve();
+  window.addEventListener('message', e => {
     if (e.source !== window || !e.data || e.data.askdndBridge !== 'apply') return;
-    const { change, ops } = e.data;
+    queue = queue.then(() => run(e.data), () => run(e.data));
+  });
+  async function run({ change, ops }) {
     try {
       for (const op of ops) {
         if (!OPS.has(op.path)) throw new Error("That isn't a change askdnd may make.");
@@ -67,5 +73,5 @@
     } catch (err) {
       post({ type: 'applied', change, ok: false, error: String((err && err.message) || err) });
     }
-  });
+  }
 })();
