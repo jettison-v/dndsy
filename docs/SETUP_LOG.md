@@ -840,3 +840,8 @@ Railway's settings, pictures in S3, Sentry, the deploy itself, or several people
 **For a new project:**
 1. Keep a local copy of real (or realistic) data and a one-click local sign-in that only works on your own computer.
 2. Review on local first; use the hosted environment for what only it can show.
+
+## 2026-10-27: The D&D Beyond bridge only runs during the game
+- **What:** the bridge (local proof, branch `ddb-bridge-proof`) now sleeps unless the table is playing or testing. It wakes on Game Mode, a change made through askdnd, or the check. It sleeps after 30 minutes idle, on Game Mode off, or after 6 hours at most. Asleep, it reads nothing from D&D Beyond.
+- **Why:** a tool that talks to someone else's service should use it only while it's needed and say plainly who it is. Brett accepts D&D Beyond's terms risk knowingly and tells the table.
+- **Reuse on a new project:** anything that polls another service gets an "awake" switch with an idle timeout *and* a hard cap, so a forgotten tab can't keep it running. And every hand-off between two programs needs a "got it" reply: without one, a message to a stale tab looks like it was delivered. Count unanswered hand-offs as failed tries and give up loudly after a few.

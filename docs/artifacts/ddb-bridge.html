@@ -42,6 +42,7 @@ header.top { display: grid; gap: 14px; max-width: 74ch; }
 .st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .live { background: var(--green-soft); color: var(--green); } .wait { background: var(--amber-soft); color: var(--amber); }
 .off { background: var(--red-soft); color: var(--red-text); } .seen { background: var(--blue-soft); color: var(--blue); }
+.asleep { background: var(--surface-2); color: var(--muted); }
 .states { display: flex; flex-wrap: wrap; gap: 8px 10px; margin-top: 14px; }
 
 /* the flow: three lanes */
@@ -57,6 +58,13 @@ header.top { display: grid; gap: 14px; max-width: 74ch; }
 .net { padding: 12px 14px; border: 1px dashed var(--blue); border-radius: 10px; background: var(--blue-soft); font-size: .9rem; display: grid; gap: 2px; }
 .net b { color: var(--strong); }
 @media (max-width: 820px) { .lanes, .nets { grid-template-columns: 1fr; } }
+
+/* awake and asleep */
+.clock { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.clock .panel h3 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.clock .panel.sleeps { background: var(--chrome); }
+.limit { margin-top: 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 720px) { .clock, .limit { grid-template-columns: 1fr; } }
 
 /* what can go wrong */
 .cases { border-top: 1px solid var(--line); }
@@ -93,7 +101,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     <h1>The D&amp;D Beyond bridge</h1>
     <p class="lead">askdnd does the playing; D&amp;D Beyond stays correct. A small Chrome extension in your own signed-in D&amp;D Beyond tab hears every change the sheet saves and makes askdnd's changes there, as you. It works like middleware: it keeps what you did, sends the end state, checks every result, and repairs itself when something goes wrong.</p>
     <div class="rule"><b>D&amp;D Beyond confirms every change.</b><span>askdnd counts a change only after reading it back from D&amp;D Beyond. Until then it's waiting; if it can't be made, askdnd lists the end state to make by hand. The two never quietly disagree.</span></div>
-    <div class="states"><span class="st live">Live with D&amp;D Beyond</span><span class="st wait">Waiting for D&amp;D Beyond</span><span class="st off">Not on D&amp;D Beyond yet · make by hand</span><span class="st seen">Changed on D&amp;D Beyond</span></div>
+    <div class="states"><span class="st live">Live with D&amp;D Beyond</span><span class="st wait">Waiting for D&amp;D Beyond</span><span class="st off">Not on D&amp;D Beyond yet · make by hand</span><span class="st seen">Changed on D&amp;D Beyond</span><span class="st asleep">Asleep · no one playing</span></div>
   </header>
 
   <section>
@@ -119,7 +127,32 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     <div class="nets">
       <div class="net"><b>Heard as it saves</b><span>Once your clicks stop (1.5 s), and once more 5 s later in case D&amp;D Beyond was slow.</span></div>
       <div class="net"><b>Pulled every 30 seconds</b><span>Each open sheet is read again; a missed save, or a "done" that never arrived, is settled here.</span></div>
-      <div class="net"><b>Delivered on its own</b><span>Waiting changes go out whenever a sheet opens, after every save, and every 30 s. No buttons.</span></div>
+      <div class="net"><b>Delivered on its own</b><span>Waiting changes go out whenever a sheet opens, after every save, and every 30 s while awake. No buttons.</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">Only while you play</div>
+      <h2>Awake for the game, asleep the rest of the week</h2>
+      <p>The bridge never runs in the background between games. Asleep, askdnd and the extension read nothing from D&amp;D Beyond: no pulls, no checks, no deliveries.</p>
+    </div>
+    <div class="clock">
+      <div class="panel"><h3>Wakes when <span class="st live">awake</span></h3><ul>
+        <li>Someone turns on <b>Game Mode</b> (and on every page they open while it's on).</li>
+        <li>A change is made through askdnd: a potion drunk, hit points taken or healed.</li>
+        <li>Someone runs the <b>check</b> from the corner badge.</li>
+      </ul></div>
+      <div class="panel sleeps"><h3>Sleeps when <span class="st asleep">asleep</span></h3><ul>
+        <li><b>30 minutes</b> pass with nothing happening (never while a change is still waiting).</li>
+        <li>Game Mode is turned off, once any waiting change is through.</li>
+        <li><b>6 hours</b> at most, whatever happens. Anything still waiting is then listed to make by hand, never left hanging.</li>
+      </ul></div>
+    </div>
+    <div class="limit">
+      <div class="net"><b>Nothing disguised</b><span>Requests go out as your own browser, named as it is. No imitation of D&amp;D Beyond's app.</span></div>
+      <div class="net"><b>The risk, known</b><span>D&amp;D Beyond's terms don't allow tools like this. Brett accepts that and tells the table; if they enforce it, askdnd lists changes to make by hand.</span></div>
+      <div class="net"><b>Light touch</b><span>One read every 30 s per open sheet, only during the game; one write per change.</span></div>
     </div>
   </section>
 
@@ -127,7 +160,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     <div class="sec-head">
       <div class="eyebrow">Self-repair</div>
       <h2>What can go wrong, and what happens</h2>
-      <p>Each of these has an automated test (19 for the bridge, 514 in askdnd in all).</p>
+      <p>Each of these has an automated test (25 for the bridge, 520 in askdnd in all).</p>
     </div>
     <div class="cases">
       <div class="case"><b>D&amp;D Beyond says OK but drops the write</b><span>The read-back sees the old value; askdnd sends the same totals again, up to 3 times, then lists the end state to make by hand.</span><span class="st wait">retries</span></div>
@@ -138,6 +171,8 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
       <div class="case"><b>askdnd restarts or crashes</b><span>Outbox, batches, log and the extension's key are in the database. A check cut short still puts Vi back.</span><span class="st live">resumes</span></div>
       <div class="case"><b>Two copies of the sheet open</b><span>Every copy reloads after a change, so none can save an old number back.</span><span class="st live">kept fresh</span></div>
       <div class="case"><b>Fast clicks (1 → 5)</b><span>Read once the clicks stop, then again 5 s later: the end state, not the steps.</span><span class="st live">end state</span></div>
+      <div class="case"><b>A sheet that never answers</b><span>A tab opened before the extension was reloaded, or one Chrome put to sleep: the next open copy takes the change; after 3 tries askdnd lists it to make by hand.</span><span class="st wait">tries another</span></div>
+      <div class="case"><b>Someone forgets Game Mode off</b><span>30 minutes idle, or 6 hours at most, and the bridge sleeps on its own.</span><span class="st asleep">sleeps</span></div>
       <div class="case"><b>Two copies of askdnd at once</b><span>The character's row is locked while its batch is built or settled: one batch at a time.</span><span class="st live">one at a time</span></div>
     </div>
   </section>
@@ -146,7 +181,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     <div class="sec-head">
       <div class="eyebrow">Tested today</div>
       <h2>A real run on Vi, in your Chrome</h2>
-      <p>The real D&amp;D Beyond, your signed-in Chrome, extension 0.4.1. Vi started at 73/73 with five Potions of Healing and ten Candles, and ended exactly there.</p>
+      <p>The real D&amp;D Beyond, your signed-in Chrome, extensions 0.4.1 and then 0.5.1. Vi started at 73/73 with five Potions of Healing and ten Candles, and ended exactly there.</p>
     </div>
     <div class="run">
       <div class="row"><span class="n">1</span><div class="body"><b>A hand change on D&amp;D Beyond</b><span>5 damage, 73 → 68: shown in askdnd within 5 seconds, as Changed on D&amp;D Beyond.</span></div><span class="ok">Passed</span></div>
@@ -155,12 +190,16 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
       <div class="row"><span class="n">4</span><div class="body"><b>A change from askdnd's own tab</b><span>Take 1 hit point: delivered through the open sheet by itself, 72 → 71.</span></div><span class="ok">Passed</span></div>
       <div class="row"><span class="n">5</span><div class="body"><b>The pre-game check</b><span>The status badge: checking…, then "working (checked 12:56 PM)". 1 hit point and a Candle out and back, each confirmed.</span></div><span class="ok">Passed</span></div>
       <div class="row"><span class="n">6</span><div class="body"><b>Any open copy of the sheet</b><span>With my tab closed, Heal 1 went through your own open Vi tab, 71 → 72.</span></div><span class="ok">Passed</span></div>
+      <div class="row"><span class="n">7</span><div class="body"><b>Asleep between games</b><span>Game Mode off: the badge said asleep; 1 damage on D&amp;D Beyond (73 → 72) and 40 seconds with no reads at all.</span></div><span class="ok">Passed</span></div>
+      <div class="row"><span class="n">8</span><div class="body"><b>Woken by Game Mode</b><span>Game Mode on: awake at once, and askdnd caught up to 72 by itself.</span></div><span class="ok">Passed</span></div>
+      <div class="row"><span class="n">9</span><div class="body"><b>A sheet that didn't answer</b><span>A heal handed to an old tab sat in Waiting. Fixed: tabs now confirm; after the reload it went through on its third try, 72 → 73.</span></div><span class="ok">Fixed</span></div>
+      <div class="row"><span class="n">10</span><div class="body"><b>The check on 0.5.1</b><span>Hit points and a Candle out and back, confirmed in 23 seconds.</span></div><span class="ok">Passed</span></div>
     </div>
     <div class="facts">
-      <div class="fact"><b>6 of 6</b><span>real checks on Vi passed</span></div>
+      <div class="fact"><b>10</b><span>real checks on Vi; one found a gap, now fixed</span></div>
       <div class="fact"><b>&lt; 10 s</b><span>from click to confirmed</span></div>
       <div class="fact"><b>0</b><span>numbers written over</span></div>
-      <div class="fact"><b>514</b><span>automated tests pass</span></div>
+      <div class="fact"><b>520</b><span>automated tests pass</span></div>
     </div>
   </section>
 
@@ -173,13 +212,14 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
       <div class="panel"><h3>Built, on your computer only</h3><ul>
         <li>The extension (load unpacked) and askdnd's side, switched on by <code>DDB_BRIDGE=1</code>; never on beta.</li>
         <li>Drink a potion, take or heal hit points; the end-state list for changes made by hand.</li>
-        <li>The status badge on every page, the hourly read check, the pre-game round trip on Vi.</li>
+        <li>The status badge on every page, the read check, the pre-game round trip on Vi.</li>
+        <li>Sleeps unless the table is playing or testing: 30 minutes idle, Game Mode off, 6 hours at most.</li>
         <li>Lessons from Foundry's DDB Importer (read, not copied): one write at a time, end states win, trust only the read-back.</li>
       </ul></div>
       <div class="panel risk"><h3>Before it's real</h3><ul>
         <li>More changes: spell slots, class resources, conditions, coins, attunement (D&amp;D Beyond has requests for each).</li>
         <li>Players install the extension (a private Chrome Web Store listing, or load unpacked).</li>
-        <li>Unofficial: D&amp;D Beyond can change its requests. The read-back and the checks turn that into "make by hand", never wrong numbers, but it's your call.</li>
+        <li>Unofficial: D&amp;D Beyond can change its requests or enforce its terms. The read-back and the checks turn that into "make by hand", never wrong numbers. Brett accepts the risk and tells the table first.</li>
         <li>Merge it into the roadmap as Phase 1's foundation (play state, fight screen).</li>
       </ul></div>
     </div>
