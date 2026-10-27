@@ -87,3 +87,21 @@ def test_leaving_mid_wild_shape_puts_battle_back(people, server):
     player.open(f"/characters/{server['cole']}/battle")
     assert page.locator("#battle-body .ws-form").count() == 0
     assert player.errors == []
+
+
+def test_a_large_section_is_lit_below_the_bars_stuck_over_it(people, server):
+    """On a short window Battle's numbers stick over half the screen; the columns' tops (their headings) are lit and
+    shown below them, not behind (Brett, 2026-10-26)."""
+    player = people("player")
+    player.page.set_viewport_size({"width": 1000, "height": 540})
+    page = player.open("/help?tab=adds")
+    page.click('[data-tour-start="battle"]')
+    page.wait_for_url(f"**/characters/{server['cole']}/battle")
+    page.wait_for_function("() => document.querySelector('.tour-card h3')?.textContent.startsWith('Battle:')", timeout=10000)
+    page.wait_for_timeout(600)  # the page settling, and the light following
+    got = page.evaluate("""() => { const bar = document.querySelector('.battlebar').getBoundingClientRect(),
+        head = document.querySelector('[data-tour="battle"] .econ-head').getBoundingClientRect(),
+        spot = document.querySelector('.tour-spot').getBoundingClientRect();
+      return { bar: bar.bottom, head: head.top, spot: spot.top }; }""")
+    assert got["head"] >= got["bar"] and got["spot"] >= got["bar"] - 8, got
+    assert player.errors == []
