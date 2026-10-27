@@ -2472,7 +2472,7 @@
     const right = Math.max(...rs.map(r => r.right)), bottom = Math.max(...rs.map(r => r.bottom));
     return { top, left, right, bottom, width: right - left, height: bottom - top };
   }
-  // Bars that stick across the top of the page (the menu bar, Battle's numbers, Sheet's tabs): found once per stop, so
+  // Bars that stick across the top of the page (the menu bar, Sheet's tabs): found once per stop, so
   // the light never sits under them (Brett, 2026-10-26: Battle's columns were lit from behind its numbers).
   let bars = [];
   function findBars() {
@@ -2492,7 +2492,7 @@
     return bars.reduce((m, el) => {
       if (lit.contains(el)) return m;
       const r = el.getBoundingClientRect();
-      return r.top < end && r.top < innerHeight * 0.3 && r.bottom < innerHeight * 0.75 ? Math.max(m, r.bottom) : m;  // (Battle's numbers fill over half a short window)
+      return r.top < end && r.top < innerHeight * 0.3 && r.bottom < innerHeight * 0.75 ? Math.max(m, r.bottom) : m;  // (a bar that fills over half a short window)
     }, 0);
   };
   function rect() {

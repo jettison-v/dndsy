@@ -533,7 +533,9 @@ details.fold > summary { cursor: pointer; color: var(--muted); font-size: var(--
 .pip.used { background: transparent; border-color: var(--faint); }
 .res-row { display: flex; gap: 6px 0; flex-wrap: wrap; align-items: center; font-size: var(--fs-sm); margin-top: 10px; }
 .res-row span { white-space: nowrap; }
-.battlebar { position: sticky; top: var(--stick-top, 62px); z-index: 4; background: var(--bg-glass); padding: 8px 0 12px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+/* Battle's numbers scroll with the page: stuck at the top they took over a third of a laptop's screen (Brett, 2026-10-27:
+   not worth the complexity of shrinking them; docs/mockups/battle-header.html was the alternative) */
+.battlebar { padding: 8px 0 12px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
 .sec-head { display: flex; align-items: baseline; gap: 10px; justify-content: space-between; flex-wrap: wrap; margin-bottom: 8px; }
 .switch { position: relative; width: 42px; height: 24px; border-radius: var(--r-pill); background: var(--surface-2); border: 1px solid var(--line); padding: 0; flex: none; }
 .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--muted); transition: left .15s; }
@@ -563,7 +565,6 @@ button.switch { cursor: pointer; }
 @media (max-width: 900px) {
   .econ, .lower { grid-template-columns: 1fr; }
   .abil6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .battlebar { position: static; }
   .peek.modal { top: auto; left: 0; bottom: 0; width: 100%; transform: translateY(100%); border-radius: 14px 14px 0 0; }
   .peek.modal.open { transform: none; }
 }
