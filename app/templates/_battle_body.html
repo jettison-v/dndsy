@@ -26,7 +26,7 @@
     <span class="ws-label">Wild Shape{% if druid.uses %} {{ pips(druid.uses) }}{% endif %}</span>
     {% if can_pick %}
     <button type="button" class="ws-chip{{ ' on' if not form }}" hx-post="/characters/{{ c.id }}/wild-shape" hx-vals='{"form": ""}' hx-target="#battle-body" hx-swap="outerHTML" aria-pressed="{{ 'false' if form else 'true' }}">Normal</button>
-    {% for kf in known_forms %}<button type="button" class="ws-chip{{ ' on' if form and form.beast.name == kf.name }}" hx-post="/characters/{{ c.id }}/wild-shape" hx-vals='{{ {"form": kf.name} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML"
+    {% for kf in known_forms %}<button type="button" class="ws-chip{{ ' on' if form and form.beast.name == kf.name }}"{% if loop.first %} data-tour="ws-form"{% endif %} hx-post="/characters/{{ c.id }}/wild-shape" hx-vals='{{ {"form": kf.name} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML"
       aria-pressed="{{ 'true' if form and form.beast.name == kf.name else 'false' }}" title="CR {{ kf.cr }}">{% if kf.image %}<img src="{{ kf.image }}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ kf.name }}</button>{% endfor %}
     {% elif form %}<span class="ws-chip on">{{ form.beast.name }}</span>{% else %}<span class="note">Normal form</span>{% endif %}
   </div>

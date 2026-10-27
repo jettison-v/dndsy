@@ -102,6 +102,9 @@ def test_leaving_mid_wild_shape_puts_battle_back(people, server):
     page = player.open("/help?tab=adds")
     page.click('[data-tour-start="wildshape"]')
     page.wait_for_url(f"**/characters/{server['cole']}/battle")
+    page.wait_for_function("() => document.querySelector('.tour-card h3')?.textContent === 'Wild Shape: pick a form'")
+    assert page.locator("#battle-body .ws-form").count() == 0  # the form's pill is lit; nothing shifts yet
+    page.keyboard.press("ArrowRight")
     page.wait_for_selector("#battle-body .ws-form")
     page.keyboard.press("Escape")
     page.keyboard.press("Enter")  # End tour

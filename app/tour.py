@@ -108,6 +108,11 @@ STOPS = [
     {"group": "spellbook", "title": "Cast at", "page": "battle", "needs": "caster", "panel": True,
      "open": [SPELLBOOK], "at": ".peek.open [data-spellbook] .ls-select:has([data-ls-lens])",
      "what": "<b>Cast at</b> works out every average again as if cast with a higher slot.", "why": "See what a higher slot adds before you spend it."},
+    {"group": "wildshape", "title": "Wild Shape: pick a form", "page": "battle", "needs": "druid",
+     "at": '#battle-body [data-tour="ws-form"]',
+     "what": "On the <b>Wild Shape</b> bar, click a form's pill to shift into it. Battle is worked out for the beast at once, "
+             "and <b>Normal</b> brings you back.",
+     "why": "Next, what that looks like. (The tour shows a preview; it won't shift you.)"},
     {"group": "wildshape", "title": "Wild Shape: you as the beast", "page": "battle", "needs": "druid", "swap": "form",
      "at": "#battle-body .ws-form",
      "what": "This is Battle in your first Wild Shape form: the beast's HP, AC and speed, your own features carried "

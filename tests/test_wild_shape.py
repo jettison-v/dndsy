@@ -371,6 +371,8 @@ def test_the_tours_preview_shows_a_form_and_saves_nothing(db, cole, player):
     stops = player.get("/tour").json()["stops"]
     groups = [s["group"] for s in stops]
     assert "spellbook" in groups and "wildshape" in groups  # Cole casts spells and knows forms
-    swap = next(s for s in stops if s["group"] == "wildshape")
+    first = next(s for s in stops if s["group"] == "wildshape")
+    assert first["title"] == "Wild Shape: pick a form" and not first["swap"]  # the form's pill on the real Battle first
+    swap = next(s for s in stops if s["group"] == "wildshape" and s["swap"])
     assert swap["swap"].startswith(f"/characters/{cole.id}/battle/preview?form=")
     assert swap["restore"] == f"/characters/{cole.id}/battle/preview"
