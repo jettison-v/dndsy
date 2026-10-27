@@ -103,18 +103,5 @@ chrome.runtime.onMessage.addListener((m, sender) => {
       await refreshPanels(here); toAskdndTabs({ type: 'bridge-update' });
       return deliver(here);  // the next batch, if any
     }
-    try {  // the panel beside the sheet
-      const st = await api('GET', '/bridge/by-ddb/' + here);
-      if (m.type === 'drink') await api('POST', `/bridge/drink/${st.character.id}/${m.itemId}`);
-      if (m.type === 'hp') await api('POST', `/bridge/hp/${st.character.id}`, { amount: m.amount });
-      if (m.type === 'retry') await api('POST', '/bridge/retry/' + m.change);
-      if (m.type === 'undo') await api('POST', '/bridge/dismiss/' + m.change);
-      if (m.type === 'check') await api('POST', '/bridge/check');
-    } catch (err) {
-      chrome.tabs.sendMessage(sender.tab.id, { type: 'panel-state', error: String(err.message || err) }).catch(() => {});
-      return;
-    }
-    await refreshPanels(here); toAskdndTabs({ type: 'bridge-update' });
-    deliver(here, sender.tab.id);
   })();
 });

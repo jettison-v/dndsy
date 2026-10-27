@@ -1,5 +1,6 @@
 // On a D&D Beyond character sheet: puts ddb-page.js into the page, passes messages between it and the extension, and
-// draws askdnd's panel beside the sheet (in its own shadow root, so neither page's styles reach the other).
+// draws askdnd's panel beside the sheet (in its own shadow root, so neither page's styles reach the other). The panel only
+// shows: changes are made in askdnd or on the sheet itself, never by a button sitting over D&D Beyond's own controls.
 (() => {
   const s = document.createElement('script');
   s.src = chrome.runtime.getURL('ddb-page.js');
@@ -37,11 +38,9 @@
     h3 { margin: 0; font: 700 11px/1 'Roboto Condensed', Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #e8b34b; }
     .item { display: flex; justify-content: space-between; align-items: center; gap: 8px; background: #1f2226; border: 1px solid #34383e; border-radius: 8px; padding: 8px 10px; }
     .note { color: #a29d93; font-size: 12px; }
-    button.btn, a.btn { font: 600 13px/1 Inter, system-ui, sans-serif; border-radius: 8px; padding: 8px 11px; border: 1px solid #34383e; background: #272b30; color: #ebe7df; cursor: pointer; text-decoration: none; display: inline-block; }
-    button.primary { background: #d64545; border-color: #d64545; color: #fff; } button[disabled] { opacity: .5; cursor: default; }
+    a.btn { font: 600 13px/1 Inter, system-ui, sans-serif; border-radius: 8px; padding: 8px 11px; border: 1px solid #34383e; background: #272b30; color: #ebe7df; cursor: pointer; text-decoration: none; display: inline-block; }
     .change { display: grid; gap: 6px; padding: 10px 12px; border-radius: 10px; border: 1px solid #34383e; }
     .change.wait { border-color: #e8b34b; } .change.off { border-color: #d64545; } .change.live { border-color: #5bbf7f; }
-    .acts { display: flex; gap: 6px; flex-wrap: wrap; }
     ul { list-style: none; margin: 0; padding: 0; } li { padding: 6px 0; border-top: 1px solid #2c3036; font-size: 13px; }`;
   function mount() {
     if (host) return;
@@ -63,11 +62,6 @@
       const t = e.target.closest('[data-act]'); if (!t) return;
       const act = t.dataset.act;
       if (act === 'toggle') { open = !open; sessionStorage.setItem('askdnd-panel', open ? 'open' : 'closed'); chrome.runtime.sendMessage({ type: 'panel-refresh' }); }
-      if (act === 'drink') { t.disabled = true; chrome.runtime.sendMessage({ type: 'drink', itemId: +t.dataset.item }); }
-      if (act === 'hp') { t.disabled = true; chrome.runtime.sendMessage({ type: 'hp', amount: +t.dataset.amount }); }
-      if (act === 'check') { t.disabled = true; chrome.runtime.sendMessage({ type: 'check' }); }
-      if (act === 'retry') chrome.runtime.sendMessage({ type: 'retry', change: +t.dataset.change });
-      if (act === 'undo') chrome.runtime.sendMessage({ type: 'undo', change: +t.dataset.change });
     });
   }
   let again = null;
@@ -83,11 +77,10 @@
       const pill = notYet ? ['off', notYet + ' to make by hand'] : waiting ? ['wait', waiting + ' waiting'] : ['live', 'Live with D&D Beyond'];
       body = `<span class="st ${pill[0]}">${pill[1]}</span>
         <div class="tile ${waiting ? 'wait' : notYet ? 'off' : ''}"><small>Hit points</small><b>${esc(st.hp.current)}</b> <span class="note">/ ${esc(st.hp.max)}</span></div>
-        ${st.can_act ? `<div class="acts"><button class="btn" data-act="hp" data-amount="-1">Take 1</button><button class="btn" data-act="hp" data-amount="1">Heal 1</button>${st.character.test ? '<button class="btn" data-act="check">Run the check</button>' : ''}</div>` : ''}
         ${st.items.length ? '<h3>Healing potions</h3>' : ''}
-        ${st.items.map(it => `<div class="item"><div><b>${esc(it.name)}</b> <span class="note">×${it.quantity}</span><div class="note">Heals ${esc(it.heals)}</div></div>${st.can_act ? `<button class="btn primary" data-act="drink" data-item="${it.id}"${!it.quantity ? ' disabled' : ''}>Drink</button>` : ''}</div>`).join('')}
+        ${st.items.map(it => `<div class="item"><div><b>${esc(it.name)}</b> <span class="note">×${it.quantity}</span><div class="note">Heals ${esc(it.heals)}</div></div></div>`).join('')}
         ${st.to_make.length ? `<div class="change off"><b>Make these on D&amp;D Beyond</b><div>${st.to_make.map(esc).join('<br>')}</div><span class="note">askdnd ticks them off when D&amp;D Beyond has them.</span></div>` : ''}
-        ${st.changes.map(c => `<div class="change ${CLS[c.state === 'sending' ? 'waiting' : c.state]}"><span class="st ${CLS[c.state === 'sending' ? 'waiting' : c.state]}">${LABEL[c.state === 'sending' ? 'waiting' : c.state]}</span><div>${esc(c.label)}</div>${c.error ? `<div class="note">${esc(c.error)}</div>` : ''}${c.state === 'not_yet' ? `<div class="acts"><button class="btn primary" data-act="retry" data-change="${c.id}">Try again</button><button class="btn" data-act="undo" data-change="${c.id}">Undo</button></div>` : ''}</div>`).join('')}
+        ${st.changes.map(c => `<div class="change ${CLS[c.state === 'sending' ? 'waiting' : c.state]}"><span class="st ${CLS[c.state === 'sending' ? 'waiting' : c.state]}">${LABEL[c.state === 'sending' ? 'waiting' : c.state]}</span><div>${esc(c.label)}</div>${c.error ? `<div class="note">${esc(c.error)}</div>` : ''}${c.state === 'not_yet' ? '<div class="note">Try again or undo it in askdnd.</div>' : ''}</div>`).join('')}
         <h3>What changed</h3>
         <ul>${st.log.map(l => `<li><span class="st ${CLS[l.state]}">${l.state === 'seen' ? 'On D&D Beyond' : 'From askdnd'}</span> ${esc(l.text)}</li>`).join('') || '<li class="note">Nothing yet.</li>'}</ul>
         <a class="btn" href="http://localhost:8000/characters/${esc(st.character.id)}/bridge" target="_blank" rel="noopener">Open in askdnd</a>`;

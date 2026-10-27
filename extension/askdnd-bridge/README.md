@@ -11,7 +11,8 @@ Load it (Chrome):
    the extension (it gets its own key to askdnd, so it works even when Chrome blocks third-party cookies); after
    askdnd restarts, open an askdnd page again.
 4. Open your character's D&D Beyond sheet: the askdnd panel slides in on the right (the red **askdnd** tab brings it
-   back). askdnd's own tab is `http://localhost:8000/characters/<id>/bridge`.
+   back). It only shows: no buttons sit over D&D Beyond's own. Make changes in askdnd (its own tab is
+   `http://localhost:8000/characters/<id>/bridge`) or on the sheet itself.
 
 What it may do: two D&D Beyond requests only (hit points, an item's count), only for the sheet that's open, only when
 you click. It stores nothing; D&D Beyond gives the sheet a 5-minute token from your own sign-in. Unofficial: D&D Beyond

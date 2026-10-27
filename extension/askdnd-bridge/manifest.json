@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "askdnd bridge (proof)",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "askdnd beside your own D&D Beyond sheet: hears your sheet's changes and makes askdnd's there, as you. A local proof.",
   "permissions": [
     "storage",
