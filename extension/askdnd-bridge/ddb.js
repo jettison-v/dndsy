@@ -96,4 +96,9 @@
   }
   const hello = () => chrome.runtime.sendMessage({ type: 'ddb-tab', ddbId: sheetId() });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hello); else hello();
+  // Someone using the sheet keeps the bridge awake (at most once a minute; its saves are heard on their own)
+  let usedAt = Date.now();
+  ['pointerdown', 'keydown'].forEach(k => document.addEventListener(k, () => {
+    if (Date.now() - usedAt > 60000) { usedAt = Date.now(); chrome.runtime.sendMessage({ type: 'ddb-active' }); }
+  }, { passive: true, capture: true }));
 })();

@@ -25,7 +25,7 @@ def sheet(monkeypatch, db):
     cole = char(db, "Cole")
     owned_by(db, cole, "player@example.com")
     characters.refresh(db, cole)
-    ddb_bridge.wake(db, "game")  # a game is on (test_the_bridge_sleeps_between_games covers the rest)
+    ddb_bridge.active(db)  # someone is using askdnd (the tests from test_asleep_… on cover waking and sleeping)
     return data
 
 
@@ -277,70 +277,110 @@ def test_a_sheet_that_keeps_changing_under_askdnd_stops_instead_of_looping(playe
     assert st["changes"][0]["state"] == "not_yet" and st["to_make"]
 
 
-def test_the_bridge_sleeps_between_games(player, db, sheet, monkeypatch):
-    """Brett, 2026-10-27: it runs only during play and testing, so it doesn't waste D&D Beyond's resources. Asleep, it
-    reads nothing from D&D Beyond (no reads on saves, no pulls, no hourly check)."""
+def asleep(db):
+    """No one has used askdnd or a sheet for a long time."""
+    row, _ = ddb_bridge._wake_row(db)
+    row.value = '{"last": 0}'
+
+
+def counting_reads(monkeypatch, sheet):
     reads = []
     monkeypatch.setattr(characters.refresh, "__defaults__", (lambda _id: reads.append(_id) or copy.deepcopy(sheet),))
     monkeypatch.setattr(ddb, "fetch_character_json", lambda _id, timeout=None: reads.append(_id) or copy.deepcopy(sheet))
+    return reads
+
+
+def test_asleep_it_reads_nothing_in_the_background_but_a_save_is_always_recorded(player, db, sheet, monkeypatch):
+    """Brett, 2026-10-27: no wasting D&D Beyond's resources when no one is playing, but always active when it needs to
+    be. Asleep, the background pull and the hourly check read nothing; a player's save on D&D Beyond is still read,
+    recorded, and wakes it."""
+    reads = counting_reads(monkeypatch, sheet)
     cole = char(db, "Cole")
-    ddb_bridge.sleep(db, "Asleep: Game Mode switched off.")
-    player.post("/bridge/heard/75423618")
+    asleep(db)
     player.post("/bridge/heard/75423618?pull=1")
     health = player.get("/bridge/health").json()
     assert reads == [] and health["state"] == "asleep" and health["text"] == "D&D Beyond bridge · asleep"
     assert ddb_bridge.outbox(db, cole) is None
 
-    player.post(f"/bridge/hp/{cole.id}", json={"amount": -1})  # making a change wakes it
-    assert ddb_bridge.awake(db)["awake"] and ddb_bridge.outbox(db, cole)
+    sheet["removedHitPoints"] = 20  # someone took 6 on D&D Beyond, with no askdnd page open
+    player.post("/bridge/heard/75423618")
+    st = player.get(f"/bridge/state/{cole.id}").json()
+    assert reads and st["hp"]["current"] == 31 and "hit points 37 → 31" in st["log"][0]["text"]
+    assert ddb_bridge.awake(db)["awake"]
 
 
-def test_it_sleeps_after_half_an_hour_without_play_but_never_with_a_change_waiting(player, db, sheet, monkeypatch):
+def test_opening_or_using_askdnd_or_a_sheet_keeps_it_awake_half_an_hour(player, db, sheet, monkeypatch):
     now = [ddb_bridge.time.time()]
     monkeypatch.setattr(ddb_bridge.time, "time", lambda: now[0])
+    asleep(db)
+    player.post("/bridge/active", json={})  # an askdnd page opened, or someone clicked on one
+    assert ddb_bridge.awake(db)["awake"]
+    now[0] += ddb_bridge.timers(db)["idle"] - 60
+    player.post("/bridge/active", json={"sheet": "75423618"})  # a D&D Beyond sheet opened, or someone used it
+    now[0] += ddb_bridge.timers(db)["idle"] - 60
+    assert ddb_bridge.awake(db)["awake"]
+    now[0] += 120
+    assert not ddb_bridge.awake(db)["awake"] and "30 minutes" in ddb_bridge.awake(db)["why"]
+    player.post(f"/bridge/hp/{char(db, 'Cole').id}", json={"amount": -1})  # making a change wakes it too
+    assert ddb_bridge.awake(db)["awake"]
+
+
+def test_a_character_page_shows_what_d_and_d_beyond_has_now(player, db, sheet, monkeypatch):
+    """Planning in askdnd never starts from an old number: opening a character's page (or their D&D Beyond sheet)
+    reads D&D Beyond when askdnd's copy is older than Game Mode's refresh, and not otherwise."""
+    from datetime import timedelta
+    reads = counting_reads(monkeypatch, sheet)
     cole = char(db, "Cole")
-    drink(db, cole)
-    batch = ddb_bridge.outbox(db, cole)
-    now[0] += ddb_bridge.IDLE_SECONDS + 60
-    assert ddb_bridge.awake(db)["awake"]  # the drink is still on its way
-    make(sheet, batch)
-    ddb_bridge.delivered(db, batch["id"], ok=True)
-    now[0] += ddb_bridge.IDLE_SECONDS + 60
-    assert not ddb_bridge.awake(db)["awake"] and "without play" in ddb_bridge.awake(db)["why"]
+    player.get(f"/characters/{cole.id}")
+    assert reads == []  # read a moment ago
+    sheet["removedHitPoints"] = 20
+    cole.snapshot.attempted_at -= timedelta(minutes=3)
+    db.commit()
+    player.get(f"/characters/{cole.id}")
+    assert len(reads) == 1 and ddb_bridge.numbers(char(db, "Cole"))["removed"] == 20
+    cole = char(db, "Cole")
+    cole.snapshot.attempted_at -= timedelta(minutes=3)
+    db.commit()
+    player.post("/bridge/active", json={"sheet": "75423618"})
+    assert reads.count("75423618") == 2  # (besides the hourly check of the test character)
 
 
-def test_it_sleeps_after_six_hours_however_it_was_woken(db, sheet, monkeypatch):
+def test_game_mode_keeps_it_awake_however_quiet_then_it_follows_what_people_do(player, db, sheet, monkeypatch):
     now = [ddb_bridge.time.time()]
     monkeypatch.setattr(ddb_bridge.time, "time", lambda: now[0])
-    for _ in range(13):  # play every half hour, never idle
-        now[0] += ddb_bridge.IDLE_SECONDS - 60
-        ddb_bridge.played(db)
-    assert not ddb_bridge.awake(db)["awake"] and "6 hours" in ddb_bridge.awake(db)["why"]
+    h = player.post("/bridge/game", json={"on": True}).json()
+    assert h["awake"]["game_until"] == pytest.approx(now[0] + 6 * 3600)
+    now[0] += 5 * 3600  # five quiet hours
+    assert ddb_bridge.awake(db)["awake"]
+    now[0] += 3600 + 60
+    assert not ddb_bridge.awake(db)["awake"]  # its time is up, and no one has been here for half an hour
+    player.post("/bridge/game", json={"on": True})  # Keep going
+    player.post("/bridge/game", json={"on": False})  # Game Mode off: awake while people use it, as without it
+    a = ddb_bridge.awake(db)
+    assert a["awake"] and a["game_until"] is None
 
 
-def test_game_mode_switched_off_puts_it_to_sleep_once_nothing_is_waiting(player, db, sheet):
-    cole = char(db, "Cole")
-    player.post("/bridge/sleep")
-    assert not ddb_bridge.awake(db)["awake"]
-    player.post("/bridge/wake", json={"reason": "game"})
-    drink(db, cole)
-    batch = ddb_bridge.outbox(db, cole)
-    player.post("/bridge/sleep")
-    assert ddb_bridge.awake(db)["awake"]  # the drink is still on its way
-    make(sheet, batch)
-    ddb_bridge.delivered(db, batch["id"], ok=True)
-    assert not ddb_bridge.awake(db)["awake"]
-
-
-def test_a_change_still_waiting_when_the_bridge_sleeps_is_listed_to_make_by_hand(player, db, sheet, monkeypatch):
+def test_a_change_still_waiting_keeps_it_awake_then_is_listed_to_make_by_hand(player, db, sheet, monkeypatch):
     now = [ddb_bridge.time.time()]
     monkeypatch.setattr(ddb_bridge.time, "time", lambda: now[0])
     cole = char(db, "Cole")
     ddb_bridge.add(db, cole, "hp", {"amount": -3}, "Cole took 3")  # no sheet open to deliver it
-    now[0] += ddb_bridge.MAX_SECONDS + 60
+    now[0] += ddb_bridge.timers(db)["idle"] + 60
+    assert ddb_bridge.awake(db)["awake"]  # still on its way
+    now[0] += ddb_bridge.timers(db)["wait"]
     st = player.get(f"/bridge/state/{cole.id}").json()
     assert not ddb_bridge.awake(db)["awake"]
     assert st["changes"][0]["state"] == "not_yet" and st["to_make"] == ["Hit points 34 (D&D Beyond has 37)"]
+
+
+def test_admins_set_the_timers(admin, player, db, sheet):
+    assert admin.get("/manage/bridge").status_code == 200
+    admin.post("/manage/bridge", data={"idle": "45", "game": "99", "warn": "5", "wait": "x"}, follow_redirects=False)
+    assert ddb_bridge.timers(db) == {"idle": 45 * 60, "game": 12 * 3600, "warn": 5 * 60, "wait": 6 * 3600}  # (kept in range)
+    admin.post("/manage/bridge", data={"reset": "1"})
+    assert ddb_bridge.timers(db)["idle"] == 30 * 60
+    player.post("/manage/bridge", data={"idle": "5"})
+    assert ddb_bridge.timers(db)["idle"] == 30 * 60  # only admins
 
 
 def test_a_batch_no_sheet_ever_answers_for_stops_after_three_tries(player, db, sheet, monkeypatch):

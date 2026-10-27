@@ -15,7 +15,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import access, review, web
+from app import access, config, review, web
 from app.auth import (
     can_edit_settings,
     can_moderate,
@@ -50,6 +50,9 @@ PAGES = (
     ("askdnd-history", "History", "/manage/history", "Changes to accounts and askdnd as a whole", ASKDND, is_admin, ()),
     ("design", "Design system", "/manage/design", "Every component and token, for building askdnd", ASKDND, is_admin, ()),
     ("dice", "Dice tuning", "/manage/dice", "How thrown dice move and how long they stay, for everyone", ASKDND, is_admin, ()),
+    # the D&D Beyond bridge, a local proof (app/ddb_bridge.py): only where it's switched on
+    ("bridge", "D&D Beyond bridge", "/manage/bridge", "Whether it's awake and why, and its timers", ASKDND,
+     lambda user: config.DDB_BRIDGE and is_admin(user), ()),
 )
 
 

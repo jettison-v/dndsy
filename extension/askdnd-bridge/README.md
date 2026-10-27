@@ -18,10 +18,10 @@ you click. It stores nothing; D&D Beyond gives the sheet a 5-minute token from y
 offers no way for other tools to change a sheet, so a change on their side can break it. When it does, askdnd shows
 "Not on D&D Beyond yet", never a wrong number.
 
-It sleeps unless you're playing or testing, so it doesn't keep calling D&D Beyond: it wakes when someone turns on
-Game Mode, makes a change through askdnd or runs the check, and goes to sleep after 30 minutes with nothing happening,
-when Game Mode is turned off (once any waiting change is through), or after 6 hours at most (anything still waiting is
-then listed to make by hand). Asleep, it reads nothing from D&D Beyond; the corner badge says "asleep".
+It's awake whenever someone is using it, with no switch: opening or using an askdnd page or a D&D Beyond sheet keeps
+it on for 30 more minutes, and Game Mode keeps it on for the whole game (6 hours, with a warning and Keep going). A
+change saved on a D&D Beyond sheet is always recorded. Asleep, only its background check of D&D Beyond (every 30
+seconds) stops; the corner badge says "asleep". Admins change the timers on Manage › askdnd › D&D Beyond bridge.
 
 After changing these files, reload the extension (chrome://extensions, the ↻ on askdnd bridge) and then reload any open
 D&D Beyond sheet: a sheet opened before the reload can't take changes (askdnd tries another copy of the sheet, and

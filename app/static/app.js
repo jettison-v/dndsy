@@ -22,13 +22,20 @@
     reportError('Unhandled: ' + (r.message || String(r)).slice(0, 300), at ? at[1] : '', at ? +at[2] : 0, at ? +at[3] : 0, r.stack);
   });
 
-  function toast(message) {
+  function toast(message, action) {  // action: {label, run}: a button in the toast, which then stays a while
     const t = $('#toast');
     if (!t || !message) return;
     t.textContent = message;
+    if (action) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'btn small toast-act'; b.textContent = action.label;
+      b.addEventListener('click', () => { t.classList.remove('show'); action.run(); });
+      t.append(' ', b);
+    }
+    t.classList.toggle('acts', !!action);
     t.classList.add('show');
     clearTimeout(t._hide);
-    t._hide = setTimeout(() => t.classList.remove('show'), 2200);
+    t._hide = setTimeout(() => t.classList.remove('show'), action ? 20000 : 2200);
   }
   window.askdndToast = toast;
 
@@ -2694,25 +2701,56 @@
 
   // The pill on every page
   const pill = document.querySelector('[data-bridge-health]');
-  let health = null;
-  async function checkHealth() {
+  let health = null, healthTimer = null;
+  async function checkHealth() {  // (one loop, however often it's called)
     if (!pill) return;
+    clearTimeout(healthTimer);
     try { const r = await fetch('/bridge/health', { headers: { Accept: 'application/json' } }); if (r.ok) health = await r.json(); } catch (e) { /* offline */ }
-    if (health) { pill.className = 'br-st br-pill ' + ({ live: 'br-live', wait: 'br-wait', off: 'br-off', asleep: 'br-asleep' }[health.state] || 'br-wait'); pill.textContent = health.text; if (health.state === 'asleep') { pill.title = (health.awake.why || 'Asleep') + ' Wakes with Game Mode or a change made in askdnd; click to run the check.'; setTimeout(checkHealth, 30000); return; } pill.title = 'D&D Beyond read ' + (health.read_check.ok ? 'OK' : 'failed: ' + health.read_check.error) + (health.round_trip && health.round_trip.error ? ' · check: ' + health.round_trip.error : ''); }
-    setTimeout(checkHealth, health && health.state === 'wait' ? 3000 : 30000);
+    if (health) {
+      pill.className = 'br-st br-pill ' + ({ live: 'br-live', wait: 'br-wait', off: 'br-off', asleep: 'br-asleep' }[health.state] || 'br-wait');
+      pill.textContent = health.text;
+      pill.title = health.state === 'asleep' ? (health.awake.why || 'Asleep') + ' Wakes as soon as someone opens or uses askdnd or a sheet; click to run the check.'
+        : 'D&D Beyond read ' + (health.read_check.ok ? 'OK' : 'failed: ' + health.read_check.error) + (health.round_trip && health.round_trip.error ? ' · check: ' + health.round_trip.error : '');
+      gameTimer(health.awake);
+    }
+    healthTimer = setTimeout(checkHealth, health && health.state === 'wait' ? 3000 : 30000);
+  }
+  // Game Mode keeps the bridge awake for the game (6 hours unless an admin changed it): a warning with Keep going
+  // shortly before, and a word when it's up (it then follows what people do, as it does without Game Mode)
+  const clock = s => new Date(s * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const toast = (message, action) => window.askdndToast && window.askdndToast(message, action);
+  const once = key => { try { if (sessionStorage.getItem(key)) return false; sessionStorage.setItem(key, '1'); } catch (e) {} return true; };
+  let gameWas = null;
+  function gameTimer(a) {
+    const until = a && a.game_until, left = until ? until - Date.now() / 1000 : 0;
+    if (until && left < a.warn && once('askdnd.bridgeWarn.' + until))
+      toast("Game Mode's D&D Beyond sync ends at " + clock(until) + '.', { label: 'Keep going', run: () => startGame(true) });
+    if (gameWas && !until && document.body.classList.contains('gm-on') && once('askdnd.bridgeEnded.' + gameWas))
+      toast("Game Mode's time is up: D&D Beyond stays in sync while anyone is using askdnd or a sheet.");
+    gameWas = until || null;
+  }
+  async function startGame(on) {
+    try {
+      const r = await fetch('/bridge/game', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ on }) });
+      health = await r.json();
+      if (on) { window.postMessage({ askdndBridge: 'wake' }, location.origin); toast('Game Mode on: D&D Beyond stays in sync until ' + clock(health.awake.game_until) + '.'); }
+      gameWas = health.awake.game_until || null;
+    } catch (e) { /* offline */ }
+    checkHealth();
   }
   if (pill) {
-    // The bridge is awake only while the game is on: Game Mode on wakes it (on every page while it's on, so a restart
-    // or a new tab keeps it awake), switching it off puts it to sleep; askdnd also sleeps it after 30 minutes without
-    // play (app/ddb_bridge.py)
-    const wakeFor = reason => fetch('/bridge/wake', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason }) })
-      .then(() => { window.postMessage({ askdndBridge: 'wake' }, location.origin); checkHealth(); }).catch(() => {});
-    if (document.body.classList.contains('gm-on')) wakeFor('game');
-    document.addEventListener('askdnd:gamemode-switched', e => {
-      if (e.detail.on) wakeFor('game');
-      else fetch('/bridge/sleep', { method: 'POST' }).then(checkHealth).catch(() => {});
-    });
-    checkHealth();
+    // Awake whenever someone is using askdnd (app/ddb_bridge.py): opening this page, and using it (at most once a
+    // minute), keeps it awake 30 more minutes; the extension starts its pulls at once
+    let usedAt = 0;
+    const used = () => {
+      usedAt = Date.now();
+      fetch('/bridge/active', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+        .then(r => r.json()).then(h => { const slept = !health || health.state === 'asleep'; health = h; if (slept) window.postMessage({ askdndBridge: 'wake' }, location.origin); checkHealth(); })
+        .catch(() => {});
+    };
+    ['click', 'keydown', 'change'].forEach(k => document.addEventListener(k, () => { if (Date.now() - usedAt > 60000) used(); }, { passive: true }));
+    used();
+    document.addEventListener('askdnd:gamemode-switched', e => startGame(e.detail.on));
     pill.addEventListener('click', async () => {  // run the pre-game round trip on the test character
       pill.textContent = 'D&D Beyond · checking…';
       const r = await fetch('/bridge/check', { method: 'POST', headers: { Accept: 'application/json' } });

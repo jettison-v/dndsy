@@ -66,13 +66,15 @@ async function heard(ddbId, pull, tabId) {
   await refreshPanels(ddbId); toAskdndTabs({ type: 'bridge-update' });
   return deliver(ddbId, tabId);
 }
+// A sheet opened or someone used it: askdnd keeps the bridge awake (and reads the sheet when its copy is old)
+const active = ddbId => api('POST', '/bridge/active', { sheet: ddbId }).catch(() => {});
 // Every 30 seconds: tell askdnd the extension is on, and pull each open sheet (a save the extension missed, or an
 // answer that never reached askdnd, is corrected here)
 async function hello() {
   const sheets = [...new Set((await sheetTabs()).map(t => ddbIdOf(t.url)).filter(Boolean))];
   let h;
   try { h = await api('POST', '/bridge/hello', { sheets }); } catch (err) { return; /* not connected yet */ }
-  if (!h.awake || !h.awake.awake) return;  // asleep between games: no pulls (askdnd itself reads nothing from D&D Beyond)
+  if (!h.awake || !h.awake.awake) return;  // asleep (no one is using askdnd or a sheet): no background pulls
   for (const id of sheets) heard(id, true);
 }
 chrome.alarms.create('askdnd-bridge', { periodInMinutes: 0.5 });
@@ -87,7 +89,9 @@ chrome.runtime.onMessage.addListener((m, sender) => {
     if (m.type === 'wake') return hello();
     const here = ddbIdOf(sender.tab && sender.tab.url);  // the rest come from a D&D Beyond sheet
     if (!here) return;
-    if (m.type === 'ddb-tab') { await refreshPanels(here); hello(); return deliver(here, sender.tab.id); }
+    // A sheet opened or used: the bridge is awake (askdnd reads the sheet if its copy is a few minutes old)
+    if (m.type === 'ddb-tab') { await active(here); await refreshPanels(here); hello(); return deliver(here, sender.tab.id); }
+    if (m.type === 'ddb-active') return active(here);
     if (m.type === 'panel-refresh') return refreshPanels(here);
     if (m.type === 'ddb-saved') return heardSoon(here, sender.tab.id);
     if (m.type === 'ddb-applied') {

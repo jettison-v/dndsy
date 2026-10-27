@@ -382,6 +382,7 @@ table.list td a:hover { color: var(--text-strong); text-decoration: underline; }
 /* Toast */
 .toast { position: fixed; top: 72px; left: 50%; transform: translate(-50%, -10px); background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-left: 3px solid var(--green); padding: 10px 18px; border-radius: var(--r-md); opacity: 0; transition: all .2s; pointer-events: none; z-index: 10; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast.acts { pointer-events: auto; display: flex; align-items: center; gap: 12px; }  /* a toast with a button (Keep going) */
 
 /* Login */
 .login { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
@@ -2094,3 +2095,7 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
 @media (max-width: 640px) { .br-pill { display: none; } }
 .br-phone { display: none; }
 @media (max-width: 640px) { .br-phone { display: block; } }
+.br-now { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 18px; margin: 0; }
+.br-now dt { color: var(--muted); }
+.br-now dd { margin: 0; }
+.br-num { width: 6em; }
