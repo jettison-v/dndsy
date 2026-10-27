@@ -845,3 +845,8 @@ Railway's settings, pictures in S3, Sentry, the deploy itself, or several people
 - **What:** the bridge (local proof, branch `ddb-bridge-proof`) now sleeps unless the table is playing or testing. It wakes on Game Mode, a change made through askdnd, or the check. It sleeps after 30 minutes idle, on Game Mode off, or after 6 hours at most. Asleep, it reads nothing from D&D Beyond.
 - **Why:** a tool that talks to someone else's service should use it only while it's needed and say plainly who it is. Brett accepts D&D Beyond's terms risk knowingly and tells the table.
 - **Reuse on a new project:** anything that polls another service gets an "awake" switch with an idle timeout *and* a hard cap, so a forgotten tab can't keep it running. And every hand-off between two programs needs a "got it" reply: without one, a message to a stale tab looks like it was delivered. Count unanswered hand-offs as failed tries and give up loudly after a few.
+
+## 2026-10-27: Merging a feature "dark"
+- **What:** the D&D Beyond bridge merged into `main` switched off. It runs only on a computer with `DDB_BRIDGE=1` in `.env`, and the code refuses to turn it on in production, so beta looks exactly the same; beta's database just gains four empty tables.
+- **Why:** one branch, kept current with everything else, instead of a long-lived side branch that drifts. Turning it on for the table becomes a settings change plus installing the extension, not a big merge.
+- **Reuse on a new project:** guard unfinished features with an environment variable that's off by default and can't be switched on in production by accident. Merge early, show late. Its timers live on an admin page rather than in code, so they can be tuned without a deploy.
