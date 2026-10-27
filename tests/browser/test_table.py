@@ -205,3 +205,18 @@ def test_the_rolls_sidebar_stays_as_you_left_it(people, server):
     assert page.evaluate(state) == "closed"
     assert page.locator("#table-rolls").is_visible() and not page.locator(".rs-edge").is_visible()
     assert player.errors == []
+
+
+def test_add_on_the_spell_bar_opens_the_book_and_pinning_there_updates_the_bar(people, server):
+    player = people("player")
+    page = battle(player, server)
+    bar = page.locator("#spell-bar")
+    bar.locator(".sb-add").click()
+    book = page.locator(".peek.open [data-spellbook]")
+    pin = book.locator('[data-ref="spell:Moonbeam"] .pick.star')
+    pin.click()
+    page.wait_for_function("document.querySelector('#spell-bar') && document.querySelector('#spell-bar').textContent.includes('Moonbeam')")
+    assert bar.locator(".sb-add").count() == 0
+    book.locator('[data-ref="spell:Moonbeam"] .pick.star.on').click()  # unpin: + Add comes back
+    bar.locator(".sb-add").wait_for()
+    assert player.errors == []
