@@ -79,7 +79,7 @@ def test_spell_bar_shows_the_four_most_recently_used_starred_spells(db, cole, pl
         db.flush()
     page = player.get(f"/characters/{cole.id}/battle").text
     bar = page[page.index('class="sb-starred"'):]
-    bar = bar[:bar.index("</span>\n</div>")]
+    bar = bar[:bar.index("</div>")]
     shown = [n for n in names if f">{n}</button>" in bar]
     assert len(shown) == 4 and bar.index(">Starry Wisp<") < bar.index(">Thorn Whip<") < bar.index(">Cure Wounds<")
     assert ">+2</button>" in bar  # the other two are in the Spell Book
@@ -119,3 +119,16 @@ def test_sheet_spells_list_every_spell_with_views(db, cole, player, dm):
     assert 'data-views="ready all"' in spells.split('data-ref="spell:Moonbeam"')[1][:400]
     dm_spells = dm.get(f"/characters/{cole.id}").text.split('id="t-spells"')[1].split('id="t-forms"')[0]
     assert "data-ls-view" not in dm_spells and "Barkskin" in dm_spells  # the DM sees All only, no views
+
+
+def test_spell_bar_offers_add_when_nothing_is_pinned_and_the_book_pins(db, cole, player, dm):
+    bar = player.get(f"/characters/{cole.id}/battle").text
+    assert 'class="spell-chip more sb-add"' in bar  # nothing pinned: + Add opens the Spell Book
+    assert "sb-add" not in dm.get(f"/characters/{cole.id}/battle").text  # the DM can't pin
+    book = player.get(f"/characters/{cole.id}/spellbook").text
+    assert '"ref": "spell:Moonbeam"' in book and 'class="pick star"' in book  # each row's pin toggle
+    assert 'hx-post="/characters/%d/pick"' % cole.id not in dm.get(f"/characters/{cole.id}/spellbook").text
+    player.post(f"/characters/{cole.id}/pick", data={"kind": "star", "ref": "spell:Moonbeam"}, headers=HX)
+    bar = player.get(f"/characters/{cole.id}/battle").text
+    assert "sb-add" not in bar and ">Moonbeam</button>" in bar
+    assert 'class="pick star on static"' in dm.get(f"/characters/{cole.id}/spellbook").text  # the DM sees the pin

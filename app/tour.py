@@ -96,7 +96,7 @@ STOPS = [
      "what": "With a note, a row shows it right under its name. (An example again.)",
      "why": "The why and when stay next to the thing itself, where you'll see them mid-fight."},
     {"group": "spellbook", "title": "Spell Book", "page": "battle", "needs": "caster", "at": SPELLBOOK,
-     "what": "<b>Spell Book</b>, above your columns, opens every spell you have prepared in a large window.", "why": "Battle shows the spells you pinned; the Spell Book has all the rest, one click away."},
+     "what": "<b>Spell Book</b>, above your columns, opens every spell you have prepared in a large window.", "why": "Battle shows the spells you pinned; the Spell Book has all the rest, one click away, with a pin on each row."},
     {"group": "spellbook", "title": "Spell Book: filters", "page": "battle", "needs": "caster", "panel": True,
      "open": [SPELLBOOK], "at": ".peek.open [data-spellbook] .ls-fold",
      "what": "Filters narrow the list down: Effect (Damage, Heal, Control…), Casting time, Concentration and more.",
