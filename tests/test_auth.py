@@ -73,6 +73,8 @@ def test_unverified_email_is_rejected(client, monkeypatch):
 
 
 def test_removing_from_allowlist_ends_session(client, monkeypatch):
+    """A standing rule (CLAUDE.md › Stack): only people on the email allowlist sign in; taking someone off ends their
+    session at once."""
     monkeypatch.setattr(
         auth.oauth.google,
         "authorize_access_token",
@@ -95,6 +97,7 @@ def test_logout(client, monkeypatch):
 
 
 def test_dev_login_only_when_configured_and_not_production(monkeypatch):
+    """A standing rule (CLAUDE.md): the dev login is local only, never on beta or production."""
     c = TestClient(app)
     monkeypatch.setattr(config, "DEV_LOGIN_EMAIL", "")
     assert c.get("/dev/login", follow_redirects=False).headers["location"] == "/login"

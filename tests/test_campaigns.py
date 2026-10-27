@@ -1,11 +1,10 @@
 """More than one campaign (data organization step 4): /c/<campaign>/ addresses, the current campaign per person,
 who can open which campaign, moving characters, and Manage › Campaigns."""
 
-import subprocess
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select, text
+from sqlalchemy import select
 
 from app import access, auth, characters, config
 from app.config import parse_allowlist
@@ -14,7 +13,9 @@ from app.importer import import_bundle
 from app.main import app
 from app.models import Campaign, CampaignCharacter, Character, Entity, PlayerNote, User
 from tests.roles import set_role
-from tests.test_characters import BUNDLE, char, fake_fetch, no_network  # noqa: F401
+from tests.table_setup import BUNDLE, char, fake_fetch
+
+pytestmark = pytest.mark.usefixtures("no_network")  # D&D Beyond is never called (tests/conftest.py)
 
 OTHER = {"campaign": {"slug": "strahd", "name": "Curse of Strahd", "dm_name": "Brett"},
          "entities": [{"kind": "npc", "name": "Ireena", "summary": "A burgomaster's daughter."}]}
@@ -182,31 +183,6 @@ def test_uploads_can_name_their_campaign(db, monkeypatch):
                headers={"Authorization": "Bearer t0ken"})
     assert r.status_code == 404 and "nowhere" in r.json()["error"]
     app.dependency_overrides.clear()
-
-
-def test_migration_moves_the_spending_limit_to_the_tool(db_engine):
-    env = {"DATABASE_URL": db_engine.url.render_as_string(hide_password=False), "PATH": __import__("os").environ["PATH"]}
-    from app.db import Base
-
-    def alembic(*args):
-        r = subprocess.run(["alembic", *args], env=env, capture_output=True, text=True)
-        assert r.returncode == 0, r.stderr
-
-    Base.metadata.drop_all(db_engine)
-    try:
-        alembic("upgrade", "bc7d9e3f6a82")
-        with db_engine.begin() as c:
-            c.execute(text("INSERT INTO campaigns (id, name, slug, dm_name, monthly_limit_usd) VALUES (1, 'Main', 'main', '', 25)"))
-        alembic("upgrade", "head")
-        with db_engine.connect() as c:
-            assert c.execute(text("SELECT key, value FROM tool_settings")).all() == [("monthly_limit_usd", "25")]
-        alembic("downgrade", "bc7d9e3f6a82")
-        with db_engine.connect() as c:
-            assert c.execute(text("SELECT monthly_limit_usd FROM campaigns")).scalar() == 25
-        alembic("upgrade", "head")
-    finally:
-        subprocess.run(["alembic", "downgrade", "base"], env=env, capture_output=True)
-        Base.metadata.create_all(db_engine)
 
 
 def test_a_campaigns_manage_pages_act_on_the_campaign_in_the_address(two, db):

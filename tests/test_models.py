@@ -27,12 +27,15 @@ def test_sqlalchemy_url_uses_psycopg():
 
 
 def test_character_notes_hidden_from_dm():
+    """A standing rule (CLAUDE.md › Privacy): character notes are visible to players but never the DM."""
     assert can_view_character_notes(Role.PLAYER)
     assert not can_view_character_notes(Role.DM)
     assert not can_view_character_notes(None)
 
 
 def test_published_story_visible_to_whole_table():
+    """A standing rule (CLAUDE.md › Privacy): everything except character notes is visible to everyone at the table
+    once published."""
     assert can_view_published_story(Role.PLAYER)
     assert can_view_published_story(Role.DM)
     assert not can_view_published_story(None)

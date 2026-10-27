@@ -2,13 +2,16 @@
 VTT piece; another campaign only the Ready pieces switched on in its Settings; test copies of characters keep the real
 ones untouched."""
 
+import pytest
 from sqlalchemy import select
 
 from app import access, characters, vtt
 from app.models import Campaign, Character, CharacterSnapshot, User
 from tests.roles import set_role
 from tests.test_campaigns import sign_in, two  # noqa: F401
-from tests.test_characters import char, no_network  # noqa: F401
+from tests.table_setup import char
+
+pytestmark = pytest.mark.usefixtures("no_network")  # D&D Beyond is never called (tests/conftest.py)
 
 HP = vtt.Piece("hp", "Hit points askdnd tracks", "1.1", "Damage by type, resistances, temporary HP", ready=True)
 SLOTS = vtt.Piece("slots", "Casting spends spell slots", "1.2", "Upcasting and concentration")

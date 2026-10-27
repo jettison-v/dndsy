@@ -88,6 +88,8 @@ def test_a_roll_reaches_the_dms_screen_within_a_second(people, server):
 
 
 def test_a_dm_only_roll_reaches_everyone_but_only_the_dm_sees_it(people, server):
+    """A standing rule, in real pages: a DM-only roll arrives live on every screen, but only the DM's shows its
+    numbers."""
     player, other, dm = people("player", "other", "dm")
     for p in (other, dm):
         p.open("/c/main/")

@@ -69,8 +69,8 @@ def test_the_dm_adds_a_picture_everyone_sees_it(people, db):
 
 
 def test_player_characters_use_their_d_and_d_beyond_portrait(people, db, monkeypatch):
-    from tests.test_characters import BUNDLE as CHAR_BUNDLE
-    from tests.test_characters import fake_fetch
+    from tests.table_setup import BUNDLE as CHAR_BUNDLE
+    from tests.table_setup import fake_fetch
 
     monkeypatch.setattr(characters.refresh, "__defaults__", (fake_fetch,))
     import_bundle(db, CHAR_BUNDLE)

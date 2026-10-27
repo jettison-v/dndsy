@@ -11,7 +11,9 @@ from app import characters
 from app import player_notes as pn
 from app.importer import import_bundle
 from app.models import PlayerNote
-from tests.test_characters import BUNDLE, admin, char, dm, no_network, owned_by, player  # noqa: F401
+from tests.table_setup import BUNDLE, char, owned_by
+
+pytestmark = pytest.mark.usefixtures("no_network")  # D&D Beyond is never called (tests/conftest.py)
 
 
 def form(**fields) -> FormData:
@@ -71,6 +73,8 @@ def cole(db, player):
 
 
 def test_only_the_player_writes_and_the_dm_never_sees(db, cole, player, dm, admin):
+    """A standing rule (CLAUDE.md › Privacy): character notes are visible to players but never the DM. Only the
+    character's player writes them."""
     url = f"/characters/{cole.id}"
     r = player.post(f"{url}/notes", data={"kind": "combo", "title": "Bear and beam", "turn_label": "Setup",
                                            "turn_action": "Cast Moonbeam", "turn_bonus": "Wild Shape into Polar Bear",

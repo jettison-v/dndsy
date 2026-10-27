@@ -1,12 +1,15 @@
 """One Character page with Play / Sheet / Plan modes, the menu bar's characters (your character, Party ▾), and
 the Live control (Game Mode and refreshing). D&D Beyond is never called (fake fetch)."""
 
+import pytest
 import json
 import re
 
 from app import characters, live
 from app.importer import import_bundle
-from tests.test_characters import BUNDLE, admin, char, dm, down, no_network, owned_by, player  # noqa: F401
+from tests.table_setup import BUNDLE, char, down, owned_by
+
+pytestmark = pytest.mark.usefixtures("no_network")  # D&D Beyond is never called (tests/conftest.py)
 
 
 def modes_nav(page: str) -> str:

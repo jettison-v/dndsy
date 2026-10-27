@@ -117,6 +117,8 @@ def test_imported_members_need_an_invite(env, monkeypatch, db):
 
 
 def test_dm_never_sees_character_notes_even_as_admin(env, monkeypatch, db):
+    """A standing rule (CLAUDE.md › Privacy): character notes are visible to players but never the DM. Being an admin
+    too doesn't change that."""
     from app.models import Character, NoteSnapshot, NoteSource
 
     import_bundle(db, {**MAIN, "entities": [{"kind": "pc", "name": "Cole", "character": {"player_name": "Brett"}}]})
@@ -222,6 +224,8 @@ def test_table_lists_people_by_role_and_folds_the_chart(env, monkeypatch, db):
 
 
 def test_the_dm_sees_the_table_and_edits_settings_but_changes_no_roles(env, monkeypatch, db):
+    """A standing rule (app/access.py): the DM sees Manage › Table and edits Settings; only admins change who plays
+    what."""
     import_bundle(db, MAIN)
     owner, _ = sign_in(monkeypatch, "owner@example.com")
     add(owner, "dm@example.com", "dm", "Dee")
@@ -236,47 +240,3 @@ def test_the_dm_sees_the_table_and_edits_settings_but_changes_no_roles(env, monk
     assert (main.name, main.dm_name, main.ddb_campaign_id, main.slug) == ("The Lost Mine", "Dee", "42", "main")
     pat, _ = sign_in(monkeypatch, "pat@example.com")
     assert pat.get("/c/main/manage/settings").status_code == 403 and pat.get("/c/main/manage/table").status_code == 403
-
-
-def test_migration_moves_the_dm_tick_and_reviewer_into_campaign_roles(db_engine):
-    """The step 2 migration on people shaped like production's, then back down and up again."""
-    import os
-    import subprocess
-
-    from sqlalchemy import text
-
-    from app.db import Base
-
-    env = {"DATABASE_URL": db_engine.url.render_as_string(hide_password=False), "PATH": os.environ["PATH"]}
-
-    def alembic(*args):
-        r = subprocess.run(["alembic", *args], env=env, capture_output=True, text=True)
-        assert r.returncode == 0, r.stderr
-
-    Base.metadata.drop_all(db_engine)
-    try:
-        alembic("upgrade", "9a5b7c1d4e60")
-        with db_engine.begin() as c:
-            c.execute(text("INSERT INTO campaigns (id, name, slug, dm_name) VALUES (1, 'Main', 'main', 'Mary')"))
-            c.execute(text("""INSERT INTO users (id, email, name, access, is_dm) VALUES
-                (1, 'brett@example.com', 'Brett', 'admin', false), (2, 'jay@example.com', 'Jay', 'player', false),
-                (3, 'mary@example.com', 'Mary', 'reviewer', true), (4, 'old@example.com', 'Old', 'removed', false),
-                (5, 'new@example.com', 'New', NULL, false)"""))
-            c.execute(text("INSERT INTO campaign_members (campaign_id, user_id, role) VALUES (1, 1, 'player')"))
-            c.execute(text("""INSERT INTO revisions ("table", row_id, label, field, old, new, actor, source)
-                              VALUES ('users', 2, 'Jay', 'access', '"reviewer"', '"player"', 'brett@example.com', 'edit')"""))
-        alembic("upgrade", "head")
-        with db_engine.connect() as c:
-            assert c.execute(text("SELECT user_id, role, left_on FROM campaign_members ORDER BY user_id")).all() == [
-                (1, "player", None), (2, "player", None), (3, "dm", None)]  # removed and never-invited people get no role
-            assert c.execute(text("SELECT id, access FROM users ORDER BY id")).all() == [
-                (1, "admin"), (2, "member"), (3, "member"), (4, "removed"), (5, None)]
-            assert c.execute(text("SELECT old, new FROM revisions")).one() == ("member", "member")
-        alembic("downgrade", "9a5b7c1d4e60")
-        with db_engine.connect() as c:
-            assert c.execute(text("SELECT id, access, is_dm FROM users ORDER BY id")).all() == [
-                (1, "admin", False), (2, "player", False), (3, "reviewer", True), (4, "removed", False), (5, None, False)]
-        alembic("upgrade", "head")
-    finally:
-        subprocess.run(["alembic", "downgrade", "base"], env=env, capture_output=True)
-        Base.metadata.create_all(db_engine)

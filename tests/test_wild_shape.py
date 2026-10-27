@@ -8,8 +8,10 @@ import pytest
 from app import characters
 from app import wild_shape as ws
 from app.importer import import_bundle
-from tests.test_characters import BUNDLE, COLE, admin, char, dm, no_network, owned_by, player  # noqa: F401
+from tests.table_setup import BUNDLE, COLE, char, owned_by
 from tests.test_suggestions import HX
+
+pytestmark = pytest.mark.usefixtures("no_network")  # D&D Beyond is never called (tests/conftest.py)
 
 
 def cole_sheet(level=6, moon=True) -> dict:
@@ -110,6 +112,8 @@ def test_wild_shape_tab_panel_and_battle_switch(db, cole, player, dm):
 
 
 def test_one_note_per_form_is_the_players_and_hidden_from_the_dm(db, cole, player, dm):
+    """A standing rule (CLAUDE.md › Privacy): character notes are visible to players but never the DM. A note on a Wild
+    Shape form is one of them."""
     owned_by(db, char(db, "Trah"), "dm@example.com", is_dm=True)
     url = f"/characters/{cole.id}"
     r = player.post(f"{url}/pick", data={"kind": "fav", "ref": "form:Tiger", "marks": "fav,remind"})

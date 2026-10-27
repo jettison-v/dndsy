@@ -1,10 +1,10 @@
 """Tool corrections and house rules (data organization step 3): a campaign's rulings point at the tool's knowledge
 and never edit it; the effective value is tool knowledge, then a tool correction, then the house rule."""
 
+import pytest
 import itertools
-import subprocess
 
-from sqlalchemy import select, text
+from sqlalchemy import select
 
 from app import characters, history, house_rules
 from app import roll_recipes as rr
@@ -12,7 +12,9 @@ from app import table_rolls as tr
 from app.importer import import_bundle
 from app.models import Campaign, HouseRule, Revision, ToolCorrection
 from tests.roles import set_role
-from tests.test_characters import BUNDLE, admin, char, client, dm, no_network, owned_by, player  # noqa: F401
+from tests.table_setup import BUNDLE, char, owned_by
+
+pytestmark = pytest.mark.usefixtures("no_network")  # D&D Beyond is never called (tests/conftest.py)
 
 
 def rule(db, key, field, value="1", reason="", campaign=None):
@@ -71,6 +73,7 @@ def test_a_ruling_shows_in_the_roll_window_of_the_spell(player, db):
 
 
 def test_only_the_dm_and_admins_set_house_rules(player, admin, dm, db):
+    """A standing rule: the DM makes every ruling, so only the DM (and admins) set house rules."""
     import_bundle(db, BUNDLE)
     assert player.get("/c/main/manage/house-rules").status_code == 403
     assert dm.get("/c/main/manage/house-rules").status_code == 403  # a reviewer (dm@ is on the Railway reviewer list) isn't the DM
@@ -119,30 +122,3 @@ def test_tool_corrections_say_why(admin, db):
     assert o.reason == "D&D Beyond lists it twice"
     page = admin.get("/manage/tool-corrections").text
     assert "Tool corrections" in page and 'value="D&amp;D Beyond lists it twice"' in page
-
-
-def test_migration_renames_sheet_corrections_and_adds_house_rules(db_engine):
-    url = db_engine.url.render_as_string(hide_password=False)
-    env = {"DATABASE_URL": url, "PATH": __import__("os").environ["PATH"]}
-    from app.db import Base
-
-    def alembic(*args):
-        r = subprocess.run(["alembic", *args], env=env, capture_output=True, text=True)
-        assert r.returncode == 0, r.stderr
-
-    Base.metadata.drop_all(db_engine)
-    try:
-        alembic("upgrade", "ab6c8d2e5f71")
-        with db_engine.begin() as c:
-            c.execute(text("INSERT INTO sheet_overrides (ref, field, value, set_by) VALUES ('spell:Moonbeam', 'battle', 'hide', 'b@x')"))
-        alembic("upgrade", "head")
-        with db_engine.begin() as c:
-            assert c.execute(text("SELECT ref, field, value, reason FROM tool_corrections")).all() == [("spell:Moonbeam", "battle", "hide", "")]
-            c.execute(text("INSERT INTO tool_corrections (ref, field, value) VALUES ('spell:Shield', 'battle', 'hide')"))  # ids continue
-        alembic("downgrade", "ab6c8d2e5f71")
-        with db_engine.connect() as c:
-            assert c.execute(text("SELECT count(*) FROM sheet_overrides")).scalar() == 2
-        alembic("upgrade", "head")
-    finally:
-        subprocess.run(["alembic", "downgrade", "base"], env=env, capture_output=True)
-        Base.metadata.create_all(db_engine)

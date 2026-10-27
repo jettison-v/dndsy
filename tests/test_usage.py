@@ -71,6 +71,8 @@ def test_parse_amount():
 
 
 def test_monthly_limit_blocks_new_claude_calls(db):
+    """A standing rule (CLAUDE.md › Privacy and data rules): a monthly spending limit on the Anthropic API; every
+    Claude call checks it first."""
     from app import spending
     from app.extraction import Source, extract_session
     from app.models import Campaign

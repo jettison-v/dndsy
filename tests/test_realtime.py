@@ -6,8 +6,10 @@ from starlette.websockets import WebSocketDisconnect
 
 from app import characters, realtime
 from app import table_rolls as tr
-from tests.test_characters import char, no_network  # noqa: F401
+from tests.table_setup import char
 from tests.test_table_rolls import post, table  # noqa: F401
+
+pytestmark = pytest.mark.usefixtures("no_network")  # D&D Beyond is never called (tests/conftest.py)
 
 
 def test_a_roll_reaches_every_page_at_the_table_without_its_number(table, db, monkeypatch):  # noqa: F811
@@ -54,9 +56,9 @@ def test_announced_after_commit_never_after_rollback(db, monkeypatch):
     assert sent == [(1, "rolls", {})]
 
 
-def test_a_character_is_announced_only_when_dnd_beyond_changed_it(db, monkeypatch, no_network):  # noqa: F811
+def test_a_character_is_announced_only_when_dnd_beyond_changed_it(db, monkeypatch, no_network):
     from app.importer import import_bundle
-    from tests.test_characters import BUNDLE
+    from tests.table_setup import BUNDLE
 
     import_bundle(db, BUNDLE)
     sent = []
