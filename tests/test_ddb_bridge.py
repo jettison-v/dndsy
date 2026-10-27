@@ -36,9 +36,11 @@ def test_a_drink_waits_for_d_and_d_beyond_and_counts_once_it_has_it(player, db, 
     askdnd shows a change as made only after reading it back from D&D Beyond."""
     cole = char(db, "Cole")
     ch = ddb_bridge.drink(db, cole, POTION, roll=lambda sides: 3)  # 2d4 + 2 = 8
-    assert ch["ops"] == [
-        {"path": "/character/v5/inventory/item/quantity", "body": {"characterId": 75423618, "id": POTION, "quantity": 1}},
-        {"path": "/character/v5/life/hp/damage-taken", "body": {"characterId": 75423618, "removedHitPoints": 6, "temporaryHitPoints": 0}}]
+    assert ch["ops"] == [  # each says what askdnd read from D&D Beyond just now; the extension checks it before writing
+        {"path": "/character/v5/inventory/item/quantity", "body": {"characterId": 75423618, "id": POTION, "quantity": 1},
+         "from": {"item": POTION, "quantity": 2}},
+        {"path": "/character/v5/life/hp/damage-taken", "body": {"characterId": 75423618, "removedHitPoints": 6, "temporaryHitPoints": 0},
+         "from": {"removedHitPoints": 14, "temporaryHitPoints": 0}}]
     st = player.get(f"/bridge/state/{cole.id}").json()
     assert st["hp"]["current"] == 37 and st["items"][0]["quantity"] == 2  # nothing changes in askdnd yet
     assert [c["state"] for c in st["changes"]] == ["waiting"]
@@ -82,3 +84,26 @@ def test_only_the_player_drinks_and_never_in_production(player, dm, db, sheet, m
     monkeypatch.setattr(config, "IS_PRODUCTION", True)
     assert player.get(f"/bridge/state/{cole.id}").status_code == 404
     assert player.get(f"/characters/{cole.id}/bridge").status_code == 404
+
+
+def test_a_drink_works_from_what_d_and_d_beyond_has_now(player, db, sheet):
+    """askdnd reads the sheet just before working out a change, so it never writes over one it hadn't seen."""
+    cole = char(db, "Cole")
+    sheet["removedHitPoints"] = 11  # changed on D&D Beyond since askdnd last read it (40 of 51)
+    ch = ddb_bridge.drink(db, cole, POTION, roll=lambda sides: 1)  # heals 4
+    assert ch["ops"][1]["body"]["removedHitPoints"] == 7 and ch["ops"][1]["from"]["removedHitPoints"] == 11
+
+
+def test_the_extension_signs_in_with_its_own_key(player, db, sheet):
+    """A browser that blocks third-party cookies sends the extension none, so it uses a key from a signed-in page."""
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    key = player.post("/bridge/connect").json()["key"]
+    assert player.post("/bridge/connect").json()["key"] == key  # one per person
+    stranger = TestClient(app)
+    assert stranger.get("/bridge/by-ddb/75423618").status_code == 401
+    assert stranger.post("/bridge/connect").status_code == 401
+    got = stranger.get("/bridge/by-ddb/75423618", headers={"X-Askdnd-Bridge": key}).json()
+    assert got["character"]["name"] == "Cole" and got["can_act"] is True

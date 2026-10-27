@@ -7,7 +7,9 @@ askdnd's changes there, as you; askdnd counts a change only once it has read it 
 Load it (Chrome):
 1. chrome://extensions, switch on **Developer mode** (top right).
 2. **Load unpacked**, and pick this folder (`extension/askdnd-bridge`).
-3. Sign in to askdnd on http://localhost:8000 and to D&D Beyond, in the same Chrome.
+3. Sign in to askdnd on http://localhost:8000 and to D&D Beyond, in the same Chrome. Opening any askdnd page connects
+   the extension (it gets its own key to askdnd, so it works even when Chrome blocks third-party cookies); after
+   askdnd restarts, open an askdnd page again.
 4. Open your character's D&D Beyond sheet: the askdnd panel slides in on the right (the red **askdnd** tab brings it
    back). askdnd's own tab is `http://localhost:8000/characters/<id>/bridge`.
 

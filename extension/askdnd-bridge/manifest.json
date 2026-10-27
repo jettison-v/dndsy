@@ -1,13 +1,46 @@
 {
   "manifest_version": 3,
   "name": "askdnd bridge (proof)",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "askdnd beside your own D&D Beyond sheet: hears your sheet's changes and makes askdnd's there, as you. A local proof.",
-  "host_permissions": ["https://www.dndbeyond.com/*", "http://localhost:8000/*"],
-  "background": { "service_worker": "background.js" },
-  "content_scripts": [
-    { "matches": ["https://www.dndbeyond.com/characters/*"], "js": ["ddb.js"], "run_at": "document_start" },
-    { "matches": ["http://localhost:8000/*"], "js": ["askdnd.js"], "run_at": "document_start" }
+  "permissions": [
+    "storage"
   ],
-  "web_accessible_resources": [{ "resources": ["ddb-page.js"], "matches": ["https://www.dndbeyond.com/*"] }]
+  "host_permissions": [
+    "https://www.dndbeyond.com/*",
+    "http://localhost:8000/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.dndbeyond.com/characters/*"
+      ],
+      "js": [
+        "ddb.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "http://localhost:8000/*"
+      ],
+      "js": [
+        "askdnd.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "ddb-page.js"
+      ],
+      "matches": [
+        "https://www.dndbeyond.com/*"
+      ]
+    }
+  ]
 }

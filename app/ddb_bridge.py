@@ -11,10 +11,16 @@ It's local only (refused in production) and keeps its changes and log in this pr
 them, and a second copy of the app wouldn't see them. Built for real, both go in the database (play log, VTT 0.4).
 
 askdnd decides the D&D Beyond requests (`ops`), and the extension makes only the two it knows (OPS), so a page can't
-ask it to change anything else.
+ask it to change anything else. Each op says what askdnd believes D&D Beyond has now (`from`); the extension reads the
+sheet fresh first and makes nothing if D&D Beyond has changed since, so askdnd never writes over a change it hadn't seen
+(2026-10-27: a drink worked out from a copy read an hour earlier would have put hit points back to 51).
+
+The extension calls askdnd with a key it got from an askdnd page you're signed in to (`/bridge/connect`), not with
+askdnd's cookie: to Chrome the extension is a third party, and a browser that blocks third-party cookies sends none.
 """
 
 import itertools
+import secrets
 import threading
 import time
 from datetime import UTC, datetime
@@ -24,7 +30,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import config, picks, table_rolls
+from app import access, config, picks, table_rolls
 from app import characters as chars
 from app.auth import current_user
 from app.db import get_db
@@ -50,6 +56,7 @@ _changes: dict[int, dict] = {}  # change id -> {character_id, state, label, expe
 _logs: dict[int, list[dict]] = {}  # character id -> newest first: {text, state, at}
 _seen: dict[int, dict] = {}  # character id -> the numbers last read from D&D Beyond
 _refreshed: dict[int, float] = {}
+_keys: dict[str, dict] = {}  # the extension's key -> who gave it (the signed-in person on an askdnd page)
 
 
 def _local_only():
@@ -139,6 +146,7 @@ def state(db: Session, character: Character, user: dict | None) -> dict:
 def drink(db: Session, character: Character, item_id: int, roll=None) -> dict:
     """Drink a healing potion: roll it, then ask D&D Beyond for one fewer and the hit points it restores. Nothing in
     askdnd changes until D&D Beyond confirms both (reconcile)."""
+    chars.refresh(db, character)  # work it out from what D&D Beyond has now, not an old copy
     summary = chars.character_summary(character)
     item = next((it for it in (summary or {}).get("inventory", []) if it["key"] == f"item:{item_id}"), None)
     if not item or item["name"] not in HEALING or item["quantity"] < 1:
@@ -149,8 +157,10 @@ def drink(db: Session, character: Character, item_id: int, roll=None) -> dict:
     removed = max(0, hp["damage"] - heal)
     new_hp = hp["max"] - removed
     ddb_id = int(character.ddb_id)
-    ops = [{"path": "/character/v5/inventory/item/quantity", "body": {"characterId": ddb_id, "id": item_id, "quantity": item["quantity"] - 1}},
-           {"path": "/character/v5/life/hp/damage-taken", "body": {"characterId": ddb_id, "removedHitPoints": removed, "temporaryHitPoints": hp["temp"]}}]
+    ops = [{"path": "/character/v5/inventory/item/quantity", "body": {"characterId": ddb_id, "id": item_id, "quantity": item["quantity"] - 1},
+            "from": {"item": item_id, "quantity": item["quantity"]}},
+           {"path": "/character/v5/life/hp/damage-taken", "body": {"characterId": ddb_id, "removedHitPoints": removed, "temporaryHitPoints": hp["temp"]},
+            "from": {"removedHitPoints": hp["damage"], "temporaryHitPoints": hp["temp"]}}]
     lines = [f"{item['name']} ×{item['quantity']} → ×{item['quantity'] - 1}",
              f"Hit points {hp['current']} → {new_hp} (rolled {heal}: {rolled['formula']})"]
     change = {"character_id": character.id, "state": "waiting", "ops": ops, "lines": lines, "at": time.time(), "error": "",
@@ -165,9 +175,19 @@ def drink(db: Session, character: Character, item_id: int, roll=None) -> dict:
 # ------------------------------------------------------------------ routes
 
 
+def _who(request: Request) -> dict | None:
+    """The signed-in person: askdnd's own pages by their cookie, the extension by its key (checked again each time, so
+    removing someone locks the extension out too)."""
+    user = current_user(request)
+    if user:
+        return user
+    key = _keys.get(request.headers.get("x-askdnd-bridge", ""))
+    return key if key and access.level(key.get("email")) else None
+
+
 def _mine(db: Session, request: Request, character_id: int) -> tuple[Character, dict]:
     _local_only()
-    user = current_user(request)
+    user = _who(request)
     character = db.get(Character, character_id)
     if not user or not character or not picks.can_view(db, user, character):
         raise HTTPException(404)
@@ -177,6 +197,19 @@ def _mine(db: Session, request: Request, character_id: int) -> tuple[Character, 
 def _json(body: dict, status: int = 200) -> JSONResponse:
     # The extension's panel on dndbeyond.com reads these through its own background page, so no CORS is opened
     return JSONResponse(body, status_code=status, headers={"Cache-Control": "no-store"})
+
+
+@router.post("/bridge/connect")
+def bridge_connect(request: Request):
+    """An askdnd page you're signed in to hands the extension its key (askdnd.js); one per person while the app runs."""
+    _local_only()
+    user = current_user(request)
+    if not user:
+        return _json({"error": "Sign in to askdnd first."}, 401)
+    with _lock:
+        key = next((k for k, u in _keys.items() if u["email"] == user["email"]), None) or secrets.token_urlsafe(32)
+        _keys[key] = {"email": user["email"], "name": user.get("name", "")}
+    return _json({"key": key})
 
 
 @router.get("/bridge/state/{character_id:int}")
@@ -189,9 +222,9 @@ def bridge_state(character_id: int, request: Request, db: Session = Depends(get_
 def bridge_by_ddb(ddb_id: str, request: Request, db: Session = Depends(get_db)):
     """The extension knows a sheet by its D&D Beyond number; askdnd says which character that is here."""
     _local_only()
-    user = current_user(request)
+    user = _who(request)
     if not user:
-        return _json({"error": "Sign in to askdnd in this browser."}, 401)
+        return _json({"error": "Open askdnd (localhost:8000) once in this browser to connect the extension."}, 401)
     character = db.scalar(select(Character).where(Character.ddb_id == ddb_id, Character.copy_of_id.is_(None)))
     if not character or not picks.can_view(db, user, character):
         return _json({"error": "askdnd doesn't know this character."}, 404)
@@ -230,10 +263,15 @@ async def bridge_result(change_id: int, request: Request, db: Session = Depends(
         if not body.get("ok"):
             ch["state"], ch["error"] = "not_yet", str(body.get("error") or "The change couldn't be made.")[:200]
     character, user = _mine(db, request, ch["character_id"])
-    if body.get("ok"):
-        _refreshed[character.id] = time.time()
-        reconcile(db, character)
-        db.commit()
+    if body.get("ok"):  # read it back; D&D Beyond can take a moment to serve what it just saved
+        for attempt in range(4):
+            if attempt:
+                time.sleep(1)
+            _refreshed[character.id] = time.time()
+            reconcile(db, character)
+            db.commit()
+            if _changes[change_id]["state"] == "live":
+                break
     return _json(state(db, character, user))
 
 

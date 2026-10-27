@@ -9,7 +9,7 @@
 
   window.addEventListener('message', e => {
     if (e.source !== window || !e.data || e.data.askdndBridge !== 'from-page') return;
-    chrome.runtime.sendMessage({ type: e.data.type === 'saved' ? 'ddb-saved' : 'ddb-applied', ...e.data });
+    chrome.runtime.sendMessage({ ...e.data, type: e.data.type === 'saved' ? 'ddb-saved' : 'ddb-applied' });  // (the page's own type last would win)
   });
   chrome.runtime.onMessage.addListener(m => {
     if (m.type === 'apply') window.postMessage({ askdndBridge: 'apply', change: m.change, ops: m.ops }, location.origin);
@@ -57,8 +57,11 @@
       if (act === 'undo') chrome.runtime.sendMessage({ type: 'undo', change: +t.dataset.change });
     });
   }
+  let again = null;
   function draw(st, error) {
     mount();
+    clearTimeout(again);  // while a change waits, ask again every second and a half
+    if (st && st.changes.some(c => c.state === 'waiting')) again = setTimeout(() => chrome.runtime.sendMessage({ type: 'panel-refresh' }), 1500);
     if (!open) { root.innerHTML = `<style>${CSS}</style><button class="tab" data-act="toggle" aria-label="Open askdnd">askdnd</button>`; return; }
     let body;
     if (error) body = `<span class="st off">Not connected</span><p class="note">${esc(error)}</p>`;

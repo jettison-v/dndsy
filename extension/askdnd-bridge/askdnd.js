@@ -7,3 +7,7 @@ window.addEventListener('message', e => {
 });
 chrome.runtime.onMessage.addListener(m => { if (m.type === 'bridge-update') window.postMessage({ askdndBridge: 'update' }, location.origin); });
 window.postMessage({ askdndBridge: 'hello' }, location.origin);
+// The extension's key to askdnd: asked for by this page (signed in, so its cookie counts), kept by the extension. It
+// can't use askdnd's cookie itself: to Chrome the extension is a third party.
+fetch('/bridge/connect', { method: 'POST', headers: { Accept: 'application/json' } })
+  .then(r => (r.ok ? r.json() : null)).then(j => { if (j && j.key) chrome.runtime.sendMessage({ type: 'key', key: j.key }); }).catch(() => {});

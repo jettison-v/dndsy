@@ -47,6 +47,17 @@
         if (!OPS.has(op.path)) throw new Error("That isn't a change askdnd may make.");
         if (String(op.body && op.body.characterId) !== sheetId()) throw new Error("A different character's sheet is open.");
       }
+      // What D&D Beyond has right now (signed in, so not a cached copy): if it isn't what askdnd worked the change out
+      // from, someone changed it meanwhile, and writing would put an old number back. Make nothing; askdnd reads again.
+      const now = await ofetch(CS + '/character/v5/character/' + sheetId(), { headers: { Accept: 'application/json', Authorization: 'Bearer ' + await auth() } });
+      if (!now.ok) throw new Error("Couldn't read the sheet from D&D Beyond (" + now.status + ').');
+      const d = (await now.json()).data || {};
+      for (const op of ops) {
+        const f = op.from || {};
+        const item = f.item ? (d.inventory || []).find(i => i.id === f.item) : null;
+        const same = f.item ? item && item.quantity === f.quantity : d.removedHitPoints === f.removedHitPoints && (d.temporaryHitPoints || 0) === f.temporaryHitPoints;
+        if (!same) throw new Error('D&D Beyond changed since askdnd read it. Nothing was changed: try again.');
+      }
       for (const op of ops) {
         const r = await ofetch(CS + op.path, { method: 'PUT', headers: { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: 'Bearer ' + await auth() }, body: JSON.stringify(op.body) });
         if (!r.ok) throw new Error('D&D Beyond refused it (' + r.status + ').');

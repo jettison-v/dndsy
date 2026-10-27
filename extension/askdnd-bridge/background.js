@@ -5,9 +5,12 @@ const ASKDND = 'http://localhost:8000';
 const ddbIdOf = url => ((url || '').match(/^https:\/\/www\.dndbeyond\.com\/characters\/(\d+)/) || [])[1];
 
 async function api(method, path, body) {
-  const r = await fetch(ASKDND + path, { method, credentials: 'include', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  const { key } = await chrome.storage.session.get('key');  // from askdnd.js; kept while Chrome is open
+  if (!key) throw new Error('Open askdnd (localhost:8000) once in this browser to connect the extension.');
+  const r = await fetch(ASKDND + path, { method, headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Askdnd-Bridge': key }, body: body ? JSON.stringify(body) : undefined });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.error || j.detail || (r.status === 401 ? 'Sign in to askdnd (localhost:8000) in this browser.' : 'askdnd answered ' + r.status + '.'));
+  if (r.status === 401) await chrome.storage.session.remove('key');  // askdnd restarted: open it again to reconnect
+  if (!r.ok) throw new Error(j.error || j.detail || 'askdnd answered ' + r.status + '.');
   return j;
 }
 async function sheetTabs(ddbId) {
@@ -34,6 +37,7 @@ async function apply(ddbId, change, ops) {
 
 chrome.runtime.onMessage.addListener((m, sender) => {
   (async () => {
+    if (m.type === 'key') { await chrome.storage.session.set({ key: m.key }); for (const t of await chrome.tabs.query({ url: 'https://www.dndbeyond.com/characters/*' })) refreshPanels(ddbIdOf(t.url)); return; }
     const here = ddbIdOf(sender.tab && sender.tab.url);  // set when the message comes from a D&D Beyond sheet
     if (m.type === 'apply') return apply(m.ddbId, m.change, m.ops);  // from askdnd's own tab
     if (!here) return;
