@@ -97,6 +97,28 @@ D&D Beyond never sees. Each lands in a bucket, so there's no gap:
   ("Add Flame Tongue · 2 fewer Potions of Healing · +150 gp"), for the player to make on D&D Beyond, typically at
   level-up. When a change shows up on the sheet, the merge ticks it off. No write-back and no stored D&D Beyond logins.
 
+## Brett's answers (2026-10-27)
+
+From the questions on the data strategy page and the overlay mockup (`docs/mockups/ddb-overlay.html`):
+
+- **Decided as recommended:** 1 (four buckets), 2 (one shape for rules content), 3 (books checked once), 5 (enhancements
+  in our own words), 6 (a book belongs to a person), 7 (optional rules become house rules).
+- **4, settled:** a campaign's list of books mirrors what the DM shares on D&D Beyond (the DM ticks them once;
+  askdnd pre-ticks every book already on the party's sheets). askdnd never shows a player less than D&D Beyond does,
+  and the list mainly governs the DM's side (monsters, loot, rules answers).
+- **8, changed:** prove the model with one book first: the 2024 Monster Manual's beasts in Wild Shape's list of forms
+  you could pick, labelled "MM 2024", switchable for the campaign, stored only in the database.
+- **9 and 10, replaced.** A partial sync is out: numbers must be correct in both places, or the difference shown
+  (Brett: "That was one of the main reasons we stopped using Foundry"). The direction instead: **D&D Beyond confirms
+  every change.** An askdnd browser extension in each person's own signed-in D&D Beyond tab hears changes there at
+  once and makes askdnd's changes there, as that person; askdnd shows a number as changed only after reading it back
+  from D&D Beyond. Four states, everywhere: Live with D&D Beyond, Waiting for D&D Beyond, Not on D&D Beyond yet,
+  Changed on D&D Beyond.
+  - **Both views:** askdnd's panel beside the D&D Beyond sheet, and askdnd's own tab with the extension behind it.
+  - **Phones read and plan only:** no changes to sheet numbers there; a phone is the story and planning companion.
+  - **Party Inventory later:** the table hasn't started using it; loot through it waits until they do.
+  - Unofficial (D&D Beyond offers no way to write), so a one-day proof on Cole comes before any roadmap change.
+
 ## Decisions for Brett
 
 1. **The four buckets** as above. *Recommended.*
