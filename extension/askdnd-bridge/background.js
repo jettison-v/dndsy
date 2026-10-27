@@ -25,8 +25,9 @@ async function refreshPanels(ddbId) {  // every open tab of this sheet; returns 
   for (const t of await sheetTabs(ddbId)) chrome.tabs.sendMessage(t.id, st ? { type: 'panel-state', state: st } : { type: 'panel-state', error }).catch(() => {});
   return st;
 }
-async function apply(ddbId, change, ops) {
-  const [tab] = await sheetTabs(ddbId);
+async function apply(ddbId, change, ops, tabId) {  // through the tab you clicked in, else any copy of the sheet
+  const tabs = await sheetTabs(ddbId);
+  const tab = tabs.find(t => t.id === tabId) || tabs[0];
   if (!tab) {
     await api('POST', '/bridge/result/' + change, { ok: false, error: "Open the character's D&D Beyond sheet in this browser." }).catch(() => {});
     toAskdndTabs({ type: 'bridge-update' });
@@ -48,6 +49,9 @@ chrome.runtime.onMessage.addListener((m, sender) => {
       return;
     }
     if (m.type === 'ddb-applied') {
+      // Every other open copy of this sheet still shows the old numbers, and D&D Beyond's page would save them back over
+      // the new ones on its next change: reload them all (the tab that made the change reloads itself)
+      if (m.ok) for (const t of await sheetTabs(here)) if (t.id !== sender.tab.id) chrome.tabs.reload(t.id);
       await api('POST', '/bridge/result/' + m.change, { ok: m.ok, error: m.error }).catch(() => {});
       await refreshPanels(here); toAskdndTabs({ type: 'bridge-update' });
       return;
@@ -55,8 +59,8 @@ chrome.runtime.onMessage.addListener((m, sender) => {
     // From the panel beside the sheet
     try {
       const st = await api('GET', '/bridge/by-ddb/' + here);
-      if (m.type === 'drink') { const ch = await api('POST', `/bridge/drink/${st.character.id}/${m.itemId}`); await refreshPanels(here); await apply(here, ch.id, ch.ops); }
-      if (m.type === 'retry') { const c = st.changes.find(x => x.id === m.change); if (c) await apply(here, c.id, c.ops); }
+      if (m.type === 'drink') { const ch = await api('POST', `/bridge/drink/${st.character.id}/${m.itemId}`); await refreshPanels(here); await apply(here, ch.id, ch.ops, sender.tab.id); }
+      if (m.type === 'retry') { const c = st.changes.find(x => x.id === m.change); if (c) await apply(here, c.id, c.ops, sender.tab.id); }
       if (m.type === 'undo') await api('POST', '/bridge/dismiss/' + m.change);
     } catch (err) {
       chrome.tabs.sendMessage(sender.tab.id, { type: 'panel-state', error: String(err.message || err) }).catch(() => {});

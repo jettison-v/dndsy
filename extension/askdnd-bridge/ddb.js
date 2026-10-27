@@ -22,8 +22,8 @@
   const CLS = { live: 'live', waiting: 'wait', not_yet: 'off', seen: 'seen' };
   const esc = v => String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const CSS = `:host { all: initial; } * { box-sizing: border-box; }
-    .tab { position: fixed; top: 140px; right: 0; z-index: 2147483000; background: #d64545; color: #fff; font: 700 12px/1 Inter, system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; writing-mode: vertical-rl; padding: 12px 7px; border: 0; border-radius: 8px 0 0 8px; cursor: pointer; }
-    .panel { position: fixed; top: 0; right: 0; bottom: 0; width: 320px; z-index: 2147483001; background: #15171a; color: #ebe7df; border-left: 1px solid #34383e; font: 14px/1.5 Inter, system-ui, sans-serif; display: flex; flex-direction: column; box-shadow: -8px 0 24px rgba(0,0,0,.45); }
+    .tab { position: fixed; top: 140px; right: var(--beside, 0px); z-index: 2147483000; background: #d64545; color: #fff; font: 700 12px/1 Inter, system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; writing-mode: vertical-rl; padding: 12px 7px; border: 0; border-radius: 8px 0 0 8px; cursor: pointer; }
+    .panel { position: fixed; top: 0; right: var(--beside, 0px); bottom: 0; width: 320px; z-index: 2147483001; background: #15171a; color: #ebe7df; border-left: 1px solid #34383e; font: 14px/1.5 Inter, system-ui, sans-serif; display: flex; flex-direction: column; box-shadow: -8px 0 24px rgba(0,0,0,.45); }
     .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 14px; border-bottom: 2px solid #d64545; background: #0f1113; }
     .head b { color: #fff; } .logo { color: #f08a8a; font-weight: 700; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
     .x { background: none; border: 0; color: #a29d93; font-size: 18px; cursor: pointer; }
@@ -48,6 +48,17 @@
     host = document.createElement('div'); host.id = 'askdnd-bridge';
     root = host.attachShadow({ mode: 'open' });
     document.documentElement.appendChild(host);
+    // D&D Beyond opens its own pane on the right (an item, a spell, hit points): the panel moves left to sit beside it
+    // instead of covering it (2026-10-27: it hid the potion's quantity buttons)
+    const beside = () => {
+      const pane = document.querySelector('.ct-sidebar');
+      const w = pane && getComputedStyle(pane).display !== 'none' ? Math.round(pane.getBoundingClientRect().width) : 0;
+      host.style.setProperty('--beside', (w > 0 && w < innerWidth / 2 ? w : 0) + 'px');
+    };
+    let queued = false;  // at most once a frame: the sheet changes its page often
+    new MutationObserver(() => { if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; beside(); }); } }).observe(document.documentElement, { childList: true, subtree: true });
+    addEventListener('resize', beside);
+    beside();
     root.addEventListener('click', e => {
       const t = e.target.closest('[data-act]'); if (!t) return;
       const act = t.dataset.act;
