@@ -44,9 +44,13 @@ the characters but not the shared books. Every spell and item on a sheet names i
 
 - **Automatic: what a player has.** Spells, prepared spells and inventory come from D&D Beyond, already limited by the
   player's settings there. askdnd shows what's on the sheet; nothing to build.
-- **The campaign's books: what askdnd offers.** What isn't on a sheet comes from askdnd's own lookups: Sheet's "All you
-  could prepare", the Spell Book, Wild Shape forms, and later stat blocks, items to hand out and rules answers. These
-  follow the campaign's list instead of the fixed `CORE_SOURCES`.
+- **Beyond the sheet, for spells:** askdnd also asks D&D Beyond for the class's whole spell list at the character's
+  level (app/ddb.py `CLASS_SPELLS_URLS`), with each spell's text, from every book. That's Sheet's "All you could
+  prepare" and the Spell Book; today askdnd keeps only the 2024 core books' (`ddb_sheet.CORE_SOURCES`).
+- **Not from D&D Beyond at all:** items a character doesn't carry, monsters and rules text. Those come from the SRD and
+  the campaign's books in askdnd: Wild Shape forms, and later stat blocks, items to hand out and rules answers.
+- **The books toggle filters both,** D&D Beyond's class spell list and askdnd's own lookups, instead of the fixed three
+  books.
 - **A sheet with a book the campaign has off** (a Xanathar's spell when Xanathar's is off): it still shows, since it's
   on the sheet, labelled with its book. askdnd removes nothing; the DM rules.
 
