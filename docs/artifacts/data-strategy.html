@@ -115,6 +115,26 @@ section { margin-bottom: 52px; }
 .decision .body span { color: var(--muted); font-size: .9rem; }
 @media (max-width: 560px) { .decision { grid-template-columns: 26px minmax(0, 1fr); } .decision .chip { grid-column: 2; justify-self: start; } }
 .ask { margin-top: 18px; background: var(--surface); border: 1px solid var(--red); border-radius: 12px; padding: 16px 18px; display: grid; gap: 6px; }
+/* Questions: one fieldset each; answers save to the page's store (docs answers/<key>) */
+.questions { display: grid; gap: 12px; margin: 0; }
+.q { margin: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 14px 18px 16px; display: grid; gap: 10px; min-width: 0; }
+.q legend { display: contents; }
+.q .n { font: 700 .9rem/1.5 var(--cond); color: var(--faint); margin-right: 10px; font-variant-numeric: tabular-nums; }
+.q .qt { font: 600 1.02rem/1.4 var(--sans); color: var(--strong); }
+.qwhy { color: var(--muted); font-size: .9rem; max-width: 76ch; }
+.rec { color: var(--green); font-weight: 600; }
+.choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.choices label { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-2); cursor: pointer; font-size: .9rem; }
+.choices input { accent-color: var(--blue); margin: 0; }
+.choices label:has(input:checked) { border-color: var(--blue); background: var(--blue-soft); color: var(--strong); }
+.choices label:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: 2px; }
+.notes { display: grid; gap: 4px; font-size: .82rem; color: var(--muted); }
+.notes textarea { font: .93rem/1.5 var(--sans); color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; resize: vertical; width: 100%; }
+.notes textarea:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+.saved { font-size: .8rem; color: var(--green); min-height: 1.2em; }
+.saved.bad { color: var(--red-text); }
+.tally { font-size: .88rem; color: var(--muted); margin-bottom: 10px; font-variant-numeric: tabular-nums; }
+.banner { padding: 10px 14px; border: 1px dashed var(--amber); border-radius: 10px; background: var(--amber-soft); margin-bottom: 12px; font-size: .9rem; }
 footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--line); padding-top: 16px; }
 </style>
 
@@ -269,23 +289,172 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
   <section id="decisions">
     <div class="sec-head">
       <div class="eyebrow">For you</div>
-      <h2>Decisions to approve</h2>
-      <p class="why">Each has a recommendation. Approve them all, or name the ones to change.</p>
+      <h2>Questions for you</h2>
+      <p class="why">Each has a recommendation. Pick Yes, Change it or Not sure, and add notes anywhere. Your answers save as you go, and Claude reads them back from this page.</p>
     </div>
-    <div class="decisions">
-      <div class="decision"><span class="n">1</span><div class="body"><b>The four buckets</b><span>Campaign and character data, public rules, private rules, askdnd enhancements, each with its home and who sees it.</span></div><span class="chip c-green">Recommended</span></div>
-      <div class="decision"><span class="n">2</span><div class="body"><b>Rules content is one shape</b><span>Sources hold entries; play and the story stay in their own tables.</span></div><span class="chip c-green">Recommended</span></div>
-      <div class="decision"><span class="n">3</span><div class="body"><b>Checked once</b><span>A campaign's list of books, set when it's made and changed by its DM or an admin. No checks when a game loads.</span></div><span class="chip c-green">Recommended</span></div>
-      <div class="decision"><span class="n">4</span><div class="body"><b>The books toggle</b><span>Each book on or off per campaign (default: the SRD and the 2024 core books). Off hides its entries from lookups and keeps copies already in play. A character's own sheet always shows, labelled.</span></div><span class="chip c-green">Recommended</span></div>
-      <div class="decision"><span class="n">5</span><div class="body"><b>Enhancements are askdnd's</b><span>Shown to everyone, always in our own words.</span></div><span class="chip c-green">Recommended</span></div>
-      <div class="decision"><span class="n">6</span><div class="body"><b>A book belongs to a person</b><span>The DM's library, usable in any campaign they DM, the way D&amp;D Beyond shares a DM's books.</span></div><span class="chip c-green">Recommended</span></div>
-      <div class="decision"><span class="n">7</span><div class="body"><b>A book's optional rules become house rules</b><span>The DM switches each one on; they don't apply by themselves. The DM makes every ruling.</span></div><span class="chip c-green">Recommended</span></div>
-      <div class="decision"><span class="n">8</span><div class="body"><b>Build the model now, the import later</b><span>About a day, while the table is empty. How a book's content gets in (typed, imported from a file made on your Mac, or read from D&amp;D Beyond) is decided when the DM first wants one.</span></div><span class="chip c-green">Recommended</span></div>
-      <div class="decision"><span class="n">9</span><div class="body"><b>What askdnd puts into play is campaign data with its own copy</b><span>What's on a D&amp;D Beyond sheet gets only its play numbers in askdnd; the merge links the two when an item reaches the sheet.</span></div><span class="chip c-green">Recommended</span></div>
-      <div class="decision"><span class="n">10</span><div class="body"><b>A Copy to D&amp;D Beyond checklist instead of write-back</b><span>Inventory changes made in askdnd collect per character for the player to copy onto D&amp;D Beyond; each is ticked off when it appears on the sheet. No storing D&amp;D Beyond logins; write-back can be revisited if the checklist proves a chore.</span></div><span class="chip c-green">Recommended</span></div>
-    </div>
+    <p class="banner" id="nosave" hidden>Answers can't be saved in this view. You can still read everything; reply in chat instead.</p>
+    <p class="tally" id="tally" aria-live="polite">0 of 10 answered</p>
+    <form class="questions" id="questions">
+      <fieldset class="q" data-key="d1">
+        <legend><span class="n">1</span><span class="qt">Do the four buckets cover everything?</span></legend>
+        <p class="qwhy">Campaign and character data, public rules, private rules, askdnd enhancements, each with its home and who sees it. <span class="rec">Recommended: yes.</span></p>
+        <div class="choices" role="radiogroup" aria-label="Your answer to question 1">
+          <label><input type="radio" name="d1" value="yes" id="d1-yes"> Yes</label>
+          <label><input type="radio" name="d1" value="change" id="d1-change"> Change it</label>
+          <label><input type="radio" name="d1" value="unsure" id="d1-unsure"> Not sure</label>
+        </div>
+        <label class="notes"><span>Your notes</span><textarea id="d1-note" rows="2" placeholder="What you'd change, or what you're unsure about"></textarea></label>
+        <span class="saved" aria-live="polite"></span>
+      </fieldset>
+      <fieldset class="q" data-key="d2">
+        <legend><span class="n">2</span><span class="qt">Should all rules content share one shape, while play and the story keep their own tables?</span></legend>
+        <p class="qwhy">Books, the SRD and homebrew each hold entries (a monster, a spell, an item), with the page they're on. <span class="rec">Recommended: yes.</span></p>
+        <div class="choices" role="radiogroup" aria-label="Your answer to question 2">
+          <label><input type="radio" name="d2" value="yes" id="d2-yes"> Yes</label>
+          <label><input type="radio" name="d2" value="change" id="d2-change"> Change it</label>
+          <label><input type="radio" name="d2" value="unsure" id="d2-unsure"> Not sure</label>
+        </div>
+        <label class="notes"><span>Your notes</span><textarea id="d2-note" rows="2" placeholder="What you'd change, or what you're unsure about"></textarea></label>
+        <span class="saved" aria-live="polite"></span>
+      </fieldset>
+      <fieldset class="q" data-key="d3">
+        <legend><span class="n">3</span><span class="qt">Is checking a campaign's books once enough?</span></legend>
+        <p class="qwhy">Set when the campaign is made and changed by its DM or an admin; no checks when a game loads, nothing asked of D&amp;D Beyond. <span class="rec">Recommended: yes.</span></p>
+        <div class="choices" role="radiogroup" aria-label="Your answer to question 3">
+          <label><input type="radio" name="d3" value="yes" id="d3-yes"> Yes</label>
+          <label><input type="radio" name="d3" value="change" id="d3-change"> Change it</label>
+          <label><input type="radio" name="d3" value="unsure" id="d3-unsure"> Not sure</label>
+        </div>
+        <label class="notes"><span>Your notes</span><textarea id="d3-note" rows="2" placeholder="What you'd change, or what you're unsure about"></textarea></label>
+        <span class="saved" aria-live="polite"></span>
+      </fieldset>
+      <fieldset class="q" data-key="d4">
+        <legend><span class="n">4</span><span class="qt">Should each campaign switch books on and off, starting with the SRD and the 2024 core books?</span></legend>
+        <p class="qwhy">Off hides a book's entries from lookups and keeps copies already in play. A character's own sheet always shows, labelled with its book. <span class="rec">Recommended: yes.</span></p>
+        <div class="choices" role="radiogroup" aria-label="Your answer to question 4">
+          <label><input type="radio" name="d4" value="yes" id="d4-yes"> Yes</label>
+          <label><input type="radio" name="d4" value="change" id="d4-change"> Change it</label>
+          <label><input type="radio" name="d4" value="unsure" id="d4-unsure"> Not sure</label>
+        </div>
+        <label class="notes"><span>Your notes</span><textarea id="d4-note" rows="2" placeholder="What you'd change, or what you're unsure about"></textarea></label>
+        <span class="saved" aria-live="polite"></span>
+      </fieldset>
+      <fieldset class="q" data-key="d5">
+        <legend><span class="n">5</span><span class="qt">Should askdnd's own summaries and corrections go to every campaign, always in our own words?</span></legend>
+        <p class="qwhy">Our take on Moonbeam goes to everyone, even when it draws on the DMG; a book's own wording never does. <span class="rec">Recommended: yes.</span></p>
+        <div class="choices" role="radiogroup" aria-label="Your answer to question 5">
+          <label><input type="radio" name="d5" value="yes" id="d5-yes"> Yes</label>
+          <label><input type="radio" name="d5" value="change" id="d5-change"> Change it</label>
+          <label><input type="radio" name="d5" value="unsure" id="d5-unsure"> Not sure</label>
+        </div>
+        <label class="notes"><span>Your notes</span><textarea id="d5-note" rows="2" placeholder="What you'd change, or what you're unsure about"></textarea></label>
+        <span class="saved" aria-live="polite"></span>
+      </fieldset>
+      <fieldset class="q" data-key="d6">
+        <legend><span class="n">6</span><span class="qt">Should a book belong to a person, the DM's library, so it works in any campaign they run?</span></legend>
+        <p class="qwhy">The way D&amp;D Beyond shares a DM's books with their campaigns. <span class="rec">Recommended: yes.</span></p>
+        <div class="choices" role="radiogroup" aria-label="Your answer to question 6">
+          <label><input type="radio" name="d6" value="yes" id="d6-yes"> Yes</label>
+          <label><input type="radio" name="d6" value="change" id="d6-change"> Change it</label>
+          <label><input type="radio" name="d6" value="unsure" id="d6-unsure"> Not sure</label>
+        </div>
+        <label class="notes"><span>Your notes</span><textarea id="d6-note" rows="2" placeholder="What you'd change, or what you're unsure about"></textarea></label>
+        <span class="saved" aria-live="polite"></span>
+      </fieldset>
+      <fieldset class="q" data-key="d7">
+        <legend><span class="n">7</span><span class="qt">Should a book's optional rules wait for the DM to switch them on as house rules?</span></legend>
+        <p class="qwhy">Rather than applying by themselves. The DM makes every ruling. <span class="rec">Recommended: yes.</span></p>
+        <div class="choices" role="radiogroup" aria-label="Your answer to question 7">
+          <label><input type="radio" name="d7" value="yes" id="d7-yes"> Yes</label>
+          <label><input type="radio" name="d7" value="change" id="d7-change"> Change it</label>
+          <label><input type="radio" name="d7" value="unsure" id="d7-unsure"> Not sure</label>
+        </div>
+        <label class="notes"><span>Your notes</span><textarea id="d7-note" rows="2" placeholder="What you'd change, or what you're unsure about"></textarea></label>
+        <span class="saved" aria-live="polite"></span>
+      </fieldset>
+      <fieldset class="q" data-key="d8">
+        <legend><span class="n">8</span><span class="qt">Build the model now, and decide later how a book's content gets in?</span></legend>
+        <p class="qwhy">About a day, while the table is empty. Getting content in (typed, a file made on your Mac, or read from D&amp;D Beyond) waits until the DM first wants a book. <span class="rec">Recommended: yes.</span></p>
+        <div class="choices" role="radiogroup" aria-label="Your answer to question 8">
+          <label><input type="radio" name="d8" value="yes" id="d8-yes"> Yes</label>
+          <label><input type="radio" name="d8" value="change" id="d8-change"> Change it</label>
+          <label><input type="radio" name="d8" value="unsure" id="d8-unsure"> Not sure</label>
+        </div>
+        <label class="notes"><span>Your notes</span><textarea id="d8-note" rows="2" placeholder="What you'd change, or what you're unsure about"></textarea></label>
+        <span class="saved" aria-live="polite"></span>
+      </fieldset>
+      <fieldset class="q" data-key="d9">
+        <legend><span class="n">9</span><span class="qt">Should what askdnd puts into play be saved as the campaign's own copy?</span></legend>
+        <p class="qwhy">Loot and homebrew get their own copy; what's on a D&amp;D Beyond sheet keeps only its play numbers (charges left, potions used), and the merge links the two when an item reaches the sheet. <span class="rec">Recommended: yes.</span></p>
+        <div class="choices" role="radiogroup" aria-label="Your answer to question 9">
+          <label><input type="radio" name="d9" value="yes" id="d9-yes"> Yes</label>
+          <label><input type="radio" name="d9" value="change" id="d9-change"> Change it</label>
+          <label><input type="radio" name="d9" value="unsure" id="d9-unsure"> Not sure</label>
+        </div>
+        <label class="notes"><span>Your notes</span><textarea id="d9-note" rows="2" placeholder="What you'd change, or what you're unsure about"></textarea></label>
+        <span class="saved" aria-live="polite"></span>
+      </fieldset>
+      <fieldset class="q" data-key="d10">
+        <legend><span class="n">10</span><span class="qt">Is a &ldquo;Copy to D&amp;D Beyond&rdquo; checklist enough, instead of writing back to D&amp;D Beyond?</span></legend>
+        <p class="qwhy">Changes made in askdnd collect per character for the player to copy over, ticked off when they show up. No storing anyone's D&amp;D Beyond login. <span class="rec">Recommended: yes.</span></p>
+        <div class="choices" role="radiogroup" aria-label="Your answer to question 10">
+          <label><input type="radio" name="d10" value="yes" id="d10-yes"> Yes</label>
+          <label><input type="radio" name="d10" value="change" id="d10-change"> Change it</label>
+          <label><input type="radio" name="d10" value="unsure" id="d10-unsure"> Not sure</label>
+        </div>
+        <label class="notes"><span>Your notes</span><textarea id="d10-note" rows="2" placeholder="What you'd change, or what you're unsure about"></textarea></label>
+        <span class="saved" aria-live="polite"></span>
+      </fieldset>
+      <fieldset class="q" data-key="general">
+        <legend><span class="n">+</span><span class="qt">Anything else?</span></legend>
+        <label class="notes"><span>Your notes</span><textarea id="general-note" rows="3" placeholder="Anything the questions didn't cover"></textarea></label>
+        <span class="saved" aria-live="polite"></span>
+      </fieldset>
+    </form>
     <div class="ask"><b>Open for later</b><span class="muted">How a book's content gets in, and what a second group could see (roadmap 7.1, only if askdnd is ever shared).</span></div>
   </section>
 
+
+<script>
+// Brett's answers to the questions, saved in this page's store (answers/<key>: {choice, note, updatedAt}) for Claude to
+// read back. The page works without the store; it just can't save.
+(function () {
+  const form = document.getElementById('questions'), tally = document.getElementById('tally');
+  const qs = [...form.querySelectorAll('.q')], total = qs.filter(q => q.dataset.key !== 'general').length;
+  const count = () => { const n = qs.filter(q => q.querySelector('input:checked')).length; tally.textContent = n + ' of ' + total + ' answered'; };
+  form.addEventListener('submit', e => e.preventDefault());
+  form.addEventListener('change', count);
+  count();
+  if (!window.claude || !window.claude.use) { document.getElementById('nosave').hidden = false; return; }
+  claude.use('db').then(db => {
+    if (!db) { document.getElementById('nosave').hidden = false; return; }
+    const state = {}, timers = {}, busy = {};
+    const body = q => ({ choice: (q.querySelector('input:checked') || {}).value || '', note: q.querySelector('textarea').value });
+    const mark = (q, text, bad) => { const s = q.querySelector('.saved'); s.textContent = text; s.classList.toggle('bad', !!bad); };
+    async function save(q) {
+      const key = q.dataset.key, now = body(q);
+      if (state[key] && state[key].choice === now.choice && state[key].note === now.note) return;
+      if (busy[key]) { timers[key] = setTimeout(() => save(q), 400); return; }
+      busy[key] = true;
+      try { await db.doc('answers/' + key).set({ ...now, updatedAt: new Date().toISOString() }); state[key] = now; mark(q, 'Saved'); }
+      catch (e) { mark(q, e && e.code === 'invalid_argument' ? "Only the page's owner can save answers here." : "Couldn't save. Try again in a moment.", true); }
+      finally { busy[key] = false; }
+    }
+    const later = (q, ms) => { clearTimeout(timers[q.dataset.key]); timers[q.dataset.key] = setTimeout(() => save(q), ms); };
+    form.addEventListener('change', e => { const q = e.target.closest('.q'); if (q) later(q, 0); });
+    form.addEventListener('input', e => { const q = e.target.closest('.q'); if (q && e.target.tagName === 'TEXTAREA') { mark(q, ''); later(q, 900); } });
+    db.collection('answers').get().then(snap => {
+      snap.docs.forEach(d => {
+        const q = form.querySelector('.q[data-key="' + d.id + '"]'), v = d.data() || {};
+        if (!q) return;
+        state[d.id] = { choice: v.choice || '', note: v.note || '' };
+        const r = v.choice && q.querySelector('input[value="' + v.choice + '"]'); if (r) r.checked = true;
+        const t = q.querySelector('textarea'); if (t && !t.value) t.value = v.note || '';
+      });
+      count();
+    }).catch(() => {});
+  });
+})();
+</script>
   <footer>askdnd · the record is docs/plans/2026-10-27-data-strategy.md · builds on the content-sources draft (Oct 26) and your notes (Oct 27)</footer>
 </div>
