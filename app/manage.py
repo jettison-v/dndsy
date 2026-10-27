@@ -57,7 +57,8 @@ PAGES = (
      lambda user: config.DDB_BRIDGE and is_admin(user), ()),
     ("design", "Design system", "/manage/design", "Every component and token, for building askdnd", ASKDND, TUNING, is_admin, ()),
 )
-IN_MENU = ("needs", "inbox", "sessions", "table", "overview")  # the Manage menu's own items; the rest are a click further
+IN_MENU = ("needs", "inbox", "sessions", "table",  # each menu's own items (Manage, then Admin); the rest are on one line
+           "overview", "accounts", "campaigns", "usage", "backups")
 COUNTED = ("needs", "inbox")  # with a count of what's waiting (filled in by /manage/counts as the menu opens)
 
 

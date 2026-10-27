@@ -56,9 +56,8 @@
 
   <section class="section" id="switches">
     <h2>Switches</h2>
-    {{ ds("Two-way switch", ".seg > button[aria-pressed] · .seg > a[aria-current]", "Two or three choices side by side; the one that's on is red. Buttons change something on the page (By level · By name); links go to a place and mark where you are.") }}
-    <div class="ds-row"><span class="seg" role="group" aria-label="Sort"><button type="button" aria-pressed="true">By level</button><button type="button" aria-pressed="false">By name</button></span>
-      <span class="seg" role="group" aria-label="Where"><a href="#switches" aria-current="true">This campaign</a><a href="#switches">askdnd admin</a></span></div>
+    {{ ds("Two-way switch", ".seg > button[aria-pressed]", "Two or three choices side by side that change something on the page (By level · By name); the one that's on is red.") }}
+    <div class="ds-row"><span class="seg" role="group" aria-label="Sort"><button type="button" aria-pressed="true">By level</button><button type="button" aria-pressed="false">By name</button></span></div>
   </section>
 
   <section class="section" id="pills">
@@ -247,9 +246,11 @@
   <section class="section" id="manage">
     <h2>Manage pages</h2>
     <p class="hint">Every Manage page is built from these and nothing else: a test fails on a Manage page with its own inline spacing (tests/test_design_system.py).</p>
-    {{ ds("Section list", "_manage_head.html · .manage-side · .manage-sec · .manage-jump", "Every Manage page's group down the left, in sections, most often opened first (this page has one at 1240px and wider). Narrower, the same list opens from the jump control at the top of the page. The list sits in the page's left padding, so the page keeps its width.") }}
-    {{ ds("Campaign | askdnd admin", ".seg.manage-switch", "At the top of the list, for anyone who can open both halves of Manage: which half you're in (red), and one click to the other half's home. Two rows, so neither name is ever cut.") }}
-    <div class="ds-switch"><span class="seg manage-switch" role="group" aria-label="Manage"><a href="#manage" aria-current="true"><b>The Lost Mine</b><small>This campaign</small></a><a href="#manage"><b>askdnd admin</b><small>Every campaign</small></a></span></div>
+    {{ ds("Two doors", "Manage ▾ · ⚙ Admin ▾ · .menu-head.camp | .tool", "Manage is this campaign's (the DM, reviewers, admins), red; Admin is askdnd's as a whole (admins only), blue. Each menu opens with a head saying which, lists what's opened most, the rest on one line, and Manage lists your other campaigns.") }}
+    {{ ds("Band", "_manage_head.html · .manage-band.camp | .tool", "The top of every Manage and Admin page, in its half's colour, with the way to the other half on the right.") }}
+    <div class="manage-band camp"><b>The Lost Mine</b><span>This campaign's Manage</span><a href="#manage">⚙ askdnd admin →</a></div>
+    <div class="manage-band tool"><b>⚙ askdnd admin</b><span>The same in every campaign</span><a href="#manage">The Lost Mine's Manage →</a></div>
+    {{ ds("Section list", "_manage_head.html · .manage-side · .manage-sec · .manage-jump", "The page's half down the left, in sections, most often opened first (this page has one at 1240px and wider). Narrower, the same list opens from the jump control under the band. The list sits in the page's left padding, so the page keeps its width.") }}
     {{ ds("Overview card", ".ov-cards > a.ov-card · .ov-state.ok | .warn", "One per page on askdnd's Overview: its name, how it stands (green when fine, amber when it needs a look), and what the page is for. The whole card opens the page.") }}
     <div class="ov-cards"><a class="ov-card" href="#manage"><b>Usage</b><span class="ov-state ok">$4.10 of $20.00 this month</span><span class="note">Claude spending and balance</span></a><a class="ov-card" href="#manage"><b>Backups and imports</b><span class="ov-state warn">Last backup failed (2 days ago)</span><span class="note">Nightly backups, then imports</span></a></div>
     {{ ds("Page head", ".title-row h1 · .title-action · .subtitle", "The page's name, one button on the right if the page has a main action, then one or two sentences on what the page is for.") }}

@@ -39,6 +39,7 @@ def _page_context(request: Request) -> dict:
             # The campaign you're in, the start of its story addresses, and the campaigns you can switch to
             "here": here, "cbase": f"/c/{here['slug']}" if here else "",
             "my_campaigns": access.campaigns_for(user.get("email")) if user else [],
+            "managed_ids": [c["id"] for c in access.campaigns_for(user.get("email")) if access.role(user.get("email"), c["id"]) in (access.DM, access.REVIEWER)] if user else [],  # (the Manage menu's other campaigns)
             "switch_path": switch_path(request.url.path),
             "vtt_on": lambda key: vtt.on(here, key),  # the VTT switch (app/vtt.py)
             "my_dice": _my_dice, "dice_tuning": _dice_tuning}  # your dice and everyone's tuning (app/dice.py), for thrown rolls

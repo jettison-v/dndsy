@@ -21,29 +21,37 @@ def _clear():
 
 
 def test_admin_sees_both_groups_in_the_menu(monkeypatch, db):
-    """Brett, 2026-10-27 (docs/mockups/manage-menu.html): the menu keeps what's opened every week; every Manage page
-    lists the rest of its group down the left, in sections, most often opened first."""
+    """Brett, 2026-10-27 (docs/mockups/manage-menu.html, round 2 option A): two doors, Manage for this campaign and
+    Admin for askdnd as a whole; each lists what's opened most, and every page lists the rest of its half down the
+    left, under a band saying which half it is."""
     import_bundle(db, {"campaign": {"slug": "main", "name": "The Lost Mine"}})
+    import_bundle(db, {"campaign": {"slug": "second", "name": "Second Wind"}})
     admin = client_for(monkeypatch, db, "brett@example.com")
     page = admin.get("/c/main/manage").text  # opens Needs you at the campaign's address
     assert "<h1>Needs you</h1>" in page and "What's waiting in The Lost Mine" in page
-    menu = page.split('id="manage-menu"')[1].split("</div>\n    </div>")[0]
-    assert menu.index('menu-group">The Lost Mine') < menu.index('menu-group">askdnd · admins')
+    menu = page.split('id="manage-menu"')[1].split('<div class="manage admin">')[0]
+    assert '<b>The Lost Mine</b><span>This campaign</span>' in menu
     for label, path in (("Needs you", ""), ("Inbox", "/inbox"), ("Sessions", "/sessions"), ("Table", "/table")):
         assert f'<a href="/c/main/manage{path}" class="menu-count' in menu and f">{label}<" in menu
     more = menu.split('class="menu-more"')[1].split("</p>")[0]  # the campaign's other pages, on one line
     assert [x.split("</a>")[0] for x in more.split('">')[1:]] == ["House rules", "Settings", "History", "DM guide"]
-    assert 'href="/manage/askdnd"' in menu and ">Overview<" in menu and 'href="/manage/accounts"' not in menu
+    assert 'href="/c/second/manage">Second Wind' in menu  # your other campaigns, on the same page
+    assert "/manage/askdnd" not in menu
+    tool = page.split('id="admin-menu"')[1].split("</div>\n    </div>")[0]
+    assert '<b>askdnd admin</b><span>Every campaign</span>' in tool
+    assert tool.index(">Overview<") < tool.index(">Accounts<") < tool.index(">Campaigns<") < tool.index(">Usage<") < tool.index(">Backups and imports<")
+    assert ">Design system</a>" in tool.split('class="menu-more"')[1] and "Needs you" not in tool
 
+    band = page.split('class="manage-band')[1].split("</div>")[0]
+    assert band.startswith(' camp"') and "<b>The Lost Mine</b>" in band and 'href="/manage/askdnd">⚙ askdnd admin →' in band
     side = page.split('class="manage-side"')[1].split("</nav>")[0]
-    order = [x.split("<")[0] for x in side.split("/manage")[1:]]
     assert [s.split('class="manage-sec">')[1].split("<")[0] for s in side.split("<span")[1:] if 'manage-sec"' in s] == ["Every week", "The table", "Setup"]
-    assert 'aria-current="page">Needs you' in side and order
-    switch = side.split('class="seg manage-switch"')[1].split("</span>")[0]  # which half of Manage, and the other
-    assert 'href="/c/main/manage" aria-current="true"><b>The Lost Mine</b>' in switch and 'href="/manage/askdnd"><b>askdnd admin</b>' in switch
-    side = admin.get("/manage/usage").text.split('class="manage-side"')[1].split("</nav>")[0]
+    assert 'aria-current="page">Needs you' in side
+    usage = admin.get("/manage/usage").text
+    band = usage.split('class="manage-band')[1].split("</div>")[0]
+    assert band.startswith(' tool"') and "⚙ askdnd admin" in band and "The Lost Mine's Manage →" in band
+    side = usage.split('class="manage-side"')[1].split("</nav>")[0]
     assert 'aria-current="page">Usage' in side and "Inbox" not in side and ">askdnd history<" in side
-    assert 'href="/manage/askdnd" aria-current="true"><b>askdnd admin</b>' in side
     assert side.index(">Overview<") < side.index(">Accounts<") < side.index(">Usage<") < side.index(">Design system<")
 
     overview = admin.get("/manage/askdnd").text
@@ -55,8 +63,10 @@ def test_reviewers_see_campaign_pages_only_and_players_none(monkeypatch, db):
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}})
     monkeypatch.setattr(config, "REVIEWER_EMAILS", parse_allowlist("dm@example.com"))
     reviewer = client_for(monkeypatch, db, "dm@example.com")
-    menu = reviewer.get("/c/main/manage").text.split('id="manage-menu"')[1].split("</div>\n    </div>")[0]
-    assert ">Sessions</a>" in menu and ">Inbox<" in menu and "askdnd · admins" not in menu
+    page = reviewer.get("/c/main/manage").text
+    menu = page.split('id="manage-menu"')[1].split("</div>\n    </div>")[0]
+    assert ">Sessions</a>" in menu and ">Inbox<" in menu and 'id="admin-menu"' not in page  # Admin is for admins
+    assert 'class="manage-band camp"' in page and "askdnd admin →" not in page
     assert ">Table</a>" not in menu and ">Settings</a>" not in menu  # those are the DM's and admins'
     assert reviewer.get("/manage/askdnd").status_code == 403
     player = client_for(monkeypatch, db, "mark@example.com")

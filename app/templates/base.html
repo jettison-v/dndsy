@@ -77,17 +77,31 @@
   </nav>
   <div class="bar-end">
     <div class="live" data-tour="live">{% include "_live_pill.html" %}<div class="menu live-menu" id="live-menu" data-keep-open hidden></div></div>
-    {% if manage_pages %}
+    {# Two doors (Brett, 2026-10-27, docs/mockups/manage-menu.html round 2, option A): Manage is this campaign's (the DM,
+       reviewers, admins), Admin is askdnd's as a whole (admins only). Each lists what's opened most; every page of
+       either lists the rest down the left. #}
+    {% set camp_pages = manage_pages | selectattr("group", "equalto", "campaign") | list %}
+    {% set admin_pages = manage_pages | selectattr("group", "equalto", "askdnd") | list %}
+    {% if camp_pages %}{% set on_camp = camp_pages | selectattr("here") | list %}
     <div class="manage">
-      <button class="{{ 'active' if manage_pages | selectattr('here') | list }}" data-menu="manage-menu" aria-haspopup="true">Manage ▾</button>
-      <div class="menu" id="manage-menu" hidden{% if cbase %} data-manage-counts="{{ cbase }}/manage/counts"{% endif %}>
-        {# Two groups, only what's opened every week (Brett, 2026-10-27, docs/mockups/manage-menu.html): the campaign's
-           four with counts, its other pages on one line, then askdnd's Overview; every Manage page lists the rest #}
-        {% for group, title in [("campaign", here.name if here else "This campaign"), ("askdnd", "askdnd · admins")] %}{% set pages = manage_pages | selectattr("group", "equalto", group) | list %}{% if pages %}
-        <div class="menu-group">{{ title }}</div>
-        {% for p in pages if p.menu %}<a href="{{ p.href }}" class="menu-count{{ ' active' if p.here }}" title="{{ p.about }}">{{ p.label }}{% if p.counted and cbase %}<span class="mcount" data-manage-count="{{ p.key }}" hidden></span>{% endif %}</a>{% endfor %}
-        {% set more = pages | rejectattr("menu") | list %}{% if more and group == "campaign" %}<p class="menu-more">{% for p in more %}<a href="{{ p.href }}" class="{{ 'active' if p.here }}">{{ p.label }}</a>{% endfor %}</p>{% endif %}
-        {% endif %}{% endfor %}
+      <button class="{{ 'active' if on_camp }}" data-menu="manage-menu" aria-haspopup="true">Manage ▾</button>
+      <div class="menu manage-menu" id="manage-menu" hidden{% if cbase %} data-manage-counts="{{ cbase }}/manage/counts"{% endif %}>
+        <div class="menu-head camp"><b>{{ here.name if here else "This campaign" }}</b><span>This campaign</span></div>
+        {% for p in camp_pages if p.menu %}<a href="{{ p.href }}" class="menu-count{{ ' active' if p.here }}" title="{{ p.about }}">{{ p.label }}{% if p.counted and cbase %}<span class="mcount" data-manage-count="{{ p.key }}" hidden></span>{% endif %}</a>{% endfor %}
+        {% set more = camp_pages | rejectattr("menu") | list %}{% if more %}<p class="menu-more">{% for p in more %}<a href="{{ p.href }}" class="{{ 'active' if p.here }}">{{ p.label }}</a>{% endfor %}</p>{% endif %}
+        {% set others = my_campaigns | rejectattr("id", "equalto", here.id if here else none) | list %}{% set others = others if is_admin else (others | selectattr("id", "in", managed_ids) | list) %}
+        {% if others %}<div class="menu-group">Your other campaigns</div>
+        {% for c in others %}<a href="/c/{{ c.slug }}{{ switch_path if on_camp else '/manage' }}">{{ c.name }}{% if c.is_test %} <span class="tag draft campaign-test">Test</span>{% endif %}{% if campaign_role(c.id) %}<small>{{ campaign_role(c.id) }}</small>{% endif %}</a>{% endfor %}{% endif %}
+      </div>
+    </div>
+    {% endif %}
+    {% if admin_pages %}{% set on_admin = admin_pages | selectattr("here") | list %}
+    <div class="manage admin">
+      <button class="{{ 'active' if on_admin }}" data-menu="admin-menu" aria-haspopup="true"><span aria-hidden="true">⚙</span> Admin ▾</button>
+      <div class="menu manage-menu" id="admin-menu" hidden>
+        <div class="menu-head tool"><b>askdnd admin</b><span>Every campaign</span></div>
+        {% for p in admin_pages if p.menu %}<a href="{{ p.href }}" class="{{ 'active' if p.here }}" title="{{ p.about }}">{{ p.label }}</a>{% endfor %}
+        {% set more = admin_pages | rejectattr("menu") | list %}{% if more %}<p class="menu-more">{% for p in more %}<a href="{{ p.href }}" class="{{ 'active' if p.here }}">{{ p.label }}</a>{% endfor %}</p>{% endif %}
       </div>
     </div>
     {% endif %}
@@ -130,7 +144,9 @@
   {% if my_campaigns | length > 1 %}{% for c in my_campaigns if not (here and c.id == here.id) %}<a href="/c/{{ c.slug }}{{ switch_path }}">{{ c.name }}{% if c.is_test %} <span class="tag draft campaign-test">Test</span>{% endif %}<small>Switch campaign</small></a>{% endfor %}{% endif %}
   <a href="/your-suggestions" class="{{ 'active' if path == '/your-suggestions' }}">Your suggestions</a>
   <a href="#" data-modal-url="/dice" data-modal-size="large">Your dice</a>
-  {% if manage_pages %}<a href="{{ manage_pages[0].href }}" class="{{ 'active' if path.startswith('/manage') }}">Manage<small>Running the campaign and askdnd</small></a>{% endif %}
+  {% set camp_home = manage_pages | selectattr("group", "equalto", "campaign") | first %}{% set admin_home = manage_pages | selectattr("group", "equalto", "askdnd") | first %}
+  {% if camp_home %}<a href="{{ camp_home.href }}" class="{{ 'active' if camp_home.group == 'campaign' and (manage_pages | selectattr('group', 'equalto', 'campaign') | selectattr('here') | list) }}">Manage<small>Running {{ here.name if here else "the campaign" }}</small></a>{% endif %}
+  {% if admin_home %}<a href="{{ admin_home.href }}" class="{{ 'active' if manage_pages | selectattr('group', 'equalto', 'askdnd') | selectattr('here') | list }}">⚙ Admin<small>askdnd, for every campaign</small></a>{% endif %}
   <a href="/help" class="{{ 'active' if path == '/help' }}" data-no-peek>Help<small>The FAQ and About askdnd</small></a>
   <form method="post" action="/logout"><button type="submit">Sign out <small class="note">{{ user.email }}</small></button></form>
 </div>
