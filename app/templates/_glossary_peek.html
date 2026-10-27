@@ -18,7 +18,7 @@
       <label class="field">Often misheard as <span class="note">(comma separated)</span><input type="text" name="misheard_as" value="{{ g.misheard_as | join(', ') }}"></label>
       <div class="row"><button class="btn primary">Save</button></div>
     </form>
-    <form hx-post="/campaign/glossary/{{ g.id }}/delete" hx-target="this" hx-swap="outerHTML" hx-confirm="Delete {{ g.term }} from the glossary?" style="margin-top:10px"><button class="btn link danger">Delete this term</button></form>
+    <form hx-post="/campaign/glossary/{{ g.id }}/delete" hx-target="this" hx-swap="outerHTML" hx-confirm="Delete {{ g.term }} from the glossary?" class="mt-3"><button class="btn link danger">Delete this term</button></form>
   </details>
   {% endif %}
 </div>

@@ -42,15 +42,21 @@ def test_tokens_are_defined_once():
         assert t in names
 
 
-def test_manage_pages_use_the_components_not_one_off_spacing():
-    """Brett, 2026-10-23: Manage pages are built from the Manage components (app.css), so no page carries its own
-    inline style. The Design system page is the exception: its samples draw each token."""
+def test_pages_use_the_components_not_inline_styles():
+    """DESIGN.md › Rules for every page: no inline spacing. Brett, 2026-10-23, for Manage pages; every page since
+    2026-10-27 (the spacing helpers in app.css instead). Allowed: a value worked out per item (a diagram's positions,
+    its size), and the Design system page, whose samples draw each token."""
     from pathlib import Path
 
     templates = Path(__file__).resolve().parent.parent / "app" / "templates"
-    found = {p.name: len(re.findall(r'\sstyle="', p.read_text())) for p in templates.glob("*.html")
-             if "_manage_head.html" in p.read_text() and p.name != "design.html"}
-    assert not {k: v for k, v in found.items() if v}, f"Inline styles on Manage pages: {found}"
+    found = {}
+    for p in templates.glob("*.html"):
+        if p.name == "design.html":
+            continue
+        fixed = [v for v in re.findall(r'\sstyle="([^"]*)"', p.read_text()) if "{{" not in v]
+        if fixed:
+            found[p.name] = fixed
+    assert not found, f"Inline styles (use a component or a spacing helper, DESIGN.md › Space): {found}"
 
 
 def test_every_table_scrolls_in_its_own_frame():

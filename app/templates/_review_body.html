@@ -14,7 +14,7 @@
   {% if s.source == "account" %}
   {% set last = s.messages[-1] if s.messages else none %}
   <{{ "details" if latest else "section" }} class="section conversation" {% if latest %}id="conversation"{% endif %}>
-    {% if latest %}<summary style="cursor:pointer"><b>Conversation with Claude</b> <span class="note">({{ s.messages | length }} messages; used for the draft)</span></summary>
+    {% if latest %}<summary><b>Conversation with Claude</b> <span class="note">({{ s.messages | length }} messages; used for the draft)</span></summary>
     {% else %}<div class="section-head"><h2>Tell Claude what happened</h2></div>
     <p class="hint">Claude checks your account against the sessions before and after, then asks about gaps. Answer, add details or change your mind; later messages win.</p>{% endif %}
     <div class="messages">
@@ -31,8 +31,8 @@
         {% if last and last.role == "reviewer" %}<button class="btn link" type="button" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/check" {{ hx | safe }} hx-indicator="#thinking">Ask Claude to check again</button>{% endif %}</div>
     </form>
     {% if not latest %}
-    <div class="callout" style="{{ 'background:var(--green-soft)' if last and last.ready }}"><div class="row">
-      <span style="flex:1;min-width:220px">{% if last and last.ready %}<b>Claude has enough to draft.</b>{% else %}<b>Ready when you are.</b> You can draft any time, even with questions open.{% endif %}</span>
+    <div class="callout{{ ' ready' if last and last.ready }}"><div class="row">
+      <span class="grow">{% if last and last.ready %}<b>Claude has enough to draft.</b>{% else %}<b>Ready when you are.</b> You can draft any time, even with questions open.{% endif %}</span>
       <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/draft-account" {{ hx | safe }}><button class="btn primary" {% if drafting %}disabled{% endif %}>Draft this session</button></form>
       <span class="note">≈ 12¢</span></div></div>
     {% endif %}
@@ -43,7 +43,7 @@
   {% if s.source != "account" %}
   <section class="section">
     <h2>No draft yet</h2>
-    <p class="hint" style="margin-top:8px">{% if s.source == "transcript" %}Send this session's transcript from the askdnd Processor on your Mac.{% else %}Go back to <a href="{{ cbase }}/manage/sessions">Sessions</a> and choose <i>Draft from notes</i>.{% endif %}</p>
+    <p class="hint mt-2">{% if s.source == "transcript" %}Send this session's transcript from the askdnd Processor on your Mac.{% else %}Go back to <a href="{{ cbase }}/manage/sessions">Sessions</a> and choose <i>Draft from notes</i>.{% endif %}</p>
   </section>
   {% endif %}
   {% else %}
@@ -87,7 +87,7 @@
           {% for c in asks %}{% set wid = "w" ~ c.id %}
           <div class="item">
             <p class="item-title">{{ c.before }}</p>
-            {% if c.note %}<p class="note" style="margin:-6px 0 10px">{{ c.asked_by or "You" }}: {{ c.note }}</p>{% endif %}
+            {% if c.note %}<p class="note byline">{{ c.asked_by or "You" }}: {{ c.note }}</p>{% endif %}
             <div class="row" id="{{ wid }}-buttons">
               <span class="tag draft">Waiting</span>
               <button type="button" class="btn link" data-show="{{ wid }}-form" data-hide="{{ wid }}-buttons">Record their answer</button>
@@ -106,7 +106,7 @@
 
         {% if unused_answers and s.source == "notes" %}
         <div class="callout"><div class="row">
-          <span style="flex:1;min-width:220px"><b>{{ unused_answers }} new answer{{ "s" if unused_answers > 1 }}.</b> Redraft so the recap and key moments use {{ "them" if unused_answers > 1 else "it" }}.</span>
+          <span class="grow"><b>{{ unused_answers }} new answer{{ "s" if unused_answers > 1 }}.</b> Redraft so the recap and key moments use {{ "them" if unused_answers > 1 else "it" }}.</span>
           <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/redraft" {{ hx | safe }}><button class="btn primary" {% if drafting %}disabled{% endif %}>Redraft</button></form>
           <span class="note">≈ 12¢ · your current version stays until you publish again</span>
         </div></div>
@@ -123,7 +123,7 @@
             {% else %}
             <div id="{{ did }}-view">
               <p class="answer">{{ c.after }}</p>
-              {% if c.answered_by %}<p class="note" style="margin:-4px 0 8px">Answered by {{ c.answered_by }}</p>{% endif %}
+              {% if c.answered_by %}<p class="note byline">Answered by {{ c.answered_by }}</p>{% endif %}
               <div class="row">{% if c.standing_instruction %}<span class="tag">Used in every future draft</span>{% endif %}
                 <button type="button" class="btn link" data-show="{{ did }}-form" data-hide="{{ did }}-view">Edit</button>
                 <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/questions/reopen" {{ hx | safe }}><input type="hidden" name="q" value="{{ c.before }}"><button class="btn link danger">Remove answer</button></form></div>
@@ -181,7 +181,7 @@
               <select name="kind">{% for k in event_kinds %}<option value="{{ k }}" {% if k == ev.kind.value %}selected{% endif %}>{{ k | capitalize }}</option>{% endfor %}</select>
               <textarea name="text" rows="2" required>{{ ev.text }}</textarea>
               <div class="row"><button class="btn primary">Save</button><button type="button" class="btn link" data-cancel="ev{{ ev.id }}-form" data-restore="ev{{ ev.id }}-view">Cancel</button>
-                <button type="button" class="btn link danger" style="margin-left:auto" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/events/{{ ev.id }}/delete" {{ hx | safe }} hx-confirm="Delete this key moment?">Delete</button></div>
+                <button type="button" class="btn link danger push" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/events/{{ ev.id }}/delete" {{ hx | safe }} hx-confirm="Delete this key moment?">Delete</button></div>
             </form>
           </li>
           {% endfor %}

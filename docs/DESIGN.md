@@ -1,6 +1,6 @@
 # askdnd Design Guide
 
-_Last updated 2026-10-22 · Applies to every page in the app. The living component page (**Manage › Design system**, `/manage/design`) shows every token and component with the app's own styles; old mockups are archived in `docs/mockups/archive/`._
+_Last updated 2026-10-27 · Applies to every page in the app. The living component page (**Manage › Design system**, `/manage/design`) shows every token and component with the app's own styles; old mockups are archived in `docs/mockups/archive/`._
 
 askdnd is read before a session and reviewed after one. People open it on a laptop next to Zoom and D&D Beyond, sometimes on a phone. It should feel like a well-kept campaign journal, not an admin panel.
 
@@ -66,7 +66,7 @@ Status colors are text on their `-soft` tint.
 
 **Text sizes** (Brett, 2026-10-22): `--fs-xs` 12px labels, secondary lines and tags · `--fs-sm` 14px list cells, chips, controls · `--fs-md` 16px body and a row's name · `--fs-lg` 19px section headings · `--fs-xl` 26px the character's name · `--fs-2xl` 30px page titles. UI in **Inter** (fallback system-ui) at 16px / 1.6; story text in `"Iowan Old Style", Palatino, Georgia, serif` at `--fs-lg` / 1.75. The logo alone uses Roboto Condensed.
 
-**Space:** a 4px scale, `--sp-1` 4 · `--sp-2` 8 · `--sp-3` 12 · `--sp-4` 16 · `--sp-5` 24 · `--sp-6` 32. Prefer `gap` on flex and grid over margins between siblings.
+**Space:** a 4px scale, `--sp-1` 4 · `--sp-2` 8 · `--sp-3` 12 · `--sp-4` 16 · `--sp-5` 24 · `--sp-6` 32. Prefer `gap` on flex and grid over margins between siblings. Where a block's parent has no gap, a **spacing helper** on the same scale, never an inline style (2026-10-27; `tests/test_design_system.py` checks every page): `.mt-1`…`.mt-5` space above, `.mb-1`…`.mb-3` below, `.m-0` none, `.byline` a note tucked under what it's about (who added it and when), `.push` a button at the far end of its row, `.grow` the part of a row that takes the room left, `.row.tight` small controls that belong together. Small component rules took the rest: `.btn.block` (a card's one action), `label.field.short`, `.callout.ready`, `.title-action`.
 
 **Corners:** `--r-sm` 6px small chips and inner boxes · `--r-md` 8px buttons and inputs · `--r-lg` 12px sections, cards, panels · `--r-pill` tags, chips, counts.
 

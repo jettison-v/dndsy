@@ -79,7 +79,7 @@
     <template>{{ qstep({}) }}</template>
     <button type="button" class="btn small" data-repeat-add>+ Add a step</button>
   </div>
-  <label class="field" style="max-width:220px"><span>Status</span><select name="status">{% for k, v in statuses.items() %}<option value="{{ k }}"{{ ' selected' if status == k }}>{{ v }}</option>{% endfor %}</select></label>
+  <label class="field short"><span>Status</span><select name="status">{% for k, v in statuses.items() %}<option value="{{ k }}"{{ ' selected' if status == k }}>{{ v }}</option>{% endfor %}</select></label>
 
   {% else %}
   {# app.js richNotes swaps the textarea for an editor with formatting buttons; the textarea still holds the Markdown that's saved #}
@@ -90,7 +90,7 @@
   <div class="row note-form-foot">
     <button class="btn primary" type="submit">Save</button>
     <span class="note">Every player can read this; the DM can't.</span>
-    {% if n %}<button class="btn link danger" type="button" hx-post="/characters/{{ c.id }}/notes/{{ n.id }}/delete" hx-swap="none"
-      hx-confirm="Delete this note?" style="margin-left:auto">Delete</button>{% endif %}
+    {% if n %}<button class="btn link danger push" type="button" hx-post="/characters/{{ c.id }}/notes/{{ n.id }}/delete" hx-swap="none"
+      hx-confirm="Delete this note?">Delete</button>{% endif %}
   </div>
 </form>

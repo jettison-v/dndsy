@@ -8,7 +8,7 @@
    Tabs: At a glance (a card per character, Battle's number tiles), then the party's spells and items in the shared list
    (DESIGN.md › Lists and filters), who has each shown by portrait. #}
 {% macro who(list) -%}
-<span class="pt-who">{% for w in list %}<span class="pt-w" data-panel-url="{{ w.url }}" tabindex="0" role="button" title="{{ w.label }}" aria-label="Open {{ w.label }}'s"><span class="roll-av hue{{ w.hue }}">{% if w.portrait %}<img src="{{ w.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ w.name[:1] }}</span>{% if w.note %}<small class="note">{{ w.note }}</small>{% endif %}</span>{% endfor %}</span>
+<span class="pt-who">{% for w in list %}<span class="pt-w" data-panel-url="{{ w.url }}" tabindex="0" role="button" title="{{ w.label }}" aria-label="Open {{ w.name }}'s{{ ' (' ~ w.note ~ ')' if w.note }}"><span class="roll-av hue{{ w.hue }}">{% if w.portrait %}<img src="{{ w.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ w.name[:1] }}</span>{% if w.note %}<small class="note">{{ w.note }}</small>{% endif %}</span>{% endfor %}</span>
 {%- endmacro %}
 <main class="page wide">
   <div class="title-row"><h1>Party</h1></div>

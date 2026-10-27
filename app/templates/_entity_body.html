@@ -29,22 +29,22 @@
   {% if can_edit %}
   <details class="section names">
     <summary><b>Name and spellings</b> <span class="note">({{ e.aliases | length }} other names)</span></summary>
-    <form class="row" hx-post="/campaign/{{ e.id }}/name" {{ hx | safe }} style="margin-top:10px">
-      <input type="text" name="name" value="{{ e.name }}" aria-label="Name" required style="flex:1;min-width:180px">
+    <form class="row mt-3" hx-post="/campaign/{{ e.id }}/name" {{ hx | safe }}>
+      <input type="text" name="name" value="{{ e.name }}" aria-label="Name" required class="grow">
       <button class="btn">Rename</button><span class="note">The old name stays as another name, so links still find it.</span>
     </form>
-    <p class="hint" style="margin-top:8px">Other names show as "also known as". Misspellings stay hidden but still help @-mentions, links and Claude recognize the name.</p>
+    <p class="hint mt-2">Other names show as "also known as". Misspellings stay hidden but still help @-mentions, links and Claude recognize the name.</p>
     <ul class="plain">
       {% for a in e.aliases %}
-      <li class="row"><span style="flex:1">{{ a.alias }}{% if a.note %} <span class="note">· {{ a.note }}</span>{% endif %}</span>
+      <li class="row"><span class="grow">{{ a.alias }}{% if a.note %} <span class="note">· {{ a.note }}</span>{% endif %}</span>
         <span class="tag {{ '' if a.misspelling else 'done' }}">{{ "Misspelling" if a.misspelling else "Other name" }}</span>
         <form class="inline" hx-post="/campaign/{{ e.id }}/aliases/{{ a.id }}/toggle" {{ hx | safe }}><button class="btn link">{{ "Mark as other name" if a.misspelling else "Mark as misspelling" }}</button></form>
         <form class="inline" hx-post="/campaign/{{ e.id }}/aliases/{{ a.id }}/delete" {{ hx | safe }} hx-confirm="Remove {{ a.alias }}?"><button class="btn link danger">Remove</button></form></li>
       {% else %}<li class="muted">None yet.</li>{% endfor %}
     </ul>
-    <p class="note" style="margin:8px 0 0"><a href="{{ cbase }}/manage/history?table=entities&amp;row={{ e.id }}" data-no-peek>History of this entry</a>: every earlier name, description and status, with Restore.</p>
-    <form class="row" hx-post="/campaign/{{ e.id }}/aliases" {{ hx | safe }} style="margin-top:12px">
-      <input type="text" name="alias" placeholder="Add a name or spelling" required style="flex:1;min-width:180px">
+    <p class="note m-0 mt-2"><a href="{{ cbase }}/manage/history?table=entities&amp;row={{ e.id }}" data-no-peek>History of this entry</a>: every earlier name, description and status, with Restore.</p>
+    <form class="row mt-3" hx-post="/campaign/{{ e.id }}/aliases" {{ hx | safe }}>
+      <input type="text" name="alias" placeholder="Add a name or spelling" required class="grow">
       <label class="check"><input type="checkbox" name="misspelling" value="1"> Misspelling</label>
       <button class="btn">Add</button>
     </form>
@@ -60,7 +60,7 @@
     <div id="desc-read">{% if e.summary %}<div class="story">{{ ln.text(e.summary) }}</div>
       {% if e.summary_by %}<p class="note">Written by {{ "Claude" if e.summary_by == "claude" else e.summary_by }}{% if e.written_by_person %}. Claude keeps these words when it suggests changes.{% endif %}</p>{% endif %}
       {% else %}<p class="muted">No description yet.</p>{% endif %}
-      {% if can_edit %}<button type="button" class="btn small" style="margin-top:10px" data-show="desc-edit" data-hide="desc-read">Edit description</button>{% endif %}</div>
+      {% if can_edit %}<button type="button" class="btn small mt-3" data-show="desc-edit" data-hide="desc-read">Edit description</button>{% endif %}</div>
     {% if can_edit %}
     {# Your own words, no Claude (Brett, 2026-10-22); Undo keeps the earlier one #}
     <form id="desc-edit" class="stack" hidden hx-post="/campaign/{{ e.id }}/description" {{ hx | safe }}>
@@ -71,7 +71,7 @@
     {% if e.draft_summary %}
     <div class="item" id="desc-view">
       <p class="item-title">Claude's new description</p>
-      {% if e.draft_fact_ids %}<p class="note" style="margin:-4px 0 8px">Using it takes {{ e.draft_fact_ids | length }} fact{{ "s" if e.draft_fact_ids | length != 1 }} Claude worked in off the list below (they stay under Done).</p>{% endif %}
+      {% if e.draft_fact_ids %}<p class="note byline">Using it takes {{ e.draft_fact_ids | length }} fact{{ "s" if e.draft_fact_ids | length != 1 }} Claude worked in off the list below (they stay under Done).</p>{% endif %}
       {% if e.summary %}
       <div class="compare single"><div class="after markup"><span>{% if e.written_by_person %}Keeps {{ e.written_by_person }}'s words; Claude's changes marked{% else %}Claude's changes marked{% endif %}</span>{{ e.summary | diff(e.draft_summary) }}</div></div>
       {% else %}
@@ -88,10 +88,10 @@
       <div class="row"><button class="btn primary">Save and use</button><button type="button" class="btn link" data-cancel="desc-form" data-restore="desc-view">Cancel</button></div>
     </form>
     {% elif e.previous_summary is not none %}
-    <div class="row" style="margin-top:12px"><span class="tag published">Description updated</span>
+    <div class="row mt-3"><span class="tag published">Description updated</span>
       <form class="inline" hx-post="/campaign/{{ e.id }}/description/undo" {{ hx | safe }}><button class="btn link">Undo</button></form></div>
     {% else %}
-    <p class="note" style="margin-top:12px">Regenerate asks Claude (about 1–2¢) to rewrite this from the facts and key moments below. You see it before anything changes.</p>
+    <p class="note mt-3">Regenerate asks Claude (about 1–2¢) to rewrite this from the facts and key moments below. You see it before anything changes.</p>
     {% endif %}
     {% endif %}
   </section>
@@ -107,7 +107,7 @@
     </ul>
     {% else %}<p class="muted">None recorded yet.</p>{% endif %}
     {% if can_edit %}
-    <form id="rel-form" class="stack" hidden hx-post="/campaign/{{ e.id }}/relationships" {{ hx | safe }} style="margin-top:14px">
+    <form id="rel-form" class="stack mt-3" hidden hx-post="/campaign/{{ e.id }}/relationships" {{ hx | safe }}>
       <div class="row">
         <span>{{ e.name }} is</span>
         <select name="type" aria-label="Relationship">{% for value, label in rel_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select>
@@ -129,7 +129,7 @@
     {% for f in pending %}
     <div class="item">
       <p class="item-title">{{ f.text }}</p>
-      <p class="note" style="margin:-6px 0 10px">Added by {{ f.author_name or f.author_email or "someone" }} · {{ f.created_at.strftime("%b %-d") }}</p>
+      <p class="note byline">Added by {{ f.author_name or f.author_email or "someone" }} · {{ f.created_at.strftime("%b %-d") }}</p>
       <div class="row">
         <form class="inline" hx-post="/campaign/facts/{{ f.id }}/merge" {{ hx | safe }}><button class="btn primary">Accept</button></form>
         <form class="inline" hx-post="/campaign/facts/{{ f.id }}/reject" {{ hx | safe }}><button class="btn link">Dismiss</button></form>
@@ -151,7 +151,7 @@
     <details class="done"><summary>Done ({{ done_facts | length }})</summary>
       {% for f in done_facts %}
       <div class="item">
-        <p class="item-title" {% if f.status == "rejected" %}style="color:var(--muted)"{% endif %}>{{ f.text }}</p>
+        <p class="item-title{{ ' muted' if f.status == 'rejected' }}">{{ f.text }}</p>
         <div class="row"><span class="tag {{ 'published' if f.status in ('merged', 'done') else '' }}">{{ {"merged": "Merged", "done": "Done", "rejected": "Rejected"}.get(f.status, f.status) }}</span>
           <span class="note">{{ f.author_name or f.author_email }}</span>
           <form class="inline" hx-post="/campaign/facts/{{ f.id }}/undo" {{ hx | safe }}><button class="btn link">Undo</button></form></div>
@@ -164,16 +164,16 @@
   <section class="section" id="moments">
     <h2>Key moments</h2>
     {% if moments %}
-    <ul class="events" style="margin-top:10px">
+    <ul class="events mt-3">
       {% for m in moments %}
       <li class="ev {{ 'theory' if m.e.kind.value == 'theory' }}"><span class="kind {{ m.e.kind.value }}">{{ m.e.kind.value }}</span>
         <div class="ev-text">{{ ln.text(m.e.text) }}<small><a href="{{ cbase }}/?tab=sessions#s{{ m.e.session_id }}">{{ m.label }}</a></small></div></li>
       {% endfor %}
     </ul>
-    {% else %}<p class="muted" style="margin-top:8px">No published key moments mention {{ e.name }} yet.</p>{% endif %}
+    {% else %}<p class="muted mt-2">No published key moments mention {{ e.name }} yet.</p>{% endif %}
     {% if can_edit and sessions %}
     <details class="add-moment"><summary>+ Add a key moment</summary>
-      <form class="stack" hx-post="/campaign/{{ e.id }}/moments" {{ hx | safe }} style="margin-top:10px">
+      <form class="stack mt-3" hx-post="/campaign/{{ e.id }}/moments" {{ hx | safe }}>
         <div class="row">
           <select name="session_id" aria-label="Session">{% for sid, label in sessions %}<option value="{{ sid }}">{{ label }}</option>{% endfor %}</select>
           <select name="kind" aria-label="Kind"><option value="event">Event</option><option value="reveal">Reveal</option><option value="decision">Decision</option><option value="loot">Loot</option><option value="theory">Theory</option></select>
@@ -188,7 +188,7 @@
   {% if can_edit %}
   <section class="section" id="details">
     <h2>Details</h2>
-    <form class="row" hx-post="/campaign/{{ e.id }}/details" {{ hx | safe }} style="margin-top:8px">
+    <form class="row mt-2" hx-post="/campaign/{{ e.id }}/details" {{ hx | safe }}>
       {% if e.kind.value == "pc" %}<input type="hidden" name="kind" value="pc"><span class="tag">Player character</span>
       {% else %}<select name="kind" aria-label="Kind">{% for value, label in kinds %}<option value="{{ value }}"{{ ' selected' if value == e.kind.value }}>{{ label }}</option>{% endfor %}</select>{% endif %}
       {% if e.kind.value == "quest" %}<select name="quest_open" aria-label="Quest status"><option value="open"{{ ' selected' if e.quest_open }}>Open</option><option value="done"{{ ' selected' if not e.quest_open }}>Done</option></select>{% endif %}
@@ -200,12 +200,12 @@
   {% if e.kind.value != "pc" %}
   <section class="section" id="tidy">
     <h2>Merge or delete</h2>
-    <p class="hint" style="margin:6px 0 10px">A duplicate from a transcript? Merge it into the entry to keep: its name becomes another name there, and its facts, relationships, key moments and picture move over.</p>
+    <p class="hint mt-2 mb-3">A duplicate from a transcript? Merge it into the entry to keep: its name becomes another name there, and its facts, relationships, key moments and picture move over.</p>
     <form class="row" hx-post="/campaign/{{ e.id }}/merge" hx-swap="none" hx-confirm="Merge {{ e.name }} into the entry you picked? {{ e.name }} goes away.">
       <select name="into" aria-label="Entry to keep" required><option value="">Merge into…</option>{% for o in others %}<option value="{{ o.id }}">{{ o.name }}</option>{% endfor %}</select>
       <button class="btn small">Merge</button>
     </form>
-    <div class="row" style="margin-top:12px"><button class="btn link danger small" hx-post="/campaign/{{ e.id }}/delete" hx-swap="none" hx-confirm="Delete {{ e.name }}? Manage › History can bring it back.">Delete {{ e.name }}</button></div>
+    <div class="row mt-3"><button class="btn link danger small" hx-post="/campaign/{{ e.id }}/delete" hx-swap="none" hx-confirm="Delete {{ e.name }}? Manage › History can bring it back.">Delete {{ e.name }}</button></div>
   </section>
   {% endif %}
   {% endif %}

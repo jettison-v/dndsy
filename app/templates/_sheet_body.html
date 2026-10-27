@@ -27,7 +27,7 @@
       <div class="sv{{ ' prof' if sv.proficient }}">Save {{ sv.label }} {{ adv(sv.adv) }}</div></div>
     {% endfor %}
   </div>
-  <p class="note" style="margin:8px 0 0">{% if s.save_adv_all %}{{ adv(s.save_adv_all) }} on every save {% for a in s.save_adv_all %}{{ a.when }} ({{ a.source }}){{ "; " if not loop.last }}{% endfor %} · {% endif %}Hit dice {% for h in s.hit_points.hit_dice %}{{ h.total - h.used }}/{{ h.total }} {{ h.die }}{{ ", " if not loop.last }}{% endfor %}</p>
+  <p class="note m-0 mt-2">{% if s.save_adv_all %}{{ adv(s.save_adv_all) }} on every save {% for a in s.save_adv_all %}{{ a.when }} ({{ a.source }}){{ "; " if not loop.last }}{% endfor %} · {% endif %}Hit dice {% for h in s.hit_points.hit_dice %}{{ h.total - h.used }}/{{ h.total }} {{ h.die }}{{ ", " if not loop.last }}{% endfor %}</p>
 </section>
 
 {# Row 3: everything else, in tabs #}
@@ -60,7 +60,7 @@
       {% for b in s.spellbook %}
       <div class="planner-class">
         <b>{{ b.class }}</b> <span class="muted">{{ b.ability }} · save DC {{ b.save_dc }} · attack {{ b.attack }}</span>
-        <div class="row" style="gap:6px;margin-top:4px">
+        <div class="row tight mt-1">
           {% if b.prepared_max %}<span class="tag {{ 'done' if b.prepared_count == b.prepared_max else 'draft' }}">{{ "Spellbook: prepared" if b.spellbook else "Prepared" }} {{ b.prepared_count }} of {{ b.prepared_max }}</span>{% endif %}
           {% if b.cantrips_max %}<span class="tag {{ 'done' if b.cantrips_count == b.cantrips_max else 'draft' }}">Cantrips {{ b.cantrips_count }} of {{ b.cantrips_max }}</span>{% endif %}
           {% set always = b.spells | selectattr("state", "equalto", "always") | list %}{% if always %}<span class="tag">+{{ always | length }} always prepared</span>{% endif %}
@@ -68,7 +68,7 @@
       </div>
       {% endfor %}
       <div class="planner-class"><b>Slots</b>
-        <div class="res-row" style="margin-top:4px">{% for sl in s.spell_slots.slots %}<span class="res">{{ sl.level }}{{ {1: "st", 2: "nd", 3: "rd"}.get(sl.level, "th") }} {{ pips({"max": sl.max, "left": sl.max - sl.used}) }}</span>{% endfor %}
+        <div class="res-row mt-1">{% for sl in s.spell_slots.slots %}<span class="res">{{ sl.level }}{{ {1: "st", 2: "nd", 3: "rd"}.get(sl.level, "th") }} {{ pips({"max": sl.max, "left": sl.max - sl.used}) }}</span>{% endfor %}
           {% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}<span class="res">Pact, level {{ p.level }} {{ pips({"max": p.max, "left": p.max - p.used}) }}</span>{% endif %}</div></div>
     </div>
     {{ spell_list(c, s, sheet_spells, spell_groups, picks, can_pick, show_picks, "sheet-spells", [("ready", "Prepared"), ("fav", "Shortlist"), ("all", "All")], help_off) }}
@@ -76,7 +76,7 @@
   {% endif %}
 
   <div id="t-items" hidden>
-    {% if s.attuned %}<p class="note" style="margin:0 0 10px">Attuned: {{ s.attuned | join(", ") }} ({{ s.attuned | length }} of 3)</p>{% endif %}
+    {% if s.attuned %}<p class="note m-0 mb-3">Attuned: {{ s.attuned | join(", ") }} ({{ s.attuned | length }} of 3)</p>{% endif %}
     {{ item_list(c, s.inventory, picks, can_pick, show_picks, item_notes, "sheet-items", [("ready", "Equipped"), ("fav", "Shortlist"), ("all", "All")], help_off) }}
     {% if s.currency %}<p class="note">Coins: {% for k, v in s.currency.items() %}{{ "{:,}".format(v) }} {{ k }}{{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
   </div>
@@ -124,20 +124,20 @@
   <div id="t-forms" hidden>
     <div class="planner-classes">
       <div class="planner-class"><b>Wild Shape</b> <span class="muted">Druid {{ d.level }}{% if d.moon %} · Circle of the Moon{% endif %}</span>
-        <div class="row" style="gap:6px;margin-top:4px">
+        <div class="row tight mt-1">
           {% set known_n = forms | selectattr("known") | list | length %}
           <span class="tag {{ 'done' if known_n == d.known else 'draft' }}">Known {{ known_n }} of {{ d.known }}</span>
           <span class="tag">Max CR {{ d.max_cr_label }}{% if d.moon and d.max_cr > d.table_cr %} (Circle Forms){% endif %}</span>
           <span class="tag {{ '' if d.fly else 'faint' }}">{{ "Fly Speed allowed" if d.fly else "No Fly Speed until Druid 8" }}</span>
         </div></div>
       <div class="planner-class"><b>In a form</b>
-        <div class="row" style="gap:6px;margin-top:4px">{% if d.uses %}<span class="res">Uses {{ pips(d.uses) }}</span>{% endif %}
+        <div class="row tight mt-1">{% if d.uses %}<span class="res">Uses {{ pips(d.uses) }}</span>{% endif %}
           <span class="tag">+{{ d.temp_hp }} temp HP</span>{% if d.moon %}<span class="tag">AC at least {{ 13 + ((s.abilities | selectattr("key", "equalto", "wisdom") | first).modifier) }}</span>{% endif %}
           <span class="tag">Up to {{ d.hours }} h</span></div>
-        <div class="note clamp" style="margin-top:4px" tabindex="0" role="button" aria-expanded="false" title="Show all">{% if d.beast_spells %}Beast Spells: cast your spells in a form (not ones with a costly or consumed Material component).{% elif d.moon_spells %}Spells in a form: {{ d.moon_spells | join(", ") }} (Circle of the Moon Spells).{% else %}No spellcasting in a form.{% endif %}
+        <div class="note clamp mt-1" tabindex="0" role="button" aria-expanded="false" title="Show all">{% if d.beast_spells %}Beast Spells: cast your spells in a form (not ones with a costly or consumed Material component).{% elif d.moon_spells %}Spells in a form: {{ d.moon_spells | join(", ") }} (Circle of the Moon Spells).{% else %}No spellcasting in a form.{% endif %}
           {% if d.elemental_fury %}{% if d.fury == "Primal Strike" %} Primal Strike: +{{ d.primal_strike }} once per turn.{% elif not d.fury %} Elemental Fury: Primal Strike would add {{ d.primal_strike }} to a form's attacks.{% endif %}{% endif %}
           {% if d.lunar_form %} Lunar Form: +2d10 Radiant once per turn.{% endif %}</div>
-        {% if s.form_options and (s.form_options["items"] or s.form_options.features) %}{% set kept_now = c.wild_shape_keep if c.wild_shape_keep is not none else (s.form_options.features | map(attribute="key") | list) + (s.form_options["items"] | map(attribute="key") | list) %}<div class="note clamp" style="margin-top:4px" tabindex="0" role="button" aria-expanded="false" title="Show all">Kept in a form: {% set kn = (s.form_options.features | selectattr("key", "in", kept_now) | map(attribute="name") | list) + (s.form_options["items"] | selectattr("key", "in", kept_now) | map(attribute="name") | list) %}{{ kn | join(", ") if kn else "nothing yet" }}. Change it in any form's window.</div>{% endif %}</div>
+        {% if s.form_options and (s.form_options["items"] or s.form_options.features) %}{% set kept_now = c.wild_shape_keep if c.wild_shape_keep is not none else (s.form_options.features | map(attribute="key") | list) + (s.form_options["items"] | map(attribute="key") | list) %}<div class="note clamp mt-1" tabindex="0" role="button" aria-expanded="false" title="Show all">Kept in a form: {% set kn = (s.form_options.features | selectattr("key", "in", kept_now) | map(attribute="name") | list) + (s.form_options["items"] | selectattr("key", "in", kept_now) | map(attribute="name") | list) %}{{ kn | join(", ") if kn else "nothing yet" }}. Change it in any form's window.</div>{% endif %}</div>
     </div>
     {% if ws_other_uses %}<details class="fold ws-other"{% if not d.moon and d.level >= 3 %} open{% endif %}><summary>Other ways to use Wild Shape ({{ ws_other_uses | length }})</summary>
       <ul class="plain">{% for u in ws_other_uses %}<li><b>{{ u.name }}</b> <span class="muted">{{ u.summary }}</span></li>{% endfor %}</ul></details>{% endif %}

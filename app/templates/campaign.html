@@ -9,7 +9,7 @@
    (family trees, the other ties, anyone's connections in a window) and Glossary. ?tab= picks one. #}
 <main class="page sheet wide campaign-page">
   <div class="title-row"><h1>{{ campaign.name if campaign else "Campaign" }}</h1>
-    {% if editor %}<a class="btn" href="#" data-modal-url="/campaign/new" style="margin-left:auto">+ New entry</a>{% endif %}</div>
+    {% if editor %}<a class="btn title-action" href="#" data-modal-url="/campaign/new">+ New entry</a>{% endif %}</div>
   <p class="subtitle">People, places and things the party has met.{% if campaign and campaign.dm_name %} Dungeon Master: {{ campaign.dm_name }}.{% endif %}</p>
   {% if campaign %}
   <div class="tabbar" role="tablist" data-tab-param data-tour="campaign">
@@ -138,8 +138,8 @@
   </div>
 
   <section class="section" id="t-glossary"{% if tab != "glossary" %} hidden{% endif %}>
-    <p class="hint" style="margin:0 0 8px">Campaign names and words with their correct spelling. Click one for more, or to suggest a fix.</p>
-    {% if glossary %}<div class="table-scroll"><table class="list">{% for g in glossary %}<tr><td style="width:30%"><a href="{{ cbase }}/campaign/glossary/{{ g.id }}"><b>{{ g.term }}</b></a></td><td class="muted">{{ g.description }}</td></tr>{% endfor %}</table></div>
+    <p class="hint m-0 mb-2">Campaign names and words with their correct spelling. Click one for more, or to suggest a fix.</p>
+    {% if glossary %}<div class="table-scroll"><table class="list">{% for g in glossary %}<tr><td class="term"><a href="{{ cbase }}/campaign/glossary/{{ g.id }}"><b>{{ g.term }}</b></a></td><td class="muted">{{ g.description }}</td></tr>{% endfor %}</table></div>
     {% else %}<p class="muted">No terms yet.</p>{% endif %}
     {% if is_dm or is_reviewer %}
     <details class="suggest"><summary>Add a term</summary>
@@ -149,7 +149,7 @@
         <div class="row"><button class="btn primary">Add</button><span class="note">Goes straight into the glossary.</span></div>
       </form>
     </details>
-    {% else %}<div style="margin-top:12px">{{ suggest("/campaign/glossary/suggest", "the new glossary entry", kinds=False) }}</div>{% endif %}
+    {% else %}<div class="mt-3">{{ suggest("/campaign/glossary/suggest", "the new glossary entry", kinds=False) }}</div>{% endif %}
   </section>
 
   {# Map (menu bar Option B, Brett 2026-10-22): AideDD's Sword Coast atlas (app/atlas.py). The frame loads when the tab

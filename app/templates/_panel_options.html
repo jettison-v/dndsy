@@ -18,5 +18,5 @@
   </div>{% endfor %}
   <p class="muted" data-opt-none hidden>Nothing matches.</p>
   {% if adding and not opts %}<p class="muted">Everything here is already pinned.</p>{% endif %}
-  {% if can_pick and (opts | length > 1 or adding and opts) %}<p class="note" style="margin-top:12px">Pin an option to show it in its column on Battle.</p>{% endif %}
+  {% if can_pick and (opts | length > 1 or adding and opts) %}<p class="note mt-3">Pin an option to show it in its column on Battle.</p>{% endif %}
 </div>

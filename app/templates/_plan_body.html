@@ -15,7 +15,7 @@
 
   {% for kind, meta, notes in player_notes %}
   <div id="t-{{ kind }}"{% if not loop.first %} hidden{% endif %}>
-    <div class="sec-head"><p class="muted" style="margin:0">{{ meta.about }}</p>
+    <div class="sec-head"><p class="muted m-0">{{ meta.about }}</p>
       {% if can_pick %}<a class="btn small" href="#" data-modal-url="/characters/{{ c.id }}/notes/new?kind={{ kind }}" data-modal-size="large"{% if kind == "combo" and not notes %} data-tour="combo"{% endif %}>+ {{ meta.label }}</a>{% endif %}</div>
     {% if notes %}
     {# Compact rows (tiles for general notes), the full note in the side panel; drag to reorder (roadmap step 6) #}
