@@ -1,4 +1,4 @@
-# From table companion to virtual tabletop (2026-10-22, reviewed 2026-10-24, reordered 2026-10-26, statuses 2026-10-27)
+# From table companion to virtual tabletop (2026-10-22, reviewed 2026-10-24, reordered 2026-10-26, statuses and order of work 2026-10-27)
 
 The long-range plan for growing askdnd into a full virtual tabletop (VTT) for our table. The readable version, with
 filters, is the "askdnd VTT Roadmap" artifact: https://claude.ai/artifact/EtCBFsKNwLK5LNhQjcbzS3. This file is the
@@ -183,9 +183,8 @@ group L nice · 7.3 Accounts and costs per group L nice.
 - **How screens update live** (phase 0): decided 2026-10-24, WebSockets through Postgres NOTIFY/LISTEN (above).
 - **Play state and the D&D Beyond merge** (phase 1): reviewed by Brett 2026-10-26 (`docs/plans/2026-10-24-play-state.md`,
   mockup `docs/mockups/play-state.html`); where it shows moved to the fight screen the same day.
-- **Where the data lives** (before 2.3): rules content as sources and entries (SRD, books the DM buys, homebrew),
-  play and story kept concrete, is the recommendation in `docs/plans/2026-10-27-next-steps.md`; Brett is writing up
-  his own notes first (2026-10-27). The content-sources draft (closed PR #52, branch `roadmap-fight-first`) feeds it.
+- **Where the data lives** (before 2.3): decided 2026-10-27 (`docs/plans/2026-10-27-data-strategy.md`): four
+  buckets, a campaign's books checked once, and D&D Beyond confirming every change instead of a partial sync.
 - **Where monsters come from** (phase 2): SRD built in, DM-owned books entered by the DM and kept in the database.
 - **How much map automation** (phase 3).
 - **Music sources** (phase 4).
@@ -193,14 +192,44 @@ group L nice · 7.3 Accounts and costs per group L nice.
 - **Licensing before other groups** (phase 7).
 - **When askdnd.ai moves to v2 and legacy retires** (Brett, any time; not tied to a phase).
 
-## Next
+## Next: the order of work (Brett, 2026-10-27: one list of what's done and what's left)
 
-1. **Brett:** list the table's frustrations with D&D Beyond Maps, Foundry and Roll20; each is attached to the item
-   that fixes it (still open).
-2. **The data strategy** (Brett's notes, then a decision): where rules content, play and story live; it shapes
-   2.3 stat blocks and rules answers.
-3. **The fight screen:** a mockup of 2.2 with hit points and the play log on it (the play state design stands;
-   `docs/plans/2026-10-24-play-state.md`), reviewed by Brett; then built in small pieces in the test campaign.
-4. Rules answers (5.1) stay later (Brett, 2026-10-26).
+The D&D Beyond bridge (`docs/artifacts/ddb-bridge.html`, merged switched off 2026-10-27) changes how Phases 1 and 2
+reach D&D Beyond: instead of askdnd keeping its own hit points and merging, every change is made on D&D Beyond and
+read back. So the bridge's changes come first, then the fight screen and live character state use them.
 
-Done since 2026-10-24: the tour (all three parts), the play state review.
+1. **The shorter Manage menu** (mockup `docs/mockups/manage-menu.html`, approved 2026-10-27): six items, a section
+   list down the left, an askdnd admin Overview, askdnd's History renamed.
+2. **Bridge polish:** no reloading the sheet after askdnd changes it (the sheet should take the new numbers in
+   place; today every open copy reloads so none saves an old number back); log "Changed on D&D Beyond" even when
+   askdnd's own refresh read the change first.
+3. **Bridge changes, everything a player changes in play** (checked against Foundry's DDB Importer, which syncs the
+   same list; askdnd already hears all of them through its reads, so each is the writing half plus its read-back):
+   - a. Hit points and their neighbours: hit points and temporary (**done**), death saves, Heroic Inspiration,
+     Exhaustion and conditions, hit dice.
+   - b. Spells: spell slots, Pact Magic slots, prepared spells.
+   - c. Class resources and limited uses (Rage, Wild Shape, Channel Divinity, an item's uses).
+   - d. Inventory: an item's count (**done**), equipped, attuned, charges, coins, adding and removing an item, moving
+     it into or out of a container.
+   - Left out on purpose: experience points, custom names and custom items (D&D Beyond stays for building and
+     leveling).
+4. **The bridge for the table:** switch it on for beta (today it refuses to run in production), point the extension
+   at beta, and share it as an unlisted Chrome Web Store listing; Brett tells the table the risk first.
+5. **The fight screen** (Phase 1: 2.2 with 1.1 and the play log): first update the play state design
+   (`docs/plans/2026-10-24-play-state.md`) for "D&D Beyond confirms every change", then the mockup, then build in
+   small pieces in the test campaign.
+6. **Live character state** (Phase 2: 1.2 casting, 1.3 resources, 1.6 conditions, 1.4 rests, 1.5 inventory), each on
+   the bridge change it needs from step 3.
+
+Alongside, whenever there's room:
+- **Brett:** list the table's frustrations with D&D Beyond Maps, Foundry and Roll20; each is attached to the item
+  that fixes it (still open).
+- **The Monster Manual's beasts in Wild Shape** (data strategy decision 8): the one-book proof of the books model,
+  labelled "MM 2024", switchable per campaign, stored only in the database.
+- **Pictures only in S3** (0.5's last step): remove the database copies once beta's backfill is checked.
+- Rules answers (5.1) stay later (Brett, 2026-10-26). askdnd.ai moves to v2 when Brett says.
+
+Done on 2026-10-27: the code and design system review, the roadmap statuses, the test suite review, the data
+strategy (decided), Battle's header scrolling with the page, and the D&D Beyond bridge proof (repairs itself,
+awake only while someone uses askdnd or a sheet, admin timers). Done since 2026-10-24: the tour (all three parts),
+the play state review.

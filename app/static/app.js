@@ -2810,3 +2810,20 @@
   phone.addEventListener('change', render);
   render();
 })();
+
+// ---------------------------------------------------------------- Manage counts
+// Beside Needs you and Inbox (app/manage.py counts): asked for once, when the Manage menu opens or a Manage page
+// loads, so no other page waits for them
+(function () {
+  let asked = false;
+  function fill() {
+    const src = document.querySelector('[data-manage-counts]');
+    if (asked || !src) return;
+    asked = true;
+    fetch(src.dataset.manageCounts, { headers: { Accept: 'application/json' } }).then(r => (r.ok ? r.json() : {})).then(c => {
+      document.querySelectorAll('[data-manage-count]').forEach(el => { const n = c[el.dataset.manageCount]; el.textContent = n || ''; el.hidden = !n; });
+    }).catch(() => {});
+  }
+  if (document.querySelector('.manage-side')) fill();
+  document.addEventListener('click', e => { if (e.target.closest('[data-menu="manage-menu"]')) fill(); });
+})();

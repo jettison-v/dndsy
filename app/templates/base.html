@@ -80,11 +80,13 @@
     {% if manage_pages %}
     <div class="manage">
       <button class="{{ 'active' if manage_pages | selectattr('here') | list }}" data-menu="manage-menu" aria-haspopup="true">Manage ▾</button>
-      <div class="menu" id="manage-menu" hidden>
-        {# Two groups: this campaign's pages, then askdnd's (admins). Manage layout, 2026-10-23 #}
+      <div class="menu" id="manage-menu" hidden{% if cbase %} data-manage-counts="{{ cbase }}/manage/counts"{% endif %}>
+        {# Two groups, only what's opened every week (Brett, 2026-10-27, docs/mockups/manage-menu.html): the campaign's
+           four with counts, its other pages on one line, then askdnd's Overview; every Manage page lists the rest #}
         {% for group, title in [("campaign", here.name if here else "This campaign"), ("askdnd", "askdnd · admins")] %}{% set pages = manage_pages | selectattr("group", "equalto", group) | list %}{% if pages %}
         <div class="menu-group">{{ title }}</div>
-        {% for p in pages %}<a href="{{ p.href }}" class="{{ 'active' if p.here }}" title="{{ p.about }}">{{ p.label }}</a>{% endfor %}
+        {% for p in pages if p.menu %}<a href="{{ p.href }}" class="menu-count{{ ' active' if p.here }}" title="{{ p.about }}">{{ p.label }}{% if p.counted and cbase %}<span class="mcount" data-manage-count="{{ p.key }}" hidden></span>{% endif %}</a>{% endfor %}
+        {% set more = pages | rejectattr("menu") | list %}{% if more and group == "campaign" %}<p class="menu-more">{% for p in more %}<a href="{{ p.href }}" class="{{ 'active' if p.here }}">{{ p.label }}</a>{% endfor %}</p>{% endif %}
         {% endif %}{% endfor %}
       </div>
     </div>

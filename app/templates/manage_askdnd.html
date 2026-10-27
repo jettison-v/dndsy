@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Overview · Manage · askdnd{% endblock %}
+{% block content %}
+{# Manage › askdnd › Overview (app/manage.py overview; docs/mockups/manage-menu.html): one card per admin page, saying
+   how it stands. #}
+<main class="page manage-page">
+  {% include "_manage_head.html" %}
+  <div class="title-row"><h1>askdnd admin</h1></div>
+  <p class="subtitle">How askdnd stands, the same in every campaign. Open a card for its page.</p>
+  <div class="ov-cards">
+    {% for c in cards %}
+    <a class="ov-card" href="{{ c.href }}"><b>{{ c.label }}</b>{% if c.state[0] %}<span class="ov-state {{ c.state[1] }}">{{ c.state[0] }}</span>{% endif %}<span class="note">{{ c.about }}</span></a>
+    {% endfor %}
+  </div>
+</main>
+{% endblock %}

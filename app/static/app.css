@@ -898,14 +898,43 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .fm-col h4.econ-head::before { content: var(--k-glyph); margin-right: 8px; letter-spacing: 0; }
 .fm-col h4.econ-head small { display: block; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--faint); font-size: var(--fs-xs); }
 
-/* Manage: grouped menu, tabs on every Manage page, and the overview cards */
+/* Manage: the menu's two groups */
 .menu .menu-group { padding: 8px 12px 2px; font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); }
 .menu a + .menu-group { border-top: 1px solid var(--line); margin-top: var(--sp-1); padding-top: var(--sp-3); }
-.manage-tabs { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 0 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--line); font-size: var(--fs-sm); }
-.manage-tabs a { color: var(--muted); text-decoration: none; padding: 4px 10px; border-radius: var(--r-pill); }
-.manage-tabs a:hover { color: var(--text); background: var(--surface); }
-.manage-tabs a.on { color: var(--text); background: var(--surface-2); font-weight: 600; }
-.manage-tabs .manage-scope { font: 700 var(--fs-xs) var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); padding-right: var(--sp-2); }
+.menu a.menu-count { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); }
+.menu .menu-more { margin: 0; padding: 2px 12px 8px; display: flex; flex-wrap: wrap; gap: 2px var(--sp-3); font-size: var(--fs-xs); }
+.menu .menu-more a { display: inline; padding: 0; color: var(--muted); background: none; }
+.menu .menu-more a:hover, .menu .menu-more a.active { color: var(--text); text-decoration: underline; }
+.mcount { background: var(--red); color: var(--text-strong); font: 700 var(--fs-xs)/1 var(--sans); border-radius: var(--r-pill); padding: 3px 7px; }
+/* Every Manage page: its group's pages in a list down the left (wide screens), else from a "jump to" control. The
+   list sits in the page's left padding, so each page's own layout keeps the width it was built for (1240px: where
+   the content is still at least as wide as on a 1000px screen without it). */
+.manage-side { display: none; }
+.manage-side a, .manage-jump-list a { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); color: var(--muted); text-decoration: none; padding: 5px 10px; border-radius: var(--r-sm); font-size: var(--fs-sm); }
+.manage-side a:hover, .manage-jump-list a:hover { color: var(--text); background: var(--surface); }
+.manage-side a.on, .manage-jump-list a.on { color: var(--text-strong); background: var(--surface-2); font-weight: 600; }
+.manage-sec { display: block; padding: var(--sp-3) 10px 2px; font: 700 var(--fs-xs) var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+.manage-scope { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); padding: 0 10px var(--sp-1); font-size: var(--fs-xs); color: var(--faint); }
+.manage-scope b { color: var(--text-strong); font-size: var(--fs-sm); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+a.manage-other { margin-top: var(--sp-4); border-top: 1px solid var(--line); border-radius: 0; padding-top: var(--sp-3); font-size: var(--fs-xs); }
+.manage-jump { margin: 0 0 var(--sp-4); }
+.manage-jump > summary { list-style: none; display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); min-height: var(--control-h); padding: 6px 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); cursor: pointer; font-size: var(--fs-sm); }
+.manage-jump > summary::-webkit-details-marker { display: none; }
+.manage-jump > summary b { color: var(--text-strong); }
+.manage-jump > summary span { color: var(--muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.manage-jump-list { display: grid; margin-top: var(--sp-2); padding: 6px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); }
+@media (min-width: 1240px) {
+  .page.manage-page { position: relative; max-width: calc(1120px + 228px); padding-left: calc(24px + 228px); }
+  .manage-side { display: grid; align-content: start; position: absolute; left: 24px; top: 32px; width: 200px; }
+  .manage-jump { display: none; }
+}
+/* Manage › askdnd › Overview: a card per admin page */
+.ov-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--sp-3); }
+.ov-card { display: grid; gap: var(--sp-1); align-content: start; padding: var(--sp-3) var(--sp-4); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--text); text-decoration: none; }
+.ov-card:hover { border-color: var(--line-strong); background: var(--row-hover); }
+.ov-card b { color: var(--text-strong); }
+.ov-state { font-size: var(--fs-sm); }
+.ov-state.ok { color: var(--green); } .ov-state.warn { color: var(--amber); }
 /* Manage lists and grids: Needs you, Table, Accounts, Campaigns, Sessions (Manage layout, 2026-10-23) */
 .sub-tabs { display: flex; gap: var(--sp-4); border-bottom: 1px solid var(--line); margin: 0 0 var(--sp-4); font-size: var(--fs-sm); }
 .sub-tabs a { padding-bottom: var(--sp-2); color: var(--muted); text-decoration: none; }
