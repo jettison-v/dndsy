@@ -18,7 +18,12 @@ It works like middleware between askdnd and D&D Beyond, and repairs itself:
    again from the new numbers.
 5. **Never a guess.** A field D&D Beyond holds at a value askdnd can't explain after writing to it isn't written over:
    the change stops as "not on D&D Beyond yet", with the end state to make by hand.
-6. **Health.** The extension reports in every minute; askdnd reads the test character every hour (no sign-in needed);
+6. **Asleep unless the game is on** (Brett, 2026-10-27: don't waste D&D Beyond's resources). The bridge sleeps by
+   default: no reads of D&D Beyond on saves, no pulls, no hourly check; the extension only asks the local askdnd
+   whether it's awake. Game Mode, a change made in askdnd, or the check wakes it; it sleeps again after IDLE_SECONDS
+   without play (a change on a sheet or in askdnd; pulls don't count), after MAX_SECONDS however it was woken, or when
+   Game Mode is switched off, and never while a change is still waiting. The state is in tool_settings (bridge_awake).
+7. **Health.** The extension reports in every minute; askdnd reads the test character every hour (no sign-in needed);
    a round trip on the test character (1 hit point and a Candle out and back) runs from the status pill before a game;
    every page's menu bar shows how it stands.
 
@@ -35,6 +40,7 @@ browser blocking third-party cookies sends it no cookie.
 """
 
 import hashlib
+import json
 import secrets
 import time
 from datetime import UTC, datetime
@@ -49,7 +55,7 @@ from app import access, config, ddb, picks, table_rolls
 from app import characters as chars
 from app.auth import current_user
 from app.db import get_db
-from app.models import BridgeBatch, BridgeIntent, BridgeKey, BridgeLog, Character
+from app.models import BridgeBatch, BridgeIntent, BridgeKey, BridgeLog, Character, ToolSetting
 from app.templating import templates
 
 router = APIRouter()
@@ -67,6 +73,9 @@ SENDING_SECONDS = 30  # a batch the extension took but never answered for is off
 EXTENSION_FRESH_SECONDS = 90  # the extension reports every 30 seconds
 READ_CHECK_SECONDS = 3600
 OPEN = ("waiting", "sending", "not_yet")
+AWAKE_KEY = "bridge_awake"
+IDLE_SECONDS = 30 * 60  # asleep again after this long without play
+MAX_SECONDS = 6 * 3600  # and after this long however it was woken
 _health = {"extension_at": 0.0, "sheets": [], "heard_at": 0.0, "read_check": None, "round_trip": None}  # a heartbeat, in memory
 
 
@@ -86,6 +95,69 @@ def _lock(db: Session, character_id: int) -> None:
 
 def _log(db: Session, character_id: int, text: str, state: str) -> None:
     db.add(BridgeLog(character_id=character_id, text=text[:400], state=state))
+
+
+# ------------------------------------------------------------------ awake only while playing
+
+
+def _wake_row(db: Session) -> tuple[ToolSetting, dict]:
+    row = db.get(ToolSetting, AWAKE_KEY)
+    if not row:
+        row = ToolSetting(key=AWAKE_KEY, value="{}")
+        db.add(row)
+    try:
+        value = json.loads(row.value or "{}")
+    except ValueError:
+        value = {}
+    return row, value
+
+
+def awake(db: Session) -> dict:
+    """{"awake": bool, ...}: asleep unless something woke it recently; puts it to sleep when its time is up (never while
+    a change is still waiting: that's play too)."""
+    row, w = _wake_row(db)
+    now = time.time()
+    if not w.get("on"):
+        return {"awake": False, "why": w.get("why", "Asleep until the game starts.")}
+    open_changes = db.scalar(select(BridgeIntent.id).where(BridgeIntent.state.in_(("waiting", "sending"))).limit(1))
+    why = ""
+    if now - w["since"] > MAX_SECONDS:
+        why = f"Asleep: on for {MAX_SECONDS // 3600} hours."
+        _stop_waiting(db, "The bridge went to sleep before D&D Beyond had it.")  # listed to make by hand, never kept quietly
+    elif not open_changes and (w.get("then_sleep") or now - w["last"] > IDLE_SECONDS):
+        why = "Asleep: Game Mode switched off." if w.get("then_sleep") else f"Asleep: {IDLE_SECONDS // 60} minutes without play."
+    if why:
+        row.value = json.dumps({"on": False, "why": why, "slept_at": now})
+        return {"awake": False, "why": why}
+    return {"awake": True, "reason": w.get("reason", ""), "since": w["since"], "until": min(w["since"] + MAX_SECONDS, w["last"] + IDLE_SECONDS)}
+
+
+def _stop_waiting(db: Session, why: str) -> None:
+    for b in db.scalars(select(BridgeBatch).where(BridgeBatch.state.in_(("sending", "ready")))):
+        b.state, b.error = "stopped", why
+    for it in db.scalars(select(BridgeIntent).where(BridgeIntent.state.in_(("waiting", "sending")))):
+        it.state, it.error = "not_yet", why
+
+
+def wake(db: Session, reason: str) -> None:
+    """Game Mode switched on, a change made in askdnd, or the check: awake now, and for IDLE_SECONDS after the last play."""
+    row, w = _wake_row(db)
+    now = time.time()
+    since = w["since"] if w.get("on") and now - w["since"] <= MAX_SECONDS else now
+    row.value = json.dumps({"on": True, "since": since, "last": now, "reason": reason})
+
+
+def played(db: Session) -> None:
+    """Something happened in the game (a change made or seen): stay awake."""
+    row, w = _wake_row(db)
+    if w.get("on"):
+        w["last"] = time.time()
+        row.value = json.dumps(w)
+
+
+def sleep(db: Session, why: str) -> None:
+    row, _ = _wake_row(db)
+    row.value = json.dumps({"on": False, "why": why, "slept_at": time.time()})
 
 
 # ------------------------------------------------------------------ the numbers askdnd follows
@@ -167,6 +239,7 @@ def _ops(character: Character, target: dict, n: dict) -> list[dict]:
 
 
 def add(db: Session, character: Character, kind: str, data: dict, label: str) -> int:
+    wake(db, (_wake_row(db)[1].get("reason") if awake(db)["awake"] else "") or "change")  # making a change is playing
     it = BridgeIntent(character_id=character.id, kind=kind, data=data, label=label[:300])
     db.add(it)
     db.flush()
@@ -181,12 +254,19 @@ def outbox(db: Session, character: Character) -> dict | None:
     """The batch the extension should make on this character's sheet now, or None. A new batch is built on a fresh read
     of D&D Beyond, so its totals sit on whatever D&D Beyond has this moment."""
     _lock(db, character.id)
+    if not awake(db)["awake"]:
+        return None
     now = time.time()
     live = db.scalars(select(BridgeBatch).where(BridgeBatch.character_id == character.id,
                                                 BridgeBatch.state.in_(("ready", "sending"))).order_by(BridgeBatch.id)).first()
     if live:
         if (live.state == "sending" and now - live.sent_at < SENDING_SECONDS) or now < live.next_at:
             return None  # the extension is on it, or it waits before trying again
+        if live.state == "sending":  # taken but never answered for: that was a try too
+            if live.attempts >= MAX_ATTEMPTS:
+                _stop(db, live, f"No D&D Beyond sheet answered. Tried {MAX_ATTEMPTS} times.")
+                return None
+            live.attempts += 1
         live.state, live.sent_at = "sending", now
         return {"id": live.id, "ops": live.ops}
     waiting = list(db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == character.id, BridgeIntent.state == "waiting")
@@ -220,6 +300,7 @@ def _intents_of(db: Session, b: BridgeBatch) -> list[BridgeIntent]:
 
 
 def _settle(db: Session, b: BridgeBatch) -> None:
+    played(db)
     b.state = "done"
     for it in _intents_of(db, b):
         it.state = "live"
@@ -290,6 +371,8 @@ def heard(db: Session, character: Character, saved: bool = True) -> None:
     """A read of the sheet, after the extension heard it save (`saved`) or on its every-30-seconds pull: it settles any
     batch D&D Beyond now holds the totals of (so a lost "done" from the extension still gets confirmed), and logs what
     D&D Beyond changed itself (not what askdnd is writing)."""
+    if not awake(db)["awake"]:
+        return  # asleep: no read of D&D Beyond (askdnd's own Game Mode refresh still runs as it always has)
     if saved:
         _health["heard_at"] = time.time()
     _lock(db, character.id)
@@ -315,6 +398,7 @@ def heard(db: Session, character: Character, saved: bool = True) -> None:
                 changed.append(f"{n['names'].get(i, 'an item')} ×{before['items'][i]} → ×{q}")
         if changed:
             _log(db, character.id, f"{character.name} (on D&D Beyond): " + ", ".join(changed), "seen")
+            played(db)
 
 
 def retry(db: Session, intent_id: int) -> None:
@@ -339,6 +423,7 @@ def round_trip(db: Session, character: Character) -> None:
     n = numbers(character) or {}
     item = next((i for i, name in (n.get("names") or {}).items() if name == TEST_ITEM and n["items"][i] > 0), None)
     _health["round_trip"] = {"state": "running", "at": _now(), "error": ""}
+    wake(db, "test")
     add(db, character, "hp", {"amount": -1, "check": "out"}, "Check: 1 hit point taken")
     if item:
         add(db, character, "item", {"item": item, "delta": -1, "name": TEST_ITEM, "check": "out"}, f"Check: one {TEST_ITEM} taken")
@@ -377,16 +462,20 @@ def read_check() -> dict:
 
 def health(db: Session) -> dict:
     """One status for every page."""
+    a = awake(db)
     rc = _health["read_check"]
-    if not rc or time.time() - rc["t"] > READ_CHECK_SECONDS:
-        rc = read_check()
+    if a["awake"] and (not rc or time.time() - rc["t"] > READ_CHECK_SECONDS):
+        rc = read_check()  # hourly, and only while awake
+    rc = rc or {"ok": True, "error": "", "at": None, "t": 0}
     rt = _health["round_trip"]
     extension = time.time() - _health["extension_at"] < EXTENSION_FRESH_SECONDS
     rows = db.execute(select(BridgeIntent.state, BridgeIntent.data).where(BridgeIntent.state.in_(OPEN))).all()
     stuck = sum(1 for s, _ in rows if s == "not_yet")
     waiting = sum(1 for s, d in rows if s != "not_yet" and not d.get("check"))
     when = (lambda iso: datetime.fromisoformat(iso).astimezone().strftime("%-I:%M %p"))
-    if not rc["ok"]:
+    if not a["awake"]:
+        state, text = "asleep", "D&D Beyond bridge · asleep"
+    elif not rc["ok"]:
         state, text = "off", "D&D Beyond · problem: " + rc["error"]
     elif rt and rt["state"] == "failed":
         state, text = "off", "D&D Beyond · check failed"
@@ -402,7 +491,7 @@ def health(db: Session) -> dict:
         state, text = "live", f"D&D Beyond · working (checked {when(rt['done_at'])})"
     else:
         state, text = "live", "D&D Beyond · connected, not checked yet"
-    return {"state": state, "text": text, "read_check": {k: rc[k] for k in ("ok", "error", "at")}, "round_trip": rt,
+    return {"state": state, "text": text, "awake": a, "read_check": {k: rc[k] for k in ("ok", "error", "at")}, "round_trip": rt,
             "extension": extension, "sheets": _health["sheets"] if extension else [], "test_ddb_id": TEST_DDB_ID,
             "heard_at": datetime.fromtimestamp(_health["heard_at"], UTC).isoformat() if _health["heard_at"] else None}
 
@@ -411,6 +500,7 @@ def health(db: Session) -> dict:
 
 
 def state(db: Session, character: Character, user: dict | None) -> dict:
+    asleep = not awake(db)["awake"]  # (time to sleep settles what's waiting first, so the page shows it)
     summary = chars.character_summary(character)
     n = numbers(character)
     mine = list(db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == character.id, BridgeIntent.state.in_(OPEN))
@@ -427,7 +517,7 @@ def state(db: Session, character: Character, user: dict | None) -> dict:
     return {"character": {"id": character.id, "name": character.name, "ddb_id": character.ddb_id, "test": character.ddb_id == TEST_DDB_ID},
             "can_act": picks.can_edit(db, user, character),
             "hp": {"current": hp.get("current"), "max": hp.get("max"), "temp": hp.get("temp")},
-            "items": items, "changes": changes, "to_make": to_make, "log": log,
+            "items": items, "changes": changes, "to_make": to_make, "log": log, "asleep": asleep,
             "read_at": snap.fetched_at.isoformat() if snap and snap.fetched_at else None}
 
 
@@ -498,12 +588,44 @@ async def bridge_hello(request: Request, db: Session = Depends(get_db)):
     _signed_in(request, db)
     body = await request.json()
     _health["extension_at"], _health["sheets"] = time.time(), [str(s) for s in body.get("sheets", [])][:20]
-    return _json(await run_in_threadpool(health, db))  # (its hourly read reaches D&D Beyond)
+
+    def report():  # (its hourly read reaches D&D Beyond, and only while awake)
+        h = health(db)
+        db.commit()
+        return h
+    return _json(await run_in_threadpool(report))
 
 
 @router.get("/bridge/health")
 def bridge_health(request: Request, db: Session = Depends(get_db)):
     _signed_in(request, db)
+    body = health(db)
+    db.commit()  # (putting it to sleep when its time is up)
+    return _json(body)
+
+
+@router.post("/bridge/wake")
+async def bridge_wake(request: Request, db: Session = Depends(get_db)):
+    """Game Mode switched on (askdnd's page), or a person asking to test: awake now."""
+    _signed_in(request, db)
+    reason = (await request.json()).get("reason", "game")
+    wake(db, "test" if reason == "test" else "game")
+    db.commit()
+    return _json(health(db))
+
+
+@router.post("/bridge/sleep")
+def bridge_sleep(request: Request, db: Session = Depends(get_db)):
+    """Game Mode switched off: asleep now, unless a change is still waiting (it sleeps once that's settled)."""
+    _signed_in(request, db)
+    if db.scalar(select(BridgeIntent.id).where(BridgeIntent.state.in_(("waiting", "sending"))).limit(1)) is None:
+        sleep(db, "Asleep: Game Mode switched off.")
+    else:
+        row, w = _wake_row(db)
+        if w.get("on"):
+            w["then_sleep"] = True  # sleeps as soon as the waiting change is settled
+            row.value = json.dumps(w)
+    db.commit()
     return _json(health(db))
 
 
@@ -521,7 +643,9 @@ def bridge_check(request: Request, db: Session = Depends(get_db)):
 @router.get("/bridge/state/{character_id:int}")
 def bridge_state(character_id: int, request: Request, db: Session = Depends(get_db)):
     character, user = _mine(db, request, character_id)
-    return _json(state(db, character, user))
+    body = state(db, character, user)
+    db.commit()
+    return _json(body)
 
 
 @router.get("/bridge/by-ddb/{ddb_id}")

@@ -31,15 +31,22 @@ async function refreshPanels(ddbId) {
 const busy = new Set();  // sheets with a batch out right now (one at a time per character)
 async function deliver(ddbId, tabId) {
   if (!ddbId || busy.has(ddbId)) return;
-  const tabs = await sheetTabs(ddbId);
-  const tab = tabs.find(t => t.id === tabId) || tabs[0];
-  if (!tab) return;  // waits in askdnd until the sheet is open somewhere
+  // The tab you clicked in first, then visible ones; never a tab Chrome has put to sleep (it can't run the change)
+  const tabs = (await sheetTabs(ddbId)).filter(t => !t.discarded && !t.frozen)
+    .sort((a, b) => (b.id === tabId) - (a.id === tabId) || (b.active - a.active) || (b.lastAccessed || 0) - (a.lastAccessed || 0));
+  if (!tabs.length) return;  // waits in askdnd until the sheet is open somewhere
   busy.add(ddbId);
   try {
     const { batch } = await api('POST', '/bridge/outbox/' + ddbId);
     if (!batch) { busy.delete(ddbId); return; }
-    await chrome.tabs.sendMessage(tab.id, { type: 'apply', batch });  // the answer comes back as 'ddb-applied'
-    setTimeout(() => busy.delete(ddbId), 30000);  // in case the tab never answers (askdnd offers it again)
+    for (const t of tabs) {  // the first copy of the sheet that answers takes it (a tab left from before the extension
+      try {                  // was reloaded, or one Chrome froze, doesn't)
+        const r = await chrome.tabs.sendMessage(t.id, { type: 'apply', batch });
+        if (r && r.took) { setTimeout(() => busy.delete(ddbId), 30000); return; }  // its answer comes back as 'ddb-applied'
+      } catch (err) { /* no one there: try the next */ }
+    }
+    await api('POST', '/bridge/delivered/' + batch.id, { ok: false, error: "No open D&D Beyond sheet answered. Reload the character's sheet." });
+    busy.delete(ddbId);
   } catch (err) { busy.delete(ddbId); }
 }
 // Reading the sheet after it saves: once the clicks stop (fast changes, 1 → 5, are one read of the end, not a read
@@ -63,7 +70,9 @@ async function heard(ddbId, pull, tabId) {
 // answer that never reached askdnd, is corrected here)
 async function hello() {
   const sheets = [...new Set((await sheetTabs()).map(t => ddbIdOf(t.url)).filter(Boolean))];
-  try { await api('POST', '/bridge/hello', { sheets }); } catch (err) { return; /* not connected yet */ }
+  let h;
+  try { h = await api('POST', '/bridge/hello', { sheets }); } catch (err) { return; /* not connected yet */ }
+  if (!h.awake || !h.awake.awake) return;  // asleep between games: no pulls (askdnd itself reads nothing from D&D Beyond)
   for (const id of sheets) heard(id, true);
 }
 chrome.alarms.create('askdnd-bridge', { periodInMinutes: 0.5 });
@@ -75,6 +84,7 @@ chrome.runtime.onMessage.addListener((m, sender) => {
   (async () => {
     if (m.type === 'key') { await chrome.storage.session.set({ key: m.key }); hello(); for (const t of await sheetTabs()) refreshPanels(ddbIdOf(t.url)); return; }
     if (m.type === 'deliver') return deliver(String(m.ddbId));  // askdnd's own tab queued something
+    if (m.type === 'wake') return hello();
     const here = ddbIdOf(sender.tab && sender.tab.url);  // the rest come from a D&D Beyond sheet
     if (!here) return;
     if (m.type === 'ddb-tab') { await refreshPanels(here); hello(); return deliver(here, sender.tab.id); }

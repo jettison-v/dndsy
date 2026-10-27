@@ -11,8 +11,8 @@
     if (e.source !== window || !e.data || e.data.askdndBridge !== 'from-page') return;
     chrome.runtime.sendMessage({ ...e.data, type: e.data.type === 'saved' ? 'ddb-saved' : 'ddb-applied' });  // (the page's own type last would win)
   });
-  chrome.runtime.onMessage.addListener(m => {
-    if (m.type === 'apply') window.postMessage({ askdndBridge: 'apply', batch: m.batch }, location.origin);
+  chrome.runtime.onMessage.addListener((m, sender, reply) => {
+    if (m.type === 'apply') { window.postMessage({ askdndBridge: 'apply', batch: m.batch }, location.origin); reply({ took: true }); }  // (so the extension knows this tab is alive)
     if (m.type === 'panel-state') draw(m.state, m.error);
   });
 

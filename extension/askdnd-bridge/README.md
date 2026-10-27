@@ -17,3 +17,12 @@ What it may do: two D&D Beyond requests only (hit points, an item's count), only
 you click. It stores nothing; D&D Beyond gives the sheet a 5-minute token from your own sign-in. Unofficial: D&D Beyond
 offers no way for other tools to change a sheet, so a change on their side can break it. When it does, askdnd shows
 "Not on D&D Beyond yet", never a wrong number.
+
+It sleeps unless you're playing or testing, so it doesn't keep calling D&D Beyond: it wakes when someone turns on
+Game Mode, makes a change through askdnd or runs the check, and goes to sleep after 30 minutes with nothing happening,
+when Game Mode is turned off (once any waiting change is through), or after 6 hours at most (anything still waiting is
+then listed to make by hand). Asleep, it reads nothing from D&D Beyond; the corner badge says "asleep".
+
+After changing these files, reload the extension (chrome://extensions, the ↻ on askdnd bridge) and then reload any open
+D&D Beyond sheet: a sheet opened before the reload can't take changes (askdnd tries another copy of the sheet, and
+after 3 tries lists the change to make by hand).

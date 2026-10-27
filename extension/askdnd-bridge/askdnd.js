@@ -3,6 +3,7 @@
 window.addEventListener('message', e => {
   if (e.source !== window || !e.data || !e.data.askdndBridge) return;
   if (e.data.askdndBridge === 'ping') window.postMessage({ askdndBridge: 'hello' }, location.origin);
+  if (e.data.askdndBridge === 'wake') chrome.runtime.sendMessage({ type: 'wake' });  // Game Mode on: pull now
   if (e.data.askdndBridge === 'deliver') chrome.runtime.sendMessage({ type: 'deliver', ddbId: e.data.ddbId });  // something was queued here
 });
 chrome.runtime.onMessage.addListener(m => { if (m.type === 'bridge-update') window.postMessage({ askdndBridge: 'update' }, location.origin); });

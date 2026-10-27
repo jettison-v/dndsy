@@ -25,6 +25,7 @@ def sheet(monkeypatch, db):
     cole = char(db, "Cole")
     owned_by(db, cole, "player@example.com")
     characters.refresh(db, cole)
+    ddb_bridge.wake(db, "game")  # a game is on (test_the_bridge_sleeps_between_games covers the rest)
     return data
 
 
@@ -135,7 +136,8 @@ def test_a_sheet_that_cant_be_reached_is_tried_again_later(db, sheet, monkeypatc
     batch = ddb_bridge.outbox(db, cole)
     ddb_bridge.delivered(db, batch["id"], ok=False, error="D&D Beyond answered 503.")
     assert ddb_bridge.outbox(db, cole) is None  # it waits a moment first
-    monkeypatch.setattr(ddb_bridge.time, "time", lambda: 10**10)
+    later = ddb_bridge.time.time() + 60
+    monkeypatch.setattr(ddb_bridge.time, "time", lambda: later)
     assert ddb_bridge.outbox(db, cole)["id"] == batch["id"]
 
 
@@ -273,3 +275,81 @@ def test_a_sheet_that_keeps_changing_under_askdnd_stops_instead_of_looping(playe
         ddb_bridge.delivered(db, batch["id"], ok=False, conflicts=["hp"])
     st = player.get(f"/bridge/state/{cole.id}").json()
     assert st["changes"][0]["state"] == "not_yet" and st["to_make"]
+
+
+def test_the_bridge_sleeps_between_games(player, db, sheet, monkeypatch):
+    """Brett, 2026-10-27: it runs only during play and testing, so it doesn't waste D&D Beyond's resources. Asleep, it
+    reads nothing from D&D Beyond (no reads on saves, no pulls, no hourly check)."""
+    reads = []
+    monkeypatch.setattr(characters.refresh, "__defaults__", (lambda _id: reads.append(_id) or copy.deepcopy(sheet),))
+    monkeypatch.setattr(ddb, "fetch_character_json", lambda _id, timeout=None: reads.append(_id) or copy.deepcopy(sheet))
+    cole = char(db, "Cole")
+    ddb_bridge.sleep(db, "Asleep: Game Mode switched off.")
+    player.post("/bridge/heard/75423618")
+    player.post("/bridge/heard/75423618?pull=1")
+    health = player.get("/bridge/health").json()
+    assert reads == [] and health["state"] == "asleep" and health["text"] == "D&D Beyond bridge · asleep"
+    assert ddb_bridge.outbox(db, cole) is None
+
+    player.post(f"/bridge/hp/{cole.id}", json={"amount": -1})  # making a change wakes it
+    assert ddb_bridge.awake(db)["awake"] and ddb_bridge.outbox(db, cole)
+
+
+def test_it_sleeps_after_half_an_hour_without_play_but_never_with_a_change_waiting(player, db, sheet, monkeypatch):
+    now = [ddb_bridge.time.time()]
+    monkeypatch.setattr(ddb_bridge.time, "time", lambda: now[0])
+    cole = char(db, "Cole")
+    drink(db, cole)
+    batch = ddb_bridge.outbox(db, cole)
+    now[0] += ddb_bridge.IDLE_SECONDS + 60
+    assert ddb_bridge.awake(db)["awake"]  # the drink is still on its way
+    make(sheet, batch)
+    ddb_bridge.delivered(db, batch["id"], ok=True)
+    now[0] += ddb_bridge.IDLE_SECONDS + 60
+    assert not ddb_bridge.awake(db)["awake"] and "without play" in ddb_bridge.awake(db)["why"]
+
+
+def test_it_sleeps_after_six_hours_however_it_was_woken(db, sheet, monkeypatch):
+    now = [ddb_bridge.time.time()]
+    monkeypatch.setattr(ddb_bridge.time, "time", lambda: now[0])
+    for _ in range(13):  # play every half hour, never idle
+        now[0] += ddb_bridge.IDLE_SECONDS - 60
+        ddb_bridge.played(db)
+    assert not ddb_bridge.awake(db)["awake"] and "6 hours" in ddb_bridge.awake(db)["why"]
+
+
+def test_game_mode_switched_off_puts_it_to_sleep_once_nothing_is_waiting(player, db, sheet):
+    cole = char(db, "Cole")
+    player.post("/bridge/sleep")
+    assert not ddb_bridge.awake(db)["awake"]
+    player.post("/bridge/wake", json={"reason": "game"})
+    drink(db, cole)
+    batch = ddb_bridge.outbox(db, cole)
+    player.post("/bridge/sleep")
+    assert ddb_bridge.awake(db)["awake"]  # the drink is still on its way
+    make(sheet, batch)
+    ddb_bridge.delivered(db, batch["id"], ok=True)
+    assert not ddb_bridge.awake(db)["awake"]
+
+
+def test_a_change_still_waiting_when_the_bridge_sleeps_is_listed_to_make_by_hand(player, db, sheet, monkeypatch):
+    now = [ddb_bridge.time.time()]
+    monkeypatch.setattr(ddb_bridge.time, "time", lambda: now[0])
+    cole = char(db, "Cole")
+    ddb_bridge.add(db, cole, "hp", {"amount": -3}, "Cole took 3")  # no sheet open to deliver it
+    now[0] += ddb_bridge.MAX_SECONDS + 60
+    st = player.get(f"/bridge/state/{cole.id}").json()
+    assert not ddb_bridge.awake(db)["awake"]
+    assert st["changes"][0]["state"] == "not_yet" and st["to_make"] == ["Hit points 34 (D&D Beyond has 37)"]
+
+
+def test_a_batch_no_sheet_ever_answers_for_stops_after_three_tries(player, db, sheet, monkeypatch):
+    """A tab left from before the extension was reloaded takes nothing: the offer counts as a try, and after
+    MAX_ATTEMPTS the change is listed to make by hand instead of being offered forever."""
+    monkeypatch.setattr(ddb_bridge, "SENDING_SECONDS", -1)
+    cole = char(db, "Cole")
+    drink(db, cole)
+    for _ in range(ddb_bridge.MAX_ATTEMPTS + 1):
+        ddb_bridge.outbox(db, cole)  # offered, never answered
+    st = player.get(f"/bridge/state/{cole.id}").json()
+    assert st["changes"][0]["state"] == "not_yet" and "No D&D Beyond sheet answered" in st["changes"][0]["error"]

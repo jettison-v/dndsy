@@ -417,6 +417,7 @@
     const on = !gmIsOn();
     gmStore(on);
     gmSetup();
+    document.dispatchEvent(new CustomEvent('askdnd:gamemode-switched', { detail: { on } }));  // (the D&D Beyond bridge wakes or sleeps)
     if (on) gmTick();
     toast(on ? 'Game Mode on: updating from D&D Beyond every 2–3 minutes' : 'Game Mode off');
   });
@@ -2697,10 +2698,20 @@
   async function checkHealth() {
     if (!pill) return;
     try { const r = await fetch('/bridge/health', { headers: { Accept: 'application/json' } }); if (r.ok) health = await r.json(); } catch (e) { /* offline */ }
-    if (health) { pill.className = 'br-st br-pill ' + ({ live: 'br-live', wait: 'br-wait', off: 'br-off' }[health.state] || 'br-wait'); pill.textContent = health.text; pill.title = 'D&D Beyond read ' + (health.read_check.ok ? 'OK' : 'failed: ' + health.read_check.error) + (health.round_trip && health.round_trip.error ? ' · check: ' + health.round_trip.error : ''); }
+    if (health) { pill.className = 'br-st br-pill ' + ({ live: 'br-live', wait: 'br-wait', off: 'br-off', asleep: 'br-asleep' }[health.state] || 'br-wait'); pill.textContent = health.text; if (health.state === 'asleep') { pill.title = (health.awake.why || 'Asleep') + ' Wakes with Game Mode or a change made in askdnd; click to run the check.'; setTimeout(checkHealth, 30000); return; } pill.title = 'D&D Beyond read ' + (health.read_check.ok ? 'OK' : 'failed: ' + health.read_check.error) + (health.round_trip && health.round_trip.error ? ' · check: ' + health.round_trip.error : ''); }
     setTimeout(checkHealth, health && health.state === 'wait' ? 3000 : 30000);
   }
   if (pill) {
+    // The bridge is awake only while the game is on: Game Mode on wakes it (on every page while it's on, so a restart
+    // or a new tab keeps it awake), switching it off puts it to sleep; askdnd also sleeps it after 30 minutes without
+    // play (app/ddb_bridge.py)
+    const wakeFor = reason => fetch('/bridge/wake', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason }) })
+      .then(() => { window.postMessage({ askdndBridge: 'wake' }, location.origin); checkHealth(); }).catch(() => {});
+    if (document.body.classList.contains('gm-on')) wakeFor('game');
+    document.addEventListener('askdnd:gamemode-switched', e => {
+      if (e.detail.on) wakeFor('game');
+      else fetch('/bridge/sleep', { method: 'POST' }).then(checkHealth).catch(() => {});
+    });
     checkHealth();
     pill.addEventListener('click', async () => {  // run the pre-game round trip on the test character
       pill.textContent = 'D&D Beyond · checking…';
