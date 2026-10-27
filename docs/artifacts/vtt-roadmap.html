@@ -146,10 +146,10 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
 
 <div class="wrap">
   <header class="top">
-    <div class="eyebrow">askdnd · plan · Oct 22, 2026 · reviewed Oct 24</div>
+    <div class="eyebrow">askdnd · plan · Oct 22, 2026 · reordered Oct 26 · updated Oct 27</div>
     <h1>From table companion to virtual tabletop</h1>
     <p class="lead">How askdnd grows from today's recaps, character pages and table rolls into a full virtual tabletop for our table: live character state, combat, maps and tokens, the DM's media tools, and eventually voice and video. Each piece is built behind the VTT switch, tried in the test campaign, then switched on for the table.</p>
-    <p class="muted">Decided before this plan: it's for our table, without ruling out other groups later. Live character state comes first. D&D Beyond stays where characters are built and leveled, and askdnd runs everything during play. Voice and video come later, as a nice to have. And every piece is built to scale and kept clean, even when that takes more effort.</p>
+    <p class="muted">Decided before this plan: it's for our table, without ruling out other groups later. The fight screen comes first (Brett, Oct 26), with hit points and the play log on it, then the rest of live character state. D&D Beyond stays where characters are built and leveled, and askdnd runs everything during play. Voice and video come later, as a nice to have. And every piece is built to scale and kept clean, even when that takes more effort.</p>
   </header>
 
   <div class="controls" role="group" aria-label="Show items">
@@ -172,9 +172,9 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
 
   <section id="today">
     <div class="sec-head">
-      <div class="eyebrow">Where we are · Oct 24</div>
+      <div class="eyebrow">Where we are · Oct 27</div>
       <h2>A strong base to build on</h2>
-      <p class="why">A lot of what a virtual tabletop needs already exists, and Phase 0's first half is done. The biggest gap is unchanged: D&amp;D Beyond still owns hit points, spell slots and inventory during play, so askdnd can show them but not change them. That's Phase 1.</p>
+      <p class="why">A lot of what a virtual tabletop needs already exists, and most of Phase 0 is done. The biggest gap is unchanged: D&amp;D Beyond still owns hit points, spell slots and inventory during play, so askdnd can show them but not change them. The play state design was reviewed on Oct 26; next it shows on the fight screen, Phase 1.</p>
     </div>
     <div class="cols">
       <div class="box"><h3>The story</h3><ul>
@@ -188,12 +188,14 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
         <li>Battle, Sheet, Plan, Spell Book, Wild Shape forms</li>
         <li>Inventory and Features lists with pins and notes</li>
         <li>Conditions, concentration and item effects like Invisible</li>
+        <li>A tour of every feature, on your own pages</li>
       </ul></div>
       <div class="box"><h3>The table</h3><ul>
         <li>Table rolls on the server, on every screen within a second</li>
         <li>Thrown 3D dice in each player's own set, tuned by admins</li>
         <li>Several campaigns, roles per campaign, house rules</li>
         <li>The VTT switch and a test campaign with test copies</li>
+        <li>Party: everyone's numbers, spells and items, filtered</li>
       </ul></div>
     </div>
   </section>
@@ -210,6 +212,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
       <div class="principle"><b>Nothing changes silently</b><span>Every hit point, slot, item and move is in a play log with who did it, and anything can be undone.</span></div>
       <div class="principle"><b>No setup tax</b><span>Nothing to install, host or keep updated, and no add-on hunting. It opens in a browser and works.</span></div>
       <div class="principle"><b>The story remembers itself</b><span>Fights, loot and reveals flow into the session's recap, so nobody takes notes and transcripts matter less.</span></div>
+      <div class="principle"><b>Remind, don't over-automate</b><span>askdnd keeps the numbers and reminds the table of the check that follows (a Concentration save and its DC, death saves at 0 HP). People roll and decide; a reminder becomes automatic only after playtests show the table wants it.</span></div>
       <div class="principle"><b>Inform, don't advise</b><span>Show what you can do and how it works at the right moment. Never tell anyone what to do.</span></div>
       <div class="principle"><b>Built to scale, kept clean</b><span>Each piece is built to hold up with more copies of the app, more tables and more data, and whatever a change makes unnecessary is removed in the same change.</span></div>
     </div>
@@ -228,18 +231,18 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
         <p class="used">Rule: every item that changes something the table sees announces it. For maps, token moves will carry their position, and hidden monsters go on a DM-only channel.</p>
       </div>
       <div class="box">
-        <div class="head"><h3>Play state and the play log</h3><span class="chip eff">0.4 + 1.7</span></div>
+        <div class="head"><h3>Play state and the play log</h3><span class="chip st-part">Designed · reviewed Oct 26</span></div>
         <p>One home for what askdnd owns during play (HP, slots, resources, conditions, Wild Shape, item counts), per character per campaign. Every change is a log entry with who, what and why, and Undo applies the reverse. D&amp;D Beyond refreshes never overwrite play state; where they meet, the rule is written per field.</p>
-        <p class="used">Replaces today's three scattered fields (Wild Shape, concentration, conditions), which don't reach other screens yet. Two people editing at once can't overwrite each other.</p>
+        <p class="used">Replaces today's three scattered fields (Wild Shape, concentration, conditions), which don't reach other screens yet. Two people editing at once can't overwrite each other. It shows on the fight screen (Phase 1).</p>
       </div>
       <div class="box">
-        <div class="head"><h3>Files</h3><span class="chip st-part">Built · moving pictures next</span></div>
+        <div class="head"><h3>Files</h3><span class="chip st-part">Built · old copies to remove</span></div>
         <p>Maps, handouts and tokens in private storage (S3), served through askdnd with the same access checks, cached, with upload limits.</p>
-        <p class="used">Today's pictures move out of the database too. Needed before maps (Phase 3) and Show to the table (4.1).</p>
+        <p class="used">Today's pictures are in storage; their old database copies go once beta's copy is checked. Needed before maps (Phase 3) and Show to the table (4.1).</p>
       </div>
       <div class="box">
         <div class="head"><h3>Rules content as data</h3><span class="chip st-done">Done</span></div>
-        <p>The free 2024 rules content (SRD 5.2) as data; the DM's own creations and anything from purchased books in the database, never in the public code.</p>
+        <p>The free 2024 rules content (SRD 5.2) as data; the DM's own creations and anything from purchased books in the database, never in the code.</p>
         <p class="used">Stat blocks, attacks that resolve, and rules answers in play all read from it.</p>
       </div>
       <div class="box wide">
@@ -259,8 +262,9 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     </div>
     <div class="decisions">
       <div class="decision"><b>How screens update live</b><span>A connection to every open page (WebSockets), shared between copies of the app through Postgres, so it scales without a new service.</span><span class="when"><span class="chip st-done">Decided Oct 24</span><span class="chip eff">Phase 0</span></span></div>
-      <div class="decision"><b>Play state and the D&amp;D Beyond merge</b><span>The foundation above is the proposal. The rule for each field and how the play log looks are decided when you review the mockup, before hit points are built.</span><span class="when"><span class="chip eff">Phase 1</span></span></div>
-      <div class="decision"><b>Where monsters come from</b><span>The free 2024 rules content (SRD 5.2) is built in. Creatures from books the DM owns are entered or pasted by the DM and stay in the database, never in the public code.</span><span class="when"><span class="chip eff">Phase 2</span></span></div>
+      <div class="decision"><b>Play state and the D&amp;D Beyond merge</b><span>Reviewed with the mockup: what askdnd owns, the rule for each field, the DM's undo per line, temporary HP by the 2024 rules. Where it shows moved to the fight screen the same day.</span><span class="when"><span class="chip st-done">Decided Oct 26</span><span class="chip eff">Phase 1</span></span></div>
+      <div class="decision"><b>Where the data lives</b><span>Rules content (the SRD, books the DM buys, homebrew) and how it's organized, with play and story kept as they are. You're writing up your notes first; the recommendation and a content-sources draft are ready to compare.</span><span class="when"><span class="chip st-now">Open</span><span class="chip eff">Before 2b</span></span></div>
+      <div class="decision"><b>Where monsters come from</b><span>The free 2024 rules content (SRD 5.2) is built in. Creatures from books the DM owns are entered or pasted by the DM and stay in the database, never in the code.</span><span class="when"><span class="chip eff">Phase 2</span></span></div>
       <div class="decision"><b>How much map automation</b><span>Walls, light and line of sight are a lot of work, and many tables play fine with fog the DM reveals by hand. Decide after using simple maps.</span><span class="when"><span class="chip eff">Phase 3</span></span></div>
       <div class="decision"><b>Where music comes from</b><span>Tracks the DM uploads or has rights to. Streaming services generally can't be played to a group through another app.</span><span class="when"><span class="chip eff">Phase 4</span></span></div>
       <div class="decision"><b>Video service and the privacy rule</b><span>Video would run on a hosted service. Today's rule is that raw transcripts never go to a cloud service, so recording either stays on your Mac or the rule changes. Your call.</span><span class="when"><span class="chip eff">Phase 6</span></span></div>
@@ -275,19 +279,21 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
       <h2>What comes next</h2>
       <ol>
         <li><b>You:</b> list what has frustrated you and the players in D&amp;D Beyond Maps, Foundry and Roll20 (and what each does well). I'll attach each one to the item that fixes it, or add an item.</li>
-        <li><b>The play state foundation:</b> a written design and a mockup of the play log and “what changed” for you to review, then hit points as the first piece, in the test campaign.</li>
+        <li><b>The data strategy:</b> your notes, then a decision on where rules content, play and story live.</li>
+        <li><b>The fight screen:</b> a mockup for you to review, then built in small pieces in the test campaign.</li>
+        <li>Rules answers (5.1) stay later.</li>
       </ol>
     </div>
   </section>
 
-  <footer>askdnd · this plan lives in the repo as docs/plans/2026-10-22-vtt-roadmap.md (reviewed Oct 24, 2026) · sizes and order change as we learn</footer>
+  <footer>askdnd · this plan lives in the repo as docs/plans/2026-10-22-vtt-roadmap.md (reviewed Oct 24, reordered Oct 26, updated Oct 27, 2026) · sizes and order change as we learn</footer>
 </div>
 
 <script>
 // Each item: [id, name, what it is, why it's better ("" for none), size, priority, status ("" | done | built | part | now), what it needs first ("")]
 const PHASES = [
   { id: "p0", n: "Phase 0", title: "Foundations", why: "The plumbing every later phase stands on (see the five foundations above). The first half is done; the rest is built just before the phase that needs it.",
-    order: "<b>Order:</b> 0.8 and 0.9 next, then 0.4 with Phase 1, 0.6 before Phase 2, 0.5 before Phase 3.",
+    order: "<b>Order:</b> 0.4 with the fight screen (Phase 1); 0.5's last step, removing the old picture copies, before Phase 3.",
     items: [
       ["0.1", "One site, a VTT switch, a test campaign", "Table Assistant (TA) and the VTT are the same code on one site (beta.askdnd.ai now, askdnd.ai once legacy retires). Each VTT piece stays hidden behind a switch per campaign: the test campaign sees every piece, and a piece reaches the table when its DM switches it on.", "TA fixes are made once and are in the VTT automatically. Releasing a piece means switching it on, and it can be switched back off.", "S", "core", "done", ""],
       ["0.2", "Data organization", "Characters separate from campaigns, roles per campaign, house rules, more than one campaign (roadmap step 10).", "Keeps other groups possible later without a rebuild.", "L", "core", "done", ""],
@@ -295,30 +301,35 @@ const PHASES = [
       ["0.7", "Finish the Railway cleanup", "Google secret, database password, legacy keys, backups confirmed (roadmap step 12).", "", "S", "core", "done", ""],
       ["0.8", "Browser tests for the table", "A few tests drive a player's page and the DM's at once through the table's core flows, on every change.", "Live updates are checked before they reach the table, not at it.", "S", "core", "done", ""],
       ["0.9", "Know when something breaks", "Errors on beta are reported to you as they happen (Sentry), with nothing private in them: no notes, recaps, transcripts, emails or names.", "You hear about a problem before the table does.", "S", "core", "done", ""],
-      ["0.4", "Play state and the play log", "One home for what askdnd owns during play. Every change to hit points, slots, items, conditions and token moves is a log entry with who made it and why. The DM can undo a mistake or a whole turn.", "Fixing a mis-click doesn't mean editing three numbers by hand.", "M", "core", "", "Designed with 1.7, built with 1.1"],
-      ["0.6", "Rules content as data", "The free 2024 rules content (SRD 5.2: monsters, spells, items, conditions) built in. The DM's own creations live in the database, never in the public code.", "", "M", "core", "done", ""],
+      ["0.4", "Play state and the play log", "One home for what askdnd owns during play. Every change to hit points, slots, items, conditions and token moves is a log entry with who made it and why. The DM can undo a mistake or a whole turn.", "Fixing a mis-click doesn't mean editing three numbers by hand.", "M", "core", "part", "Designed with 1.7 (reviewed Oct 26), built with 1.1"],
+      ["0.6", "Rules content as data", "The free 2024 rules content (SRD 5.2: monsters, spells, items, conditions) built in. The DM's own creations live in the database, never in the code.", "", "M", "core", "done", ""],
       ["0.5", "File storage for the campaign", "Images, maps, tokens and audio in the campaign's private storage, with size limits. Today's pictures move out of the database.", "", "M", "core", "part", ""],
     ] },
-  { id: "p1", n: "Phase 1", title: "Live character state", first: true, why: "askdnd takes over the numbers that change during play. D&D Beyond remains where characters are built and leveled; its changes merge in without overwriting what happened at the table.",
-    order: "<b>Order:</b> design the play log and the D&amp;D Beyond merge together (with a mockup for you), then hit points, slots, resources, conditions, rests, inventory. House rules switches arrive with the item each one changes.",
+  { id: "p1", n: "Phase 1", title: "The fight screen", first: true, why: "The table's shared screen for a fight: the party and the DM's enemies in turn order, whose turn it is, and each one's hit points, live for everyone. Hit points and the play log live here, instead of a window of their own on each character's page (reordered Oct 26).",
+    order: "<b>Order:</b> mock up the fight screen first, then initiative and turns, hit points with the play log as the fight's log (the DM undoes a line), and the D&amp;D Beyond merge with them. Outside a fight it's the DM's party at a glance.",
+    milestone: "A fight's turn order and hit points in askdnd, with the table watching the same screen.",
+    items: [
+      ["2.2", "Initiative and turns", "Everyone's initiative rolled at once (players can roll their own), turn order, round count, a clear “your turn”, and durations counting down. Delay and Ready are handled. The party and the DM's enemies (\u201cEnemy 1\u201d…), each with their hit points.", "", "M", "core", "", "A mockup first"],
+      ["1.1", "Hit points askdnd owns", "On the fight screen: damage, healing, temporary HP (2024 rules), death saves, and the Concentration reminder. Damage has a type, and resistance, immunity and vulnerability apply with the reason shown.", "“Halved: resistant to fire (Tiefling)” instead of everyone doing the math aloud.", "M", "core", "", "0.4, 2.2"],
+      ["1.7", "D&D Beyond merge", "On sync, build changes (level, max HP, new spells, purchases) come in and play state stays askdnd's, with a short list of what changed on D&D Beyond. The rule for each field is written down.", "No double bookkeeping: the sheet you play from is the one that counts.", "M", "core", "", "Arrives with 1.1"],
+      ["1.8", "Party at a glance for the DM", "HP, AC, passive Perception and Insight, conditions and slots left for every character on one screen: the fight screen outside a fight. The Party page already shows everyone's numbers.", "", "S", "core", "part", "2.2"],
+    ] },
+  { id: "p2", n: "Phase 2", title: "Live character state", why: "askdnd takes over the rest of the numbers that change during play. D&D Beyond remains where characters are built and leveled; its changes merge in without overwriting what happened at the table. Each shows on the fight screen where it matters, and on the character's own pages.",
+    order: "<b>Order:</b> slots, resources, conditions, rests, inventory, then the level-up companion. House rules switches arrive with the item each one changes.",
     milestone: "A whole session's bookkeeping happens in askdnd. D&D Beyond is only for building and leveling.",
     items: [
-      ["1.7", "D&D Beyond merge", "On sync, build changes (level, max HP, new spells, purchases) come in and play state stays askdnd's, with a short list of what changed on D&D Beyond. The rule for each field is written down.", "No double bookkeeping: the sheet you play from is the one that counts.", "M", "core", "", "Designed first, with 0.4"],
-      ["1.1", "Hit points askdnd owns", "Damage, healing, temporary HP, death saves. Damage has a type, and resistance, immunity and vulnerability apply with the reason shown.", "“Halved: resistant to fire (Tiefling)” instead of everyone doing the math aloud.", "M", "core", "", "0.4, 1.7"],
       ["1.2", "Casting spends slots", "Cast from Battle or the Spell Book, pick the slot level (upcasting shows what changes), pact slots, free rituals. Concentration starts by itself and warns before replacing another.", "", "M", "core", "", "1.1"],
       ["1.3", "Class resources and uses", "Wild Shape, Focus Points, Channel Divinity, Bardic Inspiration and per-rest feats, counted down as they're used.", "", "M", "core", "", "1.1"],
       ["1.6", "Conditions with durations", "Rounds, minutes, until the end of your next turn, or until a save. Conditions and 2024 Exhaustion change the rolls they affect. Today's conditions and concentration move into play state.", "", "M", "core", "part", "1.1"],
       ["1.4", "Short and long rests", "Spend Hit Dice and heal on a short rest. A long rest lists what comes back before you confirm. The DM can call a rest for the whole party.", "", "M", "core", "", "1.1–1.3"],
       ["1.5", "Inventory in play", "Quantities, using a potion (rolls the healing and removes it), charges that return at dawn, ammunition, coins, attunement, handing an item to another character. Loot from the DM lands straight in inventories.", "“I always forget my hat and my cloak”: unused items keep showing up where you'll see them.", "L", "core", "part", "1.1"],
-      ["1.8", "Party at a glance for the DM", "HP, AC, passive Perception and Insight, conditions and slots left for every character on one screen.", "", "S", "core", "", "1.1–1.6"],
       ["1.10", "House rules for what askdnd automates", "Each common table rule becomes a switch on Manage › House rules, applied wherever askdnd does that thing: how critical hit damage works, drinking a potion as a bonus action, flanking, rest variants. Today it covers one roll for all of Magic Missile's darts and the DM's notes on spells in the roll window.", "The DM's rulings are built in, instead of everyone remembering them.", "M", "core", "part", "Each switch arrives with its item"],
       ["1.9", "Level-up companion", "After leveling on D&D Beyond: what's new and how it works, with a prompt to write down why you chose it.", "", "S", "nice", "", "1.7"],
     ] },
-  { id: "p2", n: "Phase 2", title: "Combat", why: "Fights run in askdnd from start to finish, without a map first. Initiative runs itself, the DM prepares encounters, and rolls resolve against their targets.",
-    order: "<b>Order:</b> initiative first (useful even before monsters are in askdnd), then stat blocks, what players see, resolving attacks and encounters.",
+  { id: "p2b", n: "Phase 2b", title: "The rest of combat", why: "Fights run in askdnd from start to finish, without a map first: monsters with stat blocks, encounters the DM prepares, and rolls that resolve against their targets.",
+    order: "<b>Order:</b> stat blocks, what players see, resolving attacks, then encounters. Stat blocks wait for the data strategy (where rules content lives).",
     milestone: "A whole fight, start to finish, runs in askdnd.",
     items: [
-      ["2.2", "Initiative and turns", "Everyone's initiative rolled at once (players can roll their own), turn order, round count, a clear “your turn”, and durations counting down. Delay and Ready are handled.", "", "M", "core", "", ""],
       ["2.3", "Stat blocks the DM can click", "Roll a monster's attacks, damage and saves from its block. Recharge, legendary and lair actions tracked. Several of the same monster are numbered.", "", "L", "core", "", "0.6"],
       ["2.6", "What players see of monsters", "A name or “unknown creature”, Bloodied instead of hit points, and only the traits the party has learned.", "", "S", "core", "", "2.3"],
       ["2.4", "Attacks and saves that resolve", "Pick a target: the roll is compared to AC and damage applies once the DM confirms. For a save spell: pick targets, everyone rolls, and half damage on a success applies.", "One click from roll to result, and the DM can still change it before it lands.", "L", "core", "", "1.1, 2.3"],
