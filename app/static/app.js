@@ -2436,14 +2436,19 @@
     }
     tour.arriving = false; keep(); show(s);
   }
-  function tidy() {  // what a stop showed, put back: examples go, a side panel the tour opened closes, Battle is itself again
+  // What a stop showed, put back: examples go, a side panel the tour opened closes, and on ending, Battle is itself
+  // again. Between stops prepare() puts Battle back (or swaps it) itself, waiting for it, so two swaps never race
+  // (2026-10-26: one landing late replaced Battle under the next stop's light).
+  function tidy(ending) {
     document.querySelectorAll('.tour-example').forEach(x => x.remove());
     if (tour && tour.panel) { const x = document.querySelector('.peek.open .peek-close'); if (x) x.click(); tour.panel = false; }
-    if (tour && tour.shown && tour.restore) { swapBattle(tour.restore); tour.shown = null; }
+    if (ending && tour && tour.shown && tour.restore) { swapBattle(tour.restore); tour.shown = null; }
   }
   // Wild Shape's stops show Battle in a form: the server draws it (/characters/<id>/battle/preview, nothing saved or
   // announced) and it replaces Battle on this page only; `restore` draws the real one back.
-  async function swapBattle(url) {
+  let swapping = Promise.resolve();  // one swap at a time, in order
+  const swapBattle = url => (swapping = swapping.then(() => swapNow(url), () => swapNow(url)));
+  async function swapNow(url) {
     const res = await fetch(url, { headers: { 'HX-Request': 'true' } });
     const cur = document.getElementById('battle-body');
     if (!res.ok || !cur) return;
@@ -2454,7 +2459,7 @@
     if (window.htmx) htmx.process(next);
   }
   function end() {
-    tidy(); tour = null; keep(); lit = null; lits = []; heads = []; asking = false;
+    tidy(true); tour = null; keep(); lit = null; lits = []; heads = []; asking = false;
     if (spot) spot.remove(); if (card) card.remove(); if (area) area.remove(); spot = card = area = null;
   }
   // A target taller than most of the screen (a recap, a sheet) is lit from its top down to just under half the screen,
