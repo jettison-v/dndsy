@@ -5,6 +5,18 @@ stop's target fails here, so the tour can't quietly break."""
 import pytest
 
 
+# Is the top of what a stop lights covered by something stuck across the page (Battle's numbers, the menu bar)? Looks
+# at what's drawn just inside its top edge, left of the card: the name of the cover, or "" when the target shows.
+TOP_HIDDEN = """sel => { const t = [...document.querySelectorAll(sel)].find(e => e.getBoundingClientRect().height > 0);
+  if (!t || t.closest('.peek')) return '';
+  const r = t.getBoundingClientRect(), y = Math.max(r.top, 0) + 4, x = r.left + Math.min(24, r.width / 2);
+  if (y > innerHeight) return '';
+  const top = document.elementsFromPoint(x, y).find(e => !e.closest('.tour-card, .tour-spot, .tour-example, .rs-tip, .peek:not(.open)'));  // (a window closing)
+  if (!top || t.contains(top) || top.contains(t)) return '';
+  let s = top; while (s && !['sticky', 'fixed'].includes(getComputedStyle(s).position)) s = s.parentElement;
+  return s ? (s.className || s.tagName) : ''; }"""
+
+
 def card_title(page) -> str:
     return page.locator(".tour-card h3").inner_text()
 
@@ -35,6 +47,8 @@ def test_a_player_walks_every_stop_and_each_lights_something(people, server):
             assert page.evaluate("location.pathname") == stop["url"], stop["title"]
         page.wait_for_function("() => { const s = document.querySelector('.tour-spot'); return s && !s.hidden; }", timeout=5000)
         assert lit(page), f"stop {i + 1}, {stop['title']}: nothing to light up ({stop['at']})"
+        hidden = page.evaluate(TOP_HIDDEN, stop["at"])
+        assert not hidden, f"stop {i + 1}, {stop['title']}: its top is behind {hidden}"
         if stop["example"]:
             assert page.locator(".tour-example").count() == 1, stop["title"]
         if stop["panel"]:
