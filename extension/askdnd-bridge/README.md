@@ -10,7 +10,7 @@ Load it (Chrome):
 3. Sign in to askdnd on http://localhost:8000 and to D&D Beyond, in the same Chrome. Opening any askdnd page connects
    the extension (it gets its own key to askdnd, so it works even when Chrome blocks third-party cookies); after
    askdnd restarts, open an askdnd page again.
-4. Open your character's D&D Beyond sheet: the askdnd panel slides in on the right (the red **askdnd** tab brings it
+4. Open your character's D&D Beyond sheet: the askdnd panel slides in on the left (the red **askdnd** tab brings it
    back). It only shows: no buttons sit over D&D Beyond's own. Make changes in askdnd (its own tab is
    `http://localhost:8000/characters/<id>/bridge`) or on the sheet itself.
 

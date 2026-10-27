@@ -1,0 +1,269 @@
+<title>askdnd Manage Menu</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* A mockup of a shorter Manage menu (Brett, 2026-10-27: "The admin menu has gotten too large"). Today, then the
+   proposal: a short menu, a section list down the left of every Manage page instead of tabs that wrap, an askdnd
+   Overview page, and a phone. Colors and sizes are app.css's tokens (askdnd is dark only). */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e; --line-soft: #2c3036; --chrome: #0f1113;
+  --text: #ebe7df; --text-strong: #fff; --muted: #a29d93; --faint: #6f6b64; --link: #f08a8a;
+  --red: #d64545; --red-soft: rgba(214, 69, 69, .14);
+  --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .15);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  --fs-xs: .75rem; --fs-sm: .875rem; --fs-md: 1rem; --fs-lg: 1.2rem; --fs-xl: 1.625rem;
+  --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-pill: 999px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 36px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 44px; }
+h1, h2, h3 { color: var(--text-strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2rem/1.15 var(--serif); }
+h2 { font: 600 1.4rem/1.2 var(--serif); }
+h3 { font: 600 var(--fs-md)/1.3 var(--sans); }
+p { margin: 0; }
+.eyebrow { font: 700 .74rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--link); }
+.lead { max-width: 70ch; color: var(--text); }
+.head { display: grid; gap: 10px; }
+.sec { display: grid; gap: 16px; }
+.sec > p { color: var(--muted); max-width: 72ch; }
+.label { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+.pick { display: inline-flex; align-items: center; gap: 6px; font: 700 .72rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--green); background: var(--green-soft); padding: 5px 9px; border-radius: var(--r-pill); }
+
+/* a browser-ish frame */
+.screen { border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; background: var(--bg); }
+.bar { background: var(--chrome); border-bottom: 2px solid var(--red); height: 52px; display: flex; align-items: center; gap: 6px; padding: 0 14px; font-size: var(--fs-sm); min-width: 0; }
+.bar .brand { font: 700 var(--fs-md) var(--cond); color: var(--text-strong); margin-right: 8px; white-space: nowrap; }
+.bar .nv { color: var(--muted); padding: 6px 9px; border-radius: var(--r-sm); white-space: nowrap; }
+.bar .nv.on { color: var(--text-strong); background: var(--surface); }
+.bar .end { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+.av { width: 26px; height: 26px; border-radius: 50%; background: var(--surface-2); display: grid; place-items: center; font-size: var(--fs-xs); color: var(--text-strong); }
+
+/* the dropdown menus */
+.menus { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+@media (max-width: 760px) { .menus { grid-template-columns: 1fr; } }
+.menu-card { display: grid; gap: 10px; }
+.menu { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 6px; width: min(100%, 280px); box-shadow: 0 10px 30px rgba(0,0,0,.45); }
+.menu .grp { font: 700 var(--fs-xs) var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); padding: 8px 10px 4px; }
+.menu a { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--text); text-decoration: none; padding: 7px 10px; border-radius: var(--r-sm); font-size: var(--fs-sm); }
+.menu a small { color: var(--muted); font-size: var(--fs-xs); display: block; }
+.menu a:hover { background: var(--surface); }
+.menu .all { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 9px; color: var(--muted); }
+.count { background: var(--red); color: #fff; font: 700 11px/1 var(--sans); border-radius: var(--r-pill); padding: 3px 7px; }
+.count.amber { background: var(--amber-soft); color: var(--amber); }
+.tooLong .menu a { padding: 5px 10px; }
+.note { color: var(--muted); font-size: var(--fs-sm); }
+
+/* a Manage page with its section list down the left */
+.page { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 430px; }
+.side { border-right: 1px solid var(--line); padding: 16px 10px; display: grid; gap: 14px; align-content: start; background: #17191c; }
+.side .grp { font: 700 var(--fs-xs) var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); padding: 0 10px 4px; }
+.side a { display: flex; justify-content: space-between; align-items: center; color: var(--muted); text-decoration: none; padding: 6px 10px; border-radius: var(--r-sm); font-size: var(--fs-sm); }
+.side a.on { color: var(--text-strong); background: var(--surface-2); font-weight: 600; }
+.side .scope { display: flex; justify-content: space-between; align-items: center; padding: 0 10px; font-size: var(--fs-sm); color: var(--text-strong); font-weight: 600; }
+.side .scope span { color: var(--muted); font-weight: 400; }
+.main { padding: 22px 26px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.main h3.pt { font: 600 var(--fs-xl)/1.2 var(--serif); }
+.row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); font-size: var(--fs-sm); }
+.row .who { color: var(--muted); margin-left: auto; white-space: nowrap; }
+.tag { font: 600 11px/1 var(--sans); border-radius: var(--r-pill); padding: 4px 8px; background: var(--blue-soft); color: var(--blue); white-space: nowrap; }
+.tag.amber { background: var(--amber-soft); color: var(--amber); }
+@media (max-width: 760px) { .page { grid-template-columns: 1fr; } .side { display: none; } }
+
+/* askdnd Overview */
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 900px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .cards { grid-template-columns: 1fr; } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; display: grid; gap: 6px; align-content: start; }
+.card b { color: var(--text-strong); font-weight: 600; }
+.card .note { font-size: var(--fs-xs); }
+.card .state { font-size: var(--fs-sm); color: var(--text); }
+.card .state.ok { color: var(--green); } .card .state.warn { color: var(--amber); }
+
+/* phone */
+.phones { display: grid; grid-template-columns: repeat(2, minmax(0, 300px)); gap: 24px; justify-content: start; }
+@media (max-width: 680px) { .phones { grid-template-columns: minmax(0, 300px); } }
+.phone { border: 1px solid var(--line); border-radius: 26px; overflow: hidden; background: var(--bg); width: 100%; }
+.phone .bar { height: 46px; }
+.phone .pbody { padding: 14px; display: grid; gap: 12px; min-height: 360px; align-content: start; }
+.jump { display: flex; justify-content: space-between; align-items: center; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 12px; font-size: var(--fs-sm); color: var(--text-strong); }
+.jump span { color: var(--muted); }
+.sheet { background: var(--surface-2); border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; padding: 12px; display: grid; gap: 2px; margin-top: auto; }
+.sheet .grp { font: 700 var(--fs-xs) var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); padding: 8px 8px 2px; }
+.sheet a { display: flex; justify-content: space-between; color: var(--text); text-decoration: none; padding: 9px 8px; border-radius: var(--r-sm); font-size: var(--fs-sm); }
+.sheet a.on { background: var(--surface); font-weight: 600; }
+
+/* naming table */
+.names { border: 1px solid var(--line); border-radius: var(--r-lg); overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: var(--fs-sm); }
+th, td { text-align: left; padding: 9px 14px; border-top: 1px solid var(--line-soft); vertical-align: top; }
+th { font: 700 var(--fs-xs) var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); border-top: 0; background: var(--surface); }
+td.new { color: var(--text-strong); font-weight: 600; }
+td.why { color: var(--muted); }
+tr.grp td { background: #191b1e; font: 700 var(--fs-xs) var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--link); }
+.qs { display: grid; gap: 10px; counter-reset: q; }
+.q { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; display: grid; gap: 4px; }
+.q b { color: var(--text-strong); }
+.q span { color: var(--muted); font-size: var(--fs-sm); }
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <div class="eyebrow">askdnd · mockup · Oct 27, 2026</div>
+    <h1>A shorter Manage menu</h1>
+    <p class="lead">The menu keeps only what a DM or admin opens every week. Everything else is one click further, in a section list down the left of every Manage page, so nothing wraps and nothing is lost. Each page keeps its own address.</p>
+  </header>
+
+  <section class="sec">
+    <h2>1 · The menu: today and proposed</h2>
+    <p>Today the menu lists all 17 pages an admin can open. The proposal shows four campaign pages with counts, and one way into the rest.</p>
+    <div class="menus">
+      <div class="menu-card tooLong">
+        <span class="label">Today · 17 items</span>
+        <div class="menu">
+          <div class="grp">VTT test</div>
+          <a>Needs you</a><a>Inbox</a><a>Sessions</a><a>Table</a><a>House rules</a><a>History</a><a>Settings</a><a>DM guide</a>
+          <div class="grp">askdnd · admins</div>
+          <a>Campaigns</a><a>Accounts</a><a>Tool corrections</a><a>Usage</a><a>Backups and imports</a><a>History</a><a>Design system</a><a>Dice tuning</a><a>D&amp;D Beyond bridge</a>
+        </div>
+      </div>
+      <div class="menu-card">
+        <span class="label">Proposed · 6 items <span class="pick">Recommended</span></span>
+        <div class="menu">
+          <div class="grp">VTT test</div>
+          <a>Needs you <span class="count">3</span></a>
+          <a>Inbox <span class="count amber">5</span></a>
+          <a>Sessions</a>
+          <a>Table</a>
+          <a class="all">All campaign pages…<small>House rules, Settings, History, DM guide</small></a>
+          <div class="grp">askdnd · admins</div>
+          <a>askdnd admin<small>Accounts, campaigns, usage, backups, tools</small></a>
+        </div>
+        <p class="note">Counts say what's waiting, so the menu itself answers "do I need to look?".</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <h2>2 · Every Manage page: a section list down the left</h2>
+    <p>Instead of a row of tabs that wraps onto two lines, each Manage page lists its group's pages down the left, in three small groups. Separate pages, not one long page to scroll: Sessions and History are big on their own, and each page keeps the address you can bookmark.</p>
+    <div class="screen">
+      <div class="bar"><span class="brand">askdnd</span><span class="nv">Story</span><span class="nv">Campaign</span><span class="nv">Cole</span><span class="nv">Party ▾</span><span class="end"><span class="nv">Live</span><span class="nv on">Manage ▾</span><span class="av">D</span></span></div>
+      <div class="page">
+        <nav class="side" aria-label="Manage">
+          <div class="scope">VTT test <span>Campaign</span></div>
+          <div><div class="grp">Every week</div><a class="on">Needs you <span class="count">3</span></a><a>Inbox <span class="count amber">5</span></a><a>Sessions</a></div>
+          <div><div class="grp">The table</div><a>Table</a><a>House rules</a></div>
+          <div><div class="grp">Setup</div><a>Settings</a><a>History</a><a>DM guide</a></div>
+        </nav>
+        <div class="main">
+          <h3 class="pt">Needs you</h3>
+          <div class="row"><span class="tag amber">Recap</span>Session 14's recap is drafted, waiting for review<span class="who">Claude</span></div>
+          <div class="row"><span class="tag">Suggestion</span>"NPC 1 is Trah's cousin" for the World<span class="who">The player of Trah</span></div>
+          <div class="row"><span class="tag">Suggestion</span>A new quest from session 14<span class="who">The player of Big C</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <h2>3 · askdnd admin: one Overview page</h2>
+    <p>A home for the admin pages, the way Needs you is the campaign's home: each card says how things stand, so most days you never open the page behind it.</p>
+    <div class="screen">
+      <div class="bar"><span class="brand">askdnd</span><span class="nv">Story</span><span class="nv">Campaign</span><span class="end"><span class="nv on">Manage ▾</span><span class="av">D</span></span></div>
+      <div class="page">
+        <nav class="side" aria-label="askdnd admin">
+          <div class="scope">askdnd <span>Admins</span></div>
+          <div><a class="on">Overview</a></div>
+          <div><div class="grp">People</div><a>Accounts</a><a>Campaigns</a></div>
+          <div><div class="grp">Running askdnd</div><a>Usage</a><a>Backups and imports</a><a>askdnd history</a></div>
+          <div><div class="grp">Tuning</div><a>Tool corrections</a><a>Dice tuning</a><a>D&amp;D Beyond bridge</a><a>Design system</a></div>
+        </nav>
+        <div class="main">
+          <h3 class="pt">askdnd admin</h3>
+          <div class="cards">
+            <div class="card"><b>Usage</b><span class="state ok">$4.10 of $25 this month</span><span class="note">Claude spending</span></div>
+            <div class="card"><b>Backups</b><span class="state ok">Last night, 2:00 AM</span><span class="note">Nightly to S3</span></div>
+            <div class="card"><b>Tool corrections</b><span class="state warn">2 askdnd now gets right</span><span class="note">Ready to retire</span></div>
+            <div class="card"><b>Accounts</b><span class="state">6 people, 1 admin</span><span class="note">Who can sign in</span></div>
+            <div class="card"><b>Campaigns</b><span class="state">2 campaigns, 1 test</span><span class="note">Start one, move a character</span></div>
+            <div class="card"><b>D&amp;D Beyond bridge</b><span class="state">Asleep</span><span class="note">On this computer only</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <h2>4 · On a phone</h2>
+    <p>The section list becomes one "jump to" control at the top of the page, opening the same list from the bottom of the screen.</p>
+    <div class="phones">
+      <div class="phone">
+        <div class="bar"><span class="brand">askdnd</span><span class="end"><span class="av">D</span></span></div>
+        <div class="pbody">
+          <div class="jump">Needs you <span>VTT test ▾</span></div>
+          <div class="row"><span class="tag amber">Recap</span>Session 14, waiting</div>
+          <div class="row"><span class="tag">Suggestion</span>From Trah's player</div>
+        </div>
+      </div>
+      <div class="phone">
+        <div class="bar"><span class="brand">askdnd</span><span class="end"><span class="av">D</span></span></div>
+        <div class="pbody" style="padding-bottom:0">
+          <div class="sheet">
+            <div class="grp">Every week</div><a class="on">Needs you <span class="count">3</span></a><a>Inbox <span class="count amber">5</span></a><a>Sessions</a>
+            <div class="grp">The table</div><a>Table</a><a>House rules</a>
+            <div class="grp">Setup</div><a>Settings</a><a>History</a><a>DM guide</a>
+            <div class="grp">askdnd</div><a>askdnd admin</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <h2>5 · Names and order</h2>
+    <p>Ordered by how often each is opened. Most names stay; three change so no two pages share a name and each says what it holds.</p>
+    <div class="names">
+      <table>
+        <thead><tr><th>Today</th><th>Proposed</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr class="grp"><td colspan="3">The campaign · Every week</td></tr>
+          <tr><td>Needs you</td><td class="new">Needs you</td><td class="why">The campaign's home. Unchanged.</td></tr>
+          <tr><td>Inbox</td><td class="new">Inbox</td><td class="why">Unchanged.</td></tr>
+          <tr><td>Sessions</td><td class="new">Sessions</td><td class="why">Unchanged (the campaign doc stays its tab).</td></tr>
+          <tr class="grp"><td colspan="3">The campaign · The table</td></tr>
+          <tr><td>Table</td><td class="new">Table</td><td class="why">Unchanged: who plays which character.</td></tr>
+          <tr><td>House rules</td><td class="new">House rules</td><td class="why">Moves up: it's about play.</td></tr>
+          <tr class="grp"><td colspan="3">The campaign · Setup</td></tr>
+          <tr><td>Settings</td><td class="new">Settings</td><td class="why">Unchanged.</td></tr>
+          <tr><td>History</td><td class="new">History</td><td class="why">Unchanged in the campaign.</td></tr>
+          <tr><td>DM guide</td><td class="new">DM guide</td><td class="why">Last: read once, then now and then.</td></tr>
+          <tr class="grp"><td colspan="3">askdnd admin</td></tr>
+          <tr><td>(none)</td><td class="new">Overview</td><td class="why">New: the admin home, with a card for each page.</td></tr>
+          <tr><td>Accounts, Campaigns</td><td class="new">Accounts, Campaigns</td><td class="why">People first; Accounts is opened most.</td></tr>
+          <tr><td>Usage, Backups and imports</td><td class="new">Usage, Backups and imports</td><td class="why">Running askdnd.</td></tr>
+          <tr><td>History</td><td class="new">askdnd history</td><td class="why">Two pages were both called History.</td></tr>
+          <tr><td>Tool corrections</td><td class="new">Tool corrections</td><td class="why">Grouped with the other tuning.</td></tr>
+          <tr><td>Dice tuning, D&amp;D Beyond bridge</td><td class="new">Dice tuning, D&amp;D Beyond bridge</td><td class="why">Tuning.</td></tr>
+          <tr><td>Design system</td><td class="new">Design system</td><td class="why">Last: for building askdnd, not running it.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="sec">
+    <h2>Questions for you</h2>
+    <div class="qs">
+      <div class="q"><b>1. Four campaign pages in the menu (Needs you, Inbox, Sessions, Table)?</b><span>Or fewer: Needs you alone, since it already lists what's waiting in Inbox and Sessions.</span></div>
+      <div class="q"><b>2. A section list down the left of Manage pages, instead of tabs?</b><span>Recommended. The other way: keep tabs but show only the current group's three to five.</span></div>
+      <div class="q"><b>3. An askdnd Overview page with a card per page?</b><span>Recommended: it makes the admin menu one item.</span></div>
+      <div class="q"><b>4. Rename askdnd's History to "askdnd history"?</b><span>So the two History pages can't be mixed up.</span></div>
+    </div>
+  </section>
+</div>
