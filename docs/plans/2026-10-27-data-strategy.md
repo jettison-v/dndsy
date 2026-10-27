@@ -1,0 +1,145 @@
+# Data strategy: four buckets, books checked once (decided by Brett, 2026-10-27)
+
+Brett's notes (2026-10-27) set the buckets and the constraint: keep data properly separated so each campaign sees only
+what it should, without adding overhead ("I do not want to have to check access to the books every time the game
+loads"). This page turns them into a decision. It builds on `docs/plans/2026-10-26-content-sources.md` (the sources
+model, drafted Oct 26) and the recommendation in `docs/plans/2026-10-27-next-steps.md`. The readable version is the
+"askdnd Data Strategy" page (`docs/artifacts/data-strategy.html`,
+https://claude.ai/artifact/PWXtaunHcp3MEEJyJpLWoe).
+
+**In one line:** rules content is one shape (sources hold entries) that each campaign filters by its own list of books;
+everything about play and the story stays in its own tables, as today.
+
+## The four buckets
+
+| Bucket | What's in it | Where it lives | Who sees it |
+|---|---|---|---|
+| **Campaign and character data** | Characters, play state, sessions, recaps, rolls, notes, house rules, the campaign record | Postgres, per campaign (as today) | As today's visibility rules say (character notes: players, never the DM) |
+| **Public rules** | The SRD 5.2.1: monsters, spells, magic items, the Rules Glossary | `app/data/srd/`, files in the repo (CC-BY-4.0, attribution on Help › About) | Everyone |
+| **Private rules** | Books bought on D&D Beyond: today the 2024 Player's Handbook, Dungeon Master's Guide and Monster Manual | Postgres only, each entry tagged with its book; never in git (`private/books/` stays the offline copy) | Campaigns that have that book switched on |
+| **askdnd enhancements** | Our summaries, groupings, corrections and additions: tool corrections, roll recipes, item actions, rule terms, `docs/rules/` | Where each is today (files in `app/data/`, `tool_corrections`), tagged as askdnd's | Everyone |
+
+Two cautions, agreed with Brett:
+- **Public means licensed, not just free to read.** Only the SRD comes with a license to store and show it. Content
+  that's free to read on D&D Beyond but isn't in the SRD is treated as private rules.
+- **Enhancements are in our own words.** A summary, a grouping or a correction of Moonbeam is ours and goes to everyone,
+  even when it draws on the DMG. A book's own wording isn't: enhancements never quote a book (the rule `docs/rules/`
+  already follows).
+
+## Checked once
+
+- Each campaign keeps **its list of books**, set when the campaign is made and changed by its DM or an admin on
+  **Manage › Settings › Books** (each book on or off).
+- Every rules lookup already goes through one place (`rules_data.catalog/find`), which merges the SRD with the
+  campaign's own content. It filters by the campaign's list there: one cheap filter, no check when a game loads and
+  nothing asked of D&D Beyond.
+- The default for a new campaign: the SRD plus the 2024 Player's Handbook, Dungeon Master's Guide and Monster Manual
+  (what askdnd assumes today, as `ddb_sheet.CORE_SOURCES`).
+
+## The books toggle and D&D Beyond
+
+Checked against Cole's public sheet (2026-10-27): D&D Beyond switches books on **per character, by the player**
+(`activeSourceCategories` in the character's settings, plus `useHomebrewContent`). Its campaign data names the DM and
+the characters but not the shared books. Every spell and item on a sheet names its book (`sourceId`).
+
+- **Automatic: what a player has.** Spells, prepared spells and inventory come from D&D Beyond, already limited by the
+  player's settings there. askdnd shows what's on the sheet; nothing to build.
+- **Beyond the sheet, for spells:** askdnd also asks D&D Beyond for the class's whole spell list at the character's
+  level (app/ddb.py `CLASS_SPELLS_URLS`), with each spell's text, from every book. That's Sheet's "All you could
+  prepare" and the Spell Book; today askdnd keeps only the 2024 core books' (`ddb_sheet.CORE_SOURCES`).
+- **Not from D&D Beyond at all:** items a character doesn't carry, monsters and rules text. Those come from the SRD and
+  the campaign's books in askdnd: Wild Shape forms, and later stat blocks, items to hand out and rules answers.
+- **The books toggle filters both,** D&D Beyond's class spell list and askdnd's own lookups, instead of the fixed three
+  books.
+- **A sheet with a book the campaign has off** (a Xanathar's spell when Xanathar's is off): it still shows, since it's
+  on the sheet, labelled with its book. askdnd removes nothing; the DM rules.
+
+## The shape (from the content-sources draft)
+
+- A **source** is a book, the SRD, or someone's homebrew; it holds **entries** (a monster, spell, item, feat, subclass,
+  or a section of rules text), each with a kind, a name, its details as one document, and its page.
+- A **campaign's books** are the sources it has on, in order (homebrew, then books, then the SRD); the first that has
+  an entry wins and the page says which.
+- **A copy in play:** a monster in a fight or an item handed out keeps a copy of its entry, so switching a book off
+  never breaks a fight or an inventory.
+- The SRD stays files in the repo and is registered as a built-in source.
+- Stays concrete (its own tables, as today): characters, play state, rolls, the story.
+- Not built: a general "anything" model, plug-ins, schemas per book, access checks during play.
+
+What changes in the code is small: `campaign_content` (empty; nothing writes to it yet) becomes entries of a source, a
+campaign gets its list of books, `CORE_SOURCES` gives way to that list, and `catalog/find` keep their signatures. About
+a day, with Manage › Settings › Books the only visible change.
+
+## When askdnd runs inventory and spells (Brett's question, 2026-10-27)
+
+Once askdnd keeps play state (1.2 casting spends slots, 1.5 inventory in play), things change during a session that
+D&D Beyond never sees. Each lands in a bucket, so there's no gap:
+
+- **What's on the sheet** (D&D Beyond's spells and items): their text comes with the sheet, as today. askdnd stores only
+  the play numbers against D&D Beyond's own id: slots spent, charges left, potions used, who holds it. No book text is
+  copied, and the books toggle doesn't apply (it's already the player's).
+- **What askdnd puts into play** (loot the DM hands out, an item from homebrew): picked from the campaign's books, so
+  the toggle applies at that moment. It becomes campaign data: a **copy in play** with its book and entry, a copy of the
+  entry's details, and its numbers (quantity, charges, attuned). Private book text in it stays in that campaign, in the
+  database, never in git. Switching the book off later keeps the copy, labelled with its book.
+- **Given to another character:** the copy, or the play numbers, move to them. D&D Beyond can't be written to, so askdnd
+  reminds both players to update their sheets there. When the item shows up on a sheet later, the D&D Beyond merge
+  (1.7) links it to askdnd's copy instead of counting it twice, and lists it under "what changed".
+- **Spells:** spells known and prepared stay D&D Beyond's (they change when you level up or prepare). askdnd spends slots
+  and tracks concentration. The only spells that arrive through askdnd come on items (a scroll, a wand): they're part of
+  that item's copy.
+- **An unidentified item** (a potion the party hasn't tried): the DM hands out the real entry and players see only what
+  they've learned, like monsters (2.6).
+- **Back to D&D Beyond:** D&D Beyond can't be written to officially. Other tabletops either copy the character and own
+  play from then on (Foundry's DDB Importer, whose write-back is limited, paid and needs each player's D&D Beyond login
+  cookie) or leave inventory on D&D Beyond (Owlbear Rodeo and Roll20 with Beyond20 only pass rolls along). askdnd copies
+  and owns play, and keeps a **Copy to D&D Beyond** checklist per character: every inventory change made in askdnd
+  ("Add Flame Tongue · 2 fewer Potions of Healing · +150 gp"), for the player to make on D&D Beyond, typically at
+  level-up. When a change shows up on the sheet, the merge ticks it off. No write-back and no stored D&D Beyond logins.
+
+## Brett's answers (2026-10-27)
+
+From the questions on the data strategy page and the overlay mockup (`docs/mockups/ddb-overlay.html`):
+
+- **Decided as recommended:** 1 (four buckets), 2 (one shape for rules content), 3 (books checked once), 5 (enhancements
+  in our own words), 6 (a book belongs to a person), 7 (optional rules become house rules).
+- **4, settled:** a campaign's list of books mirrors what the DM shares on D&D Beyond (the DM ticks them once;
+  askdnd pre-ticks every book already on the party's sheets). askdnd never shows a player less than D&D Beyond does,
+  and the list mainly governs the DM's side (monsters, loot, rules answers).
+- **8, changed:** prove the model with one book first: the 2024 Monster Manual's beasts in Wild Shape's list of forms
+  you could pick, labelled "MM 2024", switchable for the campaign, stored only in the database.
+- **9 and 10, replaced.** A partial sync is out: numbers must be correct in both places, or the difference shown
+  (Brett: "That was one of the main reasons we stopped using Foundry"). The direction instead: **D&D Beyond confirms
+  every change.** An askdnd browser extension in each person's own signed-in D&D Beyond tab hears changes there at
+  once and makes askdnd's changes there, as that person; askdnd shows a number as changed only after reading it back
+  from D&D Beyond. Four states, everywhere: Live with D&D Beyond, Waiting for D&D Beyond, Not on D&D Beyond yet,
+  Changed on D&D Beyond.
+  - **Both views:** askdnd's panel beside the D&D Beyond sheet, and askdnd's own tab with the extension behind it.
+  - **Phones read and plan only:** no changes to sheet numbers there; a phone is the story and planning companion.
+  - **Party Inventory later:** the table hasn't started using it; loot through it waits until they do.
+  - Unofficial (D&D Beyond offers no way to write), so a one-day proof on Cole comes before any roadmap change.
+  - **Proven (2026-10-27):** the bridge proof works against the real D&D Beyond (app/ddb_bridge.py,
+    extension/askdnd-bridge/, `docs/artifacts/ddb-bridge.html`); it's merged switched off, local only, until Brett
+    decides to bring it to the table.
+
+## Decisions for Brett
+
+1. **The four buckets** as above. *Recommended.*
+2. **Rules content is one shape** (sources hold entries); play and story stay concrete. *Recommended.*
+3. **Checked once:** a campaign's list of books, set when it's made and changed by its DM or an admin; no checks when a
+   game loads. *Recommended.*
+4. **The books toggle:** each book on or off per campaign (default: the SRD and the 2024 core books); off hides its
+   entries from lookups and keeps copies already in play; a character's own sheet always shows, labelled. *Recommended.*
+5. **Enhancements are askdnd's,** shown to everyone, always in our own words. *Recommended.*
+6. **A book belongs to a person** (the DM's library), usable in any campaign they DM. *Recommended.*
+7. **A book's optional rules become house rules** the DM switches on, not rules that apply by themselves. *Recommended.*
+8. **Build the model now** (about a day, while `campaign_content` is empty); getting a book's content in is decided
+   later, when the DM first wants one. *Recommended.*
+9. **What askdnd puts into play is campaign data with its own copy;** what's on a D&D Beyond sheet gets only its play
+   numbers in askdnd, and the merge links the two when an item reaches the sheet. *Recommended.*
+10. **A Copy to D&D Beyond checklist instead of write-back:** inventory changes made in askdnd collect per character
+    for the player to copy onto D&D Beyond; the merge ticks each off when it appears. No storing D&D Beyond logins.
+    Write-back can be revisited if the checklist proves a chore. *Recommended.*
+
+Open for later: how a book's content gets in (typed, imported from a file made on the Mac, or read from D&D Beyond), and
+what a second group could see (VTT 7.1).
