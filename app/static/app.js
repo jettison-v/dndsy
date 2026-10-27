@@ -2582,7 +2582,7 @@
       findBars();
       if (tall(lit.getBoundingClientRect())) alignTop();
       else lit.scrollIntoView({ block: s.all ? 'nearest' : 'center' });
-      shownAt = Date.now(); holding = true;
+      shownAt = Date.now(); holding = true; scrolled = 0;
     }
     requestAnimationFrame(() => { if (!card || asking) return; place(); card.querySelector('[data-tour-go="1"]').focus({ preventScroll: true }); });  // (ended meanwhile)
     follow();
@@ -2638,8 +2638,11 @@
   // change height, only once the page has scrolled). While the stop shows, its top is put back whenever it slips under
   // them (a picture loading, Game Mode redrawing Battle with a fresh sheet), until the person scrolls the page
   // themselves (Brett, 2026-10-26: Battle's column headings ended up behind its numbers).
-  let holding = false, shownAt = 0;
-  ['wheel', 'touchmove'].forEach(t => addEventListener(t, () => { if (Date.now() - shownAt > 800) holding = false; }, { passive: true }));  // (not the last page's momentum)
+  // Only a real scroll counts: not the last page's momentum, nor a finger resting on a trackpad (tiny wheel events; Brett,
+  // 2026-10-26, on his laptop)
+  let holding = false, shownAt = 0, scrolled = 0;
+  addEventListener('wheel', e => { if (Date.now() - shownAt > 800 && (scrolled += Math.abs(e.deltaY)) > 60) holding = false; }, { passive: true });
+  addEventListener('touchmove', () => { if (Date.now() - shownAt > 800) holding = false; }, { passive: true });
   function alignTop() {
     for (let k = 0; k < 4; k++) {
       const want = covered() + 16, at = lit.getBoundingClientRect().top;
