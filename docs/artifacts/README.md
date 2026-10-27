@@ -12,6 +12,7 @@ screenshots of real pages (they show the campaign).
 | Page | Link on claude.ai | Here | What it was |
 |---|---|---|---|
 | askdnd Stack Map | [AYYGdebsBtPND4HoTq5uyr](https://claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr) | `../stack.html` | How the services connect, who changes each, where the data lives (kept current) |
+| Party Redesign | [EJmFmzbXoV15HKjpJiJ18a](https://claude.ai/artifact/EJmFmzbXoV15HKjpJiJ18a) | `../mockups/party.html` | The Party page built from the rest of askdnd's pieces (proposal, Oct 26) |
 | askdnd VTT Roadmap | [EtCBFsKNwLK5LNhQjcbzS3](https://claude.ai/artifact/EtCBFsKNwLK5LNhQjcbzS3) | `vtt-roadmap.html` | The roadmap as reviewed Oct 24; the current order is `../plans/2026-10-22-vtt-roadmap.md` |
 | askdnd content workflows | [MPiEDh3KMNmB2NoCtuq52U](https://claude.ai/artifact/MPiEDh3KMNmB2NoCtuq52U) | `content-workflows.html` | Recaps, entries and suggestions, start to finish (Oct 22) |
 | askdnd campaigns and roles | [LLRsdZLY7wf5W7vTp4SEZR](https://claude.ai/artifact/LLRsdZLY7wf5W7vTp4SEZR) | `campaigns-and-roles.html` | Data organization: campaigns, roles per campaign (Oct 22) |
