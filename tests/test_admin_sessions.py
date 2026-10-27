@@ -57,7 +57,7 @@ def drafted_session(db):
 
 
 def proposal(db, name):
-    return next(p for p in db.scalars(select(Proposal)) if p.payload.get("name") == name or p.payload.get("term") == name)
+    return next(p for p in db.scalars(select(Proposal).order_by(Proposal.id)) if p.payload.get("name") == name or p.payload.get("term") == name)
 
 
 def test_review_list_and_draft_button(client, db, monkeypatch):
