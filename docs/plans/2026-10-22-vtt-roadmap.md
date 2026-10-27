@@ -145,7 +145,11 @@ potions, charges, ammo, coins, attunement, giving, loot) L core · 1.9 Level-up 
 for what askdnd automates M core, partly built (each switch arrives with the item it changes).
 Order: 1.2, 1.3, 1.6, 1.4, 1.5, 1.9. Each shows on the fight screen where it matters (slots, conditions) and on the
 character's own pages.
-Milestone: a whole session's bookkeeping in askdnd; D&D Beyond only for building and leveling.
+Two ways, always (Brett, 2026-10-27): askdnd takes over during play, but if someone uses D&D Beyond for anything, by
+accident or on purpose, it still syncs: a change made in askdnd is made on D&D Beyond and confirmed, and a change made
+on D&D Beyond comes into askdnd within seconds (the bridge). Both always agree, or the difference is shown, for data
+quality and so the table trusts the tool.
+Milestone: a whole session's bookkeeping in askdnd, and D&D Beyond agrees with every number.
 
 **Phase 2b, The rest of combat.** 2.3 Clickable stat blocks L core (needs 0.6) · 2.6 What players see of monsters S
 core (needs 2.3) · 2.4 Attacks and saves that resolve, DM confirms L core (needs 1.1, 2.3) · 2.1 Encounters (2024
@@ -211,6 +215,9 @@ read back. So the bridge's changes come first, then the fight screen and live ch
    - c. Class resources and limited uses (Rage, Wild Shape, Channel Divinity, an item's uses).
    - d. Inventory: an item's count (**done**), equipped, attuned, charges, coins, adding and removing an item, moving
      it into or out of a container.
+   - e. Rolls made on D&D Beyond come into Table rolls (heard on the sheet, the way Beyond20 does; labelled "on D&D
+     Beyond"), so a roll made there by habit still reaches the table. askdnd's rolls aren't written into D&D Beyond's
+     game log: the table watches askdnd, and it would mean imitating D&D Beyond's own client.
    - Left out on purpose: experience points, custom names and custom items (D&D Beyond stays for building and
      leveling).
 4. **The bridge for the table:** switch it on for beta (today it refuses to run in production), point the extension
