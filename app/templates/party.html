@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% from "_char.html" import pips, adv %}
-{% from "_help.html" import help %}
 {% from "_lists.html" import filter_column, search_box, active_row %}
 {% block title %}Party · askdnd{% endblock %}
 {% block content %}
@@ -14,7 +13,6 @@
   <div class="title-row"><h1>Party</h1></div>
   <p class="subtitle">{% if here %}{{ here.name }} · {% endif %}{{ rows | length }} character{{ "s" if rows | length != 1 }}{% if oldest %} · from D&amp;D Beyond {{ oldest | ago }}{% endif %}</p>
   {% if pick %}<p class="flash warn">You aren't set as playing a character yet, so pick one below. (An admin can set who plays which character on Manage › Table.)</p>{% endif %}
-  {% call help("party", help_off, "modes") %}Click a character, a spell or an item for details; a portrait opens that character's.{% endcall %}
 
   <div data-tour="party">
   <div class="tabbar" role="tablist">

@@ -246,25 +246,16 @@ def test_a_spell_key_opens_the_spell_not_a_situational_rule_with_the_same_key():
     assert views.find(sheet, "spell:Absorb Elements")["section"] == "spells"
 
 
-def test_help_lines_hide_for_good_with_got_it(player, admin, db):
-    from app.models import User
-
+def test_pages_have_no_help_lines(player, db):
+    """Help lines are gone (Brett, 2026-10-27): the tour and Help explain the pages."""
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
     characters.refresh(db, cole)
     owned_by(db, cole, "player@example.com")
-    page = player.get(f"/characters/{cole.id}").text
-    assert 'id="help-sheet"' in page and 'href="/help#marks"' in page and "Got it" in page
-    r = player.post("/help/dismiss", data={"key": "sheet"})
-    assert r.status_code == 200 and r.text == ""
-    assert 'id="help-sheet"' not in player.get(f"/characters/{cole.id}").text  # gone for this person
-    assert 'id="help-features"' in player.get(f"/characters/{cole.id}").text  # the other lines stay
-    me = db.scalar(select(User).where(User.email == "player@example.com"))
-    db.refresh(me)
-    assert me.dismissed_help == ["sheet"]
-    assert player.post("/help/dismiss", data={"key": "nope"}).status_code == 400
-    assert 'id="help-features"' in admin.get(f"/characters/{cole.id}").text  # other people still see theirs
-    assert 'id="marks"' in player.get("/help").text  # "More" opens that answer
+    for page in (player.get(f"/characters/{cole.id}").text, player.get(f"/characters/{cole.id}/battle").text,
+                 player.get(f"/characters/{cole.id}/plan").text, player.get("/party").text):
+        assert "help-line" not in page and "Got it" not in page
+    assert player.post("/help/dismiss", data={"key": "sheet"}).status_code in (404, 405)
 
 
 def test_battle_column_rules_are_a_chip(player, db):

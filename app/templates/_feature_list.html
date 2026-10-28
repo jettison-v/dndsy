@@ -4,8 +4,7 @@
    come from, then the ones that are always on. #}
 {% from "_lists.html" import filter_column, search_box, active_row, view_switch, notes_toggle %}
 {% from "_char.html" import pick_btn, pips %}
-{% from "_help.html" import help %}
-{% macro feature_list(c, features, picks, can_pick, show_picks, key="sheet-features", views=(), help_off=()) -%}
+{% macro feature_list(c, features, picks, can_pick, show_picks, key="sheet-features", views=()) -%}
 {%- set TURN = ["Action", "Bonus action", "Reaction", "Other", "Always on"] -%}
 {%- set sources = features | map(attribute="source") | unique | list -%}
 {%- set groups = [
@@ -48,7 +47,6 @@
       </div>
       <p class="note ls-empty" data-ls-empty hidden>No features match. <button type="button" class="btn link small" data-ls-clear>Clear all</button></p>
       {% if views %}<p class="note ls-empty" data-ls-empty-view="fav" hidden>Nothing on your Shortlist yet. In <b>All</b>, press the bookmark on a feature you want close at hand.</p>{% endif %}
-      {% call help("features", help_off, "modes", "sb-foot-note") %}What each feature lets you do. Click one for the full text and where it comes from.{% endcall %}
     </div>
   </div>
 </div>

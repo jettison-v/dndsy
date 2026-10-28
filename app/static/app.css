@@ -1740,11 +1740,6 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .ds-sizes { overflow-x: auto; }
 .ds-sizes td { vertical-align: middle; font-size: var(--fs-sm); }
 
-/* Help line (_help.html): one short line, More, and Got it at the end */
-.help-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-1) var(--sp-3); margin: 0 0 var(--sp-3); }
-.help-line .help-text { flex: 0 1 auto; }
-.help-more { font-size: var(--fs-sm); color: var(--muted); }
-.help-x { font-size: var(--fs-sm); }
 
 /* Icon labels (app.js): what an icon button does, on hover, focus or a long press */
 .icon-tip { position: fixed; z-index: 40; max-width: 240px; padding: var(--sp-1) var(--sp-2); background: var(--text); color: var(--bg);
