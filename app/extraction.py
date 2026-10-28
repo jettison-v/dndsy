@@ -240,7 +240,7 @@ def _image_block(img: NoteImage, label: str) -> list[dict]:
         {
             "type": "image",
             "source": {"type": "base64", "media_type": img.content_type,
-                       "data": base64.b64encode(files.read(img.file_key, lambda: img.data)).decode()},
+                       "data": base64.b64encode(files.read(img.file_key)).decode()},
         },
     ]
 
