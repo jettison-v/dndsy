@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "askdnd bridge",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "Keeps your D&D Beyond sheet and askdnd in step, both ways: hears your sheet's changes and makes askdnd's there, as you.",
   "permissions": [
     "storage",
