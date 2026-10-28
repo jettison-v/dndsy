@@ -60,7 +60,9 @@ def rows_from(db: Session) -> list[dict]:
     if bridge:
         from sqlalchemy import func
 
-        by_hand = dict(db.execute(select(BridgeIntent.character_id, func.count()).where(BridgeIntent.state == "not_yet")
+        waits_for_sheet = BridgeIntent.data["quiet"].astext == "true"  # (made by itself once its sheet is open: ddb_bridge._catch_up)
+        by_hand = dict(db.execute(select(BridgeIntent.character_id, func.count())
+                                  .where(BridgeIntent.state == "not_yet", func.coalesce(waits_for_sheet, False).is_(False))
                                   .group_by(BridgeIntent.character_id)).all())
     reach = datetime.now(UTC) - REACH
     summary = CharacterSnapshot.summary
