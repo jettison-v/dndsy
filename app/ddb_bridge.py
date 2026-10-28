@@ -27,8 +27,14 @@ It works like middleware between askdnd and D&D Beyond, and repairs itself:
    (6 hours) after anyone last used it; then it's listed to make by hand. Admins set the timers on Manage › askdnd ›
    D&D Beyond bridge (TIMERS); the state is in tool_settings (bridge_awake).
 7. **Health.** The extension reports in every minute; askdnd reads the test character every hour (no sign-in needed);
-   a round trip on the test character (1 hit point and a Candle out and back) runs from the status pill before a game;
-   every page's menu bar shows how it stands.
+   a round trip on the test character (1 hit point and a Candle out and back) runs from the status pill before a game,
+   and Check everything (Manage › askdnd › D&D Beyond bridge) runs every kind of change out and back; every page's
+   menu bar shows how it stands.
+8. **Everything a player changes in play** (ddb_fields: what each field is, where D&D Beyond keeps it, the request
+   that writes it): hit points, death saves, Heroic Inspiration, conditions, Exhaustion, Hit Dice (as a Short Rest),
+   spell and Pact Magic slots, prepared spells, limited uses, an item's count, equipped, attuned, charges, container,
+   coins, adding and removing an item. A roll made on the sheet is only heard, into Table rolls ("on D&D Beyond").
+   After a change, every open copy of the sheet shows D&D Beyond's numbers in place (ddb-page.js `show`).
 
 States for a change: waiting (and sending), live (D&D Beyond has it), not_yet (can't be made; the end state is listed
 to make by hand), plus seen in the log (changed on D&D Beyond itself). The outbox, the batches, the log and the

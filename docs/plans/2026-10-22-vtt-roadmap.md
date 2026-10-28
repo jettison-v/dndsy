@@ -204,13 +204,13 @@ read back. So the bridge's changes come first, then the fight screen and live ch
 
 1. **The shorter Manage menu** (mockup `docs/mockups/manage-menu.html`, approved 2026-10-27): six items, a section
    list down the left, an askdnd admin Overview, askdnd's History renamed.
-2. **Bridge polish:** no reloading the sheet after askdnd changes it (the sheet should take the new numbers in
+2. **Bridge polish** (**done** 2026-10-27, through the sheet's own store): no reloading the sheet after askdnd changes it (the sheet should take the new numbers in
    place; today every open copy reloads so none saves an old number back); log "Changed on D&D Beyond" even when
    askdnd's own refresh read the change first.
-3. **Bridge changes, everything a player changes in play** (checked against Foundry's DDB Importer, which syncs the
+3. **Bridge changes, everything a player changes in play** (**done** 2026-10-27, each checked live on Vi; checked against Foundry's DDB Importer, which syncs the
    same list; askdnd already hears all of them through its reads, so each is the writing half plus its read-back):
    - a. Hit points and their neighbours: hit points and temporary (**done**), death saves, Heroic Inspiration,
-     Exhaustion and conditions, hit dice.
+     Exhaustion and conditions, hit dice (as a Short Rest: the only way D&D Beyond takes them).
    - b. Spells: spell slots, Pact Magic slots, prepared spells.
    - c. Class resources and limited uses (Rage, Wild Shape, Channel Divinity, an item's uses).
    - d. Inventory: an item's count (**done**), equipped, attuned, charges, coins, adding and removing an item, moving
