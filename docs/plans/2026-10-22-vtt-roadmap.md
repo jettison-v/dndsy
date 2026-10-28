@@ -225,7 +225,14 @@ read back. So the bridge's changes come first, then the fight screen and live ch
    at beta, and share it as an unlisted Chrome Web Store listing; Brett tells the table the risk first.
 5. **The fight screen** (Phase 1: 2.2 with 1.1 and the play log): first update the play state design
    (`docs/plans/2026-10-24-play-state.md`) for "D&D Beyond confirms every change", then the mockup, then build in
-   small pieces in the test campaign.
+   small pieces in the test campaign. It starts with Game Mode and the bridge as one switch and one status
+   (decided 2026-10-28, `docs/mockups/game-mode-and-bridge.html`): Game Mode for the whole table, the Live pill about
+   your own sheet. Every control that changes a D&D Beyond number works only while that character's sheet can be
+   reached now (its extension heard it in the last minute or so); otherwise pressing it says how in place and queues
+   nothing, and a change already waiting gives up a few minutes after that sheet was last heard (then it's listed to
+   make by hand). The mockup also shows how a change appears (Brett, 2026-10-28): a number that changed, from
+   D&D Beyond or in askdnd, marks itself for a moment; it goes in app.js `showInPlace`, the one way every page shows a new
+   copy, so it works the same everywhere.
 6. **Live character state** (Phase 2: 1.2 casting with prepared spells, 1.3 resources, 1.6 conditions, 1.4 rests, 1.5 inventory), each on
    the bridge change it needs from step 3.
 

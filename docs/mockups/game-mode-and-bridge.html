@@ -1,0 +1,285 @@
+<title>Game Mode and Bridge</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<style>
+/* One page: the proposal, a live mock driven by three switches (Game Mode, your sheet, who's looking), the rules in
+   and between games, then what moves and what's for Brett to decide. askdnd is dark only, so this page is too. */
+:root { --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --bar: #0f1113; --line: #34383e; --text: #ebe7df; --strong: #fff;
+  --muted: #a29d93; --faint: #6f6b64; --red: #d64545; --red-text: #f08a8a; --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .14);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .15); --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --serif: "Iowan Old Style", Palatino, Georgia, serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.6 var(--sans); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 36px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 32px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.4rem/1.25 var(--serif); }
+h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; }
+.eyebrow { font: 700 .78rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red-text); }
+.label { font: 700 .74rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+header { display: grid; gap: 12px; max-width: 76ch; }
+.muted { color: var(--muted); }
+.small { font-size: .86rem; }
+
+/* Today → proposed */
+.compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 760px) { .compare { grid-template-columns: 1fr; } }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.box ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: .93rem; }
+.box.new { border-color: var(--green); }
+.box.ask { border-color: var(--red); }
+
+/* Switches above the mock */
+.controls { display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: center; }
+.ctl { display: grid; gap: 6px; }
+.ctl > span { font-size: .8rem; color: var(--muted); }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.seg button { font: 500 .86rem/1 var(--sans); color: var(--text); background: var(--surface-2); border: 0; padding: 9px 13px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--blue-soft); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); }
+.seg button:focus-visible, .btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+/* The mock: menu bar, popover, a toast, the extension panel */
+.stage { background: #101214; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.mbar { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: var(--bar); border-bottom: 2px solid var(--red); flex-wrap: wrap; }
+.mbar .brand { font-weight: 700; color: var(--strong); }
+.mbar .camp { color: var(--strong); font-weight: 600; }
+.mbar .nav { color: var(--muted); font-size: .92rem; }
+.mbar .grow { flex: 1; }
+.pill { display: inline-flex; align-items: center; gap: 7px; border-radius: 999px; padding: 6px 13px; font: 500 .88rem/1.2 var(--sans);
+  border: 1px solid var(--line); background: var(--surface); color: var(--muted); white-space: nowrap; cursor: default; }
+.pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; }
+.pill.live { border-color: var(--green); color: var(--strong); background: var(--green-soft); }
+.pill.live .dot { background: var(--green); }
+.pill.step .dot { background: var(--green); }
+.pill.step { color: var(--text); }
+.pill.warn { border-color: var(--amber); color: var(--strong); background: var(--amber-soft); }
+.pill.warn .dot { background: var(--amber); }
+.pill b { font-weight: 600; }
+.mbtn { border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; font-size: .88rem; color: var(--text); background: var(--surface); }
+.stage-body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; padding: 18px; align-items: start; }
+@media (max-width: 860px) { .stage-body { grid-template-columns: 1fr; } }
+.pop { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 30px rgba(0, 0, 0, .4); padding: 16px; display: grid; gap: 14px; max-width: 460px; justify-self: end; width: 100%; }
+@media (max-width: 860px) { .pop { justify-self: stretch; max-width: none; } }
+.gm { display: grid; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.gm-top { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
+.gm small { color: var(--muted); font-size: .84rem; line-height: 1.45; }
+.on-tag { font: 600 .78rem/1 var(--sans); padding: 4px 9px; border-radius: 999px; background: var(--green-soft); color: var(--green); border: 1px solid var(--green); }
+.off-tag { font: 600 .78rem/1 var(--sans); padding: 4px 9px; border-radius: 999px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+.btn { font: 600 .86rem/1 var(--sans); border-radius: 8px; padding: 9px 13px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); cursor: pointer; }
+.btn.primary { background: var(--red); border-color: var(--red); color: #fff; }
+.row-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.confirm { display: grid; gap: 8px; background: var(--amber-soft); border: 1px solid var(--amber); border-radius: 10px; padding: 12px; }
+.list { display: grid; gap: 2px; }
+.lrow { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; padding: 7px 8px; border-radius: 8px; font-size: .9rem; align-items: baseline; }
+.lrow.here { background: var(--surface-2); }
+.lrow > span:first-child { white-space: nowrap; }
+.lrow .how { color: var(--muted); font-size: .84rem; text-align: right; }
+.lrow .how.ok { color: var(--green); }
+.lrow .how.warn { color: var(--amber); }
+.toast { justify-self: start; background: var(--surface-2); border: 1px solid var(--line); border-left: 3px solid var(--green); border-radius: 8px; padding: 10px 14px; font-size: .9rem; max-width: 460px; }
+.left { display: grid; gap: 14px; align-content: start; min-width: 0; }
+.left .cap { color: var(--muted); font-size: .84rem; }
+/* The extension's panel beside the D&D Beyond sheet (its own look: extension/askdnd-bridge/ddb.js) */
+.ext { background: #15171a; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; font-size: .86rem; }
+.ext .head { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 2px solid var(--red); background: var(--bar); }
+.ext .logo { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--red-text); margin-left: 6px; }
+.ext .body { padding: 12px; display: grid; gap: 10px; }
+.st { justify-self: start; display: inline-flex; align-items: center; gap: 6px; font-size: .78rem; font-weight: 600; border-radius: 999px; padding: 4px 10px; background: var(--surface-2); color: var(--muted); }
+.st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.st.live { background: var(--green-soft); color: var(--green); }
+.st.off { background: var(--amber-soft); color: var(--amber); }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.tile small { display: block; color: var(--muted); font-size: .76rem; }
+.tile b { color: var(--strong); font-size: 1.15rem; }
+
+/* Rules in and between games */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; min-width: 680px; font-size: .92rem; }
+th, td { text-align: left; vertical-align: top; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+thead th { background: var(--surface); color: var(--strong); font-weight: 600; }
+tbody th { color: var(--strong); font-weight: 500; width: 26%; }
+tbody tr:last-child > * { border-bottom: 0; }
+td.same { color: var(--green); }
+.callout { border: 1px solid var(--green); background: var(--green-soft); border-radius: 12px; padding: 14px 18px; display: grid; gap: 6px; }
+.callout b { color: var(--strong); }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 860px) { .grid3 { grid-template-columns: 1fr; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">askdnd · mockup · Game Mode and the D&amp;D Beyond bridge · Oct 28, 2026</div>
+    <h1>One switch for the table, one status for you</h1>
+    <p>Today a player meets three things: the Live pill, a Game Mode switch kept in each browser, and a bridge pill that's really an admin's health check. This puts them in two places. <b>Game Mode</b> means "we're playing" and is on for the whole table at once. <b>The Live pill</b> says how your own sheet and askdnd are kept in step right now. The bridge is never a switch: it simply works whenever it can, in a game or between games.</p>
+  </header>
+
+  <div class="compare">
+    <div class="box"><span class="label">Today</span><ul>
+      <li><b>Game Mode</b>, per browser: reads everyone's sheet every 2–3 minutes, shares your rolls, keeps the bridge awake 6 hours. Forget to turn it on and your rolls stay private without a word.</li>
+      <li><b>Live pill</b>: when the copy was last read. Green only when your browser has Game Mode on.</li>
+      <li><b>Bridge pill</b> (bottom right): askdnd's health as a whole ("connected, not checked yet"); clicking it runs a test on Vi.</li>
+    </ul></div>
+    <div class="box new"><span class="label">Proposed</span><ul>
+      <li><b>Game Mode for the table</b>: anyone turns it on, every page in the campaign follows within a second, it ends after 6 hours or when someone ends it.</li>
+      <li><b>Live pill about you</b>: "in step" when the bridge is working for your character, "updated 2 min ago" when askdnd is reading it on a timer, amber when something needs you.</li>
+      <li><b>Bridge health</b> moves to Manage › askdnd › D&amp;D Beyond bridge, for admins.</li>
+    </ul></div>
+  </div>
+
+  <section class="box" style="gap:16px">
+    <h2>Try it</h2>
+    <div class="controls">
+      <div class="ctl"><span>Game Mode</span><div class="seg" role="group" aria-label="Game Mode" data-ctl="game"><button type="button" data-v="off" aria-pressed="true">Between games</button><button type="button" data-v="on" aria-pressed="false">On for the table</button></div></div>
+      <div class="ctl"><span>Your D&amp;D Beyond sheet</span><div class="seg" role="group" aria-label="Your sheet" data-ctl="sheet"><button type="button" data-v="bridge" aria-pressed="true">Open with the extension</button><button type="button" data-v="none" aria-pressed="false">No extension (phone)</button><button type="button" data-v="hand" aria-pressed="false">A change it couldn't make</button></div></div>
+      <div class="ctl"><span>Looking as</span><div class="seg" role="group" aria-label="Looking as" data-ctl="who"><button type="button" data-v="player" aria-pressed="true">Cole's player</button><button type="button" data-v="dm" aria-pressed="false">The DM</button></div></div>
+    </div>
+
+    <div class="stage">
+      <div class="mbar">
+        <span class="brand">askdnd</span><span class="camp">The Adventure Begins</span>
+        <span class="nav">Story</span><span class="nav">Campaign</span><span class="mbtn" data-me>Cole</span><span class="nav">Party ▾</span>
+        <span class="grow"></span>
+        <span class="pill" data-pill><span class="dot"></span><span data-pill-text></span></span>
+        <span class="mbtn">Manage ▾</span>
+      </div>
+      <div class="stage-body">
+        <div class="left">
+          <div class="toast" data-toast hidden></div>
+          <div class="ext" data-ext>
+            <div class="head"><span><b>Cole</b><span class="logo">askdnd</span></span><span class="muted">✕</span></div>
+            <div class="body"><span class="st" data-ext-st></span><div class="tile"><small>Hit points</small><b>44</b> <span class="muted">/ 51</span></div><p class="muted small" data-ext-note></p></div>
+          </div>
+          <p class="cap" data-ext-cap>The panel beside Cole's D&amp;D Beyond sheet, in Chrome.</p>
+        </div>
+        <div class="pop" role="dialog" aria-label="Live">
+          <div class="gm">
+            <div class="gm-top"><b>Game Mode</b><span data-gm-tag></span></div>
+            <small data-gm-text></small>
+            <div class="row-btns" data-gm-btns></div>
+            <div class="confirm" data-confirm hidden><b>End Game Mode for everyone?</b><span class="small">Everyone's rolls go back to private and askdnd stops reading the party every few minutes. The bridge keeps working for anyone using askdnd or their sheet.</span>
+              <div class="row-btns"><button type="button" class="btn primary" data-end>End for the table</button><button type="button" class="btn" data-keep>Keep playing</button></div></div>
+          </div>
+          <div class="list">
+            <div class="label" style="margin-bottom:6px">How each sheet is kept in step</div>
+            <div data-rows></div>
+          </div>
+          <div class="row-btns"><button type="button" class="btn small" data-refresh>Refresh Cole now</button></div>
+        </div>
+      </div>
+    </div>
+    <p class="muted small">Click <b>Start for the table</b> or <b>End for the table</b> in the window to see what the rest of the table gets.</p>
+  </section>
+
+  <section style="display:grid;gap:14px">
+    <h2>In a game and between games</h2>
+    <div class="callout"><b>Between games, nothing waits for Game Mode.</b><span>The bridge keeps the rules it has today: a save on your D&amp;D Beyond sheet is always read within seconds, and a change you make in askdnd is made on your sheet, whether or not a game is on. Using askdnd or a sheet keeps it awake for 30 minutes, so a player buying gear, levelling up or tidying their sheet on a Tuesday sees it in askdnd straight away, and a short rest taken in askdnd lands on D&amp;D Beyond. Game Mode only adds what a game needs on top.</span></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>Game Mode on</th><th>Between games</th></tr></thead>
+      <tbody>
+        <tr><th>You save something on your D&amp;D Beyond sheet</th><td>askdnd has it within seconds (the bridge)</td><td class="same">The same, and it wakes the bridge for 30 minutes</td></tr>
+        <tr><th>You change something in askdnd (hit points, slots, uses, items, coins, conditions)</th><td>Made on your sheet within seconds; counted once askdnd reads it back</td><td class="same">The same: using askdnd wakes the bridge</td></tr>
+        <tr><th>You press a change in askdnd while your sheet can't be reached (no extension, the sheet closed, a phone)</th><td colspan="2">Nothing is queued: the control says how in place (add the askdnd bridge to Chrome and open your sheet, or make it on D&amp;D Beyond). A change already waiting gives up a few minutes after your sheet was last heard and is listed to make by hand</td></tr>
+        <tr><th>A page showing a character</th><td>Updates itself the moment askdnd has a new copy</td><td class="same">The same (since today's fix)</td></tr>
+        <tr><th>Sheets without the bridge running (no extension, phones, the sheet not open)</th><td>Read every 2–3 minutes</td><td>Read when someone opens that character's page, or presses Refresh now</td></tr>
+        <tr><th>Sheets with the bridge running</th><td>Not read on the timer as well: their saves already arrive</td><td>—</td></tr>
+        <tr><th>Your rolls</th><td>Shared with the table; each roll's Who sees it (Table, DM only, Just me) still applies</td><td>Private, rolled in your browser</td></tr>
+        <tr><th>How long the bridge stays awake</th><td>The whole game (6 hours, Keep going near the end)</td><td>30 minutes after anyone last used askdnd or a sheet</td></tr>
+        <tr><th>Pins, notes, reminders, plans</th><td colspan="2">askdnd's own, saved as you make them; they never go to D&amp;D Beyond</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <div class="grid3">
+    <div class="box"><h3>What moves</h3><ul>
+      <li>The bottom-right bridge pill goes to Manage › askdnd › D&amp;D Beyond bridge, with its check, for admins only.</li>
+      <li>Game Mode's switch becomes Start / End for the table, in the same window.</li>
+      <li>Game Mode is stored for the campaign, not in each browser; pages learn it through the live connection.</li>
+    </ul></div>
+    <div class="box"><h3>What stays</h3><ul>
+      <li>The name Game Mode, and the Live pill where it is.</li>
+      <li>Refresh now, and Refresh everyone for reviewers.</li>
+      <li>The 6-hour game and its Keep going warning.</li>
+      <li>Everything the bridge does between games.</li>
+    </ul></div>
+    <div class="box new"><h3>Decided (Oct 28)</h3><ul>
+      <li><b>Anyone at the table</b> starts and ends it; ending asks first.</li>
+      <li><b>It ends</b> after 6 hours or when someone ends it, not when the DM closes askdnd.</li>
+      <li><b>The DM's pill</b> shows the party's slowest sheet.</li>
+      <li><b>Changes from askdnd</b> only while your sheet can be reached now; built with the fight screen.</li>
+    </ul></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const st = { game: 'off', sheet: 'bridge', who: 'player', toast: '' };
+  const $ = s => document.querySelector(s);
+  const party = [
+    { name: 'Cole', me: true },
+    { name: 'Big C', how: 'bridge' },
+    { name: 'No Name', how: 'timer', note: 'no extension' },
+    { name: 'Trah', how: 'timer', note: 'on a phone' },
+  ];
+  function rowHow(r, game) {
+    const how = r.me ? (st.sheet === 'none' ? 'timer' : st.sheet === 'hand' ? 'hand' : 'bridge') : r.how;
+    if (how === 'hand') return ['warn', '1 to make by hand'];
+    if (how === 'bridge') return ['ok', 'in step · bridge'];
+    return ['', (game ? 'every 3 min · ' + (r.me ? '1 min ago' : '2 min ago') : 'updated ' + (r.me ? '20 hours ago' : '2 days ago')) + (r.note ? ' · ' + r.note : '')];
+  }
+  function render() {
+    document.querySelectorAll('[data-ctl]').forEach(g => g.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === st[g.dataset.ctl]))));
+    const game = st.game === 'on', dm = st.who === 'dm', pill = $('[data-pill]'), txt = $('[data-pill-text]');
+    // The pill: Game Mode first, then how you're kept in step (the DM: the party's slowest sheet)
+    let cls = '', words = '';
+    if (dm) {
+      cls = game ? 'live' : '';
+      words = game ? '<b>Game on</b> · slowest sheet 2 min ago' : 'Updated 2 days ago';
+    } else if (st.sheet === 'hand') {
+      cls = 'warn'; words = (game ? '<b>Game on</b> · ' : '') + '1 to make by hand';
+    } else if (st.sheet === 'bridge') {
+      cls = game ? 'live' : 'step'; words = (game ? '<b>Game on</b> · ' : '') + 'in step with D&amp;D Beyond';
+    } else {
+      cls = game ? 'live' : ''; words = game ? '<b>Game on</b> · updated 1 min ago' : 'Updated 20 hours ago';
+    }
+    pill.className = 'pill ' + cls; txt.innerHTML = words;
+    $('[data-me]').hidden = dm;
+    // Game Mode block
+    $('[data-gm-tag]').innerHTML = game ? '<span class="on-tag">On for the table</span>' : '<span class="off-tag">Off</span>';
+    $('[data-gm-text]').innerHTML = game
+      ? 'Started by ' + (dm ? 'you' : 'the DM') + ' at 7:02 PM · ends at 1:02 AM. Rolls are shared, and sheets without the bridge are read every 3 minutes.'
+      : 'Start it when the game starts: everyone at the table gets shared rolls, and every sheet stays fresh for 6 hours. Between games your sheet and askdnd still keep in step while you use either.';
+    $('[data-gm-btns]').innerHTML = game ? '<button type="button" class="btn" data-ask-end>End for the table</button>' : '<button type="button" class="btn primary" data-start>Start for the table</button>';
+    $('[data-confirm]').hidden = true;
+    // Rows
+    $('[data-rows]').innerHTML = party.map(r => {
+      const [c, t] = rowHow(r, game);
+      return '<div class="lrow' + (r.me && !dm ? ' here' : '') + '"><span>' + r.name + (r.me && !dm ? ' <span class="muted">(you)</span>' : '') + '</span><span class="how ' + c + '">' + t + '</span></div>';
+    }).join('');
+    $('[data-refresh]').textContent = dm ? 'Refresh everyone' : 'Refresh Cole now';
+    // The toast someone else at the table sees
+    const toast = $('[data-toast]');
+    toast.hidden = !st.toast; toast.innerHTML = st.toast;
+    // The extension's panel
+    const ext = $('[data-ext]'), cap = $('[data-ext-cap]');
+    const showExt = !dm && st.sheet !== 'none';
+    ext.hidden = !showExt;
+    cap.textContent = dm ? 'The DM has no sheet of their own: no panel.' : st.sheet === 'none' ? 'No extension on a phone: no panel. askdnd reads the sheet ' + (game ? 'every 3 minutes.' : 'when you open your page.') : "The panel beside Cole's D&D Beyond sheet, in Chrome.";
+    const est = $('[data-ext-st]'), note = $('[data-ext-note]');
+    if (st.sheet === 'hand') { est.className = 'st off'; est.textContent = '1 to make by hand'; note.textContent = '2nd-level: 1 used → 2 used. Make it here on the sheet; askdnd ticks it off when it reads it.'; }
+    else { est.className = 'st live'; est.textContent = game ? 'Game on · in step' : 'In step'; note.textContent = game ? 'Game Mode keeps this live until 1:02 AM.' : 'Live while you use askdnd or this sheet (30 minutes after the last time). A save here always gets through.'; }
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-ctl] button');
+    if (b) { st[b.closest('[data-ctl]').dataset.ctl] = b.dataset.v; st.toast = ''; render(); return; }
+    if (e.target.closest('[data-start]')) { st.game = 'on'; st.toast = '<b>' + (st.who === 'dm' ? 'You' : 'The DM') + ' started Game Mode</b> · rolls are shared with the table until 1:02 AM. (Everyone else\'s pages show this.)'; render(); return; }
+    if (e.target.closest('[data-ask-end]')) { $('[data-confirm]').hidden = false; return; }
+    if (e.target.closest('[data-keep]')) { $('[data-confirm]').hidden = true; return; }
+    if (e.target.closest('[data-end]')) { st.game = 'off'; st.toast = '<b>Game Mode ended</b> · rolls are private again. Your sheet and askdnd still keep in step while you use them.'; render(); }
+  });
+  render();
+})();
+</script>

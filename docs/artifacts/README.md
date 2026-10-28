@@ -11,6 +11,7 @@ screenshots of real pages (they show the campaign).
 
 | Page | Link on claude.ai | Here | What it was |
 |---|---|---|---|
+| Game Mode and Bridge | [VfmC2TvFmSUf9ruQGWUAjk](https://claude.ai/artifact/VfmC2TvFmSUf9ruQGWUAjk) | `../mockups/game-mode-and-bridge.html` | Game Mode as one switch for the whole table, the Live pill as one status for your own sheet, and the bridge working between games as it does today (proposal, Oct 28) |
 | askdnd Manage Menu | [Y3ZKdQHFykyR9ywm3sV7at](https://claude.ai/artifact/Y3ZKdQHFykyR9ywm3sV7at) | `../mockups/manage-menu.html` | A six-item Manage menu, a section list down the left of Manage pages, an askdnd admin Overview, names in order (approved, Oct 27); round 2: three ways to tell this campaign from askdnd admin |
 | askdnd Data Strategy | [PWXtaunHcp3MEEJyJpLWoe](https://claude.ai/artifact/PWXtaunHcp3MEEJyJpLWoe) | `data-strategy.html` | Where askdnd's data lives: four buckets, books checked once (decided, Oct 27); the record is `../plans/2026-10-27-data-strategy.md` |
 | askdnd Stack Map | [AYYGdebsBtPND4HoTq5uyr](https://claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr) | `../stack.html` | How the services connect, who changes each, where the data lives (kept current) |
