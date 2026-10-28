@@ -2761,6 +2761,15 @@
     });
   }
 
+  const all = document.querySelector('[data-br-check-all]');
+  if (all) all.addEventListener('click', async () => {  // Manage › askdnd › D&D Beyond bridge: every kind of change, out and back
+    all.disabled = true;
+    const r = await fetch('/bridge/check?full=1', { method: 'POST', headers: { Accept: 'application/json' } });
+    if (r.ok) window.postMessage({ askdndBridge: 'deliver', ddbId: (await r.json()).test_ddb_id }, location.origin);
+    all.textContent = r.ok ? 'Checking: the menu bar shows how it goes' : 'Open the test character\'s sheet first';
+    setTimeout(() => { all.disabled = false; all.textContent = 'Check everything'; }, 8000);
+  });
+
   const root = document.querySelector('[data-bridge]');
   if (!root) return;
   const id = root.dataset.bridge, ddbId = root.dataset.ddbId, canAct = root.dataset.canAct === 'true';

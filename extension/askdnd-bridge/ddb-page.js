@@ -3,15 +3,26 @@
 //    the sheet back from D&D Beyond itself).
 // 2. Makes askdnd's batches: only the requests askdnd may make (WRITES), only for the character whose sheet this is,
 //    with a short-lived token D&D Beyond gives this page from its own sign-in. Nothing is stored.
-// 3. Keeps the open sheet showing what D&D Beyond has (Brett, 2026-10-27: no reloading): after askdnd changes the
+// 3. Hears rolls made on the sheet: the finished roll the sheet sends to D&D Beyond's game log is passed on to askdnd's
+//    Table rolls (only heard: nothing is ever sent to the game log).
+// 4. Keeps the open sheet showing what D&D Beyond has (Brett, 2026-10-27: no reloading): after askdnd changes the
 //    character, or when askdnd's read of D&D Beyond differs from what this page holds, the page reads the character as
 //    the sheet does when it opens and hands it to the sheet's own store, so it can't save an old number back.
 (() => {
   if (window.__askdndBridge) return;
   window.__askdndBridge = true;
   const CS = 'https://character-service.dndbeyond.com';
-  // The same list as app/ddb_fields.py WRITES
-  const WRITES = new Set(['PUT /character/v5/life/hp/damage-taken', 'PUT /character/v5/inventory/item/quantity']);
+  // The same list as app/ddb_fields.py WRITES (tests/test_ddb_bridge.py checks)
+  const WRITES = new Set([
+    'PUT /character/v5/life/hp/damage-taken', 'PUT /character/v5/life/death-saves', 'PUT /character/v5/character/inspiration',
+    'PUT /character/v5/condition', 'DELETE /character/v5/condition', 'POST /character/v5/character/rest/short',
+    'PUT /character/v5/spell/slots', 'PUT /character/v5/spell/pact-magic',
+    'PUT /character/v5/action/limited-use', 'PUT /character/v5/inventory/item/quantity', 'PUT /character/v5/inventory/item/equipped',
+    'PUT /character/v5/inventory/item/attuned', 'PUT /character/v5/inventory/item/charge', 'PUT /character/v5/inventory/item/move',
+    'POST /character/v5/inventory/item', 'DELETE /character/v5/inventory/item',
+    'PUT /character/v5/inventory/currency/copper', 'PUT /character/v5/inventory/currency/silver',
+    'PUT /character/v5/inventory/currency/electrum', 'PUT /character/v5/inventory/currency/gold',
+    'PUT /character/v5/inventory/currency/platinum']);
   const sheetId = () => (location.pathname.match(/\/characters\/(\d+)/) || [])[1];
   const post = m => window.postMessage({ askdndBridge: 'from-page', characterId: sheetId(), ...m }, location.origin);
   let saving = 0;  // the sheet's own changes on their way to D&D Beyond
@@ -45,6 +56,19 @@
     } finally { saving--; }
   };
 
+  // Rolls made on this sheet: the sheet tells D&D Beyond's game log each finished roll; askdnd only listens (the message
+  // goes out exactly as the sheet sent it) and passes this character's own on to Table rolls
+  const wsend = WebSocket.prototype.send;
+  WebSocket.prototype.send = function (m) {
+    try {
+      const j = typeof m === 'string' && m.includes('dice/roll/fulfilled') ? JSON.parse(m) : null;
+      if (j && j.eventType === 'dice/roll/fulfilled' && String(j.entityId) === sheetId() && j.data) {
+        post({ type: 'roll', roll: { id: j.data.rollId, action: j.data.action, rolls: j.data.rolls, scope: j.messageScope, target: j.messageTarget, user: j.userId } });
+      }
+    } catch (e) { /* not a roll */ }
+    return wsend.apply(this, arguments);
+  };
+
   let token = null, until = 0;
   async function auth(fresh) {
     if (!fresh && token && Date.now() < until) return token;
@@ -67,13 +91,22 @@
 
   // Where a field is in a character, as app/ddb_fields.py `pick` reads it (keep the two the same)
   function pick(data, steps) {
+    const isDict = x => x && typeof x === 'object' && !Array.isArray(x);
     let v = data;
     for (const s of steps) {
-      if (s && typeof s === 'object' && 'or' in s) { if (v == null) v = s.or; }
+      if (isDict(s) && 'or' in s) { if (v == null) v = s.or; }
+      else if (isDict(s) && 'present' in s) v = v != null;
       else if (v == null) continue;
-      else if (typeof s === 'string') v = (v && typeof v === 'object' && !Array.isArray(v)) ? v[s] : null;
-      else if ('id' in s) v = Array.isArray(v) ? (v.find(x => x && x.id === s.id) || null) : null;
+      else if (s === '*') v = isDict(v) ? Object.values(v).filter(Array.isArray).flat() : null;
+      else if (typeof s === 'string') v = isDict(v) ? v[s] : null;
       else if ('read' in s) { const o = {}; for (const k of Object.keys(s.read)) o[k] = pick(v, s.read[k]); v = o; }
+      else if ('sum' in s) {
+        const [where, want, key] = s.sum;
+        v = Array.isArray(v) ? v.filter(x => isDict(x) && String(pick(x, where)) === String(want)).reduce((t, x) => t + (x[key] || 0), 0) : null;
+      } else {
+        const [key, want] = Object.entries(s)[0];
+        v = Array.isArray(v) ? (v.find(x => isDict(x) && String(x[key]) === String(want)) || null) : null;
+      }
       if (v === undefined) v = null;
     }
     return v;

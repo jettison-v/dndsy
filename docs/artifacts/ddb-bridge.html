@@ -59,6 +59,17 @@ footer { color: var(--faint); font-size: .84rem; border-top: 1px solid var(--lin
   </header>
 
   <section>
+    <h2>What it changes on D&amp;D Beyond</h2>
+    <div class="table">
+      <div class="tr"><span>Life</span><span>Hit points and temporary hit points, Death Saving Throws, Heroic Inspiration, conditions and Exhaustion, Hit Dice (D&amp;D Beyond takes those only as a Short Rest, so askdnd spends them that way)</span></div>
+      <div class="tr"><span>Magic</span><span>Spell slots, Pact Magic slots, class features' limited uses</span></div>
+      <div class="tr"><span>Inventory</span><span>How many, equipped, attuned, charges, coins, adding another of an item, removing one, moving it into or out of a container</span></div>
+      <div class="tr"><span>Rolls</span><span>Only heard: a roll made on the sheet comes into Table rolls marked "on D&amp;D Beyond". askdnd's own rolls stay out of D&amp;D Beyond's game log.</span></div>
+      <div class="tr sleep"><span>Left out</span><span>Experience points, custom names and custom items. Prepared spells come with casting in Phase 2.</span></div>
+    </div>
+  </section>
+
+  <section>
     <h2>When it's on</h2>
     <div class="table">
       <div class="tr"><span>An askdnd page opens, or someone uses one</span><span>On for 30 more minutes. A character's page also reads D&amp;D Beyond first if askdnd's copy is more than 2 minutes old.</span></div>
@@ -75,12 +86,13 @@ footer { color: var(--faint); font-size: .84rem; border-top: 1px solid var(--lin
       <li><span class="st wait">Works it out again</span><span>Someone changed the sheet a moment before: the change is worked out again from the new numbers.</span></li>
       <li><span class="st off">Make by hand</span><span>A number askdnd can't explain, or 3 failed tries: nothing is written over, and askdnd lists the end state to make.</span></li>
       <li><span class="st wait">Waits</span><span>No sheet open, or a phone: the change waits and goes out when a sheet opens (6 hours at most).</span></li>
-      <li><span class="st seen">Changed on D&amp;D Beyond</span><span>Changes made on D&amp;D Beyond itself show in askdnd within seconds.</span></li>
+      <li><span class="st seen">Changed on D&amp;D Beyond</span><span>Changes made on D&amp;D Beyond itself show in askdnd within seconds, and are logged whichever read sees them first.</span></li>
+      <li><span class="st seen">Shown in place</span><span>Every open copy of the sheet shows askdnd's change without reloading, so it can't save an old number back.</span></li>
     </ul>
   </section>
 
   <footer>
-    <span>Tested on Vi in Brett's Chrome against the real D&amp;D Beyond, plus 521 automated tests. Still a local proof (branch ddb-bridge-proof), not on beta.</span>
+    <span>Every change tested on Vi in Brett's Chrome against the real D&amp;D Beyond (Manage › askdnd › D&amp;D Beyond bridge › Check everything runs them all again, out and back), plus the automated tests. Still a local proof, switched off on beta.</span>
     <span>Admins change the timers on Manage › askdnd › D&amp;D Beyond bridge. D&amp;D Beyond's terms don't allow tools like this: nothing is disguised, Brett accepts the risk and tells the table, and if D&amp;D Beyond blocks it, askdnd falls back to make by hand.</span>
   </footer>
 </div>

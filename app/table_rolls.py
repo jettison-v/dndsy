@@ -290,7 +290,7 @@ def entries(db: Session, roots: list[TableRoll], kids: list[TableRoll], viewer_i
         name = names.get(r.character_id) or r.who or "Someone"
         e = {"id": r.id, "seq": seq[r.id], "character_id": r.character_id or 0, "name": name, "initial": name[:1].upper(),
              "portrait": pics.get(r.character_id) or "", "hue": (r.character_id or 0) % 6 if r.character_id else 6,
-             "mine": mine, "to": r.visibility, "hidden": how == "hidden", "dice": dice.get(r.user_id) or prefs(None),
+             "mine": mine, "to": r.visibility, "hidden": how == "hidden", "dice": dice.get(r.user_id) or prefs(None), "ddb": bool(r.ddb_roll_id),
              "at": r.created_at.isoformat() if r.created_at else "", "ago": _ago(r.created_at),
              "hidden_text": "Rolled for the DM" if r.character_id else "Rolled behind the screen"}
         if how == "full":
@@ -306,7 +306,7 @@ def entries(db: Session, roots: list[TableRoll], kids: list[TableRoll], viewer_i
                   "outcome": _death(total, nat) if r.kind == "death" else "",
                   "short": {"death": "Death", "heal": "Heal", "damage": "Dmg", "dice": "Dice"}.get(r.kind) or r.label.split()[0][:5],
                   "can": {"damage": "", "reroll": "", "bonus": False}}
-            if mine and newest_mine:
+            if mine and newest_mine and not r.ddb_roll_id:  # (a roll made on D&D Beyond is only shown: its dice are D&D Beyond's)
                 ctx = mine_ctx or {}
                 e["can"] = {
                     "damage": _damage_label(r) if r.kind == "attack" and (r.damage or r.spec) and not dmg and (nat != 1 or r.parts) else "",

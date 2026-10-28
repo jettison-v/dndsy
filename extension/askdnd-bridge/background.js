@@ -97,6 +97,7 @@ chrome.runtime.onMessage.addListener((m, sender) => {
     if (m.type === 'ddb-active') return active(here);
     if (m.type === 'panel-refresh') return refreshPanels(here);
     if (m.type === 'ddb-saved') return heardSoon(here, sender.tab.id);
+    if (m.type === 'ddb-roll') return api('POST', '/bridge/roll/' + here, m.roll).catch(() => {});  // into Table rolls, "on D&D Beyond"
     if (m.type === 'ddb-applied') {
       // Every other open copy of this sheet shows the old numbers, and D&D Beyond's page would save them back over the
       // new ones on its next change: each shows D&D Beyond's numbers now, in place (the tab that wrote does it itself)
