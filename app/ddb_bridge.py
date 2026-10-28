@@ -411,8 +411,8 @@ def outbox(db: Session, character: Character) -> dict | None:
                         before={f: _value(n, f) for f in target}, target=target, state="sending", attempts=1, sent_at=now,
                         next_at=0, check=keep[0].data.get("check", ""), names={f: ddb_fields.name(n["raw"], f) for f in target})
     db.add(batch)
-    for i in keep:
-        i.state = "sending"
+    for i in keep:  # (each intent's own fields: a batch stopped part way settles the ones D&D Beyond has)
+        i.state, i.data = "sending", {**i.data, "fields": sorted(plan([_as_dict(i)], n)[0])}
     db.flush()
     return {"id": batch.id, "ops": batch.ops}
 
@@ -464,7 +464,7 @@ def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: 
     if not missing:
         _settle(db, b)
     elif any(now.get(f) != b.before.get(f) for f in missing):
-        _stop(db, b, f"D&D Beyond's {_say(missing, b)} isn't what askdnd wrote or what it had before.")
+        _stop(db, b, f"D&D Beyond's {_say(missing, b)} isn't what askdnd wrote or what it had before.", missing)
     else:
         _again(db, b, "D&D Beyond answered OK but didn't keep it.")
 
@@ -482,11 +482,18 @@ def _again(db: Session, b: BridgeBatch, why: str) -> None:
     b.attempts += 1
 
 
-def _stop(db: Session, b: BridgeBatch, why: str) -> None:
+def _stop(db: Session, b: BridgeBatch, why: str, missing: list[str] | None = None) -> None:
+    """The batch stops. With `missing` (the read-back's fields D&D Beyond doesn't hold as written), the rest landed: an
+    intent all of whose fields D&D Beyond has is made (never listed to make again), the others wait to be made by hand."""
     b.state, b.error = "stopped", why[:400]
+    bad = set(b.target if missing is None else missing)
     for it in _intents_of(db, b):
-        it.state, it.error = "not_yet", (why + " Nothing was written over.")[:400]
-    _check_step(db, b, False, why)
+        if missing is not None and not bad.intersection(it.data.get("fields", b.target)):
+            it.state = "live"
+            _log(db, b.character_id, it.label, "live")
+        else:
+            it.state, it.error = "not_yet", (why + " Nothing was written over.")[:400]
+    _check_step(db, b, False, why, [f for f in b.target if f not in bad])
 
 
 def heard(db: Session, character: Character, saved: bool = True) -> None:
@@ -595,14 +602,18 @@ def _every_change(n: dict) -> list[tuple[str, dict]]:
     return out
 
 
-def _check_step(db: Session, b: BridgeBatch, ok: bool, why: str = "") -> None:
+def _check_step(db: Session, b: BridgeBatch, ok: bool, why: str = "", landed: list[str] = ()) -> None:
     if not b.check:
         return
     rt = _health.get("round_trip") or {"state": "running", "at": _now(), "error": ""}
     _health["round_trip"] = rt
     if not ok:
         rt.update(state="failed", error=why, done_at=_now())
-        b.check = ""  # (nothing goes back on its own: the stopped change waits to be made by hand or undone)
+        if b.check == "out":  # what the check did change goes back (the stopped field waits to be made by hand)
+            character = db.get(Character, b.character_id)
+            for f in landed:
+                add(db, character, "set", {"field": f, "value": b.before[f]}, f"Check: {b.names.get(f, f)} back")
+        b.check = ""
         return
     if b.check == "out":  # each field back as D&D Beyond had it before the check
         character = db.get(Character, b.character_id)

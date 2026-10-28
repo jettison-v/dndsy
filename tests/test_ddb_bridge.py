@@ -612,6 +612,33 @@ def test_the_full_check_takes_one_of_each_out_and_puts_everything_back(admin, db
     assert admin.get("/bridge/health").json()["text"].startswith("D&D Beyond · working (checked ")
 
 
+def test_a_check_stopped_part_way_settles_what_landed_and_puts_it_back(admin, db, sheet, monkeypatch):
+    """Seen on Vi (2026-10-27): one field D&D Beyond held at a value askdnd couldn't explain stopped the whole batch, and
+    the rest, which had landed, was listed to make again (a hit point taken twice). Now what landed is made, only the
+    unexplained field is listed to make by hand, and the check puts back what it changed."""
+    monkeypatch.setattr(ddb_bridge, "TEST_DDB_ID", "75423618")
+    monkeypatch.setattr(ddb_bridge, "TEST_ITEM", "Potion of Healing")
+    monkeypatch.setattr(ddb, "fetch_character_json", lambda _id, timeout=None: copy.deepcopy(sheet))
+    cole = char(db, "Cole")
+    owned_by(db, cole, "admin@example.com")
+    before = ddb_fields.tracked(copy.deepcopy(sheet))
+    admin.post("/bridge/hello", json={"sheets": ["75423618"]})
+    admin.post("/bridge/check?full=1")
+    out = ddb_bridge.outbox(db, cole)
+    make(sheet, out)
+    sheet["conditions"] = [c for c in sheet["conditions"] if c["id"] != ddb_fields.EXHAUSTION] + [{"id": ddb_fields.EXHAUSTION, "level": 3}]
+    ddb_bridge.delivered(db, out["id"], ok=True)
+    st = admin.get(f"/bridge/state/{cole.id}").json()
+    assert [c["label"] for c in st["changes"] if c["state"] == "not_yet"] == ["Check: Exhaustion level 1"]
+    assert st["to_make"] == ["Exhaustion level 1 (D&D Beyond has level 3)"]
+    back = ddb_bridge.outbox(db, cole)
+    assert {op["field"] for op in back["ops"]} >= {"hp", "death", "inspiration"} and "exhaustion" not in {op["field"] for op in back["ops"]}
+    make(sheet, back)
+    ddb_bridge.delivered(db, back["id"], ok=True)
+    assert {f: v for f, v in ddb_fields.tracked(sheet).items() if f != "exhaustion"} == {f: v for f, v in before.items() if f != "exhaustion"}
+    assert admin.get("/bridge/health").json()["text"] == "D&D Beyond · check failed"
+
+
 def test_askdnd_and_the_extension_read_every_kind_of_field_the_same_way():
     """The steps ddb-page.js `pick` follows too: a list picked by id or level (as text), lists joined, a sum, presence."""
     data = {"actions": {"race": [], "class": [{"id": "9", "limitedUse": {"numberUsed": 2}}], "item": None},
