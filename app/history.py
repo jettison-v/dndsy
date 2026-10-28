@@ -48,7 +48,7 @@ TRACKED = {
     CampaignCharacter: ("wild_shape_keep",),
     PlayerNote: ("title", "status", "data"),
     CharacterPick: ("note",),
-    Campaign: ("name", "dm_name"),
+    Campaign: ("name", "dm_name", "books"),
     User: ("name", "access"),
     CampaignMember: ("role", "left_on"),
     HouseRule: ("value", "reason"),
@@ -77,7 +77,7 @@ FIELD_LABELS = {"summary": "Description", "quest_open": "Quest", "status": "Publ
                 "description": "Description", "title": "Title", "played_on": "Date played", "ddb_id": "D&D Beyond link",
                 "player_name": "Player name", "owner_id": "Played by", "data": "Content", "note": "Note",
                 "dm_name": "DM name", "access": "Access", "is_dm": "DM", "role": "Role", "left_on": "Left the campaign", "value": "Rule", "reason": "Why", "deleted": "Deleted",
-                "wild_shape_keep": "Kept in Wild Shape", "text": "Text", "kind": "Kind", "alias": "Name",
+                "wild_shape_keep": "Kept in Wild Shape", "books": "Books", "text": "Text", "kind": "Kind", "alias": "Name",
                 "misspelling": "Misspelling", "type": "Relationship"}
 
 _actor: contextvars.ContextVar[str] = contextvars.ContextVar("history_actor", default="")

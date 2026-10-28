@@ -4,7 +4,7 @@ for a local copy of beta. Files already there are skipped (a key's content never
 Run it with the backup service's S3 key, which Railway lends to this one command (never printed or saved):
     railway run --service askdnd-backup -- uv run python scripts/fetch_files.py private/backups/askdnd-….json.gz
 Reads S3 only; never touches a database. scripts/pull_beta.sh runs it for you. If the key can't read v2/files/
-it says so and stops without failing: pictures still have their copies in the database until VTT 0.5 removes them.
+it says so and stops without failing: the local copy then works without its pictures.
 """
 
 import os
@@ -35,7 +35,7 @@ def main() -> None:
     try:
         got = fetch(keys, files.S3(os.environ["AWS_S3_BUCKET_NAME"], os.environ.get("AWS_REGION")), target)
     except ClientError as e:
-        print(f"Couldn't download files from S3 ({e.response['Error']['Code']}); pictures will use their database copies.",
+        print(f"Couldn't download files from S3 ({e.response['Error']['Code']}); the local copy will show no pictures.",
               file=sys.stderr)
         return
     print(f"Files: {len(keys):,} listed, {got:,} downloaded to {target.root}", file=sys.stderr)

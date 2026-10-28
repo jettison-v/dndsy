@@ -170,7 +170,7 @@ def note_linker(db: Session, character: Character, sheet: dict | None) -> NoteLi
         for x in book["spells"]:
             urls.setdefault(x["name"], (f"{base}/detail?ref={x['key']}", False))
     if ws.druid(sheet):
-        for f in ws.forms(sheet, set()):
+        for f in ws.forms(sheet, set(), beasts=ws.beasts(db, character.campaign_id)):
             urls[f["name"]] = (f"{base}/form?name={f['name'].replace(' ', '%20')}", True)
     names = sorted(urls, key=len, reverse=True)
     pattern = re.compile(r"(?<![\w-])(?:" + "|".join(re.escape(n) for n in names) + r")(?![\w-])") if names else None

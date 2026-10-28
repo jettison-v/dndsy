@@ -15,6 +15,7 @@
       <span class="tag">CR {{ b.cr_label }}</span>{% if b.size %}<span class="tag">{{ b.size }} Beast</span>{% endif %}
       {% if known %}<span class="tag done">Known</span>{% elif why_not %}<span class="tag faint">{{ why_not }}</span>{% else %}<span class="tag">You could learn it</span>{% endif %}
       {% if current %}<span class="tag draft">In this form on Battle</span>{% endif %}
+      {% if book %}<span class="tag" title="From a book this campaign uses (Manage › Settings › Books)">{{ book }}</span>{% endif %}
       {% if b.ddb_url %}<a class="note" href="{{ b.ddb_url }}" target="_blank" rel="noopener" data-no-peek>D&amp;D Beyond ↗</a>{% endif %}
     </div>
   </div>

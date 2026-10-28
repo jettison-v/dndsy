@@ -16,7 +16,6 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
-    LargeBinary,
     String,
     Text,
     UniqueConstraint,
@@ -29,6 +28,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app import books as _books
 from app.db import Base
 
 
@@ -100,6 +100,9 @@ class Campaign(Timestamped, Base):
     # The VTT switch (app/vtt.py): a test campaign sees every VTT piece; others only the finished ones switched on here
     is_test: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     vtt_pieces: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
+    # Its books (app/books.py): which private rules books its lookups use, set on Manage › Settings › Books
+    books: Mapped[list] = mapped_column(JSONB, default=lambda: list(_books.DEFAULT),
+                                        server_default=sql(f"'{_books.DEFAULT_JSON}'::jsonb"))
     members: Mapped[list["CampaignMember"]] = relationship(back_populates="campaign")
 
 
@@ -180,17 +183,14 @@ class StoredFile(Base):
 
 class EntityPicture(Timestamped, Base):
     """A picture on an entity page (portrait, map, banner), added by the DM or a reviewer, resized by
-    app/pictures.py. The files are in file storage (file_key, thumb_key); data and thumb are the old copies in the
-    database, still written and read when a key is missing until they're removed (VTT 0.5)."""
+    app/pictures.py. The files are in file storage (app/files.py)."""
 
     __tablename__ = "entity_pictures"
     id: Mapped[int] = mapped_column(primary_key=True)
     entity_id: Mapped[int] = mapped_column(ForeignKey("entities.id", ondelete="CASCADE"), unique=True)
     content_type: Mapped[str] = mapped_column(String(100), default="image/webp", server_default="image/webp")
-    file_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), index=True, nullable=True)  # up to 1200 px
-    thumb_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), index=True, nullable=True)  # 320 px square
-    data: Mapped[bytes] = mapped_column(LargeBinary, deferred=True)  # up to 1200 px
-    thumb: Mapped[bytes] = mapped_column(LargeBinary, deferred=True)  # 320 px square crop
+    file_key: Mapped[str] = mapped_column(ForeignKey("stored_files.key"), index=True)  # up to 1200 px
+    thumb_key: Mapped[str] = mapped_column(ForeignKey("stored_files.key"), index=True)  # 320 px square crop
     added_by: Mapped[str] = mapped_column(String(320), default="", server_default="")
 
 
@@ -424,6 +424,25 @@ class CampaignContent(Timestamped, Base):
         return {**(self.data or {}), "key": self.key, "name": self.name, "source": self.source}
 
 
+class BookEntry(Timestamped, Base):
+    """One entry from a private rules book (app/books.py): a monster from the 2024 Monster Manual, say, copied in by
+    scripts/book_load.py from the offline copy. Kept only here, never in the public repo; a campaign's lookups use it
+    when that book is on for the campaign (Campaign.books). `data` is the entry in its kind's shape
+    (rules_data.CAMPAIGN_KINDS) without key, name and source; `page` is where the book prints it and `image` a link to
+    D&D Beyond's art (a link, never the picture)."""
+
+    __tablename__ = "book_entries"
+    __table_args__ = (UniqueConstraint("book", "kind", "key"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    book: Mapped[str] = mapped_column(String(40), index=True)  # app/books.py BOOKS: "mm-2024"
+    kind: Mapped[str] = mapped_column(String(20))  # "monster" | "spell" | "magic_item"
+    key: Mapped[str] = mapped_column(String(120))  # "giant-squid"; the same key as an SRD entry replaces it
+    name: Mapped[str] = mapped_column(String(200))
+    page: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    image: Mapped[str] = mapped_column(String(500), default="", server_default="")
+    data: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
+
+
 class PlayerNote(Timestamped, Base):
     """A player's own structured note on their character (app/player_notes.py): a battle
     combo, a leveling strategy, a personal quest or a general note. Replaces syncing
@@ -594,9 +613,7 @@ class NoteImage(Base):
     snapshot_id: Mapped[int] = mapped_column(ForeignKey("note_snapshots.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column(String(300))
     content_type: Mapped[str] = mapped_column(String(100))
-    # In file storage (app/files.py); data is the old copy in the database, kept until it's removed (VTT 0.5)
-    file_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), index=True, nullable=True)
-    data: Mapped[bytes] = mapped_column(LargeBinary, deferred=True)
+    file_key: Mapped[str] = mapped_column(ForeignKey("stored_files.key"), index=True)  # in file storage (app/files.py)
 
 
 # ExtractionRun sources that are not session drafts (they never hold Claude's questions).

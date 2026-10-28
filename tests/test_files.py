@@ -1,5 +1,6 @@
 """File storage (app/files.py, VTT 0.5): keys per campaign named by content, served only through askdnd's routes,
-pictures moving out of the database in the safe order, and the nightly sweep that keeps every kept backup whole."""
+pictures kept only in storage, and the nightly sweep that keeps every
+kept backup whole."""
 
 import base64
 import hashlib
@@ -97,7 +98,7 @@ def test_storage_is_s3_on_beta_once_its_key_is_set(monkeypatch):
     monkeypatch.setattr(config, "FILE_STORAGE", "s3")
     monkeypatch.setattr(config, "AWS_S3_BUCKET_NAME", "askdnd-ai")
     monkeypatch.delenv("AWS_ACCESS_KEY_ID", raising=False)
-    assert files.from_config() is None  # not set up yet: pictures stay in the database only, as before
+    assert files.from_config() is None  # not set up yet
     monkeypatch.setattr(config, "FILE_STORAGE", "private/files")
     assert files.from_config().root == ROOT / "private" / "files"
 
@@ -109,7 +110,7 @@ def test_an_uploaded_picture_is_stored_and_served_through_askdnd(people, db, fil
     dm.post(f"/campaign/{k.id}/picture", files={"file": ("k.png", png(), "image/png")}, headers=HX)
     pic = db.scalar(select(EntityPicture))
     assert pic.file_key.startswith(f"{k.campaign_id}/") and pic.thumb_key.endswith(".webp")
-    assert file_store.get(pic.file_key) == pic.data and file_store.get(pic.thumb_key) == pic.thumb  # both, until 0.5 ends
+    assert file_store.get(pic.file_key) and file_store.get(pic.thumb_key)
     url = pictures.urls(db, [k.id])[k.id]
     assert url["full"].endswith(f"v={files.version(pic.file_key)}")  # a new picture is a new address
     got = player.get(url["thumb"])
@@ -119,30 +120,25 @@ def test_an_uploaded_picture_is_stored_and_served_through_askdnd(people, db, fil
         assert player.get(f"/files/{key}").status_code == 404
 
 
-def test_reads_prefer_storage_and_fall_back_to_the_database_copy(people, db, file_store):  # noqa: F811
+def test_pictures_are_read_only_from_storage(people, db, file_store):  # noqa: F811
     import_bundle(db, BUNDLE)
     k = entity(db, "Kieran")
-    db.add(EntityPicture(entity_id=k.id, data=b"old full", thumb=b"old thumb"))  # from before file storage
+    key = files.put(db, k.campaign_id, b"RIFF full", "image/webp")
+    db.add(EntityPicture(entity_id=k.id, file_key=key, thumb_key=key))
     db.flush()
     player = people["player"]
     url = pictures.urls(db, [k.id])[k.id]
-    assert player.get(url["full"]).content == b"old full"
-    pic = db.scalar(select(EntityPicture))
-    pic.file_key = files.put(db, k.campaign_id, b"RIFF new full", "image/webp")
-    db.flush()
-    assert player.get(url["full"]).content == b"RIFF new full"
-    file_store.delete(pic.file_key)  # storage lost it: the database copy still shows
-    assert player.get(url["full"]).content == b"old full"
+    assert player.get(url["full"]).content == b"RIFF full"
+    file_store.delete(key)  # storage lost it
+    assert player.get(url["full"]).status_code == 404
 
 
-def test_without_storage_pictures_stay_in_the_database(people, db, monkeypatch):  # noqa: F811
+def test_without_storage_a_picture_is_refused_not_lost(people, db, monkeypatch):  # noqa: F811
     monkeypatch.setattr(files, "storage", lambda: None)
     import_bundle(db, BUNDLE)
     k = entity(db, "Kieran")
     r = people["dm"].post(f"/campaign/{k.id}/picture", files={"file": ("k.png", png(), "image/png")}, headers=HX)
-    pic = db.scalar(select(EntityPicture))
-    assert "Picture saved" in r.headers["HX-Trigger"] and pic.file_key is None and pic.data
-    assert people["player"].get(pictures.urls(db, [k.id])[k.id]["thumb"]).content == pic.thumb
+    assert "file storage isn't set up" in r.headers["HX-Trigger"] and db.scalar(select(EntityPicture)) is None
 
 
 def test_note_images_go_to_storage_and_still_reach_claude(db, file_store):
@@ -162,7 +158,7 @@ def test_the_nightly_sweep_keeps_every_file_a_kept_backup_could_need(db, file_st
     k = entity(db, "Kieran")
     used = files.put(db, c.id, b"RIFF used", "image/webp")
     dropped = files.put(db, c.id, b"RIFF dropped", "image/webp")
-    db.add(EntityPicture(entity_id=k.id, data=b"", thumb=b"", file_key=used, thumb_key=used))
+    db.add(EntityPicture(entity_id=k.id, file_key=used, thumb_key=used))
     db.flush()
     assert {str(col) for col in files.references()} == {"entity_pictures.file_key", "entity_pictures.thumb_key", "note_images.file_key"}
     now = datetime.now(UTC)
@@ -185,28 +181,13 @@ def test_the_nightly_sweep_keeps_every_file_a_kept_backup_could_need(db, file_st
     assert files.sweep(db, file_store, later)["missing"] == [used]  # the nightly backup reports it (and fails)
 
 
-def test_backfill_copies_every_database_picture_once_and_checks_it(db, file_store):
+def test_a_note_image_storage_wont_keep_is_left_out(db, file_store):
     c = campaign(db)
-    k = entity(db, "Kieran")
-    db.add(EntityPicture(entity_id=k.id, data=b"RIFF full", thumb=b"RIFF thumb"))
-    s = NoteSource(campaign_id=c.id, google_doc_id="y" * 30)
-    s.snapshots.append(NoteSnapshot(content_hash="h", text="[image: a]",
-                                    images=[NoteImage(name="a", content_type="image/png", data=b"\x89PNG a"),
-                                            NoteImage(name="b", content_type="image/x-emf", data=b"emf")]))
+    s = NoteSource(campaign_id=c.id, google_doc_id="z" * 30)
     db.add(s)
     db.flush()
-    backfill = _script("backfill_files").backfill
-    said = []
-    assert backfill(db, dry_run=True, say=said.append)["copied"] == 3 and db.scalar(select(StoredFile)) is None
-    counts = backfill(db, say=said.append)
-    assert counts == {"copied": 3, "already": 0, "skipped": 1, "checked": 3, "problems": 0}
-    pic, img = db.scalar(select(EntityPicture)), db.scalar(select(NoteImage).where(NoteImage.name == "a"))
-    assert file_store.get(pic.file_key) == b"RIFF full" and file_store.get(pic.thumb_key) == b"RIFF thumb"
-    assert file_store.get(img.file_key) == b"\x89PNG a" and pic.data == b"RIFF full"  # the database copy stays
-    assert any("image/x-emf" in line for line in said)
-    assert backfill(db, say=said.append)["copied"] == 0  # running it again is harmless
-    file_store.put(pic.file_key, b"RIFF changed", "image/webp")
-    assert backfill(db, say=said.append)["problems"] == 1
+    store_export(db, s, parse_export(make_zip(images={"images/a.svg": b"<svg onload=alert(1)>"})), "Notes")
+    assert db.scalar(select(NoteSnapshot)) is not None and db.scalar(select(NoteImage)) is None
 
 
 def test_pull_beta_downloads_only_the_files_it_lacks(tmp_path, file_store):
@@ -224,7 +205,7 @@ def test_entities_merged_keep_their_picture_file(db, file_store):
     c = campaign(db)
     k, w = entity(db, "Kieran"), entity(db, "Womford")
     key = files.put(db, c.id, b"RIFF k", "image/webp")
-    db.add(EntityPicture(entity_id=k.id, data=b"RIFF k", thumb=b"RIFF k", file_key=key, thumb_key=key))
+    db.add(EntityPicture(entity_id=k.id, file_key=key, thumb_key=key))
     db.flush()
     entities.merge(db, k, w)
     assert db.scalar(select(EntityPicture)).entity_id == w.id and db.get(Entity, k.id) is None
@@ -240,7 +221,7 @@ def test_the_database_connection_goes_back_before_the_download(monkeypatch):
         def commit(self):
             order.append("connection back")
 
-    monkeypatch.setattr(files, "read", lambda key, fallback=None: order.append("download") or b"RIFF")
+    monkeypatch.setattr(files, "read", lambda key: order.append("download") or b"RIFF")
     assert files.serve("1/abc.webp", "image/webp", release=Session()).body == b"RIFF"
     assert order == ["connection back", "download"]
 

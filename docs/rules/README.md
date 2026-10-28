@@ -14,11 +14,13 @@ summaries and openly licensed data, never the books' text.
 
 ## Rules content as data
 
-`app/rules_data.py` reads the SRD files and a campaign's own entries (`campaign_content` in the database: the DM's
-creations, or entries copied from a book the DM owns) as one: `catalog(kind, db, campaign_id)` lists them,
-`find(kind, name, db, campaign_id)` finds one, `save(...)` adds one to a campaign (checked first). A campaign's entry
-with an SRD key replaces that entry for the campaign. Every entry says where it's from in `source` ("SRD 5.2.1",
-"Homebrew", a book's title). Kinds and their fields (the schemas in `rules_data.py` are the full list):
+`app/rules_data.py` reads three layers as one: a campaign's own entries (`campaign_content` in the database: the DM's
+creations), then the entries of the campaign's books that are on (`book_entries`, app/books.py: private books the DM
+owns, loaded by `scripts/book_load.py`, never in git), then the SRD files. `catalog(kind, db, campaign_id)` lists them,
+`find(kind, name, db, campaign_id)` finds one, `save(...)` adds one to a campaign (checked first; `books.save` adds one to
+a book). The first layer with a key wins, so a campaign's entry or a book's replaces the SRD's with that key. Every entry
+says where it's from in `source` ("SRD 5.2.1", "Homebrew", a book's short label like "MM 2024"); a book's entries also
+carry `page` (and `image`, a link to D&D Beyond's art). Kinds and their fields (the schemas in `rules_data.py` are the full list):
 
 - **monster**: `key` ("adult-red-dragon"), `name`, `size` ("Medium or Small"), `type` (one of the 14 creature types),
   `tags` (["Chromatic"]), `swarm_of` ("Tiny" for a swarm of Tiny Beasts), `alignment`, `ac`, `initiative`, `hp`,

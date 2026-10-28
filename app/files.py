@@ -7,7 +7,7 @@ holds never changes, so browsers may keep a copy for good.
 
     key = files.put(db, campaign_id, data, "image/webp")   # checks type and size, records it in stored_files
     data = files.get(key)
-    files.serve(key, content_type, fallback)               # a response for askdnd's own routes
+    files.serve(key, content_type)                         # a response for askdnd's own routes
 
 Files are never public links: each feature serves them from its own route, after its own access check, through
 serve(). Nothing deletes a file directly. Rows that use one point at stored_files with a foreign key, and every
@@ -19,7 +19,7 @@ import hashlib
 import logging
 import os
 import threading
-from collections.abc import Callable, Iterator
+from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from functools import cache
@@ -158,11 +158,6 @@ def storage():
 storage.cache_clear = _made.cache_clear  # (tests reset it)
 
 
-def ready() -> bool:
-    """False on beta until its S3 key is set; pictures then stay in the database only, as before."""
-    return storage() is not None
-
-
 def _store():
     s = storage()
     if s is None:
@@ -213,34 +208,31 @@ def delete(key: str) -> None:
     _store().delete(key)
 
 
-def read(key: str | None, fallback: Callable[[], bytes] | None = None) -> bytes | None:
-    """The file at `key`, else the old copy in the database (fallback), while both exist (VTT 0.5)."""
-    if key and ready():
-        try:
-            return get(key)
-        except Exception:  # noqa: BLE001 - storage unreachable or the file missing: the database copy still works
-            log.warning("File %s couldn't be read from storage; using the database copy", key, exc_info=True)
-    return fallback() if fallback else None
+def read(key: str | None) -> bytes | None:
+    """The file at `key`, or None if there's no key or storage doesn't have it."""
+    if not key:
+        return None
+    try:
+        return get(key)
+    except FileNotFoundError:
+        log.warning("File %s is listed but storage doesn't have it", key)
+        return None
 
 
-def serve(key: str | None, content_type: str, fallback: Callable[[], bytes] | None = None, cache_control: str = CACHE_FOREVER,
-          release: Session | None = None):
+def serve(key: str | None, content_type: str, cache_control: str = CACHE_FOREVER, release: Session | None = None):
     """A response with the file, for a route that has already checked who may see it. Addresses carry the key's
     version (?v=), so the response can be cached for good.
 
     `release`: the route's database session. Its read-only transaction ends before the download, which hands its
-    connection back, so a page of pictures never holds the database's connections while S3 answers. (A `fallback`
-    that needs the database takes a connection again, briefly.)"""
+    connection back, so a page of pictures never holds the database's connections while S3 answers."""
     from fastapi import Response
 
     if release is not None:
         release.commit()  # nothing to save: ending the transaction is what returns the connection
-    data = read(key, fallback)
+    data = read(key)
     if data is None:
         return Response(status_code=404)
-    headers = {"Cache-Control": cache_control, "X-Content-Type-Options": "nosniff"}
-    if key:
-        headers["ETag"] = f'"{version(key)}"'
+    headers = {"Cache-Control": cache_control, "X-Content-Type-Options": "nosniff", "ETag": f'"{version(key)}"'}
     return Response(data, media_type=content_type, headers=headers)
 
 

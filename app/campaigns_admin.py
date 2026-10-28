@@ -1,6 +1,7 @@
 """Manage › Campaigns (admins, /manage/campaigns): every campaign, creating one, and moving characters between them
 (data organization step 4). And each campaign's Manage › Settings (/c/<campaign>/manage/settings): its name, the
-DM's name and its D&D Beyond campaign id, which its DM can change too (Manage layout, 2026-10-23), and its VTT switch
+DM's name and its D&D Beyond campaign id, which its DM can change too (Manage layout, 2026-10-23), its books
+(app/books.py: which private rules books its lookups use; its DM and admins switch each on or off) and its VTT switch
 (app/vtt.py: admins make a campaign a test one; its DM and admins switch finished pieces on). Who plays in a
 campaign, and adding characters to it, are on its Manage › Table (app/manage_table.py)."""
 
@@ -11,7 +12,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import access, vtt, web
+from app import access, books, vtt, web
 from app import characters as chars
 from app.auth import can_edit_settings, is_admin
 from app.db import get_db
@@ -95,7 +96,7 @@ def settings_page(request: Request, db: Session = Depends(get_db)):
         return web.not_found(request, "Pick a campaign first.")
     return templates.TemplateResponse(request, "manage_settings.html", {
         "campaign": campaign, "ddb_name": chars.ddb_campaigns(db).get(campaign.ddb_campaign_id or "", ""),
-        "vtt_rows": vtt.rows(campaign), "can_set_test": is_admin(user), "toast": request.session.pop("toast", None)})
+        "book_rows": books.rows(db, campaign), "vtt_rows": vtt.rows(campaign), "can_set_test": is_admin(user), "toast": request.session.pop("toast", None)})
 
 
 @router.post("/manage/settings")
@@ -145,6 +146,20 @@ def switch_piece(request: Request, key: str, on: str = Form(""), db: Session = D
         db.commit()
         access.invalidate()
     return RedirectResponse(f"{web.base(c)}/manage/settings#vtt", status_code=303)
+
+
+@router.post("/manage/settings/books/{key}")
+def switch_book(request: Request, key: str, on: str = Form(""), db: Session = Depends(get_db)):
+    """Switch one of askdnd's books on or off for this campaign's lookups: its DM or an admin. Checked once: every
+    lookup reads the campaign's list (app/books.py)."""
+    user, denied = web.require(request, can_edit_settings, SETTINGS_DENIED)
+    if denied:
+        return denied
+    c = web.campaign(db)
+    if c is not None:
+        request.session["toast"] = books.switch(c, key, bool(on))
+        db.commit()
+    return RedirectResponse(f"{web.base(c)}/manage/settings#books", status_code=303)
 
 
 @router.post(BACK + "/characters/{character_id:int}/move")
