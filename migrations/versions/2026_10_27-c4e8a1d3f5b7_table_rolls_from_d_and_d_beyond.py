@@ -1,7 +1,7 @@
 """Table rolls heard on a D&D Beyond sheet (app/ddb_bridge.py): the roll's own id there, so it's recorded once
 
 Revision ID: c4e8a1d3f5b7
-Revises: b7d2e4f6a8c1
+Revises: c4e6a8b0d2f3
 Create Date: 2026-10-27 20:00:00.000000
 
 """
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = 'c4e8a1d3f5b7'
-down_revision: Union[str, Sequence[str], None] = 'b7d2e4f6a8c1'
+down_revision: Union[str, Sequence[str], None] = 'c4e6a8b0d2f3'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
