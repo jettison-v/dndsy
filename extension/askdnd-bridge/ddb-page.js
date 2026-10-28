@@ -1,33 +1,48 @@
 // Runs inside the D&D Beyond sheet's own page (injected by ddb.js), as the signed-in person.
 // 1. Hears the sheet save: every successful change it sends to character-service is reported (no numbers: askdnd reads
 //    the sheet back from D&D Beyond itself).
-// 2. Makes askdnd's batches: only the two requests askdnd may make (OPS), only for the character whose sheet this is,
-//    with a short-lived token D&D Beyond gives this page from its own sign-in. Nothing is stored. Then the sheet
-//    reloads, so it shows what D&D Beyond now has and can't save an old number over it.
+// 2. Makes askdnd's batches: only the requests askdnd may make (WRITES), only for the character whose sheet this is,
+//    with a short-lived token D&D Beyond gives this page from its own sign-in. Nothing is stored.
+// 3. Keeps the open sheet showing what D&D Beyond has (Brett, 2026-10-27: no reloading): after askdnd changes the
+//    character, or when askdnd's read of D&D Beyond differs from what this page holds, the page reads the character as
+//    the sheet does when it opens and hands it to the sheet's own store, so it can't save an old number back.
 (() => {
   if (window.__askdndBridge) return;
   window.__askdndBridge = true;
   const CS = 'https://character-service.dndbeyond.com';
-  const OPS = new Set(['/character/v5/life/hp/damage-taken', '/character/v5/inventory/item/quantity']);
+  // The same list as app/ddb_fields.py WRITES
+  const WRITES = new Set(['PUT /character/v5/life/hp/damage-taken', 'PUT /character/v5/inventory/item/quantity']);
   const sheetId = () => (location.pathname.match(/\/characters\/(\d+)/) || [])[1];
   const post = m => window.postMessage({ askdndBridge: 'from-page', characterId: sheetId(), ...m }, location.origin);
+  let saving = 0;  // the sheet's own changes on their way to D&D Beyond
+  const isSave = (method, url) => {
+    try { const u = new URL(url, location.href); return u.origin === CS && method !== 'GET'; } catch (e) { return false; }
+  };
   const saved = (method, url) => {
-    try { const u = new URL(url, location.href); if (u.origin === CS && method !== 'GET') post({ type: 'saved', path: u.pathname }); } catch (e) { /* not a URL */ }
+    try { const u = new URL(url, location.href); post({ type: 'saved', path: u.pathname }); } catch (e) { /* not a URL */ }
   };
 
   const open = XMLHttpRequest.prototype.open, send = XMLHttpRequest.prototype.send;
   XMLHttpRequest.prototype.open = function (m, u) { this.__askdnd = [String(m).toUpperCase(), String(u)]; return open.apply(this, arguments); };
   XMLHttpRequest.prototype.send = function () {
     const x = this;
-    if (x.__askdnd) x.addEventListener('loadend', () => { if (x.status >= 200 && x.status < 300) saved(...x.__askdnd); });
+    if (x.__askdnd && isSave(...x.__askdnd)) {
+      saving++;
+      x.addEventListener('loadend', () => { saving--; if (x.status >= 200 && x.status < 300) saved(...x.__askdnd); });
+    }
     return send.apply(this, arguments);
   };
   const ofetch = window.fetch;
   window.fetch = async function (input, init) {
-    const res = await ofetch.apply(this, arguments);
     const method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
-    if (res.ok) saved(method, typeof input === 'string' ? input : input.url);
-    return res;
+    const url = typeof input === 'string' ? input : input.url;
+    if (!isSave(method, url)) return ofetch.apply(this, arguments);
+    saving++;
+    try {
+      const res = await ofetch.apply(this, arguments);
+      if (res.ok) saved(method, url);
+      return res;
+    } finally { saving--; }
   };
 
   let token = null, until = 0;
@@ -47,20 +62,86 @@
       return r.json().catch(() => ({}));
     }
   }
-  const HP = '/character/v5/life/hp/damage-taken';
-  const valueNow = (d, op) => op.path === HP
-    ? { removedHitPoints: d.removedHitPoints, temporaryHitPoints: d.temporaryHitPoints || 0 }
-    : { item: op.to.item, quantity: ((d.inventory || []).find(i => i.id === op.to.item) || {}).quantity };
-  const same = (a, b) => Object.keys(b).every(k => a[k] === b[k]);
+  // The character as the sheet reads it when it opens (with its custom items)
+  const character = async () => (await call('GET', '/character/v5/character/' + sheetId() + '?includeCustomItems=true')).data || {};
+
+  // Where a field is in a character, as app/ddb_fields.py `pick` reads it (keep the two the same)
+  function pick(data, steps) {
+    let v = data;
+    for (const s of steps) {
+      if (s && typeof s === 'object' && 'or' in s) { if (v == null) v = s.or; }
+      else if (v == null) continue;
+      else if (typeof s === 'string') v = (v && typeof v === 'object' && !Array.isArray(v)) ? v[s] : null;
+      else if ('id' in s) v = Array.isArray(v) ? (v.find(x => x && x.id === s.id) || null) : null;
+      else if ('read' in s) { const o = {}; for (const k of Object.keys(s.read)) o[k] = pick(v, s.read[k]); v = o; }
+      if (v === undefined) v = null;
+    }
+    return v;
+  }
+  const same = (a, b) => {
+    if (a === b) return true;
+    if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+    const ka = Object.keys(a), kb = Object.keys(b);
+    return ka.length === kb.length && ka.every(k => same(a[k], b[k]));
+  };
+
+  // ---- the sheet's own store: where the open page keeps the character it shows and saves from
+  let store = null;
+  function findStore() {  // (from the first page element React drew, up to the provider that holds the store)
+    if (store) return store;
+    let tries = 0;  // (the site's menu is drawn by React too, without the store)
+    for (const el of document.querySelectorAll('body *')) {
+      const k = Object.keys(el).find(n => n.startsWith('__reactFiber$'));
+      if (!k) continue;
+      for (let f = el[k], n = 0; f && n < 200; f = f.return, n++) {
+        const s = f.memoizedProps && f.memoizedProps.store;
+        if (s && typeof s.getState === 'function' && typeof s.dispatch === 'function' && s.getState().character) return (store = s);
+      }
+      if (++tries > 50) break;
+    }
+    return null;
+  }
+  const held = () => { const s = findStore(); return s ? s.getState().character : null; };
+  const quiet = async () => {  // never while the sheet's own change is on its way (it would show the number before it)
+    for (let i = 0; i < 50 && (saving > 0 || ((findStore() || { getState: () => ({}) }).getState().syncTransaction || {}).active); i++) await new Promise(r => setTimeout(r, 100));
+  };
+  // Show what D&D Beyond has now. In place, with the store's own "set character" (nothing is written, and no request
+  // but the read the sheet makes when it opens); where D&D Beyond's page has changed so the store can't be found or
+  // doesn't take it, the sheet reloads as it did before.
+  let showing = Promise.resolve();
+  function show() {
+    showing = showing.then(async () => {
+      await quiet();
+      const d = await character();
+      const s = findStore();
+      if (s) {
+        s.dispatch({ type: 'character.CHARACTER_SET', payload: d });
+        const now = s.getState().character;
+        if (now && now.removedHitPoints === d.removedHitPoints && (now.inventory || []).length === (d.inventory || []).length) return 'in place';
+      }
+      setTimeout(() => location.reload(), 200);
+      return 'reloaded';
+    }).catch(() => 'not shown');
+    return showing;
+  }
 
   // One batch at a time for this sheet: D&D Beyond can drop writes that reach a character at the same moment while
   // still answering OK to each (DDB Importer's experience, its src/updater/syncQueue.ts); askdnd's read-back catches a
   // dropped one, and this stops causing them.
   let queue = Promise.resolve();
   window.addEventListener('message', e => {
-    if (e.source !== window || !e.data || e.data.askdndBridge !== 'apply') return;
-    queue = queue.then(() => run(e.data.batch), () => run(e.data.batch));
+    if (e.source !== window || !e.data) return;
+    if (e.data.askdndBridge === 'apply') queue = queue.then(() => run(e.data.batch), () => run(e.data.batch));
+    if (e.data.askdndBridge === 'show') show();  // askdnd changed this character from another copy of the sheet
+    if (e.data.askdndBridge === 'check') check(e.data.fields || []);
   });
+  // askdnd just read D&D Beyond: if this page holds anything else, it shows D&D Beyond's numbers (a change made on
+  // another device, or in another copy of this sheet)
+  async function check(fields) {
+    const c = held();
+    if (!c || !fields.length) return;
+    if (fields.some(f => !same(pick(c, f.read), f.value))) show();
+  }
   // Each total is checked against what D&D Beyond has right now (signed in, so not a cached copy): already there is
   // skipped (a repeat never doubles a change), still at the old value is written, anything else is someone else's
   // change, and then nothing is written at all.
@@ -68,20 +149,20 @@
     const id = batch.id;
     try {
       for (const op of batch.ops) {
-        if (!OPS.has(op.path)) throw new Error("That isn't a change askdnd may make.");
+        if (!WRITES.has(op.method + ' ' + op.path)) throw new Error("That isn't a change askdnd may make.");
         if (String(op.body && op.body.characterId) !== sheetId()) throw new Error("A different character's sheet is open.");
       }
-      const d = (await call('GET', '/character/v5/character/' + sheetId())).data || {};
+      const d = await character();
       const todo = [], conflicts = [];
       for (const op of batch.ops) {
-        const v = valueNow(d, op);
+        const v = pick(d, op.read);
         if (same(v, op.to)) continue;
         if (same(v, op.from)) todo.push(op); else conflicts.push(op.field);
       }
       if (conflicts.length) return post({ type: 'applied', batch: id, ok: false, conflicts });
-      for (const op of todo) await call('PUT', op.path, op.body);
+      for (const op of todo) await call(op.method, op.path, op.body);
       post({ type: 'applied', batch: id, ok: true, wrote: todo.length > 0 });
-      if (todo.length) setTimeout(() => location.reload(), 400);  // show what D&D Beyond has now; never save old numbers back
+      if (todo.length) show();  // the sheet shows what D&D Beyond has now, and can't save old numbers back
     } catch (err) {
       post({ type: 'applied', batch: id, ok: false, error: String((err && err.message) || err) });
     }

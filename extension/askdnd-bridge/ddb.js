@@ -15,6 +15,7 @@
   chrome.runtime.onMessage.addListener((m, sender, reply) => {
     if (m.type === 'apply') { window.postMessage({ askdndBridge: 'apply', batch: m.batch }, location.origin); reply({ took: true }); }  // (so the extension knows this tab is alive)
     if (m.type === 'panel-state') draw(m.state, m.error);
+    if (m.type === 'show' || m.type === 'check') window.postMessage({ askdndBridge: m.type, fields: m.fields }, location.origin);  // (ddb-page.js)
   });
 
   // ---- the panel: askdnd's colors (app.css tokens), the four states

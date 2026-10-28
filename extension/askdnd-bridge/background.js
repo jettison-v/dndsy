@@ -62,7 +62,10 @@ function heardSoon(ddbId, tabId) {
   }, QUIET_MS));
 }
 async function heard(ddbId, pull, tabId) {
-  await api('POST', '/bridge/heard/' + ddbId + (pull ? '?pull=1' : '')).catch(() => {});
+  const st = await api('POST', '/bridge/heard/' + ddbId + (pull ? '?pull=1' : '')).catch(() => null);
+  // What askdnd just read from D&D Beyond: an open copy of the sheet holding anything else shows D&D Beyond's numbers
+  // (not the copy that just saved: it has its own change)
+  if (st && st.check) for (const t of await sheetTabs(ddbId)) if (t.id !== tabId) chrome.tabs.sendMessage(t.id, { type: 'check', fields: st.check }).catch(() => {});
   await refreshPanels(ddbId); toAskdndTabs({ type: 'bridge-update' });
   return deliver(ddbId, tabId);
 }
@@ -96,8 +99,8 @@ chrome.runtime.onMessage.addListener((m, sender) => {
     if (m.type === 'ddb-saved') return heardSoon(here, sender.tab.id);
     if (m.type === 'ddb-applied') {
       // Every other open copy of this sheet shows the old numbers, and D&D Beyond's page would save them back over the
-      // new ones on its next change: reload them all (the tab that wrote reloads itself)
-      if (m.wrote) for (const t of await sheetTabs(here)) if (t.id !== sender.tab.id) chrome.tabs.reload(t.id);
+      // new ones on its next change: each shows D&D Beyond's numbers now, in place (the tab that wrote does it itself)
+      if (m.wrote) for (const t of await sheetTabs(here)) if (t.id !== sender.tab.id) chrome.tabs.sendMessage(t.id, { type: 'show' }).catch(() => {});
       await api('POST', '/bridge/delivered/' + m.batch, { ok: m.ok, error: m.error, conflicts: m.conflicts }).catch(() => {});
       busy.delete(here);
       await refreshPanels(here); toAskdndTabs({ type: 'bridge-update' });
