@@ -246,8 +246,7 @@ def view_snapshot(request: Request, snapshot_id: int, db: Session = Depends(get_
     snap = db.get(NoteSnapshot, snapshot_id)
     if snap is None or not _visible(snap.source, user):
         return _back()
-    urls = {img.name: f"{web.base()}{DOC}/images/{img.id}" + (f"?v={files.version(img.file_key)}" if img.file_key else "")
-            for img in snap.images}
+    urls = {img.name: f"{web.base()}{DOC}/images/{img.id}?v={files.version(img.file_key)}" for img in snap.images}
     body = markdown_to_html(snap.text, urls.get)
     return templates.TemplateResponse(request, "admin_snapshot.html", {"user": user, "snap": snap, "body": body})
 
@@ -260,5 +259,4 @@ def image(request: Request, image_id: int, db: Session = Depends(get_db)):
     img = db.get(NoteImage, image_id)
     if img is None or not _visible(db.get(NoteSnapshot, img.snapshot_id).source, user):
         return Response(status_code=404)
-    return files.serve(img.file_key, img.content_type, lambda: img.data,  # the connection goes back before the download
-                       cache_control=files.CACHE_FOREVER if img.file_key else "private, max-age=3600", release=db)
+    return files.serve(img.file_key, img.content_type, release=db)  # the connection goes back before the download
