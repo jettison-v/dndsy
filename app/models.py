@@ -181,7 +181,7 @@ class StoredFile(Base):
 class EntityPicture(Timestamped, Base):
     """A picture on an entity page (portrait, map, banner), added by the DM or a reviewer, resized by
     app/pictures.py. The files are in file storage (file_key, thumb_key); data and thumb are the old copies in the
-    database, still written and read when a key is missing until they're removed (VTT 0.5)."""
+    database, no longer written or read, until they're removed (VTT 0.5)."""
 
     __tablename__ = "entity_pictures"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -189,8 +189,8 @@ class EntityPicture(Timestamped, Base):
     content_type: Mapped[str] = mapped_column(String(100), default="image/webp", server_default="image/webp")
     file_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), index=True, nullable=True)  # up to 1200 px
     thumb_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), index=True, nullable=True)  # 320 px square
-    data: Mapped[bytes] = mapped_column(LargeBinary, deferred=True)  # up to 1200 px
-    thumb: Mapped[bytes] = mapped_column(LargeBinary, deferred=True)  # 320 px square crop
+    data: Mapped[bytes | None] = mapped_column(LargeBinary, deferred=True, nullable=True)
+    thumb: Mapped[bytes | None] = mapped_column(LargeBinary, deferred=True, nullable=True)
     added_by: Mapped[str] = mapped_column(String(320), default="", server_default="")
 
 
@@ -594,9 +594,10 @@ class NoteImage(Base):
     snapshot_id: Mapped[int] = mapped_column(ForeignKey("note_snapshots.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column(String(300))
     content_type: Mapped[str] = mapped_column(String(100))
-    # In file storage (app/files.py); data is the old copy in the database, kept until it's removed (VTT 0.5)
+    # In file storage (app/files.py); data is the old copy in the database, no longer written or read, until it's
+    # removed (VTT 0.5)
     file_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), index=True, nullable=True)
-    data: Mapped[bytes] = mapped_column(LargeBinary, deferred=True)
+    data: Mapped[bytes | None] = mapped_column(LargeBinary, deferred=True, nullable=True)
 
 
 # ExtractionRun sources that are not session drafts (they never hold Claude's questions).

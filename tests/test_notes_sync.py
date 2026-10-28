@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from app import admin_notes, auth, config
+from app import admin_notes, auth, config, files
 from app.config import parse_allowlist
 from app.db import get_db
 from app.gdocs import doc_id_from_url, html_to_text, parse_export
@@ -261,7 +261,7 @@ def test_add_source_and_sync(admin_client, db, monkeypatch):
     assert "<b>DnD Notes</b>: updated" in page.text
     assert "2 images" in page.text
     snap = db.scalar(select(NoteSnapshot))
-    assert {i.name: i.data for i in snap.images} == {"obj-1": b"photo", "obj-2": b"tree"}
+    assert {i.name: files.get(i.file_key) for i in snap.images} == {"obj-1": b"photo", "obj-2": b"tree"}
     view = admin_client.get(f"/c/main/manage/sessions/doc/snapshots/{snap.id}").text
     assert "/manage/sessions/doc/images/" in view
     assert view.count("<ul>") >= 2  # nested bullet list
