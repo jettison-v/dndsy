@@ -1,0 +1,443 @@
+<title>Wild Shape Hit Points</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<style>
+/* One page: the idea, a live Battle header for Cole as a Polar Bear with the HP window, the rules it applies, then
+   what's for Brett to decide. askdnd is dark only, so this page is too. Numbers are Cole's own from askdnd's copy of
+   his sheet (Druid 6, Circle of the Moon / Monk 2). */
+:root { --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --bar: #0f1113; --line: #34383e; --text: #ebe7df; --strong: #fff;
+  --muted: #a29d93; --faint: #6f6b64; --red: #d64545; --red-text: #f08a8a; --red-soft: rgba(214, 69, 69, .14);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .14); --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .15);
+  --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14); --cold: #8fd3f4;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --serif: "Iowan Old Style", Palatino, Georgia, serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.6 var(--sans); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 36px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 30px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.4rem/1.25 var(--serif); }
+h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; }
+.eyebrow { font: 700 .78rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red-text); }
+.label { font: 700 .74rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+header { display: grid; gap: 12px; max-width: 76ch; }
+.muted { color: var(--muted); }
+.small { font-size: .86rem; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.box ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: .93rem; }
+.box.ask { border-color: var(--red); }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 860px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+
+/* Try-it controls */
+.controls { display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: end; }
+.ctl { display: grid; gap: 6px; }
+.ctl > span { font-size: .8rem; color: var(--muted); }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.seg button { font: 500 .86rem/1 var(--sans); color: var(--text); background: var(--surface-2); border: 0; padding: 9px 13px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--blue-soft); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); }
+.btn { font: 600 .86rem/1 var(--sans); border-radius: 8px; padding: 9px 13px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); cursor: pointer; }
+.btn.primary { background: var(--red); border-color: var(--red); color: #fff; }
+.btn.link { background: none; border: 0; padding: 0; color: var(--red-text); text-decoration: underline; font-weight: 500; }
+.btn:disabled { opacity: .5; cursor: default; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+/* The mock: menu bar, Battle's header */
+.stage { background: #101214; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.mbar { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: var(--bar); border-bottom: 2px solid var(--red); flex-wrap: wrap; }
+.mbar .brand { font-weight: 700; color: var(--strong); }
+.mbar .nav { color: var(--muted); font-size: .92rem; }
+.mbar .grow { flex: 1; }
+.pill { display: inline-flex; align-items: center; gap: 7px; border-radius: 999px; padding: 6px 13px; font: 500 .88rem/1.2 var(--sans); border: 1px solid var(--green); background: var(--green-soft); color: var(--strong); white-space: nowrap; }
+.pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+.pill.wait { border-color: var(--amber); background: var(--amber-soft); }
+.pill.wait .dot { background: var(--amber); }
+.mbtn { border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; font-size: .88rem; color: var(--text); background: var(--surface); }
+.battle { padding: 18px; display: grid; gap: 14px; }
+.who { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.who b { font: 600 1.5rem/1.1 var(--sans); color: var(--strong); }
+.form-chip { font-size: .82rem; border: 1px solid var(--blue); background: var(--blue-soft); color: var(--strong); border-radius: 999px; padding: 4px 10px; }
+.conc { font-size: .82rem; border: 1px solid var(--amber); background: var(--amber-soft); color: var(--strong); border-radius: 999px; padding: 4px 10px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+.tile { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-width: 0; }
+.tile small { display: block; color: var(--muted); font-size: .8rem; }
+.tile b { font-size: 1.45rem; color: var(--strong); font-variant-numeric: tabular-nums; }
+.tile .of { color: var(--muted); font-size: .92rem; }
+.tile .temp { display: block; color: var(--blue); font-size: .86rem; font-weight: 600; }
+.tile.hp { cursor: pointer; text-align: left; font: inherit; color: inherit; }
+.tile.hp:hover { border-color: var(--faint); }
+.tile.hp.waiting { box-shadow: inset 0 0 0 1px var(--amber); }
+/* A number that changed marks itself for a moment (showInPlace, every source) */
+.tile.marked { animation: mark 2.2s ease-out; }
+@keyframes mark { 0% { box-shadow: 0 0 0 2px var(--green), 0 0 18px rgba(91, 191, 127, .45); } 100% { box-shadow: 0 0 0 0 transparent; } }
+.delta { position: absolute; right: 10px; top: 8px; font: 700 .82rem/1 var(--sans); padding: 3px 7px; border-radius: 999px; background: var(--surface-2); animation: fade 2.6s ease-out forwards; }
+.delta.down { color: var(--red-text); }
+.delta.up { color: var(--green); }
+.delta .src { color: var(--muted); font-weight: 500; margin-left: 4px; }
+@keyframes fade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+
+/* The HP window: opens by the tile, like the roll window */
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 18px; align-items: start; }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+.win { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 30px rgba(0, 0, 0, .45); padding: 14px; display: grid; gap: 12px; min-width: 0; }
+.win-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+.tabs button { background: none; border: 0; color: var(--muted); font: 600 .9rem/1 var(--sans); padding: 8px 10px 10px; cursor: pointer; border-bottom: 2px solid transparent; }
+.tabs button[aria-selected="true"] { color: var(--strong); border-bottom-color: var(--red); }
+.amount { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.amount input { width: 6.5em; font: 600 1.3rem/1 var(--sans); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--strong); }
+.types { display: flex; flex-wrap: wrap; gap: 6px; }
+.types button { font: 500 .82rem/1 var(--sans); border: 1px solid var(--line); background: var(--surface-2); color: var(--text); border-radius: 999px; padding: 6px 10px; cursor: pointer; }
+.types button[aria-pressed="true"] { border-color: var(--blue); background: var(--blue-soft); color: var(--strong); }
+.types button .r { color: var(--cold); font-size: .74rem; margin-left: 4px; }
+.working { display: grid; gap: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.step { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 9px 12px; font-size: .9rem; border-top: 1px solid var(--line); align-items: baseline; }
+.step:first-child { border-top: 0; }
+.step b { color: var(--strong); font-variant-numeric: tabular-nums; }
+.step .why { grid-column: 1 / -1; color: var(--muted); font-size: .82rem; }
+.step.off { opacity: .55; }
+.step.off b { text-decoration: line-through; }
+.result { background: var(--surface-2); }
+.remind { border: 1px solid var(--amber); background: var(--amber-soft); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; font-size: .9rem; }
+.remind .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.note-rule { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: .86rem; color: var(--muted); }
+.note-rule b { color: var(--text); }
+.blocked { border: 1px solid var(--red); background: var(--red-soft); border-radius: 10px; padding: 10px 12px; font-size: .9rem; display: grid; gap: 4px; }
+.go { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.rolled { font-size: .9rem; }
+.rolled b { color: var(--strong); }
+.side { display: grid; gap: 12px; align-content: start; }
+.log { display: grid; gap: 6px; font-size: .86rem; }
+.log div { border-top: 1px solid var(--line); padding-top: 6px; }
+.tag { font: 600 .74rem/1 var(--sans); border-radius: 999px; padding: 3px 8px; margin-right: 6px; }
+.tag.a { background: var(--green-soft); color: var(--green); }
+.tag.d { background: var(--blue-soft); color: var(--blue); }
+.tag.w { background: var(--amber-soft); color: var(--amber); }
+/* The Table rolls sidebar: rolls arrive here with their amount and type; Apply to Cole opens the window filled in */
+.with-rolls { display: grid; grid-template-columns: 270px minmax(0, 1fr); }
+@media (max-width: 900px) { .with-rolls { grid-template-columns: 1fr; } }
+.rolls { border-right: 1px solid var(--line); padding: 14px; display: grid; gap: 10px; align-content: start; background: #121417; }
+@media (max-width: 900px) { .rolls { border-right: 0; border-bottom: 1px solid var(--line); } }
+.rolls .label { color: var(--muted); }
+.rcard { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; font-size: .86rem; }
+.rcard .who-r { color: var(--muted); font-size: .78rem; }
+.rcard .what { color: var(--strong); font-weight: 600; }
+.rcard .tot { font: 700 1.3rem/1 var(--sans); color: var(--strong); }
+.rcard .typ { color: var(--cold); font-weight: 600; font-size: .82rem; }
+.rcard .typ.p { color: var(--muted); }
+.rcard .typ.h { color: var(--green); }
+.rcard .dice { color: var(--faint); font-size: .78rem; }
+.rcard .done { color: var(--green); font-size: .8rem; }
+.rcard.on { border-color: var(--green); }
+.source { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; background: var(--surface-2); border-radius: 8px; padding: 8px 10px; font-size: .88rem; }
+.source b { color: var(--strong); }
+/* Where you'll find it: Battle drawn small, the HP tile and its window lit */
+.where-wrap { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 0; max-width: 900px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #101214; }
+@media (max-width: 640px) { .where-wrap { grid-template-columns: 1fr; } }
+.w-rolls { border-right: 1px solid var(--line); padding: 10px; display: grid; gap: 6px; align-content: start; font-size: .78rem; color: var(--muted); }
+.w-roll { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; display: grid; gap: 3px; }
+.w-roll b { color: var(--strong); }
+.w-roll .w-apply { justify-self: start; border: 1px solid var(--green); color: var(--green); border-radius: 999px; padding: 1px 8px; box-shadow: 0 0 0 2px var(--green-soft); }
+.where { position: relative; display: grid; gap: 8px; padding: 12px; font-size: .84rem; min-width: 0; }
+.w-bar { color: var(--muted); border-bottom: 2px solid var(--red); padding-bottom: 6px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.w-bar b { color: var(--strong); }
+.w-pill { margin-left: auto; color: var(--green); border: 1px solid var(--green); border-radius: 999px; padding: 1px 8px; font-size: .76rem; }
+.w-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.w-head b { color: var(--strong); font-size: 1.05rem; }
+.w-chip { font-size: .74rem; border: 1px solid var(--blue); border-radius: 999px; padding: 1px 7px; }
+.w-tabs { margin-left: auto; display: inline-flex; gap: 4px; }
+.w-tabs i { font-style: normal; padding: 2px 8px; border-radius: 6px; background: var(--surface); color: var(--muted); }
+.w-tabs i.on { background: var(--red); color: #fff; }
+.w-tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.w-tile { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; color: var(--muted); line-height: 1.3; min-width: 0; overflow: hidden; }
+.w-tile b { color: var(--strong); font-size: .95rem; }
+.w-hp { border-color: var(--green); box-shadow: 0 0 0 2px var(--green-soft); color: var(--text); position: relative; }
+.w-hp em { position: absolute; right: 5px; top: 4px; font-style: normal; font-size: .68rem; color: var(--green); }
+.w-pop { justify-self: start; margin-top: -2px; background: var(--surface); border: 1px solid var(--green); border-radius: 8px; padding: 6px 10px; color: var(--strong); box-shadow: 0 8px 18px rgba(0, 0, 0, .45); }
+.w-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.w-cols span { background: var(--surface); border-radius: 6px; padding: 10px 7px; color: var(--muted); }
+@media (max-width: 560px) { .w-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: .92rem; }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+thead th { background: var(--surface); color: var(--strong); font-weight: 600; }
+tbody th { color: var(--strong); font-weight: 500; width: 30%; }
+tbody tr:last-child > * { border-bottom: 0; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">askdnd · mockup · step 5, bucket 4 · Oct 28, 2026</div>
+    <h1>Hit points in Wild Shape, worked out for you</h1>
+    <p>D&amp;D Beyond doesn't know Cole is a Polar Bear, so every hit is worked out out loud: does the Bear resist it, how much do the form's Temporary Hit Points take, is Moonbeam still up? Here the hit starts where it really starts: the DM rolls Enemy 1's damage (or Big C rolls a heal), and the roll arrives in Table rolls with its amount and type. <b>Apply to Cole</b> opens this window already filled in; askdnd shows its working by the 2024 rules, then makes the result on Cole's D&amp;D Beyond sheet through the bridge. Nobody types a number. These are Cole's real numbers: Druid 6, Circle of the Moon, 51 HP; as a Polar Bear, AC 17, 18 Temporary Hit Points and the Bear's Cold resistance.</p>
+  </header>
+
+  <section class="box" style="gap:14px">
+    <h2>Where you'll find it</h2>
+    <p><b>It starts in Table rolls</b>, the sidebar down the left of every page in Game Mode. When the DM rolls a damage roll (in D&amp;D Beyond's VTT, as today, or in askdnd), it arrives there with its amount and damage type. On Cole's player's screen it has <b>Apply to Cole</b>; the DM's has <b>Apply to…</b> anyone. That opens the hit points window beside Cole's <b>Hit points</b> on his <b>Battle</b> page (the first number in the row under his name), filled in from the roll. The rest of Battle stays as it is.</p>
+    <div class="where-wrap" aria-hidden="true">
+      <div class="w-rolls"><b style="color:var(--muted)">Table rolls</b>
+        <div class="w-roll"><span>Enemy 1 · the DM</span><b>Frost Breath: 22 cold</b><span class="w-apply">Apply to Cole</span></div>
+        <div class="w-roll"><span>Big C</span><b>Cure Wounds: heals 9</b></div></div>
+    <div class="where">
+      <div class="w-bar">askdnd · Story · Campaign · <b>Cole</b> · Party ▾ <span class="w-pill">● Game on · in step</span></div>
+      <div class="w-head"><b>Cole</b> <span class="w-chip">🐻 Polar Bear</span><span class="w-tabs"><i class="on">Battle</i><i>Sheet</i><i>Plan</i></span></div>
+      <div class="w-row muted small">Resources: Wild Shape ●●○ · Focus Points ●● · Luck Points ●●●</div>
+      <div class="w-tiles"><span class="w-tile w-hp">Hit points<br><b>51</b> +18 temp<em>click</em></span><span class="w-tile">Armor class<br><b>17</b></span><span class="w-tile">Speed<br><b>40 ft</b></span><span class="w-tile">Initiative<br><b>+2</b></span><span class="w-tile">Spell DC<br><b>15</b></span></div>
+      <div class="w-pop">Cole's hit points · Damage · Heal · Temporary HP</div>
+      <div class="w-row muted small">Saves · + Condition · Spell Book bar</div>
+      <div class="w-cols"><span>Action</span><span>Bonus action</span><span>Reaction</span></div>
+    </div></div>
+    <p class="muted small"><b>Without a roll</b> (a trap the DM describes, a fall), click Hit points itself and enter the number: the same window, the same working. It also opens from Hit points on <b>Sheet</b> and on each <b>Party</b> card. On a phone it opens at the bottom, for reading only (changes are made from a computer).</p>
+  </section>
+
+  <section class="box" style="gap:16px">
+    <h2>Try it</h2>
+    <div class="controls">
+      <div class="ctl"><span>Cole's D&amp;D Beyond sheet</span><div class="seg" role="group" aria-label="Sheet" data-ctl="sheet">
+        <button type="button" data-v="open" aria-pressed="true">Open with the extension</button>
+        <button type="button" data-v="closed" aria-pressed="false">Can't be reached</button></div></div>
+      <div class="ctl"><span>&nbsp;</span><div class="go"><button type="button" class="btn" data-ddb>A change made on D&amp;D Beyond</button><button type="button" class="btn" data-reset>Start again</button></div></div>
+    </div>
+
+    <div class="stage">
+      <div class="mbar">
+        <span class="brand">askdnd</span><span class="nav">Story</span><span class="nav">Campaign</span><span class="mbtn">Cole</span><span class="nav">Party ▾</span>
+        <span class="grow"></span>
+        <span class="pill" data-pill><span class="dot"></span><span data-pill-text>Game on · in step with D&amp;D Beyond</span></span>
+      </div>
+      <div class="with-rolls">
+      <aside class="rolls" aria-label="Table rolls">
+        <span class="label">Table rolls · newest first</span>
+        <div class="rcard" data-card="bite"><span class="who-r">Enemy 2 · rolled by the DM on D&amp;D Beyond</span><span class="what">Bite: damage</span><span><span class="tot">30</span> <span class="typ p">piercing</span></span><span class="dice">4d10 + 8 (6, 9, 3, 4)</span><button type="button" class="btn small" data-from="bite">Apply to Cole</button></div>
+        <div class="rcard" data-card="cold"><span class="who-r">Enemy 1 · rolled by the DM on D&amp;D Beyond</span><span class="what">Frost Breath: damage</span><span><span class="tot">22</span> <span class="typ">cold</span></span><span class="dice">5d8 (4, 6, 2, 7, 3)</span><button type="button" class="btn small" data-from="cold">Apply to Cole</button></div>
+        <div class="rcard" data-card="heal"><span class="who-r">Big C · rolled in askdnd</span><span class="what">Cure Wounds: healing</span><span><span class="tot">9</span> <span class="typ h">healing</span></span><span class="dice">2d8 + 2 (3, 4)</span><button type="button" class="btn small" data-from="heal">Apply to Cole</button></div>
+        <p class="muted small">Apply the cold breath first, then the bite, then the heal.</p>
+      </aside>
+      <div class="battle">
+        <div class="who"><b>Cole</b><span class="form-chip">🐻 Polar Bear</span><span class="conc">Concentrating: Moonbeam</span></div>
+        <div class="layout">
+          <div class="side">
+            <div class="tiles">
+              <button type="button" class="tile hp" data-hp-tile aria-label="Hit points: open the window"><small>Hit points</small><b data-hp>51</b><span class="of"> / 51</span> <span class="temp" data-temp>+18 temp</span></button>
+              <div class="tile"><small>Armor class</small><b>17</b></div>
+              <div class="tile"><small>Speed</small><b>40 ft</b><span class="of"> swim 40</span></div>
+              <div class="tile"><small>Con save</small><b>+7</b></div>
+              <div class="tile"><small>Wild Shape</small><b>2</b><span class="of"> of 3 left</span></div>
+            </div>
+            <div class="box" style="background:var(--surface-2)">
+              <span class="label">What changed (the bridge's log)</span>
+              <div class="log" data-log><div><span class="tag a">From askdnd</span>Cole: Wild Shape into a Polar Bear, 18 Temporary Hit Points</div></div>
+            </div>
+          </div>
+
+          <div class="win" role="dialog" aria-label="Cole's hit points" data-win>
+            <div class="win-head"><b>Cole's hit points</b><span class="muted small">51 of 51 · 18 temp</span></div>
+            <div class="tabs" role="tablist">
+              <button type="button" role="tab" data-tab="damage" aria-selected="true">Damage</button>
+              <button type="button" role="tab" data-tab="heal" aria-selected="false">Heal</button>
+              <button type="button" role="tab" data-tab="temp" aria-selected="false">Temporary HP</button>
+            </div>
+            <div class="source" data-source hidden></div>
+            <div class="amount" data-amount-row><input type="number" min="0" inputmode="numeric" aria-label="Amount" data-amount value="22"><span class="muted small" data-amount-note>damage</span></div>
+            <div class="types" data-types></div>
+            <div class="working" data-working></div>
+            <div class="remind" data-remind hidden></div>
+            <div class="note-rule" data-rule hidden></div>
+            <div class="blocked" data-blocked hidden><b>Cole's D&amp;D Beyond sheet can't be reached</b><span>To change it from askdnd, open Cole's sheet in Chrome with the askdnd bridge. Or make it on D&amp;D Beyond: askdnd shows it within seconds.</span></div>
+            <div class="go"><button type="button" class="btn primary" data-apply>Take 11</button><button type="button" class="btn" data-cancel>Cancel</button></div>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+    <p class="muted small">Or click Cole's hit points to enter a number without a roll. The green mark on a number is the same whether the change came from here, from someone else's screen, or from D&amp;D Beyond.</p>
+  </section>
+
+  <section style="display:grid;gap:14px">
+    <h2>The rules it applies, in order (2024)</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Step</th><th>What askdnd does</th><th>Cole as a Polar Bear</th></tr></thead>
+      <tbody>
+        <tr><th>1. Resistance, vulnerability, immunity</th><td>Halves (rounded down), doubles, or makes it 0, with where it comes from. In a form: the Beast's, plus your own class features and feats that carry over (species traits don't).</td><td>Cold resistance, from the Polar Bear</td></tr>
+        <tr><th>2. Temporary Hit Points first</th><td>They take the damage first; the rest comes off your own Hit Points.</td><td>18 from Circle Forms (3 × Druid level)</td></tr>
+        <tr><th>3. Out of Temporary Hit Points</th><td>A reminder: in the 2024 rules the form doesn't end; the damage just comes off your own Hit Points. It ends if you're Incapacitated, die, or choose to.</td><td>Stays a Polar Bear at 28 of 51</td></tr>
+        <tr><th>4. Concentration</th><td>A reminder on the player's screen, with their roll: Constitution save, DC 10 or half the damage taken (up to 30). The player rolls it, also when the DM applied the hit. Shifting doesn't end it; nothing ends it on its own.</td><td>+7 (Bear's Con +3, Increased Toughness +4), Advantage from War Caster</td></tr>
+        <tr><th>5. At 0 Hit Points</th><td>A reminder: Unconscious, death saves (bucket 6); massive damage pointed out for the DM.</td><td>—</td></tr>
+        <tr><th>Healing</th><td>Restores your own Hit Points, never Temporary ones.</td><td>Up to 51</td></tr>
+        <tr><th>Gaining Temporary HP</th><td>They don't add up: keep what you have or take the new ones. askdnd suggests the higher; you choose.</td><td>Keep 7 or take 10</td></tr>
+      </tbody>
+    </table></div>
+    <p class="muted small">Every step can be crossed out when the table rules otherwise (a magical source the sheet doesn't know): click the step. askdnd informs; the DM rules.</p>
+  </section>
+
+  <div class="grid3">
+    <div class="box"><h3>Made on D&amp;D Beyond</h3><ul>
+      <li>Confirming makes the end result on Cole's sheet through the bridge: Temporary Hit Points and damage taken.</li>
+      <li>Until D&amp;D Beyond has it, the tile and the Live pill say <b>waiting</b>; then the number marks itself.</li>
+      <li>Wild Shape itself (the form, its 18 Temporary HP) is made the same way when Cole shifts.</li>
+    </ul></div>
+    <div class="box"><h3>Where it opens</h3><ul>
+      <li>Hit points on Battle, Sheet and Party, and later on a fight screen.</li>
+      <li>A small window by the number, like the roll window; at the bottom on phones (reading only there).</li>
+      <li>Not in a form: the same window without step 3, with your own resistances.</li>
+    </ul></div>
+    <div class="box"><h3>Decided (Oct 28)</h3><ul>
+      <li><b>Who presses Apply:</b> normally the character's own player (Apply to Cole, on their screen); the DM can too, for anyone (Apply to…).</li>
+      <li><b>The Concentration save is the player's to roll</b>, after being hit: the reminder and its roll button appear on the character's player's screen, also when the DM applied the damage.</li>
+      <li>Damage types: the ones the character resists first, the rest under Other types.</li>
+      <li>Anyone can cross out a step (a ruling), with the reason shown.</li>
+      <li>The change mark: a green glow and the change for two seconds.</li>
+    </ul>
+    <p class="muted small"><b>First to check when it's built:</b> whether the DM's rolls in D&amp;D Beyond's VTT reach askdnd with their damage type. If the type isn't in the roll, askdnd takes it from the monster's attack by name (a Bite is piercing), and Change fixes it.</p></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const START = { hp: 51, max: 51, temp: 18 };
+  const TYPES = ['Cold', 'Piercing', 'Slashing', 'Bludgeoning', 'Fire', 'Lightning', 'Thunder', 'Acid', 'Poison', 'Necrotic', 'Radiant', 'Force', 'Psychic'];
+  const RESIST = { Cold: 'Polar Bear' };
+  const PRESETS = { cold: { tab: 'damage', amount: 22, type: 'Cold', from: "Enemy 1's Frost Breath", by: 'rolled by the DM on D&D Beyond' },
+                    bite: { tab: 'damage', amount: 30, type: 'Piercing', from: "Enemy 2's Bite", by: 'rolled by the DM on D&D Beyond' },
+                    heal: { tab: 'heal', amount: 9, from: "Big C's Cure Wounds", by: 'rolled in askdnd' } };
+  let st = { ...START }, ui = { roll: 'cold', applied: {}, editing: false, sheet: 'open', tab: 'damage', amount: 22, type: 'Cold', off: {}, from: "Enemy 1's Frost Breath", by: 'rolled by the DM on D&D Beyond', waiting: false, keepNew: true, rolled: '' };
+  const $ = s => document.querySelector(s);
+
+  function work() {  // the 2024 rules in order; each step can be crossed out (a ruling)
+    const a = Math.max(0, Number(ui.amount) || 0), steps = [];
+    if (ui.tab === 'damage') {
+      let dmg = a;
+      steps.push({ k: 'hit', text: (ui.from ? ui.from + ': ' : '') + a + ' ' + ui.type.toLowerCase(), val: a });
+      if (RESIST[ui.type]) {
+        const halved = Math.floor(dmg / 2), off = ui.off.resist;
+        steps.push({ k: 'resist', text: ui.type + ' resistance halves it', why: 'From the ' + RESIST[ui.type] + ' (your form). Click if it doesn’t apply.', val: halved, off, toggle: true });
+        if (!off) dmg = halved;
+      }
+      const fromTemp = Math.min(st.temp, dmg), rest = dmg - fromTemp, hp = Math.max(0, st.hp - rest);
+      steps.push({ k: 'temp', text: 'Temporary Hit Points take ' + fromTemp, why: st.temp + ' → ' + (st.temp - fromTemp) + ' (Circle Forms)', val: (st.temp - fromTemp) + ' left' });
+      steps.push({ k: 'hp', text: rest ? 'The other ' + rest + ' come off your Hit Points' : 'Your Hit Points stay', why: st.hp + ' → ' + hp + ' of ' + st.max, val: hp + ' of ' + st.max, result: true });
+      return { steps, dmg, temp: st.temp - fromTemp, hp, ranOut: st.temp > 0 && fromTemp === st.temp && rest > 0, verb: 'Take ' + dmg };
+    }
+    if (ui.tab === 'heal') {
+      const hp = Math.min(st.max, st.hp + a);
+      steps.push({ k: 'heal', text: (ui.from ? ui.from + ': ' : '') + 'heals ' + a, val: a });
+      steps.push({ k: 'hp', text: 'Your Hit Points', why: st.hp + ' → ' + hp + ' of ' + st.max + (st.hp + a > st.max ? ' (no more than your maximum)' : '') + '. Temporary Hit Points don’t heal: still ' + st.temp + '.', val: hp, result: true });
+      return { steps, temp: st.temp, hp, verb: 'Heal ' + (hp - st.hp) };
+    }
+    const take = a > st.temp ? ui.keepNew : false, temp = take ? a : st.temp;
+    steps.push({ k: 'gain', text: (ui.from ? ui.from + ': ' : '') + a + ' Temporary Hit Points', val: a });
+    steps.push({ k: 'choose', text: 'They don’t add up: keep ' + st.temp + ' or take ' + a, why: (a > st.temp ? 'askdnd suggests ' + a + ' (the higher). ' : 'You keep ' + st.temp + ' (the higher). ') + '2024 rules, as on D&D Beyond.', val: temp, result: true });
+    return { steps, temp, hp: st.hp, verb: temp === st.temp ? 'Keep ' + st.temp : 'Take ' + temp };
+  }
+
+  function render() {
+    document.querySelectorAll('[data-ctl]').forEach(g => g.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === ui[g.dataset.ctl]))));
+    document.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === ui.tab)));
+    $('[data-hp]').textContent = st.hp;
+    $('[data-temp]').textContent = st.temp ? '+' + st.temp + ' temp' : '';
+    $('[data-hp-tile]').classList.toggle('waiting', ui.waiting);
+    $('[data-win] .win-head .muted').textContent = st.hp + ' of ' + st.max + (st.temp ? ' · ' + st.temp + ' temp' : '');
+    const pill = $('[data-pill]');
+    pill.classList.toggle('wait', ui.waiting || ui.sheet === 'closed');
+    $('[data-pill-text]').textContent = ui.waiting ? 'Game on · 1 waiting' : ui.sheet === 'closed' ? 'Game on · updated 1 min ago' : 'Game on · in step with D&D Beyond';
+    // Filled in from the roll: where it came from, with Change for a ruling (a number nobody rolled opens the fields)
+    const fromRoll = !!ui.roll && !ui.editing;
+    $('[data-source]').hidden = !fromRoll;
+    $('[data-source]').innerHTML = fromRoll ? '<span><b>' + ui.from + '</b>: ' + ui.amount + (ui.tab === 'damage' ? ' ' + ui.type.toLowerCase() : ' healing') + '<br><span class="muted small">' + ui.by + '</span></span><button type="button" class="btn link" data-edit>Change</button>' : '';
+    $('[data-amount-row]').hidden = fromRoll;
+    $('.tabs').hidden = fromRoll;
+    document.querySelectorAll('[data-card]').forEach(c => { const k = c.dataset.card, b = c.querySelector('[data-from]'), done = ui.applied[k];
+      c.classList.toggle('on', ui.roll === k && !done); b.hidden = !!done;
+      let d = c.querySelector('.done'); if (done && !d) { d = document.createElement('span'); d.className = 'done'; c.appendChild(d); } if (d) d.textContent = done || ''; });
+    const amt = $('[data-amount]');
+    if (document.activeElement !== amt) amt.value = ui.amount;
+    $('[data-amount-note]').textContent = ui.tab === 'damage' ? 'damage' : ui.tab === 'heal' ? 'healing' : 'Temporary Hit Points';
+    // Damage types: the ones Cole resists first, then the rest under "Other types"
+    const types = $('[data-types]');
+    types.hidden = ui.tab !== 'damage' || fromRoll;
+    const first = TYPES.filter(t => RESIST[t] || ['Piercing', 'Slashing', 'Bludgeoning'].includes(t));
+    const shown = ui.showAll ? TYPES : [...new Set([...first, ui.type])];
+    types.innerHTML = shown.map(t => '<button type="button" data-type="' + t + '" aria-pressed="' + (t === ui.type) + '">' + t + (RESIST[t] ? '<span class="r">resisted</span>' : '') + '</button>').join('') +
+      (ui.showAll ? '' : '<button type="button" data-all>Other types ▾</button>');
+    const w = work();
+    $('[data-working]').innerHTML = w.steps.map(s => '<div class="step' + (s.result ? ' result' : '') + (s.off ? ' off' : '') + '"' + (s.toggle ? ' data-toggle="' + s.k + '" role="button" tabindex="0" style="cursor:pointer"' : '') + '><span>' + s.text + '</span><b>' + s.val + '</b>' + (s.why ? '<span class="why">' + s.why + '</span>' : '') + '</div>').join('');
+    // Reminders: Concentration after damage, the 2024 form rule, choosing Temporary HP
+    const rem = $('[data-remind]'), rule = $('[data-rule]');
+    rem.hidden = !(ui.tab === 'damage' && w.dmg > 0);
+    if (!rem.hidden) {
+      const dc = Math.min(30, Math.max(10, Math.floor(w.dmg / 2)));
+      rem.innerHTML = '<b>Concentrating on Moonbeam</b><span>Constitution save, DC ' + dc + (w.dmg >= 20 ? ' (half the ' + w.dmg + ')' : '') + '. You roll; nothing ends it on its own.</span>' +
+        '<div class="row"><button type="button" class="btn" data-roll="' + dc + '">Roll +7 (Advantage: War Caster)</button><button type="button" class="btn link" data-endc>End concentration</button><span class="rolled" data-rolled>' + ui.rolled + '</span></div>';
+    }
+    rule.hidden = !(ui.tab === 'damage' && w.ranOut) && ui.tab !== 'temp';
+    rule.innerHTML = ui.tab === 'temp'
+      ? (Number(ui.amount) > st.temp ? '<b>Your choice:</b> <button type="button" class="btn link" data-keep>' + (ui.keepNew ? 'keep your ' + st.temp + ' instead' : 'take the ' + ui.amount + ' instead') + '</button>' : '<b>Nothing to change:</b> the ones you have are higher.')
+      : '<b>Out of Temporary Hit Points:</b> you stay a Polar Bear (2024 rules). The form ends if you’re Incapacitated, die, or choose to end it.';
+    const blocked = ui.sheet === 'closed';
+    $('[data-blocked]').hidden = !blocked;
+    const apply = $('[data-apply]');
+    apply.textContent = w.verb;
+    apply.disabled = blocked;
+  }
+
+  function mark(text, up, src) {  // the change mark: the same for every source
+    const tile = $('[data-hp-tile]');
+    tile.classList.remove('marked'); void tile.offsetWidth; tile.classList.add('marked');
+    tile.querySelectorAll('.delta').forEach(d => d.remove());
+    tile.insertAdjacentHTML('beforeend', '<span class="delta ' + (up ? 'up' : 'down') + '">' + text + (src ? '<span class="src">' + src + '</span>' : '') + '</span>');
+  }
+  function log(tag, text) { $('[data-log]').insertAdjacentHTML('afterbegin', '<div><span class="tag ' + tag + '">' + ({ a: 'From askdnd', d: 'On D&D Beyond', w: 'Waiting' }[tag]) + '</span>' + text + '</div>'); }
+
+  function preset(k) { const p = PRESETS[k]; Object.assign(ui, { roll: k, editing: false, tab: p.tab, amount: p.amount, type: p.type || ui.type, from: p.from, by: p.by, off: {}, rolled: '', keepNew: true }); }
+
+  document.addEventListener('click', e => {
+    const c = e.target.closest('[data-ctl] button');
+    if (c) { ui[c.closest('[data-ctl]').dataset.ctl] = c.dataset.v; render(); return; }
+    const f = e.target.closest('[data-from]'); if (f) { preset(f.dataset.from); $('[data-win]').hidden = false; render(); return; }
+    if (e.target.closest('[data-edit]')) { ui.editing = true; render(); return; }
+    const t = e.target.closest('[data-tab]'); if (t) { ui.tab = t.dataset.tab; ui.from = ''; ui.roll = ''; render(); return; }
+    const ty = e.target.closest('[data-type]'); if (ty) { ui.type = ty.dataset.type; ui.off = {}; render(); return; }
+    if (e.target.closest('[data-all]')) { ui.showAll = true; render(); return; }
+    const tg = e.target.closest('[data-toggle]'); if (tg) { ui.off[tg.dataset.toggle] = !ui.off[tg.dataset.toggle]; render(); return; }
+    if (e.target.closest('[data-keep]')) { ui.keepNew = !ui.keepNew; render(); return; }
+    const r = e.target.closest('[data-roll]');
+    if (r) { const a = 1 + Math.floor(Math.random() * 20), b = 1 + Math.floor(Math.random() * 20), k = Math.max(a, b), tot = k + 7, dc = Number(r.dataset.roll);
+      ui.rolled = '<b>' + tot + '</b> (' + a + ', ' + b + ' → ' + k + ' + 7) · ' + (tot >= dc ? 'Moonbeam holds' : 'below DC ' + dc + ': the DM rules'); render(); return; }
+    if (e.target.closest('[data-endc]')) { document.querySelector('.conc').remove(); render(); return; }
+    if (e.target.closest('[data-hp-tile]')) { Object.assign(ui, { roll: '', editing: true, from: '', by: '', off: {}, rolled: '' }); $('[data-win]').hidden = false; render(); return; }
+    if (e.target.closest('[data-cancel]')) { $('[data-win]').hidden = true; return; }
+    if (e.target.closest('[data-apply]')) {
+      const w = work(), before = { ...st };
+      if (w.hp === st.hp && w.temp === st.temp) { $('[data-win]').hidden = true; return; }
+      ui.waiting = true; $('[data-win]').hidden = true;
+      log('w', 'Cole: ' + w.verb.toLowerCase() + (ui.from ? ' (' + ui.from + ')' : '') + ': waiting for D&D Beyond');
+      render();
+      setTimeout(() => {  // the bridge makes it, askdnd reads it back, the page shows its new copy
+        st.hp = w.hp; st.temp = w.temp; ui.waiting = false;
+        if (ui.roll) ui.applied[ui.roll] = '✓ Applied to Cole';  // (a roll is applied once)
+        const d = (st.hp + st.temp) - (before.hp + before.temp);
+        $('[data-log] div').innerHTML = '<span class="tag a">From askdnd</span>Cole: hit points ' + before.hp + (before.temp ? ' +' + before.temp + ' temp' : '') + ' → ' + st.hp + (st.temp ? ' +' + st.temp + ' temp' : '') + (ui.from ? ' (' + ui.from + ')' : '');
+        render(); mark((d > 0 ? '+' : '−') + Math.abs(d), d > 0);
+      }, 1100);
+      return;
+    }
+    if (e.target.closest('[data-ddb]')) {  // a change made on D&D Beyond itself: the same mark
+      const before = st.hp; st.hp = Math.max(0, st.hp - 3);
+      log('d', 'Cole (on D&D Beyond): hit points ' + before + ' → ' + st.hp);
+      render(); mark('−3', false, 'D&D Beyond'); return;
+    }
+    if (e.target.closest('[data-reset]')) { st = { ...START }; preset('cold'); ui.applied = {}; ui.sheet = 'open'; ui.waiting = false; ui.showAll = false;
+      $('[data-log]').innerHTML = '<div><span class="tag a">From askdnd</span>Cole: Wild Shape into a Polar Bear, 18 Temporary Hit Points</div>';
+      if (!document.querySelector('.conc')) document.querySelector('.form-chip').insertAdjacentHTML('afterend', '<span class="conc">Concentrating: Moonbeam</span>');
+      $('[data-win]').hidden = false; render(); }
+  });
+  document.addEventListener('keydown', e => { const tg = e.target.closest && e.target.closest('[data-toggle]'); if (tg && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); tg.click(); } });
+  $('[data-amount]').addEventListener('input', e => { ui.amount = e.target.value; ui.rolled = ''; render(); });
+  render();
+})();
+</script>

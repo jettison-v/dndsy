@@ -1,8 +1,9 @@
 # From table companion to virtual tabletop (2026-10-22, reviewed 2026-10-24, reordered 2026-10-26, statuses and order of work 2026-10-27)
 
-The long-range plan for growing askdnd into a full virtual tabletop (VTT) for our table. The readable version, with
-filters, is the "askdnd VTT Roadmap" artifact: https://claude.ai/artifact/EtCBFsKNwLK5LNhQjcbzS3. This file is the
-record; the artifact is regenerated from it when it changes.
+The long-range plan for growing askdnd into a full virtual tabletop (VTT) for our table. **The one page Brett reads is
+the askdnd Roadmap** (`docs/roadmap.html`, published at https://claude.ai/artifact/EtCBFsKNwLK5LNhQjcbzS3; master
+since 2026-10-28): now, waiting, next, parked, later, done, and every plan and mockup with whether it's current. This
+file is the detail behind it (how we build, principles, each item's reasoning); when a status changes, change both.
 
 ## Decided (Brett, 2026-10-22)
 
@@ -129,13 +130,13 @@ they were, so earlier notes still match.
 
 **Phase 1, The fight screen (first).** 2.2 Initiative and turns as the table's shared fight screen M core: the party
 and the DM's enemies ("Enemy 1"…) in turn order, whose turn it is, each one's HP; everyone sees it live (0.3). On it:
-1.1 Hit points askdnd owns (damage with its type and resistance, healing, temporary HP by the 2024 rules), the
-Concentration and death save reminders, and 0.4's play log as the fight's log (the DM undoes a line). A damage roll
-in Table rolls can go to someone on the screen. The play state design (`docs/plans/2026-10-24-play-state.md`: what
-askdnd owns, damage taken, a version per change, the D&D Beyond merge rules) is unchanged; only where it shows moves.
-1.8 Party at a glance for the DM S core is the same screen outside a fight (the Party page, rebuilt 2026-10-26,
-already shows everyone's numbers; the DM's live version with conditions comes with the fight screen). 1.7 D&D Beyond merge M core arrives with
-1.1 (a level-up mid-campaign must not muddle HP). Mock up the fight screen first.
+1.1 Hit points (damage with its type and resistance, healing, temporary HP by the 2024 rules), made on D&D Beyond
+through the bridge and counted once read back, the Concentration and death save reminders, and the fight's log (the
+DM undoes a line). A damage roll in Table rolls can go to someone on the screen. The play state design
+(`docs/plans/2026-10-24-play-state.md`, rewritten 2026-10-28 for the bridge: D&D Beyond keeps a character's numbers,
+askdnd keeps the fight and enemies, so no second copy and no merge) has the buckets. 1.8 Party at a glance for the DM
+S core is the same screen outside a fight (the Party page, rebuilt 2026-10-26, already shows everyone's numbers).
+1.7 D&D Beyond merge is no longer needed: D&D Beyond keeps the numbers, so a level-up just comes through. Mock up the fight screen first.
 Milestone: a fight's turn order and HP in askdnd, with the table watching the same screen.
 
 **Phase 2, Live character state.** 1.2 Casting spends slots, upcasting, concentration M core · 1.3 Class resources
@@ -223,9 +224,12 @@ read back. So the bridge's changes come first, then the fight screen and live ch
 4. **The bridge for the table** (built 2026-10-28: a VTT piece each campaign switches on; the listing waits on review):
    switch it on for beta (today it refuses to run in production), point the extension
    at beta, and share it as an unlisted Chrome Web Store listing; Brett tells the table the risk first.
-5. **The fight screen** (Phase 1: 2.2 with 1.1 and the play log): first update the play state design
-   (`docs/plans/2026-10-24-play-state.md`) for "D&D Beyond confirms every change", then the mockup, then build in
-   small pieces in the test campaign. It starts with Game Mode and the bridge as one switch and one status
+5. **The fight screen** (Phase 1: 2.2 with 1.1 and the play log): the play state design is updated for "D&D Beyond
+   confirms every change" (**done** 2026-10-28, `docs/plans/2026-10-24-play-state.md`). **Reordered 2026-10-28
+   (Brett):** the table plays on D&D Beyond's VTT, which already handles turns, so what it's missing comes first:
+   Game Mode for the table and the Live pill, the change rule, change marks, then hit points with the working (Wild
+   Shape aware: the form's resistances and Temporary Hit Points), then forgotten effects. The fight screen's own
+   turn order is parked until playtests ask for it. Mockup next: Battle's HP window in Wild Shape. It starts with Game Mode and the bridge as one switch and one status
    (decided 2026-10-28, `docs/mockups/game-mode-and-bridge.html`): Game Mode for the whole table, the Live pill about
    your own sheet. Every control that changes a D&D Beyond number works only while that character's sheet can be
    reached now (its extension heard it in the last minute or so); otherwise pressing it says how in place and queues

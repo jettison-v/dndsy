@@ -5,12 +5,13 @@ to Brett's account. This folder keeps their source in git, so they outlive any o
 and every clone hold a copy, and any page can be opened in a browser or published again from here.
 
 **The rule** (CLAUDE.md): a page published for askdnd has its source in the repo. Pages that are kept up to date
-live where they belong (`docs/stack.html`, `docs/mockups/`); this folder holds the rest, saved when they're published.
+live where they belong (`docs/roadmap.html`, `docs/stack.html`, `docs/mockups/`); this folder holds the rest, saved when they're published.
 Treat the repo as public (it's private for now, and may open again), so nothing goes here that couldn't be: no book text, campaign story or players' notes, and no
 screenshots of real pages (they show the campaign).
 
 | Page | Link on claude.ai | Here | What it was |
 |---|---|---|---|
+| Wild Shape Hit Points | [7dWbuf3hDwR5V9JFrrDT9H](https://claude.ai/artifact/7dWbuf3hDwR5V9JFrrDT9H) | `../mockups/hp-window.html` | Battle's hit points window for Cole as a Polar Bear: a typed hit worked out by the 2024 rules, then made on D&D Beyond (step 5, bucket 4; proposal, Oct 28) |
 | Game Mode and Bridge | [VfmC2TvFmSUf9ruQGWUAjk](https://claude.ai/artifact/VfmC2TvFmSUf9ruQGWUAjk) | `../mockups/game-mode-and-bridge.html` | Game Mode as one switch for the whole table, the Live pill as one status for your own sheet, and the bridge working between games as it does today (proposal, Oct 28) |
 | askdnd Manage Menu | [Y3ZKdQHFykyR9ywm3sV7at](https://claude.ai/artifact/Y3ZKdQHFykyR9ywm3sV7at) | `../mockups/manage-menu.html` | A six-item Manage menu, a section list down the left of Manage pages, an askdnd admin Overview, names in order (approved, Oct 27); round 2: three ways to tell this campaign from askdnd admin |
 | askdnd Data Strategy | [PWXtaunHcp3MEEJyJpLWoe](https://claude.ai/artifact/PWXtaunHcp3MEEJyJpLWoe) | `data-strategy.html` | Where askdnd's data lives: four buckets, books checked once (decided, Oct 27); the record is `../plans/2026-10-27-data-strategy.md` |
@@ -18,7 +19,7 @@ screenshots of real pages (they show the campaign).
 | Battle Slim Header | [CXkXguKnGmrPMnPXDYjwP2](https://claude.ai/artifact/CXkXguKnGmrPMnPXDYjwP2) | `../mockups/battle-header.html` | Battle's header shrinking to one row as you scroll (Oct 27). Not built: Brett chose to let the header scroll with the page |
 | askdnd D&D Beyond Bridge | [9H59RDNi99gVa7bNwmjp6G](https://claude.ai/artifact/9H59RDNi99gVa7bNwmjp6G) | `ddb-bridge.html` | What the bridge changes on D&D Beyond (everything a player changes in play), when it's on, and how it repairs itself |
 | Party Redesign | [EJmFmzbXoV15HKjpJiJ18a](https://claude.ai/artifact/EJmFmzbXoV15HKjpJiJ18a) | `../mockups/party.html` | The Party page built from the rest of askdnd's pieces (proposal, Oct 26) |
-| askdnd VTT Roadmap | [EtCBFsKNwLK5LNhQjcbzS3](https://claude.ai/artifact/EtCBFsKNwLK5LNhQjcbzS3) | `vtt-roadmap.html` | The roadmap, fight screen first (Oct 27); the record is `../plans/2026-10-22-vtt-roadmap.md` |
+| askdnd Roadmap | [EtCBFsKNwLK5LNhQjcbzS3](https://claude.ai/artifact/EtCBFsKNwLK5LNhQjcbzS3) | `../roadmap.html` | The one page to read for the roadmap: now, waiting, next, parked, later, done, and every plan and mockup with whether it's current (kept current; master since Oct 28) |
 | askdnd content workflows | [MPiEDh3KMNmB2NoCtuq52U](https://claude.ai/artifact/MPiEDh3KMNmB2NoCtuq52U) | `content-workflows.html` | Recaps, entries and suggestions, start to finish (Oct 22) |
 | askdnd campaigns and roles | [LLRsdZLY7wf5W7vTp4SEZR](https://claude.ai/artifact/LLRsdZLY7wf5W7vTp4SEZR) | `campaigns-and-roles.html` | Data organization: campaigns, roles per campaign (Oct 22) |
 | askdnd design system | [TJBLGJti8JCkUfN2BXph8K](https://claude.ai/artifact/TJBLGJti8JCkUfN2BXph8K) | `design-system-plan.html` | The design system plan and Brett's answers (Oct 22); the living version is Manage › Design system |

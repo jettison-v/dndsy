@@ -1,5 +1,7 @@
 # Next steps, Oct 27
 
+**Superseded (2026-10-28)** by the askdnd Roadmap (`docs/roadmap.html`, https://claude.ai/artifact/EtCBFsKNwLK5LNhQjcbzS3). Kept for the record.
+
 Where things stand at the end of Oct 26, and what to do next, in order. Each step says what it needs from Brett.
 
 ## Where we are

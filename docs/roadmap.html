@@ -1,0 +1,277 @@
+<title>askdnd Roadmap</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd's roadmap, the one page to read (Brett, 2026-10-28): now, waiting, next, parked, later, done, and every
+   document with whether it's current. Kept current in the repo as docs/roadmap.html and republished to the same link
+   whenever a step's status changes. Colors and faces are askdnd's own, dark first. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e; --line-soft: #2c3036;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #6f6b64;
+  --red: #d64545; --red-soft: rgba(214, 69, 69, .16); --red-text: #f08a8a;
+  --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .15);
+  --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f4ef; --surface: #ffffff; --surface-2: #efece5; --line: #dcd7cd; --line-soft: #e8e4dc;
+  --text: #2a2723; --strong: #111111; --muted: #6b655c; --faint: #918a7f;
+  --red: #b83232; --red-soft: rgba(184, 50, 50, .10); --red-text: #a62a2a;
+  --amber: #9a6a07; --amber-soft: rgba(201, 145, 30, .14);
+  --green: #2f7d4c; --green-soft: rgba(47, 125, 76, .12);
+  --blue: #2f5f9e; --blue-soft: rgba(47, 95, 158, .10);
+  --violet: #6b4fa3; --violet-soft: rgba(107, 79, 163, .10);
+  color-scheme: light;
+} }
+:root[data-theme="light"] {
+  --bg: #f6f4ef; --surface: #ffffff; --surface-2: #efece5; --line: #dcd7cd; --line-soft: #e8e4dc;
+  --text: #2a2723; --strong: #111111; --muted: #6b655c; --faint: #918a7f;
+  --red: #b83232; --red-soft: rgba(184, 50, 50, .10); --red-text: #a62a2a;
+  --amber: #9a6a07; --amber-soft: rgba(201, 145, 30, .14);
+  --green: #2f7d4c; --green-soft: rgba(47, 125, 76, .12);
+  --blue: #2f5f9e; --blue-soft: rgba(47, 95, 158, .10);
+  --violet: #6b4fa3; --violet-soft: rgba(107, 79, 163, .10);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.6 var(--sans); }
+.wrap { max-width: 1000px; margin: 0 auto; padding-block: 40px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 44px; }
+h1, h2, h3 { color: var(--strong); text-wrap: balance; margin: 0; }
+h1 { font: 600 2.4rem/1.15 var(--serif); letter-spacing: -.01em; }
+h2 { font: 600 1.55rem/1.2 var(--serif); }
+h3 { font: 600 1rem/1.35 var(--sans); }
+p { margin: 0; }
+a { color: var(--red-text); }
+.eyebrow { font: 700 .78rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red-text); }
+.lead { font-size: 1.06rem; max-width: 68ch; }
+.muted { color: var(--muted); }
+.small { font-size: .88rem; }
+header.top { display: grid; gap: 14px; }
+nav.jump { display: flex; flex-wrap: wrap; gap: 8px; }
+nav.jump a { text-decoration: none; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-size: .88rem; }
+nav.jump a:hover { border-color: var(--faint); }
+section { display: grid; gap: 16px; scroll-margin-top: 16px; }
+.sec-head { display: grid; gap: 8px; }
+.sec-head .why { max-width: 70ch; color: var(--muted); }
+
+/* Chips */
+.chip { display: inline-flex; align-items: center; font: 700 .72rem/1 var(--cond); letter-spacing: .06em; text-transform: uppercase; border-radius: 999px; padding: 5px 9px; white-space: nowrap; }
+.eff { background: var(--surface-2); color: var(--strong); border: 1px solid var(--line); }
+.s-done { background: var(--green-soft); color: var(--green); }
+.s-review { background: var(--red-soft); color: var(--red-text); }
+.s-designed { background: var(--blue-soft); color: var(--blue); }
+.s-todo { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+.s-wait { background: var(--amber-soft); color: var(--amber); }
+.s-parked { background: var(--violet-soft); color: var(--violet); }
+
+/* Steps: one row each, with where you'll see it */
+.steps { display: grid; border-top: 1px solid var(--line); }
+.step { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 6px 16px; padding: 16px 0; border-bottom: 1px solid var(--line-soft); }
+.step .n { font: 700 .9rem/1.6 var(--cond); color: var(--faint); font-variant-numeric: tabular-nums; }
+.step .body { display: grid; gap: 6px; min-width: 0; }
+.step .where { font-size: .9rem; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.step .where b { color: var(--strong); }
+.step .links { font-size: .88rem; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.step .tags { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; align-items: flex-start; max-width: 220px; }
+@media (max-width: 640px) { .step { grid-template-columns: 26px minmax(0, 1fr); } .step .tags { grid-column: 2; justify-content: flex-start; max-width: none; } }
+.you { border: 1px solid var(--red); border-radius: 12px; padding: 16px 18px; background: var(--surface); display: grid; gap: 8px; }
+.you ol, .you ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 820px) { .cards { grid-template-columns: 1fr; } }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.box ul, .box ol { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: .92rem; }
+.box .head { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+
+details.phase { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 0 16px; }
+details.phase summary { cursor: pointer; padding: 14px 0; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; list-style: none; }
+details.phase summary::-webkit-details-marker { display: none; }
+details.phase summary::before { content: "▸"; color: var(--muted); }
+details.phase[open] summary::before { content: "▾"; }
+details.phase summary b { color: var(--strong); }
+details.phase ul { margin: 0 0 14px; padding-left: 18px; display: grid; gap: 5px; font-size: .92rem; }
+details.phase .milestone { margin: 0 0 14px; font-size: .88rem; color: var(--green); }
+
+.done-list { display: grid; gap: 12px; }
+.day { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 4px 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line-soft); }
+.day .d { font: 700 .82rem/1.6 var(--cond); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.day ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: .92rem; }
+@media (max-width: 560px) { .day { grid-template-columns: 1fr; } }
+
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; min-width: 720px; font-size: .9rem; }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--line-soft); }
+thead th { background: var(--surface); color: var(--strong); font-weight: 600; position: sticky; top: 0; }
+tbody tr:last-child > * { border-bottom: 0; }
+td.what { color: var(--muted); }
+code { font-size: .84rem; color: var(--text); }
+footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--line); padding-top: 16px; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">askdnd · roadmap · updated Oct 28, 2026</div>
+    <h1>askdnd roadmap</h1>
+    <p class="lead">The one page to read for what's happening. What's being built now and where you'll see it, what's waiting on someone else, what comes next, what's parked, and what's done, most recent first. Every plan and mockup is listed at the bottom with whether it's current.</p>
+    <nav class="jump" aria-label="On this page"><a href="#now">Now</a><a href="#waiting">Waiting on</a><a href="#next">Next</a><a href="#parked">Parked</a><a href="#later">Later</a><a href="#done">Done</a><a href="#documents">Documents</a></nav>
+  </header>
+
+  <section id="now">
+    <div class="sec-head">
+      <div class="eyebrow">Now · step 5</div>
+      <h2>What D&amp;D Beyond's VTT is missing</h2>
+      <p class="why">The table plays on D&amp;D Beyond's own VTT, which already handles turns. So askdnd's next job in a fight is what it leaves to the table: Wild Shape damage math worked out out loud, and forgotten effects (reordered Oct 28). Each step is one small change, tried in the test campaign before the next starts.</p>
+    </div>
+    <div class="you">
+      <div class="eyebrow">Your call now</div>
+      <p>Nothing on step 5's designs: they're decided. Next is building it, one step at a time, starting with step 1. Each comes to you to try locally first, then on beta.</p>
+    </div>
+    <div class="steps">
+      <div class="step"><span class="n">1</span><div class="body"><h3>Game Mode for the table, and the Live pill</h3>
+        <p>Game Mode becomes one switch for the whole table (anyone starts or ends it; it lasts 6 hours). The Live pill says how your own sheet is kept in step: in step through the bridge, read every few minutes, or something to make by hand. The bridge's health pill moves to the admins' page.</p>
+        <p class="where"><b>Where you'll see it:</b> the <b>Live</b> pill at the top right of every page, and the window it opens. The bottom-right "D&amp;D Beyond ·" pill goes away for players.</p>
+        <p class="links"><a href="https://claude.ai/artifact/VfmC2TvFmSUf9ruQGWUAjk">Mockup: Game Mode and Bridge</a></p></div>
+        <div class="tags"><span class="chip eff">M</span><span class="chip s-designed">Designed · decided Oct 28</span></div></div>
+      <div class="step"><span class="n">2</span><div class="body"><h3>Changes only while your sheet can be reached</h3>
+        <p>A control that changes a D&amp;D Beyond number works only while that character's sheet is open with the extension; otherwise it says how, and nothing is queued. A change already waiting gives up a few minutes after the sheet was last heard.</p>
+        <p class="where"><b>Where you'll see it:</b> on every control that changes a number (the HP window in step 4 first). On a phone, changes are always made on D&amp;D Beyond.</p></div>
+        <div class="tags"><span class="chip eff">S</span><span class="chip s-designed">Designed · decided Oct 28</span></div></div>
+      <div class="step"><span class="n">3</span><div class="body"><h3>A changed number marks itself</h3>
+        <p>Whenever a number changes, from D&amp;D Beyond, someone else's screen or your own, it glows for a moment with the change ("−11"). Built once, in the one way every page updates, so it works everywhere.</p>
+        <p class="where"><b>Where you'll see it:</b> any number on any page as it changes: Battle, Sheet, Party.</p>
+        <p class="links"><a href="https://claude.ai/artifact/7dWbuf3hDwR5V9JFrrDT9H">Shown in: Wild Shape Hit Points</a></p></div>
+        <div class="tags"><span class="chip eff">S</span><span class="chip s-designed">Designed</span></div></div>
+      <div class="step"><span class="n">4</span><div class="body"><h3>Hit points with the working, aware of Wild Shape</h3>
+        <p>A damage roll (the DM's for an enemy) or a healing roll (a party member's) carries its amount and type. <b>Apply to Cole</b> on that roll opens Cole's hit points window filled in, and askdnd works it out by the 2024 rules: the form's resistances, its Temporary Hit Points first, the Concentration save's DC. Then it makes the result on his D&amp;D Beyond sheet through the bridge. A roll is applied once; normally the player applies it, and the DM can too. The Concentration save is the player's to roll, on their screen. Without a roll (a trap), click Hit points and enter the number.</p>
+        <p class="where"><b>Where you'll see it:</b> it starts in <b>Table rolls</b>, the sidebar on the left of every page in Game Mode: the roll's <b>Apply to Cole</b>. The window opens beside <b>Hit points</b> on your <b>Battle</b> page (the first number under your name). Also from Hit points on Sheet and each Party card.</p>
+        <p class="small muted">First to check: whether the DM's rolls in D&amp;D Beyond's VTT reach askdnd with their damage type (the extension already hears your own sheet's rolls in that same game log). If the type isn't in the roll, askdnd takes it from the monster's attack.</p>
+        <p class="links"><a href="https://claude.ai/artifact/7dWbuf3hDwR5V9JFrrDT9H">Mockup: Wild Shape Hit Points</a></p></div>
+        <div class="tags"><span class="chip eff">M</span><span class="chip s-designed">Designed · decided Oct 28</span></div></div>
+      <div class="step"><span class="n">5</span><div class="body"><h3>Forgotten effects</h3>
+        <p>Conditions that say when they end, and potions and charges at hand. "Until the end of your next turn" needs to know whose turn it is: first find out whether the extension can hear D&amp;D Beyond's own turn tracker, as it hears rolls; if not, a simple "next turn" for the DM.</p>
+        <p class="where"><b>Where you'll see it:</b> on Battle: the conditions row under the numbers, and your potions and charges beside the action columns.</p></div>
+        <div class="tags"><span class="chip eff">M</span><span class="chip s-todo">To design</span></div></div>
+      <div class="step"><span class="n">6</span><div class="body"><h3>Death save reminders and the massive damage note</h3>
+        <p>At 0 hit points: the death save marks and the rule's reminder, and a note for the DM when damage is massive. People roll and decide.</p>
+        <p class="where"><b>Where you'll see it:</b> in the hit points window (step 4) and on Battle's Hit points number at 0.</p></div>
+        <div class="tags"><span class="chip eff">S</span><span class="chip s-todo">To design</span></div></div>
+    </div>
+    <p class="muted small">The detail behind these six: <code>docs/plans/2026-10-24-play-state.md</code> (rewritten Oct 28).</p>
+  </section>
+
+  <section id="waiting">
+    <div class="sec-head"><div class="eyebrow">Waiting on</div><h2>Someone else's move</h2></div>
+    <div class="cards">
+      <div class="box"><div class="head"><h3>Chrome Web Store review</h3><span class="chip s-wait">2–7 days</span></div>
+        <p class="small">The askdnd bridge 0.9.1, unlisted. When it's approved:</p>
+        <ol><li>Send me the listing's link (from the <a href="https://chrome.google.com/webstore/devconsole">developer dashboard</a>); I put it in Help.</li>
+          <li>Share the <a href="https://claude.ai/artifact/9H59RDNi99gVa7bNwmjp6G">bridge's risk summary</a> with the table.</li>
+          <li>Switch the bridge on for The Adventure Begins: <a href="https://beta.askdnd.ai/c/main/manage/settings">Manage › Settings</a> › Virtual tabletop.</li></ol></div>
+      <div class="box"><div class="head"><h3>Railway</h3><span class="chip s-wait">Building</span></div>
+        <p class="small">Today's second update (one way for every change) was held up by <a href="https://status.railway.com">Railway's deploy incident</a> and is building now.</p></div>
+      <div class="box"><div class="head"><h3>The table's feedback</h3><span class="chip s-wait">Later</span></div>
+        <p class="small">You speak for the table for now (Oct 28: Wild Shape math and forgotten effects). Their own list of frustrations will sharpen steps 5 and 6.</p></div>
+    </div>
+  </section>
+
+  <section id="next">
+    <div class="sec-head"><div class="eyebrow">Next · step 6</div><h2>Live character state</h2>
+      <p class="why">The rest of what changes in play, each through the bridge (a change made in askdnd is made on D&amp;D Beyond and confirmed; a change made there comes into askdnd within seconds), shown on the character's own pages.</p></div>
+    <div class="steps">
+      <div class="step"><span class="n">1.2</span><div class="body"><h3>Casting spends slots</h3><p>Cast from Battle or the Spell Book, pick the slot level (upcasting shows what changes), Pact Magic, rituals; Concentration starts by itself. Prepared spells change here too.</p></div><div class="tags"><span class="chip eff">M</span></div></div>
+      <div class="step"><span class="n">1.3</span><div class="body"><h3>Class resources and uses</h3><p>Wild Shape, Focus Points, Channel Divinity, Bardic Inspiration and per-rest feats, counted down as they're used.</p></div><div class="tags"><span class="chip eff">M</span></div></div>
+      <div class="step"><span class="n">1.6</span><div class="body"><h3>Conditions with durations, Exhaustion</h3><p>Rounds, minutes, until the end of your next turn, or until a save; conditions change the rolls they affect.</p></div><div class="tags"><span class="chip eff">M</span></div></div>
+      <div class="step"><span class="n">1.4</span><div class="body"><h3>Short and long rests</h3><p>A rest lists what comes back before you confirm; the DM can call one for the party.</p></div><div class="tags"><span class="chip eff">M</span></div></div>
+      <div class="step"><span class="n">1.5</span><div class="body"><h3>Inventory in play</h3><p>Potions, charges, ammunition, coins, attunement, handing items over, loot from the DM.</p></div><div class="tags"><span class="chip eff">L</span></div></div>
+      <div class="step"><span class="n">1.9</span><div class="body"><h3>Level-up companion</h3><p>After leveling on D&amp;D Beyond: what's new and how it works.</p></div><div class="tags"><span class="chip eff">S</span></div></div>
+    </div>
+  </section>
+
+  <section id="parked">
+    <div class="sec-head"><div class="eyebrow">Parked</div><h2>Until playtests ask for it</h2></div>
+    <div class="box"><div class="head"><h3>The fight screen's own turn order</h3><span class="chip s-parked">Parked Oct 28</span></div>
+      <p class="small">Turn order, whose turn, the round, enemies with their HP, the fight's log with the DM's undo. (Apply from a roll moved into step 4, Oct 28.) D&amp;D Beyond's VTT already does turns well. Your answers are kept for when it's built: enemy HP hidden from players by default, in a DM battle settings menu that keeps defaults; players roll their own initiative (suspense); the DM's change to a player whose sheet can't be reached is listed for them to make by hand.</p></div>
+  </section>
+
+  <section id="later">
+    <div class="sec-head"><div class="eyebrow">Later</div><h2>The rest of the virtual tabletop</h2>
+      <p class="why">Sizes at today's pace: S a day or two · M about a week · L 2–3 weeks · XL a month or more. Open a phase for its items.</p></div>
+    <details class="phase"><summary><b>Phase 2b · The rest of combat</b><span class="muted small">stat blocks, attacks that resolve, encounters</span></summary>
+      <ul><li>2.3 Stat blocks the DM can click (L)</li><li>2.6 What players see of monsters (S)</li><li>2.4 Attacks and saves that resolve, the DM confirms (L)</li><li>2.1 Encounters with the 2024 DMG's budget (L)</li><li>2.5 Reactions at the right moment (M, nice to have)</li><li>2.7 Fights flow into the recap (S, nice to have)</li></ul>
+      <p class="milestone">Milestone: a whole fight in askdnd.</p></details>
+    <details class="phase"><summary><b>Phase 3 · Maps and tokens</b><span class="muted small">instead of D&amp;D Beyond Maps</span></summary>
+      <ul><li>3.1 Map canvas (L) · 3.2 Tokens tied to the characters (L) · 3.3 Movement and measuring (M) · 3.4 Fog of war (M)</li><li>3.5 Spell areas (M) · 3.6 Scenes (M)</li><li>Nice to have: 3.7 Walls, doors and vision (XL) · 3.8 Import .dd2vtt maps (M) · 3.9 Draw and ping (S) · 3.10 Story map (M)</li><li>3.11 Table dice: built Oct 23, behind the VTT switch, not released</li></ul>
+      <p class="milestone">Milestone: a session on askdnd's maps.</p></details>
+    <details class="phase"><summary><b>Phase 4 · The DM's table tools</b><span class="muted small">show to the table, music, prep</span></summary>
+      <ul><li>4.1 Show to the table (S) · 4.4 Asset library (M) · 4.5 Make stat blocks and items (L) · 4.6 Session prep (M)</li><li>Nice to have: 4.2 Music and ambience (M) · 4.3 Sound effects (S) · 4.7 Whispers (S; secret rolls are in) · 4.8 Paste-in import (M)</li></ul></details>
+    <details class="phase"><summary><b>Phase 5 · During play</b><span class="muted small">rules answers, chat, phones</span></summary>
+      <ul><li>5.1 Rules answers in play (L)</li><li>Nice to have: 5.2 Table chat with rolls (M) · 5.3 Phones and tablets for maps and combat (M) · 5.4 Start-of-turn summary (S)</li><li>5.5 Dice you can watch: done Oct 23</li></ul></details>
+    <details class="phase"><summary><b>Phase 6 · Voice and video</b><span class="muted small">later, nice to have</span></summary>
+      <ul><li>6.1 Voice and video in askdnd (L) · 6.2 One recording track per person (L) · 6.3 Recording straight to recap (L) · 6.4 Live captions (M)</li><li>Needs your decision on the raw-transcript privacy rule first.</li></ul></details>
+    <details class="phase"><summary><b>Phase 7 · Other groups</b><span class="muted small">not planned</span></summary>
+      <ul><li>7.1 Content and licensing check (S, before sharing) · 7.2 Invite another group (L) · 7.3 Accounts and costs per group (L)</li></ul></details>
+    <div class="box"><h3>Decisions that come up later</h3><ul>
+      <li><b>Where monsters come from</b> (2b): the SRD built in; creatures from books the DM owns entered by the DM, kept in the database.</li>
+      <li><b>How much map automation</b> (3): decide after using simple maps.</li>
+      <li><b>Where music comes from</b> (4): tracks the DM uploads or has rights to.</li>
+      <li><b>Video and the privacy rule</b> (6): recording stays on your Mac, or the rule changes.</li>
+      <li><b>When askdnd.ai moves to v2</b>: any time you say.</li></ul></div>
+  </section>
+
+  <section id="done">
+    <div class="sec-head"><div class="eyebrow">Done</div><h2>Most recent first</h2></div>
+    <div class="done-list">
+      <div class="day"><span class="d">Oct 28</span><ul>
+        <li>The D&amp;D Beyond bridge for the table: on beta, switched on per campaign, never on a test copy; the extension resubmitted to the Chrome Web Store as 0.9.1 (no healing potions in its panel)</li>
+        <li>Pages update themselves in place, Game Mode or not, with no flash: one way for every change, from the bridge, Game Mode, Refresh now or your own pins and notes</li>
+        <li>Whatever the table sees of a character (conditions, Concentration, Wild Shape) reaches everyone watching, live</li>
+        <li>The bridge page drawn like every other page; Inventory starts on All</li>
+        <li>Help lines and their small labels removed from every page (the tour and Help explain them)</li>
+        <li>Decided: Game Mode as one switch for the table; changes only while the sheet can be reached; step 5 reordered</li></ul></div>
+      <div class="day"><span class="d">Oct 27</span><ul>
+        <li>The bridge changes everything a player changes in play (hit points, death saves, conditions, slots, resources, items, coins), and rolls made on D&amp;D Beyond reach Table rolls</li>
+        <li>The shorter Manage menu: Manage for the campaign, ⚙ Admin for askdnd</li>
+        <li>The Monster Manual's Beasts in Wild Shape ("MM 2024"); pictures only in S3; the data strategy decided</li>
+        <li>End-of-day code and design system review, and its fixes</li></ul></div>
+      <div class="day"><span class="d">Oct 26</span><ul><li>The new-player tour and Help › What askdnd adds; the Party page rebuilt; the first play state design reviewed</li></ul></div>
+      <div class="day"><span class="d">Oct 23–24</span><ul><li>The foundations: one site with a VTT switch and a test campaign, the live table connection, the SRD as data, browser tests, error reports (Sentry), data organization, the Railway cleanup, thrown 3D dice and Dice tuning</li></ul></div>
+    </div>
+  </section>
+
+  <section id="documents">
+    <div class="sec-head"><div class="eyebrow">Documents</div><h2>Every plan and mockup, and whether it's current</h2>
+      <p class="why">Current: read this one. Done: built as described. Superseded: kept for the record; the newer one is named. Pages on claude.ai have a link; the rest live in the repo.</p></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Document</th><th>Status</th><th>Date</th><th>What it is</th></tr></thead>
+      <tbody>
+        <tr><td><b>askdnd Roadmap</b> (this page)</td><td><span class="chip s-done">Current</span></td><td>Oct 28</td><td class="what">The one page to read. Source <code>docs/roadmap.html</code>; detail behind it in <code>docs/plans/2026-10-22-vtt-roadmap.md</code></td></tr>
+        <tr><td><a href="https://claude.ai/artifact/7dWbuf3hDwR5V9JFrrDT9H">Wild Shape Hit Points</a></td><td><span class="chip s-done">Current · decided</span></td><td>Oct 28</td><td class="what">Step 5.4: Battle's hit points window, Cole as a Polar Bear</td></tr>
+        <tr><td><a href="https://claude.ai/artifact/VfmC2TvFmSUf9ruQGWUAjk">Game Mode and Bridge</a></td><td><span class="chip s-done">Current · decided</span></td><td>Oct 28</td><td class="what">Step 5.1: Game Mode for the table and the Live pill; the change rule</td></tr>
+        <tr><td>Play state and the fight screen <code>docs/plans/2026-10-24-play-state.md</code></td><td><span class="chip s-done">Current</span></td><td>Oct 28</td><td class="what">Step 5's design and buckets, rewritten for the bridge</td></tr>
+        <tr><td><a href="https://claude.ai/artifact/9H59RDNi99gVa7bNwmjp6G">askdnd D&amp;D Beyond Bridge</a></td><td><span class="chip s-done">Current</span></td><td>Oct 27</td><td class="what">What the bridge changes, when it's on, the risk; for the table</td></tr>
+        <tr><td><a href="https://claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr">askdnd Stack Map</a></td><td><span class="chip s-done">Current</span></td><td>Oct 28</td><td class="what">How the services connect, who changes each, where the keys live</td></tr>
+        <tr><td><a href="https://claude.ai/artifact/PWXtaunHcp3MEEJyJpLWoe">askdnd Data Strategy</a></td><td><span class="chip s-done">Decided</span></td><td>Oct 27</td><td class="what">Where data lives: four buckets, books checked once</td></tr>
+        <tr><td><a href="https://claude.ai/artifact/Y3ZKdQHFykyR9ywm3sV7at">askdnd Manage Menu</a></td><td><span class="chip s-done">Done</span></td><td>Oct 27</td><td class="what">Manage for the campaign and ⚙ Admin for askdnd</td></tr>
+        <tr><td><a href="https://claude.ai/artifact/CXkXguKnGmrPMnPXDYjwP2">Battle Slim Header</a></td><td><span class="chip s-todo">Not built</span></td><td>Oct 27</td><td class="what">You chose to let Battle's header scroll with the page instead</td></tr>
+        <tr><td><a href="https://claude.ai/artifact/EJmFmzbXoV15HKjpJiJ18a">Party Redesign</a></td><td><span class="chip s-done">Done</span></td><td>Oct 26</td><td class="what">The Party page built from askdnd's pieces</td></tr>
+        <tr><td>Play state mockup <code>docs/mockups/play-state.html</code></td><td><span class="chip s-todo">Superseded</span></td><td>Oct 26</td><td class="what">By Wild Shape Hit Points and Game Mode and Bridge</td></tr>
+        <tr><td>Content sources <code>docs/plans/2026-10-26-content-sources.md</code></td><td><span class="chip s-todo">Superseded</span></td><td>Oct 26</td><td class="what">By the data strategy (Oct 27)</td></tr>
+        <tr><td>Next steps, Oct 27 <code>docs/plans/2026-10-27-next-steps.md</code></td><td><span class="chip s-todo">Superseded</span></td><td>Oct 27</td><td class="what">By this page</td></tr>
+        <tr><td>Roadmap, Oct 21 <code>docs/plans/2026-10-21-roadmap.md</code></td><td><span class="chip s-todo">Superseded</span></td><td>Oct 21</td><td class="what">The steps before the VTT plan (lists, design system); all done</td></tr>
+        <tr><td>The tour <code>docs/plans/2026-10-26-tour.md</code></td><td><span class="chip s-done">Done</span></td><td>Oct 26</td><td class="what">The new-player tour and Help › What askdnd adds</td></tr>
+        <tr><td><a href="https://claude.ai/artifact/MPiEDh3KMNmB2NoCtuq52U">askdnd content workflows</a></td><td><span class="chip s-done">Done</span></td><td>Oct 22</td><td class="what">Recaps, entries and suggestions, start to finish</td></tr>
+        <tr><td><a href="https://claude.ai/artifact/LLRsdZLY7wf5W7vTp4SEZR">askdnd campaigns and roles</a></td><td><span class="chip s-done">Done</span></td><td>Oct 22</td><td class="what">Campaigns and roles per campaign</td></tr>
+        <tr><td><a href="https://claude.ai/artifact/TJBLGJti8JCkUfN2BXph8K">askdnd design system</a></td><td><span class="chip s-done">Done</span></td><td>Oct 22</td><td class="what">The plan; the living version is <a href="https://beta.askdnd.ai/manage/design">Manage › Design system</a></td></tr>
+        <tr><td>Earlier explorations: <a href="https://claude.ai/artifact/DsaXefMSwqfssr9Nr9CX6G">lists and filters</a>, <a href="https://claude.ai/artifact/MugmGvRMCLnPotQWf2fzFc">spellcasting</a>, <a href="https://claude.ai/artifact/4hB75v84hYmrJwYUoTADfr">table rolls</a>, <a href="https://claude.ai/artifact/4NJKfKE7uyTEKu6y4vVgn2">navigation</a>, <a href="https://claude.ai/artifact/SkZpGVy97JqLcxyi3zyUE4">lists questions</a>, step <a href="https://claude.ai/artifact/8wDE5Mes9sjAqUbfmosakD">3</a> and <a href="https://claude.ai/artifact/PqQRvc1cyx52vWrsdUKwDQ">4</a> before and after</td><td><span class="chip s-done">Done</span></td><td>Oct 21–22</td><td class="what">Built; kept for the record</td></tr>
+      </tbody>
+    </table></div>
+    <p class="muted small">Every decision, one line each: <code>docs/DECISIONS.md</code>. What each page's source is and where it lives: <code>docs/artifacts/README.md</code>.</p>
+  </section>
+
+  <footer>askdnd · roadmap · kept current in the repo as <code>docs/roadmap.html</code> and published to this same link whenever a step changes · updated Oct 28, 2026</footer>
+</div>

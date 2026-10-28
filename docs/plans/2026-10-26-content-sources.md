@@ -1,5 +1,7 @@
 # Content sources: books, homebrew and the SRD (design for Brett's review, 2026-10-26)
 
+**Superseded (2026-10-27)** by the data strategy (`docs/plans/2026-10-27-data-strategy.md`). Kept for the record.
+
 Brett's questions: if the DM buys another book and the table starts using it, where is that content stored and how
 is it used? What happens when the book is no longer used? Does it add to the core rules? Decide this now, before the
 fight screen, stat blocks (2.3) and rules answers (5.1) are built on top of it.

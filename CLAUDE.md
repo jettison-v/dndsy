@@ -6,6 +6,7 @@ A companion app for one D&D 2024 table (4 players + DM, playing on Zoom with D&D
 - `docs/ARCHITECTURE.md`: stack, data, build plan
 - `docs/stack.html`: the stack map, a diagram of how the services connect and who changes each one (Claude, Brett, or both), with where every key lives. **Update it** whenever a service, a key or who does what changes, and republish it (its private artifact link is in the file's footer).
 - `docs/artifacts/`: the source of every page published on claude.ai (Brett, 2026-10-26: artifacts must outlive Claude). **When you publish a page for askdnd, save its source in the repo** (here, or where it's kept current: `docs/stack.html`, `docs/mockups/`) and add it to `docs/artifacts/README.md`. Public repo: no screenshots of real pages, book text or campaign story.
+- `docs/roadmap.html`: **the askdnd Roadmap, the one page Brett reads** for what's happening (Brett, 2026-10-28: plans spread across files and pages were hard to follow): now (with where each piece shows), waiting on, next, parked, later, done, and every plan and mockup with whether it's current. **Update it and republish to its link** (in `docs/artifacts/README.md`) whenever a step's status changes or a plan or mockup is added or superseded; `docs/plans/2026-10-22-vtt-roadmap.md` is the detail behind it.
 - `docs/DECISIONS.md`: running decision log. **Append to it** whenever a meaningful decision is made in a session (one line: date, decision, why).
 
 ## Working with Brett
