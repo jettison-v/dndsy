@@ -83,7 +83,7 @@ def test_sheet_shows_quiet_note_when_latest_refresh_failed(player, db):
     assert "showing the copy from" in player.get(f"/characters/{cole.id}/battle").text
 
 
-def test_game_mode_sync_is_throttled(player, db, monkeypatch):
+def test_game_mode_reads_the_character_on_screen_first_and_is_throttled(player, db, monkeypatch):
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
     calls = []
@@ -93,16 +93,14 @@ def test_game_mode_sync_is_throttled(player, db, monkeypatch):
         return fake_fetch(ddb_id)
 
     monkeypatch.setattr(characters.refresh, "__defaults__", (counting,))
-    body = player.post(f"/characters/{cole.id}/sync").text
-    assert 'id="battle-body"' in body and "<html" not in body and calls == [cole.ddb_id, "135831636"]  # then the party (Trah)
-    player.post(f"/characters/{cole.id}/sync")
+    pill = player.post(f"/live/sync?c={cole.id}").text
+    assert 'id="live-pill"' in pill and "<html" not in pill and calls == [cole.ddb_id, "135831636"]  # then the party (Trah)
+    player.post(f"/live/sync?c={cole.id}")
     assert len(calls) == 2  # a second viewer moments later doesn't fetch again
-    player.post(f"/characters/{cole.id}/sync", data={"now": "1"})
-    assert len(calls) == 2  # "Refresh now" also waits at least 20 seconds
     from datetime import timedelta
 
     cole.snapshot.attempted_at -= timedelta(minutes=3)
-    player.post(f"/characters/{cole.id}/sync")
+    player.post(f"/live/sync?c={cole.id}")
     assert calls.count(cole.ddb_id) == 2
 
 

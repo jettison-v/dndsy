@@ -121,19 +121,19 @@ def maybe_refresh(db: Session, ch: Character, min_age: timedelta) -> bool:
     return True
 
 
-def refresh_party(db: Session, user: dict, focus_id: int | None, skip: int | None = None) -> None:
+def refresh_party(db: Session, user: dict, focus_id: int | None) -> None:
     """Game Mode: the character on screen (else your own) first, then everyone else linked in the campaign, each at
-    most every AUTO_MIN_AGE. `skip`: one the caller has just refreshed."""
+    most every AUTO_MIN_AGE."""
     tn = table(user, "", rows_from(db), focus_id)
     first = [tn["focus"]["id"]] if tn["focus"] and tn["focus"]["linked"] else []
     for i in first + [r["id"] for r in tn["linked"] if r["id"] not in first]:
-        ch = db.get(Character, i) if i != skip else None
+        ch = db.get(Character, i)
         if ch is not None:
             maybe_refresh(db, ch, AUTO_MIN_AGE)
 
 
 def pill(db: Session, user: dict, focus_id: int | None) -> str:
-    """The pill's HTML on its own (Game Mode's tick away from Battle swaps it in)."""
+    """The pill's HTML on its own (Game Mode's tick swaps it in)."""
     return templates.get_template("_live_pill.html").render(tn=table(user, "", rows_from(db), focus_id))
 
 
@@ -156,8 +156,8 @@ def live_panel(request: Request, c: int = 0, db: Session = Depends(get_db)):
 
 @router.post("/live/sync")
 def live_sync(request: Request, c: int = 0, db: Session = Depends(get_db)):
-    """Game Mode away from Battle: keep the party fresh (the character on screen, else your own, first) and return
-    the updated pill."""
+    """Game Mode's tick, on every page: keep the party fresh (the character on screen, else your own, first) and
+    return the updated pill. What changed reaches the pages showing it through the live connection (app/realtime.py)."""
     user = current_user(request)
     if not user:
         return HTMLResponse("", status_code=401)

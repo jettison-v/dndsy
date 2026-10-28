@@ -321,16 +321,19 @@
   });
 
   // Tabs (Character page): buttons with data-tab show #id and hide their siblings' panels.
-  document.addEventListener('click', e => {
-    const b = e.target.closest('[role=tab][data-tab]');
-    if (!b) return;
-    const list = b.closest('[role=tablist]');
-    list.querySelectorAll('[role=tab]').forEach(x => {
+  function selectTab(b) {
+    b.closest('[role=tablist]').querySelectorAll('[role=tab]').forEach(x => {
       x.setAttribute('aria-selected', x === b ? 'true' : 'false');
       const p = document.getElementById(x.dataset.tab); if (p) p.hidden = x !== b;
     });
     const panel = document.getElementById(b.dataset.tab);
     if (panel) panel.dispatchEvent(new CustomEvent('tab:shown', { bubbles: true }));
+    return panel;
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[role=tab][data-tab]');
+    if (!b) return;
+    const list = b.closest('[role=tablist]'), panel = selectTab(b);
     // If the tabs are stuck at the top (scrolled down), start the new tab from its top.
     const offset = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--stick-top')) || 0;
     if (panel && list.getBoundingClientRect().top <= offset + 1) {
@@ -404,11 +407,14 @@
       localStorage.setItem(GM, on ? 'on' : 'off');
     } catch (e) {}
   }
+  // Game Mode's tick: askdnd reads the party from D&D Beyond (the character on screen, or your own, first) and the Live
+  // pill comes back. Whatever changed reaches the pages showing it through the live connection, like every change
+  // (showInPlace below); while that's down, this page asks for its new copy itself.
   function gmTick() {
-    if (!window.htmx) return;
-    const body = document.getElementById('battle-body'), pill = document.getElementById('live-pill');
-    if (body) htmx.ajax('POST', '/characters/' + body.dataset.character + '/sync', { target: '#battle-body', swap: 'outerHTML' });
-    else if (pill) htmx.ajax('POST', '/live/sync' + (pill.dataset.focus ? '?c=' + pill.dataset.focus : ''), { target: '#live-pill', swap: 'outerHTML' });
+    const pill = document.getElementById('live-pill');
+    if (!window.htmx || !pill) return;
+    htmx.ajax('POST', '/live/sync' + (pill.dataset.focus ? '?c=' + pill.dataset.focus : ''), { target: '#live-pill', swap: 'outerHTML' })
+      .then(() => { if (!live.up) showInPlace(); });
   }
   function gmSetup() {
     const on = gmIsOn(), pill = document.getElementById('live-pill');
@@ -428,13 +434,66 @@
     if (on) gmTick();
     toast(on ? 'Game Mode on: updating from D&D Beyond every 2–3 minutes' : 'Game Mode off');
   });
-  // After "Refresh now" or "Refresh everyone": show the new copy. Battle swaps its body; other
-  // pages showing that character (Sheet, Plan, Party) reload.
+  // A page shows a new copy in one way, whatever brought it (the bridge hearing a sheet save, Game Mode, Refresh now,
+  // a reconnect, your own pin or note): the page is fetched again and its main and Live pill swapped in before the
+  // next paint, keeping the tabs, the scroll and each list's search, so nothing flashes. Someone else's change waits
+  // while you're in the middle of something (typing, a side panel, a roll, the tour); your own (`now`) doesn't. Lists
+  // set themselves up as they appear; notes, dragging and Battle's columns are set up again here. (A button's own
+  // answer, such as Wild Shape's, still swaps just the box it changed.)
+  const PARTY = /^(\/c\/[^/]+)?\/party$/;
+  let showWait = null, showing = false, again = false;
+  function showsAny(ids) {  // ids: character ids as text, or '*' for any
+    const page = document.querySelector('main[data-character]');
+    return PARTY.test(location.pathname) || !!(page && (ids.includes('*') || ids.includes(page.dataset.character)));
+  }
+  function shows(id) {  // this character's own page (Battle, Sheet, Plan)
+    const page = document.querySelector('main[data-character]');
+    return !!page && page.dataset.character === String(id);
+  }
+  function busyHere() {
+    const a = document.activeElement;
+    return !!(document.querySelector('.peek.open, .roll-win, .tour-card, dialog[open]') ||
+              (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))));
+  }
+  function swapMain(html) {
+    const doc = new DOMParser().parseFromString(html, 'text/html'), here = document.querySelector('main'), there = doc.querySelector('main');
+    if (!here || !there) return;
+    const y = window.scrollY, tabs = [...here.querySelectorAll('[role=tab][data-tab][aria-selected=true]')].map(t => t.dataset.tab);
+    const searches = [...here.querySelectorAll('[data-list]')].map(r => [r.dataset.list, (r.querySelector('[data-ls-search]') || {}).value || '']).filter(([, q]) => q);
+    [...here.attributes].forEach(a => { if (!there.hasAttribute(a.name)) here.removeAttribute(a.name); });
+    [...there.attributes].forEach(a => here.setAttribute(a.name, a.value));
+    here.replaceChildren(...[...there.childNodes].map(n => document.importNode(n, true)));
+    const pill = document.getElementById('live-pill'), newPill = doc.getElementById('live-pill');
+    if (pill && newPill) { pill.className = newPill.className; pill.title = newPill.title; pill.innerHTML = newPill.innerHTML; Object.assign(pill.dataset, newPill.dataset); }
+    tabs.forEach(id => { const t = here.querySelector('[role=tab][data-tab="' + id + '"]'); if (t) selectTab(t); });
+    if (window.htmx) htmx.process(here);
+    if (window.askdndNotesInit) window.askdndNotesInit(here);
+    sortSetup(); econSetup();
+    window.scrollTo(0, y);
+    queueMicrotask(() => searches.forEach(([key, q]) => {  // after the lists have set themselves up
+      const box = here.querySelector('[data-list="' + key + '"] [data-ls-search]');
+      if (box) { box.value = q; box.dispatchEvent(new Event('input', { bubbles: true })); }
+    }));
+  }
+  function showInPlace(now) {
+    if (showing) { again = true; return; }
+    clearTimeout(showWait); showWait = null;
+    const later = () => { showWait = setTimeout(() => showInPlace(), 2000); };
+    if (!now && (busyHere() || document.visibilityState !== 'visible')) return later();
+    showing = true;
+    fetch(location.pathname + location.search, { headers: { 'HX-Request': 'true' } })
+      .then(r => r.ok ? r.text() : Promise.reject(r.status))
+      .then(html => {
+        showing = false;
+        if (!now && busyHere()) return later();
+        swapMain(html);
+        if (again) { again = false; showInPlace(now); }
+      })
+      .catch(() => { showing = false; });
+  }
+  // After "Refresh now" or "Refresh everyone"
   document.body.addEventListener('liveRefreshed', e => {
-    const ids = ((e.detail && e.detail.ids) || []).map(String), body = document.getElementById('battle-body');
-    const page = document.querySelector('[data-character]');
-    if (body && ids.includes(body.dataset.character)) htmx.ajax('POST', '/characters/' + body.dataset.character + '/sync', { target: '#battle-body', swap: 'outerHTML' });
-    else if ((page && ids.includes(page.dataset.character)) || /^(\/c\/[^/]+)?\/party$/.test(location.pathname)) location.reload();
+    if (showsAny(((e.detail && e.detail.ids) || []).map(String))) showInPlace(true);
   });
   // ---------------------------------------------------------------- live connection
   // (VTT 0.3, app/realtime.py) One WebSocket per page to its campaign's table. askdnd says what changed ("rolls", or
@@ -459,56 +518,35 @@
       if (ev.code !== 4403) setTimeout(() => connectLive(Math.min(wait * 2, 30)), wait * (500 + Math.random() * 1000));
     };
   })(1);
-  // Someone's character changed (a D&D Beyond refresh found something new): in Game Mode, Battle showing them swaps in
-  // the new copy and the Live pill catches up. A burst ("Refresh everyone") is taken once; after a gap, any of them.
-  let liveTick = null;
+  // Someone's character changed (a read of D&D Beyond found something new: the bridge hearing their sheet save, Game
+  // Mode, a page opening), or the connection came back ("resync": anything may have changed): a page showing them
+  // shows the new copy, Game Mode or not; in Game Mode the Live pill on any other page catches up. A burst ("Refresh
+  // everyone") is taken once.
+  let liveTick = null, liveIds = new Set();
   document.addEventListener('askdnd:live', e => {
     const t = e.detail.type;
-    if ((t !== 'character' && t !== 'resync') || !gmIsOn() || !window.htmx) return;
-    const body = document.getElementById('battle-body');
-    if (t === 'character' && body && body.dataset.character !== String(e.detail.id)) return;
+    if (t !== 'character' && t !== 'resync') return;
+    liveIds.add(t === 'resync' ? '*' : String(e.detail.id));
     clearTimeout(liveTick);
-    liveTick = setTimeout(gmTick, 400);
+    liveTick = setTimeout(() => {
+      const ids = [...liveIds];
+      liveIds = new Set();
+      if (showsAny(ids)) showInPlace();
+      else if (gmIsOn()) gmTick();
+    }, 400);
   });
-  // Plan's Reminders and Shortlist tabs: fetch the page again and swap in just those tabs' contents
-  // (each tab keeps whether it's open), after a mark or note changes.
-  function refreshPlanTabs(character) {
-    if (!/\/characters\/\d+\/plan$/.test(location.pathname) || !location.pathname.includes('/' + character + '/')) return;
-    fetch(location.pathname, { headers: { 'HX-Request': 'true' } }).then(r => r.text()).then(html => {
-      const doc = new DOMParser().parseFromString(html, 'text/html');
-      // Every tab on Plan: notes (combos, leveling, quests, notes), Reminders and the shortlists
-      [...document.querySelectorAll('[role=tab][data-tab]')].map(t => t.dataset.tab).forEach(id => {
-        const here = document.getElementById(id), there = doc.getElementById(id);
-        if (!here || !there) return;
-        here.innerHTML = there.innerHTML;
-        if (window.htmx) htmx.process(here);
-        if (window.askdndNotesInit) window.askdndNotesInit(here);  // "Full notes" stays on
-      });
-      if (typeof sortSetup === 'function') sortSetup();  // Reminders can be dragged
-      document.querySelectorAll('[role=tab][data-tab]').forEach(t => {  // the tab counts
-        const there = doc.querySelector('[role=tab][data-tab="' + t.dataset.tab + '"] .count'), here = t.querySelector('.count');
-        if (there && here) here.textContent = there.textContent;
-        else if (there && !here) t.insertAdjacentHTML('beforeend', ' <span class="count">' + there.textContent + '</span>');
-        else if (!there && here) here.remove();
-      });
-    });
-  }
-  // A Plan note was saved or deleted in its modal (player_notes.save_note): close the modal and update
-  // the page in place, staying on the same tab (roadmap step 6). Battle reloads its body (combos).
+  // A Plan note was saved or deleted in its modal (player_notes.save_note): close the modal and show the page's new
+  // copy in place, staying on the same tab (roadmap step 6).
   document.body.addEventListener('notesChanged', e => {
-    const d = e.detail || {}, body = document.getElementById('battle-body');
+    const d = e.detail || {};
     closePeek();
-    if (body && String(body.dataset.character) === String(d.character))
-      htmx.ajax('GET', '/characters/' + d.character + '/battle/body', { target: '#battle-body', swap: 'outerHTML' });
-    refreshPlanTabs(d.character);
+    if (shows(d.character)) showInPlace(true);
   });
-  // A note was saved in a side panel (character_pages.save_pick_note): the one-line note under that
-  // thing's rows changes in place; Battle reloads its body (option rows and Reminders); Plan its tabs.
+  // A note was saved in a side panel (character_pages.save_pick_note): the page behind it shows its new copy, and the
+  // one-line note under that thing's rows changes at once, in the side panel too.
   document.body.addEventListener('noteChanged', e => {
-    const d = e.detail || {}, body = document.getElementById('battle-body');
-    if (body && String(body.dataset.character) === String(d.character))
-      htmx.ajax('GET', '/characters/' + d.character + '/battle/body', { target: '#battle-body', swap: 'outerHTML' });
-    refreshPlanTabs(d.character);
+    const d = e.detail || {};
+    if (shows(d.character)) showInPlace(true);
     document.querySelectorAll('[data-ref]').forEach(row => {
       if (row.dataset.ref !== d.ref || row.closest('.peek.top, .detail-marks')) return;
       let line = row.querySelector('.ls-note, .ri-note');
@@ -523,14 +561,12 @@
       line.title = d.note;
     });
   });
-  // A pin, bookmark or reminder changed (character_pages.toggle_pick): show it everywhere on the page
-  // without a refresh. Battle reloads its body (pins fill its columns; reminders its box); rows on
-  // Sheet and in lists update their buttons, and a shared list moves the row in or out of Shortlist.
+  // A pin, bookmark or reminder changed (character_pages.toggle_pick): the page behind shows its new copy (pins fill
+  // Battle's columns, reminders its box), and the buttons on that thing's rows change at once, in the side panel too,
+  // with a shared list moving the row in or out of Shortlist.
   document.body.addEventListener('marksChanged', e => {
-    const d = e.detail || {}, body = document.getElementById('battle-body');
-    refreshPlanTabs(d.character);
-    if (body && String(body.dataset.character) === String(d.character))
-      htmx.ajax('GET', '/characters/' + d.character + '/battle/body', { target: '#battle-body', swap: 'outerHTML' });
+    const d = e.detail || {};
+    if (shows(d.character)) showInPlace(true);
     const set = (row, kind, on) => row.querySelectorAll('.pick.' + kind + ':not(.static)').forEach(b => {
       if (!b.closest('.detail-marks')) { b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); }
     });

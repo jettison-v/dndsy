@@ -37,7 +37,6 @@
     .tile { background: #1f2226; border: 1px solid #34383e; border-radius: 8px; padding: 8px 10px; } .tile small { color: #a29d93; display: block; font-size: 12px; } .tile b { color: #fff; font-size: 20px; }
     .tile.wait { border-color: #e8b34b; background: #1f2226; } .tile.off { border-color: #d64545; background: #1f2226; }
     h3 { margin: 0; font: 700 11px/1 'Roboto Condensed', Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #e8b34b; }
-    .item { display: flex; justify-content: space-between; align-items: center; gap: 8px; background: #1f2226; border: 1px solid #34383e; border-radius: 8px; padding: 8px 10px; }
     .note { color: #a29d93; font-size: 12px; }
     a.btn { font: 600 13px/1 Inter, system-ui, sans-serif; border-radius: 8px; padding: 8px 11px; border: 1px solid #34383e; background: #272b30; color: #ebe7df; cursor: pointer; text-decoration: none; display: inline-block; }
     .change { display: grid; gap: 6px; padding: 10px 12px; border-radius: 10px; border: 1px solid #34383e; }
@@ -68,8 +67,6 @@
       const pill = notYet ? ['off', notYet + ' to make by hand'] : waiting ? ['wait', waiting + ' waiting'] : ['live', 'Live with D&D Beyond'];
       body = `<span class="st ${pill[0]}">${pill[1]}</span>
         <div class="tile ${waiting ? 'wait' : notYet ? 'off' : ''}"><small>Hit points</small><b>${esc(st.hp.current)}</b> <span class="note">/ ${esc(st.hp.max)}</span></div>
-        ${st.items.length ? '<h3>Healing potions</h3>' : ''}
-        ${st.items.map(it => `<div class="item"><div><b>${esc(it.name)}</b> <span class="note">×${it.quantity}</span><div class="note">Heals ${esc(it.heals)}</div></div></div>`).join('')}
         ${st.to_make.length ? `<div class="change off"><b>Make these on D&amp;D Beyond</b><div>${st.to_make.map(esc).join('<br>')}</div><span class="note">askdnd ticks them off when D&amp;D Beyond has them.</span></div>` : ''}
         ${st.changes.map(c => `<div class="change ${CLS[c.state === 'sending' ? 'waiting' : c.state]}"><span class="st ${CLS[c.state === 'sending' ? 'waiting' : c.state]}">${LABEL[c.state === 'sending' ? 'waiting' : c.state]}</span><div>${esc(c.label)}</div>${c.error ? `<div class="note">${esc(c.error)}</div>` : ''}${c.state === 'not_yet' ? '<div class="note">Try again or undo it in askdnd.</div>' : ''}</div>`).join('')}
         <h3>What changed</h3>

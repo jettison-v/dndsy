@@ -23,7 +23,6 @@ body{margin:0;width:1280px;height:800px;background:#0f1113;font-family:Inter,sys
 <p><b>&#9679;</b> askdnd counts a change only once D&amp;D Beyond has it.</p></div></body></html>"""
 stub = """window.chrome = {runtime: {getURL: () => 'about:blank', sendMessage: () => {}, onMessage: {addListener: f => { window.__listen = f; }}}};"""
 state = {"character": {"name": "Vi", "id": 12}, "hp": {"current": 61, "max": 73}, "to_make": [],
-         "items": [{"name": "Potion of Healing", "quantity": 4, "heals": "2d4+2"}, {"name": "Potion of Greater Healing", "quantity": 1, "heals": "4d4+4"}],
          "changes": [],
          "log": [{"state": "live", "text": "Vi: drank a Potion of Healing (+7 hit points)"},
                  {"state": "seen", "text": "Vi (on D&D Beyond): 1st-level slots 1 used → 2 used"},

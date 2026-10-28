@@ -1,6 +1,7 @@
 """The table's core flows in real browsers (tests/browser/conftest.py): pages load cleanly, the roll window's keys,
 and rolls reaching everyone at the table live, with a DM-only roll's number kept from the other players."""
 
+import json
 import time
 
 LOG = "#roll-log > li"
@@ -219,4 +220,54 @@ def test_add_on_the_spell_bar_opens_the_book_and_pinning_there_updates_the_bar(p
     assert bar.locator(".sb-add").count() == 0
     book.locator('[data-ref="spell:Moonbeam"] .pick.star.on').click()  # unpin: + Add comes back
     bar.locator(".sb-add").wait_for()
+    assert player.errors == []
+
+
+def test_a_character_changed_on_d_and_d_beyond_updates_the_pages_showing_it(people, server, browser_db):
+    """With Game Mode off too, and never by reloading (it flashed): Battle swaps its body in, Sheet swaps its page in on
+    the tab, the place and the search you had, and not while a side panel is open (app.js "live connection"; the
+    bridge hearing a sheet save sends the same message)."""
+    from sqlalchemy import create_engine, text
+
+    engine = create_engine(browser_db[0])
+
+    def changed():
+        msg = '{"type": "character", "id": %d}' % server["cole"]
+        with engine.connect() as conn:
+            conn.execute(text("SELECT pg_notify('askdnd_table', :p)"), {"p": '{"c": %d, "m": %s}' % (server["campaign"], json.dumps(msg))})
+            conn.commit()
+
+    player = people("player")
+    player.context.add_init_script("localStorage.setItem('askdnd.gameMode', 'off');")
+    page = battle(player, server)
+    player.live()
+    page.evaluate("document.getElementById('battle-body').dataset.old = '1'; window.stayed = true")
+    changed()
+    page.wait_for_function("!document.getElementById('battle-body').dataset.old")
+    assert page.evaluate("window.stayed")  # swapped in, not reloaded
+
+    page = player.open(f"/characters/{server['cole']}")
+    page.click('[data-tab="t-items"]')
+    assert page.locator('#t-items [data-ls-view]').first.inner_text().startswith("All")  # Inventory starts on All
+    assert page.locator('#t-items [data-ls-view="all"]').get_attribute("aria-pressed") == "true"
+    player.live()
+    items = page.locator("#t-items [data-ls-row]")
+    first = items.first.get_attribute("data-name")
+    page.locator("#t-items [data-ls-search]").fill(first)
+    page.locator("#t-items [data-ls-search]").blur()
+    shown = page.locator("#t-items [data-ls-row]:visible").count()
+    page.locator("#t-items [data-ls-row]:visible").first.click()
+    page.wait_for_selector(".peek.open")
+    page.evaluate("window.scrollTo(0, 300); window.stayed = true; document.getElementById('t-items').dataset.old = '1'; window.y = scrollY")
+    changed()
+    time.sleep(2.5)
+    assert page.evaluate("document.getElementById('t-items').dataset.old")  # busy with the side panel: it waits
+    page.locator(".peek.open .peek-close").click()
+    page.wait_for_function("!document.getElementById('t-items').dataset.old")
+    assert page.evaluate("window.stayed")  # swapped in place, not reloaded
+    assert page.locator('[role=tab][data-tab="t-items"]').get_attribute("aria-selected") == "true"
+    assert page.evaluate("scrollY === window.y")
+    assert page.locator("#t-items [data-ls-search]").input_value() == first
+    assert page.locator("#t-items [data-ls-row]:visible").count() == shown
+    engine.dispose()
     assert player.errors == []
