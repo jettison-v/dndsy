@@ -202,6 +202,22 @@ def test_changes_made_on_d_and_d_beyond_itself_are_logged(player, db, sheet):
     assert st["log"][0]["state"] == "seen" and st["log"][0]["text"] == "Cole (on D&D Beyond): hit points 37 → 31, Potion of Healing ×2 → ×3"
 
 
+def test_a_save_the_bridge_hears_tells_the_pages_showing_that_character(player, db, sheet, monkeypatch):
+    """Pages showing the character update themselves, Game Mode or not (app.js "live connection"); nothing is sent
+    when the sheet saved without changing anything askdnd shows."""
+    from app import realtime
+
+    cole = char(db, "Cole")
+    player.get(f"/bridge/state/{cole.id}")
+    sent = []
+    monkeypatch.setattr(realtime, "publish", lambda campaign_id, kind, **data: sent.append((campaign_id, kind, data)))
+    player.post("/bridge/heard/75423618")
+    assert sent == []
+    sheet["removedHitPoints"] = 20
+    player.post("/bridge/heard/75423618")
+    assert sent == [(cole.campaign_id, "character", {"id": cole.id})]
+
+
 def test_a_change_on_d_and_d_beyond_is_logged_whichever_read_sees_it_first(player, db, sheet):
     """Game Mode's refresh (or a page opening) can read D&D Beyond before the bridge does: the change is still logged
     as made on D&D Beyond, once, and what askdnd is writing never is."""

@@ -170,8 +170,7 @@ def test_a_pin_announces_itself_so_the_page_updates_without_a_refresh(player, db
     r = player.post(f"/characters/{cole.id}/pick", data={"kind": "star", "ref": "spell:Heat Metal", "marks": "star,fav,remind"})
     event = json.loads(r.headers["HX-Trigger"])["marksChanged"]
     assert event == {"character": cole.id, "kind": "star", "ref": "spell:Heat Metal", "on": True, "fav": True}  # pinning shortlists
-    body = player.get(f"/characters/{cole.id}/battle/body").text
-    assert body.startswith('<div id="battle-body"') or 'id="battle-body"' in body[:200]
+    body = player.get(f"/characters/{cole.id}/battle", headers={"HX-Request": "true"}).text  # the page's own swap (app.js showInPlace)
     assert "Heat Metal" in body.split('data-econ-col="action"')[1].split('data-econ-col="bonus"')[0]
 
 

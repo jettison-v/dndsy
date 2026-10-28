@@ -6,7 +6,8 @@
 - /battle and /character open on the signed-in person's own character (set on
   Manage › People); /party shows everyone.
 - Keeping the copy fresh (Game Mode, Refresh now) lives in the menu bar's Live control
-  (app/live.py). On Battle, Game Mode swaps in the updated body from game_mode_sync.
+  (app/live.py). A page shows a new copy by fetching itself again and swapping in its main (app.js
+  "showInPlace"), whatever brought it.
 - Stars and reminders (app/picks.py): only the character's player sets them;
   the DM never sees them. Character notes are never shown here.
 """
@@ -250,19 +251,6 @@ def plan_page(request: Request, character_id: int, db: Session = Depends(get_db)
     return _character(request, db, character_id, "plan")
 
 
-@router.post("/characters/{character_id:int}/sync")
-def game_mode_sync(request: Request, character_id: int, now: str = Form(""), db: Session = Depends(get_db)):
-    """Game Mode on Battle: refresh this character from D&D Beyond, then the rest of the party (each at most every
-    ~2 minutes, whoever is watching), and return the updated Battle body, with the menu bar's Live pill."""
-    user, ch, stop = _load(request, db, character_id)
-    if stop:
-        return stop
-    live.maybe_refresh(db, ch, live.MANUAL_MIN_AGE if now else live.AUTO_MIN_AGE)
-    live.refresh_party(db, user, ch.id, skip=ch.id)
-    tn = live.table(user, "", live.rows_from(db), ch.id)
-    return templates.TemplateResponse(request, "_battle_sync.html", {**_battle_ctx(db, ch, user), "tn": tn, "oob": True})
-
-
 @router.get("/characters/{character_id:int}/all/{cost}")
 def see_all(request: Request, character_id: int, cost: str, add: int = 0, db: Session = Depends(get_db)):
     """Side panel: every option of one kind (actions, bonus actions, reactions). add=1 (the column's
@@ -400,15 +388,6 @@ def add_reminder(request: Request, character_id: int, text: str = Form(""), db: 
     db.commit()
     return Response(status_code=204, headers={"HX-Trigger": json.dumps({
         "toast": "Reminder added", "marksChanged": {"character": ch.id, "kind": "remind", "ref": ref, "on": True, "fav": None}})})
-
-
-@router.get("/characters/{character_id:int}/battle/body")
-def battle_body(request: Request, character_id: int, db: Session = Depends(get_db)):
-    """Battle's body on its own, for a live update after a pin or reminder changes (no D&D Beyond refresh)."""
-    user, ch, stop = _load(request, db, character_id)
-    if stop:
-        return stop
-    return templates.TemplateResponse(request, "_battle_body.html", _battle_ctx(db, ch, user))
 
 
 @router.post("/characters/{character_id:int}/pick/note")

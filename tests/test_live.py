@@ -197,13 +197,6 @@ def test_game_mode_away_from_play_keeps_the_copy_fresh(player, dm, db, monkeypat
     assert calls == ["Cole", "Trah"]  # throttled, whoever asks
 
 
-def test_game_mode_on_play_swaps_the_body_and_the_pill(player, db):
-    import_bundle(db, BUNDLE)
-    cole = char(db, "Cole")
-    body = player.post(f"/characters/{cole.id}/sync").text
-    assert 'id="battle-body"' in body and 'id="live-pill"' in body and 'hx-swap-oob="true"' in body and "<html" not in body
-
-
 def test_plan_shortlists_filter_like_sheet(player, db):
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
