@@ -2131,6 +2131,10 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
 @media (max-width: 640px) { .br-pill { display: none; } }
 .br-phone { display: none; }
 @media (max-width: 640px) { .br-phone { display: block; } }
+/* The bridge page: what shows with and without the extension in this browser (body.br-ext, app.js), and what's
+   for a computer only */
+body:not(.br-ext) .br-ext-on, body.br-ext .br-ext-off { display: none; }
+@media (max-width: 640px) { .br-desk { display: none; } }
 .br-now { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 18px; margin: 0; }
 .br-now dt { color: var(--muted); }
 .br-now dd { margin: 0; }

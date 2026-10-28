@@ -5,6 +5,7 @@ permission check, and the plain "not available" / "not found" pages.
 they last opened); with no one asking (background work, the upload API), the first one.
 """
 
+import json
 from collections.abc import Callable
 
 from fastapi import Request
@@ -62,3 +63,15 @@ def require(request: Request, allow: Callable[[dict], bool] | None = None,
     if allow is not None and not allow(user):
         return None, forbidden(request, text)
     return user, None
+
+
+def changed(character, toast: str = "", closePanel: bool = False, **more) -> str:  # noqa: N803 (the event's name in app.js)
+    """The HX-Trigger header for "you changed something of this character's" (a pin, reminder, note, a change for D&D
+    Beyond): the page and its open side panels show their new copy (app.js "characterChanged", the one way every page
+    shows a new copy). `toast` says so; `closePanel` closes the window the form was in first; `more`: other events."""
+    events = {"characterChanged": {"character": character.id}, **more}
+    if toast:
+        events["toast"] = toast
+    if closePanel:
+        events = {"closePanel": True, **events}
+    return json.dumps(events)

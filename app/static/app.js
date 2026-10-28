@@ -272,18 +272,7 @@
         panel.dataset.url = url;
         const title = panel.querySelector('#peek-title');
         if (title) panel.setAttribute('aria-label', title.textContent.trim());
-        const prev = layer.history[layer.history.length - 1];
-        if (prev) {
-          const head = panel.querySelector('.peek-head > div');
-          const b = document.createElement('button');
-          b.type = 'button'; b.className = 'btn link peek-back';
-          b.textContent = '← Back' + (prev.title ? ' to ' + prev.title : '');
-          b.addEventListener('click', () => {
-            const p = layer.history.pop();
-            openPanel(p.url, null, null, p.modal, p);
-          });
-          if (head) head.prepend(b);
-        }
+        addBack(layer);
         panel.hidden = false;
         backdrop.hidden = false;
         void panel.offsetWidth; // let the browser place it off-screen first, then slide in
@@ -297,6 +286,18 @@
         panel.dispatchEvent(new CustomEvent('panel:loaded', { bubbles: true }));
       })
       .catch(() => { if (fallback) location.href = fallback; });
+  }
+  function addBack(layer) {  // "← Back" to what the layer showed before
+    const prev = layer.history[layer.history.length - 1], head = layer.panel.querySelector('.peek-head > div');
+    if (!prev || !head) return;
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn link peek-back';
+    b.textContent = '← Back' + (prev.title ? ' to ' + prev.title : '');
+    b.addEventListener('click', () => {
+      const p = layer.history.pop();
+      openPanel(p.url, null, null, p.modal, p);
+    });
+    head.prepend(b);
   }
   window.askdndPanel = openPanel;
   // ✕ closes its own layer. Delegated, so it still works after part of a panel is swapped in
@@ -435,45 +436,65 @@
     toast(on ? 'Game Mode on: updating from D&D Beyond every 2–3 minutes' : 'Game Mode off');
   });
   // A page shows a new copy in one way, whatever brought it (the bridge hearing a sheet save, Game Mode, Refresh now,
-  // a reconnect, your own pin or note): the page is fetched again and its main and Live pill swapped in before the
-  // next paint, keeping the tabs, the scroll and each list's search, so nothing flashes. Someone else's change waits
-  // while you're in the middle of something (typing, a side panel, a roll, the tour); your own (`now`) doesn't. Lists
-  // set themselves up as they appear; notes, dragging and Battle's columns are set up again here. (A button's own
-  // answer, such as Wild Shape's, still swaps just the box it changed.)
+  // a reconnect, your own change): the page and each open side panel fetch themselves again and are swapped in
+  // together before the next paint, with the Live pill, keeping the tabs, each list's search and the scroll, so
+  // nothing flashes. Someone else's change waits while you're in the middle of something (typing, a side panel, a
+  // roll, the tour); your own (`now`) doesn't. Lists set themselves up as they appear; the rest is set up again here
+  // (a panel as when it opened: panel:loaded). A button's own answer, such as a pin's or Wild Shape's, still swaps
+  // just the box it changed.
   const PARTY = /^(\/c\/[^/]+)?\/party$/;
   let showWait = null, showing = false, again = false;
   function showsAny(ids) {  // ids: character ids as text, or '*' for any
     const page = document.querySelector('main[data-character]');
     return PARTY.test(location.pathname) || !!(page && (ids.includes('*') || ids.includes(page.dataset.character)));
   }
-  function shows(id) {  // this character's own page (Battle, Sheet, Plan)
-    const page = document.querySelector('main[data-character]');
-    return !!page && page.dataset.character === String(id);
-  }
   function busyHere() {
     const a = document.activeElement;
     return !!(document.querySelector('.peek.open, .roll-win, .tour-card, dialog[open]') ||
               (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))));
   }
+  // A field that saves as you type (a note in a side panel): the box holding it isn't swapped while you're in it
+  const typingIn = box => { const a = document.activeElement; return !!(a && box.contains(a) && a.closest('form[hx-trigger*="input"]')); };
+  function keepState(box) {  // what the person had in a box (the page's main, a side panel); returns what puts it back
+    const scroller = () => box.matches('main') ? document.scrollingElement : box.querySelector('.peek-body');
+    const y = (scroller() || {}).scrollTop || 0;
+    const a = document.activeElement, form = a && box.contains(a) && a.name && a.closest('form');
+    const field = form && ('form[' + (form.getAttribute('hx-post') ? 'hx-post="' + form.getAttribute('hx-post') : 'action="' + form.getAttribute('action')) + '"] [name="' + a.name + '"]');
+    const tabs = [...box.querySelectorAll('[role=tab][data-tab][aria-selected=true]')].map(t => t.dataset.tab);
+    const searches = [...box.querySelectorAll('[data-list]')].map(r => [r.dataset.list, (r.querySelector('[data-ls-search]') || {}).value || '']).filter(([, q]) => q);
+    return () => {
+      tabs.forEach(id => { const t = box.querySelector('[role=tab][data-tab="' + id + '"]'); if (t) selectTab(t); });
+      if (window.htmx) htmx.process(box);
+      const sc = scroller(); if (sc) sc.scrollTop = y;
+      const back = field && box.querySelector(field); if (back) back.focus({ preventScroll: true });  // where you were
+      queueMicrotask(() => searches.forEach(([key, q]) => {  // after the lists have set themselves up
+        const input = box.querySelector('[data-list="' + key + '"] [data-ls-search]');
+        if (input) { input.value = q; input.dispatchEvent(new Event('input', { bubbles: true })); }
+      }));
+    };
+  }
   function swapMain(html) {
     const doc = new DOMParser().parseFromString(html, 'text/html'), here = document.querySelector('main'), there = doc.querySelector('main');
     if (!here || !there) return;
-    const y = window.scrollY, tabs = [...here.querySelectorAll('[role=tab][data-tab][aria-selected=true]')].map(t => t.dataset.tab);
-    const searches = [...here.querySelectorAll('[data-list]')].map(r => [r.dataset.list, (r.querySelector('[data-ls-search]') || {}).value || '']).filter(([, q]) => q);
+    const restore = keepState(here);
     [...here.attributes].forEach(a => { if (!there.hasAttribute(a.name)) here.removeAttribute(a.name); });
     [...there.attributes].forEach(a => here.setAttribute(a.name, a.value));
     here.replaceChildren(...[...there.childNodes].map(n => document.importNode(n, true)));
     const pill = document.getElementById('live-pill'), newPill = doc.getElementById('live-pill');
     if (pill && newPill) { pill.className = newPill.className; pill.title = newPill.title; pill.innerHTML = newPill.innerHTML; Object.assign(pill.dataset, newPill.dataset); }
-    tabs.forEach(id => { const t = here.querySelector('[role=tab][data-tab="' + id + '"]'); if (t) selectTab(t); });
-    if (window.htmx) htmx.process(here);
+    restore();
     if (window.askdndNotesInit) window.askdndNotesInit(here);
     sortSetup(); econSetup();
-    window.scrollTo(0, y);
-    queueMicrotask(() => searches.forEach(([key, q]) => {  // after the lists have set themselves up
-      const box = here.querySelector('[data-list="' + key + '"] [data-ls-search]');
-      if (box) { box.value = q; box.dispatchEvent(new Event('input', { bubbles: true })); }
-    }));
+  }
+  function swapPanel(layer, html) {
+    const panel = layer.panel, restore = keepState(panel);
+    const top = layer.name === 'base' && layers.top ? [layers.top.backdrop, layers.top.panel].filter(n => n.parentNode === panel) : [];  // (the top layer lives inside the modal)
+    const t = document.createElement('template');
+    t.innerHTML = html;
+    panel.replaceChildren(...t.content.childNodes, ...top);
+    addBack(layer);
+    restore();
+    panel.dispatchEvent(new CustomEvent('panel:loaded', { bubbles: true }));
   }
   function showInPlace(now) {
     if (showing) { again = true; return; }
@@ -481,12 +502,15 @@
     const later = () => { showWait = setTimeout(() => showInPlace(), 2000); };
     if (!now && (busyHere() || document.visibilityState !== 'visible')) return later();
     showing = true;
-    fetch(location.pathname + location.search, { headers: { 'HX-Request': 'true' } })
-      .then(r => r.ok ? r.text() : Promise.reject(r.status))
-      .then(html => {
+    const get = url => fetch(url, { headers: { 'HX-Request': 'true' } }).then(r => r.ok ? r.text() : Promise.reject(r.status));
+    const open = ['base', 'top'].map(n => layers[n]).filter(l => isOpen(l) && l.panel.dataset.url);
+    Promise.all([get(location.pathname + location.search), ...open.map(l => get(l.panel.dataset.url))])
+      .then(([page, ...panels]) => {
         showing = false;
         if (!now && busyHere()) return later();
-        swapMain(html);
+        const main = document.querySelector('main');
+        if (main && !typingIn(main)) swapMain(page);
+        open.forEach((l, i) => { if (isOpen(l) && l.panel.dataset.url && !typingIn(l.panel)) swapPanel(l, panels[i]); });
         if (again) { again = false; showInPlace(now); }
       })
       .catch(() => { showing = false; });
@@ -535,56 +559,10 @@
       else if (gmIsOn()) gmTick();
     }, 400);
   });
-  // A Plan note was saved or deleted in its modal (player_notes.save_note): close the modal and show the page's new
-  // copy in place, staying on the same tab (roadmap step 6).
-  document.body.addEventListener('notesChanged', e => {
-    const d = e.detail || {};
-    closePeek();
-    if (shows(d.character)) showInPlace(true);
-  });
-  // A note was saved in a side panel (character_pages.save_pick_note): the page behind it shows its new copy, and the
-  // one-line note under that thing's rows changes at once, in the side panel too.
-  document.body.addEventListener('noteChanged', e => {
-    const d = e.detail || {};
-    if (shows(d.character)) showInPlace(true);
-    document.querySelectorAll('[data-ref]').forEach(row => {
-      if (row.dataset.ref !== d.ref || row.closest('.peek.top, .detail-marks')) return;
-      let line = row.querySelector('.ls-note, .ri-note');
-      if (!d.note) { if (line) line.remove(); return; }
-      if (!line) {
-        const home = row.querySelector('.ls-name, .ri-main'); if (!home) return;
-        line = document.createElement('span');
-        line.className = row.matches('.ls-row') ? 'ls-note' : 'ri-note';
-        home.appendChild(line);
-      }
-      line.textContent = '✎ ' + d.note;
-      line.title = d.note;
-    });
-  });
-  // A pin, bookmark or reminder changed (character_pages.toggle_pick): the page behind shows its new copy (pins fill
-  // Battle's columns, reminders its box), and the buttons on that thing's rows change at once, in the side panel too,
-  // with a shared list moving the row in or out of Shortlist.
-  document.body.addEventListener('marksChanged', e => {
-    const d = e.detail || {};
-    if (shows(d.character)) showInPlace(true);
-    const set = (row, kind, on) => row.querySelectorAll('.pick.' + kind + ':not(.static)').forEach(b => {
-      if (!b.closest('.detail-marks')) { b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); }
-    });
-    document.querySelectorAll('[data-ref]').forEach(row => {
-      if (row.dataset.ref !== d.ref || row.closest('.peek.top, .detail-marks')) return;
-      set(row, d.kind, d.on);
-      if (d.fav === null || d.fav === undefined) return;
-      set(row, 'fav', d.fav);
-      if (row.dataset.fav !== undefined) row.dataset.fav = d.fav ? '1' : '0';
-      if (row.dataset.views !== undefined) {
-        const vs = new Set(row.dataset.views.split(' ').filter(Boolean));
-        if (d.fav) vs.add('fav'); else vs.delete('fav');
-        row.dataset.views = [...vs].join(' ');
-        const root = row.closest('[data-list]');
-        if (root && root._ls && window.askdndList) window.askdndList.apply(root);
-      }
-    });
-  });
+  // You changed something of a character's (a pin, bookmark, reminder or note: character_pages, player_notes):
+  // the page and its open panels show their new copy at once. A form that's done with its window closes it first.
+  document.body.addEventListener('closePanel', () => closePeek());
+  document.body.addEventListener('characterChanged', () => showInPlace(true));
   // Pop-ups made of <details> (Concentration, conditions, + Condition): a click anywhere else closes them
   document.addEventListener('click', e => {
     document.querySelectorAll('details.conc-pop[open], details.cond-pill[open]').forEach(d => { if (!d.contains(e.target)) d.open = false; });
@@ -2257,7 +2235,6 @@
     const sn = root.querySelector('[data-ls-searching]'); if (sn) sn.hidden = !q;
     save(root);
   }
-  window.askdndList = { apply };
   const rootOf = el => el.closest && el.closest('[data-list]');
   document.addEventListener('click', e => {
     const root = rootOf(e.target); if (!root || !root._ls) return;
@@ -2728,12 +2705,9 @@
 // ---------------------------------------------------------------- the D&D Beyond bridge
 // Character › with D&D Beyond (bridge.html, app/ddb_bridge.py): every number comes from D&D Beyond; a change made here
 // is an intent askdnd keeps until the extension (extension/askdnd-bridge/) has made it on D&D Beyond and askdnd has
-// read it back. This page talks to the extension with window messages ({askdndBridge: ...}). Phones read only (Brett,
-// 2026-10-27: askdnd on a phone is for reading and planning). The menu bar's pill is the bridge's health.
+// read it back. Pages talk to the extension with window messages ({askdndBridge: ...}). The menu bar's pill is the
+// bridge's health.
 (function () {
-  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const CLS = { live: 'br-live', waiting: 'br-wait', sending: 'br-wait', not_yet: 'br-off', seen: 'br-seen' };  // (not .wait: app.css's loading line)
-  const LABEL = { waiting: 'Waiting for D&D Beyond', sending: 'Waiting for D&D Beyond', not_yet: 'Not on D&D Beyond yet' };
 
   // The pill on every page
   const pill = document.querySelector('[data-bridge-health]');
@@ -2806,55 +2780,19 @@
     setTimeout(() => { all.disabled = false; all.textContent = 'Check everything'; }, 8000);
   });
 
+  // Character › with D&D Beyond (bridge.html): drawn on the server and updated like every page (showInPlace, through
+  // "characterChanged"). Here only what the browser knows: the extension answering (body.br-ext), telling it to make
+  // a change now, and its word that something changed.
   const root = document.querySelector('[data-bridge]');
   if (!root) return;
-  const id = root.dataset.bridge, ddbId = root.dataset.ddbId, canAct = root.dataset.canAct === 'true';
-  const $ = sel => root.querySelector(sel);
-  const phone = matchMedia('(max-width: 640px)');
-  let extension = false, st = JSON.parse(document.getElementById('br-initial').textContent), timer = null;
-  function render() {
-    const waiting = st.changes.filter(c => c.state !== 'not_yet').length, notYet = st.changes.filter(c => c.state === 'not_yet').length;
-    const status = $('[data-br-status]');
-    const [cls, text] = !extension ? ['br-off', 'Extension off'] : notYet ? ['br-off', notYet + ' to make by hand'] : waiting ? ['br-wait', waiting + ' waiting'] : ['br-live', 'Live with D&D Beyond'];
-    status.className = 'br-st title-action ' + cls; status.textContent = text;
-    const help = $('[data-br-help]');
-    help.hidden = extension || phone.matches;
-    help.textContent = 'Add the askdnd bridge to Chrome (Help › FAQ › "the D&D Beyond bridge" has the link), then open ' + st.character.name + "'s D&D Beyond sheet in this browser.";
-    $('[data-br-hp]').className = waiting ? 'br-wait' : notYet ? 'br-off' : '';
-    $('[data-br-hp-v]').textContent = st.hp.current;
-    $('[data-br-read]').textContent = st.read_at ? 'Read from D&D Beyond ' + new Date(st.read_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' }) + '.' : 'Not read from D&D Beyond yet.';
-    const act = canAct && !phone.matches;
-    $('[data-br-acts]').innerHTML = act ? '<button type="button" class="btn small" data-br-hp-amount="-1">Take 1 hit point</button><button type="button" class="btn small" data-br-hp-amount="1">Heal 1</button>' : '';
-    $('[data-br-items]').innerHTML = st.items.map(it => `<div class="br-item"><div><b>${esc(it.name)}</b> <span class="note">×${it.quantity}</span><div class="note">Heals ${esc(it.heals)}</div></div>${act ? `<button type="button" class="btn primary small" data-br-drink="${it.id}"${!it.quantity ? ' disabled' : ''}>Drink</button>` : ''}</div>`).join('');
-    $('[data-br-hand]').hidden = !st.to_make.length;
-    $('[data-br-to-make]').innerHTML = st.to_make.map(l => `<li>${esc(l)}</li>`).join('');
-    $('[data-br-changes]').innerHTML = st.changes.map(c => `<div class="br-change ${CLS[c.state]}"><span class="br-st ${CLS[c.state]}">${LABEL[c.state]}</span><div>${esc(c.label)}</div>${c.error ? `<div class="note">${esc(c.error)}</div>` : ''}${c.state === 'not_yet' && act ? `<div class="row tight"><button type="button" class="btn primary small" data-br-retry="${c.id}">Try again</button><a class="btn small" href="https://www.dndbeyond.com/characters/${esc(ddbId)}" target="_blank" rel="noopener">Open in D&amp;D Beyond</a><button type="button" class="btn small" data-br-undo="${c.id}">Undo</button></div>` : ''}</div>`).join('');
-    $('[data-br-none]').hidden = st.changes.length > 0;
-    $('[data-br-log]').innerHTML = st.log.map(l => `<li><span class="br-st ${CLS[l.state]}">${l.state === 'seen' ? 'On D&D Beyond' : 'From askdnd'}</span> ${esc(l.text)} <time class="note">${new Date(l.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</time></li>`).join('');
-    $('[data-br-log-none]').hidden = st.log.length > 0;
-    clearTimeout(timer);
-    timer = setTimeout(() => load(), waiting ? 1000 : 5000);  // quicker while something waits; the extension also pings
-  }
-  async function load(method = 'GET', url = '/bridge/state/' + id, body) {
-    const r = await fetch(url, { method, headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
-    if (method === 'GET' && r.ok) { st = await r.json(); render(); return; }
-    if (method !== 'GET') { window.postMessage({ askdndBridge: 'deliver', ddbId }, location.origin); load(); }
-  }
-  root.addEventListener('click', e => {
-    const d = e.target.closest('[data-br-drink]'), h = e.target.closest('[data-br-hp-amount]'), r = e.target.closest('[data-br-retry]'), u = e.target.closest('[data-br-undo]');
-    if (d) { d.disabled = true; load('POST', `/bridge/drink/${id}/${d.dataset.brDrink}`); }
-    if (h) load('POST', '/bridge/hp/' + id, { amount: +h.dataset.brHpAmount });
-    if (r) load('POST', '/bridge/retry/' + r.dataset.brRetry);
-    if (u) load('POST', '/bridge/dismiss/' + u.dataset.brUndo);
-  });
+  const ddbId = root.dataset.ddbId;
+  document.body.addEventListener('bridgeDeliver', () => window.postMessage({ askdndBridge: 'deliver', ddbId }, location.origin));
   addEventListener('message', e => {
     if (e.source !== window || !e.data || !e.data.askdndBridge) return;
-    if (e.data.askdndBridge === 'hello') { if (!extension) { extension = true; render(); } }
-    if (e.data.askdndBridge === 'update') load();
+    if (e.data.askdndBridge === 'hello') document.body.classList.add('br-ext');
+    if (e.data.askdndBridge === 'update') document.body.dispatchEvent(new CustomEvent('characterChanged'));
   });
   window.postMessage({ askdndBridge: 'ping' }, location.origin);
-  phone.addEventListener('change', render);
-  render();
 })();
 
 // ---------------------------------------------------------------- Manage counts

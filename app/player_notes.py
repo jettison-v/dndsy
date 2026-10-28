@@ -7,7 +7,6 @@ quests and General notes. They replace syncing players' Google Docs.
   forms) become links that open them; so do people and places from the campaign.
 """
 
-import json
 import re
 from dataclasses import dataclass
 from urllib.parse import urlparse
@@ -247,8 +246,8 @@ async def save_note(request: Request, character_id: int, db: Session = Depends(g
 
 
 def _changed(ch: Character, kind: str, toast: str) -> Response:
-    """No page to send: tell the page a note changed (it closes the modal and refreshes that part)."""
-    return Response(status_code=204, headers={"HX-Trigger": json.dumps({"toast": toast, "notesChanged": {"character": ch.id, "kind": kind}})})
+    """No page to send: the modal closes and the page shows its new copy (app.js "characterChanged")."""
+    return Response(status_code=204, headers={"HX-Trigger": web.changed(ch, toast=toast, closePanel=True)})
 
 
 @router.get("/characters/{character_id:int}/notes/{note_id:int}")

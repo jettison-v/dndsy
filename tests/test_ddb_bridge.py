@@ -314,7 +314,7 @@ def test_a_test_copy_never_reaches_d_and_d_beyond(admin, db, sheet):
     copy_ = characters.test_copy(db, cole, test.id)
     db.flush()
     assert ddb_bridge.on_for(db, cole) and not ddb_bridge.on_for(db, copy_)
-    assert admin.post(f"/bridge/hp/{copy_.id}", json={"amount": -1}).status_code == 404
+    assert admin.post(f"/bridge/hp/{copy_.id}", data={"amount": -1}).status_code == 404
     assert db.scalar(select(BridgeIntent.id)) is None
 
 
@@ -383,7 +383,7 @@ def test_a_change_that_only_counts_with_the_others_isnt_marked_made_when_they_st
     cole = char(db, "Cole")
     characters.refresh(db, cole)
     for ask in ({"amount": -10}, {"amount": 5}):
-        player.post(f"/bridge/hp/{cole.id}", json=ask)
+        player.post(f"/bridge/hp/{cole.id}", data=ask)
     player.post(f"/bridge/change/{cole.id}", json={"kind": "use", "field": "coin:gp", "delta": 1})
     batch = ddb_bridge.outbox(db, cole)
     make(sheet, batch)
@@ -436,7 +436,7 @@ def test_opening_or_using_askdnd_or_a_sheet_keeps_it_awake_half_an_hour(player, 
     assert ddb_bridge.awake(db)["awake"]
     now[0] += 120
     assert not ddb_bridge.awake(db)["awake"] and "30 minutes" in ddb_bridge.awake(db)["why"]
-    player.post(f"/bridge/hp/{char(db, 'Cole').id}", json={"amount": -1})  # making a change wakes it too
+    player.post(f"/bridge/hp/{char(db, 'Cole').id}", data={"amount": -1})  # making a change wakes it too
     assert ddb_bridge.awake(db)["awake"]
 
 
