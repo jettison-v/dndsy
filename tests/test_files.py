@@ -133,6 +133,25 @@ def test_pictures_are_read_only_from_storage(people, db, file_store):  # noqa: F
     assert player.get(url["full"]).status_code == 404
 
 
+def test_a_storage_outage_shows_pictures_missing_and_is_reported_once(people, db, file_store, monkeypatch, caplog):  # noqa: F811
+    """S3 not answering: each picture is Not found rather than an error page, and the outage is one report, not one per
+    picture."""
+    import_bundle(db, BUNDLE)
+    k = entity(db, "Kieran")
+    key = files.put(db, k.campaign_id, b"RIFF full", "image/webp")
+    db.add(EntityPicture(entity_id=k.id, file_key=key, thumb_key=key))
+    db.flush()
+    url = pictures.urls(db, [k.id])[k.id]
+
+    def down(_key):
+        raise TimeoutError("S3 didn't answer")
+    monkeypatch.setattr(file_store, "get", down)
+    monkeypatch.setitem(files._unreachable, "at", None)
+    for _ in range(3):
+        assert people["player"].get(url["full"]).status_code == 404
+    assert [r.levelname for r in caplog.records if "didn't answer" in r.getMessage()] == ["ERROR"]
+
+
 def test_without_storage_a_picture_is_refused_not_lost(people, db, monkeypatch):  # noqa: F811
     monkeypatch.setattr(files, "storage", lambda: None)
     import_bundle(db, BUNDLE)

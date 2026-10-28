@@ -202,7 +202,7 @@ The D&D Beyond bridge (`docs/artifacts/ddb-bridge.html`, merged switched off 202
 reach D&D Beyond: instead of askdnd keeping its own hit points and merging, every change is made on D&D Beyond and
 read back. So the bridge's changes come first, then the fight screen and live character state use them.
 
-1. **The shorter Manage menu** (mockup `docs/mockups/manage-menu.html`, approved 2026-10-27): six items, a section
+1. **The shorter Manage menu** (**done** 2026-10-27: two doors, Manage for the campaign and ⚙ Admin for askdnd, round 2 option A; mockup `docs/mockups/manage-menu.html`, approved 2026-10-27): six items, a section
    list down the left, an askdnd admin Overview, askdnd's History renamed.
 2. **Bridge polish** (**done** 2026-10-27, through the sheet's own store): no reloading the sheet after askdnd changes it (the sheet should take the new numbers in
    place; today every open copy reloads so none saves an old number back); log "Changed on D&D Beyond" even when
@@ -231,9 +231,20 @@ read back. So the bridge's changes come first, then the fight screen and live ch
 Alongside, whenever there's room:
 - **Brett:** list the table's frustrations with D&D Beyond Maps, Foundry and Roll20; each is attached to the item
   that fixes it (still open).
-- **The Monster Manual's beasts in Wild Shape** (data strategy decision 8): the one-book proof of the books model,
+- **The Monster Manual's beasts in Wild Shape** (**done** 2026-10-27, live on beta; data strategy decision 8): the one-book proof of the books model,
   labelled "MM 2024", switchable per campaign, stored only in the database.
 - Rules answers (5.1) stay later (Brett, 2026-10-26). askdnd.ai moves to v2 when Brett says.
+
+**First, 2026-10-28: the end-of-day review's fixes** (2026-10-27, one small change): the bridge works out a slot's or
+use's most from the sheet, not the page; a roll made to the DM on D&D Beyond reaches the DM; an intent that changes
+nothing alone isn't marked made when its batch stops; a storage outage answers Not found per picture, not an error;
+Manage's counts count without building Needs you; a campaign's Beasts are read once, not on every page. Design system:
+add the Manage menu's one line of other pages and its counts, the jump list, Battle's bar, and (once the table has
+it) the bridge page's tiles.
+
+Done on 2026-10-27 (evening): the shorter Manage menu (two doors), bridge steps 2 and 3, the Monster Manual's Beasts,
+the SRD text fix, help lines removed from every page (the tour and Help explain them), and the end-of-day code and
+design system review.
 
 Done on 2026-10-27: the code and design system review, the roadmap statuses, the test suite review, the data
 strategy (decided), Battle's header scrolling with the page, pictures only in S3 (0.5's last step), and the D&D Beyond bridge proof (repairs itself,

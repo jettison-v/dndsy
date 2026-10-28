@@ -1726,6 +1726,8 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .ds-sample .title-row h1 { margin: 0; }
 .ds-h2 { margin: 0; }
 .ds-narrow { max-width: 420px; }
+.ds-menus { align-items: flex-start; }
+.ds-menu { position: static; }  /* a menu drawn open on the design page */
 .ds-econ .section { background: var(--surface-2); min-height: 70px; }
 .ds-rows { max-width: 640px; }
 .ds-swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--sp-3); }

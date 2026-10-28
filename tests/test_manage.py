@@ -142,3 +142,41 @@ def test_dm_guide_shows_the_backlog_to_the_dm_only(monkeypatch, db):
     assert ">DM guide</a>" in reviewer.get("/c/main/manage").text
     player = client_for(monkeypatch, db, "mark@example.com")
     assert player.get("/c/main/manage/dm-guide").status_code == 403
+
+
+def test_needs_you_reads_each_sessions_status_in_one_go(monkeypatch, db):
+    """Needs you (and its count in the Manage menu) reads every session's review status in one query, the same as each
+    session's own: no draft, a draft, published, or edited after publishing."""
+    from app import review
+    from app.models import Recap, Status
+
+    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"},
+                       "sessions": [{"number": n, "played_on": f"2026-01-{n + 10}"} for n in range(1, 5)]})
+    s1, s2, s3, s4 = db.scalars(select(GameSession).order_by(GameSession.number)).all()
+    for s, recaps in ((s2, [Status.DRAFT]), (s3, [Status.PUBLISHED]), (s4, [Status.PUBLISHED, Status.DRAFT])):
+        db.add_all(Recap(session_id=s.id, version=v, body="…", author="ai", status=st) for v, st in enumerate(recaps, 1))
+    db.flush()
+    db.expire_all()
+    camp = db.scalar(select(Campaign))
+    got = review.statuses(db, camp.id)
+    assert {s.id: got.get(s.id, "no draft") for s in (s1, s2, s3, s4)} == {s.id: review.review_status(s, False) for s in (s1, s2, s3, s4)}
+    assert [got.get(s.id, "no draft") for s in (s1, s2, s3, s4)] == ["no draft", "draft", "published", "edited"]
+    monkeypatch.setattr(config, "REVIEWER_EMAILS", parse_allowlist("dm@example.com"))
+    assert "2 sessions ready to review" in client_for(monkeypatch, db, "dm@example.com").get("/c/main/manage").text
+
+
+def test_needs_you_says_when_a_character_couldnt_refresh(monkeypatch, db):
+    """It reads only each sheet's status and when it was fetched, not the sheets themselves."""
+    from app import characters
+    from tests.table_setup import BUNDLE, char
+
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    monkeypatch.setattr(config, "REVIEWER_EMAILS", parse_allowlist("dm@example.com"))
+    reviewer = client_for(monkeypatch, db, "dm@example.com")
+    slug = db.scalar(select(Campaign.slug))
+    assert "couldn&#39;t refresh" not in reviewer.get(f"/c/{slug}/manage").text
+    cole.snapshot.status = "error"
+    db.flush()
+    assert "1 character couldn&#39;t refresh from D&amp;D Beyond" in reviewer.get(f"/c/{slug}/manage").text

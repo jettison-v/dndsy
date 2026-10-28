@@ -6,8 +6,9 @@ import copy
 import pytest
 from sqlalchemy import select
 
-from app import characters, config, ddb, ddb_bridge, ddb_fields
+from app import characters, config, ddb, ddb_bridge, ddb_fields, ddb_sheet
 from app.importer import import_bundle
+from tests.roles import set_role
 from tests.table_setup import BUNDLE, COLE, char, owned_by
 
 POTION = 758022089  # Cole's Potion of Healing (×2 in the fixture)
@@ -335,6 +336,23 @@ def test_a_sheet_that_keeps_changing_under_askdnd_stops_instead_of_looping(playe
     assert st["changes"][0]["state"] == "not_yet" and st["to_make"]
 
 
+
+def test_a_change_that_only_counts_with_the_others_isnt_marked_made_when_they_stop(player, db, sheet):
+    """At full hit points a heal alone changes nothing, but after damage in the same batch it does: when D&D Beyond
+    ends up with other hit points, the heal waits with the damage instead of counting as made."""
+    sheet["removedHitPoints"] = 0
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    for ask in ({"amount": -10}, {"amount": 5}):
+        player.post(f"/bridge/hp/{cole.id}", json=ask)
+    player.post(f"/bridge/change/{cole.id}", json={"kind": "use", "field": "coin:gp", "delta": 1})
+    batch = ddb_bridge.outbox(db, cole)
+    make(sheet, batch)
+    sheet["removedHitPoints"] = 7  # neither what askdnd wrote nor what it had
+    ddb_bridge.delivered(db, batch["id"], ok=True)
+    states = {c["label"]: c["state"] for c in player.get(f"/bridge/state/{cole.id}").json()["changes"]}
+    assert [s for label, s in states.items() if "gold" not in label] == ["not_yet", "not_yet"], states
+
 def asleep(db):
     """No one has used askdnd or a sheet for a long time."""
     row, _ = ddb_bridge._wake_row(db)
@@ -483,10 +501,12 @@ CHANGES = [  # what a page asks for, the sheet's own request it becomes (seen on
 
 
 @pytest.mark.parametrize("ask,method,path,body,field,after", CHANGES, ids=[c[0]["kind"] + " " + c[4] for c in CHANGES])
-def test_every_change_a_player_makes_goes_as_the_sheets_own_request(player, db, sheet, ask, method, path, body, field, after):
+def test_every_change_a_player_makes_goes_as_the_sheets_own_request(player, db, sheet, monkeypatch, ask, method, path, body, field, after):
     """Roadmap step 3 (Brett, 2026-10-27: everything a player changes in play, checked against DDB Importer's list):
     each change is the sheet's own request, read back from D&D Beyond before askdnd counts it."""
     sheet["pactMagic"] = [{"level": 1, "used": 0, "available": 1}]
+    most = ddb_sheet.most  # (Cole isn't a Warlock: give him one Pact Magic slot)
+    monkeypatch.setattr(ddb_sheet, "most", lambda data, kind, ref: 1 if kind == "pact" else most(data, kind, ref))
     sheet["classes"][0]["hitDiceUsed"] = 0
     characters.refresh(db, char(db, "Cole"))
     cole = char(db, "Cole")
@@ -533,8 +553,14 @@ def test_hit_dice_are_spent_as_a_short_rest_that_goes_first(player, db, sheet):
 
 
 def test_a_change_with_no_room_left_says_why_and_lists_nothing_to_write(player, db, sheet):
+    """How many a slot, a use or a charge can be is worked out from the sheet, never taken from the page."""
     cole = char(db, "Cole")
-    player.post(f"/bridge/change/{cole.id}", json={"kind": "use", "field": "uses:9414015", "delta": 2, "max": 1})
+    player.post(f"/bridge/change/{cole.id}", json={"kind": "use", "field": "slot:1", "delta": 5, "max": 99})  # Cole has 4
+    assert ddb_bridge.outbox(db, cole) is None
+    st = player.get(f"/bridge/state/{cole.id}").json()
+    assert st["changes"][0]["state"] == "not_yet" and "no room" in st["changes"][0]["error"]
+    player.post(f"/bridge/dismiss/{st['changes'][0]['id']}")
+    player.post(f"/bridge/change/{cole.id}", json={"kind": "use", "field": "uses:9414015", "delta": 2})  # 1 use
     assert ddb_bridge.outbox(db, cole) is None
     st = player.get(f"/bridge/state/{cole.id}").json()
     assert st["changes"][0]["state"] == "not_yet" and "no room" in st["changes"][0]["error"]
@@ -554,7 +580,7 @@ def test_a_change_with_no_room_left_says_why_and_lists_nothing_to_write(player, 
     {"kind": "use", "field": "coin:gp", "delta": 1.5}, {"kind": "use", "field": "xp", "delta": 100},
     {"kind": "set", "field": f"container:{ROD}", "value": POTION}, {"kind": "remove_item", "item": 1},
     {"kind": "short_rest", "spend": {"1": 1}}, {"kind": "rename", "value": "Sarkas"},
-    {"kind": "set", "field": "prepared:21171650", "value": False}])
+    {"kind": "set", "field": "prepared:21171650", "value": False}, {"kind": "use", "field": "slot:4", "delta": 1}])
 def test_only_changes_the_bridge_can_make_are_taken(player, db, sheet, ask):
     """Left out on purpose (Brett, 2026-10-27): experience points, custom names and custom items."""
     assert player.post(f"/bridge/change/{char(db, 'Cole').id}", json=ask).status_code == 400
@@ -634,9 +660,10 @@ def test_askdnd_and_the_extension_read_every_kind_of_field_the_same_way():
         == [2, True, False, 0, 1, 5, 0]
 
 
-def ddb_roll(rid="r-1", scope="gameId", kind="check", how="", values=(14,), constant=5, total=19, action="Stealth"):
-    """A finished roll as the sheet sends it to D&D Beyond's game log (seen on Vi's sheet, 2026-10-27)."""
-    return {"id": rid, "action": action, "scope": scope, "rolls": [{
+def ddb_roll(rid="r-1", scope="gameId", kind="check", how="", values=(14,), constant=5, total=19, action="Stealth", target=None):
+    """A finished roll as the sheet sends it to D&D Beyond's game log (seen on Vi's sheet, 2026-10-27). D&D Beyond's
+    user 101 is the roller; rolled to one person, `target` is who."""
+    return {"id": rid, "action": action, "scope": scope, "user": 101, "target": target, "rolls": [{
         "diceNotation": {"constant": constant, "set": [{"count": len(values), "dieType": "d20", "operation": 0,
                                                         "dice": [{"dieType": "d20", "dieValue": v} for v in values]}]},
         "rollKind": how, "rollType": kind, "result": {"constant": constant, "text": "", "total": total, "values": list(values)}}]}
@@ -654,8 +681,12 @@ def test_a_roll_made_on_d_and_d_beyond_comes_into_table_rolls_once(player, dm, d
     assert "Stealth" in html and "on D&amp;D Beyond" in html
     assert "roll-follow" not in player.get("/rolls").text  # only shown: no reroll or added die on D&D Beyond's dice
 
-    player.post("/bridge/roll/75423618", json=ddb_roll(rid="r-2", scope="userId", action="Perception"))  # rolled to self there
+    player.post("/bridge/roll/75423618", json=ddb_roll(rid="r-2", scope="userId", target=101, action="Perception"))  # to self
     assert "Perception" not in dm.get("/rolls").text
+    player.post("/bridge/roll/75423618", json=ddb_roll(rid="r-4", scope="userId", target=202, action="Insight"))  # to the DM
+    assert db.scalar(select(TableRoll.visibility).where(TableRoll.ddb_roll_id == "r-4")) == "dm"
+    set_role(db, "dm@example.com")
+    assert "Insight" in dm.get("/rolls").text
     assert dm.post("/bridge/roll/75423618", json=ddb_roll(rid="r-3")).json() == {"ok": False}  # only the player's own browser
 
 

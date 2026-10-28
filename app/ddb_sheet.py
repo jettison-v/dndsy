@@ -1197,6 +1197,25 @@ def _creature_block(df: dict) -> dict:
     }
 
 
+def most(data: dict, kind: str, ref) -> int | None:
+    """The most a count on this character can be, worked out as the sheet works it out (D&D Beyond keeps only how many
+    are used): a level's spell slots ("slot", its level), Pact Magic slots ("pact", their level), a limited use ("uses",
+    the action's id) or an item's charges ("charges", its inventory id). None if it has none."""
+    sh = _Sheet(data)
+    if kind in ("slot", "pact"):
+        slots = sh.spell_slots()
+        rows = slots["slots"] if kind == "slot" else [slots["pact"]] if slots.get("pact") else []
+        return next((r["max"] for r in rows if str(r["level"]) == str(ref)), None)
+    if kind == "uses":
+        a = next((a for group in (data.get("actions") or {}).values() for a in group or [] if str(a.get("id")) == str(ref)), None)
+        lu = sh.limited_use((a or {}).get("limitedUse"))
+    elif kind == "charges":
+        i = next((i for i in sh.items if str(i.get("id")) == str(ref)), None)
+        lu = sh.limited_use((i or {}).get("limitedUse"))
+    else:
+        return None
+    return lu["max"] if lu else None
+
 def parse_character(data: dict) -> dict:
     """A readable summary of a D&D Beyond character (the `data` object).
 

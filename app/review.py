@@ -362,6 +362,15 @@ def published_recap(session: GameSession) -> Recap | None:
     return next((r for r in reversed(session.recaps) if r.status == Status.PUBLISHED), None)
 
 
+def statuses(db: Session, campaign_id: int) -> dict[int, str]:
+    """Every session's review_status (not drafting) in one query, without loading each session's recaps: by session
+    id, and a session with no recap isn't listed ("no draft")."""
+    rows = db.execute(select(Recap.session_id, func.max(Recap.version), func.max(Recap.version).filter(Recap.status == Status.PUBLISHED))
+                      .join(GameSession, GameSession.id == Recap.session_id).where(GameSession.campaign_id == campaign_id)
+                      .group_by(Recap.session_id))
+    return {sid: "draft" if published is None else "published" if latest == published else "edited" for sid, latest, published in rows}
+
+
 def review_status(session: GameSession, drafting: bool) -> str:
     if drafting:
         return "drafting"

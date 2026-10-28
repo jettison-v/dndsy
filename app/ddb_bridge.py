@@ -60,7 +60,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import access, config, ddb, ddb_fields, live, picks, realtime, table_rolls, web
+from app import access, config, ddb, ddb_fields, ddb_sheet, live, picks, realtime, table_rolls, web
 from app import characters as chars
 from app.auth import current_user, is_admin
 from app.db import get_db
@@ -222,9 +222,10 @@ def _value(n: dict, field: str):
     return fields(n)[field] if field in fields(n) else ddb_fields.value(n["raw"], field)
 
 
-def plan(intents: list[dict], n: dict) -> tuple[dict, list[str], list[tuple[dict, str]], dict]:
+def plan(intents: list[dict], n: dict, every: bool = False) -> tuple[dict, list[str], list[tuple[dict, str]], dict]:
     """The end state of these intents built on what D&D Beyond has now (`n`): the final value of each field they touch,
-    one line per field to show, any intent that can't happen any more (with why), and what an added item needs."""
+    one line per field to show, any intent that can't happen any more (with why), and what an added item needs. A
+    field D&D Beyond already holds at that value is left out, unless `every` (which fields an intent touches at all)."""
     vals, impossible, touched, extra = {}, [], [], {}
 
     def get(f):
@@ -310,7 +311,7 @@ def plan(intents: list[dict], n: dict) -> tuple[dict, list[str], list[tuple[dict
             touched.append(f)
     target, lines = {}, []
     for f in dict.fromkeys(touched):
-        if vals[f] == _value(n, f):
+        if vals[f] == _value(n, f) and not every:
             continue  # (a change and its undo in one batch, or D&D Beyond has it already: nothing to write)
         target[f] = vals[f]
         line = ddb_fields.show(n["raw"], f, vals[f], n["max"])
@@ -412,7 +413,7 @@ def outbox(db: Session, character: Character) -> dict | None:
                         next_at=0, check=keep[0].data.get("check", ""), names={f: ddb_fields.name(n["raw"], f) for f in target})
     db.add(batch)
     for i in keep:  # (each intent's own fields: a batch stopped part way settles the ones D&D Beyond has)
-        i.state, i.data = "sending", {**i.data, "fields": sorted(plan([_as_dict(i)], n)[0])}
+        i.state, i.data = "sending", {**i.data, "fields": sorted(plan([_as_dict(i)], n, every=True)[0])}
     db.flush()
     return {"id": batch.id, "ops": batch.ops}
 
@@ -905,7 +906,7 @@ def heard_roll(db: Session, character: Character, user: dict, roll: dict) -> Tab
     """A roll made on the character's own D&D Beyond sheet (Brett, 2026-10-27: heard on the sheet, the way Beyond20 does)
     goes into Table rolls, marked "on D&D Beyond", so a roll made there by habit still reaches the table. Only heard:
     askdnd never writes its own rolls into D&D Beyond's game log. Each is recorded once (its id there); who sees it
-    follows who it was rolled to on D&D Beyond (everyone, or just the roller)."""
+    follows who it was rolled to on D&D Beyond (everyone, the DM, or just the roller)."""
     rid = str(roll.get("id") or "")[:60]
     r = (roll.get("rolls") or [None])[0]
     campaign = character.campaign_id
@@ -925,10 +926,11 @@ def heard_roll(db: Session, character: Character, user: dict, roll: dict) -> Tab
     if kind in table_rolls.D20_KINDS and dice:
         kept = max(dice) if mode == "adv" else min(dice) if mode == "dis" else dice[0]
     me = picks.user_row(db, user)
-    private = roll.get("scope") == "userId"  # rolled to self (or to the DM) on D&D Beyond
+    # Rolled to one person on D&D Beyond: to self (the target is the roller) or to the DM (anyone else)
+    to = "table" if roll.get("scope") != "userId" else "self" if str(roll.get("target") or "") in ("", str(roll.get("user") or "")) else "dm"
     row = TableRoll(campaign_id=campaign, character_id=character.id, user_id=me.id if me else None,
                     label=" ".join(str(roll.get("action") or "Roll").split())[:120], kind=kind, formula=formula[:40], dice=dice,
-                    kept=kept, modifier=constant, total=total, mode=mode, visibility="self" if private else "table",
+                    kept=kept, modifier=constant, total=total, mode=mode, visibility=to,
                     crit="critical" in how, ddb_roll_id=rid)
     db.add(row)
     realtime.announce(db, campaign, "rolls")
@@ -970,7 +972,10 @@ def _change(n: dict, body: dict) -> tuple[str, dict] | None:
                 return None
             return "set", {"field": field, "value": v}
         if kind == "use" and fk in USES[:-1] and isinstance(body.get("delta"), int) and 0 < abs(body["delta"]) <= 100000:
-            return "use", {"field": field, "delta": body["delta"], **({"max": body["max"]} if isinstance(body.get("max"), int) else {})}
+            most = None if fk == "coin" else ddb_sheet.most(raw, fk, arg)  # (worked out from the sheet, never the page's)
+            if fk != "coin" and most is None:
+                return None
+            return "use", {"field": field, "delta": body["delta"], **({"max": most} if most is not None else {})}
         if kind == "death" and (body.get("reset") is True or body.get("fail") in (1, 2) or body.get("success") in (1, 2)):
             return "death", {k: body[k] for k in ("fail", "success", "reset") if k in body}
         if kind == "short_rest" and isinstance(body.get("spend"), dict) and body["spend"] and \

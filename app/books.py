@@ -55,12 +55,17 @@ def label(entry: dict) -> str:
 # ------------------------------------------------------------------ reading
 
 
+_read: dict[tuple, tuple] = {}  # (books, kind) -> (what the database had, the entries): read and checked once
+
+
 def entries(db, kind: str, campaign_id: int | None) -> list[dict]:
     """The entries of a kind in the campaign's books that are on (the first book wins a key), validated; each with
-    "source" (the book's short label), "page" and "image". An entry that no longer fits its schema is left out."""
+    "source" (the book's short label), "page" and "image". An entry that no longer fits its schema is left out.
+    Read and checked once, then kept until a book entry is added, changed or removed (one small query says so), so a
+    character page doesn't read a whole book each time. Like the SRD's, the entries are shared: read, never change."""
     if db is None or campaign_id is None:
         return []
-    from sqlalchemy import select
+    from sqlalchemy import func, select
 
     from app import rules_data
     from app.models import BookEntry, Campaign
@@ -68,6 +73,21 @@ def entries(db, kind: str, campaign_id: int | None) -> list[dict]:
     keys = on(db.get(Campaign, campaign_id))
     if not keys or kind not in rules_data.CAMPAIGN_KINDS:
         return []
+    version = tuple(db.execute(select(func.count(), func.max(BookEntry.id), func.max(BookEntry.updated_at))
+                               .where(BookEntry.book.in_(keys), BookEntry.kind == kind)).one())
+    kept = _read.get((tuple(keys), kind))
+    if kept and kept[0] == version:
+        return kept[1]
+    _read[(tuple(keys), kind)] = (version, out := _entries(db, kind, keys))
+    return out
+
+
+def _entries(db, kind: str, keys: list[str]) -> list[dict]:
+    from sqlalchemy import select
+
+    from app import rules_data
+    from app.models import BookEntry
+
     order = {k: i for i, k in enumerate(keys)}
     rows = sorted(db.scalars(select(BookEntry).where(BookEntry.book.in_(keys), BookEntry.kind == kind)),
                   key=lambda r: order[r.book])
@@ -141,4 +161,5 @@ def save(db, book_key: str, kind: str, entry: dict, page: int | None = None, ima
     row.name, row.page, row.image = entry["name"], page, image or ""
     row.data = {k: v for k, v in entry.items() if k not in ("key", "name", "source")}
     db.flush()
+    _read.clear()  # (a change in this same transaction has the same time as the read before it)
     return row
