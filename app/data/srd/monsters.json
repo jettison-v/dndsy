@@ -2766,7 +2766,7 @@
     },
     {
      "name": "Fire Breath (Recharge 5–6)",
-     "text": ". Dexterity Saving Throw: DC 14, each creature in a 40-foot-long, 5-foot-wide Line. Failure: 38 (11d6) Fire damage. Success: Half damage."
+     "text": "Dexterity Saving Throw: DC 14, each creature in a 40-foot-long, 5-foot-wide Line. Failure: 38 (11d6) Fire damage. Success: Half damage."
     },
     {
      "name": "Sleep Breath",
@@ -2860,7 +2860,7 @@
     },
     {
      "name": "Fire Breath (Recharge 5–6)",
-     "text": ". Dexterity Saving Throw: DC 18, each creature in a 60-foot-long, 5-foot-wide Line. Failure: 45 (10d8) Fire damage. Success: Half damage."
+     "text": "Dexterity Saving Throw: DC 18, each creature in a 60-foot-long, 5-foot-wide Line. Failure: 45 (10d8) Fire damage. Success: Half damage."
     },
     {
      "name": "Sleep Breath",
@@ -2971,7 +2971,7 @@
     },
     {
      "name": "Fire Breath (Recharge 5–6)",
-     "text": ". Dexterity Saving Throw: DC 21, each creature in a 90-foot-long, 5-foot-wide Line. Failure: 58 (13d8) Fire damage. Success: Half damage."
+     "text": "Dexterity Saving Throw: DC 21, each creature in a 90-foot-long, 5-foot-wide Line. Failure: 58 (13d8) Fire damage. Success: Half damage."
     },
     {
      "name": "Sleep Breath",
@@ -3080,7 +3080,7 @@
     },
     {
      "name": "Lightning Breath (Recharge 5–6)",
-     "text": ". Dexterity Saving Throw: DC 12, each creature in a 40-foot-long, 5-foot-wide Line. Failure: 16 (3d10) Lightning damage. Success: Half damage."
+     "text": "Dexterity Saving Throw: DC 12, each creature in a 40-foot-long, 5-foot-wide Line. Failure: 16 (3d10) Lightning damage. Success: Half damage."
     },
     {
      "name": "Repulsion Breath",
@@ -3173,7 +3173,7 @@
     },
     {
      "name": "Lightning Breath (Recharge 5–6)",
-     "text": ". Dexterity Saving Throw: DC 15, each creature in a 60-foot-long, 5-foot-wide Line. Failure: 49 (9d10) Lightning damage. Success: Half damage."
+     "text": "Dexterity Saving Throw: DC 15, each creature in a 60-foot-long, 5-foot-wide Line. Failure: 49 (9d10) Lightning damage. Success: Half damage."
     },
     {
      "name": "Repulsion Breath",
@@ -3270,7 +3270,7 @@
     },
     {
      "name": "Lightning Breath (Recharge 5–6)",
-     "text": ". Dexterity Saving Throw: DC 19, each creature in a 90-foot-long, 5-foot-wide Line. Failure: 55 (10d10) Lightning damage. Success: Half damage."
+     "text": "Dexterity Saving Throw: DC 19, each creature in a 90-foot-long, 5-foot-wide Line. Failure: 55 (10d10) Lightning damage. Success: Half damage."
     },
     {
      "name": "Repulsion Breath",
@@ -3384,7 +3384,7 @@
     },
     {
      "name": "Lightning Breath (Recharge 5–6)",
-     "text": ". Dexterity Saving Throw: DC 23, each creature in a 120-foot-long, 10-foot-wide Line. Failure: 82 (15d10) Lightning damage. Success: Half damage."
+     "text": "Dexterity Saving Throw: DC 23, each creature in a 120-foot-long, 10-foot-wide Line. Failure: 82 (15d10) Lightning damage. Success: Half damage."
     },
     {
      "name": "Repulsion Breath",
@@ -4515,7 +4515,7 @@
     },
     {
      "name": "Acid Breath (Recharge 5–6)",
-     "text": ". Dexterity Saving Throw: DC 11, each creature in a 20-foot-long, 5-foot-wide Line. Failure: 18 (4d8) Acid damage. Success: Half damage."
+     "text": "Dexterity Saving Throw: DC 11, each creature in a 20-foot-long, 5-foot-wide Line. Failure: 18 (4d8) Acid damage. Success: Half damage."
     },
     {
      "name": "Slowing Breath",
@@ -4696,7 +4696,7 @@
     },
     {
      "name": "Acid Breath (Recharge 5–6)",
-     "text": ". Dexterity Saving Throw: DC 18, each creature in an 60-foot-long, 5-foot-wide Line. Failure: 54 (12d8) Acid damage. Success: Half damage."
+     "text": "Dexterity Saving Throw: DC 18, each creature in an 60-foot-long, 5-foot-wide Line. Failure: 54 (12d8) Acid damage. Success: Half damage."
     },
     {
      "name": "Slowing Breath",
@@ -4806,7 +4806,7 @@
     },
     {
      "name": "Acid Breath (Recharge 5–6)",
-     "text": ". Dexterity Saving Throw: DC 22, each creature in an 90-foot-long, 10-foot-wide Line. Failure: 63 (14d8) Acid damage. Success: Half damage."
+     "text": "Dexterity Saving Throw: DC 22, each creature in an 90-foot-long, 10-foot-wide Line. Failure: 63 (14d8) Acid damage. Success: Half damage."
     },
     {
      "name": "Slowing Breath",
@@ -6767,7 +6767,7 @@
     },
     {
      "name": "Lightning Absorption",
-     "text": ". Whenever the golem is subjected to Lightning damage, it regains a number of Hit Points equal to the Lightning damage dealt."
+     "text": "Whenever the golem is subjected to Lightning damage, it regains a number of Hit Points equal to the Lightning damage dealt."
     },
     {
      "name": "Magic Resistance",
@@ -8126,7 +8126,7 @@
     },
     {
      "name": "Fire Breath (Recharge 5–6)",
-     "text": ". Dexterity Saving Throw: DC 13, each creature in a 15-foot Cone. Failure: 22 (4d10) Fire damage. Success: Half damage."
+     "text": "Dexterity Saving Throw: DC 13, each creature in a 15-foot Cone. Failure: 22 (4d10) Fire damage. Success: Half damage."
     },
     {
      "name": "Weakening Breath",
@@ -8220,7 +8220,7 @@
     },
     {
      "name": "Fire Breath (Recharge 5–6)",
-     "text": ". Dexterity Saving Throw: DC 17, each creature in a 30-foot Cone. Failure: 55 (10d10) Fire damage. Success: Half damage."
+     "text": "Dexterity Saving Throw: DC 17, each creature in a 30-foot Cone. Failure: 55 (10d10) Fire damage. Success: Half damage."
     },
     {
      "name": "Weakening Breath",
@@ -8318,7 +8318,7 @@
     },
     {
      "name": "Fire Breath (Recharge 5–6)",
-     "text": ". Dexterity Saving Throw: DC 21, each creature in a 60-foot Cone. Failure: 66 (12d10) Fire damage. Success: Half damage."
+     "text": "Dexterity Saving Throw: DC 21, each creature in a 60-foot Cone. Failure: 66 (12d10) Fire damage. Success: Half damage."
     },
     {
      "name": "Spellcasting",
@@ -8433,7 +8433,7 @@
     },
     {
      "name": "Fire Breath (Recharge 5–6)",
-     "text": ". Dexterity Saving Throw: DC 24, each creature in a 90-foot Cone. Failure: 71 (13d10) Fire damage. Success: Half damage."
+     "text": "Dexterity Saving Throw: DC 24, each creature in a 90-foot Cone. Failure: 71 (13d10) Fire damage. Success: Half damage."
     },
     {
      "name": "Spellcasting",
@@ -16102,7 +16102,7 @@
    "traits": [
     {
      "name": "Lightning Absorption",
-     "text": ". Whenever the shambling mound is subjected to Lightning damage, it regains a number of Hit Points equal to the Lightning damage dealt."
+     "text": "Whenever the shambling mound is subjected to Lightning damage, it regains a number of Hit Points equal to the Lightning damage dealt."
     }
    ],
    "actions": [
@@ -16295,7 +16295,7 @@
     },
     {
      "name": "Cold Breath (Recharge 5–6)",
-     "text": ". Constitution Saving Throw: DC 13, each creature in a 15-foot Cone. Failure: 18 (4d8) Cold damage. Success: Half damage."
+     "text": "Constitution Saving Throw: DC 13, each creature in a 15-foot Cone. Failure: 18 (4d8) Cold damage. Success: Half damage."
     },
     {
      "name": "Paralyzing Breath",
@@ -16382,7 +16382,7 @@
     },
     {
      "name": "Cold Breath (Recharge 5–6)",
-     "text": ". Constitution Saving Throw: DC 17, each creature in a 30-foot Cone. Failure: 49 (11d8) Cold damage. Success: Half damage."
+     "text": "Constitution Saving Throw: DC 17, each creature in a 30-foot Cone. Failure: 49 (11d8) Cold damage. Success: Half damage."
     },
     {
      "name": "Paralyzing Breath",
@@ -16474,7 +16474,7 @@
     },
     {
      "name": "Cold Breath (Recharge 5–6)",
-     "text": ". Constitution Saving Throw: DC 20, each creature in a 60-foot Cone. Failure: 54 (12d8) Cold damage. Success: Half damage."
+     "text": "Constitution Saving Throw: DC 20, each creature in a 60-foot Cone. Failure: 54 (12d8) Cold damage. Success: Half damage."
     },
     {
      "name": "Paralyzing Breath",
@@ -16583,7 +16583,7 @@
     },
     {
      "name": "Cold Breath (Recharge 5–6)",
-     "text": ". Constitution Saving Throw: DC 24, each creature in a 90-foot Cone. Failure: 67 (15d8) Cold damage. Success: Half damage."
+     "text": "Constitution Saving Throw: DC 24, each creature in a 90-foot Cone. Failure: 67 (15d8) Cold damage. Success: Half damage."
     },
     {
      "name": "Paralyzing Breath",
@@ -18648,7 +18648,7 @@
     },
     {
      "name": "Magic Resistance",
-     "text": ". The unicorn has Advantage on saving throws against spells and other magical effects."
+     "text": "The unicorn has Advantage on saving throws against spells and other magical effects."
     }
    ],
    "actions": [
@@ -21715,11 +21715,11 @@
     },
     {
      "name": "Bite",
-     "text": ". Melee Attack Roll: +5, reach 5 ft. Hit: 7 (1d8 + 3) Piercing damage."
+     "text": "Melee Attack Roll: +5, reach 5 ft. Hit: 7 (1d8 + 3) Piercing damage."
     },
     {
      "name": "Claw",
-     "text": ". Melee Attack Roll: +5, reach 5 ft. Hit: 5 (1d4 + 3) Slashing damage. If the target is a Large or smaller creature, it has the Prone condition."
+     "text": "Melee Attack Roll: +5, reach 5 ft. Hit: 5 (1d4 + 3) Slashing damage. If the target is a Large or smaller creature, it has the Prone condition."
     }
    ],
    "bonus_actions": [],
@@ -22416,7 +22416,7 @@
     },
     {
      "name": "Gore",
-     "text": ". Melee Attack Roll: +8, reach 5 ft. Hit: 15 (2d8 + 6) Piercing damage. If the target is a Huge or smaller creature and the elephant moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition."
+     "text": "Melee Attack Roll: +8, reach 5 ft. Hit: 15 (2d8 + 6) Piercing damage. If the target is a Huge or smaller creature and the elephant moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition."
     }
    ],
    "bonus_actions": [

@@ -529,7 +529,8 @@ def entries(lines: list[Line], text: Text) -> tuple[dict[str, list[dict]], str]:
         if f[0] == "Optima-BoldItalic" and (x.spans[0] is f or not x.spans[0][2].strip()):
             done()
             name = f[2].strip().rstrip(".").strip()
-            rest = x.text.replace("\t", " ").strip()[len(f[2].strip()):]
+            # the name's closing period is sometimes a span of its own ("Bite" then ". Melee Attack Roll…")
+            rest = re.sub(r"^\s*\.", "", x.text.replace("\t", " ").strip()[len(f[2].strip()):])
             buf = [Line(x.page, x.col, x.base, [["Optima-Regular", 9.5, rest, MARGIN[x.col]]], MARGIN[x.col])]
         elif x.is_("Optima-Italic", 9.0) and name is None and cur == "Legendary Actions":
             intro.append(x)

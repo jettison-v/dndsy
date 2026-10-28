@@ -38,6 +38,15 @@ def test_stat_blocks_read_as_the_book_prints_them():
     werebear = rules_data.find("monster", "Werebear")
     assert werebear["speed"] == {"walk": 30} and werebear["speed_note"] == "40 ft. (bear form only), Climb 30 ft. (bear form only)"
     assert rules_data.find("monster", "Will-o’-Wisp")["key"] == "will-o-wisp"  # either apostrophe finds it
+    bear = rules_data.find("monster", "Brown Bear")
+    assert bear["actions"][1]["text"].startswith("Melee Attack Roll: +5, reach 5 ft.")
+
+
+def test_no_entry_text_starts_with_the_names_period():
+    """A name's closing period printed as a span of its own once stayed at the start of the text (". Melee…")."""
+    stray = [(m["name"], e["name"]) for m in rules_data.srd("monster") for part, rows in m.items()
+             if isinstance(rows, list) for e in rows if isinstance(e, dict) and str(e.get("text", "")).startswith((".", ",", ";", ":"))]
+    assert stray == []
 
 
 def test_spells_items_and_the_glossary():
