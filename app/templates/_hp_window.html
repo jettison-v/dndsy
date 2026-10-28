@@ -31,6 +31,7 @@
             {% if w.first %}<optgroup label="{{ c.name }} resists or is immune or vulnerable to">{% for t in w.first %}<option value="{{ t }}"{{ " selected" if p.type == t }}>{{ t | capitalize }}</option>{% endfor %}</optgroup>{% endif %}
             <optgroup label="{{ 'Other types' if w.first else 'Types' }}">{% for t in w.types if t not in w.first %}<option value="{{ t }}"{{ " selected" if p.type == t }}>{{ t | capitalize }}</option>{% endfor %}</optgroup>
           </select></label>{% endif %}
+        {% if p.type_from and p.type %}<p class="note hp-type-from">D&amp;D Beyond's roll doesn't say the type: {{ p.type }} is the {{ roll.who }}'s {{ roll.label }} in {{ p.type_from }}. Change it if the DM's differs.</p>{% endif %}
       </div>
       {% endfor %}
       {% include "_hp_working.html" %}

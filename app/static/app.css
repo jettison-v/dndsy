@@ -2164,6 +2164,7 @@ body:not(.br-ext) .br-ext-on, body.br-ext .br-ext-off { display: none; }
 .hp-source { display: flex; justify-content: space-between; gap: var(--sp-2); flex-wrap: wrap; align-items: baseline; background: var(--surface-2); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); font-size: var(--fs-sm); }
 .hp-source b { color: var(--text-strong); }
 .hp-part { display: flex; gap: var(--sp-3); flex-wrap: wrap; align-items: end; }
+.hp-type-from { flex-basis: 100%; margin: 0; }
 .hp-amount, .hp-type { display: grid; gap: var(--sp-1); }
 .hp-amount input { width: 6.5em; font-size: var(--fs-lg); font-weight: 600; }
 .hp-form:has(.hp-modes):not(:has(.hp-modes input[value=damage]:checked)) .hp-type { display: none; }

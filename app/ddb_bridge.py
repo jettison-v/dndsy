@@ -1101,8 +1101,9 @@ def heard_in_game(db: Session, hearer: Character, message: dict) -> TableRoll | 
     name = " ".join(str(ctx.get("name") or "A monster").split())[:80]
     if row["kind"] == "damage":
         from app import hit_points
-        kind = hit_points.attack_type(db, campaign, name, row["label"])
-        row["parts"] = [{"label": row["label"], "kind": kind, "formula": row["formula"], "dice": row["dice"], "total": row["total"]}]
+        kind, kind_from = hit_points.attack_type(db, campaign, name, row["label"])
+        row["parts"] = [{"label": row["label"], "kind": kind, "kind_from": kind_from, "formula": row["formula"], "dice": row["dice"],
+                         "total": row["total"]}]
     return _record(db, campaign, rid, {**row, "who": name, "visibility": "table" if message.get("messageScope") == "gameId" else "dm"})
 
 

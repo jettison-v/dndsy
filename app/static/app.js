@@ -2133,13 +2133,25 @@
     [...log.querySelectorAll('.roll-item[data-seq]')].reverse().forEach(li => {
       if (+li.dataset.seq > before) fresh.add(li.dataset.person);
       if (+li.dataset.seq > before && !li.dataset.mine) {
-        if (animate() && !li.classList.contains('hidden-roll')) throwOthers(li).catch(() => notice(li));  // thrown dice (Brett, 2026-10-23)
-        else notice(li);
+        const show = firstToShow(li.dataset.seq);  // false: another of your tabs shows it, this one only lists it
+        if (show && animate() && !li.classList.contains('hidden-roll')) throwOthers(li).catch(() => notice(li));  // thrown dice (Brett, 2026-10-23)
+        else if (show) notice(li);
         li.classList.remove('fresh'); void li.offsetWidth; li.classList.add('fresh');
       }
     });
     buildPeople(fresh);
   });
+  // Someone else's roll is thrown (or noticed) once per browser, however many askdnd tabs are open (Brett, 2026-10-28):
+  // a tab out of sight only lists it, and of the tabs in sight the first to claim it shows it
+  function firstToShow(seq) {
+    if (document.visibilityState !== 'visible') return false;
+    try {
+      const shown = JSON.parse(localStorage.getItem('askdnd.shownRolls') || '[]');
+      if (shown.includes(+seq)) return false;
+      localStorage.setItem('askdnd.shownRolls', JSON.stringify([+seq, ...shown].slice(0, 50)));
+    } catch (err) {}  // no storage: every tab shows it, as before
+    return true;
+  }
   function notice(li) {
     if (!pops) return;
     const n = document.createElement('div');

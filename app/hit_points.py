@@ -51,13 +51,14 @@ HIT = re.compile(r"(\d+d\d+)?(?:\s*[+−-]\s*\d+)?\)?\s*(Acid|Bludgeoning|Cold|F
 # ------------------------------------------------------------------ a monster's attack: its damage type
 
 
-def attack_type(db: Session | None, campaign_id: int | None, monster: str, action: str, formula: str = "") -> str:
-    """The damage type of a monster's attack by name, from the campaign's rules data (its own, its books', the SRD's):
-    "bludgeoning" for an Ogre's Greatclub, "" when the monster or the attack isn't there. With several types in the
-    attack, the one whose dice match the roll's (a Bite's 2d10 piercing plus 2d6 fire)."""
+def attack_type(db: Session | None, campaign_id: int | None, monster: str, action: str, formula: str = "") -> tuple[str, str]:
+    """(damage type, where it's from) for a monster's attack by name. D&D Beyond's roll doesn't carry the type, so it
+    comes from the campaign's rules data (its own, its books', the SRD's) and says so: ("bludgeoning", "SRD 5.2.1") for
+    an Ogre's Greatclub, ("", "") when the monster or the attack isn't there. With several types in the attack, the
+    one whose dice match the roll's (a Bite's 2d10 piercing plus 2d6 fire)."""
     m = rules_data.find("monster", monster, db, campaign_id) if monster else None
     if not m:
-        return ""
+        return "", ""
     want = action.strip().lower()
     for group in ("actions", "bonus_actions", "reactions", "legendary_actions"):
         for a in m.get(group) or []:
@@ -65,11 +66,9 @@ def attack_type(db: Session | None, campaign_id: int | None, monster: str, actio
             if name == want or name.startswith(want + " ("):
                 hits = HIT.findall(a.get("text") or "")
                 dice = (re.match(r"\d+d\d+", formula or "") or [""])[0]
-                for d, kind in hits:
-                    if dice and d == dice:
-                        return kind.lower()
-                return hits[0][1].lower() if hits else ""
-    return ""
+                kind = next((k for d, k in hits if dice and d == dice), hits[0][1] if hits else "")
+                return kind.lower(), m.get("source", "") if kind else ""
+    return "", ""
 
 
 # ------------------------------------------------------------------ the working
@@ -205,7 +204,8 @@ def from_roll(db: Session, roll: TableRoll | None) -> tuple[str, list[dict], str
     src = dmg or roll
     who = roll.character.name if roll.character else roll.who or "Someone"
     if src.kind == "damage":
-        parts = [{"amount": x.get("total", 0), "type": x.get("kind") or ""} for x in src.parts or [] if x.get("total") is not None]
+        parts = [{"amount": x.get("total", 0), "type": x.get("kind") or "", "type_from": x.get("kind_from") or ""}
+                 for x in src.parts or [] if x.get("total") is not None]
         return "damage", parts or [{"amount": src.total, "type": ""}], f"{who} · {roll.label}"
     if src.kind in ("heal", "temp"):
         return ("heal" if src.kind == "heal" else "temp"), [{"amount": src.total, "type": ""}], f"{who} · {roll.label}"

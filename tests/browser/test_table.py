@@ -338,3 +338,23 @@ def test_a_number_that_changed_marks_itself_with_the_change(people, server, brow
     page.wait_for_function(f'document.querySelector(\'[data-mark="{server["cole"]}:hp"] b\').textContent.trim() === "{before}"')
     engine.dispose()
     assert player.errors == []
+
+
+def test_someone_elses_roll_shows_once_however_many_tabs_are_open(people, server):
+    """Brett, 2026-10-28: with three askdnd tabs open he saw each roll three times. Every tab lists it, but only one
+    tab in each browser throws it (or notices it, with the dice off)."""
+    player, dm = people("player", "dm")
+    tabs = [dm.page, dm.context.new_page()]
+    for t in tabs:
+        t.goto(server["base"] + "/c/main/")
+        t.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=5000)
+        t.wait_for_selector(LOG, state="attached")
+    counts = [t.locator(LOG).count() for t in tabs]
+    page = battle(player, server)
+    page.click(save("Wis"), modifiers=["Shift"])
+    for t, n in zip(tabs, counts):
+        t.wait_for_function(f"document.querySelectorAll('{LOG}').length > {n}", timeout=5000)
+        assert "Wis save" in newest(t)
+    time.sleep(0.3)
+    assert sorted(t.locator(".roll-note").count() for t in tabs) == [0, 1]
+    assert player.errors == [] and dm.errors == []

@@ -67,10 +67,11 @@ def test_healing_stops_at_the_maximum_and_temporary_hit_points_dont_add_up():
 
 
 def test_a_monsters_attack_names_its_damage_type():
-    """D&D Beyond's roll carries no damage type (checked Oct 28), so it comes from the attack in the rules data."""
-    assert hit_points.attack_type(None, None, "Ogre", "Greatclub") == "bludgeoning"
-    assert hit_points.attack_type(None, None, "Ogre", "Javelin", "2d6+4") == "piercing"
-    assert hit_points.attack_type(None, None, "Nobody", "Greatclub") == ""
+    """D&D Beyond's roll carries no damage type (checked Oct 28), so it comes from the attack in the rules data, which
+    it names (Brett, Oct 28: what D&D Beyond doesn't give is shown as looked up)."""
+    assert hit_points.attack_type(None, None, "Ogre", "Greatclub") == ("bludgeoning", "SRD 5.2.1")
+    assert hit_points.attack_type(None, None, "Ogre", "Javelin", "2d6+4") == ("piercing", "SRD 5.2.1")
+    assert hit_points.attack_type(None, None, "Nobody", "Greatclub") == ("", "")
 
 
 def game_roll(rid="g-1", entity="monster", eid="4904825", name="Ogre", action="Greatclub", kind="damage", total=17, scope="gameId"):
@@ -88,7 +89,7 @@ def test_the_dms_rolls_in_the_game_come_into_table_rolls_once(player, dm, db, sh
     row = db.scalar(select(TableRoll).where(TableRoll.ddb_roll_id == "g-1"))
     assert (row.who, row.label, row.kind, row.total, row.character_id, row.parts[0]["kind"]) == ("Ogre", "Greatclub", "damage", 17, None, "bludgeoning")
     html = dm.get("/rolls").text
-    assert "Ogre" in html and "bludgeoning" in html and "the DM" in html
+    assert "Ogre" in html and "bludgeoning" in html and "(SRD 5.2.1)" in html and "the DM" in html
     assert player.post("/bridge/others-roll/75423618", json=game_roll("g-2", entity="user", eid="1")).json() == {"ok": False}  # plain dice
     assert dm.post("/bridge/others-roll/75423618", json=game_roll("g-3")).json() == {"ok": False}  # only the player's own browser
     cole = char(db, "Cole")  # a roll for Cole made on another page (the encounter's) is his
@@ -107,6 +108,7 @@ def test_apply_to_cole_works_it_out_and_makes_it_through_the_bridge(player, dm, 
     assert f"/characters/{cole.id}/hp?roll={rid}" in player.get("/rolls").text  # Apply to Cole
     page = player.get(f"/characters/{cole.id}/hp?roll={rid}").text
     assert "Ogre · Greatclub" in page and "Take 17" in page and "Concentration: Moonbeam" in page and "DC 10" in page
+    assert "bludgeoning is the Ogre's Greatclub in SRD 5.2.1" in page  # looked up, and it says so
     r = player.post(f"/characters/{cole.id}/hp/apply", data={"roll": rid, "mode": "damage", "amount": "17", "type": "bludgeoning"})
     assert r.status_code == 200 and "closePanel" in r.headers["HX-Trigger"]
     it = db.scalar(select(BridgeIntent).where(BridgeIntent.character_id == cole.id))
