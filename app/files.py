@@ -209,7 +209,7 @@ def delete(key: str) -> None:
     _store().delete(key)
 
 
-_unreachable = {"at": 0.0}  # when storage last failed to answer, so an outage is reported once, not once per picture
+_unreachable: dict = {"at": None}  # when storage last failed to answer, so an outage is reported once, not once per picture
 
 
 def read(key: str | None) -> bytes | None:
@@ -224,7 +224,7 @@ def read(key: str | None) -> bytes | None:
     except StorageNotReady:
         raise  # (set up wrong: that's for the deploy to show, not a missing picture)
     except Exception:  # noqa: BLE001 - storage unreachable or refusing
-        if time.monotonic() - _unreachable["at"] > 600:
+        if _unreachable["at"] is None or time.monotonic() - _unreachable["at"] > 600:
             _unreachable["at"] = time.monotonic()
             log.error("File storage didn't answer for %s; pictures show as missing until it does", key, exc_info=True)
     return None

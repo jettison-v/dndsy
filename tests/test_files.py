@@ -146,7 +146,7 @@ def test_a_storage_outage_shows_pictures_missing_and_is_reported_once(people, db
     def down(_key):
         raise TimeoutError("S3 didn't answer")
     monkeypatch.setattr(file_store, "get", down)
-    monkeypatch.setitem(files._unreachable, "at", 0.0)
+    monkeypatch.setitem(files._unreachable, "at", None)
     for _ in range(3):
         assert people["player"].get(url["full"]).status_code == 404
     assert [r.levelname for r in caplog.records if "didn't answer" in r.getMessage()] == ["ERROR"]
