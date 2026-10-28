@@ -121,17 +121,19 @@
 
   // ---- the sheet's own store: where the open page keeps the character it shows and saves from
   let store = null;
-  function findStore() {  // (from the first page element React drew, up to the provider that holds the store)
-    if (store) return store;
-    let tries = 0;  // (the site's menu is drawn by React too, without the store)
-    for (const el of document.querySelectorAll('body *')) {
-      const k = Object.keys(el).find(n => n.startsWith('__reactFiber$'));
-      if (!k) continue;
-      for (let f = el[k], n = 0; f && n < 200; f = f.return, n++) {
-        const s = f.memoizedProps && f.memoizedProps.store;
-        if (s && typeof s.getState === 'function' && typeof s.dispatch === 'function' && s.getState().character) return (store = s);
+  function findStore() {  // (from a page element React drew, up to the provider that holds the store: the sheet's own
+    if (store) return store;  // part of the page first, since the site's menu and banners are drawn by React too, without it)
+    for (const q of ['#character-tools-target *', 'body *']) {
+      let tries = 0;
+      for (const el of document.querySelectorAll(q)) {
+        const k = Object.keys(el).find(n => n.startsWith('__reactFiber$'));
+        if (!k) continue;
+        for (let f = el[k], n = 0; f && n < 200; f = f.return, n++) {
+          const s = f.memoizedProps && f.memoizedProps.store;
+          if (s && typeof s.getState === 'function' && typeof s.dispatch === 'function' && s.getState().character) return (store = s);
+        }
+        if (++tries > 2000) break;
       }
-      if (++tries > 50) break;
     }
     return null;
   }
