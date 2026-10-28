@@ -16,7 +16,6 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
-    LargeBinary,
     String,
     Text,
     UniqueConstraint,
@@ -180,17 +179,14 @@ class StoredFile(Base):
 
 class EntityPicture(Timestamped, Base):
     """A picture on an entity page (portrait, map, banner), added by the DM or a reviewer, resized by
-    app/pictures.py. The files are in file storage (file_key, thumb_key); data and thumb are the old copies in the
-    database, no longer written or read, until they're removed (VTT 0.5)."""
+    app/pictures.py. The files are in file storage (app/files.py)."""
 
     __tablename__ = "entity_pictures"
     id: Mapped[int] = mapped_column(primary_key=True)
     entity_id: Mapped[int] = mapped_column(ForeignKey("entities.id", ondelete="CASCADE"), unique=True)
     content_type: Mapped[str] = mapped_column(String(100), default="image/webp", server_default="image/webp")
-    file_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), index=True, nullable=True)  # up to 1200 px
-    thumb_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), index=True, nullable=True)  # 320 px square
-    data: Mapped[bytes | None] = mapped_column(LargeBinary, deferred=True, nullable=True)
-    thumb: Mapped[bytes | None] = mapped_column(LargeBinary, deferred=True, nullable=True)
+    file_key: Mapped[str] = mapped_column(ForeignKey("stored_files.key"), index=True)  # up to 1200 px
+    thumb_key: Mapped[str] = mapped_column(ForeignKey("stored_files.key"), index=True)  # 320 px square crop
     added_by: Mapped[str] = mapped_column(String(320), default="", server_default="")
 
 
@@ -594,10 +590,7 @@ class NoteImage(Base):
     snapshot_id: Mapped[int] = mapped_column(ForeignKey("note_snapshots.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column(String(300))
     content_type: Mapped[str] = mapped_column(String(100))
-    # In file storage (app/files.py); data is the old copy in the database, no longer written or read, until it's
-    # removed (VTT 0.5)
-    file_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), index=True, nullable=True)
-    data: Mapped[bytes | None] = mapped_column(LargeBinary, deferred=True, nullable=True)
+    file_key: Mapped[str] = mapped_column(ForeignKey("stored_files.key"), index=True)  # in file storage (app/files.py)
 
 
 # ExtractionRun sources that are not session drafts (they never hold Claude's questions).
