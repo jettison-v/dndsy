@@ -114,6 +114,8 @@ def announce(db: Session, campaign_id: int | None, kind: str, **data) -> None:
 # aren't here: they're theirs (the DM never sees them), and the page they were made on shows them at once.
 TABLE_SEES = {"Character": ("name", "owner_id", "wild_shape", "concentration", "conditions"), "CharacterSnapshot": ("summary",),
               "BridgeIntent": ("state", "error"), "BridgeLog": ("text",)}
+# And of the campaign itself: Game Mode, on or off for the whole table (app/game_mode.py), announced as "game"
+CAMPAIGN_SEES = {"Campaign": ("game_until",)}
 
 
 def _stored(value) -> str:
@@ -127,14 +129,19 @@ def _character_changes(db: Session, flush_context, instances) -> None:
 
     from app.models import Character
 
+    def changed(obj, fields) -> bool:
+        state = inspect(obj)
+        return any(state.attrs[f].history.has_changes()
+                   and _stored((state.attrs[f].history.deleted or [None])[0]) != _stored((state.attrs[f].history.added or [None])[0])
+                   for f in fields)
+
+    for obj in list(db.dirty):
+        fields = CAMPAIGN_SEES.get(type(obj).__name__)
+        if fields and changed(obj, fields):
+            announce(db, obj.id, "game")
     for obj in list(db.new) + list(db.dirty):
         fields = TABLE_SEES.get(type(obj).__name__)
-        if not fields:
-            continue
-        state = inspect(obj)
-        if not any(state.attrs[f].history.has_changes()
-                   and _stored((state.attrs[f].history.deleted or [None])[0]) != _stored((state.attrs[f].history.added or [None])[0])
-                   for f in fields):
+        if not fields or not changed(obj, fields):
             continue
         with db.no_autoflush:  # (a new copy knows its character before its character_id is filled in)
             character = obj if isinstance(obj, Character) else getattr(obj, "character", None) or (

@@ -123,14 +123,18 @@ body.gm-on .live-dot { background: var(--green); animation: gm-pulse 2s infinite
 body.gm-on .live-word, body.gm-on .live-on { display: inline; }
 body.gm-on .live-off { display: none; }
 .live-pill.warn .live-dot { background: var(--amber); }
+.live-pill.step .live-dot { background: var(--green); }  /* in step through the bridge, Game Mode or not */
 .live-pill.htmx-request { opacity: .7; }
-@media (max-width: 1240px) { .live-ago { display: none; } .live-word { display: inline; } }  /* "● Live"; the popover says when */
+@media (max-width: 1240px) { .live-ago { display: none; } .live-word { display: inline; } }  /* "● Live" or "● Game on"; the dot's colour says in step or to make by hand, the window the rest */
 @keyframes gm-pulse { 0% { box-shadow: 0 0 0 0 var(--green-line); } 70% { box-shadow: 0 0 0 8px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
 .menu.live-menu { width: 360px; max-width: calc(100vw - 24px); padding: 0; }
 .live-menu:empty { display: none; }
 .live-pop { padding: 14px 16px; display: grid; gap: 12px; font-size: var(--fs-sm); }
-.live-gm { display: flex; gap: 12px; align-items: center; justify-content: space-between; }
-.live-gm small { display: block; color: var(--muted); font-size: var(--fs-xs); line-height: 1.45; margin-top: 2px; }
+.live-gm { display: grid; gap: var(--sp-2); }
+.live-gm-top { display: flex; gap: var(--sp-3); align-items: center; justify-content: space-between; }
+.live-gm small { display: block; color: var(--muted); font-size: var(--fs-xs); line-height: 1.45; }
+.live-confirm { display: grid; gap: var(--sp-2); padding: var(--sp-3); border: 1px solid var(--amber); background: var(--amber-soft); border-radius: var(--r-md); }
+.live-ok { color: var(--green); text-align: right; }
 .live-list { border-top: 1px solid var(--line); padding-top: 10px; display: grid; gap: 4px; }
 .live-head { font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); margin-bottom: 2px; }
 .live-row { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
@@ -2127,8 +2131,7 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
 .br-log { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
 .br-log li { padding: var(--sp-2) 0; border-top: 1px solid var(--line-soft); display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: baseline; }
 /* the bridge's health, bottom right on every page (bottom left is Table rolls' pop-ups and tray); phones read only */
-.br-pill { position: fixed; right: 16px; bottom: 16px; z-index: 8; cursor: pointer; border: 0; font-family: inherit; box-shadow: 0 4px 14px var(--shadow); max-width: min(420px, calc(100vw - 32px)); overflow: hidden; text-overflow: ellipsis; }
-@media (max-width: 640px) { .br-pill { display: none; } }
+button.br-st { border: 0; font-family: inherit; cursor: pointer; }  /* the bridge's health on Manage › askdnd › D&D Beyond bridge: a click runs the check */
 .br-phone { display: none; }
 @media (max-width: 640px) { .br-phone { display: block; } }
 /* The bridge page: what shows with and without the extension in this browser (body.br-ext, app.js), and what's

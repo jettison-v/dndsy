@@ -1,26 +1,46 @@
-{# The Live popover (app/live.py): Game Mode for this browser, each character's last refresh,
-   and refreshing now. "Refresh everyone" is for reviewers only. Also refreshes the pill. #}
-{% set f = tn.focus %}
-<div class="live-pop" role="dialog" aria-label="Live updates from D&amp;D Beyond">
+{# The Live window (app/live.py): Game Mode for the whole table (app/game_mode.py: anyone at the table starts or ends
+   it; ending asks first), how each sheet is kept in step, and refreshing now. "Refresh everyone" is for reviewers only.
+   Also refreshes the pill. #}
+{% set f = tn.focus %}{% set q = '?c=%s' % f.id if f else '' %}
+<div class="live-pop" role="dialog" aria-label="Game Mode and D&amp;D Beyond">
   <div class="live-gm">
-    <div><b>Game Mode</b>
-      <small>Keeps the party fresh from D&amp;D Beyond every {{ "%g" | format(tn.every / 60) }} minutes while askdnd is open{% if f %}, {{ f.name }} first; on Battle the page updates itself{% endif %}. Remembered on this device.</small></div>
-    <button class="switch" type="button" role="switch" aria-checked="false" data-game-mode aria-label="Game Mode"></button>
+    <div class="live-gm-top"><b>Game Mode</b>{% if game.on %}<span class="tag done">On for the table</span>{% else %}<span class="tag">Off</span>{% endif %}</div>
+    {% if game.on %}
+    <small>{% if game.by %}Started by {{ game.by }}. {% endif %}{{ game.until | left }} left. Everyone's rolls are shared in Table rolls, and every sheet is read from D&amp;D Beyond every {{ "%g" | format(tn.every / 60) }} minutes{% if bridge %}; a sheet the bridge keeps in step arrives within seconds{% endif %}.</small>
+    {% else %}
+    <small>Start it when the game starts: everyone's rolls are shared in Table rolls and every sheet stays fresh, for {{ game_hours }} hours.{% if bridge %} Between games your sheet and askdnd still keep in step while you use either.{% endif %}</small>
+    {% endif %}
+    {% if can_switch %}
+    {% if game.on %}
+    <div class="row tight" data-gm-ask-row><button type="button" class="btn small" data-gm-ask>End for the table</button>
+      <button type="button" class="btn small" hx-post="/live/game{{ q }}" hx-vals='{"on": "1"}' hx-target="#live-menu" hx-disabled-elt="this">Keep going</button></div>
+    <div class="live-confirm" data-gm-confirm hidden>
+      <b>End Game Mode for everyone?</b>
+      <span class="note">Everyone's rolls go back to private, and askdnd stops reading the party every few minutes.{% if bridge %} The bridge keeps working for anyone using askdnd or their sheet.{% endif %}</span>
+      <div class="row tight"><button type="button" class="btn primary small" hx-post="/live/game{{ q }}" hx-vals='{"on": ""}' hx-target="#live-menu" hx-disabled-elt="this">End for the table</button><button type="button" class="btn small" data-gm-keep>Keep playing</button></div>
+    </div>
+    {% else %}
+    <div class="row tight"><button type="button" class="btn primary small" hx-post="/live/game{{ q }}" hx-vals='{"on": "1"}' hx-target="#live-menu" hx-disabled-elt="this">Start for the table</button></div>
+    {% endif %}
+    {% endif %}
   </div>
   <div class="live-list">
-    <div class="live-head">D&amp;D Beyond copies</div>
+    <div class="live-head">How each sheet is kept in step</div>
     {% for r in tn.characters %}
     <div class="live-row{{ ' here' if f and r.id == f.id }}"><span>{{ r.name }}{% if r.mine %} <span class="note">(you)</span>{% endif %}</span>
       {% if not r.linked %}<span class="note">not linked</span>
+      {% elif r.by_hand %}<span class="quiet-warn">{{ r.by_hand }} to make by hand</span>
+      {% elif r.step %}<span class="live-ok">in step · bridge</span>
       {% elif not r.fetched_at %}<span class="quiet-warn">{{ "couldn't refresh" if r.failed else "not fetched yet" }}</span>
       {% elif r.failed %}<span class="quiet-warn" title="{{ r.error }}">couldn't refresh · showing {{ r.fetched_at | ago }}</span>
-      {% else %}<span class="note">{{ r.fetched_at | ago }}</span>{% endif %}</div>
+      {% elif game.on %}<span class="note">every {{ "%g" | format(tn.every / 60) }} min · {{ r.fetched_at | ago }}</span>
+      {% else %}<span class="note">updated {{ r.fetched_at | ago }}</span>{% endif %}</div>
     {% else %}<p class="muted">No characters yet.</p>{% endfor %}
   </div>
   {% if (f and f.linked) or (reviewer and tn.linked) %}
   <div class="live-actions">
     {% if f and f.linked %}<button type="button" class="btn primary small" hx-post="/live/refresh/{{ f.id }}" hx-target="#live-menu" hx-disabled-elt="this">Refresh {{ f.name }} now</button>{% endif %}
-    {% if reviewer and tn.linked %}<button type="button" class="btn small" hx-post="/live/refresh-all{{ '?c=%s' % f.id if f }}" hx-target="#live-menu" hx-disabled-elt="this">Refresh everyone</button>{% endif %}
+    {% if reviewer and tn.linked %}<button type="button" class="btn small" hx-post="/live/refresh-all{{ q }}" hx-target="#live-menu" hx-disabled-elt="this">Refresh everyone</button>{% endif %}
   </div>
   {% endif %}
 </div>

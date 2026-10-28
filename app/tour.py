@@ -32,8 +32,8 @@ SECTIONS = [
     ("Rolling", [
         ("rolling", "Rolling and Table rolls", "Click any number to roll it. With Game Mode on, everyone's rolls are in Table rolls; DM "
                                                "only and Just me keep a roll private."),
-        ("live", "Game Mode and Live", "askdnd re-reads everyone's D&D Beyond sheet during play. Build and level up on D&D Beyond as "
-                                       "always; askdnd never changes it."),
+        ("live", "Game Mode and Live", "One switch for the whole table: anyone starts it when the game starts, and everyone's rolls "
+                                       "are shared. The Live pill says how your own D&D Beyond sheet is kept in step."),
         (None, "Your dice", "Thrown 3D dice in the set you choose (account menu › Your dice); the table sees your rolls in them."),
     ]),
     ("Your character", [
@@ -132,9 +132,9 @@ STOPS = [
      "why": "With Game Mode on, your rolls land in <b>Table rolls</b> for everyone, thrown in your own 3D dice. Pick "
             "<b>DM only</b> or <b>Just me</b> for a private roll."},
     {"group": "live", "page": None, "at": '[data-tour="live"]',
-     "what": "<b>Live</b> turns on Game Mode for the session: your rolls are shared, and askdnd re-reads everyone's D&D "
-             "Beyond sheet every few minutes. Changed something there? <b>Refresh now</b> picks it up at once.",
-     "why": "Build and level up on D&D Beyond as always. askdnd lays your sheet out for play and never changes it."},
+     "what": "<b>Live</b> says how your D&D Beyond sheet is kept in step, and holds <b>Game Mode</b>: one switch for the "
+             "whole table. Anyone starts it when the game starts; everyone's rolls are shared and every sheet stays fresh.",
+     "why": "Build and level up on D&D Beyond as always. <b>Refresh now</b> picks up a change made there at once."},
     {"group": "character", "title": "Sheet: your whole character", "page": "sheet", "needs": "character",
      "at": '[data-tour="sheet"]',
      "what": "Everything from D&D Beyond in one view, laid out for play. Click any row for its rules and your note.",

@@ -3,15 +3,16 @@
 - Your character (portrait and name) is one click to it, in the mode you used last (Battle / Sheet /
   Plan). Party ▾ lists the campaign's characters, your own first, with class, level and HP, and opens
   the one you pick in the mode you're in (menu bar Option B, Brett 2026-10-22).
-- The Live pill says when the D&D Beyond copy was last updated: the character on screen,
-  else your own, else the party's oldest copy. Its popover holds Game Mode (a switch per
-  browser, kept in localStorage by app.js), each character's last refresh and failures,
-  "Refresh <character> now" (anyone signed in, throttled) and "Refresh everyone"
-  (reviewers only).
-- While Game Mode is on, app.js asks every couple of minutes: on Battle it swaps in the updated
-  page body (character_pages.game_mode_sync), elsewhere it calls /live/sync and swaps the pill.
-  Either way the whole party is kept fresh, the character on screen first (Brett, 2026-10-23), and
-  the server fetches at most every AUTO_MIN_AGE per character, however many people watch.
+- The Live pill says how your own sheet is kept in step (decided 2026-10-28,
+  docs/mockups/game-mode-and-bridge.html): in step through the D&D Beyond bridge (its extension
+  heard the sheet in the last REACH), something to make by hand, or when the copy was last read;
+  the character on screen, else your own, else the party's slowest sheet (the DM's). "Game on"
+  leads it while Game Mode is on for the table (app/game_mode.py). Its window holds Game Mode
+  (Start / End for the table), how each sheet is kept in step, "Refresh <character> now" (anyone
+  signed in, throttled) and "Refresh everyone" (reviewers only).
+- While Game Mode is on, every open page calls /live/sync every couple of minutes: the whole party
+  is kept fresh, the character on screen first (Brett, 2026-10-23), and the server fetches at most
+  every AUTO_MIN_AGE per character, however many people watch.
 
 The menu bar is on every page, so `loader` reads the rows with its own short session (like
 app/access.py); tests point it at their session.
@@ -28,10 +29,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import characters as chars
-from app import web
+from app import config, vtt, web
 from app.auth import current_user, is_reviewer
 from app.db import get_db
-from app.models import CampaignCharacter, Character, CharacterSnapshot, User
+from app.models import BridgeIntent, CampaignCharacter, Character, CharacterSnapshot, User
 from app.templating import templates
 
 router = APIRouter()
@@ -39,6 +40,7 @@ router = APIRouter()
 GAME_MODE_SECONDS = 150  # the page asks every 2.5 minutes…
 AUTO_MIN_AGE = timedelta(seconds=110)  # …and the server fetches at most this often per character
 MANUAL_MIN_AGE = timedelta(seconds=20)  # "Refresh now"
+REACH = timedelta(seconds=90)  # a sheet heard by the bridge this recently can be reached (its extension pulls every 30 seconds)
 
 # /characters/5 is Sheet, /characters/5/battle is Battle, /characters/5/plan is Plan
 CHARACTER_PAGE = re.compile(r"^/characters/(\d+)(/battle|/plan)?/?$")
@@ -48,12 +50,21 @@ SUFFIX = {"battle": "/battle", "sheet": "", "plan": "/plan"}
 
 def rows_from(db: Session) -> list[dict]:
     """Each campaign character: id, name, who plays it, its last D&D Beyond copy, and from that copy its
-    portrait, classes and hit points (read straight from the stored summary, not the whole sheet)."""
+    portrait, classes and hit points (read straight from the stored summary, not the whole sheet); and with the D&D
+    Beyond bridge on, whether its sheet can be reached now (`step`) and how many changes wait to be made by hand."""
     campaign = web.campaign(db)
     if not campaign:
         return []
+    bridge = config.DDB_BRIDGE and vtt.on(campaign, "ddb_bridge")
+    by_hand: dict[int, int] = {}
+    if bridge:
+        from sqlalchemy import func
+
+        by_hand = dict(db.execute(select(BridgeIntent.character_id, func.count()).where(BridgeIntent.state == "not_yet")
+                                  .group_by(BridgeIntent.character_id)).all())
+    reach = datetime.now(UTC) - REACH
     summary = CharacterSnapshot.summary
-    q = (select(Character.id, Character.name, User.email, Character.ddb_id,
+    q = (select(Character.id, Character.name, User.email, Character.ddb_id, Character.copy_of_id, Character.sheet_heard_at,
                 CharacterSnapshot.fetched_at, CharacterSnapshot.status, CharacterSnapshot.error,
                 summary["portrait"].astext, summary["classes"], summary["hit_points"]["current"].astext,
                 summary["hit_points"]["max"].astext)
@@ -65,8 +76,11 @@ def rows_from(db: Session) -> list[dict]:
     return [{"id": cid, "name": name, "owner": (email or "").lower(), "linked": bool(ddb_id), "fetched_at": fetched,
              "failed": status == "error", "error": error or "", "portrait": portrait or "",
              "classes": " / ".join(f"{k.get('name')} {k.get('level')}" for k in classes or [] if isinstance(k, dict)),
-             "hp": f"{hp}/{hp_max} HP" if hp and hp_max else ""}
-            for cid, name, email, ddb_id, fetched, status, error, portrait, classes, hp, hp_max in db.execute(q)]
+             "hp": f"{hp}/{hp_max} HP" if hp and hp_max else "",
+             # (a test copy shares a real sheet, so the bridge never works on it: ddb_bridge.on_for)
+             "step": bool(bridge and ddb_id and copy_of is None and heard and heard >= reach),
+             "by_hand": by_hand.get(cid, 0) if bridge and copy_of is None else 0}
+            for cid, name, email, ddb_id, copy_of, heard, fetched, status, error, portrait, classes, hp, hp_max in db.execute(q)]
 
 
 def _load_from_db() -> list[dict]:
@@ -137,9 +151,17 @@ def pill(db: Session, user: dict, focus_id: int | None) -> str:
     return templates.get_template("_live_pill.html").render(tn=table(user, "", rows_from(db), focus_id))
 
 
-def _panel(request: Request, db: Session, user: dict, focus_id: int | None, toast: str = "", ids: list[int] = ()):
+def panel(request: Request, db: Session, user: dict, focus_id: int | None, toast: str = "", ids: list[int] = ()):
+    """The Live window: Game Mode for the table, how each sheet is kept in step, refreshing."""
+    from app import game_mode
+
     tn = table(user, "", rows_from(db), focus_id)
-    resp = templates.TemplateResponse(request, "_live_panel.html", {"tn": tn, "reviewer": is_reviewer(user)})
+    campaign = web.campaign(db)
+    from app import ddb_bridge
+
+    resp = templates.TemplateResponse(request, "_live_panel.html", {
+        "tn": tn, "reviewer": is_reviewer(user), "game": game_mode.state(db, campaign), "can_switch": game_mode.can_switch(user, campaign),
+        "bridge": config.DDB_BRIDGE and vtt.on(campaign, "ddb_bridge"), "game_hours": f"{ddb_bridge.timers(db)['game'] / 3600:g}"})
     if toast:
         resp.headers["HX-Trigger"] = json.dumps({"toast": toast, "liveRefreshed": {"ids": list(ids)}})
     return resp
@@ -151,7 +173,7 @@ def live_panel(request: Request, c: int = 0, db: Session = Depends(get_db)):
     user = current_user(request)
     if not user:
         return HTMLResponse("", status_code=401)
-    return _panel(request, db, user, c or None)
+    return panel(request, db, user, c or None)
 
 
 @router.post("/live/sync")
@@ -181,7 +203,7 @@ def live_refresh_one(request: Request, character_id: int, db: Session = Depends(
         msg = f"Updated {name} from D&D Beyond"
     else:
         msg = f"Couldn't update {name}; showing the last good copy"
-    return _panel(request, db, user, character_id, msg, [character_id])
+    return panel(request, db, user, character_id, msg, [character_id])
 
 
 @router.post("/live/refresh-all")
@@ -194,4 +216,4 @@ def live_refresh_all(request: Request, c: int = 0, db: Session = Depends(get_db)
     ok, failed = chars.refresh_all(db, campaign.id) if campaign else (0, [])
     db.commit()
     msg = f"Updated {ok} from D&D Beyond" + (f"; couldn't update {', '.join(failed)}" if failed else "")
-    return _panel(request, db, user, c or None, msg, [r["id"] for r in rows_from(db)])
+    return panel(request, db, user, c or None, msg, [r["id"] for r in rows_from(db)])

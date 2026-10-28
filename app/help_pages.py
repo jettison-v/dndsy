@@ -15,12 +15,15 @@ router = APIRouter()
 
 
 @router.get("/help")
-def help_page(request: Request, tab: str = "faq"):
+def help_page(request: Request, tab: str = "faq", db: Session = Depends(get_db)):
     """What askdnd adds, FAQ and About in one page (Brett, 2026-10-23; the first tab 2026-10-26). /help#<id> opens that
     FAQ answer, so the FAQ stays the default."""
+    from app import ddb_bridge  # (how long Game Mode lasts: an admin's setting)
+
     return templates.TemplateResponse(request, "help.html", {"tab": tab if tab in ("adds", "about") else "faq",
                                                              "sections": tour.SECTIONS,
-                                                             "game_mode_minutes": GAME_MODE_SECONDS / 60})
+                                                             "game_mode_minutes": GAME_MODE_SECONDS / 60,
+                                                             "game_hours": f"{ddb_bridge.timers(db)['game'] / 3600:g}"})
 
 
 @router.get("/tour")

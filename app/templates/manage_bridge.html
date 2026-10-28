@@ -4,7 +4,7 @@
 {# Manage › askdnd › D&D Beyond bridge (app/ddb_bridge.py): whether it's awake and why, and its timers. #}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
-  <div class="title-row"><h1>D&amp;D Beyond bridge</h1><span class="br-st title-action {{ {'live': 'br-live', 'wait': 'br-wait', 'off': 'br-off', 'asleep': 'br-asleep'}[health.state] }}">{{ health.text }}</span></div>
+  <div class="title-row"><h1>D&amp;D Beyond bridge</h1><button type="button" class="br-st title-action {{ {'live': 'br-live', 'wait': 'br-wait', 'off': 'br-off', 'asleep': 'br-asleep'}[health.state] }}" data-bridge-health data-base="br-st title-action" title="The bridge's health; click to run the check on the test character">{{ health.text }}</button></div>
   <p class="subtitle">It's awake whenever someone is using askdnd or a D&amp;D Beyond sheet, and asleep otherwise. Asleep, it only stops checking D&amp;D Beyond in the background: anything a person does still goes through.</p>
 
   <section class="section">

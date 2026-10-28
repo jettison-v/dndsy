@@ -128,3 +128,19 @@ def test_dev_login_as_someone_else_who_can_sign_in(monkeypatch):
     assert c.get("/dev/login?as=other@example.com", follow_redirects=False).headers["location"] == "/"
     monkeypatch.setattr(config, "IS_PRODUCTION", True)
     assert TestClient(app).get("/dev/login?as=other@example.com", follow_redirects=False).headers["location"] == "/login"
+
+
+def test_dev_login_as_the_campaigns_dm_or_a_player_needs_no_email(monkeypatch, db):
+    """`?as=dm` / `?as=player`: the campaign's DM, or one of its players other than you, so a two-person link works."""
+    from app.auth import _dev_person
+    from tests.roles import set_role
+
+    monkeypatch.setattr(config, "DEV_LOGIN_EMAIL", "player@example.com")
+    monkeypatch.setattr(config, "ALLOWED_EMAILS", parse_allowlist("player@example.com,other@example.com,dm@example.com"))
+    set_role(db, "dm@example.com", "dm")
+    set_role(db, "player@example.com", "player")
+    set_role(db, "other@example.com", "player")
+    assert _dev_person(db, "dm", "/c/main/party") == "dm@example.com"
+    assert _dev_person(db, "player", "/c/main/") == "other@example.com"  # not you
+    assert _dev_person(db, "dm", "/c/nowhere/") == "x@invalid"  # no such campaign: no sign-in
+    assert _dev_person(db, "other@example.com", "/") == "other@example.com"  # an email as it is

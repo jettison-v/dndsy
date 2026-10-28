@@ -102,6 +102,9 @@ class Campaign(Timestamped, Base):
     # Its books (app/books.py): which private rules books its lookups use, set on Manage › Settings › Books
     books: Mapped[list] = mapped_column(JSONB, default=lambda: list(_books.DEFAULT),
                                         server_default=sql(f"'{_books.DEFAULT_JSON}'::jsonb"))
+    # Game Mode, one switch for the whole table (app/game_mode.py): on until this moment, started by this person
+    game_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    game_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL", use_alter=True, name="campaigns_game_by_id_fkey"))  # (users point at campaigns too)
     members: Mapped[list["CampaignMember"]] = relationship(back_populates="campaign")
 
 
@@ -278,6 +281,8 @@ class Character(Timestamped, Base):
     # What they're concentrating on (app/spellbook.py), set by their player: {"spell", "key", "level", "round", "rounds"}
     concentration: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     conditions: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{"name": "Invisible", "source": "Ring of Invisibility"}] (app/conditions.py)
+    # When its player's askdnd extension last heard its D&D Beyond sheet (app/ddb_bridge.py): the sheet can be reached
+    sheet_heard_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     owner: Mapped[User | None] = relationship()
     snapshot: Mapped["CharacterSnapshot | None"] = relationship(back_populates="character", uselist=False, passive_deletes=True)
     memberships: Mapped[list["CampaignCharacter"]] = relationship(

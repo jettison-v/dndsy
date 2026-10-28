@@ -84,7 +84,7 @@ TIMERS_KEY = "bridge_timers"  # admins change these on Manage › askdnd › D&D
 # (key, label, what it's for, unit in seconds, unit's name, default, lowest, highest)
 TIMERS = (
     ("idle", "Stays awake after anyone was here", "After someone last opened or used askdnd or a D&D Beyond sheet.", 60, "minutes", 30, 5, 240),
-    ("game", "Game Mode keeps it on for", "However quiet the table is, from when Game Mode is switched on (or Keep going).", 3600, "hours", 6, 1, 12),
+    ("game", "Game Mode lasts", "For the whole table, however quiet it is, from when someone starts it (or Keep going); the bridge stays awake that long.", 3600, "hours", 6, 1, 12),
     ("warn", "Warning before Game Mode's time is up", "A message on every page, with Keep going.", 60, "minutes", 10, 1, 60),
     ("wait", "A waiting change gives up after", "With no one using askdnd or D&D Beyond; then it's listed to make by hand.", 3600, "hours", 6, 1, 24),
 )
@@ -188,7 +188,8 @@ def active(db: Session) -> None:
 
 
 def game(db: Session, on: bool) -> None:
-    """Game Mode switched on (or Keep going): awake for the game timer however quiet. Off: back to following activity."""
+    """Game Mode started for the table (or Keep going: app/game_mode.py): awake for the game timer however quiet. Ended:
+    back to following activity."""
     row, w = _wake_row(db)
     w["last"] = time.time()
     w["game_until"] = w["last"] + timers(db)["game"] if on else None
@@ -810,15 +811,6 @@ async def bridge_active(request: Request, db: Session = Depends(get_db)):
     return _json(await run_in_threadpool(note))
 
 
-@router.post("/bridge/game")
-async def bridge_game(request: Request, db: Session = Depends(get_db)):
-    """Game Mode switched on (or Keep going): awake for the game. Off: back to following what people do."""
-    _signed_in(request, db)
-    game(db, bool((await request.json()).get("on")))
-    db.commit()
-    return _json(health(db))
-
-
 @router.post("/bridge/check")
 def bridge_check(request: Request, db: Session = Depends(get_db)):
     """Run the pre-game round trip on the test character (the extension delivers it from its open sheet)."""
@@ -877,6 +869,7 @@ async def bridge_delivered(batch_id: int, request: Request, db: Session = Depend
 def bridge_heard(ddb_id: str, request: Request, pull: int = 0, db: Session = Depends(get_db)):
     """The sheet saved a change (the extension heard it), or the extension's regular pull (`?pull=1`)."""
     character, user = _by_ddb(db, request, ddb_id)
+    character.sheet_heard_at = datetime.now(UTC)  # its sheet can be reached (the Live pill's "in step": app/live.py)
     heard(db, character, saved=not pull)
     db.commit()
     return _json({**state(db, character, user), "check": check(character)})

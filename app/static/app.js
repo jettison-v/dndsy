@@ -390,24 +390,19 @@
     b.classList.remove('busy'); b.disabled = false; if (b.dataset.label) b.textContent = b.dataset.label;
   }));
 
-  // Game Mode (the Live popover in the menu bar): one switch per browser, off unless this
-  // browser turned it on. While on and the tab is visible, every couple of minutes: on Battle,
-  // ask the server to sync that character and swap in the updated body (the pill comes along
-  // out of band); anywhere else, sync the character on screen (or your own) and swap the pill.
-  // The server throttles per character, however many browsers ask.
-  const GM = 'askdnd.gameMode';
-  let gmTimer = null;
-  function gmIsOn() {
-    try {  // older versions kept one switch per character: any of those still counts
-      return localStorage.getItem(GM) === 'on' || Object.keys(localStorage).some(k => k.startsWith(GM + '.') && localStorage.getItem(k) === 'on');
-    } catch (e) { return false; }
+  // Game Mode, one switch for the whole table (app/game_mode.py): the page is drawn with it (body.gm-on and its end,
+  // data-game-until), and when someone starts or ends it every page at the table shows its new copy the one way
+  // (showInPlace, which carries the body's Game Mode over and calls gmSetup). While it's on and the tab is visible,
+  // every couple of minutes the page asks the server to keep the party fresh (throttled per character, however many
+  // pages ask). Shortly before the end every page warns, with Keep going; at the end it turns itself off.
+  let gmTimer = null, gmEnd = null, gmWarn = null;
+  const gmUntil = () => Date.parse(document.body.dataset.gameUntil || '') || 0;
+  function gmIsOn() { return gmUntil() > Date.now(); }
+  const gmClock = t => new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  function gmSwitch(on) {  // Start (or Keep going) or end it for the table, from a page's own button
+    return fetch('/live/game', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'HX-Request': 'true' }, body: 'on=' + (on ? '1' : '') });
   }
-  function gmStore(on) {
-    try {
-      Object.keys(localStorage).filter(k => k.startsWith(GM + '.') || k.startsWith('askdnd.gameModeName.')).forEach(k => localStorage.removeItem(k));
-      localStorage.setItem(GM, on ? 'on' : 'off');
-    } catch (e) {}
-  }
+  try { localStorage.removeItem('askdnd.gameMode'); Object.keys(localStorage).filter(k => k.startsWith('askdnd.gameMode')).forEach(k => localStorage.removeItem(k)); } catch (e) {}  // (it was kept per browser until 2026-10-28)
   // Game Mode's tick: askdnd reads the party from D&D Beyond (the character on screen, or your own, first) and the Live
   // pill comes back. Whatever changed reaches the pages showing it through the live connection, like every change
   // (showInPlace below); while that's down, this page asks for its new copy itself.
@@ -418,22 +413,29 @@
       .then(() => { if (!live.up) showInPlace(); });
   }
   function gmSetup() {
-    const on = gmIsOn(), pill = document.getElementById('live-pill');
+    const on = gmIsOn(), pill = document.getElementById('live-pill'), until = gmUntil();
     document.body.classList.toggle('gm-on', on);
-    document.querySelectorAll('[data-game-mode]').forEach(sw => sw.setAttribute('aria-checked', on ? 'true' : 'false'));
-    clearInterval(gmTimer); gmTimer = null;
+    clearInterval(gmTimer); clearTimeout(gmEnd); clearTimeout(gmWarn); gmTimer = null;
     if (on && pill) gmTimer = setInterval(() => { if (document.visibilityState === 'visible') gmTick(); }, (Number(pill.dataset.every) || 150) * 1000);
+    if (on) {
+      const warn = (Number(document.body.dataset.gameWarn) || 600) * 1000;
+      gmWarn = setTimeout(() => toast('Game Mode ends at ' + gmClock(until) + '.', { label: 'Keep going', run: () => gmSwitch(true) }), Math.max(0, until - warn - Date.now()));
+      gmEnd = setTimeout(() => {  // time's up: off here too (a Keep going meanwhile arrives as the page's new copy)
+        if (gmUntil() !== until) return;
+        delete document.body.dataset.gameUntil;
+        gmSetup();
+        toast("Game Mode's time is up: rolls are private again.");
+      }, until - Date.now() + 500);
+    }
     document.dispatchEvent(new CustomEvent('askdnd:gamemode', { detail: { on } }));  // Table rolls follow it
   }
+  // The Live window's End for the table asks first, in the window itself
   document.addEventListener('click', e => {
-    const sw = e.target.closest('[data-game-mode]');
-    if (!sw) return;
-    const on = !gmIsOn();
-    gmStore(on);
-    gmSetup();
-    document.dispatchEvent(new CustomEvent('askdnd:gamemode-switched', { detail: { on } }));  // (the D&D Beyond bridge wakes or sleeps)
-    if (on) gmTick();
-    toast(on ? 'Game Mode on: updating from D&D Beyond every 2–3 minutes' : 'Game Mode off');
+    const ask = e.target.closest('[data-gm-ask]'), keep = e.target.closest('[data-gm-keep]');
+    if (!ask && !keep) return;
+    const pop = (ask || keep).closest('.live-pop');
+    pop.querySelector('[data-gm-confirm]').hidden = !ask;
+    pop.querySelector('[data-gm-ask-row]').hidden = !!ask;
   });
   // A page shows a new copy in one way, whatever brought it (the bridge hearing a sheet save, Game Mode, Refresh now,
   // a reconnect, your own change): the page and each open side panel fetch themselves again and are swapped in
@@ -482,6 +484,14 @@
     here.replaceChildren(...[...there.childNodes].map(n => document.importNode(n, true)));
     const pill = document.getElementById('live-pill'), newPill = doc.getElementById('live-pill');
     if (pill && newPill) { pill.className = newPill.className; pill.title = newPill.title; pill.innerHTML = newPill.innerHTML; Object.assign(pill.dataset, newPill.dataset); }
+    // Game Mode, as the page is drawn now: started, ended or kept going by someone at the table
+    const b = document.body, was = gmIsOn(), wasUntil = b.dataset.gameUntil || '';
+    ['gameUntil', 'gameBy', 'gameWarn'].forEach(k => { if (doc.body.dataset[k] !== undefined) b.dataset[k] = doc.body.dataset[k]; else delete b.dataset[k]; });
+    if ((b.dataset.gameUntil || '') !== wasUntil) {
+      gmSetup();
+      const by = b.dataset.gameBy;
+      if (gmIsOn() !== was) toast(gmIsOn() ? (by ? by + ' started' : 'Started') + ' Game Mode: rolls are shared with the table until ' + gmClock(gmUntil()) + '.' : 'Game Mode ended: rolls are private again.');
+    }
     restore();
     if (window.askdndNotesInit) window.askdndNotesInit(here);
     sortSetup(); econSetup();
@@ -549,6 +559,7 @@
   let liveTick = null, liveIds = new Set();
   document.addEventListener('askdnd:live', e => {
     const t = e.detail.type;
+    if (t === 'game') { showInPlace(true); return; }  // Game Mode started, ended or kept going: every page, at once
     if (t !== 'character' && t !== 'resync') return;
     liveIds.add(t === 'resync' ? '*' : String(e.detail.id));
     clearTimeout(liveTick);
@@ -2705,8 +2716,8 @@
 // ---------------------------------------------------------------- the D&D Beyond bridge
 // Character › with D&D Beyond (bridge.html, app/ddb_bridge.py): every number comes from D&D Beyond; a change made here
 // is an intent askdnd keeps until the extension (extension/askdnd-bridge/) has made it on D&D Beyond and askdnd has
-// read it back. Pages talk to the extension with window messages ({askdndBridge: ...}). The menu bar's pill is the
-// bridge's health.
+// read it back. Pages talk to the extension with window messages ({askdndBridge: ...}). The bridge's health shows on
+// Manage › askdnd › D&D Beyond bridge (admins); players see how their own sheet is kept in step in the Live pill.
 (function () {
 
   // The pill on every page
@@ -2717,41 +2728,18 @@
     clearTimeout(healthTimer);
     try { const r = await fetch('/bridge/health', { headers: { Accept: 'application/json' } }); if (r.ok) health = await r.json(); } catch (e) { /* offline */ }
     if (health) {
-      pill.className = 'br-st br-pill ' + ({ live: 'br-live', wait: 'br-wait', off: 'br-off', asleep: 'br-asleep' }[health.state] || 'br-wait');
+      pill.className = pill.dataset.base + ' ' + ({ live: 'br-live', wait: 'br-wait', off: 'br-off', asleep: 'br-asleep' }[health.state] || 'br-wait');
       pill.textContent = health.text;
       pill.title = health.state === 'asleep' ? (health.awake.why || 'Asleep') + ' Wakes as soon as someone opens or uses askdnd or a sheet; click to run the check.'
         : 'D&D Beyond read ' + (health.read_check.ok ? 'OK' : 'failed: ' + health.read_check.error) + (health.round_trip && health.round_trip.error ? ' · check: ' + health.round_trip.error : '');
-      gameTimer(health.awake);
     }
     clearTimeout(healthTimer);  // (again: another call may have finished while this one waited)
     healthTimer = setTimeout(checkHealth, health && health.state === 'wait' ? 3000 : 30000);
   }
-  // Game Mode keeps the bridge awake for the game (6 hours unless an admin changed it): a warning with Keep going
-  // shortly before, and a word when it's up (it then follows what people do, as it does without Game Mode)
-  const clock = s => new Date(s * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  const toast = (message, action) => window.askdndToast && window.askdndToast(message, action);
-  const once = key => { try { if (sessionStorage.getItem(key)) return false; sessionStorage.setItem(key, '1'); } catch (e) {} return true; };
-  let gameWas = null;
-  function gameTimer(a) {
-    const until = a && a.game_until, left = until ? until - Date.now() / 1000 : 0;
-    if (until && left < a.warn && once('askdnd.bridgeWarn.' + until))
-      toast("Game Mode's D&D Beyond sync ends at " + clock(until) + '.', { label: 'Keep going', run: () => startGame(true) });
-    if (gameWas && !until && document.body.classList.contains('gm-on') && once('askdnd.bridgeEnded.' + gameWas))
-      toast("Game Mode's time is up: D&D Beyond stays in sync while anyone is using askdnd or a sheet.");
-    gameWas = until || null;
-  }
-  async function startGame(on) {
-    try {
-      const r = await fetch('/bridge/game', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ on }) });
-      health = await r.json();
-      if (on) { window.postMessage({ askdndBridge: 'wake' }, location.origin); toast('Game Mode on: D&D Beyond stays in sync until ' + clock(health.awake.game_until) + '.'); }
-      gameWas = health.awake.game_until || null;
-    } catch (e) { /* offline */ }
-    checkHealth();
-  }
-  if (pill) {
-    // Awake whenever someone is using askdnd (app/ddb_bridge.py): opening this page, and using it (at most once a
-    // minute), keeps it awake 30 more minutes; the extension starts its pulls at once
+  if (document.body.dataset.bridgeOn !== undefined) {
+    // Awake whenever someone is using askdnd (app/ddb_bridge.py): opening a page, and using it (at most once a
+    // minute), keeps it awake 30 more minutes; the extension starts its pulls at once. (Game Mode keeps it awake for
+    // the game: app/game_mode.py.)
     let usedAt = 0;
     const used = () => {
       usedAt = Date.now();
@@ -2761,8 +2749,11 @@
     };
     ['click', 'keydown', 'change'].forEach(k => document.addEventListener(k, () => { if (Date.now() - usedAt > 60000) used(); }, { passive: true }));
     used();
-    document.addEventListener('askdnd:gamemode-switched', e => startGame(e.detail.on));
-    pill.addEventListener('click', async () => {  // run the pre-game round trip on the test character
+    document.addEventListener('askdnd:gamemode', e => { if (e.detail.on) window.postMessage({ askdndBridge: 'wake' }, location.origin); });
+  }
+  if (pill) {
+    checkHealth();
+    pill.addEventListener('click', async () => {  // run the round trip on the test character (Manage › askdnd › D&D Beyond bridge)
       pill.textContent = 'D&D Beyond · checking…';
       const r = await fetch('/bridge/check', { method: 'POST', headers: { Accept: 'application/json' } });
       if (r.ok) { window.postMessage({ askdndBridge: 'deliver', ddbId: (await r.json()).test_ddb_id }, location.origin); }

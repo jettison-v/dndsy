@@ -30,6 +30,21 @@ def _page_context(request: Request) -> dict:
         return {"dm": "DM", "reviewer": "Reviewer"}.get(access.role(user.get("email"), campaign_id) or "", "") if user else ""
 
     here = access.current_campaign() if user else None
+    game: dict = {}
+
+    def game_mode() -> dict:
+        """Game Mode for the campaign you're in (app/game_mode.py), read once per page: every page draws it."""
+        from app import game_mode as gm
+
+        if "v" not in game:
+            game["v"] = dict(gm.OFF)
+            if user and here:
+                try:
+                    game["v"] = gm.loader(here["id"])
+                except Exception:
+                    pass  # database unavailable: the page works without it
+        return game["v"]
+
     viewing_as = user if request.session.get("real_user") and user else None  # app/view_as.py
     viewing_role = access.ROLE_LABELS.get(access.role(user.get("email"))) if viewing_as else None
     return {"user": user, "viewing_as": viewing_as, "viewing_role": viewing_role, "is_admin": is_admin(user), "is_reviewer": is_reviewer(user), "is_dm": is_dm(user), "can_moderate": can_moderate(user),
@@ -42,6 +57,7 @@ def _page_context(request: Request) -> dict:
             "managed_ids": [c["id"] for c in access.campaigns_for(user.get("email")) if access.role(user.get("email"), c["id"]) in (access.DM, access.REVIEWER)] if user else [],  # (the Manage menu's other campaigns)
             "switch_path": switch_path(request.url.path),
             "vtt_on": lambda key: vtt.on(here, key),  # the VTT switch (app/vtt.py)
+            "game_mode": game_mode,
             "my_dice": _my_dice, "dice_tuning": _dice_tuning}  # your dice and everyone's tuning (app/dice.py), for thrown rolls
 
 
@@ -138,6 +154,21 @@ def _ago(when) -> str:
 
 
 templates.env.filters["ago"] = _ago
+
+
+def _left(until) -> str:
+    """How long until then: '5 hours 40 minutes', '12 minutes', 'a moment' (no time zone needed)."""
+    from datetime import UTC, datetime
+
+    if not until:
+        return ""
+    minutes = max(0, round((until - datetime.now(UTC)).total_seconds() / 60))
+    hours, minutes = divmod(minutes, 60)
+    parts = ([f"{hours} hour{'s' if hours != 1 else ''}"] if hours else []) + ([f"{minutes} minute{'s' if minutes != 1 else ''}"] if minutes else [])
+    return " ".join(parts) or "a moment"
+
+
+templates.env.filters["left"] = _left
 
 
 def _terms(text: str, on=None, seen=None):

@@ -7,6 +7,7 @@ import re
 
 from app import characters, live
 from app.importer import import_bundle
+from tests.roles import set_role
 from tests.table_setup import BUNDLE, char, down, owned_by
 
 pytestmark = pytest.mark.usefixtures("no_network")  # D&D Beyond is never called (tests/conftest.py)
@@ -131,8 +132,9 @@ def test_live_popover_lists_each_copy_and_who_can_refresh(player, dm, db):
     cole, trah = char(db, "Cole"), char(db, "Trah")
     characters.refresh(db, cole)
     characters.refresh(db, trah)  # private on D&D Beyond: fails
+    set_role(db, "player@example.com", "player")  # at the table: may start Game Mode (app/game_mode.py)
     panel = player.get("/live", params={"c": cole.id}).text
-    assert "data-game-mode" in panel and "Refresh Cole now" in panel and "Refresh everyone" not in panel
+    assert "Start for the table" in panel and "Refresh Cole now" in panel and "Refresh everyone" not in panel
     assert "couldn&#39;t refresh" in panel and "not linked" in panel  # Trah failed; Big C has no link
     assert 'hx-swap-oob="true"' in panel  # opening it updates the pill too
     assert "Refresh everyone" in dm.get("/live", params={"c": cole.id}).text

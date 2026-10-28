@@ -2,6 +2,7 @@
 a fake sheet stands in, and each test changes it the way the extension, a player or a misbehaving D&D Beyond would."""
 
 import copy
+from datetime import timedelta
 
 import pytest
 from sqlalchemy import select
@@ -463,14 +464,15 @@ def test_a_character_page_shows_what_d_and_d_beyond_has_now(player, db, sheet, m
 def test_game_mode_keeps_it_awake_however_quiet_then_it_follows_what_people_do(player, db, sheet, monkeypatch):
     now = [ddb_bridge.time.time()]
     monkeypatch.setattr(ddb_bridge.time, "time", lambda: now[0])
-    h = player.post("/bridge/game", json={"on": True}).json()
-    assert h["awake"]["game_until"] == pytest.approx(now[0] + 6 * 3600)
+    set_role(db, "player@example.com", "player")
+    assert player.post("/live/game", data={"on": "1"}).status_code == 200  # Game Mode for the table (app/game_mode.py)
+    assert ddb_bridge.awake(db)["game_until"] == pytest.approx(now[0] + 6 * 3600)
     now[0] += 5 * 3600  # five quiet hours
     assert ddb_bridge.awake(db)["awake"]
     now[0] += 3600 + 60
     assert not ddb_bridge.awake(db)["awake"]  # its time is up, and no one has been here for half an hour
-    player.post("/bridge/game", json={"on": True})  # Keep going
-    player.post("/bridge/game", json={"on": False})  # Game Mode off: awake while people use it, as without it
+    player.post("/live/game", data={"on": "1"})  # Keep going
+    player.post("/live/game", data={"on": ""})  # Game Mode ended: awake while people use it, as without it
     a = ddb_bridge.awake(db)
     assert a["awake"] and a["game_until"] is None
 
@@ -759,3 +761,21 @@ def test_the_store_copy_of_the_extension_is_for_askdnds_own_sites(tmp_path, monk
     manifest = json.loads((src / "manifest.json").read_text())
     sites = re.search(r"const SITES = \[([^\]]*)\]", (src / "background.js").read_text()).group(1)
     assert {s.strip(" '") for s in sites.split(",")} == {p.removesuffix("/*") for p in manifest["content_scripts"][1]["matches"]}
+
+
+def test_the_live_pill_says_whether_your_sheet_is_in_step_or_has_something_to_make_by_hand(player, db, sheet):
+    """The Live pill is about your own sheet (docs/mockups/game-mode-and-bridge.html): in step while the bridge hears it,
+    something to make by hand when a change couldn't be made, else when it was last read."""
+    cole = char(db, "Cole")
+    pill = lambda: player.get(f"/characters/{cole.id}").text.split('id="live-pill"')[1].split("</button>")[0]  # noqa: E731
+    assert "Updated" in pill() and "in step" not in pill()
+    player.post("/bridge/heard/75423618?pull=1")  # the extension's pull: the sheet can be reached
+    assert "In step" in pill() and " step" in pill().split(">")[0]
+    drink(db, cole)
+    db.scalar(select(BridgeIntent)).state = "not_yet"
+    db.flush()
+    assert "1 to make by hand" in pill()
+    cole.sheet_heard_at -= timedelta(minutes=5)  # the sheet was closed a while ago
+    db.scalar(select(BridgeIntent)).state = "dismissed"
+    db.flush()
+    assert "in step" not in pill().lower()
