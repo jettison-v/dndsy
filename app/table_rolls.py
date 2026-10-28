@@ -292,7 +292,8 @@ def entries(db: Session, roots: list[TableRoll], kids: list[TableRoll], viewer_i
              "portrait": pics.get(r.character_id) or "", "hue": (r.character_id or 0) % 6 if r.character_id else 6,
              "mine": mine, "to": r.visibility, "hidden": how == "hidden", "dice": dice.get(r.user_id) or prefs(None), "ddb": bool(r.ddb_roll_id),
              "at": r.created_at.isoformat() if r.created_at else "", "ago": _ago(r.created_at),
-             "hidden_text": "Rolled for the DM" if r.character_id else "Rolled behind the screen"}
+             "hidden_text": "Rolled for the DM" if r.character_id else "Rolled behind the screen",
+             "by_dm": bool(r.ddb_roll_id and not r.character_id)}  # (a monster's, heard from D&D Beyond's game log)
         if how == "full":
             k = {x.kind: x for x in by_root.get(r.id, [])}
             rr, dmg, bonus = k.get("reroll"), k.get("damage"), k.get("bonus")
@@ -376,15 +377,28 @@ def roll_log(request: Request, since: int = -1, db: Session = Depends(get_db)):
     roots = list(db.scalars(q.order_by(TableRoll.id.desc()).limit(LOG_SIZE)))
     if not roots and since >= 0:
         return Response(status_code=204)
-    return HTMLResponse(render(request, entries(db, roots, _kids(db, roots), viewer_id, dm, _ctx(db, viewer_id))))
+    return HTMLResponse(render(request, _entries(db, user, roots, viewer_id, dm)))
 
 
 def _error(text: str, status: int = 400):
     return JSONResponse({"error": text}, status_code=status)
 
 
+def _entries(db: Session, user: dict, roots: list[TableRoll], viewer_id: int | None, dm: bool) -> list[dict]:
+    """entries() with what each damage or healing roll offers this viewer: Apply to whom, who it was applied to, and
+    the Concentration save a hit asks of their own character (app/hit_points.py)."""
+    from app import hit_points
+
+    kids = _kids(db, roots)
+    items = entries(db, roots, kids, viewer_id, dm, _ctx(db, viewer_id))
+    info = hit_points.apply_info(db, user, roots, kids)
+    for e in items:
+        e["apply"] = info.get(e["id"])
+    return items
+
+
 def _reply(request: Request, db: Session, root: TableRoll, me_id: int, dm: bool):
-    entry = entries(db, [root], _kids(db, [root]), me_id, dm, _ctx(db, me_id))[0]
+    entry = _entries(db, current_user(request), [root], me_id, dm)[0]
     return JSONResponse({"roll": entry, "html": render(request, [entry])})
 
 

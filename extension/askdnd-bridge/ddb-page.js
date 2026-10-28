@@ -62,9 +62,9 @@
     const j = typeof m === 'string' && m.includes('dice/roll/fulfilled') ? JSON.parse(m) : null;
     return j && j.eventType === 'dice/roll/fulfilled' && j.data ? j : null;
   };
-  // Step 5.4's first check (Oct 28): the game log also brings this page the rolls others make in the game, the DM's
-  // for a monster among them; each is passed on as it came, to see what a damage roll carries (askdnd keeps it only
-  // on Brett's computer, app/ddb_bridge.py heard_others). Heard from the moment the page opens its connection
+  // The game log also brings this page the rolls made elsewhere in the game: the DM's for a monster (so a player can
+  // apply the hit, app/hit_points.py) and a character's made on another page. Each is passed on as it came;
+  // askdnd keeps each roll once (app/ddb_bridge.py heard_in_game). Heard from the moment the page opens its connection
   const listening = new WeakSet();
   const listen = ws => {
     if (listening.has(ws)) return;
@@ -72,7 +72,7 @@
     ws.addEventListener('message', e => {
       try {
         const j = asRoll(e.data);
-        if (j && String(j.entityId) !== sheetId()) post({ type: 'heard', message: j });
+        if (j) post({ type: 'heard', message: j });  // (this sheet's own come back too: kept once)
       } catch (err) { /* not a roll */ }
     });
   };

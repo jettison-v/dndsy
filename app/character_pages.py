@@ -23,7 +23,7 @@ from app import web
 from app import character_views as views
 from app import characters as chars
 from app import conditions as cond
-from app import ddb, ddb_bridge, house_rules, picks
+from app import ddb, ddb_bridge, hit_points, house_rules, picks
 from app import class_rules, live, player_notes
 from app import spellbook as sb
 from app import wild_shape as ws
@@ -341,6 +341,7 @@ def vital_panel(request: Request, character_id: int, kind: str, db: Session = De
     return templates.TemplateResponse(request, "_panel_vital.html", {
         **ctx, "kind": "skill" if skill else kind, "title": f"{skill['name']} ({skill['ability']})" if skill else VITALS[kind],
         "skill": skill, "gives": gives, "perception": perception,
+        "hp_change": kind == "hp" and ddb_bridge.on_for(db, ch) and hit_points.can_apply(db, user, ch),
         "underline": terms.underlined(_overrides(db))})
 
 

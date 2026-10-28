@@ -1,0 +1,31 @@
+{# The hit points window's working (app/hit_points.py work), redrawn after each change in its form: the 2024 rules as
+   steps (a defense can be crossed out for a ruling), the end result, and the button that makes it. #}
+<div id="hp-working" class="hp-working">
+  <ol class="hp-steps">
+    {% for p in w.parts %}{% for st in p.steps %}
+    <li class="hp-step{{ ' off' if st.off }}"><label><input type="checkbox" name="off" value="{{ st.key }}"{{ " checked" if st.off }}> <span class="sr">Cross out</span>
+      <span class="hp-st-title">{{ st.title }}</span></label><b>{{ st.value }}</b><span class="why">{{ st.why }}{% if st.off %} Crossed out: the table rules otherwise.{% endif %}</span></li>
+    {% endfor %}{% endfor %}
+    {% if w.mode == "damage" and w.parts | selectattr("type", "equalto", "") | list and w.taken %}<li class="hp-step note-only"><span class="hp-st-title">Damage type not known</span><b></b><span class="why">Choose it above to see whether {{ c.name }} resists it.</span></li>{% endif %}
+    {% for st in w.steps %}
+    <li class="hp-step"><span class="hp-st-title">{{ st.title }}</span><b>{{ st.value }}</b><span class="why">{{ st.why }}</span></li>
+    {% endfor %}
+    {% if w.mode == "temp" %}
+    <li class="hp-step"><span class="hp-st-title">Choose</span><b></b><span class="seg hp-take">
+      <label><input type="radio" name="take" value="0"{{ " checked" if not w.take }}><span>Keep {{ w.temp_before }}</span></label>
+      <label><input type="radio" name="take" value="1"{{ " checked" if w.take }}><span>Take {{ w.amount }}</span></label></span></li>
+    {% endif %}
+  </ol>
+  {% if done %}
+  <p class="hp-blocked">Already applied to {{ c.name }}: {{ done.label }}.</p>
+  {% elif not reachable %}
+  <div class="hp-blocked"><b>{{ c.name }}'s D&amp;D Beyond sheet can't be reached</b>
+    <span>To change it from askdnd, open the sheet in Chrome with the askdnd bridge. Or make it on D&amp;D Beyond: askdnd shows it within seconds.</span></div>
+  {% endif %}
+  <div class="hp-go">
+    {% set label = ("Take " ~ w.taken if w.taken else "No damage") if w.mode == "damage" else ("Heal " ~ (w.hp_after - w.hp_before)) if w.mode == "heal" else ("Set " ~ w.temp_after ~ " temp") %}
+    <button class="btn primary" type="submit"{{ " disabled" if done or not reachable or (w.mode == "damage" and not w.amount and not w.parts | sum(attribute="amount")) or (w.mode == "heal" and w.hp_after == w.hp_before) or (w.mode == "temp" and w.temp_after == w.temp_before) }}>{{ label }}</button>
+    <button class="btn peek-close" type="button">Cancel</button>
+  </div>
+  <p class="note">Made on {{ c.name }}'s D&amp;D Beyond sheet through the bridge; until D&amp;D Beyond has it, Hit points shows it waiting. askdnd informs; the DM rules.</p>
+</div>
