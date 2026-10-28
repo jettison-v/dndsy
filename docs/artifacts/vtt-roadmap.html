@@ -236,9 +236,9 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
         <p class="used">Replaces today's three scattered fields (Wild Shape, concentration, conditions), which don't reach other screens yet. Two people editing at once can't overwrite each other. It shows on the fight screen (Phase 1).</p>
       </div>
       <div class="box">
-        <div class="head"><h3>Files</h3><span class="chip st-part">Built · old copies to remove</span></div>
+        <div class="head"><h3>Files</h3><span class="chip st-done">Done</span></div>
         <p>Maps, handouts and tokens in private storage (S3), served through askdnd with the same access checks, cached, with upload limits.</p>
-        <p class="used">Today's pictures are in storage; their old database copies go once beta's copy is checked. Needed before maps (Phase 3) and Show to the table (4.1).</p>
+        <p class="used">Today's pictures live only in storage now. Needed before maps (Phase 3) and Show to the table (4.1).</p>
       </div>
       <div class="box">
         <div class="head"><h3>Rules content as data</h3><span class="chip st-done">Done</span></div>
@@ -295,7 +295,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
 // Each item: [id, name, what it is, why it's better ("" for none), size, priority, status ("" | done | built | part | now), what it needs first ("")]
 const PHASES = [
   { id: "p0", n: "Phase 0", title: "Foundations", why: "The plumbing every later phase stands on (see the five foundations above). The first half is done; the rest is built just before the phase that needs it.",
-    order: "<b>Order:</b> 0.4 with the fight screen (Phase 1); 0.5's last step, removing the old picture copies, before Phase 3.",
+    order: "<b>Order:</b> 0.4 with the fight screen (Phase 1).",
     items: [
       ["0.1", "One site, a VTT switch, a test campaign", "Table Assistant (TA) and the VTT are the same code on one site (beta.askdnd.ai now, askdnd.ai once legacy retires). Each VTT piece stays hidden behind a switch per campaign: the test campaign sees every piece, and a piece reaches the table when its DM switches it on.", "TA fixes are made once and are in the VTT automatically. Releasing a piece means switching it on, and it can be switched back off.", "S", "core", "done", ""],
       ["0.2", "Data organization", "Characters separate from campaigns, roles per campaign, house rules, more than one campaign (roadmap step 10).", "Keeps other groups possible later without a rebuild.", "L", "core", "done", ""],
@@ -305,7 +305,7 @@ const PHASES = [
       ["0.9", "Know when something breaks", "Errors on beta are reported to you as they happen (Sentry), with nothing private in them: no notes, recaps, transcripts, emails or names.", "You hear about a problem before the table does.", "S", "core", "done", ""],
       ["0.4", "Play state and the play log", "One home for what askdnd owns during play. Every change to hit points, slots, items, conditions and token moves is a log entry with who made it and why. The DM can undo a mistake or a whole turn.", "Fixing a mis-click doesn't mean editing three numbers by hand.", "M", "core", "part", "Designed with 1.7 (reviewed Oct 26), built with 1.1"],
       ["0.6", "Rules content as data", "The free 2024 rules content (SRD 5.2: monsters, spells, items, conditions) built in. The DM's own creations live in the database, never in the code.", "", "M", "core", "done", ""],
-      ["0.5", "File storage for the campaign", "Images, maps, tokens and audio in the campaign's private storage, with size limits. Today's pictures move out of the database.", "", "M", "core", "part", ""],
+      ["0.5", "File storage for the campaign", "Images, maps, tokens and audio in the campaign's private storage, with size limits. Today's pictures move out of the database.", "", "M", "core", "done", ""],
     ] },
   { id: "p1", n: "Phase 1", title: "The fight screen", first: true, why: "The table's shared screen for a fight: the party and the DM's enemies in turn order, whose turn it is, and each one's hit points, live for everyone. Hit points and the play log live here, instead of a window of their own on each character's page (reordered Oct 26).",
     order: "<b>Order:</b> mock up the fight screen first, then initiative and turns, hit points with the play log as the fight's log (the DM undoes a line), and the D&amp;D Beyond merge with them. Outside a fight it's the DM's party at a glance.",

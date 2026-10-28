@@ -4,7 +4,7 @@ book_entries holds entries copied in from books the DM owns (scripts/book_load.p
 campaigns.books lists the books a campaign's lookups use (app/books.py), the 2024 core books to start with.
 
 Revision ID: c4e6a8b0d2f3
-Revises: c4e8a1f3b6d2
+Revises: d5f9b2a4c7e3
 Create Date: 2026-10-27 18:00:00.000000
 
 """
@@ -16,7 +16,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 
 # revision identifiers, used by Alembic.
 revision: str = 'c4e6a8b0d2f3'
-down_revision: Union[str, Sequence[str], None] = 'c4e8a1f3b6d2'
+down_revision: Union[str, Sequence[str], None] = 'd5f9b2a4c7e3'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

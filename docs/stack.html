@@ -313,7 +313,7 @@ td { min-width: 0; }
         <tr><td>Characters</td><td>Postgres (a copy)</td><td>Everyone in the campaign</td><td>Nightly; D&amp;D Beyond has the original</td></tr>
         <tr><td>Players' notes, pins, reminders</td><td>Postgres</td><td>The player and other players; never the DM</td><td>Nightly</td></tr>
         <tr><td>Table rolls</td><td>Postgres</td><td>Per roll: the table, the DM, or just you</td><td>Nightly</td></tr>
-        <tr><td>Pictures</td><td>S3 <code>v2/files/</code></td><td>The campaign, through askdnd only</td><td>Kept 35 days past last use; listed in each backup</td></tr>
+        <tr><td>Pictures</td><td>S3 <code>v2/files/</code></td><td>The campaign, through askdnd only</td><td>Not in the backup: S3 keeps each one 35 days past last use, and each backup lists them</td></tr>
         <tr><td>Raw transcripts</td><td>Your Mac</td><td>You</td><td>Yours to keep</td></tr>
         <tr><td>Filtered game text</td><td>Sent to Claude once, to draft</td><td>Not stored</td><td>—</td></tr>
         <tr><td>Errors</td><td>Sentry</td><td>You (and Claude, through its connection)</td><td>—</td></tr>
@@ -413,5 +413,5 @@ td { min-width: 0; }
   </section>
 
   <p class="foot">Kept in the repo at <code>docs/stack.html</code> and updated whenever a service, a key or who does
-    what changes; published privately at <code>claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr</code>. Last updated 2026-10-26 (where the data lives added).</p>
+    what changes; published privately at <code>claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr</code>. Last updated 2026-10-27 (pictures only in S3; the database copies are gone).</p>
 </main>
