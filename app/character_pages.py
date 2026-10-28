@@ -22,7 +22,7 @@ from app import web
 from app import character_views as views
 from app import characters as chars
 from app import conditions as cond
-from app import config, ddb, ddb_bridge, house_rules, picks
+from app import ddb, ddb_bridge, house_rules, picks
 from app import class_rules, live, player_notes
 from app import spellbook as sb
 from app import wild_shape as ws
@@ -124,8 +124,8 @@ def _load(request: Request, db: Session, character_id: int):
     ch = db.get(Character, character_id)
     if ch is None or not picks.can_view(db, user, ch):
         return user, None, _not_found(request)
-    if config.DDB_BRIDGE and request.method == "GET" and not request.headers.get("HX-Request"):
-        ddb_bridge.page_opened(db, ch)  # the D&D Beyond bridge (a local proof): the page shows D&D Beyond's numbers now
+    if request.method == "GET" and not request.headers.get("HX-Request") and ddb_bridge.on_for(db, ch):
+        ddb_bridge.page_opened(db, ch)  # the D&D Beyond bridge: the page shows D&D Beyond's numbers now
     return user, ch, None
 
 

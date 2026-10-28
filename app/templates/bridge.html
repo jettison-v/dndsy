@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ c.name }} with D&amp;D Beyond · askdnd{% endblock %}
 {% block content %}
-{# The D&D Beyond bridge, askdnd's own tab (app/ddb_bridge.py, a local proof; docs/mockups/ddb-overlay.html). app.js
+{# The D&D Beyond bridge, askdnd's own tab (app/ddb_bridge.py; docs/mockups/ddb-overlay.html). app.js
    "the D&D Beyond bridge" draws it from /bridge/state and talks to the askdnd extension; the same panel shows beside
    the D&D Beyond sheet. #}
 <main class="page" data-bridge="{{ c.id }}" data-ddb-id="{{ c.ddb_id }}" data-can-act="{{ 'true' if state.can_act else 'false' }}">

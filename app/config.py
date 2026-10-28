@@ -45,8 +45,11 @@ UPLOAD_TOKEN = os.getenv("UPLOAD_TOKEN", "").strip()
 # Local development only: /dev/login signs in as this email without Google.
 # Ignored in production and for requests that don't come from this machine.
 DEV_LOGIN_EMAIL = "" if IS_PRODUCTION else os.getenv("DEV_LOGIN_EMAIL", "").strip().lower()
-# The D&D Beyond bridge proof (app/ddb_bridge.py, extension/askdnd-bridge): on only where DDB_BRIDGE=1, never in production
-DDB_BRIDGE = not IS_PRODUCTION and os.getenv("DDB_BRIDGE", "").strip() == "1"
+# The D&D Beyond bridge (app/ddb_bridge.py, extension/askdnd-bridge) may run where DDB_BRIDGE=1 (beta since 2026-10-28,
+# roadmap step 4); each campaign still has it only once switched on (the VTT piece "ddb_bridge", app/vtt.py)
+DDB_BRIDGE = os.getenv("DDB_BRIDGE", "").strip() == "1"
+# Where the table adds the extension: its Chrome Web Store listing (unlisted: only people with this link find it)
+BRIDGE_EXTENSION_URL = ""
 
 
 def sqlalchemy_url(raw: str | None) -> str:

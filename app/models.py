@@ -745,7 +745,7 @@ class TableRoll(Base):
 
 # Record changes to tracked fields as Revisions on every flush (app/history.py).
 class BridgeIntent(Timestamped, Base):
-    """The D&D Beyond bridge (app/ddb_bridge.py, a local proof): something a person did that D&D Beyond should hold
+    """The D&D Beyond bridge (app/ddb_bridge.py): something a person did that D&D Beyond should hold
     ("drank a Potion of Healing, rolled 7"), kept until D&D Beyond has it. `data` is the intent, never totals: those are
     worked out from D&D Beyond's numbers when it's sent. state: waiting, sending, live, not_yet, dismissed."""
 

@@ -23,6 +23,9 @@ class Piece:
 # Every VTT piece, in roadmap order. Add one here when its work starts (ready=False), and set ready=True when the table
 # can have it.
 PIECES: list[Piece] = [
+    Piece("ddb_bridge", "D&D Beyond bridge", "4",
+          "The askdnd extension keeps each player's D&D Beyond sheet and askdnd in step, both ways (app/ddb_bridge.py). "
+          "Tell the table first: D&D Beyond's terms don't allow tools like this.", ready=True),
     Piece("table_dice", "Everyone's rolls thrown across the screen", "3.11",
           "Others' rolls are thrown across the page like your own, instead of the small tray (app/dice.py)"),
 ]

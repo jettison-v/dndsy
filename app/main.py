@@ -131,7 +131,7 @@ app.include_router(campaigns_router)
 app.include_router(dice_router)
 app.include_router(realtime_router)
 app.include_router(errors_router)
-app.include_router(ddb_bridge_router)  # a local proof: refused in production (app/ddb_bridge.py)
+app.include_router(ddb_bridge_router)  # only where DDB_BRIDGE=1, per campaign (app/ddb_bridge.py)
 
 LOGIN_ERRORS = {
     "not_allowed": "That Google account isn't on the list for this table.",

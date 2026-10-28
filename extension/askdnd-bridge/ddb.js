@@ -14,7 +14,7 @@
   });
   chrome.runtime.onMessage.addListener((m, sender, reply) => {
     if (m.type === 'apply') { window.postMessage({ askdndBridge: 'apply', batch: m.batch }, location.origin); reply({ took: true }); }  // (so the extension knows this tab is alive)
-    if (m.type === 'panel-state') draw(m.state, m.error);
+    if (m.type === 'panel-state') draw(m.state, m.error, m.askdnd);
     if (m.type === 'show' || m.type === 'check') window.postMessage({ askdndBridge: m.type, fields: m.fields }, location.origin);  // (ddb-page.js)
   });
 
@@ -56,7 +56,7 @@
     });
   }
   let again = null;
-  function draw(st, error) {
+  function draw(st, error, askdnd) {
     mount();
     clearTimeout(again);  // while something waits, ask again every second and a half
     if (st && st.changes.some(c => c.state !== 'not_yet')) again = setTimeout(() => chrome.runtime.sendMessage({ type: 'panel-refresh' }), 1500);
@@ -74,7 +74,7 @@
         ${st.changes.map(c => `<div class="change ${CLS[c.state === 'sending' ? 'waiting' : c.state]}"><span class="st ${CLS[c.state === 'sending' ? 'waiting' : c.state]}">${LABEL[c.state === 'sending' ? 'waiting' : c.state]}</span><div>${esc(c.label)}</div>${c.error ? `<div class="note">${esc(c.error)}</div>` : ''}${c.state === 'not_yet' ? '<div class="note">Try again or undo it in askdnd.</div>' : ''}</div>`).join('')}
         <h3>What changed</h3>
         <ul>${st.log.map(l => `<li><span class="st ${CLS[l.state]}">${l.state === 'seen' ? 'On D&D Beyond' : 'From askdnd'}</span> ${esc(l.text)}</li>`).join('') || '<li class="note">Nothing yet.</li>'}</ul>
-        <a class="btn" href="http://localhost:8000/characters/${esc(st.character.id)}/bridge" target="_blank" rel="noopener">Open in askdnd</a>`;
+        ${askdnd ? `<a class="btn" href="${esc(askdnd)}/characters/${esc(st.character.id)}/bridge" target="_blank" rel="noopener">Open in askdnd</a>` : ''}`;
     }
     root.innerHTML = `<style>${CSS}</style><aside class="panel" aria-label="askdnd"><div class="head"><span><b>${esc(st ? st.character.name : 'askdnd')}</b><span class="logo">askdnd</span></span><button class="x" data-act="toggle" aria-label="Close askdnd">✕</button></div><div class="body">${body}</div></aside>`;
   }

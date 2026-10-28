@@ -2689,7 +2689,7 @@
   } else tour = null;
 })();
 
-// ---------------------------------------------------------------- the D&D Beyond bridge (a local proof)
+// ---------------------------------------------------------------- the D&D Beyond bridge
 // Character › with D&D Beyond (bridge.html, app/ddb_bridge.py): every number comes from D&D Beyond; a change made here
 // is an intent askdnd keeps until the extension (extension/askdnd-bridge/) has made it on D&D Beyond and askdnd has
 // read it back. This page talks to the extension with window messages ({askdndBridge: ...}). Phones read only (Brett,
@@ -2783,7 +2783,7 @@
     status.className = 'br-st title-action ' + cls; status.textContent = text;
     const help = $('[data-br-help]');
     help.hidden = extension || phone.matches;
-    help.textContent = 'Turn on the askdnd extension in Chrome (chrome://extensions › Load unpacked › extension/askdnd-bridge), then open ' + st.character.name + "'s D&D Beyond sheet in this browser.";
+    help.textContent = 'Add the askdnd bridge to Chrome (Help › FAQ › "the D&D Beyond bridge" has the link), then open ' + st.character.name + "'s D&D Beyond sheet in this browser.";
     $('[data-br-hp]').className = waiting ? 'br-wait' : notYet ? 'br-off' : '';
     $('[data-br-hp-v]').textContent = st.hp.current;
     $('[data-br-read]').textContent = st.read_at ? 'Read from D&D Beyond ' + new Date(st.read_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' }) + '.' : 'Not read from D&D Beyond yet.';

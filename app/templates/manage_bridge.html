@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}D&amp;D Beyond bridge · Manage · askdnd{% endblock %}
 {% block content %}
-{# Manage › askdnd › D&D Beyond bridge (app/ddb_bridge.py, a local proof): whether it's awake and why, and its timers. #}
+{# Manage › askdnd › D&D Beyond bridge (app/ddb_bridge.py): whether it's awake and why, and its timers. #}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>D&amp;D Beyond bridge</h1><span class="br-st title-action {{ {'live': 'br-live', 'wait': 'br-wait', 'off': 'br-off', 'asleep': 'br-asleep'}[health.state] }}">{{ health.text }}</span></div>

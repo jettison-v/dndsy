@@ -2106,7 +2106,7 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
   .pt-list { padding: 16px; }
 }
 
-/* The D&D Beyond bridge, a local proof (bridge.html, app/ddb_bridge.py; docs/mockups/ddb-overlay.html): four states,
+/* The D&D Beyond bridge (bridge.html, app/ddb_bridge.py; docs/mockups/ddb-overlay.html): four states,
    the same everywhere, Live, Waiting, Not on D&D Beyond yet and Changed on D&D Beyond */
 .br-st { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-xs); font-weight: 600; border-radius: var(--r-pill); padding: var(--sp-1) var(--sp-3); white-space: nowrap; }
 .br-st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }

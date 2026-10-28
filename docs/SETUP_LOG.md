@@ -855,3 +855,19 @@ Railway's settings, pictures in S3, Sentry, the deploy itself, or several people
 - **What:** a read-only check compared every picture still in beta's database with its copy in S3, byte for byte (84 note images, all identical; all 28 stored files present). Then askdnd stopped writing and reading the database copies, and a last change dropped them.
 - **Why in three steps:** each is safe on its own. The check changes nothing; the second step leaves the old copies in place, so undoing it loses nothing; only the third deletes, and it refuses to run if any picture lacks its S3 copy. The backups from before it still hold the old copies for 30 days.
 - **Reuse on a new project:** when moving data from one place to another, add the new place, copy, *verify with a separate read-only check*, switch reads over, and only then delete the old copy, as its own step that someone approves. Write the verification as a script you keep, not a one-off command, so you can show the numbers.
+
+## 2026-10-28: Publishing a Chrome extension (the askdnd bridge)
+
+- **What:** a Chrome Web Store developer account (Brett's Google account, publisher name "askdnd", $5 once), and the
+  bridge packaged for it: `scripts/build_extension.py` makes the zip, the listing text is in
+  `extension/askdnd-bridge/README.md`, and Help › About's bridge section is its privacy policy. The listing is
+  **unlisted**: only people with the link find it, and Chrome keeps everyone's copy up to date on its own.
+- **Why the store, not "Load unpacked":** an unpacked extension needs Developer mode, never updates itself, and Chrome
+  nags about it at every start. Through the store, a new version reaches the whole table after Google's review.
+- **One folder, two copies:** the repo's folder works with askdnd on your own computer and on beta (for trying
+  changes); the store's copy is the same files with localhost taken out of its permissions, which reviewers look at.
+- **Switched on per campaign:** beta may run the bridge (`DDB_BRIDGE=1`), but each campaign switches it on itself
+  (a VTT piece), so it reaches the table only when you decide, after telling them the risk.
+- **Reuse on a new project:** register the developer account early (review can take days), keep the listing text and
+  the privacy page in the repo next to the code, publish unlisted until you're sure, and raise the version for every
+  upload: the store refuses one it already has.
