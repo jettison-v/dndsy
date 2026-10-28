@@ -28,6 +28,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app import books as _books
 from app.db import Base
 
 
@@ -99,6 +100,9 @@ class Campaign(Timestamped, Base):
     # The VTT switch (app/vtt.py): a test campaign sees every VTT piece; others only the finished ones switched on here
     is_test: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     vtt_pieces: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
+    # Its books (app/books.py): which private rules books its lookups use, set on Manage › Settings › Books
+    books: Mapped[list] = mapped_column(JSONB, default=lambda: list(_books.DEFAULT),
+                                        server_default=sql(f"'{_books.DEFAULT_JSON}'::jsonb"))
     members: Mapped[list["CampaignMember"]] = relationship(back_populates="campaign")
 
 
@@ -418,6 +422,25 @@ class CampaignContent(Timestamped, Base):
 
     def entry(self) -> dict:
         return {**(self.data or {}), "key": self.key, "name": self.name, "source": self.source}
+
+
+class BookEntry(Timestamped, Base):
+    """One entry from a private rules book (app/books.py): a monster from the 2024 Monster Manual, say, copied in by
+    scripts/book_load.py from the offline copy. Kept only here, never in the public repo; a campaign's lookups use it
+    when that book is on for the campaign (Campaign.books). `data` is the entry in its kind's shape
+    (rules_data.CAMPAIGN_KINDS) without key, name and source; `page` is where the book prints it and `image` a link to
+    D&D Beyond's art (a link, never the picture)."""
+
+    __tablename__ = "book_entries"
+    __table_args__ = (UniqueConstraint("book", "kind", "key"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    book: Mapped[str] = mapped_column(String(40), index=True)  # app/books.py BOOKS: "mm-2024"
+    kind: Mapped[str] = mapped_column(String(20))  # "monster" | "spell" | "magic_item"
+    key: Mapped[str] = mapped_column(String(120))  # "giant-squid"; the same key as an SRD entry replaces it
+    name: Mapped[str] = mapped_column(String(200))
+    page: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    image: Mapped[str] = mapped_column(String(500), default="", server_default="")
+    data: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
 
 
 class PlayerNote(Timestamped, Base):

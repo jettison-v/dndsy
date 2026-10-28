@@ -1,8 +1,10 @@
 """Wild Shape for druids (2024 Player's Handbook): which Beasts a druid can learn,
 and what a form looks like with the druid's own stats carried over.
 
-The Beast list is the SRD's Beasts (app/rules_data.py, SRD 5.2.1 stat blocks), with pictures
-linked from D&D Beyond (app/data/monster_pictures.json). Forms the druid already knows come
+The Beast list is the campaign's Beasts (`beasts(db, campaign_id)`, through app/rules_data.py): the
+SRD 5.2.1's, plus those of the campaign's books that are on (app/books.py: the 2024 Monster Manual's,
+labelled "MM 2024"), with pictures linked from D&D Beyond (app/data/monster_pictures.json, or the
+book entry's own link). Without a campaign it's the SRD's alone. Forms the druid already knows come
 from D&D Beyond (sheet["creatures"]); their stat block from the list is used when the names
 match, D&D Beyond's otherwise (in the same shape, app/ddb_sheet.py).
 
@@ -14,7 +16,7 @@ inform; the DM makes every ruling (e.g. which other class features work in a for
 import re
 from functools import cache
 
-from app import advantage, rules_data
+from app import advantage, books, rules_data
 from app import character_views as views
 
 ABILITIES = (("str", "Strength", "Str"), ("dex", "Dexterity", "Dex"), ("con", "Constitution", "Con"),
@@ -27,6 +29,7 @@ SKILL_ABILITY = {"Acrobatics": "dex", "Animal Handling": "wis", "Arcana": "int",
                  "Sleight of Hand": "dex", "Stealth": "dex", "Survival": "wis"}
 CR_LABELS = {0.0: "0", 0.125: "1/8", 0.25: "1/4", 0.5: "1/2"}
 MOON_SPELLS = ((3, ("Cure Wounds", "Moonbeam", "Starry Wisp")), (5, ("Conjure Animals",)), (7, ("Fount of Moonlight",)), (9, ("Mass Cure Wounds",)))
+BOOK_LABELS = {b.short for b in books.BOOKS}
 ASI = re.compile(r"Ability Score (Improvement|Increase)s?$", re.I)  # background and level ASIs are listed as feats
 COSTLY = re.compile(r"worth|\bGP\b|consume", re.I)  # Beast Spells: no costly or consumed Material components
 ATTACK = re.compile(r"(Melee or Ranged|Melee|Ranged) Attack Roll:\s*([+−-]\d+)")
@@ -46,17 +49,41 @@ def cr_label(cr: float) -> str:
     return CR_LABELS.get(cr, str(int(cr)))
 
 
-@cache
-def _catalog() -> tuple[dict, ...]:
-    """The SRD's Beasts (swarms of Beasts too) with their pictures, by CR then name."""
+def _with_pictures(monsters) -> tuple[dict, ...]:
+    """The Beasts among monsters (swarms of Beasts too) with their pictures, by CR then name."""
     pics = rules_data.pictures()
-    beasts = [{**m, **pics.get(m["key"], {})} for m in rules_data.srd("monster") if m["type"] == "Beast"]
+    beasts = [{**pics.get(m["key"], {}), **m} for m in monsters if m["type"] == "Beast"]
     return tuple(sorted(beasts, key=lambda b: (b["cr"], b["name"])))
 
 
+@cache
+def _catalog() -> tuple[dict, ...]:
+    """The SRD's Beasts alone (no campaign)."""
+    return _with_pictures(rules_data.srd("monster"))
+
+
+def beasts(db=None, campaign_id: int | None = None) -> tuple[dict, ...]:
+    """Every Beast a druid in this campaign could take the form of: the SRD's, with the campaign's books'
+    replacing or adding to them. Read once per page and passed to the functions below (`beasts=`)."""
+    if db is None or campaign_id is None:
+        return _catalog()
+    return _with_pictures(rules_data.catalog("monster", db, campaign_id))
+
+
 def credit(beast: dict) -> str:
-    """The note under an SRD form (the SRD's attribution itself is on Help › About)."""
-    return "Stat block from the SRD 5.2.1 (see Help › About); picture from D&D Beyond." if beast.get("source") == rules_data.SOURCE else ""
+    """The note under a form: where its stat block is from (the SRD's attribution itself is on Help › About)."""
+    if beast.get("source") == rules_data.SOURCE:
+        return "Stat block from the SRD 5.2.1 (see Help › About); picture from D&D Beyond."
+    b = next((b for b in books.BOOKS if b.short == beast.get("source")), None)
+    if b:
+        page = f", p. {beast['page']}" if beast.get("page") else ""
+        return f"Stat block from the {b.title}{page}, a book this campaign uses; picture from D&D Beyond."
+    return ""
+
+
+def book_label(beast: dict) -> str:
+    """ "MM 2024 p. 373" for a form from one of the campaign's books, "" for the SRD's or D&D Beyond's."""
+    return books.label(beast) if beast.get("source") in BOOK_LABELS else ""
 
 
 def senses_text(beast: dict) -> str:
@@ -64,20 +91,20 @@ def senses_text(beast: dict) -> str:
     return ", ".join(f"{k.title()} {v} ft." for k, v in (beast.get("senses") or {}).items())
 
 
-def catalog_beast(name: str) -> dict | None:
-    return next((b for b in _catalog() if b["name"].lower() == name.lower()), None)
+def catalog_beast(name: str, beasts: tuple | None = None) -> dict | None:
+    return next((b for b in beasts or _catalog() if b["name"].lower() == name.lower()), None)
 
 
 # ------------------------------------------------------------------ the druid
 
 
 
-def known_forms(sheet: dict | None) -> list[dict]:
+def known_forms(sheet: dict | None, beasts: tuple | None = None) -> list[dict]:
     """The forms a druid can shift into right now (known on D&D Beyond), with pictures."""
     out = []
     for c in (sheet or {}).get("creatures") or []:
         if c.get("group") == "Wild Shape form":
-            b = catalog_beast(c["kind"]) or {}
+            b = catalog_beast(c["kind"], beasts) or {}
             out.append({"name": c["kind"], "cr": c["cr"], "image": b.get("image", "")})
     return out
 
@@ -151,14 +178,16 @@ def _first_attack(beast: dict) -> str:
     return acts[0]["name"] if acts else ""
 
 
-def forms(sheet: dict, fav: set[str], keep=None) -> list[dict]:
-    """Every Beast the druid could learn now, plus anything they know or shortlisted."""
+def forms(sheet: dict, fav: set[str], keep=None, beasts: tuple | None = None) -> list[dict]:
+    """Every Beast the druid could learn now, plus anything they know or shortlisted. `beasts` is the campaign's
+    list (`beasts(db, campaign_id)`); without it, the SRD's."""
+    beasts = beasts or _catalog()
     d = druid(sheet)
     if not d:
         return []
     known = {c["kind"].lower(): c for c in sheet.get("creatures") or [] if c.get("group") == "Wild Shape form"}
     rows, seen = [], set()
-    for b in list(_catalog()) + [c["block"] for c in known.values() if c.get("block") and not catalog_beast(c["kind"])]:
+    for b in list(beasts) + [c["block"] for c in known.values() if c.get("block") and not catalog_beast(c["kind"], beasts)]:
         if b["name"].lower() in seen:
             continue
         seen.add(b["name"].lower())
@@ -171,6 +200,7 @@ def forms(sheet: dict, fav: set[str], keep=None) -> list[dict]:
             "key": key, "name": b["name"], "cr": b["cr"], "cr_label": b["cr_label"], "size": b.get("size", ""),
             "ac": b["ac"], "speed": _speed_text(b.get("speed") or {}), "moves": sorted(k for k in b.get("speed") or {} if k != "walk"),
             "image": b.get("image", ""), "known": is_known, "why_not": reason, "summary": _first_attack(b),
+            "book": b["source"] if b.get("source") in BOOK_LABELS else "",  # "MM 2024": from one of the campaign's books
             "card": card(sheet, b, keep),
             # for the shared list's filters (templates/_form_list.html)
             "status_label": "Known" if is_known else "Locked" if reason else "Can learn",
@@ -180,19 +210,19 @@ def forms(sheet: dict, fav: set[str], keep=None) -> list[dict]:
     return rows
 
 
-def beast_for(sheet: dict, name: str) -> dict | None:
+def beast_for(sheet: dict, name: str, beasts: tuple | None = None) -> dict | None:
     """The stat block for a form by name: the Beast list first, then D&D Beyond's known forms."""
-    b = catalog_beast(name)
+    b = catalog_beast(name, beasts)
     if b:
         return b
     c = next((c for c in sheet.get("creatures") or [] if c["kind"].lower() == name.lower() and c.get("block")), None)
     return c["block"] if c else None
 
 
-def label_for(ref: str) -> str:
+def label_for(ref: str, beasts: tuple | None = None) -> str:
     """Reminders text for a form that isn't on the sheet."""
     name = ref.removeprefix("form:")
-    b = catalog_beast(name)
+    b = catalog_beast(name, beasts)
     return f"{b['name']} (Wild Shape, CR {b['cr_label']}): {_first_attack(b)}" if b else ""
 
 

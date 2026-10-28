@@ -1,12 +1,12 @@
 """Rules content as data (VTT 0.6): monsters, spells, magic items and the Rules Glossary (conditions among it).
 
-Two layers, read as one:
+Three layers, read as one (the first that has a key wins):
 
-1. The System Reference Document 5.2.1 in app/data/srd/ (public, CC-BY-4.0; ATTRIBUTION below goes wherever
+1. A campaign's own: the DM's creations, in the database (models.CampaignContent), never in the public repo.
+2. The campaign's books that are on (app/books.py): private rules books the DM owns, in the database only
+   (models.BookEntry), each entry labelled with its book ("MM 2024") and page.
+3. The System Reference Document 5.2.1 in app/data/srd/ (public, CC-BY-4.0; ATTRIBUTION below goes wherever
    it's shown). Built from the official PDF by scripts/srd_import.py, never edited by hand.
-2. A campaign's own: the DM's creations, or entries copied from a book the DM owns, in the database
-   (models.CampaignContent), never in the public repo. One with the same key as an SRD entry replaces it
-   for that campaign.
 
 `catalog(kind, db, campaign_id)` and `find(kind, name, db, campaign_id)` give the merged view; without a
 campaign it's the SRD alone. Every entry is validated against its kind's schema when it's loaded (the SRD
@@ -250,6 +250,25 @@ def pictures() -> dict[str, dict]:
 # ------------------------------------------------------------------ with a campaign's own
 
 
+def check(kind: str, entry: dict) -> None:
+    """Raises ValueError if an entry doesn't fit its kind's schema."""
+    try:
+        CAMPAIGN_KINDS[kind].model_validate(entry)
+    except ValidationError as e:
+        raise ValueError(str(e)) from e
+
+
+def fits(kind: str, entry: dict, what: str) -> bool:
+    """Whether a stored entry still fits its schema; one saved before a schema change is logged and left out,
+    so it doesn't break the page."""
+    try:
+        check(kind, entry)
+    except ValueError as e:
+        log.warning("%s doesn't fit its schema: %s", what, e)
+        return False
+    return True
+
+
 def _campaign_rows(db, kind: str, campaign_id: int | None) -> list[dict]:
     if db is None or campaign_id is None:
         return []
@@ -257,30 +276,32 @@ def _campaign_rows(db, kind: str, campaign_id: int | None) -> list[dict]:
 
     from app.models import CampaignContent
 
-    out = []
-    for row in db.scalars(select(CampaignContent).where(CampaignContent.campaign_id == campaign_id, CampaignContent.kind == kind)):
-        entry = row.entry()
-        try:
-            CAMPAIGN_KINDS[kind].model_validate(entry)
-        except ValidationError as e:  # saved before a schema change: leave it out, don't break the page
-            log.warning("campaign content %s (%s %s) doesn't fit its schema: %s", row.id, kind, row.key, e)
-            continue
-        out.append(entry)
-    return out
+    return [e for row in db.scalars(select(CampaignContent).where(CampaignContent.campaign_id == campaign_id, CampaignContent.kind == kind))
+            if fits(kind, e := row.entry(), f"campaign content {row.id} ({kind} {row.key})")]
+
+
+def _layers(db, kind: str, campaign_id: int | None) -> list[dict]:
+    """The campaign's own entries of a kind, then its books' (app/books.py), before the SRD."""
+    from app import books
+
+    return _campaign_rows(db, kind, campaign_id) + books.entries(db, kind, campaign_id)
 
 
 def catalog(kind: str, db=None, campaign_id: int | None = None) -> list[dict]:
-    """The SRD's entries of a kind plus the campaign's own (its own replacing an SRD entry with the same key),
-    by name. Each says where it's from in "source" ("SRD 5.2.1", "Homebrew", a book's title)."""
-    own = {r["key"]: r for r in _campaign_rows(db, kind, campaign_id)}
-    rows = [own.pop(r["key"], r) for r in srd(kind)] + list(own.values())
+    """The SRD's entries of a kind with the campaign's own and its books' (the first layer with a key wins, so
+    they replace an SRD entry with the same key), by name. Each says where it's from in "source" ("SRD 5.2.1",
+    "Homebrew", a book's short label like "MM 2024"); a book's also carry "page"."""
+    over: dict[str, dict] = {}
+    for r in _layers(db, kind, campaign_id):
+        over.setdefault(r["key"], r)
+    rows = [over.pop(r["key"], r) for r in srd(kind)] + list(over.values())
     return sorted(rows, key=lambda r: r["name"].lower())
 
 
 def find(kind: str, name_or_key: str, db=None, campaign_id: int | None = None) -> dict | None:
-    """One entry by key or name (any case): the campaign's own first, then the SRD's."""
+    """One entry by key or name (any case): the campaign's own first, then its books', then the SRD's."""
     want = name_or_key.strip().lower().replace("’", "'")
-    for r in _campaign_rows(db, kind, campaign_id):
+    for r in _layers(db, kind, campaign_id):
         if want in (r["key"], r["name"].lower()):
             return r
     return _srd_by(kind).get(want) or _srd_by(kind).get(slug(want))
@@ -296,10 +317,7 @@ def save(db, campaign_id: int, kind: str, entry: dict, source: str = "Homebrew",
     if kind not in CAMPAIGN_KINDS:
         raise ValueError(f"a campaign can't add a {kind}")
     entry = {**entry, "key": entry.get("key") or slug(entry.get("name", "")), "source": source}
-    try:
-        CAMPAIGN_KINDS[kind].model_validate(entry)
-    except ValidationError as e:
-        raise ValueError(str(e)) from e
+    check(kind, entry)
     row = db.scalar(select(CampaignContent).where(CampaignContent.campaign_id == campaign_id, CampaignContent.kind == kind,
                                                   CampaignContent.key == entry["key"]))
     if row is None:

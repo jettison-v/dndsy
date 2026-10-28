@@ -13,6 +13,9 @@
   {"key": "size", "label": "Size", "values": sizes | select("in", forms | map(attribute="size") | list) | list},
   {"key": "turn", "label": "On your turn", "values": ["Bonus action", "Reaction"], "more": true},
 ] -%}
+{#- a campaign's books (app/books.py): "MM 2024" beside a form from one, and a filter when forms come from more than one -#}
+{%- set book_labels = (["SRD"] if forms | rejectattr("book") | first else []) + forms | map(attribute="book") | select | unique | list -%}
+{%- if book_labels | length > 1 %}{% set groups = groups + [{"key": "book", "label": "Book", "values": book_labels, "more": true}] %}{% endif -%}
 <div class="form-list" data-list="{{ key }}" data-noun="form" data-default-sort="default">
   <div class="ls-layout">
     {{ filter_column(groups) }}
@@ -31,12 +34,12 @@
         {% for fm in forms %}{% set k = fm.card %}{% set note = picks.notes.get(fm.key) if show_picks else "" %}
         <div class="ls-row form-row{{ ' not-ready' if fm.why_not }}" data-ls-row data-ref="{{ fm.key }}" data-fav="{{ '1' if fm.key in picks.fav else '0' }}"
           data-views="{{ 'ready ' if fm.known }}{{ 'fav ' if fm.key in picks.fav }}all" data-name="{{ fm.name | lower }}" data-level="{{ fm.cr }}" data-group-label="{{ 'Known' if fm.known else 'CR ' ~ fm.cr_label }}"
-          data-f='{{ {"status": fm.status_label, "cr": fm.cr_label, "move": fm.move_labels, "size": fm.size, "turn": (["Bonus action"] if k.bonus else []) + (["Reaction"] if k.reactions else [])} | tojson }}'
+          data-f='{{ {"status": fm.status_label, "cr": fm.cr_label, "move": fm.move_labels, "size": fm.size, "turn": (["Bonus action"] if k.bonus else []) + (["Reaction"] if k.reactions else []), "book": fm.book or "SRD"} | tojson }}'
           data-sort-default="{{ loop.index }}" data-sort-damage="{{ k.per_turn or 0 }}" data-sort-hit="{{ k.hit_value or 0 }}" data-sort-speed="{{ k.fastest or 0 }}" data-sort-cr="{{ fm.cr }}"
           data-modal-url="/characters/{{ c.id }}/form?name={{ fm.name | urlencode }}" data-modal-size="large" tabindex="0" role="button" aria-label="{{ fm.name }}: open the form">
           <span class="sh-status {{ 'on' if fm.known else 'off' }}" title="{{ 'Known' if fm.known else (fm.why_not or 'You could learn it') }}" role="img" aria-label="{{ fm.status_label }}">{{ "✓" if fm.known else ("🔒" if fm.why_not else "○") }}</span>
           <span class="fm-pic">{% if fm.image %}<img src="{{ fm.image }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>
-          <span class="ls-name"><span class="ls-line"><b>{{ fm.name }}</b> <span class="tag">CR {{ fm.cr_label }}</span> <span class="tag">{{ fm.size }}</span>{% if fm.why_not %} <span class="tag faint">{{ fm.why_not }}</span>{% endif %}</span>
+          <span class="ls-name"><span class="ls-line"><b>{{ fm.name }}</b> <span class="tag">CR {{ fm.cr_label }}</span> <span class="tag">{{ fm.size }}</span>{% if fm.book %} <span class="tag" title="From a book this campaign uses (Manage › Settings › Books)">{{ fm.book }}</span>{% endif %}{% if fm.why_not %} <span class="tag faint">{{ fm.why_not }}</span>{% endif %}</span>
             <span class="ls-what">{{ k.attack or "No attack" }}{% for t in k.bonus %} · Bonus: {{ t }}{% endfor %}{% for t in k.reactions %} · Reaction: {{ t }}{% endfor %}</span>
             {% if note %}<span class="ls-note" title="{{ note }}">✎ {{ note }}</span>{% endif %}</span>
           <span title="{{ 'Circle Forms: 13 + your Wisdom modifier' if k.ac_moon else 'The form\'s AC' }}">{{ k.ac }}</span>

@@ -9,6 +9,7 @@ is left out rather than guessed.
 
 import re
 
+from app import books
 from app.advantage import ABILITY as ABILITY_WORDS
 from app.advantage import KEPT_SOURCES
 from app.ddb import (
@@ -94,8 +95,8 @@ PROFICIENCY_GROUPS = {174869515: "armor", 660121713: "weapons", 1782728300: "wea
 # The table plays with the 2024 core rulebooks only (CLAUDE.md). D&D Beyond adds
 # some rules from other books to every character; those are left out.
 NON_CORE_RULES = re.compile(r"^(Initiate a Circle Spell|Circle Spell:)", re.I)
-CORE_SOURCES = {145, 146, 147}  # Player's Handbook (2024), Dungeon Master's Guide (2024), Monster Manual (2025)
-SOURCE_NAMES = {1: "PHB 2014", 2: "MM 2014", 3: "DMG 2014", 4: "Xanathar's", 145: "PHB 2024", 146: "DMG 2024", 147: "MM 2025"}
+CORE_SOURCES = {b.ddb_source_id for b in books.BOOKS}  # the 2024 Player's Handbook, Dungeon Master's Guide, Monster Manual
+SOURCE_NAMES = {1: "PHB 2014", 2: "MM 2014", 3: "DMG 2014", 4: "Xanathar's", **{b.ddb_source_id: b.short for b in books.BOOKS}}
 
 
 

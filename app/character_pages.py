@@ -45,6 +45,7 @@ def _view(db: Session, ch: Character, user: dict) -> dict:
     snap = ch.snapshot
     sheet = views.apply_overrides(chars.character_summary(ch), _overrides(db))
     mine = picks.picks(db, ch, user)
+    druid = ws.druid(sheet)
     return {
         "c": ch,
         "sheet": sheet,
@@ -55,12 +56,18 @@ def _view(db: Session, ch: Character, user: dict) -> dict:
         "can_pick": picks.can_edit(db, user, ch),
         "show_picks": picks.can_see(user, ch),
         "reminders": views.reminders(sheet, mine["remind"], mine["order"].get("forget"), mine["notes"]) if sheet else [],
-        "druid": ws.druid(sheet),
+        "druid": druid,
+        "beasts": ws.beasts(db, ch.campaign_id) if druid else ws.beasts(),  # Wild Shape's forms: the SRD's and its campaign's books'
         "reviewer": is_reviewer(user),
         "admin": is_admin(user),
         "item_notes": chars.item_notes(db, ch),
         "help_off": help_pages.dismissed(db, user),
     }
+
+
+def _form_label(db: Session, ch: Character, ref: str) -> str:
+    """Reminders text for a Wild Shape form that isn't on the sheet (from the character's campaign's Beasts)."""
+    return ws.label_for(ref, ws.beasts(db, ch.campaign_id)) if ref.startswith("form:") else ""
 
 
 _forbidden = web.forbidden
@@ -134,8 +141,8 @@ def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None
     if ctx["sheet"]:
         ctx["columns"] = views.battle_columns(ctx["sheet"], ctx["picks"]["star"], ctx["picks"]["order"], pinned_only=ctx["show_picks"])
         ctx["riders"] = class_rules.turn(ctx["sheet"])["riders"]
-        ctx["known_forms"] = ws.known_forms(ctx["sheet"]) if ctx["druid"] else []
-        beast = ws.beast_for(ctx["sheet"], wild) if wild and ctx["druid"] else None
+        ctx["known_forms"] = ws.known_forms(ctx["sheet"], ctx["beasts"]) if ctx["druid"] else []
+        beast = ws.beast_for(ctx["sheet"], wild, ctx["beasts"]) if wild and ctx["druid"] else None
         if beast:
             ctx["form"] = ws.shaped(ctx["sheet"], beast, keep=ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep))
             ctx["columns"] = ctx["form"]["columns"]
@@ -194,7 +201,7 @@ def _sheet_ctx(db: Session, ch: Character, user: dict) -> dict:
         ctx["options"] = [o for o in views.options(ctx["sheet"], ctx["picks"]["star"])
                           if o["kind"] != "spell" or (o["tags"] and o["tags"][0] == "cantrip" and o["hit"])]
         ctx["feature_rows"] = views.feature_rows(ctx["sheet"], views.options(ctx["sheet"]))  # Features tab: the shared list
-        ctx["forms"] = ws.forms(ctx["sheet"], ctx["picks"]["fav"], ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep))
+        ctx["forms"] = ws.forms(ctx["sheet"], ctx["picks"]["fav"], ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep), ctx["beasts"])
         ctx["ws_other_uses"] = ws.other_uses(ctx["sheet"]) if ctx["druid"] else []
     return ctx
 
@@ -209,7 +216,7 @@ def _plan_ctx(db: Session, ch: Character, user: dict) -> dict:
         ctx["plan_spell_groups"] = sb.sheet_filter_groups(ctx["plan_spells"])
         ctx["fav_spells"] = [e for e in ctx["plan_spells"] if e["key"] in fav]  # the tab's count
         if ctx["druid"]:
-            ctx["plan_forms"] = ws.forms(s, fav, ws.chosen_keep(s, ch.wild_shape_keep))  # every form you can learn: Shortlist and All
+            ctx["plan_forms"] = ws.forms(s, fav, ws.chosen_keep(s, ch.wild_shape_keep), ctx["beasts"])  # every form you can learn: Shortlist and All
             ctx["fav_forms"] = [f for f in ctx["plan_forms"] if f["key"] in fav]
     return ctx
 
@@ -363,7 +370,7 @@ def toggle_pick(request: Request, character_id: int, kind: str = Form(...), ref:
         return _forbidden(request, "Only this character's player can do that.")
     sheet = chars.character_summary(ch) or {}
     try:
-        on = picks.toggle(db, ch, kind, ref, views.label_for(sheet, ref) or ws.label_for(ref))
+        on = picks.toggle(db, ch, kind, ref, views.label_for(sheet, ref) or _form_label(db, ch, ref))
     except ValueError:
         return HTMLResponse("", status_code=400)
     db.commit()
@@ -417,7 +424,7 @@ def save_pick_note(request: Request, character_id: int, ref: str = Form(...), no
         return _forbidden(request, "Only this character's player can do that.")
     sheet = chars.character_summary(ch) or {}
     try:
-        picks.set_note(db, ch, ref, note, views.label_for(sheet, ref) or ws.label_for(ref))
+        picks.set_note(db, ch, ref, note, views.label_for(sheet, ref) or _form_label(db, ch, ref))
     except ValueError:
         return HTMLResponse("", status_code=400)
     db.commit()
@@ -434,14 +441,14 @@ def form_panel(request: Request, character_id: int, name: str, db: Session = Dep
     if stop:
         return stop
     ctx = _view(db, ch, user)
-    beast = ws.beast_for(ctx["sheet"] or {}, name) if ctx["druid"] else None
+    beast = ws.beast_for(ctx["sheet"] or {}, name, ctx["beasts"]) if ctx["druid"] else None
     if beast is None:
         return HTMLResponse("", status_code=404)
-    known = any(f["name"].lower() == beast["name"].lower() for f in ws.known_forms(ctx["sheet"]))
+    known = any(f["name"].lower() == beast["name"].lower() for f in ws.known_forms(ctx["sheet"], ctx["beasts"]))
     return templates.TemplateResponse(request, "_panel_form.html", {
         **ctx, "f": ws.shaped(ctx["sheet"], beast, keep=ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep)), "ref": f"form:{beast['name']}", "known": known,
         "keep_options": ws.options_for(ctx["sheet"] or {}, ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep)), "beast_name": beast["name"],
-        "why_not": ws.why_not(ctx["druid"], beast), "credit": ws.credit(beast),
+        "why_not": ws.why_not(ctx["druid"], beast), "credit": ws.credit(beast), "book": ws.book_label(beast),
         "current": (ch.wild_shape or "").lower() == beast["name"].lower()})
 
 
