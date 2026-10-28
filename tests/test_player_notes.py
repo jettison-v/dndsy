@@ -128,7 +128,7 @@ def test_saving_from_the_modal_updates_in_place_and_notes_can_be_reordered(db, c
     hx = {"HX-Request": "true"}
     for title in ("First", "Second"):
         r = player.post(f"{url}/notes", data={"kind": "general", "title": title, "body": "x"}, headers=hx)
-        assert r.status_code == 204 and json.loads(r.headers["HX-Trigger"])["notesChanged"] == {"character": cole.id, "kind": "general"}
+        assert r.status_code == 204 and json.loads(r.headers["HX-Trigger"])["characterChanged"] == {"character": cole.id} and json.loads(r.headers["HX-Trigger"])["closePanel"]
     first, second = db.scalars(select(PlayerNote).order_by(PlayerNote.position)).all()
     assert player.post(f"{url}/notes/order", data={"column": "general", "keys": [str(second.id), str(first.id)]}).status_code == 204
     db.refresh(first), db.refresh(second)

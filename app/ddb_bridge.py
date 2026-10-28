@@ -54,7 +54,7 @@ import secrets
 import time
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import select
@@ -894,20 +894,27 @@ def bridge_drink(character_id: int, item_id: int, request: Request, db: Session 
     add(db, character, "drink", {"item": item_id, "name": name, "heal": rolled["total"]},
         f"{character.name} drank a {name} (rolled {rolled['total']}: {rolled['formula']})")
     db.commit()
-    return _json(state(db, character, user))
+    return _made(db, character, user)
 
 
 @router.post("/bridge/hp/{character_id:int}")
-async def bridge_hp(character_id: int, request: Request, db: Session = Depends(get_db)):
+def bridge_hp(character_id: int, request: Request, amount: int = Form(0), db: Session = Depends(get_db)):
     """Take damage or heal (+ heals, - damage), for trying the bridge on any character."""
     character, user = _mine(db, request, character_id)
     if not picks.can_edit(db, user, character):
         raise HTTPException(403)
-    amount = int((await request.json()).get("amount", 0))
     if amount:
         add(db, character, "hp", {"amount": amount}, f"{character.name} {'healed' if amount > 0 else 'took'} {abs(amount)}")
         db.commit()
-    return _json(state(db, character, user))
+    return _made(db, character, user)
+
+
+def _made(db: Session, character: Character, user: dict) -> JSONResponse:
+    """A change made from the bridge page: its state, the page and its panels told (web.changed), and the extension
+    told to make it now (app.js "bridgeDeliver")."""
+    out = _json(state(db, character, user))
+    out.headers["HX-Trigger"] = web.changed(character, bridgeDeliver=True)
+    return out
 
 
 # ------------------------------------------------------------------ rolls made on D&D Beyond
@@ -1026,18 +1033,24 @@ async def bridge_change(character_id: int, request: Request, db: Session = Depen
 
 @router.post("/bridge/retry/{intent_id:int}")
 def bridge_retry(intent_id: int, request: Request, db: Session = Depends(get_db)):
-    _signed_in(request, db)
+    user = _signed_in(request, db)
     retry(db, intent_id)
     db.commit()
-    return _json({"ok": True})
+    return _for_intent(db, intent_id, user)
 
 
 @router.post("/bridge/dismiss/{intent_id:int}")
 def bridge_dismiss(intent_id: int, request: Request, db: Session = Depends(get_db)):
-    _signed_in(request, db)
+    user = _signed_in(request, db)
     dismiss(db, intent_id)
     db.commit()
-    return _json({"ok": True})
+    return _for_intent(db, intent_id, user)
+
+
+def _for_intent(db: Session, intent_id: int, user: dict) -> JSONResponse:
+    it = db.get(BridgeIntent, intent_id)
+    character = db.get(Character, it.character_id) if it else None
+    return _made(db, character, user) if character else _json({"ok": True})
 
 
 @router.get("/characters/{character_id:int}/bridge")

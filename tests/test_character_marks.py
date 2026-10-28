@@ -168,8 +168,8 @@ def test_a_pin_announces_itself_so_the_page_updates_without_a_refresh(player, db
     characters.refresh(db, cole)
     owned_by(db, cole, "player@example.com")
     r = player.post(f"/characters/{cole.id}/pick", data={"kind": "star", "ref": "spell:Heat Metal", "marks": "star,fav,remind"})
-    event = json.loads(r.headers["HX-Trigger"])["marksChanged"]
-    assert event == {"character": cole.id, "kind": "star", "ref": "spell:Heat Metal", "on": True, "fav": True}  # pinning shortlists
+    assert json.loads(r.headers["HX-Trigger"])["characterChanged"] == {"character": cole.id}  # the page and its panels show it
+    assert 'aria-pressed="true"' in r.text.split("fav")[1][:400]  # the panel's own marks: pinning shortlists
     body = player.get(f"/characters/{cole.id}/battle", headers={"HX-Request": "true"}).text  # the page's own swap (app.js showInPlace)
     assert "Heat Metal" in body.split('data-econ-col="action"')[1].split('data-econ-col="bonus"')[0]
 
@@ -180,10 +180,11 @@ def test_a_note_announces_itself_so_the_rows_update_without_a_refresh(player, db
     characters.refresh(db, cole)
     owned_by(db, cole, "player@example.com")
     r = player.post(f"/characters/{cole.id}/pick/note", data={"ref": "spell:Moonbeam", "note": "  Opener vs. groups "})
-    assert json.loads(r.headers["HX-Trigger"])["noteChanged"] == {"character": cole.id, "ref": "spell:Moonbeam", "note": "Opener vs. groups"}
-    assert "data-ls-notes" in player.get(f"/characters/{cole.id}/plan").text  # Plan's spell list offers "Full notes"
+    assert json.loads(r.headers["HX-Trigger"])["characterChanged"] == {"character": cole.id}
+    plan = player.get(f"/characters/{cole.id}/plan", headers={"HX-Request": "true"}).text  # the page's own swap
+    assert "data-ls-notes" in plan and "Opener vs. groups" in plan  # Plan's spell list offers "Full notes"
     r = player.post(f"/characters/{cole.id}/pick/note", data={"ref": "spell:Moonbeam", "note": ""})
-    assert json.loads(r.headers["HX-Trigger"])["noteChanged"]["note"] == ""  # cleared: the line goes away
+    assert "Opener vs. groups" not in player.get(f"/characters/{cole.id}/plan", headers={"HX-Request": "true"}).text  # cleared
 
 
 def test_free_text_reminders_are_the_players_and_show_on_battle(player, admin, dm, db):
@@ -193,7 +194,7 @@ def test_free_text_reminders_are_the_players_and_show_on_battle(player, admin, d
     owned_by(db, cole, "player@example.com")
     owned_by(db, char(db, "Trah"), "dm@example.com", is_dm=True)
     r = player.post(f"/characters/{cole.id}/reminders", data={"text": "  Ask the DM   about the map "})
-    assert r.status_code == 204 and json.loads(r.headers["HX-Trigger"])["marksChanged"]["kind"] == "remind"
+    assert r.status_code == 204 and json.loads(r.headers["HX-Trigger"]) == {"characterChanged": {"character": cole.id}, "toast": "Reminder added"}
     assert "Ask the DM about the map" in player.get(f"/characters/{cole.id}/battle").text
     assert "Ask the DM about the map" in player.get(f"/characters/{cole.id}/plan").text
     assert player.post(f"/characters/{cole.id}/reminders", data={"text": "   "}).status_code == 400

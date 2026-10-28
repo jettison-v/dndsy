@@ -120,8 +120,10 @@ def _ago(when) -> str:
     """'just now', '5 minutes ago', '3 hours ago', 'yesterday', or 'Oct 14' — no time zone needed."""
     from datetime import UTC, datetime
 
-    if when is None:
+    if not when:
         return ""
+    if isinstance(when, str):  # (as JSON carries it)
+        when = datetime.fromisoformat(when)
     seconds = (datetime.now(UTC) - when).total_seconds()
     if seconds < 90:
         return "just now"

@@ -108,6 +108,41 @@ def announce(db: Session, campaign_id: int | None, kind: str, **data) -> None:
     db.info.setdefault("announce", []).append((campaign_id, kind, data))
 
 
+# What the table sees of a character: a change to any of these, however it's made (a read of D&D Beyond, a condition,
+# Concentration, Wild Shape, a rename, a change waiting for D&D Beyond or its log), tells every page in its campaign on
+# save, and the pages showing it swap in their new copy (app.js showInPlace). Players' own pins, notes and reminders
+# aren't here: they're theirs (the DM never sees them), and the page they were made on shows them at once.
+TABLE_SEES = {"Character": ("name", "owner_id", "wild_shape", "concentration", "conditions"), "CharacterSnapshot": ("summary",),
+              "BridgeIntent": ("state", "error"), "BridgeLog": ("text",)}
+
+
+def _stored(value) -> str:
+    """A value as the database gives it back (tuples become lists, number keys text), to compare two."""
+    return json.dumps(json.loads(json.dumps(value, default=str)), sort_keys=True)
+
+
+@event.listens_for(Session, "before_flush")
+def _character_changes(db: Session, flush_context, instances) -> None:
+    from sqlalchemy import inspect
+
+    from app.models import Character
+
+    for obj in list(db.new) + list(db.dirty):
+        fields = TABLE_SEES.get(type(obj).__name__)
+        if not fields:
+            continue
+        state = inspect(obj)
+        if not any(state.attrs[f].history.has_changes()
+                   and _stored((state.attrs[f].history.deleted or [None])[0]) != _stored((state.attrs[f].history.added or [None])[0])
+                   for f in fields):
+            continue
+        with db.no_autoflush:  # (a new copy knows its character before its character_id is filled in)
+            character = obj if isinstance(obj, Character) else getattr(obj, "character", None) or (
+                db.get(Character, obj.character_id) if obj.character_id else None)
+        if character is not None and character.id is not None:
+            announce(db, character.campaign_id, "character", id=character.id)
+
+
 @event.listens_for(Session, "after_commit")
 def _after_commit(db: Session) -> None:
     sent = set()

@@ -366,10 +366,7 @@ def toggle_pick(request: Request, character_id: int, kind: str = Form(...), ref:
                                                                           "picks": picks.picks(db, ch, user)})
     else:
         resp = templates.TemplateResponse(request, "_pick.html", {"c": ch, "kind": kind, "ref": ref, "on": on, "can_pick": True})
-    # Tell the page behind (Battle, Sheet's rows) so it shows the change without a refresh (roadmap step 5).
-    # Pinning also shortlists; unpinning leaves the shortlist as it was (fav: None).
-    fav = on if kind == "fav" else (True if kind == "star" and on else None)
-    resp.headers["HX-Trigger"] = json.dumps({"marksChanged": {"character": ch.id, "kind": kind, "ref": ref, "on": on, "fav": fav}})
+    resp.headers["HX-Trigger"] = web.changed(ch)  # the page and its open panels show it (pinning also shortlists)
     return resp
 
 
@@ -382,12 +379,11 @@ def add_reminder(request: Request, character_id: int, text: str = Form(""), db: 
     if not picks.can_edit(db, user, ch):
         return _forbidden(request, "Only this character's player can do that.")
     try:
-        ref = picks.add_text_reminder(db, ch, text)
+        picks.add_text_reminder(db, ch, text)
     except ValueError:
         return HTMLResponse("", status_code=400)
     db.commit()
-    return Response(status_code=204, headers={"HX-Trigger": json.dumps({
-        "toast": "Reminder added", "marksChanged": {"character": ch.id, "kind": "remind", "ref": ref, "on": True, "fav": None}})})
+    return Response(status_code=204, headers={"HX-Trigger": web.changed(ch, toast="Reminder added")})
 
 
 @router.post("/characters/{character_id:int}/pick/note")
@@ -405,10 +401,7 @@ def save_pick_note(request: Request, character_id: int, ref: str = Form(...), no
     except ValueError:
         return HTMLResponse("", status_code=400)
     db.commit()
-    # Tell the page behind so the note line under the row shows it without a refresh (roadmap step 5b)
-    note = (picks.picks(db, ch, user)["notes"].get(ref) or "")
-    return HTMLResponse('<span class="note">Saved</span>', headers={
-        "HX-Trigger": json.dumps({"noteChanged": {"character": ch.id, "ref": ref, "note": note}})})
+    return HTMLResponse('<span class="note">Saved</span>', headers={"HX-Trigger": web.changed(ch)})
 
 
 @router.get("/characters/{character_id:int}/form")

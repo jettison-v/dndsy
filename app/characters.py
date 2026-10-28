@@ -5,14 +5,13 @@ sheet (app/ddb.py's summary shape) for a character, or None if it has never
 been fetched. It never contains player notes.
 """
 
-import json
 from collections.abc import Callable
 from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import config, ddb, realtime
+from app import config, ddb
 from app.models import CampaignCharacter, Character, CharacterItemNote, CharacterSnapshot, Entity, EntityKind
 
 Fetch = Callable[[str], dict]
@@ -118,11 +117,6 @@ def ddb_campaigns(db: Session) -> dict[str, str]:
     return out
 
 
-def _as_stored(summary):
-    """A summary as the database gives it back (tuples become lists, number keys text), to compare two."""
-    return json.loads(json.dumps(summary, default=str))
-
-
 def refresh(db: Session, character: Character, fetch: Fetch = ddb.fetch_character) -> CharacterSnapshot:
     """Fetch and parse the character. On success the snapshot is replaced; on any
     failure only its status and error change, so the last good copy stays."""
@@ -142,8 +136,6 @@ def refresh(db: Session, character: Character, fetch: Fetch = ddb.fetch_characte
     except ddb.DdbError as e:
         snap.status, snap.error = "error", str(e)
     else:
-        if _as_stored(snap.summary) != _as_stored(summary):  # pages showing this character update (app/realtime.py)
-            realtime.announce(db, character.campaign_id, "character", id=character.id)
         if config.DDB_BRIDGE:  # the bridge's log of what changed on D&D Beyond, whichever read saw it
             from app import ddb_bridge  # (it builds on this module)
             if ddb_bridge.on_for(db, character):
