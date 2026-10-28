@@ -29,7 +29,7 @@
       </div>
       {{ active_row() }}
       <div class="ls-rows fm-cols" data-ls-rows>
-        <div class="ls-head" aria-hidden="true"><span title="Known">✓</span><span></span><span>Form</span><span>AC</span><span>Temp HP</span><span>To hit</span><span title="Assumes every attack hits">Damage / turn</span><span>Speed</span><span></span></div>
+        <div class="ls-head" aria-hidden="true"><span title="Known">✓</span><span></span><span>Form</span><span>AC</span><span>Temp HP</span><span>To hit</span><span>Damage / turn</span><span>Speed</span><span></span></div>
         {% for fm in forms %}{% set k = fm.card %}{% set note = picks.notes.get(fm.key) if show_picks else "" %}
         <div class="ls-row form-row{{ ' not-ready' if fm.why_not }}" data-ls-row data-ref="{{ fm.key }}" data-fav="{{ '1' if fm.key in picks.fav else '0' }}"
           data-views="{{ 'ready ' if fm.known }}{{ 'fav ' if fm.key in picks.fav }}all" data-name="{{ fm.name | lower }}" data-level="{{ fm.cr }}" data-group-label="{{ 'Known' if fm.known else 'CR ' ~ fm.cr_label }}"

@@ -246,9 +246,8 @@ def test_a_spell_key_opens_the_spell_not_a_situational_rule_with_the_same_key():
     assert views.find(sheet, "spell:Absorb Elements")["section"] == "spells"
 
 
-def test_pages_have_no_help_lines_only_the_facts_they_cant_show(player, admin, db):
-    """Help lines are gone (Brett, 2026-10-27): the tour and Help explain the pages. Who can read what, and Wild Shape's
-    swap, stay as small labels; Damage / turn explains itself in its heading's tooltip."""
+def test_pages_have_no_help_lines(player, db):
+    """Help lines are gone (Brett, 2026-10-27): the tour and Help explain the pages."""
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
     characters.refresh(db, cole)
@@ -256,11 +255,6 @@ def test_pages_have_no_help_lines_only_the_facts_they_cant_show(player, admin, d
     for page in (player.get(f"/characters/{cole.id}").text, player.get(f"/characters/{cole.id}/battle").text,
                  player.get(f"/characters/{cole.id}/plan").text, player.get("/party").text):
         assert "help-line" not in page and "Got it" not in page
-    sheet = player.get(f"/characters/{cole.id}").text
-    assert "Everyone at the table can read this" in sheet  # Background
-    assert "Swap one per Long Rest" in sheet and 'title="Assumes every attack hits">Damage / turn' in sheet
-    assert "Hidden from the DM" in player.get(f"/characters/{cole.id}/plan").text
-    assert "Hidden from the DM" not in sheet
     assert player.post("/help/dismiss", data={"key": "sheet"}).status_code in (404, 405)
 
 

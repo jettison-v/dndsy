@@ -124,7 +124,6 @@
         <div class="row tight mt-1">
           {% set known_n = forms | selectattr("known") | list | length %}
           <span class="tag {{ 'done' if known_n == d.known else 'draft' }}">Known {{ known_n }} of {{ d.known }}</span>
-          <span class="tag faint" title="Learn forms on D&amp;D Beyond. After a Long Rest you can swap one known form for another.">Swap one per Long Rest, on D&amp;D Beyond</span>
           <span class="tag">Max CR {{ d.max_cr_label }}{% if d.moon and d.max_cr > d.table_cr %} (Circle Forms){% endif %}</span>
           <span class="tag {{ '' if d.fly else 'faint' }}">{{ "Fly Speed allowed" if d.fly else "No Fly Speed until Druid 8" }}</span>
         </div></div>
@@ -149,7 +148,6 @@
   {% endif %}
   {% if s.story %}{% set st = s.story %}
   <div id="t-story" class="story-tab" hidden>
-    <p class="m-0"><span class="tag faint" title="From the Background tab on D&amp;D Beyond, in the player's words">Everyone at the table can read this</span></p>
     {% if st.background %}<h3 class="divider">Background</h3><p><b>{{ st.background }}</b>{% if st.background_text %} <span class="muted">{{ st.background_text }}</span>{% endif %}</p>{% endif %}
     {% if st.characteristics %}<h3 class="divider">Characteristics</h3>
     <dl class="traits-grid">{% for k, v in st.characteristics %}<div><dt>{{ k }}</dt><dd>{{ v }}</dd></div>{% endfor %}</dl>{% endif %}
