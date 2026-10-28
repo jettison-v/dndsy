@@ -56,6 +56,7 @@ import json
 import secrets
 import time
 from datetime import UTC, datetime
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
@@ -1071,6 +1072,25 @@ async def bridge_roll(ddb_id: str, request: Request, db: Session = Depends(get_d
     row = heard_roll(db, character, user, body) if isinstance(body, dict) else None
     db.commit()
     return _json({"ok": row is not None})
+
+
+# Step 5.4's first check (Oct 28, docs/plans/2026-10-24-play-state.md): what a roll someone else makes in the game
+# (the DM's damage roll for a monster) carries when it reaches a player's sheet. Kept only on Brett's computer, in
+# private/ (never in git), until the hit points window reads them for real
+HEARD = Path(__file__).resolve().parent.parent / "private" / "ddb-heard-rolls"
+
+
+@router.post("/bridge/others-roll/{ddb_id}")
+async def heard_others(ddb_id: str, request: Request, db: Session = Depends(get_db)):
+    """The extension heard someone else's roll in the game on this character's sheet."""
+    _by_ddb(db, request, ddb_id)
+    body = await request.json()
+    if config.IS_PRODUCTION or not isinstance(body, dict):
+        return _json({"ok": False})
+    rid = "".join(c for c in str((body.get("data") or {}).get("rollId") or "") if c.isalnum() or c == "-")[:60] or secrets.token_hex(6)
+    HEARD.mkdir(parents=True, exist_ok=True)
+    (HEARD / f"{rid}.json").write_text(json.dumps(body, indent=2))
+    return _json({"ok": True})
 
 
 # ------------------------------------------------------------------ changes from askdnd's pages

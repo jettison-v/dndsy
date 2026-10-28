@@ -750,6 +750,20 @@ def test_a_roll_made_on_d_and_d_beyond_comes_into_table_rolls_once(player, dm, d
     assert dm.post("/bridge/roll/75423618", json=ddb_roll(rid="r-3")).json() == {"ok": False}  # only the player's own browser
 
 
+def test_someone_elses_roll_in_the_game_is_kept_only_locally(player, db, sheet, tmp_path, monkeypatch):
+    """Step 5.4's first check (Oct 28): a roll the DM makes in the game is kept as it came, in private/ on Brett's
+    computer only (never on beta), to see what a damage roll carries."""
+    from app import ddb_bridge
+    monkeypatch.setattr(ddb_bridge, "HEARD", tmp_path)
+    monkeypatch.setattr(config, "IS_PRODUCTION", False)
+    message = {"eventType": "dice/roll/fulfilled", "entityType": "monster", "entityId": "17", "data": {"rollId": "r/../9", "rolls": []}}
+    assert player.post("/bridge/others-roll/75423618", json=message).json() == {"ok": True}
+    assert [p.name for p in tmp_path.iterdir()] == ["r9.json"]  # (a roll id can't reach outside the folder)
+    monkeypatch.setattr(config, "IS_PRODUCTION", True)
+    assert player.post("/bridge/others-roll/75423618", json={**message, "data": {"rollId": "r-10"}}).json() == {"ok": False}
+    assert len(list(tmp_path.iterdir())) == 1
+
+
 def test_the_extension_makes_only_the_requests_askdnd_knows():
     """The extension's own list of requests (ddb-page.js WRITES) is askdnd's (ddb_fields.WRITES): a page can't ask it for
     anything else, and nothing askdnd writes is refused there."""

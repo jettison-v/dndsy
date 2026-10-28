@@ -129,7 +129,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     </div>
     <div class="you">
       <div class="eyebrow">Your call now</div>
-      <p><b>Try steps 2 and 3 locally</b> (the change rule and the change mark), and step 1 on beta (Game Mode for the table). The links and steps are in the conversation.</p>
+      <p><b>Try steps 1–3 on beta</b> (Game Mode, the change rule with catching up, the change mark); the steps are in the conversation. <b>Next, step 4</b> starts with one check that needs you: a damage roll made by the DM in D&amp;D Beyond's VTT, to see whether askdnd hears its damage type.</p>
     </div>
     <div class="steps">
       <div class="step"><span class="n">1</span><div class="body"><h3>Game Mode for the table, and the Live pill</h3>
@@ -138,14 +138,15 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
         <p class="links"><a href="https://claude.ai/artifact/VfmC2TvFmSUf9ruQGWUAjk">Mockup: Game Mode and Bridge</a></p></div>
         <div class="tags"><span class="chip eff">M</span><span class="chip s-done">Done · on beta Oct 28</span></div></div>
       <div class="step"><span class="n">2</span><div class="body"><h3>Changes only while your sheet can be reached</h3>
-        <p>A control that changes a D&amp;D Beyond number works only while that character's sheet is open with the extension; otherwise it says how, and nothing is queued. A change already waiting gives up a few minutes after the sheet was last heard.</p>
-        <p class="where"><b>Where you'll see it:</b> on every control that changes a number (the HP window in step 4 first). On a phone, changes are always made on D&amp;D Beyond.</p></div>
-        <div class="tags"><span class="chip eff">S</span><span class="chip s-review">Built · try it locally</span></div></div>
+        <p>A control that changes a D&amp;D Beyond number works only while that character's sheet is open with the extension; otherwise it says how, and nothing is queued. A change already waiting when the sheet goes quiet waits for it and is made by itself when it's back, ticked off if you made it by hand, and flagged if D&amp;D Beyond changed in between.</p>
+        <p class="where"><b>Where you'll see it:</b> on every control that changes a number (the HP window in step 4 first). On a phone, changes are always made on D&amp;D Beyond.</p>
+        <p class="links"><a href="https://claude.ai/artifact/VhKW45Ec3mYoQsksGnQZ1T">How the Bridge Works</a></p></div>
+        <div class="tags"><span class="chip eff">S</span><span class="chip s-done">Done · on beta Oct 28</span></div></div>
       <div class="step"><span class="n">3</span><div class="body"><h3>A changed number marks itself</h3>
         <p>Whenever a number changes, from D&amp;D Beyond, someone else's screen or your own, it glows for a moment with the change ("−11"). Built once, in the one way every page updates, so it works everywhere.</p>
         <p class="where"><b>Where you'll see it:</b> any number on any page as it changes: Battle, Sheet, Party.</p>
         <p class="links"><a href="https://claude.ai/artifact/7dWbuf3hDwR5V9JFrrDT9H">Shown in: Wild Shape Hit Points</a></p></div>
-        <div class="tags"><span class="chip eff">S</span><span class="chip s-review">Built · try it locally</span></div></div>
+        <div class="tags"><span class="chip eff">S</span><span class="chip s-done">Done · on beta Oct 28</span></div></div>
       <div class="step"><span class="n">4</span><div class="body"><h3>Hit points with the working, aware of Wild Shape</h3>
         <p>A damage roll (the DM's for an enemy) or a healing roll (a party member's) carries its amount and type. <b>Apply to Cole</b> on that roll opens Cole's hit points window filled in, and askdnd works it out by the 2024 rules: the form's resistances, its Temporary Hit Points first, the Concentration save's DC. Then it makes the result on his D&amp;D Beyond sheet through the bridge. A roll is applied once; normally the player applies it, and the DM can too. The Concentration save is the player's to roll, on their screen. Without a roll (a trap), click Hit points and enter the number.</p>
         <p class="where"><b>Where you'll see it:</b> it starts in <b>Table rolls</b>, the sidebar on the left of every page in Game Mode: the roll's <b>Apply to Cole</b>. The window opens beside <b>Hit points</b> on your <b>Battle</b> page (the first number under your name). Also from Hit points on Sheet and each Party card.</p>
@@ -172,8 +173,6 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
         <ol><li>Send me the listing's link (from the <a href="https://chrome.google.com/webstore/devconsole">developer dashboard</a>); I put it in Help.</li>
           <li>Share the <a href="https://claude.ai/artifact/9H59RDNi99gVa7bNwmjp6G">bridge's risk summary</a> with the table.</li>
           <li>Switch the bridge on for The Adventure Begins: <a href="https://beta.askdnd.ai/c/main/manage/settings">Manage › Settings</a> › Virtual tabletop.</li></ol></div>
-      <div class="box"><div class="head"><h3>Railway</h3><span class="chip s-wait">Building</span></div>
-        <p class="small">Today's second update (one way for every change) was held up by <a href="https://status.railway.com">Railway's deploy incident</a> and is building now.</p></div>
       <div class="box"><div class="head"><h3>The table's feedback</h3><span class="chip s-wait">Later</span></div>
         <p class="small">You speak for the table for now (Oct 28: Wild Shape math and forgotten effects). Their own list of frustrations will sharpen steps 5 and 6.</p></div>
     </div>
@@ -227,6 +226,8 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     <div class="sec-head"><div class="eyebrow">Done</div><h2>Most recent first</h2></div>
     <div class="done-list">
       <div class="day"><span class="d">Oct 28</span><ul>
+        <li>Changes for D&amp;D Beyond only while the sheet can be reached, and catching up when it's back: made by itself, ticked off if made by hand, flagged if D&amp;D Beyond changed (step 5.2, on beta)</li>
+        <li>A changed number glows for a moment with the change, on every page; a refused button says why (step 5.3, on beta)</li>
         <li>Game Mode is one switch for the whole table, and the Live pill says how your own sheet is kept in step (step 5.1, on beta)</li>
         <li>The D&amp;D Beyond bridge for the table: on beta, switched on per campaign, never on a test copy; the extension resubmitted to the Chrome Web Store as 0.9.1 (no healing potions in its panel)</li>
         <li>Pages update themselves in place, Game Mode or not, with no flash: one way for every change, from the bridge, Game Mode, Refresh now or your own pins and notes</li>
