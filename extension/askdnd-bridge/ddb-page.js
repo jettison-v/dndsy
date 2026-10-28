@@ -62,7 +62,21 @@
     const j = typeof m === 'string' && m.includes('dice/roll/fulfilled') ? JSON.parse(m) : null;
     return j && j.eventType === 'dice/roll/fulfilled' && j.data ? j : null;
   };
+  // Step 5.4's first check (Oct 28): the game log also brings this page the rolls others make in the game, the DM's
+  // for a monster among them; each is passed on as it came, to see what a damage roll carries (askdnd keeps it only
+  // on Brett's computer, app/ddb_bridge.py heard_others). Heard from the moment the page opens its connection
   const listening = new WeakSet();
+  const listen = ws => {
+    if (listening.has(ws)) return;
+    listening.add(ws);
+    ws.addEventListener('message', e => {
+      try {
+        const j = asRoll(e.data);
+        if (j && String(j.entityId) !== sheetId()) post({ type: 'heard', message: j });
+      } catch (err) { /* not a roll */ }
+    });
+  };
+  window.WebSocket = new Proxy(WebSocket, { construct(t, args, nt) { const ws = Reflect.construct(t, args, nt); listen(ws); return ws; } });
   const wsend = WebSocket.prototype.send;
   WebSocket.prototype.send = function (m) {
     try {
@@ -71,18 +85,7 @@
         post({ type: 'roll', roll: { id: j.data.rollId, action: j.data.action, rolls: j.data.rolls, scope: j.messageScope, target: j.messageTarget, user: j.userId } });
       }
     } catch (e) { /* not a roll */ }
-    // Step 5.4's first check (Oct 28): the game log also brings this page the rolls others make in the game, the DM's
-    // for a monster among them; each is passed on as it came, to see what a damage roll carries (askdnd keeps it only
-    // on Brett's computer, app/ddb_bridge.py heard_others)
-    if (!listening.has(this)) {
-      listening.add(this);
-      this.addEventListener('message', e => {
-        try {
-          const j = asRoll(e.data);
-          if (j && String(j.entityId) !== sheetId()) post({ type: 'heard', message: j });
-        } catch (err) { /* not a roll */ }
-      });
-    }
+    listen(this);  // (a connection opened before this script ran)
     return wsend.apply(this, arguments);
   };
 
