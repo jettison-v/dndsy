@@ -91,9 +91,21 @@ TIMERS = (
 _health = {"extension_at": 0.0, "sheets": [], "heard_at": 0.0, "read_check": None, "round_trip": None}  # a heartbeat, in memory
 
 
-def _local_only():
-    if not config.DDB_BRIDGE:  # (never in production: app/config.py)
+def _allowed():
+    if not config.DDB_BRIDGE:  # (only where DDB_BRIDGE=1: app/config.py)
         raise HTTPException(404)
+
+
+def on_for(db: Session, character: Character | None) -> bool:
+    """Whether the bridge works on this character: it may run here, its campaign has it switched on (the VTT piece
+    "ddb_bridge"; a test campaign always does), and it's a character of its own. Never a test copy: a copy shares a
+    real character's D&D Beyond sheet, so a change to it would land on the real one."""
+    from app import vtt
+    from app.models import Campaign
+
+    if not config.DDB_BRIDGE or character is None or character.copy_of_id is not None or not character.campaign_id:
+        return False
+    return vtt.on(db.get(Campaign, character.campaign_id), "ddb_bridge")
 
 
 def _now() -> str:
@@ -717,17 +729,17 @@ def _who(request: Request, db: Session) -> dict | None:
 
 
 def _signed_in(request: Request, db: Session) -> dict:
-    _local_only()
+    _allowed()
     user = _who(request, db)
     if not user:
-        raise HTTPException(401, "Open askdnd (localhost:8000) once in this browser to connect the extension.")
+        raise HTTPException(401, "Open askdnd once in this browser, signed in, to connect the extension.")
     return user
 
 
 def _mine(db: Session, request: Request, character_id: int) -> tuple[Character, dict]:
     user = _signed_in(request, db)
     character = db.get(Character, character_id)
-    if not character or not picks.can_view(db, user, character):
+    if not character or not picks.can_view(db, user, character) or not on_for(db, character):
         raise HTTPException(404)
     return character, user
 
@@ -737,6 +749,8 @@ def _by_ddb(db: Session, request: Request, ddb_id: str) -> tuple[Character, dict
     character = db.scalar(select(Character).where(Character.ddb_id == ddb_id, Character.copy_of_id.is_(None)).order_by(Character.id))
     if not character or not picks.can_view(db, user, character):
         raise HTTPException(404, "askdnd doesn't know this character.")
+    if not on_for(db, character):
+        raise HTTPException(404, "The D&D Beyond bridge isn't switched on for this character's campaign.")
     return character, user
 
 
@@ -747,7 +761,7 @@ def _json(body: dict, status: int = 200) -> JSONResponse:
 @router.post("/bridge/connect")
 def bridge_connect(request: Request, db: Session = Depends(get_db)):
     """An askdnd page you're signed in to hands the extension a key (askdnd.js); only its hash is stored."""
-    _local_only()
+    _allowed()
     user = current_user(request)
     if not user:
         return _json({"error": "Sign in to askdnd first."}, 401)
@@ -1036,7 +1050,7 @@ def bridge_page(character_id: int, request: Request, db: Session = Depends(get_d
 @router.get("/manage/bridge")
 def manage_page(request: Request, db: Session = Depends(get_db)):
     """Whether the bridge is awake and why, and its timers."""
-    _local_only()
+    _allowed()
     _, stop = web.require(request, is_admin, "The D&D Beyond bridge's settings are for admins.")
     if stop:
         return stop
@@ -1054,7 +1068,7 @@ def manage_page(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/manage/bridge")
 async def save_timers(request: Request, db: Session = Depends(get_db)):
-    _local_only()
+    _allowed()
     _, stop = web.require(request, is_admin, "The D&D Beyond bridge's settings are for admins.")
     if stop:
         return stop

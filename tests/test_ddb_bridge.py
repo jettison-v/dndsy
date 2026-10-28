@@ -8,6 +8,7 @@ from sqlalchemy import select
 
 from app import characters, config, ddb, ddb_bridge, ddb_fields, ddb_sheet
 from app.importer import import_bundle
+from app.models import BridgeIntent, Campaign
 from tests.roles import set_role
 from tests.table_setup import BUNDLE, COLE, char, owned_by
 
@@ -25,6 +26,7 @@ def sheet(monkeypatch, db):
     ddb_bridge._health.update(extension_at=0.0, sheets=[], heard_at=0.0, read_check=None, round_trip=None)
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
+    db.get(Campaign, cole.campaign_id).vtt_pieces = ["ddb_bridge"]  # the DM switched it on (Manage › Settings)
     owned_by(db, cole, "player@example.com")
     characters.refresh(db, cole)
     ddb_bridge.active(db)  # someone is using askdnd (the tests from test_asleep_… on cover waking and sleeping)
@@ -274,9 +276,30 @@ def test_only_the_player_changes_and_only_where_switched_on(player, dm, db, shee
     assert dm.post("/bridge/outbox/75423618").json() == {"batch": None}  # only the player's own browser writes the sheet
     assert player.post(f"/bridge/drink/{cole.id}/12345").status_code == 400
     assert "with D&amp;D Beyond" in player.get(f"/characters/{cole.id}/bridge").text
-    monkeypatch.setattr(config, "DDB_BRIDGE", False)  # off unless DDB_BRIDGE=1, and never in production (app/config.py)
+    db.get(Campaign, cole.campaign_id).vtt_pieces = []  # its campaign switched it off (Manage › Settings)
+    db.flush()
+    assert player.get(f"/bridge/state/{cole.id}").status_code == 404 and player.post("/bridge/heard/75423618").status_code == 404
+    assert "data-bridge-health" not in player.get(f"/characters/{cole.id}").text  # no pill in that campaign
+    db.get(Campaign, cole.campaign_id).vtt_pieces = ["ddb_bridge"]
+    db.flush()
+    monkeypatch.setattr(config, "DDB_BRIDGE", False)  # off unless DDB_BRIDGE=1 (app/config.py)
     assert player.get(f"/bridge/state/{cole.id}").status_code == 404
     assert player.get(f"/characters/{cole.id}/bridge").status_code == 404
+
+
+def test_a_test_copy_never_reaches_d_and_d_beyond(admin, db, sheet):
+    """A standing rule (Brett, 2026-10-27: test only on Vi, never a table character's real sheet): a test copy shares
+    the real character's D&D Beyond sheet, so the bridge never works on one, even in a test campaign (which has every
+    VTT piece)."""
+    cole = char(db, "Cole")
+    test = Campaign(slug="vtt-test", name="VTT test", is_test=True)
+    db.add(test)
+    db.flush()
+    copy_ = characters.test_copy(db, cole, test.id)
+    db.flush()
+    assert ddb_bridge.on_for(db, cole) and not ddb_bridge.on_for(db, copy_)
+    assert admin.post(f"/bridge/hp/{copy_.id}", json={"amount": -1}).status_code == 404
+    assert db.scalar(select(BridgeIntent.id)) is None
 
 
 def test_a_pull_of_d_and_d_beyond_settles_a_change_even_if_the_extension_never_said_so(player, db, sheet):
@@ -698,3 +721,25 @@ def test_the_extension_makes_only_the_requests_askdnd_knows():
     js = (Path(__file__).parent.parent / "extension/askdnd-bridge/ddb-page.js").read_text()
     listed = js[js.index("const WRITES"):js.index("]);", js.index("const WRITES"))]
     assert {tuple(w.split(" ", 1)) for w in re.findall(r"'([A-Z]+ /[^']+)'", listed)} == ddb_fields.WRITES
+
+
+def test_the_store_copy_of_the_extension_is_for_askdnds_own_sites(tmp_path, monkeypatch):
+    """The Chrome Web Store's copy (scripts/build_extension.py) leaves out localhost, holds every file its manifest
+    names, and the extension takes a key only from the askdnd sites its manifest lists."""
+    import json
+    import re
+    import zipfile
+    from pathlib import Path
+
+    from scripts import build_extension
+
+    monkeypatch.setattr(build_extension, "OUT", tmp_path)
+    with zipfile.ZipFile(build_extension.build()) as z:
+        store = json.loads(z.read("manifest.json"))
+        names = set(z.namelist())
+    assert "localhost" not in json.dumps(store) and "README.md" not in names
+    assert {"icons/icon-128.png", "background.js", "ddb.js", "ddb-page.js", "askdnd.js"} <= names
+    src = Path(__file__).parent.parent / "extension/askdnd-bridge"
+    manifest = json.loads((src / "manifest.json").read_text())
+    sites = re.search(r"const SITES = \[([^\]]*)\]", (src / "background.js").read_text()).group(1)
+    assert {s.strip(" '") for s in sites.split(",")} == {p.removesuffix("/*") for p in manifest["content_scripts"][1]["matches"]}

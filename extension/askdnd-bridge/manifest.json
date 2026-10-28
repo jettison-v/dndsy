@@ -1,14 +1,16 @@
 {
   "manifest_version": 3,
-  "name": "askdnd bridge (proof)",
-  "version": "0.8.2",
-  "description": "askdnd beside your own D&D Beyond sheet: hears your sheet's changes and makes askdnd's there, as you. A local proof.",
+  "name": "askdnd bridge",
+  "version": "0.9.0",
+  "description": "Keeps your D&D Beyond sheet and askdnd in step, both ways: hears your sheet's changes and makes askdnd's there, as you.",
   "permissions": [
     "storage",
     "alarms"
   ],
   "host_permissions": [
     "https://www.dndbeyond.com/*",
+    "https://beta.askdnd.ai/*",
+    "https://askdnd.ai/*",
     "http://localhost:8000/*"
   ],
   "background": {
@@ -26,6 +28,8 @@
     },
     {
       "matches": [
+        "https://beta.askdnd.ai/*",
+        "https://askdnd.ai/*",
         "http://localhost:8000/*"
       ],
       "js": [
@@ -43,5 +47,11 @@
         "https://www.dndbeyond.com/*"
       ]
     }
-  ]
+  ],
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  }
 }

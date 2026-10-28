@@ -355,6 +355,7 @@ td { min-width: 0; }
             <tr><td>Processor</td><td>Run it after a session; review the cuts; Send to askdnd.</td><td>Maintains its code and the filter.</td></tr>
             <tr><td>Sentry</td><td>Keep the account, alert emails and privacy settings. When an alert arrives, say "check Sentry".</td><td>Reads the error with its page and line, fixes it, marks it resolved.</td></tr>
             <tr><td>Railway dashboard</td><td>The few settings the CLI can't reach (Wait for CI, the cron schedule).</td><td>Says exactly where to click.</td></tr>
+            <tr><td>Chrome Web Store (the askdnd bridge)</td><td>Upload the zip Claude builds and press Submit for review, on the <a href="https://chrome.google.com/webstore/devconsole">developer dashboard</a>.</td><td>Builds it (<code>scripts/build_extension.py</code>), raises its version, writes the listing text (<code>extension/askdnd-bridge/README.md</code>).</td></tr>
           </tbody>
         </table></div>
       </div>
@@ -368,6 +369,7 @@ td { min-width: 0; }
             <tr><td>Google Cloud</td><td>The sign-in client and its secret; the test-user list (Testing mode until launch).</td><td>Adding a player: here <em>and</em> on Manage › Accounts.</td></tr>
             <tr><td>Anthropic Console</td><td>The API key and the prepaid balance (auto-reload off).</td><td>Topping up. askdnd's own limit is on Manage › Usage.</td></tr>
             <tr><td>GitHub, Railway</td><td>Your accounts and the CLI logins Claude borrows.</td><td>If a login expires.</td></tr>
+            <tr><td>Chrome Web Store</td><td>The developer account (brett.cupta@gmail.com, publisher askdnd) and the askdnd bridge's listing, unlisted.</td><td>Publishing an update; sharing its link with the table.</td></tr>
             <tr><td>MacWhisper</td><td>Recording each session.</td><td>Game night.</td></tr>
           </tbody>
         </table></div>
@@ -413,5 +415,5 @@ td { min-width: 0; }
   </section>
 
   <p class="foot">Kept in the repo at <code>docs/stack.html</code> and updated whenever a service, a key or who does
-    what changes; published privately at <code>claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr</code>. Last updated 2026-10-27 (pictures only in S3; the database copies are gone).</p>
+    what changes; published privately at <code>claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr</code>. Last updated 2026-10-28 (the Chrome Web Store, for the askdnd bridge).</p>
 </main>

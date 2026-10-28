@@ -52,7 +52,7 @@ PAGES = (
     ("askdnd-history", "askdnd history", "/manage/history", "Changes to accounts and askdnd as a whole", ASKDND, RUNNING, is_admin, ()),
     ("corrections", "Tool corrections", "/manage/tool-corrections", "Fixes to how askdnd reads D&D Beyond, for every character", ASKDND, TUNING, is_admin, ()),
     ("dice", "Dice tuning", "/manage/dice", "How thrown dice move and how long they stay, for everyone", ASKDND, TUNING, is_admin, ()),
-    # the D&D Beyond bridge, a local proof (app/ddb_bridge.py): only where it's switched on
+    # the D&D Beyond bridge (app/ddb_bridge.py): only where it may run (DDB_BRIDGE=1)
     ("bridge", "D&D Beyond bridge", "/manage/bridge", "Whether it's awake and why, and its timers", ASKDND, TUNING,
      lambda user: config.DDB_BRIDGE and is_admin(user), ()),
     ("design", "Design system", "/manage/design", "Every component and token, for building askdnd", ASKDND, TUNING, is_admin, ()),

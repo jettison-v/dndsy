@@ -220,7 +220,8 @@ read back. So the bridge's changes come first, then the fight screen and live ch
      game log: the table watches askdnd, and it would mean imitating D&D Beyond's own client.
    - Left out on purpose: experience points, custom names and custom items (D&D Beyond stays for building and
      leveling).
-4. **The bridge for the table:** switch it on for beta (today it refuses to run in production), point the extension
+4. **The bridge for the table** (built 2026-10-28: a VTT piece each campaign switches on; the listing waits on review):
+   switch it on for beta (today it refuses to run in production), point the extension
    at beta, and share it as an unlisted Chrome Web Store listing; Brett tells the table the risk first.
 5. **The fight screen** (Phase 1: 2.2 with 1.1 and the play log): first update the play state design
    (`docs/plans/2026-10-24-play-state.md`) for "D&D Beyond confirms every change", then the mockup, then build in

@@ -1,4 +1,4 @@
-# askdnd bridge (a local proof)
+# askdnd bridge
 
 askdnd's panel beside your own D&D Beyond sheet. It hears the sheet's changes the moment they save, and makes
 askdnd's changes there, as you; askdnd counts a change only once it has read it back from D&D Beyond
@@ -17,15 +17,22 @@ After askdnd changes the character, every open copy of the sheet shows D&D Beyon
 sheet's own store (no reload, no request but the read the sheet makes when it opens); only if D&D Beyond's page has
 changed so that doesn't work does the sheet reload.
 
-Load it (Chrome):
+Where it works: on askdnd's own sites (beta.askdnd.ai, askdnd.ai) and, from this folder, askdnd on your own
+computer (http://localhost:8000); on the characters of a campaign that has the bridge switched on (Manage › Settings ›
+Virtual tabletop › D&D Beyond bridge; a test campaign always has it), never on a test copy (it shares a real
+character's sheet). askdnd itself runs it only where `DDB_BRIDGE=1` (beta and your own computer).
+
+The table adds it from the Chrome Web Store (unlisted: the link is in app/config.py `BRIDGE_EXTENSION_URL` and Help ›
+FAQ). For working on it, load this folder instead:
 1. chrome://extensions, switch on **Developer mode** (top right).
-2. **Load unpacked**, and pick this folder (`extension/askdnd-bridge`).
-3. Sign in to askdnd on http://localhost:8000 and to D&D Beyond, in the same Chrome. Opening any askdnd page connects
-   the extension (it gets its own key to askdnd, so it works even when Chrome blocks third-party cookies); after
-   askdnd restarts, open an askdnd page again.
+2. **Load unpacked**, and pick this folder (`extension/askdnd-bridge`). Remove the store's copy first, or the two
+   both answer.
+3. Sign in to askdnd (beta, or http://localhost:8000) and to D&D Beyond, in the same Chrome. Opening any askdnd page
+   connects the extension to that askdnd (it gets its own key, so it works even when Chrome blocks third-party
+   cookies); after askdnd restarts, or to switch between beta and your computer, open an askdnd page there again.
 4. Open your character's D&D Beyond sheet: the askdnd panel slides in on the left (the red **askdnd** tab brings it
    back). It only shows: no buttons sit over D&D Beyond's own. Make changes in askdnd (its own tab is
-   `http://localhost:8000/characters/<id>/bridge`) or on the sheet itself.
+   `/characters/<id>/bridge`) or on the sheet itself.
 
 What it may do: only the D&D Beyond requests in the list (ddb-page.js `WRITES`, the same as askdnd's), only for the
 sheet that's open, only for a change someone made. It stores nothing; D&D Beyond gives the sheet a 5-minute token from your own sign-in. Unofficial: D&D Beyond
@@ -43,3 +50,24 @@ kind of change the test character can take, out and back, each confirmed.
 After changing these files, reload the extension (chrome://extensions, the ↻ on askdnd bridge) and then reload any open
 D&D Beyond sheet: a sheet opened before the reload can't take changes (askdnd tries another copy of the sheet, and
 after 3 tries lists the change to make by hand).
+
+## Publishing to the Chrome Web Store
+
+1. Raise `version` in manifest.json (the store refuses a version it already has), then
+   `uv run python -m scripts.build_extension`: it writes `private/extension/askdnd-bridge-<version>.zip`, this folder
+   without localhost.
+2. On the developer dashboard (https://chrome.google.com/webstore/devconsole), the item › **Package** › **Upload new
+   package**, pick the zip, then **Submit for review**. The table's Chrome updates it on its own once it's approved.
+
+The listing (first upload: **+ New item**, then fill in each tab with these):
+- **Store listing.** Name: askdnd bridge. Summary: "Keeps your D&D Beyond sheet and askdnd in step, both ways: hears your
+  sheet's changes and makes askdnd's there, as you." Description: the first paragraph of this file, then "For the
+  players of a campaign on askdnd that uses it. Not affiliated with Wizards of the Coast or D&D Beyond." Category:
+  Tools. Language: English. Icon: icons/icon-128.png. Screenshot: private/extension/listing-screenshot.png (1280×800).
+- **Privacy.** Single purpose: "Keep a player's own D&D Beyond character sheet and askdnd, their table's companion app,
+  showing the same numbers." Permissions: *storage*, its key to askdnd until Chrome closes; *alarms*, a check every 30
+  seconds while someone is using askdnd or a sheet; *host permission dndbeyond.com*, to hear the player's sheet save
+  and to make askdnd's changes there with the sheet's own requests; *host permission askdnd.ai and beta.askdnd.ai*, to
+  talk to askdnd. Remote code: No. Data: website content (the character sheet's numbers and rolls), sent to askdnd only;
+  not sold, not used for anything else, not used for credit. Privacy policy: https://beta.askdnd.ai/help?tab=about#bridge-privacy
+- **Distribution.** Visibility: **Unlisted**. Regions: all.

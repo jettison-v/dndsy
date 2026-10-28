@@ -1,14 +1,15 @@
 // The extension's go-between: middleware between askdnd and D&D Beyond (app/ddb_bridge.py says how it repairs itself).
 // It finds the open D&D Beyond sheets from the tabs (Chrome may stop this worker at any time, so it keeps nothing it
 // can't find again), collects each sheet's outbox from askdnd and has the sheet make it, reports what D&D Beyond
-// saved, and tells askdnd every minute that it's on. Stores only its key to askdnd.
-const ASKDND = 'http://localhost:8000';
+// saved, and tells askdnd every minute that it's on. Stores only its key to askdnd, and which askdnd gave it.
+// The askdnd sites it works with (manifest.json's own list; the store's copy leaves out localhost: scripts/build_extension.py)
+const SITES = ['https://beta.askdnd.ai', 'https://askdnd.ai', 'http://localhost:8000'];
 const ddbIdOf = url => ((url || '').match(/^https:\/\/www\.dndbeyond\.com\/characters\/(\d+)/) || [])[1];
 
 async function api(method, path, body) {
-  const { key } = await chrome.storage.session.get('key');  // from askdnd.js
-  if (!key) throw new Error('Open askdnd (localhost:8000) once in this browser to connect the extension.');
-  const r = await fetch(ASKDND + path, { method, headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Askdnd-Bridge': key }, body: body ? JSON.stringify(body) : undefined });
+  const { key, askdnd } = await chrome.storage.session.get(['key', 'askdnd']);  // from askdnd.js
+  if (!key || !askdnd) throw new Error('Open askdnd once in this browser, signed in, to connect the extension.');
+  const r = await fetch(askdnd + path, { method, headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Askdnd-Bridge': key }, body: body ? JSON.stringify(body) : undefined });
   const j = await r.json().catch(() => ({}));
   if (r.status === 401) await chrome.storage.session.remove('key');  // askdnd restarted: an askdnd page reconnects it
   if (!r.ok) throw new Error(j.error || j.detail || 'askdnd answered ' + r.status + '.');
@@ -19,12 +20,14 @@ async function sheetTabs(ddbId) {
   return ddbId ? tabs.filter(t => ddbIdOf(t.url) === String(ddbId)) : tabs;
 }
 async function toAskdndTabs(msg) {
-  for (const t of await chrome.tabs.query({ url: ASKDND + '/*' })) chrome.tabs.sendMessage(t.id, msg).catch(() => {});
+  const { askdnd } = await chrome.storage.session.get('askdnd');
+  if (askdnd) for (const t of await chrome.tabs.query({ url: askdnd + '/*' })) chrome.tabs.sendMessage(t.id, msg).catch(() => {});
 }
 async function refreshPanels(ddbId) {
   let st = null, error = null;
   try { st = await api('GET', '/bridge/by-ddb/' + ddbId); } catch (err) { error = String(err.message || err); }
-  for (const t of await sheetTabs(ddbId)) chrome.tabs.sendMessage(t.id, st ? { type: 'panel-state', state: st } : { type: 'panel-state', error }).catch(() => {});
+  const { askdnd } = await chrome.storage.session.get('askdnd');
+  for (const t of await sheetTabs(ddbId)) chrome.tabs.sendMessage(t.id, st ? { type: 'panel-state', state: st, askdnd } : { type: 'panel-state', error }).catch(() => {});
   return st;
 }
 
@@ -87,7 +90,11 @@ chrome.runtime.onInstalled.addListener(hello);
 
 chrome.runtime.onMessage.addListener((m, sender) => {
   (async () => {
-    if (m.type === 'key') { await chrome.storage.session.set({ key: m.key }); hello(); for (const t of await sheetTabs()) refreshPanels(ddbIdOf(t.url)); return; }
+    if (m.type === 'key') {  // from an askdnd page (Chrome says which site sent it, not the page)
+      const askdnd = sender.origin || (sender.tab && new URL(sender.tab.url).origin);
+      if (!SITES.includes(askdnd)) return;
+      await chrome.storage.session.set({ key: m.key, askdnd }); hello(); for (const t of await sheetTabs()) refreshPanels(ddbIdOf(t.url)); return;
+    }
     if (m.type === 'deliver') return deliver(String(m.ddbId));  // askdnd's own tab queued something
     if (m.type === 'wake') return hello();
     const here = ddbIdOf(sender.tab && sender.tab.url);  // the rest come from a D&D Beyond sheet

@@ -202,7 +202,8 @@ def _combo_steps(turn: dict) -> list[dict]:
 
 
 templates.env.filters["combo_steps"] = _combo_steps
-# The D&D Beyond bridge proof (app/ddb_bridge.py): only where DDB_BRIDGE=1 (a developer's own computer)
+# The D&D Beyond bridge (app/ddb_bridge.py) may run here (DDB_BRIDGE=1); pages also ask vtt_on("ddb_bridge")
 templates.env.globals["bridge_on"] = config.DDB_BRIDGE
+templates.env.globals["bridge_extension_url"] = config.BRIDGE_EXTENSION_URL
 templates.env.globals["SRD_ATTRIBUTION"] = rules_data.ATTRIBUTION  # Help › About; the SRD's license asks for it word for word
 templates.env.globals["STEP_KINDS"] = {"bonus": "Bonus action", "action": "Action", "reaction": "Reaction", "move": "Movement", "free": "Free"}
