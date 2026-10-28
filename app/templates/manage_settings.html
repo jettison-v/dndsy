@@ -17,6 +17,24 @@
   <p class="note page-note">Its address stays <code>/c/{{ campaign.slug }}</code>, so links people saved keep working.</p>
   </section>
 
+  {# Books (data strategy, 2026-10-27; app/books.py): private rules books this campaign's lookups use #}
+  <section class="section" id="books">
+    <h2>Books</h2>
+    <p class="hint">Rules books the DM owns, on top of the free rules (the SRD) that every campaign has. Tick the ones the DM shares with the table on D&amp;D Beyond. A book's content stays in askdnd's private database, never in its public code.</p>
+    {% if book_rows %}
+    <ul class="records cols-3">
+      <li class="records-head" aria-hidden="true"><span>Book</span><span>In askdnd</span><span>Here</span></li>
+      {% for r in book_rows %}
+      <li class="record"><span class="record-main"><b>{{ r.b.title }}</b><span class="note">Labelled {{ r.b.short }}{% if r.b.key == "mm-2024" %}. Its Beasts are among Wild Shape's forms.{% endif %}</span></span>
+        <span>{{ r.what }}</span>
+        <span class="record-actions"><form method="post" action="{{ cbase }}/manage/settings/books/{{ r.b.key }}">{% if not r.on %}<input type="hidden" name="on" value="1">{% endif %}
+          <button class="switch" type="submit" role="switch" aria-checked="{{ 'true' if r.on else 'false' }}" aria-label="{{ r.b.title }} on here"></button></form></span>
+      </li>{% endfor %}
+    </ul>
+    <p class="note">Off: its entries leave this campaign's lists and lookups (with only the SRD, Wild Shape offers the SRD's Beasts). Nothing is deleted; switching it back on brings them back. A character's own D&amp;D Beyond sheet always shows in full.</p>
+    {% else %}<p class="muted">No books are in askdnd yet, so lookups use the SRD alone.</p>{% endif %}
+  </section>
+
   {# The VTT switch (VTT 0.1, docs/mockups/vtt-switch.html; app/vtt.py) #}
   <section class="section" id="vtt">
     <h2>Virtual tabletop</h2>

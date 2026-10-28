@@ -269,7 +269,7 @@ def _import_notes(db: Session, campaign: Campaign, bundle: dict, counts: Counter
     from app.models import CharacterPick, PlayerNote
     from app.picks import set_note
     from app.player_notes import KINDS, QUEST_STATUS
-    from app.wild_shape import label_for
+    from app.wild_shape import beasts, label_for
 
     for item in bundle.get("player_notes") or []:
         kind, title = item.get("kind"), (item.get("title") or "").strip()[:200]
@@ -287,13 +287,14 @@ def _import_notes(db: Session, campaign: Campaign, bundle: dict, counts: Counter
             counts["player notes updated"] += 1
         note.data = item["data"]
         note.status = item.get("status") if item.get("status") in QUEST_STATUS else ("open" if kind == "quest" else "")
+    forms = beasts(db, campaign.id) if bundle.get("form_notes") else None
     for item in bundle.get("form_notes") or []:
         ch = _character(db, campaign, item.get("character", ""))
         ref = f"form:{item.get('form', '').strip()}"
         pick = db.scalar(select(CharacterPick).where(CharacterPick.character_id == ch.id, CharacterPick.kind == "fav", CharacterPick.ref == ref))
         if pick is None:
-            db.add(CharacterPick(character_id=ch.id, kind="fav", ref=ref, label=label_for(ref)))
+            db.add(CharacterPick(character_id=ch.id, kind="fav", ref=ref, label=label_for(ref, forms)))
             counts["shortlisted forms added"] += 1
-        set_note(db, ch, ref, item.get("note") or "", label_for(ref))
+        set_note(db, ch, ref, item.get("note") or "", label_for(ref, forms))
         counts["form notes set"] += 1
     db.flush()
