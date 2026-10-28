@@ -2,14 +2,14 @@
 a fake sheet stands in, and each test changes it the way the extension, a player or a misbehaving D&D Beyond would."""
 
 import copy
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import select
 
 from app import characters, config, ddb, ddb_bridge, ddb_fields, ddb_sheet
 from app.importer import import_bundle
-from app.models import BridgeIntent, Campaign
+from app.models import BridgeIntent, Campaign, Character
 from tests.roles import set_role
 from tests.table_setup import BUNDLE, COLE, char, owned_by
 
@@ -30,6 +30,8 @@ def sheet(monkeypatch, db):
     db.get(Campaign, cole.campaign_id).vtt_pieces = ["ddb_bridge"]  # the DM switched it on (Manage › Settings)
     owned_by(db, cole, "player@example.com")
     characters.refresh(db, cole)
+    for ch in db.scalars(select(Character)):  # the extension has each sheet open (the tests from test_a_change_needs_… on: when it hasn't)
+        ch.sheet_heard_at = datetime.now(UTC)
     ddb_bridge.active(db)  # someone is using askdnd (the tests from test_asleep_… on cover waking and sleeping)
     return data
 
@@ -437,14 +439,16 @@ def test_opening_or_using_askdnd_or_a_sheet_keeps_it_awake_half_an_hour(player, 
     assert ddb_bridge.awake(db)["awake"]
     now[0] += 120
     assert not ddb_bridge.awake(db)["awake"] and "30 minutes" in ddb_bridge.awake(db)["why"]
-    player.post(f"/bridge/hp/{char(db, 'Cole').id}", data={"amount": -1})  # making a change wakes it too
+    player.post("/bridge/heard/75423618?pull=1")  # (Cole's sheet is open: asleep, the pull reads nothing)
+    assert not ddb_bridge.awake(db)["awake"]
+    assert player.post(f"/bridge/hp/{char(db, 'Cole').id}", data={"amount": -1}).status_code == 200  # making a change wakes it too
     assert ddb_bridge.awake(db)["awake"]
 
 
 def test_a_character_page_shows_what_d_and_d_beyond_has_now(player, db, sheet, monkeypatch):
     """Planning in askdnd never starts from an old number: opening a character's page (or their D&D Beyond sheet)
     reads D&D Beyond when askdnd's copy is older than Game Mode's refresh, and not otherwise."""
-    from datetime import timedelta
+    from datetime import UTC, datetime, timedelta
     reads = counting_reads(monkeypatch, sheet)
     cole = char(db, "Cole")
     player.get(f"/characters/{cole.id}")
@@ -477,23 +481,38 @@ def test_game_mode_keeps_it_awake_however_quiet_then_it_follows_what_people_do(p
     assert a["awake"] and a["game_until"] is None
 
 
-def test_a_change_still_waiting_keeps_it_awake_then_is_listed_to_make_by_hand(player, db, sheet, monkeypatch):
+def test_a_change_still_waiting_gives_up_once_its_sheet_goes_quiet(player, db, sheet, monkeypatch):
+    """Decided 2026-10-28: a waiting change gives up a few minutes after its sheet was last heard (not hours after
+    anyone was around), and is listed to make by hand, so nothing waits all evening at a busy table."""
     now = [ddb_bridge.time.time()]
     monkeypatch.setattr(ddb_bridge.time, "time", lambda: now[0])
     cole = char(db, "Cole")
-    ddb_bridge.add(db, cole, "hp", {"amount": -3}, "Cole took 3")  # no sheet open to deliver it
-    now[0] += ddb_bridge.timers(db)["idle"] + 60
-    assert ddb_bridge.awake(db)["awake"]  # still on its way
-    now[0] += ddb_bridge.timers(db)["wait"]
+    ddb_bridge.add(db, cole, "hp", {"amount": -3}, "Cole took 3")  # then the sheet closed before it was made
+    now[0] += 2 * 60
+    assert ddb_bridge.awake(db)["awake"] and player.get(f"/bridge/state/{cole.id}").json()["changes"][0]["state"] == "waiting"
+    now[0] += 2 * 60  # quiet for longer than the wait timer (3 minutes)
     st = player.get(f"/bridge/state/{cole.id}").json()
-    assert not ddb_bridge.awake(db)["awake"]
-    assert st["changes"][0]["state"] == "not_yet" and st["to_make"] == ["Hit points 34 (D&D Beyond has 37)"]
+    assert st["changes"][0]["state"] == "waiting" and "wasn't heard for 3 minutes" in st["changes"][0]["error"]  # (for its sheet)
+    assert db.scalar(select(BridgeIntent)).state == "not_yet" and st["to_make"] == []
+
+
+def test_a_change_needs_its_sheet_open_with_the_extension(player, db, sheet):
+    """Decided 2026-10-28: askdnd takes a change for D&D Beyond only while that character's sheet can be reached; otherwise
+    it says how, and nothing is queued."""
+    cole = char(db, "Cole")
+    cole.sheet_heard_at = datetime.now(UTC) - timedelta(minutes=5)  # closed a while ago
+    db.flush()
+    r = player.post(f"/bridge/hp/{cole.id}", data={"amount": -1})
+    assert r.status_code == 409 and "can't be reached" in r.json()["detail"] and "make the change on D&D Beyond" in r.json()["detail"]
+    assert db.scalar(select(BridgeIntent)) is None  # nothing waits
+    player.post("/bridge/heard/75423618?pull=1")  # the extension's pull: open again
+    assert player.post(f"/bridge/hp/{cole.id}", data={"amount": -1}).status_code == 200
 
 
 def test_admins_set_the_timers(admin, player, db, sheet):
     assert admin.get("/manage/bridge").status_code == 200
     admin.post("/manage/bridge", data={"idle": "45", "game": "99", "warn": "5", "wait": "x"}, follow_redirects=False)
-    assert ddb_bridge.timers(db) == {"idle": 45 * 60, "game": 12 * 3600, "warn": 5 * 60, "wait": 6 * 3600}  # (kept in range)
+    assert ddb_bridge.timers(db) == {"idle": 45 * 60, "game": 12 * 3600, "warn": 5 * 60, "wait": 3 * 60}  # (kept in range)
     admin.post("/manage/bridge", data={"reset": "1"})
     assert ddb_bridge.timers(db)["idle"] == 30 * 60
     player.post("/manage/bridge", data={"idle": "5"})
@@ -768,6 +787,8 @@ def test_the_live_pill_says_whether_your_sheet_is_in_step_or_has_something_to_ma
     something to make by hand when a change couldn't be made, else when it was last read."""
     cole = char(db, "Cole")
     pill = lambda: player.get(f"/characters/{cole.id}").text.split('id="live-pill"')[1].split("</button>")[0]  # noqa: E731
+    cole.sheet_heard_at = None  # no extension yet
+    db.flush()
     assert "Updated" in pill() and "in step" not in pill()
     player.post("/bridge/heard/75423618?pull=1")  # the extension's pull: the sheet can be reached
     assert "In step" in pill() and " step" in pill().split(">")[0]
@@ -779,3 +800,43 @@ def test_the_live_pill_says_whether_your_sheet_is_in_step_or_has_something_to_ma
     db.scalar(select(BridgeIntent)).state = "dismissed"
     db.flush()
     assert "in step" not in pill().lower()
+
+
+def _gave_up(db, player, cole, monkeypatch, now):
+    """Cole took 3 in askdnd, then his sheet closed before it was made: after the wait timer it's listed to make."""
+    monkeypatch.setattr(ddb_bridge.time, "time", lambda: now[0])
+    ddb_bridge.add(db, cole, "hp", {"amount": -3}, "Cole took 3")
+    now[0] += 4 * 60
+    st = player.get(f"/bridge/state/{cole.id}").json()
+    assert st["changes"][0]["state"] == "waiting" and "as soon as the sheet is open again" in st["changes"][0]["error"]
+    assert st["to_make"] == []  # it waits for the sheet, not for a person (making it by hand too would make it twice)
+    cole.sheet_heard_at = datetime.fromtimestamp(now[0], UTC)  # (the sheet is open again from here)
+    db.flush()
+
+
+def test_a_change_that_gave_up_is_made_by_itself_once_its_sheet_is_open_again(player, db, sheet, monkeypatch):
+    """Decided 2026-10-28: no button and no making it by hand: the sheet's next read sends it."""
+    cole, now = char(db, "Cole"), [ddb_bridge.time.time()]
+    _gave_up(db, player, cole, monkeypatch, now)
+    st = player.post("/bridge/heard/75423618?pull=1").json()  # the extension's pull, D&D Beyond still at 37
+    assert st["changes"][0]["state"] == "waiting" and st["to_make"] == []
+    batch = ddb_bridge.outbox(db, cole)
+    assert [op["body"]["removedHitPoints"] for op in batch["ops"]] == [17]  # 37 → 34
+
+
+def test_a_change_made_by_hand_on_d_and_d_beyond_is_ticked_off(player, db, sheet, monkeypatch):
+    cole, now = char(db, "Cole"), [ddb_bridge.time.time()]
+    _gave_up(db, player, cole, monkeypatch, now)
+    sheet["removedHitPoints"] = 17  # the player made it on D&D Beyond: 34
+    st = player.post("/bridge/heard/75423618").json()
+    assert st["changes"] == [] and st["to_make"] == []  # never asked twice
+    assert st["log"][0]["text"] == "Cole took 3 (made on D&D Beyond)"
+
+
+def test_if_d_and_d_beyond_changed_meanwhile_askdnd_doesnt_guess_and_never_asks_twice(player, db, sheet, monkeypatch):
+    cole, now = char(db, "Cole"), [ddb_bridge.time.time()]
+    _gave_up(db, player, cole, monkeypatch, now)
+    sheet["removedHitPoints"] = 21  # something else happened on D&D Beyond: 30
+    st = player.post("/bridge/heard/75423618").json()
+    assert st["changes"][0]["state"] == "not_yet" and "D&D Beyond changed since" in st["changes"][0]["error"]
+    assert st["to_make"] == ["Hit points 34 (D&D Beyond has 30)"]  # now one for a person: the end result it wanted, not 3 more off

@@ -289,6 +289,8 @@
     <p class="hint">For anything askdnd changes on D&amp;D Beyond (the bridge; docs/artifacts/ddb-bridge.html). A number shows as changed only once D&amp;D Beyond has it.</p>
     {{ ds("State", ".br-st.br-live | .br-wait | .br-off | .br-seen | .br-asleep", "Live: D&D Beyond has it. Waiting: on its way. Not on D&D Beyond yet: askdnd couldn't make it, and lists the end state to make by hand. Changed on D&D Beyond: someone changed it there. Asleep: no one is using askdnd or a sheet.") }}
     <div class="ds-row"><span class="br-st br-live">Live with D&amp;D Beyond</span><span class="br-st br-wait">Waiting for D&amp;D Beyond</span><span class="br-st br-off">Not on D&amp;D Beyond yet</span><span class="br-st br-seen">Changed on D&amp;D Beyond</span><span class="br-st br-asleep">D&amp;D Beyond bridge · asleep</span></div>
+    {{ ds("Change mark", "[data-mark] · .marked · .mark-delta.up | .down", "A number that changed while the page showed its new copy glows for two seconds with the change, whatever brought it: D&D Beyond, someone else's screen, your own (app.js, in showInPlace). Name a number with _char.html's mark(c, kind); its value is its first <b>. Pips are compared by their place.") }}
+    <div class="strip ds-row"><div data-mark="sample:hp" class="marked ds-mark-sample"><small>Hit points</small><b>40</b><span class="mark-delta down">−11</span><span class="note"> / 51</span></div></div>
     {{ ds("Status badge", "button.br-st", "The bridge's health, beside the title of Manage › askdnd › D&D Beyond bridge (admins); a click runs the check on the test character.") }}
   </section>
 </main>

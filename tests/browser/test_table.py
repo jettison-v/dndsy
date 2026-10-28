@@ -307,3 +307,34 @@ def test_game_mode_started_by_one_person_is_on_for_everyone_at_once(people, serv
     assert page.evaluate("window.stayed")  # in place, not reloaded
     assert page.locator("#live-pill .live-word").is_visible() and page.locator("#table-rolls").is_visible()
     assert player.errors == [] and dm.errors == []
+
+
+def test_a_number_that_changed_marks_itself_with_the_change(people, server, browser_db):
+    """The change mark (Brett, 2026-10-28): when a page shows its new copy, a number that changed glows for a moment with
+    the change, whatever brought it (here: a read of D&D Beyond)."""
+    from sqlalchemy import create_engine, text
+
+    engine = create_engine(browser_db[0])
+
+    def hp(change: int):
+        with engine.connect() as conn:
+            conn.execute(text("UPDATE character_snapshots SET summary = jsonb_set(summary, '{hit_points,current}', "
+                              "to_jsonb((summary->'hit_points'->>'current')::int + :d)) WHERE character_id = :c"),
+                         {"d": change, "c": server["cole"]})
+            conn.execute(text("SELECT pg_notify('askdnd_table', :p)"),
+                         {"p": json.dumps({"c": server["campaign"], "m": json.dumps({"type": "character", "id": server["cole"]})})})
+            conn.commit()
+
+    player = people("player")
+    page = battle(player, server)
+    player.live()
+    tile = page.locator(f'[data-mark="{server["cole"]}:hp"]').first
+    before = int(tile.locator("b").inner_text())
+    hp(-7)
+    page.wait_for_function(f'document.querySelector(\'[data-mark="{server["cole"]}:hp"] .mark-delta\')')
+    assert tile.locator(".mark-delta").inner_text() == "−7" and "marked" in tile.get_attribute("class")
+    assert int(tile.locator("b").inner_text()) == before - 7
+    hp(7)  # (put back for the other tests)
+    page.wait_for_function(f'document.querySelector(\'[data-mark="{server["cole"]}:hp"] b\').textContent.trim() === "{before}"')
+    engine.dispose()
+    assert player.errors == []

@@ -730,6 +730,16 @@ details.faq[open] > summary::before { transform: rotate(90deg); }
 .vital[data-panel-url], .strip > div[data-panel-url] { cursor: pointer; transition: border-color .12s, background .12s; }
 .vital[data-panel-url]:hover { background: var(--surface-3); }
 .strip > div[data-panel-url]:hover { background: var(--surface-2); }
+/* The change mark (app.js, showInPlace): a number that changed glows for a moment with the change, whatever brought it */
+.marked { animation: mark-glow 2.2s ease-out; }
+@keyframes mark-glow { 0% { box-shadow: 0 0 0 2px var(--green), 0 0 18px var(--green-soft); } 100% { box-shadow: 0 0 0 0 transparent; } }
+.pips.marked { border-radius: var(--r-pill); }
+.mark-delta { display: inline-block; vertical-align: middle; margin-left: 6px; font-size: var(--fs-xs); font-weight: 700; line-height: 1; padding: 3px 7px; border-radius: var(--r-pill); background: var(--surface-2); animation: mark-fade 2.6s ease-out forwards; pointer-events: none; }
+.mark-delta.down { color: var(--link); }
+.mark-delta.up { color: var(--green); }
+@keyframes mark-fade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .marked { animation: none; box-shadow: 0 0 0 2px var(--green); } .mark-delta { animation: none; } }
+.ds-mark-sample.marked { animation-iteration-count: infinite; } .ds-mark-sample .mark-delta { animation: none; }  /* Manage › Design system's sample keeps glowing */
 table.calc { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); margin: 4px 0 6px; }
 table.calc td { padding: 5px 0; border-bottom: 1px solid var(--line); color: var(--muted); }
 table.calc td.num { text-align: right; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 12px; }

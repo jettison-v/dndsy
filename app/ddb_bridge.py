@@ -22,10 +22,13 @@ It works like middleware between askdnd and D&D Beyond, and repairs itself:
    without wasting D&D Beyond's resources). Anyone opening or using an askdnd page or a D&D Beyond sheet wakes it for
    the idle timer (30 minutes); a save on a D&D Beyond sheet is always read and recorded, awake or not; an askdnd
    character page re-reads that character when askdnd's copy is older than live.AUTO_MIN_AGE. Game Mode keeps it awake
-   for the game timer (6 hours) however quiet the table is, with a warning before, and Keep going. Asleep, only the
-   extension's background pull and the hourly check stop. A change still waiting keeps it awake up to the wait timer
-   (6 hours) after anyone last used it; then it's listed to make by hand. Admins set the timers on Manage › askdnd ›
-   D&D Beyond bridge (TIMERS); the state is in tool_settings (bridge_awake).
+   for the game timer (6 hours) however quiet the table is, with a warning before, and Keep going (app/game_mode.py).
+   Asleep, only the extension's background pull and the hourly check stop. **A change from askdnd only while its sheet
+   can be reached** (decided 2026-10-28; `reachable`: its extension heard the sheet in the last live.REACH): otherwise
+   it's refused, saying how, and nothing is queued. A change still waiting keeps it awake until its sheet has gone
+   quiet for the wait timer (3 minutes); then it's listed to make by hand (`_give_up`), and made by itself on the
+   sheet's next read if D&D Beyond still holds what it did, or ticked off if it was made there by hand (`_catch_up`). Admins set the timers on
+   Manage › askdnd › D&D Beyond bridge (TIMERS); the state is in tool_settings (bridge_awake).
 7. **Health.** The extension reports in every minute; askdnd reads the test character every hour (no sign-in needed);
    a round trip on the test character (1 hit point and a Candle out and back) runs from the status pill before a game,
    and Check everything (Manage › askdnd › D&D Beyond bridge) runs every kind of change out and back; every page's
@@ -86,7 +89,7 @@ TIMERS = (
     ("idle", "Stays awake after anyone was here", "After someone last opened or used askdnd or a D&D Beyond sheet.", 60, "minutes", 30, 5, 240),
     ("game", "Game Mode lasts", "For the whole table, however quiet it is, from when someone starts it (or Keep going); the bridge stays awake that long.", 3600, "hours", 6, 1, 12),
     ("warn", "Warning before Game Mode's time is up", "A message on every page, with Keep going.", 60, "minutes", 10, 1, 60),
-    ("wait", "A waiting change gives up after", "With no one using askdnd or D&D Beyond; then it's listed to make by hand.", 3600, "hours", 6, 1, 24),
+    ("wait", "A waiting change gives up after", "Its D&D Beyond sheet not heard by the extension for this long (closed, or the extension stopped); then it's listed to make by hand.", 60, "minutes", 3, 1, 30),
 )
 _health = {"extension_at": 0.0, "sheets": [], "heard_at": 0.0, "read_check": None, "round_trip": None}  # a heartbeat, in memory
 
@@ -152,14 +155,12 @@ def timers(db: Session) -> dict:
 
 def awake(db: Session) -> dict:
     """{"awake": bool, "until", "game_until", "why"}: awake while someone used askdnd or a sheet in the last idle timer,
-    while Game Mode's time runs, or while a change is still waiting (up to the wait timer after anyone was last here)."""
+    while Game Mode's time runs, or while a change is still waiting (until its sheet has gone quiet for the wait timer)."""
     row, w = _wake_row(db)
     tm = timers(db)
     now, last, game_until = time.time(), w.get("last", 0), w.get("game_until") or 0
+    _give_up(db)
     open_changes = db.scalar(select(BridgeIntent.id).where(BridgeIntent.state.in_(("waiting", "sending"))).limit(1))
-    if open_changes and now - last > tm["wait"]:
-        _stop_waiting(db, f"No one used askdnd or D&D Beyond for {_span(tm['wait'])}, so the bridge went to sleep before D&D Beyond had it.")
-        open_changes = None
     game = game_until > now
     if game or now - last <= tm["idle"] or open_changes:
         return {"awake": True, "until": max(game_until, last + tm["idle"]), "game_until": game_until if game else None,
@@ -172,11 +173,37 @@ def _span(seconds: float) -> str:
     return f"{seconds / 3600:g} hours" if seconds >= 3600 else f"{seconds / 60:g} minutes"
 
 
-def _stop_waiting(db: Session, why: str) -> None:
-    for b in db.scalars(select(BridgeBatch).where(BridgeBatch.state.in_(("sending", "ready")))):
-        b.state, b.error = "stopped", why
-    for it in db.scalars(select(BridgeIntent).where(BridgeIntent.state.in_(("waiting", "sending")))):
-        it.state, it.error = "not_yet", why
+def reachable(character: Character) -> bool:
+    """Its D&D Beyond sheet can be reached now: its player's extension heard it in the last live.REACH. askdnd takes a
+    change for D&D Beyond only then (decided 2026-10-28: a change with no way there isn't accepted)."""
+    heard = character.sheet_heard_at  # (the bridge's one clock, time.time, as the give-up timer reads it)
+    return bool(heard) and time.time() - heard.timestamp() <= live.REACH.total_seconds()
+
+
+def _reach(character: Character, what: str = "") -> None:
+    """Refuse a change whose sheet can't be reached, saying how (app.js shows the message where it was pressed)."""
+    if not reachable(character):
+        raise HTTPException(409, what or f"{character.name}'s D&D Beyond sheet can't be reached: open it in Chrome with the askdnd "
+                                         "bridge to change it from askdnd, or make the change on D&D Beyond (askdnd shows it within seconds).")
+
+
+def _give_up(db: Session) -> None:
+    """A change still waiting whose sheet hasn't been heard for the wait timer gives up (decided 2026-10-28): it's listed
+    to make by hand, with its batch stopped, instead of waiting all evening at a busy table."""
+    wait, now = timers(db)["wait"], time.time()
+    quiet = {cid: name for cid, name, heard in db.execute(
+        select(Character.id, Character.name, Character.sheet_heard_at).join(BridgeIntent, BridgeIntent.character_id == Character.id)
+        .where(BridgeIntent.state.in_(("waiting", "sending"))).distinct()) if heard is None or now - heard.timestamp() > wait}
+    if not quiet:
+        return
+    for b in db.scalars(select(BridgeBatch).where(BridgeBatch.character_id.in_(quiet), BridgeBatch.state.in_(("sending", "ready")))):
+        b.state, b.error = "stopped", "Its D&D Beyond sheet went quiet."
+    for cid, name in quiet.items():
+        its = list(db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == cid, BridgeIntent.state.in_(("waiting", "sending")))
+                              .order_by(BridgeIntent.id)))
+        for it in its:
+            it.state, it.error = "not_yet", f"{name}'s D&D Beyond sheet wasn't heard for {_span(wait)}; askdnd makes it as soon as the sheet is open again."
+        _note_stopped(numbers(db.get(Character, cid)), its, quiet=True)
 
 
 def active(db: Session) -> None:
@@ -327,9 +354,73 @@ def plan(intents: list[dict], n: dict, every: bool = False) -> tuple[dict, list[
         if vals[f] == _value(n, f) and not every:
             continue  # (a change and its undo in one batch, or D&D Beyond has it already: nothing to write)
         target[f] = vals[f]
-        line = ddb_fields.show(n["raw"], f, vals[f], n["max"])
-        lines.append(f"{line[:1].upper()}{line[1:]} (D&D Beyond has {ddb_fields.text(n['raw'], f, _value(n, f), n['max'])})")
+        lines.append(_line(n, f, vals[f]))
     return target, lines, impossible, extra
+
+
+def _line(n: dict, f: str, v) -> str:
+    """One number to make on D&D Beyond: "Hit points 34 (D&D Beyond has 37)"."""
+    line = ddb_fields.show(n["raw"], f, v, n["max"])
+    return f"{line[:1].upper()}{line[1:]} (D&D Beyond has {ddb_fields.text(n['raw'], f, _value(n, f), n['max'])})"
+
+
+# ------------------------------------------------------------------ catching up (decided 2026-10-28)
+# A change that stops short of D&D Beyond keeps what D&D Beyond held then (`was`) and its own end result (`want`), in the
+# order the changes were made. On each read of that sheet afterwards (`_catch_up`): D&D Beyond holds the end result (it
+# was made by hand) → ticked off; it gave up only because the sheet went quiet and D&D Beyond still holds `was` → made
+# now, by itself; anything else → it stays, saying D&D Beyond changed since. So nothing waits for a button, and "Make
+# these on D&D Beyond" shows the fixed end results, never asking for the same change twice.
+STOPPED_KEYS = ("was", "want", "quiet")
+
+
+def _note_stopped(n: dict | None, intents: list[BridgeIntent], quiet: bool) -> None:
+    if not n:
+        return
+    done: list[dict] = []
+    for it in intents:
+        d = _as_dict(it)
+        fields = list(plan([d], n, every=True)[0])
+        before = plan(done, n, every=True)[0] if done else {}
+        after, _, impossible, _ = plan(done + [d], n, every=True)
+        if impossible and impossible[-1][0] is d or not fields:
+            continue  # (one that can't happen any more has no end result: it stays until Try again or Undo)
+        it.data = {**it.data, "was": {f: before.get(f, _value(n, f)) for f in fields}, "want": {f: after[f] for f in fields}, "quiet": quiet}
+        done.append(d)
+
+
+def _for_sheet(it: BridgeIntent) -> bool:
+    """Stopped only because its sheet went quiet: it waits for the sheet, not for a person."""
+    return it.state == "not_yet" and bool(it.data.get("quiet"))
+
+
+def _clean(it: BridgeIntent) -> None:
+    it.data = {k: v for k, v in it.data.items() if k not in STOPPED_KEYS}
+
+
+def _catch_up(db: Session, character: Character, n: dict) -> None:
+    pending: set[str] = set()  # fields an earlier change is now being made on: later ones follow it
+    for it in db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == character.id, BridgeIntent.state == "not_yet")
+                         .order_by(BridgeIntent.id)):
+        want, was, quiet = it.data.get("want"), it.data.get("was"), it.data.get("quiet")
+        if not want:
+            continue
+        if set(want) & pending:
+            if quiet:
+                it.state, it.error = "waiting", ""
+                _clean(it)
+                pending |= set(want)
+            continue
+        if all(_value(n, f) == v for f, v in want.items()):  # D&D Beyond has it: made there by hand
+            it.state = "live"
+            _clean(it)
+            _log(db, character.id, f"{it.label} (made on D&D Beyond)", "seen")
+        elif quiet and all(_value(n, f) == v for f, v in was.items()):  # its sheet is back and nothing changed: make it now
+            it.state, it.error = "waiting", ""
+            _clean(it)
+            pending |= set(want)
+        elif quiet:  # it needs a person now: listed to make by hand like any other
+            it.error = "D&D Beyond changed since; check it there, then Try again or Undo in askdnd."
+            it.data = {**it.data, "quiet": False}
 
 
 def describe(kind: str, d: dict, n: dict) -> str:
@@ -501,12 +592,15 @@ def _stop(db: Session, b: BridgeBatch, why: str, missing: list[str] | None = Non
     intent all of whose fields D&D Beyond has is made (never listed to make again), the others wait to be made by hand."""
     b.state, b.error = "stopped", why[:400]
     bad = set(b.target if missing is None else missing)
+    left = []
     for it in _intents_of(db, b):
         if missing is not None and not bad.intersection(it.data.get("fields", b.target)):
             it.state = "live"
             _log(db, b.character_id, it.label, "live")
         else:
             it.state, it.error = "not_yet", (why + " Nothing was written over.")[:400]
+            left.append(it)
+    _note_stopped(numbers(db.get(Character, b.character_id)), left, quiet=False)
     _check_step(db, b, False, why, [f for f in b.target if f not in bad])
 
 
@@ -524,6 +618,7 @@ def heard(db: Session, character: Character, saved: bool = True) -> None:
     n = numbers(character)
     if not n:
         return
+    _catch_up(db, character, n)
     open_batches = list(db.scalars(select(BridgeBatch).where(BridgeBatch.character_id == character.id, BridgeBatch.state.in_(("sending", "ready")))))
     for b in open_batches:
         if all(_value(n, f) == v for f, v in b.target.items()):
@@ -562,6 +657,7 @@ def retry(db: Session, intent_id: int) -> None:
     it = db.get(BridgeIntent, intent_id)
     if it and it.state == "not_yet":
         it.state, it.error = "waiting", ""
+        _clean(it)
 
 
 def dismiss(db: Session, intent_id: int) -> None:
@@ -661,8 +757,8 @@ def health(db: Session) -> dict:
     rt = _health["round_trip"]
     extension = time.time() - _health["extension_at"] < EXTENSION_FRESH_SECONDS
     rows = db.execute(select(BridgeIntent.state, BridgeIntent.data).where(BridgeIntent.state.in_(OPEN))).all()
-    stuck = sum(1 for s, _ in rows if s == "not_yet")
-    waiting = sum(1 for s, d in rows if s != "not_yet" and not d.get("check"))
+    stuck = sum(1 for s, d in rows if s == "not_yet" and not d.get("quiet"))
+    waiting = sum(1 for s, d in rows if (s != "not_yet" or d.get("quiet")) and not d.get("check"))  # (waiting for its sheet counts as waiting)
     when = (lambda iso: datetime.fromisoformat(iso).astimezone().strftime("%-I:%M %p"))
     if not a["awake"]:
         state, text = "asleep", "D&D Beyond bridge · asleep"
@@ -696,9 +792,18 @@ def state(db: Session, character: Character, user: dict | None) -> dict:
     n = numbers(character)
     mine = list(db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == character.id, BridgeIntent.state.in_(OPEN))
                            .order_by(BridgeIntent.id.desc())))
-    changes = [{"id": i.id, "label": i.label, "state": i.state, "error": i.error} for i in mine]
-    by_hand = [_as_dict(i) for i in reversed(mine) if i.state == "not_yet"]
-    to_make = plan(by_hand, n)[1] if by_hand and n else []  # the end state only, one line per number
+    # A change that only waits for its sheet to be open again shows as waiting: it's made by itself then (_catch_up), so
+    # it isn't one to make by hand (that would make it twice)
+    changes = [{"id": i.id, "label": i.label, "state": "waiting" if _for_sheet(i) else i.state, "error": i.error} for i in mine]
+    stuck = [i for i in reversed(mine) if i.state == "not_yet" and not _for_sheet(i)]
+    to_make = []
+    if stuck and n:  # the end state only, one line per number
+        final = {}
+        for i in stuck:
+            final.update(i.data.get("want") or {})
+        to_make = [_line(n, f, v) for f, v in final.items() if _value(n, f) != v]
+        older = [_as_dict(i) for i in stuck if not i.data.get("want")]  # (from before the end results were kept)
+        to_make += plan(older, n)[1] if older else []
     log = [{"text": r.text, "state": r.state, "at": r.at.isoformat() if r.at else _now()}
            for r in db.scalars(select(BridgeLog).where(BridgeLog.character_id == character.id).order_by(BridgeLog.id.desc()).limit(30))]
     hp = (summary or {}).get("hit_points") or {}
@@ -817,6 +922,7 @@ def bridge_check(request: Request, db: Session = Depends(get_db)):
     character, user = _by_ddb(db, request, TEST_DDB_ID)
     if not picks.can_edit(db, user, character):
         raise HTTPException(403, "Only the test character's player runs the check.")
+    _reach(character, "Open the test character's D&D Beyond sheet in Chrome with the askdnd bridge to run the check.")
     full = bool(request.query_params.get("full"))
     if full and not is_admin(user):
         raise HTTPException(403, "Checking everything is for admins.")
@@ -848,6 +954,7 @@ def bridge_outbox(ddb_id: str, request: Request, db: Session = Depends(get_db)):
     character, user = _by_ddb(db, request, ddb_id)
     if not picks.can_edit(db, user, character):
         return _json({"batch": None})  # only the character's own player's browser writes their sheet
+    character.sheet_heard_at = datetime.fromtimestamp(time.time(), UTC)  # (asking for work: its sheet is open)
     batch = outbox(db, character)
     db.commit()
     return _json({"batch": batch})
@@ -869,7 +976,7 @@ async def bridge_delivered(batch_id: int, request: Request, db: Session = Depend
 def bridge_heard(ddb_id: str, request: Request, pull: int = 0, db: Session = Depends(get_db)):
     """The sheet saved a change (the extension heard it), or the extension's regular pull (`?pull=1`)."""
     character, user = _by_ddb(db, request, ddb_id)
-    character.sheet_heard_at = datetime.now(UTC)  # its sheet can be reached (the Live pill's "in step": app/live.py)
+    character.sheet_heard_at = datetime.fromtimestamp(time.time(), UTC)  # its sheet can be reached (the Live pill's "in step": app/live.py)
     heard(db, character, saved=not pull)
     db.commit()
     return _json({**state(db, character, user), "check": check(character)})
@@ -880,6 +987,7 @@ def bridge_drink(character_id: int, item_id: int, request: Request, db: Session 
     character, user = _mine(db, request, character_id)
     if not picks.can_edit(db, user, character):
         raise HTTPException(403, "Only the character's player drinks their potions.")
+    _reach(character)
     name = (numbers(character).get("names") or {}).get(item_id)
     if name not in HEALING:
         raise HTTPException(400, "That isn't a healing potion this character has.")
@@ -896,6 +1004,7 @@ def bridge_hp(character_id: int, request: Request, amount: int = Form(0), db: Se
     character, user = _mine(db, request, character_id)
     if not picks.can_edit(db, user, character):
         raise HTTPException(403)
+    _reach(character)
     if amount:
         add(db, character, "hp", {"amount": amount}, f"{character.name} {'healed' if amount > 0 else 'took'} {abs(amount)}")
         db.commit()
@@ -1013,6 +1122,7 @@ async def bridge_change(character_id: int, request: Request, db: Session = Depen
     character, user = _mine(db, request, character_id)
     if not picks.can_edit(db, user, character):
         raise HTTPException(403, "Only the character's player changes their sheet.")
+    _reach(character)
     body = await request.json()
     n = numbers(character)
     made = _change(n, body) if n and isinstance(body, dict) else None
@@ -1027,6 +1137,9 @@ async def bridge_change(character_id: int, request: Request, db: Session = Depen
 @router.post("/bridge/retry/{intent_id:int}")
 def bridge_retry(intent_id: int, request: Request, db: Session = Depends(get_db)):
     user = _signed_in(request, db)
+    it = db.get(BridgeIntent, intent_id)
+    if it is not None:
+        _reach(db.get(Character, it.character_id))
     retry(db, intent_id)
     db.commit()
     return _for_intent(db, intent_id, user)
