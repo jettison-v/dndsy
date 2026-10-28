@@ -934,7 +934,7 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .manage.admin > button.active { border-color: var(--blue); }
 @media (min-width: 1240px) {
   .page.manage-page { position: relative; max-width: calc(1120px + 228px); padding-left: calc(24px + 228px); }
-  .manage-band { margin-left: -228px; }  /* across the list's column too */
+  .page.manage-page > .manage-band { margin-left: -228px; }  /* the page's own band, across the list's column too (not a sample in a section) */
   .manage-side { display: grid; align-content: start; position: absolute; left: 24px; top: calc(32px + 42px + var(--sp-5)); width: 200px; }  /* under the band */
   .manage-jump { display: none; }
 }
