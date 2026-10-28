@@ -68,6 +68,11 @@ def browser_db():
         owned_by(db, trah, PEOPLE["other"])
         set_role(db, PEOPLE["dm"])
         characters.refresh(db, cole, fake_fetch)
+        from datetime import UTC, datetime, timedelta
+
+        from app.models import Campaign
+
+        db.get(Campaign, cole.campaign_id).game_until = datetime.now(UTC) + timedelta(days=1)  # Game Mode on for the table
         db.commit()
         ids = {"cole": cole.id, "campaign": cole.campaign_id}
     engine.dispose()
@@ -124,14 +129,15 @@ def chromium():
 
 
 class Person:
-    """One person at the table: their own browser context, signed in, with Game Mode on and the dice animation off
-    (the numbers are the same; the tests don't wait for dice to land). `errors` collects the page's JavaScript errors."""
+    """One person at the table: their own browser context, signed in, with the dice animation off (the numbers are the
+    same; the tests don't wait for dice to land). Game Mode is on for the table (`browser_db`; `game_mode` switches it).
+    `errors` collects the page's JavaScript errors."""
 
     def __init__(self, chromium, server, who: str):
         self.server, self.errors = server, []
         self.context = chromium.new_context(viewport={"width": 1400, "height": 900})
         self.context.set_default_timeout(10_000)  # a page that's working answers well within this
-        self.context.add_init_script("localStorage.setItem('askdnd.gameMode', 'on'); localStorage.setItem('askdnd.rollsAnim', 'off');")
+        self.context.add_init_script("localStorage.setItem('askdnd.rollsAnim', 'off');")
         self.page = self.context.new_page()
         self.page.on("pageerror", lambda e: self.errors.append(str(e)))
         # The console's "Failed to load resource" doesn't say which: record the failing address instead
@@ -161,3 +167,22 @@ def people(chromium, server):
     yield make
     for p in made:
         p.context.close()
+
+
+@pytest.fixture
+def game_mode(browser_db, server):
+    """game_mode(False) ends Game Mode for the table, straight in the database (as if someone ended it), and
+    game_mode(True) starts it again; it's back on after the test, as the other tests expect."""
+    from datetime import UTC, datetime, timedelta
+
+    engine = create_engine(browser_db[0])
+
+    def switch(on: bool):
+        with engine.connect() as conn:
+            conn.execute(text("UPDATE campaigns SET game_until = :u WHERE id = :c"),
+                         {"u": datetime.now(UTC) + timedelta(days=1) if on else None, "c": server["campaign"]})
+            conn.commit()
+
+    yield switch
+    switch(True)
+    engine.dispose()

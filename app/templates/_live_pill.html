@@ -1,9 +1,16 @@
-{# The menu bar's Live control (app/live.py): when the D&D Beyond copy was last updated. Green
-   while Game Mode is on in this browser (body.gm-on, app.js). Opens the Live popover. #}
+{# The menu bar's Live control (app/live.py): how your own sheet is kept in step (docs/mockups/game-mode-and-bridge.html):
+   in step through the D&D Beyond bridge, something to make by hand, or when the copy was last read; the party's slowest
+   sheet for the DM. "Game on" leads it, and it's green, while Game Mode is on for the table (body.gm-on). Opens the
+   Live window. #}
 {% set p = tn.pill %}
 {% if p %}{% set fid = tn.focus.id if tn.focus else "" %}
-<button type="button" id="live-pill" class="live-pill{{ ' warn' if p.failed }}" data-menu="live-menu" aria-haspopup="dialog" aria-controls="live-menu"
+<button type="button" id="live-pill" class="live-pill{{ ' warn' if p.failed or p.by_hand }}{{ ' step' if p.step and not p.by_hand }}" data-menu="live-menu" aria-haspopup="dialog" aria-controls="live-menu"
   hx-get="/live{{ '?c=%s' % fid if fid }}" hx-target="#live-menu" hx-trigger="click" data-focus="{{ fid }}" data-every="{{ tn.every }}"{% if oob %} hx-swap-oob="true"{% endif %}
-  title="{% if p.failed %}Couldn't refresh {{ p.name }} from D&amp;D Beyond; showing the copy from {{ p.fetched_at | ago }}{% elif tn.party_pill %}The party's oldest copy from D&amp;D Beyond ({{ p.name }}){% else %}{{ p.name }}, from D&amp;D Beyond{% endif %}">
-  <span class="live-dot" aria-hidden="true"></span><span class="live-word">Live</span><span class="live-ago"><span class="live-off">Updated</span><span class="live-on"> · updated</span> {{ (p.fetched_at | ago) or "never" }}</span></button>
+  title="{% if p.by_hand %}{{ p.name }}: askdnd couldn't make {{ p.by_hand }} change{{ 's' if p.by_hand != 1 }} on D&amp;D Beyond; make {{ 'them' if p.by_hand != 1 else 'it' }} there{% elif p.failed %}Couldn't refresh {{ p.name }} from D&amp;D Beyond; showing the copy from {{ p.fetched_at | ago }}{% elif p.step %}{{ p.name }}'s D&amp;D Beyond sheet and askdnd are in step (the bridge){% elif tn.party_pill %}The party's slowest copy from D&amp;D Beyond ({{ p.name }}){% else %}{{ p.name }}, from D&amp;D Beyond{% endif %}">
+  <span class="live-dot" aria-hidden="true"></span><span class="live-word"><span class="live-off">Live</span><span class="live-on">Game on</span></span><span class="live-ago">
+  {%- if p.by_hand -%}<span class="live-on"> · </span>{{ p.by_hand }} to make by hand
+  {%- elif p.step -%}<span class="live-off">In step</span><span class="live-on"> · in step</span> with D&amp;D Beyond
+  {%- elif tn.party_pill -%}<span class="live-off">Updated</span><span class="live-on"> · slowest sheet</span> {{ (p.fetched_at | ago) or "never" }}
+  {%- else -%}<span class="live-off">Updated</span><span class="live-on"> · updated</span> {{ (p.fetched_at | ago) or "never" }}{%- endif -%}
+  </span></button>
 {% endif %}

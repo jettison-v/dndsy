@@ -16,15 +16,15 @@
   <script src="{{ static('app.js') }}" defer></script>
   {% block head %}{% endblock %}
 </head>
-<body data-toast="{{ toast or '' }}"{% if user %}{% if here %} data-campaign="{{ here.id }}"{% endif %} data-dice='{{ my_dice() | tojson }}' data-dice-tuning='{{ dice_tuning() | tojson }}'{% if vtt_on("table_dice") %} data-dice-all{% endif %}{% endif %}>
+{% set gm = game_mode() %}<body data-toast="{{ toast or '' }}"{% if gm.on %} class="gm-on" data-game-until="{{ gm.until.isoformat() }}" data-game-by="{{ gm.by }}" data-game-warn="{{ gm.warn }}"{% endif %}{% if user %}{% if here %} data-campaign="{{ here.id }}"{% endif %}{% if bridge_on and vtt_on("ddb_bridge") %} data-bridge-on{% endif %} data-dice='{{ my_dice() | tojson }}' data-dice-tuning='{{ dice_tuning() | tojson }}'{% if vtt_on("table_dice") %} data-dice-all{% endif %}{% endif %}>
 {% if user %}<script>
 /* The Table rolls sidebar's place, before the page is drawn, so pages don't shift sideways as they load (Brett,
-   2026-10-26). The same rules as app.js "the sidebar's state", which takes over once it runs: Game Mode on this
-   device; open unless closed on this device (closed until opened on phones), and closed between 901 and 1099px. */
+   2026-10-26). The same rules as app.js "the sidebar's state", which takes over once it runs: Game Mode on for the
+   table (body.gm-on, drawn above); open unless closed on this device (closed until opened on phones), and closed
+   between 901 and 1099px. */
 (function (b) { try {
-  var ls = localStorage, on = ls.getItem('askdnd.gameMode') === 'on' || Object.keys(ls).some(function (k) { return k.indexOf('askdnd.gameMode.') === 0 && ls.getItem(k) === 'on'; });
-  if (!on) return;
-  var phone = matchMedia('(max-width: 900px)').matches;
+  if (!b.classList.contains('gm-on')) return;
+  var ls = localStorage, phone = matchMedia('(max-width: 900px)').matches;
   var side = ls.getItem('askdnd.rollsSide'), closed = phone ? side !== 'open' : innerWidth < 1100 || side === 'closed';
   b.classList.add('gm-on', 'rolls-on', closed ? 'rolls-closed' : 'rolls-open');
 } catch (e) { /* private window: app.js places it */ } })(document.body);
@@ -129,7 +129,6 @@
   </div>
   {% endif %}
 </div></header>
-{% if bridge_on and user and vtt_on("ddb_bridge") %}<button type="button" class="br-st br-wait br-pill" data-bridge-health title="The D&amp;D Beyond bridge: click to run the check">D&amp;D Beyond · …</button>{% endif %}
 {% if user %}
 {# Phones: the same groups in a bottom bar (Story · Campaign · your character · Party · More); the rest under More. #}
 <nav class="bottom-nav" aria-label="Main">

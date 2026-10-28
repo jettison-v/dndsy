@@ -136,20 +136,39 @@ def _record_sign_in(db: Session, email: str, name: str) -> None:
 
 
 @router.get("/dev/login")
-def dev_login(request: Request, as_: str = Query("", alias="as"), next_: str = Query("/", alias="next")):
+def dev_login(request: Request, as_: str = Query("", alias="as"), next_: str = Query("/", alias="next"),
+              db: Session = Depends(get_db)):
     """Local-only shortcut for previewing pages without Google (see DEV_LOGIN_EMAIL).
     `?as=<email>` previews as someone else who can sign in (two people at once: one tab on
-    localhost, another on 127.0.0.1, since each keeps its own cookie). `?next=/a/page` opens that page after (a path on
-    this site only), so a link Claude gives Brett to try a change lands on it."""
+    localhost, another on 127.0.0.1, since each keeps its own cookie); `?as=dm` or `?as=player` is that campaign's DM,
+    or one of its players other than you (the campaign in `next`, else the first), so a link needs no one's email.
+    `?next=/a/page` opens that page after (a path on this site only), so a link Claude gives Brett to try a change lands
+    on it."""
     local = request.client is not None and request.client.host in ("127.0.0.1", "::1", "testclient")
     if config.IS_PRODUCTION or not config.DEV_LOGIN_EMAIL or not local:
         return RedirectResponse("/login", status_code=303)
-    email = as_.strip().lower() or config.DEV_LOGIN_EMAIL
+    email = _dev_person(db, as_.strip().lower(), next_) or config.DEV_LOGIN_EMAIL
     if not access.level(email):
         return RedirectResponse("/login", status_code=303)
     request.session["user"] = {"email": email, "name": "Dev preview", "picture": None}
     here = next_ if next_.startswith("/") and not next_.startswith(("//", "/\\")) else "/"
     return RedirectResponse(here, status_code=303)
+
+
+def _dev_person(db: Session, who: str, next_: str) -> str:
+    """The email `?as=` names: an email as it is, or "dm" / "player" in the campaign the next page is in."""
+    if who not in ("dm", "player"):
+        return who
+    from app.models import Campaign, CampaignMember, Role, User
+
+    slug = next_.split("/")[2] if next_.startswith("/c/") and next_.count("/") >= 2 else None
+    campaign = db.scalar(select(Campaign).where(Campaign.slug == slug)) if slug else db.scalar(select(Campaign).order_by(Campaign.id))
+    roles = (Role.DM,) if who == "dm" else (Role.PLAYER, Role.REVIEWER)
+    emails = db.scalars(select(User.email).join(CampaignMember, CampaignMember.user_id == User.id)
+                        .where(CampaignMember.campaign_id == (campaign.id if campaign else None), CampaignMember.left_on.is_(None),
+                               CampaignMember.role.in_(roles), User.email != config.DEV_LOGIN_EMAIL)
+                        .order_by(User.id)).all()
+    return next((e for e in emails if access.level(e)), "x@invalid")  # (nobody with that role: no sign-in)
 
 
 @router.post("/logout")

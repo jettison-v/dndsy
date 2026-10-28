@@ -2,6 +2,7 @@
 D&D Beyond is never called: refreshes use a fake fetch built from fixtures (tests/table_setup.py)."""
 
 import json
+import re
 
 import pytest
 from sqlalchemy import select
@@ -138,4 +139,5 @@ def test_refresh_buttons_show_that_they_are_working(dm, db):
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
     panel = dm.get("/live", params={"c": cole.id}).text
-    assert panel.count('hx-disabled-elt="this"') == 2  # Refresh Cole now, Refresh everyone: disabled while working
+    refresh = re.findall(r'hx-post="/live/refresh[^"]*"[^>]*>', panel)
+    assert len(refresh) == 2 and all('hx-disabled-elt="this"' in b for b in refresh)  # Refresh Cole now, Refresh everyone: disabled while working
