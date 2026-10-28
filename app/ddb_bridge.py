@@ -37,7 +37,7 @@ second copy of the app loses and doubles nothing; each character's row is locked
 so two copies never build two batches for one character. Only the extension's heartbeat is kept in memory (it comes
 back within 30 seconds). Local only: on where DDB_BRIDGE=1, never in production.
 
-The extension makes only the two requests it knows (OPS), so a page can't ask it to change anything else; it calls
+The extension makes only the requests it knows (ddb_fields.WRITES), so a page can't ask it to change anything else; it calls
 askdnd with a key from an askdnd page you're signed in to (`/bridge/connect`), since to Chrome it's a third party and a
 browser blocking third-party cookies sends it no cookie.
 """
@@ -54,7 +54,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import access, config, ddb, live, picks, table_rolls, web
+from app import access, config, ddb, ddb_fields, live, picks, table_rolls, web
 from app import characters as chars
 from app.auth import current_user, is_admin
 from app.db import get_db
@@ -63,9 +63,6 @@ from app.templating import templates
 
 router = APIRouter()
 
-HP_PATH = "/character/v5/life/hp/damage-taken"
-ITEM_PATH = "/character/v5/inventory/item/quantity"
-OPS = {HP_PATH: ("characterId", "removedHitPoints", "temporaryHitPoints"), ITEM_PATH: ("characterId", "id", "quantity")}
 HEALING = {"Potion of Healing": "2d4+2", "Potion of Greater Healing": "4d4+4", "Potion of Superior Healing": "8d4+8",
            "Potion of Supreme Healing": "10d4+20"}  # SRD 5.2.1
 TEST_DDB_ID = "172836541"  # Vi, Brett's test character on D&D Beyond (not in the table's campaign)
@@ -196,20 +193,22 @@ def page_opened(db: Session, character: Character | None) -> None:
 
 
 def numbers(character: Character) -> dict:
-    """Hit points (as D&D Beyond keeps them: damage taken and temporary) and each item's count, exactly as D&D Beyond
-    has them, from its saved copy (not askdnd's display summary, which shows a count of 0 as 1)."""
+    """What D&D Beyond has for this character, from askdnd's last read of it (its saved copy, not askdnd's display
+    summary, which shows a count of 0 as 1): every field the bridge follows (`fields`, app/ddb_fields.py), and hit
+    points (as D&D Beyond keeps them: damage taken and temporary) and each item's count for working out changes."""
     summary = chars.character_summary(character)
     raw = character.snapshot.raw if character.snapshot else None
     if not summary or not raw:
         return {}
-    inv = [i for i in raw.get("inventory") or [] if isinstance(i, dict) and i.get("id") is not None]
-    return {"max": summary["hit_points"]["max"], "removed": raw.get("removedHitPoints") or 0, "temp": raw.get("temporaryHitPoints") or 0,
-            "items": {i["id"]: i.get("quantity") or 0 for i in inv}, "names": {i["id"]: (i.get("definition") or {}).get("name", "Item") for i in inv}}
+    now = ddb_fields.tracked(raw)
+    items = {int(f[5:]): v or 0 for f, v in now.items() if f.startswith("item:")}
+    return {"max": ddb_fields.max_hp(summary), "removed": now["hp"]["removedHitPoints"], "temp": now["hp"]["temporaryHitPoints"],
+            "items": items, "names": {i: ddb_fields.item_name(raw, i) for i in items}, "raw": raw, "fields": now}
 
 
 def fields(n: dict) -> dict:
-    """The values askdnd writes, keyed as a batch's ops are: "hp" and "item:<id>"."""
-    return {"hp": [n["removed"], n["temp"]], **{f"item:{i}": q for i, q in n["items"].items()}}
+    """The values askdnd follows, keyed as a batch's ops are: "hp", "item:<id>"."""
+    return n.get("fields") or {}
 
 
 def plan(intents: list[dict], n: dict) -> tuple[dict, list[str], list[tuple[dict, str]]]:
@@ -242,7 +241,7 @@ def plan(intents: list[dict], n: dict) -> tuple[dict, list[str], list[tuple[dict
     target, lines = {}, []
     for f in dict.fromkeys(touched):
         if f == "hp":
-            target[f] = [removed, temp]
+            target[f] = {"removedHitPoints": removed, "temporaryHitPoints": temp}
             lines.append(f"Hit points {n['max'] - removed}" + (f" + {temp} temporary" if temp else "")
                          + f" (D&D Beyond has {n['max'] - n['removed']})")
         else:
@@ -253,18 +252,11 @@ def plan(intents: list[dict], n: dict) -> tuple[dict, list[str], list[tuple[dict
 
 
 def _ops(character: Character, target: dict, n: dict) -> list[dict]:
+    """Each field's request, with where to read it (`read`) and the value it should go from and to: the extension reads
+    the sheet just before writing and compares (app/ddb_fields.py)."""
     did = int(character.ddb_id)
-    out = []
-    for f, value in target.items():
-        if f == "hp":
-            out.append({"field": f, "path": HP_PATH, "body": {"characterId": did, "removedHitPoints": value[0], "temporaryHitPoints": value[1]},
-                        "from": {"removedHitPoints": n["removed"], "temporaryHitPoints": n["temp"]},
-                        "to": {"removedHitPoints": value[0], "temporaryHitPoints": value[1]}})
-        else:
-            i = int(f[5:])
-            out.append({"field": f, "path": ITEM_PATH, "body": {"characterId": did, "id": i, "quantity": value},
-                        "from": {"item": i, "quantity": n["items"][i]}, "to": {"item": i, "quantity": value}})
-    return out
+    return [{"field": f, **ddb_fields.write(did, f, v), "read": ddb_fields.steps(f), "from": fields(n).get(f), "to": v}
+            for f, v in target.items()]
 
 
 # ------------------------------------------------------------------ the outbox
@@ -317,9 +309,9 @@ def outbox(db: Session, character: Character) -> dict | None:
     keep = [i for i in waiting if i.state == "waiting"]
     if not keep or not target:
         return None
-    batch = BridgeBatch(character_id=character.id, intents=[i.id for i in keep], ops=_ops(character, target, n), before=fields(n),
-                        target=target, state="sending", attempts=1, sent_at=now, next_at=0, check=keep[0].data.get("check", ""),
-                        names={f: ("hit points" if f == "hp" else n["names"].get(int(f[5:]), "an item")) for f in target})
+    batch = BridgeBatch(character_id=character.id, intents=[i.id for i in keep], ops=_ops(character, target, n),
+                        before={f: fields(n).get(f) for f in target}, target=target, state="sending", attempts=1, sent_at=now,
+                        next_at=0, check=keep[0].data.get("check", ""), names={f: ddb_fields.name(n["raw"], f) for f in target})
     db.add(batch)
     for i in keep:
         i.state = "sending"
@@ -400,36 +392,44 @@ def _stop(db: Session, b: BridgeBatch, why: str) -> None:
 
 def heard(db: Session, character: Character, saved: bool = True) -> None:
     """A read of the sheet, after the extension heard it save (`saved`) or on its every-30-seconds pull: it settles any
-    batch D&D Beyond now holds the totals of (so a lost "done" from the extension still gets confirmed), and logs what
-    D&D Beyond changed itself (not what askdnd is writing)."""
+    batch D&D Beyond now holds the totals of (so a lost "done" from the extension still gets confirmed). What D&D
+    Beyond changed itself is logged by the read (`seen`)."""
     if saved:  # a person saved something on D&D Beyond: always read and recorded, and it counts as using it
         _health["heard_at"] = time.time()
         active(db)
     elif not awake(db)["awake"]:
         return  # asleep: the background pull reads nothing from D&D Beyond
     _lock(db, character.id)
-    before = numbers(character)  # the last copy askdnd read
     chars.refresh(db, character)
-    n = numbers(character)
-    if not n:
+    now = fields(numbers(character))
+    if not now:
         return
-    now = fields(n)
     open_batches = list(db.scalars(select(BridgeBatch).where(BridgeBatch.character_id == character.id, BridgeBatch.state.in_(("sending", "ready")))))
     for b in open_batches:
         if all(now.get(f) == v for f, v in b.target.items()):
             _settle(db, b)
-    recent = db.scalars(select(BridgeBatch).where(BridgeBatch.character_id == character.id,
-                                                  BridgeBatch.sent_at > time.time() - 60)).all()
-    ours = {f for b in recent for f in b.target}  # what askdnd is writing (or just wrote) isn't "changed on D&D Beyond"
-    if before:
-        changed = []
-        if before["removed"] != n["removed"] and "hp" not in ours:
-            changed.append(f"hit points {before['max'] - before['removed']} → {n['max'] - n['removed']}")
-        for i, q in n["items"].items():
-            if before["items"].get(i) not in (None, q) and f"item:{i}" not in ours:
-                changed.append(f"{n['names'].get(i, 'an item')} ×{before['items'][i]} → ×{q}")
-        if changed:
-            _log(db, character.id, f"{character.name} (on D&D Beyond): " + ", ".join(changed), "seen")
+
+
+def seen(db: Session, character: Character, before: dict | None, after: dict, summary: dict | None) -> None:
+    """Every read of a character from D&D Beyond (the bridge's, Game Mode's refresh, a page opening) passes through
+    here with askdnd's last copy (`before`) and the new one: whatever D&D Beyond changed itself goes in the log as
+    "On D&D Beyond", whichever read saw it first. What askdnd is writing (or just wrote) isn't D&D Beyond's change."""
+    if not before:
+        return
+    was, now = ddb_fields.tracked(before), ddb_fields.tracked(after)
+    recent = db.scalars(select(BridgeBatch).where(BridgeBatch.character_id == character.id, BridgeBatch.sent_at > time.time() - 60)).all()
+    ours = {f for b in recent for f in b.target}
+    hp_max = ddb_fields.max_hp(summary)
+    lines = [ddb_fields.changed(after, f, was[f], v, hp_max) for f, v in now.items()
+             if f in was and was[f] is not None and v != was[f] and f not in ours]
+    if lines:
+        _log(db, character.id, f"{character.name} (on D&D Beyond): " + ", ".join(lines), "seen")
+
+
+def check(character: Character) -> list[dict]:
+    """What askdnd just read from D&D Beyond, field by field, for the extension to compare with each open copy of the
+    sheet: a copy holding anything else shows D&D Beyond's numbers (extension/askdnd-bridge/ddb-page.js `check`)."""
+    return [{"read": ddb_fields.steps(f), "value": v} for f, v in fields(numbers(character)).items()]
 
 
 def retry(db: Session, intent_id: int) -> None:
@@ -714,7 +714,7 @@ def bridge_heard(ddb_id: str, request: Request, pull: int = 0, db: Session = Dep
     character, user = _by_ddb(db, request, ddb_id)
     heard(db, character, saved=not pull)
     db.commit()
-    return _json(state(db, character, user))
+    return _json({**state(db, character, user), "check": check(character)})
 
 
 @router.post("/bridge/drink/{character_id:int}/{item_id:int}")

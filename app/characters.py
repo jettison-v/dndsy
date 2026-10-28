@@ -12,7 +12,7 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import ddb, realtime
+from app import config, ddb, realtime
 from app.models import CampaignCharacter, Character, CharacterItemNote, CharacterSnapshot, Entity, EntityKind
 
 Fetch = Callable[[str], dict]
@@ -144,6 +144,9 @@ def refresh(db: Session, character: Character, fetch: Fetch = ddb.fetch_characte
     else:
         if _as_stored(snap.summary) != _as_stored(summary):  # pages showing this character update (app/realtime.py)
             realtime.announce(db, character.campaign_id, "character", id=character.id)
+        if config.DDB_BRIDGE:  # the bridge's log of what changed on D&D Beyond, whichever read saw it (a local proof)
+            from app import ddb_bridge  # (it builds on this module)
+            ddb_bridge.seen(db, character, snap.raw, raw, summary)
         snap.raw, snap.summary, snap.fetched_at = raw, summary, now
         character.ddb_campaign_id = ddb.campaign_id(raw)
         snap.status, snap.error = "ok", ""

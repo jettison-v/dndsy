@@ -5,7 +5,7 @@ import copy
 
 import pytest
 
-from app import characters, config, ddb, ddb_bridge
+from app import characters, config, ddb, ddb_bridge, ddb_fields
 from app.importer import import_bundle
 from tests.table_setup import BUNDLE, COLE, char, owned_by
 
@@ -32,7 +32,7 @@ def sheet(monkeypatch, db):
 def make(data, batch):
     """What the extension's requests do to the sheet (it skips a field already at its new value)."""
     for op in batch["ops"]:
-        if op["path"] == ddb_bridge.HP_PATH:
+        if op["path"] == ddb_fields.HP_PATH:
             data["removedHitPoints"], data["temporaryHitPoints"] = op["body"]["removedHitPoints"], op["body"]["temporaryHitPoints"]
         else:
             next(i for i in data["inventory"] if i["id"] == op["body"]["id"])["quantity"] = op["body"]["quantity"]
@@ -166,6 +166,33 @@ def test_changes_made_on_d_and_d_beyond_itself_are_logged(player, db, sheet):
     st = player.post("/bridge/heard/75423618").json()
     assert st["hp"]["current"] == 31
     assert st["log"][0]["state"] == "seen" and st["log"][0]["text"] == "Cole (on D&D Beyond): hit points 37 → 31, Potion of Healing ×2 → ×3"
+
+
+def test_a_change_on_d_and_d_beyond_is_logged_whichever_read_sees_it_first(player, db, sheet):
+    """Game Mode's refresh (or a page opening) can read D&D Beyond before the bridge does: the change is still logged
+    as made on D&D Beyond, once, and what askdnd is writing never is."""
+    cole = char(db, "Cole")
+    sheet["temporaryHitPoints"] = 5
+    characters.refresh(db, cole)  # Game Mode's refresh, not the bridge
+    player.post("/bridge/heard/75423618")  # the bridge reads it again: nothing new
+    log = player.get(f"/bridge/state/{cole.id}").json()["log"]
+    assert [entry["text"] for entry in log if entry["state"] == "seen"] == ["Cole (on D&D Beyond): temporary hit points 0 → 5"]
+
+    drink(db, cole)
+    batch = ddb_bridge.outbox(db, cole)
+    make(sheet, batch)
+    characters.refresh(db, cole)  # Game Mode's refresh sees askdnd's own write first
+    ddb_bridge.delivered(db, batch["id"], ok=True)
+    log = player.get(f"/bridge/state/{cole.id}").json()["log"]
+    assert [entry["state"] for entry in log] == ["live", "seen"]
+
+
+def test_askdnd_and_the_extension_read_a_field_the_same_way():
+    """The extension follows the same steps (ddb-page.js `pick`): a value D&D Beyond leaves out reads as its stand-in,
+    a missing item as None."""
+    data = {"removedHitPoints": 3, "inventory": [{"id": 7, "quantity": 2}]}
+    assert ddb_fields.value(data, "hp") == {"removedHitPoints": 3, "temporaryHitPoints": 0}
+    assert ddb_fields.value(data, "item:7") == 2 and ddb_fields.value(data, "item:8") is None
 
 
 def test_the_round_trip_check_and_the_status(player, db, sheet, monkeypatch):
