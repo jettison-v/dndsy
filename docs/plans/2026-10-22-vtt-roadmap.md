@@ -211,7 +211,7 @@ read back. So the bridge's changes come first, then the fight screen and live ch
    same list; askdnd already hears all of them through its reads, so each is the writing half plus its read-back):
    - a. Hit points and their neighbours: hit points and temporary (**done**), death saves, Heroic Inspiration,
      Exhaustion and conditions, hit dice (as a Short Rest: the only way D&D Beyond takes them).
-   - b. Spells: spell slots, Pact Magic slots, prepared spells.
+   - b. Spells: spell slots, Pact Magic slots. Prepared spells moved to 1.2 casting (Brett, 2026-10-27).
    - c. Class resources and limited uses (Rage, Wild Shape, Channel Divinity, an item's uses).
    - d. Inventory: an item's count (**done**), equipped, attuned, charges, coins, adding and removing an item, moving
      it into or out of a container.
@@ -225,7 +225,7 @@ read back. So the bridge's changes come first, then the fight screen and live ch
 5. **The fight screen** (Phase 1: 2.2 with 1.1 and the play log): first update the play state design
    (`docs/plans/2026-10-24-play-state.md`) for "D&D Beyond confirms every change", then the mockup, then build in
    small pieces in the test campaign.
-6. **Live character state** (Phase 2: 1.2 casting, 1.3 resources, 1.6 conditions, 1.4 rests, 1.5 inventory), each on
+6. **Live character state** (Phase 2: 1.2 casting with prepared spells, 1.3 resources, 1.6 conditions, 1.4 rests, 1.5 inventory), each on
    the bridge change it needs from step 3.
 
 Alongside, whenever there's room:

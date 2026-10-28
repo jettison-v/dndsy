@@ -2,7 +2,7 @@
 the request the sheet itself sends to change it (each seen on Brett's test character's own sheet, 2026-10-27).
 
 A field is a key: "hp", "death", "inspiration", "exhaustion", "condition:<id>", "hitdice:<class id>", "slot:<level>",
-"pact:<level>", "prepared:<spell row id>", "uses:<action id>", "item:<inventory id>" (its count; None once removed),
+"pact:<level>", "uses:<action id>", "item:<inventory id>" (its count; None once removed),
 "equipped:<id>", "attuned:<id>", "charges:<id>", "container:<id>", "coin:<cp|sp|ep|gp|pp>", "add:<definition id>" (how
 many of that item the character has, in all). `steps(field)` says where D&D Beyond keeps it in a character's JSON, as
 steps the extension follows too (extension/askdnd-bridge/ddb-page.js `pick`), so askdnd's read-back, the extension's
@@ -11,7 +11,6 @@ check before writing and its check of the open sheet always read a value the sam
 - a string reads a dict's entry ("removedHitPoints"),
 - {key: value} picks the element of a list whose `key` is `value` ({"id": 7}, {"level": 1}; compared as text),
 - "*" joins the lists in a dict into one ("actions": its race, class and feat lists),
-- {"each": key} joins each element's list `key` into one ("classSpells": each class's spells),
 - {"read": {name: steps}} reads several values at once, as a dict,
 - {"or": X} stands for a value D&D Beyond left out (no temporary hit points, no Exhaustion),
 - {"present": true} reads whether there is anything there at all (a condition),
@@ -32,7 +31,7 @@ ITEM_PATH = f"{CS}/inventory/item/quantity"
 # The only requests the extension makes (its own list in ddb-page.js matches)
 WRITES = {("PUT", HP_PATH), ("PUT", f"{CS}/life/death-saves"), ("PUT", f"{CS}/character/inspiration"),
           ("PUT", f"{CS}/condition"), ("DELETE", f"{CS}/condition"), ("POST", f"{CS}/character/rest/short"),
-          ("PUT", f"{CS}/spell/slots"), ("PUT", f"{CS}/spell/pact-magic"), ("PUT", f"{CS}/spell/prepared"),
+          ("PUT", f"{CS}/spell/slots"), ("PUT", f"{CS}/spell/pact-magic"),
           ("PUT", f"{CS}/action/limited-use"), ("PUT", ITEM_PATH), ("PUT", f"{CS}/inventory/item/equipped"),
           ("PUT", f"{CS}/inventory/item/attuned"), ("PUT", f"{CS}/inventory/item/charge"),
           ("PUT", f"{CS}/inventory/item/move"), ("POST", f"{CS}/inventory/item"), ("DELETE", f"{CS}/inventory/item"),
@@ -53,8 +52,6 @@ def pick(data, steps: list):
             v = [x for part in v.values() if isinstance(part, list) for x in part] if isinstance(v, dict) else None
         elif isinstance(s, str):
             v = v.get(s) if isinstance(v, dict) else None
-        elif "each" in s:
-            v = [x for e in v if isinstance(e, dict) for x in e.get(s["each"]) or []] if isinstance(v, list) else None
         elif "read" in s:
             v = {k: pick(v, sub) for k, sub in s["read"].items()}
         elif "sum" in s:
@@ -83,7 +80,6 @@ def steps(field: str) -> list:
         "hitdice": ["classes", {"id": arg}, "hitDiceUsed", {"or": 0}],
         "slot": ["spellSlots", {"level": arg}, "used", {"or": 0}],
         "pact": ["pactMagic", {"level": arg}, "used", {"or": 0}],
-        "prepared": ["classSpells", {"each": "spells"}, {"id": arg}, "prepared"],
         "uses": ["actions", "*", {"id": arg}, "limitedUse", "numberUsed"],
         "item": [*item, "quantity"],
         "equipped": [*item, "equipped"],
@@ -107,9 +103,6 @@ def tracked(data: dict | None) -> dict:
     fs += [f"hitdice:{c['id']}" for c in data.get("classes") or [] if isinstance(c, dict)]
     fs += [f"slot:{s['level']}" for s in data.get("spellSlots") or [] if isinstance(s, dict)]
     fs += [f"pact:{s['level']}" for s in data.get("pactMagic") or [] if isinstance(s, dict)]
-    # (never a cantrip's: on D&D Beyond its "prepared" means learned, and switching it on took Guidance off Vi's sheet)
-    fs += [f"prepared:{s['id']}" for s in pick(data, ["classSpells", {"each": "spells"}]) or []
-           if isinstance(s, dict) and not s.get("alwaysPrepared") and (s.get("definition") or {}).get("level") != 0]
     fs += [f"uses:{a['id']}" for a in pick(data, ["actions", "*"]) or [] if isinstance(a, dict) and a.get("limitedUse")]
     for i in data.get("inventory") or []:
         if isinstance(i, dict) and i.get("id") is not None:
@@ -142,8 +135,6 @@ def name(data: dict | None, field: str) -> str:
         return (row.get("definition") or {}).get("name") or "an item"
     if kind == "hitdice":
         return f"{((pick(data, ['classes', {'id': arg}]) or {}).get('definition') or {}).get('name') or 'Class'} Hit Dice"
-    if kind == "prepared":
-        return ((pick(data, ["classSpells", {"each": "spells"}, {"id": arg}]) or {}).get("definition") or {}).get("name") or "a spell"
     if kind == "uses":
         return (pick(data, ["actions", "*", {"id": arg}]) or {}).get("name") or "a use"
     if kind == "condition":
@@ -169,8 +160,7 @@ def text(data: dict | None, field: str, v, max_hit_points: int = 0) -> str:
     if kind == "container":
         return "carried" if str(v) == str((data or {}).get("id")) else f"in {item_name(data, v)}"
     if isinstance(v, bool):
-        return {"equipped": ("equipped", "not equipped"), "attuned": ("attuned", "not attuned"),
-                "prepared": ("prepared", "not prepared")}.get(kind, ("on", "off"))[0 if v else 1]
+        return {"equipped": ("equipped", "not equipped"), "attuned": ("attuned", "not attuned")}.get(kind, ("on", "off"))[0 if v else 1]
     if kind == "exhaustion":
         return f"level {v}" if v else "none"
     return f"{v} used" if kind in ("hitdice", "slot", "pact", "uses", "charges") else str(v)
@@ -218,11 +208,6 @@ def write(ddb_id: int, field: str, v, data: dict | None = None, extra: dict | No
         return req("POST", "character/rest/short", classHitDiceUsed={arg: v}, resetMaxHpModifier=False)
     if kind in ("slot", "pact"):
         return req("PUT", "spell/slots" if kind == "slot" else "spell/pact-magic", **{f"level{arg}": v})
-    if kind == "prepared":
-        cls = next((c for c in data.get("classSpells") or [] if pick(c, ["spells", {"id": arg}])), {})
-        s = pick(cls, ["spells", {"id": arg}]) or {}
-        return req("PUT", "spell/prepared", spellId=(s.get("definition") or {}).get("id"), characterClassId=cls.get("characterClassId"),
-                   entityTypeId=s.get("entityTypeId"), id=int(arg), prepared=v)
     if kind == "uses":
         a = pick(data, ["actions", "*", {"id": arg}]) or {}
         return req("PUT", "action/limited-use", id=str(arg), entityTypeId=str(a.get("entityTypeId")), uses=v)

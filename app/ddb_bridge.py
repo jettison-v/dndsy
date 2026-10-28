@@ -32,7 +32,7 @@ It works like middleware between askdnd and D&D Beyond, and repairs itself:
    menu bar shows how it stands.
 8. **Everything a player changes in play** (ddb_fields: what each field is, where D&D Beyond keeps it, the request
    that writes it): hit points, death saves, Heroic Inspiration, conditions, Exhaustion, Hit Dice (as a Short Rest),
-   spell and Pact Magic slots, prepared spells, limited uses, an item's count, equipped, attuned, charges, container,
+   spell and Pact Magic slots, limited uses, an item's count, equipped, attuned, charges, container,
    coins, adding and removing an item. A roll made on the sheet is only heard, into Table rolls ("on D&D Beyond").
    After a change, every open copy of the sheet shows D&D Beyond's numbers in place (ddb-page.js `show`).
 
@@ -261,7 +261,7 @@ def plan(intents: list[dict], n: dict) -> tuple[dict, list[str], list[tuple[dict
                 continue
             vals[f] = get(f) + d["delta"]
             touched.append(f)
-        elif kind == "set":  # an absolute value: on or off, a level, prepared, where an item is, or back as it was
+        elif kind == "set":  # an absolute value: on or off, a level, where an item is, or back as it was
             f = d["field"]
             if get(f) is None and not f.startswith("item:"):
                 no(it, f"{ddb_fields.name(n['raw'], f)} isn't on D&D Beyond any more.")
@@ -592,7 +592,7 @@ def _every_change(n: dict) -> list[tuple[str, dict]]:
         if f:
             out.append(("use", {"field": f, "delta": -1 if now[f] else 1}))
     canequip = lambda f, v: ((ddb_fields.pick(raw, ["inventory", {"id": f[9:]}]) or {}).get("definition") or {}).get("canEquip")  # noqa: E731
-    for f in (first("prepared:"), first("equipped:", canequip), first("attuned:")):
+    for f in (first("equipped:", canequip), first("attuned:")):
         if f:
             out.append(("set", {"field": f, "value": not now[f]}))
     box = next((i for i in raw.get("inventory") or [] if (i.get("definition") or {}).get("isContainer")), None)
@@ -951,7 +951,7 @@ async def bridge_roll(ddb_id: str, request: Request, db: Session = Depends(get_d
 # ------------------------------------------------------------------ changes from askdnd's pages
 
 
-SETS = {"inspiration": bool, "condition": bool, "exhaustion": int, "equipped": bool, "attuned": bool, "prepared": bool, "container": int}
+SETS = {"inspiration": bool, "condition": bool, "exhaustion": int, "equipped": bool, "attuned": bool, "container": int}
 USES = ("slot", "pact", "uses", "charges", "coin", "hitdice")
 
 
@@ -961,7 +961,7 @@ def _change(n: dict, body: dict) -> tuple[str, dict] | None:
     field = str(body.get("field") or "")
     fk, _, arg = field.partition(":")
     if kind in ("set", "use") and field not in fields(n):
-        return None  # only a field the bridge follows on this character (no cantrip's "prepared", no item it hasn't got)
+        return None  # only a field the bridge follows on this character (no item it hasn't got)
     try:
         if kind == "set" and fk in SETS:
             v = body.get("value")

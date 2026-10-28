@@ -16,7 +16,7 @@
   const WRITES = new Set([
     'PUT /character/v5/life/hp/damage-taken', 'PUT /character/v5/life/death-saves', 'PUT /character/v5/character/inspiration',
     'PUT /character/v5/condition', 'DELETE /character/v5/condition', 'POST /character/v5/character/rest/short',
-    'PUT /character/v5/spell/slots', 'PUT /character/v5/spell/pact-magic', 'PUT /character/v5/spell/prepared',
+    'PUT /character/v5/spell/slots', 'PUT /character/v5/spell/pact-magic',
     'PUT /character/v5/action/limited-use', 'PUT /character/v5/inventory/item/quantity', 'PUT /character/v5/inventory/item/equipped',
     'PUT /character/v5/inventory/item/attuned', 'PUT /character/v5/inventory/item/charge', 'PUT /character/v5/inventory/item/move',
     'POST /character/v5/inventory/item', 'DELETE /character/v5/inventory/item',
@@ -99,7 +99,6 @@
       else if (v == null) continue;
       else if (s === '*') v = isDict(v) ? Object.values(v).filter(Array.isArray).flat() : null;
       else if (typeof s === 'string') v = isDict(v) ? v[s] : null;
-      else if ('each' in s) v = Array.isArray(v) ? v.filter(isDict).flatMap(e => e[s.each] || []) : null;
       else if ('read' in s) { const o = {}; for (const k of Object.keys(s.read)) o[k] = pick(v, s.read[k]); v = o; }
       else if ('sum' in s) {
         const [where, want, key] = s.sum;

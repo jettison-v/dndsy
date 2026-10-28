@@ -6,12 +6,12 @@ askdnd's changes there, as you; askdnd counts a change only once it has read it 
 player changes in play:
 - hit points and temporary hit points, Death Saving Throws, Heroic Inspiration, conditions and Exhaustion, Hit Dice
   (D&D Beyond takes those only as a Short Rest);
-- spell slots, Pact Magic slots, prepared spells (never a cantrip's: there "prepared" means learned), limited uses;
+- spell slots, Pact Magic slots, limited uses;
 - an item's count, equipped, attuned, charges, coins (absolute amounts, never the sheet's +/− deltas), adding another
   of an item, removing one, moving it into or out of a container;
 - rolls made on the sheet come into Table rolls marked "on D&D Beyond" (only heard; nothing goes into D&D Beyond's
   game log).
-Left out: experience points, custom names and custom items.
+Left out: experience points, custom names and custom items. Prepared spells come with casting (roadmap Phase 2).
 
 After askdnd changes the character, every open copy of the sheet shows D&D Beyond's numbers in place, through the
 sheet's own store (no reload, no request but the read the sheet makes when it opens); only if D&D Beyond's page has

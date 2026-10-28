@@ -53,8 +53,6 @@ def put(data, field, v):
         next(c for c in data["classes"] if str(c["id"]) == arg)["hitDiceUsed"] = v
     elif kind in ("slot", "pact"):
         next(x for x in data["spellSlots" if kind == "slot" else "pactMagic"] if str(x["level"]) == arg)["used"] = v
-    elif kind == "prepared":
-        next(x for c in data["classSpells"] for x in c["spells"] if str(x["id"]) == arg)["prepared"] = v
     elif kind == "uses":
         next(a for group in data["actions"].values() for a in group or [] if str(a["id"]) == arg)["limitedUse"]["numberUsed"] = v
     elif kind == "item" and v is None:
@@ -472,8 +470,6 @@ CHANGES = [  # what a page asks for, the sheet's own request it becomes (seen on
      {"classHitDiceUsed": {"184968818": 2}, "resetMaxHpModifier": False}, "hitdice:184968818", 2),
     ({"kind": "use", "field": "slot:2", "delta": 1}, "PUT", "spell/slots", {"level2": 1}, "slot:2", 1),
     ({"kind": "use", "field": "pact:1", "delta": 1}, "PUT", "spell/pact-magic", {"level1": 1}, "pact:1", 1),
-    ({"kind": "set", "field": "prepared:21171650", "value": False}, "PUT", "spell/prepared",
-     {"id": 21171650, "characterClassId": 184968818, "prepared": False}, "prepared:21171650", False),
     ({"kind": "use", "field": "uses:9414013", "delta": 1}, "PUT", "action/limited-use", {"id": "9414013", "uses": 1}, "uses:9414013", 1),
     ({"kind": "set", "field": f"equipped:{ROD}", "value": False}, "PUT", "inventory/item/equipped", {"id": ROD, "value": False}, f"equipped:{ROD}", False),
     ({"kind": "set", "field": f"attuned:{LUCKSTONE}", "value": False}, "PUT", "inventory/item/attuned", {"id": LUCKSTONE, "value": False}, f"attuned:{LUCKSTONE}", False),
@@ -557,22 +553,11 @@ def test_a_change_with_no_room_left_says_why_and_lists_nothing_to_write(player, 
     {"kind": "set", "field": "exhaustion", "value": 7}, {"kind": "set", "field": "inspiration", "value": "yes"},
     {"kind": "use", "field": "coin:gp", "delta": 1.5}, {"kind": "use", "field": "xp", "delta": 100},
     {"kind": "set", "field": f"container:{ROD}", "value": POTION}, {"kind": "remove_item", "item": 1},
-    {"kind": "short_rest", "spend": {"1": 1}}, {"kind": "rename", "value": "Sarkas"}])
+    {"kind": "short_rest", "spend": {"1": 1}}, {"kind": "rename", "value": "Sarkas"},
+    {"kind": "set", "field": "prepared:21171650", "value": False}])
 def test_only_changes_the_bridge_can_make_are_taken(player, db, sheet, ask):
     """Left out on purpose (Brett, 2026-10-27): experience points, custom names and custom items."""
     assert player.post(f"/bridge/change/{char(db, 'Cole').id}", json=ask).status_code == 400
-
-
-def test_a_cantrip_is_never_prepared_or_unprepared(player, db, sheet):
-    """On D&D Beyond a cantrip's "prepared" is whether it's learned: switching it on took Guidance off Vi's sheet
-    (2026-10-27). The bridge doesn't follow it, and a page can't ask for it."""
-    spells = sheet["classSpells"][0]["spells"]
-    spells.append({**copy.deepcopy(spells[0]), "id": 777, "prepared": False, "alwaysPrepared": False,
-                   "definition": {**spells[0]["definition"], "level": 0, "name": "Guidance"}})
-    cole = char(db, "Cole")
-    player.post("/bridge/heard/75423618")
-    assert "prepared:777" not in ddb_fields.tracked(sheet) and f"prepared:{spells[0]['id']}" in ddb_fields.tracked(sheet)
-    assert player.post(f"/bridge/change/{cole.id}", json={"kind": "set", "field": "prepared:777", "value": True}).status_code == 400
 
 
 def test_what_changed_on_d_and_d_beyond_is_said_in_words(player, db, sheet):
@@ -601,7 +586,7 @@ def test_the_full_check_takes_one_of_each_out_and_puts_everything_back(admin, db
     assert admin.post("/bridge/check?full=1").json()["text"] == "D&D Beyond · checking…"
     out = ddb_bridge.outbox(db, cole)
     kinds = {op["field"].split(":")[0] for op in out["ops"]}
-    assert {"hp", "item", "death", "inspiration", "condition", "exhaustion", "coin", "hitdice", "uses", "charges", "prepared",
+    assert {"hp", "item", "death", "inspiration", "condition", "exhaustion", "coin", "hitdice", "uses", "charges",
             "equipped", "attuned", "container"} <= kinds
     make(sheet, out)
     ddb_bridge.delivered(db, out["id"], ok=True)
@@ -640,13 +625,13 @@ def test_a_check_stopped_part_way_settles_what_landed_and_puts_it_back(admin, db
 
 
 def test_askdnd_and_the_extension_read_every_kind_of_field_the_same_way():
-    """The steps ddb-page.js `pick` follows too: a list picked by id or level (as text), lists joined, a sum, presence."""
+    """The steps ddb-page.js `pick` follows too: a list picked by id or level (as text), a dict's lists joined, a sum, presence."""
     data = {"actions": {"race": [], "class": [{"id": "9", "limitedUse": {"numberUsed": 2}}], "item": None},
-            "classSpells": [{"spells": [{"id": 5, "prepared": True}]}, {"spells": []}], "conditions": [{"id": 12, "level": None}],
+            "conditions": [{"id": 12, "level": None}],
             "spellSlots": [{"level": 1, "used": 1}], "inventory": [{"id": 1, "quantity": 2, "definition": {"id": 7}},
                                                                     {"id": 2, "quantity": 3, "definition": {"id": 7}}]}
-    assert [ddb_fields.value(data, f) for f in ("uses:9", "prepared:5", "condition:12", "condition:1", "exhaustion", "slot:1", "add:7", "add:8")] \
-        == [2, True, True, False, 0, 1, 5, 0]
+    assert [ddb_fields.value(data, f) for f in ("uses:9", "condition:12", "condition:1", "exhaustion", "slot:1", "add:7", "add:8")] \
+        == [2, True, False, 0, 1, 5, 0]
 
 
 def ddb_roll(rid="r-1", scope="gameId", kind="check", how="", values=(14,), constant=5, total=19, action="Stealth"):
