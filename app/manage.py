@@ -118,9 +118,9 @@ def _plural(n: int, one: str, many: str | None = None) -> str:
 def needs(db: Session, user: dict) -> list[dict]:
     """What's waiting in the campaign, most important first: one line each, with where to go.
     Admins also get askdnd-wide items (backups, spending), marked `admin`."""
-    from app import characters as chars
     from app.admin_usage import usage_summary
     from app.extraction import session_label, timeline
+    from app.models import CampaignCharacter, Character, CharacterSnapshot
     from app.suggestions import waiting_count
 
     campaign = web.campaign(db)
@@ -132,7 +132,8 @@ def needs(db: Session, user: dict) -> list[dict]:
             out.append({"text": f"{_plural(n, 'suggestion')} or draft{'s' if n != 1 else ''} from the table",
                         "sub": "Waiting for your OK", "href": f"{base}/manage/inbox", "go": "Open the inbox"})
     if campaign and is_reviewer(user):
-        rows = [(s, review.review_status(s, False)) for s in timeline(db, campaign.id)]
+        status = review.statuses(db, campaign.id)
+        rows = [(s, status.get(s.id, "no draft")) for s in timeline(db, campaign.id)]
         ready = [s for s, st in rows if st in ("draft", "edited")]
         if ready:
             first = ready[0]
@@ -145,9 +146,13 @@ def needs(db: Session, user: dict) -> list[dict]:
         if undrafted:
             out.append({"text": f"Backlog: {_plural(undrafted, 'session')} not drafted yet",
                         "sub": "Publishing a session drafts the next one", "href": f"{base}/manage/sessions", "go": "Sessions"})
-        snaps = [ch.snapshot for ch in chars.campaign_characters(db, campaign.id) if ch.ddb_id]
-        failed = [s for s in snaps if s and s.status == "error"]
-        oldest = min((s.fetched_at for s in snaps if s and s.fetched_at), default=None)
+        snaps = db.execute(select(CharacterSnapshot.status, CharacterSnapshot.fetched_at)  # (not the sheets themselves)
+                           .join(CampaignCharacter, CampaignCharacter.character_id == CharacterSnapshot.character_id)
+                           .join(Character, Character.id == CharacterSnapshot.character_id)
+                           .where(CampaignCharacter.campaign_id == campaign.id, CampaignCharacter.left_on.is_(None),
+                                  Character.ddb_id.is_not(None), Character.ddb_id != "")).all()
+        failed = [s for s in snaps if s.status == "error"]
+        oldest = min((s.fetched_at for s in snaps if s.fetched_at), default=None)
         where = (f"{base}/manage/table", "Table") if can_see_table(user) else ("/party", "Party")
         if failed:
             out.append({"text": f"{_plural(len(failed), 'character')} couldn't refresh from D&D Beyond",
@@ -296,7 +301,8 @@ def backlog(db: Session) -> dict:
     if campaign is None:
         return {}
     sessions = timeline(db, campaign.id)
-    rows = [(s, review.review_status(s, False)) for s in sessions]
+    status = review.statuses(db, campaign.id)
+    rows = [(s, status.get(s.id, "no draft")) for s in sessions]
     return {
         "to_draft": [s for s, st in rows if st == "no draft" and s.source == "notes"],
         "to_record": [s for s, st in rows if st == "no draft" and s.source == "transcript"],

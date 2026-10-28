@@ -63,6 +63,26 @@ def test_switching_a_book_off_hides_it_and_deletes_nothing(db):
     assert books.switch(ours, "xgte", True) == "askdnd doesn't know that book."
 
 
+def test_a_books_entries_are_read_once_until_one_changes(db, monkeypatch):
+    """A character page doesn't read and check a whole book each time: the entries are kept until one is added,
+    changed or removed (here, or by scripts/book_load.py in another process)."""
+    ours = Campaign(slug="ours", name="Ours")
+    db.add(ours)
+    db.flush()
+    books.save(db, "mm-2024", "monster", made_up_beast())
+    checked = []
+    fits = rules_data.fits
+    monkeypatch.setattr(rules_data, "fits", lambda kind, entry, what: checked.append(entry["key"]) or fits(kind, entry, what))
+    for _ in range(3):
+        assert [m["name"] for m in books.entries(db, "monster", ours.id)] == ["Glimmer Hound"]
+    assert checked == ["glimmer-hound"]
+    books.save(db, "mm-2024", "monster", made_up_beast(hp=20))  # changed here
+    assert books.entries(db, "monster", ours.id)[0]["hp"] == 20
+    db.add(BookEntry(book="mm-2024", kind="monster", key="ember-cat", name="Ember Cat",
+                     data={k: v for k, v in made_up_beast(name="Ember Cat").items() if k not in ("key", "name", "source")}))
+    db.flush()  # added elsewhere: the count says so
+    assert {m["name"] for m in books.entries(db, "monster", ours.id)} == {"Glimmer Hound", "Ember Cat"}
+
 def test_a_bad_book_entry_is_refused_on_save_and_skipped_on_read(db):
     ours = Campaign(slug="ours", name="Ours")
     db.add(ours)

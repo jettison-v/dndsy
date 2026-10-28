@@ -96,6 +96,14 @@ def file_store(monkeypatch, tmp_path):
 
 
 @pytest.fixture(autouse=True)
+def _books_read_fresh():
+    """Each test reads books' entries from its own database (app/books.py keeps what it read)."""
+    from app import books
+
+    books._read.clear()
+
+
+@pytest.fixture(autouse=True)
 def _access_rows(monkeypatch):
     """Access checks (app/access.py) read people from the database. Tests never see
     the local dev database: no rows unless the test uses `db`, and no caching."""

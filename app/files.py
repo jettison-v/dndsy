@@ -19,6 +19,7 @@ import hashlib
 import logging
 import os
 import threading
+import time
 from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -208,15 +209,25 @@ def delete(key: str) -> None:
     _store().delete(key)
 
 
+_unreachable = {"at": 0.0}  # when storage last failed to answer, so an outage is reported once, not once per picture
+
+
 def read(key: str | None) -> bytes | None:
-    """The file at `key`, or None if there's no key or storage doesn't have it."""
+    """The file at `key`, or None if there's no key, storage doesn't have it, or storage doesn't answer (a page of
+    pictures then shows them missing instead of failing; the outage is reported at most every 10 minutes)."""
     if not key:
         return None
     try:
         return get(key)
     except FileNotFoundError:
         log.warning("File %s is listed but storage doesn't have it", key)
-        return None
+    except StorageNotReady:
+        raise  # (set up wrong: that's for the deploy to show, not a missing picture)
+    except Exception:  # noqa: BLE001 - storage unreachable or refusing
+        if time.monotonic() - _unreachable["at"] > 600:
+            _unreachable["at"] = time.monotonic()
+            log.error("File storage didn't answer for %s; pictures show as missing until it does", key, exc_info=True)
+    return None
 
 
 def serve(key: str | None, content_type: str, cache_control: str = CACHE_FOREVER, release: Session | None = None):
