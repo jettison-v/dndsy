@@ -943,6 +943,8 @@ def _change(n: dict, body: dict) -> tuple[str, dict] | None:
     kind, raw = body.get("kind"), n["raw"]
     field = str(body.get("field") or "")
     fk, _, arg = field.partition(":")
+    if kind in ("set", "use") and field not in fields(n):
+        return None  # only a field the bridge follows on this character (no cantrip's "prepared", no item it hasn't got)
     try:
         if kind == "set" and fk in SETS:
             v = body.get("value")

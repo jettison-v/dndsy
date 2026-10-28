@@ -306,7 +306,7 @@ def entries(db: Session, roots: list[TableRoll], kids: list[TableRoll], viewer_i
                   "outcome": _death(total, nat) if r.kind == "death" else "",
                   "short": {"death": "Death", "heal": "Heal", "damage": "Dmg", "dice": "Dice"}.get(r.kind) or r.label.split()[0][:5],
                   "can": {"damage": "", "reroll": "", "bonus": False}}
-            if mine and newest_mine:
+            if mine and newest_mine and not r.ddb_roll_id:  # (a roll made on D&D Beyond is only shown: its dice are D&D Beyond's)
                 ctx = mine_ctx or {}
                 e["can"] = {
                     "damage": _damage_label(r) if r.kind == "attack" and (r.damage or r.spec) and not dmg and (nat != 1 or r.parts) else "",

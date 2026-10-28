@@ -107,8 +107,9 @@ def tracked(data: dict | None) -> dict:
     fs += [f"hitdice:{c['id']}" for c in data.get("classes") or [] if isinstance(c, dict)]
     fs += [f"slot:{s['level']}" for s in data.get("spellSlots") or [] if isinstance(s, dict)]
     fs += [f"pact:{s['level']}" for s in data.get("pactMagic") or [] if isinstance(s, dict)]
+    # (never a cantrip's: on D&D Beyond its "prepared" means learned, and switching it on took Guidance off Vi's sheet)
     fs += [f"prepared:{s['id']}" for s in pick(data, ["classSpells", {"each": "spells"}]) or []
-           if isinstance(s, dict) and not s.get("alwaysPrepared")]
+           if isinstance(s, dict) and not s.get("alwaysPrepared") and (s.get("definition") or {}).get("level") != 0]
     fs += [f"uses:{a['id']}" for a in pick(data, ["actions", "*"]) or [] if isinstance(a, dict) and a.get("limitedUse")]
     for i in data.get("inventory") or []:
         if isinstance(i, dict) and i.get("id") is not None:

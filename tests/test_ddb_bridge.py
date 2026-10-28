@@ -563,6 +563,18 @@ def test_only_changes_the_bridge_can_make_are_taken(player, db, sheet, ask):
     assert player.post(f"/bridge/change/{char(db, 'Cole').id}", json=ask).status_code == 400
 
 
+def test_a_cantrip_is_never_prepared_or_unprepared(player, db, sheet):
+    """On D&D Beyond a cantrip's "prepared" is whether it's learned: switching it on took Guidance off Vi's sheet
+    (2026-10-27). The bridge doesn't follow it, and a page can't ask for it."""
+    spells = sheet["classSpells"][0]["spells"]
+    spells.append({**copy.deepcopy(spells[0]), "id": 777, "prepared": False, "alwaysPrepared": False,
+                   "definition": {**spells[0]["definition"], "level": 0, "name": "Guidance"}})
+    cole = char(db, "Cole")
+    player.post("/bridge/heard/75423618")
+    assert "prepared:777" not in ddb_fields.tracked(sheet) and f"prepared:{spells[0]['id']}" in ddb_fields.tracked(sheet)
+    assert player.post(f"/bridge/change/{cole.id}", json={"kind": "set", "field": "prepared:777", "value": True}).status_code == 400
+
+
 def test_what_changed_on_d_and_d_beyond_is_said_in_words(player, db, sheet):
     sheet["deathSaves"]["failCount"] = 1
     sheet["conditions"] = [{"id": 12, "level": None}]
@@ -628,6 +640,7 @@ def test_a_roll_made_on_d_and_d_beyond_comes_into_table_rolls_once(player, dm, d
     assert len(rows) == 1 and (rows[0].kind, rows[0].mode, rows[0].kept, rows[0].total, rows[0].formula) == ("check", "adv", 14, 19, "2d20+5")
     html = dm.get("/rolls").text
     assert "Stealth" in html and "on D&amp;D Beyond" in html
+    assert "roll-follow" not in player.get("/rolls").text  # only shown: no reroll or added die on D&D Beyond's dice
 
     player.post("/bridge/roll/75423618", json=ddb_roll(rid="r-2", scope="userId", action="Perception"))  # rolled to self there
     assert "Perception" not in dm.get("/rolls").text
