@@ -22,7 +22,7 @@ from app import web
 from app import character_views as views
 from app import characters as chars
 from app import conditions as cond
-from app import config, ddb, ddb_bridge, help_pages, house_rules, picks
+from app import config, ddb, ddb_bridge, house_rules, picks
 from app import class_rules, live, player_notes
 from app import spellbook as sb
 from app import wild_shape as ws
@@ -61,7 +61,6 @@ def _view(db: Session, ch: Character, user: dict) -> dict:
         "reviewer": is_reviewer(user),
         "admin": is_admin(user),
         "item_notes": chars.item_notes(db, ch),
-        "help_off": help_pages.dismissed(db, user),
     }
 
 
@@ -111,7 +110,6 @@ def party_page(request: Request, pick: str = "", db: Session = Depends(get_db)):
         "coins": views.party_coins(rows),
         "reviewer": is_reviewer(user),
         "pick": pick if pick in ("battle", "character") else "",
-        "help_off": help_pages.dismissed(db, user),
         "oldest": min((r["c"].snapshot.fetched_at for r in rows if r["c"].snapshot and r["c"].snapshot.fetched_at), default=None),
     })
 

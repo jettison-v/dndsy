@@ -1,6 +1,5 @@
 {% from "_char.html" import pips, pick_btn, pin_icon, battle_strip, save_tiles, resource_row, portrait, spends, adv, hit, roll_attrs %}
 {% from "_notes_macros.html" import combo_body %}
-{% from "_help.html" import help %}
 {% set s = sheet %}
 {# Character › Battle (character_pages._battle_ctx). Game Mode and the Wild Shape switch swap this whole block. #}
 <div id="battle-body" data-character="{{ c.id }}" data-name="{{ c.name }}" data-fetched="{{ fetched_at.isoformat() if fetched_at else '' }}" data-cond-adv='{{ cond_adv | tojson }}'>
@@ -63,7 +62,6 @@
 
   {% if s and spellbar %}{% include "_spell_bar.html" %}{% endif %}
   {% if s %}
-  {% if can_pick and not form %}{% call help("battle", help_off, "modes") %}Drag to reorder a column; <b>+ Add</b> pins more.{% endcall %}{% endif %}
   {% set econ = [("Action", "One per turn", "action"), ("Bonus action", "One per turn, before or after your Action", "bonus"), ("Reaction", "One per round, also on others' turns", "reaction")] %}
   {# Phones: the three columns become tabs (app.js keeps the chosen one across Game Mode updates). #}
   <div class="econ-tabs" role="tablist" aria-label="Action, bonus action or reaction">

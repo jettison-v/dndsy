@@ -624,7 +624,7 @@
     document.querySelectorAll('.help .section').forEach(s => { s.hidden = !!words.length && !s.querySelector('details.faq:not([hidden])'); });
     document.getElementById('faq-none').hidden = any;
   });
-  // FAQ: a link to one answer (a help line's "More") opens it
+  // FAQ: a link to one answer (/help#<id>) opens it
   const openFaq = () => { const d = location.hash.length > 1 && document.getElementById(location.hash.slice(1)); if (d && d.matches('details.faq')) { d.open = true; d.scrollIntoView({ block: 'start' }); } };
   openFaq(); window.addEventListener('hashchange', openFaq);
   // Lists' "Full notes": each row's note in full instead of one line, remembered per list. Plan's tabs re-render

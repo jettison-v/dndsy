@@ -3,8 +3,7 @@
    its group: battle, equipped, Weapons, Armor, Magic items, Potions and scrolls, Gear). #}
 {% from "_lists.html" import filter_column, search_box, active_row, view_switch, notes_toggle %}
 {% from "_char.html" import pick_btn, pips %}
-{% from "_help.html" import help %}
-{% macro item_list(c, items, picks, can_pick, show_picks, item_notes, key="sheet-items", views=(), help_off=()) -%}
+{% macro item_list(c, items, picks, can_pick, show_picks, item_notes, key="sheet-items", views=()) -%}
 {%- set GROUPS = [("battle", "Usable in battle"), ("equipped", "Equipped"), ("Weapons", "Weapons"), ("Armor", "Armor"),
                   ("Magic items", "Magic items"), ("Potions and scrolls", "Potions and scrolls"), ("Gear", "Gear")] -%}
 {%- set RARITY = ["Common", "Uncommon", "Rare", "Very Rare", "Legendary", "Artifact"] -%}
@@ -55,7 +54,6 @@
       <p class="note ls-empty" data-ls-empty hidden>No items match. <button type="button" class="btn link small" data-ls-clear>Clear all</button></p>
       {% if views %}<p class="note ls-empty" data-ls-empty-view="fav" hidden>Nothing on your Shortlist yet. In <b>All</b>, press the bookmark on an item you want close at hand.</p>
       <p class="note ls-empty" data-ls-empty-view="ready" hidden>Nothing equipped. Equip items on D&amp;D Beyond, then refresh; <b>All</b> shows everything you carry.</p>{% endif %}
-      {% call help("items", help_off, "items", "sb-foot-note") %}Click an item for its description, uses and your note. Equip and attune on D&amp;D Beyond, then refresh.{% endcall %}
     </div>
   </div>
 </div>

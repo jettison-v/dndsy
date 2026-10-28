@@ -1,7 +1,6 @@
 {# Character › Sheet: the full sheet in tabs (character_pages._sheet_ctx). #}
 {% from "_spell_list.html" import spell_list %}
 {% from "_form_list.html" import form_list %}
-{% from "_help.html" import help %}
 {% from "_item_list.html" import item_list %}
 {% from "_feature_list.html" import feature_list %}
 {% from "_char.html" import pips, pick_btn, ri, opt_row, bell, pin_icon, bookmark_icon, tile, adv, roll_attrs %}
@@ -32,7 +31,6 @@
 
 {# Row 3: everything else, in tabs #}
 <section class="section" data-tour="sheet">
-  {% if can_pick %}{% call help("sheet", help_off, "marks") %}<span class="pick star on static">{{ pin_icon() }}</span> Battle · <span class="pick fav on static">{{ bookmark_icon() }}</span> Shortlist · <span class="pick remind on static">{{ bell(true) }}</span> Reminders. Click anything for details and your note. The DM can't see these.{% endcall %}{% endif %}
   <div class="tabbar" role="tablist">
     <button role="tab" aria-selected="true" data-tab="t-actions">Actions</button>
     {% if s.spells or s.spellbook %}<button role="tab" aria-selected="false" data-tab="t-spells">Spells</button>{% endif %}
@@ -71,18 +69,18 @@
         <div class="res-row mt-1">{% for sl in s.spell_slots.slots %}<span class="res">{{ sl.level }}{{ {1: "st", 2: "nd", 3: "rd"}.get(sl.level, "th") }} {{ pips({"max": sl.max, "left": sl.max - sl.used}) }}</span>{% endfor %}
           {% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}<span class="res">Pact, level {{ p.level }} {{ pips({"max": p.max, "left": p.max - p.used}) }}</span>{% endif %}</div></div>
     </div>
-    {{ spell_list(c, s, sheet_spells, spell_groups, picks, can_pick, show_picks, "sheet-spells", [("ready", "Prepared"), ("fav", "Shortlist"), ("all", "All")], help_off) }}
+    {{ spell_list(c, s, sheet_spells, spell_groups, picks, can_pick, show_picks, "sheet-spells", [("ready", "Prepared"), ("fav", "Shortlist"), ("all", "All")]) }}
   </div>
   {% endif %}
 
   <div id="t-items" hidden>
     {% if s.attuned %}<p class="note m-0 mb-3">Attuned: {{ s.attuned | join(", ") }} ({{ s.attuned | length }} of 3)</p>{% endif %}
-    {{ item_list(c, s.inventory, picks, can_pick, show_picks, item_notes, "sheet-items", [("ready", "Equipped"), ("fav", "Shortlist"), ("all", "All")], help_off) }}
+    {{ item_list(c, s.inventory, picks, can_pick, show_picks, item_notes, "sheet-items", [("ready", "Equipped"), ("fav", "Shortlist"), ("all", "All")]) }}
     {% if s.currency %}<p class="note">Coins: {% for k, v in s.currency.items() %}{{ "{:,}".format(v) }} {{ k }}{{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
   </div>
 
   <div id="t-features" hidden>
-    {{ feature_list(c, feature_rows, picks, can_pick, show_picks, "sheet-features", ([("all", "All"), ("fav", "Shortlist")] if show_picks else ()), help_off) }}
+    {{ feature_list(c, feature_rows, picks, can_pick, show_picks, "sheet-features", ([("all", "All"), ("fav", "Shortlist")] if show_picks else ())) }}
   </div>
 
   <div id="t-skills" hidden>
@@ -115,7 +113,6 @@
     {% set live = s.situational | rejectattr("in_numbers") | list %}
     {% set counted = s.situational | selectattr("in_numbers") | list %}
     <h3 class="divider" id="situational">Situational <span class="count">{{ s.situational | length }}</span></h3>
-    {% call help("situational", help_off, "modes") %}Rules that only matter in some situations: advantages, immunities and resistances, and reactions that protect you.{% endcall %}
     {% if live %}<div class="rows">{% for x in live %}{{ situ_row(x) }}{% endfor %}</div>{% else %}<p class="muted">Nothing situational on this sheet.</p>{% endif %}
     {% if counted %}<details class="fold"><summary>Already in your numbers ({{ counted | length }})</summary><div class="rows">{% for x in counted %}{{ situ_row(x) }}{% endfor %}</div></details>{% endif %}
   </div>
@@ -127,6 +124,7 @@
         <div class="row tight mt-1">
           {% set known_n = forms | selectattr("known") | list | length %}
           <span class="tag {{ 'done' if known_n == d.known else 'draft' }}">Known {{ known_n }} of {{ d.known }}</span>
+          <span class="tag faint" title="Learn forms on D&amp;D Beyond. After a Long Rest you can swap one known form for another.">Swap one per Long Rest, on D&amp;D Beyond</span>
           <span class="tag">Max CR {{ d.max_cr_label }}{% if d.moon and d.max_cr > d.table_cr %} (Circle Forms){% endif %}</span>
           <span class="tag {{ '' if d.fly else 'faint' }}">{{ "Fly Speed allowed" if d.fly else "No Fly Speed until Druid 8" }}</span>
         </div></div>
@@ -141,7 +139,7 @@
     </div>
     {% if ws_other_uses %}<details class="fold ws-other"{% if not d.moon and d.level >= 3 %} open{% endif %}><summary>Other ways to use Wild Shape ({{ ws_other_uses | length }})</summary>
       <ul class="plain">{% for u in ws_other_uses %}<li><b>{{ u.name }}</b> <span class="muted">{{ u.summary }}</span></li>{% endfor %}</ul></details>{% endif %}
-    {{ form_list(c, forms, picks, can_pick, show_picks, "sheet-forms", [("ready", "Known"), ("all", "All you can learn")], help_off) }}
+    {{ form_list(c, forms, picks, can_pick, show_picks, "sheet-forms", [("ready", "Known"), ("all", "All you can learn")]) }}
     <p class="note">Beast stat blocks from the SRD 5.2.1 (see Help › About). Pictures from D&amp;D Beyond.</p>
   </div>
   {% elif s.creatures %}
@@ -151,7 +149,7 @@
   {% endif %}
   {% if s.story %}{% set st = s.story %}
   <div id="t-story" class="story-tab" hidden>
-    {% call help("background", help_off, "privacy") %}From the Background tab on D&amp;D Beyond, in the player's words. Everyone at the table can read it.{% endcall %}
+    <p class="m-0"><span class="tag faint" title="From the Background tab on D&amp;D Beyond, in the player's words">Everyone at the table can read this</span></p>
     {% if st.background %}<h3 class="divider">Background</h3><p><b>{{ st.background }}</b>{% if st.background_text %} <span class="muted">{{ st.background_text }}</span>{% endif %}</p>{% endif %}
     {% if st.characteristics %}<h3 class="divider">Characteristics</h3>
     <dl class="traits-grid">{% for k, v in st.characteristics %}<div><dt>{{ k }}</dt><dd>{{ v }}</dd></div>{% endfor %}</dl>{% endif %}
