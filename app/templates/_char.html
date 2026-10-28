@@ -6,7 +6,10 @@
 {%- endmacro %}
 
 {# Every number tile opens a side panel explaining it (character_pages.vital_panel). #}
-{% macro tile(c, kind) %}data-panel-url="/characters/{{ c.id }}/vital/{{ kind }}" tabindex="0" role="button"{% endmacro %}
+{# A number a page shows of a character, named so a change to it marks itself for a moment when the page shows its new
+   copy (app.js "the change mark", in showInPlace): its value is the tile's first <b>. #}
+{% macro mark(c, kind) %}data-mark="{{ c.id }}:{{ kind }}"{% endmacro %}
+{% macro tile(c, kind) %}data-panel-url="/characters/{{ c.id }}/vital/{{ kind }}" tabindex="0" role="button" {{ mark(c, kind) }}{% endmacro %}
 
 {# Advantage, marked the same way everywhere (app/advantage.py): a small "Adv" badge, with when it
    applies and where it comes from on hover. Outlined when every source needs a condition. #}

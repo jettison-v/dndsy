@@ -429,6 +429,11 @@
     }
     document.dispatchEvent(new CustomEvent('askdnd:gamemode', { detail: { on } }));  // Table rolls follow it
   }
+  // A button the server refused (403, 409: a sheet that can't be reached…) says why, the same way everywhere: the
+  // message askdnd answered with (FastAPI's {"detail": …})
+  document.body.addEventListener('htmx:responseError', e => {
+    try { const d = JSON.parse(e.detail.xhr.responseText).detail; if (typeof d === 'string' && d) toast(d); } catch (err) { /* not a message */ }
+  });
   // The Live window's End for the table asks first, in the window itself
   document.addEventListener('click', e => {
     const ask = e.target.closest('[data-gm-ask]'), keep = e.target.closest('[data-gm-keep]');
@@ -475,10 +480,37 @@
       }));
     };
   }
+  // The change mark (Brett, 2026-10-28): a number that changed while the page showed its new copy glows for a moment with
+  // the change ("−11"), whatever brought it (D&D Beyond, someone else's screen, your own). Numbers are named on the page
+  // ([data-mark]: its first <b>; pips by their place), compared before and after the swap.
+  function marksIn(box) {
+    const out = new Map();
+    box.querySelectorAll('[data-mark]').forEach(el => { const b = el.querySelector('b'); if (b) out.set(el.dataset.mark, b.textContent.trim()); });
+    box.querySelectorAll('.pips').forEach((el, i) => out.set('pips#' + i, String(el.querySelectorAll('.pip:not(.used)').length)));
+    return out;
+  }
+  function showMarks(box, before) {
+    const num = v => /^[−-]?\d+$/.test(v) ? parseInt(v.replace('−', '-'), 10) : null;
+    const one = (el, was, now) => {
+      if (was === undefined || was === now) return;
+      el.classList.remove('marked'); void el.offsetWidth; el.classList.add('marked');
+      clearTimeout(el._marked); el._marked = setTimeout(() => el.classList.remove('marked'), 2600);
+      const a = num(was), b = num(now);
+      if (a === null || b === null) return;
+      const d = document.createElement('span');
+      d.className = 'mark-delta ' + (b > a ? 'up' : 'down');
+      d.textContent = (b > a ? '+' : '−') + Math.abs(b - a);
+      const value = el.matches('.pips') ? el : el.querySelector('b');
+      value.after(d);  // right after the number, so it never covers the label
+      setTimeout(() => d.remove(), 2600);
+    };
+    box.querySelectorAll('[data-mark]').forEach(el => { const b = el.querySelector('b'); if (b) one(el, before.get(el.dataset.mark), b.textContent.trim()); });
+    box.querySelectorAll('.pips').forEach((el, i) => one(el, before.get('pips#' + i), String(el.querySelectorAll('.pip:not(.used)').length)));
+  }
   function swapMain(html) {
     const doc = new DOMParser().parseFromString(html, 'text/html'), here = document.querySelector('main'), there = doc.querySelector('main');
     if (!here || !there) return;
-    const restore = keepState(here);
+    const restore = keepState(here), before = marksIn(here);
     [...here.attributes].forEach(a => { if (!there.hasAttribute(a.name)) here.removeAttribute(a.name); });
     [...there.attributes].forEach(a => here.setAttribute(a.name, a.value));
     here.replaceChildren(...[...there.childNodes].map(n => document.importNode(n, true)));
@@ -495,15 +527,17 @@
     restore();
     if (window.askdndNotesInit) window.askdndNotesInit(here);
     sortSetup(); econSetup();
+    showMarks(here, before);
   }
   function swapPanel(layer, html) {
-    const panel = layer.panel, restore = keepState(panel);
+    const panel = layer.panel, restore = keepState(panel), before = marksIn(panel);
     const top = layer.name === 'base' && layers.top ? [layers.top.backdrop, layers.top.panel].filter(n => n.parentNode === panel) : [];  // (the top layer lives inside the modal)
     const t = document.createElement('template');
     t.innerHTML = html;
     panel.replaceChildren(...t.content.childNodes, ...top);
     addBack(layer);
     restore();
+    showMarks(panel, before);
     panel.dispatchEvent(new CustomEvent('panel:loaded', { bubbles: true }));
   }
   function showInPlace(now) {
