@@ -5,7 +5,7 @@ from datetime import date
 
 from sqlalchemy import select, text
 
-from app import backup
+from app import backup, files
 from app.importer import import_bundle
 from app.models import Entity, EntityPicture, Revision
 
@@ -14,7 +14,8 @@ def test_a_backup_restores_every_row(db):
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"},
                        "entities": [{"kind": "place", "name": "Oakhurst", "summary": "A town."}]})
     oak = db.scalar(select(Entity))
-    db.add(EntityPicture(entity_id=oak.id, data=b"\x00\x01png", thumb=b"t"))
+    key = files.put(db, oak.campaign_id, b"RIFF oak", "image/webp")
+    db.add(EntityPicture(entity_id=oak.id, file_key=key, thumb_key=key))
     oak.summary = "Myna's hometown."
     db.flush()
     conn = db.connection()
@@ -26,7 +27,7 @@ def test_a_backup_restores_every_row(db):
     assert counts["entities"] == 1 and counts["revisions"] >= 1
     db.expire_all()
     restored = db.scalar(select(Entity))
-    assert restored.summary == "Myna's hometown." and db.scalar(select(EntityPicture)).data == b"\x00\x01png"
+    assert restored.summary == "Myna's hometown." and db.scalar(select(EntityPicture)).file_key == key
     assert db.scalar(select(Revision)).new == "Myna's hometown."
     assert conn.execute(text("select nextval(pg_get_serial_sequence('entities', 'id'))")).scalar() > restored.id
 

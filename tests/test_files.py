@@ -1,5 +1,5 @@
 """File storage (app/files.py, VTT 0.5): keys per campaign named by content, served only through askdnd's routes,
-pictures kept only in storage (checked against the old database copies first), and the nightly sweep that keeps every
+pictures kept only in storage, and the nightly sweep that keeps every
 kept backup whole."""
 
 import base64
@@ -110,7 +110,7 @@ def test_an_uploaded_picture_is_stored_and_served_through_askdnd(people, db, fil
     dm.post(f"/campaign/{k.id}/picture", files={"file": ("k.png", png(), "image/png")}, headers=HX)
     pic = db.scalar(select(EntityPicture))
     assert pic.file_key.startswith(f"{k.campaign_id}/") and pic.thumb_key.endswith(".webp")
-    assert file_store.get(pic.file_key) and file_store.get(pic.thumb_key) and pic.data is None  # in storage only
+    assert file_store.get(pic.file_key) and file_store.get(pic.thumb_key)
     url = pictures.urls(db, [k.id])[k.id]
     assert url["full"].endswith(f"v={files.version(pic.file_key)}")  # a new picture is a new address
     got = player.get(url["thumb"])
@@ -124,12 +124,12 @@ def test_pictures_are_read_only_from_storage(people, db, file_store):  # noqa: F
     import_bundle(db, BUNDLE)
     k = entity(db, "Kieran")
     key = files.put(db, k.campaign_id, b"RIFF full", "image/webp")
-    db.add(EntityPicture(entity_id=k.id, data=b"old full", thumb=b"old thumb", file_key=key, thumb_key=key))  # an old copy
+    db.add(EntityPicture(entity_id=k.id, file_key=key, thumb_key=key))
     db.flush()
     player = people["player"]
     url = pictures.urls(db, [k.id])[k.id]
     assert player.get(url["full"]).content == b"RIFF full"
-    file_store.delete(key)  # storage lost it: the old database copy is never shown
+    file_store.delete(key)  # storage lost it
     assert player.get(url["full"]).status_code == 404
 
 
@@ -148,7 +148,7 @@ def test_note_images_go_to_storage_and_still_reach_claude(db, file_store):
     db.flush()
     store_export(db, s, parse_export(make_zip()), "Notes")
     img = db.scalar(select(NoteImage))
-    assert img.file_key.startswith(f"{c.id}/") and file_store.get(img.file_key) == b"\x89PNG fake" and img.data is None
+    assert img.file_key.startswith(f"{c.id}/") and file_store.get(img.file_key) == b"\x89PNG fake"
     file_store.put(img.file_key, b"\x89PNG from storage", "image/png")  # (never happens: just shows where it's read from)
     assert base64.b64decode(extraction._image_block(img, "1")[1]["source"]["data"]) == b"\x89PNG from storage"
 
@@ -188,32 +188,6 @@ def test_a_note_image_storage_wont_keep_is_left_out(db, file_store):
     db.flush()
     store_export(db, s, parse_export(make_zip(images={"images/a.svg": b"<svg onload=alert(1)>"})), "Notes")
     assert db.scalar(select(NoteSnapshot)) is not None and db.scalar(select(NoteImage)) is None
-
-
-def test_the_check_finds_every_old_copy_in_storage_and_changes_nothing(db, file_store):
-    c = campaign(db)
-    k = entity(db, "Kieran")
-    full, thumb = files.put(db, c.id, b"RIFF full", "image/webp"), files.put(db, c.id, b"RIFF thumb", "image/webp")
-    db.add(EntityPicture(entity_id=k.id, data=b"RIFF full", thumb=b"RIFF thumb", file_key=full, thumb_key=thumb))
-    s = NoteSource(campaign_id=c.id, google_doc_id="y" * 30)
-    s.snapshots.append(NoteSnapshot(content_hash="h", text="[image: a]",
-                                    images=[NoteImage(name="a", content_type="image/png", data=b"\x89PNG a")]))
-    db.add(s)
-    db.commit()
-    script = _script("check_files")
-    said = []
-    result = script.check(db, file_store, say=said.append)
-    assert [result[w]["same"] for w in ("picture", "thumbnail", "note image")] == [1, 1, 0]
-    assert result["note image"]["no key"] == 1 and result["listed"] == 2 and script.problems(result) == 1
-    img = db.scalar(select(NoteImage))
-    img.file_key = files.put(db, c.id, b"\x89PNG a", "image/png")
-    db.commit()
-    assert script.problems(script.check(db, file_store, say=said.append)) == 0
-    file_store.put(full, b"RIFF changed", "image/webp")
-    file_store.delete(thumb)
-    result = script.check(db, file_store, say=said.append)
-    assert result["picture"]["differs"] == 1 and result["thumbnail"]["not in storage"] == 1 and script.problems(result) == 2
-    assert db.scalar(select(EntityPicture)).data == b"RIFF full"  # read only
 
 
 def test_pull_beta_downloads_only_the_files_it_lacks(tmp_path, file_store):
