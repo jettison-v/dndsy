@@ -271,3 +271,20 @@ def test_a_character_changed_on_d_and_d_beyond_updates_the_pages_showing_it(peop
     assert page.locator("#t-items [data-ls-row]:visible").count() == shown
     engine.dispose()
     assert player.errors == []
+
+
+def test_a_condition_reaches_everyone_watching_that_character_without_a_reload(people, server):
+    """What the table sees of a character announces itself however it's made (realtime.TABLE_SEES): the player adds
+    Poisoned, and the DM's Battle page for that character shows it in place."""
+    player, dm = people("player", "dm")
+    battle(player, server)
+    page = battle(dm, server)
+    dm.live()
+    page.evaluate("window.stayed = true")
+    assert not page.locator(".cond-pill:not(.cond-add)", has_text="Poisoned").count()
+    player.page.evaluate("id => fetch('/characters/' + id + '/conditions', {method: 'POST', headers: {'HX-Request': 'true'}, body: new URLSearchParams({name: 'Poisoned'})})", server["cole"])
+    page.locator(".cond-pill:not(.cond-add)", has_text="Poisoned").wait_for(timeout=5000)
+    assert page.evaluate("window.stayed")  # swapped in, not reloaded
+    player.page.evaluate("id => fetch('/characters/' + id + '/conditions/end', {method: 'POST', headers: {'HX-Request': 'true'}, body: new URLSearchParams({name: 'Poisoned'})})", server["cole"])
+    page.locator(".cond-pill:not(.cond-add)", has_text="Poisoned").wait_for(state="detached", timeout=5000)  # and ends the same way
+    assert dm.errors == [] and player.errors == []

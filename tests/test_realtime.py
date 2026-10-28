@@ -72,6 +72,29 @@ def test_a_character_is_announced_only_when_dnd_beyond_changed_it(db, monkeypatc
     assert len(sent) == 1
 
 
+def test_whatever_the_table_sees_of_a_character_announces_itself_however_its_made(db, monkeypatch, no_network):
+    """A condition, Concentration or Wild Shape set in askdnd reaches every page like a read of D&D Beyond does
+    (realtime.TABLE_SEES); a player's own pin or note doesn't go to the table at all."""
+    from app import picks
+    from app.importer import import_bundle
+    from tests.table_setup import BUNDLE
+
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    db.commit()
+    sent = []
+    monkeypatch.setattr(realtime, "publish", lambda campaign_id, kind, **data: sent.append((campaign_id, kind, data)))
+    cole.conditions = [{"name": "Invisible", "source": "Ring of Invisibility"}]
+    db.commit()
+    assert sent == [(cole.campaign_id, "character", {"id": cole.id})]
+    cole.conditions = [{"name": "Invisible", "source": "Ring of Invisibility"}]  # the same again: nothing new
+    db.commit()
+    picks.toggle(db, cole, "star", "spell:Heat Metal", "Heat Metal")
+    db.commit()
+    assert len(sent) == 1
+
+
 def test_other_sites_pages_are_refused(table, db):  # noqa: F811
     cole = char(db, "Cole")
     with table["other"].websocket_connect(f"/live/connect?c={cole.campaign_id}", headers={"origin": "https://elsewhere.example"}) as ws:
