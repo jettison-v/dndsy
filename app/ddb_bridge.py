@@ -54,11 +54,11 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import access, config, ddb, ddb_fields, live, picks, table_rolls, web
+from app import access, config, ddb, ddb_fields, live, picks, realtime, table_rolls, web
 from app import characters as chars
 from app.auth import current_user, is_admin
 from app.db import get_db
-from app.models import BridgeBatch, BridgeIntent, BridgeKey, BridgeLog, Character, ToolSetting
+from app.models import BridgeBatch, BridgeIntent, BridgeKey, BridgeLog, Character, TableRoll, ToolSetting
 from app.templating import templates
 
 router = APIRouter()
@@ -207,56 +207,143 @@ def numbers(character: Character) -> dict:
 
 
 def fields(n: dict) -> dict:
-    """The values askdnd follows, keyed as a batch's ops are: "hp", "item:<id>"."""
+    """The values askdnd follows, keyed as a batch's ops are: "hp", "item:<id>", …"""
     return n.get("fields") or {}
 
 
-def plan(intents: list[dict], n: dict) -> tuple[dict, list[str], list[tuple[dict, str]]]:
+def _value(n: dict, field: str):
+    """A field's value on D&D Beyond, also one the log doesn't follow (how many of an item there are in all)."""
+    return fields(n)[field] if field in fields(n) else ddb_fields.value(n["raw"], field)
+
+
+def plan(intents: list[dict], n: dict) -> tuple[dict, list[str], list[tuple[dict, str]], dict]:
     """The end state of these intents built on what D&D Beyond has now (`n`): the final value of each field they touch,
-    one line per field to show, and any intent that can't happen any more (with why)."""
-    removed, temp, items = n["removed"], n["temp"], dict(n["items"])
-    impossible, touched = [], []
+    one line per field to show, any intent that can't happen any more (with why), and what an added item needs."""
+    vals, impossible, touched, extra = {}, [], [], {}
+
+    def get(f):
+        return vals[f] if f in vals else _value(n, f)
+
+    def no(it, why):
+        impossible.append((it, why))
+
     for it in intents:
-        d = it["data"]
-        if it["kind"] == "drink":
-            if items.get(d["item"], 0) < 1:
-                impossible.append((it, f"No {d['name']} left on D&D Beyond."))
+        d, kind = it["data"], it["kind"]
+        if kind == "drink":
+            f = f"item:{d['item']}"
+            if (get(f) or 0) < 1:
+                no(it, f"No {d['name']} left on D&D Beyond.")
                 continue
-            items[d["item"]] -= 1
-            removed = max(0, removed - d["heal"])
-            touched += ["hp", f"item:{d['item']}"]
-        elif it["kind"] == "hp":  # + heals, - damage; temporary hit points take damage first (2024 rules)
+            hp = get("hp")
+            vals[f] = get(f) - 1
+            vals["hp"] = {**hp, "removedHitPoints": max(0, hp["removedHitPoints"] - d["heal"])}
+            touched += ["hp", f]
+        elif kind == "hp":  # + heals, - damage; temporary hit points take damage first (2024 rules)
+            hp = get("hp")
+            removed, temp = hp["removedHitPoints"], hp["temporaryHitPoints"]
             if d["amount"] >= 0:
                 removed = max(0, removed - d["amount"])
             else:
                 soak = min(temp, -d["amount"])
                 temp, removed = temp - soak, min(n["max"], removed + (-d["amount"] - soak))
+            vals["hp"] = {"removedHitPoints": removed, "temporaryHitPoints": temp}
             touched.append("hp")
-        elif it["kind"] == "item":
-            if items.get(d["item"]) is None or items[d["item"]] + d["delta"] < 0:
-                impossible.append((it, f"D&D Beyond doesn't have enough {d['name']}."))
+        elif kind == "item":
+            f = f"item:{d['item']}"
+            if get(f) is None or get(f) + d["delta"] < 0:
+                no(it, f"D&D Beyond doesn't have enough {d['name']}.")
                 continue
-            items[d["item"]] += d["delta"]
-            touched.append(f"item:{d['item']}")
+            vals[f] = get(f) + d["delta"]
+            touched.append(f)
+        elif kind == "set":  # an absolute value: on or off, a level, prepared, where an item is, or back as it was
+            f = d["field"]
+            if get(f) is None and not f.startswith("item:"):
+                no(it, f"{ddb_fields.name(n['raw'], f)} isn't on D&D Beyond any more.")
+                continue
+            vals[f] = d["value"]
+            touched.append(f)
+        elif kind == "use":  # a count used or spent: a slot, a use, a charge, Hit Dice, coins
+            f, cur = d["field"], get(d["field"])
+            if cur is None:
+                no(it, f"{ddb_fields.name(n['raw'], f)} isn't on D&D Beyond any more.")
+                continue
+            new = cur + d["delta"]
+            if new < 0 or (d.get("max") is not None and new > d["max"]):
+                no(it, f"D&D Beyond has {ddb_fields.show(n['raw'], f, cur)}: there's no room for that.")
+                continue
+            vals[f] = new
+            touched.append(f)
+        elif kind == "death":  # a success or a failure (at most 3 of each), or back to none
+            ds = get("death")
+            if d.get("reset"):
+                vals["death"] = {"failCount": 0, "successCount": 0}
+            else:
+                vals["death"] = {"failCount": min(3, ds["failCount"] + d.get("fail", 0)),
+                                 "successCount": min(3, ds["successCount"] + d.get("success", 0))}
+            touched.append("death")
+        elif kind == "short_rest":  # D&D Beyond spends Hit Dice only as part of a Short Rest
+            for cls, spend in d["spend"].items():
+                f, level = f"hitdice:{cls}", (ddb_fields.pick(n["raw"], ["classes", {"id": cls}]) or {}).get("level") or 0
+                if get(f) is None or get(f) + spend > level:
+                    no(it, f"D&D Beyond doesn't have {spend} Hit Dice left for that class.")
+                    break
+                vals[f] = get(f) + spend
+                touched.append(f)
+        elif kind == "remove_item":
+            f = f"item:{d['item']}"
+            if get(f) is None:
+                no(it, f"{d['name']} isn't on D&D Beyond any more.")
+                continue
+            vals[f] = None
+            touched.append(f)
+        elif kind == "add_item":
+            f = f"add:{d['definition']}"
+            vals[f] = (get(f) or 0) + d["quantity"]
+            before = extra.get(f, {}).get("quantity", 0)
+            extra[f] = {"entityTypeId": d["entityTypeId"], "quantity": before + d["quantity"], "container": d.get("container")}
+            touched.append(f)
     target, lines = {}, []
     for f in dict.fromkeys(touched):
-        if f == "hp":
-            target[f] = {"removedHitPoints": removed, "temporaryHitPoints": temp}
-            lines.append(f"Hit points {n['max'] - removed}" + (f" + {temp} temporary" if temp else "")
-                         + f" (D&D Beyond has {n['max'] - n['removed']})")
-        else:
-            i = int(f[5:])
-            target[f] = items[i]
-            lines.append(f"{n['names'].get(i, 'Item')} ×{items[i]} (D&D Beyond has ×{n['items'].get(i)})")
-    return target, lines, impossible
+        if vals[f] == _value(n, f):
+            continue  # (a change and its undo in one batch, or D&D Beyond has it already: nothing to write)
+        target[f] = vals[f]
+        line = ddb_fields.show(n["raw"], f, vals[f], n["max"])
+        lines.append(f"{line[:1].upper()}{line[1:]} (D&D Beyond has {ddb_fields.text(n['raw'], f, _value(n, f), n['max'])})")
+    return target, lines, impossible, extra
 
 
-def _ops(character: Character, target: dict, n: dict) -> list[dict]:
+def describe(kind: str, d: dict, n: dict) -> str:
+    """A change in words, for the log and the list of what's waiting: "Heroic Inspiration on", "1st-level slots: 1 more
+    used", "a Death Saving Throw failure"."""
+    raw = n.get("raw")
+    if kind == "set":
+        return ddb_fields.show(raw, d["field"], d["value"], n.get("max", 0))
+    if kind == "use":
+        what, many = ddb_fields.name(raw, d["field"]), abs(d["delta"])
+        if d["field"].startswith("coin:"):
+            return f"{many} {what} {'gained' if d['delta'] > 0 else 'spent'}"
+        return f"{what}: {many} more used" if d["delta"] > 0 else f"{what}: {many} back"
+    if kind == "death":
+        return "Death Saving Throws back to none" if d.get("reset") else \
+            f"a Death Saving Throw {'failure' if d.get('fail') else 'success'}" + (" (×2)" if max(d.get("fail", 0), d.get("success", 0)) > 1 else "")
+    if kind == "short_rest":
+        spent = sum(d["spend"].values())
+        return f"a Short Rest, spending {spent} Hit {'Die' if spent == 1 else 'Dice'}"
+    if kind == "remove_item":
+        return f"{d['name']} removed"
+    if kind == "add_item":
+        return f"{d['name']} ×{d['quantity']} added"
+    return kind
+
+
+def _ops(character: Character, target: dict, n: dict, extra: dict | None = None) -> list[dict]:
     """Each field's request, with where to read it (`read`) and the value it should go from and to: the extension reads
-    the sheet just before writing and compares (app/ddb_fields.py)."""
+    the sheet just before writing and compares (app/ddb_fields.py). A Short Rest goes first: it restores what a Short
+    Rest restores, and the rest is built on top of it."""
     did = int(character.ddb_id)
-    return [{"field": f, **ddb_fields.write(did, f, v), "read": ddb_fields.steps(f), "from": fields(n).get(f), "to": v}
-            for f, v in target.items()]
+    order = sorted(target, key=lambda f: not f.startswith("hitdice:"))
+    return [{"field": f, **ddb_fields.write(did, f, target[f], n["raw"], (extra or {}).get(f), n["max"]),
+             "read": ddb_fields.steps(f), "from": _value(n, f), "to": target[f]} for f in order]
 
 
 # ------------------------------------------------------------------ the outbox
@@ -302,15 +389,20 @@ def outbox(db: Session, character: Character) -> dict | None:
     if not n:
         return None
     dicts = [_as_dict(i) for i in waiting]
-    target, _lines, impossible = plan(dicts, n)
+    target, _lines, impossible, extra = plan(dicts, n)
     for d, why in impossible:  # (by identity: two drinks of the same potion are equal dicts)
         it = waiting[next(k for k, x in enumerate(dicts) if x is d)]
         it.state, it.error = "not_yet", why
     keep = [i for i in waiting if i.state == "waiting"]
-    if not keep or not target:
+    if keep and not target:  # D&D Beyond has the end state already (a change and its undo): nothing to write
+        for i in keep:
+            i.state = "live"
+            _log(db, character.id, i.label, "live")
         return None
-    batch = BridgeBatch(character_id=character.id, intents=[i.id for i in keep], ops=_ops(character, target, n),
-                        before={f: fields(n).get(f) for f in target}, target=target, state="sending", attempts=1, sent_at=now,
+    if not keep:
+        return None
+    batch = BridgeBatch(character_id=character.id, intents=[i.id for i in keep], ops=_ops(character, target, n, extra),
+                        before={f: _value(n, f) for f in target}, target=target, state="sending", attempts=1, sent_at=now,
                         next_at=0, check=keep[0].data.get("check", ""), names={f: ddb_fields.name(n["raw"], f) for f in target})
     db.add(batch)
     for i in keep:
@@ -358,7 +450,8 @@ def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: 
         if attempt:
             time.sleep(1)
         chars.refresh(db, character)
-        now = fields(numbers(character))
+        n = numbers(character)
+        now = {f: _value(n, f) for f in b.target} if n else {}
         missing = [f for f, v in b.target.items() if now.get(f) != v]
         if not missing:
             break
@@ -401,12 +494,12 @@ def heard(db: Session, character: Character, saved: bool = True) -> None:
         return  # asleep: the background pull reads nothing from D&D Beyond
     _lock(db, character.id)
     chars.refresh(db, character)
-    now = fields(numbers(character))
-    if not now:
+    n = numbers(character)
+    if not n:
         return
     open_batches = list(db.scalars(select(BridgeBatch).where(BridgeBatch.character_id == character.id, BridgeBatch.state.in_(("sending", "ready")))))
     for b in open_batches:
-        if all(now.get(f) == v for f, v in b.target.items()):
+        if all(_value(n, f) == v for f, v in b.target.items()):
             _settle(db, b)
 
 
@@ -419,9 +512,15 @@ def seen(db: Session, character: Character, before: dict | None, after: dict, su
     was, now = ddb_fields.tracked(before), ddb_fields.tracked(after)
     recent = db.scalars(select(BridgeBatch).where(BridgeBatch.character_id == character.id, BridgeBatch.sent_at > time.time() - 60)).all()
     ours = {f for b in recent for f in b.target}
+    rested = any(f.startswith("hitdice:") for f in ours)  # askdnd's Short Rest restored what a Short Rest restores
+    ours |= {f for f in now if rested and f.split(":")[0] in ("uses", "pact", "slot", "charges")}
     hp_max = ddb_fields.max_hp(summary)
     lines = [ddb_fields.changed(after, f, was[f], v, hp_max) for f, v in now.items()
              if f in was and was[f] is not None and v != was[f] and f not in ours]
+    for i in after.get("inventory") or []:  # a new row: added on D&D Beyond, unless askdnd just added one of these
+        if isinstance(i, dict) and f"item:{i.get('id')}" not in was and f"add:{(i.get('definition') or {}).get('id')}" not in ours:
+            lines.append(f"{ddb_fields.item_name(after, i.get('id'))} added (×{i.get('quantity')})")
+    lines += [f"{ddb_fields.item_name(before, f[5:])} removed" for f in was if f.startswith("item:") and f not in now and f not in ours]
     if lines:
         _log(db, character.id, f"{character.name} (on D&D Beyond): " + ", ".join(lines), "seen")
 
@@ -447,16 +546,47 @@ def dismiss(db: Session, intent_id: int) -> None:
 # ------------------------------------------------------------------ health
 
 
-def round_trip(db: Session, character: Character) -> None:
+def round_trip(db: Session, character: Character, full: bool = False) -> None:
     """The pre-game check on the test character: 1 hit point and one Candle out, then back, each confirmed by
-    read-back. Queued like any change; the extension delivers it from the test character's open sheet. Putting them
-    back depends only on the batch (its `check`), so a restart mid-check still puts Vi back."""
+    read-back. `full` (Manage › askdnd › D&D Beyond bridge, after D&D Beyond changes its sheet): every kind of change
+    the bridge makes that the test character can take, out and back. Queued like any change; the extension delivers it
+    from the test character's open sheet. Putting it back depends only on the batch (its `check` and `before`), so a
+    restart mid-check still puts Vi back as she was."""
     n = numbers(character) or {}
     item = next((i for i, name in (n.get("names") or {}).items() if name == TEST_ITEM and n["items"][i] > 0), None)
-    _health["round_trip"] = {"state": "running", "at": _now(), "error": ""}
+    _health["round_trip"] = {"state": "running", "at": _now(), "error": "", "full": full}
     add(db, character, "hp", {"amount": -1, "check": "out"}, "Check: 1 hit point taken")
     if item:
         add(db, character, "item", {"item": item, "delta": -1, "name": TEST_ITEM, "check": "out"}, f"Check: one {TEST_ITEM} taken")
+    for kind, data in _every_change(n) if full and n else []:
+        add(db, character, kind, {**data, "check": "out"}, "Check: " + describe(kind, data, n))
+
+
+def _every_change(n: dict) -> list[tuple[str, dict]]:
+    """One of each kind of change, on whatever the test character has (each goes back after)."""
+    raw, now = n["raw"], fields(n)
+    out = [("death", {"fail": 1}), ("set", {"field": "inspiration", "value": not now["inspiration"]}),
+           ("set", {"field": "condition:1", "value": not now["condition:1"]}),
+           ("set", {"field": "exhaustion", "value": 0 if now["exhaustion"] else 1}), ("use", {"field": "coin:gp", "delta": 1})]
+    cls = next((c for c in raw.get("classes") or [] if (c.get("hitDiceUsed") or 0) < (c.get("level") or 0)), None)
+    out += [("short_rest", {"spend": {str(cls["id"]): 1}})] if cls else []
+
+    def first(prefix, ok=lambda f, v: True):
+        return next((f for f, v in now.items() if f.startswith(prefix) and v is not None and ok(f, v)), None)
+    for f in (first("slot:"), first("pact:", lambda f, v: (ddb_fields.pick(raw, ["pactMagic", {"level": f[5:]}]) or {}).get("available")),
+              first("uses:", lambda f, v: ((ddb_fields.pick(raw, ["actions", "*", {"id": f[5:]}]) or {}).get("limitedUse") or {}).get("maxUses")),
+              first("charges:", lambda f, v: ((ddb_fields.pick(raw, ["inventory", {"id": f[8:]}]) or {}).get("limitedUse") or {}).get("maxUses", 0) > 1)):
+        if f:
+            out.append(("use", {"field": f, "delta": -1 if now[f] else 1}))
+    canequip = lambda f, v: ((ddb_fields.pick(raw, ["inventory", {"id": f[9:]}]) or {}).get("definition") or {}).get("canEquip")  # noqa: E731
+    for f in (first("prepared:"), first("equipped:", canequip), first("attuned:")):
+        if f:
+            out.append(("set", {"field": f, "value": not now[f]}))
+    box = next((i for i in raw.get("inventory") or [] if (i.get("definition") or {}).get("isContainer")), None)
+    thing = first("container:", lambda f, v: str(v) == str(raw.get("id")) and box and f[10:] != str(box["id"]))
+    if box and thing:
+        out.append(("set", {"field": thing, "value": box["id"]}))
+    return out
 
 
 def _check_step(db: Session, b: BridgeBatch, ok: bool, why: str = "") -> None:
@@ -468,10 +598,10 @@ def _check_step(db: Session, b: BridgeBatch, ok: bool, why: str = "") -> None:
         rt.update(state="failed", error=why, done_at=_now())
         b.check = ""  # (nothing goes back on its own: the stopped change waits to be made by hand or undone)
         return
-    if b.check == "out":
-        for it in _intents_of(db, b):
-            back = {"amount": -it.data["amount"]} if it.kind == "hp" else {"item": it.data["item"], "delta": -it.data["delta"], "name": it.data["name"]}
-            add(db, db.get(Character, b.character_id), it.kind, {**back, "check": "back"}, it.label.replace("taken", "back"))
+    if b.check == "out":  # each field back as D&D Beyond had it before the check
+        character = db.get(Character, b.character_id)
+        for f, was in b.before.items():
+            add(db, character, "set", {"field": f, "value": was, "check": "back"}, f"Check: {b.names.get(f, f)} back")
     elif b.check == "back":
         rt.update(state="passed", done_at=_now())
 
@@ -663,7 +793,10 @@ def bridge_check(request: Request, db: Session = Depends(get_db)):
     character, user = _by_ddb(db, request, TEST_DDB_ID)
     if not picks.can_edit(db, user, character):
         raise HTTPException(403, "Only the test character's player runs the check.")
-    round_trip(db, character)
+    full = bool(request.query_params.get("full"))
+    if full and not is_admin(user):
+        raise HTTPException(403, "Checking everything is for admins.")
+    round_trip(db, character, full)
     db.commit()
     return _json(health(db))
 
@@ -742,6 +875,114 @@ async def bridge_hp(character_id: int, request: Request, db: Session = Depends(g
     if amount:
         add(db, character, "hp", {"amount": amount}, f"{character.name} {'healed' if amount > 0 else 'took'} {abs(amount)}")
         db.commit()
+    return _json(state(db, character, user))
+
+
+# ------------------------------------------------------------------ rolls made on D&D Beyond
+
+
+ROLL_KINDS = {"check": "check", "save": "save", "to hit": "attack", "damage": "damage", "heal": "heal"}
+
+
+def heard_roll(db: Session, character: Character, user: dict, roll: dict) -> TableRoll | None:
+    """A roll made on the character's own D&D Beyond sheet (Brett, 2026-10-27: heard on the sheet, the way Beyond20 does)
+    goes into Table rolls, marked "on D&D Beyond", so a roll made there by habit still reaches the table. Only heard:
+    askdnd never writes its own rolls into D&D Beyond's game log. Each is recorded once (its id there); who sees it
+    follows who it was rolled to on D&D Beyond (everyone, or just the roller)."""
+    rid = str(roll.get("id") or "")[:60]
+    r = (roll.get("rolls") or [None])[0]
+    campaign = character.campaign_id
+    if not rid or not isinstance(r, dict) or not campaign or db.scalar(select(TableRoll.id).where(TableRoll.ddb_roll_id == rid)):
+        return None
+    try:
+        sets = r["diceNotation"]["set"]
+        dice = [int(d["dieValue"]) for s in sets for d in s["dice"]]
+        constant, total = int(r["diceNotation"].get("constant") or 0), int(r["result"]["total"])
+        formula = "+".join(f"{s['count']}{s['dieType']}" for s in sets) + (f"{constant:+d}" if constant else "")
+    except (KeyError, TypeError, ValueError):
+        return None
+    kind = ROLL_KINDS.get(str(r.get("rollType") or "").lower(), "dice")
+    how = str(r.get("rollKind") or "").lower()
+    mode = "adv" if "advantage" in how and "dis" not in how else "dis" if "disadvantage" in how else "normal"
+    kept = None
+    if kind in table_rolls.D20_KINDS and dice:
+        kept = max(dice) if mode == "adv" else min(dice) if mode == "dis" else dice[0]
+    me = picks.user_row(db, user)
+    private = roll.get("scope") == "userId"  # rolled to self (or to the DM) on D&D Beyond
+    row = TableRoll(campaign_id=campaign, character_id=character.id, user_id=me.id if me else None,
+                    label=" ".join(str(roll.get("action") or "Roll").split())[:120], kind=kind, formula=formula[:40], dice=dice,
+                    kept=kept, modifier=constant, total=total, mode=mode, visibility="self" if private else "table",
+                    crit="critical" in how, ddb_roll_id=rid)
+    db.add(row)
+    realtime.announce(db, campaign, "rolls")
+    return row
+
+
+@router.post("/bridge/roll/{ddb_id}")
+async def bridge_roll(ddb_id: str, request: Request, db: Session = Depends(get_db)):
+    """The extension heard a roll on this character's D&D Beyond sheet. Only the character's own player's browser
+    records it (like the outbox)."""
+    character, user = _by_ddb(db, request, ddb_id)
+    if not picks.can_edit(db, user, character):
+        return _json({"ok": False})
+    body = await request.json()
+    row = heard_roll(db, character, user, body) if isinstance(body, dict) else None
+    db.commit()
+    return _json({"ok": row is not None})
+
+
+# ------------------------------------------------------------------ changes from askdnd's pages
+
+
+SETS = {"inspiration": bool, "condition": bool, "exhaustion": int, "equipped": bool, "attuned": bool, "prepared": bool, "container": int}
+USES = ("slot", "pact", "uses", "charges", "coin", "hitdice")
+
+
+def _change(n: dict, body: dict) -> tuple[str, dict] | None:
+    """A change asked for by a page, checked: the intent it makes, or None. Only what the bridge can write."""
+    kind, raw = body.get("kind"), n["raw"]
+    field = str(body.get("field") or "")
+    fk, _, arg = field.partition(":")
+    try:
+        if kind == "set" and fk in SETS:
+            v = body.get("value")
+            if not isinstance(v, SETS[fk]) or (fk == "condition" and int(arg) not in ddb_fields.CONDITIONS) or (fk == "exhaustion" and not 0 <= v <= 6) \
+                    or (fk == "container" and str(v) != str(raw.get("id")) and not (ddb_fields.pick(raw, ["inventory", {"id": v}]) or {}).get("definition", {}).get("isContainer")):
+                return None
+            return "set", {"field": field, "value": v}
+        if kind == "use" and fk in USES[:-1] and isinstance(body.get("delta"), int) and 0 < abs(body["delta"]) <= 100000:
+            return "use", {"field": field, "delta": body["delta"], **({"max": body["max"]} if isinstance(body.get("max"), int) else {})}
+        if kind == "death" and (body.get("reset") is True or body.get("fail") in (1, 2) or body.get("success") in (1, 2)):
+            return "death", {k: body[k] for k in ("fail", "success", "reset") if k in body}
+        if kind == "short_rest" and isinstance(body.get("spend"), dict) and body["spend"] and \
+                all(isinstance(v, int) and 0 < v <= 20 and ddb_fields.pick(raw, ["classes", {"id": k}]) for k, v in body["spend"].items()):
+            return "short_rest", {"spend": {str(k): v for k, v in body["spend"].items()}}
+        row = ddb_fields.pick(raw, ["inventory", {"id": body.get("item")}]) if body.get("item") is not None else None
+        if kind == "remove_item" and row:
+            return "remove_item", {"item": row["id"], "name": ddb_fields.item_name(raw, row["id"])}
+        if kind == "add_item" and row and isinstance(body.get("quantity", 1), int) and 0 < body.get("quantity", 1) <= 100:
+            d = row.get("definition") or {}  # another of an item the character has (D&D Beyond's own definition of it)
+            return "add_item", {"definition": d["id"], "entityTypeId": d["entityTypeId"], "quantity": body.get("quantity", 1), "name": d.get("name") or "an item"}
+    except (TypeError, ValueError, KeyError):
+        return None
+    return None
+
+
+@router.post("/bridge/change/{character_id:int}")
+async def bridge_change(character_id: int, request: Request, db: Session = Depends(get_db)):
+    """Any change a player makes in play, as an intent (`kind`: set, use, death, short_rest, remove_item, add_item), for
+    the bridge to make on D&D Beyond. What the page shows comes from D&D Beyond once it has it."""
+    character, user = _mine(db, request, character_id)
+    if not picks.can_edit(db, user, character):
+        raise HTTPException(403, "Only the character's player changes their sheet.")
+    body = await request.json()
+    n = numbers(character)
+    made = _change(n, body) if n and isinstance(body, dict) else None
+    if not made:
+        raise HTTPException(400, "That isn't a change askdnd can make on D&D Beyond.")
+    kind, data = made
+    add(db, character, kind, data, f"{character.name}: {describe(kind, data, n)}")
+    db.commit()
     return _json(state(db, character, user))
 
 

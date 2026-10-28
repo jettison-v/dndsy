@@ -290,7 +290,7 @@ def entries(db: Session, roots: list[TableRoll], kids: list[TableRoll], viewer_i
         name = names.get(r.character_id) or r.who or "Someone"
         e = {"id": r.id, "seq": seq[r.id], "character_id": r.character_id or 0, "name": name, "initial": name[:1].upper(),
              "portrait": pics.get(r.character_id) or "", "hue": (r.character_id or 0) % 6 if r.character_id else 6,
-             "mine": mine, "to": r.visibility, "hidden": how == "hidden", "dice": dice.get(r.user_id) or prefs(None),
+             "mine": mine, "to": r.visibility, "hidden": how == "hidden", "dice": dice.get(r.user_id) or prefs(None), "ddb": bool(r.ddb_roll_id),
              "at": r.created_at.isoformat() if r.created_at else "", "ago": _ago(r.created_at),
              "hidden_text": "Rolled for the DM" if r.character_id else "Rolled behind the screen"}
         if how == "full":

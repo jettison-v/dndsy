@@ -4,6 +4,7 @@ a fake sheet stands in, and each test changes it the way the extension, a player
 import copy
 
 import pytest
+from sqlalchemy import select
 
 from app import characters, config, ddb, ddb_bridge, ddb_fields
 from app.importer import import_bundle
@@ -30,12 +31,44 @@ def sheet(monkeypatch, db):
 
 
 def make(data, batch):
-    """What the extension's requests do to the sheet (it skips a field already at its new value)."""
+    """What the extension's requests do to the sheet: each field ends at its new value."""
     for op in batch["ops"]:
-        if op["path"] == ddb_fields.HP_PATH:
-            data["removedHitPoints"], data["temporaryHitPoints"] = op["body"]["removedHitPoints"], op["body"]["temporaryHitPoints"]
-        else:
-            next(i for i in data["inventory"] if i["id"] == op["body"]["id"])["quantity"] = op["body"]["quantity"]
+        put(data, op["field"], op["to"])
+
+
+def put(data, field, v):
+    """A field set on the fake sheet, as D&D Beyond keeps it."""
+    kind, _, arg = field.partition(":")
+    row = next((i for i in data["inventory"] if str(i["id"]) == arg), None)
+    if kind == "hp":
+        data.update(v)
+    elif kind == "death":
+        data["deathSaves"].update(v)
+    elif kind == "inspiration":
+        data["inspiration"] = v
+    elif kind in ("exhaustion", "condition"):
+        cid = 4 if kind == "exhaustion" else int(arg)
+        data["conditions"] = [c for c in data["conditions"] if c["id"] != cid] + ([{"id": cid, "level": v if kind == "exhaustion" else None}] if v else [])
+    elif kind == "hitdice":
+        next(c for c in data["classes"] if str(c["id"]) == arg)["hitDiceUsed"] = v
+    elif kind in ("slot", "pact"):
+        next(x for x in data["spellSlots" if kind == "slot" else "pactMagic"] if str(x["level"]) == arg)["used"] = v
+    elif kind == "prepared":
+        next(x for c in data["classSpells"] for x in c["spells"] if str(x["id"]) == arg)["prepared"] = v
+    elif kind == "uses":
+        next(a for group in data["actions"].values() for a in group or [] if str(a["id"]) == arg)["limitedUse"]["numberUsed"] = v
+    elif kind == "item" and v is None:
+        data["inventory"].remove(row)
+    elif kind in ("item", "equipped", "attuned", "container"):
+        row[{"item": "quantity", "attuned": "isAttuned", "container": "containerEntityId"}.get(kind, kind)] = v
+    elif kind == "charges":
+        row["limitedUse"]["numberUsed"] = v
+    elif kind == "coin":
+        data["currencies"][arg] = v
+    elif kind == "add":
+        like = next(i for i in data["inventory"] if str(i["definition"]["id"]) == arg)
+        have = sum(i["quantity"] for i in data["inventory"] if i["definition"] is like["definition"])
+        data["inventory"].append({**copy.deepcopy(like), "id": 999000 + len(data["inventory"]), "quantity": v - have})
 
 
 def potions(data):
@@ -420,3 +453,192 @@ def test_a_batch_no_sheet_ever_answers_for_stops_after_three_tries(player, db, s
         ddb_bridge.outbox(db, cole)  # offered, never answered
     st = player.get(f"/bridge/state/{cole.id}").json()
     assert st["changes"][0]["state"] == "not_yet" and "No D&D Beyond sheet answered" in st["changes"][0]["error"]
+
+
+# ------------------------------------------------------------------ everything a player changes in play
+
+
+def cole_field(db, field):
+    return ddb_fields.value(char(db, "Cole").snapshot.raw, field)
+
+
+SOUL_COIN, BAG, QUIVER, LUCKSTONE, ROD = 992695540, 340867412, 358545286, 819724150, 758020411
+CHANGES = [  # what a page asks for, the sheet's own request it becomes (seen on Vi's sheet, 2026-10-27), the field after
+    ({"kind": "death", "fail": 1}, "PUT", "life/death-saves", {"failCount": 1, "successCount": 0}, "death", {"failCount": 1, "successCount": 0}),
+    ({"kind": "set", "field": "inspiration", "value": False}, "PUT", "character/inspiration", {"inspiration": False}, "inspiration", False),
+    ({"kind": "set", "field": "condition:1", "value": True}, "PUT", "condition", {"id": 1, "level": None, "totalHp": 51}, "condition:1", True),
+    ({"kind": "set", "field": "exhaustion", "value": 2}, "PUT", "condition", {"id": 4, "level": 2, "totalHp": 51}, "exhaustion", 2),
+    ({"kind": "short_rest", "spend": {"184968818": 2}}, "POST", "character/rest/short",
+     {"classHitDiceUsed": {"184968818": 2}, "resetMaxHpModifier": False}, "hitdice:184968818", 2),
+    ({"kind": "use", "field": "slot:2", "delta": 1}, "PUT", "spell/slots", {"level2": 1}, "slot:2", 1),
+    ({"kind": "use", "field": "pact:1", "delta": 1}, "PUT", "spell/pact-magic", {"level1": 1}, "pact:1", 1),
+    ({"kind": "set", "field": "prepared:21171650", "value": False}, "PUT", "spell/prepared",
+     {"id": 21171650, "characterClassId": 184968818, "prepared": False}, "prepared:21171650", False),
+    ({"kind": "use", "field": "uses:9414013", "delta": 1}, "PUT", "action/limited-use", {"id": "9414013", "uses": 1}, "uses:9414013", 1),
+    ({"kind": "set", "field": f"equipped:{ROD}", "value": False}, "PUT", "inventory/item/equipped", {"id": ROD, "value": False}, f"equipped:{ROD}", False),
+    ({"kind": "set", "field": f"attuned:{LUCKSTONE}", "value": False}, "PUT", "inventory/item/attuned", {"id": LUCKSTONE, "value": False}, f"attuned:{LUCKSTONE}", False),
+    ({"kind": "use", "field": f"charges:{SOUL_COIN}", "delta": 2}, "PUT", "inventory/item/charge", {"id": SOUL_COIN, "uses": 2, "charges": 2}, f"charges:{SOUL_COIN}", 2),
+    ({"kind": "use", "field": "coin:gp", "delta": -54}, "PUT", "inventory/currency/gold", {"amount": 600}, "coin:gp", 600),
+    ({"kind": "set", "field": f"container:{ROD}", "value": BAG}, "PUT", "inventory/item/move",
+     {"id": ROD, "containerEntityId": BAG, "containerEntityTypeId": 1439493548}, f"container:{ROD}", BAG),
+    ({"kind": "remove_item", "item": QUIVER}, "DELETE", "inventory/item", {"id": QUIVER}, f"item:{QUIVER}", None),
+    ({"kind": "add_item", "item": POTION, "quantity": 1}, "POST", "inventory/item", {}, "add:8960641", 3),
+]
+
+
+@pytest.mark.parametrize("ask,method,path,body,field,after", CHANGES, ids=[c[0]["kind"] + " " + c[4] for c in CHANGES])
+def test_every_change_a_player_makes_goes_as_the_sheets_own_request(player, db, sheet, ask, method, path, body, field, after):
+    """Roadmap step 3 (Brett, 2026-10-27: everything a player changes in play, checked against DDB Importer's list):
+    each change is the sheet's own request, read back from D&D Beyond before askdnd counts it."""
+    sheet["pactMagic"] = [{"level": 1, "used": 0, "available": 1}]
+    sheet["classes"][0]["hitDiceUsed"] = 0
+    characters.refresh(db, char(db, "Cole"))
+    cole = char(db, "Cole")
+    st = player.post(f"/bridge/change/{cole.id}", json=ask)
+    assert st.status_code == 200, st.text
+    assert st.json()["changes"][0]["state"] == "waiting" and st.json()["changes"][0]["label"].startswith("Cole: ")
+    batch = ddb_bridge.outbox(db, cole)
+    op = batch["ops"][0]
+    assert (op["method"], op["path"]) == (method, f"/character/v5/{path}") and (method, op["path"]) in ddb_fields.WRITES
+    assert op["body"]["characterId"] == 75423618 and body.items() <= op["body"].items()
+    assert op["read"] == ddb_fields.steps(field) and op["to"] == after
+    make(sheet, batch)
+    ddb_bridge.delivered(db, batch["id"], ok=True)
+    st = player.get(f"/bridge/state/{cole.id}").json()
+    assert st["changes"] == [] and st["log"][0]["state"] == "live" and cole_field(db, field) == after
+
+
+def test_an_added_item_is_d_and_d_beyonds_own(player, db, sheet):
+    """Another of an item the character has: D&D Beyond's own definition, carried by the character."""
+    cole = char(db, "Cole")
+    player.post(f"/bridge/change/{cole.id}", json={"kind": "add_item", "item": POTION, "quantity": 2})
+    op = ddb_bridge.outbox(db, cole)["ops"][0]
+    assert op["body"]["equipment"] == [{"containerEntityId": 75423618, "containerEntityTypeId": 1581111423, "entityId": 8960641,
+                                        "entityTypeId": 112130694, "quantity": 2}]
+    assert (op["from"], op["to"]) == (2, 4)  # how many Potions of Healing in all: a repeat never adds twice
+
+
+def test_hit_dice_are_spent_as_a_short_rest_that_goes_first(player, db, sheet):
+    """D&D Beyond spends Hit Dice only in a Short Rest, which restores what a Short Rest restores: it's written first,
+    so a use in the same batch lands after it, and what the rest restored isn't logged as D&D Beyond's own change."""
+    cole = char(db, "Cole")
+    next(a for a in sheet["actions"]["class"] if a["id"] == "9414030")["limitedUse"]["numberUsed"] = 2  # Focus Points spent
+    characters.refresh(db, cole)
+    player.post(f"/bridge/change/{cole.id}", json={"kind": "use", "field": "uses:9414013", "delta": 1})
+    player.post(f"/bridge/change/{cole.id}", json={"kind": "short_rest", "spend": {"194083739": 1}})
+    batch = ddb_bridge.outbox(db, cole)
+    assert [op["field"] for op in batch["ops"]] == ["hitdice:194083739", "uses:9414013"]
+    make(sheet, batch)
+    next(a for a in sheet["actions"]["class"] if a["id"] == "9414030")["limitedUse"]["numberUsed"] = 0  # the rest restored them
+    ddb_bridge.delivered(db, batch["id"], ok=True)
+    log = player.get(f"/bridge/state/{cole.id}").json()["log"]
+    assert [entry["state"] for entry in log] == ["live", "live", "seen"]  # (the seen one: the Focus Points spent above)
+    assert "a Short Rest, spending 1 Hit Die" in log[0]["text"] + log[1]["text"] and "2 used → 0 used" not in log[2]["text"]
+
+
+def test_a_change_with_no_room_left_says_why_and_lists_nothing_to_write(player, db, sheet):
+    cole = char(db, "Cole")
+    player.post(f"/bridge/change/{cole.id}", json={"kind": "use", "field": "uses:9414015", "delta": 2, "max": 1})
+    assert ddb_bridge.outbox(db, cole) is None
+    st = player.get(f"/bridge/state/{cole.id}").json()
+    assert st["changes"][0]["state"] == "not_yet" and "no room" in st["changes"][0]["error"]
+    player.post(f"/bridge/dismiss/{st['changes'][0]['id']}")
+    # a change and its undo before D&D Beyond had it: nothing to write, done
+    player.post(f"/bridge/change/{cole.id}", json={"kind": "use", "field": "coin:gp", "delta": 5})
+    player.post(f"/bridge/change/{cole.id}", json={"kind": "set", "field": "inspiration", "value": False})
+    player.post(f"/bridge/change/{cole.id}", json={"kind": "use", "field": "coin:gp", "delta": -5})
+    player.post(f"/bridge/change/{cole.id}", json={"kind": "set", "field": "inspiration", "value": True})
+    assert ddb_bridge.outbox(db, cole) is None
+    assert player.get(f"/bridge/state/{cole.id}").json()["changes"] == []
+
+
+@pytest.mark.parametrize("ask", [
+    {"kind": "set", "field": "hp", "value": 3}, {"kind": "set", "field": "condition:99", "value": True},
+    {"kind": "set", "field": "exhaustion", "value": 7}, {"kind": "set", "field": "inspiration", "value": "yes"},
+    {"kind": "use", "field": "coin:gp", "delta": 1.5}, {"kind": "use", "field": "xp", "delta": 100},
+    {"kind": "set", "field": f"container:{ROD}", "value": POTION}, {"kind": "remove_item", "item": 1},
+    {"kind": "short_rest", "spend": {"1": 1}}, {"kind": "rename", "value": "Sarkas"}])
+def test_only_changes_the_bridge_can_make_are_taken(player, db, sheet, ask):
+    """Left out on purpose (Brett, 2026-10-27): experience points, custom names and custom items."""
+    assert player.post(f"/bridge/change/{char(db, 'Cole').id}", json=ask).status_code == 400
+
+
+def test_what_changed_on_d_and_d_beyond_is_said_in_words(player, db, sheet):
+    sheet["deathSaves"]["failCount"] = 1
+    sheet["conditions"] = [{"id": 12, "level": None}]
+    sheet["currencies"]["gp"] = 650
+    sheet["inventory"] = [i for i in sheet["inventory"] if i["id"] != QUIVER]
+    sheet["inventory"].append({**copy.deepcopy(sheet["inventory"][5]), "id": 4242, "quantity": 1})
+    st = player.post("/bridge/heard/75423618").json()
+    text = st["log"][0]["text"]
+    for said in ("Death Saving Throws 0 successes, 0 failures → 0 successes, 1 failures", "Prone off → on", "gold 654 → 650",
+                 "Potion of Healing added (×1)", "Quiver removed"):
+        assert said in text
+
+
+def test_the_full_check_takes_one_of_each_out_and_puts_everything_back(admin, db, sheet, monkeypatch):
+    """Manage › askdnd › D&D Beyond bridge › Check everything: every kind of change the test character can take, out
+    and back, each confirmed by read-back; the test character ends as it began."""
+    monkeypatch.setattr(ddb_bridge, "TEST_DDB_ID", "75423618")
+    monkeypatch.setattr(ddb_bridge, "TEST_ITEM", "Potion of Healing")
+    monkeypatch.setattr(ddb, "fetch_character_json", lambda _id, timeout=None: copy.deepcopy(sheet))
+    cole = char(db, "Cole")
+    owned_by(db, cole, "admin@example.com")
+    before = ddb_fields.tracked(copy.deepcopy(sheet))
+    admin.post("/bridge/hello", json={"sheets": ["75423618"]})
+    assert admin.post("/bridge/check?full=1").json()["text"] == "D&D Beyond · checking…"
+    out = ddb_bridge.outbox(db, cole)
+    kinds = {op["field"].split(":")[0] for op in out["ops"]}
+    assert {"hp", "item", "death", "inspiration", "condition", "exhaustion", "coin", "hitdice", "uses", "charges", "prepared",
+            "equipped", "attuned", "container"} <= kinds
+    make(sheet, out)
+    ddb_bridge.delivered(db, out["id"], ok=True)
+    back = ddb_bridge.outbox(db, cole)
+    make(sheet, back)
+    ddb_bridge.delivered(db, back["id"], ok=True)
+    assert ddb_fields.tracked(sheet) == before
+    assert admin.get("/bridge/health").json()["text"].startswith("D&D Beyond · working (checked ")
+
+
+def test_askdnd_and_the_extension_read_every_kind_of_field_the_same_way():
+    """The steps ddb-page.js `pick` follows too: a list picked by id or level (as text), lists joined, a sum, presence."""
+    data = {"actions": {"race": [], "class": [{"id": "9", "limitedUse": {"numberUsed": 2}}], "item": None},
+            "classSpells": [{"spells": [{"id": 5, "prepared": True}]}, {"spells": []}], "conditions": [{"id": 12, "level": None}],
+            "spellSlots": [{"level": 1, "used": 1}], "inventory": [{"id": 1, "quantity": 2, "definition": {"id": 7}},
+                                                                    {"id": 2, "quantity": 3, "definition": {"id": 7}}]}
+    assert [ddb_fields.value(data, f) for f in ("uses:9", "prepared:5", "condition:12", "condition:1", "exhaustion", "slot:1", "add:7", "add:8")] \
+        == [2, True, True, False, 0, 1, 5, 0]
+
+
+def ddb_roll(rid="r-1", scope="gameId", kind="check", how="", values=(14,), constant=5, total=19, action="Stealth"):
+    """A finished roll as the sheet sends it to D&D Beyond's game log (seen on Vi's sheet, 2026-10-27)."""
+    return {"id": rid, "action": action, "scope": scope, "rolls": [{
+        "diceNotation": {"constant": constant, "set": [{"count": len(values), "dieType": "d20", "operation": 0,
+                                                        "dice": [{"dieType": "d20", "dieValue": v} for v in values]}]},
+        "rollKind": how, "rollType": kind, "result": {"constant": constant, "text": "", "total": total, "values": list(values)}}]}
+
+
+def test_a_roll_made_on_d_and_d_beyond_comes_into_table_rolls_once(player, dm, db, sheet):
+    """Roadmap step 3e (Brett, 2026-10-27): a roll made on D&D Beyond by habit still reaches the table, marked "on
+    D&D Beyond"; it's only heard (askdnd never writes into D&D Beyond's game log)."""
+    from app.models import TableRoll
+    player.post("/bridge/roll/75423618", json=ddb_roll(how="advantage", values=(4, 14)))
+    player.post("/bridge/roll/75423618", json=ddb_roll(how="advantage", values=(4, 14)))  # heard twice, recorded once
+    rows = db.scalars(select(TableRoll)).all()
+    assert len(rows) == 1 and (rows[0].kind, rows[0].mode, rows[0].kept, rows[0].total, rows[0].formula) == ("check", "adv", 14, 19, "2d20+5")
+    html = dm.get("/rolls").text
+    assert "Stealth" in html and "on D&amp;D Beyond" in html
+
+    player.post("/bridge/roll/75423618", json=ddb_roll(rid="r-2", scope="userId", action="Perception"))  # rolled to self there
+    assert "Perception" not in dm.get("/rolls").text
+    assert dm.post("/bridge/roll/75423618", json=ddb_roll(rid="r-3")).json() == {"ok": False}  # only the player's own browser
+
+
+def test_the_extension_makes_only_the_requests_askdnd_knows():
+    """The extension's own list of requests (ddb-page.js WRITES) is askdnd's (ddb_fields.WRITES): a page can't ask it for
+    anything else, and nothing askdnd writes is refused there."""
+    import re
+    from pathlib import Path
+    js = (Path(__file__).parent.parent / "extension/askdnd-bridge/ddb-page.js").read_text()
+    listed = js[js.index("const WRITES"):js.index("]);", js.index("const WRITES"))]
+    assert {tuple(w.split(" ", 1)) for w in re.findall(r"'([A-Z]+ /[^']+)'", listed)} == ddb_fields.WRITES
