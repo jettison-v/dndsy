@@ -28,6 +28,25 @@
     },
     {
       "matches": [
+        "https://www.dndbeyond.com/games/*"
+      ],
+      "js": [
+        "vtt-page.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://www.dndbeyond.com/games/*"
+      ],
+      "js": [
+        "vtt.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
         "https://beta.askdnd.ai/*",
         "https://askdnd.ai/*",
         "http://localhost:8000/*"
