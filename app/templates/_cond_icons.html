@@ -35,16 +35,18 @@
 
 {# The badges after the character's name on every character page (Brett, 2026-10-29; docs/mockups/temporary-items.html):
    Concentration first, then the conditions in their order, icons only; hover, focus or a tap says what each does
-   (its rules summary: character_pages._view). Six at most, then "+2". #}
-{% macro cond_badges(conditions) -%}
+   (its rules summary: character_pages._view). Six at most, then "+2". On Party's cards (`ch`, `still`) the same badges
+   only show what they do on hover, as a click there opens the card. #}
+{% macro cond_badges(conditions, ch=none, still=false) -%}
+{% set who = ch or c %}{% set tag = "span" if still else "button" %}
 {% if conditions %}
 <span class="cond-badges" role="group" aria-label="Conditions">
   {% for x in conditions[:6] %}
-  <button type="button" class="cond-badge" data-cond="{{ cond_slug(x.name) }}" data-name="{{ x.name }}" data-mark="{{ c.id }}:emb:{{ x.name }}"{% if x.sync %} data-sync="{{ x.sync }}"{% endif %} aria-expanded="false" aria-label="{{ x.name }}{% if x.level %} {{ x.level }}{% endif %}">
+  <{{ tag }}{% if not still %} type="button"{% endif %} class="cond-badge" data-cond="{{ cond_slug(x.name) }}" data-name="{{ x.name }}" data-mark="{{ who.id }}:emb:{{ x.name }}"{% if x.sync %} data-sync="{{ x.sync }}"{% endif %}{% if still %} role="img"{% else %} aria-expanded="false"{% endif %} aria-label="{{ x.name }}{% if x.level %} {{ x.level }}{% endif %}">
     {{- cond_icon(x.name) }}{% if x.level %}<span class="cond-lv">{{ x.level }}</span>{% endif %}
     {% if x.name == "Concentration" %}<span class="cond-tip" role="tooltip"><b>Concentration: {{ x.spell }}</b>{% if x.rounds %}Round {{ x.round }} of {{ x.rounds }}. {% endif %}Taking damage asks for a Constitution save, DC 10 or half the damage (up to 30); being Incapacitated ends it.<span class="note">the DM rules</span></span>
     {% else %}<span class="cond-tip" role="tooltip"><b>{{ x.name }}{% if x.level %}, level {{ x.level }}{% endif %}</b>{{ x.rules }}<span class="note">{% if x.source %}{{ x.source }} · {% endif %}the DM rules</span></span>{% endif %}
-  </button>
+  </{{ tag }}>
   {% endfor %}
   {% if conditions | length > 6 %}<span class="cond-more">+{{ conditions | length - 6 }}</span>{% endif %}
 </span>

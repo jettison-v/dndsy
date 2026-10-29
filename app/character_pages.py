@@ -106,7 +106,7 @@ def party_page(request: Request, pick: str = "", db: Session = Depends(get_db)):
     if not user:
         return RedirectResponse("/login", status_code=303)
     overrides = _overrides(db)
-    rows = [{**r, "sheet": views.apply_overrides(r["sheet"], overrides), "conditions": listed(db, r["c"], r["sheet"])} for r in _party_rows(db, user)]
+    rows = [{**r, "sheet": views.apply_overrides(r["sheet"], overrides), "conditions": [{**x, "rules": cond.rules_text(x["name"])} for x in listed(db, r["c"], r["sheet"])]} for r in _party_rows(db, user)]
     return _page(request, "party.html", {
         "rows": rows,
         "spells": views.party_spell_list(rows),

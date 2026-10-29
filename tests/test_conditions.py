@@ -106,7 +106,7 @@ def test_a_condition_shows_on_battle_party_and_your_menu_bar_button(player, dm, 
         assert [x.split('"')[0] for x in badges.split('data-name="')[1:]] == ["Poisoned", "Prone", "Exhaustion"]  # in the order they started
         assert 'class="cond-lv">2<' in badges and "Disadvantage on attack rolls" in badges
     party = dm.get("/c/main/party").text
-    assert 'style="--h: var(--cond-exhaustion)" data-conds' in party and 'title="Exhaustion 2"' in party
+    assert 'style="--h: var(--cond-exhaustion)" data-conds' in party and 'aria-label="Exhaustion 2"' in party.split('class="cond-badges"')[1]
     dots = player.get("/c/main/").text.split("data-cond-dots")[1].split("</span>")[0]
     assert 'title="Poisoned, Prone, Exhaustion"' in dots and dots.count("<i data-cond=") == 3
     player.post(f"/characters/{cole.id}/conditions", data={"name": "Invisible"}, headers=HX)
