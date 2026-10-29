@@ -5,6 +5,7 @@ window.addEventListener('message', e => {
   if (e.data.askdndBridge === 'ping') window.postMessage({ askdndBridge: 'hello' }, location.origin);
   if (e.data.askdndBridge === 'wake') chrome.runtime.sendMessage({ type: 'wake' });  // the bridge woke: pull now
   if (e.data.askdndBridge === 'deliver') chrome.runtime.sendMessage({ type: 'deliver', ddbId: e.data.ddbId });  // something was queued here
+  if (e.data.askdndBridge === 'gamelog') chrome.runtime.sendMessage({ type: 'gamelog', ddbId: e.data.ddbId, messages: e.data.messages });  // a roll for the game log
 });
 chrome.runtime.onMessage.addListener(m => { if (m.type === 'bridge-update') window.postMessage({ askdndBridge: 'update' }, location.origin); });
 window.postMessage({ askdndBridge: 'hello' }, location.origin);

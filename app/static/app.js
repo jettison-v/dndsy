@@ -1886,6 +1886,8 @@
         if (pending) pending.remove();
         addToLog(j.html, j.roll.id);
         showResult(w, j.roll, go.follow);
+        // Into D&D Beyond's Game Log too, as askdnd's (app/gamelog.py): the extension sends it from this player's sheet
+        if (j.gamelog) window.postMessage({ askdndBridge: 'gamelog', ddbId: j.gamelog.ddbId, messages: j.gamelog.messages }, location.origin);
       })
       .catch(err => {
         if (pending) pending.remove();

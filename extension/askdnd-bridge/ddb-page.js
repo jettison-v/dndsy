@@ -4,7 +4,9 @@
 // 2. Makes askdnd's batches: only the requests askdnd may make (WRITES), only for the character whose sheet this is,
 //    with a short-lived token D&D Beyond gives this page from its own sign-in. Nothing is stored.
 // 3. Hears rolls made on the sheet: the finished roll the sheet sends to D&D Beyond's game log is passed on to askdnd's
-//    Table rolls (only heard: nothing is ever sent to the game log).
+//    Table rolls. And sends the player's askdnd rolls to the game log (app/gamelog.py; Brett, 2026-10-29), as
+//    askdnd's own: source "askdnd" and ⓐ in the name, never passed off as D&D Beyond's; askdnd builds each one, this
+//    page adds only who is signed in, an id and the time.
 // 4. Keeps the open sheet showing what D&D Beyond has (Brett, 2026-10-27: no reloading): after askdnd changes the
 //    character, or when askdnd's read of D&D Beyond differs from what this page holds, the page reads the character as
 //    the sheet does when it opens and hands it to the sheet's own store, so it can't save an old number back.
@@ -66,9 +68,11 @@
   // apply the hit, app/hit_points.py) and a character's made on another page. Each is passed on as it came;
   // askdnd keeps each roll once (app/ddb_bridge.py heard_in_game). Heard from the moment the page opens its connection
   const listening = new WeakSet();
+  let gameLog = null;  // this sheet's connection to its game's log (askdnd's rolls go out on it)
   const listen = ws => {
     if (listening.has(ws)) return;
     listening.add(ws);
+    if (String(ws.url).includes('game-log-api')) gameLog = ws;
     ws.addEventListener('message', e => {
       try {
         const j = asRoll(e.data);
@@ -81,7 +85,7 @@
   WebSocket.prototype.send = function (m) {
     try {
       const j = asRoll(m);
-      if (j && String(j.entityId) === sheetId()) {
+      if (j && String(j.entityId) === sheetId() && j.source !== 'askdnd') {  // (askdnd's own: Table rolls has it)
         post({ type: 'roll', roll: { id: j.data.rollId, action: j.data.action, rolls: j.data.rolls, scope: j.messageScope, target: j.messageTarget, user: j.userId } });
       }
     } catch (e) { /* not a roll */ }
@@ -189,7 +193,23 @@
     if (e.data.askdndBridge === 'apply') queue = queue.then(() => run(e.data.batch), () => run(e.data.batch));
     if (e.data.askdndBridge === 'show') show();  // askdnd changed this character from another copy of the sheet
     if (e.data.askdndBridge === 'check') check(e.data.fields || []);
+    if (e.data.askdndBridge === 'gamelog') toGameLog(e.data.messages || []);
   });
+  // askdnd's rolls into the game log, on this sheet's own connection: only this character's, only in this sheet's game
+  function toGameLog(messages) {
+    if (!gameLog || gameLog.readyState !== 1) return post({ type: 'gamelog', sent: 0 });
+    const q = new URL(gameLog.url).searchParams, user = q.get('userId'), game = q.get('gameId');
+    let sent = 0;
+    for (const m of messages) {
+      if (m.source !== 'askdnd' || String(m.entityId) !== sheetId() || String(m.gameId) !== game || !user) continue;
+      const self = m.messageScope === 'userId' && m.messageTarget === 'self';  // (a roll the player keeps to themself)
+      const target = self ? user : m.messageTarget;
+      const data = { ...m.data, context: { ...m.data.context, messageTarget: target } };
+      wsend.call(gameLog, JSON.stringify({ id: crypto.randomUUID(), dateTime: String(Date.now()), userId: user, ...m, data, messageTarget: target }));
+      sent++;
+    }
+    post({ type: 'gamelog', sent });
+  }
   // askdnd just read D&D Beyond: if this page holds anything else, it shows D&D Beyond's numbers (a change made on
   // another device, or in another copy of this sheet)
   async function check(fields) {

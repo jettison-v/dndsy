@@ -9,8 +9,9 @@ player changes in play:
 - spell slots, Pact Magic slots, limited uses;
 - an item's count, equipped, attuned, charges, coins (absolute amounts, never the sheet's +/− deltas), adding another
   of an item, removing one, moving it into or out of a container;
-- rolls made on the sheet come into Table rolls marked "on D&D Beyond" (only heard; nothing goes into D&D Beyond's
-  game log).
+- rolls made on the sheet come into Table rolls marked "on D&D Beyond"; and the player's askdnd rolls go into D&D
+  Beyond's game log from their open sheet (0.9.3, app/gamelog.py), as askdnd's own: source "askdnd" and ⓐ after the
+  name, never passed off as D&D Beyond's.
 Left out: experience points, custom names and custom items. Prepared spells come with casting (roadmap Phase 2).
 
 After askdnd changes the character, every open copy of the sheet shows D&D Beyond's numbers in place, through the

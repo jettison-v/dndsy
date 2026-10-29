@@ -96,6 +96,14 @@ chrome.runtime.onMessage.addListener((m, sender) => {
       await chrome.storage.session.set({ key: m.key, askdnd }); hello(); for (const t of await sheetTabs()) refreshPanels(ddbIdOf(t.url)); return;
     }
     if (m.type === 'deliver') return deliver(String(m.ddbId));  // askdnd's own tab queued something
+    if (m.type === 'gamelog') {  // a roll made in askdnd, for the game log: from one open copy of the sheet only
+      const askdnd = sender.origin || (sender.tab && new URL(sender.tab.url).origin);
+      if (!SITES.includes(askdnd)) return;
+      for (const t of (await sheetTabs(String(m.ddbId))).filter(t => !t.discarded).sort((a, b) => (b.active - a.active) || (b.lastAccessed || 0) - (a.lastAccessed || 0))) {
+        try { const r = await chrome.tabs.sendMessage(t.id, { type: 'gamelog', messages: m.messages }); if (r && r.took) return; } catch (err) { /* not there: the next */ }
+      }
+      return;
+    }
     if (m.type === 'wake') return hello();
     const here = ddbIdOf(sender.tab && sender.tab.url);  // the rest come from a D&D Beyond sheet
     if (!here) return;
