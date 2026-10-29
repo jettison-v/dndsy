@@ -74,7 +74,19 @@ header.top { display: grid; gap: 12px; max-width: 76ch; }
 .badge.conc { border-radius: 50%; }
 .badge svg { width: 16px; height: 16px; }
 .badge .end { position: absolute; right: -3px; bottom: -3px; width: 10px; height: 10px; border-radius: 50%; background: var(--amber); border: 2px solid var(--bg); }
-.turnline { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font-size: .86rem; color: var(--muted); }
+/* The fight band (Brett, 2026-10-29): above the name, on every character page and Party, while a fight runs */
+.turnline { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font-size: .86rem; color: var(--muted); padding: 8px 12px; background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--amber); border-radius: 10px; }
+.turnline .seq { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; }
+.turnline .seq span { font-size: .76rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.turnline .seq span.now { border-color: var(--amber); color: var(--amber); }
+.turnline .seq span.you { color: var(--strong); font-weight: 600; }
+@media (max-width: 640px) { .turnline .seq { margin-left: 0; } }
+.party { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 640px) { .party { grid-template-columns: 1fr; } }
+.pcard { display: grid; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.pcard .name-row h3 { font-size: 1.15rem; }
+.pcard .line { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: .8rem; color: var(--muted); }
+.pcard .line b { color: var(--text); font-weight: 600; }
 .turnline .rd { font: 700 .72rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 5px 9px; }
 .turnline .mine { color: var(--amber); font-weight: 600; }
 .turnline .src { border: 1px solid var(--line); border-radius: 999px; padding: 0 6px; font-size: .78rem; color: var(--muted); }  /* the badge Table rolls gives what came from D&D Beyond (.roll-to) */
@@ -134,7 +146,8 @@ footer { color: var(--faint); font-size: .84rem; border-top: 1px solid var(--lin
     <span class="eyebrow">Where you'll find it</span>
     <div class="box where">
       <ol>
-        <li><b>Battle's Status row</b>: each condition's pill says how long it lasts in a few words ("to your next turn", "9 rounds", "Wis 13 save"); click it for the whole of it, where it came from, and End it. A line above the pills shows the round and whose turn it is.</li>
+        <li><b>Battle's Status row</b>: each condition's pill says how long it lasts in a few words ("to your next turn", "9 rounds", "Wis 13 save"); click it for the whole of it, where it came from, and End it.</li>
+        <li><b>The fight band</b>, above the character's name on every character page (Battle, Sheet, Plan) and at the top of Party, while a fight runs in D&amp;D Beyond's VTT: the round, whose turn it is, "you're next", and the order.</li>
         <li><b>The badges after the name</b> (every character page): a small amber dot on any that ends this turn; point at a badge for when it ends.</li>
         <li><b>Corner cards</b>: "Frightened ends now · End it", or "Wisdom save to end Paralyzed · Roll the save", shown to that character's player and the DM.</li>
         <li><b>+ Condition</b> on Battle: a Lasts menu when you start one. Concentration keeps its pill and now counts its rounds by itself.</li>
@@ -152,16 +165,17 @@ footer { color: var(--faint); font-size: .84rem; border-top: 1px solid var(--lin
     </div>
     <div class="ctl-row">
       <div class="ctl"><span>Looking as</span><div class="seg" data-seg="view"><button type="button" aria-pressed="true" data-v="cole">Cole's player</button><button type="button" aria-pressed="false" data-v="bigc">Big C's player</button><button type="button" aria-pressed="false" data-v="dm">The DM</button></div></div>
-      <div class="ctl"><span>Battle for</span><div class="seg" data-seg="page"><button type="button" aria-pressed="true" data-v="cole">Cole</button><button type="button" aria-pressed="false" data-v="bigc">Big C</button><button type="button" aria-pressed="false" data-v="trah">Trah</button></div></div>
+      <div class="ctl"><span>Page</span><div class="seg" data-seg="page"><button type="button" aria-pressed="true" data-v="cole">Cole</button><button type="button" aria-pressed="false" data-v="bigc">Big C</button><button type="button" aria-pressed="false" data-v="trah">Trah</button><button type="button" aria-pressed="false" data-v="party">Party</button></div></div>
       <button class="btn" type="button" id="reset">Start over</button>
     </div>
     <div class="stage">
       <div class="s-mb"><b>The Adventure Begins</b><span>Story</span><span>Campaign</span><span id="mb-who" style="margin-left:auto;color:var(--strong)">Cole</span></div>
       <div class="s-body">
-        <div class="head"><span class="av"></span><div style="display:grid;gap:3px"><div class="name-row"><h3 id="pname">Cole</h3><span class="badges" id="badges"></span></div><span class="muted small" id="psub"></span></div></div>
-        <div class="tiles"><div class="tile"><span>Hit points</span><b id="hp">51 / 51</b></div><div class="tile"><span>Armor class</span><b id="ac">16</b></div><div class="tile"><span>Speed</span><b id="spd">45 ft</b></div><div class="tile"><span>Initiative</span><b id="init">+3</b></div></div>
         <div class="turnline" id="turnline"></div>
+        <div class="head" id="head"><span class="av"></span><div style="display:grid;gap:3px"><div class="name-row"><h3 id="pname">Cole</h3><span class="badges" id="badges"></span></div><span class="muted small" id="psub"></span></div></div>
+        <div class="tiles" id="tiles"><div class="tile"><span>Hit points</span><b id="hp">51 / 51</b></div><div class="tile"><span>Armor class</span><b id="ac">16</b></div><div class="tile"><span>Speed</span><b id="spd">45 ft</b></div><div class="tile"><span>Initiative</span><b id="init">+3</b></div></div>
         <div class="status" id="status"></div>
+        <div class="party" id="party" hidden></div>
       </div>
       <div class="cards" id="cards" aria-live="polite"></div>
     </div>
@@ -220,8 +234,8 @@ footer { color: var(--faint); font-size: .84rem; border-top: 1px solid var(--lin
         <p class="small">A reminder card with <b>End it</b> and <b>Keep</b>, or askdnd ends it by itself (and says so)? A reminder keeps the DM ruling, and covers a DM who says it lasts a little longer. <b>My pick: the reminder.</b></p></div>
       <div class="box ask"><h3>2 · Who sees a reminder</h3>
         <p class="small">That character's player and the DM, or the player alone? The DM watches every creature's conditions, so the DM seeing them helps them run the fight. A save is rolled by the player either way. <b>My pick: the player and the DM.</b></p></div>
-      <div class="box ask"><h3>3 · Whose turn, shown where</h3>
-        <p class="small">Only on Battle, above the pills, or in the menu bar on every page too? The menu bar is already full. Battle is where you are in a fight. <b>My pick: Battle only.</b></p></div>
+      <div class="box"><h3>3 · Whose turn, shown where</h3>
+        <p class="small"><b>Decided (your comment):</b> a fight band above the name on every character page and on Party, only while a fight runs.</p></div>
     </div>
   </section>
 
@@ -284,7 +298,7 @@ footer { color: var(--faint); font-size: .84rem; border-top: 1px solid var(--lin
   function draw() {
     const cur = ORDER[S.turn][0];
     document.getElementById('order').innerHTML = ORDER.map(([k, n, i]) => '<div class="who' + (k === cur ? ' now' : '') + '"><b>' + n + '</b><span>' + i + '</span></div>').join('');
-    const sh = SHEET[page];
+    const sh = SHEET[page] || SHEET.cole;
     document.getElementById('pname').textContent = NAME[page];
     document.getElementById('psub').textContent = sh[0];
     document.getElementById('hp').textContent = sh[1]; document.getElementById('ac').textContent = sh[2];
@@ -293,7 +307,18 @@ footer { color: var(--faint); font-size: .84rem; border-top: 1px solid var(--lin
     const mine = S.conds.filter(c => c.who === page);
     document.getElementById('badges').innerHTML = mine.map(c => '<span class="badge' + (c.name === 'Concentration' ? ' conc' : '') + '" style="--c: var(--cond-' + c.name.toLowerCase() + ')" title="' + c.name + ': ' + lasts(c) + '">' + svg(c.name) + (endsNow(c) || c.due ? '<i class="end"></i>' : '') + '</span>').join('');
     const nextUp = ORDER[(S.turn + 1) % ORDER.length][0];
-    document.getElementById('turnline').innerHTML = '<span class="rd">Round ' + S.round + '</span>' + (cur === page ? '<span class="mine">Your turn</span>' : '<span>' + NAME[cur] + '’s turn' + (nextUp === page ? ' · <span class="mine">you’re next</span>' : '') + '</span>') + '<span class="src">on D&amp;D Beyond</span>';
+    const me = view === 'dm' ? null : view;  // whose turn is "yours": the person looking, on any page
+    document.getElementById('turnline').innerHTML = '<span class="rd">Round ' + S.round + '</span>' + (cur === me ? '<span class="mine">Your turn</span>' : '<span>' + NAME[cur] + '\u2019s turn' + (nextUp === me ? ' \u00b7 <span class="mine">you\u2019re next</span>' : '') + '</span>') + '<span class="src">on D&amp;D Beyond</span>'
+      + '<span class="seq">' + ORDER.map(([k, n]) => '<span class="' + (k === cur ? 'now ' : '') + (k === me ? 'you' : '') + '">' + n + '</span>').join('') + '</span>';
+    const party = page === 'party';
+    ['head', 'tiles', 'status'].forEach(id => { document.getElementById(id).hidden = party; });
+    document.getElementById('party').hidden = !party;
+    if (party) {
+      document.getElementById('party').innerHTML = ['cole', 'bigc', 'noname', 'trah'].map(k => { const cs = S.conds.filter(c => c.who === k);
+        return '<div class="pcard"><div class="name-row"><h3>' + NAME[k] + '</h3><span class="badges">' + cs.map(c => '<span class="badge' + (c.name === 'Concentration' ? ' conc' : '') + '" style="--c: var(--cond-' + c.name.toLowerCase() + ')">' + svg(c.name) + (endsNow(c) || c.due ? '<i class="end"></i>' : '') + '</span>').join('') + '</span></div>'
+          + '<div class="line">' + (cs.map(c => '<span><b>' + (c.spell || c.name) + '</b>' + (short(c) ? ' ' + short(c) : '') + '</span>').join('') || '<span>No conditions</span>') + '</div></div>'; }).join('');
+      return;
+    }
     const pills = mine.map((c, n) => '<details class="pillpop" data-i="' + S.conds.indexOf(c) + '"><summary class="pill' + (endsNow(c) || c.due ? ' ending' : '') + '" style="--c: var(--cond-' + c.name.toLowerCase() + ')">' + svg(c.name) + '<b>' + (c.spell || c.name) + '</b>' + (short(c) ? '<small>' + short(c) + '</small>' : '') + '</summary>'
       + '<div class="pop" style="--c: var(--cond-' + c.name.toLowerCase() + ')"><b>' + (c.spell ? 'Concentration: ' + c.spell : c.name) + '</b><span>' + lasts(c).charAt(0).toUpperCase() + lasts(c).slice(1) + '.</span>' + (c.from ? '<span class="muted">From ' + c.from + '</span>' : '') + '<button class="btn" type="button" data-end>End it</button></div></details>');
     if (mine.length && mine[0].name === 'Concentration') pills.splice(1, 0, '<i class="sep"></i>');
