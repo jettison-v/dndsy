@@ -105,6 +105,9 @@ class Campaign(Timestamped, Base):
     # Game Mode, one switch for the whole table (app/game_mode.py): on until this moment, started by this person
     game_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     game_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL", use_alter=True, name="campaigns_game_by_id_fkey"))  # (users point at campaigns too)
+    # The fight running in its D&D Beyond VTT, as askdnd last heard it (app/fight.py): the order, the round, whose turn
+    fight: Mapped[dict | None] = mapped_column(JSONB)
+    fight_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     members: Mapped[list["CampaignMember"]] = relationship(back_populates="campaign")
 
 

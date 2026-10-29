@@ -114,8 +114,9 @@ def announce(db: Session, campaign_id: int | None, kind: str, **data) -> None:
 # aren't here: they're theirs (the DM never sees them), and the page they were made on shows them at once.
 TABLE_SEES = {"Character": ("name", "owner_id", "wild_shape", "concentration", "conditions"), "CharacterSnapshot": ("summary",),
               "BridgeIntent": ("state", "error"), "BridgeLog": ("text",)}
-# And of the campaign itself: Game Mode, on or off for the whole table (app/game_mode.py), announced as "game"
-CAMPAIGN_SEES = {"Campaign": ("game_until",)}
+# And of the campaign itself: Game Mode, on or off for the whole table (app/game_mode.py), and the fight heard from
+# D&D Beyond's VTT (app/fight.py), announced as "game"
+CAMPAIGN_SEES = {"Campaign": ("game_until", "fight")}
 
 
 def _stored(value) -> str:

@@ -46,6 +46,21 @@ def _page_context(request: Request) -> dict:
                     pass  # database unavailable: the page works without it
         return game["v"]
 
+    fight: dict = {}
+
+    def fight_now() -> dict | None:
+        """The fight in D&D Beyond's VTT as you see it (app/fight.py), for the fight band; read once per page."""
+        from app import fight as f
+
+        if "v" not in fight:
+            fight["v"] = None
+            if user and here:
+                try:
+                    fight["v"] = f.loader(here["id"], user.get("email"))
+                except Exception:
+                    pass  # database unavailable: the page works without it
+        return fight["v"]
+
     viewing_as = user if request.session.get("real_user") and user else None  # app/view_as.py
     viewing_role = access.ROLE_LABELS.get(access.role(user.get("email"))) if viewing_as else None
     return {"user": user, "viewing_as": viewing_as, "viewing_role": viewing_role, "is_admin": is_admin(user), "is_reviewer": is_reviewer(user), "is_dm": is_dm(user), "can_moderate": can_moderate(user),
@@ -58,7 +73,7 @@ def _page_context(request: Request) -> dict:
             "managed_ids": [c["id"] for c in access.campaigns_for(user.get("email")) if access.role(user.get("email"), c["id"]) in (access.DM, access.REVIEWER)] if user else [],  # (the Manage menu's other campaigns)
             "switch_path": switch_path(request.url.path),
             "vtt_on": lambda key: vtt.on(here, key),  # the VTT switch (app/vtt.py)
-            "game_mode": game_mode,
+            "game_mode": game_mode, "fight_now": fight_now,
             "my_dice": _my_dice, "dice_tuning": _dice_tuning,
             "my_id": (lambda: access.user_id(user.get("email"))) if user else (lambda: None)}  # your dice and everyone's tuning (app/dice.py), for thrown rolls
 

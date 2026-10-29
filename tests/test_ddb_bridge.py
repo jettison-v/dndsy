@@ -777,11 +777,12 @@ def test_the_store_copy_of_the_extension_is_for_askdnds_own_sites(tmp_path, monk
         store = json.loads(z.read("manifest.json"))
         names = set(z.namelist())
     assert "localhost" not in json.dumps(store) and "README.md" not in names
-    assert {"icons/icon-128.png", "background.js", "ddb.js", "ddb-page.js", "askdnd.js"} <= names
+    assert {"icons/icon-128.png", "background.js", "ddb.js", "ddb-page.js", "askdnd.js", "vtt.js", "vtt-page.js"} <= names
     src = Path(__file__).parent.parent / "extension/askdnd-bridge"
     manifest = json.loads((src / "manifest.json").read_text())
     sites = re.search(r"const SITES = \[([^\]]*)\]", (src / "background.js").read_text()).group(1)
-    assert {s.strip(" '") for s in sites.split(",")} == {p.removesuffix("/*") for p in manifest["content_scripts"][1]["matches"]}
+    on_askdnd = next(c for c in manifest["content_scripts"] if c["js"] == ["askdnd.js"])
+    assert {s.strip(" '") for s in sites.split(",")} == {p.removesuffix("/*") for p in on_askdnd["matches"]}
 
 
 def test_the_live_pill_says_whether_your_sheet_is_in_step_or_has_something_to_make_by_hand(player, db, sheet):

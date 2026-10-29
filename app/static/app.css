@@ -1739,6 +1739,16 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .cond-halo.dark::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, var(--cond-dark-glow)); }
 .cond-halo.starting i { animation: cond-flash 1.8s ease-out; }
 @keyframes cond-flash { 0% { opacity: 1; } }
+/* The fight band (app/fight.py, _fight_band.html; Brett, 2026-10-29): above the name on every character page and on
+   Party while a fight runs in D&D Beyond's VTT */
+.fight-band { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-3); margin-bottom: var(--sp-3); padding: var(--sp-2) var(--sp-3); background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--amber); border-radius: var(--r-md); font-size: var(--fs-sm); color: var(--muted); }
+.fb-round { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; border: 1px solid var(--line); border-radius: var(--r-pill); padding: 2px var(--sp-2); }
+.fb-mine { color: var(--amber); font-weight: 600; }
+.fb-order { display: flex; flex-wrap: wrap; gap: var(--sp-1); margin-left: auto; }
+.fb-order > span { font-size: var(--fs-xs); padding: 1px var(--sp-2); border: 1px solid var(--line); border-radius: var(--r-pill); white-space: nowrap; }
+.fb-order > .now { border-color: var(--amber); color: var(--amber); }
+.fb-order > .hid { border-style: dashed; opacity: .7; }
+@media (max-width: 640px) { .fb-order { margin-left: 0; } }
 /* The badges after the name, on every character page (Brett, 2026-10-29; docs/mockups/temporary-items.html): small,
    each in its condition's colour; hover, focus or a tap shows what it does below it */
 .char-name { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) 10px; }

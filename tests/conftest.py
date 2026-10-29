@@ -107,9 +107,10 @@ def _books_read_fresh():
 def _access_rows(monkeypatch):
     """Access checks (app/access.py) read people from the database. Tests never see
     the local dev database: no rows unless the test uses `db`, and no caching."""
-    from app import access, game_mode, house_rules, live
+    from app import access, fight, game_mode, house_rules, live
 
     monkeypatch.setattr(access, "loader", lambda: {})
+    monkeypatch.setattr(fight, "loader", lambda campaign_id, email: None)
     monkeypatch.setattr(live, "loader", lambda: [])
     monkeypatch.setattr(game_mode, "loader", lambda campaign_id: dict(game_mode.OFF))
     monkeypatch.setattr(house_rules, "loader", lambda: {})
@@ -149,7 +150,7 @@ def _until_changed(session, writes, load):
 @pytest.fixture
 def db(db_engine, monkeypatch):
     """A session whose changes are rolled back after each test."""
-    from app import access, game_mode, house_rules, live
+    from app import access, fight, game_mode, house_rules, live
     from app.models import Campaign
 
     with db_engine.connect() as conn:
@@ -159,6 +160,7 @@ def db(db_engine, monkeypatch):
             monkeypatch.setattr(access, "loader", _until_changed(session, writes, lambda: access.rows_from(session)))
             monkeypatch.setattr(live, "loader", lambda: live.rows_from(session))
             monkeypatch.setattr(game_mode, "loader", lambda cid: game_mode.state(session, session.get(Campaign, cid)))
+            monkeypatch.setattr(fight, "loader", lambda cid, email: fight.for_person(session, session.get(Campaign, cid), email))
             monkeypatch.setattr(house_rules, "loader", _until_changed(session, writes, lambda: house_rules.rows_from(session)))
             from app import campaign_paths
 
