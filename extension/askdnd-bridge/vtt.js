@@ -7,6 +7,15 @@
 // glance shows whether askdnd hears the fight). It only shows: no buttons over D&D Beyond's own controls, and clicks
 // go through it to the map. Nothing shows for a game askdnd doesn't follow.
 (() => {
+  // A message to the extension. After the extension is reloaded or updated, a page opened before it keeps this old
+  // script, which can no longer reach it: it stops quietly then (reload the page to bring askdnd back)
+  const send = (m, cb) => {
+    try {
+      if (!chrome.runtime || !chrome.runtime.id) return;
+      const p = cb ? chrome.runtime.sendMessage(m, cb) : chrome.runtime.sendMessage(m);
+      if (p && p.catch) p.catch(() => {});
+    } catch (e) { /* the extension was reloaded: this page's old script is cut off */ }
+  };
   const gameId = () => (location.pathname.match(/\/games\/(\d+)/) || [])[1];
   let follows = false, last = null, root = null;
   const esc = v => String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -32,9 +41,9 @@
   window.addEventListener('message', e => {
     if (e.source !== window || !e.data || e.data.askdndBridge !== 'from-vtt') return;
     if (e.data.type === 'fight') { last = e.data.fight; draw(); }
-    chrome.runtime.sendMessage({ ...e.data, type: 'vtt-' + e.data.type, gameId: gameId() });
+    send({ ...e.data, type: 'vtt-' + e.data.type, gameId: gameId() });
   });
-  chrome.runtime.sendMessage({ type: 'vtt-hello', gameId: gameId() }, answer => {
+  send({ type: 'vtt-hello', gameId: gameId() }, answer => {
     if (chrome.runtime.lastError) return;
     follows = !!(answer && answer.followed);
     draw();

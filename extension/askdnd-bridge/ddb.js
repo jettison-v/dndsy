@@ -2,6 +2,15 @@
 // draws askdnd's panel beside the sheet (in its own shadow root, so neither page's styles reach the other). The panel only
 // shows: changes are made in askdnd or on the sheet itself, never by a button sitting over D&D Beyond's own controls.
 (() => {
+  // A message to the extension. After the extension is reloaded or updated, a page opened before it keeps this old
+  // script, which can no longer reach it: it stops quietly then (reload the page to bring askdnd back)
+  const send = (m, cb) => {
+    try {
+      if (!chrome.runtime || !chrome.runtime.id) return;
+      const p = cb ? chrome.runtime.sendMessage(m, cb) : chrome.runtime.sendMessage(m);
+      if (p && p.catch) p.catch(() => {});
+    } catch (e) { /* the extension was reloaded: this page's old script is cut off */ }
+  };
   const s = document.createElement('script');
   s.src = chrome.runtime.getURL('ddb-page.js');
   (document.head || document.documentElement).appendChild(s);
@@ -11,7 +20,7 @@
   window.addEventListener('message', e => {
     if (e.source !== window || !e.data || e.data.askdndBridge !== 'from-page') return;
     if (e.data.type === 'gamelog') return;  // (sent, or no game log open: Table rolls has the roll either way)
-    chrome.runtime.sendMessage({ ...e.data, type: { saved: 'ddb-saved', roll: 'ddb-roll', heard: 'ddb-heard' }[e.data.type] || 'ddb-applied' });  // (the page's own type last would win)
+    send({ ...e.data, type: { saved: 'ddb-saved', roll: 'ddb-roll', heard: 'ddb-heard' }[e.data.type] || 'ddb-applied' });  // (the page's own type last would win)
   });
   chrome.runtime.onMessage.addListener((m, sender, reply) => {
     if (m.type === 'apply') { window.postMessage({ askdndBridge: 'apply', batch: m.batch }, location.origin); reply({ took: true }); }  // (so the extension knows this tab is alive)
@@ -53,14 +62,14 @@
     root.addEventListener('click', e => {
       const t = e.target.closest('[data-act]'); if (!t) return;
       const act = t.dataset.act;
-      if (act === 'toggle') { open = !open; sessionStorage.setItem('askdnd-panel', open ? 'open' : 'closed'); chrome.runtime.sendMessage({ type: 'panel-refresh' }); }
+      if (act === 'toggle') { open = !open; sessionStorage.setItem('askdnd-panel', open ? 'open' : 'closed'); send({ type: 'panel-refresh' }); }
     });
   }
   let again = null;
   function draw(st, error, askdnd) {
     mount();
     clearTimeout(again);  // while something waits, ask again every second and a half
-    if (st && st.changes.some(c => c.state !== 'not_yet')) again = setTimeout(() => chrome.runtime.sendMessage({ type: 'panel-refresh' }), 1500);
+    if (st && st.changes.some(c => c.state !== 'not_yet')) again = setTimeout(() => send({ type: 'panel-refresh' }), 1500);
     if (!open) { root.innerHTML = `<style>${CSS}</style><button class="tab" data-act="toggle" aria-label="Open askdnd">askdnd</button>`; return; }
     let body;
     if (error) body = `<span class="st off">Not connected</span><p class="note">${esc(error)}</p>`;
@@ -77,11 +86,11 @@
     }
     root.innerHTML = `<style>${CSS}</style><aside class="panel" aria-label="askdnd"><div class="head"><span><b>${esc(st ? st.character.name : 'askdnd')}</b><span class="logo">askdnd</span></span><button class="x" data-act="toggle" aria-label="Close askdnd">✕</button></div><div class="body">${body}</div></aside>`;
   }
-  const hello = () => chrome.runtime.sendMessage({ type: 'ddb-tab', ddbId: sheetId() });
+  const hello = () => send({ type: 'ddb-tab', ddbId: sheetId() });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hello); else hello();
   // Someone using the sheet keeps the bridge awake (at most once a minute; its saves are heard on their own)
   let usedAt = Date.now();
   ['pointerdown', 'keydown'].forEach(k => document.addEventListener(k, () => {
-    if (Date.now() - usedAt > 60000) { usedAt = Date.now(); chrome.runtime.sendMessage({ type: 'ddb-active' }); }
+    if (Date.now() - usedAt > 60000) { usedAt = Date.now(); send({ type: 'ddb-active' }); }
   }, { passive: true, capture: true }));
 })();
