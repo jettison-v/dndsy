@@ -113,3 +113,27 @@ def test_each_in_the_order_has_its_picture(player, db, sheet):
     assert f'src="{cole.replace("&", "&amp;")}"' in band and "tracker.example.com" not in band and '<span class="fb-name">Goblin</span>' in band
     assert band.count('class="fb-who party now"') == 1 and band.count('class="fb-who enemy') == 2  # Cole's turn; two enemies
 
+
+
+def test_the_extension_tells_askdnd_only_about_the_games_it_follows(player, db, sheet):
+    """A standing rule (Brett, 2026-10-29, the listing's privacy answers): nothing about a D&D Beyond game askdnd
+    doesn't follow leaves the browser. askdnd says which games those are: this person's campaigns with the bridge."""
+    _campaign(db)
+    assert player.get("/bridge/games").json()["games"] == []  # no role in the campaign
+    set_role(db, "player@example.com", "player")
+    assert player.get("/bridge/games").json()["games"] == [GAME]
+
+
+def test_the_last_vtt_closing_leaves_no_fight_heard_and_a_closed_sheet_isnt_in_step(player, db, sheet):
+    from datetime import UTC, datetime
+
+    campaign = _campaign(db)
+    set_role(db, "player@example.com", "player")
+    player.post(f"/bridge/fight/{GAME}", json={"fight": heard()})
+    assert campaign.fight is not None
+    player.post(f"/bridge/fight/{GAME}", json={"closed": True})  # the browser's last VTT tab for that game closed
+    assert campaign.fight is None
+    cole = char(db, "Cole")
+    cole.sheet_heard_at = datetime.now(UTC)
+    assert player.post(f"/bridge/closed/{cole.ddb_id}").status_code == 200
+    assert cole.sheet_heard_at is None  # the Live pill says so at once

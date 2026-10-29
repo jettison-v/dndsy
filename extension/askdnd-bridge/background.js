@@ -5,6 +5,34 @@
 // The askdnd sites it works with (manifest.json's own list; the store's copy leaves out localhost: scripts/build_extension.py)
 const SITES = ['https://beta.askdnd.ai', 'https://askdnd.ai', 'http://localhost:8000'];
 const ddbIdOf = url => ((url || '').match(/^https:\/\/www\.dndbeyond\.com\/characters\/(\d+)/) || [])[1];
+const gameOf = url => ((url || '').match(/^https:\/\/www\.dndbeyond\.com\/games\/(\d+)/) || [])[1];
+
+// The D&D Beyond games askdnd follows for this person (its campaigns with the bridge): only those are told about,
+// so nothing about any other game they open leaves this browser. Asked again every 5 minutes.
+async function followed() {
+  const { games } = await chrome.storage.session.get('games');
+  if (games && Date.now() - games.at < 5 * 60 * 1000) return games.ids;
+  const ids = (await api('GET', '/bridge/games')).games || [];
+  await chrome.storage.session.set({ games: { ids, at: Date.now() } });
+  return ids;
+}
+// The sheets and VTT pages open now, by tab, to tell askdnd when the last one closes (Chrome forgets a closed tab's
+// address, and may stop this worker, so they're kept in session storage)
+async function opened(tabId, what) {
+  const { tabsOpen = {} } = await chrome.storage.session.get('tabsOpen');
+  tabsOpen[tabId] = what;
+  await chrome.storage.session.set({ tabsOpen });
+}
+chrome.tabs.onRemoved.addListener(async tabId => {
+  const { tabsOpen = {} } = await chrome.storage.session.get('tabsOpen');
+  const was = tabsOpen[tabId];
+  if (!was) return;
+  delete tabsOpen[tabId];
+  await chrome.storage.session.set({ tabsOpen });
+  if (was.sheet && !(await sheetTabs(was.sheet)).length) api('POST', '/bridge/closed/' + was.sheet).catch(() => {});
+  if (was.game && !(await chrome.tabs.query({ url: 'https://www.dndbeyond.com/games/' + was.game + '*' })).length)
+    api('POST', '/bridge/fight/' + was.game, { closed: true }).catch(() => {});  // no VTT here hears that fight now
+});
 
 async function api(method, path, body) {
   const { key, askdnd } = await chrome.storage.session.get(['key', 'askdnd']);  // from askdnd.js
@@ -88,7 +116,16 @@ chrome.alarms.onAlarm.addListener(a => { if (a.name === 'askdnd-bridge') hello()
 chrome.runtime.onStartup.addListener(hello);
 chrome.runtime.onInstalled.addListener(hello);
 
-chrome.runtime.onMessage.addListener((m, sender) => {
+chrome.runtime.onMessage.addListener((m, sender, reply) => {
+  if (m.type === 'vtt-hello') {  // a VTT page opened: does askdnd follow its game? (its badge shows only then)
+    const game = gameOf(sender.tab && sender.tab.url);
+    followed().then(async ids => {
+      const yes = !!game && ids.includes(game);
+      if (yes) await opened(sender.tab.id, { game });
+      reply({ followed: yes });
+    }, () => reply({ followed: false }));
+    return true;  // (answers later)
+  }
   (async () => {
     if (m.type === 'key') {  // from an askdnd page (Chrome says which site sent it, not the page)
       const askdnd = sender.origin || (sender.tab && new URL(sender.tab.url).origin);
@@ -105,16 +142,17 @@ chrome.runtime.onMessage.addListener((m, sender) => {
       return;
     }
     if (m.type === 'wake') return hello();
-    // D&D Beyond's VTT open in this browser: the fight as it changes (vtt-page.js; askdnd only listens)
+    // D&D Beyond's VTT open in this browser: the fight as it changes (vtt-page.js; askdnd only listens), for a game
+    // askdnd follows only
     if (m.type === 'vtt-fight') {
-      const game = ((sender.tab && sender.tab.url || '').match(/^https:\/\/www\.dndbeyond\.com\/games\/(\d+)/) || [])[1];
-      if (game) return api('POST', '/bridge/fight/' + game, { fight: m.fight }).catch(() => {});
+      const game = gameOf(sender.tab && sender.tab.url);
+      if (game && (await followed().catch(() => [])).includes(game)) return api('POST', '/bridge/fight/' + game, { fight: m.fight }).catch(() => {});
       return;
     }
     const here = ddbIdOf(sender.tab && sender.tab.url);  // the rest come from a D&D Beyond sheet
     if (!here) return;
     // A sheet opened or used: the bridge is awake (askdnd reads the sheet if its copy is a few minutes old)
-    if (m.type === 'ddb-tab') { await active(here); await refreshPanels(here); hello(); return deliver(here, sender.tab.id); }
+    if (m.type === 'ddb-tab') { await opened(sender.tab.id, { sheet: here }); await active(here); await refreshPanels(here); hello(); return deliver(here, sender.tab.id); }
     if (m.type === 'ddb-active') return active(here);
     if (m.type === 'panel-refresh') return refreshPanels(here);
     if (m.type === 'ddb-saved') return heardSoon(here, sender.tab.id);
