@@ -5,7 +5,11 @@
 {# Story (menu bar Option B, Brett 2026-10-22; docs/mockups/menu-bar.html): Recap and Sessions in one page.
    Tabs: Previously on… (questions for you, the latest session) and All sessions. ?tab=sessions picks the second. #}
 <main class="page wide">
-  <div class="title-row"><h1>Story</h1></div>
+  <div class="title-row"><h1>Story</h1>{% if items %}
+    {# Search the story (Brett, 2026-10-29): every published session's recap, key moments and the DM's notes, here on
+       the page (app.js "Story search"); the whole campaign's World, quests and glossary are searched on the Campaign page #}
+    <div class="ls-search story-search"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input type="search" placeholder="Search the story" aria-label="Search the story" data-story-search></div>{% endif %}</div>
   {% if waiting %}<p class="flash">{{ waiting }} suggestion{{ "s" if waiting != 1 }} or draft{{ "s" if waiting != 1 }} {{ "are" if waiting != 1 else "is" }} waiting for an OK from you, the DM or a reviewer. <a href="{{ cbase }}/manage/inbox">Open the inbox →</a></p>{% endif %}
   <div class="tabbar" role="tablist" data-tab-param>
     <button role="tab" aria-selected="{{ 'true' if tab == 'previously' else 'false' }}" data-tab="t-previously">Previously on…</button>
@@ -65,7 +69,8 @@
   </div>
 
   <div id="t-sessions"{% if tab != "sessions" %} hidden{% endif %}>
-  <p class="subtitle">Every published session, newest first.</p>
+  <p class="subtitle" data-story-sub>Every published session, newest first.</p>
+  <p class="subtitle" data-story-found hidden></p>
   {% for item in items %}
   <details class="section" id="s{{ item.s.id }}" {% if loop.first %}open{% endif %}>
     <summary><b>{{ item.label }}</b>{% if item.s.title %} · {{ item.s.title }}{% endif %}</summary>

@@ -157,6 +157,8 @@ body.gm-on .live-off { display: none; }
 .crumbs a { color: var(--muted); text-decoration: none; }
 .crumbs a:hover { color: var(--text); }
 .title-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 8px 0 4px; }
+.story-search { margin-left: auto; width: min(320px, 100%); }  /* Story's search, beside its title */
+mark.story-hit { background: var(--amber-soft); color: var(--text-strong); border-radius: 2px; padding: 0 1px; }
 h1 { font-size: var(--fs-2xl); font-weight: 700; margin: 0; letter-spacing: -.01em; line-height: 1.25; }
 .subtitle { color: var(--muted); margin: 0 0 32px; }
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 32px; align-items: start; }

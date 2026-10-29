@@ -397,6 +397,23 @@ def _entries(db: Session, user: dict, roots: list[TableRoll], viewer_id: int | N
     return items
 
 
+LIVE_FIELDS = ("id", "seq", "name", "label", "kind", "main", "damage", "bonus", "dice", "total", "nat")
+
+
+def _live(db: Session, root: TableRoll) -> dict:
+    """A roll the whole table sees, in the live message itself (Brett, 2026-10-29: every screen starts the dice at once,
+    as D&D Beyond's do; an exception to "a live message says what changed, never the change"): what throwing it takes,
+    as anyone else at the table sees it. Each page still fetches its own row (Apply, who sees what). A roll for fewer
+    people (the DM, just you) sends nothing more than that the rolls changed, so only the server decides who sees it."""
+    if root.visibility != "table":
+        return {}
+    e = entries(db, [root], _kids(db, [root]), None, False)[0]
+    if e.get("hidden"):
+        return {}
+    roll = {k: e.get(k) for k in LIVE_FIELDS} | {"by": root.user_id}
+    return {"roll": roll} if len(json.dumps(roll, default=str)) < 5000 else {}  # (Postgres's NOTIFY holds 8000 bytes)
+
+
 def _reply(request: Request, db: Session, root: TableRoll, me_id: int, dm: bool, new: TableRoll | None = None):
     """The roll's entry and its HTML for the log, and what the extension sends to D&D Beyond's Game Log for the roll
     just made (`new`: a follow-up, else the roll itself; app/gamelog.py)."""
@@ -480,7 +497,8 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
     row = TableRoll(campaign_id=campaign.id, character_id=ch.id if ch else None, user_id=me.id, label=label, kind=kind,
                     mode=mode, visibility=to, damage=damage, spec=spec, extras=rolled, who=who, **result)
     db.add(row)
-    realtime.announce(db, campaign.id, "rolls")  # every page at the table asks for it (app/realtime.py)
+    db.flush()
+    realtime.announce(db, campaign.id, "rolls", **_live(db, row))  # every page at the table (app/realtime.py)
     db.commit()
     db.refresh(row)
     return _reply(request, db, row, me.id, is_dm(user))
@@ -533,7 +551,8 @@ def _follow_up(request, db, campaign_id, me_id, dm, parent_id, action, label, ex
     else:
         return _error("That roll is missing something.")
     db.add(row)
-    realtime.announce(db, campaign_id, "rolls")
+    db.flush()
+    realtime.announce(db, campaign_id, "rolls", **_live(db, root))
     db.commit()
     db.refresh(root)
     return _reply(request, db, root, me_id, dm, new=row)
