@@ -1745,10 +1745,13 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .fb-round { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; border: 1px solid var(--line); border-radius: var(--r-pill); padding: 2px var(--sp-2); }
 .fb-mine { color: var(--amber); font-weight: 600; }
 .fb-order { display: flex; flex-wrap: wrap; gap: var(--sp-1); margin-left: auto; }
-.fb-order > span { font-size: var(--fs-xs); padding: 1px var(--sp-2); border: 1px solid var(--line); border-radius: var(--r-pill); white-space: nowrap; }
-.fb-order > .now { border-color: var(--amber); color: var(--amber); }
-.fb-order > .hid { border-style: dashed; opacity: .7; }
-@media (max-width: 640px) { .fb-order { margin-left: 0; } }
+.fb-who { display: inline-flex; align-items: center; gap: 5px; padding: 2px var(--sp-2) 2px 2px; border: 1px solid var(--line); border-radius: var(--r-pill); font-size: var(--fs-xs); white-space: nowrap; }
+.fb-pic { position: relative; width: 22px; height: 22px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--surface-3); color: var(--muted); font-weight: 700; flex: none; }
+.fb-pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.fb-who.now { border-color: var(--amber); color: var(--text-strong); }
+.fb-who.now .fb-pic { box-shadow: 0 0 0 2px var(--amber); }
+.fb-who.hid { border-style: dashed; opacity: .7; }
+@media (max-width: 640px) { .fb-order { margin-left: 0; } .fb-who:not(.now) { padding-right: 2px; } .fb-who:not(.now) .fb-name { display: none; } }  /* phones: pictures, and whose turn by name */
 /* The badges after the name, on every character page (Brett, 2026-10-29; docs/mockups/temporary-items.html): small,
    each in its condition's colour; hover, focus or a tap shows what it does below it */
 .char-name { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) 10px; }

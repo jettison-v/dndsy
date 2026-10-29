@@ -16,6 +16,7 @@ every character page and on Party shows it (`_fight_band.html`).
 
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
+from urllib.parse import urlparse
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -37,6 +38,14 @@ def campaigns_for(db: Session, game_id: str) -> list[Campaign]:
     return [db.get(Campaign, i) for i in ids]
 
 
+def _picture(url) -> str | None:
+    """A token's picture as the VTT draws it, kept only when it's D&D Beyond's own (an image askdnd's pages load)."""
+    if not isinstance(url, str) or len(url) > 1000:
+        return None
+    u = urlparse(url)
+    return url if u.scheme == "https" and (u.hostname or "").endswith(".dndbeyond.com") else None
+
+
 def _clean(heard: dict | None, characters: dict[str, int]) -> dict | None:
     """What the extension heard, kept as askdnd shows it: each entry's name, kind, askdnd character (by its D&D Beyond
     id, in this campaign), initiative, hidden and whose turn; the round and the turn."""
@@ -52,7 +61,7 @@ def _clean(heard: dict | None, characters: dict[str, int]) -> dict | None:
                       "kind": "character" if x.get("kind") == "character" else "monster",
                       "character": characters.get(ddb_id) if ddb_id else None,
                       "initiative": init if isinstance(init, (int, float)) else None,
-                      "hidden": bool(x.get("hidden")), "active": bool(x.get("active"))})
+                      "hidden": bool(x.get("hidden")), "active": bool(x.get("active")), "image": _picture(x.get("image"))})
     return {"round": int(heard.get("round") or 1), "turn": int(heard.get("turn") or 1), "order": order}
 
 
@@ -94,7 +103,14 @@ def for_person(db: Session, campaign: Campaign | None, email: str | None) -> dic
         return None
     me = access.user_id(email)
     mine = set(db.scalars(select(Character.id).where(Character.owner_id == me))) if me else set()
-    return shown(campaign, access.allows("fight_hidden", access.level(email), access.role(email, campaign.id)), mine)
+    f = shown(campaign, access.allows("fight_hidden", access.level(email), access.role(email, campaign.id)), mine)
+    if f:  # a character's picture is its portrait, as on its own page; a creature's, its token's
+        from app import characters as chars
+
+        ids = {x["character"] for x in f["order"] if x.get("character")}
+        portraits = {c.id: (chars.character_summary(c) or {}).get("portrait") for c in db.scalars(select(Character).where(Character.id.in_(ids)))} if ids else {}
+        f["order"] = [{**x, "picture": portraits.get(x.get("character")) or x.get("image")} for x in f["order"]]
+    return f
 
 
 def _load_from_db(campaign_id: int, email: str | None) -> dict | None:
