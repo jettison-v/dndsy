@@ -257,13 +257,12 @@
     if (back) { /* returning: the history entry was already taken off */ }
     else if (inside && panel.dataset.url) {
       const title = panel.querySelector('#peek-title');
-      layer.history.push({ url: panel.dataset.url, modal: panel.classList.contains('full') ? 'full' : panel.classList.contains('large') ? 'large' : panel.classList.contains('modal'), scroll: (panel.querySelector('.peek-body') || {}).scrollTop || 0,
+      layer.history.push({ url: panel.dataset.url, modal: panel.classList.contains('large') ? 'large' : panel.classList.contains('modal'), scroll: (panel.querySelector('.peek-body') || {}).scrollTop || 0,
                            title: title ? title.textContent.trim() : '', layer });
     } else layer.history = [];
     if (!inside && !back) { if (layer.name === 'top') layer.focus = opener; else lastFocus = opener; }
     panel.classList.toggle('modal', !!modal);
-    panel.classList.toggle('large', modal === 'large' || modal === 'full');
-    panel.classList.toggle('full', modal === 'full');
+    panel.classList.toggle('large', modal === 'large');
     backdrop.classList.toggle('dim', !!modal);
     fetch(url, { headers: { 'HX-Request': 'true' } })
       .then(r => (r.ok ? r.text() : Promise.reject(r.status)))
@@ -310,9 +309,9 @@
 
   document.addEventListener('click', e => {
     const t = e.target.closest('[data-panel-url], [data-modal-url]');
-    if (!t || e.target.closest('button[hx-post], form, [data-roll]')) return;
+    if (!t || e.target.closest('button[hx-post], form, [data-roll], details')) return;  // (a pop-up in a row: the row stays put)
     e.preventDefault();
-    if (t.dataset.modalUrl) openPanel(t.dataset.modalUrl, t, t.getAttribute('href'), ['large', 'full'].includes(t.dataset.modalSize) ? t.dataset.modalSize : true);
+    if (t.dataset.modalUrl) openPanel(t.dataset.modalUrl, t, t.getAttribute('href'), t.dataset.modalSize === 'large' ? 'large' : true);
     else openPanel(t.dataset.panelUrl, t, t.getAttribute('href'));
   });
   document.addEventListener('keydown', e => {
@@ -2830,6 +2829,29 @@
     setTimeout(() => { all.disabled = false; all.textContent = 'Check everything'; }, 8000);
   });
 
+  // Manage › Design system: its navigation row lights the section you're in and keeps that chip in view; ↑ Top goes back
+  // up (Brett, 2026-10-29)
+  const dsJump = document.querySelector('[data-ds-jump]');
+  if (dsJump && window.IntersectionObserver) {
+    const links = new Map([...dsJump.querySelectorAll('a[href^="#"]:not([data-ds-top])')].map(a => [a.getAttribute('href').slice(1), a]));
+    const seen = new Set();
+    let lit = null;
+    const light = () => {
+      const atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+      // the first section on screen, in page order; the last one once you're at the bottom; else the one lit before
+      const id = (atEnd && [...links.keys()].pop()) || [...links.keys()].find(k => seen.has(k)) || lit;
+      if (id === lit) return;
+      lit = id;
+      links.forEach((a, k) => a.setAttribute('aria-current', String(k === id)));
+      const a = links.get(id);
+      if (a) dsJump.scrollTo({ left: Math.max(0, a.offsetLeft - dsJump.clientWidth / 2 + a.offsetWidth / 2), behavior: 'smooth' });
+    };
+    const io = new IntersectionObserver(es => { es.forEach(e => e.isIntersecting ? seen.add(e.target.id) : seen.delete(e.target.id)); light(); },
+                                        { rootMargin: '-120px 0px -50% 0px' });
+    links.forEach((a, id) => { const sec = document.getElementById(id); if (sec) io.observe(sec); });
+    window.addEventListener('scroll', () => { if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) light(); }, { passive: true });
+    dsJump.querySelector('[data-ds-top]').addEventListener('click', e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
   // A change for D&D Beyond was just made on this page, whichever it is (web.deliver_now): the extension makes it now,
   // not at its next check every 30 seconds (Brett, 2026-10-29: Battle's changes waited up to half a minute)
   document.body.addEventListener('bridgeDeliver', e => {

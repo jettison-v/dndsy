@@ -16,7 +16,8 @@
   <div class="title-row"><h1>Design system</h1></div>
   <p class="subtitle">Every token and component askdnd is built from, drawn with the app's own styles, so this page changes when they do. Rules for when to use each: <code>docs/DESIGN.md</code>. A test blocks text sizes, colors and screen widths outside the tokens.</p>
 
-  <nav class="ds-jump" aria-label="On this page">
+  <nav class="ds-jump" aria-label="On this page" data-ds-jump>
+    <a href="#" class="ds-top" data-ds-top>↑ Top</a>
     {% for id, label in [("colors", "Colors"), ("type", "Text sizes"), ("space", "Space and corners"), ("buttons", "Buttons"), ("switches", "Switches"), ("pills", "Pills"),
                          ("headings", "Headings"), ("surfaces", "Sections and tiles"), ("lists", "Lists"), ("marks", "Marks and pips"),
                          ("help", "Help and empty states"), ("panels", "Panels and toasts"), ("narrow", "Narrow screens"), ("story", "Story text"), ("manage", "Manage pages"), ("conditions", "Conditions"), ("ddb", "D&D Beyond states")] %}<a href="#{{ id }}">{{ label }}</a>{% endfor %}
@@ -154,14 +155,13 @@
 
   <section class="section" id="panels">
     <h2>Panels and toasts</h2>
-    {{ ds("Four sizes", "--panel-w · --modal-w · --modal-lg-w · --modal-full-w", "Pick by what's inside, never by page. On phones every one is a sheet from the bottom.") }}
+    {{ ds("Three sizes", "--panel-w · --modal-w · --modal-lg-w", "Pick by what's inside, never by page. On phones every one is a sheet from the bottom.") }}
     <div class="table-scroll ds-sizes"><table class="list">
       <thead><tr><th>Size</th><th>Desktop</th><th>For</th><th>Open with</th><th></th></tr></thead>
       <tbody>
         <tr><td><b>Side panel</b></td><td>420px wide, full height, from the right edge</td><td>Details for one thing (a spell, an item, a note), next to the list it came from</td><td><code>data-panel-url</code></td><td><button class="btn small" type="button" data-panel-url="/manage/design/panel">Open</button></td></tr>
         <tr><td><b>Modal</b></td><td>720px, up to 86% of the height</td><td>A form or short content that needs your attention (a note, a reminder)</td><td><code>data-modal-url</code></td><td><button class="btn small" type="button" data-modal-url="/manage/design/panel">Open</button></td></tr>
-        <tr><td><b>Large modal</b></td><td>1180px, 90% of the height</td><td>Rich content in columns (a Wild Shape form, a combo, a leveling plan)</td><td><code>data-modal-size="large"</code></td><td><button class="btn small" type="button" data-modal-url="/manage/design/panel" data-modal-size="large">Open</button></td></tr>
-        <tr><td><b>Full window</b></td><td>95% of the width, 92% of the height</td><td>A whole tool with its own list and side panel (the Spell Book)</td><td><code>data-modal-size="full"</code></td><td><button class="btn small" type="button" data-modal-url="/manage/design/panel" data-modal-size="full">Open</button></td></tr>
+        <tr><td><b>Large modal</b></td><td>1180px, 90% of the height</td><td>Rich content in columns (a Wild Shape form, a combo, a leveling plan, the Spell Book)</td><td><code>data-modal-size="large"</code></td><td><button class="btn small" type="button" data-modal-url="/manage/design/panel" data-modal-size="large">Open</button></td></tr>
       </tbody>
     </table></div>
     <p class="note">A side panel opened from inside a modal slides out from the modal's own right edge, inside it.</p>

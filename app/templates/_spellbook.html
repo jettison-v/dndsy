@@ -3,13 +3,14 @@
    A row opens its side panel from the window edge; "Averages at" redraws the numbers for upcasting. #}
 {% from "_char.html" import spell_roll, pick_btn %}
 {% from "_lists.html" import filter_column, search_box, active_row %}
+{% from "_cond_icons.html" import cond_icon %}
 {% set ON_SAVE = {"half": ("Half on a save", "half"), "none": ("Nothing on a save", "none"), "lands": ("Damage needs no save", "lands")} %}
 <div class="peek-head sb-head{{ ' sb-concentrating' if conc }}">
   <div class="fm-title">
     <div class="note">{{ c.name }}{% if sc.save_dc %} · {{ sc.class }} spells · DC {{ sc.save_dc }} · {{ sc.attack }} to hit{% endif %}</div>
     <h2 id="peek-title">Spell Book</h2>
   </div>
-  {% if conc %}<span class="conc-pill sb-conc" title="Concentrating on {{ conc.spell }}: a new Concentration spell ends it"><span class="conc-k">Conc.</span><b>{{ conc.spell }}</b>
+  {% if conc %}<span class="conc-pill sb-conc" data-cond="concentration" title="Concentrating on {{ conc.spell }}: a new Concentration spell ends it"><span class="conc-k">Conc.</span><b>{{ conc.spell }}</b>
     <span class="conc-k">{{ conc.level | ordinal if conc.level else "cantrip" }}{% if conc.rounds %} · round {{ conc.round }}/{{ conc.rounds }}{% endif %}</span></span>{% endif %}
   <div class="fm-actions"><button class="btn link peek-close" type="button" aria-label="Close">✕</button></div>
 </div>
@@ -39,7 +40,7 @@
           data-group-label="{{ 'Cantrips' if not e.level else (e.level | ordinal) ~ ' level' }}" data-avgs='{{ e.avgs | tojson }}'
           data-panel-url="/characters/{{ c.id }}/detail?ref={{ e.key | urlencode }}" tabindex="0" role="button" aria-label="{{ e.name }}: details">
           <span class="ls-pk">{% if show_picks %}{{ pick_btn(c, "star", e.key, e.key in picks.star, can_pick) }}{% endif %}</span>
-          <span class="ls-name"><span class="ls-line"><b>{{ e.name }}</b>{% if e.conc %} <span class="tag">Conc.</span>{% endif %}{% if e.ritual %} <span class="tag">Ritual</span>{% endif %}{% if conc and conc.key == e.key %} <span class="tag sb-conc-tag">Concentrating</span>{% endif %}</span>
+          <span class="ls-name"><span class="ls-line"><b>{{ e.name }}</b>{% if conc and conc.key == e.key %} <span class="tag sb-conc-tag" data-cond="concentration">{{ cond_icon("Concentration") }}Concentration</span>{% elif e.conc %} <span class="tag">Conc.</span>{% endif %}{% if e.ritual %} <span class="tag">Ritual</span>{% endif %}</span>
             {% if note %}<span class="ls-note" title="{{ note }}">✎ {{ note }}</span>{% endif %}</span>
           <span class="sb-time">{{ {"Bonus action": "Bonus"}.get(e.time, e.time) }}</span>
           <span class="sb-range">{{ e.range or "—" }}</span>
@@ -50,10 +51,24 @@
           <span class="sb-actions">
             {% if e.recipe %}{{ spell_roll(c, e, ("Roll " ~ e.attack if e.attack else "Roll"), "btn small sb-roll", 0) }}{% endif %}
             {% if e.conc and can_pick and not (conc and conc.key == e.key) %}
+            {% if conc %}{# already concentrating: ask first, as ✕ does (Brett, 2026-10-29) #}
+            <details class="conc-pop sb-switch">
+              <summary class="btn small">Concentrate</summary>
+              <div class="conc-box warn" role="alertdialog" aria-label="End Concentration on {{ conc.spell }}?">
+                <b>End Concentration on {{ conc.spell }}?</b>
+                <span class="note">Concentrating on {{ e.name }} ends {{ conc.spell }} now. Its slot stays spent; spend {{ e.name }}'s on D&amp;D Beyond.</span>
+                <div class="row tight"><button type="button" class="btn small" data-close-details>Keep {{ conc.spell }}</button>
+                  <form class="inline" hx-post="/characters/{{ c.id }}/concentration" hx-target="#battle-body" hx-swap="outerHTML">
+                    <input type="hidden" name="key" value="{{ e.key }}"><input type="hidden" name="level" value="{{ e.level }}" data-sb-level>
+                    <button class="btn small danger">Switch to {{ e.name }}</button></form></div>
+              </div>
+            </details>
+            {% else %}
             <form class="inline" hx-post="/characters/{{ c.id }}/concentration" hx-target="#battle-body" hx-swap="outerHTML">
               <input type="hidden" name="key" value="{{ e.key }}"><input type="hidden" name="level" value="{{ e.level }}" data-sb-level>
-              <button class="btn small" title="Track Concentration on {{ e.name }} (spend the slot on D&amp;D Beyond){% if conc %}. It ends Concentration on {{ conc.spell }}{% endif %}">Concentrate</button>
+              <button class="btn small" title="Track Concentration on {{ e.name }} (spend the slot on D&amp;D Beyond)">Concentrate</button>
             </form>
+            {% endif %}
             {% endif %}
           </span>
         </div>

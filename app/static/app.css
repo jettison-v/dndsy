@@ -43,13 +43,13 @@
   --control-h: 32px; --control-h-sm: 26px; --chip-h: 28px;
   --selected-bg: #2a3550;  /* a chip or view that's on: blue on a dark tint */
   /* Panels and modals: side panel (also inside a modal) · regular modal (forms) · large (a Wild Shape form, combos,
-     leveling) · full window (the Spell Book) */
-  --panel-w: 420px; --modal-w: 720px; --modal-lg-w: 1180px; --modal-full-w: 95vw;
+     leveling, the Spell Book) */
+  --panel-w: 420px; --modal-w: 720px; --modal-lg-w: 1180px;
   /* Screen widths (media queries can't use variables): phone ≤ 640px, tablet ≤ 900px, wide ≥ 1100px */
   /* Conditions (docs/mockups/conditions-on-battle.html): each one's colour, and Blinded's black on the page's edge */
   --cond-blinded: #e6e9ee; --cond-charmed: #ec84b8; --cond-deafened: #c3b08a; --cond-exhaustion: #d08a4c; --cond-frightened: #a983e6; --cond-grappled: #e59a52; --cond-incapacitated: #ef6a5e; --cond-invisible: #f4f6f9; --cond-paralyzed: #f0d24a;
-  --cond-petrified: #b3aa9b; --cond-poisoned: #86c95b; --cond-prone: #c9a47b; --cond-restrained: #d9774d; --cond-stunned: #f2b93b; --cond-unconscious: #7b8ce0; --cond-enlarged: #4fc7b0; --cond-flying: #8fc6f2; --cond-water-breathing: #5aa7e8;
-  --cond-concentration: #e8b34b; --cond-dark: #000; --cond-dark-edge: #6b7079; --cond-dark-glow: rgba(0, 0, 0, .6);
+  --cond-petrified: #b3aa9b; --cond-poisoned: #86c95b; --cond-prone: #c9a47b; --cond-restrained: #d9774d; --cond-stunned: #f2b93b; --cond-unconscious: #8f97ab; --cond-enlarged: #4fc7b0; --cond-flying: #8fc6f2; --cond-water-breathing: #5aa7e8;
+  --cond-concentration: #7ea6e0; --cond-dark: #000; --cond-dark-edge: #6b7079; --cond-dark-glow: rgba(0, 0, 0, .6);
 }
 @media (max-width: 640px) { :root { --control-h: 44px; --control-h-sm: 36px; --chip-h: 36px; } }
 * { box-sizing: border-box; }
@@ -545,6 +545,10 @@ details.fold > summary { cursor: pointer; color: var(--muted); font-size: var(--
 .res-row span { white-space: nowrap; }
 /* Battle's numbers scroll with the page: stuck at the top they took over a third of a laptop's screen (Brett, 2026-10-27:
    not worth the complexity of shrinking them; docs/mockups/battle-header.html was the alternative) */
+/* Battle's blocks (the numbers, Wild Shape, the Status row, the spell bar, the action columns) stack with one gap and
+   no margins of their own, so each sits the same distance from the next (Brett, 2026-10-29; DESIGN.md › Space) */
+#battle-body { display: flex; flex-direction: column; gap: var(--sp-4); }
+#battle-body > * { margin-top: 0; margin-bottom: 0; }
 .battlebar { padding: 8px 0 12px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
 .sec-head { display: flex; align-items: baseline; gap: 10px; justify-content: space-between; flex-wrap: wrap; margin-bottom: 8px; }
 .switch { position: relative; width: 42px; height: 24px; border-radius: var(--r-pill); background: var(--surface-2); border: 1px solid var(--line); padding: 0; flex: none; }
@@ -1514,10 +1518,17 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .sb-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; }
 .sb-head .fm-title { flex: 1 1 220px; min-width: 0; }
 .sb-conc { margin-left: 12px; }
+.sb-switch .conc-box { left: auto; right: 0; text-align: left; }  /* (Concentrate sits at a row's right end) */
+.sb-switch > summary.btn { list-style: none; }
 /* Concentrating (Brett, 2026-10-28: lightly): a thin amber line under the Spell Book's header, and the spell's row edged */
 .sb-head.sb-concentrating { box-shadow: inset 0 -1px 0 var(--cond-concentration); }
-.ls-row.sb-conc-row { box-shadow: inset 3px 0 0 var(--cond-concentration); }
-.sb-conc-tag { color: var(--cond-concentration); border-color: var(--cond-concentration); background: color-mix(in srgb, var(--cond-concentration) 14%, transparent); }
+.ls-row.sb-conc-row { box-shadow: inset 3px 0 0 var(--cond-concentration); background: color-mix(in srgb, var(--cond-concentration) 10%, transparent); }  /* edged and lightly tinted */
+/* The spell you're concentrating on (Brett, 2026-10-29, option B): its "Conc." tag becomes "◎ Concentration", filled in
+   Concentration's color; the ◎ pulses once as the Spell Book opens, then stays still */
+.sb-conc-tag { display: inline-flex; align-items: center; gap: 4px; color: var(--bg); border-color: var(--c); background: var(--c); font-weight: 600; }
+.sb-conc-tag .cond-icon { width: 12px; height: 12px; color: var(--bg); animation: conc-pulse 1.2s ease-out 1; }
+@keyframes conc-pulse { 0% { transform: scale(1); } 35% { transform: scale(1.45); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .sb-conc-tag .cond-icon { animation: none; } }
 @media (max-width: 640px) {
   .sb-conc { margin-left: 0; }
   .sb-starred { margin-left: 0; }
@@ -1623,13 +1634,11 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 
 /* A full-window modal (the Spell Book), and the top panel layer: a side panel that slides in from
    the modal's right edge, inside it (a spell's details in the Spell Book). */
-.peek.modal.full { width: min(var(--modal-full-w), calc(100% - 32px)); height: 92vh; max-height: none; }
 .peek > .peek.top { position: absolute; top: 0; right: 0; bottom: 0; left: auto; width: min(var(--panel-w), 92%); max-height: none; z-index: 6;
   border: none; border-left: 1px solid var(--line); border-radius: 0; box-shadow: -12px 0 30px var(--shadow); transform: translateX(100%); }
 .peek > .peek.top.open { transform: none; }
 .peek > .peek-backdrop.top { position: absolute; inset: 0; z-index: 5; background: var(--backdrop-soft); }
 .peek:focus { outline: none; }
-@media (max-width: 900px) { .peek.modal.full { width: 100%; height: 94vh; } }
 
 /* Plan's notes (roadmap step 6): compact rows for combos, leveling and quests; tiles for general notes,
    three per row with a capped height. A click opens the full note in the side panel; drag to reorder. */
@@ -1664,7 +1673,7 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .forget .forget-note { display: block; font-size: var(--fs-xs); }
 
 /* Conditions on Battle (app/conditions.py): pills like Concentration, with the rules in a pop-up */
-.cond-bar { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
+.cond-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 10px; }  /* (centered: Concentration's pill holds buttons) */
 .cond-pill { position: relative; }
 .cond-pill > summary { list-style: none; gap: var(--sp-2); }
 .cond-pill > summary::-webkit-details-marker { display: none; }
@@ -1682,9 +1691,9 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 [data-cond="concentration"] { --c: var(--cond-concentration); } [data-cond="enlarged"] { --c: var(--cond-enlarged); } [data-cond="flying"] { --c: var(--cond-flying); } [data-cond="water-breathing"] { --c: var(--cond-water-breathing); }
 .cond-icon { width: 16px; height: 16px; flex: none; color: var(--c); }
 /* Concentration first in the Status row, like a condition pill in its color, then a divider before the conditions */
-.cond-bar .conc-pill { border: 1px solid var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); min-height: var(--chip-h); padding-left: var(--sp-2); }
+.cond-bar .conc-pill { border: 1px solid var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); min-height: var(--chip-h); padding: 3px 5px 3px var(--sp-2); }
 .cond-bar .conc-pill > .cond-icon { margin-right: -4px; }
-.cond-sep { align-self: stretch; width: 1px; margin: 3px var(--sp-1); background: var(--line); }
+.cond-sep { align-self: stretch; width: 1px; margin: 2px var(--sp-1); background: var(--line); }
 .cond-sep:last-child { display: none; }
 .cond-pill:not(.cond-add) > summary { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); padding-left: var(--sp-2); }
 /* The edge: the newest three conditions' own colours around the page (--edge, from _cond_icons.html), blending into
@@ -1815,6 +1824,8 @@ body:has(.peek.open:not(.modal)) .cond-corner { right: calc(var(--panel-w) + 14p
 .ds-jump { display: flex; gap: var(--sp-2); margin: 0 0 var(--sp-5); position: sticky; top: var(--stick-top, 62px); z-index: 4; background: var(--bg); padding-block: var(--sp-2); overflow-x: auto; scrollbar-width: none; }  /* one row that stays in reach as you scroll (sideways when there's no room) */
 .ds-jump a { flex: none; white-space: nowrap; font-size: var(--fs-sm); color: var(--muted); text-decoration: none; padding: var(--sp-1) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-pill); }
 .ds-jump a:hover { color: var(--text); }
+.ds-jump a[aria-current="true"] { color: var(--text); border-color: var(--blue); background: var(--selected-bg); }  /* the section you're in */
+.ds-jump .ds-top { color: var(--muted); position: sticky; left: 0; z-index: 1; background: var(--bg); box-shadow: 6px 0 8px var(--bg); }  /* stays at the row's start while it scrolls */
 .ds-page .section { scroll-margin-top: calc(var(--stick-top, 62px) + 64px); }  /* (below the sticky navigation) */
 .ds-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-1) var(--sp-3); margin: var(--sp-5) 0 var(--sp-2); font-size: var(--fs-sm); }
 .ds-meta:first-of-type { margin-top: var(--sp-3); }
