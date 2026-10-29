@@ -1,6 +1,7 @@
 """The Spell Book and Concentration (app/spellbook.py): effect groups, averages with upcasting,
 the Concentration save, and who can start or end Concentration."""
 
+import json
 import pytest
 from app import roll_recipes as rr
 from app import spellbook as sb
@@ -57,6 +58,13 @@ def test_spellbook_and_concentration_for_the_player_only(db, cole, player, dm):
     db.refresh(cole)
     assert cole.concentration == {"spell": "Moonbeam", "key": "spell:Moonbeam", "level": 3, "round": 1, "rounds": 10}
     assert "Con save (Concentration on Moonbeam)" in r.text and 'data-adv="1"' in r.text
+    # Brett, 2026-10-29: first in the Status row like a condition, with its color on the page's edge and an emblem;
+    # out of the spell bar; and every open window (the Spell Book it was started from) shows it without a reload
+    status = r.text.split('class="cond-bar"')[1]
+    assert status.index('data-cond="concentration"') < status.index('class="cond-sep"') and "conc-pill" not in r.text.split('id="spell-bar"')[1].split("</div>")[0]
+    assert "--edge: var(--cond-concentration)" in r.text and 'data-name="Concentration"' in r.text
+    assert json.loads(r.headers["HX-Trigger"])["characterChanged"] == {"character": cole.id}
+    assert "sb-conc-row" in player.get(f"/characters/{cole.id}/spellbook").text
     player.post(f"/characters/{cole.id}/concentration/round", headers=HX)
     db.refresh(cole)
     assert cole.concentration["round"] == 2

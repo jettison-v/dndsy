@@ -32,9 +32,10 @@
   </div>
   {% endif %}
 
-  {% if conditions or (can_pick and s and not form) %}{# Status: conditions and item effects; everyone at the table sees them #}
+  {% if conditions or (can_pick and s and not form) %}{# Status: Concentration first, then conditions and item effects; everyone at the table sees them #}
   <div class="cond-bar" aria-label="Status">
-    {% for x in conditions %}
+    {% if conc %}{% include "_conc_pill.html" %}<span class="cond-sep" aria-hidden="true"></span>{% endif %}
+    {% for x in conditions if x.name != "Concentration" %}
     <details class="cond-pill" data-cond="{{ cond_slug(x.name) }}" data-mark="{{ c.id }}:cond:{{ x.name }}"{{ sync_attrs(x.sync) }}>
       <summary>{{ cond_icon(x.name) }}<b>{{ x.name }}{% if x.level %} {{ x.level }}{% endif %}</b>{% if x.source %}<span class="conc-k">{{ x.source }}</span>{% endif %}</summary>
       <div class="cond-box">

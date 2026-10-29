@@ -487,10 +487,7 @@
   // ([data-mark]: its first <b>; pips by their place), compared before and after the swap.
   function marksIn(box) {
     const out = new Map();
-    box.querySelectorAll('[data-mark]').forEach(el => {
-      const b = el.querySelector('b'); if (b) out.set(el.dataset.mark, b.textContent.trim());
-      if (el.dataset.sync) out.set('sync:' + el.dataset.mark, el.dataset.sync);  // on its way to D&D Beyond
-    });
+    box.querySelectorAll('[data-mark]').forEach(el => { const b = el.querySelector('b'); if (b) out.set(el.dataset.mark, b.textContent.trim()); });
     box.querySelectorAll('.pips').forEach((el, i) => out.set('pips#' + i, String(el.querySelectorAll('.pip:not(.used)').length)));
     return out;
   }
@@ -509,11 +506,8 @@
       value.after(d);  // right after the number, so it never covers the label
       setTimeout(() => d.remove(), 2600);
     };
-    box.querySelectorAll('[data-mark]').forEach(el => {
-      const b = el.querySelector('b'); if (b) one(el, before.get(el.dataset.mark), b.textContent.trim());
-      // D&D Beyond has it now (it was on its way, shown already): the same green mark as any change, without a number
-      if (!el.dataset.sync && /^(on|ending)$/.test(before.get('sync:' + el.dataset.mark) || '') && !el.classList.contains('marked')) one(el, 'was', 'now');
-    });
+    // (D&D Beyond confirming a change shown already is quiet: its mark just goes; Brett, 2026-10-29)
+    box.querySelectorAll('[data-mark]').forEach(el => { const b = el.querySelector('b'); if (b) one(el, before.get(el.dataset.mark), b.textContent.trim()); });
     box.querySelectorAll('.pips').forEach((el, i) => one(el, before.get('pips#' + i), String(el.querySelectorAll('.pip:not(.used)').length)));
   }
   function swapMain(html) {

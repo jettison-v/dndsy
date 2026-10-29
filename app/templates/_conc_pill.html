@@ -1,0 +1,37 @@
+{# Concentration, first in Battle's Status row (Brett, 2026-10-29: the most common thing a character is under, so treated
+   like a condition, with its own color on the page's edge and an emblem): the spell, its round, the Con save and End.
+   character_pages._battle_ctx gives `conc` (Character.concentration) and `con_save`. #}
+{% from "_char.html" import roll_attrs %}
+{% from "_cond_icons.html" import cond_icon %}
+{% set cn = conc %}
+  <span class="conc-pill" data-cond="concentration" title="Concentrating on {{ cn.spell }} ({{ (cn.level | ordinal ~ ' level') if cn.level else 'cantrip' }}){% if cn.rounds %}, round {{ cn.round }} of {{ cn.rounds }}{% endif %}">
+    {{ cond_icon("Concentration") }}<span class="sr">Concentrating on</span><b>{{ cn.spell }}</b>
+    <span class="conc-k">{{ cn.level | ordinal if cn.level else "cantrip" }}{% if cn.rounds %} · round {{ cn.round }}/{{ cn.rounds }}{% endif %}</span>
+    {% if can_pick and cn.rounds and cn.round < cn.rounds %}<button type="button" class="conc-next" hx-post="/characters/{{ c.id }}/concentration/round" hx-target="#battle-body" hx-swap="outerHTML" title="Next round" aria-label="Next round">+1</button>{% endif %}
+    {% if con_save %}
+    <details class="conc-pop">
+      <summary class="conc-save">Save {{ con_save.label }}{% if con_save.adv %} Adv{% endif %}</summary>
+      <div class="conc-box" role="dialog" aria-label="Concentration save">
+        <div class="conc-head"><b>Concentration save</b><span class="note">{{ cn.spell }}</span></div>
+        <label class="conc-dmg">Damage you just took <input type="number" min="0" max="999" value="0" inputmode="numeric" data-conc-dmg></label>
+        <dl class="conc-facts">
+          <dt>DC</dt><dd><b data-conc-dc>10</b> <span class="note">(10, or half the damage if higher; up to 30)</span></dd>
+          <dt>Bonus</dt><dd>Con {{ con_save.label }}</dd>
+          {% if con_save.adv %}<dt>Advantage</dt><dd>{% for a in con_save.adv %}{{ a.source or a.text }}{{ ", " if not loop.last }}{% endfor %}</dd>{% endif %}
+        </dl>
+        <button type="button" class="btn primary conc-roll" data-conc-roll {{ roll_attrs("save", "Con save (Concentration on " ~ cn.spell ~ ")", con_save.label, "", con_save.adv, note="DC 10") }}>Roll Con save{% if con_save.adv %} · Adv{% endif %}</button>
+      </div>
+    </details>
+    {% endif %}
+    {% if can_pick %}
+    <details class="conc-pop">
+      <summary class="conc-x" aria-label="End Concentration" title="End Concentration">✕</summary>
+      <div class="conc-box warn" role="alertdialog" aria-label="End Concentration?">
+        <b>End Concentration on {{ cn.spell }}?</b>
+        <span class="note">The spell ends now. The slot stays spent.</span>
+        <div class="row tight"><button type="button" class="btn small" data-close-details>Keep it</button>
+          <button type="button" class="btn small danger" hx-post="/characters/{{ c.id }}/concentration/end" hx-target="#battle-body" hx-swap="outerHTML">End it</button></div>
+      </div>
+    </details>
+    {% endif %}
+  </span>
