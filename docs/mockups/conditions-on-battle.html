@@ -124,6 +124,8 @@ button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 .stage.phone .emb { width: 42px; height: 42px; }
 .emb svg { width: 26px; height: 26px; }
 .emb .lv { position: absolute; right: -6px; top: -6px; min-width: 18px; height: 18px; border-radius: 9px; background: var(--c); color: #15171a; font: 700 .72rem/18px var(--sans); text-align: center; padding: 0 4px; }
+.emb.black { background: #000; border-color: #6b7079; color: #e6e9ee; }
+.emb.white { background: color-mix(in srgb, #f4f6f9 22%, #15171a); }
 .emb.new { animation: arrive .9s cubic-bezier(.2, 1.4, .4, 1); }
 @keyframes arrive { 0% { transform: scale(.3) rotate(-20deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
 .emb.prone svg { transform: rotate(-8deg); }
@@ -201,9 +203,6 @@ button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
           <button type="button" data-v="tint" aria-pressed="false">Tint</button>
           <button type="button" data-v="both" aria-pressed="false">Halo and tint</button>
           <button type="button" data-v="none" aria-pressed="false">Emblems only</button></div></div>
-        <div class="ctl"><span>The halo's colour</span><div class="seg" role="group" aria-label="Halo colour" data-ctl="hue">
-          <button type="button" data-v="serious" aria-pressed="true">How serious</button>
-          <button type="button" data-v="own" aria-pressed="false">Each condition's own</button></div></div>
         <div class="ctl"><span>Signature touches</span><div class="seg" role="group" aria-label="Signature touches" data-ctl="touch">
           <button type="button" data-v="on" aria-pressed="true">On</button>
           <button type="button" data-v="off" aria-pressed="false">Off</button></div></div>
@@ -254,8 +253,8 @@ button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 
   <section>
     <span class="eyebrow">The colours and icons</span>
-    <p class="muted" style="max-width:76ch">Each condition has its own colour and icon, drawn for askdnd (D&amp;D Beyond's icons are its own art, so I haven't copied them). They fall in three families, which is what the halo shows with <b>How serious</b>: a red edge says you can't act, amber that you're hindered, blue that something's helping.</p>
-    <div class="fams"><span><i style="background:var(--cant)"></i>Can't act</span><span><i style="background:var(--hindered)"></i>Hindered</span><span><i style="background:var(--helped)"></i>Helped (item effects and Invisible)</span></div>
+    <p class="muted" style="max-width:76ch">Each condition has its own colour and icon, drawn for askdnd (D&amp;D Beyond's icons are its own art, so I haven't copied them). They fall in three families, and the halo shows the most serious: a red edge says you can't act, amber that you're hindered, blue that something's helping. Three have a halo of their own, stacked with the rest: <b>Poisoned</b> green, <b>Invisible</b> white and <b>Blinded</b> black (the page darkens towards its edges, since a black glow wouldn't show on askdnd's dark page).</p>
+    <div class="fams"><span><i style="background:var(--cant)"></i>Can't act</span><span><i style="background:var(--hindered)"></i>Hindered</span><span><i style="background:var(--helped)"></i>Helped (item effects)</span><span><i style="background:#86c95b"></i>Poisoned</span><span><i style="background:#f4f6f9"></i>Invisible</span><span><i style="background:#000;border:1px solid #6b7079"></i>Blinded</span></div>
     <div class="legend" data-legend></div>
   </section>
 
@@ -282,14 +281,14 @@ button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
   </section>
 
   <section>
-    <span class="eyebrow">Your call</span>
-    <div class="box ask">
+    <span class="eyebrow">Decided (Brett, Oct 28)</span>
+    <div class="box">
       <ol>
-        <li><b>The page:</b> halo, tint, both, or emblems only? I'd go with the halo: it's there on every scroll without changing the numbers' colours. A tint reads as "the page looks off" more than as a condition.</li>
-        <li><b>The halo's colour:</b> how serious, or each condition's own? I'd go with how serious: one glance says "can't act" or "hindered", and the emblems carry each condition's own colour. Several own colours at once blur into brown.</li>
-        <li><b>Signature touches:</b> keep them? I'd keep these four and add no more.</li>
-        <li><b>Beyond Battle:</b> your character's button in the menu bar also gets a dot per condition (shown above), so you see it on Story or the Spell Book. Keep, or Battle only?</li>
-        <li><b>Concentration:</b> it's already a pill in the header. Give it an emblem too? I'd leave it as the pill: it's not a condition, and the hit points window already reminds you of its save.</li>
+        <li><b>The page:</b> the halo. No tint.</li>
+        <li><b>The halo's colour:</b> how serious for most; Poisoned green, Invisible white and Blinded black, each its own ring. They stack: it's rare to have several.</li>
+        <li><b>Signature touches:</b> these four, no more.</li>
+        <li><b>Beyond Battle:</b> a dot per condition on your character's button in the menu bar.</li>
+        <li><b>Concentration</b> stays the pill in the header.</li>
       </ol>
     </div>
   </section>
@@ -320,14 +319,14 @@ button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
   };
   // Each one's colour, family and a short summary of what it does (askdnd's own words, from its rules terms)
   const C = [
-    ['Blinded', '#9fb0c8', 'hindered', "You can't see. Your attack rolls have Disadvantage; attacks against you have Advantage."],
+    ['Blinded', '#e6e9ee', 'hindered', "You can't see. Your attack rolls have Disadvantage; attacks against you have Advantage."],
     ['Charmed', '#ec84b8', 'hindered', "You can't attack the charmer, and it has Advantage on checks to interact with you socially."],
     ['Deafened', '#c3b08a', 'hindered', "You can't hear, and you automatically fail any ability check that needs hearing."],
     ['Exhaustion', '#d08a4c', 'hindered', 'Your d20 Tests are reduced by 2 for each level, and your Speed by 5 feet for each.'],
     ['Frightened', '#a983e6', 'hindered', 'Disadvantage on attack rolls and ability checks while the source of your fear is in sight; you can\'t move closer to it.'],
     ['Grappled', '#e59a52', 'hindered', 'Your Speed is 0. Disadvantage on attack rolls against anyone other than the grappler.'],
     ['Incapacitated', '#ef6a5e', 'cant', "You can't take actions, Bonus Actions or Reactions, and your Concentration ends. Disadvantage on Initiative."],
-    ['Invisible', '#7fd8e3', 'helped', 'Advantage on Initiative, and on your attack rolls unless the target can see you; attacks against you have Disadvantage.'],
+    ['Invisible', '#f4f6f9', 'helped', 'Advantage on Initiative, and on your attack rolls unless the target can see you; attacks against you have Disadvantage.'],
     ['Paralyzed', '#f0d24a', 'cant', 'Incapacitated, Speed 0. You fail Strength and Dexterity saves; a hit from within 5 feet is a Critical Hit.'],
     ['Petrified', '#b3aa9b', 'cant', 'Turned to stone: Incapacitated, Speed 0, Resistance to all damage. You fail Strength and Dexterity saves.'],
     ['Poisoned', '#86c95b', 'hindered', 'Disadvantage on attack rolls and ability checks.'],
@@ -346,7 +345,7 @@ button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
   const svg = n => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + I[n] + '</svg>';
   const esc = s => s.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 
-  const st = { on: ['Poisoned', 'Prone'], exh: 2, treat: 'halo', hue: 'serious', touch: 'on', view: 'desktop', fresh: null };
+  const st = { on: ['Poisoned', 'Prone'], exh: 2, treat: 'halo', touch: 'on', view: 'desktop', fresh: null };
   const $ = s => document.querySelector(s);
   const stage = $('[data-stage]');
 
@@ -366,12 +365,16 @@ button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
   }));
   function pulse() { stage.classList.remove('pulse'); void stage.offsetWidth; stage.classList.add('pulse'); }
 
+  // The halo (Brett, Oct 28): how serious for most (the most serious family's colour), but Poisoned is green,
+  // Invisible white and Blinded black (the edges go dark), each its own ring; they stack, the most serious innermost
+  const OWN = { Poisoned: '#86c95b', Invisible: '#f4f6f9', Blinded: '#000000' };
   function haloShadow(list) {
     if (!list.length) return 'none';
-    const cols = st.hue === 'serious'
-      ? [FAM[list.map(n => BY[n].f).sort((a, b) => RANK[a] - RANK[b])[0]][0]]
-      : list.slice(-3).reverse().map(n => BY[n].c);
-    return cols.map((c, i) => 'inset 0 0 0 ' + (2 + i * 2) + 'px ' + c + ', inset 0 0 ' + (54 + i * 18) + 'px ' + c + '55').join(', ');
+    const fams = list.filter(n => !OWN[n]).map(n => BY[n].f).sort((a, b) => RANK[a] - RANK[b]);
+    const cols = [...(fams.length ? [FAM[fams[0]][0]] : []), ...list.filter(n => OWN[n]).map(n => OWN[n])];
+    return cols.map((c, i) => c === '#000000'
+      ? 'inset 0 0 0 ' + (2 + i * 3) + 'px #000, inset 0 0 90px 20px rgba(0, 0, 0, .8)'
+      : 'inset 0 0 0 ' + (2 + i * 3) + 'px ' + c + ', inset 0 0 ' + (54 + i * 20) + 'px ' + c + '55').join(', ');
   }
 
   function draw() {
@@ -392,7 +395,7 @@ button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
       + '<span class="cpill add">+ Condition</span>';
     // The corner: up to five, newest nearest the corner
     const shown = list.slice(-5), extra = list.length - shown.length;
-    $('[data-corner]').innerHTML = shown.map(n => '<button type="button" class="emb' + (n === st.fresh ? ' new' : '') + (touch && n === 'Prone' ? ' prone' : '') + '" style="--c:' + BY[n].c + '" aria-expanded="false" aria-label="' + esc(n) + '">'
+    $('[data-corner]').innerHTML = shown.map(n => '<button type="button" class="emb' + (n === st.fresh ? ' new' : '') + (touch && n === 'Prone' ? ' prone' : '') + (n === 'Blinded' ? ' black' : n === 'Invisible' ? ' white' : '') + '" style="--c:' + BY[n].c + '" aria-expanded="false" aria-label="' + esc(n) + '">'
       + svg(n) + (n === 'Exhaustion' ? '<span class="lv">' + st.exh + '</span>' : '')
       + '<span class="tip"><b>' + esc(n) + (n === 'Exhaustion' ? ', level ' + st.exh : '') + '</b>' + esc(BY[n].t) + '<span class="src">' + esc(SRC[n] || 'Started on Battle') + ' · the DM rules</span></span></button>').join('')
       + (extra ? '<span class="more">+' + extra + ' more</span>' : '');
@@ -417,7 +420,7 @@ button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
   });
 
   // The legend
-  $('[data-legend]').innerHTML = C.map(([n, c, f, t]) => '<div class="lg"><span class="emb" style="--c:' + c + '">' + svg(n) + '</span><div><b>' + esc(n) + '</b><span class="fam" style="color:' + FAM[f][0] + '">' + FAM[f][1] + '</span><p>' + esc(t) + '</p></div></div>').join('');
+  $('[data-legend]').innerHTML = C.map(([n, c, f, t]) => '<div class="lg"><span class="emb' + (n === 'Blinded' ? ' black' : n === 'Invisible' ? ' white' : '') + '" style="--c:' + c + '">' + svg(n) + '</span><div><b>' + esc(n) + '</b><span class="fam" style="color:' + (OWN[n] && n !== 'Blinded' ? OWN[n] : FAM[f][0]) + '">' + (OWN[n] ? 'Its own halo' : FAM[f][1]) + '</span><p>' + esc(t) + '</p></div></div>').join('');
 
   // Party: Cole follows the controls; the rest are examples
   function party() {
