@@ -1180,7 +1180,7 @@
       e.main = part({ ...old, dice, kept, total: kept + old.modifier + sum(old.extras) });
     } else if (action === 'bonus') {
       const n = die(opts.die);
-      e.bonus = { label: opts.label || 'Bardic Inspiration', formula: '1d' + opts.die, dice: [n], total: n };
+      e.bonus = { label: opts.label || 'Added die', formula: '1d' + opts.die, dice: [n], total: n };
     }
     return settle(e, opts.ctx || {});
   }
@@ -1366,8 +1366,7 @@
     let other = '';
     if (spec.follow === 'bonus') {
       h += '<div class="rw-row"><span class="rw-label">Die</span>' + seg('Die', [[4, 'd4'], [6, 'd6'], [8, 'd8'], [10, 'd10'], [12, 'd12']], 6) + '</div>'
-        + '<div class="rw-row"><span class="rw-label">From</span><input type="text" class="rw-text" data-bonus-label value="Bardic Inspiration" maxlength="40"></div>'
-        + '<p class="rw-note">Bardic Inspiration adds its die after you see a d20 roll fail.</p>';
+        + '<div class="rw-row"><span class="rw-label">From</span><input type="text" class="rw-text" data-bonus-label placeholder="Bardic Inspiration, Guidance…" maxlength="40"></div>';
     } else if (spec.kind === 'dice') {
       h += '<div class="rw-row"><span class="rw-label">For</span><input type="text" class="rw-text" data-for placeholder="What the DM asked for (optional)" maxlength="60"></div>';
     } else if (spec.follow !== 'reroll') {
@@ -1432,8 +1431,21 @@
     w._ready = Promise.resolve();  // with the animation on, the dice on stage (below) take the time instead
     place(w, w._anchor);
   }
+  // A roll's number waits in Table rolls until its dice land (Brett, 2026-10-29: it showed before the roll was done),
+  // however its row arrived (your own answer, the live update, the slow poll): the rolls being thrown, by id
+  const LANDING = window.askdndLanding = window.askdndLanding || new Set();
+  function markLanding() {
+    document.querySelectorAll('#roll-log .roll-item[data-id]').forEach(li => li.classList.toggle('landing', LANDING.has(li.dataset.id)));
+  }
+  function throwing(id) {
+    LANDING.add(String(id)); markLanding();
+    setTimeout(() => landed(id), 9000);  // (whatever happens to the throw, the number shows)
+  }
+  function landed(id) { if (LANDING.delete(String(id))) markLanding(); }
+  window.askdndThrowing = { throwing, landed, markLanding };
   function showResult(w, e, focus) {
-    w._ready.then(() => animate() ? throwMine(e, focus).catch(() => stage(e, focus)) : null).then(() => {
+    return w._ready.then(() => animate() ? throwMine(e, focus).catch(() => stage(e, focus)) : null).then(() => {
+      landed(e.id);
       if (!w.isConnected) return;
       w._entry = e;
       const dieEl = w.querySelector('.rp-die');
@@ -1502,11 +1514,13 @@
     const p = focus === 'damage' && e.damage ? e.damage : e.main;
     if (p === e.main && D20.includes(e.kind)) {
       const rays = (p.parts || []).filter(x => x.kept != null), src = rays.length > 1 ? rays : [p];
-      return src.flatMap(r => r.dice.map((v, i) => ({ s: 20, v, look: 'gold', off: r.dice.length > 1 && i !== r.kept_at,
-                                                      nat: r.dice.length > 1 && i !== r.kept_at ? null : v === 20 ? 20 : v === 1 ? 1 : null })));
+      return src.flatMap(r => [...r.dice.map((v, i) => ({ s: 20, v, look: 'gold', off: r.dice.length > 1 && i !== r.kept_at,
+                                                         nat: r.dice.length > 1 && i !== r.kept_at ? null : v === 20 ? 20 : v === 1 ? 1 : null })),
+                                ...(r.extras || []).flatMap(x => (x.dice || []).map(v => ({ s: sidesOf(x.formula), v, look: 'gold' })))]);
     }
-    const lines = p.parts && p.parts.length ? p.parts : [p];
-    return lines.flatMap(ln => ln.dice.map(v => ({ s: sidesOf(ln.formula), v, look: heal ? 'jade' : e.kind === 'dice' ? 'gold' : 'ruby' })));
+    const lines = p.parts && p.parts.length ? p.parts : [p], look = heal ? 'jade' : e.kind === 'dice' ? 'gold' : 'ruby';
+    return [...lines.flatMap(ln => ln.dice.map(v => ({ s: sidesOf(ln.formula), v, look }))),
+            ...(p.extras || []).flatMap(x => (x.dice || []).map(v => ({ s: sidesOf(x.formula), v, look })))];
   }
   let stageEl = null;
   function stageClear() { if (stageEl) { stageEl.querySelectorAll('.gem').forEach(d => { clearTimeout(d._timer); if (d._land) d._land(); }); stageEl.remove(); stageEl = null; } }
@@ -1563,12 +1577,14 @@
     if (focus === 'bonus' && e.bonus) return e.bonus.dice.map(v => ({ s: sides(e.bonus.formula), v }));
     const p = focus === 'damage' && e.damage ? e.damage : e.main;
     if (!p) return [];
+    // dice added to the roll (Bless's d4, Hunter's Mark's d6) are thrown with it (Brett, 2026-10-29)
+    const added = r => (r.extras || []).filter(x => (x.dice || []).length).flatMap(x => x.dice.map(v => ({ s: sides(x.formula), v })));
     if (p === e.main && D20.includes(e.kind)) {
       const rays = (p.parts || []).filter(x => x.kept != null), src = rays.length > 1 ? rays : [p];
-      return src.flatMap(r => r.dice.map(v => ({ s: 20, v })));
+      return src.flatMap(r => [...r.dice.map(v => ({ s: 20, v })), ...added(r)]);
     }
     const lines = p.parts && p.parts.length ? p.parts : [p];
-    return lines.flatMap(ln => ln.dice.map(v => ({ s: sides(ln.formula), v, type: ln.kind })));
+    return [...lines.flatMap(ln => ln.dice.map(v => ({ s: sides(ln.formula), v, type: ln.kind }))), ...added(p)];
   }
   // "1d8+2d6@5,4,2": the library merges dice of a size, so each size's values go together, in order
   function notation(list) {
@@ -1704,7 +1720,7 @@
         throwEl.classList.remove('landed');
         throwEl.classList.add('on', 'others');
         throwEl.querySelector('.dt-who').innerHTML = swatch + '<b>' + esc(name) + '</b> · ' + esc(followUp ? 'damage' : what);
-      }, () => throwCard(name + ' · ' + (followUp ? 'damage' : what), total, nat, nat ? 'Natural ' + nat : ''), tune));
+      }, () => { window.askdndThrowing.landed(li.dataset.id); throwCard(name + ' · ' + (followUp ? 'damage' : what), total, nat, nat ? 'Natural ' + nat : ''); }, tune));
     }
     const box = tray(), tune = tuning('tray');
     return box.ready.then(() => box.throw(list, dice, async () => {
@@ -1713,6 +1729,7 @@
       trayEl.classList.add('up');
       await sleep(tune.slide);
     }, async () => {
+      window.askdndThrowing.landed(li.dataset.id);
       const tot = trayEl.querySelector('.dtr-total');
       tot.textContent = total; tot.classList.toggle('nat20', nat === 20); tot.classList.toggle('nat1', nat === 1);
       await sleep(tune.stay);
@@ -1740,9 +1757,13 @@
   document.addEventListener('panel:loaded', ev => {
     const form = ev.target.querySelector && ev.target.querySelector('[data-dice-picker]');
     if (!form) return;
-    const snd = form.querySelector('[data-dice-sound]');
+    const snd = form.querySelector('[data-dice-sound]'), anim = form.querySelector('[data-dice-anim]');
     snd.checked = soundOn();
     snd.addEventListener('change', () => store.set('askdnd.diceSound', snd.checked ? 'on' : 'off'));
+    // Dice animation on this device (it was at the bottom of Table rolls; Table rolls reads the same setting)
+    const calm = window.matchMedia('(prefers-reduced-motion: reduce)'), was = store.get('askdnd.rollsAnim');
+    anim.checked = was ? was === 'on' : !calm.matches;
+    anim.addEventListener('change', () => store.set('askdnd.rollsAnim', anim.checked ? 'on' : 'off'));
     form.addEventListener('change', ev2 => { if (ev2.target.name === 'set' || ev2.target.name === 'material') pickPreview(form); });
     pickPreview(form);
   });
@@ -1860,7 +1881,7 @@
     if (go.follow) {
       p.set('parent', go.parent); p.set('action', go.follow);
       if (go.follow === 'reroll') p.set('label', go.reason);
-      if (go.follow === 'bonus') { p.set('die', go.die); p.set('label', go.bonusLabel || 'Bardic Inspiration'); }
+      if (go.follow === 'bonus') { p.set('die', go.die); p.set('label', go.bonusLabel || 'Added die'); }
     } else {
       Object.entries({ character: go.cid || '', kind: go.kind, label: go.label, mod: go.mod || '', dmg: go.dmg || '', mode: go.mode, to,
                        count: go.count || 1, each: go.each || '', once: go.once ? 1 : '' }).forEach(([k, v]) => p.set(k, v));
@@ -1884,6 +1905,7 @@
       .then(r => r.json().catch(() => ({})).then(j => { if (!r.ok) throw Object.assign(new Error(j.error || "askdnd couldn't roll that"), { said: true }); return j; }))
       .then(j => {
         if (pending) pending.remove();
+        if (animate()) window.askdndThrowing.throwing(j.roll.id);
         addToLog(j.html, j.roll.id);
         showResult(w, j.roll, go.follow);
         // Into D&D Beyond's Game Log too, as askdnd's (app/gamelog.py): the extension sends it from this player's sheet
@@ -2050,9 +2072,6 @@
     addEventListener('resize', () => { const wide = innerWidth >= WIDE; if (wide !== wasWide) { wasWide = wide; snap(); } });
     phone.addEventListener('change', snap);
     document.addEventListener('askdnd:gamemode', () => { layout(); loadLog(); });
-    const anim = side.querySelector('[data-roll-anim]');
-    anim.checked = animate();
-    anim.addEventListener('change', () => store.set(ANIM, anim.checked ? 'on' : 'off'));
     layout();
   }
 
@@ -2077,6 +2096,7 @@
     log.querySelectorAll('.roll-item[data-id="' + id + '"]').forEach(li => li.remove());
     log.insertAdjacentHTML('afterbegin', html);
     tidy();
+    if (window.askdndThrowing) window.askdndThrowing.markLanding();
     const li = log.firstElementChild;
     if (li) { li.classList.remove('fresh'); void li.offsetWidth; li.classList.add('fresh'); }
     buildPeople(li ? new Set([li.dataset.person]) : null);
@@ -2153,13 +2173,14 @@
   if (log) log.addEventListener('htmx:afterSwap', () => {
     const first = !loaded;
     tidy();
+    if (window.askdndThrowing) window.askdndThrowing.markLanding();
     loaded = true;
     if (first) return buildPeople();
     const fresh = new Set();
     [...log.querySelectorAll('.roll-item[data-seq]')].reverse().forEach(li => {
       if (+li.dataset.seq > before) fresh.add(li.dataset.person);
       if (+li.dataset.seq > before && !li.dataset.mine) {
-        if (animate() && !li.classList.contains('hidden-roll')) throwOthers(li).catch(() => notice(li));  // thrown dice (Brett, 2026-10-23)
+        if (animate() && !li.classList.contains('hidden-roll')) { window.askdndThrowing.throwing(li.dataset.id); throwOthers(li).catch(() => notice(li)).finally(() => window.askdndThrowing.landed(li.dataset.id)); }  // thrown dice (Brett, 2026-10-23)
         else notice(li);
         li.classList.remove('fresh'); void li.offsetWidth; li.classList.add('fresh');
       }

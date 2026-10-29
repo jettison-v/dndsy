@@ -1203,6 +1203,8 @@ body.gm-on .topbar { margin-left: calc(-1 * var(--rolls-w, 0px)); }
 .roll-to { border: 1px solid var(--line); border-radius: var(--r-pill); padding: 0 6px; }
 .roll-what { font-weight: 600; font-size: var(--fs-md); }
 .roll-what .roll-sub { font-weight: 400; }
+/* Dice still in the air: the row says what was rolled, its number shows as they land (app.js LANDING) */
+.roll-item.landing :is(.roll-total, .roll-dice, .roll-dmg-line b, .roll-flag) { visibility: hidden; }
 .roll-what .roll-sub, .roll-dice { color: var(--muted); font-size: var(--fs-xs); }
 .roll-sub { color: var(--muted); }
 .roll-old s { color: var(--faint); }
@@ -1611,7 +1613,7 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 /* The Spell Book's table: pin · spell · time · range · roll · casting damage · actions. The header and
    rows share one grid (subgrid), so each column is as wide as its widest cell; the spell name takes
    the space left over, and Range and Casting Damage wrap beyond a sensible width. */
-.sb-cols { display: grid; grid-template-columns: 1.25rem minmax(12rem, 1fr) max-content fit-content(13rem) max-content fit-content(15rem) max-content; column-gap: 16px; }
+.sb-cols { display: grid; grid-template-columns: 1.25rem minmax(11rem, 1fr) max-content fit-content(11rem) max-content fit-content(13rem) max-content; column-gap: 12px; }
 .sb-cols > .ls-head, .sb-cols > .ls-row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
 .sb-cols > .ls-grouphead { grid-column: 1 / -1; }
 .sb-roll-col { display: flex; flex-direction: column; }
@@ -1623,7 +1625,7 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .sb-range { color: var(--muted); }
 .sb-actions { display: inline-flex; gap: 6px; justify-content: flex-end; }
 .sb-foot-note { margin-top: 14px; }
-@container list (max-width: 920px) {  /* narrow: name and actions on top, the numbers on one line under them */
+@container list (max-width: 760px) {  /* narrow: name and actions on top, the numbers on one line under them (columns fit the large modal's 1180px; Brett, 2026-10-29) */
   .sb-cols { display: block; }
   .sb-cols > .ls-head { display: none; }
   .sb-cols > .ls-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
@@ -1632,7 +1634,7 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
   .sb-cols > .ls-row > .sb-time, .sb-cols > .ls-row > .sb-range, .sb-cols > .ls-row > .sb-roll-col, .sb-cols > .ls-row > .sb-avg-col { order: 2; font-size: var(--fs-xs); flex-direction: row; gap: 6px; }
 }
 
-/* A full-window modal (the Spell Book), and the top panel layer: a side panel that slides in from
+/* The top panel layer in a modal (the Spell Book): a side panel that slides in from
    the modal's right edge, inside it (a spell's details in the Spell Book). */
 .peek > .peek.top { position: absolute; top: 0; right: 0; bottom: 0; left: auto; width: min(var(--panel-w), 92%); max-height: none; z-index: 6;
   border: none; border-left: 1px solid var(--line); border-radius: 0; box-shadow: -12px 0 30px var(--shadow); transform: translateX(100%); }
