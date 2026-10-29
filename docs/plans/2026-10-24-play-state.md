@@ -208,3 +208,9 @@ own initiative order. Checked in Brett's Chrome with a temporary listener in the
   beyond the test (Next once, the Ogre's initiative 9 → 10 → 9).
 
 **Decided (Brett, Oct 29): hear only.** The extension listens on the VTT page; askdnd never writes the order. If players' initiative should reach the order, first check whether the VTT fills it from an askdnd Initiative roll in the Game Log (its "pending initiative").
+
+## Conditions that end (designed Oct 29, `docs/mockups/turn-conditions.html`)
+
+Decided by Brett: each condition can say how long it lasts (until it's ended; the start or end of someone's next turn; rounds; 1 minute; minutes or hours; until a save, with its ability, DC and when it's rolled), chosen in + Condition's **Lasts**. The turns come from D&D Beyond's VTT (heard, never written). When one runs out or asks for a save, a **corner card** reminds the character's player and the DM: End it / Keep, or Roll the save; nothing ends by itself. Battle's pills say it in a few words ("to your next turn", "Wis 13 save", "9 rounds"), and a click shows the whole of it with End it; a badge gets an amber dot on the turn it ends. A **fight band** above the name on every character page and on Party shows the round, whose turn, "you're next" and the order, only while a fight runs. Not heard (no VTT open), nothing is counted and no reminder comes; Concentration keeps +1.
+
+To build, in order: the extension listening on the VTT page (a new extension version for the Chrome Web Store), askdnd keeping the fight (order, round, turn) per campaign and announcing it live, the fight band, then durations and their reminders.
