@@ -37,14 +37,16 @@
     {% if conc %}{% include "_conc_pill.html" %}<span class="cond-sep" aria-hidden="true"></span>{% endif %}
     {% for x in conditions if x.name != "Concentration" %}
     <details class="cond-pill" data-cond="{{ cond_slug(x.name) }}" data-mark="{{ c.id }}:cond:{{ x.name }}"{{ sync_attrs(x.sync) }}>
-      <summary>{{ cond_icon(x.name) }}<b>{{ x.name }}{% if x.level %} {{ x.level }}{% endif %}</b>{% if x.source %}<span class="conc-k">{{ x.source }}</span>{% endif %}</summary>
+      <summary>{{ cond_icon(x.name) }}<b>{{ x.name }}{% if x.level %} {{ x.level }}{% endif %}</b>{% if x.time and x.time.short %}<span class="conc-k cond-time{{ ' soon' if x.time.soon }}">{{ x.time.short }}</span>{% elif x.source %}<span class="conc-k">{{ x.source }}</span>{% endif %}</summary>
       <div class="cond-box">
+        {% if x.time %}<p class="cond-lasts{{ ' soon' if x.time.soon }}"><b>{{ x.time.long }}</b>{% if x.source %} <span class="note">From {{ x.source }}.</span>{% endif %}</p>{% endif %}
         <p>{{ x.rules }}</p>
         {% if x.note %}<p class="note">{{ x.note }}</p>{% endif %}
         <p class="note">askdnd lists what it changes in the roll window; the DM makes the call.</p>
         {% if can_pick and x.sync != "ending" %}<div class="row">
           {% if x.name == "Exhaustion" %}{% for lv in range(1, 7) %}<button class="btn small{{ ' primary' if lv == x.level }}" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": "Exhaustion", "level": lv, "source": x.source or ""} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML" title="Exhaustion level {{ lv }}">{{ lv }}</button>{% endfor %}{% endif %}
-          <button class="btn small" hx-post="/characters/{{ c.id }}/conditions/end" hx-vals='{{ {"name": x.name} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">End {{ x.name }}</button></div>{% endif %}
+          <button class="btn small" hx-post="/characters/{{ c.id }}/conditions/end" hx-vals='{{ {"name": x.name} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">End {{ x.name }}</button>
+          {% if x.due %}<button class="btn small link" hx-post="/characters/{{ c.id }}/conditions/keep" hx-vals='{{ {"name": x.name} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML" title="The DM says it lasts: until it's ended">Keep</button>{% endif %}</div>{% endif %}
       </div>
     </details>
     {% endfor %}
@@ -52,10 +54,30 @@
     <details class="cond-pill cond-add">
       <summary>+ Condition</summary>
       <div class="cond-box">
+        {# How long it lasts (Brett, 2026-10-29: docs/mockups/turn-conditions.html), sent with the chip picked below #}
+        {% set ff = fight_now() %}
+        <div class="cond-lasts-form" data-lasts-form>
+          <label class="field"><span>Lasts</span><select name="lasts" data-lasts>
+            <option value="">Until it's ended</option>
+            <option value="endnext">Until the end of a turn…</option>
+            <option value="startnext">Until the start of a turn…</option>
+            <option value="rounds">Rounds</option>
+            <option value="minute">1 minute (10 rounds)</option>
+            <option value="time">Longer</option>
+            <option value="save">Until a save</option></select></label>
+          <label class="field" data-lasts-for="endnext startnext save" hidden><span>Whose turn</span><select name="whose">
+            <option value="self">{{ c.name }}’s (yours)</option>
+            {% for x in (ff.order if ff else []) if x.character != c.id %}<option value="{{ x.key }}">{{ x.name }}’s</option>{% endfor %}</select></label>
+          <label class="field" data-lasts-for="rounds" hidden><span>Rounds</span><input type="number" name="n" min="1" max="100" value="3" inputmode="numeric"></label>
+          <label class="field" data-lasts-for="time" hidden><span>How long</span><select name="time">{% for t in lasts_times %}<option>{{ t }}</option>{% endfor %}</select></label>
+          <label class="field" data-lasts-for="save" hidden><span>Save</span><select name="ability">{% for a in lasts_abilities %}<option{{ ' selected' if a == "Wis" }}>{{ a }}</option>{% endfor %}</select></label>
+          <label class="field" data-lasts-for="save" hidden><span>DC</span><input type="number" name="dc" min="1" max="30" value="13" inputmode="numeric"></label>
+          {% if not ff %}<p class="note" data-lasts-for="endnext startnext rounds save" hidden>Counted by the turns of a fight in D&amp;D Beyond's VTT; none is heard now.</p>{% endif %}
+        </div>
         <div class="ls-label">Conditions</div>
-        <div class="ls-chips">{% for n in all_conditions if n not in active_conditions %}<button class="ls-chip" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": n, "level": 1} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">{{ n }}</button>{% endfor %}</div>
+        <div class="ls-chips">{% for n in all_conditions if n not in active_conditions %}<button class="ls-chip" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": n, "level": 1} | tojson }}' hx-include="closest .cond-box" hx-target="#battle-body" hx-swap="outerHTML">{{ n }}</button>{% endfor %}</div>
         <div class="ls-label mt-2">Effects</div>
-        <div class="ls-chips">{% for n in all_effects if n not in active_conditions %}<button class="ls-chip" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": n} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">{{ n }}</button>{% endfor %}</div>
+        <div class="ls-chips">{% for n in all_effects if n not in active_conditions %}<button class="ls-chip" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": n} | tojson }}' hx-include="closest .cond-box" hx-target="#battle-body" hx-swap="outerHTML">{{ n }}</button>{% endfor %}</div>
       </div>
     </details>
     {% endif %}

@@ -1328,6 +1328,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .card-tx { min-width: 0; overflow-wrap: anywhere; }
 .card-tx b { color: var(--text-strong); font-weight: 600; }
 .card-tx b.nat20 { color: var(--green); } .card-tx b.nat1 { color: var(--red); }
+.card-acts { display: inline-flex; gap: var(--sp-1); }
 .card-act { font: 600 var(--fs-xs)/1 var(--sans); color: var(--k); background: transparent; border: 1px solid color-mix(in srgb, var(--k) 55%, transparent); border-radius: var(--r-md); padding: 6px 9px; cursor: pointer; white-space: nowrap; }
 .card-x { width: 26px; height: 26px; border: 0; background: transparent; color: var(--muted); border-radius: var(--r-sm); cursor: pointer; font-size: var(--fs-sm); }
 .card-x:hover { background: var(--surface-3); color: var(--text-strong); }
@@ -1739,6 +1740,15 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .cond-halo.dark::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, var(--cond-dark-glow)); }
 .cond-halo.starting i { animation: cond-flash 1.8s ease-out; }
 @keyframes cond-flash { 0% { opacity: 1; } }
+/* How long a condition lasts (app/conditions.py; Brett, 2026-10-29): a few words on its pill, amber when it ends or asks
+   for its save this turn; the whole of it in the pill's box; an amber dot on its badge */
+.cond-time.soon, .cond-lasts.soon b { color: var(--amber); }
+.cond-lasts { margin-bottom: var(--sp-1); }
+.cond-soon { position: absolute; right: 1px; top: 1px; width: 8px; height: 8px; border-radius: 50%; background: var(--amber); border: 2px solid var(--bg); }
+.cond-lasts-form { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: end; margin-bottom: var(--sp-2); padding-bottom: var(--sp-2); border-bottom: 1px solid var(--line-soft); }
+.cond-lasts-form .field { display: grid; gap: 2px; font-size: var(--fs-xs); color: var(--muted); }
+.cond-lasts-form input[type=number] { width: 72px; }
+.cond-lasts-form .note { flex-basis: 100%; margin: 0; }
 /* The fight band (app/fight.py, _fight_band.html; Brett, 2026-10-29): above the name on every character page and on
    Party while a fight runs in D&D Beyond's VTT */
 .fight-band { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-3); margin-bottom: var(--sp-3); padding: var(--sp-2) var(--sp-3); background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--amber); border-radius: var(--r-md); font-size: var(--fs-sm); color: var(--muted); }

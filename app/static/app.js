@@ -28,7 +28,7 @@
   // done 4 seconds, for your information and someone's roll 6, refused 10, an error until closed; one with a button
   // (Undo, Keep going) 20. Hovering a card keeps it. The server says which kind (web.notice: its text alone is "done").
   const CARD = { ok: ['✓', 4000], info: ['i', 6000], roll: ['', 6000], warn: ['!', 10000], error: ['✕', 0] };
-  function card(content, { kind = 'ok', action, icon } = {}) {
+  function card(content, { kind = 'ok', action, actions, icon, stay } = {}) {
     const box = $('#cards');
     if (!box || !content) return null;
     const [mark, ms] = CARD[kind] || CARD.ok, el = document.createElement('div');
@@ -40,16 +40,21 @@
     tx.append(content);
     el.append(ic, tx);
     const close = () => { clearTimeout(el._hide); el.classList.add('out'); setTimeout(() => el.remove(), 250); };
-    if (action) {
-      const b = Object.assign(document.createElement('button'), { type: 'button', className: 'card-act', textContent: action.label });
-      b.addEventListener('click', () => { close(); action.run(); });
-      el.append(b);
+    const acts = actions || (action ? [action] : []);
+    if (acts.length) {
+      const row = acts.length > 1 ? Object.assign(document.createElement('span'), { className: 'card-acts' }) : el;
+      acts.forEach(a => {
+        const b = Object.assign(document.createElement('button'), { type: 'button', className: 'card-act', textContent: a.label });
+        b.addEventListener('click', () => { close(); a.run(); });
+        row.append(b);
+      });
+      if (row !== el) el.append(row);
     }
     const x = Object.assign(document.createElement('button'), { type: 'button', className: 'card-x', textContent: '✕' });
     x.setAttribute('aria-label', 'Close');
     x.addEventListener('click', close);
     el.append(x);
-    const wait = action ? 20000 : ms, start = () => { if (wait) el._hide = setTimeout(close, wait); };
+    const wait = stay ? 0 : acts.length ? 20000 : ms, start = () => { if (wait) el._hide = setTimeout(close, wait); };
     el.addEventListener('mouseenter', () => clearTimeout(el._hide));
     el.addEventListener('mouseleave', start);
     start();
@@ -550,7 +555,8 @@
     document.querySelectorAll('[data-cond-dots]').forEach((d, i) => { if (dots[i]) { d.innerHTML = dots[i].innerHTML; if (dots[i].title) d.title = dots[i].title; else d.removeAttribute('title'); } });
     // Game Mode, as the page is drawn now: started, ended or kept going by someone at the table
     const b = document.body, was = gmIsOn(), wasUntil = b.dataset.gameUntil || '';
-    ['gameUntil', 'gameBy', 'gameWarn'].forEach(k => { if (doc.body.dataset[k] !== undefined) b.dataset[k] = doc.body.dataset[k]; else delete b.dataset[k]; });
+    ['gameUntil', 'gameBy', 'gameWarn', 'reminders'].forEach(k => { if (doc.body.dataset[k] !== undefined) b.dataset[k] = doc.body.dataset[k]; else delete b.dataset[k]; });
+    showReminders();  // (a condition's reminder, as the fight moved on)
     if ((b.dataset.gameUntil || '') !== wasUntil) {
       gmSetup();
       const by = b.dataset.gameBy;
@@ -664,6 +670,62 @@
     if (halo) halo.classList.add('starting');
   }
   condArrive();
+
+  // How long a condition lasts (Brett, 2026-10-29; docs/mockups/turn-conditions.html): + Condition's Lasts shows only
+  // the fields its choice needs, and they go with the chip picked (hx-include)
+  document.addEventListener('change', e => {
+    const sel = e.target.closest('[data-lasts]');
+    if (!sel) return;
+    const kind = sel.value === 'minute' ? 'rounds-fixed' : sel.value;
+    sel.closest('[data-lasts-form]').querySelectorAll('[data-lasts-for]').forEach(f => { f.hidden = !f.dataset.lastsFor.split(' ').includes(kind); });
+  });
+  // Its reminders (app/fight.py follow): a condition that ran out, a save at the end of a turn, Concentration's time
+  // up, each a corner card for that character's player (with what to do) and the DM (to know). They come with the page
+  // (body data-reminders, drawn again whenever the fight moves on); each shows once in this browser, and only while
+  // it's fresh. Nothing ends by itself: the player ends it, keeps it (the DM ruled it lasts), or rolls the save.
+  const SEEN = 'askdnd.reminders', FRESH_MS = 3 * 60 * 1000;
+  const seenGet = k => { try { return sessionStorage.getItem(k); } catch (e) { return null; } };
+  const seenSet = (k, v) => { try { sessionStorage.setItem(k, v); } catch (e) { /* private window */ } };
+  const escText = v => { const d = document.createElement('div'); d.textContent = v == null ? '' : v; return d.innerHTML; };
+  function act(url, data) {
+    return fetch(url, { method: 'POST', headers: { 'HX-Request': 'true', 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(data) })
+      .then(r => r.ok ? showInPlace(true) : r.json().then(j => toast(j.detail || 'Not done', null, 'warn'), () => toast('Not done', null, 'warn')));
+  }
+  function showReminders() {
+    let list = [];
+    try { list = JSON.parse(document.body.dataset.reminders || '[]'); } catch (e) { return; }
+    const key = SEEN + ':' + (document.body.dataset.campaign || ''), seen = +(seenGet(key) || 0);
+    let top = seen;
+    for (const r of list) {
+      if (r.id <= seen) continue;
+      top = Math.max(top, r.id);
+      if (Date.now() - Date.parse(r.at) > FRESH_MS) continue;
+      const base = '/characters/' + r.character;
+      const t = document.createElement('span');
+      if (!r.mine) {  // the DM: to know
+        t.innerHTML = '<b>' + escText(r.who) + '</b>: ' + escText(r.text) + (r.kind === 'save' ? ' (their roll)' : '');
+        card(t, { kind: 'info' });
+        continue;
+      }
+      if (r.kind === 'save') {
+        t.innerHTML = '<b>End of your turn:</b> ' + escText(r.text) + ' ';
+        const roll = Object.assign(document.createElement('button'), { type: 'button', className: 'row-act', textContent: 'Roll the save' });
+        Object.assign(roll.dataset, { roll: 'save', label: r.ability + ' save (' + r.name + '), DC ' + r.dc, mod: (r.mod || '+0').replace('−', '-') });
+        t.append(roll);
+        card(t, { kind: 'warn', stay: true, actions: [{ label: 'Saved: end it', run: () => act(base + '/conditions/end', { name: r.name }) }] });
+      } else if (r.kind === 'conc') {
+        t.innerHTML = '<b>' + escText(r.text) + '.</b>';
+        card(t, { kind: 'warn', stay: true, actions: [{ label: 'End it', run: () => act(base + '/concentration/end', {}) },
+                                                      { label: 'Keep', run: () => act(base + '/conditions/keep', { name: 'Concentration' }) }] });
+      } else {
+        t.innerHTML = '<b>' + escText(r.text) + '.</b>';
+        card(t, { kind: 'warn', stay: true, actions: [{ label: 'End it', run: () => act(base + '/conditions/end', { name: r.name }) },
+                                                      { label: 'Keep', run: () => act(base + '/conditions/keep', { name: r.name }) }] });
+      }
+    }
+    if (top > seen) seenSet(key, String(top));
+  }
+  showReminders();
   // Icon buttons say what they do (Brett, 2026-10-22): a label on hover or keyboard focus, or a long press on
   // phones. The text is the button's data-tip, aria-label or title; the native title is held back while
   // the label shows so the two don't stack.

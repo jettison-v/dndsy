@@ -43,9 +43,9 @@
 <span class="cond-badges" role="group" aria-label="Conditions">
   {% for x in conditions[:6] %}
   <{{ tag }}{% if not still %} type="button"{% endif %} class="cond-badge" data-cond="{{ cond_slug(x.name) }}" data-name="{{ x.name }}" data-mark="{{ who.id }}:emb:{{ x.name }}"{% if x.sync %} data-sync="{{ x.sync }}"{% endif %}{% if still %} role="img"{% else %} aria-expanded="false"{% endif %} aria-label="{{ x.name }}{% if x.level %} {{ x.level }}{% endif %}">
-    {{- cond_icon(x.name) }}{% if x.level %}<span class="cond-lv">{{ x.level }}</span>{% endif %}
+    {{- cond_icon(x.name) }}{% if x.level %}<span class="cond-lv">{{ x.level }}</span>{% endif %}{% if (x.time and x.time.soon) or x.due %}<i class="cond-soon" title="Ends or asks for its save this turn"></i>{% endif %}
     {% if x.name == "Concentration" %}<span class="cond-tip" role="tooltip"><b>Concentration: {{ x.spell }}</b>{% if x.rounds %}Round {{ x.round }} of {{ x.rounds }}. {% endif %}Taking damage asks for a Constitution save, DC 10 or half the damage (up to 30); being Incapacitated ends it.<span class="note">the DM rules</span></span>
-    {% else %}<span class="cond-tip" role="tooltip"><b>{{ x.name }}{% if x.level %}, level {{ x.level }}{% endif %}</b>{{ x.rules }}<span class="note">{% if x.source %}{{ x.source }} · {% endif %}the DM rules</span></span>{% endif %}
+    {% else %}<span class="cond-tip" role="tooltip"><b>{{ x.name }}{% if x.level %}, level {{ x.level }}{% endif %}</b>{% if x.time %}{{ x.time.long }} {% endif %}{{ x.rules }}<span class="note">{% if x.source %}{{ x.source }} · {% endif %}the DM rules</span></span>{% endif %}
   </{{ tag }}>
   {% endfor %}
   {% if conditions | length > 6 %}<span class="cond-more">+{{ conditions | length - 6 }}</span>{% endif %}
