@@ -206,3 +206,5 @@ own initiative order. Checked in Brett's Chrome with a temporary listener in the
   actions carry only `source: "CLIENT"`: anything askdnd sent would look exactly like the VTT's own click. That
   touches the standing rule against imitating D&D Beyond's client, so it's Brett's call, and nothing has been written
   beyond the test (Next once, the Ogre's initiative 9 → 10 → 9).
+
+**Decided (Brett, Oct 29): hear only.** The extension listens on the VTT page; askdnd never writes the order. If players' initiative should reach the order, first check whether the VTT fills it from an askdnd Initiative roll in the Game Log (its "pending initiative").
