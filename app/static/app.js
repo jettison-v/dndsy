@@ -1645,6 +1645,14 @@
       const physics = t ? { gravity_multiplier: t.gravity, baseScale: Math.round(t.size * room), shadows: t.shadows, light_intensity: t.light, strength: t.strength } : {};
       ready = lib().then(DiceBox => { host.innerHTML = ''; box = new DiceBox('#' + host.id, { assetPath: LIB, theme_surface: 'green-felt', theme_colorset: 'white',
         theme_material: 'glass', shadows: true, sounds: false, ...opts, ...physics });
+        // A die landing while its material's sounds are still loading (sound() below loads them in the background) made
+        // the library look up a list it hadn't made yet and throw mid-roll (Sentry ASKDND-V2-3, 2026-10-29): that hit
+        // is silent instead. (Each throw binds box.eventCollide afresh, so this stands in for the library's.)
+        const collide = box.eventCollide;
+        box.eventCollide = function (ev) {
+          if (this.sounds && !(this.sounds_dice.coin && this.sounds_dice[this.sound_dieMaterial] && this.sounds_table[this.surface])) return;
+          return collide.call(this, ev);
+        };
         // The library draws at one pixel per screen point, so on a Retina screen (2 pixels per point) the dice were
         // drawn at half resolution and stretched, looking soft (Brett, 2026-10-26). Draw at the screen's own
         // resolution, up to 2x: sharper, without the cost of 3x phones or very large screens.
