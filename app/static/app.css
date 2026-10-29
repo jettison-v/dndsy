@@ -1700,7 +1700,7 @@ body:has(.peek.open:not(.modal)) .cond-corner { right: calc(var(--panel-w) + 14p
 .cond-emb .cond-icon { width: 26px; height: 26px; }
 .cond-emb[data-cond="blinded"] { background: var(--cond-dark); border-color: var(--cond-dark-edge); }
 .cond-emb[data-cond="prone"] .cond-icon { transform: rotate(-8deg); }
-.cond-lv { position: absolute; right: -6px; top: -6px; min-width: 18px; height: 18px; border-radius: 9px; background: var(--c); color: var(--bg); font: 700 var(--fs-xs)/18px var(--sans); text-align: center; padding: 0 4px; }
+.cond-lv { position: absolute; right: 2px; top: 2px; min-width: 15px; height: 15px; border-radius: 8px; background: var(--c); color: var(--bg); font: 700 var(--fs-xs)/15px var(--sans); text-align: center; padding: 0 3px; }
 .cond-emb.new { animation: cond-arrive .9s cubic-bezier(.2, 1.4, .4, 1); }
 @keyframes cond-arrive { 0% { transform: scale(.3) rotate(-20deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
 .cond-tip { position: absolute; right: 58px; bottom: 0; width: 260px; text-align: left; background: var(--surface); border: 1px solid var(--c); border-radius: var(--r-lg); padding: 10px 12px; color: var(--text); font-size: var(--fs-sm); line-height: 1.45; box-shadow: 0 10px 26px var(--shadow); display: none; }
@@ -1740,7 +1740,7 @@ body:has(.peek.open:not(.modal)) .cond-corner { right: calc(var(--panel-w) + 14p
 [data-sync]::after { content: "↻"; position: absolute; top: 3px; right: 5px; font: 400 var(--fs-xs)/1 var(--sans); color: var(--sync); pointer-events: none; }
 [data-sync="failed"]::after { content: "!"; font-weight: 700; }
 .cond-pill[data-sync]::after { top: -9px; right: -3px; }  /* (a tile clips outside its box; a pill and an emblem don't) */
-.cond-emb[data-sync]::after { top: auto; bottom: -13px; right: 2px; }  /* (Exhaustion's level sits top right) */
+.cond-emb[data-sync]::after { top: auto; bottom: 2px; right: 4px; }  /* (Exhaustion's level sits top right) */
 .pt-conds [data-sync]::after { top: -9px; right: -4px; }
 .cond-pill[data-sync="ending"] > summary, .cond-emb[data-sync="ending"], .pt-conds [data-sync="ending"] { opacity: .5; }
 .cond-pill[data-sync] { border-radius: var(--r-pill); }
