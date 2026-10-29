@@ -86,6 +86,12 @@ header.top { display: grid; gap: 12px; max-width: 76ch; }
 .pill small { color: var(--muted); font-size: .74rem; line-height: 1.2; }
 .pill.ending { border-color: var(--amber); }
 .pill.ending small { color: var(--amber); }
+.pillpop { position: relative; }
+.pillpop > summary { list-style: none; cursor: pointer; }
+.pillpop > summary::-webkit-details-marker { display: none; }
+.pop { position: absolute; left: 0; top: calc(100% + 6px); z-index: 6; width: 260px; max-width: calc(100vw - 48px); display: grid; gap: 6px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--c); border-radius: 10px; box-shadow: 0 10px 26px var(--shadow); font-size: .84rem; }
+.pop b { color: var(--c); }
+.pop .btn { justify-self: start; padding: 6px 10px; }
 .sep { width: 1px; background: var(--line-strong); margin: 4px 2px; }
 .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 @media (max-width: 640px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -128,7 +134,7 @@ footer { color: var(--faint); font-size: .84rem; border-top: 1px solid var(--lin
     <span class="eyebrow">Where you'll find it</span>
     <div class="box where">
       <ol>
-        <li><b>Battle's Status row</b>: each condition's pill says how long it lasts ("ends at the end of your next turn", "9 rounds left", "Wis 13 save at the end of your turns"). A line above the pills shows the round and whose turn it is.</li>
+        <li><b>Battle's Status row</b>: each condition's pill says how long it lasts in a few words ("to your next turn", "9 rounds", "Wis 13 save"); click it for the whole of it, where it came from, and End it. A line above the pills shows the round and whose turn it is.</li>
         <li><b>The badges after the name</b> (every character page): a small amber dot on any that ends this turn; point at a badge for when it ends.</li>
         <li><b>Corner cards</b>: "Frightened ends now · End it", or "Wisdom save to end Paralyzed · Roll the save", shown to that character's player and the DM.</li>
         <li><b>+ Condition</b> on Battle: a Lasts menu when you start one. Concentration keeps its pill and now counts its rounds by itself.</li>
@@ -266,6 +272,15 @@ footer { color: var(--faint); font-size: .84rem; border-top: 1px solid var(--lin
     if (c.kind === 'rounds') { const n = left(c); return c.name === 'Concentration' ? 'round ' + inRound(c) + ' of ' + c.rounds : (n <= 1 ? 'ends this round' : n + ' rounds left'); }
     return '';
   }
+  // The pill's own few words (Brett, 2026-10-29: shorter, click for more); lasts() is the sentence in its pop-up
+  function short(c) {
+    if (c.due) return 'due to end';
+    if (c.kind === 'removed') return '';
+    if (c.kind === 'endnext') return endsNow(c) ? 'ends this turn' : 'to ' + (c.of === page ? 'your' : NAME[c.of] + '\u2019s') + ' next turn';
+    if (c.kind === 'save') return c.ability + ' ' + c.dc + ' save';
+    if (c.kind === 'rounds') { const n = left(c); return c.name === 'Concentration' ? 'round ' + inRound(c) + '/' + c.rounds : (n <= 1 ? 'last round' : n + ' rounds'); }
+    return '';
+  }
   function draw() {
     const cur = ORDER[S.turn][0];
     document.getElementById('order').innerHTML = ORDER.map(([k, n, i]) => '<div class="who' + (k === cur ? ' now' : '') + '"><b>' + n + '</b><span>' + i + '</span></div>').join('');
@@ -279,7 +294,8 @@ footer { color: var(--faint); font-size: .84rem; border-top: 1px solid var(--lin
     document.getElementById('badges').innerHTML = mine.map(c => '<span class="badge' + (c.name === 'Concentration' ? ' conc' : '') + '" style="--c: var(--cond-' + c.name.toLowerCase() + ')" title="' + c.name + ': ' + lasts(c) + '">' + svg(c.name) + (endsNow(c) || c.due ? '<i class="end"></i>' : '') + '</span>').join('');
     const nextUp = ORDER[(S.turn + 1) % ORDER.length][0];
     document.getElementById('turnline').innerHTML = '<span class="rd">Round ' + S.round + '</span>' + (cur === page ? '<span class="mine">Your turn</span>' : '<span>' + NAME[cur] + '’s turn' + (nextUp === page ? ' · <span class="mine">you’re next</span>' : '') + '</span>') + '<span class="src">on D&amp;D Beyond</span>';
-    const pills = mine.map(c => '<span class="pill' + (endsNow(c) || c.due ? ' ending' : '') + '" style="--c: var(--cond-' + c.name.toLowerCase() + ')">' + svg(c.name) + '<b>' + (c.spell || c.name) + '</b><small>' + lasts(c) + (c.from ? ' · ' + c.from : '') + '</small></span>');
+    const pills = mine.map((c, n) => '<details class="pillpop" data-i="' + S.conds.indexOf(c) + '"><summary class="pill' + (endsNow(c) || c.due ? ' ending' : '') + '" style="--c: var(--cond-' + c.name.toLowerCase() + ')">' + svg(c.name) + '<b>' + (c.spell || c.name) + '</b>' + (short(c) ? '<small>' + short(c) + '</small>' : '') + '</summary>'
+      + '<div class="pop" style="--c: var(--cond-' + c.name.toLowerCase() + ')"><b>' + (c.spell ? 'Concentration: ' + c.spell : c.name) + '</b><span>Lasts ' + lasts(c) + '.</span>' + (c.from ? '<span class="muted">From ' + c.from + '</span>' : '') + '<button class="btn" type="button" data-end>End it</button></div></details>');
     if (mine.length && mine[0].name === 'Concentration') pills.splice(1, 0, '<i class="sep"></i>');
     document.getElementById('status').innerHTML = '<span class="lbl">Status</span>' + (pills.join('') || '<span class="muted small">No conditions</span>');
   }
@@ -311,6 +327,10 @@ footer { color: var(--faint); font-size: .84rem; border-top: 1px solid var(--lin
     if (S.turn === 0) S.round++;
     draw();
   }
+  document.getElementById('status').addEventListener('click', e => {
+    if (e.target.closest('[data-end]')) { const i = +e.target.closest('details').dataset.i; S.conds.splice(i, 1); draw(); }
+  });
+  document.addEventListener('click', e => document.querySelectorAll('.pillpop[open]').forEach(d => { if (!d.contains(e.target)) d.open = false; }));
   document.getElementById('next').onclick = next;
   document.getElementById('reset').onclick = () => { S = fresh(); document.getElementById('cards').innerHTML = ''; draw(); };
   document.querySelectorAll('[data-seg]').forEach(seg => seg.addEventListener('click', e => {
