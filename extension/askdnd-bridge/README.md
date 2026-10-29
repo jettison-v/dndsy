@@ -61,14 +61,18 @@ after 3 tries lists the change to make by hand).
    package**, pick the zip, then **Submit for review**. The table's Chrome updates it on its own once it's approved.
 
 The listing (first upload: **+ New item**, then fill in each tab with these):
-- **Store listing.** Name: askdnd bridge. Summary: "Keeps your D&D Beyond sheet and askdnd in step, both ways: hears your
-  sheet's changes and makes askdnd's there, as you." Description: the first paragraph of this file, then "For the
+- **Store listing.** Name: askdnd bridge. Summary (the manifest's description, 132 characters at most): "Keeps your
+  D&D Beyond sheet and askdnd in step, both ways, and hears the turns of a fight in D&D Beyond's VTT." Description:
+  the first paragraph of this file, then "For the
   players of a campaign on askdnd that uses it. Not affiliated with Wizards of the Coast or D&D Beyond." Category:
   Tools. Language: English. Icon: icons/icon-128.png. Screenshot: private/extension/listing-screenshot.png (1280×800).
-- **Privacy.** Single purpose: "Keep a player's own D&D Beyond character sheet and askdnd, their table's companion app,
-  showing the same numbers." Permissions: *storage*, its key to askdnd until Chrome closes; *alarms*, a check every 30
-  seconds while someone is using askdnd or a sheet; *host permission dndbeyond.com*, to hear the player's sheet save
-  and to make askdnd's changes there with the sheet's own requests; *host permission askdnd.ai and beta.askdnd.ai*, to
-  talk to askdnd. Remote code: No. Data: website content (the character sheet's numbers and rolls), sent to askdnd only;
-  not sold, not used for anything else, not used for credit. Privacy policy: https://beta.askdnd.ai/help?tab=about#bridge-privacy
+- **Privacy.** Single purpose: "Keep a player's D&D Beyond play and askdnd, their table's companion app, in step: the
+  same numbers on their sheet, their rolls in both, and the turn a fight is on." Permissions: *storage*, its key to
+  askdnd until Chrome closes; *alarms*, a check every 30 seconds while someone is using askdnd or a sheet; *host
+  permission dndbeyond.com*, to hear the player's sheet save and make askdnd's changes there with the sheet's own
+  requests, to put the player's askdnd rolls into their game's Game Log (marked as askdnd's), and on D&D Beyond's VTT
+  only to listen to the fight's order and turns (it never changes the VTT); *host permission askdnd.ai and
+  beta.askdnd.ai*, to talk to askdnd. Remote code: No. Data: website content (the character sheet's numbers and rolls,
+  and a fight's order: names, initiative, whose turn), sent to askdnd only; not sold, not used for anything else, not
+  used for credit. Privacy policy: https://beta.askdnd.ai/help?tab=about#bridge-privacy
 - **Distribution.** Visibility: **Unlisted**. Regions: all.
