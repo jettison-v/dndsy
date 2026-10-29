@@ -70,7 +70,7 @@ def rows_from(db: Session) -> list[dict]:
     q = (select(Character.id, Character.name, User.email, Character.ddb_id, Character.copy_of_id, Character.sheet_heard_at,
                 CharacterSnapshot.fetched_at, CharacterSnapshot.status, CharacterSnapshot.error,
                 summary["portrait"].astext, summary["classes"], summary["hit_points"]["current"].astext,
-                summary["hit_points"]["max"].astext, Character.conditions, summary["conditions"])
+                summary["hit_points"]["max"].astext, Character.conditions, summary["conditions"], Character.concentration)
          .join(CampaignCharacter, CampaignCharacter.character_id == Character.id)
          .outerjoin(User, Character.owner_id == User.id)
          .outerjoin(CharacterSnapshot, CharacterSnapshot.character_id == Character.id)
@@ -84,8 +84,9 @@ def rows_from(db: Session) -> list[dict]:
              "step": bool(bridge and ddb_id and copy_of is None and heard and heard >= reach),
              "by_hand": by_hand.get(cid, 0) if bridge and copy_of is None else 0,
              # the menu bar's dots: what it's under now (D&D Beyond's with askdnd's own, as on Battle)
-             "conditions": [x["name"] for x in cond.shown(own, on_sheet, bool(bridge and copy_of is None))]}
-            for cid, name, email, ddb_id, copy_of, heard, fetched, status, error, portrait, classes, hp, hp_max, own, on_sheet in db.execute(q)]
+             "conditions": ["Concentration"] * bool(conc) + [x["name"] for x in cond.shown(own, on_sheet, bool(bridge and copy_of is None))]}
+            for cid, name, email, ddb_id, copy_of, heard, fetched, status, error, portrait, classes, hp, hp_max, own, on_sheet, conc
+            in db.execute(q)]
 
 
 def _load_from_db() -> list[dict]:

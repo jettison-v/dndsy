@@ -125,9 +125,12 @@ def listed(db: Session, ch: Character, sheet: dict | None) -> list[dict]:
     to make by hand) and whether it "counts" (on rolls and the page's edge: not one ending, nor one D&D Beyond didn't take)."""
     sheet = sheet or {}
     now, sync, ending = cond.shown(ch.conditions, sheet.get("conditions"), ddb_bridge.on_for(db, ch)), sheet.get("sync") or {}, sheet.get("ending") or []
+    if ch.concentration:  # first, treated like a condition (Brett, 2026-10-29); askdnd's own, as D&D Beyond doesn't keep it
+        cn = ch.concentration
+        now = [{"name": "Concentration", "spell": cn.get("spell", ""), "round": cn.get("round"), "rounds": cn.get("rounds"),
+                "source": cn.get("spell", "")}] + now
     names = {x["name"] for x in now}
-    now += [{"name": n, "on_ddb": True} for n in ending if n not in names]
-    now += [{"name": m[5:], "on_ddb": False} for m, st in sync.items() if st == "failed" and m.startswith("cond:") and m[5:] not in names | set(ending)]
+    now += [{"name": m[5:], "on_ddb": False} for m, st in sync.items() if st == "failed" and m.startswith("cond:") and m[5:] not in names]
     for x in now:
         x["sync"] = "ending" if x["name"] in ending else sync.get("cond:" + x["name"], "")
         x["counts"] = x["sync"] != "ending" and not (x["sync"] == "failed" and not x.get("on_ddb"))
@@ -168,6 +171,8 @@ def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None
     ctx["all_conditions"], ctx["all_effects"] = list(cond.CONDITIONS), list(cond.EFFECTS)
     ctx["active_conditions"] = {x["name"] for x in now if x["sync"] != "ending"}
     ctx["cond_synced"] = ddb_bridge.on_for(db, ch)
+    ctx["conc"] = ch.concentration or None  # first in the Status row (_conc_pill.html)
+    ctx["con_save"] = sb.concentration_save((ctx["form"] or {}).get("saves") or (ctx["sheet"] or {}).get("saves") or [])
     ctx |= player_notes.page_context(db, ch, user, ctx["sheet"])
     return ctx
 
@@ -513,7 +518,9 @@ def spellbook_modal(request: Request, character_id: int, db: Session = Depends(g
 def _concentration_reply(request: Request, db: Session, ch: Character, user: dict, toast: str, deliver: bool = False):
     if request.headers.get("HX-Request"):
         resp = templates.TemplateResponse(request, "_battle_body.html", _battle_ctx(db, ch, user))
-        resp.headers["HX-Trigger"] = json.dumps({"toast": toast, **({"bridgeDeliver": web.deliver_now(ch)} if deliver else {})})
+        # (and every open window shows its new copy at once: the Spell Book's Concentrate, Brett 2026-10-29)
+        resp.headers["HX-Trigger"] = json.dumps({"toast": toast, "characterChanged": {"character": ch.id},
+                                                 **({"bridgeDeliver": web.deliver_now(ch)} if deliver else {})})
         return resp
     return RedirectResponse(f"/characters/{ch.id}/battle", status_code=303)
 

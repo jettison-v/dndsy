@@ -92,8 +92,11 @@ def slug(name: str) -> str:
 
 
 def edge(conditions: list[dict] | None) -> list[str]:
-    """The slugs of the conditions whose colours the page's edge takes, newest first (["poisoned", "prone"])."""
-    return [slug(c.get("name", "")) for c in (conditions or [])[-EDGE:]][::-1]
+    """The slugs of the conditions whose colours the page's edge takes: Concentration's always when it's there (Brett,
+    2026-10-29), then the newest of the rest, three in all (["concentration", "poisoned", "prone"])."""
+    conc = [c for c in conditions or [] if c.get("name") == "Concentration"]
+    rest = [c for c in conditions or [] if c.get("name") != "Concentration"]
+    return [slug(c["name"]) for c in conc] + [slug(c.get("name", "")) for c in rest[len(rest) - (EDGE - len(conc)):]][::-1]
 
 
 def darkens(conditions: list[dict] | None) -> bool:
@@ -124,16 +127,15 @@ def from_sheet(data: dict | None) -> list[dict]:
 
 def shown(own: list[dict] | None, sheet: list[dict] | None, synced: bool) -> list[dict]:
     """What a character is under now, oldest first: D&D Beyond's (`sheet`, from the summary; None from a copy read
-    before askdnd kept them) with askdnd's source and note for each, then askdnd's own. Each says "on_ddb". Synced
-    (the bridge works on it), a condition askdnd holds but D&D Beyond doesn't is left out: D&D Beyond's read decides."""
+    before askdnd kept them) in D&D Beyond's order, with askdnd's source and note for each, then askdnd's own in its
+    order. Each says "on_ddb". The order holds while one comes or goes (Brett, 2026-10-29: ending the first mustn't
+    move it). Synced (the bridge works on it), one askdnd holds but D&D Beyond doesn't is left out: D&D Beyond decides."""
     own = own or []
     if sheet is None:
         return [dict(c) for c in own]
-    there = {c["name"]: c for c in sheet}
-    keep = [c for c in own if c.get("name") in there or not (synced and c.get("name") in ON_DDB)]
-    named = {c["name"] for c in keep}
-    return ([{**c, "on_ddb": True} for c in sheet if c["name"] not in named]
-            + [{**c, **there.get(c["name"], {}), "on_ddb": c.get("name") in there} for c in keep])
+    there, notes = {c["name"] for c in sheet}, {c.get("name"): c for c in own}
+    return ([{**notes.get(c["name"], {}), **c, "on_ddb": True} for c in sheet]
+            + [{**c, "on_ddb": False} for c in own if c.get("name") not in there and not (synced and c.get("name") in ON_DDB)])
 
 
 def usable(it: dict) -> bool:

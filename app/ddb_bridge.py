@@ -522,9 +522,12 @@ def as_shown(db: Session, character: Character, summary: dict | None) -> dict | 
             shown = ddb.parse_character(raw)
         except ddb.DdbError:
             shown = summary
-    had = {c["name"] for c in summary.get("conditions") or []}
-    ending = [m[5:] for f, m in ((f, _mark(f)) for f in vals) if m.startswith("cond:") and not vals[f] and m[5:] in had]
-    return {**shown, "sync": sync, "ending": ending}
+    # Conditions keep their places: one on its way off stays where it is (marked ending) until D&D Beyond has it gone
+    real, planned = summary.get("conditions") or [], {c["name"]: c for c in shown.get("conditions") or []}
+    had = {c["name"] for c in real}
+    ending = [c["name"] for c in real if c["name"] not in planned]
+    conditions = [planned.get(c["name"], c) for c in real] + [c for n, c in planned.items() if n not in had]
+    return {**shown, "conditions": conditions, "sync": sync, "ending": ending}
 
 
 def outbox(db: Session, character: Character) -> dict | None:

@@ -85,7 +85,7 @@ def test_d_and_d_beyonds_conditions_show_with_askdnds_own():
     synced = cd.shown(own, sheet, synced=True)  # Invisible ended on D&D Beyond (or isn't made yet): left out
     assert [(c["name"], c.get("level"), c.get("source"), c["on_ddb"]) for c in synced] == [
         ("Poisoned", None, "Giant Spider", True), ("Exhaustion", 2, "", True), ("Enlarged", None, "Potion of Growth", False)]
-    assert [c["name"] for c in cd.shown(own, sheet, synced=False)] == ["Invisible", "Poisoned", "Exhaustion", "Enlarged"]
+    assert [c["name"] for c in cd.shown(own, sheet, synced=False)] == ["Poisoned", "Exhaustion", "Invisible", "Enlarged"]  # D&D Beyond's first
     assert cd.shown(own, None, synced=True) == own  # a copy read before askdnd kept D&D Beyond's: askdnd's own
 
 
@@ -142,6 +142,17 @@ def test_with_the_bridge_a_condition_is_made_on_d_and_d_beyond_and_shows_at_once
     db.commit()
     assert player.post(f"/characters/{cole.id}/conditions", data={"name": "Prone"}, headers=HX).status_code == 409
     assert player.post(f"/characters/{cole.id}/conditions", data={"name": "Enlarged"}, headers=HX).status_code == 200  # askdnd's own
+
+
+def test_a_condition_ending_keeps_its_place_until_its_gone(player, db, sheet):
+    """Brett, 2026-10-29: with three conditions, ending the first mustn't move it to the end."""
+    cole = char(db, "Cole")
+    sheet["conditions"] = [{"id": 11, "level": None}, {"id": 12, "level": None}, {"id": 2, "level": None}]  # Poisoned, Prone, Charmed
+    characters.refresh(db, cole)
+    r = player.post(f"/characters/{cole.id}/conditions/end", data={"name": "Poisoned"}, headers=HX)
+    pills = [x.split('"')[0] for x in r.text.split('class="cond-bar"')[1].split('data-mark="')[1:] if ":cond:" in x.split('"')[0]]
+    assert pills == [f"{cole.id}:cond:Poisoned", f"{cole.id}:cond:Prone", f"{cole.id}:cond:Charmed"]
+    assert r.text.split(f'data-mark="{cole.id}:cond:Poisoned"')[1].startswith(' data-sync="ending"')
 
 
 def test_a_hit_on_its_way_shows_on_battle_and_party_at_once(player, dm, db, sheet):

@@ -49,7 +49,7 @@
   /* Conditions (docs/mockups/conditions-on-battle.html): each one's colour, and Blinded's black on the page's edge */
   --cond-blinded: #e6e9ee; --cond-charmed: #ec84b8; --cond-deafened: #c3b08a; --cond-exhaustion: #d08a4c; --cond-frightened: #a983e6; --cond-grappled: #e59a52; --cond-incapacitated: #ef6a5e; --cond-invisible: #f4f6f9; --cond-paralyzed: #f0d24a;
   --cond-petrified: #b3aa9b; --cond-poisoned: #86c95b; --cond-prone: #c9a47b; --cond-restrained: #d9774d; --cond-stunned: #f2b93b; --cond-unconscious: #7b8ce0; --cond-enlarged: #4fc7b0; --cond-flying: #8fc6f2; --cond-water-breathing: #5aa7e8;
-  --cond-dark: #000; --cond-dark-edge: #6b7079; --cond-dark-glow: rgba(0, 0, 0, .6);
+  --cond-concentration: #e8b34b; --cond-dark: #000; --cond-dark-edge: #6b7079; --cond-dark-glow: rgba(0, 0, 0, .6);
 }
 @media (max-width: 640px) { :root { --control-h: 44px; --control-h-sm: 36px; --chip-h: 36px; } }
 * { box-sizing: border-box; }
@@ -1515,9 +1515,9 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .sb-head .fm-title { flex: 1 1 220px; min-width: 0; }
 .sb-conc { margin-left: 12px; }
 /* Concentrating (Brett, 2026-10-28: lightly): a thin amber line under the Spell Book's header, and the spell's row edged */
-.sb-head.sb-concentrating { box-shadow: inset 0 -2px 0 var(--amber-soft), inset 0 -1px 0 var(--amber); }
-.ls-row.sb-conc-row { box-shadow: inset 3px 0 0 var(--amber); }
-.sb-conc-tag { color: var(--amber); border-color: var(--amber); background: var(--amber-soft); }
+.sb-head.sb-concentrating { box-shadow: inset 0 -1px 0 var(--cond-concentration); }
+.ls-row.sb-conc-row { box-shadow: inset 3px 0 0 var(--cond-concentration); }
+.sb-conc-tag { color: var(--cond-concentration); border-color: var(--cond-concentration); background: color-mix(in srgb, var(--cond-concentration) 14%, transparent); }
 @media (max-width: 640px) {
   .sb-conc { margin-left: 0; }
   .sb-starred { margin-left: 0; }
@@ -1679,15 +1679,20 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 [data-cond="incapacitated"] { --c: var(--cond-incapacitated); } [data-cond="invisible"] { --c: var(--cond-invisible); } [data-cond="paralyzed"] { --c: var(--cond-paralyzed); }
 [data-cond="petrified"] { --c: var(--cond-petrified); } [data-cond="poisoned"] { --c: var(--cond-poisoned); } [data-cond="prone"] { --c: var(--cond-prone); }
 [data-cond="restrained"] { --c: var(--cond-restrained); } [data-cond="stunned"] { --c: var(--cond-stunned); } [data-cond="unconscious"] { --c: var(--cond-unconscious); }
-[data-cond="enlarged"] { --c: var(--cond-enlarged); } [data-cond="flying"] { --c: var(--cond-flying); } [data-cond="water-breathing"] { --c: var(--cond-water-breathing); }
+[data-cond="concentration"] { --c: var(--cond-concentration); } [data-cond="enlarged"] { --c: var(--cond-enlarged); } [data-cond="flying"] { --c: var(--cond-flying); } [data-cond="water-breathing"] { --c: var(--cond-water-breathing); }
 .cond-icon { width: 16px; height: 16px; flex: none; color: var(--c); }
+/* Concentration first in the Status row, like a condition pill in its color, then a divider before the conditions */
+.cond-bar .conc-pill { border: 1px solid var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); min-height: var(--chip-h); padding-left: var(--sp-2); }
+.cond-bar .conc-pill > .cond-icon { margin-right: -4px; }
+.cond-sep { align-self: stretch; width: 1px; margin: 3px var(--sp-1); background: var(--line); }
+.cond-sep:last-child { display: none; }
 .cond-pill:not(.cond-add) > summary { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); padding-left: var(--sp-2); }
 /* The edge: the newest three conditions' own colours around the page (--edge, from _cond_icons.html), blending into
    each other, subdued: a thin line and a soft glow. It's the page's own edge, so it shows wherever you've scrolled. */
 .cond-halo { position: fixed; inset: 0; z-index: 9; pointer-events: none; }  /* over the Table rolls sidebar and the side panel too (below menus and pop-ups) */
 .cond-halo i { position: absolute; inset: 0; border: 0 solid transparent; border-image: conic-gradient(from -45deg, var(--edge)) 1; }
 .cond-halo .cond-line { border-width: 3px; opacity: .9; }
-.cond-halo .cond-glow { border-width: 28px; filter: blur(22px); opacity: .4; }
+.cond-halo .cond-glow { border-width: 19px; filter: blur(15px); opacity: .4; }  /* (a third narrower: Brett, 2026-10-29) */
 .cond-halo.dark::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, var(--cond-dark-glow)); }
 .cond-halo.starting i { animation: cond-flash 1.8s ease-out; }
 @keyframes cond-flash { 0% { opacity: 1; } }
@@ -1807,10 +1812,10 @@ body:has(.peek.open:not(.modal)) .cond-corner { right: calc(var(--panel-w) + 14p
 .ls-notes-full .ls-note { white-space: pre-line; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
 
 /* Manage › Design system (the living component page): only layout for the samples; the samples use the real styles */
-.ds-jump { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin: 0 0 var(--sp-5); }
-.ds-jump a { font-size: var(--fs-sm); color: var(--muted); text-decoration: none; padding: var(--sp-1) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-pill); }
+.ds-jump { display: flex; gap: var(--sp-2); margin: 0 0 var(--sp-5); position: sticky; top: var(--stick-top, 62px); z-index: 4; background: var(--bg); padding-block: var(--sp-2); overflow-x: auto; scrollbar-width: none; }  /* one row that stays in reach as you scroll (sideways when there's no room) */
+.ds-jump a { flex: none; white-space: nowrap; font-size: var(--fs-sm); color: var(--muted); text-decoration: none; padding: var(--sp-1) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-pill); }
 .ds-jump a:hover { color: var(--text); }
-.ds-page .section { scroll-margin-top: 80px; }
+.ds-page .section { scroll-margin-top: calc(var(--stick-top, 62px) + 64px); }  /* (below the sticky navigation) */
 .ds-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-1) var(--sp-3); margin: var(--sp-5) 0 var(--sp-2); font-size: var(--fs-sm); }
 .ds-meta:first-of-type { margin-top: var(--sp-3); }
 .ds-meta code, .ds-page code { font-size: var(--fs-xs); color: var(--muted); background: var(--surface-2); border-radius: var(--r-sm); padding: 1px var(--sp-1); }
