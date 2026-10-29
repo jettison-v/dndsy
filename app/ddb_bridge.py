@@ -1149,7 +1149,10 @@ def heard_in_game(db: Session, hearer: Character, message: dict) -> TableRoll | 
     log brings every sheet in the game the rolls made there. The DM's for a monster go into Table rolls as that
     monster's ("Ogre"), with the damage type its attack in the campaign's rules data names (D&D Beyond's roll doesn't
     carry one), so a player can apply the hit; a roll for a character at the table made elsewhere (the encounter's
-    page) goes in as that character's. Others' plain dice stay out (whose they are isn't known)."""
+    page) goes in as that character's. Others' plain dice stay out (whose they are isn't known), and so do askdnd's own
+    rolls sent to the Game Log (app/gamelog.py): Table rolls has them already."""
+    if message.get("source") == "askdnd":
+        return None
     d, ctx = message.get("data") or {}, (message.get("data") or {}).get("context") or {}
     roll = {"id": d.get("rollId"), "action": d.get("action"), "rolls": d.get("rolls")}
     rid, what, campaign = str(d.get("rollId") or "")[:60], str(message.get("entityType") or ""), hearer.campaign_id

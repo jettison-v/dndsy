@@ -733,7 +733,7 @@ def ddb_roll(rid="r-1", scope="gameId", kind="check", how="", values=(14,), cons
 
 def test_a_roll_made_on_d_and_d_beyond_comes_into_table_rolls_once(player, dm, db, sheet):
     """Roadmap step 3e (Brett, 2026-10-27): a roll made on D&D Beyond by habit still reaches the table, marked "on
-    D&D Beyond"; it's only heard (askdnd never writes into D&D Beyond's game log)."""
+    D&D Beyond"; heard, and kept once (askdnd's own rolls go the other way, app/gamelog.py)."""
     from app.models import TableRoll
     player.post("/bridge/roll/75423618", json=ddb_roll(how="advantage", values=(4, 14)))
     player.post("/bridge/roll/75423618", json=ddb_roll(how="advantage", values=(4, 14)))  # heard twice, recorded once

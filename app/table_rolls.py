@@ -397,9 +397,17 @@ def _entries(db: Session, user: dict, roots: list[TableRoll], viewer_id: int | N
     return items
 
 
-def _reply(request: Request, db: Session, root: TableRoll, me_id: int, dm: bool):
+def _reply(request: Request, db: Session, root: TableRoll, me_id: int, dm: bool, new: TableRoll | None = None):
+    """The roll's entry and its HTML for the log, and what the extension sends to D&D Beyond's Game Log for the roll
+    just made (`new`: a follow-up, else the roll itself; app/gamelog.py)."""
+    from app import gamelog  # (it reads this module's kinds)
+
     entry = _entries(db, current_user(request), [root], me_id, dm)[0]
-    return JSONResponse({"roll": entry, "html": render(request, [entry])})
+    made = new or root
+    out = {"roll": entry, "html": render(request, [entry])}
+    if (msgs := gamelog.messages(db, made, made.character)):
+        out["gamelog"] = {"ddbId": str(made.character.ddb_id), "messages": msgs}
+    return JSONResponse(out)
 
 
 @router.post("/rolls")
@@ -528,7 +536,7 @@ def _follow_up(request, db, campaign_id, me_id, dm, parent_id, action, label, ex
     realtime.announce(db, campaign_id, "rolls")
     db.commit()
     db.refresh(root)
-    return _reply(request, db, root, me_id, dm)
+    return _reply(request, db, root, me_id, dm, new=row)
 
 
 @router.get("/rolls/checks")
