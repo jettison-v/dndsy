@@ -295,7 +295,7 @@ footer { color: var(--faint); font-size: .84rem; border-top: 1px solid var(--lin
     const nextUp = ORDER[(S.turn + 1) % ORDER.length][0];
     document.getElementById('turnline').innerHTML = '<span class="rd">Round ' + S.round + '</span>' + (cur === page ? '<span class="mine">Your turn</span>' : '<span>' + NAME[cur] + '’s turn' + (nextUp === page ? ' · <span class="mine">you’re next</span>' : '') + '</span>') + '<span class="src">on D&amp;D Beyond</span>';
     const pills = mine.map((c, n) => '<details class="pillpop" data-i="' + S.conds.indexOf(c) + '"><summary class="pill' + (endsNow(c) || c.due ? ' ending' : '') + '" style="--c: var(--cond-' + c.name.toLowerCase() + ')">' + svg(c.name) + '<b>' + (c.spell || c.name) + '</b>' + (short(c) ? '<small>' + short(c) + '</small>' : '') + '</summary>'
-      + '<div class="pop" style="--c: var(--cond-' + c.name.toLowerCase() + ')"><b>' + (c.spell ? 'Concentration: ' + c.spell : c.name) + '</b><span>Lasts ' + lasts(c) + '.</span>' + (c.from ? '<span class="muted">From ' + c.from + '</span>' : '') + '<button class="btn" type="button" data-end>End it</button></div></details>');
+      + '<div class="pop" style="--c: var(--cond-' + c.name.toLowerCase() + ')"><b>' + (c.spell ? 'Concentration: ' + c.spell : c.name) + '</b><span>' + lasts(c).charAt(0).toUpperCase() + lasts(c).slice(1) + '.</span>' + (c.from ? '<span class="muted">From ' + c.from + '</span>' : '') + '<button class="btn" type="button" data-end>End it</button></div></details>');
     if (mine.length && mine[0].name === 'Concentration') pills.splice(1, 0, '<i class="sep"></i>');
     document.getElementById('status').innerHTML = '<span class="lbl">Status</span>' + (pills.join('') || '<span class="muted small">No conditions</span>');
   }
