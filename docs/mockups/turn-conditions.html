@@ -1,0 +1,345 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conditions That End</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Step 5, forgotten effects (Brett, 2026-10-29: design before building). Conditions that say when they end, timed by the
+   turns askdnd hears from D&D Beyond's VTT (it only listens: docs/plans/2026-10-24-play-state.md). One page: where
+   you'll find it, a live fight to step through as the DM presses Next, starting a condition with its duration, what
+   happens when turns aren't heard, then what's for Brett to decide. askdnd is dark only, so this page is too. */
+:root { --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --chrome: #0f1113; --line: #34383e; --line-soft: #2c3036;
+  --line-strong: #4a4f57; --text: #ebe7df; --strong: #fff; --muted: #a29d93; --faint: #6f6b64; --shadow: rgba(0, 0, 0, .45);
+  --red: #d64545; --red-text: #f08a8a; --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14); --green: #5bbf7f; --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .15);
+  --die-gold-hi: #f7d98f; --die-gold-mid: #d9a441; --die-gold-ink: #2a1a05;
+  --cond-concentration: #7ea6e0; --cond-frightened: #a983e6; --cond-paralyzed: #f0d24a; --cond-prone: #c9a47b; --cond-poisoned: #86c95b;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.6 var(--sans); margin: 0; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 36px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 34px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.4rem/1.25 var(--serif); }
+h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+section { display: grid; gap: 14px; min-width: 0; }
+.eyebrow { font: 700 .78rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red-text); }
+.label { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+header.top { display: grid; gap: 12px; max-width: 76ch; }
+.lead { font-size: 1.05rem; }
+.muted { color: var(--muted); } .small { font-size: .86rem; } .faint { color: var(--faint); }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.box.ask { border-color: var(--red); }
+.box ol, .box ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 900px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+.where ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+
+/* The order heard from D&D Beyond */
+.order { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+.who { display: grid; gap: 1px; padding: 8px 12px; min-width: 104px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; font-size: .84rem; }
+.who b { font-size: .92rem; }
+.who span { color: var(--muted); }
+.who.now { border-color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber); background: color-mix(in srgb, var(--amber) 8%, var(--surface)); }
+.who.now span::after { content: " · their turn"; color: var(--amber); }
+.ddb { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; padding: 12px 14px; border: 1px dashed var(--line-strong); border-radius: 12px; }
+.ddb .tag { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+.btn { font: 600 .86rem/1 var(--sans); color: var(--text); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 8px; padding: 9px 13px; cursor: pointer; white-space: nowrap; }
+.btn.red { background: var(--red); border-color: var(--red); color: #fff; }
+.btn:hover { border-color: var(--muted); }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.seg button { font: 500 .86rem/1 var(--sans); color: var(--text); background: var(--surface-2); border: 0; padding: 9px 13px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed=true] { background: var(--blue-soft); color: var(--blue); }
+.ctl-row { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: end; }
+.ctl { display: grid; gap: 6px; min-width: 0; }
+.ctl > span { font-size: .8rem; color: var(--muted); }
+
+/* The page: Battle for the character you're looking at */
+.stage { position: relative; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); overflow: hidden; min-height: 470px; }
+.s-mb { height: 44px; background: var(--chrome); border-bottom: 2px solid var(--red); display: flex; align-items: center; gap: 18px; padding: 0 16px; font-size: .84rem; color: var(--muted); white-space: nowrap; overflow: hidden; }
+.s-mb b { font: 600 .95rem/1 var(--serif); }
+.s-body { padding: 18px 20px 110px; display: grid; gap: 14px; }
+.head { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.av { width: 50px; height: 50px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #5d6b55, #2b3328); border: 2px solid var(--line-strong); flex: none; }
+.name-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.name-row h3 { font: 600 1.6rem/1.1 var(--serif); }
+.badges { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.badge { position: relative; width: 26px; height: 26px; border-radius: 7px; border: 1.5px solid var(--c); background: color-mix(in srgb, var(--c) 16%, var(--bg)); color: var(--c); display: grid; place-items: center; }
+.badge.conc { border-radius: 50%; }
+.badge svg { width: 16px; height: 16px; }
+.badge .end { position: absolute; right: -3px; bottom: -3px; width: 10px; height: 10px; border-radius: 50%; background: var(--amber); border: 2px solid var(--bg); }
+.turnline { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font-size: .86rem; color: var(--muted); }
+.turnline .rd { font: 700 .72rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 5px 9px; }
+.turnline .mine { color: var(--amber); font-weight: 600; }
+.status { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+.status .lbl { align-self: center; font: 700 .68rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-right: 2px; }
+.pill { display: inline-grid; grid-template-columns: auto auto; column-gap: 7px; align-items: center; border: 1px solid var(--c); border-radius: 999px; padding: 5px 12px 5px 9px; background: color-mix(in srgb, var(--c) 12%, var(--surface)); font-size: .84rem; }
+.pill svg { width: 15px; height: 15px; color: var(--c); grid-row: span 2; }
+.pill b { line-height: 1.2; }
+.pill small { color: var(--muted); font-size: .74rem; line-height: 1.2; }
+.pill.ending { border-color: var(--amber); }
+.pill.ending small { color: var(--amber); }
+.sep { width: 1px; background: var(--line-strong); margin: 4px 2px; }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 640px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; display: grid; }
+.tile span { font: 700 .68rem/1.2 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.tile b { font-size: 1.3rem; }
+
+/* Corner cards, as built */
+.cards { position: absolute; right: 14px; bottom: 14px; z-index: 5; display: flex; flex-direction: column; gap: 8px; width: min(360px, calc(100% - 28px)); }
+.card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 10px; align-items: start; background: var(--surface-2); border: 1px solid var(--line-strong); border-left: 3px solid var(--k); border-radius: 10px; padding: 10px 8px 10px 11px; box-shadow: 0 10px 26px var(--shadow); font-size: .86rem; line-height: 1.4; animation: in .18s ease-out; }
+@keyframes in { from { opacity: 0; transform: translateY(8px); } }
+@media (prefers-reduced-motion: reduce) { .card { animation: none; } }
+.card .ic { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--k) 18%, transparent); color: var(--k); font: 700 .8rem/1 var(--sans); }
+.card .acts { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
+.card .act { font: 600 .8rem/1 var(--sans); color: var(--k); background: transparent; border: 1px solid color-mix(in srgb, var(--k) 55%, transparent); border-radius: 7px; padding: 6px 9px; cursor: pointer; }
+.card .act.quiet { color: var(--muted); border-color: var(--line-strong); }
+.card .x { width: 24px; height: 24px; border: 0; background: transparent; color: var(--muted); border-radius: 6px; cursor: pointer; }
+.k-info { --k: var(--blue); } .k-warn { --k: var(--amber); }
+
+/* + Condition with its duration */
+.form { display: grid; gap: 12px; max-width: 520px; }
+.field { display: grid; gap: 5px; }
+.field > span { font-size: .78rem; color: var(--muted); font-weight: 600; }
+select, input[type=number] { font: inherit; color: var(--text); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 8px; padding: 8px 10px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.preview { font-size: .86rem; color: var(--muted); }
+.kinds { display: grid; gap: 6px; font-size: .9rem; }
+.kinds li span { color: var(--muted); }
+footer { color: var(--faint); font-size: .84rem; border-top: 1px solid var(--line); padding-top: 14px; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="eyebrow">Step 5 · forgotten effects</span>
+    <h1>Conditions that end</h1>
+    <p class="lead">A condition can say when it ends: at the end of someone's next turn, after a minute, or when a save succeeds. askdnd follows the fight's turns by <b>listening</b> to D&amp;D Beyond's VTT as the DM presses Next. When something ends or asks for a save, it <b>reminds</b> the right person. You or the DM still end it.</p>
+  </header>
+
+  <section>
+    <span class="eyebrow">Where you'll find it</span>
+    <div class="box where">
+      <ol>
+        <li><b>Battle's Status row</b>: each condition's pill says how long it lasts ("ends at the end of your next turn", "9 rounds left", "Wis 13 save at the end of your turns"). A line above the pills shows the round and whose turn it is.</li>
+        <li><b>The badges after the name</b> (every character page): a small amber dot on any that ends this turn; point at a badge for when it ends.</li>
+        <li><b>Corner cards</b>: "Frightened ends now · End it", or "Wisdom save to end Paralyzed · Roll the save", shown to that character's player and the DM.</li>
+        <li><b>+ Condition</b> on Battle: a Lasts menu when you start one. Concentration keeps its pill and now counts its rounds by itself.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <h2>Try a fight</h2>
+    <p class="muted">Round 2 of a fight in D&amp;D Beyond's VTT. Press <b>Next</b> as the DM would; askdnd hears each turn. Switch who's looking to see who gets which reminder.</p>
+    <div class="ddb">
+      <span class="tag">In D&amp;D Beyond's VTT (the DM)</span>
+      <div class="order" id="order"></div>
+      <button class="btn red" type="button" id="next">Next</button>
+    </div>
+    <div class="ctl-row">
+      <div class="ctl"><span>Looking as</span><div class="seg" data-seg="view"><button type="button" aria-pressed="true" data-v="cole">Cole's player</button><button type="button" aria-pressed="false" data-v="bigc">Big C's player</button><button type="button" aria-pressed="false" data-v="dm">The DM</button></div></div>
+      <div class="ctl"><span>Battle for</span><div class="seg" data-seg="page"><button type="button" aria-pressed="true" data-v="cole">Cole</button><button type="button" aria-pressed="false" data-v="bigc">Big C</button><button type="button" aria-pressed="false" data-v="trah">Trah</button></div></div>
+      <button class="btn" type="button" id="reset">Start over</button>
+    </div>
+    <div class="stage">
+      <div class="s-mb"><b>The Adventure Begins</b><span>Story</span><span>Campaign</span><span id="mb-who" style="margin-left:auto;color:var(--strong)">Cole</span></div>
+      <div class="s-body">
+        <div class="head"><span class="av"></span><div style="display:grid;gap:3px"><div class="name-row"><h3 id="pname">Cole</h3><span class="badges" id="badges"></span></div><span class="muted small" id="psub"></span></div></div>
+        <div class="tiles"><div class="tile"><span>Hit points</span><b id="hp">51 / 51</b></div><div class="tile"><span>Armor class</span><b id="ac">16</b></div><div class="tile"><span>Speed</span><b id="spd">45 ft</b></div><div class="tile"><span>Initiative</span><b id="init">+3</b></div></div>
+        <div class="turnline" id="turnline"></div>
+        <div class="status" id="status"></div>
+      </div>
+      <div class="cards" id="cards" aria-live="polite"></div>
+    </div>
+    <p class="small muted">The amber dot on a badge and the amber pill mean it ends or asks for a save on this turn. Nothing ends on its own: <b>End it</b> ends it (on D&amp;D Beyond too, through the bridge), <b>Keep</b> keeps it, for when the DM rules otherwise.</p>
+  </section>
+
+  <section>
+    <h2>Starting one, with how long it lasts</h2>
+    <div class="grid2">
+      <div class="box">
+        <span class="label">+ Condition on Battle</span>
+        <div class="form">
+          <label class="field"><span>Condition</span><select id="f-cond"><option>Frightened</option><option>Paralyzed</option><option>Poisoned</option><option>Prone</option></select></label>
+          <label class="field"><span>From</span><select id="f-from"><option>Enemy 1</option><option>Big C</option><option>Trah</option><option>No Name</option><option>Not said</option></select></label>
+          <label class="field"><span>Lasts</span>
+            <select id="f-lasts">
+              <option value="removed">Until it's ended</option>
+              <option value="endnext">Until the end of a turn: …</option>
+              <option value="startnext">Until the start of a turn: …</option>
+              <option value="rounds">Rounds</option>
+              <option value="minute">1 minute (10 rounds)</option>
+              <option value="time">Longer: minutes or hours</option>
+              <option value="save">Until a save</option>
+            </select></label>
+          <div class="row" id="f-more"></div>
+          <p class="preview" id="f-preview"></p>
+        </div>
+      </div>
+      <div class="box">
+        <span class="label">The kinds, in the 2024 rules' words</span>
+        <ul class="kinds">
+          <li><b>Until it's ended</b> <span>(Prone, Grappled): no reminder; End it when it's over.</span></li>
+          <li><b>Until the start or end of someone's turn</b> <span>("until the end of your next turn"): pick whose. Most say yours or the creature that caused it.</span></li>
+          <li><b>Rounds, or 1 minute</b> <span>(10 rounds): counted from the turn it started, round by round.</span></li>
+          <li><b>Minutes or hours</b> <span>(1 hour, 8 hours): shown as a time, not counted in rounds; askdnd reminds you after a rest.</span></li>
+          <li><b>Until a save</b> <span>(Hold Person): the ability and DC, and when it's rolled (the end of each of your turns, most often). It can also have a longest time, like 1 minute.</span></li>
+          <li><b>With Concentration</b> <span>: when the caster is concentrating, it ends when their Concentration does, and askdnd reminds you.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>When turns aren't heard</h2>
+    <div class="grid3">
+      <div class="box"><span class="label">Nobody has the VTT open</span><p class="small">The turn line says <b>Turns not heard</b>. Pills show what was set ("until the end of your next turn") but nothing is counted, and no reminder comes. Concentration keeps its <b>+1</b> for counting rounds by hand.</p></div>
+      <div class="box"><span class="label">The VTT has no fight running</span><p class="small">No round or turn, so the turn line is hidden. A condition started outside a fight keeps its time ("1 minute") as a plain label.</p></div>
+      <div class="box"><span class="label">Someone isn't in the order</span><p class="small">A character the DM didn't add to the VTT's initiative has no turn: "end of Trah's next turn" can't be timed, and the pill says so.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>For you to decide</h2>
+    <div class="grid3">
+      <div class="box ask"><h3>1 · When a duration runs out</h3>
+        <p class="small">A reminder card with <b>End it</b> and <b>Keep</b>, or askdnd ends it by itself (and says so)? A reminder keeps the DM ruling, and covers a DM who says it lasts a little longer. <b>My pick: the reminder.</b></p></div>
+      <div class="box ask"><h3>2 · Who sees a reminder</h3>
+        <p class="small">That character's player and the DM, or the player alone? The DM watches every creature's conditions, so the DM seeing them helps them run the fight. A save is rolled by the player either way. <b>My pick: the player and the DM.</b></p></div>
+      <div class="box ask"><h3>3 · Whose turn, shown where</h3>
+        <p class="small">Only on Battle, above the pills, or in the menu bar on every page too? The menu bar is already full. Battle is where you are in a fight. <b>My pick: Battle only.</b></p></div>
+    </div>
+  </section>
+
+  <footer>Source: docs/mockups/turn-conditions.html in the askdnd repo. Characters are the table's (Cole, Big C, No Name, Trah); Enemy 1 is the DM's. The icons are askdnd's own (app/templates/_cond_icons.html); the rules lines are summaries in askdnd's words.</footer>
+</div>
+
+<script>
+(function () {
+  const ICON = {
+    Concentration: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/>',
+    Frightened: '<circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1.6"/><circle cx="15" cy="10" r="1.6"/><ellipse cx="12" cy="16" rx="2" ry="2.4"/>',
+    Paralyzed: '<path d="M13 2 5 14h6l-1 8 8-12h-6l1-8z"/>',
+    Prone: '<circle cx="5.5" cy="13.5" r="2.2"/><path d="M8.5 14.5h11M11.5 14.5l3-3.5M3 19h18"/>',
+    Poisoned: '<path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/><circle cx="10" cy="13.5" r="1"/><circle cx="14" cy="13.5" r="1"/><path d="M10 17h4"/>',
+  };
+  const svg = n => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON[n] + '</svg>';
+  const ORDER = [['cole', 'Cole', 18], ['enemy', 'Enemy 1', 15], ['bigc', 'Big C', 12], ['noname', 'No Name', 9], ['trah', 'Trah', 6]];
+  const NAME = Object.fromEntries(ORDER.map(([k, n]) => [k, n]));
+  const SHEET = { cole: ['Druid 6 / Monk 2', '51 / 51', 16, '45 ft', '+3'], bigc: ['Paladin 6 / Sorcerer 2', '72 / 72', 19, '30 ft', '+0'], trah: ['Ranger 8', '58 / 58', 15, '35 ft', '+4'] };
+  const fresh = () => ({ round: 2, turn: 0, conds: [
+    { who: 'cole', name: 'Concentration', spell: 'Moonbeam', kind: 'rounds', start: [1, 0], rounds: 10 },
+    { who: 'cole', name: 'Frightened', from: 'Enemy 1', kind: 'endnext', of: 'cole', start: [1, 1] },
+    { who: 'bigc', name: 'Paralyzed', from: 'Enemy 1', kind: 'save', ability: 'Wis', dc: 13, at: 'bigc', start: [1, 1] },
+    { who: 'trah', name: 'Poisoned', from: 'Enemy 1', kind: 'rounds', start: [1, 1], rounds: 10 },
+    { who: 'noname', name: 'Prone', kind: 'removed' },
+  ] });
+  let S = fresh(), view = 'cole', page = 'cole';
+  const idx = k => ORDER.findIndex(o => o[0] === k);
+  // Which of its rounds a "rounds" duration is in (it started on a turn, and ends as that turn comes round again,
+  // rounds later), and how many are left counting this one
+  const inRound = c => S.round - c.start[0] + (S.turn >= c.start[1] ? 1 : 0);
+  const left = c => c.rounds - inRound(c) + 1;
+  // Does it end or ask for a save at the end of the turn now running?
+  function endsNow(c) {
+    const cur = ORDER[S.turn][0];
+    if (c.due) return false;
+    if (c.kind === 'endnext') return cur === c.of && (S.round > c.start[0] || idx(c.of) > c.start[1]);
+    if (c.kind === 'save') return cur === c.at;
+    if (c.kind === 'rounds') return inRound(c) === c.rounds && S.turn === (c.start[1] + ORDER.length - 1) % ORDER.length;
+    return false;
+  }
+  const turnOf = k => (k === page ? 'your' : NAME[k] + '\u2019s');
+  function lasts(c) {
+    if (c.due) return 'was due to end' + (c.kind === 'endnext' ? ' at the end of ' + turnOf(c.of) + ' turn' : '') + ': End it or Keep';
+    if (c.kind === 'removed') return 'until it’s ended';
+    if (c.kind === 'endnext') return endsNow(c) ? 'ends at the end of this turn' : 'until the end of ' + (c.of === page ? 'your' : NAME[c.of] + '’s') + ' next turn';
+    if (c.kind === 'save') return c.ability + ' ' + c.dc + ' save at the end of ' + (c.at === page ? 'your' : NAME[c.at] + '’s') + ' turns';
+    if (c.kind === 'rounds') { const n = left(c); return c.name === 'Concentration' ? 'round ' + inRound(c) + ' of ' + c.rounds : (n <= 1 ? 'ends this round' : n + ' rounds left'); }
+    return '';
+  }
+  function draw() {
+    const cur = ORDER[S.turn][0];
+    document.getElementById('order').innerHTML = ORDER.map(([k, n, i]) => '<div class="who' + (k === cur ? ' now' : '') + '"><b>' + n + '</b><span>' + i + '</span></div>').join('');
+    const sh = SHEET[page];
+    document.getElementById('pname').textContent = NAME[page];
+    document.getElementById('psub').textContent = sh[0];
+    document.getElementById('hp').textContent = sh[1]; document.getElementById('ac').textContent = sh[2];
+    document.getElementById('spd').textContent = sh[3]; document.getElementById('init').textContent = sh[4];
+    document.getElementById('mb-who').textContent = view === 'dm' ? 'The DM' : NAME[view];
+    const mine = S.conds.filter(c => c.who === page);
+    document.getElementById('badges').innerHTML = mine.map(c => '<span class="badge' + (c.name === 'Concentration' ? ' conc' : '') + '" style="--c: var(--cond-' + c.name.toLowerCase() + ')" title="' + c.name + ': ' + lasts(c) + '">' + svg(c.name) + (endsNow(c) || c.due ? '<i class="end"></i>' : '') + '</span>').join('');
+    const nextUp = ORDER[(S.turn + 1) % ORDER.length][0];
+    document.getElementById('turnline').innerHTML = '<span class="rd">Round ' + S.round + '</span>' + (cur === page ? '<span class="mine">Your turn</span>' : '<span>' + NAME[cur] + '’s turn' + (nextUp === page ? ' · <span class="mine">you’re next</span>' : '') + '</span>') + '<span class="faint">· heard from D&amp;D Beyond</span>';
+    const pills = mine.map(c => '<span class="pill' + (endsNow(c) || c.due ? ' ending' : '') + '" style="--c: var(--cond-' + c.name.toLowerCase() + ')">' + svg(c.name) + '<b>' + (c.spell || c.name) + '</b><small>' + lasts(c) + (c.from ? ' · ' + c.from : '') + '</small></span>');
+    if (mine.length && mine[0].name === 'Concentration') pills.splice(1, 0, '<i class="sep"></i>');
+    document.getElementById('status').innerHTML = '<span class="lbl">Status</span>' + (pills.join('') || '<span class="muted small">No conditions</span>');
+  }
+  function card(k, ic, html, acts) {
+    const box = document.getElementById('cards'), el = document.createElement('div');
+    el.className = 'card k-' + k;
+    el.innerHTML = '<i class="ic">' + ic + '</i><div>' + html + '</div><button class="x" type="button" aria-label="Close">✕</button>' + (acts.length ? '<div class="acts">' + acts.map(a => '<button class="act' + (a.quiet ? ' quiet' : '') + '" type="button">' + a.label + '</button>').join('') + '</div>' : '');
+    el.querySelector('.x').onclick = () => el.remove();
+    el.querySelectorAll('.act').forEach((b, i) => b.onclick = () => { acts[i].run && acts[i].run(); el.remove(); draw(); });
+    box.append(el);
+    while (box.children.length > 3) box.firstElementChild.remove();
+  }
+  const sees = who => view === 'dm' || view === who;
+  // The DM pressed Next: what the turn that's ending brings, then the next turn starts
+  function next() {
+    for (const c of [...S.conds]) {
+      if (!endsNow(c)) continue;
+      if (c.kind !== 'save') c.due = true;  // (shown as due until someone ends or keeps it)
+      if (!sees(c.who)) continue;
+      const you = view === c.who, nm = NAME[c.who];
+      if (c.kind === 'save') card('warn', '!', (you ? '<b>End of your turn:</b> a ' : '<b>' + nm + '</b> makes a ') + c.ability + ' save, DC ' + c.dc + ', to end <b>' + c.name + '</b>.', you ? [{ label: 'Roll the save' }, { label: 'Saved: end it', quiet: true, run: () => { S.conds = S.conds.filter(x => x !== c); } }] : [{ label: 'End it', run: () => { S.conds = S.conds.filter(x => x !== c); } }]);
+      else {
+        const why = c.kind === 'endnext' ? 'it lasted until the end of ' + (you ? 'your' : nm + '\u2019s') + ' turn' : c.name === 'Concentration' ? 'its minute is up' : 'its ' + c.rounds + ' rounds are up';
+        card('info', 'i', '<b>' + (c.spell || c.name) + '</b> ends now' + (you ? '' : ' for <b>' + nm + '</b>') + ': ' + why + '.',
+          [{ label: 'End it', run: () => { S.conds = S.conds.filter(x => x !== c); } }, { label: 'Keep', quiet: true, run: () => { c.due = false; c.kind = 'removed'; } }]);
+      }
+    }
+    S.turn = (S.turn + 1) % ORDER.length;
+    if (S.turn === 0) S.round++;
+    draw();
+  }
+  document.getElementById('next').onclick = next;
+  document.getElementById('reset').onclick = () => { S = fresh(); document.getElementById('cards').innerHTML = ''; draw(); };
+  document.querySelectorAll('[data-seg]').forEach(seg => seg.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+    if (seg.dataset.seg === 'view') view = b.dataset.v; else page = b.dataset.v;
+    draw();
+  }));
+
+  // + Condition's Lasts menu
+  const more = document.getElementById('f-more'), prev = document.getElementById('f-preview');
+  const whose = '<select data-k="whose"><option>yours (Cole)</option><option>Enemy 1</option><option>Big C</option><option>Trah</option><option>No Name</option></select>';
+  const MORE = {
+    removed: '', endnext: whose, startnext: whose,
+    rounds: '<input type="number" data-k="n" value="3" min="1" max="100" style="width:80px" aria-label="Rounds"> <span class="muted">rounds</span>',
+    minute: '', time: '<input type="number" data-k="n" value="1" min="1" style="width:80px" aria-label="How long"> <select data-k="unit"><option>hour</option><option>minutes</option></select>',
+    save: '<select data-k="ab"><option>Wis</option><option>Con</option><option>Str</option><option>Dex</option><option>Int</option><option>Cha</option></select> <span class="muted">DC</span> <input type="number" data-k="dc" value="13" style="width:72px" aria-label="DC"> <span class="muted">at the end of</span> ' + whose.replace('data-k="whose"', 'data-k="at"'),
+  };
+  function say() {
+    const k = document.getElementById('f-lasts').value, g = n => (more.querySelector('[data-k=' + n + ']') || {}).value;
+    const c = document.getElementById('f-cond').value, from = document.getElementById('f-from').value;
+    const turn = w => (w || '').startsWith('yours') ? 'your' : w + '’s';
+    const txt = { removed: 'until it’s ended: no reminder', endnext: 'until the end of ' + turn(g('whose')) + ' next turn: a reminder then', startnext: 'until the start of ' + turn(g('whose')) + ' next turn: a reminder then',
+      rounds: g('n') + ' rounds: counted from now, a reminder when they’re up', minute: '1 minute: 10 rounds from now, a reminder when it’s up', time: g('n') + ' ' + g('unit') + ': shown as a time, a reminder after a rest',
+      save: 'until a ' + g('ab') + ' save, DC ' + g('dc') + ', at the end of each of ' + turn(g('at')) + ' turns: a reminder to roll it' }[k];
+    prev.innerHTML = 'Battle will say: <b>' + c + '</b> ' + txt + (from !== 'Not said' ? ' · from ' + from : '') + '.';
+  }
+  document.getElementById('f-lasts').addEventListener('change', e => { more.innerHTML = MORE[e.target.value]; say(); });
+  document.querySelector('.form').addEventListener('input', say);
+  document.getElementById('f-lasts').value = 'endnext'; more.innerHTML = MORE.endnext;
+  draw(); say();
+})();
+</script>
