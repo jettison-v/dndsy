@@ -77,6 +77,7 @@ header.top { display: grid; gap: 12px; max-width: 76ch; }
 .turnline { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font-size: .86rem; color: var(--muted); }
 .turnline .rd { font: 700 .72rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 5px 9px; }
 .turnline .mine { color: var(--amber); font-weight: 600; }
+.turnline .src { border: 1px solid var(--line); border-radius: 999px; padding: 0 6px; font-size: .78rem; color: var(--muted); }  /* the badge Table rolls gives what came from D&D Beyond (.roll-to) */
 .status { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
 .status .lbl { align-self: center; font: 700 .68rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-right: 2px; }
 .pill { display: inline-grid; grid-template-columns: auto auto; column-gap: 7px; align-items: center; border: 1px solid var(--c); border-radius: 999px; padding: 5px 12px 5px 9px; background: color-mix(in srgb, var(--c) 12%, var(--surface)); font-size: .84rem; }
@@ -277,7 +278,7 @@ footer { color: var(--faint); font-size: .84rem; border-top: 1px solid var(--lin
     const mine = S.conds.filter(c => c.who === page);
     document.getElementById('badges').innerHTML = mine.map(c => '<span class="badge' + (c.name === 'Concentration' ? ' conc' : '') + '" style="--c: var(--cond-' + c.name.toLowerCase() + ')" title="' + c.name + ': ' + lasts(c) + '">' + svg(c.name) + (endsNow(c) || c.due ? '<i class="end"></i>' : '') + '</span>').join('');
     const nextUp = ORDER[(S.turn + 1) % ORDER.length][0];
-    document.getElementById('turnline').innerHTML = '<span class="rd">Round ' + S.round + '</span>' + (cur === page ? '<span class="mine">Your turn</span>' : '<span>' + NAME[cur] + '’s turn' + (nextUp === page ? ' · <span class="mine">you’re next</span>' : '') + '</span>') + '<span class="faint">· heard from D&amp;D Beyond</span>';
+    document.getElementById('turnline').innerHTML = '<span class="rd">Round ' + S.round + '</span>' + (cur === page ? '<span class="mine">Your turn</span>' : '<span>' + NAME[cur] + '’s turn' + (nextUp === page ? ' · <span class="mine">you’re next</span>' : '') + '</span>') + '<span class="src">on D&amp;D Beyond</span>';
     const pills = mine.map(c => '<span class="pill' + (endsNow(c) || c.due ? ' ending' : '') + '" style="--c: var(--cond-' + c.name.toLowerCase() + ')">' + svg(c.name) + '<b>' + (c.spell || c.name) + '</b><small>' + lasts(c) + (c.from ? ' · ' + c.from : '') + '</small></span>');
     if (mine.length && mine[0].name === 'Concentration') pills.splice(1, 0, '<i class="sep"></i>');
     document.getElementById('status').innerHTML = '<span class="lbl">Status</span>' + (pills.join('') || '<span class="muted small">No conditions</span>');
