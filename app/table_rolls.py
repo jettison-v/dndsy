@@ -13,7 +13,7 @@ Who sees a roll (Brett, 2026-10-20):
 
 A roll can get follow-ups, stored as rows pointing at it (parent_id) and shown with it
 as one entry: the damage of an attack (doubled dice on a natural 20), a reroll (Heroic
-Inspiration, or Halfling Luck on a 1) and an added die (Bardic Inspiration). They share
+Inspiration, or Halfling Luck on a 1) and an added die (Bardic Inspiration, Guidance…, named as you say). They share
 the roll's character and audience. Only your newest roll offers them.
 
 Only a character's own player rolls for it here (like stars and notes); anyone else's
@@ -528,7 +528,7 @@ def _follow_up(request, db, campaign_id, me_id, dm, parent_id, action, label, ex
         if root.kind not in D20_KINDS or "bonus" in kids or "damage" in kids or die_size not in BONUS_DICE:
             return _error("That die can't be added now.", 409)
         n = die(die_size)
-        row = TableRoll(**base, kind="bonus", label=(" ".join(label.split())[:40] or "Bardic Inspiration"), mode="normal",
+        row = TableRoll(**base, kind="bonus", label=(" ".join(label.split())[:40] or "Added die"), mode="normal",
                         dice=[n], kept=None, modifier=0, total=n, formula=f"1d{die_size}", extras=[])
     else:
         return _error("That roll is missing something.")

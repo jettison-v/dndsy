@@ -1116,11 +1116,35 @@ def _dice(roll: dict) -> dict | None:
             "kept": kept, "modifier": constant, "total": total, "mode": mode, "crit": "critical" in how}
 
 
+JOIN_SECONDS = 120  # a D&D Beyond damage roll joins its attack when it comes this soon after
+
+
+def _attack_for(db: Session, campaign_id: int, row: dict) -> int | None:
+    """The attack a damage roll from D&D Beyond belongs to, or None. D&D Beyond rolls them separately and doesn't link
+    them (Brett, 2026-10-29: show them as one where that takes no guessing): the damage joins the attack only when it's
+    the same roller's very next roll (the same character, or the same monster), for the same attack by name, to the
+    same people, within two minutes, and the attack has no damage yet. Anything else stays a roll of its own."""
+    if row.get("kind") != "damage":
+        return None
+    who = (TableRoll.character_id == row["character_id"]) if row.get("character_id") else \
+        (TableRoll.character_id.is_(None) & (TableRoll.who == row.get("who", "")))
+    last = db.scalar(select(TableRoll).where(TableRoll.campaign_id == campaign_id, TableRoll.parent_id.is_(None), who)
+                     .order_by(TableRoll.id.desc()).limit(1))
+    if not last or last.kind != "attack" or not last.ddb_roll_id or last.label != row.get("label") or last.visibility != row.get("visibility"):
+        return None
+    if not last.created_at or (datetime.now(UTC) - last.created_at).total_seconds() > JOIN_SECONDS:
+        return None
+    if db.scalar(select(TableRoll.id).where(TableRoll.parent_id == last.id, TableRoll.kind == "damage")):
+        return None
+    return last.id
+
+
 def _record(db: Session, campaign_id: int | None, rid: str, row: dict) -> TableRoll | None:
-    """Into Table rolls once: a roll heard on two sheets (or twice on one) is the same roll (its id on D&D Beyond)."""
+    """Into Table rolls once: a roll heard on two sheets (or twice on one) is the same roll (its id on D&D Beyond). A
+    damage roll right after its attack joins it, as askdnd's own attack and damage show together (_attack_for)."""
     if not rid or not campaign_id or db.scalar(select(TableRoll.id).where(TableRoll.ddb_roll_id == rid)):
         return None
-    t = TableRoll(campaign_id=campaign_id, ddb_roll_id=rid, **row)
+    t = TableRoll(campaign_id=campaign_id, ddb_roll_id=rid, parent_id=_attack_for(db, campaign_id, row), **row)
     try:
         with db.begin_nested():
             db.add(t)
@@ -1132,8 +1156,8 @@ def _record(db: Session, campaign_id: int | None, rid: str, row: dict) -> TableR
 
 def heard_roll(db: Session, character: Character, user_id: int | None, roll: dict) -> TableRoll | None:
     """A roll made on the character's own D&D Beyond sheet (Brett, 2026-10-27: heard on the sheet, the way Beyond20 does)
-    goes into Table rolls, marked "on D&D Beyond", so a roll made there by habit still reaches the table. Only heard:
-    askdnd never writes its own rolls into D&D Beyond's game log. Each is recorded once (its id there); who sees it
+    goes into Table rolls, marked "on D&D Beyond", so a roll made there by habit still reaches the table (askdnd's own
+    rolls go the other way, app/gamelog.py, and aren't heard back). Each is recorded once (its id there); who sees it
     follows who it was rolled to on D&D Beyond (everyone, the DM, or just the roller)."""
     row = _dice(roll)
     if not row:

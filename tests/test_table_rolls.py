@@ -210,7 +210,7 @@ def test_an_added_die_counts_toward_the_total(table, db, monkeypatch):
     monkeypatch.setattr(tr, "die", lambda sides: {20: 8, 8: 5}[sides])
     first = post(table["player"], character=char(db, "Cole").id, kind="save", label="Con save", mod="2").json()["roll"]
     r = post(table["player"], parent=first["id"], action="bonus", die="8").json()["roll"]
-    assert r["total"] == 15 and r["bonus"] == {"label": "Bardic Inspiration", "formula": "1d8", "dice": [5], "total": 5}
+    assert r["total"] == 15 and r["bonus"] == {"label": "Added die", "formula": "1d8", "dice": [5], "total": 5}  # (not always Bardic Inspiration)
     assert post(table["player"], parent=first["id"], action="bonus", die="7").status_code == 409
 
 

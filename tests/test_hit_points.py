@@ -171,3 +171,22 @@ def test_a_characters_own_damage_offers_no_apply_but_healing_does(player, db, sh
     ids = dict(db.execute(select(TableRoll.ddb_roll_id, TableRoll.id).where(TableRoll.ddb_roll_id.like("own-%"))).all())
     html = player.get("/rolls").text
     assert f"hp?roll={ids['own-heal']}" in html and f"hp?roll={ids['own-dmg']}" not in html
+
+
+def test_d_and_d_beyonds_attack_and_its_damage_show_as_one(player, dm, db, sheet):
+    """Brett, 2026-10-29 (no guessing): D&D Beyond rolls an attack and its damage separately; the damage joins the attack
+    only as the same roller's very next roll for the same attack, to the same people, within two minutes, so Table
+    rolls shows them together (and Apply sits on the attack). Anything else stays a roll of its own."""
+    send = lambda **k: player.post("/bridge/others-roll/75423618", json=game_roll(**k))  # noqa: E731
+    send(rid="a-1", kind="to hit", total=19)
+    send(rid="d-1", kind="damage", total=17)
+    attack = db.scalar(select(TableRoll).where(TableRoll.ddb_roll_id == "a-1"))
+    assert db.scalar(select(TableRoll.parent_id).where(TableRoll.ddb_roll_id == "d-1")) == attack.id
+    assert f"/hp?roll={attack.id}" in player.get("/rolls").text  # Apply on the attack, with its damage
+    send(rid="a-2", kind="to hit", total=8)
+    send(rid="x-1", kind="check", action="Strength", total=12)  # something else in between
+    send(rid="d-2", kind="damage", total=11)
+    assert db.scalar(select(TableRoll.parent_id).where(TableRoll.ddb_roll_id == "d-2")) is None
+    send(rid="a-3", kind="to hit", action="Javelin", total=15)
+    send(rid="d-3", kind="damage", action="Greatclub", total=9)  # another attack's name
+    assert db.scalar(select(TableRoll.parent_id).where(TableRoll.ddb_roll_id == "d-3")) is None

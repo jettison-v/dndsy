@@ -16,8 +16,9 @@
         {% for m in materials %}<label class="dp-mat"><input type="radio" name="material" value="{{ m }}"{{ ' checked' if d.material == m }}>{{ m | capitalize }}</label>{% endfor %}
       </div>
       <label class="check"><input type="checkbox" name="by_type" value="1"{{ ' checked' if d.by_type }}> Damage dice take their damage type's look (fire, cold, radiant…)</label>
+      <label class="check"><input type="checkbox" data-dice-anim> Dice animation <span class="note">(this device)</span></label>
       <label class="check"><input type="checkbox" data-dice-sound> Dice sounds <span class="note">(this device)</span></label>
-      <p class="note">Everyone sees your rolls in your dice. Dice animation in the Table rolls sidebar turns the throwing off on a device.</p>
+      <p class="note">Everyone sees your rolls in your dice. Turning the animation off on a device shows the numbers without throwing dice.</p>
     </div>
     <div class="dp-preview" data-dice-preview><span class="note dp-loading">Loading the dice…</span></div>
   </div>
