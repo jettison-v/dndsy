@@ -64,7 +64,9 @@ def test_spellbook_and_concentration_for_the_player_only(db, cole, player, dm):
     assert status.index('data-cond="concentration"') < status.index('class="cond-sep"') and "conc-pill" not in r.text.split('id="spell-bar"')[1].split("</div>")[0]
     assert "--edge: var(--cond-concentration)" in r.text and 'data-name="Concentration"' in r.text
     assert json.loads(r.headers["HX-Trigger"])["characterChanged"] == {"character": cole.id}
-    assert "sb-conc-row" in player.get(f"/characters/{cole.id}/spellbook").text
+    book = player.get(f"/characters/{cole.id}/spellbook").text
+    assert "sb-conc-row" in book
+    assert "End Concentration on Moonbeam?" in book and ">Switch to " in book  # another spell asks first (Brett, 2026-10-29)
     player.post(f"/characters/{cole.id}/concentration/round", headers=HX)
     db.refresh(cole)
     assert cole.concentration["round"] == 2

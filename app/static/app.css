@@ -545,6 +545,10 @@ details.fold > summary { cursor: pointer; color: var(--muted); font-size: var(--
 .res-row span { white-space: nowrap; }
 /* Battle's numbers scroll with the page: stuck at the top they took over a third of a laptop's screen (Brett, 2026-10-27:
    not worth the complexity of shrinking them; docs/mockups/battle-header.html was the alternative) */
+/* Battle's blocks (the numbers, Wild Shape, the Status row, the spell bar, the action columns) stack with one gap and
+   no margins of their own, so each sits the same distance from the next (Brett, 2026-10-29; DESIGN.md › Space) */
+#battle-body { display: flex; flex-direction: column; gap: var(--sp-4); }
+#battle-body > * { margin-top: 0; margin-bottom: 0; }
 .battlebar { padding: 8px 0 12px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
 .sec-head { display: flex; align-items: baseline; gap: 10px; justify-content: space-between; flex-wrap: wrap; margin-bottom: 8px; }
 .switch { position: relative; width: 42px; height: 24px; border-radius: var(--r-pill); background: var(--surface-2); border: 1px solid var(--line); padding: 0; flex: none; }
@@ -1514,9 +1518,11 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .sb-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; }
 .sb-head .fm-title { flex: 1 1 220px; min-width: 0; }
 .sb-conc { margin-left: 12px; }
+.sb-switch .conc-box { left: auto; right: 0; text-align: left; }  /* (Concentrate sits at a row's right end) */
+.sb-switch > summary.btn { list-style: none; }
 /* Concentrating (Brett, 2026-10-28: lightly): a thin amber line under the Spell Book's header, and the spell's row edged */
 .sb-head.sb-concentrating { box-shadow: inset 0 -1px 0 var(--cond-concentration); }
-.ls-row.sb-conc-row { box-shadow: inset 3px 0 0 var(--cond-concentration); }
+.ls-row.sb-conc-row { box-shadow: inset 3px 0 0 var(--cond-concentration); background: color-mix(in srgb, var(--cond-concentration) 10%, transparent); }  /* edged and lightly tinted */
 /* The spell you're concentrating on (Brett, 2026-10-29, option B): its "Conc." tag becomes "◎ Concentration", filled in
    Concentration's color; the ◎ pulses once as the Spell Book opens, then stays still */
 .sb-conc-tag { display: inline-flex; align-items: center; gap: 4px; color: var(--bg); border-color: var(--c); background: var(--c); font-weight: 600; }
@@ -1687,10 +1693,9 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 [data-cond="concentration"] { --c: var(--cond-concentration); } [data-cond="enlarged"] { --c: var(--cond-enlarged); } [data-cond="flying"] { --c: var(--cond-flying); } [data-cond="water-breathing"] { --c: var(--cond-water-breathing); }
 .cond-icon { width: 16px; height: 16px; flex: none; color: var(--c); }
 /* Concentration first in the Status row, like a condition pill in its color, then a divider before the conditions */
-.cond-bar .conc-pill { border: 1px solid var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); height: var(--chip-h); box-sizing: border-box; padding: 0 4px 0 var(--sp-2); }
-.cond-bar .conc-pill .conc-save { padding: 2px 9px; }  /* (the same height as a condition chip) */
+.cond-bar .conc-pill { border: 1px solid var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); min-height: var(--chip-h); padding: 3px 5px 3px var(--sp-2); }
 .cond-bar .conc-pill > .cond-icon { margin-right: -4px; }
-.cond-sep { width: 1px; height: var(--chip-h); margin: 0 var(--sp-1); background: var(--line); }
+.cond-sep { align-self: stretch; width: 1px; margin: 2px var(--sp-1); background: var(--line); }
 .cond-sep:last-child { display: none; }
 .cond-pill:not(.cond-add) > summary { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); padding-left: var(--sp-2); }
 /* The edge: the newest three conditions' own colours around the page (--edge, from _cond_icons.html), blending into
@@ -1822,7 +1827,7 @@ body:has(.peek.open:not(.modal)) .cond-corner { right: calc(var(--panel-w) + 14p
 .ds-jump a { flex: none; white-space: nowrap; font-size: var(--fs-sm); color: var(--muted); text-decoration: none; padding: var(--sp-1) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-pill); }
 .ds-jump a:hover { color: var(--text); }
 .ds-jump a[aria-current="true"] { color: var(--text); border-color: var(--blue); background: var(--selected-bg); }  /* the section you're in */
-.ds-jump .ds-top { color: var(--muted); }
+.ds-jump .ds-top { color: var(--muted); position: sticky; left: 0; z-index: 1; background: var(--bg); box-shadow: 6px 0 8px var(--bg); }  /* stays at the row's start while it scrolls */
 .ds-page .section { scroll-margin-top: calc(var(--stick-top, 62px) + 64px); }  /* (below the sticky navigation) */
 .ds-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-1) var(--sp-3); margin: var(--sp-5) 0 var(--sp-2); font-size: var(--fs-sm); }
 .ds-meta:first-of-type { margin-top: var(--sp-3); }

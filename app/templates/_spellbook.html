@@ -51,10 +51,24 @@
           <span class="sb-actions">
             {% if e.recipe %}{{ spell_roll(c, e, ("Roll " ~ e.attack if e.attack else "Roll"), "btn small sb-roll", 0) }}{% endif %}
             {% if e.conc and can_pick and not (conc and conc.key == e.key) %}
+            {% if conc %}{# already concentrating: ask first, as ✕ does (Brett, 2026-10-29) #}
+            <details class="conc-pop sb-switch">
+              <summary class="btn small">Concentrate</summary>
+              <div class="conc-box warn" role="alertdialog" aria-label="End Concentration on {{ conc.spell }}?">
+                <b>End Concentration on {{ conc.spell }}?</b>
+                <span class="note">Concentrating on {{ e.name }} ends {{ conc.spell }} now. Its slot stays spent; spend {{ e.name }}'s on D&amp;D Beyond.</span>
+                <div class="row tight"><button type="button" class="btn small" data-close-details>Keep {{ conc.spell }}</button>
+                  <form class="inline" hx-post="/characters/{{ c.id }}/concentration" hx-target="#battle-body" hx-swap="outerHTML">
+                    <input type="hidden" name="key" value="{{ e.key }}"><input type="hidden" name="level" value="{{ e.level }}" data-sb-level>
+                    <button class="btn small danger">Switch to {{ e.name }}</button></form></div>
+              </div>
+            </details>
+            {% else %}
             <form class="inline" hx-post="/characters/{{ c.id }}/concentration" hx-target="#battle-body" hx-swap="outerHTML">
               <input type="hidden" name="key" value="{{ e.key }}"><input type="hidden" name="level" value="{{ e.level }}" data-sb-level>
-              <button class="btn small" title="Track Concentration on {{ e.name }} (spend the slot on D&amp;D Beyond){% if conc %}. It ends Concentration on {{ conc.spell }}{% endif %}">Concentrate</button>
+              <button class="btn small" title="Track Concentration on {{ e.name }} (spend the slot on D&amp;D Beyond)">Concentrate</button>
             </form>
+            {% endif %}
             {% endif %}
           </span>
         </div>

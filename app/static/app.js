@@ -310,7 +310,7 @@
 
   document.addEventListener('click', e => {
     const t = e.target.closest('[data-panel-url], [data-modal-url]');
-    if (!t || e.target.closest('button[hx-post], form, [data-roll]')) return;
+    if (!t || e.target.closest('button[hx-post], form, [data-roll], details')) return;  // (a pop-up in a row: the row stays put)
     e.preventDefault();
     if (t.dataset.modalUrl) openPanel(t.dataset.modalUrl, t, t.getAttribute('href'), ['large', 'full'].includes(t.dataset.modalSize) ? t.dataset.modalSize : true);
     else openPanel(t.dataset.panelUrl, t, t.getAttribute('href'));
@@ -2836,15 +2836,21 @@
   if (dsJump && window.IntersectionObserver) {
     const links = new Map([...dsJump.querySelectorAll('a[href^="#"]:not([data-ds-top])')].map(a => [a.getAttribute('href').slice(1), a]));
     const seen = new Set();
+    let lit = null;
     const light = () => {
-      const id = [...links.keys()].find(k => seen.has(k));  // the first section on screen, in page order
+      const atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+      // the first section on screen, in page order; the last one once you're at the bottom; else the one lit before
+      const id = (atEnd && [...links.keys()].pop()) || [...links.keys()].find(k => seen.has(k)) || lit;
+      if (id === lit) return;
+      lit = id;
       links.forEach((a, k) => a.setAttribute('aria-current', String(k === id)));
       const a = links.get(id);
-      if (a) dsJump.scrollTo({ left: a.offsetLeft - dsJump.clientWidth / 2 + a.offsetWidth / 2, behavior: 'smooth' });
+      if (a) dsJump.scrollTo({ left: Math.max(0, a.offsetLeft - dsJump.clientWidth / 2 + a.offsetWidth / 2), behavior: 'smooth' });
     };
     const io = new IntersectionObserver(es => { es.forEach(e => e.isIntersecting ? seen.add(e.target.id) : seen.delete(e.target.id)); light(); },
                                         { rootMargin: '-120px 0px -50% 0px' });
     links.forEach((a, id) => { const sec = document.getElementById(id); if (sec) io.observe(sec); });
+    window.addEventListener('scroll', () => { if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) light(); }, { passive: true });
     dsJump.querySelector('[data-ds-top]').addEventListener('click', e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
   }
   // A change for D&D Beyond was just made on this page, whichever it is (web.deliver_now): the extension makes it now,
