@@ -60,7 +60,7 @@ def rows_from(db) -> dict[str, dict]:
         roles.setdefault(m.user_id, {})[m.campaign_id] = m.role.value
     from app.dice import prefs
 
-    out: dict = {u.email.lower(): {"access": u.access, "roles": roles.get(u.id, {}), "current": u.current_campaign_id,
+    out: dict = {u.email.lower(): {"id": u.id, "access": u.access, "roles": roles.get(u.id, {}), "current": u.current_campaign_id,
                                    "dice": prefs(u)} for u in db.scalars(select(User))}
     from app.dice import tuning_from
 
@@ -134,6 +134,11 @@ def current_campaign(email: str | None = None, rows: dict | None = None) -> dict
 def current_campaign_id(email: str | None = None) -> int | None:
     c = current_campaign(email)
     return c["id"] if c else None
+
+
+def user_id(email: str | None) -> int | None:
+    """Their askdnd id (the page knows whose a live roll is: app.js "rolls at once")."""
+    return (_rows().get((email or "").lower()) or {}).get("id")
 
 
 def is_owner(email: str | None) -> bool:

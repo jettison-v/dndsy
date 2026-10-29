@@ -2162,8 +2162,29 @@
     since: () => (loaded ? lastId : -1),  // -1: the whole recent log
   };
   document.addEventListener('askdnd:live', e => {
+    if (e.detail.type === 'rolls' && gmOn()) earlyThrow(e.detail.roll);
     if ((e.detail.type === 'rolls' || e.detail.type === 'resync') && gmOn() && loaded && log && window.htmx) htmx.trigger(log, 'rolls:load');
   });
+  // A roll the whole table sees comes in the live message itself (app/table_rolls.py _live; Brett, 2026-10-29: every
+  // screen starts the dice at once, as D&D Beyond's do): someone else's dice start now, from it, and the row the page
+  // then fetches doesn't throw them again (its number shows as they land)
+  const thrownEarly = new Set();
+  function earlyThrow(t) {
+    if (!t || String(t.by) === document.body.dataset.me || !animate() || document.visibilityState !== 'visible') return;
+    if (thrownEarly.has(String(t.seq))) return;
+    thrownEarly.add(String(t.seq));
+    const li = document.createElement('li');
+    Object.assign(li.dataset, { id: t.id, seq: t.seq, dice: JSON.stringify(t.dice || {}),
+                                throw: JSON.stringify({ kind: t.kind, main: t.main, dmg: t.damage, bonus: t.bonus }) });
+    if (t.nat === 20 || t.nat === 1) li.classList.add('nat' + t.nat);
+    li.innerHTML = '<span class="roll-who"><b></b></span><span class="roll-what"></span><b class="roll-total"></b>' + (t.damage ? '<span class="roll-dmg-line"><b></b></span>' : '');
+    li.querySelector('.roll-who b').textContent = t.name;
+    li.querySelector('.roll-what').textContent = t.label + (t.kind === 'attack' ? ' to hit' : t.kind === 'damage' ? ' damage' : '');
+    li.querySelector('.roll-total').textContent = t.total;
+    if (t.damage) li.querySelector('.roll-dmg-line b').textContent = t.damage.total;
+    window.askdndThrowing.throwing(t.id);
+    throwOthers(li).catch(() => {}).finally(() => window.askdndThrowing.landed(t.id));
+  }
   // Only polled rows move `lastId` on: your own roll can land before someone else's earlier one.
   let before = 0;
   if (log) log.addEventListener('htmx:beforeSwap', e => {
@@ -2180,7 +2201,8 @@
     [...log.querySelectorAll('.roll-item[data-seq]')].reverse().forEach(li => {
       if (+li.dataset.seq > before) fresh.add(li.dataset.person);
       if (+li.dataset.seq > before && !li.dataset.mine) {
-        if (animate() && !li.classList.contains('hidden-roll')) { window.askdndThrowing.throwing(li.dataset.id); throwOthers(li).catch(() => notice(li)).finally(() => window.askdndThrowing.landed(li.dataset.id)); }  // thrown dice (Brett, 2026-10-23)
+        if (thrownEarly.delete(li.dataset.seq)) {}  // (its dice started from the live message)
+        else if (animate() && !li.classList.contains('hidden-roll')) { window.askdndThrowing.throwing(li.dataset.id); throwOthers(li).catch(() => notice(li)).finally(() => window.askdndThrowing.landed(li.dataset.id)); }  // thrown dice (Brett, 2026-10-23)
         else notice(li);
         li.classList.remove('fresh'); void li.offsetWidth; li.classList.add('fresh');
       }
@@ -2408,6 +2430,50 @@
     const k = e.target.closest('[data-close-details]');
     if (k) { const d = k.closest('details'); if (d) d.open = false; }
   });
+})();
+
+// Story search (Brett, 2026-10-29): as you type, All sessions shows only the sessions whose recap, key moments or DM's
+// notes hold every word, opened, with the words marked; clearing the box shows them all again, as they were
+(function () {
+  const box = document.querySelector('[data-story-search]');
+  if (!box) return;
+  const pane = document.getElementById('t-sessions'), found = pane.querySelector('[data-story-found]'), sub = pane.querySelector('[data-story-sub]');
+  const sessions = [...pane.querySelectorAll('details.section')], wasOpen = new Map(sessions.map(d => [d, d.open]));
+  const unmark = () => pane.querySelectorAll('mark.story-hit').forEach(m => { const p = m.parentNode; m.replaceWith(m.textContent); p.normalize(); });
+  function mark(el, words) {
+    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT), nodes = [];
+    while (walk.nextNode()) if (walk.currentNode.nodeValue.trim() && !walk.currentNode.parentNode.closest('summary, form, .suggest')) nodes.push(walk.currentNode);
+    const re = new RegExp('(' + words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'gi');
+    nodes.forEach(n => {
+      if (!re.test(n.nodeValue)) return;
+      re.lastIndex = 0;
+      const frag = document.createDocumentFragment();
+      n.nodeValue.split(re).forEach((part, i) => frag.append(i % 2 ? Object.assign(document.createElement('mark'), { className: 'story-hit', textContent: part }) : part));
+      n.replaceWith(frag);
+    });
+  }
+  let timer = null;
+  box.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 150); });
+  function run() {
+    unmark();
+    const words = box.value.trim().toLowerCase().split(/\s+/).filter(w => w.length > 1);
+    if (!words.length) {
+      sessions.forEach(d => { d.hidden = false; d.open = wasOpen.get(d); });
+      found.hidden = true; sub.hidden = false;
+      return;
+    }
+    const tab = document.querySelector('[role=tab][data-tab="t-sessions"]');
+    if (tab && tab.getAttribute('aria-selected') !== 'true') tab.click();
+    let n = 0;
+    sessions.forEach(d => {
+      const text = d.querySelector('.session-body').textContent.toLowerCase() + ' ' + d.querySelector('summary').textContent.toLowerCase();
+      const hit = words.every(w => text.includes(w));
+      d.hidden = !hit; d.open = hit;
+      if (hit) { n++; mark(d.querySelector('.session-body'), words); }
+    });
+    sub.hidden = true; found.hidden = false;
+    found.textContent = n ? n + ' session' + (n === 1 ? '' : 's') + ' mention' + (n === 1 ? 's' : '') + ' “' + box.value.trim() + '”' : 'No session mentions “' + box.value.trim() + '”';
+  }
 })();
 
 // Story and the Campaign page's Map tab (menu bar Option B). A [data-goto-tab] link shows that tab on this page

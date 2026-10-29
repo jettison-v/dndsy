@@ -403,3 +403,21 @@ def test_one_roll_for_all_darts_on_the_server(table, db, monkeypatch):
     r = post(table["player"], character=cole.id, kind="damage", label="Magic Missile", mode="normal", to="table",
              part="1d4+1 force", count=3, each="dart", once=1)
     assert [p["total"] for p in r.json()["roll"]["main"]["parts"]] == [4, 4, 4] and r.json()["roll"]["total"] == 12
+
+
+def test_a_table_roll_carries_its_dice_in_the_live_message_and_a_private_one_doesnt(table, db, monkeypatch):
+    """Brett, 2026-10-29: every screen starts the dice at once (as D&D Beyond's do), so a roll the whole table sees
+    travels in the live message itself; a DM-only or private roll still says only that the rolls changed (A standing
+    rule kept: who sees what is the server's to decide, so nothing private is in a message to every page)."""
+    from app import realtime
+
+    sent = []
+    monkeypatch.setattr(realtime, "publish", lambda campaign_id, kind, **data: sent.append((kind, data)))
+    cole = char(db, "Cole")
+    post(table["player"], character=cole.id, kind="save", label="Con save", mod="2")
+    kind, data = sent[-1]
+    assert kind == "rolls" and data["roll"]["label"] == "Con save" and data["roll"]["by"] and data["roll"]["main"]["dice"]
+    post(table["player"], character=cole.id, kind="save", label="Wis save", mod="1", to="dm")
+    assert sent[-1] == ("rolls", {})
+    post(table["player"], character=cole.id, kind="check", label="Stealth", mod="3", to="self")
+    assert sent[-1] == ("rolls", {})

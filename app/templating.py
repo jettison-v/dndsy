@@ -59,7 +59,8 @@ def _page_context(request: Request) -> dict:
             "switch_path": switch_path(request.url.path),
             "vtt_on": lambda key: vtt.on(here, key),  # the VTT switch (app/vtt.py)
             "game_mode": game_mode,
-            "my_dice": _my_dice, "dice_tuning": _dice_tuning}  # your dice and everyone's tuning (app/dice.py), for thrown rolls
+            "my_dice": _my_dice, "dice_tuning": _dice_tuning,
+            "my_id": (lambda: access.user_id(user.get("email"))) if user else (lambda: None)}  # your dice and everyone's tuning (app/dice.py), for thrown rolls
 
 
 # Pages that make sense in any campaign: switching campaigns keeps you on them (else you land on Story)
