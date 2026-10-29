@@ -215,8 +215,19 @@ def _give_up(db: Session) -> None:
 
 def active(db: Session) -> None:
     """Someone opened or used an askdnd page or a D&D Beyond sheet (or made a change, or ran the check): awake now,
-    and for the idle timer more."""
-    row, w = _wake_row(db)
+    and for the idle timer more. Never waited for (Sentry ASKDND-V2-4, 2026-10-29: ending a condition marked this
+    first and its character second, while the extension's check-in did the reverse, and the two deadlocked): a request
+    finding another one marking it right now skips it, as that one is saying the same thing, and one marked in the last
+    15 seconds isn't marked again (the timers run in minutes)."""
+    if time.time() - _wake_row(db)[1].get("last", 0) < 15:
+        return
+    row = db.scalars(select(ToolSetting).where(ToolSetting.key == AWAKE_KEY)
+                     .with_for_update(skip_locked=True).execution_options(populate_existing=True)).first()
+    if row is None:
+        if db.get(ToolSetting, AWAKE_KEY) is not None:
+            return  # (being marked by another request now)
+        row = _wake_row(db)[0]
+    w = _wake_row(db)[1]
     w["last"] = time.time()
     row.value = json.dumps(w)
 

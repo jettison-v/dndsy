@@ -842,3 +842,37 @@ def test_if_d_and_d_beyond_changed_meanwhile_askdnd_doesnt_guess_and_never_asks_
     st = player.post("/bridge/heard/75423618").json()
     assert st["changes"][0]["state"] == "not_yet" and "D&D Beyond changed since" in st["changes"][0]["error"]
     assert st["to_make"] == ["Hit points 34 (D&D Beyond has 30)"]  # now one for a person: the end result it wanted, not 3 more off
+
+
+def test_marking_askdnd_awake_never_waits_for_another_request(db_engine):
+    """Sentry ASKDND-V2-4 (2026-10-29): ending a condition and the extension's check-in deadlocked over the bridge's
+    awake timer, each holding what the other wanted. A request that finds another one marking it right now skips it."""
+    import time
+
+    from sqlalchemy import delete, text
+    from sqlalchemy.orm import Session
+
+    from app.models import ToolSetting
+
+    with Session(db_engine) as setup:
+        setup.merge(ToolSetting(key=ddb_bridge.AWAKE_KEY, value='{"last": 0}'))
+        setup.commit()
+    try:
+        with Session(db_engine) as holder, Session(db_engine) as other:
+            holder.execute(select(ToolSetting).where(ToolSetting.key == ddb_bridge.AWAKE_KEY).with_for_update())  # marking it now
+            other.execute(text("SET lock_timeout = '2s'"))  # (waiting would fail here instead of hanging)
+            start = time.monotonic()
+            ddb_bridge.active(other)
+            other.commit()
+            assert time.monotonic() - start < 1
+            holder.rollback()
+        with Session(db_engine) as s:  # nobody else marking it: it's marked
+            ddb_bridge.active(s)
+            s.commit()
+            assert ddb_bridge._wake_row(s)[1]["last"] > time.time() - 5
+            ddb_bridge.active(s)  # again at once: not written again (15 seconds)
+            assert not s.dirty
+    finally:
+        with Session(db_engine) as s:
+            s.execute(delete(ToolSetting).where(ToolSetting.key == ddb_bridge.AWAKE_KEY))
+            s.commit()
