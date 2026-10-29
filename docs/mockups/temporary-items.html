@@ -1,0 +1,480 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Corner Cards and Badges</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Brett, 2026-10-29: one strategy for everything that pops up. Anything you read and dismiss becomes a corner card
+   (option B on Manage › Design system), bottom right; conditions move from Battle's corner to small badges after the
+   character's name on every character page; Battle keeps its edge; the dice stay where they are. One page: where
+   you'll find it, what moves and what stays, a live Cole page to try both, then what's for Brett to decide. askdnd is
+   dark only, so this page is too: its colours are askdnd's tokens, set explicitly. */
+:root { --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --chrome: #0f1113; --line: #34383e; --line-soft: #2c3036;
+  --line-strong: #4a4f57; --text: #ebe7df; --strong: #fff; --muted: #a29d93; --faint: #6f6b64; --shadow: rgba(0, 0, 0, .45);
+  --red: #d64545; --red-text: #f08a8a; --red-soft: rgba(214, 69, 69, .14); --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15); --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .15);
+  --die-gold-hi: #f7d98f; --die-gold-mid: #d9a441; --die-gold-ink: #2a1a05;
+  --cond-concentration: #7ea6e0; --cond-poisoned: #86c95b; --cond-prone: #c9a47b; --cond-frightened: #a983e6; --cond-exhaustion: #d08a4c;
+  --cond-invisible: #f4f6f9; --cond-grappled: #e59a52;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.6 var(--sans); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 36px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 34px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.4rem/1.25 var(--serif); }
+h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; }
+section { display: grid; gap: 14px; min-width: 0; }
+.eyebrow { font: 700 .78rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red-text); }
+header.top { display: grid; gap: 12px; max-width: 76ch; }
+.lead { font-size: 1.05rem; }
+.muted { color: var(--muted); }
+.small { font-size: .86rem; }
+b { color: var(--strong); font-weight: 600; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.box.ask { border-color: var(--red); }
+.box ol, .box ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+
+/* Where you'll find it: the page drawn small */
+.where { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 22px; align-items: center; }
+@media (max-width: 800px) { .where { grid-template-columns: 1fr; } }
+.minis { display: flex; gap: 14px; align-items: end; min-width: 0; }
+.mini { position: relative; flex: 1; aspect-ratio: 16 / 10; max-width: 100%; border-radius: 10px; background: #101214; border: 1px solid var(--line); overflow: hidden;
+  box-shadow: inset 0 0 0 2px rgba(126, 166, 224, .45), inset 0 0 30px rgba(134, 201, 91, .16); }
+.mini.ph { flex: 0 0 26%; aspect-ratio: 9 / 18; box-shadow: none; }
+.mini .mb { position: absolute; inset: 0 0 auto; height: 8%; background: var(--chrome); border-bottom: 2px solid var(--red); }
+.mini.ph .mb { height: 5%; }
+.mini .rs { position: absolute; left: 0; top: 8%; bottom: 0; width: 18%; background: #121417; border-right: 1px solid var(--line); }
+.mini .hd { position: absolute; left: 22%; top: 13%; width: 38%; height: 9%; display: flex; gap: 5%; align-items: center; }
+.mini .hd .av { width: 15%; aspect-ratio: 1; border-radius: 50%; background: var(--surface-3); }
+.mini .hd .nm { width: 36%; height: 46%; border-radius: 3px; background: var(--text); opacity: .75; }
+.mini .hd .bd { display: flex; gap: 3px; }
+.mini .hd .bd i { width: 9px; height: 9px; border-radius: 3px; border: 1.5px solid var(--c); background: color-mix(in srgb, var(--c) 25%, transparent); }
+.mini.ph .hd { left: 6%; width: 88%; top: 8%; }
+.mini.ph .hd .av { width: 18%; }
+.mini .bodyb { position: absolute; left: 22%; right: 4%; top: 27%; bottom: 8%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 3%; }
+.mini .bodyb i { background: var(--surface); border-radius: 4px; }
+.mini.ph .bodyb { left: 6%; right: 6%; top: 20%; bottom: 24%; grid-template-columns: 1fr; }
+.mini .cards { position: absolute; right: 3%; bottom: 5%; display: grid; gap: 4px; justify-items: end; }
+.mini .cards i { width: 64px; height: 13px; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--line-strong); border-left: 3px solid var(--c); }
+.mini.ph .cards { right: 6%; left: 6%; bottom: 15%; }
+.mini.ph .cards i { width: 100%; }
+.mini .tray { position: absolute; left: 21%; bottom: 5%; width: 18%; height: 15%; border-radius: 5px; border: 1px dashed var(--faint); }
+.mini .bb { position: absolute; inset: auto 0 0; height: 8%; background: var(--chrome); border-top: 1px solid var(--line); }
+.mini .rsbar { position: absolute; inset: auto 0 8%; height: 5%; background: #121417; border-top: 1px solid var(--line); }
+.mini .tag { position: absolute; font: 600 .66rem/1.2 var(--sans); color: var(--strong); background: rgba(0, 0, 0, .7); border-radius: 5px; padding: 2px 6px; white-space: nowrap; }
+@media (max-width: 560px) { .mini.ph { display: none; } .mini .tag { font-size: .58rem; } }
+.where ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+
+/* What moves, what stays */
+.moves { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); }
+.mv { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.3fr); gap: 4px 18px; padding: 11px 16px; border-top: 1px solid var(--line-soft); align-items: start; }
+.mv:first-child { border-top: 0; font: 700 .74rem/1.3 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.mv > :first-child { color: var(--strong); font-weight: 600; }
+.mv:first-child > :first-child { color: var(--muted); font-weight: 700; }
+.mv .to { color: var(--text); }
+.mv.moved .to { color: var(--amber); }
+.mv .was { color: var(--muted); }
+@media (max-width: 640px) { .mv { grid-template-columns: 1fr; } .mv:first-child { display: none; } .mv .was::before { content: "Now: "; color: var(--faint); } }
+
+/* Try it: controls */
+.controls { display: grid; gap: 12px; }
+.ctl-row { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: end; }
+.ctl { display: grid; gap: 6px; min-width: 0; }
+.ctl > span { font-size: .8rem; color: var(--muted); }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.seg button { font: 500 .86rem/1 var(--sans); color: var(--text); background: var(--surface-2); border: 0; padding: 9px 13px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed=true] { background: var(--blue-soft); color: var(--blue); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 500 .84rem/1 var(--sans); color: var(--text); background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 7px 11px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.chip[aria-pressed=true] { border-color: var(--c); color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface-2)); }
+.chip svg { width: 15px; height: 15px; }
+.btn { font: 500 .84rem/1 var(--sans); color: var(--text); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 8px; padding: 8px 11px; cursor: pointer; }
+.btn:hover { border-color: var(--muted); }
+
+/* The stage: a character page, desktop or phone */
+.stage-wrap { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; }
+.stage { position: relative; width: 100%; height: 640px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); overflow: hidden; container-type: inline-size; }
+.stage.phone { width: 375px; max-width: 100%; height: 720px; border-radius: 28px; border-width: 6px; border-color: #2a2d31; }
+.s-mb { height: 44px; background: var(--chrome); border-bottom: 2px solid var(--red); display: flex; align-items: center; gap: 18px; padding: 0 16px; font-size: .84rem; color: var(--muted); white-space: nowrap; overflow: hidden; }
+.s-mb b { font: 600 .95rem/1 var(--serif); }
+.s-mb .me { margin-left: auto; color: var(--strong); display: inline-flex; gap: 6px; align-items: center; }
+.s-mb .me i { width: 6px; height: 6px; border-radius: 50%; background: var(--c); }
+.phone .s-mb .links { display: none; }
+.s-rolls { position: absolute; left: 0; top: 46px; bottom: 0; width: 220px; background: #121417; border-right: 1px solid var(--line); padding: 12px; display: grid; align-content: start; gap: 8px; font-size: .8rem; }
+.s-rolls .h { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.s-rolls .r { background: var(--surface); border-radius: 8px; padding: 7px 9px; display: grid; gap: 1px; }
+.s-rolls .r b { font-size: .82rem; }
+.s-rolls .r span { color: var(--muted); }
+.s-rolls .r em { font-style: normal; font-weight: 700; color: var(--strong); font-size: 1rem; }
+.phone .s-rolls { top: auto; bottom: 56px; left: 0; right: 0; width: auto; height: 40px; border-right: 0; border-top: 1px solid var(--line); padding: 0 14px; display: flex; align-items: center; gap: 10px; }
+.phone .s-rolls .r, .phone .s-rolls .foot { display: none; }
+.s-rolls .heads { display: none; }
+.phone .s-rolls .heads { display: flex; gap: 6px; margin-left: auto; }
+.phone .s-rolls .heads i { width: 22px; height: 22px; border-radius: 50%; background: var(--surface-3); }
+.s-main { position: absolute; left: 220px; right: 0; top: 46px; bottom: 0; padding: 18px 22px; overflow: hidden; display: grid; align-content: start; gap: 16px; }
+.phone .s-main { left: 0; bottom: 96px; padding: 14px 14px; }
+.s-bb { display: none; }
+.phone .s-bb { display: flex; position: absolute; inset: auto 0 0; height: 56px; background: var(--chrome); border-top: 1px solid var(--line); justify-content: space-around; align-items: center; font-size: .72rem; color: var(--muted); }
+.phone .s-bb b { color: var(--strong); font-weight: 600; }
+
+.head { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.av { width: 52px; height: 52px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #5d6b55, #2b3328); border: 2px solid var(--line-strong); flex: none; }
+.phone .av { width: 44px; height: 44px; }
+.titles { display: grid; gap: 3px; min-width: 0; flex: 1; }
+.name-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.name-row h3 { font: 600 1.7rem/1.1 var(--serif); }
+.phone .name-row h3 { font-size: 1.4rem; }
+.sub { color: var(--muted); font-size: .84rem; }
+.modes { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; font-size: .84rem; }
+.modes button { background: transparent; border: 0; color: var(--muted); padding: 7px 14px; cursor: pointer; font: inherit; }
+.modes button[aria-current=page] { background: var(--surface-2); color: var(--strong); }
+.phone .modes { width: 100%; justify-content: stretch; }
+.phone .modes button { flex: 1; }
+
+/* The badges after the name: askdnd's icons in each one's colour; hover or tap for what it does */
+.badges { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; position: relative; }
+.badge { position: relative; width: 26px; height: 26px; border-radius: 7px; border: 1.5px solid var(--c); background: color-mix(in srgb, var(--c) 16%, var(--bg)); color: var(--c); display: grid; place-items: center; padding: 0; cursor: pointer; }
+.badge svg { width: 16px; height: 16px; }
+.badge .lv { position: absolute; right: -5px; bottom: -5px; min-width: 14px; height: 14px; border-radius: 7px; background: var(--c); color: #15171a; font: 700 .62rem/14px var(--sans); text-align: center; padding: 0 3px; }
+.badge.conc { border-radius: 50%; }
+.badge-more { font: 600 .74rem/1 var(--sans); color: var(--muted); padding: 0 4px; }
+.labels .badge { width: auto; padding: 0 8px 0 6px; grid-auto-flow: column; gap: 5px; font: 600 .74rem/1 var(--sans); border-radius: 999px; }
+.tip { position: absolute; top: calc(100% + 8px); left: 0; z-index: 20; width: 270px; max-width: calc(100cqw - 28px); background: var(--surface); border: 1px solid var(--c); border-radius: 10px; padding: 10px 12px; color: var(--text); font-size: .84rem; line-height: 1.45; box-shadow: 0 10px 26px var(--shadow); text-align: left; }
+.tip b { display: block; margin-bottom: 2px; color: var(--c); }
+.tip .src { display: block; margin-top: 5px; color: var(--faint); font-size: .76rem; }
+
+/* Battle's edge stays: the newest three conditions' colours, Concentration always one */
+.halo { position: absolute; inset: 46px 0 0 220px; pointer-events: none; border-radius: 0 0 10px 0; box-shadow: inset 0 0 0 2px var(--e1), inset 0 0 26px color-mix(in srgb, var(--e2) 30%, transparent), inset 0 0 60px color-mix(in srgb, var(--e3) 14%, transparent); opacity: .75; transition: box-shadow .3s; }
+.phone .halo { inset: 46px 0 96px 0; border-radius: 0; }
+
+/* The page's body, drawn simply per mode */
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.phone .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; display: grid; gap: 1px; }
+.tile span { font: 700 .68rem/1.2 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.tile b { font-size: 1.35rem; }
+.status { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: .8rem; }
+.status .lbl { font: 700 .68rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+.pill { border: 1px solid var(--c); color: var(--c); border-radius: 999px; padding: 4px 10px; background: color-mix(in srgb, var(--c) 10%, transparent); }
+.status .sep { width: 1px; height: 18px; background: var(--line-strong); }
+.cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.phone .cols { grid-template-columns: 1fr; }
+.col { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; align-content: start; font-size: .84rem; }
+.col h4 { margin: 0; font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--red-text); }
+.col .row { display: flex; justify-content: space-between; gap: 8px; color: var(--text); }
+.col .row span:last-child { color: var(--amber); }
+.phone .col:nth-child(n+2) { display: none; }
+
+/* Others' dice: the tray stays where it is */
+.tray { position: absolute; left: 236px; bottom: 14px; width: 170px; height: 92px; border: 1px dashed var(--line-strong); border-radius: 10px; display: grid; place-items: center; color: var(--faint); font-size: .74rem; text-align: center; padding: 8px; pointer-events: none; }
+.phone .tray { display: none; }
+
+/* The corner cards (option B): bottom right, newest at the bottom, three at most; an icon and colour by kind, ✕, one button */
+.cards { position: absolute; right: 14px; bottom: 14px; z-index: 15; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; width: min(320px, calc(100% - 28px)); pointer-events: none; }
+.phone .cards { right: 10px; left: 10px; width: auto; bottom: 106px; align-items: stretch; }
+.card { pointer-events: auto; width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 10px; align-items: center; background: var(--surface-2); border: 1px solid var(--line-strong); border-left: 3px solid var(--k); border-radius: 10px; padding: 9px 8px 9px 11px; box-shadow: 0 10px 26px var(--shadow); font-size: .86rem; line-height: 1.4;
+  animation: card-in .18s ease-out; }
+.card.out { opacity: 0; transform: translateY(6px); transition: opacity .25s, transform .25s; }
+@keyframes card-in { from { opacity: 0; transform: translateY(8px); } }
+@media (prefers-reduced-motion: reduce) { .card { animation: none; } }
+.card .ic { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--k) 18%, transparent); color: var(--k); font: 700 .8rem/1 var(--sans); }
+.card .ic.die { border-radius: 4px; background: linear-gradient(145deg, var(--die-gold-hi), var(--die-gold-mid)); color: var(--die-gold-ink); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+.card .tx { min-width: 0; }
+.card .tx .m { color: var(--muted); }
+.card .act { font: 600 .8rem/1 var(--sans); color: var(--k); background: transparent; border: 1px solid color-mix(in srgb, var(--k) 55%, transparent); border-radius: 7px; padding: 6px 9px; cursor: pointer; white-space: nowrap; }
+.card .x { width: 26px; height: 26px; border: 0; background: transparent; color: var(--muted); border-radius: 6px; cursor: pointer; font-size: .9rem; }
+.card .x:hover { background: var(--surface-3); color: var(--strong); }
+.k-ok { --k: var(--green); } .k-info { --k: var(--blue); } .k-warn { --k: var(--amber); } .k-err { --k: var(--red-text); } .k-roll { --k: var(--die-gold-mid); }
+
+.kinds { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+.kind { display: grid; grid-template-columns: auto minmax(0, 1fr); align-content: start; gap: 2px 10px; background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--k); border-radius: 10px; padding: 11px 13px; font-size: .86rem; }
+.kind .ic { grid-row: span 2; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--k) 18%, transparent); color: var(--k); font: 700 .8rem/1 var(--sans); }
+.kind span { color: var(--muted); }
+footer { color: var(--faint); font-size: .84rem; border-top: 1px solid var(--line); padding-top: 14px; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="eyebrow">Step 5 · everything that pops up</span>
+    <h1>Corner cards and badges</h1>
+    <p class="lead">About ten things pop up today, in five places. This puts <b>anything you read and dismiss</b> in one place, a corner card at the bottom right, and moves the conditions next to the character's name on every character page. Battle keeps its coloured edge, and the dice stay where they are.</p>
+  </header>
+
+  <section>
+    <span class="eyebrow">Where you'll find it</span>
+    <div class="where">
+      <div class="minis" aria-hidden="true">
+        <div class="mini">
+          <i class="mb"></i><i class="rs"></i>
+          <div class="hd"><i class="av"></i><i class="nm"></i><span class="bd"><i style="--c: var(--cond-concentration); border-radius: 50%"></i><i style="--c: var(--cond-poisoned)"></i><i style="--c: var(--cond-prone)"></i></span></div>
+          <div class="bodyb"><i></i><i></i><i></i></div>
+          <i class="tray"></i>
+          <div class="cards"><i style="--c: var(--die-gold-mid)"></i><i style="--c: var(--green)"></i></div>
+          <span class="tag" style="left: 23%; top: 24%">① badges by the name</span>
+          <span class="tag" style="right: 3%; bottom: 25%">② corner cards</span>
+          <span class="tag" style="left: 21%; bottom: 23%">③ others' dice (stays)</span>
+          <span class="tag" style="left: 1%; top: 12%">Table rolls</span>
+        </div>
+        <div class="mini ph">
+          <i class="mb"></i>
+          <div class="hd"><i class="av"></i><i class="nm"></i><span class="bd"><i style="--c: var(--cond-concentration); border-radius: 50%"></i><i style="--c: var(--cond-poisoned)"></i></span></div>
+          <div class="bodyb"><i></i></div>
+          <div class="cards"><i style="--c: var(--green)"></i></div>
+          <i class="rsbar"></i><i class="bb"></i>
+        </div>
+      </div>
+      <ol>
+        <li><b>Badges after the name</b> in the header of Battle, Sheet and Plan: small, in each condition's own colour and icon, Concentration first. Hover or tap one for what it does. They leave Battle's bottom-right corner.</li>
+        <li><b>Corner cards</b>, bottom right, stacked with the newest at the bottom: "Saved", errors, a refused button's reason, someone's roll when your dice animation is off, Keep going. On a phone they sit just above Table rolls' bar, one at a time.</li>
+        <li><b>Unchanged:</b> others' dice in the tray beside Table rolls, your own dice across the page, Battle's coloured edge, the Status row's pills, and the ↻ mark and change glow on a number.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <h2>What moves and what stays</h2>
+    <div class="moves">
+      <div class="mv"><span>What</span><span>Now</span><span>With this</span></div>
+      <div class="mv moved"><span>Toasts ("Saved", errors, Game Mode)</span><span class="was">Top centre, under the menu bar</span><span class="to">Corner card</span></div>
+      <div class="mv moved"><span>Someone's roll, animation off</span><span class="was">Bottom left, beside Table rolls</span><span class="to">Corner card</span></div>
+      <div class="mv moved"><span>A refused button's reason</span><span class="was">A toast, top centre</span><span class="to">Corner card, amber, stays a little longer</span></div>
+      <div class="mv moved"><span>Condition emblems</span><span class="was">Battle's bottom-right corner</span><span class="to">Badges after the name, every character page</span></div>
+      <div class="mv"><span>Someone's dice, animation on</span><span class="was">Tray, bottom left</span><span class="to">Stays: it's the roll itself, not a notice</span></div>
+      <div class="mv"><span>Your own thrown dice</span><span class="was">Across the page</span><span class="to">Stays</span></div>
+      <div class="mv"><span>The coloured edge</span><span class="was">Battle</span><span class="to">Stays, Battle only</span></div>
+      <div class="mv"><span>Condition pills, the ↻ mark, the change glow</span><span class="was">Where they belong</span><span class="to">Stay</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Try it on Cole's page</h2>
+    <div class="box controls">
+      <div class="ctl-row">
+        <div class="ctl"><span>Page</span><div class="seg" data-seg="mode"><button type="button" aria-pressed="true" data-v="battle">Battle</button><button type="button" aria-pressed="false" data-v="sheet">Sheet</button><button type="button" aria-pressed="false" data-v="plan">Plan</button></div></div>
+        <div class="ctl"><span>Screen</span><div class="seg" data-seg="screen"><button type="button" aria-pressed="true" data-v="desk">Computer</button><button type="button" aria-pressed="false" data-v="phone">Phone</button></div></div>
+        <div class="ctl"><span>Badges</span><div class="seg" data-seg="labels"><button type="button" aria-pressed="true" data-v="icons">Icons only</button><button type="button" aria-pressed="false" data-v="labels">With names</button></div></div>
+      </div>
+      <div class="ctl"><span>Cole's conditions (click to start or end one)</span><div class="chips" id="cond-chips"></div></div>
+      <div class="ctl"><span>Show a corner card</span><div class="chips">
+        <button class="btn" type="button" data-card="saved">Saved</button>
+        <button class="btn" type="button" data-card="wild">Wild Shape, with Undo</button>
+        <button class="btn" type="button" data-card="roll">Big C's roll (animation off)</button>
+        <button class="btn" type="button" data-card="hidden">A roll for the DM</button>
+        <button class="btn" type="button" data-card="gm">Game Mode ends soon</button>
+        <button class="btn" type="button" data-card="refused">A refused button</button>
+        <button class="btn" type="button" data-card="error">Couldn't save</button>
+      </div></div>
+    </div>
+
+    <div class="stage-wrap">
+      <div class="stage" id="stage">
+        <div class="s-mb"><b>The Adventure Begins</b><span class="links">Story</span><span class="links">Campaign</span><span class="me" id="me-btn">Cole</span></div>
+        <aside class="s-rolls">
+          <span class="h">Table rolls</span>
+          <div class="r"><b>Trah</b><span>Longbow · to hit</span><em>19</em></div>
+          <div class="r"><b>No Name</b><span>Wisdom save</span><em>12</em></div>
+          <div class="r"><b>The DM</b><span>Enemy 1 · Scimitar damage</span><em>6</em></div>
+          <span class="heads"><i></i><i></i><i></i><i></i></span>
+        </aside>
+        <div class="halo" id="halo"></div>
+        <div class="s-main">
+          <div class="head">
+            <span class="av"></span>
+            <div class="titles">
+              <div class="name-row"><h3>Cole</h3><span class="badges" id="badges" role="group" aria-label="Conditions"></span></div>
+              <span class="sub">Druid 5 (Circle of the Moon) · level 5</span>
+            </div>
+            <nav class="modes" id="modes"><button type="button" data-v="battle" aria-current="page">Battle</button><button type="button" data-v="sheet">Sheet</button><button type="button" data-v="plan">Plan</button></nav>
+          </div>
+          <div id="body"></div>
+        </div>
+        <div class="tray" id="tray">others' dice land here<br>(unchanged)</div>
+        <div class="cards" id="cards" aria-live="polite"></div>
+        <nav class="s-bb"><span>Story</span><span>Campaign</span><b>Cole</b><span>Party</span><span>More</span></nav>
+      </div>
+    </div>
+    <p class="small muted">Cards here use the timings proposed below; hover a card to keep it. With a side panel open, the cards move left of it, as the emblems do today.</p>
+  </section>
+
+  <section>
+    <h2>The kinds of card</h2>
+    <div class="kinds">
+      <div class="kind k-ok"><i class="ic">✓</i><b>Done</b><span>"Saved", "Wild Shape: Polar Bear". Fades after 4 seconds.</span></div>
+      <div class="kind k-info"><i class="ic">i</i><b>For your information</b><span>Game Mode started or ends soon, someone's roll for the DM. 6 seconds.</span></div>
+      <div class="kind k-roll"><i class="ic" style="border-radius: 4px">20</i><b>Someone's roll</b><span>Only when your dice animation is off: the die and the total, as the corner note shows it today. 6 seconds.</span></div>
+      <div class="kind k-warn"><i class="ic">!</i><b>Refused</b><span>Why a button didn't work ("Cole's sheet isn't open"). 10 seconds.</span></div>
+      <div class="kind k-err"><i class="ic">✕</i><b>Error</b><span>Something didn't save. Stays until you close it.</span></div>
+    </div>
+    <p class="small muted">Every card has ✕, and at most one button (Undo, Keep going, Try again); a card with a button stays 20 seconds. Three at most on a computer, the oldest leaving first; one on a phone.</p>
+  </section>
+
+  <section>
+    <h2>For you to decide</h2>
+    <div class="grid2">
+      <div class="box ask"><h3>1 · The badges: icons only, or with names?</h3>
+        <p>Switch <b>Badges</b> above to compare. Icons only keeps the header one line on a phone; the name is a hover or tap away, and the Status row on Battle already names each one. <b>My pick: icons only.</b></p></div>
+      <div class="box ask"><h3>2 · Someone's roll with your animation off</h3>
+        <p>Today the note sits bottom left, where their dice would land. As a corner card it joins everything else at the bottom right, so someone's roll shows in one of two corners depending on your animation setting. <b>My pick: the corner card</b>, as you suggested: the tray is the dice, the card is a message.</p></div>
+    </div>
+  </section>
+
+  <footer>Source: docs/mockups/temporary-items.html in the askdnd repo. The icons are askdnd's own (app/templates/_cond_icons.html); the rules lines are summaries in askdnd's words.</footer>
+</div>
+
+<script>
+(function () {
+  const ICON = {
+    Concentration: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/>',
+    Poisoned: '<path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/><circle cx="10" cy="13.5" r="1"/><circle cx="14" cy="13.5" r="1"/><path d="M10 17h4"/>',
+    Prone: '<circle cx="5.5" cy="13.5" r="2.2"/><path d="M8.5 14.5h11M11.5 14.5l3-3.5M3 19h18"/>',
+    Frightened: '<circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1.6"/><circle cx="15" cy="10" r="1.6"/><ellipse cx="12" cy="16" rx="2" ry="2.4"/>',
+    Exhaustion: '<path d="M7 3h10M7 21h10"/><path d="M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9s8 4 8 9"/><path d="M10 18h4"/>',
+    Grappled: '<path d="M7 11V6.5a1.5 1.5 0 0 1 3 0V11M10 10V5a1.5 1.5 0 0 1 3 0v5M13 10V6a1.5 1.5 0 0 1 3 0v6M16 10.5a1.5 1.5 0 0 1 3 0V14a7 7 0 0 1-7 7h-.5a6 6 0 0 1-5-2.7L4 14.6a1.5 1.5 0 0 1 2.4-1.8L7 14"/>',
+    Invisible: '<circle cx="12" cy="7" r="3.5" stroke-dasharray="2.4 2.2"/><path d="M5 21c0-4 3-7 7-7s7 3 7 7" stroke-dasharray="2.4 2.2"/>',
+  };
+  const ALL = [
+    { name: 'Concentration', c: 'concentration', tip: 'Concentrating on Moonbeam. Taking damage: a Constitution save, DC 10 or half the damage, whichever is higher.', src: "askdnd's own: D&D Beyond doesn't keep it" },
+    { name: 'Poisoned', c: 'poisoned', tip: 'Disadvantage on attack rolls and ability checks.', src: 'From D&D Beyond' },
+    { name: 'Prone', c: 'prone', tip: 'Crawl, or stand up with half your Speed. Disadvantage on your attacks; attacks from within 5 feet have Advantage against you.', src: 'From D&D Beyond' },
+    { name: 'Frightened', c: 'frightened', tip: "Disadvantage on checks and attacks while you can see the source; you can't move closer to it.", src: 'From D&D Beyond' },
+    { name: 'Exhaustion', c: 'exhaustion', lv: 2, tip: 'Level 2: −4 to every D20 Test, and your Speed is 10 feet lower.', src: 'From D&D Beyond' },
+    { name: 'Grappled', c: 'grappled', tip: "Speed 0, and Disadvantage on attacks against anyone but the grappler.", src: 'From D&D Beyond' },
+    { name: 'Invisible', c: 'invisible', tip: "Advantage on your attacks; attacks against you have Disadvantage, unless they can see you.", src: 'From D&D Beyond' },
+  ];
+  const on = new Set(['Concentration', 'Poisoned', 'Prone']);
+  let order = ['Poisoned', 'Prone'];  // conditions in the order they started (Concentration always first)
+  const state = { mode: 'battle', screen: matchMedia('(max-width: 700px)').matches ? 'phone' : 'desk', labels: 'icons' };
+  const $ = s => document.querySelector(s);
+  const svg = n => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON[n] + '</svg>';
+  const cv = c => 'var(--cond-' + c + ')';
+  const shown = () => ['Concentration'].filter(n => on.has(n)).concat(order.filter(n => on.has(n))).map(n => ALL.find(x => x.name === n));
+
+  const chips = $('#cond-chips');
+  ALL.forEach(x => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.style.setProperty('--c', cv(x.c));
+    b.innerHTML = svg(x.name) + x.name + (x.lv ? ' ' + x.lv : '');
+    b.setAttribute('aria-pressed', on.has(x.name));
+    b.addEventListener('click', () => {
+      if (on.has(x.name)) { on.delete(x.name); order = order.filter(n => n !== x.name); }
+      else { on.add(x.name); if (x.name !== 'Concentration') order.push(x.name); }
+      b.setAttribute('aria-pressed', on.has(x.name));
+      draw();
+    });
+    chips.append(b);
+  });
+
+  let openTip = null;
+  function badges() {
+    const box = $('#badges'), list = shown(), max = state.screen === 'phone' ? 4 : 6;
+    box.className = 'badges' + (state.labels === 'labels' ? ' labels' : '');
+    box.innerHTML = '';
+    list.slice(0, max).forEach(x => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'badge' + (x.name === 'Concentration' ? ' conc' : '');
+      b.style.setProperty('--c', cv(x.c));
+      b.setAttribute('aria-label', x.name + (x.lv ? ' ' + x.lv : ''));
+      b.setAttribute('aria-expanded', openTip === x.name);
+      b.innerHTML = svg(x.name) + (state.labels === 'labels' ? '<span>' + x.name + '</span>' : '') + (x.lv ? '<span class="lv">' + x.lv + '</span>' : '');
+      b.addEventListener('click', e => { e.stopPropagation(); openTip = openTip === x.name ? null : x.name; badges(); });
+      b.addEventListener('mouseenter', () => { if (matchMedia('(hover: hover)').matches) { openTip = x.name; badges(); } });
+      box.append(b);
+    });
+    if (list.length > max) box.insertAdjacentHTML('beforeend', '<span class="badge-more">+' + (list.length - max) + '</span>');
+    const t = list.find(x => x.name === openTip);
+    if (t) {
+      const tip = document.createElement('div');
+      tip.className = 'tip'; tip.style.setProperty('--c', cv(t.c));
+      tip.innerHTML = '<b>' + t.name + (t.lv ? ' ' + t.lv : '') + '</b>' + t.tip + '<span class="src">' + t.src + '</span>';
+      box.append(tip);
+    }
+    box.onmouseleave = () => { if (matchMedia('(hover: hover)').matches && openTip) { openTip = null; badges(); } };
+    $('#me-btn').innerHTML = 'Cole' + list.slice(0, 3).map(x => '<i style="--c: ' + cv(x.c) + '"></i>').join('');
+  }
+  document.addEventListener('click', () => { if (openTip) { openTip = null; badges(); } });
+
+  function halo() {
+    const h = $('#halo'), list = shown();
+    const edge = (on.has('Concentration') ? ['concentration'] : []).concat(order.filter(n => on.has(n)).slice(-2).reverse().map(n => ALL.find(x => x.name === n).c)).slice(0, 3);
+    h.hidden = state.mode !== 'battle' || !list.length;
+    const e = edge.length ? edge : ['concentration'];
+    h.style.setProperty('--e1', cv(e[0])); h.style.setProperty('--e2', cv(e[1] || e[0])); h.style.setProperty('--e3', cv(e[2] || e[1] || e[0]));
+  }
+
+  function body() {
+    const list = shown();
+    const pills = list.map(x => '<span class="pill" style="--c: ' + cv(x.c) + '">' + x.name + (x.lv ? ' ' + x.lv : '') + '</span>');
+    if (list.length && list[0].name === 'Concentration') pills.splice(1, 0, '<i class="sep"></i>');
+    const B = {
+      battle: '<div class="tiles"><div class="tile"><span>Armor Class</span><b>15</b></div><div class="tile"><span>Hit points</span><b>38 / 45</b></div><div class="tile"><span>Speed</span><b>30 ft.</b></div><div class="tile"><span>Initiative</span><b>+2</b></div></div>'
+        + '<div class="status" style="margin-top: 14px"><span class="lbl">Status</span>' + (pills.join('') || '<span class="muted">No conditions</span>') + '</div>'
+        + '<div class="cols" style="margin-top: 14px"><div class="col"><h4>Action</h4><div class="row"><span>Wild Shape</span><span>2 left</span></div><div class="row"><span>Moonbeam</span><span>2nd</span></div><div class="row"><span>Quarterstaff</span><span>+5</span></div></div><div class="col"><h4>Bonus action</h4><div class="row"><span>Move Moonbeam</span><span></span></div><div class="row"><span>Healing Word</span><span>1st</span></div></div><div class="col"><h4>Reaction</h4><div class="row"><span>Opportunity Attack</span><span></span></div></div></div>',
+      sheet: '<div class="tiles"><div class="tile"><span>Strength</span><b>10</b></div><div class="tile"><span>Dexterity</span><b>14</b></div><div class="tile"><span>Constitution</span><b>14</b></div><div class="tile"><span>Wisdom</span><b>18</b></div></div>'
+        + '<div class="cols" style="margin-top: 14px"><div class="col"><h4>Skills</h4><div class="row"><span>Perception</span><span>+7</span></div><div class="row"><span>Nature</span><span>+3</span></div><div class="row"><span>Survival</span><span>+7</span></div></div><div class="col"><h4>Saves</h4><div class="row"><span>Intelligence</span><span>+3</span></div><div class="row"><span>Wisdom</span><span>+7</span></div></div><div class="col"><h4>Senses</h4><div class="row"><span>Passive Perception</span><span>17</span></div></div></div>',
+      plan: '<div class="cols"><div class="col"><h4>Prepared</h4><div class="row"><span>Moonbeam</span><span>2nd</span></div><div class="row"><span>Healing Word</span><span>1st</span></div><div class="row"><span>Entangle</span><span>1st</span></div></div><div class="col"><h4>Wild Shape forms</h4><div class="row"><span>Polar Bear</span><span>CR 2</span></div><div class="row"><span>Giant Toad</span><span>CR 1</span></div></div><div class="col"><h4>Combos</h4><div class="row"><span>Moonbeam, then Wild Shape</span><span></span></div></div></div>',
+    };
+    $('#body').innerHTML = B[state.mode];
+  }
+
+  function draw() {
+    const st = $('#stage');
+    st.className = 'stage' + (state.screen === 'phone' ? ' phone' : '');
+    document.querySelectorAll('#modes button').forEach(b => { if (b.dataset.v === state.mode) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+    badges(); halo(); body();
+    if (state.screen === 'phone') [...$('#cards').children].slice(0, -1).forEach(c => c.remove());
+  }
+
+  document.querySelectorAll('[data-seg]').forEach(seg => seg.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    state[seg.dataset.seg] = b.dataset.v;
+    seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+    if (seg.dataset.seg === 'mode') syncModeSeg();
+    draw();
+  }));
+  function syncModeSeg() { document.querySelectorAll('[data-seg=mode] button').forEach(x => x.setAttribute('aria-pressed', x.dataset.v === state.mode)); }
+  $('#modes').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.mode = b.dataset.v; syncModeSeg(); draw(); });
+
+  // The corner cards
+  const CARDS = {
+    saved: { k: 'ok', ic: '✓', t: '<b>Saved</b>', s: 4 },
+    wild: { k: 'ok', ic: '✓', t: '<b>Wild Shape: Polar Bear</b>', act: 'Undo', s: 20 },
+    roll: { k: 'roll', ic: '17', die: true, t: '<b>Big C</b> rolled <b>17</b> <span class="m">· Dexterity save</span>', s: 6 },
+    hidden: { k: 'info', ic: 'i', t: '<b>No Name</b> rolled for the DM', s: 6 },
+    gm: { k: 'info', ic: 'i', t: 'Game Mode ends at 11:40 PM.', act: 'Keep going', s: 20 },
+    refused: { k: 'warn', ic: '!', t: "Cole's sheet isn't open on D&D Beyond, so this can't be made there. Open it, or make it by hand.", s: 10 },
+    error: { k: 'err', ic: '✕', t: "<b>Couldn't save the order.</b> <span class=\"m\">Try again in a moment.</span>", act: 'Try again', s: 0 },
+  };
+  function card(key) {
+    const d = CARDS[key], box = $('#cards'), el = document.createElement('div');
+    el.className = 'card k-' + d.k;
+    el.setAttribute('role', d.k === 'err' || d.k === 'warn' ? 'alert' : 'status');
+    el.innerHTML = '<i class="ic' + (d.die ? ' die' : '') + '">' + d.ic + '</i><div class="tx">' + d.t + '</div>' + (d.act ? '<button type="button" class="act">' + d.act + '</button>' : '<span></span>') + '<button type="button" class="x" aria-label="Close">✕</button>';
+    const close = () => { el.classList.add('out'); setTimeout(() => el.remove(), 260); };
+    el.querySelector('.x').addEventListener('click', close);
+    if (d.act) el.querySelector('.act').addEventListener('click', () => { close(); if (d.act === 'Undo') setTimeout(() => card('undone'), 280); });
+    let timer = null;
+    const start = () => { if (d.s) timer = setTimeout(close, d.s * 1000); };
+    el.addEventListener('mouseenter', () => clearTimeout(timer));
+    el.addEventListener('mouseleave', start);
+    start();
+    box.append(el);
+    const limit = state.screen === 'phone' ? 1 : 3;
+    while (box.children.length > limit) box.firstElementChild.remove();
+  }
+  CARDS.undone = { k: 'ok', ic: '✓', t: '<b>Back to Cole</b>', s: 4 };
+  document.querySelectorAll('[data-card]').forEach(b => b.addEventListener('click', () => card(b.dataset.card)));
+
+  document.querySelectorAll('[data-seg=screen] button').forEach(x => x.setAttribute('aria-pressed', x.dataset.v === state.screen));
+  draw();
+  setTimeout(() => card('roll'), 600);
+  setTimeout(() => card('saved'), 1200);
+})();
+</script>

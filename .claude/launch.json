@@ -44,6 +44,20 @@
         "cd ../dndsy-spellbar && uv run --env-file ../dndsy/.env uvicorn app.main:app --port 8010"
       ],
       "port": 8010
+    },
+    {
+      "name": "mockups",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8020",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "docs/mockups"
+      ],
+      "port": 8020
     }
   ]
 }
