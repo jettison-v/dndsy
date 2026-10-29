@@ -235,7 +235,7 @@ def _act(request: Request, db: Session, session_id: int, action: Callable[[GameS
         db.commit()
     except review.ReviewError as e:
         db.rollback()
-        message = str(e)
+        message = web.notice(str(e), "warn")
     db.expire_all()
     s = db.get(GameSession, session_id)
     if request.headers.get("HX-Request"):
@@ -417,8 +417,10 @@ def new_session_form(request: Request, db: Session = Depends(get_db)):
         return denied
     campaign = web.campaign(db)
     sessions = timeline(db, campaign.id) if campaign else []
+    error = request.session.pop("toast", None)  # (web.notice: shown on the form, not as a card)
     return templates.TemplateResponse(
-        request, "admin_session_new.html", {"sessions": [(x, session_label(x)) for x in sessions], "error": request.session.pop("toast", None)}
+        request, "admin_session_new.html",
+        {"sessions": [(x, session_label(x)) for x in sessions], "error": error.get("text") if isinstance(error, dict) else error}
     )
 
 
@@ -444,13 +446,13 @@ def create_session(
         played = date_type.fromisoformat(played_on)
         num = int(number) if number.strip() else None
     except ValueError:
-        request.session["toast"] = "Check the date and session number."
+        request.session["toast"] = web.notice("Check the date and session number.", "warn")
         return RedirectResponse(f"{web.base()}/manage/sessions/new", status_code=303)
     if not account.strip():
-        request.session["toast"] = "Write what happened first."
+        request.session["toast"] = web.notice("Write what happened first.", "warn")
         return RedirectResponse(f"{web.base()}/manage/sessions/new", status_code=303)
     if num is not None and db.scalar(select(GameSession).where(GameSession.campaign_id == campaign.id, GameSession.number == num)):
-        request.session["toast"] = f"Session {num} already exists. Leave the number blank or pick another."
+        request.session["toast"] = web.notice(f"Session {num} already exists. Leave the number blank or pick another.", "warn")
         return RedirectResponse(f"{web.base()}/manage/sessions/new", status_code=303)
     if mode == "manual":  # the DM's own recap, no Claude (content workflows step 1): review it, add key moments, publish
         s = GameSession(campaign_id=campaign.id, played_on=played, number=num, title=title.strip(), source="manual")

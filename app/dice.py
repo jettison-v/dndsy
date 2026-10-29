@@ -55,7 +55,7 @@ _PAGE = [("The throw", ["strength", "gravity", "size"]), ("Light", ["shadows", "
          ("Shadow box: the page behind the dice", ["dim", "blur"]), ("Timing", ["fade_in", "stay", "fade_out"])]
 PLACES = [
     ("mine", "Your roll", "You rolled, on any page: your dice are thrown across the whole page, the page behind them goes dark, "
-     "and the total lands at the bottom.", _PAGE),
+     "and the total shows at the top, clear of the roll window.", _PAGE),
     ("tray", "Others' rolls in the tray", "Someone else rolled while you're on a character page: a small tray slides up in the "
      "corner, their dice tumble in it, and it shows who and the total.",
      [("The throw", ["strength", "gravity", "size"]), ("Light", ["shadows", "light"]), ("Timing", ["slide", "stay"])]),

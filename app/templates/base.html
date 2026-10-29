@@ -16,7 +16,7 @@
   <script src="{{ static('app.js') }}" defer></script>
   {% block head %}{% endblock %}
 </head>
-{% set gm = game_mode() %}<body data-toast="{{ toast or '' }}"{% if gm.on %} class="gm-on" data-game-until="{{ gm.until.isoformat() }}" data-game-by="{{ gm.by }}" data-game-warn="{{ gm.warn }}"{% endif %}{% if user %}{% if here %} data-campaign="{{ here.id }}"{% endif %}{% if bridge_on and vtt_on("ddb_bridge") %} data-bridge-on{% endif %} data-me="{{ my_id() or '' }}" data-dice='{{ my_dice() | tojson }}' data-dice-tuning='{{ dice_tuning() | tojson }}'{% if vtt_on("table_dice") %} data-dice-all{% endif %}{% endif %}>
+{% set gm = game_mode() %}<body{% if toast %} data-toast='{{ toast | tojson }}'{% endif %}{% if gm.on %} class="gm-on" data-game-until="{{ gm.until.isoformat() }}" data-game-by="{{ gm.by }}" data-game-warn="{{ gm.warn }}"{% endif %}{% if user %}{% if here %} data-campaign="{{ here.id }}"{% endif %}{% if bridge_on and vtt_on("ddb_bridge") %} data-bridge-on{% endif %} data-me="{{ my_id() or '' }}" data-dice='{{ my_dice() | tojson }}' data-dice-tuning='{{ dice_tuning() | tojson }}'{% if vtt_on("table_dice") %} data-dice-all{% endif %}{% endif %}>
 {% if user %}<script>
 /* The Table rolls sidebar's place, before the page is drawn, so pages don't shift sideways as they load (Brett,
    2026-10-26). The same rules as app.js "the sidebar's state", which takes over once it runs: Game Mode on for the
@@ -154,6 +154,6 @@
 {% block content %}{% endblock %}
 {% endblock %}
 <footer class="site-foot"><a href="/help" data-no-peek>Help</a> · <a href="/help?tab=about" data-no-peek>About</a></footer>
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="cards" id="cards" aria-live="polite"></div>{# corner cards (app.js) #}
 </body>
 </html>

@@ -10,7 +10,7 @@ from sqlalchemy import select
 from app import characters, ddb
 from app.importer import import_bundle
 from app.models import CharacterSnapshot
-from tests.table_setup import BUNDLE, char, down, fake_fetch
+from tests.table_setup import BUNDLE, card_on, char, down, fake_fetch
 
 pytestmark = pytest.mark.usefixtures("no_network")  # D&D Beyond is never called (tests/conftest.py)
 
@@ -120,10 +120,10 @@ def test_dm_refreshes_one_and_all(dm, db):
     r = dm.post(f"/characters/{cole.id}/refresh", follow_redirects=False)
     assert r.status_code == 303 and cole.snapshot.status == "ok"
     page = dm.get(f"/characters/{cole.id}").text
-    assert "Updated from D&amp;D Beyond" in page and "Refresh from D&amp;D Beyond" not in page  # refresh from Live
+    assert card_on(page) == "Updated from D&D Beyond" and "Refresh from D&amp;D Beyond" not in page  # refresh from Live
     page = dm.post("/characters/refresh").text  # follows the redirect back to /party
     assert char(db, "Trah").snapshot.status == "error"
-    assert "Updated 1 from D&amp;D Beyond; couldn&#39;t update Trah" in page
+    assert card_on(page) == {"text": "Updated 1 from D&D Beyond; couldn't update Trah", "kind": "warn"}
 
 
 def test_admin_links_a_character(admin, db):

@@ -157,12 +157,12 @@ def add_person(request: Request, email: str = Form(""), new_email: str = Form(""
     campaign = web.campaign(db)
     email = (new_email or email).strip().lower()
     if campaign is None or "@" not in email:
-        request.session["toast"] = "Pick someone, or enter an email address."
+        request.session["toast"] = web.notice("Pick someone, or enter an email address.", "warn")
         return _back()
     new = db.scalar(select(User).where(User.email == email)) is None
     u = account(db, email, " ".join(name.split())[:200])
     if access.level(email) is None:
-        request.session["toast"] = f"{email}'s account was removed. Bring it back on Manage › Accounts first."
+        request.session["toast"] = web.notice(f"{email}'s account was removed. Bring it back on Manage › Accounts first.", "warn")
         return _back()
     set_role(db, u, campaign.id, _role(role) or access.PLAYER)
     db.commit()
@@ -201,7 +201,7 @@ def add_test_copies(request: Request, character_ids: list[int] = Form([]), db: S
         return denied
     campaign = web.campaign(db)
     if campaign is None or not campaign.is_test:
-        request.session["toast"] = "Test copies are only for a test campaign (Settings › Virtual tabletop)."
+        request.session["toast"] = web.notice("Test copies are only for a test campaign (Settings › Virtual tabletop).", "warn")
         return _back()
     can = {c.id: c for c, copied in chars.copy_candidates(db, campaign.id) if not copied}
     # A copy keeps its player if they're in the test campaign, or are the admin making it (they play their own copy)
@@ -210,7 +210,7 @@ def add_test_copies(request: Request, character_ids: list[int] = Form([]), db: S
     me = db.scalar(select(User.id).where(func.lower(User.email) == user["email"].lower()))
     made = [chars.test_copy(db, can[i], campaign.id, players | {me}).name for i in character_ids if i in can]
     db.commit()
-    request.session["toast"] = (f"Added test copies of {', '.join(made)}." if made else "Pick at least one character.")
+    request.session["toast"] = (f"Added test copies of {', '.join(made)}." if made else web.notice("Pick at least one character.", "warn"))
     return _back()
 
 
@@ -224,7 +224,7 @@ def add_character(request: Request, name: str = Form(""), user_id: str = Form(""
     campaign = web.campaign(db)
     name = " ".join(name.split())[:200]
     if campaign is None or not name:
-        request.session["toast"] = "Give the character a name."
+        request.session["toast"] = web.notice("Give the character a name.", "warn")
         return _back()
     player = db.get(User, int(user_id)) if user_id.isdigit() else None
     ch = Character(name=name, player_name=(player.name if player else "")[:200], owner_id=player.id if player else None)

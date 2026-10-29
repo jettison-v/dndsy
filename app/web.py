@@ -54,6 +54,18 @@ def not_found(request: Request, text: str = "That isn't in the campaign."):
     return message(request, "Not found", text, 404)
 
 
+NOTICE_KINDS = ("ok", "info", "warn", "error")
+
+
+def notice(text: str, kind: str = "ok"):
+    """A corner card's message (app.js "corner cards"; Brett, 2026-10-29), for `request.session["toast"]` (the next
+    page shows it) or HX-Trigger's "toast". Its text alone when it says something was done; {"text", "kind"} for
+    "info", "warn" (a refused or invalid action: amber, a little longer) or "error" (something didn't save: red, until
+    closed)."""
+    assert kind in NOTICE_KINDS
+    return text if kind == "ok" else {"text": text, "kind": kind}
+
+
 def require(request: Request, allow: Callable[[dict], bool] | None = None,
             text: str = "This page is for the campaign admin."):
     """(user, None) if signed in and allowed, else (None, a sign-in redirect or a 403 page)."""

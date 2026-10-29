@@ -75,7 +75,7 @@ def create(request: Request, name: str = Form(""), dm_name: str = Form(""), ddb_
         return denied
     name = " ".join(name.split())[:200]
     if not name:
-        request.session["toast"] = "Give the campaign a name."
+        request.session["toast"] = web.notice("Give the campaign a name.", "warn")
         return RedirectResponse(BACK, status_code=303)
     c = Campaign(name=name, slug=slug_for(db, name), dm_name=" ".join(dm_name.split())[:200],
                  ddb_campaign_id=ddb_campaign_id.strip()[:40] or None, is_test=bool(is_test))
@@ -115,7 +115,7 @@ def save_settings(request: Request, name: str = Form(""), dm_name: str = Form(""
         access.invalidate()
         request.session["toast"] = "Saved"
     elif c is not None:
-        request.session["toast"] = "Give the campaign a name."
+        request.session["toast"] = web.notice("Give the campaign a name.", "warn")
     return RedirectResponse(f"{web.base(c)}/manage/settings", status_code=303)
 
 

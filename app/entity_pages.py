@@ -179,7 +179,7 @@ def _act(request: Request, db: Session, entity_id: int, action: Callable[[Entity
         db.commit()
     except (entities.EntityError, relations.RelationError, ExtractionError) as e:
         db.rollback()
-        message = str(e)
+        message = web.notice(str(e), "warn")
     db.expire_all()
     entity = db.get(Entity, entity_id)
     if entity is None:  # e.g. removed while acting
@@ -327,7 +327,7 @@ def _leave(request: Request, db: Session, entity_id: int, fn: Callable[[Entity],
         db.commit()
     except entities.EntityError as e:
         db.rollback()
-        return Response(status_code=204, headers={"HX-Trigger": json.dumps({"toast": str(e)})})
+        return Response(status_code=204, headers={"HX-Trigger": json.dumps({"toast": web.notice(str(e), "warn")})})
     request.session["toast"] = message
     return Response(status_code=204, headers={"HX-Redirect": url})
 

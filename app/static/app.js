@@ -22,25 +22,52 @@
     reportError('Unhandled: ' + (r.message || String(r)).slice(0, 300), at ? at[1] : '', at ? +at[2] : 0, at ? +at[3] : 0, r.stack);
   });
 
-  function toast(message, action) {  // action: {label, run}: a button in the toast, which then stays a while
-    const t = $('#toast');
-    if (!t || !message) return;
-    t.textContent = message;
+  // ---------------------------------------------------------------- corner cards
+  // (Brett, 2026-10-29; docs/mockups/temporary-items.html) Everything you read and dismiss, in one place: bottom right,
+  // the newest at the bottom, three at most (one on a phone). Its kind gives its icon, colour and how long it stays:
+  // done 4 seconds, for your information and someone's roll 6, refused 10, an error until closed; one with a button
+  // (Undo, Keep going) 20. Hovering a card keeps it. The server says which kind (web.notice: its text alone is "done").
+  const CARD = { ok: ['✓', 4000], info: ['i', 6000], roll: ['', 6000], warn: ['!', 10000], error: ['✕', 0] };
+  function card(content, { kind = 'ok', action, icon } = {}) {
+    const box = $('#cards');
+    if (!box || !content) return null;
+    const [mark, ms] = CARD[kind] || CARD.ok, el = document.createElement('div');
+    el.className = 'card k-' + kind;
+    el.setAttribute('role', kind === 'warn' || kind === 'error' ? 'alert' : 'status');
+    const ic = icon || Object.assign(document.createElement('i'), { className: 'card-ic', textContent: mark });
+    const tx = document.createElement('div');
+    tx.className = 'card-tx';
+    tx.append(content);
+    el.append(ic, tx);
+    const close = () => { clearTimeout(el._hide); el.classList.add('out'); setTimeout(() => el.remove(), 250); };
     if (action) {
-      const b = document.createElement('button');
-      b.type = 'button'; b.className = 'btn small toast-act'; b.textContent = action.label;
-      b.addEventListener('click', () => { t.classList.remove('show'); action.run(); });
-      t.append(' ', b);
+      const b = Object.assign(document.createElement('button'), { type: 'button', className: 'card-act', textContent: action.label });
+      b.addEventListener('click', () => { close(); action.run(); });
+      el.append(b);
     }
-    t.classList.toggle('acts', !!action);
-    t.classList.add('show');
-    clearTimeout(t._hide);
-    t._hide = setTimeout(() => t.classList.remove('show'), action ? 20000 : 2200);
+    const x = Object.assign(document.createElement('button'), { type: 'button', className: 'card-x', textContent: '✕' });
+    x.setAttribute('aria-label', 'Close');
+    x.addEventListener('click', close);
+    el.append(x);
+    const wait = action ? 20000 : ms, start = () => { if (wait) el._hide = setTimeout(close, wait); };
+    el.addEventListener('mouseenter', () => clearTimeout(el._hide));
+    el.addEventListener('mouseleave', start);
+    start();
+    box.append(el);
+    const most = matchMedia('(max-width: 900px)').matches ? 1 : 3;
+    while (box.children.length > most) box.firstElementChild.remove();
+    return el;
+  }
+  // A message: its text, or {text, kind} from the server (web.notice); action: {label, run}, a button on the card
+  function toast(message, action, kind) {
+    if (message && typeof message === 'object') { kind = message.kind; message = message.text; }
+    if (message) card(document.createTextNode(message), { kind: kind || 'ok', action });
   }
   window.askdndToast = toast;
+  window.askdndCard = card;
 
   // Server can trigger a toast with the HX-Trigger header: {"toast": "Saved"}
-  document.body.addEventListener('toast', e => toast(e.detail && e.detail.value));
+  document.body.addEventListener('toast', e => toast(e.detail && ('value' in e.detail ? e.detail.value : e.detail)));
 
   document.addEventListener('click', e => {
     // Menus (campaign, Party, Live, Manage, account, phone More). A click elsewhere closes
@@ -418,12 +445,12 @@
     if (on && pill) gmTimer = setInterval(() => { if (document.visibilityState === 'visible') gmTick(); }, (Number(pill.dataset.every) || 150) * 1000);
     if (on) {
       const warn = (Number(document.body.dataset.gameWarn) || 600) * 1000;
-      gmWarn = setTimeout(() => toast('Game Mode ends at ' + gmClock(until) + '.', { label: 'Keep going', run: () => gmSwitch(true) }), Math.max(0, until - warn - Date.now()));
+      gmWarn = setTimeout(() => toast('Game Mode ends at ' + gmClock(until) + '.', { label: 'Keep going', run: () => gmSwitch(true) }, 'info'), Math.max(0, until - warn - Date.now()));
       gmEnd = setTimeout(() => {  // time's up: off here too (a Keep going meanwhile arrives as the page's new copy)
         if (gmUntil() !== until) return;
         delete document.body.dataset.gameUntil;
         gmSetup();
-        toast("Game Mode's time is up: rolls are private again.");
+        toast("Game Mode's time is up: rolls are private again.", null, 'info');
       }, until - Date.now() + 500);
     }
     document.dispatchEvent(new CustomEvent('askdnd:gamemode', { detail: { on } }));  // Table rolls follow it
@@ -431,7 +458,7 @@
   // A button the server refused (403, 409: a sheet that can't be reached…) says why, the same way everywhere: the
   // message askdnd answered with (FastAPI's {"detail": …})
   document.body.addEventListener('htmx:responseError', e => {
-    try { const d = JSON.parse(e.detail.xhr.responseText).detail; if (typeof d === 'string' && d) toast(d); } catch (err) { /* not a message */ }
+    try { const d = JSON.parse(e.detail.xhr.responseText).detail; if (typeof d === 'string' && d) toast(d, null, 'warn'); } catch (err) { /* not a message */ }
   });
   // The Live window's End for the table asks first, in the window itself
   document.addEventListener('click', e => {
@@ -527,7 +554,7 @@
     if ((b.dataset.gameUntil || '') !== wasUntil) {
       gmSetup();
       const by = b.dataset.gameBy;
-      if (gmIsOn() !== was) toast(gmIsOn() ? (by ? by + ' started' : 'Started') + ' Game Mode: rolls are shared with the table until ' + gmClock(gmUntil()) + '.' : 'Game Mode ended: rolls are private again.');
+      if (gmIsOn() !== was) toast(gmIsOn() ? (by ? by + ' started' : 'Started') + ' Game Mode: rolls are shared with the table until ' + gmClock(gmUntil()) + '.' : 'Game Mode ended: rolls are private again.', null, 'info');
     }
     restore();
     if (window.askdndNotesInit) window.askdndNotesInit(here);
@@ -616,23 +643,24 @@
   // Pop-ups made of <details> (Concentration, conditions, + Condition): a click anywhere else closes them
   document.addEventListener('click', e => {
     document.querySelectorAll('details.conc-pop[open], details.cond-pill[open]').forEach(d => { if (!d.contains(e.target)) d.open = false; });
-    // Battle's corner (Brett, 2026-10-28): an emblem says what its condition does on hover or focus, or a tap on phones
-    const emb = e.target.closest('.cond-emb');
-    document.querySelectorAll('.cond-emb[aria-expanded="true"]').forEach(x => { if (x !== emb) x.setAttribute('aria-expanded', 'false'); });
-    if (emb) emb.setAttribute('aria-expanded', String(emb.getAttribute('aria-expanded') !== 'true'));
+    // The badges by the name (Brett, 2026-10-29): one says what its condition does on hover or focus, or a tap on phones
+    const badge = e.target.closest('.cond-badge');
+    document.querySelectorAll('.cond-badge[aria-expanded="true"]').forEach(x => { if (x !== badge) x.setAttribute('aria-expanded', 'false'); });
+    if (badge) badge.setAttribute('aria-expanded', String(badge.getAttribute('aria-expanded') !== 'true'));
   });
-  // A condition that starts makes the halo flash once and its emblem pop in, however it arrived (its pill, D&D Beyond,
-  // someone else's screen); after that nothing moves, so it never pulls your eye mid-turn. Opening the page doesn't.
+  // A condition that starts makes its badge pop in and Battle's edge flash once, however it arrived (its pill, D&D
+  // Beyond, someone else's screen); after that nothing moves, so it never pulls your eye mid-turn. Opening the page doesn't.
   const condsWere = {};
   function condArrive() {
-    const b = document.getElementById('battle-body');
-    if (!b) return;
-    const now = [...b.querySelectorAll('.cond-emb')].map(x => x.dataset.name), was = condsWere[b.dataset.character];
-    condsWere[b.dataset.character] = now;
+    const page = document.querySelector('main[data-character]');
+    if (!page) return;
+    const badges = [...page.querySelectorAll('.char-head .cond-badge')];
+    const now = badges.map(x => x.dataset.name), was = condsWere[page.dataset.character];
+    condsWere[page.dataset.character] = now;
     const fresh = was ? now.filter(n => !was.includes(n)) : [];
     if (!fresh.length) return;
-    b.querySelectorAll('.cond-emb').forEach(x => { if (fresh.includes(x.dataset.name)) x.classList.add('new'); });
-    const halo = b.querySelector('.cond-halo');
+    badges.forEach(x => { if (fresh.includes(x.dataset.name)) x.classList.add('new'); });
+    const halo = page.querySelector('.cond-halo');
     if (halo) halo.classList.add('starting');
   }
   condArrive();
@@ -831,7 +859,7 @@
         onEnd: () => {
           const body = new URLSearchParams({ column: list.dataset.sortColumn });
           list.querySelectorAll('[data-key]').forEach(m => body.append('keys', m.dataset.key));
-          fetch(list.dataset.sortUrl, { method: 'POST', body }).then(r => { if (!r.ok) toast("Couldn't save the order"); });
+          fetch(list.dataset.sortUrl, { method: 'POST', body }).then(r => { if (!r.ok) toast("Couldn't save the order", null, 'error'); });
         },
       });
     });
@@ -925,7 +953,7 @@
     if (b) {
       const slug = termTip.dataset.slug, body = new URLSearchParams({value: b.dataset.value});
       fetch('/rules/terms/' + slug + '/underline', {method: 'POST', body, credentials: 'same-origin'}).then(r => r.json()).then(res => {
-        if (!('on' in res)) return toast(res.error || 'Not saved');
+        if (!('on' in res)) return toast(res.error || 'Not saved', null, 'error');
         termsLoad().then(d => { d.on = (d.on || []).filter(x => x !== slug); if (res.on) d.on.push(slug); });
         termTip.querySelectorAll('.term-admin button').forEach(x => x.classList.toggle('on', (x.dataset.value === 'on') === res.on));
         toast(res.on ? 'Underlined in every description' : 'No longer underlined');
@@ -966,8 +994,7 @@
   }
 
   // Flash message from a full page load
-  const flash = document.body.dataset.toast;
-  if (flash) toast(flash);
+  if (document.body.dataset.toast) { try { toast(JSON.parse(document.body.dataset.toast)); } catch (e) { /* not a message */ } }
 })();
 
 
@@ -987,7 +1014,6 @@
   const D20 = ['save', 'check', 'attack', 'death'];
   const phone = matchMedia('(max-width: 900px)'), calm = matchMedia('(prefers-reduced-motion: reduce)');
   const side = document.getElementById('table-rolls'), log = document.getElementById('roll-log');
-  const pops = document.querySelector('.roll-pops');
   const store = {
     get: (k, s) => { try { return (s ? sessionStorage : localStorage).getItem(k); } catch (e) { return null; } },
     set: (k, v, s) => { try { (s ? sessionStorage : localStorage).setItem(k, v); } catch (e) { /* private window */ } },
@@ -2209,23 +2235,20 @@
     });
     buildPeople(fresh);
   });
+  // Someone's roll as a corner card (when their dice aren't thrown): the d20 they kept, else the total, as its icon;
+  // a roll for the DM, whose number you don't see, is "for your information"
   function notice(li) {
-    if (!pops) return;
-    const n = document.createElement('div');
-    n.className = 'roll-note';
-    n.setAttribute('role', 'status');
+    if (!window.askdndCard) return;
     const name = li.querySelector('.roll-who b').textContent, total = li.querySelector('.roll-total');
-    const av = li.querySelector('.roll-av').cloneNode(true);
-    av.className = 'roll-av ' + [...li.classList].filter(c => c.startsWith('hue')).join(' ');
-    n.append(av);
-    if (total) {  // a small die: the d20 they kept, else the total, tumbling in when the animation is on
+    let d = null;
+    if (total) {
       const d20 = D20.some(k => li.classList.contains('kind-' + k)), kept = li.querySelector('.roll-dice u');
       const dmgLine = li.querySelector('.roll-dmg-line b') && +li.dataset.seq !== +li.dataset.id;
       const v = d20 && kept && !dmgLine ? kept.textContent : (dmgLine ? li.querySelector('.roll-dmg-line b').textContent : total.textContent);
-      const d = gem(d20 && !dmgLine ? 20 : sidesOf(li.querySelector('.roll-dice') && li.querySelector('.roll-dice').textContent), v,
-                    (dmgLine || li.classList.contains('kind-damage') ? 'ruby' : li.classList.contains('kind-heal') ? 'jade' : 'gold')
-                    + (li.classList.contains('nat20') && !dmgLine ? ' crit' : li.classList.contains('nat1') && !dmgLine ? ' fumble' : ''), 'tiny');
-      n.append(d);
+      d = gem(d20 && !dmgLine ? 20 : sidesOf(li.querySelector('.roll-dice') && li.querySelector('.roll-dice').textContent), v,
+              (dmgLine || li.classList.contains('kind-damage') ? 'ruby' : li.classList.contains('kind-heal') ? 'jade' : 'gold')
+              + (li.classList.contains('nat20') && !dmgLine ? ' crit' : li.classList.contains('nat1') && !dmgLine ? ' fumble' : ''), 'tiny');
+      d.classList.add('card-ic');
       if (animate()) tumble(d, 150, 650); else { d.querySelector('.gem-n').textContent = v; d.classList.add('landed'); }
     }
     const what = li.querySelector('.roll-what').textContent.trim().replace(/\s+/g, ' ');
@@ -2234,12 +2257,7 @@
     t.innerHTML = !total ? '<b>' + esc(name) + '</b> ' + esc(what.charAt(0).toLowerCase() + what.slice(1))
       : dmg && +li.dataset.seq !== +li.dataset.id ? '<b>' + esc(name) + '</b> rolled <b>' + esc(dmg.textContent) + '</b> damage · ' + esc(what.replace(/ to hit$/, ''))
       : '<b>' + esc(name) + '</b> rolled <b class="' + (li.classList.contains('nat20') ? 'nat20' : li.classList.contains('nat1') ? 'nat1' : '') + '">' + esc(total.textContent) + '</b> · ' + esc(what);
-    n.append(t);
-    pops.appendChild(n);
-    const notes = pops.querySelectorAll('.roll-note');
-    if (notes.length > 3) notes[0].remove();
-    setTimeout(() => n.classList.add('gone'), 4000);
-    setTimeout(() => n.remove(), 4400);
+    window.askdndCard(t, { kind: total ? 'roll' : 'info', icon: d });
   }
 })();
 
@@ -2657,7 +2675,7 @@
   function findBars() {
     bars = [...document.body.querySelectorAll('*')].filter(el => {
       const p = getComputedStyle(el).position;
-      if ((p !== 'sticky' && p !== 'fixed') || el.closest('.peek, .tour-card, .tour-spot, .rolls-side, .roll-pops, .dice-tray, .menu, .rs-edge')) return false;
+      if ((p !== 'sticky' && p !== 'fixed') || el.closest('.peek, .tour-card, .tour-spot, .rolls-side, .cards, .dice-tray, .menu, .rs-edge')) return false;
       const r = el.getBoundingClientRect(), at = p === 'sticky' ? parseFloat(getComputedStyle(el).top) : r.top;  // where it sticks, not where it is now
       return r.width > innerWidth * 0.4 && at < innerHeight * 0.3;
     });

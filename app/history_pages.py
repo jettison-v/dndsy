@@ -160,7 +160,7 @@ def restore(request: Request, rev_id: int, db: Session = Depends(get_db)):
         return denied
     rev = db.get(Revision, rev_id)
     if rev is None or rev.table not in visible_tables(user) or not may_restore(db, user, rev) or not history.can_restore(db, rev):
-        request.session["toast"] = "That can't be restored."
+        request.session["toast"] = web.notice("That can't be restored.", "warn")
     else:
         request.session["toast"] = history.restore(db, rev)
         db.commit()

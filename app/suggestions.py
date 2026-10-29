@@ -286,8 +286,8 @@ def mine(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(request, "suggestions_mine.html", {"rows": rows})
 
 
-def _done(request: Request, message: str) -> RedirectResponse:
-    request.session["toast"] = message
+def _done(request: Request, message: str, kind: str = "ok") -> RedirectResponse:
+    request.session["toast"] = web.notice(message, kind)
     return RedirectResponse(f"{web.base()}/manage/inbox", status_code=303)
 
 
@@ -307,7 +307,7 @@ def act_on_fact(request: Request, fact_id: int, action: str, text: str = Form(""
         return _done(request, "Dismissed. Whoever sent it sees Not used.")
     if action == "edit":
         if not _clean(text):
-            return _done(request, "Write the fact first.")
+            return _done(request, "Write the fact first.", "warn")
         fact.text = _clean(text)
     entities.merge_fact(fact)
     db.commit()
@@ -316,7 +316,7 @@ def act_on_fact(request: Request, fact_id: int, action: str, text: str = Form(""
     try:
         entities.regenerate(db, entity)
     except ExtractionError as e:
-        return _done(request, f"Added to {entity.name}, but Claude couldn't draft a description: {e}")
+        return _done(request, f"Added to {entity.name}, but Claude couldn't draft a description: {e}", "warn")
     return _done(request, f"Added to {entity.name}, and Claude drafted a new description with it. Check it under Claude's drafts.")
 
 
@@ -333,7 +333,7 @@ def accept_glossary(request: Request, suggestion_id: int, term: str = Form(""), 
     clash = db.scalar(select(GlossaryTerm).where(GlossaryTerm.campaign_id == x.campaign_id, GlossaryTerm.term == new_term,
                                                  GlossaryTerm.id != (g.id if g else -1)))
     if not new_term or clash:
-        return _done(request, "That spelling is empty or already in the glossary.")
+        return _done(request, "That spelling is empty or already in the glossary.", "warn")
     misheard = [m.strip() for m in misheard_as.split(",") if m.strip()]
     if g is None:
         db.add(GlossaryTerm(campaign_id=x.campaign_id, term=new_term, description=description.strip()[:MAX_TEXT], misheard_as=misheard))
@@ -356,7 +356,7 @@ def act_on_suggestion(request: Request, suggestion_id: int, action: str, db: Ses
     if action in ("use", "claude") and x.target_type == "session":
         s = db.get(GameSession, x.target_id)
         if action == "claude" and (s is None or s.source not in REDRAFTABLE):
-            return _done(request, "Claude can't redraft this session; edit the recap yourself, then press I fixed it.")
+            return _done(request, "Claude can't redraft this session; edit the recap yourself, then press I fixed it.", "warn")
         answer = _answer(x)
         db.add(answer)
         x.status = "used"
@@ -369,7 +369,7 @@ def act_on_suggestion(request: Request, suggestion_id: int, action: str, db: Ses
             db.delete(answer)
             x.status = "pending"
             db.commit()
-            return _done(request, "Claude is busy drafting; try again in a minute.")
+            return _done(request, "Claude is busy drafting; try again in a minute.", "warn")
         return _done(request, f"Claude is redrafting {session_label(s)} with it (about a minute). Review and publish it from Sessions to review.")
     x.status = "done" if action == "done" else "dismissed"
     db.commit()
