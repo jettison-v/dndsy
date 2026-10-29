@@ -487,7 +487,10 @@
   // ([data-mark]: its first <b>; pips by their place), compared before and after the swap.
   function marksIn(box) {
     const out = new Map();
-    box.querySelectorAll('[data-mark]').forEach(el => { const b = el.querySelector('b'); if (b) out.set(el.dataset.mark, b.textContent.trim()); });
+    box.querySelectorAll('[data-mark]').forEach(el => {
+      const b = el.querySelector('b'); if (b) out.set(el.dataset.mark, b.textContent.trim());
+      if (el.dataset.sync) out.set('sync:' + el.dataset.mark, el.dataset.sync);  // on its way to D&D Beyond
+    });
     box.querySelectorAll('.pips').forEach((el, i) => out.set('pips#' + i, String(el.querySelectorAll('.pip:not(.used)').length)));
     return out;
   }
@@ -506,7 +509,11 @@
       value.after(d);  // right after the number, so it never covers the label
       setTimeout(() => d.remove(), 2600);
     };
-    box.querySelectorAll('[data-mark]').forEach(el => { const b = el.querySelector('b'); if (b) one(el, before.get(el.dataset.mark), b.textContent.trim()); });
+    box.querySelectorAll('[data-mark]').forEach(el => {
+      const b = el.querySelector('b'); if (b) one(el, before.get(el.dataset.mark), b.textContent.trim());
+      // D&D Beyond has it now (it was on its way, shown already): the same green mark as any change, without a number
+      if (!el.dataset.sync && /^(on|ending)$/.test(before.get('sync:' + el.dataset.mark) || '') && !el.classList.contains('marked')) one(el, 'was', 'now');
+    });
     box.querySelectorAll('.pips').forEach((el, i) => one(el, before.get('pips#' + i), String(el.querySelectorAll('.pip:not(.used)').length)));
   }
   function swapMain(html) {
@@ -2829,13 +2836,17 @@
     setTimeout(() => { all.disabled = false; all.textContent = 'Check everything'; }, 8000);
   });
 
+  // A change for D&D Beyond was just made on this page, whichever it is (web.deliver_now): the extension makes it now,
+  // not at its next check every 30 seconds (Brett, 2026-10-29: Battle's changes waited up to half a minute)
+  document.body.addEventListener('bridgeDeliver', e => {
+    const ddbId = e.detail && e.detail.ddbId;
+    if (ddbId) window.postMessage({ askdndBridge: 'deliver', ddbId: String(ddbId) }, location.origin);
+  });
   // Character › with D&D Beyond (bridge.html): drawn on the server and updated like every page (showInPlace, through
   // "characterChanged"). Here only what the browser knows: the extension answering (body.br-ext), telling it to make
   // a change now, and its word that something changed.
   const root = document.querySelector('[data-bridge]');
   if (!root) return;
-  const ddbId = root.dataset.ddbId;
-  document.body.addEventListener('bridgeDeliver', () => window.postMessage({ askdndBridge: 'deliver', ddbId }, location.origin));
   addEventListener('message', e => {
     if (e.source !== window || !e.data || !e.data.askdndBridge) return;
     if (e.data.askdndBridge === 'hello') document.body.classList.add('br-ext');

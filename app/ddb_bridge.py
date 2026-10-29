@@ -51,6 +51,7 @@ askdnd with a key from an askdnd page you're signed in to (`/bridge/connect`), s
 browser blocking third-party cookies sends it no cookie.
 """
 
+import copy
 import hashlib
 import json
 import secrets
@@ -474,6 +475,51 @@ def add(db: Session, character: Character, kind: str, data: dict, label: str) ->
 
 def _as_dict(it: BridgeIntent) -> dict:
     return {"kind": it.kind, "data": it.data}
+
+
+# ------------------------------------------------------------------ what's on its way, as the page shows it
+
+
+def _mark(field: str) -> str:
+    """Which mark on a page shows this field (the `mark` macro's kind: "hp", "cond:Poisoned"), else the field itself."""
+    kind, _, arg = field.partition(":")
+    if kind == "hp":
+        return "hp"
+    if kind == "condition":
+        return "cond:" + ddb_fields.CONDITIONS.get(int(arg), "")
+    return "cond:Exhaustion" if kind == "exhaustion" else field
+
+
+def as_shown(db: Session, character: Character, summary: dict | None) -> dict | None:
+    """The character's sheet as askdnd shows it (Brett, 2026-10-29: the page shows a change at once, marked until D&D
+    Beyond has it): D&D Beyond's, with the changes on their way already made, and "sync" saying which marks are on
+    their way ("on") or were given up to make by hand ("failed"); "ending" names conditions on their way off. Without
+    any, `summary` as it is."""
+    if not summary or not character.id:
+        return summary
+    rows = list(db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == character.id, BridgeIntent.state.in_(OPEN))
+                           .order_by(BridgeIntent.id)))
+    n = numbers(character) if rows else {}
+    if not n:
+        return summary
+    going = [_as_dict(it) for it in rows if it.state != "not_yet"]
+    vals = plan(going, n)[0] if going else {}
+    sync = {_mark(f): "failed" for it in rows if it.state == "not_yet" for f in plan([_as_dict(it)], n, every=True)[0]}
+    sync |= {_mark(f): "on" for f in vals}
+    if not sync:
+        return summary
+    shown = summary
+    if vals:
+        raw = copy.deepcopy(n["raw"])
+        for f, v in vals.items():
+            ddb_fields.put(raw, f, v)
+        try:
+            shown = ddb.parse_character(raw)
+        except ddb.DdbError:
+            shown = summary
+    had = {c["name"] for c in summary.get("conditions") or []}
+    ending = [m[5:] for f, m in ((f, _mark(f)) for f in vals) if m.startswith("cond:") and not vals[f] and m[5:] in had]
+    return {**shown, "sync": sync, "ending": ending}
 
 
 def outbox(db: Session, character: Character) -> dict | None:
@@ -1019,7 +1065,7 @@ def _made(db: Session, character: Character, user: dict) -> JSONResponse:
     """A change made from the bridge page: its state, the page and its panels told (web.changed), and the extension
     told to make it now (app.js "bridgeDeliver")."""
     out = _json(state(db, character, user))
-    out.headers["HX-Trigger"] = web.changed(character, bridgeDeliver=True)
+    out.headers["HX-Trigger"] = web.changed(character, deliver=True)
     return out
 
 

@@ -1,3 +1,4 @@
+{% from "_char.html" import SYNC_SAYS %}
 {# Each condition's icon (Brett, 2026-10-28; docs/mockups/conditions-on-battle.html): askdnd's own, 24×24, drawn in
    the condition's colour (app.css `[data-cond]`). D&D Beyond's icons are its own art, so these aren't copies. #}
 {% macro cond_icon(name) -%}
@@ -29,15 +30,16 @@
    rules summary (character_pages._battle_ctx). #}
 {% macro cond_corner(conditions) -%}
 {% if conditions %}
-{% set cols = cond_edge(conditions) | map("cond_var") | list %}
-<div class="cond-halo{{ ' dark' if cond_darkens(conditions) }}" aria-hidden="true" style="--edge: {{ (cols + [cols[0]]) | join(', ') }}"><i class="cond-line"></i><i class="cond-glow"></i></div>
+{% set counted = conditions | selectattr("counts") | list %}
+{% set cols = cond_edge(counted) | map("cond_var") | list %}
+{% if cols %}<div class="cond-halo{{ ' dark' if cond_darkens(counted) }}" aria-hidden="true" style="--edge: {{ (cols + [cols[0]]) | join(', ') }}"><i class="cond-line"></i><i class="cond-glow"></i></div>{% endif %}
 {% set shown = conditions[-5:] %}
 <div class="cond-corner" role="group" aria-label="Conditions">
   {% if conditions | length > 5 %}<span class="cond-more">+{{ conditions | length - 5 }} more</span>{% endif %}
   {% for x in shown %}
-  <button type="button" class="cond-emb" data-cond="{{ cond_slug(x.name) }}" data-name="{{ x.name }}" aria-expanded="false" aria-label="{{ x.name }}{% if x.level %} {{ x.level }}{% endif %}">
+  <button type="button" class="cond-emb" data-cond="{{ cond_slug(x.name) }}" data-name="{{ x.name }}" data-mark="{{ c.id }}:emb:{{ x.name }}"{% if x.sync %} data-sync="{{ x.sync }}"{% endif %} aria-expanded="false" aria-label="{{ x.name }}{% if x.level %} {{ x.level }}{% endif %}">
     {{- cond_icon(x.name) }}{% if x.level %}<span class="cond-lv">{{ x.level }}</span>{% endif %}
-    <span class="cond-tip" role="tooltip"><b>{{ x.name }}{% if x.level %}, level {{ x.level }}{% endif %}</b>{{ x.rules }}<span class="note">{% if x.source %}{{ x.source }} · {% endif %}the DM rules</span></span>
+    <span class="cond-tip" role="tooltip"><b>{{ x.name }}{% if x.level %}, level {{ x.level }}{% endif %}</b>{{ x.rules }}{% if x.sync %}<span class="note sync-note">{{ SYNC_SAYS[x.sync] }}</span>{% endif %}<span class="note">{% if x.source %}{{ x.source }} · {% endif %}the DM rules</span></span>
   </button>
   {% endfor %}
 </div>

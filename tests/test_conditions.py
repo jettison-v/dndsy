@@ -111,30 +111,57 @@ def test_a_condition_shows_on_battle_party_and_your_menu_bar_button(player, dm, 
     assert 'id="battle-body" class="cond-ghost"' in dm.get(f"/characters/{cole.id}/battle").text  # the portrait fades
 
 
-def test_with_the_bridge_a_condition_is_made_on_d_and_d_beyond_and_shows_once_its_there(player, db, sheet):
-    """A standing rule (Brett, 2026-10-28: changes only while the sheet can be reached; conditions synced both ways):
-    starting or ending one D&D Beyond holds becomes a change for the sheet, shown once D&D Beyond has it."""
+def test_with_the_bridge_a_condition_is_made_on_d_and_d_beyond_and_shows_at_once_marked_until_its_there(player, db, sheet):
+    """A standing rule (Brett, 2026-10-28: changes only while the sheet can be reached; conditions synced both ways;
+    2026-10-29: the page shows a change at once, marked until D&D Beyond has it): starting or ending one D&D Beyond
+    holds becomes a change for the sheet, sent at once from whatever page it's made on, shown as made with its mark
+    (on its way, ending, or given up to make on the sheet) until D&D Beyond has it."""
     from sqlalchemy import select
 
     from app.models import BridgeIntent
 
     cole = char(db, "Cole")
     r = player.post(f"/characters/{cole.id}/conditions", data={"name": "Poisoned", "source": "Giant Spider"}, headers=HX)
-    assert r.status_code == 200 and "bridgeDeliver" in r.headers["HX-Trigger"]
+    assert r.status_code == 200 and json.loads(r.headers["HX-Trigger"])["bridgeDeliver"] == {"ddbId": "75423618"}  # sent now, from Battle
     it = db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == cole.id)).all()[-1]
     assert (it.kind, it.data) == ("set", {"field": "condition:11", "value": True})
-    assert 'data-name="Poisoned"' not in r.text  # not until D&D Beyond has it
+    assert 'data-name="Poisoned" data-mark="' in r.text and 'data-sync="on"' in r.text  # shown already, on its way
     sheet["conditions"] = [{"id": 11, "level": None}, {"id": 4, "level": 3}]  # made (and Exhaustion 3 ticked there)
     characters.refresh(db, cole)
     page = player.get(f"/characters/{cole.id}/battle").text
-    assert 'data-name="Poisoned"' in page and "Giant Spider" in page and 'class="cond-lv">3<' in page
-    player.post(f"/characters/{cole.id}/conditions/end", data={"name": "Exhaustion"}, headers=HX)
+    assert 'data-name="Poisoned"' in page and "Giant Spider" in page and 'class="cond-lv">3<' in page and "data-sync" not in page
+    r = player.post(f"/characters/{cole.id}/conditions/end", data={"name": "Exhaustion"}, headers=HX)
     it = db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == cole.id).order_by(BridgeIntent.id)).all()[-1]
     assert it.data == {"field": "exhaustion", "value": 0}
+    assert 'data-sync="ending"' in r.text and "Ending…" in r.text and "var(--cond-exhaustion)" not in r.text  # off the edge already
+    it.state = "not_yet"  # it gave up: to make on the sheet
+    db.commit()
+    page = player.get(f"/characters/{cole.id}/battle").text
+    assert 'data-sync="failed"' in page and "end it on the sheet" in page
     cole.sheet_heard_at = None  # the sheet can't be reached: nothing is taken
     db.commit()
     assert player.post(f"/characters/{cole.id}/conditions", data={"name": "Prone"}, headers=HX).status_code == 409
     assert player.post(f"/characters/{cole.id}/conditions", data={"name": "Enlarged"}, headers=HX).status_code == 200  # askdnd's own
+
+
+def test_a_hit_on_its_way_shows_on_battle_and_party_at_once(player, dm, db, sheet):
+    """Brett, 2026-10-29: the numbers change at once; the Hit points tile is marked until D&D Beyond has the hit."""
+    cole = char(db, "Cole")
+    r = player.post(f"/bridge/hp/{cole.id}", data={"amount": "-10"})
+    assert json.loads(r.headers["HX-Trigger"])["bridgeDeliver"] == {"ddbId": "75423618"}
+    tile = dm.get(f"/characters/{cole.id}/battle").text.split(f'data-mark="{cole.id}:hp"')[1][:200]
+    assert 'data-sync="on"' in tile and "<b>27</b>" in tile  # 37 − 10, before D&D Beyond has it
+    assert 'data-sync="on"' in dm.get("/c/main/party").text.split(f'data-mark="{cole.id}:hp"')[1][:80]
+    from sqlalchemy import select
+
+    from app.models import BridgeIntent
+
+    sheet["removedHitPoints"] = 24  # made, and the read-back counted it (ddb_bridge.delivered)
+    characters.refresh(db, cole)
+    db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == cole.id)).one().state = "live"
+    db.commit()
+    tile = dm.get(f"/characters/{cole.id}/battle").text.split(f'data-mark="{cole.id}:hp"')[1][:200]
+    assert "data-sync" not in tile and "<b>27</b>" in tile
 
 
 def test_without_the_bridge_a_condition_ticked_on_d_and_d_beyond_shows_and_ends_there(player, db, monkeypatch):

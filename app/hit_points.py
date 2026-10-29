@@ -217,7 +217,7 @@ def applied(db: Session, roll: TableRoll) -> dict[int, TableRoll]:
 
 
 def _context(db: Session, ch: Character) -> tuple[dict, dict | None]:
-    summary = chars.character_summary(ch) or {}
+    summary = ddb_bridge.as_shown(db, ch, chars.character_summary(ch)) or {}  # a hit on its way counts already
     form = None
     if ch.wild_shape and summary:
         beasts = ws.beasts(db, ch.campaign_id)
@@ -328,7 +328,7 @@ async def apply(request: Request, character_id: int, db: Session = Depends(get_d
     db.commit()
     toast = text + (f". Concentration ({w['conc']['spell']}): a Con save, DC {w['conc']['dc']}" if w["conc"] else "")
     out = HTMLResponse("")
-    out.headers["HX-Trigger"] = web.changed(ch, toast=toast, closePanel=True, bridgeDeliver=True)
+    out.headers["HX-Trigger"] = web.changed(ch, toast=toast, closePanel=True, deliver=True)
     return out
 
 

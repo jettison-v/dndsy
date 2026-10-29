@@ -95,6 +95,46 @@ def value(data: dict, field: str):
     return pick(data, steps(field))
 
 
+def put(data: dict, field: str, v) -> None:
+    """Write `v` where `field` lives in D&D Beyond's character data (a copy: what askdnd shows while a change is on its
+    way, ddb_bridge.as_shown), the other way round from `value`. A field it can't find is left as it is."""
+    kind, arg = _split(field)
+    if kind in ("condition", "exhaustion"):  # a condition is there or not; Exhaustion is one with a level
+        cid = EXHAUSTION if kind == "exhaustion" else int(arg)
+        rest = [c for c in data.get("conditions") or [] if not (isinstance(c, dict) and c.get("id") == cid)]
+        data["conditions"] = rest + ([{"id": cid, "level": int(v) if kind == "exhaustion" else None}] if v else [])
+        return
+    _put(data, [s for s in steps(field) if not (isinstance(s, dict) and ("or" in s or "present" in s))], v)
+
+
+def _put(here, path: list, v) -> None:
+    for i, s in enumerate(path):
+        last = i == len(path) - 1
+        if isinstance(s, dict) and "read" in s:  # several values at once (hit points: damage taken and temporary)
+            for k, sub in s["read"].items():
+                if isinstance(v, dict) and k in v:
+                    _put(here, [x for x in sub if not (isinstance(x, dict) and "or" in x)], v[k])
+            return
+        if s == "*":  # one of the groups (actions by where they come from): the first that has the rest of the path
+            for part in (here.values() if isinstance(here, dict) else []):
+                if isinstance(part, list) and any(isinstance(x, dict) and str(x.get(next(iter(path[i + 1])))) == str(next(iter(path[i + 1].values())))
+                                                  for x in part):
+                    return _put(part, path[i + 1:], v)
+            return
+        if isinstance(s, str):
+            if not isinstance(here, dict):
+                return
+            if last:
+                here[s] = v
+                return
+            here = here.get(s)
+        elif isinstance(s, dict) and len(s) == 1:  # the one in a list with this id (or level)
+            (key, want), = s.items()
+            here = next((x for x in here if isinstance(x, dict) and str(x.get(key)) == str(want)), None) if isinstance(here, list) else None
+        if here is None:
+            return
+
+
 def tracked(data: dict | None) -> dict:
     """Every field the bridge follows on this character, with its value on D&D Beyond (what the log compares)."""
     if not data:

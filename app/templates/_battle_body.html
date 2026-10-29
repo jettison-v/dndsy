@@ -1,6 +1,6 @@
-{% from "_char.html" import pips, pick_btn, pin_icon, battle_strip, save_tiles, resource_row, portrait, spends, adv, hit, roll_attrs %}
+{% from "_char.html" import pips, pick_btn, pin_icon, battle_strip, save_tiles, resource_row, portrait, spends, adv, hit, roll_attrs, sync_attrs %}
 {% from "_notes_macros.html" import combo_body %}
-{% from "_cond_icons.html" import cond_icon, cond_corner %}
+{% from "_cond_icons.html" import cond_icon, cond_corner with context %}
 {% set s = sheet %}
 {# Character › Battle (character_pages._battle_ctx). Game Mode and the Wild Shape switch swap this whole block. #}
 <div id="battle-body"{% if "Invisible" in active_conditions %} class="cond-ghost"{% endif %} data-character="{{ c.id }}" data-name="{{ c.name }}" data-fetched="{{ fetched_at.isoformat() if fetched_at else '' }}" data-cond-adv='{{ cond_adv | tojson }}'>
@@ -35,13 +35,14 @@
   {% if conditions or (can_pick and s and not form) %}{# Status: conditions and item effects; everyone at the table sees them #}
   <div class="cond-bar" aria-label="Status">
     {% for x in conditions %}
-    <details class="cond-pill" data-cond="{{ cond_slug(x.name) }}">
-      <summary>{{ cond_icon(x.name) }}<b>{{ x.name }}{% if x.level %} {{ x.level }}{% endif %}</b>{% if x.source %}<span class="conc-k">{{ x.source }}</span>{% endif %}</summary>
+    <details class="cond-pill" data-cond="{{ cond_slug(x.name) }}" data-mark="{{ c.id }}:cond:{{ x.name }}"{{ sync_attrs(x.sync) }}>
+      <summary>{{ cond_icon(x.name) }}<b>{{ x.name }}{% if x.level %} {{ x.level }}{% endif %}</b>{% if x.sync == "ending" %}<span class="conc-k">Ending…</span>{% endif %}{% if x.source %}<span class="conc-k">{{ x.source }}</span>{% endif %}</summary>
       <div class="cond-box">
         <p>{{ x.rules }}</p>
         {% if x.note %}<p class="note">{{ x.note }}</p>{% endif %}
         <p class="note">askdnd lists what it changes in the roll window; the DM makes the call.</p>
-        {% if can_pick %}<div class="row">
+        {% if x.sync %}<p class="note sync-note">{{ {"on": "On its way to D&D Beyond: it shows here already.", "ending": "Ending: on its way to D&D Beyond.", "failed": ("D&D Beyond didn't take this: end it on the sheet." if x.on_ddb else "D&D Beyond didn't take this: tick it on the sheet.")}[x.sync] }}</p>{% endif %}
+        {% if can_pick and x.sync != "ending" %}<div class="row">
           {% if x.name == "Exhaustion" %}{% for lv in range(1, 7) %}<button class="btn small{{ ' primary' if lv == x.level }}" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": "Exhaustion", "level": lv, "source": x.source or ""} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML" title="Exhaustion level {{ lv }}">{{ lv }}</button>{% endfor %}{% endif %}
           <button class="btn small" hx-post="/characters/{{ c.id }}/conditions/end" hx-vals='{{ {"name": x.name} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">End {{ x.name }}</button></div>{% endif %}
       </div>

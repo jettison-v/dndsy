@@ -9,6 +9,11 @@
 {# A number a page shows of a character, named so a change to it marks itself for a moment when the page shows its new
    copy (app.js "the change mark", in showInPlace): its value is the tile's first <b>. #}
 {% macro mark(c, kind) %}data-mark="{{ c.id }}:{{ kind }}"{% endmacro %}
+{# A change on its way to D&D Beyond, or given up (ddb_bridge.as_shown's "sync"; Brett, 2026-10-29): the page shows it
+   as made and marks it until D&D Beyond has it. `st` is "on", "ending" or "failed"; app.css draws the mark. #}
+{% set SYNC_SAYS = {"on": "On its way to D&D Beyond", "ending": "Ending: on its way to D&D Beyond", "failed": "D&D Beyond didn't take this: make it there"} %}
+{% macro sync_attrs(st) %}{% if st %} data-sync="{{ st }}" title="{{ SYNC_SAYS[st] }}"{% endif %}{% endmacro %}
+{% macro sync(s, kind) %}{{ sync_attrs(((s or {}).sync or {}).get(kind)) }}{% endmacro %}
 {% macro tile(c, kind) %}data-panel-url="/characters/{{ c.id }}/vital/{{ kind }}" tabindex="0" role="button" {{ mark(c, kind) }}{% endmacro %}
 
 {# Advantage, marked the same way everywhere (app/advantage.py): a small "Adv" badge, with when it
@@ -177,7 +182,7 @@
 {# Battle's header: the Character page's number strip, with the labels and tiles it uses, tighter. #}
 {% macro battle_strip(s, c) -%}
 <div class="strip compact">
-  <div {{ tile(c, "hp") }}><small>Hit points</small><b>{{ s.hit_points.current }}</b>{% if s.hit_points.current != s.hit_points.max %}<span class="note"> / {{ s.hit_points.max }}</span>{% endif %}{% if s.hit_points.temp %}<span class="note"> +{{ s.hit_points.temp }} temp</span>{% endif %}</div>
+  <div {{ tile(c, "hp") }}{{ sync(s, "hp") }}><small>Hit points</small><b>{{ s.hit_points.current }}</b>{% if s.hit_points.current != s.hit_points.max %}<span class="note"> / {{ s.hit_points.max }}</span>{% endif %}{% if s.hit_points.temp %}<span class="note"> +{{ s.hit_points.temp }} temp</span>{% endif %}</div>
   <div {{ tile(c, "ac") }}><small>Armor class</small><b>{{ s.armor_class }}</b></div>
   <div {{ tile(c, "speed") }}><small>Speed</small><b>{{ s.speed.walk }} ft</b>{% set extra = s.speed.items() | rejectattr(0, "in", ["walk", "parts", "notes"]) | list %}{% if extra %}<span class="note"> {% for k, v in extra %}{{ k }} {{ v }}{{ ", " if not loop.last }}{% endfor %}</span>{% endif %}</div>
   <div {{ tile(c, "initiative") }}><small>Initiative</small><b>{{ s.initiative }}</b>{{ adv(s.initiative_adv) }}<button type="button" class="roll-chip tile-roll" {{ roll_attrs("check", "Initiative", s.initiative, "", s.initiative_adv) }} title="Roll Initiative">Roll</button></div>
