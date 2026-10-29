@@ -257,13 +257,12 @@
     if (back) { /* returning: the history entry was already taken off */ }
     else if (inside && panel.dataset.url) {
       const title = panel.querySelector('#peek-title');
-      layer.history.push({ url: panel.dataset.url, modal: panel.classList.contains('full') ? 'full' : panel.classList.contains('large') ? 'large' : panel.classList.contains('modal'), scroll: (panel.querySelector('.peek-body') || {}).scrollTop || 0,
+      layer.history.push({ url: panel.dataset.url, modal: panel.classList.contains('large') ? 'large' : panel.classList.contains('modal'), scroll: (panel.querySelector('.peek-body') || {}).scrollTop || 0,
                            title: title ? title.textContent.trim() : '', layer });
     } else layer.history = [];
     if (!inside && !back) { if (layer.name === 'top') layer.focus = opener; else lastFocus = opener; }
     panel.classList.toggle('modal', !!modal);
-    panel.classList.toggle('large', modal === 'large' || modal === 'full');
-    panel.classList.toggle('full', modal === 'full');
+    panel.classList.toggle('large', modal === 'large');
     backdrop.classList.toggle('dim', !!modal);
     fetch(url, { headers: { 'HX-Request': 'true' } })
       .then(r => (r.ok ? r.text() : Promise.reject(r.status)))
@@ -312,7 +311,7 @@
     const t = e.target.closest('[data-panel-url], [data-modal-url]');
     if (!t || e.target.closest('button[hx-post], form, [data-roll], details')) return;  // (a pop-up in a row: the row stays put)
     e.preventDefault();
-    if (t.dataset.modalUrl) openPanel(t.dataset.modalUrl, t, t.getAttribute('href'), ['large', 'full'].includes(t.dataset.modalSize) ? t.dataset.modalSize : true);
+    if (t.dataset.modalUrl) openPanel(t.dataset.modalUrl, t, t.getAttribute('href'), t.dataset.modalSize === 'large' ? 'large' : true);
     else openPanel(t.dataset.panelUrl, t, t.getAttribute('href'));
   });
   document.addEventListener('keydown', e => {
