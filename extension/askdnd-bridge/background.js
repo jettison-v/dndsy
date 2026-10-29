@@ -105,6 +105,12 @@ chrome.runtime.onMessage.addListener((m, sender) => {
       return;
     }
     if (m.type === 'wake') return hello();
+    // D&D Beyond's VTT open in this browser: the fight as it changes (vtt-page.js; askdnd only listens)
+    if (m.type === 'vtt-fight') {
+      const game = ((sender.tab && sender.tab.url || '').match(/^https:\/\/www\.dndbeyond\.com\/games\/(\d+)/) || [])[1];
+      if (game) return api('POST', '/bridge/fight/' + game, { fight: m.fight }).catch(() => {});
+      return;
+    }
     const here = ddbIdOf(sender.tab && sender.tab.url);  // the rest come from a D&D Beyond sheet
     if (!here) return;
     // A sheet opened or used: the bridge is awake (askdnd reads the sheet if its copy is a few minutes old)

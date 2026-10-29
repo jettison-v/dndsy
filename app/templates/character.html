@@ -8,6 +8,7 @@
 {% block content %}
 {% set s = sheet %}
 <main class="page wide char-page mode-{{ mode }}{{ ' sheet' if mode in ('sheet', 'plan') }}" data-character="{{ c.id }}" data-roll-ctx="{{ roll_context(s) }}">
+  {% include "_fight_band.html" %}
   {# The same header in every mode: who this is, and the mode switch. Switch characters from the menu bar. #}
   <div class="char-head">
     {{ portrait(s, "md") }}

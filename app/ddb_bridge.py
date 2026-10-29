@@ -1062,6 +1062,23 @@ def bridge_heard(ddb_id: str, request: Request, pull: int = 0, db: Session = Dep
     return _json({**state(db, character, user), "check": check(character)})
 
 
+@router.post("/bridge/fight/{game_id}")
+async def bridge_fight(game_id: str, request: Request, db: Session = Depends(get_db)):
+    """The extension, on an open D&D Beyond VTT page, says what the fight is now (app/fight.py; it only listens).
+    Taken from anyone at that campaign's table, where the campaign has the bridge."""
+    from app import fight, vtt
+
+    user = _signed_in(request, db)
+    body = await request.json()
+    told = body.get("fight") if isinstance(body, dict) else None
+    changed = False
+    for campaign in fight.campaigns_for(db, game_id[:40]):
+        if vtt.on(campaign, "ddb_bridge") and (is_admin(user) or access.role(user["email"], campaign.id)):
+            changed = fight.heard(db, campaign, told if isinstance(told, dict) else None) or changed
+    db.commit()
+    return _json({"ok": True, "changed": changed})
+
+
 @router.post("/bridge/drink/{character_id:int}/{item_id:int}")
 def bridge_drink(character_id: int, item_id: int, request: Request, db: Session = Depends(get_db)):
     character, user = _mine(db, request, character_id)

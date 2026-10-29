@@ -214,3 +214,27 @@ own initiative order. Checked in Brett's Chrome with a temporary listener in the
 Decided by Brett: each condition can say how long it lasts (until it's ended; the start or end of someone's next turn; rounds; 1 minute; minutes or hours; until a save, with its ability, DC and when it's rolled), chosen in + Condition's **Lasts**. The turns come from D&D Beyond's VTT (heard, never written). When one runs out or asks for a save, a **corner card** reminds the character's player and the DM: End it / Keep, or Roll the save; nothing ends by itself. Battle's pills say it in a few words ("to your next turn", "Wis 13 save", "9 rounds"), and a click shows the whole of it with End it; a badge gets an amber dot on the turn it ends. A **fight band** above the name on every character page and on Party shows the round, whose turn, "you're next" and the order, only while a fight runs. Not heard (no VTT open), nothing is counted and no reminder comes; Concentration keeps +1.
 
 To build, in order: the extension listening on the VTT page (a new extension version for the Chrome Web Store), askdnd keeping the fight (order, round, turn) per campaign and announcing it live, the fight band, then durations and their reminders.
+
+## What open-source tools do (checked Oct 29, for how to build the listening)
+
+Brett asked to look at open-source options before building. Findings:
+
+- **Nobody reads D&D Beyond Maps' fight.** A GitHub code search finds no project using the VTT's game server
+  (`games.dndbeyond.com`) or its fight actions (`INCREMENT_COMBAT_TURN`, `ADD_TO_COMBAT`…). The one tool that shows
+  Maps' initiative live elsewhere, "D&D Beyond Maps VTT for Tabletop Display" (Chrome Web Store, 58 users), isn't open
+  source and works on Maps' spectator page.
+- **Many read the Game Log, for rolls only**: the Foundry modules D&D Beyond Gamelog (initiative into Foundry's own
+  tracker, from an Initiative *roll*), ddb-sync and foundry-dnd-beyond-rolls; rrgeorge/EncounterLog (MIT, Game Log to
+  EncounterPlus); AstralBridge; ddb-importer for characters. None hears turns: the Game Log doesn't carry them.
+- **AboveVTT** (cyruzzo/AboveVTT, AGPL-3.0, active) is a whole VTT drawn over D&D Beyond with its own combat tracker,
+  not Maps'. Worth knowing for askdnd's own VTT later (its code can't be copied in: AGPL). One technique worth taking:
+  it uses D&D Beyond's own **message broker** (`window[Symbol.for('@dndbeyond/message-broker-lib')]`, with
+  `subscribe` and `dispatch`) for the Game Log instead of patching the WebSocket. The VTT page has it too, but for the
+  Game Log only; its game server isn't published that way.
+
+So the build stays as found live: the extension listens on the VTT page's game server connection. It takes the whole
+fight from the SYNC the VTT gets on connecting; follows Next, back and the fight ending exactly as the VTT's own code
+does; and for a change that re-sorts the order (start, add, remove, a new initiative) takes the order the VTT itself
+worked out on the page, falling back to sorting by initiative. If D&D Beyond changes its messages, askdnd shows the
+fight as not heard, and nothing else breaks. Later, the sheets' Game Log listening (ddb-page.js) could move to the
+message broker as AboveVTT does: sturdier than the WebSocket patch.

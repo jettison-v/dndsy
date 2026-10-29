@@ -11,6 +11,7 @@
 <span class="pt-who">{% for w in list %}<span class="pt-w" data-panel-url="{{ w.url }}" tabindex="0" role="button" title="{{ w.label }}" aria-label="Open {{ w.name }}'s{{ ' (' ~ w.note ~ ')' if w.note }}"><span class="roll-av hue{{ w.hue }}">{% if w.portrait %}<img src="{{ w.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ w.name[:1] }}</span>{% if w.note %}<small class="note">{{ w.note }}</small>{% endif %}</span>{% endfor %}</span>
 {%- endmacro %}
 <main class="page wide">
+  {% include "_fight_band.html" %}
   <div class="title-row"><h1>Party</h1></div>
   <p class="subtitle">{% if here %}{{ here.name }} · {% endif %}{{ rows | length }} character{{ "s" if rows | length != 1 }}{% if oldest %} · from D&amp;D Beyond {{ oldest | ago }}{% endif %}</p>
   {% if pick %}<p class="flash warn">You aren't set as playing a character yet, so pick one below. (An admin can set who plays which character on Manage › Table.)</p>{% endif %}
