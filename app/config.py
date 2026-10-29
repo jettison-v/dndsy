@@ -49,7 +49,7 @@ DEV_LOGIN_EMAIL = "" if IS_PRODUCTION else os.getenv("DEV_LOGIN_EMAIL", "").stri
 # roadmap step 4); each campaign still has it only once switched on (the VTT piece "ddb_bridge", app/vtt.py)
 DDB_BRIDGE = os.getenv("DDB_BRIDGE", "").strip() == "1"
 # Where the table adds the extension: its Chrome Web Store listing (unlisted: only people with this link find it)
-BRIDGE_EXTENSION_URL = ""
+BRIDGE_EXTENSION_URL = "https://chromewebstore.google.com/detail/askdnd-bridge/obpgemimnhngpcckodjkcihiahoaefpl"
 
 
 def sqlalchemy_url(raw: str | None) -> str:
