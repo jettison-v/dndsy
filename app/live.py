@@ -69,7 +69,7 @@ def rows_from(db: Session) -> list[dict]:
     q = (select(Character.id, Character.name, User.email, Character.ddb_id, Character.copy_of_id, Character.sheet_heard_at,
                 CharacterSnapshot.fetched_at, CharacterSnapshot.status, CharacterSnapshot.error,
                 summary["portrait"].astext, summary["classes"], summary["hit_points"]["current"].astext,
-                summary["hit_points"]["max"].astext)
+                summary["hit_points"]["max"].astext, Character.conditions)
          .join(CampaignCharacter, CampaignCharacter.character_id == Character.id)
          .outerjoin(User, Character.owner_id == User.id)
          .outerjoin(CharacterSnapshot, CharacterSnapshot.character_id == Character.id)
@@ -81,8 +81,9 @@ def rows_from(db: Session) -> list[dict]:
              "hp": f"{hp}/{hp_max} HP" if hp and hp_max else "",
              # (a test copy shares a real sheet, so the bridge never works on it: ddb_bridge.on_for)
              "step": bool(bridge and ddb_id and copy_of is None and heard and heard >= reach),
-             "by_hand": by_hand.get(cid, 0) if bridge and copy_of is None else 0}
-            for cid, name, email, ddb_id, copy_of, heard, fetched, status, error, portrait, classes, hp, hp_max in db.execute(q)]
+             "by_hand": by_hand.get(cid, 0) if bridge and copy_of is None else 0,
+             "conditions": [x.get("name", "") for x in conditions or [] if isinstance(x, dict)]}  # the menu bar's dots
+            for cid, name, email, ddb_id, copy_of, heard, fetched, status, error, portrait, classes, hp, hp_max, conditions in db.execute(q)]
 
 
 def _load_from_db() -> list[dict]:

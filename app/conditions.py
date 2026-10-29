@@ -80,6 +80,32 @@ def rules_text(name: str) -> str:
     return EFFECT_TEXT.get(name) or next((t.text for t in rules_terms.TERMS if t.name == name), "")
 
 
+# How a condition shows on Battle (Brett, 2026-10-28; docs/mockups/conditions-on-battle.html): each its own colour
+# (app.css, by its slug) and icon (_cond_icons.html), and a family for the halo around the page: the most serious one
+# present, red for can't act, amber for hindered, blue for helped. Poisoned (green), Invisible (white) and Blinded
+# (black: the edges darken) have a ring of their own instead, stacked with it; Unconscious darkens the edges too.
+CANT_ACT = ("Incapacitated", "Paralyzed", "Petrified", "Stunned", "Unconscious")
+HELPED = ("Invisible", *EFFECTS)
+FAMILIES = ("cant", "hindered", "helped")  # most serious first
+OWN_RINGS = (("Poisoned", "poisoned"), ("Invisible", "invisible"), ("Blinded", "dark"), ("Unconscious", "dark"))
+
+
+def family(name: str) -> str:
+    return "cant" if name in CANT_ACT else "helped" if name in HELPED else "hindered"
+
+
+def slug(name: str) -> str:
+    return _slug(name)
+
+
+def rings(conditions: list[dict] | None) -> list[str]:
+    """The halo's rings, innermost first: the most serious family among the conditions without a ring of their own,
+    then each ring of its own once (["hindered", "poisoned"] for Poisoned and Prone; [] for none)."""
+    names = [c.get("name", "") for c in conditions or []]
+    fams = sorted({family(n) for n in names if n not in ("Poisoned", "Invisible", "Blinded")}, key=FAMILIES.index)
+    return fams[:1] + list(dict.fromkeys(r for n, r in OWN_RINGS if n in names))
+
+
 def usable(it: dict) -> bool:
     """An item whose powers work now: equipped (or attuned), and attuned if it needs attunement."""
     return bool(it.get("magic")) and (it.get("equipped") or it.get("attunement") == "attuned") and it.get("attunement") != "required"

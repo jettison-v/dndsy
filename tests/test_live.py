@@ -86,7 +86,7 @@ def test_your_character_opens_in_the_mode_you_used_last(player, db):
     assert f'href="/characters/{trah.id}/plan"' in party_menu(player.get("/c/main/").text)
     player.get(f"/characters/{cole.id}")
     assert f'href="/characters/{cole.id}"' in mine("/c/main/campaign")
-    assert ">Cole</span></a>" in topbar(player.get("/party").text)
+    assert ">Cole</span><span class=\"cond-dots\"" in topbar(player.get("/party").text)
 
 
 def test_the_dm_has_no_character_button(dm, db):

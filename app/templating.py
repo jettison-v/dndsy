@@ -3,6 +3,7 @@ from pathlib import Path
 from fastapi import Request
 
 from app import access, config, rules_data, vtt
+from app import conditions as cond
 from fastapi.templating import Jinja2Templates
 
 
@@ -239,4 +240,7 @@ templates.env.filters["combo_steps"] = _combo_steps
 templates.env.globals["bridge_on"] = config.DDB_BRIDGE
 templates.env.globals["bridge_extension_url"] = config.BRIDGE_EXTENSION_URL
 templates.env.globals["SRD_ATTRIBUTION"] = rules_data.ATTRIBUTION  # Help › About; the SRD's license asks for it word for word
+# Conditions' look on Battle, Party and the menu bar (app/conditions.py, _cond_icons.html)
+templates.env.globals["cond_slug"] = cond.slug
+templates.env.globals["cond_rings"] = cond.rings
 templates.env.globals["STEP_KINDS"] = {"bonus": "Bonus action", "action": "Action", "reaction": "Reaction", "move": "Movement", "free": "Free"}

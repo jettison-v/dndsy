@@ -46,6 +46,10 @@
      leveling) · full window (the Spell Book) */
   --panel-w: 420px; --modal-w: 720px; --modal-lg-w: 1180px; --modal-full-w: 95vw;
   /* Screen widths (media queries can't use variables): phone ≤ 640px, tablet ≤ 900px, wide ≥ 1100px */
+  /* Conditions (docs/mockups/conditions-on-battle.html): each one's colour, the halo's families and the dark ring */
+  --cond-blinded: #e6e9ee; --cond-charmed: #ec84b8; --cond-deafened: #c3b08a; --cond-exhaustion: #d08a4c; --cond-frightened: #a983e6; --cond-grappled: #e59a52; --cond-incapacitated: #ef6a5e; --cond-invisible: #f4f6f9; --cond-paralyzed: #f0d24a;
+  --cond-petrified: #b3aa9b; --cond-poisoned: #86c95b; --cond-prone: #c9a47b; --cond-restrained: #d9774d; --cond-stunned: #f2b93b; --cond-unconscious: #7b8ce0; --cond-enlarged: #4fc7b0; --cond-flying: #8fc6f2; --cond-water-breathing: #5aa7e8;
+  --halo-cant: #e5534b; --halo-hindered: #e8a33d; --halo-helped: #5ec4d6; --cond-dark: #000; --cond-dark-edge: #6b7079; --cond-dark-glow: rgba(0, 0, 0, .8);
 }
 @media (max-width: 640px) { :root { --control-h: 44px; --control-h-sm: 36px; --chip-h: 36px; } }
 * { box-sizing: border-box; }
@@ -81,7 +85,7 @@ img { max-width: 100%; }
 .table-nav { display: flex; gap: 6px; align-items: center; }
 .char-btn { display: inline-flex; align-items: center; gap: 8px; min-height: var(--control-h); padding: 4px 12px; background: none; border: 1px solid var(--line); border-radius: var(--r-sm); color: var(--text); text-decoration: none; font-weight: 500; font-size: var(--fs-md); white-space: nowrap; }
 a.char-btn { padding-left: 5px; max-width: 200px; }
-a.char-btn > span:last-child { overflow: hidden; text-overflow: ellipsis; }
+a.char-btn > span:not(.char-av, .cond-dots) { overflow: hidden; text-overflow: ellipsis; }
 .char-btn:hover { background: var(--surface); }
 .char-btn.active { background: var(--surface); border-color: var(--line-strong); color: var(--text-strong); }
 .char-av { position: relative; width: 24px; height: 24px; border-radius: 50%; display: inline-grid; place-items: center; flex: none; overflow: hidden; background: var(--line-strong); color: var(--text); font-size: var(--fs-xs); font-weight: 700; }
@@ -408,8 +412,9 @@ table.list td a:hover { color: var(--text-strong); text-decoration: underline; }
   .bottom-nav { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--chrome); border-top: 1px solid var(--line); padding: 4px 4px env(safe-area-inset-bottom); }
   .bottom-nav > a, .bottom-nav > button { display: grid; place-items: center; min-height: 52px; color: var(--muted); text-decoration: none; font-size: var(--fs-xs); font-weight: 500; background: none; border: none; border-radius: var(--r-md); }
   .bottom-nav > a.active, .bottom-nav > button.active { color: var(--text-strong); font-weight: 700; box-shadow: inset 0 2px 0 var(--red); }
-  .bottom-nav > a.bn-char { align-content: center; gap: 2px; padding: 0 2px; }
-  .bn-char > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2; }
+  .bottom-nav > a.bn-char { align-content: center; gap: 2px; padding: 0 2px; position: relative; }
+  .bn-char .cond-dots { position: absolute; top: 4px; left: calc(50% + 8px); }
+  .bn-char > span:not(.char-av, .cond-dots) { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2; }
   .menu.sheet-menu { position: fixed; z-index: 40; top: auto; left: auto; right: 8px; bottom: calc(64px + env(safe-area-inset-bottom)); max-height: calc(100vh - 140px); overflow-y: auto; }
   body { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
   .mobile-bar { bottom: calc(60px + env(safe-area-inset-bottom)) !important; }
@@ -1662,7 +1667,59 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .cond-box { position: absolute; top: calc(100% + 8px); left: 0; z-index: 20; width: 320px; background: var(--surface); border: 1px solid var(--blue); border-radius: var(--r-lg); padding: 12px 14px; box-shadow: 0 14px 40px var(--shadow); font-size: var(--fs-sm); }
 .cond-box p { margin: 0 0 8px; }
 .cond-go { margin-top: 6px; }
-.cond-pill.bad > summary { border-color: var(--amber); }
+/* Each condition's colour (docs/mockups/conditions-on-battle.html; app/conditions.py): its pill, emblem, Party icon and
+   menu bar dot all take --c from [data-cond] */
+[data-cond] { --c: var(--amber); }
+[data-cond="blinded"] { --c: var(--cond-blinded); } [data-cond="charmed"] { --c: var(--cond-charmed); } [data-cond="deafened"] { --c: var(--cond-deafened); }
+[data-cond="exhaustion"] { --c: var(--cond-exhaustion); } [data-cond="frightened"] { --c: var(--cond-frightened); } [data-cond="grappled"] { --c: var(--cond-grappled); }
+[data-cond="incapacitated"] { --c: var(--cond-incapacitated); } [data-cond="invisible"] { --c: var(--cond-invisible); } [data-cond="paralyzed"] { --c: var(--cond-paralyzed); }
+[data-cond="petrified"] { --c: var(--cond-petrified); } [data-cond="poisoned"] { --c: var(--cond-poisoned); } [data-cond="prone"] { --c: var(--cond-prone); }
+[data-cond="restrained"] { --c: var(--cond-restrained); } [data-cond="stunned"] { --c: var(--cond-stunned); } [data-cond="unconscious"] { --c: var(--cond-unconscious); }
+[data-cond="enlarged"] { --c: var(--cond-enlarged); } [data-cond="flying"] { --c: var(--cond-flying); } [data-cond="water-breathing"] { --c: var(--cond-water-breathing); }
+.cond-icon { width: 16px; height: 16px; flex: none; color: var(--c); }
+.cond-pill:not(.cond-add) > summary { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); padding-left: var(--sp-2); }
+/* The halo: the page's own edge, one ring per cond.rings (most serious innermost), so it shows wherever you've scrolled */
+.cond-halo { position: fixed; inset: 0; z-index: 3; pointer-events: none; }
+.cond-halo i { position: absolute; inset: 0; --h: var(--amber); box-shadow: inset 0 0 0 calc(2px + var(--i) * 3px) var(--h), inset 0 0 calc(54px + var(--i) * 20px) color-mix(in srgb, var(--h) 33%, transparent); }
+.cond-halo [data-ring="cant"] { --h: var(--halo-cant); } .cond-halo [data-ring="hindered"] { --h: var(--halo-hindered); } .cond-halo [data-ring="helped"] { --h: var(--halo-helped); }
+.cond-halo [data-ring="poisoned"] { --h: var(--cond-poisoned); } .cond-halo [data-ring="invisible"] { --h: var(--cond-invisible); }
+.cond-halo [data-ring="dark"] { box-shadow: inset 0 0 0 calc(2px + var(--i) * 3px) var(--cond-dark), inset 0 0 90px 20px var(--cond-dark-glow); }
+.cond-halo.starting { animation: cond-flash 1.8s ease-out; }
+@keyframes cond-flash { 0% { filter: brightness(1.6); opacity: 1; } 100% { filter: none; } }
+/* The corner: an emblem per condition, bottom-right (the dice tray keeps bottom-left); above the bottom bar on phones */
+.cond-corner { position: fixed; z-index: 5; right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.cond-emb { position: relative; width: 48px; height: 48px; border-radius: 12px; border: 1.5px solid var(--c); background: color-mix(in srgb, var(--c) 18%, var(--bg)); color: var(--c); display: grid; place-items: center; padding: 0; cursor: pointer; box-shadow: 0 4px 14px var(--shadow); }
+.cond-emb .cond-icon { width: 26px; height: 26px; }
+.cond-emb[data-cond="blinded"] { background: var(--cond-dark); border-color: var(--cond-dark-edge); }
+.cond-emb[data-cond="prone"] .cond-icon { transform: rotate(-8deg); }
+.cond-lv { position: absolute; right: -6px; top: -6px; min-width: 18px; height: 18px; border-radius: 9px; background: var(--c); color: var(--bg); font: 700 var(--fs-xs)/18px var(--sans); text-align: center; padding: 0 4px; }
+.cond-emb.new { animation: cond-arrive .9s cubic-bezier(.2, 1.4, .4, 1); }
+@keyframes cond-arrive { 0% { transform: scale(.3) rotate(-20deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
+.cond-tip { position: absolute; right: 58px; bottom: 0; width: 260px; text-align: left; background: var(--surface); border: 1px solid var(--c); border-radius: var(--r-lg); padding: 10px 12px; color: var(--text); font-size: var(--fs-sm); line-height: 1.45; box-shadow: 0 10px 26px var(--shadow); display: none; }
+.cond-tip b { display: block; margin-bottom: 2px; }
+.cond-tip .note { display: block; margin-top: 4px; }
+.cond-emb:hover .cond-tip, .cond-emb:focus-visible .cond-tip, .cond-emb[aria-expanded="true"] .cond-tip { display: block; }
+.cond-more { font-size: var(--fs-xs); font-weight: 600; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px 9px; }
+@media (max-width: 900px) {
+  .cond-corner { right: calc(10px + env(safe-area-inset-right, 0px)); bottom: calc(var(--bottom-nav-h, 64px) + 10px + env(safe-area-inset-bottom, 0px)); }
+  .cond-emb { width: 38px; height: 38px; border-radius: 10px; }
+  .cond-emb .cond-icon { width: 22px; height: 22px; }
+  .cond-tip { width: min(240px, calc(100vw - 80px)); } }
+/* Signature touches: Invisible fades your portrait (Blinded and Unconscious darken the edges, a ring above) */
+.char-page:has(#battle-body.cond-ghost) .char-head .portrait { opacity: .38; outline: 2px dashed var(--cond-invisible); outline-offset: 2px; }
+/* Party: the same icons small, and the card's edge in the halo's innermost ring */
+.pt-conds { display: flex; flex-wrap: wrap; gap: 5px; }
+.pt-conds [data-cond] { width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--c); background: color-mix(in srgb, var(--c) 18%, var(--bg)); display: grid; place-items: center; }
+.pt-conds .cond-icon { width: 15px; height: 15px; }
+.pt-card[data-ring] { box-shadow: inset 3px 0 0 var(--h); }
+.pt-card[data-ring="cant"] { --h: var(--halo-cant); } .pt-card[data-ring="hindered"] { --h: var(--halo-hindered); } .pt-card[data-ring="helped"] { --h: var(--halo-helped); }
+.pt-card[data-ring="poisoned"] { --h: var(--cond-poisoned); } .pt-card[data-ring="invisible"] { --h: var(--cond-invisible); } .pt-card[data-ring="dark"] { --h: var(--cond-dark-edge); }
+/* The menu bar: a dot per condition on your character's button */
+.cond-dots { display: inline-flex; gap: 3px; }
+.cond-dots:empty { display: none; }
+.cond-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+.cond-dots i[data-cond="blinded"] { background: var(--cond-dark); box-shadow: 0 0 0 1px var(--cond-dark-edge); }
+@media (prefers-reduced-motion: reduce) { .cond-halo.starting, .cond-emb.new { animation: none; } }
 .cond-add > summary { background: var(--surface-2); border-style: dashed; border-color: var(--line); color: var(--muted); }
 .cond-box .ls-chips { margin-top: 4px; }
 

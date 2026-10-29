@@ -69,7 +69,7 @@
   <span class="nav-sep" aria-hidden="true"></span>
   <nav class="table-nav" aria-label="Your table">
     {# Your character: one click, in the mode you used last. The DM has none here. #}
-    {% if tn.mine %}<a href="/characters/{{ tn.mine.id }}{{ tn.suffix }}" class="char-btn{{ ' active' if mine_here }}" title="Your character">{{ avatar(tn.mine) }}<span>{{ tn.mine.name }}</span></a>{% endif %}
+    {% if tn.mine %}<a href="/characters/{{ tn.mine.id }}{{ tn.suffix }}" class="char-btn{{ ' active' if mine_here }}" title="Your character">{{ avatar(tn.mine) }}<span>{{ tn.mine.name }}</span><span class="cond-dots" data-cond-dots data-character="{{ tn.mine.id }}"{% if tn.mine.conditions %} title="{{ tn.mine.conditions | join(', ') }}"{% endif %}>{% for n in (tn.mine.conditions or [])[:4] %}<i data-cond="{{ cond_slug(n) }}"></i>{% endfor %}</span></a>{% endif %}
     <div class="party-switch">
       <button type="button" class="char-btn{{ ' active' if path.startswith('/party') or (tn.here and not mine_here) }}" data-menu="party-menu" aria-haspopup="true" aria-controls="party-menu">Party ▾</button>
       {{ party_menu("party-menu", tn) }}
@@ -134,7 +134,7 @@
 <nav class="bottom-nav" aria-label="Main">
   <a href="{{ cbase }}/" class="{{ 'active' if path in ('/', '/story') }}">Story</a>
   <a href="{{ cbase }}/campaign" class="{{ 'active' if path.startswith('/campaign') }}">Campaign</a>
-  {% if tn.mine %}<a href="/characters/{{ tn.mine.id }}{{ tn.suffix }}" class="bn-char{{ ' active' if mine_here }}" aria-label="Your character: {{ tn.mine.name }}">{{ avatar(tn.mine) }}<span>{{ tn.mine.name }}</span></a>{% endif %}
+  {% if tn.mine %}<a href="/characters/{{ tn.mine.id }}{{ tn.suffix }}" class="bn-char{{ ' active' if mine_here }}" aria-label="Your character: {{ tn.mine.name }}{% if tn.mine.conditions %} ({{ tn.mine.conditions | join(', ') }}){% endif %}">{{ avatar(tn.mine) }}<span>{{ tn.mine.name }}</span><span class="cond-dots" data-cond-dots data-character="{{ tn.mine.id }}"{% if tn.mine.conditions %} title="{{ tn.mine.conditions | join(', ') }}"{% endif %}>{% for n in (tn.mine.conditions or [])[:4] %}<i data-cond="{{ cond_slug(n) }}"></i>{% endfor %}</span></a>{% endif %}
   <button type="button" data-menu="party-menu-m" aria-haspopup="true" aria-controls="party-menu-m" class="{{ 'active' if path.startswith('/party') or (tn.here and not mine_here) }}">Party</button>
   <button type="button" data-menu="more-menu" aria-haspopup="true" class="{{ 'active' if path.startswith('/manage') or path.startswith('/admin') or path == '/your-suggestions' }}">More</button>
 </nav>

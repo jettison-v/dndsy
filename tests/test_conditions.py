@@ -63,3 +63,37 @@ def test_only_the_player_turns_invisible_and_everyone_sees_it(player, admin, dm,
     player.post(f"{url}/conditions/end", data={"name": "Invisible"}, headers=HX)
     db.refresh(cole)
     assert not cole.conditions
+
+
+def test_the_halo_shows_the_most_serious_family_and_poisoned_invisible_blinded_their_own():
+    """Brett, 2026-10-28 (docs/mockups/conditions-on-battle.html): red can't act, amber hindered, blue helped, the most
+    serious only; Poisoned green, Invisible white and Blinded black each a ring of their own, stacked; Unconscious
+    darkens the edges too."""
+    rings = lambda *names: cd.rings([{"name": n} for n in names])  # noqa: E731
+    assert rings() == [] and rings("Prone") == ["hindered"] and rings("Enlarged") == ["helped"]
+    assert rings("Prone", "Stunned", "Enlarged") == ["cant"]
+    assert rings("Poisoned", "Prone") == ["hindered", "poisoned"] and rings("Poisoned") == ["poisoned"]
+    assert rings("Invisible") == ["invisible"] and rings("Blinded", "Unconscious") == ["cant", "dark"]
+    assert {cd.family(n) for n in cd.KNOWN} == {"cant", "hindered", "helped"}
+
+
+def test_a_condition_shows_on_battle_party_and_your_menu_bar_button(player, dm, db):
+    """Everyone at the table sees a character's conditions (as on the pills): the DM's Battle for Cole has the halo and
+    an emblem per condition with what it does, the Party card its icons, and the player's own menu bar button a dot each."""
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    owned_by(db, cole, "player@example.com")
+    for n, lv in (("Poisoned", 0), ("Prone", 0), ("Exhaustion", 2)):
+        player.post(f"/characters/{cole.id}/conditions", data={"name": n, "level": lv or 1}, headers=HX)
+    page = dm.get(f"/characters/{cole.id}/battle").text
+    assert '<i data-ring="hindered"' in page and '<i data-ring="poisoned"' in page
+    corner = page.split('class="cond-corner"')[1].split("</div>")[0]
+    assert [x.split('"')[0] for x in corner.split('data-name="')[1:]] == ["Poisoned", "Prone", "Exhaustion"]  # newest nearest the corner
+    assert 'class="cond-lv">2<' in corner and "Disadvantage on attack rolls" in corner
+    party = dm.get("/c/main/party").text
+    assert 'data-ring="hindered"' in party and 'title="Exhaustion 2"' in party
+    dots = player.get("/c/main/").text.split("data-cond-dots")[1].split("</span>")[0]
+    assert 'title="Poisoned, Prone, Exhaustion"' in dots and dots.count("<i data-cond=") == 3
+    player.post(f"/characters/{cole.id}/conditions", data={"name": "Invisible"}, headers=HX)
+    assert 'id="battle-body" class="cond-ghost"' in dm.get(f"/characters/{cole.id}/battle").text  # the portrait fades
