@@ -56,6 +56,8 @@ def test_the_listener_follows_the_fight_as_the_vtt_does(people):
     f = page.evaluate("window.told[window.told.length - 1]")
     assert f["turn"] == 3 and f["order"][0]["ddb_id"] == "75423618" and f["order"][0]["kind"] == "character"
     assert f["order"][0]["image"] == "https://www.dndbeyond.com/avatars/cole.png"  # the picture the VTT draws it with
+    ogre = next(x for x in f["order"] if x["name"] == "Ogre")
+    assert ogre["kind"] == "monster" and ogre["monster_id"] == "4904825" and f["order"][0]["monster_id"] is None
     assert send(act("INCREMENT_COMBAT_TURN")) == (4, ["Cole", "Vi", "Ogre", "Trah*"])
     assert send(act("INCREMENT_COMBAT_TURN")) == (5, ["Cole*", "Vi", "Ogre", "Trah"])
     assert send(act("UPDATE_INITIATIVE", [{"group": "Enemy", "key": "4904825", "initiative": 20}])) == (5, ["Ogre", "Cole*", "Vi", "Trah"])

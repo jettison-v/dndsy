@@ -24,7 +24,8 @@
     return { round: f.round, turn: f.turn, order: f.combatants.map(x => {
       const t = V.tokens[x.tokenId] || {};
       return { key: x.tokenId, name: (t.name || '?') + (counts[t.entityId] > 1 && t.nameSuffix ? ' ' + t.nameSuffix : ''),
-        kind: t.type === 'CHARACTER' ? 'character' : 'monster', ddb_id: t.type === 'CHARACTER' ? String(t.entityId) : null,
+        kind: t.type === 'CHARACTER' ? 'character' : t.type === 'MONSTER' ? 'monster' : 'companion',  // (the VTT's "Enemy" is its monsters)
+        ddb_id: t.type === 'CHARACTER' ? String(t.entityId) : null, monster_id: t.type === 'MONSTER' && t.entityId ? String(t.entityId) : null,
         initiative: x.initiative, hidden: !!t.hidden, active: x.tokenId === f.activeId,
         image: t.customImageUrl || t.imageUrl || t.fallbackImageUrl || null };  // (the picture the VTT draws it with)
     }) };
