@@ -1730,25 +1730,20 @@ body:has(.peek.open:not(.modal)) .cond-corner { right: calc(var(--panel-w) + 14p
 .cond-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
 .cond-dots i[data-cond="blinded"] { background: var(--cond-dark); box-shadow: 0 0 0 1px var(--cond-dark-edge); }
 @media (prefers-reduced-motion: reduce) { .cond-halo.starting i, .cond-emb.new { animation: none; } }
-/* A change on its way to D&D Beyond (ddb_bridge.as_shown, the sync macros in _char.html; Brett, 2026-10-29): shown
-   as made at once, with a dashed outline and a turning ↻ until D&D Beyond has it (then the green change mark); amber
-   with "!" when it was given up, to make on the sheet; an ending condition faded until it's gone */
-[data-sync] { position: relative; }
-[data-sync="on"], [data-sync="ending"] { outline: 1.5px dashed var(--blue); outline-offset: 2px; }
-[data-sync="failed"] { outline: 1.5px solid var(--amber); outline-offset: 2px; }
-[data-sync]::after { position: absolute; top: 5px; right: 5px; width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center;
-  font: 700 11px/1 var(--sans); background: var(--surface-2); pointer-events: none; z-index: 1; }
-[data-sync="on"]::after, [data-sync="ending"]::after { content: "↻"; color: var(--blue); box-shadow: 0 0 0 1px var(--blue); animation: sync-turn 1.4s linear infinite; }
-[data-sync="failed"]::after { content: "!"; color: var(--amber); box-shadow: 0 0 0 1px var(--amber); }
-@keyframes sync-turn { to { transform: rotate(360deg); } }
-.cond-pill[data-sync]::after { top: -7px; right: -7px; }  /* (a tile clips outside its box; a pill and an emblem don't) */
-.cond-emb[data-sync]::after { top: auto; bottom: -7px; right: -7px; }  /* (Exhaustion's level sits top right) */
-.pt-conds [data-sync]::after { width: 13px; height: 13px; top: -5px; right: -5px; }
+/* A change on its way to D&D Beyond (ddb_bridge.as_shown, the sync macros in _char.html): shown as made at once, with
+   a quiet mark until D&D Beyond has it, then the green change mark. In the background (Brett, 2026-10-29: askdnd is
+   the tool, D&D Beyond the repository): a thin, grey, half-clear dashed line and a still ↻, no words; amber the same
+   way when it was given up, to make on the sheet; a condition ending faded until it's gone. */
+[data-sync] { position: relative; --sync: color-mix(in srgb, var(--muted) 50%, transparent); }
+[data-sync="failed"] { --sync: color-mix(in srgb, var(--amber) 55%, transparent); }
+[data-sync] { outline: 1px dashed var(--sync); outline-offset: 2px; }
+[data-sync]::after { content: "↻"; position: absolute; top: 3px; right: 5px; font: 400 var(--fs-xs)/1 var(--sans); color: var(--sync); pointer-events: none; }
+[data-sync="failed"]::after { content: "!"; font-weight: 700; }
+.cond-pill[data-sync]::after { top: -9px; right: -3px; }  /* (a tile clips outside its box; a pill and an emblem don't) */
+.cond-emb[data-sync]::after { top: auto; bottom: -13px; right: 2px; }  /* (Exhaustion's level sits top right) */
+.pt-conds [data-sync]::after { top: -9px; right: -4px; }
 .cond-pill[data-sync="ending"] > summary, .cond-emb[data-sync="ending"], .pt-conds [data-sync="ending"] { opacity: .5; }
-.cond-pill[data-sync="ending"] > summary b { text-decoration: line-through; }
 .cond-pill[data-sync] { border-radius: var(--r-pill); }
-.sync-note { color: var(--blue); }
-@media (prefers-reduced-motion: reduce) { [data-sync]::after { animation: none; } }
 .cond-add > summary { background: var(--surface-2); border-style: dashed; border-color: var(--line); color: var(--muted); }
 .cond-box .ls-chips { margin-top: 4px; }
 
@@ -1823,6 +1818,9 @@ body:has(.peek.open:not(.modal)) .cond-corner { right: calc(var(--panel-w) + 14p
 .ds-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); }
 .ds-row + .ds-row { margin-top: var(--sp-3); }
 .ds-sample { margin: 0; }
+.ds-corner .cond-emb { box-shadow: none; }
+.ds-edge { position: relative; height: 96px; max-width: 520px; border-radius: var(--r-lg); background: var(--bg); overflow: hidden; }
+.ds-edge .cond-halo { position: absolute; z-index: auto; }  /* (on the page it's fixed to the window) */
 .ds-sample .title-row h1 { margin: 0; }
 .ds-h2 { margin: 0; }
 .ds-narrow { max-width: 420px; }

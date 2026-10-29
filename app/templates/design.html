@@ -2,6 +2,7 @@
 {% from "_char.html" import pips, pin_icon, bookmark_icon, bell, ri, spends %}
 {% from "_lists.html" import search_box, chip_group, view_switch %}
 {% from "_manage.html" import inline_edit %}
+{% from "_cond_icons.html" import cond_icon %}
 {% block title %}Design system · Manage · askdnd{% endblock %}
 {# The living component page (roadmap step 9): every token and component with the app's own classes and
    macros, so it changes when they do. Made-up content only. DESIGN.md explains when to use each. #}
@@ -18,7 +19,7 @@
   <nav class="ds-jump" aria-label="On this page">
     {% for id, label in [("colors", "Colors"), ("type", "Text sizes"), ("space", "Space and corners"), ("buttons", "Buttons"), ("switches", "Switches"), ("pills", "Pills"),
                          ("headings", "Headings"), ("surfaces", "Sections and tiles"), ("lists", "Lists"), ("marks", "Marks and pips"),
-                         ("help", "Help and empty states"), ("panels", "Panels and toasts"), ("narrow", "Narrow screens"), ("story", "Story text"), ("manage", "Manage pages"), ("ddb", "D&D Beyond states")] %}<a href="#{{ id }}">{{ label }}</a>{% endfor %}
+                         ("help", "Help and empty states"), ("panels", "Panels and toasts"), ("narrow", "Narrow screens"), ("story", "Story text"), ("manage", "Manage pages"), ("conditions", "Conditions"), ("ddb", "D&D Beyond states")] %}<a href="#{{ id }}">{{ label }}</a>{% endfor %}
   </nav>
 
   <section class="section" id="colors">
@@ -284,12 +285,29 @@
     <details class="fold"><summary>+ Add a character</summary><p class="note">The form goes here.</p></details>
   </section>
 
+  <section class="section" id="conditions">
+    <h2>Conditions</h2>
+    <p class="hint">On Battle (docs/mockups/conditions-on-battle.html). Each condition has its own color (<code>--cond-*</code>, by its <code>[data-cond]</code> slug) and an icon drawn for askdnd; D&amp;D Beyond's are its own art.</p>
+    {{ ds("Condition pill", "details.cond-pill[data-cond] · cond_icon(name)", "The chip under Battle's numbers, in its condition's color with its icon; it opens what the condition does, and End.") }}
+    <div class="cond-bar ds-row">{% for n in ("Poisoned", "Prone", "Charmed", "Invisible", "Exhaustion") %}<details class="cond-pill" data-cond="{{ cond_slug(n) }}"><summary>{{ cond_icon(n) }}<b>{{ n }}{% if n == "Exhaustion" %} 2{% endif %}</b></summary></details>{% endfor %}<details class="cond-pill cond-add"><summary>+ Condition</summary></details></div>
+    {{ ds("Emblem", ".cond-corner > .cond-emb", "One per condition in the bottom-right corner, newest nearest the corner (beside an open side panel; on phones above Table rolls). Point at it, or tap it, for what it does. Exhaustion shows its level; Prone's leans.") }}
+    <div class="ds-row ds-corner">{% for n in ("Blinded", "Frightened", "Exhaustion", "Prone", "Enlarged") %}<button type="button" class="cond-emb" data-cond="{{ cond_slug(n) }}" aria-expanded="false" aria-label="{{ n }}">{{ cond_icon(n) }}{% if n == "Exhaustion" %}<span class="cond-lv">2</span>{% endif %}<span class="cond-tip" role="tooltip"><b>{{ n }}</b>What it does, in askdnd's words.<span class="note">the DM rules</span></span></button>{% endfor %}</div>
+    {{ ds("The page's edge", ".cond-halo > .cond-line + .cond-glow · cond.edge()", "A thin line and a soft glow around the page in the newest three conditions' colors, blending into each other; over the Table rolls sidebar and the side panel. Blinded's is black, and Blinded or Unconscious darken the page towards its edges (.dark). It brightens once as a condition starts, then stays still.") }}
+    <div class="ds-edge"><div class="cond-halo" style="--edge: var(--cond-poisoned), var(--cond-prone), var(--cond-charmed), var(--cond-poisoned)"><i class="cond-line"></i><i class="cond-glow"></i></div></div>
+    {{ ds("Elsewhere", ".pt-conds · .cond-dots", "Each Party card shows the icons small, its left edge in the newest one's color; your character's menu bar button has a dot per condition.") }}
+    <div class="ds-row"><div class="pt-conds">{% for n in ("Poisoned", "Prone") %}<span data-cond="{{ cond_slug(n) }}" role="img" aria-label="{{ n }}">{{ cond_icon(n) }}</span>{% endfor %}</div>
+      <span class="char-btn">Cole<span class="cond-dots"><i data-cond="poisoned"></i><i data-cond="prone"></i></span></span></div>
+  </section>
+
   <section class="section" id="ddb">
     <h2>D&amp;D Beyond states</h2>
-    <p class="hint">For anything askdnd changes on D&amp;D Beyond (the bridge; docs/artifacts/ddb-bridge.html). A number shows as changed only once D&amp;D Beyond has it.</p>
+    <p class="hint">For anything askdnd changes on D&amp;D Beyond (the bridge; docs/artifacts/ddb-bridge.html). A change shows as made the moment it's made, with a quiet mark until D&amp;D Beyond has it: askdnd is the tool, D&amp;D Beyond the repository.</p>
+    {{ ds("On its way", "[data-sync=on | ending | failed] · sync(s, kind), sync_attrs(st) · ddb_bridge.as_shown", "In the background: a thin, grey, half-clear dashed line and a still ↻, no words (the hover title says it). Ending: the condition faded until it's gone. Failed (given up, to make by hand): the same in amber with !. When D&D Beyond has it, the green change mark.") }}
+    <div class="strip compact ds-row"><div data-sync="on" title="On its way to D&amp;D Beyond"><small>Hit points</small><b>32</b><span class="note"> / 51</span></div><div data-sync="failed" title="D&amp;D Beyond didn't take this: make it there"><small>Hit points</small><b>37</b><span class="note"> / 51</span></div></div>
+    <div class="cond-bar ds-row"><details class="cond-pill" data-cond="poisoned" data-sync="on" title="On its way to D&amp;D Beyond"><summary>{{ cond_icon("Poisoned") }}<b>Poisoned</b></summary></details><details class="cond-pill" data-cond="prone" data-sync="ending" title="Ending: on its way to D&amp;D Beyond"><summary>{{ cond_icon("Prone") }}<b>Prone</b></summary></details></div>
     {{ ds("State", ".br-st.br-live | .br-wait | .br-off | .br-seen | .br-asleep", "Live: D&D Beyond has it. Waiting: on its way. Not on D&D Beyond yet: askdnd couldn't make it, and lists the end state to make by hand. Changed on D&D Beyond: someone changed it there. Asleep: no one is using askdnd or a sheet.") }}
     <div class="ds-row"><span class="br-st br-live">Live with D&amp;D Beyond</span><span class="br-st br-wait">Waiting for D&amp;D Beyond</span><span class="br-st br-off">Not on D&amp;D Beyond yet</span><span class="br-st br-seen">Changed on D&amp;D Beyond</span><span class="br-st br-asleep">D&amp;D Beyond bridge · asleep</span></div>
-    {{ ds("Change mark", "[data-mark] · .marked · .mark-delta.up | .down", "A number that changed while the page showed its new copy glows for two seconds with the change, whatever brought it: D&D Beyond, someone else's screen, your own (app.js, in showInPlace). Name a number with _char.html's mark(c, kind); its value is its first <b>. Pips are compared by their place.") }}
+    {{ ds("Change mark", "[data-mark] · .marked · .mark-delta.up | .down", "A number that changed while the page showed its new copy glows for two seconds with the change, whatever brought it: D&D Beyond, someone else's screen, your own (app.js, in showInPlace). Name a number with _char.html's mark(c, kind); its value is its first <b>. Pips are compared by their place. A mark that was on its way glows the same, without a number, once D&D Beyond has it.") }}
     <div class="strip ds-row"><div data-mark="sample:hp" class="marked ds-mark-sample"><small>Hit points</small><b>40</b><span class="mark-delta down">−11</span><span class="note"> / 51</span></div></div>
     {{ ds("Status badge", "button.br-st", "The bridge's health, beside the title of Manage › askdnd › D&D Beyond bridge (admins); a click runs the check on the test character.") }}
   </section>

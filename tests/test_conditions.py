@@ -114,8 +114,8 @@ def test_a_condition_shows_on_battle_party_and_your_menu_bar_button(player, dm, 
 def test_with_the_bridge_a_condition_is_made_on_d_and_d_beyond_and_shows_at_once_marked_until_its_there(player, db, sheet):
     """A standing rule (Brett, 2026-10-28: changes only while the sheet can be reached; conditions synced both ways;
     2026-10-29: the page shows a change at once, marked until D&D Beyond has it): starting or ending one D&D Beyond
-    holds becomes a change for the sheet, sent at once from whatever page it's made on, shown as made with its mark
-    (on its way, ending, or given up to make on the sheet) until D&D Beyond has it."""
+    holds becomes a change for the sheet, sent at once from whatever page it's made on, shown as made with its quiet mark
+    (on its way, ending, or given up to make on the sheet; no words but the hover title) until D&D Beyond has it."""
     from sqlalchemy import select
 
     from app.models import BridgeIntent
@@ -133,11 +133,11 @@ def test_with_the_bridge_a_condition_is_made_on_d_and_d_beyond_and_shows_at_once
     r = player.post(f"/characters/{cole.id}/conditions/end", data={"name": "Exhaustion"}, headers=HX)
     it = db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == cole.id).order_by(BridgeIntent.id)).all()[-1]
     assert it.data == {"field": "exhaustion", "value": 0}
-    assert 'data-sync="ending"' in r.text and "Ending…" in r.text and "var(--cond-exhaustion)" not in r.text  # off the edge already
+    assert 'data-sync="ending"' in r.text and "Ending…" not in r.text and "var(--cond-exhaustion)" not in r.text  # no words; off the edge already
     it.state = "not_yet"  # it gave up: to make on the sheet
     db.commit()
     page = player.get(f"/characters/{cole.id}/battle").text
-    assert 'data-sync="failed"' in page and "end it on the sheet" in page
+    assert 'data-sync="failed" title="D&amp;D Beyond didn&#39;t take this: make it there"' in page  # said only on hover
     cole.sheet_heard_at = None  # the sheet can't be reached: nothing is taken
     db.commit()
     assert player.post(f"/characters/{cole.id}/conditions", data={"name": "Prone"}, headers=HX).status_code == 409

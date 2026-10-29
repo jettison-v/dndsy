@@ -256,6 +256,10 @@ COLOR_TOKENS = (
     ("Story", ("--story-bg", "--story-line", "--story-text")),
     ("Status", ("--red", "--amber", "--green", "--blue", "--violet")),
     ("Action economy", ("--k-action", "--k-bonus", "--k-reaction", "--k-other")),
+    ("Conditions", tuple(f"--cond-{slug}" for slug in ("blinded", "charmed", "deafened", "exhaustion", "frightened", "grappled",
+                                                       "incapacitated", "invisible", "paralyzed", "petrified", "poisoned", "prone",
+                                                       "restrained", "stunned", "unconscious", "enlarged", "flying", "water-breathing",
+                                                       "dark", "dark-edge"))),
 )
 TEXT_SIZES = (("--fs-xs", "12", "Labels, secondary lines, tags"), ("--fs-sm", "14", "List cells, chips, controls"),
               ("--fs-md", "16", "Body text, a row's name"), ("--fs-lg", "19", "Section headings"),
