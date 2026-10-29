@@ -1347,9 +1347,12 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
   border-radius: var(--r-pill); background: var(--surface); border: 1px solid var(--line-strong); font-size: var(--fs-sm); white-space: nowrap; box-shadow: 0 6px 18px var(--shadow); }
 .dice-throw.others .dt-who { display: flex; }
 .dt-who b { color: var(--text-strong); }
-.dt-card { position: absolute; left: 50%; bottom: 28px; transform: translate(-50%, 8px); display: grid; justify-items: center; gap: 2px; min-width: 220px; padding: var(--sp-3) var(--sp-5);
+/* The result: top centre, clear of the roll window, which opens by the button or at the bottom (Brett, 2026-10-29);
+   below the "who rolled" line when it's someone else's */
+.dt-card { position: absolute; left: 50%; top: calc(var(--stick-top, 62px) + 16px); transform: translate(-50%, -8px); display: grid; justify-items: center; gap: 2px; min-width: 220px; padding: var(--sp-3) var(--sp-5);
   background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-lg); box-shadow: 0 12px 32px var(--shadow); opacity: 0; transition: opacity .25s, transform .25s; }
 .dice-throw.landed .dt-card { opacity: 1; transform: translate(-50%, 0); }
+.dice-throw.others .dt-card { top: calc(var(--stick-top, 62px) + 60px); }
 .dice-tray { position: fixed; z-index: 9; left: calc(var(--rolls-w, 0px) + 16px); bottom: 16px; width: 300px; height: 150px; overflow: hidden; pointer-events: none;
   background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-lg); box-shadow: 0 10px 28px var(--shadow);
   transform: translateY(calc(100% + 24px)); transition: transform var(--dtr-slide, .3s) ease; }
@@ -1415,6 +1418,8 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .tn-layer.on { opacity: 1; transition: opacity var(--dt-in, .2s); }
 .tn-dice { position: absolute; inset: 0; }
 .tn-layer .tn-who { top: 14px; }
+.tn-layer .tn-card { top: 14px; }
+.tn-stage[data-stage="vtt"] .tn-card { top: 58px; }
 .tn-stage[data-stage="vtt"] .tn-who { display: flex; }
 .tn-layer.landed .tn-card { opacity: 1; transform: translate(-50%, 0); }
 .tn-tray { position: absolute; z-index: 7; left: 14px; bottom: 14px; width: 300px; height: 150px; overflow: hidden; background: var(--surface); border: 1px solid var(--line-strong);
@@ -1424,6 +1429,8 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .tn-stage.full .tn-layer, .tn-stage.full .tn-tray { position: fixed; z-index: 30; }
 .tn-stage.full .tn-tray { left: 16px; bottom: 16px; }
 .tn-stage.full .tn-layer .tn-who { top: calc(var(--stick-top, 62px) + 12px); }
+.tn-stage.full .tn-layer .tn-card { top: calc(var(--stick-top, 62px) + 16px); }
+.tn-stage.full[data-stage="vtt"] .tn-layer .tn-card { top: calc(var(--stick-top, 62px) + 60px); }
 @media (max-width: 900px) {
   .tn-grid { grid-template-columns: 1fr; }
   .tn-preview { position: static; order: -1; }
