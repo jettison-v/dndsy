@@ -10,6 +10,7 @@ is left out rather than guessed.
 import re
 
 from app import books
+from app.conditions import from_sheet as ddb_conditions
 from app.advantage import ABILITY as ABILITY_WORDS
 from app.advantage import KEPT_SOURCES
 from app.ddb import (
@@ -1270,6 +1271,7 @@ def parse_character(data: dict) -> dict:
             "speed": sh.speeds(),
             "passive_perception": 10 + perception["bonus"],
             "inspiration": bool(data.get("inspiration")),
+            "conditions": ddb_conditions(data),  # ticked on the sheet (app/conditions.py shows them with askdnd's own)
             "saves": sh.saves(),
             "save_notes": general_save_notes,
             "attacks": sh.attacks(),

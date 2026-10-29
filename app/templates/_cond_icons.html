@@ -1,0 +1,45 @@
+{# Each condition's icon (Brett, 2026-10-28; docs/mockups/conditions-on-battle.html): askdnd's own, 24×24, drawn in
+   the condition's colour (app.css `[data-cond]`). D&D Beyond's icons are its own art, so these aren't copies. #}
+{% macro cond_icon(name) -%}
+{%- set paths = {
+  "Blinded": '<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/><path d="M4 20 20 4"/>',
+  "Charmed": '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/><path d="M18.5 3v3M17 4.5h3"/>',
+  "Deafened": '<path d="M7.5 9a4.5 4.5 0 1 1 9 0c0 3.2-3.2 4.2-3.2 7.2a2.6 2.6 0 0 1-5.2.3"/><path d="M10.5 9.5a1.5 1.5 0 0 1 3 0"/><path d="M4 20 20 4"/>',
+  "Exhaustion": '<path d="M7 3h10M7 21h10"/><path d="M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9s8 4 8 9"/><path d="M10 18h4"/>',
+  "Frightened": '<circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1.6"/><circle cx="15" cy="10" r="1.6"/><ellipse cx="12" cy="16" rx="2" ry="2.4"/>',
+  "Grappled": '<path d="M7 11V6.5a1.5 1.5 0 0 1 3 0V11M10 10V5a1.5 1.5 0 0 1 3 0v5M13 10V6a1.5 1.5 0 0 1 3 0v6M16 10.5a1.5 1.5 0 0 1 3 0V14a7 7 0 0 1-7 7h-.5a6 6 0 0 1-5-2.7L4 14.6a1.5 1.5 0 0 1 2.4-1.8L7 14"/>',
+  "Incapacitated": '<circle cx="12" cy="12" r="9"/><path d="M5.6 18.4 18.4 5.6"/>',
+  "Invisible": '<circle cx="12" cy="7" r="3.5" stroke-dasharray="2.4 2.2"/><path d="M5 21c0-4 3-7 7-7s7 3 7 7" stroke-dasharray="2.4 2.2"/>',
+  "Paralyzed": '<path d="M13 2 5 14h6l-1 8 8-12h-6l1-8z"/>',
+  "Petrified": '<path d="M4 19 6.5 9 12 5l6 3 2 11z"/><path d="M6.5 9l4.5 3.5L18 8M11 12.5 12 19"/>',
+  "Poisoned": '<path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/><circle cx="10" cy="13.5" r="1"/><circle cx="14" cy="13.5" r="1"/><path d="M10 17h4"/>',
+  "Prone": '<circle cx="5.5" cy="13.5" r="2.2"/><path d="M8.5 14.5h11M11.5 14.5l3-3.5M3 19h18"/>',
+  "Restrained": '<rect x="2.5" y="9" width="10" height="6" rx="3"/><rect x="11.5" y="9" width="10" height="6" rx="3"/>',
+  "Stunned": '<path d="M12 12.5a1.8 1.8 0 1 1 1.8 1.8 3.8 3.8 0 1 1-3.8-3.8 5.8 5.8 0 1 1 5.8 5.8"/><path d="M19 3.5l.6 1.3 1.4.2-1 1 .2 1.4-1.2-.7-1.2.7.2-1.4-1-1 1.4-.2z"/>',
+  "Unconscious": '<path d="M3 11c2 3 5 4.5 9 4.5s7-1.5 9-4.5"/><path d="M6.5 14.5 5 17M12 15.5V18.5M17.5 14.5 19 17"/><path d="M15 3h4l-4 4h4"/>',
+  "Enlarged": '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/><path d="M9 9l-4-4M15 9l4-4M9 15l-4 4M15 15l4 4"/>',
+  "Flying": '<path d="M3 14c5 0 8-3 10-9 .6 5 3.5 8.5 8 9.5-4.5 1-7 3-8.5 5.5C11 17 7.5 15 3 14z"/>',
+  "Water Breathing": '<circle cx="9" cy="15" r="4.5"/><circle cx="16.5" cy="7.5" r="2.8"/><circle cx="17.5" cy="16.5" r="1.6"/>',
+} -%}
+<svg class="cond-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{ (paths.get(name) or '<circle cx="12" cy="12" r="8"/>') | safe }}</svg>
+{%- endmacro %}
+
+{# The page's edge in the newest three conditions' colours (cond.edge; darker towards the edges for Blinded or
+   Unconscious) and the corner's emblems, newest nearest the corner (bottom); on Battle. Each condition carries its
+   rules summary (character_pages._battle_ctx). #}
+{% macro cond_corner(conditions) -%}
+{% if conditions %}
+{% set cols = cond_edge(conditions) | map("cond_var") | list %}
+<div class="cond-halo{{ ' dark' if cond_darkens(conditions) }}" aria-hidden="true" style="--edge: {{ (cols + [cols[0]]) | join(', ') }}"><i class="cond-line"></i><i class="cond-glow"></i></div>
+{% set shown = conditions[-5:] %}
+<div class="cond-corner" role="group" aria-label="Conditions">
+  {% if conditions | length > 5 %}<span class="cond-more">+{{ conditions | length - 5 }} more</span>{% endif %}
+  {% for x in shown %}
+  <button type="button" class="cond-emb" data-cond="{{ cond_slug(x.name) }}" data-name="{{ x.name }}" aria-expanded="false" aria-label="{{ x.name }}{% if x.level %} {{ x.level }}{% endif %}">
+    {{- cond_icon(x.name) }}{% if x.level %}<span class="cond-lv">{{ x.level }}</span>{% endif %}
+    <span class="cond-tip" role="tooltip"><b>{{ x.name }}{% if x.level %}, level {{ x.level }}{% endif %}</b>{{ x.rules }}<span class="note">{% if x.source %}{{ x.source }} · {% endif %}the DM rules</span></span>
+  </button>
+  {% endfor %}
+</div>
+{% endif %}
+{%- endmacro %}

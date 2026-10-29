@@ -14,7 +14,7 @@
 
 import json
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -103,7 +103,7 @@ def party_page(request: Request, pick: str = "", db: Session = Depends(get_db)):
     if not user:
         return RedirectResponse("/login", status_code=303)
     overrides = _overrides(db)
-    rows = [{**r, "sheet": views.apply_overrides(r["sheet"], overrides)} for r in _party_rows(db, user)]
+    rows = [{**r, "sheet": views.apply_overrides(r["sheet"], overrides), "conditions": listed(db, r["c"], r["sheet"])} for r in _party_rows(db, user)]
     return _page(request, "party.html", {
         "rows": rows,
         "spells": views.party_spell_list(rows),
@@ -116,6 +116,11 @@ def party_page(request: Request, pick: str = "", db: Session = Depends(get_db)):
 
 
 # ---------------------------------------------------------------- one character
+
+
+def listed(db: Session, ch: Character, sheet: dict | None) -> list[dict]:
+    """What this character is under now (cond.shown): D&D Beyond's conditions, from its sheet, with askdnd's own."""
+    return cond.shown(ch.conditions, (sheet or {}).get("conditions"), ddb_bridge.on_for(db, ch))
 
 
 def _load(request: Request, db: Session, character_id: int):
@@ -146,10 +151,12 @@ def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None
             ctx["form"] = ws.shaped(ctx["sheet"], beast, keep=ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep))
             ctx["columns"] = ctx["form"]["columns"]
     ctx["spellbar"] = _spellbar(db, ch, ctx)
-    ctx["conditions"] = [{**x, "rules": cond.rules_text(x["name"])} for x in ch.conditions or []]  # everyone sees them
-    ctx["cond_adv"] = cond.roll_effects(ch.conditions)  # listed in the roll window (app.js specFrom)
+    now = listed(db, ch, ctx["sheet"])
+    ctx["conditions"] = [{**x, "rules": cond.rules_text(x["name"])} for x in now]  # everyone sees them
+    ctx["cond_adv"] = cond.roll_effects(now)  # listed in the roll window (app.js specFrom)
     ctx["all_conditions"], ctx["all_effects"] = list(cond.CONDITIONS), list(cond.EFFECTS)
-    ctx["active_conditions"] = {x["name"] for x in ch.conditions or []}
+    ctx["active_conditions"] = {x["name"] for x in now}
+    ctx["cond_synced"] = ddb_bridge.on_for(db, ch)
     ctx |= player_notes.page_context(db, ch, user, ctx["sheet"])
     return ctx
 
@@ -492,10 +499,10 @@ def spellbook_modal(request: Request, character_id: int, db: Session = Depends(g
         "in_form": bool(ch.wild_shape and moon), "sc": (sheet.get("spellcasting") or [{}])[0], "conc": ch.concentration})
 
 
-def _concentration_reply(request: Request, db: Session, ch: Character, user: dict, toast: str):
+def _concentration_reply(request: Request, db: Session, ch: Character, user: dict, toast: str, deliver: bool = False):
     if request.headers.get("HX-Request"):
         resp = templates.TemplateResponse(request, "_battle_body.html", _battle_ctx(db, ch, user))
-        resp.headers["HX-Trigger"] = json.dumps({"toast": toast})
+        resp.headers["HX-Trigger"] = json.dumps({"toast": toast, **({"bridgeDeliver": True} if deliver else {})})
         return resp
     return RedirectResponse(f"/characters/{ch.id}/battle", status_code=303)
 
@@ -525,26 +532,45 @@ def start_concentration(request: Request, character_id: int, key: str = Form(...
 @router.post("/characters/{character_id:int}/conditions")
 def start_condition(request: Request, character_id: int, name: str = Form(...), source: str = Form(""), note: str = Form(""),
                     level: int = Form(0), db: Session = Depends(get_db)):
-    """A condition or effect (from a magic item's action, or picked: Poisoned, Exhaustion 2…), from the character's own player only."""
+    """A condition or effect (from a magic item's action, or picked: Poisoned, Exhaustion 2…), from the character's own
+    player only. One D&D Beyond holds goes to the sheet where the bridge works (only while it can be reached), and
+    shows once D&D Beyond has it; askdnd keeps where it came from."""
     user, ch, stop = _concentration_guard(request, db, character_id)
     if stop:
         return stop
     try:
-        ch.conditions = cond.add(ch.conditions, name, source, note, level)
+        own = cond.add(ch.conditions, name, source, note, level)
     except ValueError:
         return HTMLResponse("", status_code=400)
+    label = f"{name}" + (f" {level}" if name == "Exhaustion" else "") + (f" ({source})" if source else "")
+    synced = ddb_bridge.on_for(db, ch) and name in cond.ON_DDB
+    if synced:
+        ddb_bridge.reach(ch)
+        field = "exhaustion" if name == "Exhaustion" else f"condition:{cond.DDB_ID[name]}"
+        ddb_bridge.add(db, ch, "set", {"field": field, "value": own[-1].get("level", True)}, f"{ch.name}: {label}")
+    ch.conditions = own
     db.commit()
-    return _concentration_reply(request, db, ch, user, f"{name}" + (f" {level}" if name == "Exhaustion" else "") + (f" ({source})" if source else ""))
+    return _concentration_reply(request, db, ch, user, label + (": made on D&D Beyond" if synced else ""), deliver=synced)
 
 
 @router.post("/characters/{character_id:int}/conditions/end")
 def end_condition(request: Request, character_id: int, name: str = Form(...), db: Session = Depends(get_db)):
+    """Ends one: on D&D Beyond where the bridge works and the sheet has it. Without the bridge, one ticked on D&D
+    Beyond is ended there (askdnd only reads the sheet)."""
     user, ch, stop = _concentration_guard(request, db, character_id)
     if stop:
         return stop
+    now = next((c for c in listed(db, ch, chars.character_summary(ch)) if c["name"] == name), None)
+    synced = bool(now and now.get("on_ddb")) and ddb_bridge.on_for(db, ch)
+    if now and now.get("on_ddb") and not synced:
+        raise HTTPException(409, f"{name} is ticked on {ch.name}'s D&D Beyond sheet: end it there, and askdnd shows it when it next reads the sheet.")
+    if synced:
+        ddb_bridge.reach(ch)
+        field = "exhaustion" if name == "Exhaustion" else f"condition:{cond.DDB_ID[name]}"
+        ddb_bridge.add(db, ch, "set", {"field": field, "value": 0 if name == "Exhaustion" else False}, f"{ch.name}: no longer {name}")
     ch.conditions = cond.end(ch.conditions, name) or None
     db.commit()
-    return _concentration_reply(request, db, ch, user, f"No longer {name}")
+    return _concentration_reply(request, db, ch, user, f"No longer {name}" + (": made on D&D Beyond" if synced else ""), deliver=synced)
 
 
 @router.post("/characters/{character_id:int}/concentration/round")

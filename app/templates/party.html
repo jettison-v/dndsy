@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_char.html" import pips, adv, mark %}
+{% from "_cond_icons.html" import cond_icon %}
 {% from "_lists.html" import filter_column, search_box, active_row %}
 {% block title %}Party · askdnd{% endblock %}
 {% block content %}
@@ -24,9 +25,11 @@
   <div id="t-glance">
     {% if rows %}<div class="pt-cards">
       {% for r in rows %}
-      <article class="section pt-card"{% if not pick %} data-modal-url="/characters/{{ r.c.id }}/brief" tabindex="0" role="button" aria-label="{{ r.c.name }}: a short version"{% endif %}>
+      {% set edge = cond_edge(r.conditions) %}
+      <article class="section pt-card"{% if edge %} style="--h: var(--cond-{{ edge[0] }})" data-conds{% endif %}{% if not pick %} data-modal-url="/characters/{{ r.c.id }}/brief" tabindex="0" role="button" aria-label="{{ r.c.name }}: a short version"{% endif %}>
         <header class="pt-head"><span class="roll-av hue{{ r.c.id % 6 }}">{% if r.sheet and r.sheet.portrait %}<img src="{{ r.sheet.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ r.c.name[:1] }}</span>
           <div class="pt-id"><h2 class="pt-name">{% if pick %}<a href="/characters/{{ r.c.id }}{{ '/battle' if pick == 'battle' }}">{{ r.c.name }}</a>{% else %}{{ r.c.name }}{% endif %}</h2>{% if r.sheet %}<p class="note">{{ r.classes }}</p>{% endif %}</div></header>
+        {% if r.conditions %}<div class="pt-conds" aria-label="Conditions">{% for x in r.conditions %}<span data-cond="{{ cond_slug(x.name) }}" role="img" aria-label="{{ x.name }}{% if x.level %} {{ x.level }}{% endif %}" title="{{ x.name }}{% if x.level %} {{ x.level }}{% endif %}">{{ cond_icon(x.name) }}</span>{% endfor %}</div>{% endif %}
         {% if r.sheet %}{% set s = r.sheet %}
         <div class="strip compact pt-tiles"><div {{ mark(r.c, "hp") }}><small>Hit points</small><b>{{ s.hit_points.current }}</b><span class="note"> / {{ s.hit_points.max }}</span></div><div {{ mark(r.c, "ac") }}><small>Armor class</small><b>{{ s.armor_class }}</b></div><div {{ mark(r.c, "speed") }}><small>Speed</small><b>{{ s.speed.walk }} ft</b></div></div>
         {% if r.top_saves %}<p class="pt-line"><span class="note">Best saves</span> {% for sv in r.top_saves %}<span class="nowrap">{{ sv.short }} <b>{{ sv.label }}</b>{% if sv.adv %} {{ adv(sv.adv) }}{% endif %}</span>{{ " ·" if not loop.last }} {% endfor %}</p>{% endif %}

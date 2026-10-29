@@ -63,3 +63,91 @@ def test_only_the_player_turns_invisible_and_everyone_sees_it(player, admin, dm,
     player.post(f"{url}/conditions/end", data={"name": "Invisible"}, headers=HX)
     db.refresh(cole)
     assert not cole.conditions
+
+
+def test_the_edge_takes_the_newest_three_conditions_own_colours():
+    """Brett, 2026-10-28 (docs/mockups/conditions-on-battle.html): the page's edge shows each of the newest three in its
+    own colour, so several conditions show as several colours; Blinded or Unconscious also darken the page's edges."""
+    edge = lambda *names: cd.edge([{"name": n} for n in names])  # noqa: E731
+    assert edge() == [] and edge("Prone") == ["prone"]
+    assert edge("Grappled", "Prone", "Poisoned", "Water Breathing") == ["water-breathing", "poisoned", "prone"]  # newest first
+    assert cd.darkens([{"name": "Unconscious"}]) and not cd.darkens([{"name": "Prone"}])
+
+
+def test_d_and_d_beyonds_conditions_show_with_askdnds_own():
+    """Brett, 2026-10-28 (synced both ways): D&D Beyond holds the 15 conditions and Exhaustion. Where the bridge works,
+    those are D&D Beyond's (askdnd adds where one came from, and keeps the item effects D&D Beyond doesn't have);
+    elsewhere askdnd shows what's ticked there along with its own."""
+    sheet = cd.from_sheet({"conditions": [{"id": 11, "level": None}, {"id": 4, "level": 2}, {"id": 99}, "x"]})
+    assert sheet == [{"name": "Poisoned"}, {"name": "Exhaustion", "level": 2}]
+    own = [{"name": "Invisible", "source": "Ring of Invisibility"}, {"name": "Poisoned", "source": "Giant Spider"},
+           {"name": "Exhaustion", "source": "", "level": 1}, {"name": "Enlarged", "source": "Potion of Growth"}]
+    synced = cd.shown(own, sheet, synced=True)  # Invisible ended on D&D Beyond (or isn't made yet): left out
+    assert [(c["name"], c.get("level"), c.get("source"), c["on_ddb"]) for c in synced] == [
+        ("Poisoned", None, "Giant Spider", True), ("Exhaustion", 2, "", True), ("Enlarged", None, "Potion of Growth", False)]
+    assert [c["name"] for c in cd.shown(own, sheet, synced=False)] == ["Invisible", "Poisoned", "Exhaustion", "Enlarged"]
+    assert cd.shown(own, None, synced=True) == own  # a copy read before askdnd kept D&D Beyond's: askdnd's own
+
+
+def test_a_condition_shows_on_battle_party_and_your_menu_bar_button(player, dm, db):
+    """Everyone at the table sees a character's conditions (as on the pills): the DM's Battle for Cole has the edge and
+    an emblem per condition with what it does, the Party card its icons, and the player's own menu bar button a dot each."""
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    owned_by(db, cole, "player@example.com")
+    for n, lv in (("Poisoned", 0), ("Prone", 0), ("Exhaustion", 2)):
+        player.post(f"/characters/{cole.id}/conditions", data={"name": n, "level": lv or 1}, headers=HX)
+    page = dm.get(f"/characters/{cole.id}/battle").text
+    assert "--edge: var(--cond-exhaustion), var(--cond-prone), var(--cond-poisoned), var(--cond-exhaustion)" in page
+    corner = page.split('class="cond-corner"')[1].split("</div>")[0]
+    assert [x.split('"')[0] for x in corner.split('data-name="')[1:]] == ["Poisoned", "Prone", "Exhaustion"]  # newest nearest the corner
+    assert 'class="cond-lv">2<' in corner and "Disadvantage on attack rolls" in corner
+    party = dm.get("/c/main/party").text
+    assert 'style="--h: var(--cond-exhaustion)" data-conds' in party and 'title="Exhaustion 2"' in party
+    dots = player.get("/c/main/").text.split("data-cond-dots")[1].split("</span>")[0]
+    assert 'title="Poisoned, Prone, Exhaustion"' in dots and dots.count("<i data-cond=") == 3
+    player.post(f"/characters/{cole.id}/conditions", data={"name": "Invisible"}, headers=HX)
+    assert 'id="battle-body" class="cond-ghost"' in dm.get(f"/characters/{cole.id}/battle").text  # the portrait fades
+
+
+def test_with_the_bridge_a_condition_is_made_on_d_and_d_beyond_and_shows_once_its_there(player, db, sheet):
+    """A standing rule (Brett, 2026-10-28: changes only while the sheet can be reached; conditions synced both ways):
+    starting or ending one D&D Beyond holds becomes a change for the sheet, shown once D&D Beyond has it."""
+    from sqlalchemy import select
+
+    from app.models import BridgeIntent
+
+    cole = char(db, "Cole")
+    r = player.post(f"/characters/{cole.id}/conditions", data={"name": "Poisoned", "source": "Giant Spider"}, headers=HX)
+    assert r.status_code == 200 and "bridgeDeliver" in r.headers["HX-Trigger"]
+    it = db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == cole.id)).all()[-1]
+    assert (it.kind, it.data) == ("set", {"field": "condition:11", "value": True})
+    assert 'data-name="Poisoned"' not in r.text  # not until D&D Beyond has it
+    sheet["conditions"] = [{"id": 11, "level": None}, {"id": 4, "level": 3}]  # made (and Exhaustion 3 ticked there)
+    characters.refresh(db, cole)
+    page = player.get(f"/characters/{cole.id}/battle").text
+    assert 'data-name="Poisoned"' in page and "Giant Spider" in page and 'class="cond-lv">3<' in page
+    player.post(f"/characters/{cole.id}/conditions/end", data={"name": "Exhaustion"}, headers=HX)
+    it = db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == cole.id).order_by(BridgeIntent.id)).all()[-1]
+    assert it.data == {"field": "exhaustion", "value": 0}
+    cole.sheet_heard_at = None  # the sheet can't be reached: nothing is taken
+    db.commit()
+    assert player.post(f"/characters/{cole.id}/conditions", data={"name": "Prone"}, headers=HX).status_code == 409
+    assert player.post(f"/characters/{cole.id}/conditions", data={"name": "Enlarged"}, headers=HX).status_code == 200  # askdnd's own
+
+
+def test_without_the_bridge_a_condition_ticked_on_d_and_d_beyond_shows_and_ends_there(player, db, monkeypatch):
+    import copy
+
+    from tests.table_setup import COLE
+
+    data = {**copy.deepcopy(COLE), "conditions": [{"id": 1, "level": None}]}
+    monkeypatch.setattr(characters.refresh, "__defaults__", (lambda _id: copy.deepcopy(data),))
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    owned_by(db, cole, "player@example.com")
+    assert 'data-name="Blinded"' in player.get(f"/characters/{cole.id}/battle").text and "cond-halo dark" in player.get(f"/characters/{cole.id}/battle").text
+    r = player.post(f"/characters/{cole.id}/conditions/end", data={"name": "Blinded"}, headers=HX)
+    assert r.status_code == 409 and "end it there" in r.text

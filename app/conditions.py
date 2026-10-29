@@ -18,7 +18,7 @@ import re
 from functools import cache
 from pathlib import Path
 
-from app import rules_data, rules_terms
+from app import ddb_fields, rules_data, rules_terms
 
 DATA = Path(__file__).parent / "data" / "item_actions.json"
 
@@ -78,6 +78,62 @@ def curated(it: dict) -> dict:
 def rules_text(name: str) -> str:
     """The condition's or effect's short rules summary, for the pill's pop-up."""
     return EFFECT_TEXT.get(name) or next((t.text for t in rules_terms.TERMS if t.name == name), "")
+
+
+# How a condition shows on Battle (Brett, 2026-10-28; docs/mockups/conditions-on-battle.html): each its own colour
+# (app.css --cond-*, by its slug) and icon (_cond_icons.html). The page's edge takes the colours of the newest three,
+# so each one shows; Blinded's is black and Blinded or Unconscious also darken the page towards its edges.
+EDGE = 3
+DARKEN = ("Blinded", "Unconscious")
+
+
+def slug(name: str) -> str:
+    return _slug(name)
+
+
+def edge(conditions: list[dict] | None) -> list[str]:
+    """The slugs of the conditions whose colours the page's edge takes, newest first (["poisoned", "prone"])."""
+    return [slug(c.get("name", "")) for c in (conditions or [])[-EDGE:]][::-1]
+
+
+def darkens(conditions: list[dict] | None) -> bool:
+    return any(c.get("name") in DARKEN for c in conditions or [])
+
+
+# D&D Beyond holds the 15 conditions and Exhaustion on the sheet (Brett, 2026-10-28: synced both ways). Where the
+# bridge works on a character, those are D&D Beyond's: askdnd shows what the sheet has and makes a change there;
+# askdnd keeps only what D&D Beyond doesn't have (item effects, and where a condition came from). Elsewhere askdnd
+# shows what's ticked on D&D Beyond along with its own.
+ON_DDB = (*ddb_fields.CONDITIONS.values(), "Exhaustion")
+DDB_ID = {name: cid for cid, name in ddb_fields.CONDITIONS.items()}
+
+
+def from_sheet(data: dict | None) -> list[dict]:
+    """The conditions ticked on D&D Beyond's sheet (its character data), in its order, Exhaustion with its level."""
+    out = []
+    for c in (data or {}).get("conditions") or []:
+        if not isinstance(c, dict):
+            continue
+        if c.get("id") == ddb_fields.EXHAUSTION:
+            if c.get("level"):
+                out.append({"name": "Exhaustion", "level": int(c["level"])})
+        elif ddb_fields.CONDITIONS.get(c.get("id")):
+            out.append({"name": ddb_fields.CONDITIONS[c["id"]]})
+    return out
+
+
+def shown(own: list[dict] | None, sheet: list[dict] | None, synced: bool) -> list[dict]:
+    """What a character is under now, oldest first: D&D Beyond's (`sheet`, from the summary; None from a copy read
+    before askdnd kept them) with askdnd's source and note for each, then askdnd's own. Each says "on_ddb". Synced
+    (the bridge works on it), a condition askdnd holds but D&D Beyond doesn't is left out: D&D Beyond's read decides."""
+    own = own or []
+    if sheet is None:
+        return [dict(c) for c in own]
+    there = {c["name"]: c for c in sheet}
+    keep = [c for c in own if c.get("name") in there or not (synced and c.get("name") in ON_DDB)]
+    named = {c["name"] for c in keep}
+    return ([{**c, "on_ddb": True} for c in sheet if c["name"] not in named]
+            + [{**c, **there.get(c["name"], {}), "on_ddb": c.get("name") in there} for c in keep])
 
 
 def usable(it: dict) -> bool:

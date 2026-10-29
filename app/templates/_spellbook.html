@@ -4,7 +4,7 @@
 {% from "_char.html" import spell_roll, pick_btn %}
 {% from "_lists.html" import filter_column, search_box, active_row %}
 {% set ON_SAVE = {"half": ("Half on a save", "half"), "none": ("Nothing on a save", "none"), "lands": ("Damage needs no save", "lands")} %}
-<div class="peek-head sb-head">
+<div class="peek-head sb-head{{ ' sb-concentrating' if conc }}">
   <div class="fm-title">
     <div class="note">{{ c.name }}{% if sc.save_dc %} · {{ sc.class }} spells · DC {{ sc.save_dc }} · {{ sc.attack }} to hit{% endif %}</div>
     <h2 id="peek-title">Spell Book</h2>
@@ -35,11 +35,11 @@
       <div class="ls-rows sb-cols" data-ls-rows>
         <div class="ls-head" aria-hidden="true"><span></span><span>Spell</span><span>Time</span><span>Range</span><span>Roll</span><span class="sb-avg-col">Damage / Healing</span><span></span></div>
         {% for e in spells %}{% set note = picks.notes.get(e.key) if show_picks else "" %}
-        <div class="ls-row" data-ls-row data-ref="{{ e.key }}" data-f='{{ e.f | tojson }}' data-name="{{ e.name | lower }}" data-level="{{ e.level }}"
+        <div class="ls-row{{ ' sb-conc-row' if conc and conc.key == e.key }}" data-ls-row data-ref="{{ e.key }}" data-f='{{ e.f | tojson }}' data-name="{{ e.name | lower }}" data-level="{{ e.level }}"
           data-group-label="{{ 'Cantrips' if not e.level else (e.level | ordinal) ~ ' level' }}" data-avgs='{{ e.avgs | tojson }}'
           data-panel-url="/characters/{{ c.id }}/detail?ref={{ e.key | urlencode }}" tabindex="0" role="button" aria-label="{{ e.name }}: details">
           <span class="ls-pk">{% if show_picks %}{{ pick_btn(c, "star", e.key, e.key in picks.star, can_pick) }}{% endif %}</span>
-          <span class="ls-name"><span class="ls-line"><b>{{ e.name }}</b>{% if e.conc %} <span class="tag">Conc.</span>{% endif %}{% if e.ritual %} <span class="tag">Ritual</span>{% endif %}{% if conc and conc.key == e.key %} <span class="tag draft">Concentrating</span>{% endif %}</span>
+          <span class="ls-name"><span class="ls-line"><b>{{ e.name }}</b>{% if e.conc %} <span class="tag">Conc.</span>{% endif %}{% if e.ritual %} <span class="tag">Ritual</span>{% endif %}{% if conc and conc.key == e.key %} <span class="tag sb-conc-tag">Concentrating</span>{% endif %}</span>
             {% if note %}<span class="ls-note" title="{{ note }}">✎ {{ note }}</span>{% endif %}</span>
           <span class="sb-time">{{ {"Bonus action": "Bonus"}.get(e.time, e.time) }}</span>
           <span class="sb-range">{{ e.range or "—" }}</span>
@@ -52,7 +52,7 @@
             {% if e.conc and can_pick and not (conc and conc.key == e.key) %}
             <form class="inline" hx-post="/characters/{{ c.id }}/concentration" hx-target="#battle-body" hx-swap="outerHTML">
               <input type="hidden" name="key" value="{{ e.key }}"><input type="hidden" name="level" value="{{ e.level }}" data-sb-level>
-              <button class="btn small" title="Track Concentration on {{ e.name }} (spend the slot on D&amp;D Beyond)">Concentrate</button>
+              <button class="btn small" title="Track Concentration on {{ e.name }} (spend the slot on D&amp;D Beyond){% if conc %}. It ends Concentration on {{ conc.spell }}{% endif %}">Concentrate</button>
             </form>
             {% endif %}
           </span>

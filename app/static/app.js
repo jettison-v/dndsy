@@ -453,7 +453,9 @@
   let showWait = null, showing = false, again = false;
   function showsAny(ids) {  // ids: character ids as text, or '*' for any
     const page = document.querySelector('main[data-character]');
-    return PARTY.test(location.pathname) || !!(page && (ids.includes('*') || ids.includes(page.dataset.character)));
+    const mine = document.querySelector('[data-cond-dots]');  // your character's button in the menu bar shows its conditions
+    return PARTY.test(location.pathname) || !!(page && (ids.includes('*') || ids.includes(page.dataset.character)))
+      || !!(mine && ids.includes(mine.dataset.character));
   }
   function busyHere() {
     const a = document.activeElement;
@@ -516,6 +518,9 @@
     here.replaceChildren(...[...there.childNodes].map(n => document.importNode(n, true)));
     const pill = document.getElementById('live-pill'), newPill = doc.getElementById('live-pill');
     if (pill && newPill) { pill.className = newPill.className; pill.title = newPill.title; pill.innerHTML = newPill.innerHTML; Object.assign(pill.dataset, newPill.dataset); }
+    // Your character's conditions on its menu bar button, outside main
+    const dots = doc.querySelectorAll('[data-cond-dots]');
+    document.querySelectorAll('[data-cond-dots]').forEach((d, i) => { if (dots[i]) { d.innerHTML = dots[i].innerHTML; if (dots[i].title) d.title = dots[i].title; else d.removeAttribute('title'); } });
     // Game Mode, as the page is drawn now: started, ended or kept going by someone at the table
     const b = document.body, was = gmIsOn(), wasUntil = b.dataset.gameUntil || '';
     ['gameUntil', 'gameBy', 'gameWarn'].forEach(k => { if (doc.body.dataset[k] !== undefined) b.dataset[k] = doc.body.dataset[k]; else delete b.dataset[k]; });
@@ -526,7 +531,7 @@
     }
     restore();
     if (window.askdndNotesInit) window.askdndNotesInit(here);
-    sortSetup(); econSetup();
+    sortSetup(); econSetup(); condArrive();
     showMarks(here, before);
   }
   function swapPanel(layer, html) {
@@ -611,7 +616,26 @@
   // Pop-ups made of <details> (Concentration, conditions, + Condition): a click anywhere else closes them
   document.addEventListener('click', e => {
     document.querySelectorAll('details.conc-pop[open], details.cond-pill[open]').forEach(d => { if (!d.contains(e.target)) d.open = false; });
+    // Battle's corner (Brett, 2026-10-28): an emblem says what its condition does on hover or focus, or a tap on phones
+    const emb = e.target.closest('.cond-emb');
+    document.querySelectorAll('.cond-emb[aria-expanded="true"]').forEach(x => { if (x !== emb) x.setAttribute('aria-expanded', 'false'); });
+    if (emb) emb.setAttribute('aria-expanded', String(emb.getAttribute('aria-expanded') !== 'true'));
   });
+  // A condition that starts makes the halo flash once and its emblem pop in, however it arrived (its pill, D&D Beyond,
+  // someone else's screen); after that nothing moves, so it never pulls your eye mid-turn. Opening the page doesn't.
+  const condsWere = {};
+  function condArrive() {
+    const b = document.getElementById('battle-body');
+    if (!b) return;
+    const now = [...b.querySelectorAll('.cond-emb')].map(x => x.dataset.name), was = condsWere[b.dataset.character];
+    condsWere[b.dataset.character] = now;
+    const fresh = was ? now.filter(n => !was.includes(n)) : [];
+    if (!fresh.length) return;
+    b.querySelectorAll('.cond-emb').forEach(x => { if (fresh.includes(x.dataset.name)) x.classList.add('new'); });
+    const halo = b.querySelector('.cond-halo');
+    if (halo) halo.classList.add('starting');
+  }
+  condArrive();
   // Icon buttons say what they do (Brett, 2026-10-22): a label on hover or keyboard focus, or a long press on
   // phones. The text is the button's data-tip, aria-label or title; the native title is held back while
   // the label shows so the two don't stack.
@@ -777,7 +801,7 @@
   document.body.addEventListener('htmx:afterSettle', e => {
     const ids = [e.target.id, e.detail.target && e.detail.target.id];
     if (ids.includes('live-menu')) gmSetup();  // the popover's switch
-    if (ids.includes('battle-body')) { sortSetup(); econSetup(); }
+    if (ids.includes('battle-body')) { sortSetup(); econSetup(); condArrive(); }
   });
   gmSetup();
 

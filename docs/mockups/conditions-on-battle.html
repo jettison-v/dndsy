@@ -1,0 +1,437 @@
+<title>Conditions on Battle</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<style>
+/* Step 5 (forgotten effects), Brett's idea of Oct 28: conditions you can't miss on Battle, beyond the pills. One page:
+   where you'll find it, a live Battle for Cole to switch conditions on and off and try the treatments, the colours and
+   icons (askdnd's own, drawn here; D&D Beyond's are its art), then what's for Brett to decide. askdnd is dark only, so
+   this page is too. */
+:root { --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --bar: #0f1113; --line: #34383e; --text: #ebe7df; --strong: #fff;
+  --muted: #a29d93; --faint: #6f6b64; --red: #d64545; --red-text: #f08a8a; --red-soft: rgba(214, 69, 69, .14);
+  --green: #5bbf7f; --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .15); --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+  --cant: #e5534b; --hindered: #e8a33d; --helped: #5ec4d6;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --serif: "Iowan Old Style", Palatino, Georgia, serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.6 var(--sans); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 36px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 30px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.4rem/1.25 var(--serif); }
+h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; }
+section { display: grid; gap: 14px; min-width: 0; }
+.eyebrow { font: 700 .78rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red-text); }
+.label { font: 700 .74rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+header { display: grid; gap: 12px; max-width: 76ch; }
+.muted { color: var(--muted); }
+.small { font-size: .86rem; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.box ul, .box ol { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: .93rem; }
+.box.ask { border-color: var(--red); }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+
+/* Where you'll find it: Battle drawn small, the corner and the edges lit */
+.where-wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 18px; align-items: center; }
+@media (max-width: 760px) { .where-wrap { grid-template-columns: 1fr; } }
+.mini { position: relative; aspect-ratio: 16 / 10; max-width: 100%; border-radius: 10px; background: #101214; border: 1px solid var(--line); overflow: hidden;
+  box-shadow: inset 0 0 0 2px rgba(232, 163, 61, .7), inset 0 0 38px rgba(232, 163, 61, .28); }
+.mini .mb { position: absolute; inset: 0 0 auto; height: 9%; background: var(--bar); border-bottom: 2px solid var(--red); }
+.mini .rs { position: absolute; left: 0; top: 9%; bottom: 0; width: 17%; background: #121417; border-right: 1px solid var(--line); }
+.mini .hd { position: absolute; left: 21%; right: 4%; top: 14%; height: 12%; border-radius: 4px; background: var(--surface); }
+.mini .tl { position: absolute; left: 21%; right: 4%; top: 30%; height: 12%; border-radius: 4px; background: var(--surface); }
+.mini .cols { position: absolute; left: 21%; right: 4%; top: 47%; bottom: 8%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 3%; }
+.mini .cols i { background: var(--surface); border-radius: 4px; }
+.mini .corner { position: absolute; right: 3%; bottom: 5%; display: grid; gap: 4px; }
+.mini .corner i { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--hindered); background: rgba(232, 163, 61, .2); }
+.mini .tray { position: absolute; left: 19%; bottom: 5%; width: 16%; height: 14%; border-radius: 5px; border: 1px dashed var(--faint); }
+.mini .tag { position: absolute; font: 600 .68rem/1.2 var(--sans); color: var(--strong); background: rgba(0, 0, 0, .65); border-radius: 5px; padding: 3px 6px; }
+.where-wrap ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+
+/* Try-it controls */
+.controls { display: grid; gap: 14px; }
+.ctl-row { display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: end; }
+.ctl { display: grid; gap: 6px; min-width: 0; }
+.ctl > span { font-size: .8rem; color: var(--muted); }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.seg button { font: 500 .86rem/1 var(--sans); color: var(--text); background: var(--surface-2); border: 0; padding: 9px 13px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--blue-soft); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font: 500 .82rem/1 var(--sans); border: 1px solid var(--line); background: var(--surface-2); color: var(--text); border-radius: 999px; padding: 5px 10px 5px 6px; cursor: pointer; }
+.chip svg { width: 16px; height: 16px; color: var(--c); }
+.chip[aria-pressed="true"] { border-color: var(--c); background: color-mix(in srgb, var(--c) 16%, var(--surface-2)); color: var(--strong); }
+.btn { font: 600 .86rem/1 var(--sans); border-radius: 8px; padding: 9px 13px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+/* The mock: menu bar and Battle */
+.stage-wrap { display: grid; justify-items: center; }
+.stage { position: relative; width: 100%; background: #101214; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; transition: background .6s, box-shadow .6s; --halo: transparent; }
+.stage.phone { width: 390px; max-width: 100%; }
+.stage.halo { box-shadow: var(--halo-shadow); }
+.stage.pulse { animation: pulse 1.8s ease-out; }
+@keyframes pulse { 0% { filter: brightness(1.25); } 100% { filter: none; } }
+.stage.tint { background: color-mix(in srgb, var(--tint) 9%, #101214); }
+.stage.dim::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, .55)); }
+.mbar { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: var(--bar); border-bottom: 2px solid var(--red); flex-wrap: wrap; }
+.mbar .brand { font-weight: 700; color: var(--strong); }
+.mbar .nav { color: var(--muted); font-size: .92rem; }
+.mbar .grow { flex: 1; }
+.mbtn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; font-size: .88rem; color: var(--text); background: var(--surface); }
+.mbtn .dots { display: inline-flex; gap: 3px; }
+.mbtn .dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+.pill { display: inline-flex; align-items: center; gap: 7px; border-radius: 999px; padding: 6px 13px; font: 500 .88rem/1.2 var(--sans); border: 1px solid var(--green); background: rgba(91, 191, 127, .14); color: var(--strong); white-space: nowrap; }
+.pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+.stage.phone .mbar .nav, .stage.phone .pill { display: none; }
+.battle { padding: 18px 18px 26px; display: grid; gap: 14px; }
+.stage.phone .battle { padding: 14px 14px 120px; }
+.who { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.av { width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(135deg, #4b6b54, #2c3d31); display: grid; place-items: center; font: 700 1.1rem/1 var(--sans); color: #dfe9dc; transition: opacity .4s, outline-color .4s; outline: 2px solid transparent; outline-offset: 2px; }
+.stage.ghost .av { opacity: .38; outline: 2px dashed var(--helped); }
+.who b { font: 600 1.5rem/1.1 var(--sans); color: var(--strong); }
+.who .sub { color: var(--muted); font-size: .86rem; }
+.conc { font-size: .82rem; border: 1px solid var(--amber); background: var(--amber-soft); color: var(--strong); border-radius: 999px; padding: 4px 10px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-width: 0; }
+.tile small { display: block; color: var(--muted); font-size: .8rem; }
+.tile b { font-size: 1.45rem; color: var(--strong); font-variant-numeric: tabular-nums; }
+.tile .of { color: var(--muted); font-size: .92rem; }
+.tile .adv { display: block; font-size: .76rem; font-weight: 600; }
+.tile .adv.d { color: var(--red-text); }
+.tile .adv.a { color: var(--green); }
+.cbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.cpill { display: inline-flex; align-items: center; gap: 6px; font: 500 .84rem/1 var(--sans); border: 1px solid var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); color: var(--strong); border-radius: 999px; padding: 5px 11px 5px 7px; }
+.cpill svg { width: 16px; height: 16px; color: var(--c); }
+.cpill.add { border-color: var(--line); background: var(--surface-2); color: var(--muted); padding-left: 11px; }
+.cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.stage.phone .cols { grid-template-columns: 1fr; }
+.col { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; align-content: start; font-size: .88rem; min-width: 0; }
+.col .h { font: 700 .74rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--red-text); }
+.col .h.b { color: var(--amber); }
+.col .h.r { color: var(--blue); }
+.col .row { display: flex; justify-content: space-between; gap: 8px; border-top: 1px solid var(--line); padding-top: 6px; }
+.col .row b { color: var(--strong); font-weight: 600; }
+.col .row .dis { color: var(--red-text); font-size: .76rem; font-weight: 600; white-space: nowrap; }
+.col .row .adv { color: var(--green); font-size: .76rem; font-weight: 600; white-space: nowrap; }
+
+/* The corner: one emblem per condition, newest at the bottom, nearest your eye */
+.corner { position: absolute; right: 14px; bottom: 14px; display: flex; flex-direction: column-reverse; gap: 8px; align-items: flex-end; z-index: 2; }
+.stage.phone .corner { bottom: 70px; right: 10px; }
+.emb { position: relative; width: 48px; height: 48px; border-radius: 12px; border: 1.5px solid var(--c); background: color-mix(in srgb, var(--c) 18%, #15171a); color: var(--c);
+  display: grid; place-items: center; cursor: pointer; padding: 0; box-shadow: 0 4px 14px rgba(0, 0, 0, .45); }
+.stage.phone .emb { width: 42px; height: 42px; }
+.emb svg { width: 26px; height: 26px; }
+.emb .lv { position: absolute; right: -6px; top: -6px; min-width: 18px; height: 18px; border-radius: 9px; background: var(--c); color: #15171a; font: 700 .72rem/18px var(--sans); text-align: center; padding: 0 4px; }
+.emb.black { background: #000; border-color: #6b7079; color: #e6e9ee; }
+.emb.white { background: color-mix(in srgb, #f4f6f9 22%, #15171a); }
+.emb.new { animation: arrive .9s cubic-bezier(.2, 1.4, .4, 1); }
+@keyframes arrive { 0% { transform: scale(.3) rotate(-20deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
+.emb.prone svg { transform: rotate(-8deg); }
+.emb .tip { position: absolute; right: 58px; bottom: 0; width: 260px; text-align: left; background: var(--surface); border: 1px solid var(--c); border-radius: 10px; padding: 10px 12px; color: var(--text); font: 400 .84rem/1.45 var(--sans); box-shadow: 0 10px 26px rgba(0, 0, 0, .5); display: none; }
+.stage.phone .emb .tip { width: 220px; }
+.emb .tip b { display: block; color: var(--strong); margin-bottom: 2px; }
+.emb .tip .src { display: block; color: var(--muted); font-size: .78rem; margin-top: 4px; }
+.emb:hover .tip, .emb:focus-visible .tip, .emb[aria-expanded="true"] .tip { display: block; }
+.more { font: 600 .8rem/1 var(--sans); color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 5px 9px; }
+.tray { position: absolute; left: 14px; bottom: 14px; font-size: .74rem; color: var(--faint); border: 1px dashed var(--line); border-radius: 8px; padding: 6px 10px; }
+.stage.phone .tray { display: none; }
+.pbar { display: none; position: absolute; left: 0; right: 0; bottom: 0; height: 56px; background: var(--bar); border-top: 1px solid var(--line); justify-content: space-around; align-items: center; font-size: .76rem; color: var(--muted); }
+.stage.phone .pbar { display: flex; }
+.pbar b { color: var(--strong); font-weight: 600; }
+
+/* The legend: every condition's colour and icon */
+.legend { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+.lg { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px; align-items: start; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.lg .emb { width: 44px; height: 44px; cursor: default; box-shadow: none; }
+.lg .emb svg { width: 24px; height: 24px; }
+.lg b { color: var(--strong); }
+.lg .fam { font: 700 .68rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; margin-left: 6px; }
+.lg p { font-size: .82rem; color: var(--muted); }
+.fams { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: .88rem; }
+.fams span { display: inline-flex; align-items: center; gap: 7px; }
+.fams i { width: 14px; height: 14px; border-radius: 4px; }
+
+/* Party card */
+.pcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; max-width: 900px; }
+.pcard { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; font-size: .86rem; }
+.pcard .top { display: flex; justify-content: space-between; gap: 8px; }
+.pcard b { color: var(--strong); }
+.pcard .icons { display: flex; gap: 5px; flex-wrap: wrap; min-height: 22px; }
+.pcard .icons span { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--c); background: color-mix(in srgb, var(--c) 18%, #15171a); color: var(--c); display: grid; place-items: center; }
+.pcard .icons svg { width: 14px; height: 14px; }
+.pcard.lit { box-shadow: inset 3px 0 0 var(--cl); }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Step 5 · forgotten effects · mockup</span>
+    <h1>Conditions on Battle</h1>
+    <p class="muted">Your idea (Oct 28): today a condition is only a pill under Battle's numbers, easy to scroll past. Here the page itself shows it: a halo around the edges, and an emblem in the corner for each condition, with its own colour and icon. Switch conditions on below and try the treatments.</p>
+  </header>
+
+  <section>
+    <span class="eyebrow">Where you'll find it</span>
+    <div class="where-wrap">
+      <div class="mini" role="img" aria-label="Battle drawn small: a halo around the page's edges and emblems in the bottom-right corner">
+        <div class="mb"></div><div class="rs"></div><div class="hd"></div><div class="tl"></div>
+        <div class="cols"><i></i><i></i><i></i></div>
+        <div class="tray"></div>
+        <div class="corner"><i></i><i></i></div>
+        <span class="tag" style="left:21%;top:2%">Halo: the page's edges</span>
+        <span class="tag" style="right:12%;bottom:6%">Emblems</span>
+        <span class="tag" style="left:20%;bottom:21%">Dice tray</span>
+      </div>
+      <ol>
+        <li>On your character's <b>Battle</b> page, and on anyone's screen looking at it: the DM opening Cole's Battle sees what Cole has.</li>
+        <li><b>The halo</b> is the page's own edge, so it shows whatever you're scrolled to.</li>
+        <li><b>The emblems</b> sit in the bottom-right corner, the one that's free now that the D&amp;D Beyond pill is gone for players. Bottom-left stays the dice tray; on a phone they sit just above the bottom bar.</li>
+        <li>The pills under the numbers stay: they're where you start and end a condition and read it in full.</li>
+        <li>On <b>Party</b>, each card shows the same icons small.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Try it</span>
+    <div class="controls">
+      <div class="ctl"><span>Cole's conditions (click to start or end one)</span><div class="chips" data-chips></div></div>
+      <div class="ctl-row">
+        <div class="ctl"><span>The page</span><div class="seg" role="group" aria-label="Treatment" data-ctl="treat">
+          <button type="button" data-v="halo" aria-pressed="true">Halo</button>
+          <button type="button" data-v="tint" aria-pressed="false">Tint</button>
+          <button type="button" data-v="both" aria-pressed="false">Halo and tint</button>
+          <button type="button" data-v="none" aria-pressed="false">Emblems only</button></div></div>
+        <div class="ctl"><span>Signature touches</span><div class="seg" role="group" aria-label="Signature touches" data-ctl="touch">
+          <button type="button" data-v="on" aria-pressed="true">On</button>
+          <button type="button" data-v="off" aria-pressed="false">Off</button></div></div>
+        <div class="ctl"><span>Screen</span><div class="seg" role="group" aria-label="Screen" data-ctl="view">
+          <button type="button" data-v="desktop" aria-pressed="true">Computer</button>
+          <button type="button" data-v="phone" aria-pressed="false">Phone</button></div></div>
+      </div>
+    </div>
+
+    <div class="stage-wrap">
+    <div class="stage halo" data-stage>
+      <div class="mbar">
+        <span class="brand">askdnd</span><span class="nav">Story</span><span class="nav">Campaign</span>
+        <span class="mbtn">Cole <span class="dots" data-dots></span></span><span class="nav">Party ▾</span>
+        <span class="grow"></span>
+        <span class="pill"><span class="dot"></span>Game on</span>
+      </div>
+      <div class="battle">
+        <div class="who"><div class="av">C</div><div><b>Cole</b><div class="sub">Druid 6 (Circle of the Moon) · Monk 2</div></div><span class="conc">Concentrating: Moonbeam</span></div>
+        <div class="tiles">
+          <div class="tile"><small>Hit points</small><b>37</b><span class="of"> / 51</span></div>
+          <div class="tile"><small>Armor class</small><b>16</b></div>
+          <div class="tile"><small>Speed</small><b data-speed>40 ft</b></div>
+          <div class="tile"><small>Initiative</small><b>+3</b><span class="adv" data-init></span></div>
+          <div class="tile"><small>Dex save</small><b>+6</b><span class="adv" data-dex></span></div>
+          <div class="tile"><small>Con save</small><b>+5</b></div>
+        </div>
+        <div class="cbar" data-cbar></div>
+        <div class="cols">
+          <div class="col"><span class="h">Action</span>
+            <div class="row"><b>Quarterstaff</b><span data-atk></span></div>
+            <div class="row"><b>Unarmed Strike</b><span data-atk></span></div>
+            <div class="row"><b>Produce Flame</b><span data-atk></span></div></div>
+          <div class="col"><span class="h b">Bonus action</span>
+            <div class="row"><b>Wild Shape</b><span class="muted">2 of 3</span></div>
+            <div class="row"><b>Flurry of Blows</b><span data-atk></span></div></div>
+          <div class="col"><span class="h r">Reaction</span>
+            <div class="row"><b>Opportunity Attack</b><span data-atk></span></div></div>
+        </div>
+      </div>
+      <span class="tray">Dice tray</span>
+      <div class="corner" data-corner></div>
+      <div class="pbar"><span>Story</span><span>Campaign</span><b>Cole</b><span>Party</span><span>More</span></div>
+    </div>
+    </div>
+    <p class="muted small">Point at an emblem (tap on a phone) for what it does. Starting a condition makes the edge flash once and the emblem pop in; after that nothing moves, so it never pulls your eye in the middle of a turn. The disadvantage and advantage marks on the numbers are askdnd's today, unchanged.</p>
+  </section>
+
+  <section>
+    <span class="eyebrow">The colours and icons</span>
+    <p class="muted" style="max-width:76ch">Each condition has its own colour and icon, drawn for askdnd (D&amp;D Beyond's icons are its own art, so I haven't copied them). They fall in three families, and the halo shows the most serious: a red edge says you can't act, amber that you're hindered, blue that something's helping. Three have a halo of their own, stacked with the rest: <b>Poisoned</b> green, <b>Invisible</b> white and <b>Blinded</b> black (the page darkens towards its edges, since a black glow wouldn't show on askdnd's dark page).</p>
+    <div class="fams"><span><i style="background:var(--cant)"></i>Can't act</span><span><i style="background:var(--hindered)"></i>Hindered</span><span><i style="background:var(--helped)"></i>Helped (item effects)</span><span><i style="background:#86c95b"></i>Poisoned</span><span><i style="background:#f4f6f9"></i>Invisible</span><span><i style="background:#000;border:1px solid #6b7079"></i>Blinded</span></div>
+    <div class="legend" data-legend></div>
+  </section>
+
+  <section>
+    <span class="eyebrow">On Party</span>
+    <div class="pcards" data-party></div>
+    <p class="muted small">Cole's card follows the conditions you switch on above; the others are examples. The thin edge on the left is the card's halo.</p>
+  </section>
+
+  <section>
+    <span class="eyebrow">Signature touches</span>
+    <div class="grid2">
+      <div class="box"><h3>Where a condition changes how the page feels</h3>
+        <ul><li><b>Invisible:</b> your portrait goes faint with a dashed outline.</li>
+          <li><b>Unconscious and Blinded:</b> the page darkens towards its edges.</li>
+          <li><b>Prone:</b> its emblem leans.</li>
+          <li><b>Exhaustion:</b> its level on the emblem.</li></ul>
+        <p class="muted small">Only where it says something about the rule; the rest stay plain so the page doesn't turn into a light show.</p></div>
+      <div class="box"><h3>What stays the same</h3>
+        <ul><li>Starting and ending a condition: its pill, or D&amp;D Beyond's Conditions. (Built Oct 28: they're synced both ways with D&amp;D Beyond, where the bridge works.)</li>
+          <li>Everyone at the table sees them, as today.</li>
+          <li>askdnd shows what a condition does; the DM rules on it.</li></ul></div>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Decided (Brett, Oct 28)</span>
+    <div class="box">
+      <ol>
+        <li><b>The page:</b> the halo. No tint.</li>
+        <li><b>The halo's colour:</b> how serious for most; Poisoned green, Invisible white and Blinded black, each its own ring. They stack: it's rare to have several. <b>Changed when built (Oct 28):</b> the edge takes the newest three conditions' own colours, blending around the page, and is more subdued: a thin line and a soft glow.</li>
+        <li><b>Signature touches:</b> these four, no more.</li>
+        <li><b>Beyond Battle:</b> a dot per condition on your character's button in the menu bar.</li>
+        <li><b>Concentration</b> stays the pill in the header.</li>
+      </ol>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  // askdnd's own icons, 24×24, drawn in the condition's colour
+  const I = {
+    Blinded: '<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/><path d="M4 20 20 4"/>',
+    Charmed: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/><path d="M18.5 3v3M17 4.5h3"/>',
+    Deafened: '<path d="M7.5 9a4.5 4.5 0 1 1 9 0c0 3.2-3.2 4.2-3.2 7.2a2.6 2.6 0 0 1-5.2.3"/><path d="M10.5 9.5a1.5 1.5 0 0 1 3 0"/><path d="M4 20 20 4"/>',
+    Exhaustion: '<path d="M7 3h10M7 21h10"/><path d="M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9s8 4 8 9"/><path d="M10 18h4"/>',
+    Frightened: '<circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1.6"/><circle cx="15" cy="10" r="1.6"/><ellipse cx="12" cy="16" rx="2" ry="2.4"/>',
+    Grappled: '<path d="M7 11V6.5a1.5 1.5 0 0 1 3 0V11M10 10V5a1.5 1.5 0 0 1 3 0v5M13 10V6a1.5 1.5 0 0 1 3 0v6M16 10.5a1.5 1.5 0 0 1 3 0V14a7 7 0 0 1-7 7h-.5a6 6 0 0 1-5-2.7L4 14.6a1.5 1.5 0 0 1 2.4-1.8L7 14"/>',
+    Incapacitated: '<circle cx="12" cy="12" r="9"/><path d="M5.6 18.4 18.4 5.6"/>',
+    Invisible: '<circle cx="12" cy="7" r="3.5" stroke-dasharray="2.4 2.2"/><path d="M5 21c0-4 3-7 7-7s7 3 7 7" stroke-dasharray="2.4 2.2"/>',
+    Paralyzed: '<path d="M13 2 5 14h6l-1 8 8-12h-6l1-8z"/>',
+    Petrified: '<path d="M4 19 6.5 9 12 5l6 3 2 11z"/><path d="M6.5 9l4.5 3.5L18 8M11 12.5 12 19"/>',
+    Poisoned: '<path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/><circle cx="10" cy="13.5" r="1"/><circle cx="14" cy="13.5" r="1"/><path d="M10 17h4"/>',
+    Prone: '<circle cx="5.5" cy="13.5" r="2.2"/><path d="M8.5 14.5h11M11.5 14.5l3-3.5M3 19h18"/>',
+    Restrained: '<rect x="2.5" y="9" width="10" height="6" rx="3"/><rect x="11.5" y="9" width="10" height="6" rx="3"/>',
+    Stunned: '<path d="M12 12.5a1.8 1.8 0 1 1 1.8 1.8 3.8 3.8 0 1 1-3.8-3.8 5.8 5.8 0 1 1 5.8 5.8"/><path d="M19 3.5l.6 1.3 1.4.2-1 1 .2 1.4-1.2-.7-1.2.7.2-1.4-1-1 1.4-.2z"/>',
+    Unconscious: '<path d="M3 11c2 3 5 4.5 9 4.5s7-1.5 9-4.5"/><path d="M6.5 14.5 5 17M12 15.5V18.5M17.5 14.5 19 17"/><path d="M15 3h4l-4 4h4"/>',
+    Enlarged: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/><path d="M9 9l-4-4M15 9l4-4M9 15l-4 4M15 15l4 4"/>',
+    Flying: '<path d="M3 14c5 0 8-3 10-9 .6 5 3.5 8.5 8 9.5-4.5 1-7 3-8.5 5.5C11 17 7.5 15 3 14z"/>',
+    'Water Breathing': '<circle cx="9" cy="15" r="4.5"/><circle cx="16.5" cy="7.5" r="2.8"/><circle cx="17.5" cy="16.5" r="1.6"/>',
+  };
+  // Each one's colour, family and a short summary of what it does (askdnd's own words, from its rules terms)
+  const C = [
+    ['Blinded', '#e6e9ee', 'hindered', "You can't see. Your attack rolls have Disadvantage; attacks against you have Advantage."],
+    ['Charmed', '#ec84b8', 'hindered', "You can't attack the charmer, and it has Advantage on checks to interact with you socially."],
+    ['Deafened', '#c3b08a', 'hindered', "You can't hear, and you automatically fail any ability check that needs hearing."],
+    ['Exhaustion', '#d08a4c', 'hindered', 'Your d20 Tests are reduced by 2 for each level, and your Speed by 5 feet for each.'],
+    ['Frightened', '#a983e6', 'hindered', 'Disadvantage on attack rolls and ability checks while the source of your fear is in sight; you can\'t move closer to it.'],
+    ['Grappled', '#e59a52', 'hindered', 'Your Speed is 0. Disadvantage on attack rolls against anyone other than the grappler.'],
+    ['Incapacitated', '#ef6a5e', 'cant', "You can't take actions, Bonus Actions or Reactions, and your Concentration ends. Disadvantage on Initiative."],
+    ['Invisible', '#f4f6f9', 'helped', 'Advantage on Initiative, and on your attack rolls unless the target can see you; attacks against you have Disadvantage.'],
+    ['Paralyzed', '#f0d24a', 'cant', 'Incapacitated, Speed 0. You fail Strength and Dexterity saves; a hit from within 5 feet is a Critical Hit.'],
+    ['Petrified', '#b3aa9b', 'cant', 'Turned to stone: Incapacitated, Speed 0, Resistance to all damage. You fail Strength and Dexterity saves.'],
+    ['Poisoned', '#86c95b', 'hindered', 'Disadvantage on attack rolls and ability checks.'],
+    ['Prone', '#c9a47b', 'hindered', 'Disadvantage on your attack rolls. Standing up costs half your Speed.'],
+    ['Restrained', '#d9774d', 'hindered', 'Speed 0. Disadvantage on your attack rolls and Dexterity saves; attacks against you have Advantage.'],
+    ['Stunned', '#f2b93b', 'cant', 'Incapacitated. You fail Strength and Dexterity saves; attacks against you have Advantage.'],
+    ['Unconscious', '#7b8ce0', 'cant', 'Incapacitated and Prone, you drop what you hold. You fail Strength and Dexterity saves; a hit from within 5 feet is a Critical Hit.'],
+    ['Enlarged', '#4fc7b0', 'helped', 'One size larger. Advantage on Strength checks and saves; your weapon and Unarmed Strike hits deal an extra 1d4.'],
+    ['Flying', '#8fc6f2', 'helped', "You have a Fly Speed. If you're in the air when it ends, you fall."],
+    ['Water Breathing', '#5aa7e8', 'helped', 'You can breathe underwater.'],
+  ];
+  const BY = Object.fromEntries(C.map(([n, c, f, t]) => [n, { c, f, t }]));
+  const FAM = { cant: ['#e5534b', "Can't act"], hindered: ['#e8a33d', 'Hindered'], helped: ['#5ec4d6', 'Helped'] };
+  const RANK = { cant: 0, hindered: 1, helped: 2 };
+  const SRC = { Poisoned: 'From a Giant Spider', Prone: 'Started on Battle', Invisible: 'From the Ring of Invisibility', Enlarged: 'From a Potion of Growth' };
+  const svg = n => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + I[n] + '</svg>';
+  const esc = s => s.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+
+  const st = { on: ['Poisoned', 'Prone'], exh: 2, treat: 'halo', touch: 'on', view: 'desktop', fresh: null };
+  const $ = s => document.querySelector(s);
+  const stage = $('[data-stage]');
+
+  // Controls
+  $('[data-chips]').innerHTML = C.map(([n, c]) => '<button type="button" class="chip" style="--c:' + c + '" data-cond="' + esc(n) + '" aria-pressed="false">' + svg(n) + esc(n) + '</button>').join('');
+  $('[data-chips]').addEventListener('click', e => {
+    const b = e.target.closest('[data-cond]'); if (!b) return;
+    const n = b.dataset.cond, i = st.on.indexOf(n);
+    if (i >= 0) { st.on.splice(i, 1); st.fresh = null; } else { st.on.push(n); st.fresh = n; pulse(); }
+    draw();
+  });
+  document.querySelectorAll('[data-ctl]').forEach(g => g.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    st[g.dataset.ctl] = b.dataset.v; st.fresh = null;
+    g.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    draw();
+  }));
+  function pulse() { stage.classList.remove('pulse'); void stage.offsetWidth; stage.classList.add('pulse'); }
+
+  // The halo (Brett, Oct 28): how serious for most (the most serious family's colour), but Poisoned is green,
+  // Invisible white and Blinded black (the edges go dark), each its own ring; they stack, the most serious innermost
+  const OWN = { Poisoned: '#86c95b', Invisible: '#f4f6f9', Blinded: '#000000' };
+  function haloShadow(list) {
+    if (!list.length) return 'none';
+    const fams = list.filter(n => !OWN[n]).map(n => BY[n].f).sort((a, b) => RANK[a] - RANK[b]);
+    const cols = [...(fams.length ? [FAM[fams[0]][0]] : []), ...list.filter(n => OWN[n]).map(n => OWN[n])];
+    return cols.map((c, i) => c === '#000000'
+      ? 'inset 0 0 0 ' + (2 + i * 3) + 'px #000, inset 0 0 90px 20px rgba(0, 0, 0, .8)'
+      : 'inset 0 0 0 ' + (2 + i * 3) + 'px ' + c + ', inset 0 0 ' + (54 + i * 20) + 'px ' + c + '55').join(', ');
+  }
+
+  function draw() {
+    const list = st.on;
+    document.querySelectorAll('[data-cond]').forEach(b => b.setAttribute('aria-pressed', String(list.includes(b.dataset.cond))));
+    const halo = (st.treat === 'halo' || st.treat === 'both') && list.length, tint = (st.treat === 'tint' || st.treat === 'both') && list.length;
+    stage.classList.toggle('halo', !!halo);
+    stage.style.setProperty('--halo-shadow', haloShadow(list));
+    stage.classList.toggle('tint', !!tint);
+    if (tint) stage.style.setProperty('--tint', FAM[list.map(n => BY[n].f).sort((a, b) => RANK[a] - RANK[b])[0]][0]);
+    stage.classList.toggle('phone', st.view === 'phone');
+    const touch = st.touch === 'on';
+    stage.classList.toggle('ghost', touch && list.includes('Invisible'));
+    stage.classList.toggle('dim', touch && (list.includes('Unconscious') || list.includes('Blinded')));
+
+    // The pills under the numbers (as today, now with the icon)
+    $('[data-cbar]').innerHTML = list.map(n => '<span class="cpill" style="--c:' + BY[n].c + '">' + svg(n) + esc(n) + (n === 'Exhaustion' ? ' ' + st.exh : '') + '</span>').join('')
+      + '<span class="cpill add">+ Condition</span>';
+    // The corner: up to five, newest nearest the corner
+    const shown = list.slice(-5), extra = list.length - shown.length;
+    $('[data-corner]').innerHTML = shown.map(n => '<button type="button" class="emb' + (n === st.fresh ? ' new' : '') + (touch && n === 'Prone' ? ' prone' : '') + (n === 'Blinded' ? ' black' : n === 'Invisible' ? ' white' : '') + '" style="--c:' + BY[n].c + '" aria-expanded="false" aria-label="' + esc(n) + '">'
+      + svg(n) + (n === 'Exhaustion' ? '<span class="lv">' + st.exh + '</span>' : '')
+      + '<span class="tip"><b>' + esc(n) + (n === 'Exhaustion' ? ', level ' + st.exh : '') + '</b>' + esc(BY[n].t) + '<span class="src">' + esc(SRC[n] || 'Started on Battle') + ' · the DM rules</span></span></button>').join('')
+      + (extra ? '<span class="more">+' + extra + ' more</span>' : '');
+    // The menu bar's character button: a dot per condition
+    $('[data-dots]').innerHTML = list.slice(0, 4).map(n => '<i style="--c:' + BY[n].c + '"></i>').join('');
+    // Disadvantage and advantage marks on the numbers (askdnd's today)
+    const dis = list.some(n => ['Blinded', 'Frightened', 'Poisoned', 'Prone', 'Restrained', 'Grappled'].includes(n)), adv = list.includes('Invisible');
+    document.querySelectorAll('[data-atk]').forEach(s => { s.className = dis && !adv ? 'dis' : adv && !dis ? 'adv' : ''; s.textContent = dis && !adv ? 'Disadvantage' : adv && !dis ? 'Advantage' : ''; });
+    const init = $('[data-init]'), inc = list.some(n => ['Incapacitated', 'Paralyzed', 'Petrified', 'Stunned', 'Unconscious'].includes(n));
+    init.className = 'adv ' + (inc && !adv ? 'd' : adv && !inc ? 'a' : ''); init.textContent = inc && !adv ? 'Disadvantage' : adv && !inc ? 'Advantage' : '';
+    const dex = $('[data-dex]'), fail = list.some(n => ['Paralyzed', 'Petrified', 'Stunned', 'Unconscious'].includes(n));
+    dex.className = 'adv d'; dex.textContent = fail ? 'Fails' : list.includes('Restrained') ? 'Disadvantage' : '';
+    $('[data-speed]').textContent = list.some(n => ['Grappled', 'Restrained', 'Paralyzed', 'Petrified', 'Unconscious'].includes(n)) ? '0 ft' : list.includes('Exhaustion') ? (40 - 5 * st.exh) + ' ft' : '40 ft';
+    party();
+  }
+  // Tap an emblem on a phone: its summary
+  $('[data-corner]').addEventListener('click', e => {
+    const b = e.target.closest('.emb'); if (!b) return;
+    const open = b.getAttribute('aria-expanded') === 'true';
+    document.querySelectorAll('[data-corner] .emb').forEach(x => x.setAttribute('aria-expanded', 'false'));
+    b.setAttribute('aria-expanded', String(!open));
+  });
+
+  // The legend
+  $('[data-legend]').innerHTML = C.map(([n, c, f, t]) => '<div class="lg"><span class="emb' + (n === 'Blinded' ? ' black' : n === 'Invisible' ? ' white' : '') + '" style="--c:' + c + '">' + svg(n) + '</span><div><b>' + esc(n) + '</b><span class="fam" style="color:' + (OWN[n] && n !== 'Blinded' ? OWN[n] : FAM[f][0]) + '">' + (OWN[n] ? 'Its own halo' : FAM[f][1]) + '</span><p>' + esc(t) + '</p></div></div>').join('');
+
+  // Party: Cole follows the controls; the rest are examples
+  function party() {
+    const card = (name, sub, hp, list) => {
+      const top = list.length ? FAM[list.map(n => BY[n].f).sort((a, b) => RANK[a] - RANK[b])[0]][0] : '';
+      return '<div class="pcard' + (list.length ? ' lit' : '') + '" style="--cl:' + top + '"><div class="top"><b>' + name + '</b><span class="muted">' + hp + '</span></div><span class="muted small">' + sub + '</span><div class="icons">'
+        + list.map(n => '<span style="--c:' + BY[n].c + '" title="' + esc(n) + '">' + svg(n) + '</span>').join('') + '</div></div>';
+    };
+    $('[data-party]').innerHTML = card('Cole', 'Druid 6 · Monk 2', '37 / 51', st.on) + card('Big C', 'Paladin 6 · Sorcerer 2', '58 / 72', ['Grappled'])
+      + card('Trah', 'Wizard 7 · Fighter 1', '41 / 52', ['Invisible']) + card('No Name', 'Monk 6 · Warlock 2', '0 / 75', ['Unconscious']);
+  }
+  draw();
+})();
+</script>
