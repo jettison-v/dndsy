@@ -1684,7 +1684,7 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .cond-pill:not(.cond-add) > summary { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); padding-left: var(--sp-2); }
 /* The edge: the newest three conditions' own colours around the page (--edge, from _cond_icons.html), blending into
    each other, subdued: a thin line and a soft glow. It's the page's own edge, so it shows wherever you've scrolled. */
-.cond-halo { position: fixed; inset: 0; z-index: 5; pointer-events: none; }  /* over the Table rolls sidebar's edge too */
+.cond-halo { position: fixed; inset: 0; z-index: 9; pointer-events: none; }  /* over the Table rolls sidebar and the side panel too (below menus and pop-ups) */
 .cond-halo i { position: absolute; inset: 0; border: 0 solid transparent; border-image: conic-gradient(from -45deg, var(--edge)) 1; }
 .cond-halo .cond-line { border-width: 3px; opacity: .9; }
 .cond-halo .cond-glow { border-width: 28px; filter: blur(22px); opacity: .4; }
@@ -1693,6 +1693,9 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 @keyframes cond-flash { 0% { opacity: 1; } }
 /* The corner: an emblem per condition, bottom-right (the dice tray keeps bottom-left); above the bottom bar on phones */
 .cond-corner { position: fixed; z-index: 5; right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+/* Beside an open side panel, not under it (480px wide from 1100px, .peek); on phones it's a sheet over the bottom */
+body:has(.peek.open:not(.modal)) .cond-corner { right: calc(var(--panel-w) + 14px); }
+@media (min-width: 1100px) { body:has(.peek.open:not(.modal)) .cond-corner { right: 494px; } }
 .cond-emb { position: relative; width: 48px; height: 48px; border-radius: 12px; border: 1.5px solid var(--c); background: color-mix(in srgb, var(--c) 18%, var(--bg)); color: var(--c); display: grid; place-items: center; padding: 0; cursor: pointer; box-shadow: 0 4px 14px var(--shadow); }
 .cond-emb .cond-icon { width: 26px; height: 26px; }
 .cond-emb[data-cond="blinded"] { background: var(--cond-dark); border-color: var(--cond-dark-edge); }
@@ -1713,7 +1716,7 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
   /* above the Table rolls sheet, as it's open or down to its bar; hidden while it fills the screen */
   body.gm-on.rolls-open .cond-corner { bottom: calc(280px + env(safe-area-inset-bottom, 0px)); }
   body.gm-on.rolls-closed .cond-corner { bottom: calc(160px + env(safe-area-inset-bottom, 0px)); }
-  body.gm-on.rolls-full .cond-corner { display: none; } }
+  body.gm-on.rolls-full .cond-corner, body:has(.peek.open) .cond-corner { display: none; } }
 /* Signature touches: Invisible fades your portrait (Blinded and Unconscious darken the edges, a ring above) */
 .char-page:has(#battle-body.cond-ghost) .char-head .portrait { opacity: .38; outline: 2px dashed var(--cond-invisible); outline-offset: 2px; }
 /* Party: the same icons small, and the card's edge in the newest one's colour */
