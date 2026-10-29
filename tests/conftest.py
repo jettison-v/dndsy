@@ -201,3 +201,34 @@ def dm(monkeypatch, db):
 @pytest.fixture
 def player(monkeypatch, db):
     yield from _signed_in(monkeypatch, db, "player@example.com")
+
+
+@pytest.fixture
+def sheet(monkeypatch, db):
+    """Cole's D&D Beyond sheet for the bridge (app/ddb_bridge.py), as a dict the test edits; askdnd reads it whenever it
+    refreshes. The bridge is on for his campaign, he's player@example.com's, and the extension has every sheet open."""
+    import copy
+    from datetime import UTC, datetime
+
+    from sqlalchemy import select
+
+    from app import characters, config, ddb_bridge
+    from app.importer import import_bundle
+    from app.models import Campaign, Character
+    from tests.table_setup import BUNDLE, COLE, char, owned_by
+
+    data = copy.deepcopy(COLE)
+    data["removedHitPoints"] = 14  # 37 of 51
+    monkeypatch.setattr(characters.refresh, "__defaults__", (lambda _id: copy.deepcopy(data),))
+    monkeypatch.setattr(ddb_bridge.time, "sleep", lambda s: None)  # the read-back's waits
+    monkeypatch.setattr(config, "DDB_BRIDGE", True)
+    ddb_bridge._health.update(extension_at=0.0, sheets=[], heard_at=0.0, read_check=None, round_trip=None)
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    db.get(Campaign, cole.campaign_id).vtt_pieces = ["ddb_bridge"]  # the DM switched it on (Manage › Settings)
+    owned_by(db, cole, "player@example.com")
+    characters.refresh(db, cole)
+    for ch in db.scalars(select(Character)):  # the extension has each sheet open (test_ddb_bridge's later tests: when it hasn't)
+        ch.sheet_heard_at = datetime.now(UTC)
+    ddb_bridge.active(db)  # someone is using askdnd (test_ddb_bridge covers waking and sleeping)
+    return data

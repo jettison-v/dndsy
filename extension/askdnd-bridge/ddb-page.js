@@ -58,14 +58,34 @@
 
   // Rolls made on this sheet: the sheet tells D&D Beyond's game log each finished roll; askdnd only listens (the message
   // goes out exactly as the sheet sent it) and passes this character's own on to Table rolls
+  const asRoll = m => {
+    const j = typeof m === 'string' && m.includes('dice/roll/fulfilled') ? JSON.parse(m) : null;
+    return j && j.eventType === 'dice/roll/fulfilled' && j.data ? j : null;
+  };
+  // The game log also brings this page the rolls made elsewhere in the game: the DM's for a monster (so a player can
+  // apply the hit, app/hit_points.py) and a character's made on another page. Each is passed on as it came;
+  // askdnd keeps each roll once (app/ddb_bridge.py heard_in_game). Heard from the moment the page opens its connection
+  const listening = new WeakSet();
+  const listen = ws => {
+    if (listening.has(ws)) return;
+    listening.add(ws);
+    ws.addEventListener('message', e => {
+      try {
+        const j = asRoll(e.data);
+        if (j) post({ type: 'heard', message: j });  // (this sheet's own come back too: kept once)
+      } catch (err) { /* not a roll */ }
+    });
+  };
+  window.WebSocket = new Proxy(WebSocket, { construct(t, args, nt) { const ws = Reflect.construct(t, args, nt); listen(ws); return ws; } });
   const wsend = WebSocket.prototype.send;
   WebSocket.prototype.send = function (m) {
     try {
-      const j = typeof m === 'string' && m.includes('dice/roll/fulfilled') ? JSON.parse(m) : null;
-      if (j && j.eventType === 'dice/roll/fulfilled' && String(j.entityId) === sheetId() && j.data) {
+      const j = asRoll(m);
+      if (j && String(j.entityId) === sheetId()) {
         post({ type: 'roll', roll: { id: j.data.rollId, action: j.data.action, rolls: j.data.rolls, scope: j.messageScope, target: j.messageTarget, user: j.userId } });
       }
     } catch (e) { /* not a roll */ }
+    listen(this);  // (a connection opened before this script ran)
     return wsend.apply(this, arguments);
   };
 

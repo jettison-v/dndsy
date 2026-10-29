@@ -757,7 +757,7 @@ class BridgeIntent(Timestamped, Base):
     __tablename__ = "bridge_intents"
     id: Mapped[int] = mapped_column(primary_key=True)
     character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), index=True)
-    kind: Mapped[str] = mapped_column(String(20))  # drink | hp | item
+    kind: Mapped[str] = mapped_column(String(20))  # drink | hp | temp | item | …
     data: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
     label: Mapped[str] = mapped_column(String(300))
     state: Mapped[str] = mapped_column(String(20), default="waiting", server_default="waiting", index=True)

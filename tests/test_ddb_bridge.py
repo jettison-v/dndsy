@@ -16,26 +16,6 @@ from tests.table_setup import BUNDLE, COLE, char, owned_by
 POTION = 758022089  # Cole's Potion of Healing (×2 in the fixture)
 
 
-@pytest.fixture
-def sheet(monkeypatch, db):
-    """Cole's D&D Beyond sheet as a dict the test edits; askdnd reads it whenever it refreshes."""
-    data = copy.deepcopy(COLE)
-    data["removedHitPoints"] = 14  # 37 of 51
-    monkeypatch.setattr(characters.refresh, "__defaults__", (lambda _id: copy.deepcopy(data),))
-    monkeypatch.setattr(ddb_bridge.time, "sleep", lambda s: None)  # the read-back's waits
-    monkeypatch.setattr(config, "DDB_BRIDGE", True)
-    ddb_bridge._health.update(extension_at=0.0, sheets=[], heard_at=0.0, read_check=None, round_trip=None)
-    import_bundle(db, BUNDLE)
-    cole = char(db, "Cole")
-    db.get(Campaign, cole.campaign_id).vtt_pieces = ["ddb_bridge"]  # the DM switched it on (Manage › Settings)
-    owned_by(db, cole, "player@example.com")
-    characters.refresh(db, cole)
-    for ch in db.scalars(select(Character)):  # the extension has each sheet open (the tests from test_a_change_needs_… on: when it hasn't)
-        ch.sheet_heard_at = datetime.now(UTC)
-    ddb_bridge.active(db)  # someone is using askdnd (the tests from test_asleep_… on cover waking and sleeping)
-    return data
-
-
 def make(data, batch):
     """What the extension's requests do to the sheet: each field ends at its new value."""
     for op in batch["ops"]:

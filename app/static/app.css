@@ -2152,3 +2152,38 @@ body:not(.br-ext) .br-ext-on, body.br-ext .br-ext-off { display: none; }
 .br-now dt { color: var(--muted); }
 .br-now dd { margin: 0; }
 .br-num { width: 6em; }
+
+/* ---- Hit points window (app/hit_points.py, docs/mockups/hp-window.html): from Table rolls' Apply to … or Hit points */
+.seg label { display: inline-flex; }
+.seg label input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label span { display: inline-flex; align-items: center; padding: 0 var(--sp-3); min-height: calc(var(--control-h) - 2px); font-size: var(--fs-sm); font-weight: 500; color: var(--muted); cursor: pointer; }
+.seg label + label span { border-left: 1px solid var(--line); }
+.seg label input:checked + span { background: var(--red); color: var(--text-strong); }
+.seg label input:focus-visible + span { outline: 2px solid var(--blue); outline-offset: -2px; }
+.hp-win .hp-form, .hp-fields { display: grid; gap: var(--sp-3); }
+.hp-source { display: flex; justify-content: space-between; gap: var(--sp-2); flex-wrap: wrap; align-items: baseline; background: var(--surface-2); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); font-size: var(--fs-sm); }
+.hp-source b { color: var(--text-strong); }
+.hp-part { display: flex; gap: var(--sp-3); flex-wrap: wrap; align-items: end; }
+.hp-type-from { flex-basis: 100%; margin: 0; }
+.hp-amount, .hp-type { display: grid; gap: var(--sp-1); }
+.hp-amount input { width: 6.5em; font-size: var(--fs-lg); font-weight: 600; }
+.hp-form:has(.hp-modes):not(:has(.hp-modes input[value=damage]:checked)) .hp-type { display: none; }
+.hp-working { display: grid; gap: var(--sp-3); }
+.hp-steps { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.hp-step { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--sp-3); padding: var(--sp-2) var(--sp-3); font-size: var(--fs-sm); align-items: baseline; }
+.hp-step + .hp-step { border-top: 1px solid var(--line); }
+.hp-step label { display: inline-flex; gap: var(--sp-2); align-items: baseline; cursor: pointer; }
+.hp-step label input { accent-color: var(--red); }
+.hp-step b { color: var(--text-strong); font-variant-numeric: tabular-nums; }
+.hp-step .why { grid-column: 1 / -1; color: var(--muted); font-size: var(--fs-xs); }
+.hp-step.off .hp-st-title, .hp-step.off b { text-decoration: line-through; color: var(--muted); }
+.hp-step .seg { grid-column: 1 / -1; justify-self: start; }
+.hp-blocked { display: grid; gap: var(--sp-1); border: 1px solid var(--red); background: var(--red-soft); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); font-size: var(--fs-sm); margin: 0; }
+.hp-go { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.hp-open { margin-bottom: var(--sp-3); }
+/* In Table rolls: who a hit was applied to, the Concentration save it asks for, Apply to … */
+.roll-applied { display: block; margin-top: 6px; color: var(--green); font-size: var(--fs-xs); }
+.roll-conc { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; padding: 6px 8px; border: 1px solid var(--amber); background: var(--amber-soft); border-radius: var(--r-md); font-size: var(--fs-xs); color: var(--text); }
+.roll-apply-to summary { list-style: none; cursor: pointer; }
+.roll-apply-to summary::-webkit-details-marker { display: none; }
+.roll-apply-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }

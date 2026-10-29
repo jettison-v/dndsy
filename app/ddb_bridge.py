@@ -61,6 +61,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import access, config, ddb, ddb_fields, ddb_sheet, live, picks, realtime, table_rolls, web
@@ -180,7 +181,7 @@ def reachable(character: Character) -> bool:
     return bool(heard) and time.time() - heard.timestamp() <= live.REACH.total_seconds()
 
 
-def _reach(character: Character, what: str = "") -> None:
+def reach(character: Character, what: str = "") -> None:
     """Refuse a change whose sheet can't be reached, saying how (app.js shows the message where it was pressed)."""
     if not reachable(character):
         raise HTTPException(409, what or f"{character.name}'s D&D Beyond sheet can't be reached: open it in Chrome with the askdnd "
@@ -294,6 +295,9 @@ def plan(intents: list[dict], n: dict, every: bool = False) -> tuple[dict, list[
                 soak = min(temp, -d["amount"])
                 temp, removed = temp - soak, min(n["max"], removed + (-d["amount"] - soak))
             vals["hp"] = {"removedHitPoints": removed, "temporaryHitPoints": temp}
+            touched.append("hp")
+        elif kind == "temp":  # Temporary Hit Points don't add up: the hit points window chose keep or take (app/hit_points.py)
+            vals["hp"] = {**get("hp"), "temporaryHitPoints": max(0, int(d["value"]))}
             touched.append("hp")
         elif kind == "item":
             f = f"item:{d['item']}"
@@ -922,7 +926,7 @@ def bridge_check(request: Request, db: Session = Depends(get_db)):
     character, user = _by_ddb(db, request, TEST_DDB_ID)
     if not picks.can_edit(db, user, character):
         raise HTTPException(403, "Only the test character's player runs the check.")
-    _reach(character, "Open the test character's D&D Beyond sheet in Chrome with the askdnd bridge to run the check.")
+    reach(character, "Open the test character's D&D Beyond sheet in Chrome with the askdnd bridge to run the check.")
     full = bool(request.query_params.get("full"))
     if full and not is_admin(user):
         raise HTTPException(403, "Checking everything is for admins.")
@@ -987,7 +991,7 @@ def bridge_drink(character_id: int, item_id: int, request: Request, db: Session 
     character, user = _mine(db, request, character_id)
     if not picks.can_edit(db, user, character):
         raise HTTPException(403, "Only the character's player drinks their potions.")
-    _reach(character)
+    reach(character)
     name = (numbers(character).get("names") or {}).get(item_id)
     if name not in HEALING:
         raise HTTPException(400, "That isn't a healing potion this character has.")
@@ -1004,7 +1008,7 @@ def bridge_hp(character_id: int, request: Request, amount: int = Form(0), db: Se
     character, user = _mine(db, request, character_id)
     if not picks.can_edit(db, user, character):
         raise HTTPException(403)
-    _reach(character)
+    reach(character)
     if amount:
         add(db, character, "hp", {"amount": amount}, f"{character.name} {'healed' if amount > 0 else 'took'} {abs(amount)}")
         db.commit()
@@ -1025,15 +1029,10 @@ def _made(db: Session, character: Character, user: dict) -> JSONResponse:
 ROLL_KINDS = {"check": "check", "save": "save", "to hit": "attack", "damage": "damage", "heal": "heal"}
 
 
-def heard_roll(db: Session, character: Character, user: dict, roll: dict) -> TableRoll | None:
-    """A roll made on the character's own D&D Beyond sheet (Brett, 2026-10-27: heard on the sheet, the way Beyond20 does)
-    goes into Table rolls, marked "on D&D Beyond", so a roll made there by habit still reaches the table. Only heard:
-    askdnd never writes its own rolls into D&D Beyond's game log. Each is recorded once (its id there); who sees it
-    follows who it was rolled to on D&D Beyond (everyone, the DM, or just the roller)."""
-    rid = str(roll.get("id") or "")[:60]
+def _dice(roll: dict) -> dict | None:
+    """A roll from D&D Beyond's game log as a Table rolls row's numbers, or None if it isn't one."""
     r = (roll.get("rolls") or [None])[0]
-    campaign = character.campaign_id
-    if not rid or not isinstance(r, dict) or not campaign or db.scalar(select(TableRoll.id).where(TableRoll.ddb_roll_id == rid)):
+    if not isinstance(r, dict):
         return None
     try:
         sets = r["diceNotation"]["set"]
@@ -1048,16 +1047,64 @@ def heard_roll(db: Session, character: Character, user: dict, roll: dict) -> Tab
     kept = None
     if kind in table_rolls.D20_KINDS and dice:
         kept = max(dice) if mode == "adv" else min(dice) if mode == "dis" else dice[0]
-    me = picks.user_row(db, user)
+    return {"label": " ".join(str(roll.get("action") or "Roll").split())[:120], "kind": kind, "formula": formula[:40], "dice": dice,
+            "kept": kept, "modifier": constant, "total": total, "mode": mode, "crit": "critical" in how}
+
+
+def _record(db: Session, campaign_id: int | None, rid: str, row: dict) -> TableRoll | None:
+    """Into Table rolls once: a roll heard on two sheets (or twice on one) is the same roll (its id on D&D Beyond)."""
+    if not rid or not campaign_id or db.scalar(select(TableRoll.id).where(TableRoll.ddb_roll_id == rid)):
+        return None
+    t = TableRoll(campaign_id=campaign_id, ddb_roll_id=rid, **row)
+    try:
+        with db.begin_nested():
+            db.add(t)
+    except IntegrityError:  # (another sheet's copy got there first)
+        return None
+    realtime.announce(db, campaign_id, "rolls")
+    return t
+
+
+def heard_roll(db: Session, character: Character, user_id: int | None, roll: dict) -> TableRoll | None:
+    """A roll made on the character's own D&D Beyond sheet (Brett, 2026-10-27: heard on the sheet, the way Beyond20 does)
+    goes into Table rolls, marked "on D&D Beyond", so a roll made there by habit still reaches the table. Only heard:
+    askdnd never writes its own rolls into D&D Beyond's game log. Each is recorded once (its id there); who sees it
+    follows who it was rolled to on D&D Beyond (everyone, the DM, or just the roller)."""
+    row = _dice(roll)
+    if not row:
+        return None
     # Rolled to one person on D&D Beyond: to self (the target is the roller) or to the DM (anyone else)
     to = "table" if roll.get("scope") != "userId" else "self" if str(roll.get("target") or "") in ("", str(roll.get("user") or "")) else "dm"
-    row = TableRoll(campaign_id=campaign, character_id=character.id, user_id=me.id if me else None,
-                    label=" ".join(str(roll.get("action") or "Roll").split())[:120], kind=kind, formula=formula[:40], dice=dice,
-                    kept=kept, modifier=constant, total=total, mode=mode, visibility=to,
-                    crit="critical" in how, ddb_roll_id=rid)
-    db.add(row)
-    realtime.announce(db, campaign, "rolls")
-    return row
+    return _record(db, character.campaign_id, str(roll.get("id") or "")[:60],
+                   {**row, "character_id": character.id, "user_id": user_id, "visibility": to})
+
+
+def heard_in_game(db: Session, hearer: Character, message: dict) -> TableRoll | None:
+    """A roll someone else made in the game, heard on a player's open sheet (step 5.4, Brett 2026-10-28): D&D Beyond's game
+    log brings every sheet in the game the rolls made there. The DM's for a monster go into Table rolls as that
+    monster's ("Ogre"), with the damage type its attack in the campaign's rules data names (D&D Beyond's roll doesn't
+    carry one), so a player can apply the hit; a roll for a character at the table made elsewhere (the encounter's
+    page) goes in as that character's. Others' plain dice stay out (whose they are isn't known)."""
+    d, ctx = message.get("data") or {}, (message.get("data") or {}).get("context") or {}
+    roll = {"id": d.get("rollId"), "action": d.get("action"), "rolls": d.get("rolls")}
+    rid, what, campaign = str(d.get("rollId") or "")[:60], str(message.get("entityType") or ""), hearer.campaign_id
+    if what == "character":
+        ch = db.scalar(select(Character).where(Character.ddb_id == str(message.get("entityId")), Character.copy_of_id.is_(None)))
+        if not ch or ch.campaign_id != campaign or message.get("messageScope") != "gameId":
+            return None
+        return heard_roll(db, ch, ch.owner_id, {**roll, "scope": "gameId"})
+    if what != "monster":
+        return None
+    row = _dice(roll)
+    if not row:
+        return None
+    name = " ".join(str(ctx.get("name") or "A monster").split())[:80]
+    if row["kind"] == "damage":
+        from app import hit_points
+        kind, kind_from = hit_points.attack_type(db, campaign, name, row["label"])
+        row["parts"] = [{"label": row["label"], "kind": kind, "kind_from": kind_from, "formula": row["formula"], "dice": row["dice"],
+                         "total": row["total"]}]
+    return _record(db, campaign, rid, {**row, "who": name, "visibility": "table" if message.get("messageScope") == "gameId" else "dm"})
 
 
 @router.post("/bridge/roll/{ddb_id}")
@@ -1068,7 +1115,21 @@ async def bridge_roll(ddb_id: str, request: Request, db: Session = Depends(get_d
     if not picks.can_edit(db, user, character):
         return _json({"ok": False})
     body = await request.json()
-    row = heard_roll(db, character, user, body) if isinstance(body, dict) else None
+    me = picks.user_row(db, user)
+    row = heard_roll(db, character, me.id if me else None, body) if isinstance(body, dict) else None
+    db.commit()
+    return _json({"ok": row is not None})
+
+
+@router.post("/bridge/others-roll/{ddb_id}")
+async def bridge_others_roll(ddb_id: str, request: Request, db: Session = Depends(get_db)):
+    """The extension heard someone else's roll in the game on this character's sheet (heard_in_game). Only the
+    character's own player's browser passes them on."""
+    character, user = _by_ddb(db, request, ddb_id)
+    if not picks.can_edit(db, user, character):
+        return _json({"ok": False})
+    body = await request.json()
+    row = heard_in_game(db, character, body) if isinstance(body, dict) else None
     db.commit()
     return _json({"ok": row is not None})
 
@@ -1122,7 +1183,7 @@ async def bridge_change(character_id: int, request: Request, db: Session = Depen
     character, user = _mine(db, request, character_id)
     if not picks.can_edit(db, user, character):
         raise HTTPException(403, "Only the character's player changes their sheet.")
-    _reach(character)
+    reach(character)
     body = await request.json()
     n = numbers(character)
     made = _change(n, body) if n and isinstance(body, dict) else None
@@ -1139,7 +1200,7 @@ def bridge_retry(intent_id: int, request: Request, db: Session = Depends(get_db)
     user = _signed_in(request, db)
     it = db.get(BridgeIntent, intent_id)
     if it is not None:
-        _reach(db.get(Character, it.character_id))
+        reach(db.get(Character, it.character_id))
     retry(db, intent_id)
     db.commit()
     return _for_intent(db, intent_id, user)

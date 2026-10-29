@@ -1,0 +1,40 @@
+{# The hit points window (app/hit_points.py, docs/mockups/hp-window.html): a modal from Table rolls' Apply to … (filled
+   in from the roll) or from Hit points' Damage / Heal / Temporary HP (a number to enter). Any change in the form
+   works it out again (_hp_working.html); the button makes it on D&D Beyond through the bridge. #}
+<div class="peek-head">
+  <div><div class="note">{{ c.name }} · {{ hp.current }} of {{ hp.max }}{% if hp.temp %} · {{ hp.temp }} temp{% endif %}{% if w.form %} · {{ w.form.beast.name }}{% endif %}</div>
+    <h2 id="peek-title">{{ c.name }}'s hit points</h2></div>
+  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
+</div>
+<div class="peek-body hp-win">
+  <form hx-post="/characters/{{ c.id }}/hp/apply" hx-swap="none" class="hp-form" data-hp-mode="{{ mode }}">
+    <input type="hidden" name="roll" value="{{ roll.id if roll else '' }}">
+    <input type="hidden" name="source" value="{{ source }}">
+    <div hx-post="/characters/{{ c.id }}/hp/work" hx-trigger="change" hx-include="closest form" hx-target="#hp-working" hx-swap="outerHTML" class="hp-fields">
+      {% if roll %}
+      <div class="hp-source"><span>From <b>{{ source }}</b></span><span class="note">rolled {{ "on D&D Beyond" if roll.ddb_roll_id else "in askdnd" }}</span></div>
+      <input type="hidden" name="mode" value="{{ mode }}">
+      {% else %}
+      <div class="seg hp-modes" role="radiogroup" aria-label="What happens">
+        {% for m, label in (("damage", "Damage"), ("heal", "Heal"), ("temp", "Temporary HP")) %}
+        <label><input type="radio" name="mode" value="{{ m }}"{{ " checked" if m == mode }}><span>{{ label }}</span></label>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% for p in parts %}
+      <div class="hp-part">
+        <label class="hp-amount"><span class="note">{{ "Amount" if loop.length == 1 else "Part " ~ loop.index }}</span>
+          <input type="number" name="amount" min="0" max="999" inputmode="numeric" value="{{ p.amount or '' }}" placeholder="0"{{ " autofocus" if not roll and loop.first }}></label>
+        {% if not roll or mode == "damage" %}<label class="hp-type"><span class="note">Damage type</span>
+          <select name="type">
+            <option value=""{{ " selected" if not p.type }}>Not known</option>
+            {% if w.first %}<optgroup label="{{ c.name }} resists or is immune or vulnerable to">{% for t in w.first %}<option value="{{ t }}"{{ " selected" if p.type == t }}>{{ t | capitalize }}</option>{% endfor %}</optgroup>{% endif %}
+            <optgroup label="{{ 'Other types' if w.first else 'Types' }}">{% for t in w.types if t not in w.first %}<option value="{{ t }}"{{ " selected" if p.type == t }}>{{ t | capitalize }}</option>{% endfor %}</optgroup>
+          </select></label>{% endif %}
+        {% if p.type_from and p.type %}<p class="note hp-type-from">D&amp;D Beyond's roll doesn't say the type: {{ p.type }} is the {{ roll.who }}'s {{ roll.label }} in {{ p.type_from }}. Change it if the DM's differs.</p>{% endif %}
+      </div>
+      {% endfor %}
+      {% include "_hp_working.html" %}
+    </div>
+  </form>
+</div>
