@@ -46,10 +46,10 @@
      leveling) · full window (the Spell Book) */
   --panel-w: 420px; --modal-w: 720px; --modal-lg-w: 1180px; --modal-full-w: 95vw;
   /* Screen widths (media queries can't use variables): phone ≤ 640px, tablet ≤ 900px, wide ≥ 1100px */
-  /* Conditions (docs/mockups/conditions-on-battle.html): each one's colour, the halo's families and the dark ring */
+  /* Conditions (docs/mockups/conditions-on-battle.html): each one's colour, and Blinded's black on the page's edge */
   --cond-blinded: #e6e9ee; --cond-charmed: #ec84b8; --cond-deafened: #c3b08a; --cond-exhaustion: #d08a4c; --cond-frightened: #a983e6; --cond-grappled: #e59a52; --cond-incapacitated: #ef6a5e; --cond-invisible: #f4f6f9; --cond-paralyzed: #f0d24a;
   --cond-petrified: #b3aa9b; --cond-poisoned: #86c95b; --cond-prone: #c9a47b; --cond-restrained: #d9774d; --cond-stunned: #f2b93b; --cond-unconscious: #7b8ce0; --cond-enlarged: #4fc7b0; --cond-flying: #8fc6f2; --cond-water-breathing: #5aa7e8;
-  --halo-cant: #e5534b; --halo-hindered: #e8a33d; --halo-helped: #5ec4d6; --cond-dark: #000; --cond-dark-edge: #6b7079; --cond-dark-glow: rgba(0, 0, 0, .8);
+  --cond-dark: #000; --cond-dark-edge: #6b7079; --cond-dark-glow: rgba(0, 0, 0, .6);
 }
 @media (max-width: 640px) { :root { --control-h: 44px; --control-h-sm: 36px; --chip-h: 36px; } }
 * { box-sizing: border-box; }
@@ -1514,6 +1514,10 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 .sb-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; }
 .sb-head .fm-title { flex: 1 1 220px; min-width: 0; }
 .sb-conc { margin-left: 12px; }
+/* Concentrating (Brett, 2026-10-28: lightly): a thin amber line under the Spell Book's header, and the spell's row edged */
+.sb-head.sb-concentrating { box-shadow: inset 0 -2px 0 var(--amber-soft), inset 0 -1px 0 var(--amber); }
+.ls-row.sb-conc-row { box-shadow: inset 3px 0 0 var(--amber); }
+.sb-conc-tag { color: var(--amber); border-color: var(--amber); background: var(--amber-soft); }
 @media (max-width: 640px) {
   .sb-conc { margin-left: 0; }
   .sb-starred { margin-left: 0; }
@@ -1678,14 +1682,15 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
 [data-cond="enlarged"] { --c: var(--cond-enlarged); } [data-cond="flying"] { --c: var(--cond-flying); } [data-cond="water-breathing"] { --c: var(--cond-water-breathing); }
 .cond-icon { width: 16px; height: 16px; flex: none; color: var(--c); }
 .cond-pill:not(.cond-add) > summary { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); padding-left: var(--sp-2); }
-/* The halo: the page's own edge, one ring per cond.rings (most serious innermost), so it shows wherever you've scrolled */
+/* The edge: the newest three conditions' own colours around the page (--edge, from _cond_icons.html), blending into
+   each other, subdued: a thin line and a soft glow. It's the page's own edge, so it shows wherever you've scrolled. */
 .cond-halo { position: fixed; inset: 0; z-index: 3; pointer-events: none; }
-.cond-halo i { position: absolute; inset: 0; --h: var(--amber); box-shadow: inset 0 0 0 calc(2px + var(--i) * 3px) var(--h), inset 0 0 calc(54px + var(--i) * 20px) color-mix(in srgb, var(--h) 33%, transparent); }
-.cond-halo [data-ring="cant"] { --h: var(--halo-cant); } .cond-halo [data-ring="hindered"] { --h: var(--halo-hindered); } .cond-halo [data-ring="helped"] { --h: var(--halo-helped); }
-.cond-halo [data-ring="poisoned"] { --h: var(--cond-poisoned); } .cond-halo [data-ring="invisible"] { --h: var(--cond-invisible); }
-.cond-halo [data-ring="dark"] { box-shadow: inset 0 0 0 calc(2px + var(--i) * 3px) var(--cond-dark), inset 0 0 90px 20px var(--cond-dark-glow); }
-.cond-halo.starting { animation: cond-flash 1.8s ease-out; }
-@keyframes cond-flash { 0% { filter: brightness(1.6); opacity: 1; } 100% { filter: none; } }
+.cond-halo i { position: absolute; inset: 0; border: 0 solid transparent; border-image: conic-gradient(from -45deg, var(--edge)) 1; }
+.cond-halo .cond-line { border-width: 2px; opacity: .65; }
+.cond-halo .cond-glow { border-width: 14px; filter: blur(18px); opacity: .22; }
+.cond-halo.dark::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, var(--cond-dark-glow)); }
+.cond-halo.starting i { animation: cond-flash 1.8s ease-out; }
+@keyframes cond-flash { 0% { opacity: 1; } }
 /* The corner: an emblem per condition, bottom-right (the dice tray keeps bottom-left); above the bottom bar on phones */
 .cond-corner { position: fixed; z-index: 5; right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
 .cond-emb { position: relative; width: 48px; height: 48px; border-radius: 12px; border: 1.5px solid var(--c); background: color-mix(in srgb, var(--c) 18%, var(--bg)); color: var(--c); display: grid; place-items: center; padding: 0; cursor: pointer; box-shadow: 0 4px 14px var(--shadow); }
@@ -1707,19 +1712,17 @@ body:has(.peek.open.modal) .roll-pops { z-index: 6; }
   .cond-tip { width: min(240px, calc(100vw - 80px)); } }
 /* Signature touches: Invisible fades your portrait (Blinded and Unconscious darken the edges, a ring above) */
 .char-page:has(#battle-body.cond-ghost) .char-head .portrait { opacity: .38; outline: 2px dashed var(--cond-invisible); outline-offset: 2px; }
-/* Party: the same icons small, and the card's edge in the halo's innermost ring */
+/* Party: the same icons small, and the card's edge in the newest one's colour */
 .pt-conds { display: flex; flex-wrap: wrap; gap: 5px; }
 .pt-conds [data-cond] { width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--c); background: color-mix(in srgb, var(--c) 18%, var(--bg)); display: grid; place-items: center; }
 .pt-conds .cond-icon { width: 15px; height: 15px; }
-.pt-card[data-ring] { box-shadow: inset 3px 0 0 var(--h); }
-.pt-card[data-ring="cant"] { --h: var(--halo-cant); } .pt-card[data-ring="hindered"] { --h: var(--halo-hindered); } .pt-card[data-ring="helped"] { --h: var(--halo-helped); }
-.pt-card[data-ring="poisoned"] { --h: var(--cond-poisoned); } .pt-card[data-ring="invisible"] { --h: var(--cond-invisible); } .pt-card[data-ring="dark"] { --h: var(--cond-dark-edge); }
+.pt-card[data-conds] { box-shadow: inset 3px 0 0 var(--h); }
 /* The menu bar: a dot per condition on your character's button */
 .cond-dots { display: inline-flex; gap: 3px; }
 .cond-dots:empty { display: none; }
 .cond-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
 .cond-dots i[data-cond="blinded"] { background: var(--cond-dark); box-shadow: 0 0 0 1px var(--cond-dark-edge); }
-@media (prefers-reduced-motion: reduce) { .cond-halo.starting, .cond-emb.new { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .cond-halo.starting i, .cond-emb.new { animation: none; } }
 .cond-add > summary { background: var(--surface-2); border-style: dashed; border-color: var(--line); color: var(--muted); }
 .cond-box .ls-chips { margin-top: 4px; }
 

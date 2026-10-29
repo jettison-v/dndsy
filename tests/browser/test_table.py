@@ -286,7 +286,7 @@ def test_a_condition_reaches_everyone_watching_that_character_without_a_reload(p
     page.locator(".cond-pill:not(.cond-add)", has_text="Poisoned").wait_for(timeout=5000)
     assert page.evaluate("window.stayed")  # swapped in, not reloaded
     # Brett, 2026-10-28: its emblem pops into the corner and the halo flashes once, as it starts; opening the page doesn't
-    assert page.locator('.cond-emb.new[data-name="Poisoned"]').count() == 1 and page.locator(".cond-halo.starting [data-ring=poisoned]").count() == 1
+    assert page.locator('.cond-emb.new[data-name="Poisoned"]').count() == 1 and page.locator(".cond-halo.starting").count() == 1
     page.reload()
     page.locator('.cond-emb[data-name="Poisoned"]').wait_for()
     assert page.locator(".cond-emb.new, .cond-halo.starting").count() == 0

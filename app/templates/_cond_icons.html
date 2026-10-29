@@ -24,11 +24,13 @@
 <svg class="cond-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{ (paths.get(name) or '<circle cx="12" cy="12" r="8"/>') | safe }}</svg>
 {%- endmacro %}
 
-{# The page's halo (cond.rings) and the corner's emblems, newest nearest the corner (bottom); on Battle. Each
-   condition carries its rules summary (character_pages._battle_ctx). #}
-{% macro cond_corner(conditions, rings) -%}
+{# The page's edge in the newest three conditions' colours (cond.edge; darker towards the edges for Blinded or
+   Unconscious) and the corner's emblems, newest nearest the corner (bottom); on Battle. Each condition carries its
+   rules summary (character_pages._battle_ctx). #}
+{% macro cond_corner(conditions) -%}
 {% if conditions %}
-<div class="cond-halo" aria-hidden="true">{% for r in rings %}<i data-ring="{{ r }}" style="--i: {{ loop.index0 }}"></i>{% endfor %}</div>
+{% set cols = cond_edge(conditions) | map("cond_var") | list %}
+<div class="cond-halo{{ ' dark' if cond_darkens(conditions) }}" aria-hidden="true" style="--edge: {{ (cols + [cols[0]]) | join(', ') }}"><i class="cond-line"></i><i class="cond-glow"></i></div>
 {% set shown = conditions[-5:] %}
 <div class="cond-corner" role="group" aria-label="Conditions">
   {% if conditions | length > 5 %}<span class="cond-more">+{{ conditions | length - 5 }} more</span>{% endif %}

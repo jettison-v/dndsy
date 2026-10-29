@@ -126,5 +126,5 @@
   {% else %}
   <p class="subtitle">{% if c.ddb_id %}Not fetched from D&amp;D Beyond yet.{% else %}Not linked to D&amp;D Beyond yet.{% endif %}{% if failed %} {{ error }}{% endif %}</p>
   {% endif %}
-  {{ cond_corner(conditions, cond_rings(conditions)) }}{# the halo and the corner's emblems (Brett, 2026-10-28) #}
+  {{ cond_corner(conditions) }}{# the halo and the corner's emblems (Brett, 2026-10-28) #}
 </div>

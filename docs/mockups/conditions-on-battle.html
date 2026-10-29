@@ -274,7 +274,7 @@ button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
           <li><b>Exhaustion:</b> its level on the emblem.</li></ul>
         <p class="muted small">Only where it says something about the rule; the rest stay plain so the page doesn't turn into a light show.</p></div>
       <div class="box"><h3>What stays the same</h3>
-        <ul><li>Starting and ending a condition: its pill, or D&amp;D Beyond's Conditions (the bridge brings it either way).</li>
+        <ul><li>Starting and ending a condition: its pill, or D&amp;D Beyond's Conditions. (Built Oct 28: they're synced both ways with D&amp;D Beyond, where the bridge works.)</li>
           <li>Everyone at the table sees them, as today.</li>
           <li>askdnd shows what a condition does; the DM rules on it.</li></ul></div>
     </div>
@@ -285,7 +285,7 @@ button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
     <div class="box">
       <ol>
         <li><b>The page:</b> the halo. No tint.</li>
-        <li><b>The halo's colour:</b> how serious for most; Poisoned green, Invisible white and Blinded black, each its own ring. They stack: it's rare to have several.</li>
+        <li><b>The halo's colour:</b> how serious for most; Poisoned green, Invisible white and Blinded black, each its own ring. They stack: it's rare to have several. <b>Changed when built (Oct 28):</b> the edge takes the newest three conditions' own colours, blending around the page, and is more subdued: a thin line and a soft glow.</li>
         <li><b>Signature touches:</b> these four, no more.</li>
         <li><b>Beyond Battle:</b> a dot per condition on your character's button in the menu bar.</li>
         <li><b>Concentration</b> stays the pill in the header.</li>
@@ -341,7 +341,7 @@ button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
   const BY = Object.fromEntries(C.map(([n, c, f, t]) => [n, { c, f, t }]));
   const FAM = { cant: ['#e5534b', "Can't act"], hindered: ['#e8a33d', 'Hindered'], helped: ['#5ec4d6', 'Helped'] };
   const RANK = { cant: 0, hindered: 1, helped: 2 };
-  const SRC = { Poisoned: "From the DM, on D&D Beyond's Conditions", Prone: 'Started on Battle', Invisible: 'From the Ring of Invisibility', Enlarged: 'From a Potion of Growth' };
+  const SRC = { Poisoned: 'From a Giant Spider', Prone: 'Started on Battle', Invisible: 'From the Ring of Invisibility', Enlarged: 'From a Potion of Growth' };
   const svg = n => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + I[n] + '</svg>';
   const esc = s => s.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 
