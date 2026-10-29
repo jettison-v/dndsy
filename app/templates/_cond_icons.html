@@ -1,4 +1,3 @@
-{% from "_char.html" import SYNC_SAYS %}
 {# Each condition's icon (Brett, 2026-10-28; docs/mockups/conditions-on-battle.html): askdnd's own, 24×24, drawn in
    the condition's colour (app.css `[data-cond]`). D&D Beyond's icons are its own art, so these aren't copies. #}
 {% macro cond_icon(name) -%}
@@ -39,7 +38,7 @@
   {% for x in shown %}
   <button type="button" class="cond-emb" data-cond="{{ cond_slug(x.name) }}" data-name="{{ x.name }}" data-mark="{{ c.id }}:emb:{{ x.name }}"{% if x.sync %} data-sync="{{ x.sync }}"{% endif %} aria-expanded="false" aria-label="{{ x.name }}{% if x.level %} {{ x.level }}{% endif %}">
     {{- cond_icon(x.name) }}{% if x.level %}<span class="cond-lv">{{ x.level }}</span>{% endif %}
-    <span class="cond-tip" role="tooltip"><b>{{ x.name }}{% if x.level %}, level {{ x.level }}{% endif %}</b>{{ x.rules }}{% if x.sync %}<span class="note sync-note">{{ SYNC_SAYS[x.sync] }}</span>{% endif %}<span class="note">{% if x.source %}{{ x.source }} · {% endif %}the DM rules</span></span>
+    <span class="cond-tip" role="tooltip"><b>{{ x.name }}{% if x.level %}, level {{ x.level }}{% endif %}</b>{{ x.rules }}<span class="note">{% if x.source %}{{ x.source }} · {% endif %}the DM rules</span></span>
   </button>
   {% endfor %}
 </div>
