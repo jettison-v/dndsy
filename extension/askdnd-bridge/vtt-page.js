@@ -15,7 +15,7 @@
   const post = m => window.postMessage({ askdndBridge: 'from-vtt', ...m }, location.origin);
   const FIGHT = /COMBAT|INITIATIVE|ENCOUNTER|TURN|TOKEN|MULTI_SELECT_DELETE/;
 
-  // What askdnd is told: each in the order with its name, a character's D&D Beyond id, and whether the DM hid it
+  // What askdnd is told: each in the order with its name, its picture, a character's D&D Beyond id, and whether the DM hid it
   function told() {
     const f = V.fight;
     if (!f) return null;
@@ -25,7 +25,8 @@
       const t = V.tokens[x.tokenId] || {};
       return { key: x.tokenId, name: (t.name || '?') + (counts[t.entityId] > 1 && t.nameSuffix ? ' ' + t.nameSuffix : ''),
         kind: t.type === 'CHARACTER' ? 'character' : 'monster', ddb_id: t.type === 'CHARACTER' ? String(t.entityId) : null,
-        initiative: x.initiative, hidden: !!t.hidden, active: x.tokenId === f.activeId };
+        initiative: x.initiative, hidden: !!t.hidden, active: x.tokenId === f.activeId,
+        image: t.customImageUrl || t.imageUrl || t.fallbackImageUrl || null };  // (the picture the VTT draws it with)
     }) };
   }
   let last = '';
@@ -35,7 +36,7 @@
   function keepToken(id, t) {
     if (!t) return;
     const known = V.tokens[id] || (V.tokens[id] = {});
-    for (const k of ['name', 'type', 'entityId', 'hidden', 'nameSuffix']) if (t[k] !== undefined) known[k] = t[k];
+    for (const k of ['name', 'type', 'entityId', 'hidden', 'nameSuffix', 'customImageUrl', 'imageUrl', 'fallbackImageUrl']) if (t[k] !== undefined) known[k] = t[k];
   }
   function fromGame(game) {
     V.tokens = {};

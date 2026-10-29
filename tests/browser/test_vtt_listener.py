@@ -46,7 +46,8 @@ def test_the_listener_follows_the_fight_as_the_vtt_does(people):
     assert send(sync()) == (4, ["Vi*", "Ogre"])
     assert send(act("INCREMENT_COMBAT_TURN")) == (4, ["Vi", "Ogre*"])
     # Two characters added mid-fight: on the map, into the encounter (waiting), their initiative, then into combat
-    send(act("TOKEN_ADD", {"id": "t-cole", "name": "Cole", "type": "CHARACTER", "entityId": 75423618}),
+    send(act("TOKEN_ADD", {"id": "t-cole", "name": "Cole", "type": "CHARACTER", "entityId": 75423618,
+                          "imageUrl": "https://www.dndbeyond.com/avatars/cole.png"}),
          act("TOKEN_ADD", {"id": "t-trah", "name": "Trah", "type": "CHARACTER", "entityId": 135831636}),
          act("ADD_TO_ENCOUNTER", ["t-cole", "t-trah"]),
          act("UPDATE_INITIATIVE", [{"group": "Pending", "key": "t-cole", "initiative": 15}, {"group": "Pending", "key": "t-trah", "initiative": 5}]),
@@ -54,6 +55,7 @@ def test_the_listener_follows_the_fight_as_the_vtt_does(people):
     assert send(act("ADD_TO_COMBAT", ["t-cole", "t-trah"])) == (4, ["Cole", "Vi", "Ogre*", "Trah"])  # sorted; still the Ogre's turn
     f = page.evaluate("window.told[window.told.length - 1]")
     assert f["turn"] == 3 and f["order"][0]["ddb_id"] == "75423618" and f["order"][0]["kind"] == "character"
+    assert f["order"][0]["image"] == "https://www.dndbeyond.com/avatars/cole.png"  # the picture the VTT draws it with
     assert send(act("INCREMENT_COMBAT_TURN")) == (4, ["Cole", "Vi", "Ogre", "Trah*"])
     assert send(act("INCREMENT_COMBAT_TURN")) == (5, ["Cole*", "Vi", "Ogre", "Trah"])
     assert send(act("UPDATE_INITIATIVE", [{"group": "Enemy", "key": "4904825", "initiative": 20}])) == (5, ["Ogre", "Cole*", "Vi", "Trah"])

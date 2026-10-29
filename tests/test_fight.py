@@ -12,8 +12,10 @@ GAME = "9001"
 
 def heard(round_=2, turn=1, hidden_goblin=False, cole_ddb="75423618"):
     """What the extension says (vtt-page.js `told()`): Cole first, then Enemy 1, then a goblin the DM may have hidden."""
-    order = [{"key": "t-cole", "name": "Cole", "kind": "character", "ddb_id": cole_ddb, "initiative": 18},
-             {"key": "t-e1", "name": "Enemy 1", "kind": "monster", "ddb_id": None, "initiative": 15},
+    order = [{"key": "t-cole", "name": "Cole", "kind": "character", "ddb_id": cole_ddb, "initiative": 18,
+              "image": "https://www.dndbeyond.com/avatars/token-cole.png"},
+             {"key": "t-e1", "name": "Enemy 1", "kind": "monster", "ddb_id": None, "initiative": 15,
+              "image": "https://www.dndbeyond.com/avatars/thumbnails/enemy.jpeg"},
              {"key": "t-gob", "name": "Goblin", "kind": "monster", "ddb_id": None, "initiative": 9, "hidden": hidden_goblin}]
     for i, x in enumerate(order):
         x["active"] = i == turn - 1
@@ -74,7 +76,7 @@ def test_the_band_says_whose_turn_to_each_person_and_hides_what_the_dm_hid(playe
     band = player.get(f"/characters/{cole.id}/battle").text.split('class="fight-band"')[1].split("</div>")[0]
     assert "Round 2" in band and "Your turn" in band and "Goblin" not in band  # Cole is the player's
     band = dm.get(f"/characters/{cole.id}").text.split('class="fight-band"')[1].split("</div>")[0]
-    assert "Cole’s turn" in band and 'class=" hid"' in band and "Goblin" in band  # the DM sees the hidden one, marked
+    assert "Cole’s turn" in band and 'class="fb-who hid"' in band and "Goblin" in band  # the DM sees the hidden one, marked
     fight.heard(db, campaign, heard(turn=3, hidden_goblin=True))  # the hidden goblin's turn
     band = player.get("/c/main/party").text.split('class="fight-band"')[1].split("</div>")[0]
     assert "Goblin" not in band and "’s turn" not in band and "You’re next" in band  # on Party too; Cole is next
@@ -90,3 +92,20 @@ def test_a_fight_not_heard_for_hours_isnt_shown(db, sheet):
     assert fight.shown(campaign, dm=False) is not None
     campaign.fight_at = datetime.now(UTC) - fight.STALE * 2  # a VTT closed mid-fight
     assert fight.shown(campaign, dm=False) is None
+
+
+def test_each_in_the_order_has_its_picture(player, db, sheet):
+    """A character's is its portrait, as on its own page; a creature's is its token's, only from D&D Beyond itself."""
+    from app import characters
+
+    campaign = _campaign(db)
+    set_role(db, "player@example.com", "player")
+    told = heard()
+    told["order"][2]["image"] = "https://tracker.example.com/pixel.png"  # (not D&D Beyond's: dropped)
+    fight.heard(db, campaign, told)
+    order = fight.for_person(db, campaign, "player@example.com")["order"]
+    cole = characters.character_summary(char(db, "Cole"))["portrait"]
+    assert [x["picture"] for x in order] == [cole, "https://www.dndbeyond.com/avatars/thumbnails/enemy.jpeg", None]
+    band = player.get(f"/characters/{char(db, 'Cole').id}/battle").text.split('class="fight-band"')[1].split("</div>")[0]
+    assert f'src="{cole.replace("&", "&amp;")}"' in band and "tracker.example.com" not in band and '<span class="fb-name">Goblin</span>' in band
+
