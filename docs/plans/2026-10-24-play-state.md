@@ -185,3 +185,32 @@ and the table-wide Game Mode with the Live pill (`docs/mockups/game-mode-and-bri
 | — | Parked: the fight screen's own turn order | Turn order, whose turn, the round, enemies, the fight's log and the DM's undo, the battle settings menu; after playtests show the table wants it (Apply from a roll moved into bucket 4) | — |
 
 Then Phase 2 (1.2 slots, 1.3 resources, 1.6 conditions with durations…) uses the same change path.
+
+## D&D Beyond's initiative order (checked Oct 29, on the test campaign's VTT)
+
+Before step 5's "until the end of your next turn", Brett asked whether askdnd can hear, and maybe write, D&D Beyond's
+own initiative order. Checked in Brett's Chrome with a temporary listener in the local extension (removed after):
+
+- **Where it lives.** In the VTT (`/games/<campaign>`), on its own game server connection (`wss://games.dndbeyond.com/…`),
+  separate from the Game Log. Opening the VTT sends `CONNECT` and gets a `SYNC` with the whole game: every token (with
+  hit points and conditions, monsters too) and `game.encounter` (groups such as "Enemy" with their tokens, each
+  entry's initiative, the round and the turn).
+- **Hearing it.** Every change is a named action the server passes to every open VTT, with an index: Next is
+  `INCREMENT_COMBAT_TURN`; changing a number is `UPDATE_INITIATIVE` with `[{group, key, initiative}]`. The VTT's code
+  also has `CLEAR_ENCOUNTER`, `UPDATE_INITIATIVE_BONUS` and grouping actions. So the extension can hear the order,
+  the round and whose turn it is, but **only on a VTT page**: a character sheet doesn't connect to the game server
+  and heard nothing when the turn moved. Today the extension runs only on sheets; hearing turns means it also runs on
+  `/games/*` for whoever has the VTT open (the DM at least).
+- **Writing it.** Technically the same way the VTT does: the same action on the open VTT's own connection, as the
+  signed-in person. But unlike the Game Log (whose messages name their source, so askdnd's say "askdnd" and ⓐ), these
+  actions carry only `source: "CLIENT"`: anything askdnd sent would look exactly like the VTT's own click. That
+  touches the standing rule against imitating D&D Beyond's client, so it's Brett's call, and nothing has been written
+  beyond the test (Next once, the Ogre's initiative 9 → 10 → 9).
+
+**Decided (Brett, Oct 29): hear only.** The extension listens on the VTT page; askdnd never writes the order. If players' initiative should reach the order, first check whether the VTT fills it from an askdnd Initiative roll in the Game Log (its "pending initiative").
+
+## Conditions that end (designed Oct 29, `docs/mockups/turn-conditions.html`)
+
+Decided by Brett: each condition can say how long it lasts (until it's ended; the start or end of someone's next turn; rounds; 1 minute; minutes or hours; until a save, with its ability, DC and when it's rolled), chosen in + Condition's **Lasts**. The turns come from D&D Beyond's VTT (heard, never written). When one runs out or asks for a save, a **corner card** reminds the character's player and the DM: End it / Keep, or Roll the save; nothing ends by itself. Battle's pills say it in a few words ("to your next turn", "Wis 13 save", "9 rounds"), and a click shows the whole of it with End it; a badge gets an amber dot on the turn it ends. A **fight band** above the name on every character page and on Party shows the round, whose turn, "you're next" and the order, only while a fight runs. Not heard (no VTT open), nothing is counted and no reminder comes; Concentration keeps +1.
+
+To build, in order: the extension listening on the VTT page (a new extension version for the Chrome Web Store), askdnd keeping the fight (order, round, turn) per campaign and announcing it live, the fight band, then durations and their reminders.
