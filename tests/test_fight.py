@@ -16,7 +16,8 @@ def heard(round_=2, turn=1, hidden_goblin=False, cole_ddb="75423618"):
               "image": "https://www.dndbeyond.com/avatars/token-cole.png"},
              {"key": "t-e1", "name": "Enemy 1", "kind": "monster", "ddb_id": None, "initiative": 15,
               "image": "https://www.dndbeyond.com/avatars/thumbnails/enemy.jpeg"},
-             {"key": "t-gob", "name": "Goblin", "kind": "monster", "ddb_id": None, "initiative": 9, "hidden": hidden_goblin}]
+             {"key": "t-gob", "name": "Goblin", "kind": "monster", "ddb_id": None, "initiative": 9, "hidden": hidden_goblin,
+              "monster_id": "5194879"}]  # (D&D Beyond's Allosaurus: Monster Manual art askdnd links to, rules_data.pictures)
     for i, x in enumerate(order):
         x["active"] = i == turn - 1
     return {"round": round_, "turn": turn, "order": order}
@@ -76,7 +77,7 @@ def test_the_band_says_whose_turn_to_each_person_and_hides_what_the_dm_hid(playe
     band = player.get(f"/characters/{cole.id}/battle").text.split('class="fight-band"')[1].split("</div>")[0]
     assert "Round 2" in band and "Your turn" in band and "Goblin" not in band  # Cole is the player's
     band = dm.get(f"/characters/{cole.id}").text.split('class="fight-band"')[1].split("</div>")[0]
-    assert "Cole’s turn" in band and 'class="fb-who hid"' in band and "Goblin" in band  # the DM sees the hidden one, marked
+    assert "Cole’s turn" in band and 'class="fb-who enemy hid"' in band and "Goblin" in band  # the DM sees the hidden one, marked
     fight.heard(db, campaign, heard(turn=3, hidden_goblin=True))  # the hidden goblin's turn
     band = player.get("/c/main/party").text.split('class="fight-band"')[1].split("</div>")[0]
     assert "Goblin" not in band and "’s turn" not in band and "You’re next" in band  # on Party too; Cole is next
@@ -95,17 +96,20 @@ def test_a_fight_not_heard_for_hours_isnt_shown(db, sheet):
 
 
 def test_each_in_the_order_has_its_picture(player, db, sheet):
-    """A character's is its portrait, as on its own page; a creature's is its token's, only from D&D Beyond itself."""
-    from app import characters
+    """A character's is its portrait, as on its own page; a creature's is its token's, only from D&D Beyond itself, else
+    its Monster Manual art. The enemy (the VTT's monsters) is drawn in red, the party plain (Brett, 2026-10-29)."""
+    from app import characters, rules_data
 
     campaign = _campaign(db)
     set_role(db, "player@example.com", "player")
     told = heard()
-    told["order"][2]["image"] = "https://tracker.example.com/pixel.png"  # (not D&D Beyond's: dropped)
+    told["order"][2]["image"] = "https://tracker.example.com/pixel.png"  # (not D&D Beyond's: dropped, so its Monster Manual art)
     fight.heard(db, campaign, told)
     order = fight.for_person(db, campaign, "player@example.com")["order"]
     cole = characters.character_summary(char(db, "Cole"))["portrait"]
-    assert [x["picture"] for x in order] == [cole, "https://www.dndbeyond.com/avatars/thumbnails/enemy.jpeg", None]
+    art = next(p["image"] for p in rules_data.pictures().values() if str(p["ddb_id"]) == "5194879")
+    assert [x["picture"] for x in order] == [cole, "https://www.dndbeyond.com/avatars/thumbnails/enemy.jpeg", art]
     band = player.get(f"/characters/{char(db, 'Cole').id}/battle").text.split('class="fight-band"')[1].split("</div>")[0]
     assert f'src="{cole.replace("&", "&amp;")}"' in band and "tracker.example.com" not in band and '<span class="fb-name">Goblin</span>' in band
+    assert band.count('class="fb-who party now"') == 1 and band.count('class="fb-who enemy') == 2  # Cole's turn; two enemies
 

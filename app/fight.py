@@ -57,8 +57,10 @@ def _clean(heard: dict | None, characters: dict[str, int]) -> dict | None:
             continue
         ddb_id = str(x.get("ddb_id") or "") or None
         init = x.get("initiative")
+        monster = str(x.get("monster_id") or "")
         order.append({"key": str(x.get("key") or "")[:80], "name": str(x.get("name") or "?")[:80],
-                      "kind": "character" if x.get("kind") == "character" else "monster",
+                      "kind": x.get("kind") if x.get("kind") in ("character", "companion") else "monster",
+                      "monster": monster if monster.isdigit() else None,
                       "character": characters.get(ddb_id) if ddb_id else None,
                       "initiative": init if isinstance(init, (int, float)) else None,
                       "hidden": bool(x.get("hidden")), "active": bool(x.get("active")), "image": _picture(x.get("image"))})
@@ -104,12 +106,15 @@ def for_person(db: Session, campaign: Campaign | None, email: str | None) -> dic
     me = access.user_id(email)
     mine = set(db.scalars(select(Character.id).where(Character.owner_id == me))) if me else set()
     f = shown(campaign, access.allows("fight_hidden", access.level(email), access.role(email, campaign.id)), mine)
-    if f:  # a character's picture is its portrait, as on its own page; a creature's, its token's
-        from app import characters as chars
+    if f:  # a character's picture is its portrait, as on its own page; a creature's, its token's, else its Monster
+        from app import characters as chars  # Manual art (rules_data.pictures, by D&D Beyond's monster id)
+        from app import rules_data
 
         ids = {x["character"] for x in f["order"] if x.get("character")}
         portraits = {c.id: (chars.character_summary(c) or {}).get("portrait") for c in db.scalars(select(Character).where(Character.id.in_(ids)))} if ids else {}
-        f["order"] = [{**x, "picture": portraits.get(x.get("character")) or x.get("image")} for x in f["order"]]
+        art = {str(p["ddb_id"]): p["image"] for p in rules_data.pictures().values() if p.get("ddb_id") and p.get("image")}
+        f["order"] = [{**x, "picture": portraits.get(x.get("character")) or x.get("image") or art.get(x.get("monster") or "")}
+                      for x in f["order"]]
     return f
 
 

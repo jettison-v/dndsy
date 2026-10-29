@@ -1748,7 +1748,13 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .fb-who { display: inline-flex; align-items: center; gap: 5px; padding: 2px var(--sp-2) 2px 2px; border: 1px solid var(--line); border-radius: var(--r-pill); font-size: var(--fs-xs); white-space: nowrap; }
 .fb-pic { position: relative; width: 22px; height: 22px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--surface-3); color: var(--muted); font-weight: 700; flex: none; }
 .fb-pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.fb-who.now { border-color: var(--amber); color: var(--text-strong); }
+.fb-who.enemy { border-color: var(--red-line); }  /* the VTT's monsters: the enemy (Brett, 2026-10-29); the party stays plain */
+.fb-who.enemy .fb-pic { box-shadow: 0 0 0 1.5px var(--red); }
+/* Whose turn (Brett, 2026-10-29: clearer): bigger, bold, filled amber; everyone else steps back. No motion. */
+.fb-order:has(.now) > .fb-who:not(.now) { opacity: .62; }
+.fb-who.now { border-color: var(--amber); background: var(--amber-soft); color: var(--text-strong); font-size: var(--fs-sm); font-weight: 700; padding: 2px var(--sp-3) 2px 2px; }
+.fb-who.now .fb-pic { width: 30px; height: 30px; }
+.fb-who.enemy.now { border-color: var(--red); }  /* (an enemy's turn: still red, its picture ringed in amber) */
 .fb-who.now .fb-pic { box-shadow: 0 0 0 2px var(--amber); }
 .fb-who.hid { border-style: dashed; opacity: .7; }
 @media (max-width: 640px) { .fb-order { margin-left: 0; } .fb-who:not(.now) { padding-right: 2px; } .fb-who:not(.now) .fb-name { display: none; } }  /* phones: pictures, and whose turn by name */
