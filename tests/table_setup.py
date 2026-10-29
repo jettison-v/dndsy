@@ -75,3 +75,12 @@ def owned_by(db, character, email, **kw):
     character.owner_id = u.id
     db.flush()
     return u
+
+
+def card_on(page: str):
+    """The corner card a page opens with (base.html data-toast; web.notice): its text, or {"text", "kind"}."""
+    import html
+    import re
+
+    m = re.search(r"data-toast='([^']*)'", page)
+    return json.loads(html.unescape(m.group(1))) if m else None

@@ -50,8 +50,8 @@ def test_spellbook_and_concentration_for_the_player_only(db, cole, player, dm):
     page = player.get(f"/characters/{cole.id}/battle").text
     assert 'data-modal-url="/characters/%d/spellbook"' % cole.id in page and "Spell Book" in page
     book = player.get(f"/characters/{cole.id}/spellbook").text
-    assert "data-spellbook" in book and 'data-name="moonbeam"' in book and ">Concentrate</button>" in book
-    assert ">Concentrate</button>" not in dm.get(f"/characters/{cole.id}/spellbook").text  # the DM can look, not act
+    assert "data-spellbook" in book and 'data-name="moonbeam"' in book and 'aria-label="Concentrate on Moonbeam"' in book
+    assert 'aria-label="Concentrate on' not in dm.get(f"/characters/{cole.id}/spellbook").text  # the DM can look, not act
     assert dm.post(f"/characters/{cole.id}/concentration", data={"key": "spell:Moonbeam", "level": "3"}).status_code == 403
     r = player.post(f"/characters/{cole.id}/concentration", data={"key": "spell:Moonbeam", "level": "3"}, headers=HX)
     assert r.status_code == 200 and "Moonbeam" in r.text and "round 1/10" in r.text
@@ -62,7 +62,8 @@ def test_spellbook_and_concentration_for_the_player_only(db, cole, player, dm):
     # out of the spell bar; and every open window (the Spell Book it was started from) shows it without a reload
     status = r.text.split('class="cond-bar"')[1]
     assert status.index('data-cond="concentration"') < status.index('class="cond-sep"') and "conc-pill" not in r.text.split('id="spell-bar"')[1].split("</div>")[0]
-    assert "--edge: var(--cond-concentration)" in r.text and 'data-name="Concentration"' in r.text
+    assert "--edge: var(--cond-concentration)" in r.text
+    assert 'data-name="Concentration"' in player.get(f"/characters/{cole.id}/battle").text.split('class="cond-badges"')[1]  # its badge, first
     assert json.loads(r.headers["HX-Trigger"])["characterChanged"] == {"character": cole.id}
     book = player.get(f"/characters/{cole.id}/spellbook").text
     assert "sb-conc-row" in book

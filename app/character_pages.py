@@ -62,6 +62,8 @@ def _view(db: Session, ch: Character, user: dict) -> dict:
         "reviewer": is_reviewer(user),
         "admin": is_admin(user),
         "item_notes": chars.item_notes(db, ch),
+        # what it's under, as badges after the name on every mode (Brett, 2026-10-29); everyone sees them
+        "conditions": [{**x, "rules": cond.rules_text(x["name"])} for x in listed(db, ch, sheet)],
     }
 
 
@@ -165,8 +167,7 @@ def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None
             ctx["form"] = ws.shaped(ctx["sheet"], beast, keep=ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep))
             ctx["columns"] = ctx["form"]["columns"]
     ctx["spellbar"] = _spellbar(db, ch, ctx)
-    now = listed(db, ch, ctx["sheet"])
-    ctx["conditions"] = [{**x, "rules": cond.rules_text(x["name"])} for x in now]  # everyone sees them
+    now = ctx["conditions"]
     ctx["cond_adv"] = cond.roll_effects([x for x in now if x["counts"]])  # listed in the roll window (app.js specFrom)
     ctx["all_conditions"], ctx["all_effects"] = list(cond.CONDITIONS), list(cond.EFFECTS)
     ctx["active_conditions"] = {x["name"] for x in now if x["sync"] != "ending"}
@@ -652,7 +653,7 @@ def refresh_all(request: Request, db: Session = Depends(get_db)):
     ok, failed = chars.refresh_all(db, campaign.id) if campaign else (0, [])
     db.commit()
     msg = f"Updated {ok} from D&D Beyond"
-    request.session["toast"] = msg + (f"; couldn't update {', '.join(failed)}" if failed else "")
+    request.session["toast"] = web.notice(msg + f"; couldn't update {', '.join(failed)}", "warn") if failed else msg
     return RedirectResponse(_back(request, "/party"), status_code=303)
 
 
@@ -665,7 +666,7 @@ def refresh_one(request: Request, character_id: int, db: Session = Depends(get_d
         return RedirectResponse("/party", status_code=303)
     snap = chars.refresh(db, ch)
     db.commit()
-    request.session["toast"] = "Updated from D&D Beyond" if snap.status == "ok" else "Couldn't update; showing the last good copy"
+    request.session["toast"] = "Updated from D&D Beyond" if snap.status == "ok" else web.notice("Couldn't update; showing the last good copy", "warn")
     return RedirectResponse(_back(request, f"/characters/{ch.id}"), status_code=303)
 
 
@@ -680,7 +681,7 @@ def link(request: Request, character_id: int, ddb_link: str = Form(""), db: Sess
     try:
         chars.set_ddb_link(db, ch, ddb_link)
     except ddb.DdbError as e:
-        request.session["toast"] = str(e)
+        request.session["toast"] = web.notice(str(e), "warn")
         return RedirectResponse(_table(), status_code=303)
     snap = chars.refresh(db, ch)
     db.commit()

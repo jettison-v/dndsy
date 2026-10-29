@@ -25,24 +25,28 @@
 <svg class="cond-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{ (paths.get(name) or '<circle cx="12" cy="12" r="8"/>') | safe }}</svg>
 {%- endmacro %}
 
-{# The page's edge in the newest three conditions' colours (cond.edge; darker towards the edges for Blinded or
-   Unconscious) and the corner's emblems, newest nearest the corner (bottom); on Battle. Each condition carries its
-   rules summary (character_pages._battle_ctx). #}
-{% macro cond_corner(conditions) -%}
-{% if conditions %}
+{# Battle's edge in the newest three conditions' colours (cond.edge; darker towards the edges for Blinded or
+   Unconscious). #}
+{% macro cond_halo(conditions) -%}
 {% set counted = conditions | selectattr("counts") | list %}
 {% set cols = cond_edge(counted) | map("cond_var") | list %}
 {% if cols %}<div class="cond-halo{{ ' dark' if cond_darkens(counted) }}" aria-hidden="true" style="--edge: {{ (cols + [cols[0]]) | join(', ') }}"><i class="cond-line"></i><i class="cond-glow"></i></div>{% endif %}
-{% set shown = conditions[-5:] %}
-<div class="cond-corner" role="group" aria-label="Conditions">
-  {% if conditions | length > 5 %}<span class="cond-more">+{{ conditions | length - 5 }} more</span>{% endif %}
-  {% for x in shown %}
-  <button type="button" class="cond-emb" data-cond="{{ cond_slug(x.name) }}" data-name="{{ x.name }}" data-mark="{{ c.id }}:emb:{{ x.name }}"{% if x.sync %} data-sync="{{ x.sync }}"{% endif %} aria-expanded="false" aria-label="{{ x.name }}{% if x.level %} {{ x.level }}{% endif %}">
+{%- endmacro %}
+
+{# The badges after the character's name on every character page (Brett, 2026-10-29; docs/mockups/temporary-items.html):
+   Concentration first, then the conditions in their order, icons only; hover, focus or a tap says what each does
+   (its rules summary: character_pages._view). Six at most, then "+2". #}
+{% macro cond_badges(conditions) -%}
+{% if conditions %}
+<span class="cond-badges" role="group" aria-label="Conditions">
+  {% for x in conditions[:6] %}
+  <button type="button" class="cond-badge" data-cond="{{ cond_slug(x.name) }}" data-name="{{ x.name }}" data-mark="{{ c.id }}:emb:{{ x.name }}"{% if x.sync %} data-sync="{{ x.sync }}"{% endif %} aria-expanded="false" aria-label="{{ x.name }}{% if x.level %} {{ x.level }}{% endif %}">
     {{- cond_icon(x.name) }}{% if x.level %}<span class="cond-lv">{{ x.level }}</span>{% endif %}
     {% if x.name == "Concentration" %}<span class="cond-tip" role="tooltip"><b>Concentration: {{ x.spell }}</b>{% if x.rounds %}Round {{ x.round }} of {{ x.rounds }}. {% endif %}Taking damage asks for a Constitution save, DC 10 or half the damage (up to 30); being Incapacitated ends it.<span class="note">the DM rules</span></span>
     {% else %}<span class="cond-tip" role="tooltip"><b>{{ x.name }}{% if x.level %}, level {{ x.level }}{% endif %}</b>{{ x.rules }}<span class="note">{% if x.source %}{{ x.source }} · {% endif %}the DM rules</span></span>{% endif %}
   </button>
   {% endfor %}
-</div>
+  {% if conditions | length > 6 %}<span class="cond-more">+{{ conditions | length - 6 }}</span>{% endif %}
+</span>
 {% endif %}
 {%- endmacro %}

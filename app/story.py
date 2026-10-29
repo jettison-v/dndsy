@@ -130,7 +130,7 @@ def answer_question(
         request.session["toast"] = "Thanks! Your answer was sent to the reviewers."
     except review.ReviewError as e:
         db.rollback()
-        request.session["toast"] = str(e)
+        request.session["toast"] = web.notice(str(e), "warn")
     return RedirectResponse("/", status_code=303)
 
 

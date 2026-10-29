@@ -91,7 +91,8 @@ def test_d_and_d_beyonds_conditions_show_with_askdnds_own():
 
 def test_a_condition_shows_on_battle_party_and_your_menu_bar_button(player, dm, db):
     """Everyone at the table sees a character's conditions (as on the pills): the DM's Battle for Cole has the edge and
-    an emblem per condition with what it does, the Party card its icons, and the player's own menu bar button a dot each."""
+    a badge per condition after his name with what it does (on Sheet too), the Party card its icons, and the player's own
+    menu bar button a dot each."""
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
     characters.refresh(db, cole)
@@ -100,9 +101,10 @@ def test_a_condition_shows_on_battle_party_and_your_menu_bar_button(player, dm, 
         player.post(f"/characters/{cole.id}/conditions", data={"name": n, "level": lv or 1}, headers=HX)
     page = dm.get(f"/characters/{cole.id}/battle").text
     assert "--edge: var(--cond-exhaustion), var(--cond-prone), var(--cond-poisoned), var(--cond-exhaustion)" in page
-    corner = page.split('class="cond-corner"')[1].split("</div>")[0]
-    assert [x.split('"')[0] for x in corner.split('data-name="')[1:]] == ["Poisoned", "Prone", "Exhaustion"]  # newest nearest the corner
-    assert 'class="cond-lv">2<' in corner and "Disadvantage on attack rolls" in corner
+    for mode in ("/battle", ""):  # Brett, 2026-10-29: after the name on every character page
+        badges = dm.get(f"/characters/{cole.id}{mode}").text.split('class="char-name"')[1].split('<div class="muted char-sub">')[0]
+        assert [x.split('"')[0] for x in badges.split('data-name="')[1:]] == ["Poisoned", "Prone", "Exhaustion"]  # in the order they started
+        assert 'class="cond-lv">2<' in badges and "Disadvantage on attack rolls" in badges
     party = dm.get("/c/main/party").text
     assert 'style="--h: var(--cond-exhaustion)" data-conds' in party and 'title="Exhaustion 2"' in party
     dots = player.get("/c/main/").text.split("data-cond-dots")[1].split("</span>")[0]
@@ -125,7 +127,9 @@ def test_with_the_bridge_a_condition_is_made_on_d_and_d_beyond_and_shows_at_once
     assert r.status_code == 200 and json.loads(r.headers["HX-Trigger"])["bridgeDeliver"] == {"ddbId": "75423618"}  # sent now, from Battle
     it = db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == cole.id)).all()[-1]
     assert (it.kind, it.data) == ("set", {"field": "condition:11", "value": True})
-    assert 'data-name="Poisoned" data-mark="' in r.text and 'data-sync="on"' in r.text  # shown already, on its way
+    assert 'data-sync="on"' in r.text.split('class="cond-bar"')[1]  # shown already, on its way
+    badge = player.get(f"/characters/{cole.id}/battle").text.split('class="cond-badges"')[1]
+    assert 'data-name="Poisoned" data-mark="' in badge and 'data-sync="on"' in badge
     sheet["conditions"] = [{"id": 11, "level": None}, {"id": 4, "level": 3}]  # made (and Exhaustion 3 ticked there)
     characters.refresh(db, cole)
     page = player.get(f"/characters/{cole.id}/battle").text

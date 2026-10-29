@@ -7,7 +7,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import spending
+from app import spending, web
 from app.admin import _guard
 from app.db import get_db
 from app.extraction import session_label
@@ -91,7 +91,7 @@ def add_topup(request: Request, amount: str = Form(...), added_on: date = Form(.
         return denied
     amount = parse_amount(amount)
     if amount is None or amount <= 0 or amount > 10_000:
-        request.session["toast"] = "Enter an amount between $0 and $10,000."
+        request.session["toast"] = web.notice("Enter an amount between $0 and $10,000.", "warn")
     else:
         db.add(CreditTopUp(amount_usd=round(amount, 2), added_on=added_on, note=note.strip()[:200]))
         db.commit()
@@ -106,7 +106,7 @@ def set_limit(request: Request, amount: str = Form(""), db: Session = Depends(ge
         return denied
     value = parse_amount(amount) if amount.strip() else None
     if amount.strip() and (value is None or value <= 0 or value > 10_000):
-        request.session["toast"] = "Enter a monthly limit between $0 and $10,000, or leave it blank for none."
+        request.session["toast"] = web.notice("Enter a monthly limit between $0 and $10,000, or leave it blank for none.", "warn")
     else:
         spending.set_limit(db, value)
         db.commit()

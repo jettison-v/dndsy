@@ -70,7 +70,7 @@ def add(request: Request, email: str = Form(...), name: str = Form(""), admin: s
         return denied
     email = email.strip().lower()
     if "@" not in email:
-        request.session["toast"] = "Enter an email address."
+        request.session["toast"] = web.notice("Enter an email address.", "warn")
     else:
         _save(db, email, access.ADMIN if admin else access.MEMBER, " ".join(name.split())[:200])
         db.commit()
@@ -90,9 +90,9 @@ def update(request: Request, email: str = Form(...), admin: str = Form(""), remo
     mine = access.is_owner(email) or email == user["email"].lower()
     tool = access.REMOVED if remove else access.ADMIN if (admin or mine) else access.MEMBER
     if access.is_owner(email) and tool != access.ADMIN:
-        request.session["toast"] = "Owners are set on Railway (ADMIN_EMAILS) and are always admins."
+        request.session["toast"] = web.notice("Owners are set on Railway (ADMIN_EMAILS) and are always admins.", "warn")
     elif email == user["email"].lower() and tool != access.ADMIN:
-        request.session["toast"] = "You can't lower your own access."
+        request.session["toast"] = web.notice("You can't lower your own access.", "warn")
     else:
         _save(db, email, tool)
         db.commit()

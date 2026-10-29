@@ -72,6 +72,8 @@
     <div class="ds-row"><span>Combos <span class="count">3</span></span><span>Reminders <span class="count">2</span></span></div>
     {{ ds("Waiting count", ".mcount", "How many things wait for you, red, beside Needs you and Inbox in the Manage menu and on Manage pages. Asked for when the menu opens (/manage/counts), so no page waits for it; hidden at zero.") }}
     <div class="ds-row"><span>Needs you <span class="mcount">3</span></span><span>Inbox <span class="mcount">5</span></span></div>
+    {{ ds("Row action", ".row-act · .row-act.conc-act", "An action inside a list's row (the Spell Book's Roll and Concentrate), compact so the row keeps its room; Concentrate is its ◎ icon, labelled on hover.") }}
+    <div class="ds-row"><button class="row-act" type="button">Roll</button><button class="row-act conc-act" type="button" data-tip="Concentrate on Fly" aria-label="Concentrate on Fly">{{ cond_icon("Concentration") }}</button></div>
     {{ ds("Roll chip", ".roll-chip · .roll-hit", "Rolls dice (to hit, damage, healing); amber on hover. Kept separate from Chips (Brett, 2026-10-22).") }}
     <div class="ds-row"><span class="hit"><button class="roll-hit" type="button">+7</button></span><button class="roll-chip" type="button">Roll</button><button class="roll-chip" type="button">Heal</button></div>
   </section>
@@ -165,55 +167,16 @@
       </tbody>
     </table></div>
     <p class="note">A side panel opened from inside a modal slides out from the modal's own right edge, inside it.</p>
-    {{ ds("Toast", "#toast", "A short message after an action: \"Saved\", \"Wild Shape: Polar Bear\", \"Couldn't save the order\".") }}
-    <div class="ds-row"><button class="btn" type="button" onclick="window.askdndToast && askdndToast('Saved')">Today's toast</button>
-      <button class="btn" type="button" onclick="window.askdndToast && askdndToast('Game Mode\'s D&amp;D Beyond sync ends at 11:40 PM.', { label: 'Keep going', run: () => askdndToast('Kept going') })">With a button</button></div>
-    {{ ds("Toast with a button", "toast(message, {label, run})", "When the message offers one thing to do (Keep going). It stays 20 seconds instead of two, and the button closes it.") }}
-    <h3 class="divider">Toast options (pick one)</h3>
-    <p class="hint">Each shows a success, an error and one with Undo. Errors stay until closed in B and D; the others fade after a few seconds.</p>
-    <div class="ds-toasts">
-      {% for v, name, about in [("a", "A · Top bar (today)", "Top centre, under the menu bar, green edge. Text only; errors look the same as successes."),
-                               ("b", "B · Corner card", "Bottom right, out of the way of the page and the table rolls. An icon and color by kind, ✕ to close, room for Undo."),
-                               ("c", "C · Status pill", "Top centre, compact; the whole pill takes the status color (green, red, blue). Quick to read, no actions."),
-                               ("d", "D · Snackbar", "Bottom centre, light on dark like a phone notice, with one action (Undo). Above the bottom bar on phones."),
-                               ("e", "E · On the button", "No floating message for successes: the button itself turns to \"✓ Saved\" for a moment. Errors use B.")] %}
-      <div class="ds-toast-card"><b>{{ name }}</b><span class="muted">{{ about }}</span>
-        <div class="ds-row">{% if v == "e" %}<button class="btn small" type="button" data-inline-ok>Save</button><button class="btn small" type="button" data-demo-toast="b" data-kind="error">Error</button>
-          {% else %}<button class="btn small" type="button" data-demo-toast="{{ v }}" data-kind="ok">Success</button><button class="btn small" type="button" data-demo-toast="{{ v }}" data-kind="error">Error</button>{% if v in ("b", "d") %}<button class="btn small" type="button" data-demo-toast="{{ v }}" data-kind="undo">With Undo</button>{% endif %}{% endif %}</div>
-      </div>{% endfor %}
-    </div>
-    <script>
-    // Demo only (Manage › Design system): the five toast styles side by side, until one is picked for app.js toast()
-    (() => {
-      const MSG = { ok: "Saved", error: "Couldn't save the order. Try again.", undo: "Reminder removed" };
-      let box = null, hide = null;
-      function show(v, kind) {
-        if (box) box.remove(); clearTimeout(hide);
-        if (v === "a") { window.askdndToast && askdndToast(MSG[kind]); return; }
-        box = document.createElement("div");
-        box.className = `demo-toast v-${v} k-${kind === "undo" ? "ok" : kind}`;
-        box.setAttribute("role", kind === "error" ? "alert" : "status");
-        const icon = kind === "error" ? "!" : "✓";
-        box.innerHTML = (v === "b" ? `<span class="dt-icon">${icon}</span>` : v === "c" ? `<span class="dt-icon">${icon}</span>` : "")
-          + `<span class="dt-msg"></span>`
-          + (kind === "undo" ? `<button type="button" class="dt-act">Undo</button>` : "")
-          + (v === "b" || (v === "d" && kind === "error") ? `<button type="button" class="dt-x" aria-label="Close">✕</button>` : "");
-        box.querySelector(".dt-msg").textContent = MSG[kind];
-        box.addEventListener("click", e => { if (e.target.closest(".dt-x, .dt-act")) { box.remove(); box = null; } });
-        document.body.appendChild(box);
-        requestAnimationFrame(() => box && box.classList.add("show"));
-        if (!(kind === "error" && (v === "b" || v === "d"))) hide = setTimeout(() => { if (box) { box.classList.remove("show"); setTimeout(() => box && box.remove(), 250); } }, 3200);
-      }
-      document.addEventListener("click", e => {
-        const b = e.target.closest("[data-demo-toast]"); if (b) show(b.dataset.demoToast, b.dataset.kind);
-        const ok = e.target.closest("[data-inline-ok]");
-        if (ok && !ok.classList.contains("is-done")) {
-          const was = ok.textContent; ok.textContent = "✓ Saved"; ok.classList.add("is-done");
-          setTimeout(() => { ok.textContent = was; ok.classList.remove("is-done"); }, 1800);
-        }
-      });
-    })();
-    </script>
+    {{ ds("Window foot", ".peek-foot.row · form.peek-form", "Where a window's buttons go: its foot, along the bottom edge below the scrolling body, never partway down. The main action first, then Cancel as a quiet link; Delete at the far end (.push). A window that is a form wraps body and foot in .peek-form.") }}
+    <div class="ds-sample"><div class="peek-foot row"><button class="btn primary" type="button">Save</button><button class="btn link" type="button">Cancel</button></div></div>
+    {{ ds("Corner card", "#cards > .card.k-* · toast(message, action, kind) · web.notice(text, kind)", "Everything you read and dismiss (docs/mockups/temporary-items.html): bottom right, newest at the bottom, three at most (one on a phone, above the bottom bar or Table rolls); beside an open side panel. Its kind sets the icon, color and time: done 4 seconds, for your information and someone's roll 6, refused 10, an error until closed. Hovering keeps it.") }}
+    <div class="ds-row">
+      <button class="btn" type="button" onclick="askdndToast('Saved')">Done</button>
+      <button class="btn" type="button" onclick="askdndToast('No Name rolled for the DM', null, 'info')">For your information</button>
+      <button class="btn" type="button" onclick="askdndToast('Cole\'s sheet isn\'t open on D&amp;D Beyond, so this can\'t be made there.', null, 'warn')">Refused</button>
+      <button class="btn" type="button" onclick="askdndToast('Couldn\'t save the order.', null, 'error')">Error</button>
+      <button class="btn" type="button" onclick="askdndToast('Game Mode ends at 11:40 PM.', { label: 'Keep going', run: () => askdndToast('Kept going') }, 'info')">With a button</button></div>
+    {{ ds("Card with a button", "toast(message, {label, run}, kind)", "When the message offers one thing to do (Undo, Keep going, Try again). It stays 20 seconds, and the button closes it. Someone's roll (with the dice animation off) is a card too, its die as the icon.") }}
   </section>
 
   <section class="section" id="narrow">
@@ -287,13 +250,13 @@
 
   <section class="section" id="conditions">
     <h2>Conditions</h2>
-    <p class="hint">On Battle (docs/mockups/conditions-on-battle.html). Each condition has its own color (<code>--cond-*</code>, by its <code>[data-cond]</code> slug) and an icon drawn for askdnd; D&amp;D Beyond's are its own art.</p>
+    <p class="hint">On Battle (docs/mockups/conditions-on-battle.html; the badges docs/mockups/temporary-items.html). Each condition has its own color (<code>--cond-*</code>, by its <code>[data-cond]</code> slug) and an icon drawn for askdnd; D&amp;D Beyond's are its own art.</p>
     {{ ds("Condition pill", "details.cond-pill[data-cond] · cond_icon(name)", "The chip under Battle's numbers, in its condition's color with its icon; it opens what the condition does, and End.") }}
-    {{ ds("Concentration", ".cond-bar > .conc-pill[data-cond=concentration] + .cond-sep · _conc_pill.html", "First in the Status row, in its own color with the spell, its level and round, +1, the Con save and End; a divider before the conditions. It's on the page's edge always and has an emblem, like a condition.") }}
+    {{ ds("Concentration", ".cond-bar > .conc-pill[data-cond=concentration] + .cond-sep · _conc_pill.html", "First in the Status row, in its own color with the spell, its level and round, +1, the Con save and End; a divider before the conditions. It's on the page's edge always and has a badge by the name, like a condition.") }}
     <div class="cond-bar ds-row"><span class="conc-pill" data-cond="concentration">{{ cond_icon("Concentration") }}<b>Moonbeam</b><span class="conc-k">2nd · round 3/10</span><span class="conc-save">Save +5</span></span><span class="cond-sep" aria-hidden="true"></span><details class="cond-pill" data-cond="prone"><summary>{{ cond_icon("Prone") }}<b>Prone</b></summary></details></div>
     <div class="cond-bar ds-row">{% for n in ("Poisoned", "Prone", "Charmed", "Invisible", "Exhaustion") %}<details class="cond-pill" data-cond="{{ cond_slug(n) }}"><summary>{{ cond_icon(n) }}<b>{{ n }}{% if n == "Exhaustion" %} 2{% endif %}</b></summary></details>{% endfor %}<details class="cond-pill cond-add"><summary>+ Condition</summary></details></div>
-    {{ ds("Emblem", ".cond-corner > .cond-emb", "One per condition in the bottom-right corner, newest nearest the corner (beside an open side panel; on phones above Table rolls). Point at it, or tap it, for what it does. Exhaustion shows its level; Prone's leans.") }}
-    <div class="ds-row ds-corner">{% for n in ("Blinded", "Frightened", "Exhaustion", "Prone", "Enlarged") %}<button type="button" class="cond-emb" data-cond="{{ cond_slug(n) }}" aria-expanded="false" aria-label="{{ n }}">{{ cond_icon(n) }}{% if n == "Exhaustion" %}<span class="cond-lv">2</span>{% endif %}<span class="cond-tip" role="tooltip"><b>{{ n }}</b>What it does, in askdnd's words.<span class="note">the DM rules</span></span></button>{% endfor %}</div>
+    {{ ds("Badge", ".char-name > .cond-badges > .cond-badge · cond_badges()", "After the character's name on Battle, Sheet and Plan (docs/mockups/temporary-items.html): Concentration first (round), then each condition, icons only, six at most. Point at one, or tap it, for what it does. Exhaustion shows its level; Prone's leans. A new one pops in once.") }}
+    <div class="ds-row"><span class="cond-badges">{% for n in ("Concentration", "Blinded", "Frightened", "Exhaustion", "Prone") %}<button type="button" class="cond-badge" data-cond="{{ cond_slug(n) }}" aria-expanded="false" aria-label="{{ n }}">{{ cond_icon(n) }}{% if n == "Exhaustion" %}<span class="cond-lv">2</span>{% endif %}<span class="cond-tip" role="tooltip"><b>{{ n }}</b>What it does, in askdnd's words.<span class="note">the DM rules</span></span></button>{% endfor %}</span></div>
     {{ ds("The page's edge", ".cond-halo > .cond-line + .cond-glow · cond.edge()", "A thin line and a soft glow around the page in the newest three conditions' colors, blending into each other; over the Table rolls sidebar and the side panel. Blinded's is black, and Blinded or Unconscious darken the page towards its edges (.dark). It brightens once as a condition starts, then stays still.") }}
     <div class="ds-edge"><div class="cond-halo" style="--edge: var(--cond-poisoned), var(--cond-prone), var(--cond-charmed), var(--cond-poisoned)"><i class="cond-line"></i><i class="cond-glow"></i></div></div>
     {{ ds("Elsewhere", ".pt-conds · .cond-dots", "Each Party card shows the icons small, its left edge in the newest one's color; your character's menu bar button has a dot per condition.") }}

@@ -45,11 +45,11 @@ def add(request: Request, spell: str = Form(""), field: str = Form(""), value: s
     key = rr.spell_key(spell)
     value, reason = " ".join(value.split())[:500], " ".join(reason.split())[:500]
     if not campaign or key is None or field not in house_rules.FIELDS:
-        request.session["toast"] = "Pick a spell."
+        request.session["toast"] = web.notice("Pick a spell.", "warn")
     elif field == "once" and not house_rules.can_roll_once(rr.spell(key)):
-        request.session["toast"] = f"{key} has nothing that's rolled more than once."
+        request.session["toast"] = web.notice(f"{key} has nothing that's rolled more than once.", "warn")
     elif field == "note" and not value:
-        request.session["toast"] = "Write the ruling."
+        request.session["toast"] = web.notice("Write the ruling.", "warn")
     else:
         row = db.scalar(select(HouseRule).where(HouseRule.campaign_id == campaign.id, HouseRule.target_kind == "spell",
                                                 HouseRule.target_key == key, HouseRule.field == field))

@@ -20,7 +20,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from starlette.responses import Response
 
-from app import access
+from app import access, web
 from app.db import get_db
 from app.models import User
 
@@ -82,7 +82,7 @@ class ViewAs:
 
 
 def _refuse(scope, session: dict, target: dict) -> Response:
-    message = f"You're viewing as {target.get('name') or target['email']}, so nothing can be changed. Stop viewing first."
+    message = web.notice(f"You're viewing as {target.get('name') or target['email']}, so nothing can be changed. Stop viewing first.", "warn")
     if any(k == b"hx-request" for k, _ in scope.get("headers") or []):
         return HTMLResponse("", headers={"HX-Trigger": json.dumps({"toast": message}), "HX-Reswap": "none"})
     session["toast"] = message
@@ -95,7 +95,7 @@ def start(request: Request, email: str = Form(...), db: Session = Depends(get_db
     real = request.session.get("user") or {}
     why = refusal(real.get("email", ""), email)
     if why:
-        request.session["toast"] = why
+        request.session["toast"] = web.notice(why, "warn")
         return RedirectResponse(request.headers.get("referer") or "/manage/accounts", status_code=303)
     u = db.scalar(select(User).where(User.email == email.strip().lower()))
     name = (u.name if u and u.name and u.name != u.email else None) or email

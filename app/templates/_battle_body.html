@@ -1,6 +1,6 @@
 {% from "_char.html" import pips, pick_btn, pin_icon, battle_strip, save_tiles, resource_row, portrait, spends, adv, hit, roll_attrs, sync_attrs %}
 {% from "_notes_macros.html" import combo_body %}
-{% from "_cond_icons.html" import cond_icon, cond_corner with context %}
+{% from "_cond_icons.html" import cond_icon, cond_halo with context %}
 {% set s = sheet %}
 {# Character › Battle (character_pages._battle_ctx). Game Mode and the Wild Shape switch swap this whole block. #}
 <div id="battle-body"{% if "Invisible" in active_conditions %} class="cond-ghost"{% endif %} data-character="{{ c.id }}" data-name="{{ c.name }}" data-fetched="{{ fetched_at.isoformat() if fetched_at else '' }}" data-cond-adv='{{ cond_adv | tojson }}'>
@@ -127,5 +127,5 @@
   {% else %}
   <p class="subtitle">{% if c.ddb_id %}Not fetched from D&amp;D Beyond yet.{% else %}Not linked to D&amp;D Beyond yet.{% endif %}{% if failed %} {{ error }}{% endif %}</p>
   {% endif %}
-  {{ cond_corner(conditions) }}{# the halo and the corner's emblems (Brett, 2026-10-28) #}
+  {{ cond_halo(conditions) }}{# the page's edge (Brett, 2026-10-28); the badges are by the name (character.html) #}
 </div>
