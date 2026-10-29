@@ -16,7 +16,8 @@
   <div class="title-row"><h1>Design system</h1></div>
   <p class="subtitle">Every token and component askdnd is built from, drawn with the app's own styles, so this page changes when they do. Rules for when to use each: <code>docs/DESIGN.md</code>. A test blocks text sizes, colors and screen widths outside the tokens.</p>
 
-  <nav class="ds-jump" aria-label="On this page">
+  <nav class="ds-jump" aria-label="On this page" data-ds-jump>
+    <a href="#" class="ds-top" data-ds-top>↑ Top</a>
     {% for id, label in [("colors", "Colors"), ("type", "Text sizes"), ("space", "Space and corners"), ("buttons", "Buttons"), ("switches", "Switches"), ("pills", "Pills"),
                          ("headings", "Headings"), ("surfaces", "Sections and tiles"), ("lists", "Lists"), ("marks", "Marks and pips"),
                          ("help", "Help and empty states"), ("panels", "Panels and toasts"), ("narrow", "Narrow screens"), ("story", "Story text"), ("manage", "Manage pages"), ("conditions", "Conditions"), ("ddb", "D&D Beyond states")] %}<a href="#{{ id }}">{{ label }}</a>{% endfor %}

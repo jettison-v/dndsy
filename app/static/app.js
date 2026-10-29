@@ -2830,6 +2830,23 @@
     setTimeout(() => { all.disabled = false; all.textContent = 'Check everything'; }, 8000);
   });
 
+  // Manage › Design system: its navigation row lights the section you're in and keeps that chip in view; ↑ Top goes back
+  // up (Brett, 2026-10-29)
+  const dsJump = document.querySelector('[data-ds-jump]');
+  if (dsJump && window.IntersectionObserver) {
+    const links = new Map([...dsJump.querySelectorAll('a[href^="#"]:not([data-ds-top])')].map(a => [a.getAttribute('href').slice(1), a]));
+    const seen = new Set();
+    const light = () => {
+      const id = [...links.keys()].find(k => seen.has(k));  // the first section on screen, in page order
+      links.forEach((a, k) => a.setAttribute('aria-current', String(k === id)));
+      const a = links.get(id);
+      if (a) dsJump.scrollTo({ left: a.offsetLeft - dsJump.clientWidth / 2 + a.offsetWidth / 2, behavior: 'smooth' });
+    };
+    const io = new IntersectionObserver(es => { es.forEach(e => e.isIntersecting ? seen.add(e.target.id) : seen.delete(e.target.id)); light(); },
+                                        { rootMargin: '-120px 0px -50% 0px' });
+    links.forEach((a, id) => { const sec = document.getElementById(id); if (sec) io.observe(sec); });
+    dsJump.querySelector('[data-ds-top]').addEventListener('click', e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
   // A change for D&D Beyond was just made on this page, whichever it is (web.deliver_now): the extension makes it now,
   // not at its next check every 30 seconds (Brett, 2026-10-29: Battle's changes waited up to half a minute)
   document.body.addEventListener('bridgeDeliver', e => {
