@@ -44,7 +44,7 @@ def _overrides(db: Session) -> dict[tuple[str, str], str]:
 
 def _view(db: Session, ch: Character, user: dict) -> dict:
     snap = ch.snapshot
-    sheet = views.apply_overrides(chars.character_summary(ch), _overrides(db))
+    sheet = views.apply_overrides(ddb_bridge.as_shown(db, ch, chars.character_summary(ch)), _overrides(db))  # with what's on its way
     mine = picks.picks(db, ch, user)
     druid = ws.druid(sheet)
     return {
@@ -87,7 +87,8 @@ def _party_rows(db: Session, user: dict | None = None) -> list[dict]:
     campaign = web.campaign(db)
     if not campaign:
         return []
-    return [views.party_row(ch, chars.character_summary(ch)) for ch in _mine_first(db, user, chars.campaign_characters(db, campaign.id))]
+    return [views.party_row(ch, ddb_bridge.as_shown(db, ch, chars.character_summary(ch)))
+            for ch in _mine_first(db, user, chars.campaign_characters(db, campaign.id))]
 
 
 def _page(request: Request, name: str, ctx: dict):
@@ -119,8 +120,18 @@ def party_page(request: Request, pick: str = "", db: Session = Depends(get_db)):
 
 
 def listed(db: Session, ch: Character, sheet: dict | None) -> list[dict]:
-    """What this character is under now (cond.shown): D&D Beyond's conditions, from its sheet, with askdnd's own."""
-    return cond.shown(ch.conditions, (sheet or {}).get("conditions"), ddb_bridge.on_for(db, ch))
+    """What this character is under now (cond.shown): D&D Beyond's conditions, from its sheet (as shown, with what's on
+    its way: ddb_bridge.as_shown), with askdnd's own. Each says "sync" ("on" on its way, "ending", "failed": given up
+    to make by hand) and whether it "counts" (on rolls and the page's edge: not one ending, nor one D&D Beyond didn't take)."""
+    sheet = sheet or {}
+    now, sync, ending = cond.shown(ch.conditions, sheet.get("conditions"), ddb_bridge.on_for(db, ch)), sheet.get("sync") or {}, sheet.get("ending") or []
+    names = {x["name"] for x in now}
+    now += [{"name": n, "on_ddb": True} for n in ending if n not in names]
+    now += [{"name": m[5:], "on_ddb": False} for m, st in sync.items() if st == "failed" and m.startswith("cond:") and m[5:] not in names | set(ending)]
+    for x in now:
+        x["sync"] = "ending" if x["name"] in ending else sync.get("cond:" + x["name"], "")
+        x["counts"] = x["sync"] != "ending" and not (x["sync"] == "failed" and not x.get("on_ddb"))
+    return now
 
 
 def _load(request: Request, db: Session, character_id: int):
@@ -153,9 +164,9 @@ def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None
     ctx["spellbar"] = _spellbar(db, ch, ctx)
     now = listed(db, ch, ctx["sheet"])
     ctx["conditions"] = [{**x, "rules": cond.rules_text(x["name"])} for x in now]  # everyone sees them
-    ctx["cond_adv"] = cond.roll_effects(now)  # listed in the roll window (app.js specFrom)
+    ctx["cond_adv"] = cond.roll_effects([x for x in now if x["counts"]])  # listed in the roll window (app.js specFrom)
     ctx["all_conditions"], ctx["all_effects"] = list(cond.CONDITIONS), list(cond.EFFECTS)
-    ctx["active_conditions"] = {x["name"] for x in now}
+    ctx["active_conditions"] = {x["name"] for x in now if x["sync"] != "ending"}
     ctx["cond_synced"] = ddb_bridge.on_for(db, ch)
     ctx |= player_notes.page_context(db, ch, user, ctx["sheet"])
     return ctx
@@ -502,7 +513,7 @@ def spellbook_modal(request: Request, character_id: int, db: Session = Depends(g
 def _concentration_reply(request: Request, db: Session, ch: Character, user: dict, toast: str, deliver: bool = False):
     if request.headers.get("HX-Request"):
         resp = templates.TemplateResponse(request, "_battle_body.html", _battle_ctx(db, ch, user))
-        resp.headers["HX-Trigger"] = json.dumps({"toast": toast, **({"bridgeDeliver": True} if deliver else {})})
+        resp.headers["HX-Trigger"] = json.dumps({"toast": toast, **({"bridgeDeliver": web.deliver_now(ch)} if deliver else {})})
         return resp
     return RedirectResponse(f"/characters/{ch.id}/battle", status_code=303)
 
@@ -550,7 +561,7 @@ def start_condition(request: Request, character_id: int, name: str = Form(...), 
         ddb_bridge.add(db, ch, "set", {"field": field, "value": own[-1].get("level", True)}, f"{ch.name}: {label}")
     ch.conditions = own
     db.commit()
-    return _concentration_reply(request, db, ch, user, label + (": made on D&D Beyond" if synced else ""), deliver=synced)
+    return _concentration_reply(request, db, ch, user, label + (": on its way to D&D Beyond" if synced else ""), deliver=synced)
 
 
 @router.post("/characters/{character_id:int}/conditions/end")
@@ -570,7 +581,7 @@ def end_condition(request: Request, character_id: int, name: str = Form(...), db
         ddb_bridge.add(db, ch, "set", {"field": field, "value": 0 if name == "Exhaustion" else False}, f"{ch.name}: no longer {name}")
     ch.conditions = cond.end(ch.conditions, name) or None
     db.commit()
-    return _concentration_reply(request, db, ch, user, f"No longer {name}" + (": made on D&D Beyond" if synced else ""), deliver=synced)
+    return _concentration_reply(request, db, ch, user, f"No longer {name}" + (": on its way to D&D Beyond" if synced else ""), deliver=synced)
 
 
 @router.post("/characters/{character_id:int}/concentration/round")
