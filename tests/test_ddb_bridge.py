@@ -81,13 +81,33 @@ def test_a_change_counts_only_once_d_and_d_beyond_has_it(player, db, sheet):
     assert st["log"][0] == {**st["log"][0], "state": "live", "text": "Cole drank a Potion of Healing"}
 
 
-def test_a_change_is_built_on_what_d_and_d_beyond_has_when_it_goes(db, sheet):
-    """An intent, not a number: hit points changed on D&D Beyond after the drink was asked for are built on, not lost."""
+def test_a_change_is_built_on_what_d_and_d_beyond_has_when_it_goes(db, sheet, monkeypatch):
+    """An intent, not a number: hit points changed on D&D Beyond after the drink was asked for are built on, not lost.
+    askdnd's copy of the sheet is read again first when it's more than a minute old (ddb_bridge.COPY_SECONDS)."""
     cole = char(db, "Cole")
     drink(db, cole, heal=4)
     sheet["removedHitPoints"] = 20  # the player took 6 more on D&D Beyond meanwhile
+    later = ddb_bridge.time.time() + ddb_bridge.COPY_SECONDS + 1
+    monkeypatch.setattr(ddb_bridge.time, "time", lambda: later)
     batch = ddb_bridge.outbox(db, cole)
     assert batch["ops"][0]["body"]["removedHitPoints"] == 16 and batch["ops"][0]["from"]["removedHitPoints"] == 20
+
+
+def test_a_recent_copy_of_the_sheet_is_built_on_without_reading_it_first(db, sheet, monkeypatch):
+    """Brett, 2026-10-29 (a second faster): a batch builds on askdnd's copy when it's under a minute old; what the
+    extension's check right before writing doesn't cover is read fresh first: a hit down to 0 (from maximum hit points)."""
+    reads, read = [], characters.refresh
+    monkeypatch.setattr(characters, "refresh", lambda db, ch, *a, **k: reads.append(ch.id) or read(db, ch, *a, **k))
+    cole = char(db, "Cole")
+    ddb_bridge.add(db, cole, "hp", {"amount": -5}, "Cole took 5")
+    batch = ddb_bridge.outbox(db, cole)
+    assert reads == [] and batch["ops"][0]["body"]["removedHitPoints"] == 19  # 14 + 5, from the copy
+    make(sheet, batch)
+    ddb_bridge.delivered(db, batch["id"], ok=True)
+    reads.clear()
+    ddb_bridge.add(db, cole, "hp", {"amount": -80}, "Cole took 80")
+    batch = ddb_bridge.outbox(db, cole)
+    assert len(reads) == 1 and batch["ops"][0]["body"]["removedHitPoints"] == 51  # down to 0: read fresh first
 
 
 def test_several_changes_go_as_one_end_state(player, db, sheet):
@@ -143,7 +163,7 @@ def test_a_change_on_d_and_d_beyond_in_the_moment_before_writing_is_worked_out_a
     first = ddb_bridge.outbox(db, cole)
     sheet["removedHitPoints"] = 18
     ddb_bridge.delivered(db, first["id"], ok=False, conflicts=["hp"])
-    second = ddb_bridge.outbox(db, cole)
+    second = ddb_bridge.outbox(db, cole)  # (askdnd read the sheet again on the mismatch: not built on the old copy)
     assert second["id"] != first["id"] and second["ops"][0]["body"]["removedHitPoints"] == 14  # 18 - 4
 
 
@@ -168,8 +188,10 @@ def test_a_batch_the_extension_never_answered_for_is_offered_again(db, sheet, mo
 
 def test_a_change_that_cant_happen_any_more_says_why(player, db, sheet):
     cole = char(db, "Cole")
-    next(i for i in sheet["inventory"] if i["id"] == POTION)["quantity"] = 0
+    next(i for i in sheet["inventory"] if i["id"] == POTION)["quantity"] = 0  # drunk on D&D Beyond: askdnd's copy still has two
     drink(db, cole)
+    batch = ddb_bridge.outbox(db, cole)  # built on the copy; the extension finds D&D Beyond changed and writes nothing
+    ddb_bridge.delivered(db, batch["id"], ok=False, conflicts=[f"item:{POTION}"])
     assert ddb_bridge.outbox(db, cole) is None
     st = player.get(f"/bridge/state/{cole.id}").json()
     assert st["changes"][0]["state"] == "not_yet" and "No Potion of Healing left" in st["changes"][0]["error"]
