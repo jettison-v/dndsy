@@ -81,6 +81,11 @@ TEST_ITEM = "Candle"  # the round trip takes one and puts it back
 MAX_ATTEMPTS = 3
 RETRY_SECONDS = (0, 5, 20)  # how long a batch that didn't land waits before it's sent again
 SENDING_SECONDS = 30  # a batch the extension took but never answered for is offered again
+# A batch may build on askdnd's copy of the sheet this recent instead of reading it first (Brett, 2026-10-29: a second
+# faster): the extension checks every number it writes against D&D Beyond right before writing and writes nothing if
+# one changed (askdnd works it out again), so an older copy only costs a retry. What that check doesn't cover is read
+# fresh first: a hit down to 0 (worked out from maximum hit points) and a change the copy says can't be made.
+COPY_SECONDS = 60
 EXTENSION_FRESH_SECONDS = 90  # the extension reports every 30 seconds
 READ_CHECK_SECONDS = 3600
 OPEN = ("waiting", "sending", "not_yet")
@@ -523,8 +528,9 @@ def as_shown(db: Session, character: Character, summary: dict | None) -> dict | 
 
 
 def outbox(db: Session, character: Character) -> dict | None:
-    """The batch the extension should make on this character's sheet now, or None. A new batch is built on a fresh read
-    of D&D Beyond, so its totals sit on whatever D&D Beyond has this moment."""
+    """The batch the extension should make on this character's sheet now, or None. A new batch is built on askdnd's
+    copy of the sheet when it's recent (COPY_SECONDS), else on a fresh read; either way the extension checks each total
+    against what D&D Beyond has the moment before writing it."""
     _lock(db, character.id)
     if not awake(db)["awake"]:
         return None
@@ -545,12 +551,21 @@ def outbox(db: Session, character: Character) -> dict | None:
                               .order_by(BridgeIntent.id)))
     if not waiting:
         return None
-    chars.refresh(db, character)
+    snap = character.snapshot
+    recent = bool(snap and snap.status != "error" and snap.fetched_at and now - snap.fetched_at.timestamp() < COPY_SECONDS)
+    if not recent:
+        chars.refresh(db, character)
     n = numbers(character)
     if not n:
         return None
     dicts = [_as_dict(i) for i in waiting]
     target, _lines, impossible, extra = plan(dicts, n)
+    if recent and (impossible or (target.get("hp") or {}).get("removedHitPoints", 0) >= n["max"]):
+        chars.refresh(db, character)  # what the extension's check doesn't cover: read fresh and work it out again
+        n = numbers(character)
+        if not n:
+            return None
+        target, _lines, impossible, extra = plan(dicts, n)
     for d, why in impossible:  # (by identity: two drinks of the same potion are equal dicts)
         it = waiting[next(k for k, x in enumerate(dicts) if x is d)]
         it.state, it.error = "not_yet", why
@@ -597,6 +612,7 @@ def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: 
     if conflicts:  # D&D Beyond changed in the moment since askdnd read it, and the extension wrote nothing
         replans = max((it.data.get("replans", 0) for it in _intents_of(db, b)), default=0)
         if b.attempts == 1 and replans < MAX_ATTEMPTS:  # nothing of it was written: work it out again from the new numbers
+            chars.refresh(db, character)  # (read now: the next batch mustn't build on the copy that was out of date)
             b.state = "replanned"
             for it in _intents_of(db, b):
                 it.state, it.data = "waiting", {**it.data, "replans": it.data.get("replans", 0) + 1}
