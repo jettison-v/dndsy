@@ -1758,10 +1758,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .cond-more { font-size: var(--fs-xs); font-weight: 600; color: var(--muted); padding: 0 var(--sp-1); }
 /* Signature touches: Invisible fades your portrait (Blinded and Unconscious darken the edges, a ring above) */
 .char-page:has(#battle-body.cond-ghost) .char-head .portrait { opacity: .38; outline: 2px dashed var(--cond-invisible); outline-offset: 2px; }
-/* Party: the same icons small, and the card's edge in the newest one's colour */
-.pt-conds { display: flex; flex-wrap: wrap; gap: 5px; }
-.pt-conds [data-cond] { width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--c); background: color-mix(in srgb, var(--c) 18%, var(--bg)); display: grid; place-items: center; }
-.pt-conds .cond-icon { width: 15px; height: 15px; }
+/* Party: the same badges after each name (Brett, 2026-10-29), and the card's edge in the newest one's colour */
 .pt-card[data-conds] { box-shadow: inset 3px 0 0 var(--h); }
 /* The menu bar: a dot per condition on your character's button */
 .cond-dots { display: inline-flex; gap: 3px; }
@@ -1779,8 +1776,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 [data-sync]::after { content: "↻"; position: absolute; top: 3px; right: 5px; font: 400 var(--fs-xs)/1 var(--sans); color: var(--sync); pointer-events: none; }
 [data-sync="failed"]::after { content: "!"; font-weight: 700; }
 .cond-pill[data-sync]::after, .cond-badge[data-sync]::after { top: -9px; right: -3px; }  /* (a tile clips outside its box; a pill and a badge don't) */
-.pt-conds [data-sync]::after { top: -9px; right: -4px; }
-.cond-pill[data-sync="ending"] > summary, .cond-badge[data-sync="ending"], .pt-conds [data-sync="ending"] { opacity: .5; }
+.cond-pill[data-sync="ending"] > summary, .cond-badge[data-sync="ending"] { opacity: .5; }
 .cond-pill[data-sync] { border-radius: var(--r-pill); }
 .cond-add > summary { background: var(--surface-2); border-style: dashed; border-color: var(--line); color: var(--muted); }
 .cond-box .ls-chips { margin-top: 4px; }

@@ -259,8 +259,8 @@
     <div class="ds-row"><span class="cond-badges">{% for n in ("Concentration", "Blinded", "Frightened", "Exhaustion", "Prone") %}<button type="button" class="cond-badge" data-cond="{{ cond_slug(n) }}" aria-expanded="false" aria-label="{{ n }}">{{ cond_icon(n) }}{% if n == "Exhaustion" %}<span class="cond-lv">2</span>{% endif %}<span class="cond-tip" role="tooltip"><b>{{ n }}</b>What it does, in askdnd's words.<span class="note">the DM rules</span></span></button>{% endfor %}</span></div>
     {{ ds("The page's edge", ".cond-halo > .cond-line + .cond-glow · cond.edge()", "A thin line and a soft glow around the page in the newest three conditions' colors, blending into each other; over the Table rolls sidebar and the side panel. Blinded's is black, and Blinded or Unconscious darken the page towards its edges (.dark). It brightens once as a condition starts, then stays still.") }}
     <div class="ds-edge"><div class="cond-halo" style="--edge: var(--cond-poisoned), var(--cond-prone), var(--cond-charmed), var(--cond-poisoned)"><i class="cond-line"></i><i class="cond-glow"></i></div></div>
-    {{ ds("Elsewhere", ".pt-conds · .cond-dots", "Each Party card shows the icons small, its left edge in the newest one's color; your character's menu bar button has a dot per condition.") }}
-    <div class="ds-row"><div class="pt-conds">{% for n in ("Poisoned", "Prone") %}<span data-cond="{{ cond_slug(n) }}" role="img" aria-label="{{ n }}">{{ cond_icon(n) }}</span>{% endfor %}</div>
+    {{ ds("Elsewhere", "cond_badges(conditions, ch, still=true) · .cond-dots", "Each Party card has the same badges after the name (what each does on hover; a click opens the card), its left edge in the newest one's color; your character's menu bar button has a dot per condition.") }}
+    <div class="ds-row"><span class="cond-badges">{% for n in ("Poisoned", "Prone") %}<span class="cond-badge" data-cond="{{ cond_slug(n) }}" role="img" aria-label="{{ n }}">{{ cond_icon(n) }}</span>{% endfor %}</span>
       <span class="char-btn">Cole<span class="cond-dots"><i data-cond="poisoned"></i><i data-cond="prone"></i></span></span></div>
   </section>
 
