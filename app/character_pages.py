@@ -5,7 +5,7 @@
   the player's notes, shortlists and reminders; never the DM). The header is the same in each.
 - /battle and /character open on the signed-in person's own character (set on
   Manage › People); /party shows everyone.
-- Keeping the copy fresh (Game Mode, Refresh now) lives in the menu bar's Live control
+- Keeping the copy fresh (Refresh now) lives in the menu bar's Live control
   (app/live.py). A page shows a new copy by fetching itself again and swapping in its main (app.js
   "showInPlace"), whatever brought it.
 - Stars and reminders (app/picks.py): only the character's player sets them;
@@ -164,7 +164,7 @@ def _load(request: Request, db: Session, character_id: int):
 
 
 def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None) -> dict:
-    """Battle mode's body (also swapped in by Game Mode and the Wild Shape switch). `shape` shows it in that form
+    """Battle mode's body (also swapped in by the Wild Shape switch). `shape` shows it in that form
     instead of the character's own (the tour's preview: nothing is saved)."""
     ctx = _view(db, ch, user)
     ctx["form"] = None
