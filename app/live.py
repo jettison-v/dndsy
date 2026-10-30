@@ -29,7 +29,7 @@ from sqlalchemy.orm import Session
 
 from app import characters as chars
 from app import conditions as cond
-from app import config, vtt, web
+from app import access, config, vtt, web
 from app.auth import current_user, is_reviewer
 from app.db import get_db
 from app.models import BridgeIntent, CampaignCharacter, Character, CharacterSnapshot, User
@@ -163,8 +163,13 @@ def refresh_party(db: Session, user: dict, focus_id: int | None) -> None:
 
 
 def pill(db: Session, user: dict, focus_id: int | None) -> str:
-    """The pill's HTML on its own (the page's tick swaps it in)."""
-    return templates.get_template("_live_pill.html").render(tn=table(user, "", rows_from(db), focus_id))
+    """The pill's HTML on its own (the page's tick swaps it in): no page around it, so it brings the fight itself."""
+    from app import fight
+
+    here = access.current_campaign()
+    return templates.get_template("_live_pill.html").render(
+        tn=table(user, "", rows_from(db), focus_id),
+        fight_now=lambda: fight.loader(here["id"], user.get("email")) if here else None)
 
 
 def panel(request: Request, db: Session, user: dict, focus_id: int | None, toast: str = "", ids: list[int] = ()):

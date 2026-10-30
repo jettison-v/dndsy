@@ -788,6 +788,14 @@ def test_the_store_copy_of_the_extension_is_for_askdnds_own_sites(tmp_path, monk
     assert {s.strip(" '") for s in sites.split(",")} == {p.removesuffix("/*") for p in on_askdnd["matches"]}
 
 
+def test_the_pages_tick_draws_the_pill_while_your_sheet_isnt_connected(player, db, sheet):
+    """The tick draws the pill with no page around it; beta's failed here for a player waiting to connect (ASKDND-V2-6)."""
+    cole = char(db, "Cole")
+    cole.sheet_heard_at = None
+    db.flush()
+    assert "Open your sheet to connect" in player.post(f"/live/sync?c={cole.id}").text
+
+
 def test_the_live_pill_says_whether_your_sheet_is_connected_or_has_something_to_make_by_hand(player, db, sheet):
     """The Live pill answers one question (docs/mockups/table-without-modes.html): connected while the bridge hears your
     sheet, something to make by hand when a change couldn't be made, else what to do to connect."""

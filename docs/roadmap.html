@@ -129,11 +129,9 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     </div>
     <div class="you">
       <div class="eyebrow">Your call now</div>
-      <p><b>The larger multiplayer test on beta</b>: potions, the new banner, the speed fixes and the Dying tile together.</p>
-      <p><b>Set up the real-accounts test table</b>: <code>docs/testing-setup.md</code>.</p>
-      <p><b>Try <a href="https://claude.ai/artifact/7e1exa6YDp5ndFeFN5p5PF">One Table List</a> locally, then merge.</b></p>
-      
-      <p><b>One test fight on beta with two browsers</b>: you in the VTT as DM, and Vi's sheet with the VTT open on the second laptop (the bridge is on the Chrome Web Store now). Put Vi at 0, roll from the Dying tile, take a hit at 0 and heal; add a condition until a save and check its card comes as Vi's turn begins. Still to try on beta: conditions that end in a real fight (saves now remind as your turn begins), and times shown in your own time zone.</p>
+      <p><b>Try the dice fix locally, then merge <a href="https://github.com/jettison-v/dndsy/pull/124">PR 124</a>.</b> Rolls made while you were away no longer replay when you come back.</p>
+      <p><b>Say go on real D&amp;D Beyond test runs</b> and sign in to the test accounts once: Claude then runs fights with them itself. The plan is in <code>docs/testing-setup.md</code>.</p>
+      <p><b>Keep testing on beta</b>: still to try are conditions that end in a real fight (saves remind as your turn begins) and times shown in your own time zone.</p>
     </div>
     <div class="steps">
       <div class="step"><span class="n">1</span><div class="body"><h3>Game Mode for the table, and the Live pill</h3>
@@ -239,6 +237,8 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     <div class="sec-head"><div class="eyebrow">Done</div><h2>Most recent first</h2></div>
     <div class="done-list">
       <div class="day"><span class="d">Oct 30</span><ul>
+        <li>Rolls made while you were away don't replay when you come back: one card says how many (waiting for merge)</li>
+        <li>The Live pill no longer fails on a page's tick for a player whose sheet isn't connected (waiting for merge)</li>
         <li>Manage › Table as one list: one Add, Remove with Bring back, the DM runs their own table (on beta)</li>
         <li>A closed sheet shows at once on open pages; a DM's pill counts the party's sheets instead of saying Connected; with no extension the pill says so and the Live window has the link; the real extension now runs in automated tests (on beta)</li>
         <li>Game Mode removed: rolls go to the table unless you pick otherwise, the pill says whether your sheet is connected, Table rolls opens once in a fight, the roll window says whether a roll reaches the Game Log (on beta)</li>
