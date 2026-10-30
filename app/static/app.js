@@ -58,20 +58,23 @@
     tx.append(content);
     el.append(ic, tx);
     const close = () => { clearTimeout(el._hide); el.classList.add('out'); setTimeout(() => el.remove(), 250); };
+    // Its buttons in a row of their own under the text (Brett, 2026-10-29: beside it they squeezed the words); `node`
+    // is a ready button that keeps the card open (a roll: the save it asks for, then Saved: end it)
     const acts = actions || (action ? [action] : []);
-    if (acts.length) {
-      const row = acts.length > 1 ? Object.assign(document.createElement('span'), { className: 'card-acts' }) : el;
-      acts.forEach(a => {
-        const b = Object.assign(document.createElement('button'), { type: 'button', className: 'card-act', textContent: a.label });
-        b.addEventListener('click', () => { close(); a.run(); });
-        row.append(b);
-      });
-      if (row !== el) el.append(row);
-    }
     const x = Object.assign(document.createElement('button'), { type: 'button', className: 'card-x', textContent: '✕' });
     x.setAttribute('aria-label', 'Close');
     x.addEventListener('click', close);
     el.append(x);
+    if (acts.length) {
+      const row = Object.assign(document.createElement('span'), { className: 'card-acts' });
+      acts.forEach(a => {
+        if (a.node) return row.append(a.node);
+        const b = Object.assign(document.createElement('button'), { type: 'button', className: 'card-act', textContent: a.label });
+        b.addEventListener('click', () => { close(); a.run(); });
+        row.append(b);
+      });
+      el.append(row);
+    }
     const wait = stay ? 0 : acts.length ? 20000 : ms, start = () => { if (wait) el._hide = setTimeout(close, wait); };
     el.addEventListener('mouseenter', () => clearTimeout(el._hide));
     el.addEventListener('mouseleave', start);
@@ -733,17 +736,15 @@
         continue;
       }
       if (r.kind === 'death') {
-        t.innerHTML = '<b>Your turn:</b> ' + escText(r.text) + ' ';
-        const roll = Object.assign(document.createElement('button'), { type: 'button', className: 'row-act', textContent: 'Roll' });
+        t.innerHTML = '<b>Your turn:</b> ' + escText(r.text) + '.';
+        const roll = Object.assign(document.createElement('button'), { type: 'button', className: 'card-act main', textContent: 'Roll your death save' });
         Object.assign(roll.dataset, { roll: 'death', label: 'Death save', rollChar: r.character });
-        t.append(roll);
-        card(t, { kind: 'warn', stay: true });
+        card(t, { kind: 'warn', stay: true, actions: [{ node: roll }] });
       } else if (r.kind === 'save') {
-        t.innerHTML = '<b>Your turn:</b> ' + escText(r.text) + ' ';
-        const roll = Object.assign(document.createElement('button'), { type: 'button', className: 'row-act', textContent: 'Roll the save' });
+        t.innerHTML = '<b>Your turn:</b> ' + escText(r.text) + '.';
+        const roll = Object.assign(document.createElement('button'), { type: 'button', className: 'card-act main', textContent: 'Roll the save' });
         Object.assign(roll.dataset, { roll: 'save', label: r.ability + ' save (' + r.name + '), DC ' + r.dc, mod: (r.mod || '+0').replace('−', '-'), rollChar: r.character });
-        t.append(roll);
-        card(t, { kind: 'warn', stay: true, actions: [{ label: 'Saved: end it', run: () => act(base + '/conditions/end', { name: r.name }) }] });
+        card(t, { kind: 'warn', stay: true, actions: [{ node: roll }, { label: 'Saved: end it', run: () => act(base + '/conditions/end', { name: r.name }) }] });
       } else if (r.kind === 'conc') {
         t.innerHTML = '<b>' + escText(r.text) + '.</b>';
         card(t, { kind: 'warn', stay: true, actions: [{ label: 'End it', run: () => act(base + '/concentration/end', {}) },

@@ -1330,10 +1330,10 @@ body.gm-on.rolls-closed .rs-edge { position: fixed; z-index: 4; left: 0; top: ca
 /* Corner cards (app.js "corner cards"; Brett, 2026-10-29, docs/mockups/temporary-items.html): everything you read and
    dismiss, bottom right, newest at the bottom; an icon and colour by kind, ✕, at most one button. Beside an open side
    panel, not under it; on phones one at a time above the bottom bar, or above the Table rolls sheet. */
-.cards { position: fixed; z-index: 16; right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); width: min(340px, calc(100vw - 28px)); display: flex; flex-direction: column; align-items: stretch; gap: var(--sp-2); pointer-events: none; }
+.cards { position: fixed; z-index: 16; right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); width: min(400px, calc(100vw - 28px)); display: flex; flex-direction: column; align-items: stretch; gap: var(--sp-2); pointer-events: none; }
 body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 @media (min-width: 1100px) { body:has(.peek.open:not(.modal)) .cards { right: 494px; } }
-.card { pointer-events: auto; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: var(--sp-2) 10px; align-items: center; background: var(--surface-2); color: var(--text); border: 1px solid var(--line-strong); border-left: 3px solid var(--k); border-radius: var(--r-lg); padding: 9px 6px 9px 11px; font-size: var(--fs-sm); line-height: 1.4; box-shadow: 0 10px 26px var(--shadow); animation: card-in .18s ease-out; }
+.card { pointer-events: auto; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--sp-2) 10px; align-items: center; background: var(--surface-2); color: var(--text); border: 1px solid var(--line-strong); border-left: 3px solid var(--k); border-radius: var(--r-lg); padding: 9px 6px 9px 11px; font-size: var(--fs-sm); line-height: 1.4; box-shadow: 0 10px 26px var(--shadow); animation: card-in .18s ease-out; }
 .card.out { opacity: 0; transform: translateY(6px); transition: opacity .25s, transform .25s; }
 @keyframes card-in { from { opacity: 0; transform: translateY(8px); } }
 .card-ic { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--k) 18%, transparent); color: var(--k); font: 700 var(--fs-xs)/1 var(--sans); font-style: normal; }
@@ -1341,7 +1341,8 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .card-tx { min-width: 0; overflow-wrap: anywhere; }
 .card-tx b { color: var(--text-strong); font-weight: 600; }
 .card-tx b.nat20 { color: var(--green); } .card-tx b.nat1 { color: var(--red); }
-.card-acts { display: inline-flex; gap: var(--sp-1); }
+.card-acts { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: var(--sp-2); }  /* its buttons, a row under the text */
+.card-act.main { background: color-mix(in srgb, var(--k) 16%, transparent); }
 .card-act { font: 600 var(--fs-xs)/1 var(--sans); color: var(--k); background: transparent; border: 1px solid color-mix(in srgb, var(--k) 55%, transparent); border-radius: var(--r-md); padding: 6px 9px; cursor: pointer; white-space: nowrap; }
 .card-x { width: 26px; height: 26px; border: 0; background: transparent; color: var(--muted); border-radius: var(--r-sm); cursor: pointer; font-size: var(--fs-sm); }
 .card-x:hover { background: var(--surface-3); color: var(--text-strong); }
