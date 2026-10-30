@@ -1,0 +1,373 @@
+<title>D&amp;D Beyond Overlay</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one column. A browser window with D&D Beyond's sheet drawn as a plain grey stand-in (not their design) and
+   askdnd's panel beside it, stepped through one change; then the four states, a phone, the DM's loot, the menu bar
+   pill, and questions. askdnd is dark only, so this page is too; its colors are askdnd's tokens, set explicitly. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #6f6b64; --chrome: #0f1113;
+  --red: #d64545; --red-soft: rgba(214, 69, 69, .14); --red-text: #f08a8a;
+  --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .15);
+  --stand: #3a3d42; --stand-2: #2d3034; --stand-ink: #8f9196;  /* the grey stand-in for D&D Beyond's page */
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --serif: "Iowan Old Style", Palatino, Georgia, serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.6 var(--sans); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 36px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.4rem/1.25 var(--serif); }
+h3 { font: 600 1rem/1.35 var(--sans); }
+p { margin: 0; }
+.eyebrow { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red-text); }
+header.top { display: grid; gap: 12px; max-width: 78ch; }
+.sec-head { display: grid; gap: 6px; margin-bottom: 14px; max-width: 78ch; }
+.sec-head p { color: var(--muted); }
+.rule { padding: 16px 18px; border: 1px solid var(--line); border-left: 3px solid var(--green); border-radius: 0 12px 12px 0; background: var(--surface); display: grid; gap: 6px; max-width: 78ch; }
+.rule b { color: var(--strong); font: 600 1.1rem/1.35 var(--serif); }
+
+/* State chips: the same four everywhere */
+.st { display: inline-flex; align-items: center; gap: 6px; font: 600 .78rem/1 var(--sans); border-radius: 999px; padding: 5px 10px; white-space: nowrap; }
+.st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.st.live { background: var(--green-soft); color: var(--green); }
+.st.wait { background: var(--amber-soft); color: var(--amber); }
+.st.wait::before { animation: pulse 1s ease-in-out infinite; }
+.st.off { background: var(--red-soft); color: var(--red-text); }
+.st.seen { background: var(--blue-soft); color: var(--blue); }
+@keyframes pulse { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .st.wait::before { animation: none; } }
+
+/* Step switcher */
+.steps { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.steps button { font: 500 .86rem/1 var(--sans); color: var(--text); background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 9px 13px; cursor: pointer; }
+.steps button[aria-pressed="true"] { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.steps button:focus-visible, .btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.step-note { color: var(--muted); font-size: .92rem; margin: 0 0 12px; max-width: 80ch; min-height: 3em; }
+
+/* The browser window */
+.browser { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--chrome); }
+.b-bar { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+.b-dots { display: flex; gap: 6px; } .b-dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--surface-3); }
+.b-url { flex: 1; min-width: 0; font-size: .8rem; color: var(--muted); background: var(--surface); border-radius: 6px; padding: 4px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.b-ext { width: 22px; height: 22px; border-radius: 6px; background: var(--red); display: grid; place-items: center; color: var(--strong); font: 700 .7rem/1 var(--sans); flex: none; }
+.b-body { display: grid; grid-template-columns: minmax(0, 1fr) 340px; min-height: 520px; }
+@media (max-width: 900px) { .b-body { grid-template-columns: 1fr; } }
+
+/* D&D Beyond's sheet, as a stand-in */
+.stand { background: var(--stand-2); padding: 18px; display: grid; gap: 12px; align-content: start; color: var(--stand-ink); }
+.stand .label { font: 700 .72rem/1.3 var(--cond); letter-spacing: .08em; text-transform: uppercase; }
+.stand .boxes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.stand .box { background: var(--stand); border-radius: 6px; padding: 10px; display: grid; gap: 2px; }
+.stand .box b { color: var(--text); font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+.stand .box.hl { box-shadow: 0 0 0 2px var(--amber); }
+.stand .box.ok { box-shadow: 0 0 0 2px var(--green); }
+.stand .rows { display: grid; gap: 6px; }
+.stand .r { background: var(--stand); border-radius: 6px; padding: 8px 10px; display: flex; justify-content: space-between; gap: 10px; }
+.stand .r span:last-child { color: var(--text); font-variant-numeric: tabular-nums; }
+.stand .r.hl { box-shadow: 0 0 0 2px var(--amber); } .stand .r.ok { box-shadow: 0 0 0 2px var(--green); }
+.stand .bar { height: 10px; border-radius: 4px; background: var(--stand); }
+.stand .w60 { width: 60%; } .stand .w40 { width: 40%; } .stand .w80 { width: 80%; }
+.stand .caption { font-size: .78rem; font-style: italic; }
+
+/* askdnd's panel */
+.panel { background: var(--bg); border-left: 1px solid var(--line); display: grid; align-content: start; gap: 12px; padding: 14px; min-width: 0; }
+@media (max-width: 900px) { .panel { border-left: 0; border-top: 1px solid var(--line); } }
+.p-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.p-head .who { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--strong); }
+.av { width: 26px; height: 26px; border-radius: 50%; background: #3a3226; color: var(--amber); display: grid; place-items: center; font: 700 .8rem/1 var(--sans); }
+.logo { font: 700 .8rem/1 var(--cond); letter-spacing: .06em; color: var(--red-text); text-transform: uppercase; }
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; display: grid; gap: 1px; }
+.tile small { color: var(--muted); font-size: .72rem; }
+.tile b { color: var(--strong); font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.tile .was { color: var(--faint); text-decoration: line-through; font-size: .8rem; margin-left: 4px; font-weight: 400; }
+.tile .to { color: var(--amber); font-size: .8rem; margin-left: 4px; font-weight: 600; }
+.tile.wait { border-color: var(--amber); } .tile.ok { border-color: var(--green); } .tile.off { border-color: var(--red); }
+.sect { display: grid; gap: 6px; }
+.sect h3 { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.item { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.item .nm { font-weight: 600; color: var(--strong); }
+.item .meta { color: var(--muted); font-size: .8rem; }
+.btn { font: 600 .82rem/1 var(--sans); border-radius: 8px; padding: 8px 11px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); cursor: pointer; white-space: nowrap; }
+.btn.primary { background: var(--red); border-color: var(--red); color: var(--strong); }
+.btn[disabled] { opacity: .5; cursor: default; }
+.change { border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; font-size: .88rem; border: 1px solid var(--line); background: var(--surface); }
+.change.wait { border-color: var(--amber); background: var(--amber-soft); }
+.change.ok { border-color: var(--green); background: var(--green-soft); }
+.change.off { border-color: var(--red); background: var(--red-soft); }
+.change.seen { border-color: var(--blue); background: var(--blue-soft); }
+.change > .st { justify-self: start; }
+.change .lines { display: grid; gap: 2px; color: var(--text); font-variant-numeric: tabular-nums; }
+.change .acts { display: flex; gap: 6px; flex-wrap: wrap; }
+.log { display: grid; gap: 0; border-top: 1px solid var(--line-soft); }
+.log li { list-style: none; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); font-size: .82rem; }
+.log ul, ul.log { margin: 0; padding: 0; }
+.log time { color: var(--faint); font-size: .76rem; }
+
+/* States, phone, DM, pills */
+.four { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 900px) { .four { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .four { grid-template-columns: 1fr; } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.card p { color: var(--muted); font-size: .9rem; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 820px) { .two { grid-template-columns: 1fr; } }
+.phone { width: 300px; max-width: 100%; border: 1px solid var(--line); border-radius: 28px; padding: 12px; background: var(--chrome); justify-self: center; }
+.phone .screen { background: var(--bg); border-radius: 18px; padding: 12px; display: grid; gap: 10px; min-height: 480px; align-content: start; }
+.flow { display: grid; gap: 10px; }
+.arrow { color: var(--faint); text-align: center; }
+.pills { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.menubar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--chrome); border: 1px solid var(--line); border-bottom: 2px solid var(--red); border-radius: 10px; flex-wrap: wrap; }
+.menubar .nav { color: var(--muted); font-size: .9rem; }
+.menubar .end { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+/* Questions */
+.questions { display: grid; gap: 12px; margin: 0; }
+.q { margin: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 14px 18px 16px; display: grid; gap: 10px; min-width: 0; }
+.q legend { display: contents; }
+.q .qt { font-weight: 600; color: var(--strong); }
+.choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.choices label { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-2); cursor: pointer; font-size: .9rem; }
+.choices input { accent-color: var(--blue); margin: 0; }
+.choices label:has(input:checked) { border-color: var(--blue); background: var(--blue-soft); color: var(--strong); }
+.choices label:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: 2px; }
+.notes { display: grid; gap: 4px; font-size: .82rem; color: var(--muted); }
+.notes textarea { font: .93rem/1.5 var(--sans); color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; resize: vertical; width: 100%; }
+.saved { font-size: .8rem; color: var(--green); min-height: 1.2em; } .saved.bad { color: var(--red-text); }
+.banner { padding: 10px 14px; border: 1px dashed var(--amber); border-radius: 10px; background: var(--amber-soft); font-size: .9rem; margin-bottom: 12px; }
+footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--line); padding-top: 16px; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">askdnd · mockup · Oct 27, 2026</div>
+    <h1>askdnd beside D&amp;D Beyond</h1>
+    <p>A small askdnd extension in Chrome adds askdnd's panel to your own signed-in D&amp;D Beyond tab. It hears every change on the sheet at once, and when you act in askdnd it makes the change on D&amp;D Beyond, as you. Shown with Cole, after a hit from Enemy 1 (37 of 51 HP), drinking one of his two Potions of Healing.</p>
+  </header>
+
+  <div class="rule"><b>D&amp;D Beyond confirms every change.</b><span class="muted">askdnd never shows a number as changed until it has read the change back from D&amp;D Beyond. Until then the change says it's waiting, and if it can't be made, askdnd says so and shows where to make it. The two never quietly disagree.</span></div>
+
+  <section id="computer">
+    <div class="sec-head">
+      <div class="eyebrow">On a computer</div>
+      <h2>One change, step by step</h2>
+      <p>D&amp;D Beyond's sheet is drawn as a plain grey stand-in; the real one is unchanged. Step through, or try the steps that go wrong.</p>
+    </div>
+    <div class="steps" role="group" aria-label="Step">
+      <button type="button" data-step="0" aria-pressed="true">1 · Before</button>
+      <button type="button" data-step="1" aria-pressed="false">2 · You click Drink</button>
+      <button type="button" data-step="2" aria-pressed="false">3 · On D&amp;D Beyond</button>
+      <button type="button" data-step="3" aria-pressed="false">If it can't be made</button>
+      <button type="button" data-step="4" aria-pressed="false">If you change it on D&amp;D Beyond</button>
+    </div>
+    <p class="step-note" id="note" aria-live="polite"></p>
+    <div class="browser">
+      <div class="b-bar"><span class="b-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="b-url">dndbeyond.com/characters/… · Cole Lockhard</span><span class="b-ext" title="The askdnd extension">a</span></div>
+      <div class="b-body">
+        <div class="stand" aria-label="D&amp;D Beyond's character sheet, as a stand-in">
+          <span class="label">D&amp;D Beyond's character sheet (stand-in, not their design)</span>
+          <div class="boxes">
+            <div class="box" id="s-hp"><span>Hit points</span><b id="s-hp-v">37 / 51</b></div>
+            <div class="box"><span>Armor class</span><b>16</b></div>
+            <div class="box"><span>Speed</span><b>45 ft</b></div>
+            <div class="box"><span>Initiative</span><b>+3</b></div>
+          </div>
+          <div class="bar w60"></div><div class="bar w40"></div>
+          <span class="label">Inventory</span>
+          <div class="rows">
+            <div class="r" id="s-pot"><span>Potion of Healing</span><span id="s-pot-v">×2</span></div>
+            <div class="r"><span>Immovable Rod</span><span>×1</span></div>
+            <div class="r"><span>Soul Coin</span><span>×1</span></div>
+            <div class="r"><span>Coins</span><span>654 gp</span></div>
+          </div>
+          <div class="bar w80"></div><div class="bar w60"></div>
+          <span class="caption" id="s-cap"></span>
+        </div>
+        <aside class="panel" aria-label="askdnd's panel">
+          <div class="p-head"><span class="who"><span class="av">C</span>Cole <span class="logo">askdnd</span></span><span class="st live" id="p-status">Live with D&amp;D Beyond</span></div>
+          <div class="tiles">
+            <div class="tile" id="p-hp"><small>Hit points</small><b id="p-hp-v">37<span class="was" hidden></span><span class="to" hidden></span></b></div>
+            <div class="tile"><small>AC</small><b>16</b></div>
+            <div class="tile"><small>Speed</small><b>45</b></div>
+          </div>
+          <div class="sect"><h3>Healing and items to use</h3>
+            <div class="item"><div><div class="nm">Potion of Healing <span class="meta" id="p-pot">×2</span></div><div class="meta">Heals 2d4 + 2 · bonus action</div></div><button type="button" class="btn primary" id="p-drink">Drink</button></div>
+          </div>
+          <div id="p-change"></div>
+          <div class="sect"><h3>What changed</h3><ul class="log" id="p-log"></ul></div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section id="states">
+    <div class="sec-head">
+      <div class="eyebrow">Everywhere in askdnd</div>
+      <h2>Four states, never a fifth</h2>
+      <p>Every number that lives on D&amp;D Beyond carries one of these, on the panel, on Battle, on Party and on the fight screen.</p>
+    </div>
+    <div class="four">
+      <div class="card"><span class="st live">Live with D&amp;D Beyond</span><p>What you see is what D&amp;D Beyond has, read moments ago.</p></div>
+      <div class="card"><span class="st wait">Waiting for D&amp;D Beyond</span><p>You've made a change in askdnd; it's being made on D&amp;D Beyond. Usually a second or two. The old number stays until it's confirmed.</p></div>
+      <div class="card"><span class="st off">Not on D&amp;D Beyond yet</span><p>It couldn't be made: the extension is off, you're on a phone, or D&amp;D Beyond changed. askdnd keeps the change listed until it appears there.</p></div>
+      <div class="card"><span class="st seen">Changed on D&amp;D Beyond</span><p>Someone changed it on D&amp;D Beyond itself. askdnd shows it at once and adds it to What changed.</p></div>
+    </div>
+  </section>
+
+  <section id="phone">
+    <div class="two">
+      <div class="sec-head">
+        <div class="eyebrow">Without the extension</div>
+        <h2>On a phone, askdnd lists what to make</h2>
+        <p>Chrome on a phone can't run extensions, so askdnd can't make the change itself. It keeps the change as Not on D&amp;D Beyond yet, with a button that opens the right place there, and ticks it off by itself once D&amp;D Beyond has it. Nothing else changes until then: the potion still counts as two everywhere.</p>
+      </div>
+      <div class="phone" aria-label="askdnd on a phone">
+        <div class="screen">
+          <div class="p-head"><span class="who"><span class="av">C</span>Cole</span><span class="st off">1 not on D&amp;D Beyond</span></div>
+          <div class="change off"><b>Make this on D&amp;D Beyond</b><div class="lines"><span>Potion of Healing ×2 → ×1</span><span>Hit points 37 → 44 (rolled 7)</span></div><div class="acts"><button type="button" class="btn primary">Open in D&amp;D Beyond</button><button type="button" class="btn">Undo</button></div><span class="muted" style="font-size:.8rem">askdnd ticks this off when D&amp;D Beyond has it.</span></div>
+          <div class="tiles"><div class="tile off"><small>Hit points</small><b>37</b></div><div class="tile"><small>AC</small><b>16</b></div><div class="tile"><small>Speed</small><b>45</b></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="loot">
+    <div class="sec-head">
+      <div class="eyebrow">The DM</div>
+      <h2>Loot goes into D&amp;D Beyond's Party Inventory</h2>
+      <p>The DM hands out loot from askdnd, and the DM's extension puts it in D&amp;D Beyond's Party Inventory, the shared space next to each player's own. Players take it from there, on D&amp;D Beyond or through askdnd, so loot never lives only in askdnd.</p>
+    </div>
+    <div class="four">
+      <div class="card"><h3>1 · The DM in askdnd</h3><div class="item"><div><div class="nm">Flame Tongue Longsword</div><div class="meta">from the Dungeon Master's Guide</div></div><button type="button" class="btn">Give to the party</button></div></div>
+      <div class="card"><h3>2 · Waiting</h3><div class="change wait"><span class="st wait">Waiting for D&amp;D Beyond</span><div class="lines"><span>Party Inventory: + Flame Tongue Longsword</span></div></div></div>
+      <div class="card"><h3>3 · In the Party Inventory</h3><div class="change ok"><span class="st live">On D&amp;D Beyond</span><div class="lines"><span>Party Inventory: Flame Tongue Longsword</span></div></div></div>
+      <div class="card"><h3>4 · On Party › Items</h3><div class="item"><div><div class="nm">Flame Tongue Longsword</div><div class="meta">In the party's inventory</div></div><button type="button" class="btn">Take it</button></div><p>Taking it moves it to that character's own inventory on D&amp;D Beyond, with the same four states.</p></div>
+    </div>
+  </section>
+
+  <section id="menubar">
+    <div class="sec-head">
+      <div class="eyebrow">At a glance</div>
+      <h2>askdnd's menu bar says how it's connected</h2>
+    </div>
+    <div class="flow">
+      <div class="menubar"><span class="logo">askdnd</span><span class="nav">Story</span><span class="nav">Campaign</span><span class="nav">Cole</span><span class="nav">Party ▾</span><span class="end"><span class="st live">D&amp;D Beyond · live</span></span></div>
+      <div class="menubar"><span class="logo">askdnd</span><span class="nav">Story</span><span class="nav">Campaign</span><span class="nav">Cole</span><span class="nav">Party ▾</span><span class="end"><span class="st wait">D&amp;D Beyond · 1 waiting</span></span></div>
+      <div class="menubar"><span class="logo">askdnd</span><span class="nav">Story</span><span class="nav">Campaign</span><span class="nav">Cole</span><span class="nav">Party ▾</span><span class="end"><span class="st off">D&amp;D Beyond · extension off</span></span></div>
+    </div>
+  </section>
+
+  <section id="questions-sec">
+    <div class="sec-head">
+      <div class="eyebrow">For you</div>
+      <h2>Questions</h2>
+      <p>Your answers save as you go, and Claude reads them back from this page.</p>
+    </div>
+    <p class="banner" id="nosave" hidden>Answers can't be saved in this view. Reply in chat instead.</p>
+    <form class="questions" id="questions">
+      <fieldset class="q" data-key="o1"><legend><span class="qt">1 · Does a panel beside the D&amp;D Beyond sheet feel right, or should askdnd stay its own tab, with the extension working quietly behind it?</span></legend>
+        <div class="choices"><label><input type="radio" name="o1" value="panel" id="o1-a"> Panel beside the sheet</label><label><input type="radio" name="o1" value="tab" id="o1-b"> Its own tab</label><label><input type="radio" name="o1" value="both" id="o1-c"> Both, my choice</label></div>
+        <label class="notes"><span>Your notes</span><textarea id="o1-note" rows="2"></textarea></label><span class="saved" aria-live="polite"></span></fieldset>
+      <fieldset class="q" data-key="o2"><legend><span class="qt">2 · Are the four states clear: Live, Waiting, Not on D&amp;D Beyond yet, Changed on D&amp;D Beyond?</span></legend>
+        <div class="choices"><label><input type="radio" name="o2" value="yes" id="o2-a"> Yes</label><label><input type="radio" name="o2" value="change" id="o2-b"> Change them</label><label><input type="radio" name="o2" value="unsure" id="o2-c"> Not sure</label></div>
+        <label class="notes"><span>Your notes</span><textarea id="o2-note" rows="2"></textarea></label><span class="saved" aria-live="polite"></span></fieldset>
+      <fieldset class="q" data-key="o3"><legend><span class="qt">3 · On a phone, is a list of changes with Open in D&amp;D Beyond enough?</span></legend>
+        <div class="choices"><label><input type="radio" name="o3" value="yes" id="o3-a"> Yes</label><label><input type="radio" name="o3" value="change" id="o3-b"> Change it</label><label><input type="radio" name="o3" value="unsure" id="o3-c"> Not sure</label></div>
+        <label class="notes"><span>Your notes</span><textarea id="o3-note" rows="2"></textarea></label><span class="saved" aria-live="polite"></span></fieldset>
+      <fieldset class="q" data-key="o4"><legend><span class="qt">4 · Loot through D&amp;D Beyond's Party Inventory: does that match how your table hands out treasure?</span></legend>
+        <div class="choices"><label><input type="radio" name="o4" value="yes" id="o4-a"> Yes</label><label><input type="radio" name="o4" value="change" id="o4-b"> Change it</label><label><input type="radio" name="o4" value="unsure" id="o4-c"> Not sure</label></div>
+        <label class="notes"><span>Your notes</span><textarea id="o4-note" rows="2"></textarea></label><span class="saved" aria-live="polite"></span></fieldset>
+      <fieldset class="q" data-key="general"><legend><span class="qt">Anything else?</span></legend>
+        <label class="notes"><span>Your notes</span><textarea id="general-note" rows="3"></textarea></label><span class="saved" aria-live="polite"></span></fieldset>
+    </form>
+  </section>
+
+  <footer>askdnd · a mockup for the one-day proof (an extension for Cole only). Not built. D&amp;D Beyond's page is a stand-in, not their design.</footer>
+</div>
+
+<script>
+// The step-through: one change (Cole drinks a Potion of Healing, rolled 7) in each state, on both sides of the window.
+(function () {
+  const STEPS = [
+    { note: "Cole has 37 of 51 hit points and two Potions of Healing. askdnd's panel shows the same numbers D&D Beyond has, live.",
+      sHp: "37 / 51", sPot: "×2", sHl: "", status: ["live", "Live with D&D Beyond"], hp: { v: "37" }, pot: "×2", drink: true, change: "",
+      log: [["Cole: hit points 51 → 37 (Enemy 1's claw, 14 slashing)", "2 min ago"]], cap: "" },
+    { note: "You click Drink in askdnd and it rolls 7 (2d4 + 2). askdnd asks the extension to make both changes on D&D Beyond. The old numbers stay, marked as waiting.",
+      sHp: "37 / 51", sPot: "×2", sHl: "hl", status: ["wait", "1 waiting"], hp: { v: "37", to: "→ 44", cls: "wait" }, pot: "×2 → ×1", drink: false,
+      change: '<div class="change wait"><span class="st wait">Waiting for D&amp;D Beyond</span><div class="lines"><span>Potion of Healing ×2 → ×1</span><span>Hit points 37 → 44 (rolled 7)</span></div></div>',
+      log: [["Cole: hit points 51 → 37 (Enemy 1's claw, 14 slashing)", "2 min ago"]], cap: "The extension is making the change here, in your tab, as you." },
+    { note: "D&D Beyond now has 44 hit points and one potion. askdnd read them back, so the panel shows them as live and adds the change to What changed.",
+      sHp: "44 / 51", sPot: "×1", sHl: "ok", status: ["live", "Live with D&D Beyond"], hp: { v: "44", cls: "ok" }, pot: "×1", drink: true,
+      change: '<div class="change ok"><span class="st live">On D&amp;D Beyond</span><div class="lines"><span>Potion of Healing ×1 · hit points 44</span></div></div>',
+      log: [["Cole drank a Potion of Healing: hit points 37 → 44, potions 2 → 1", "just now"], ["Cole: hit points 51 → 37 (Enemy 1's claw, 14 slashing)", "2 min ago"]], cap: "" },
+    { note: "The change couldn't be made (here, the extension was off). Nothing pretends otherwise: D&D Beyond still says 37 and two potions, and askdnd shows both as not made yet, with what to do.",
+      sHp: "37 / 51", sPot: "×2", sHl: "", status: ["off", "1 not on D&D Beyond"], hp: { v: "37", to: "→ 44", cls: "off" }, pot: "×2", drink: false,
+      change: '<div class="change off"><span class="st off">Not on D&amp;D Beyond yet</span><div class="lines"><span>Potion of Healing ×2 → ×1</span><span>Hit points 37 → 44 (rolled 7)</span></div><div class="acts"><button type="button" class="btn primary">Try again</button><button type="button" class="btn">Open in D&amp;D Beyond</button><button type="button" class="btn">Undo</button></div></div>',
+      log: [["Cole: hit points 51 → 37 (Enemy 1's claw, 14 slashing)", "2 min ago"]], cap: "The extension is off, so this page wasn't changed." },
+    { note: "Cole changes his hit points on D&D Beyond itself (another hit, 14 damage). The extension tells askdnd at once; the panel shows it and lists it, marked as changed on D&D Beyond.",
+      sHp: "30 / 51", sPot: "×1", sHl: "ok", status: ["seen", "Changed on D&D Beyond"], hp: { v: "30", cls: "ok" }, pot: "×1", drink: true,
+      change: '<div class="change seen"><span class="st seen">Changed on D&amp;D Beyond</span><div class="lines"><span>Hit points 44 → 30</span></div></div>',
+      log: [["Cole (on D&D Beyond): hit points 44 → 30", "just now"], ["Cole drank a Potion of Healing: hit points 37 → 44, potions 2 → 1", "1 min ago"], ["Cole: hit points 51 → 37 (Enemy 1's claw, 14 slashing)", "3 min ago"]], cap: "Changed here, by hand. askdnd heard it within a second." },
+  ];
+  const $ = id => document.getElementById(id);
+  function render(i) {
+    const s = STEPS[i];
+    document.querySelectorAll('.steps button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.step === i)));
+    $('note').textContent = s.note;
+    $('s-hp-v').textContent = s.sHp; $('s-pot-v').textContent = s.sPot;
+    ['s-hp', 's-pot'].forEach(id => { $(id).classList.remove('hl', 'ok'); if (s.sHl) $(id).classList.add(s.sHl); });
+    $('s-cap').textContent = s.cap;
+    const st = $('p-status'); st.className = 'st ' + s.status[0]; st.textContent = s.status[1];
+    const hp = $('p-hp'); hp.className = 'tile' + (s.hp.cls ? ' ' + s.hp.cls : '');
+    const b = $('p-hp-v'); b.firstChild.textContent = s.hp.v;
+    const to = b.querySelector('.to'); to.hidden = !s.hp.to; to.textContent = s.hp.to || '';
+    $('p-pot').textContent = s.pot; $('p-drink').disabled = !s.drink;
+    $('p-change').innerHTML = s.change;
+    const log = $('p-log'); log.textContent = '';
+    s.log.forEach(([t, w]) => { const li = document.createElement('li'); const a = document.createElement('span'); a.textContent = t; const tm = document.createElement('time'); tm.textContent = w; li.append(a, tm); log.append(li); });
+  }
+  document.querySelectorAll('.steps button').forEach(b => b.addEventListener('click', () => render(+b.dataset.step)));
+  $('p-drink').addEventListener('click', () => render(1));
+  render(0);
+})();
+
+// Brett's answers, saved in this page's store (answers/<key>: {choice, note, updatedAt}) for Claude to read back.
+(function () {
+  const form = document.getElementById('questions');
+  form.addEventListener('submit', e => e.preventDefault());
+  if (!window.claude || !window.claude.use) { document.getElementById('nosave').hidden = false; return; }
+  claude.use('db').then(db => {
+    if (!db) { document.getElementById('nosave').hidden = false; return; }
+    const state = {}, timers = {}, busy = {};
+    const body = q => ({ choice: (q.querySelector('input:checked') || {}).value || '', note: q.querySelector('textarea').value });
+    const mark = (q, text, bad) => { const s = q.querySelector('.saved'); s.textContent = text; s.classList.toggle('bad', !!bad); };
+    async function save(q) {
+      const key = q.dataset.key, now = body(q);
+      if (state[key] && state[key].choice === now.choice && state[key].note === now.note) return;
+      if (busy[key]) { timers[key] = setTimeout(() => save(q), 400); return; }
+      busy[key] = true;
+      try { await db.doc('answers/' + key).set({ ...now, updatedAt: new Date().toISOString() }); state[key] = now; mark(q, 'Saved'); }
+      catch (e) { mark(q, e && e.code === 'invalid_argument' ? "Only the page's owner can save answers here." : "Couldn't save. Try again in a moment.", true); }
+      finally { busy[key] = false; }
+    }
+    const later = (q, ms) => { clearTimeout(timers[q.dataset.key]); timers[q.dataset.key] = setTimeout(() => save(q), ms); };
+    form.addEventListener('change', e => { const q = e.target.closest('.q'); if (q) later(q, 0); });
+    form.addEventListener('input', e => { const q = e.target.closest('.q'); if (q && e.target.tagName === 'TEXTAREA') { mark(q, ''); later(q, 900); } });
+    db.collection('answers').get().then(snap => {
+      snap.docs.forEach(d => {
+        const q = form.querySelector('.q[data-key="' + d.id + '"]'), v = d.data() || {};
+        if (!q) return;
+        state[d.id] = { choice: v.choice || '', note: v.note || '' };
+        const r = v.choice && q.querySelector('input[value="' + v.choice + '"]'); if (r) r.checked = true;
+        const t = q.querySelector('textarea'); if (t && !t.value) t.value = v.note || '';
+      });
+    }).catch(() => {});
+  });
+})();
+</script>

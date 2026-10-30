@@ -123,8 +123,11 @@ def _now() -> str:
 
 
 def _lock(db: Session, character_id: int) -> None:
-    """Hold this character's row until the transaction ends: one copy of the app at a time builds or settles its batch."""
-    db.execute(select(Character.id).where(Character.id == character_id).with_for_update())
+    """Hold this character's row until the transaction ends: one copy of the app at a time builds or settles its batch.
+    FOR NO KEY UPDATE, never FOR UPDATE (Sentry ASKDND-V2-5, 2026-10-29): a request saving a bridge change holds the
+    light hold its new row's character link takes; FOR UPDATE waited on it while that request waited on this one's own
+    update of the row (sheet heard), and the two deadlocked. This still keeps out every other writer of the row."""
+    db.execute(select(Character.id).where(Character.id == character_id).with_for_update(key_share=True))
 
 
 def _log(db: Session, character_id: int, text: str, state: str) -> None:

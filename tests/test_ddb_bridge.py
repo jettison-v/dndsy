@@ -878,3 +878,18 @@ def test_marking_askdnd_awake_never_waits_for_another_request(db_engine):
         with Session(db_engine) as s:
             s.execute(delete(ToolSetting).where(ToolSetting.key == ddb_bridge.AWAKE_KEY))
             s.commit()
+
+
+def test_the_batch_lock_never_waits_on_a_new_changes_character_link():
+    """Sentry ASKDND-V2-5 (2026-10-29): the batch lock is FOR NO KEY UPDATE. FOR UPDATE waited on the light hold a new
+    bridge change takes on its character's row, while that request waited on the lock's own update, and they deadlocked."""
+    from sqlalchemy.dialects import postgresql
+
+    seen = []
+
+    class Db:
+        def execute(self, stmt):
+            seen.append(str(stmt.compile(dialect=postgresql.dialect())))
+
+    ddb_bridge._lock(Db(), 9)
+    assert seen and seen[0].endswith("FOR NO KEY UPDATE")
