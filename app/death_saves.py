@@ -23,6 +23,7 @@ from fastapi.responses import JSONResponse, Response
 from sqlalchemy.orm import Session
 
 from app import characters as chars
+from app import conditions as cond
 from app import ddb_bridge, picks, web
 from app.auth import current_user
 from app.db import get_db
@@ -30,7 +31,7 @@ from app.models import Campaign, Character
 
 router = APIRouter()
 
-UNCONSCIOUS = "condition:15"  # D&D Beyond's id (app/ddb_fields.py CONDITIONS)
+UNCONSCIOUS = cond.ddb_field("Unconscious")
 MARKS = {"success": (1, 0), "failure": (0, 1), "nat1": (0, 2), "nat20": (0, 0)}  # (successes, failures)
 SAID = {"success": "a success", "failure": "a failure", "nat1": "a natural 1: two failures", "nat20": "a natural 20: back with 1 Hit Point"}
 

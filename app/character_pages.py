@@ -577,8 +577,7 @@ def start_condition(request: Request, character_id: int, name: str = Form(...), 
     synced = ddb_bridge.on_for(db, ch) and name in cond.ON_DDB
     if synced:
         ddb_bridge.reach(ch)
-        field = "exhaustion" if name == "Exhaustion" else f"condition:{cond.DDB_ID[name]}"
-        ddb_bridge.add(db, ch, "set", {"field": field, "value": own[-1].get("level", True)}, f"{ch.name}: {label}")
+        ddb_bridge.add(db, ch, "set", {"field": cond.ddb_field(name), "value": own[-1].get("level", True)}, f"{ch.name}: {label}")
     ch.conditions = own
     db.commit()
     return _concentration_reply(request, db, ch, user, label + (": on its way to D&D Beyond" if synced else ""), deliver=synced)
@@ -622,14 +621,15 @@ def end_condition(request: Request, character_id: int, name: str = Form(...), db
     user, ch, stop = _concentration_guard(request, db, character_id)
     if stop:
         return stop
-    now = next((c for c in listed(db, ch, chars.character_summary(ch)) if c["name"] == name), None)
+    # as shown, with what's on its way: one still on its way to D&D Beyond is ended there too (review, 2026-10-29: it
+    # landed after it was ended)
+    now = next((c for c in listed(db, ch, ddb_bridge.as_shown(db, ch, chars.character_summary(ch))) if c["name"] == name), None)
     synced = bool(now and now.get("on_ddb")) and ddb_bridge.on_for(db, ch)
     if now and now.get("on_ddb") and not synced:
         raise HTTPException(409, f"{name} is ticked on {ch.name}'s D&D Beyond sheet: end it there, and askdnd shows it when it next reads the sheet.")
     if synced:
         ddb_bridge.reach(ch)
-        field = "exhaustion" if name == "Exhaustion" else f"condition:{cond.DDB_ID[name]}"
-        ddb_bridge.add(db, ch, "set", {"field": field, "value": 0 if name == "Exhaustion" else False}, f"{ch.name}: no longer {name}")
+        ddb_bridge.add(db, ch, "set", {"field": cond.ddb_field(name), "value": 0 if name == "Exhaustion" else False}, f"{ch.name}: no longer {name}")
     ch.conditions = cond.end(ch.conditions, name) or None
     db.commit()
     return _concentration_reply(request, db, ch, user, f"No longer {name}" + (": on its way to D&D Beyond" if synced else ""), deliver=synced)
