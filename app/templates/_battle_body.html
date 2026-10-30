@@ -125,7 +125,7 @@
       {% if col.item_count %}{# Items follow pinning; the rest are in the side panel (Brett, 2026-10-30) #}
       <h3 class="items-head">Items</h3>
       {% if col["items"] %}<div class="moves"{% if can_pick and not form %} data-sort-column="{{ cost }} items" data-sort-url="/characters/{{ c.id }}/order"{% endif %}>{% for o in col["items"] %}{{ move(o) }}{% endfor %}</div>{% endif %}
-      <div class="seeall"><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/{{ slug }}?items=1">All items ({{ col.item_count }}) →</a></div>
+      <div class="seeall items-all"><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/{{ slug }}?items=1">All items ({{ col.item_count }}) →</a></div>
       {% endif %}
       {% if cost == "Action" and form %}<div class="move static"><b>Dash, Disengage, Dodge, Help, Hide, Influence, Magic, Search, Study, Utilize</b><div class="meta">What anyone can do. Magic covers features like Land's Aid; spells only {{ "as listed above" if form.castable else "if a feature allows it" }}.</div></div>
       {% elif cost == "Action" %}<div class="move static"><b>Attack, Dash, Disengage, Dodge, Help, Hide, Influence, Magic, Ready, Search, Study, Utilize</b><div class="meta">What anyone can do</div></div>{% endif %}
@@ -133,6 +133,15 @@
     </div>
     {% endfor %}
   </div>
+  {% set unprompted = columns.get("No action") %}
+  {% if unprompted and (unprompted.shown or unprompted.item_count) %}{# Items that just happen (Brett, 2026-10-30) #}
+  <div class="section riders">
+    <h2 class="econ-head k-hit">No action needed<small>These happen on their own when something sets them off.</small></h2>
+    {% for o in unprompted.shown %}{{ move(o) }}{% endfor %}
+    {% if unprompted["items"] %}<div class="moves"{% if can_pick and not form %} data-sort-column="No action items" data-sort-url="/characters/{{ c.id }}/order"{% endif %}>{% for o in unprompted["items"] %}{{ move(o) }}{% endfor %}</div>{% endif %}
+    {% if unprompted.item_count %}<div class="seeall"><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/none?items=1">All items ({{ unprompted.item_count }}) →</a></div>{% endif %}
+  </div>
+  {% endif %}
   {% if riders and not form %}
   <div class="section riders">
     <h2 class="econ-head k-hit">On a hit<small>Extras you can add when an attack hits (or misses). No action needed unless it says so.</small></h2>

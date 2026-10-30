@@ -15,13 +15,13 @@ Nothing here decides what an item does beyond its numbers: other effects are the
 """
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from sqlalchemy.orm import Session
 
 from app import character_views as views
 from app import characters as chars
 from app import conditions as cond
-from app import ddb_bridge, ddb_sheet, hit_points, live, picks, realtime, table_rolls, web
+from app import ddb_bridge, ddb_sheet, hit_points, house_rules, live, picks, realtime, table_rolls, web
 from app.auth import current_user, is_dm
 from app.db import get_db
 from app.models import Character, TableRoll
@@ -38,7 +38,8 @@ def _guard(db: Session, request: Request, character_id: int) -> tuple[Character,
 
 
 def _sheet(db: Session, ch: Character) -> dict:
-    return ddb_bridge.as_shown(db, ch, chars.character_summary(ch)) or {}
+    sheet = views.apply_overrides(ddb_bridge.as_shown(db, ch, chars.character_summary(ch)) or {}, house_rules.sheet_overrides(db)) or {}
+    return {**sheet, "_item_choices": ch.item_choices}
 
 
 def _item(db: Session, ch: Character, item_id: int) -> tuple[dict, dict]:
@@ -126,6 +127,24 @@ def use(request: Request, character_id: int, item_id: int, to: str = Form(""), d
         db.refresh(row)
         out |= table_rolls.reply_body(request, db, row, me.id, is_dm(user))
     return JSONResponse(out)
+
+
+@router.post("/characters/{character_id:int}/items/{item_id:int}/kind")
+def mark_kind(request: Request, character_id: int, item_id: int, kind: str = Form(""), db: Session = Depends(get_db)):
+    """Which kind this copy of an item is, marked by its player (conditions.item_options). Kept on the character until
+    askdnd has its own inventory (Brett, 2026-10-30)."""
+    user, ch = current_user(request), db.get(Character, character_id)
+    if not user or not ch or not picks.can_edit(db, user, ch):
+        raise HTTPException(404)
+    it = next((x for x in (chars.character_summary(ch) or {}).get("inventory") or [] if x["key"] == f"item:{item_id}"), None)
+    kinds = cond.item_options(it) if it else None
+    if not kinds or (kind and kind not in [c["name"] for c in kinds["choices"]]):
+        raise HTTPException(404)
+    ch.item_choices = {k: v for k, v in {**ch.item_choices, str(item_id): kind}.items() if v}
+    db.commit()
+    out = Response(status_code=204)
+    out.headers["HX-Trigger"] = web.changed(ch, toast=f"{it['name']}: {kind}" if kind else f"{it['name']}: not marked")
+    return out
 
 
 @router.post("/characters/{character_id:int}/use/{item_id:int}/undo")

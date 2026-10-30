@@ -1,0 +1,219 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Correction Ladder</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* How askdnd works out one thing about an item (Brett, 2026-10-30): five steps, the first that answers wins. One page:
+   where you'll find it, the ladder to try on example items, what exists and what's new, the correction box, then what's
+   for Brett to decide. askdnd is dark only, so this page is too. */
+:root { --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --chrome: #0f1113; --line: #34383e; --line-soft: #2c3036;
+  --line-strong: #4a4f57; --text: #ebe7df; --strong: #fff; --muted: #a29d93; --faint: #6f6b64;
+  --red: #d64545; --red-text: #f08a8a; --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .14); --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .15);
+  --k-action: #ef6b6b; --k-bonus: var(--amber); --k-reaction: #6fa8ff;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.6 var(--sans); margin: 0; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 36px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 34px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.4rem/1.25 var(--serif); }
+h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+section { display: grid; gap: 14px; min-width: 0; }
+.eyebrow { font: 700 .78rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red-text); }
+.label { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+header.top { display: grid; gap: 12px; max-width: 76ch; }
+.lead { font-size: 1.05rem; }
+.muted { color: var(--muted); } .small { font-size: .86rem; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.box.ask { border-color: var(--red); }
+.box ol, .box ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+.chip { display: inline-block; font: 700 .68rem/1 var(--cond); letter-spacing: .06em; text-transform: uppercase; border-radius: 999px; padding: 4px 8px; white-space: nowrap; }
+.chip.built { background: var(--green-soft); color: var(--green); }
+.chip.new { background: var(--amber-soft); color: var(--amber); }
+.chip.part { background: var(--blue-soft); color: var(--blue); }
+
+.try { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 860px) { .try { grid-template-columns: 1fr; } }
+.controls { display: grid; gap: 10px; }
+.ctl { display: grid; gap: 5px; }
+.ctl > span, .ctl > label { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+select { font: 500 .9rem/1.2 var(--sans); color: var(--text); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 8px; padding: 8px 10px; width: 100%; }
+select:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.ladder { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.rung { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; align-items: center; padding: 9px 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; }
+.rung .n { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font: 700 .95rem/1 var(--cond); background: var(--surface-3); color: var(--muted); }
+.rung .said { font-size: .82rem; color: var(--muted); }
+.rung.skip { opacity: .5; }
+.rung.win { background: var(--green-soft); border-color: var(--green); }
+.rung.win .n { background: var(--green); color: var(--chrome); }
+.rung.after { opacity: .3; }
+.result { display: grid; gap: 8px; }
+.col { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; }
+.col h4 { margin: 0; font: 700 .82rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--k); }
+.k-action { --k: var(--k-action); } .k-bonus { --k: var(--k-bonus); } .k-reaction { --k: var(--k-reaction); }
+.row-it { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; font-size: .86rem; }
+.row-it .go { font: 600 .74rem/1 var(--sans); border: 1px solid var(--k); border-radius: 6px; padding: 4px 7px; color: var(--strong); }
+.why { font-size: .84rem; color: var(--muted); }
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+th { text-align: left; font: 700 .72rem/1.2 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 6px 10px; border-bottom: 1px solid var(--line-strong); }
+td { padding: 8px 10px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+.scroll { overflow-x: auto; }
+.panel { background: var(--chrome); border: 1px solid var(--line-strong); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; }
+.panel .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; justify-self: start; }
+.panel .seg span { padding: 7px 11px; font-size: .84rem; background: var(--surface-2); }
+.panel .seg span.on { background: var(--blue-soft); color: var(--blue); }
+.panel .field { display: grid; gap: 4px; font-size: .84rem; color: var(--muted); }
+.panel .val { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; color: var(--text); }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">Corrections · decided and built, Oct 30</div>
+    <h1>Five steps, the first answer wins</h1>
+    <p class="lead">When askdnd needs to know something about an item, such as what it costs, it starts at the top and stops at the first step that has an answer. Your own campaign's correction beats everything, so homebrew never has to change askdnd for anyone else.</p>
+  </header>
+
+  <section class="box">
+    <h2>Where you'll find it</h2>
+    <ol>
+      <li><b>To make a correction:</b> open any item from a character page, so its side panel shows. The Admin box at the bottom of that panel becomes a <b>Correct this</b> box, with a choice of who it's for.</li>
+      <li><b>Your campaign's corrections</b> are listed on <b>Manage › House rules</b>, beside your spell rulings. The DM can remove them there.</li>
+      <li><b>askdnd's corrections</b> stay on <b>⚙ Admin › Tool corrections</b>, the page in your screenshot.</li>
+      <li><b>To see why:</b> the side panel says where the answer came from, under the item's cost.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Try it</h2>
+    <p class="muted">Pick an item, then add a correction at either level. Example items, nothing here changes anything.</p>
+    <div class="try">
+      <ol class="ladder" id="ladder" aria-label="The five steps"></ol>
+      <div class="box">
+        <div class="controls">
+          <div class="ctl"><label for="item">Item</label><select id="item"></select></div>
+          <div class="ctl"><label for="mine">1 · This campaign's correction</label><select id="mine"></select></div>
+          <div class="ctl"><label for="global">2 · askdnd's correction</label><select id="global"></select></div>
+        </div>
+        <div class="result" id="result"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="box">
+    <h2>What exists and what's new</h2>
+    <p class="muted">Less is missing than it looks. askdnd already reads your order for the first two steps; there's just no way yet to make a step 1.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Step</th><th>Today</th><th>This work</th></tr></thead>
+      <tbody>
+        <tr><td><b>1 · This campaign's correction</b></td><td><span class="chip part">Half built</span> askdnd checks for one first, but nothing can create it. House rules only covers spells.</td><td>The Correct this box and its list on House rules.</td></tr>
+        <tr><td><b>2 · askdnd's correction</b></td><td><span class="chip built">Built</span> The Admin box and Tool corrections.</td><td>Moves into the same box.</td></tr>
+        <tr><td><b>3 · A rule that covers it</b></td><td><span class="chip built">Built</span> Every potion is a Bonus Action.</td><td>Nothing.</td></tr>
+        <tr><td><b>4 · The item's own description</b></td><td><span class="chip built">Built</span> Read the same for every table.</td><td>Nothing.</td></tr>
+        <tr><td><b>5 · Neither</b></td><td><span class="chip built">Built</span> Under Action, no cost stated, never guessed.</td><td>Nothing.</td></tr>
+        <tr><td><b>Saying why</b></td><td><span class="chip new">New</span> A correction changes the column, but the item's window still shows the old cost.</td><td>Show the answer everywhere, and where it came from.</td></tr>
+      </tbody>
+    </table></div>
+    <p class="small muted">Rulebooks your campaign owns already work the same way: the campaign's own, then its books, then the SRD. This adds the same idea for corrections.</p>
+  </section>
+
+  <section class="grid2">
+    <div class="box">
+      <h2>The Correct this box</h2>
+      <p class="muted small">In an item's side panel, for the DM of this campaign and admins. A player doesn't see it.</p>
+      <div class="panel">
+        <div class="seg"><span class="on">This campaign</span><span>Everyone (admins)</span></div>
+        <div class="field">What it costs<span class="val">Reaction</span></div>
+        <div class="field">On Battle<span class="val">As askdnd chooses</span></div>
+        <div class="field">Why, in a few words<span class="val">Our Lifewell Tattoo is a Reaction at this table</span></div>
+      </div>
+    </div>
+    <div class="box">
+      <h2>What it means for a homebrew item</h2>
+      <p>Your DM makes up a sword that costs a Bonus Action to activate, in a campaign where D&amp;D Beyond's description says nothing.</p>
+      <ol>
+        <li>Without a correction it lands on step 5: under Action, no cost shown.</li>
+        <li>The DM opens it, picks Bonus action, This campaign. It moves to the Bonus action column for that table.</li>
+        <li>No other campaign changes. If the same name appears elsewhere, it still follows steps 2 to 5 there.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <h2>Questions for you</h2>
+    <div class="grid2">
+      <div class="box ask">
+        <div class="label">1 · Where do campaign corrections live?</div>
+        <p><b>A, recommended: on House rules.</b> It's already the DM's page for "this table does it differently", so it stays one place.</p>
+        <p class="muted"><b>B: a new Corrections page in the campaign's Manage.</b> Matches Tool corrections, but it's one more page, and spells and items get split apart.</p>
+      </div>
+      <div class="box ask">
+        <div class="label">2 · Who can make them?</div>
+        <p><b>A, recommended: the DM and admins for a campaign; only admins for everyone.</b> The DM makes every ruling at their own table.</p>
+        <p class="muted"><b>B: admins only.</b> Simpler, but your DM would have to ask you each time. Today you're both, so this matters when another group joins.</p>
+      </div>
+      <div class="box ask">
+        <div class="label">3 · What can a campaign correct?</div>
+        <p><b>A, recommended: all of it.</b> Everything the Admin box can do today: what it costs, whether it's on Battle, hidden, inventory group.</p>
+        <p class="muted"><b>B: only what it costs.</b> Smaller, but a homebrew item that should be hidden or regrouped would still need an askdnd-wide correction, which is what you're avoiding.</p>
+      </div>
+      <div class="box ask">
+        <div class="label">4 · Should the panel say where the answer came from?</div>
+        <p><b>A, recommended: yes, one quiet line.</b> For example "From this campaign's house rule", so nobody wonders why two tables differ.</p>
+        <p class="muted"><b>B: only for the DM and admins.</b> A cleaner panel for players, who can't change it anyway.</p>
+      </div>
+      <div class="box ask">
+        <div class="label">5 · Items that need no action</div>
+        <p>Lifewell Tattoo just happens when triggered. So do the Dragon-Touched Focus's Chromatic and Gem options.</p>
+        <p><b>A, recommended: a small "No action needed" section under the columns</b>, like On a hit, and a matching choice in Correct this.</p>
+        <p class="muted"><b>B: leave them under Action.</b> No new section; a little misleading.</p>
+      </div>
+      <div class="box ask">
+        <div class="label">6 · The Dragon-Touched Focus choice</div>
+        <p>Metallic, Chromatic or Gem is different: it's one character's copy, not a whole campaign's. It fits step 4, the player picking from the options the item's own text gives, and steps 1 and 2 can still overrule it.</p>
+        <p><b>A, recommended: build it after this, keeping the pick on the character</b>, and move it into your own inventory list when that exists. Trah's note can go.</p>
+        <p class="muted"><b>B: wait for the inventory list.</b> One place from the start, but the note stays for now.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+const STEPS = ["This campaign's correction", "askdnd's correction", "A rule that covers it", "The item's own description", "Neither"];
+const ITEMS = [
+  { name: "Potion of Healing", rule: "Bonus action", ruleSaid: "Every potion is a Bonus Action", text: "Bonus action", textSaid: "Its text says Bonus Action" },
+  { name: "Soul Coin", text: "Action", textSaid: 'Its text says "use its action"' },
+  { name: "Lifewell Tattoo" },
+  { name: "Elemental Gem", text: "Action", textSaid: 'Your copy\'s text says "use an action"' },
+  { name: "A homebrew sword" },
+];
+const KIND = { "Action": "action", "Bonus action": "bonus", "Reaction": "reaction" };
+const GLYPH = { action: "◆", bonus: "▲", reaction: "↺" };
+const $ = id => document.getElementById(id);
+const options = el => { el.innerHTML = ['<option value="">None</option>', ...Object.keys(KIND).map(k => `<option>${k}</option>`)].join(""); };
+$("item").innerHTML = ITEMS.map((it, i) => `<option value="${i}">${it.name}</option>`).join("");
+options($("mine")); options($("global"));
+
+function draw() {
+  const it = ITEMS[+$("item").value], mine = $("mine").value, global = $("global").value;
+  const answers = [mine, global, it.rule || "", it.text || "", "Action"];
+  const says = [mine ? `Says ${mine}` : "None for this item", global ? `Says ${global}` : "None for this item",
+    it.ruleSaid || "No rule covers this item", it.textSaid || "Its text doesn't state a cost", "Under Action, no cost stated"];
+  const win = answers.findIndex(Boolean);
+  $("ladder").innerHTML = STEPS.map((s, i) => `<li class="rung ${i === win ? "win" : i < win ? "skip" : "after"}"><span class="n">${i + 1}</span><span><b>${s}</b><br><span class="said">${says[i]}</span></span></li>`).join("");
+  const cost = answers[win], k = KIND[cost], unsaid = win === 4;
+  const from = ["this campaign's house rule", "an askdnd correction", "the rules", "the item's own description", "nothing: the item doesn't say"][win];
+  $("result").innerHTML = `<div class="col k-${k}"><h4>${GLYPH[k]} ${cost}</h4><div class="row-it"><span class="go">Use</span><span>${it.name}</span></div></div>
+    <p class="why">${unsaid ? "It doesn't state a cost, so askdnd doesn't guess." : `${cost}, from ${from}.`}</p>`;
+}
+["item", "mine", "global"].forEach(id => $(id).addEventListener("change", draw));
+draw();
+</script>
