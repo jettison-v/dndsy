@@ -697,7 +697,7 @@
     const kind = sel.value === 'minute' ? 'rounds-fixed' : sel.value;
     sel.closest('[data-lasts-form]').querySelectorAll('[data-lasts-for]').forEach(f => { f.hidden = !f.dataset.lastsFor.split(' ').includes(kind); });
   });
-  // Its reminders (app/fight.py follow): a condition that ran out, a save at the end of a turn, Concentration's time
+  // Its reminders (app/fight.py follow): a condition that ran out, a save due at the end of a turn (said as it begins), Concentration's time
   // up, each a corner card for that character's player (with what to do) and the DM (to know). They come with the page
   // (body data-reminders, drawn again whenever the fight moves on); each shows once in this browser, and only while
   // it's fresh. Nothing ends by itself: the player ends it, keeps it (the DM ruled it lasts), or rolls the save.
@@ -726,7 +726,7 @@
         continue;
       }
       if (r.kind === 'save') {
-        t.innerHTML = '<b>End of your turn:</b> ' + escText(r.text) + ' ';
+        t.innerHTML = '<b>Your turn:</b> ' + escText(r.text) + ' ';
         const roll = Object.assign(document.createElement('button'), { type: 'button', className: 'row-act', textContent: 'Roll the save' });
         Object.assign(roll.dataset, { roll: 'save', label: r.ability + ' save (' + r.name + '), DC ' + r.dc, mod: (r.mod || '+0').replace('−', '-') });
         t.append(roll);
