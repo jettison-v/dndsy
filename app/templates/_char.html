@@ -251,9 +251,11 @@
 {{ sp.casting_time }}{% if sp.range %} · {{ sp.range }}{% endif %}{% if sp.duration and sp.duration != "Instantaneous" %} · {{ sp.duration | replace("Concentration, up to ", "Conc. ") }}{% endif %}{% if sp.damage %} · {{ sp.damage }}{% elif sp.healing %} · heals {{ sp.healing }}{% endif %}
 {%- endmacro %}
 
-{% macro opt_row(c, o, picks, can_pick) -%}
+{% macro opt_row(c, o, picks, can_pick, can_use=False) -%}
+{%- set go = can_use and o.use -%}
+{%- set btn -%}{% if go %}<button type="button" class="roll-chip item-go" data-use-url="/characters/{{ c.id }}/use/{{ o.use.id }}"{% if not o.use.left %} disabled title="{{ o.use.back }}"{% endif %}>{{ o.use.verb }}</button>{% endif %}{%- endset -%}
 {{ ri(c, o.key, o.name, picks, can_pick, star=o.cost != "Other", chips=o.tags, what=o.summary or o.meta,
-      mech=o.meta if o.summary else "", hit=o.hit, uses=o.uses, spend=o.spends, hit_adv=o.adv, roll=o if o.dice or (o.hit and o.hit[0] in "+-−") else None) }}
+      mech=o.meta if o.summary else "", hit=btn if go else o.hit, uses=o.uses, spend=o.spends, hit_adv=o.adv, roll=o if not go and (o.dice or (o.hit and o.hit[0] in "+-−")) else None) }}
 {%- endmacro %}
 
 {# A character's picture from D&D Beyond (their image server). Hidden if it doesn't load. #}

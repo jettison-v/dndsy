@@ -1,0 +1,16 @@
+{# An item's window, inside the roll window (app.js "using an item"; app/item_use.py). #}
+<button type="button" class="rp-x" aria-label="Close">×</button>
+<div class="rw-title">{{ it.name }}{% if o.use.gives and o.dice and o.heal %} <span class="roll-sub">{{ o.dice }}</span>{% endif %}</div>
+<p class="use-cost">{{ o.use.said or "Its text doesn't say what it costs" }}{% if o.uses %} · {{ o.uses.left }} of {{ o.uses.max }} left{% elif o.use.left > 1 %} · {{ o.use.left }} left{% endif %}</p>
+{% if o.meta %}<p class="use-what">{{ o.meta }}</p>{% endif %}
+{% if starts %}<p class="use-what">Starts {{ starts }}.</p>{% endif %}
+{% if reachable %}
+<div class="rw-row">
+  <button type="button" class="btn primary small" data-use-go>{{ o.use.verb }}</button>
+  {% if others %}<button type="button" class="btn small" data-use-give aria-expanded="false">Give</button>{% endif %}
+</div>
+{% if others %}<div class="rw-row use-names" hidden><span class="note">Give it to</span>{% for n in others %}<button type="button" class="btn small" data-use-go data-to="{{ n }}">{{ n }}</button>{% endfor %}</div>{% endif %}
+<p class="use-said" role="alert" hidden></p>
+{% else %}
+<p class="use-said">{{ c.name }}'s D&amp;D Beyond sheet can't be reached: open it in Chrome with the askdnd bridge to use this here, or make the change on D&amp;D Beyond (askdnd shows it within seconds).</p>
+{% endif %}

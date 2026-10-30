@@ -169,15 +169,19 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
             add(key=a["key"], oref=f"item:{it['base_name']}#{a['key'].split('#')[1]}", kind="item", cost=a["cost"], name=a["name"],
                 meta=a["meta"], text=a["text"], summary=a["text"], starts=a.get("starts"), ends=a.get("ends"), item=a["item"], note=a.get("note", ""),
                 common=False)  # in See all; the player pins what they'd use
-        if not it["battle"]:
-            continue
-        uses = it["charges"] if it["charges"] and it["charges"]["reset"] != "Used up" else None
+        ch, left = it["charges"], conditions.item_left(it)
+        if not it["battle"] or (not left and (not ch or ch["reset"] == "Used up")):
+            continue  # (used up: off Battle, and D&D Beyond's sheet still lists it)
+        uses = ch if ch and (ch["max"] > 1 or ch["reset"] != "Used up") else None
         first = re.split(r"(?<=[.!?])\s", it["summary"] or "", maxsplit=1)[0]
-        add(key=it["key"], oref=f"item:{it['base_name']}", kind="item", cost="Action", name=f"Use an item: {it['name']}", uses=uses,
-            tags=[f"×{it['quantity']}"] if it["quantity"] > 1 else [], meta=first if len(first) <= 120 else first[:119].rsplit(" ", 1)[0] + "…",
+        cost, said = conditions.item_cost(it)
+        add(key=it["key"], oref=f"item:{it['base_name']}", kind="item", cost=cost, name=it["name"], uses=uses,
+            tags=([said] if said and said.lower() != cost.lower() else []) + ([f"×{left}"] if left > 1 and not uses else []),
+            meta=first if len(first) <= 120 else first[:119].rsplit(" ", 1)[0] + "…",
             text=it.get("text") or it["summary"], summary=it["summary"], common="healing" in it["name"].lower(),
             recipe=rr.item(it["base_name"]) or rr.item(it["name"]),
-            **({"starts": ou["starts"], "note": ou.get("note", ""), "item": it["name"], "track": True} if (ou := conditions.on_use(it)) else {}))
+            use={"id": it["key"].split(":", 1)[1], "left": left, "said": said, "verb": {"Potion": "Drink", "Scroll": "Read"}.get(it["type"], "Use"),
+                 "gives": it["type"] == "Potion", "back": ch["reset_phrase"] if ch else ""})
     unarmed = attacks.get("Unarmed Strike")
     for o in out:
         rollable(o, unarmed)
@@ -188,7 +192,7 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
 # else dice its text says you regain ("regains 2d4 + 2 Hit Points") or deal ("1d6 fire damage").
 # Features that make Unarmed Strikes (Flurry of Blows) roll the Unarmed Strike.
 DICE = r"(\d+d\d+(?:\s*[+\u2212-]\s*\d+(?!d))?)"
-HEALS = re.compile(r"\b(?:regains?|restores?|heals?)\s+" + DICE, re.I)
+HEALS = re.compile(r"\b(?:regains?|restores?|heals?)\s+" + DICE + r"(?!\s*(?:[+\u2212-]\s*\d+\s*)?(?:expended\s+)?charges)", re.I)
 DEALS = re.compile(DICE + r"\s+(?:[a-z]+\s+){0,2}damage\b", re.I)
 MAKES_UNARMED = re.compile(r"\bmake (?:one|two|three|an?) Unarmed Strikes?\b", re.I)
 
@@ -212,7 +216,8 @@ def rollable(o: dict, unarmed: dict | None = None) -> dict:
         o["hit"] = unarmed.get("to_hit", "")
         o["meta"] = o.get("meta") or unarmed.get("damage", "")
     meta = o.get("meta") or ""
-    o["dice"], o["heal"] = _dice(meta), "heals " in meta or "healing" in (o.get("name") or "").lower()
+    # (an item's first sentence can hold dice that aren't a roll: how many doses it has)
+    o["dice"], o["heal"] = "" if o.get("use") else _dice(meta), "heals " in meta or "healing" in (o.get("name") or "").lower()
     if not o["dice"]:
         m = HEALS.search(text)
         d = None if m else DEALS.search(text)
@@ -272,7 +277,9 @@ def battle_columns(sheet: dict, starred: set[str], order: dict[str, list[str]] |
     """Action / Bonus action / Reaction columns: pinned first, then the common options (or the
     player's own drag-and-drop order); the rest is behind "See all". With `pinned_only` (anyone who
     can see the player's pins), only what the player pinned: Battle shows their plan
-    (Brett, 2026-10-21: fewer automatic choices, to encourage planning and learning)."""
+    (Brett, 2026-10-21: fewer automatic choices, to encourage planning and learning). Items sit in a
+    section of their own at the end of a column, by the same rules, in their own order ("<cost> items");
+    the rest are in the side panel (Brett, 2026-10-30, docs/mockups/potions-and-charges.html)."""
     cols, order = {}, order or {}
     for cost in ("Action", "Bonus action", "Reaction"):
         everything = []
@@ -285,7 +292,14 @@ def battle_columns(sheet: dict, starred: set[str], order: dict[str, list[str]] |
         if order.get(cost):
             rank = {k: i for i, k in enumerate(order[cost])}
             shown.sort(key=lambda o: rank.get(o["key"], len(rank)))  # stable: new ones keep their place after
-        cols[cost] = {"shown": shown[:COLUMN_LIMIT], "all": everything, "count": len(everything)}
+        items = [o for o in shown if o["kind"] == "item"]
+        if order.get(f"{cost} items"):
+            rank = {k: i for i, k in enumerate(order[f"{cost} items"])}
+            items.sort(key=lambda o: rank.get(o["key"], len(rank)))
+        options_only = [o for o in shown if o["kind"] != "item"]
+        item_count = sum(o["kind"] == "item" for o in everything)
+        cols[cost] = {"shown": options_only[:COLUMN_LIMIT], "items": items[:COLUMN_LIMIT], "item_count": item_count, "all": everything,
+                      "count": len(everything) - item_count}
     rules = class_rules.turn(sheet)
     for cost, col in cols.items():
         col["notes"] = rules["notes"][cost]

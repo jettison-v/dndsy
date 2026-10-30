@@ -247,6 +247,8 @@ def for_person(db: Session, campaign: Campaign | None, email: str | None) -> dic
                        # a character at 0 Hit Points (app/death_saves.py): its token striped, "0 HP"
                        "down": ((sheets.get(x.get("character")) or {}).get("hit_points") or {}).get("current") == 0}
                       for x in f["order"]]
+        now = next((i for i, x in enumerate(f["order"]) if x.get("active")), None)
+        f["next"] = f["order"][(now + 1) % len(f["order"])]["name"] if now is not None and len(f["order"]) > 1 else ""  # (those this person sees)
     return f
 
 

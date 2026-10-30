@@ -247,7 +247,7 @@ def _context(db: Session, ch: Character) -> tuple[dict, dict | None]:
     return summary, form
 
 
-def _working(db: Session, ch: Character, mode: str, parts: list[dict], off: set[str], temp_take: bool | None, crit: bool = False) -> dict:
+def working(db: Session, ch: Character, mode: str, parts: list[dict], off: set[str] = frozenset(), temp_take: bool | None = None, crit: bool = False) -> dict:
     summary, form = _context(db, ch)
     hp = summary.get("hit_points") or {}
     defs = defenses(summary, form)
@@ -294,7 +294,7 @@ def _guard(db: Session, request: Request, character_id: int) -> tuple[Character,
 
 def _page(request: Request, db: Session, ch: Character, template: str, mode: str, parts: list[dict], off: set[str],
           take: bool | None, roll: TableRoll | None, source: str, crit: bool = False):
-    w = _working(db, ch, mode, parts, off, take, crit)
+    w = working(db, ch, mode, parts, off, take, crit)
     done = applied(db, roll).get(ch.id) if roll else None
     return templates.TemplateResponse(request, template, {
         "c": ch, "w": w, "mode": mode, "parts": parts, "off": off, "roll": roll, "source": source, "done": done, "crit": crit,
@@ -312,26 +312,9 @@ def window(request: Request, character_id: int, roll: int = 0, mode: str = "dama
     return _page(request, db, ch, "_hp_window.html", m, parts, set(), None, r, source, _crit(r))
 
 
-@router.post("/characters/{character_id:int}/hp/work")
-def rework(request: Request, character_id: int, form=web.FormBody, db: Session = Depends(get_db)):
-    """The working again, after a number, a type, a tab or a crossed-out step changed (the window's own form)."""
-    ch, _ = _guard(db, request, character_id)
-    mode, parts, off, take = _read(form)
-    r = _roll(db, int(form.get("roll") or 0), ch)
-    return _page(request, db, ch, "_hp_working.html", mode, parts, off, take, r, form.get("source", "")[:120], form.get("crit") == "1")
-
-
-@router.post("/characters/{character_id:int}/hp/apply")
-def apply(request: Request, character_id: int, form=web.FormBody, db: Session = Depends(get_db)):
-    """Make it: the end result goes to D&D Beyond through the bridge (only while the sheet can be reached), and a roll
-    it came from says so in Table rolls, once for this character."""
-    ch, user = _guard(db, request, character_id)
-    ddb_bridge.reach(ch)
-    mode, parts, off, take = _read(form)
-    r = _roll(db, int(form.get("roll") or 0), ch)
-    if r and applied(db, r).get(ch.id):
-        raise HTTPException(409, f"This roll was already applied to {ch.name}.")
-    w = _working(db, ch, mode, parts, off, take, form.get("crit") == "1")
+def make(db: Session, ch: Character, user: dict, r: TableRoll | None, mode: str, w: dict) -> str:
+    """Make the working `w`: the end result goes to D&D Beyond through the bridge, and a roll it came from says so in
+    Table rolls. What's said. Not committed."""
     if mode == "damage" and w["taken"]:
         text = f"{ch.name} took {w['taken']}"
         ddb_bridge.add(db, ch, "hp", {"amount": -w["taken"]}, text)
@@ -364,6 +347,30 @@ def apply(request: Request, character_id: int, form=web.FormBody, db: Session = 
                          total=w["taken"] if mode == "damage" else w["amount"], visibility=r.visibility,
                          spec={"mode": mode, "conc": w["conc"]}))
         realtime.announce(db, r.campaign_id, "rolls")
+    return text
+
+
+@router.post("/characters/{character_id:int}/hp/work")
+def rework(request: Request, character_id: int, form=web.FormBody, db: Session = Depends(get_db)):
+    """The working again, after a number, a type, a tab or a crossed-out step changed (the window's own form)."""
+    ch, _ = _guard(db, request, character_id)
+    mode, parts, off, take = _read(form)
+    r = _roll(db, int(form.get("roll") or 0), ch)
+    return _page(request, db, ch, "_hp_working.html", mode, parts, off, take, r, form.get("source", "")[:120], form.get("crit") == "1")
+
+
+@router.post("/characters/{character_id:int}/hp/apply")
+def apply(request: Request, character_id: int, form=web.FormBody, db: Session = Depends(get_db)):
+    """Make it: the end result goes to D&D Beyond through the bridge (only while the sheet can be reached), and a roll
+    it came from says so in Table rolls, once for this character."""
+    ch, user = _guard(db, request, character_id)
+    ddb_bridge.reach(ch)
+    mode, parts, off, take = _read(form)
+    r = _roll(db, int(form.get("roll") or 0), ch)
+    if r and applied(db, r).get(ch.id):
+        raise HTTPException(409, f"This roll was already applied to {ch.name}.")
+    w = working(db, ch, mode, parts, off, take, form.get("crit") == "1")
+    text = make(db, ch, user, r, mode, w)
     db.commit()
     toast = text + (f". Concentration ({w['conc']['spell']}): a Con save, DC {w['conc']['dc']}" if w["conc"] else "")
     out = HTMLResponse("")

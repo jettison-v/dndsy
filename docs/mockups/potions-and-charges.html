@@ -93,6 +93,12 @@ header.top { display: grid; gap: 12px; max-width: 76ch; }
 .ah-box .cost { font: 700 .74rem/1.2 var(--cond); letter-spacing: .06em; text-transform: uppercase; color: var(--k); }
 .ah-box .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .refused { color: var(--amber); font-size: .86rem; }
+.seeall { background: none; border: 0; padding: 2px 0; font: 500 .8rem/1.3 var(--sans); color: var(--blue); cursor: pointer; text-align: left; justify-self: start; }
+/* The side panel, as every "See all" opens it */
+.side { position: fixed; z-index: 4; top: 0; right: 0; bottom: 0; width: min(400px, 100vw); background: var(--surface); border-left: 1px solid var(--line-strong); box-shadow: -8px 0 24px var(--shadow); padding: 16px; display: grid; gap: 8px; align-content: start; overflow-y: auto; }
+.side-head { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+.side .it .pin { margin-left: auto; font: 600 .72rem/1 var(--sans); color: var(--muted); background: none; border: 1px solid var(--line-strong); border-radius: 6px; padding: 5px 7px; cursor: pointer; flex: none; }
+.side .it .pin[aria-pressed=true] { color: var(--amber); border-color: var(--amber); }
 
 .cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .col { background: var(--surface); border: 1px solid var(--line-soft); border-radius: 10px; padding: 10px 12px; display: grid; gap: 7px; align-content: start; }
@@ -113,14 +119,15 @@ header.top { display: grid; gap: 12px; max-width: 76ch; }
   <header class="top">
     <div class="eyebrow">Step 5 · the last piece of forgotten effects</div>
     <h1>Potions and charges at hand</h1>
-    <p class="lead">Today Battle shows an item only if you pinned it, and nothing there spends it. This puts everything you can use in the column of what it costs, so there's one place to look. Its button opens a small window, like a roll, and that makes the change on your D&amp;D Beyond sheet.</p>
+    <p class="lead">Today nothing on Battle spends an item. This gives each column an Items section with the items you pinned, and the rest in the side panel as usual. An item's button opens a small window, like a roll, and that makes the change on your D&amp;D Beyond sheet.</p>
   </header>
 
   <section class="box">
     <h2>Where you'll find it</h2>
     <ol>
       <li>Open your character and go to <b>Battle</b>, the first tab.</li>
-      <li>In the <b>Action</b> and <b>Bonus action</b> columns, under whatever you pinned, an <b>Items</b> group. It fills itself from your sheet: no pinning.</li>
+      <li>In the <b>Action</b> and <b>Bonus action</b> columns, under your other pins, an <b>Items</b> section with the items you pinned. Nothing is pinned for you.</li>
+      <li><b>All items</b> at the end of that section opens the side panel with the rest of that column's items, where you pin one or use it. <b>+ Add</b> at the top of the column works as it does now.</li>
       <li>Each item has its button where an attack has its to-hit: <b>Drink</b>, <b>Read</b> or <b>Use</b>. It opens a small window next to it, as a roll does, at the bottom on phones.</li>
       <li>Click anywhere else on the row and the side panel opens with everything about it, like every other row on Battle.</li>
       <li>Only on Battle, and only your own character can press. The DM and the table see the same rows, as they already see your items on Party.</li>
@@ -129,12 +136,10 @@ header.top { display: grid; gap: 12px; max-width: 76ch; }
 
   <section>
     <h2>Try it</h2>
-    <p class="muted">Press an item's button, then the window's. A pretend Battle page: nothing here touches a real sheet.</p>
+    <p class="muted">Open <b>All items</b>, pin one and press its button, then the window's. A pretend Battle page: nothing here touches a real sheet.</p>
     <div class="controls">
       <div class="ctl"><span>Character</span><div class="seg" id="who"></div></div>
-      <div class="ctl"><span>Drinking</span><div class="seg" id="drink"></div></div>
       <div class="ctl"><span>Sheet</span><div class="seg" id="reach"></div></div>
-      <button class="btn small" id="turn" type="button">Your turn begins</button>
     </div>
     <div class="stage" id="stage"></div>
     <p class="small muted">The mark before each name is its cost, in Battle's own colours: ◆ Action, ▲ Bonus Action, ● the item's text doesn't say, so askdnd doesn't guess.</p>
@@ -154,37 +159,33 @@ header.top { display: grid; gap: 12px; max-width: 76ch; }
       <h2>Decided, so you don't have to</h2>
       <ul>
         <li><b>The button says what you do:</b> Drink, Read, or Use. Every use has Undo on its corner card.</li>
-        <li><b>Order in a column:</b> what you pinned first, then Items: healing, other potions, scrolls, then charged items.</li>
-        <li><b>Items that don't say their cost:</b> they sit in the Action column marked ●, so askdnd isn't guessing. I'll add the real cost in askdnd's own words for the items your table holds, like Soul Coin, so ● stays rare.</li>
+        <li><b>Order in the section:</b> you can drag your pinned items, as with any pin. In the side panel: healing, other potions, scrolls, then charged items.</li>
+        <li><b>Items that don't say their cost:</b> they sit in the Action column marked ●, so askdnd isn't guessing. Costs come only from the rules and each item's own words, for every table, never from your party's copies.</li>
         <li><b>On phones:</b> the columns are already tabs, so items are in the tab of their cost.</li>
         <li><b>Giving a potion:</b> Give rolls and spends the giver's potion, and the roll offers <b>Apply to Cole</b> to Cole's player and the DM, like any other healing roll. It works for an ally at 0.</li>
         <li><b>An effect:</b> using a Potion of Water Breathing starts its pill with its time, replacing today's separate "Used it" button.</li>
-        <li><b>Used up:</b> a one-use item leaves its column. A charged item stays dimmed with when it comes back.</li>
+        <li><b>Used up:</b> a one-use item leaves the section and the panel. A charged item stays dimmed with when it comes back.</li>
         <li><b>Needs attunement:</b> an item you aren't attuned to stays out.</li>
         <li><b>In Wild Shape:</b> Items stay, because the rules leave it to the DM what a form's limbs can handle.</li>
-        <li><b>Pinned items:</b> yours stay where you put them, at the right cost, and don't show twice.</li>
+        <li><b>Items already pinned:</b> they move into the Items section, at the right cost. Nothing is lost.</li>
       </ul>
     </div>
   </section>
 
   <section>
-    <h2>Two questions for you</h2>
+    <h2>Decided Oct 30</h2>
     <div class="grid2">
       <div class="box">
-        <div class="label">Settled Oct 30 · Where it goes</div>
-        <p><b>In the columns, with a window like a roll</b> (your comment): one place to go to do things, not a new row to look at. What it costs: Trah's Action column gets long, so items sit under what's pinned and your pins never move.</p>
+        <div class="label">Where it goes</div>
+        <p><b>An Items section in the columns, with a window like a roll</b> (your comments): one place to go to do things. Items follow pinning so a list like Trah's stays short, and the rest live in the side panel. What it costs: an item you didn't pin is one click further away, so the side panel's count is the only hint it's there.</p>
       </div>
-      <div class="box ask">
-        <div class="label">1 · Does the window's Drink heal you?</div>
-        <p><b>A, recommended: yes.</b> Drink rolls in Table rolls for all to see, spends the potion and heals you. There's no ruling to make on healing yourself, and Undo is on the card.</p>
-        <p class="muted"><b>B: Apply to on the roll.</b> Drink rolls and spends it, then you press Apply to, the same as a healing spell. One way for everything, one more press in a fight.</p>
-        <p class="small">Use <b>Drinking</b> above to feel both.</p>
+      <div class="box">
+        <div class="label">Drink heals you</div>
+        <p>The window's Drink rolls in Table rolls for all to see, spends the potion and heals you. There's no ruling to make on healing yourself, and Undo is on the card, unless it brought you up from 0.</p>
       </div>
-      <div class="box ask">
-        <div class="label">2 · Should anything remind you on your turn?</div>
-        <p><b>A, recommended: your Items light up once</b> as your turn begins in a heard fight. Quiet, and you'd see it each turn. Press <b>Your turn begins</b> above.</p>
-        <p class="muted"><b>B: also a corner card</b> when you're under half your Hit Points and carrying healing. Harder to miss, and one more card each turn of a hard fight.</p>
-        <p class="muted"><b>C: nothing.</b> The columns alone, until a playtest asks for more.</p>
+      <div class="box">
+        <div class="label">Nothing at the start of your turn</div>
+        <p>No lit items and no card. The columns alone, until a playtest asks for more.</p>
       </div>
       <div class="box">
         <div class="label">Not in this piece</div>
@@ -223,7 +224,7 @@ const START = () => ({
   Cole: { hp: 7, max: 51, pills: [], items: [potion("Potion of Healing", 2, "2d4+2"), charged("Soul Coin", 3, 3, "", "gone once used", "See its text for what it does.")] },
 });
 const OTHERS = ["Trah", "Big C", "Cole", "No Name"];
-let party = START(), who = "Cole", drink = "once", reach = "open", open = -1, giving = false, rolls = [], cards = [], lit = false, turnTimer, seq = 0;
+let party = START(), who = "Cole", drink = "once", reach = "open", open = -1, side = "", giving = false, rolls = [], cards = [], lit = false, turnTimer, seq = 0;
 const stage = document.getElementById("stage");
 const me = () => party[who];
 const usable = it => (it.qty ?? it.left) > 0;
@@ -232,12 +233,18 @@ const roll = dice => { const [, n, d, plus] = dice.match(/(\d+)d(\d+)\+(\d+)/); 
 function seg(id, options, value, set) {
   const el = document.getElementById(id);
   el.innerHTML = options.map(([v, l]) => `<button type="button" data-v="${v}" aria-pressed="${v === value}">${l}</button>`).join("");
-  el.onclick = e => { const b = e.target.closest("button"); if (!b) return; set(b.dataset.v); [...el.children].forEach(c => c.setAttribute("aria-pressed", c === b)); open = -1; giving = false; draw(); };
+  el.onclick = e => { const b = e.target.closest("button"); if (!b) return; set(b.dataset.v); [...el.children].forEach(c => c.setAttribute("aria-pressed", c === b)); open = -1; side = ""; giving = false; draw(); };
 }
 function pips(it) { return `<span class="pips" aria-label="${it.left} of ${it.max} left">${Array.from({ length: it.max }, (_, i) => `<i class="${i >= it.left ? "used" : ""}"></i>`).join("")}</span>`; }
-function row(it, i) {
+function row(it, i, extra = "") {
   const k = KIND[it.cost], count = it.max ? (it.max <= 8 ? pips(it) : `${it.left}/${it.max}`) : it.qty > 1 ? `×${it.qty}` : "";
-  return `<div class="it k-${k}${usable(it) ? "" : " empty"}${it.sync ? " sync" : ""}${lit ? " turn" : ""}"><button type="button" class="go" data-i="${i}"${usable(it) ? "" : " disabled"}>${it.verb}</button><span class="nm">${k === "other" ? `<span class="gl">${GLYPH[k]}</span> ` : ""}${it.name}</span><span class="n">${it.sync ? "↻ " : ""}${count}${usable(it) ? "" : ` ${it.back}`}</span></div>`;
+  return `<div class="it k-${k}${usable(it) ? "" : " empty"}${it.sync ? " sync" : ""}${lit && !extra ? " turn" : ""}"><button type="button" class="go" data-i="${i}"${usable(it) ? "" : " disabled"}>${it.verb}</button><span class="nm">${k === "other" ? `<span class="gl">${GLYPH[k]}</span> ` : ""}${it.name}</span><span class="n">${it.sync ? "↻ " : ""}${count}${usable(it) ? "" : ` ${it.back}`}</span>${extra}</div>`;
+}
+const costIn = key => it => KIND[it.cost] === key || (key === "action" && KIND[it.cost] === "other");
+function panel() {
+  if (!side) return "";
+  const rows = visible().filter(([it]) => costIn(side)(it)).map(([it, i]) => row(it, i, `<button type="button" class="pin" data-pin="${i}" aria-pressed="${!!it.pin}">${it.pin ? "Pinned" : "Pin"}</button>`)).join("");
+  return `<aside class="side" aria-label="All items"><div class="side-head"><h3>${side === "bonus" ? "▲ Bonus action" : "◆ Action"} items</h3><button class="btn small" type="button" data-side="">Close</button></div><p class="small muted">Pin one to keep it in its column.</p>${rows}</aside>`;
 }
 function visible() { return me().items.map((it, i) => [it, i]).filter(([it]) => usable(it) || it.back && it.back !== "gone once used"); }
 function detail() {
@@ -254,7 +261,10 @@ function detail() {
 }
 function draw() {
   const c = me(), list = visible();
-  const inCol = key => { const rows = list.filter(([it]) => (KIND[it.cost] === key) || (key === "action" && KIND[it.cost] === "other")).map(([it, i]) => row(it, i)).join(""); return rows && `<div class="items-head">Items</div>${rows}`; };
+  const inCol = key => {
+    const all = list.filter(([it]) => costIn(key)(it)), pinned = all.filter(([it]) => it.pin);
+    return all.length ? `<div class="items-head">Items</div>${pinned.map(([it, i]) => row(it, i)).join("")}<button class="seeall" type="button" data-side="${key}">All items (${all.length}) →</button>` : "";
+  };
   const cols = `<div class="cols">
     <div class="col k-action"><h4>◆ Action</h4><div class="move"><b>Fire Bolt</b></div><div class="move"><b>Attack, Dash, Dodge…</b></div>${inCol("action")}</div>
     <div class="col k-bonus"><h4>▲ Bonus action</h4><div class="move"><b>Misty Step</b></div>${inCol("bonus")}</div>
@@ -266,6 +276,7 @@ function draw() {
     <div class="status"><span>Status</span>${c.pills.map(p => `<span class="pill">${p[0]} <i>${p[1]}</i></span>`).join("") || `<span class="faint">+ Condition</span>`}</div>
     <div class="spellbar">Spell Book · 1st ●●○ · 2nd ●○ · Pinned spells</div>
     ${cols}
+    ${panel()}
     ${detail()}
     <div class="rolls" ${rolls.length ? "" : "hidden"}><div class="roll"><span class="ttl">Table rolls</span></div>${rolls.map(r => `<div class="roll"><span class="tot">${r.total}</span><span>${r.text}</span>${r.apply ? `<button class="btn small" type="button" data-apply="${r.id}">Apply to ${r.apply}</button>` : r.done ? `<span class="small muted">${r.done}</span>` : ""}</div>`).join("")}</div>
     <div class="cards">${cards.map(k => `<div class="card"><span>${k.text}</span><button class="btn small" type="button" data-undo="${k.id}">Undo</button></div>`).join("")}</div>`;
@@ -290,9 +301,11 @@ function use(i, to) {
   open = -1; giving = false; draw();
 }
 stage.addEventListener("click", e => {
-  const t = e.target.closest("[data-i],[data-act],[data-give],[data-undo],[data-apply]");
+  const t = e.target.closest("[data-i],[data-act],[data-give],[data-undo],[data-apply],[data-side],[data-pin]");
   if (!t) return;
-  if (t.dataset.i !== undefined) { open = +t.dataset.i; giving = false; draw(); }
+  if (t.dataset.side !== undefined) { side = t.dataset.side; draw(); }
+  else if (t.dataset.pin !== undefined) { const it = me().items[+t.dataset.pin]; it.pin = !it.pin; draw(); }
+  else if (t.dataset.i !== undefined) { open = +t.dataset.i; giving = false; draw(); }
   else if (t.dataset.act === "use") use(open);
   else if (t.dataset.act === "give") { giving = true; draw(); }
   else if (t.dataset.act === "nogive") { giving = false; draw(); }
@@ -301,10 +314,8 @@ stage.addEventListener("click", e => {
   else if (t.dataset.undo) { const k = cards.find(x => x.id === +t.dataset.undo); k.undo.forEach(f => f()); cards = cards.filter(x => x !== k); draw(); }
   else if (t.dataset.apply) { const r = rolls.find(x => x.id === +t.dataset.apply), got = heal(r.apply, r.total); r.done = party[r.apply] ? `applied to ${r.apply}, +${got}` : `applied to ${r.apply}`; r.apply = ""; draw(); }
 });
-document.addEventListener("keydown", e => { if (e.key === "Escape" && open >= 0) { open = -1; giving = false; draw(); } });
+document.addEventListener("keydown", e => { if (e.key !== "Escape") return; if (open >= 0) { open = -1; giving = false; } else side = ""; draw(); });
 seg("who", [["Cole", "Cole"], ["Trah", "Trah (ten items)"], ["Big C", "Big C"]], who, v => { who = v; });
-seg("drink", [["once", "A: Drink heals you"], ["two", "B: Apply to on the roll"]], drink, v => { drink = v; });
 seg("reach", [["open", "Open"], ["shut", "Can't be reached"]], reach, v => { reach = v; });
-document.getElementById("turn").onclick = () => { lit = false; draw(); requestAnimationFrame(() => { lit = true; draw(); stage.querySelector(".cols").scrollIntoView({ block: "nearest", behavior: "smooth" }); clearTimeout(turnTimer); turnTimer = setTimeout(() => { lit = false; draw(); }, 1700); }); };
 draw();
 </script>

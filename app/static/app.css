@@ -1142,6 +1142,13 @@ a.sheet-ref { text-decoration-style: dotted; }
    bonuses and who sees it, then turns into the result in place. Above side panels and windows. */
 .roll-win { position: fixed; z-index: 20; width: min(360px, calc(100vw - 16px)); max-height: calc(100vh - 16px); overflow-y: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; box-shadow: 0 14px 40px var(--shadow); font-size: var(--fs-sm); animation: roll-pop .14s ease-out; }
 .roll-win.nat20 { border-color: var(--green); } .roll-win.nat1, .roll-win.failed { border-color: var(--red); }
+/* An item on Battle (Brett, 2026-10-30): its section in a column, its button, its window */
+.items-head { margin: 10px 0 0; font-size: var(--fs-xs); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.item-go { color: var(--text); }
+.item-go:disabled { color: var(--faint); cursor: default; border-color: var(--line); }
+.use-cost { margin: 0 0 6px; font-size: var(--fs-sm); color: var(--muted); }
+.use-what { margin: 0 0 6px; font-size: var(--fs-sm); }
+.use-said { margin: 6px 0 0; font-size: var(--fs-sm); color: var(--amber); }
 .rw-title { font-weight: 700; font-size: var(--fs-md); padding-right: 24px; margin-bottom: 8px; }
 .rw-title .roll-sub { font-weight: 400; }
 .rw-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin: 8px 0; }
@@ -1765,27 +1772,43 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .cond-lasts-form .note { flex-basis: 100%; margin: 0; }
 /* The fight band (app/fight.py, _fight_band.html; Brett, 2026-10-29): above the name on every character page and on
    Party while a fight runs in D&D Beyond's VTT */
-.fight-band { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-3); margin-bottom: var(--sp-3); padding: var(--sp-2) var(--sp-3); background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--amber); border-radius: var(--r-md); font-size: var(--fs-sm); color: var(--muted); }
-.fb-round { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; border: 1px solid var(--line); border-radius: var(--r-pill); padding: 2px var(--sp-2); }
-.fb-mine { color: var(--amber); font-weight: 600; }
-.fb-order { display: flex; flex-wrap: wrap; gap: var(--sp-1); margin-left: auto; }
-.fb-who { display: inline-flex; align-items: center; gap: 5px; padding: 2px var(--sp-2) 2px 2px; border: 1px solid var(--line); border-radius: var(--r-pill); font-size: var(--fs-xs); white-space: nowrap; }
-.fb-pic { position: relative; width: 22px; height: 22px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--surface-3); color: var(--muted); font-weight: 700; flex: none; }
+/* The fight band: a war banner (Brett, 2026-10-30): a pennant, whose turn in big letters, and the order as tokens */
+.fight-band { --fb: var(--line-strong); --fb-text: var(--text-strong); --fb-soft: var(--surface-2); display: flex; align-items: stretch; margin-bottom: var(--sp-3);
+  background: linear-gradient(90deg, var(--fb-soft), transparent 60%), var(--chrome); border: 1px solid var(--line-strong); border-radius: var(--r-lg); box-shadow: 0 6px 18px var(--shadow); overflow: hidden; }
+.fight-band[data-turn="yours"] { --fb: var(--amber); --fb-text: var(--amber); --fb-soft: var(--amber-soft); border-color: var(--amber); }
+.fight-band[data-turn="enemy"] { --fb: var(--red); --fb-text: var(--red-hover); --fb-soft: var(--red-soft); border-color: var(--red-line); }
+.fight-band[data-turn="ally"] { --fb: var(--blue); --fb-text: var(--blue); --fb-soft: var(--blue-soft); border-color: var(--blue-line); }
+.fb-round { display: flex; align-items: center; gap: var(--sp-2); flex: none; padding: var(--sp-2) var(--sp-6) var(--sp-2) var(--sp-4); background: var(--fb); color: var(--chrome);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 50%, 100% 100%, 0 100%); }
+.fb-swords { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; flex: none; }
+.fb-round-tx { display: grid; justify-items: center; line-height: 1; }
+.fb-round-tx small { font: 700 var(--fs-xs)/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; }
+.fb-round-tx b { font: 700 var(--fs-2xl)/1.1 var(--cond); color: inherit; }
+.fb-call { display: grid; align-content: center; gap: 2px; flex: none; min-width: 0; max-width: 40%; padding: var(--sp-2) var(--sp-3) var(--sp-2) var(--sp-2); }
+.fb-head { font: 700 var(--fs-2xl)/1.05 var(--cond); letter-spacing: .02em; text-transform: uppercase; color: var(--fb-text); text-wrap: balance; }
+.fb-sub { font-size: var(--fs-xs); color: var(--muted); }
+.fb-sub .roll-to { border: 0; padding: 0; background: none; color: var(--faint); }
+.fb-mine { color: var(--amber); font-weight: 700; }
+.fb-order { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: flex-end; gap: var(--sp-1) var(--sp-2); flex: 1 1 0; min-width: 0; padding: var(--sp-2) var(--sp-3); }
+.fb-who { display: grid; justify-items: center; gap: 3px; width: 64px; font-size: var(--fs-xs); color: var(--muted); }
+.fb-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fb-pic { position: relative; width: 40px; height: 40px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--surface-3); color: var(--muted); font-weight: 700; box-shadow: 0 0 0 2px var(--line-strong); }
 .fb-pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.fb-who.enemy { border-color: var(--red-line); }  /* the VTT's monsters: the enemy (Brett, 2026-10-29); the party stays plain */
-.fb-who.enemy .fb-pic { box-shadow: 0 0 0 1.5px var(--red); }
-/* Whose turn (Brett, 2026-10-29: clearer): bigger, bold, filled amber; everyone else steps back. No motion. */
-.fb-order:has(.now) > .fb-who:not(.now) { opacity: .62; }
-.fb-who.now { border-color: var(--amber); background: var(--amber-soft); color: var(--text-strong); font-size: var(--fs-sm); font-weight: 700; padding: 2px var(--sp-3) 2px 2px; }
-.fb-who.now .fb-pic { width: 30px; height: 30px; }
-.fb-who.enemy.now { border-color: var(--red); }  /* (an enemy's turn: still red, its picture ringed in amber) */
-.fb-who.now .fb-pic { box-shadow: 0 0 0 2px var(--amber); }
+.fb-who.enemy .fb-pic { box-shadow: 0 0 0 2px var(--red); }  /* the VTT's monsters: the enemy (Brett, 2026-10-29) */
+.fb-who:has(~ .now) { opacity: .45; }  /* acted this round */
+.fb-who.now { width: 84px; color: var(--text-strong); font-weight: 700; }
+.fb-who.now .fb-pic { width: 56px; height: 56px; box-shadow: 0 0 0 3px var(--fb), 0 0 18px var(--fb); }
+.fight-band[data-turn="yours"] .fb-who.now .fb-pic { animation: fb-mine 2.4s ease-in-out infinite; }
+@keyframes fb-mine { 50% { box-shadow: 0 0 0 3px var(--amber), 0 0 30px var(--amber-glow); } }
+@media (prefers-reduced-motion: reduce) { .fight-band[data-turn="yours"] .fb-who.now .fb-pic { animation: none; } }
 .fb-who.down .fb-pic img { filter: grayscale(1) brightness(.6); }  /* at 0 Hit Points (app/death_saves.py) */
 .fb-who.down .fb-pic::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(135deg, transparent 0 3px, var(--shadow) 3px 6px); }
-.fb-who.down .fb-pic { box-shadow: 0 0 0 1.5px var(--red-hover); }
+.fb-who.down .fb-pic { box-shadow: 0 0 0 2px var(--red-hover); }
 .fb-zero { font-size: var(--fs-xs); font-weight: 700; color: var(--red-hover); }
-.fb-who.hid { border-style: dashed; opacity: .7; }
-@media (max-width: 640px) { .fb-order { margin-left: 0; } .fb-who:not(.now) { padding-right: 2px; } .fb-who:not(.now) .fb-name { display: none; } }  /* phones: pictures, and whose turn by name */
+.fb-who.hid { opacity: .6; }
+.fb-who.hid .fb-pic { outline: 1px dashed var(--muted); outline-offset: 3px; }
+@media (max-width: 900px) { .fight-band { flex-wrap: wrap; } .fb-call { flex: 1 1 0; max-width: none; } .fb-order { flex: 1 0 100%; justify-content: flex-start; border-top: 1px solid var(--line); } }
+@media (max-width: 640px) { .fb-head { font-size: var(--fs-xl); } .fb-who { width: 34px; } .fb-pic { width: 34px; height: 34px; } .fb-who.now { width: 60px; } .fb-who.now .fb-pic { width: 46px; height: 46px; } .fb-who:not(.now) .fb-name { display: none; } }  /* phones: pictures, and whose turn by name */
 /* The badges after the name, on every character page (Brett, 2026-10-29; docs/mockups/temporary-items.html): small,
    each in its condition's colour; hover, focus or a tap shows what it does below it */
 .char-name { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) 10px; }
@@ -1794,7 +1817,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .cond-badge[data-cond="concentration"] { border-radius: 50%; }
 .cond-badge .cond-icon { width: 16px; height: 16px; }
 .cond-badge[data-cond="blinded"] { background: var(--cond-dark); border-color: var(--cond-dark-edge); }
-.cond-badge[data-cond="prone"] .cond-icon { transform: rotate(-8deg); }
+[data-cond="prone"] .cond-icon { transform: rotate(-30deg); }
 .cond-lv { position: absolute; right: 0; bottom: 0; min-width: 13px; height: 13px; border-radius: 7px; background: var(--c); color: var(--bg); font: 700 var(--fs-xs)/13px var(--sans); text-align: center; padding: 0 2px; }  /* inside the badge */
 .cond-badge.new { animation: cond-arrive .9s cubic-bezier(.2, 1.4, .4, 1); }
 @keyframes cond-arrive { 0% { transform: scale(.3) rotate(-20deg); opacity: 0; } 100% { transform: none; opacity: 1; } }

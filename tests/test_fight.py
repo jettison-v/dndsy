@@ -74,8 +74,9 @@ def test_the_band_says_whose_turn_to_each_person_and_hides_what_the_dm_hid(playe
     set_role(db, "dm@example.com", "dm")
     cole = char(db, "Cole")
     fight.heard(db, campaign, heard(turn=1, hidden_goblin=True))
-    band = player.get(f"/characters/{cole.id}/battle").text.split('class="fight-band"')[1].split("</div>")[0]
-    assert "Round 2" in band and "Your turn" in band and "Goblin" not in band  # Cole is the player's
+    page = player.get(f"/characters/{cole.id}/battle").text
+    band = page.split('class="fight-band"')[1].split("</div>")[0]
+    assert "<b>2</b>" in band and "Your turn" in band and 'data-turn="yours"' in page and "Goblin" not in band  # Cole is the player's
     band = dm.get(f"/characters/{cole.id}").text.split('class="fight-band"')[1].split("</div>")[0]
     assert "Cole’s turn" in band and 'class="fb-who enemy hid"' in band and "Goblin" in band  # the DM sees the hidden one, marked
     fight.heard(db, campaign, heard(turn=3, hidden_goblin=True))  # the hidden goblin's turn

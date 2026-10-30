@@ -191,8 +191,48 @@ def item_actions(it: dict) -> list[dict]:
              "text": it.get("summary") or "", "key": f"{it['key']}#use", "item": it["name"]}]
 
 
+# What using an item costs (Brett, 2026-10-30: the column it sits in on Battle)
+ITEM_COST = re.compile(r"\b(?:as|take|takes|use|uses|using|with)\s+(?:an?|its)\s+(Magic action|Utilize action|Bonus Action|Reaction|action)\b", re.I)
+COST_SAID = {"action": ("Action", "Action"), "magic action": ("Action", "Magic action"), "utilize action": ("Action", "Utilize action"),
+             "bonus action": ("Bonus action", "Bonus Action"), "reaction": ("Reaction", "Reaction")}
+
+
+def item_cost(it: dict) -> tuple[str, str]:
+    """(its column on Battle, what to call the cost; "" when the item doesn't say, in the Action column so askdnd isn't
+    guessing). Every potion is a Bonus Action to drink or give (2024 DMG, Using a Potion); a scroll takes what its spell
+    takes, an action unless its text says otherwise. Anything else, by its own words, for every table: never a value
+    kept for one party's copy of an item (Brett, 2026-10-30: he corrects his party's inventory himself)."""
+    if it.get("type") == "Potion":
+        return COST_SAID["bonus action"]
+    m = ITEM_COST.search(f"{it.get('summary') or ''} {it.get('text') or ''}")
+    if m:
+        return COST_SAID[m.group(1).lower()]
+    return ("Action", "Action") if it.get("type") == "Scroll" else ("Action", "")
+
+
+def _counts_charges(it: dict) -> bool:
+    ch = it.get("charges")
+    return bool(ch) and (ch["max"] > 1 or ch["reset"] != "Used up")
+
+
+def item_left(it: dict) -> int:
+    """How many uses it has now. D&D Beyond keeps a potion two ways, a count (×2) and a one-use mark: a stack less any
+    marked used. Anything with several charges, or charges that come back, counts its charges."""
+    ch = it.get("charges")
+    if _counts_charges(it):
+        return ch["left"]
+    return max(0, it.get("count", it.get("quantity", 1)) - (ch["used"] if ch else 0))
+
+
+def item_spends(it: dict) -> str:
+    """What one use changes on D&D Beyond: "charges" (its marks) or "item" (its count). The last of a stack with a
+    one-use mark takes the mark, as using it on D&D Beyond does."""
+    return "charges" if _counts_charges(it) or (it.get("charges") and it.get("count", 1) <= 1) else "item"
+
+
 def on_use(it: dict) -> dict | None:
-    """What using a consumable starts ({"starts": "Enlarged", "note": "10 minutes…"}), for a Track button."""
+    """What using a consumable starts ({"starts": "Enlarged", "note": "10 minutes…"}), made when it's used
+    (app/item_use.py)."""
     return curated(it).get("on_use")
 
 
