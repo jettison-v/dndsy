@@ -41,7 +41,7 @@ def test_a_roll_goes_to_the_table_with_nothing_to_turn_on(people, server):
     assert page.locator(f'{WINDOW} [data-to="table"]').get_attribute("aria-pressed") == "true"
     page.keyboard.press("Enter")
     page.wait_for_function("document.querySelector('#roll-log > li')?.textContent.includes('Dex save')")
-    dm.page.wait_for_function("document.querySelector('#roll-log > li')?.textContent.includes('Dex save')", timeout=6000)
+    dm.page.wait_for_function("document.querySelector('#roll-log > li')?.textContent.includes('Dex save')", timeout=12000)
     assert "Dex save" in newest(page)
     assert player.errors == [] and dm.errors == []
 

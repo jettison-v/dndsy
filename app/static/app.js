@@ -2101,7 +2101,7 @@
   }
   function specFrom(el) {
     const cid = characterOf(el), kind = el.dataset.roll;
-    const shared = atTable() && !!side && (kind === 'dice' || (!!cid && side.dataset.mine === cid));
+    const shared = atTable() && !!side && (kind === 'dice' || (!!cid && (side.dataset.yours || '').split(',').includes(String(cid))));
     let recipe = null;
     try { recipe = el.dataset.recipe ? JSON.parse(el.dataset.recipe) : null; } catch (err) { recipe = null; }
     // A condition the character has now (Invisible…) offers Advantage with its reason, never forces it:

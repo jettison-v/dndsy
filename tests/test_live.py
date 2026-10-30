@@ -216,3 +216,14 @@ def test_plan_shortlists_filter_like_sheet(player, db):
     assert 'data-list="plan-forms"' in forms and "Polar Bear" in forms and 'class="fm-pic"' in forms  # rows with pictures
     assert re.findall(r'data-ls-view="(\w+)"', forms) == ["fav", "all"]  # evaluate (Shortlist) and select (All you can learn)
     assert 'data-ls-group="cr" data-ls-value="2"' in forms and 'data-ls-group="move" data-ls-value="Swim"' in forms
+
+
+def test_someone_with_two_characters_rolls_to_the_table_on_either(player, db):
+    """Seen 2026-10-30: only the first of your characters counted as yours, so the second's rolls stayed private."""
+    import_bundle(db, BUNDLE)
+    cole, trah = char(db, "Cole"), char(db, "Trah")
+    owned_by(db, cole, "player@example.com")
+    owned_by(db, trah, "player@example.com")
+    side = player.get(f"/characters/{trah.id}/battle").text.split('id="table-rolls"')[1].split(">")[0]
+    assert 'data-yours="' in side and {str(cole.id), str(trah.id)} == set(side.split('data-yours="')[1].split('"')[0].split(","))
+
