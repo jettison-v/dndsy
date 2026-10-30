@@ -169,7 +169,7 @@ def test_the_loader_turns_ddb_data_into_the_monster_shape():
                                            "and it can't take Opportunity Attacks.")  # D&D Beyond's markup gone
     assert (page, image, entry["languages"], entry["section"]) == (12, "https://www.dndbeyond.com/avatars/x.jpeg", "None", "Animals")
     with pytest.raises(book_load.Unconvertible):
-        book_load.convert(ddb_beast(damageAdjustments=[87]))  # something it doesn't know: fail, never guess
+        book_load.convert(ddb_beast(damageAdjustments=[999]))  # something it doesn't know: fail, never guess
 
 
 def test_the_loader_takes_saves_and_xp_from_the_books_own_text(tmp_path):
@@ -178,12 +178,37 @@ def test_the_loader_takes_saves_and_xp_from_the_books_own_text(tmp_path):
         "| Str | 12 | +1 | +1 |\n| Dex | 15 | +2 | +4 |\n| Con | 9 | −1 | −1 |\n\n| Ability | Score | Mod | Save |\n"
         "| --- | --- | --- | --- |\n| Int | 3 | −4 | −4 |\n| Wis | 12 | +1 | +3 |\n| Cha | 6 | −2 | −2 |\n\nCR 0 (XP 0; PB +2)\n")
     printed = book_load.printed(tmp_path)
-    assert printed == {"Glimmer Hound": {"saves": {"str": 1, "dex": 4, "con": -1, "int": -4, "wis": 3, "cha": -2}, "xp": 0}}
+    assert printed == {"Glimmer Hound": {"saves": {"str": 1, "dex": 4, "con": -1, "int": -4, "wis": 3, "cha": -2}, "xp": 0, "size": "Medium"}}
     entry, _, _ = book_load.convert(ddb_beast(challengeRatingId=1), printed)
     assert entry["saves"]["wis"] == 3 and entry["xp"] == 0  # D&D Beyond's data missed the Wisdom save
 
 
-def test_the_loader_writes_a_books_beasts_and_replaces_them_on_a_rerun(db, tmp_path, monkeypatch):
+def test_the_loader_takes_legendary_actions_lair_xp_and_languages_from_the_book(tmp_path):
+    """Every monster in the book, not only Beasts (Brett, 2026-10-30: encounters need them all)."""
+    (tmp_path / "monsters.md").write_text(
+        "### Glimmer Hound\n\nHuge Beast (Titan, Demon), Unaligned\n\nAC 13 Initiative +5 (15)\n\nSpeed 40 ft., Fly 30 ft. (hover)\n\n"
+        "| Ability | Score | Mod | Save |\n| --- | --- | --- | --- |\n| Str | 12 | +1 | +1 |\n| Dex | 15 | +2 | +4 |\n| Con | 9 | −1 | −1 |\n"
+        "| Int | 3 | −4 | −4 |\n| Wis | 12 | +1 | +3 |\n| Cha | 6 | −2 | −2 |\n\nGear Bell, Thieves’ Tools\n\nLanguages Common, Giant\n\n"
+        "CR 10 (XP 5,900, or 7,200 in lair; PB +4)\n\nLegendary Action Uses: 3 (4 in Lair).\n")
+    printed = book_load.printed(tmp_path)
+    entry, _, _ = book_load.convert(ddb_beast(challengeRatingId=14, typeId=13, languages=[{"languageId": 1}], isLegendary=True, hasLair=True,
+                                              legendaryActionsDescription="<p><strong>Blink.</strong> It moves.</p>"), printed)
+    assert (entry["xp"], entry["xp_lair"], entry["cr"], entry["languages"], entry["size"]) == (5900, 7200, 10, "Common, Giant", "Huge")
+    assert entry["legendary_actions"] == [{"name": "Blink", "text": "It moves."}] and entry["legendary_uses"].startswith("Legendary Action Uses: 3")
+    assert (entry["initiative"], entry["hover"], entry["gear"], entry["tags"]) == (5, True, ["Bell", "Thieves' Tools"], ["Titan", "Demon"])
+
+
+def test_a_stat_block_with_no_text_of_its_own_learns_its_languages_from_the_others():
+    book_text = {"Hound": {"languages": "Common, Giant"}}
+    data = [{"name": "Hound", "languages": [{"languageId": 1}, {"languageId": 2}]}]
+    assert book_load.language_names(data, book_text) == {1: "Common", 2: "Giant"}
+    entry, _, _ = book_load.convert(ddb_beast(languages=[{"languageId": 2}]), {}, {2: "Giant"})
+    assert entry["languages"] == "Giant"
+    with pytest.raises(book_load.Unconvertible):
+        book_load.convert(ddb_beast(languages=[{"languageId": 3}]), {}, {2: "Giant"})  # never guess
+
+
+def test_the_loader_writes_a_books_monsters_and_replaces_them_on_a_rerun(db, tmp_path, monkeypatch):
     import json
 
     from app import db as app_db
@@ -193,7 +218,7 @@ def test_the_loader_writes_a_books_beasts_and_replaces_them_on_a_rerun(db, tmp_p
     monkeypatch.setattr(app_db, "SessionLocal", lambda: _no_close(db))
     monkeypatch.setattr("sys.argv", ["book_load.py", "--file", str(data), "--yes"])
     book_load.main()
-    assert sorted(db.scalars(BookEntry.__table__.select().with_only_columns(BookEntry.key))) == ["dusk-otter", "glimmer-hound"]
+    assert sorted(db.scalars(BookEntry.__table__.select().with_only_columns(BookEntry.key))) == ["dusk-otter", "glimmer-hound", "not-a-beast"]
     data.write_text(json.dumps([ddb_beast()]))
     book_load.main()
     assert [r.key for r in db.query(BookEntry)] == ["glimmer-hound"]  # Dusk Otter left the file, so it left askdnd
