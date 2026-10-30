@@ -37,7 +37,7 @@
   <section class="section">
     <h2>Characters</h2>
     {% call q("Where does my character come from?") %}
-      <p>From your character's page on D&amp;D Beyond. It has to be set to <b>Public</b> there (Character Settings › Character Privacy), and an admin links it on the campaign's Manage › Table. askdnd keeps the last good copy, so if D&amp;D Beyond is down you still see your character, with the time it was last updated.</p>
+      <p>From your character's page on D&amp;D Beyond. It has to be set to <b>Public</b> there (Character Settings › Character Privacy), and the DM or an admin links it on the campaign's Manage › Table. askdnd keeps the last good copy, so if D&amp;D Beyond is down you still see your character, with the time it was last updated.</p>
       <p>D&amp;D Beyond doesn't officially offer this data, so if they change their format, refreshing may stop working for a while. The numbers have been checked against D&amp;D Beyond's own sheet; if one ever looks different, tell an admin.</p>
     {% endcall %}
     {% call q("How do I get the latest from D&D Beyond?") %}
@@ -220,7 +220,7 @@
         <li><b>DM</b>: everything a reviewer does; their own corrections skip review, they decide on everyone else's suggestions, edit campaign entries (names, descriptions, relationships), edit the glossary and add pictures. The DM never sees the character notes, pins, shortlists, reminders or notes on things of the characters in the campaign they run.</li>
         <li><b>Admin</b>: also manages accounts, roles, character links and regrouping, and sees usage and costs. An admin who is also the DM still never sees those notes.</li>
       </ul>
-      <p>Player, Reviewer and DM are roles in a campaign, so someone can run one campaign and play in another. Admin is about askdnd as a whole. Admins set who can sign in (and who's an admin) on Manage › Accounts, and each campaign's roles and characters on its Manage › Table. The DM can see their campaign's Table and change its name and their own name (as Claude writes it in recaps) on Manage › Settings, where they also switch finished virtual tabletop pieces on for their table.</p>
+      <p>Player, Reviewer and DM are roles in a campaign, so someone can run one campaign and play in another. Admin is about askdnd as a whole. Admins set who can sign in (and who's an admin) on Manage › Accounts, and anyone's place in a campaign on its Manage › Table. The DM runs their own campaign's Table: they add people who have an account, change roles and characters, and remove people and characters (nothing is deleted, and Left the table brings them back). The DM can also change its name and their own name (as Claude writes it in recaps) on Manage › Settings, where they also switch finished virtual tabletop pieces on for their table.</p>
     {% endcall %}
     {% call q("Where do the pictures come from?") %}
       <p>Player characters show their D&amp;D Beyond portrait. The DM, reviewers and admins can add a picture to any person, place, faction or other entry from its page (Add a picture). Uploads are shrunk, and hidden information such as a phone photo's location is removed. Pictures are kept in askdnd's private file storage (Amazon S3) and are only shown through askdnd, to people who can see that entry; there are no public links to them.</p>
@@ -240,7 +240,7 @@
       <p>Not for players. Claude is paid per use by the admin, with a monthly limit: drafting a recap costs a few cents, and regenerating a Campaign description about 1–2¢. Admins see spending on Manage › Usage and can set askdnd's own monthly limit there: once a month's spending reaches it, askdnd pauses drafts and description rewrites until the 1st (or until the limit is raised) and says so.</p>
     {% endcall %}
     {% call q("How do I get someone signed in?") %}
-      <p>An admin adds their Google email on Manage › Accounts (or straight to a campaign on its Manage › Table). While the Google sign-in is in testing, the admin also adds them as a test user in Google Cloud Console.</p>
+      <p>An admin adds their Google email on Manage › Accounts, or with <b>+ Add to the table</b> on a campaign's Manage › Table. While the Google sign-in is in testing, the admin also adds them as a test user in Google Cloud Console.</p>
     {% endcall %}
     {% call q("Can an admin see askdnd the way someone else does?") %}
       <p>Yes, to check what the DM or a player sees: <b>View as</b> on Manage › Accounts or a campaign's Table. A banner says who you're viewing as, and nothing can be changed until <b>Stop viewing</b>, so nothing happens in their name. An admin who is a campaign's DM can't view as its players, because that would show them their players' notes.</p>

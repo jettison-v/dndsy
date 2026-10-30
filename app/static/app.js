@@ -1027,6 +1027,8 @@
   document.addEventListener('scroll', () => { if (termPinned) termPlace(); else if (termTip) termHide(); }, true);
   window.addEventListener('resize', termPlace);
 
+  // A select with data-autosave saves as you pick (Manage › Table)
+  document.addEventListener('change', e => { if (e.target.matches('select[data-autosave]')) e.target.form.requestSubmit(); });
   // A file picker with data-autosubmit sends its form as soon as a file is chosen (entity pictures).
   document.addEventListener('change', e => { if (e.target.matches('input[type=file][data-autosubmit]') && e.target.files.length) e.target.form.requestSubmit(); });
 

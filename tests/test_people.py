@@ -41,7 +41,7 @@ def add(owner, email, role="player", name="", admin=False):
     """What an admin does: an account (Manage › Accounts), then a role in the campaign (its Table)."""
     if admin:
         owner.post("/manage/accounts", data={"email": email, "name": name, "admin": "1"})
-    return owner.post("/manage/table/people/add", data={"new_email": email, "name": name, "role": role})
+    return owner.post("/manage/table/add", data={"new_email": email, "name": name, "role": role})
 
 
 def test_owner_adds_a_reviewer_who_can_then_review(env, monkeypatch, db):
@@ -80,7 +80,7 @@ def test_role_changes_keep_the_membership_and_no_role_ends_it(env, monkeypatch, 
     owner.post("/manage/table/people", data={"email": "nia@example.com", "role": "none"})
     db.expire_all()
     assert rows[0].left_on is not None and access.role("nia@example.com") is None
-    assert "nia@example.com" not in owner.get("/c/main/manage/table").text.split("<h2>People</h2>")[1].split("+ Add someone")[0]
+    assert "<b>Nia" not in owner.get("/c/main/manage/table").text.split("Left the table")[0]
     owner.post("/manage/table/people", data={"email": "nia@example.com", "role": "player"})  # back: a new membership
     assert len(list(db.scalars(select(CampaignMember).join(User).where(User.email == "nia@example.com")))) == 2
 
@@ -157,7 +157,7 @@ def test_players_cant_manage_people(env, monkeypatch, db):
     player, _ = sign_in(monkeypatch, "player@example.com")
     assert player.get("/manage/accounts").status_code == 403 and player.get("/c/main/manage/table").status_code in (403, 404)
     assert player.post("/manage/accounts", data={"email": "x@example.com", "admin": "1"}).status_code == 403
-    assert player.post("/manage/table/people/add", data={"new_email": "x@example.com"}).status_code == 403
+    assert player.post("/manage/table/add", data={"new_email": "x@example.com"}).status_code == 403
     assert db.scalar(select(User).where(User.email == "x@example.com")) is None
 
 
@@ -184,7 +184,7 @@ def test_who_plays_which_character_on_the_table(env, monkeypatch, db):
     owner, _ = sign_in(monkeypatch, "owner@example.com")
     add(owner, "player@example.com", "player")
     player = db.scalar(select(User).where(User.email == "player@example.com"))
-    assert f'<option value="{player.id}" >player@example.com</option>' in owner.get("/c/main/manage/table").text
+    assert f'<option value="{player.id}">player@example.com</option>' in owner.get("/c/main/manage/table").text
     owner.post(f"/manage/table/characters/{cole.id}", data={"user_id": str(player.id)})
     assert cole.owner.email == "player@example.com"
     owner.post(f"/manage/table/characters/{trah.id}", data={"user_id": str(player.id)})  # one character each here
@@ -223,17 +223,23 @@ def test_table_lists_people_by_role_and_folds_the_chart(env, monkeypatch, db):
     assert "Main</a> (DM)" in accounts and "Main</a> (player)" in accounts  # Accounts shows each person's campaigns
 
 
-def test_the_dm_sees_the_table_and_edits_settings_but_changes_no_roles(env, monkeypatch, db):
-    """A standing rule (app/access.py): the DM sees Manage › Table and edits Settings; only admins change who plays
-    what."""
+def test_the_dm_runs_their_own_table_but_a_new_email_stays_an_admins(env, monkeypatch, db):
+    """A standing rule (app/access.py; Brett, 2026-10-30, docs/mockups/the-table.html, widening who changes the table):
+    the campaign's DM adds people with accounts, changes roles and characters, and removes; a brand-new email, which
+    lets someone sign in to askdnd, stays an admin's, and so does Accounts."""
     import_bundle(db, MAIN)
     owner, _ = sign_in(monkeypatch, "owner@example.com")
     add(owner, "dm@example.com", "dm", "Dee")
     add(owner, "pat@example.com", "player", "Pat")
     dm, _ = sign_in(monkeypatch, "dm@example.com")
     page = dm.get("/c/main/manage/table").text
-    assert "<b>Pat</b>" in page and 'name="role"' not in page and "+ Add a character" not in page  # sees, can't change
-    assert dm.post("/manage/table/people", data={"email": "pat@example.com", "role": "dm"}).status_code == 403
+    assert "<b>Pat</b>" in page and 'name="role"' in page and "+ Add to the table" in page and 'name="new_email"' not in page
+    assert dm.post("/manage/table/people", data={"email": "pat@example.com", "role": "reviewer"}).status_code == 200
+    assert access.role("pat@example.com", db.scalar(select(Campaign)).id) == "reviewer"
+    r = dm.post("/manage/table/add", data={"new_email": "brandnew@example.com"}, follow_redirects=False)
+    assert r.status_code == 303 and db.scalar(select(User).where(User.email == "brandnew@example.com")) is None
+    assert dm.post("/manage/table/people", data={"email": "dm@example.com", "role": "none"}).status_code == 200
+    assert access.role("dm@example.com", db.scalar(select(Campaign)).id) == "dm"  # not yourself
     assert dm.get("/manage/accounts").status_code == 403
     dm.post("/manage/settings", data={"name": "The Lost Mine", "dm_name": "Dee", "ddb_campaign_id": "42"})
     main = db.scalar(select(Campaign))

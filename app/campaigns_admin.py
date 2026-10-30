@@ -163,8 +163,9 @@ def switch_book(request: Request, key: str, on: str = Form(""), db: Session = De
 
 
 @router.post(BACK + "/characters/{character_id:int}/move")
-def move(request: Request, character_id: int, campaign_id: str = Form(""), db: Session = Depends(get_db)):
-    """Move a character: its time in the old campaign ends today and stays in that campaign's story."""
+def move(request: Request, character_id: int, campaign_id: str = Form(""), back: str = Form(""), db: Session = Depends(get_db)):
+    """Move a character: its time in the old campaign ends today and stays in that campaign's story. `back`: from a
+    campaign's Table, which it returns to."""
     user, denied = web.require(request, is_admin, DENIED)
     if denied:
         return denied
@@ -174,4 +175,4 @@ def move(request: Request, character_id: int, campaign_id: str = Form(""), db: S
         chars.move(db, ch, target.id if target else None)
         db.commit()
         request.session["toast"] = f"{ch.name} is now in {target.name}" if target else f"{ch.name} is in no campaign now"
-    return RedirectResponse(BACK, status_code=303)
+    return RedirectResponse(back if back.startswith("/c/") and back.endswith("/manage/table") else BACK, status_code=303)

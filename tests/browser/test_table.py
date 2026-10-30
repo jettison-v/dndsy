@@ -96,13 +96,15 @@ def test_a_dm_only_roll_reaches_everyone_but_only_the_dm_sees_it(people, server)
         p.open("/c/main/")
         p.live()
         p.page.wait_for_selector(LOG, state="attached")  # the log is collapsed on Story
-    counts = {p: p.page.locator(LOG).count() for p in (other, dm)}
+    # (by the newest row, not how many: the log's first roll replaces "No rolls yet", and a full log stays full)
+    newest_id = f"document.querySelector('{LOG}')?.dataset.id"
+    tops = {p: p.page.evaluate(newest_id) for p in (other, dm)}
     page = battle(player, server)
     page.click(save("Cha"))
     page.locator(".roll-win [data-to=dm]").click()
     page.keyboard.press("Enter")
     for p in (other, dm):
-        p.page.wait_for_function(f"document.querySelectorAll('{LOG}').length > {counts[p]}", timeout=5000)
+        p.page.wait_for_function(f"([id]) => {newest_id} && {newest_id} !== id", arg=[tops[p]], timeout=5000)
     assert "Cha save" in newest(dm.page)
     hidden = newest(other.page)
     assert "Rolled for the DM" in hidden and "Cha save" not in hidden
