@@ -137,7 +137,7 @@ def _save_label(character: Character, ability: str) -> str:
 def follow(db: Session, campaign: Campaign, prev: dict | None, now: dict) -> None:
     """A turn ended or began (app/conditions.py, how long it lasts): each condition timed by it moves on; one that ran
     out is marked due, and its player and the DM are reminded (nothing ends by itself: Brett, 2026-10-29); a save at
-    the end of someone's turn is a reminder to roll it; Concentration counts its rounds on the caster's own turns."""
+    the end of someone's turn is a reminder as that turn begins, to roll it at its end; Concentration counts its rounds on the caster's own turns."""
     ended, began = step(prev, now)
     if not ended and not began:
         return
@@ -166,8 +166,8 @@ def follow(db: Session, campaign: Campaign, prev: dict | None, now: dict) -> Non
                         elif began == c["began"]:
                             c["left"] = c.get("left", la["n"]) - 1
                             c["due"] = c["left"] <= 0
-                    elif kind == "save" and ended and ended == of:
-                        _remind(now, ch, "save", c["name"], f"{la['ability']} save, DC {la['dc']}, to end {c['name']}",
+                    elif kind == "save" and began and began == of:  # rolled at its end, said as it begins (Brett, 2026-10-29)
+                        _remind(now, ch, "save", c["name"], f"{la['ability']} save, DC {la['dc']}, at the end of this turn, to end {c['name']}",
                                 ability=la["ability"], dc=la["dc"], mod=_save_label(ch, la["ability"]))
                     if c.get("due"):
                         _remind(now, ch, "ends", c["name"], f"{c['name']} ends now" + (f": its {la['n']} rounds are up" if kind == "rounds" else ""))

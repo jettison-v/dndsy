@@ -73,12 +73,14 @@ def test_until_the_end_of_your_next_turn_counts_your_next_turn_not_this_one(play
     assert char(db, "Cole").conditions[-1]["name"] == "Frightened"  # still on: nothing ends by itself
 
 
-def test_a_save_at_the_end_of_each_of_your_turns_reminds_you_each_time(player, db, sheet):
+def test_a_save_at_the_end_of_each_of_your_turns_reminds_you_as_each_one_begins(player, db, sheet):
     setup(db, player)
     at(db, 1, 2)
     start(player, db, "Paralyzed", lasts="save", ability="Wis", dc="13", whose="self")
-    walk(db, (1, 2), (2, 2))  # Cole's turn ends
-    walk(db, (2, 2), (3, 2))  # and again
+    walk(db, (1, 2), (2, 1))  # Cole's turn begins: the reminder comes now, not once the next turn has begun
+    saves = [r for r in reminders(db, "player@example.com") if r["kind"] == "save"]
+    assert len(saves) == 1 and "at the end of this turn" in saves[0]["text"]
+    walk(db, (2, 1), (3, 2))  # it ends, and the next one begins and ends: one more, as it began
     saves = [r for r in reminders(db, "player@example.com") if r["kind"] == "save"]
     assert len(saves) == 2 and saves[0]["ability"] == "Wis" and saves[0]["dc"] == 13 and "mod" in saves[0]
     assert not condition(db, "Paralyzed").get("due")  # a save ends it, not the clock
