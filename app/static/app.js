@@ -1104,6 +1104,7 @@
 //   small notices while the sidebar is collapsed.
 // - Otherwise: a private roll in this browser only (crypto random).
 (function () {
+  const toast = (...a) => window.askdndToast(...a);  // (the corner cards live in the block above)
   const SIDE = 'askdnd.rollsSide', ANIM = 'askdnd.rollsAnim', TO = 'askdnd.rollsTo';
   const WIDE = 1100;  // narrower than this, the sidebar starts closed and opens over the page
   const D20 = ['save', 'check', 'attack', 'death'];
