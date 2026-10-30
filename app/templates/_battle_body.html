@@ -16,6 +16,7 @@
 {% endmacro %}
 
 <div id="battle-body"{% if "Invisible" in active_conditions %} class="cond-ghost"{% endif %} data-character="{{ c.id }}" data-name="{{ c.name }}" data-fetched="{{ fetched_at.isoformat() if fetched_at else '' }}" data-cond-adv='{{ cond_adv | tojson }}'>
+  {% include "_level_up.html" %}
   <div class="battlebar" data-tour="roll">
     {% if s %}{{ resource_row(s, slots=not spellbar, skip=(["Wild Shape"] if known_forms else []), c=c if can_play else none) }}{% endif %}
     {% if form %}{% set fb = form.beast %}

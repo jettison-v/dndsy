@@ -140,6 +140,10 @@ def refresh(db: Session, character: Character, fetch: Fetch = ddb.fetch_characte
             from app import ddb_bridge  # (it builds on this module)
             if ddb_bridge.on_for(db, character):
                 ddb_bridge.seen(db, character, snap.raw, raw, summary)
+        from app import level_up  # (its route reads characters through item_use)
+
+        if (news := level_up.changes(snap.summary, summary)):
+            character.level_up = level_up.merged(character.level_up, news)
         snap.raw, snap.summary, snap.fetched_at = raw, summary, now
         character.ddb_campaign_id = ddb.campaign_id(raw)
         snap.status, snap.error = "ok", ""

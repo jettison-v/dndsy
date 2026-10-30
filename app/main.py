@@ -20,6 +20,7 @@ from app.hit_points import router as hit_points_router
 from app.casting import router as casting_router
 from app.inventory import router as inventory_router
 from app.item_use import router as item_use_router
+from app.level_up import router as level_up_router
 from app.resources import router as resources_router
 from app.rests import router as rests_router
 from app.admin_notes import router as admin_notes_router
@@ -132,6 +133,7 @@ app.include_router(item_use_router)
 app.include_router(casting_router)  # (through the bridge: on_for)
 app.include_router(resources_router)  # (through the bridge: on_for)
 app.include_router(rests_router)  # (through the bridge: on_for)
+app.include_router(level_up_router)
 app.include_router(inventory_router)  # (through the bridge: on_for)
 app.include_router(admin_notes_router)
 app.include_router(manage_table_router)
