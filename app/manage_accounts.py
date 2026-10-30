@@ -78,6 +78,23 @@ def add(request: Request, email: str = Form(...), name: str = Form(""), admin: s
     return RedirectResponse(BACK, status_code=303)
 
 
+@router.post("/name")
+def rename(request: Request, email: str = Form(...), name: str = Form(""), db: Session = Depends(get_db)):
+    """Someone's name in askdnd. Google's name only fills an empty one at sign-in, so this one stays."""
+    _, denied = web.require(request, is_admin, DENIED)
+    if denied:
+        return denied
+    new = " ".join(name.split())[:200]
+    u = db.scalar(select(User).where(User.email == email.strip().lower()))
+    if u is None or not new:
+        request.session["toast"] = web.notice("Enter a name.", "warn")
+    else:
+        u.name = new
+        db.commit()
+        request.session["toast"] = f"Renamed {new}"
+    return RedirectResponse(BACK, status_code=303)
+
+
 @router.post("/update")
 def update(request: Request, email: str = Form(...), admin: str = Form(""), remove: str = Form(""),
            db: Session = Depends(get_db)):

@@ -123,7 +123,7 @@ button.help-btn { background: none; cursor: pointer; padding: 0; font-family: in
 .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; }
 .live-word, .live-noext, .live-noext-box { display: none; }
 body.no-bridge .live-noext { display: inline; }  /* the extension isn't in this browser (app.js): say so, with the link in the window */
-body.no-bridge .live-noext-box { display: block; margin: 0 0 var(--sp-2); font-size: var(--fs-sm); }
+body.no-bridge .live-noext-box { display: grid; gap: var(--sp-2); }
 body.no-bridge .live-pill[data-wants-bridge] .live-ago { display: none; }
 .live-pill.warn .live-dot { background: var(--amber); }
 .live-pill.step .live-dot { background: var(--green); }  /* connected */
@@ -552,6 +552,8 @@ details.opt > summary b:hover { text-decoration: underline; text-decoration-colo
 .seat-panel select, .seat-panel input[type="text"] { width: 100%; max-width: 100%; min-width: 0; }
 .seat-field { max-width: 320px; }
 .seat-link { display: grid; gap: var(--sp-1); }
+.seat-name { display: flex; align-items: flex-end; gap: var(--sp-1); max-width: 420px; }
+.seat-name .field { flex: 1; }
 .seat-remove { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: flex-start; }
 .seat-ask > summary { list-style: none; cursor: pointer; }
 .seat-ask > summary::-webkit-details-marker { display: none; }

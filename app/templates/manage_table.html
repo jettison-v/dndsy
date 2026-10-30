@@ -11,6 +11,9 @@
   {# A character's D&D Beyond link, refresh and Move to, in its row #}
   {% macro link_tools(c) %}{% set snap = c.snapshot %}
   <div class="seat-link">
+    {% if can_change and not c.copy_of_id %}<form method="post" action="{{ cbase }}/manage/table/characters/{{ c.id }}/name" class="seat-name">
+      <label class="field"><span>Name</span><input type="text" name="name" value="{{ c.name }}" maxlength="200" required></label>
+      <button class="btn small" type="submit">Save name</button></form>{% endif %}
     {% if not c.ddb_id %}<span class="note">Not linked to D&amp;D Beyond yet</span>{% elif snap and snap.status == "error" %}<span class="quiet-warn">{{ snap.error }}</span>{% if snap.fetched_at %} <span class="note">Last good copy {{ snap.fetched_at | ago }}</span>{% endif %}{% elif snap %}<span class="note">Linked · updated {{ snap.fetched_at | ago }}</span>{% else %}<span class="note">Linked · not read yet</span>{% endif %}
     {% if c.copy_of_id %}<span class="note">{{ originals.get(c.copy_of_id) }}</span>{% endif %}
     <div class="row tight">

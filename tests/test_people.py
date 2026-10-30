@@ -1,16 +1,19 @@
 """People: tool roles (member, admin) on Manage › Accounts and roles per campaign (DM, reviewer, player) on each
 campaign's Manage › Table (app/access.py, app/manage_accounts.py, app/manage_table.py)."""
 
+import copy
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from app import access, auth, config
+from app import access, auth, characters, config, ddb
 from app.config import parse_allowlist
 from app.db import get_db
 from app.importer import import_bundle
 from app.main import app
-from app.models import Campaign, CampaignMember, Role, User
+from app.models import Campaign, CampaignMember, Character, Role, User
+from tests.table_setup import COLE
 
 
 @pytest.fixture
@@ -246,3 +249,55 @@ def test_the_dm_runs_their_own_table_but_a_new_email_stays_an_admins(env, monkey
     assert (main.name, main.dm_name, main.ddb_campaign_id, main.slug) == ("The Lost Mine", "Dee", "42", "main")
     pat, _ = sign_in(monkeypatch, "pat@example.com")
     assert pat.get("/c/main/manage/settings").status_code == 403 and pat.get("/c/main/manage/table").status_code == 403
+
+
+def test_an_admin_renames_an_account_and_google_leaves_it_alone(env, monkeypatch, db):
+    owner, _ = sign_in(monkeypatch, "owner@example.com")
+    sign_in(monkeypatch, "player@example.com")
+    owner.post("/manage/accounts/name", data={"email": "player@example.com", "name": "  Pat   Lee "})
+    u = db.scalar(select(User).where(User.email == "player@example.com"))
+    assert u.name == "Pat Lee" and "<b>Pat Lee</b>" in owner.get("/manage/accounts").text
+    sign_in(monkeypatch, "player@example.com")  # Google says "Player" again
+    assert u.name == "Pat Lee"
+    owner.post("/manage/accounts/name", data={"email": "player@example.com", "name": "  "})
+    assert u.name == "Pat Lee"
+
+
+def test_only_admins_rename_accounts(env, monkeypatch, db):
+    player, _ = sign_in(monkeypatch, "player@example.com")
+    assert player.post("/manage/accounts/name", data={"email": "player@example.com", "name": "Me"}).status_code == 403
+
+
+def test_a_character_added_while_private_takes_its_name_from_the_sheet_once_it_can_be_read(env, monkeypatch, db):
+    """Brett, 2026-10-30: added while private, it stayed "New character" with no way to change it."""
+    import_bundle(db, MAIN)
+    owner, _ = sign_in(monkeypatch, "owner@example.com")
+    sheet = {"private": True}
+
+    def fetch(_id):
+        if sheet["private"]:
+            raise ddb.DdbError("D&D Beyond says this character is private.")
+        return copy.deepcopy(COLE)
+
+    monkeypatch.setattr(characters.refresh, "__defaults__", (fetch,))
+    owner.post("/manage/table/add", data={"ddb_link": "https://www.dndbeyond.com/characters/12345678"})
+    ch = db.scalar(select(Character).where(Character.ddb_id == "12345678"))
+    assert ch.name == "New character"
+    sheet["private"] = False
+    characters.refresh(db, ch)
+    assert ch.name == ch.membership.entity.name == "Cole Lockhard" and not ch.membership.entity.aliases
+    ch.name = ch.membership.entity.name = "Sir Cole"  # a table's own name stays
+    characters.refresh(db, ch)
+    assert ch.name == "Sir Cole"
+
+
+def test_the_table_renames_a_character_keeping_its_old_name_as_another(env, monkeypatch, db):
+    import_bundle(db, MAIN)
+    owner, _ = sign_in(monkeypatch, "owner@example.com")
+    owner.post("/manage/table/add", data={"char_name": "Sarkas"})
+    ch = db.scalar(select(Character).where(Character.name == "Sarkas"))
+    owner.post(f"/manage/table/characters/{ch.id}/name", data={"name": "No Name"})
+    assert ch.name == ch.membership.entity.name == "No Name"
+    assert [a.alias for a in ch.membership.entity.aliases] == ["Sarkas"]
+    assert 'value="No Name"' in owner.get("/c/main/manage/table").text
+

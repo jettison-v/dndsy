@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session, object_session
 from app import spending
 from app.extraction import MODEL, ExtractionError, _cost, _norm, session_label, timeline
 from app.models import (
+    NEW_CHARACTER,
     Entity,
     EntityAlias,
     EntityKind,
@@ -264,7 +265,7 @@ def rename(entity: Entity, name: str) -> None:
     old = entity.name
     entity.name = new
     sync_character_name(entity, new)
-    if not any(a.alias.casefold() == old.casefold() for a in entity.aliases):
+    if old != NEW_CHARACTER and not any(a.alias.casefold() == old.casefold() for a in entity.aliases):
         entity.aliases.append(EntityAlias(alias=old, misspelling=False, note="earlier name"))
 
 

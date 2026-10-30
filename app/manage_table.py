@@ -20,11 +20,11 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import view_as
-from app import access, config, ddb, web
+from app import access, config, ddb, entities, web
 from app import characters as chars
 from app.auth import can_run_table, can_see_table, is_admin, is_reviewer
 from app.db import get_db
-from app.models import Campaign, CampaignCharacter, CampaignMember, Character, Role, User
+from app.models import NEW_CHARACTER, Campaign, CampaignCharacter, CampaignMember, Character, Role, User
 from app.templating import templates
 
 router = APIRouter(prefix="/manage/table")
@@ -242,7 +242,7 @@ def add(request: Request, email: str = Form(""), new_email: str = Form(""), name
         set_role(db, u, campaign.id, _role(role) or access.PLAYER)
     note, added = "", (u.name or email) if u else ""
     if ddb_link or char_name:
-        ch = Character(name=char_name or "New character", player_name=(u.name if u else "")[:200], owner_id=u.id if u else None)
+        ch = Character(name=char_name or NEW_CHARACTER, player_name=(u.name if u else "")[:200], owner_id=u.id if u else None)
         db.add(ch)
         db.flush()
         chars.move(db, ch, campaign.id)
@@ -255,8 +255,6 @@ def add(request: Request, email: str = Form(""), new_email: str = Form(""), name
                 chars.set_ddb_link(db, ch, ddb_link)
                 snap = chars.refresh(db, ch)
                 note = "" if snap.status == "ok" else f" ({snap.error})"
-                if not char_name and (snap.summary or {}).get("name"):
-                    ch.name = ch.membership.entity.name = snap.summary["name"][:200]
             except ddb.DdbError as e:
                 note = f" ({e})"
         added = f"{added} with {ch.name}" if added else ch.name
@@ -317,6 +315,26 @@ def save_player(request: Request, character_id: int, user_id: str = Form(""), db
     ch.owner_id = player.id if player else None
     db.commit()
     request.session["toast"] = f"{ch.name}: played by {player.name or player.email}" if player else f"{ch.name}: nobody plays it now"
+    return _back()
+
+
+@router.post("/characters/{character_id:int}/name")
+def save_name(request: Request, character_id: int, name: str = Form(""), db: Session = Depends(get_db)):
+    """A character's name: until now only its story page could change it."""
+    user, denied = web.require(request, can_run_table, DENIED)
+    if denied:
+        return denied
+    campaign = web.campaign(db)
+    ch = db.get(Character, character_id)
+    if campaign is None or ch is None or ch.campaign_id != campaign.id:
+        return _back()
+    try:
+        entities.rename(ch.membership.entity, name)
+    except entities.EntityError as e:
+        request.session["toast"] = web.notice(str(e), "warn")
+        return _back()
+    db.commit()
+    request.session["toast"] = f"Renamed {ch.name}"
     return _back()
 
 

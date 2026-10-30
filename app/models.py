@@ -267,6 +267,9 @@ class EntityRelation(Timestamped, Base):
     to_entity: Mapped[Entity] = relationship(foreign_keys=[to_entity_id])
 
 
+NEW_CHARACTER = "New character"  # the name until the sheet can be read (Brett, 2026-10-30: it stuck when a sheet was private)
+
+
 class Character(Timestamped, Base):
     """A player character. It belongs to its player, not to a campaign: its D&D Beyond copy, notes, pins and
     reminders travel with it. Which campaign it's in (and its story page there) is a CampaignCharacter."""
