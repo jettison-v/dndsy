@@ -147,7 +147,61 @@ def close_after_roll(t: Table, seat: str = "player2", times: int = 5) -> None:
             page.wait_for_timeout(1000)
 
 
-RUNS = {"closed-sheet": closed_sheet, "game-log": game_log, "close-after-roll": close_after_roll}
+def hp(page: Page) -> int:
+    return int(page.locator('[data-panel-url$="/vital/hp"] b').first.inner_text(timeout=3000))
+
+
+def change_hp(page: Page, mode: int, amount: int) -> None:
+    """Hit points' panel, then Damage or Heal in the window, as a player does it."""
+    page.locator('[data-panel-url$="/vital/hp"]').first.click()
+    page.locator(".hp-open button").nth(mode).click(timeout=8000)
+    page.locator('.hp-form input[name="amount"]').first.fill(str(amount), timeout=8000)
+    page.locator('.hp-form input[name="amount"]').first.press("Tab")
+    page.wait_for_timeout(800)
+    page.locator('.hp-form button[type="submit"]').first.click(timeout=5000)
+    page.wait_for_timeout(800)
+    page.keyboard.press("Escape")
+
+
+def settled(page: Page) -> bool:
+    return page.locator('[data-panel-url$="/vital/hp"][data-sync]').count() == 0
+
+
+def hit_points(t: Table, seat: str = "player2") -> None:
+    """Damage made in askdnd lands on the real sheet and comes back confirmed; healing puts it back."""
+    sheet = t.sheet(seat)
+    page = t.battle(seat)
+    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    start = hp(page)
+    print("  hit points:", start, flush=True)
+    change_hp(page, 0, 1)
+    t.expect("the tile shows 1 less at once", lambda: hp(page) == start - 1, 6)
+    t.expect("D&D Beyond confirms it", lambda: settled(page), 25)
+    t.expect("the real sheet shows it", lambda: str(start - 1) in sheet.locator("[class*=hitPointsBox]").first.inner_text(timeout=2000), 15)
+    page.wait_for_timeout(1000)
+    change_hp(page, 1, 1)
+    t.expect("healing puts it back", lambda: hp(page) == start, 6)
+    t.expect("D&D Beyond confirms the healing", lambda: settled(page), 25)
+    t.expect("the real sheet shows it back", lambda: str(start) in sheet.locator("[class*=hitPointsBox]").first.inner_text(timeout=2000), 15)
+
+
+def condition(t: Table, seat: str = "player2", name: str = "Poisoned") -> None:
+    """A condition started in askdnd lands on the real sheet; ended in askdnd, it leaves it."""
+    sheet = t.sheet(seat)
+    page = t.battle(seat)
+    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    page.locator("details.cond-add > summary").click(timeout=5000)
+    page.locator(f'.ls-chip:has-text("{name}")').first.click(timeout=5000)
+    t.expect("the condition shows on Battle", lambda: page.locator(f'.cond-pill:has-text("{name}")').count() > 0, 8)
+    t.expect("it reaches the real sheet", lambda: name in sheet.locator(".ct-conditions-summary").first.inner_text(timeout=3000), 25)
+    page.wait_for_timeout(1500)
+    page.locator(f'details.cond-pill:not(.cond-add):has-text("{name}") > summary').first.click(timeout=5000)
+    page.locator(f'details.cond-pill:not(.cond-add):has-text("{name}") button:has-text("End")').first.click(timeout=5000)
+    t.expect("it ends on Battle", lambda: page.locator(f'details.cond-pill:not(.cond-add):has-text("{name}")').count() == 0, 8)
+    t.expect("it leaves the real sheet", lambda: name not in sheet.locator(".ct-conditions-summary").first.inner_text(timeout=3000), 25)
+
+
+RUNS = {"closed-sheet": closed_sheet, "game-log": game_log, "close-after-roll": close_after_roll, "hit-points": hit_points, "condition": condition}
 
 
 def main() -> int:

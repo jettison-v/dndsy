@@ -48,6 +48,7 @@ Brett, 2026-10-30: test with the real D&D Beyond, not only the stand-in in the b
 
 - **The seats.** `scripts/real_table_seats.sh` copies the three profiles above into `~/askdnd-tests/seats` on the Mini and opens them in real Chrome windows. Chrome refuses to let a script drive its normal profile folder, and sign-ins can't move between computers, so the copies stay on the Mini. Copy again after signing in afresh or updating the bridge. Claude never enters a password.
 - **The runs.** `scripts/real_table.py` holds named runs: each does what a person would, watches the pages, and says what it expected and what happened. Run one on the Mini with `.venv/bin/python real_table.py <run>`.
+- **The plan.** [live-test-plan.md](live-test-plan.md) is what to run and when, with the checks that still need a person.
 - **Stays apart.** Never on GitHub, since it needs the signed-in seats and D&D Beyond itself. It tests what's on beta, not unmerged changes.
 - **Don't overlap.** While a run is going, stay off Cathartic and Vi: it opens and closes their sheets.
 
@@ -56,8 +57,10 @@ Brett, 2026-10-30: test with the real D&D Beyond, not only the stand-in in the b
 | `closed-sheet` | An open sheet connects the pill, and closing it changes the pill at once |
 | `game-log` | A roll reaches the Game Log while the sheet is open; with it closed the table still sees the roll, and the roll window says why it isn't in the log |
 | `close-after-roll` | Repeats closing a sheet right after a roll, at different moments |
+| `hit-points` | Damage and healing in askdnd land on the real sheet and are confirmed |
+| `condition` | A condition started and ended in askdnd lands on and leaves the real sheet |
 
-Still to write: a turn order heard from the VTT, Hit Points through the bridge.
+Still by hand: the fight on D&D Beyond's VTT.
 
 First results, 2026-10-30, with extension 0.9.4: `closed-sheet` passed. `game-log` passed in 3 of 5 runs after its test was fixed: the two misses were a closed sheet still saying Connected, fixed in 0.9.5. The rolls themselves reached the other player's sheet every time, and none did with the sheet closed. `close-after-roll` once took over 40 seconds to show Connected after a sheet opened, not explained yet. Rerun all three once 0.9.5 is on the store, after copying the seats again.
 

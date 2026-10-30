@@ -166,7 +166,8 @@ def follow(db: Session, campaign: Campaign, ended: str | None, began: str | None
 
     keys = {x["character"]: x["key"] for x in now["order"] if x.get("character")}
     members = db.scalars(select(Character).join(CampaignCharacter, CampaignCharacter.character_id == Character.id)
-                         .where(CampaignCharacter.campaign_id == campaign.id, CampaignCharacter.left_on.is_(None)))
+                         .where(CampaignCharacter.campaign_id == campaign.id, CampaignCharacter.left_on.is_(None))
+                         .order_by(Character.id))  # (one order, so two of these can't deadlock on each other's rows)
     for ch in members:
         mine = keys.get(ch.id)
         if ch.conditions and any(c.get("lasts") for c in ch.conditions):
