@@ -133,6 +133,10 @@ def test_the_last_vtt_closing_leaves_no_fight_heard_and_a_closed_sheet_isnt_in_s
     assert campaign.fight is not None
     player.post(f"/bridge/fight/{GAME}", json={"closed": True})  # the browser's last VTT tab for that game closed
     assert campaign.fight is None
+    from sqlalchemy import text
+
+    db.flush()
+    assert db.scalar(text("select fight is null from campaigns where id = :i"), {"i": campaign.id})  # an empty field, not JSON null
     cole = char(db, "Cole")
     cole.sheet_heard_at = datetime.now(UTC)
     assert player.post(f"/bridge/closed/{cole.ddb_id}").status_code == 200

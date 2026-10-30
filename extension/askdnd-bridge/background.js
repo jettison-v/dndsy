@@ -29,9 +29,11 @@ chrome.tabs.onRemoved.addListener(async tabId => {
   if (!was) return;
   delete tabsOpen[tabId];
   await chrome.storage.session.set({ tabsOpen });
-  if (was.sheet && !(await sheetTabs(was.sheet)).length) api('POST', '/bridge/closed/' + was.sheet).catch(() => {});
-  if (was.game && !(await chrome.tabs.query({ url: 'https://www.dndbeyond.com/games/' + was.game + '*' })).length)
-    api('POST', '/bridge/fight/' + was.game, { closed: true }).catch(() => {});  // no VTT here hears that fight now
+  // (Chrome may still list the tab that's closing: it doesn't count)
+  const others = tabs => tabs.filter(t => t.id !== tabId);
+  if (was.sheet && !others(await sheetTabs(was.sheet)).length) api('POST', '/bridge/closed/' + was.sheet).catch(() => {});
+  const vtts = was.game ? others(await chrome.tabs.query({ url: 'https://www.dndbeyond.com/games/' + was.game + '*' })) : [];
+  if (was.game && !vtts.length) api('POST', '/bridge/fight/' + was.game, { closed: true }).catch(() => {});  // no VTT here hears that fight now
 });
 
 async function api(method, path, body) {
