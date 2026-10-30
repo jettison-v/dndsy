@@ -1,4 +1,4 @@
-"""Table rolls: dice rolled on the server while Game Mode is on, shared with the table.
+"""Table rolls: dice rolled on the server, shared with the table.
 
 The page's roll buttons carry what to roll (data-roll, data-label, data-mod, data-dmg,
 data-adv; app/templates/_char.html). app.js opens a small roll window (Adv / Dis, who
@@ -357,7 +357,7 @@ def render(request: Request, items: list[dict]) -> str:
 @router.get("/rolls")
 def roll_log(request: Request, since: int = -1, db: Session = Depends(get_db)):
     """The table's rolls this viewer may see, newest activity first: the last LOG_SIZE (with a
-    line when there are none), or only rolls with something new after `since` (Game Mode polls
+    line when there are none), or only rolls with something new after `since` (pages poll
     every few seconds; nothing new is a 204, which htmx skips). A roll whose damage, reroll or
     added die is new comes again, whole: the page replaces its old copy."""
     user = current_user(request)

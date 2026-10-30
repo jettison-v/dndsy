@@ -262,7 +262,7 @@ def _load_from_db(campaign_id: int, email: str | None) -> dict | None:
         return for_person(db, db.get(Campaign, campaign_id), email)
 
 
-# Character pages and Party draw the band (templating.fight_now), with their own short session like Game Mode's;
+# Character pages and Party draw the band (templating.fight_now), with their own short session;
 # tests point it at their session
 loader: Callable[[int, str | None], dict | None] = _load_from_db
 
