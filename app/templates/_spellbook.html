@@ -50,13 +50,14 @@
           <span class="sb-avg-col{{ ' heal' if healing }}">{% if e.avgs %}<b data-sb-avg>—</b> <span class="note" data-sb-dice></span>{% if e.on_save == "half" %}<span class="note sb-half" data-sb-half></span>{% endif %}{% else %}<span class="note">—</span>{% endif %}</span>
           <span class="sb-actions">
             {% if e.recipe %}{{ spell_roll(c, e, "Roll", "row-act sb-roll", 0) }}{% endif %}{# compact: the row says what it rolls (Brett, 2026-10-29) #}
+            {% if can_use and (e.level or e.conc) %}<button type="button" class="row-act item-go" data-use-url="/characters/{{ c.id }}/cast?key={{ e.key | urlencode }}">Cast</button>{% endif %}
             {% if e.conc and can_pick and not (conc and conc.key == e.key) %}
             {% if conc %}{# already concentrating: ask first, as ✕ does (Brett, 2026-10-29) #}
             <details class="conc-pop sb-switch">
               <summary class="row-act conc-act" data-tip="Concentrate on {{ e.name }}" aria-label="Concentrate on {{ e.name }}">{{ cond_icon("Concentration") }}</summary>
               <div class="conc-box warn" role="alertdialog" aria-label="End Concentration on {{ conc.spell }}?">
                 <b>End Concentration on {{ conc.spell }}?</b>
-                <span class="note">Concentrating on {{ e.name }} ends {{ conc.spell }} now. Its slot stays spent; spend {{ e.name }}'s on D&amp;D Beyond.</span>
+                <span class="note">Concentrating on {{ e.name }} ends {{ conc.spell }} now. Its slot stays spent{% if can_use %}. This spends no slot: Cast does{% else %}; spend {{ e.name }}'s on D&amp;D Beyond{% endif %}.</span>
                 <div class="row tight"><button type="button" class="btn small" data-close-details>Keep {{ conc.spell }}</button>
                   <form class="inline" hx-post="/characters/{{ c.id }}/concentration" hx-target="#battle-body" hx-swap="outerHTML">
                     <input type="hidden" name="key" value="{{ e.key }}"><input type="hidden" name="level" value="{{ e.level }}" data-sb-level>
@@ -66,7 +67,7 @@
             {% else %}
             <form class="inline" hx-post="/characters/{{ c.id }}/concentration" hx-target="#battle-body" hx-swap="outerHTML">
               <input type="hidden" name="key" value="{{ e.key }}"><input type="hidden" name="level" value="{{ e.level }}" data-sb-level>
-              <button class="row-act conc-act" data-tip="Concentrate on {{ e.name }} (spend the slot on D&amp;D Beyond)" aria-label="Concentrate on {{ e.name }}">{{ cond_icon("Concentration") }}</button>
+              <button class="row-act conc-act" data-tip="Concentrate on {{ e.name }} ({{ 'spends no slot' if can_use else 'spend the slot on D&amp;D Beyond' }})" aria-label="Concentrate on {{ e.name }}">{{ cond_icon("Concentration") }}</button>
             </form>
             {% endif %}
             {% endif %}

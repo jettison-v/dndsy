@@ -220,12 +220,18 @@
 
 {# Limited resources, the ones with the most uses first (by total, not by what's left), then spell
    slots. Battle passes slots=False and skips Wild Shape: its spell bar and Wild Shape row show those. #}
-{% macro resource_row(s, slots=True, skip=()) -%}
-{% set res = s.actions | selectattr("uses") | selectattr("source", "in", ["class", "feat", "race"]) | rejectattr("name", "in", skip) | sort(attribute="uses.max", reverse=True) | list %}
-{% if res %}<div class="res-row"><span class="res-label">Resources</span>{% for a in res %}<span class="res">{{ a.name }} {{ pips(a.uses) }}</span>{% endfor %}</div>{% endif %}
+{# One count in the Resources row; with `c`, it opens its window (app/resources.py) #}
+{% macro res(s, c, field, label, u) -%}
+{%- if c %}<button type="button" class="res res-go" data-use-url="/characters/{{ c.id }}/count?field={{ field | urlencode }}"{{ sync(s, field) }}>{{ label }} {{ pips(u) }}</button>
+{%- else %}<span class="res">{{ label }} {{ pips(u) }}</span>{% endif -%}
+{%- endmacro %}
+
+{% macro resource_row(s, slots=True, skip=(), c=none) -%}
+{% set res_rows = s.actions | selectattr("uses") | selectattr("source", "in", ["class", "feat", "race"]) | rejectattr("name", "in", skip) | sort(attribute="uses.max", reverse=True) | list %}
+{% if res_rows %}<div class="res-row"><span class="res-label">Resources</span>{% for a in res_rows %}{{ res(s, c if a.id else none, "uses:" ~ a.id, a.name, a.uses) }}{% endfor %}</div>{% endif %}
 {% if slots and (s.spell_slots.slots or s.spell_slots.pact) %}<div class="res-row slots"><span class="res-label">Spell slots</span>
-  {% for sl in s.spell_slots.slots %}<span class="res">{{ sl.level }}{{ {1: "st", 2: "nd", 3: "rd"}.get(sl.level, "th") }} {{ pips({"max": sl.max, "left": sl.max - sl.used}) }}</span>{% endfor %}
-  {% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}<span class="res">Pact ({{ {1: "1st", 2: "2nd", 3: "3rd"}.get(p.level, p.level ~ "th") }}) {{ pips({"max": p.max, "left": p.max - p.used}) }}</span>{% endif %}
+  {% for sl in s.spell_slots.slots %}{{ res(s, c, "slot:" ~ sl.level, sl.level ~ {1: "st", 2: "nd", 3: "rd"}.get(sl.level, "th"), {"max": sl.max, "left": sl.max - sl.used}) }}{% endfor %}
+  {% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}{{ res(s, c, "pact:" ~ p.level, "Pact (" ~ {1: "1st", 2: "2nd", 3: "3rd"}.get(p.level, p.level ~ "th") ~ ")", {"max": p.max, "left": p.max - p.used}) }}{% endif %}
 </div>{% endif %}
 {%- endmacro %}
 

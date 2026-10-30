@@ -553,6 +553,7 @@ class _Sheet:
                 values = self.template_values(class_level, scale)
                 out.append({
                     "key": f"action:{name}",
+                    "id": a.get("id"),
                     "name": name,
                     "source": source,
                     "activation": ACTIVATION.get(kind, ""),

@@ -1,0 +1,12 @@
+{# A spell's window, inside the roll window (app.js "using an item"; app/casting.py). #}
+<button type="button" class="rp-x" aria-label="Close">×</button>
+<div class="rw-title">{{ e.name }}</div>
+<p class="use-cost">{{ e.time }}{% if e.range %} · {{ e.range }}{% endif %}{% if e.duration %} · {{ e.duration }}{% endif %}</p>
+{% if ends %}<p class="use-what">Ends Concentration on {{ ends.spell }}.</p>{% endif %}
+{% if ways %}<div class="rw-row"><span class="rw-label">Cast at</span><select class="rw-slot" name="way" aria-label="How to cast {{ e.name }}">{% for w in ways %}<option value="{{ w.way }}">{{ w.label }}</option>{% endfor %}</select></div>{% endif %}
+{% if reachable %}
+<div class="rw-row"><button type="button" class="btn primary small" data-use-go>Cast</button></div>
+<p class="use-said" role="alert" hidden></p>
+{% else %}
+<p class="use-said">{{ c.name }}'s D&amp;D Beyond sheet can't be reached: open it in Chrome with the askdnd bridge to cast here, or spend the slot on D&amp;D Beyond (askdnd shows it within seconds).</p>
+{% endif %}
