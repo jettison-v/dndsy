@@ -12,10 +12,17 @@ from sqlalchemy.orm import Session
 from app import ddb_bridge, web
 from app.character_views import ordinal
 from app.db import get_db
-from app.item_use import _guard, _sheet
+from app.item_use import _guard as _player, _sheet
 from app.templating import templates
 
 router = APIRouter()
+
+
+def _guard(db: Session, request: Request, character_id: int):
+    ch, user = _player(db, request, character_id)
+    if not ddb_bridge.plays(db, ch):
+        raise HTTPException(404)
+    return ch, user
 
 
 def count(sheet: dict, field: str) -> dict | None:

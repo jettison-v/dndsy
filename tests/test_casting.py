@@ -1,11 +1,19 @@
 """Casting a spell in play (app/casting.py): the slot through the bridge, Concentration by itself, Undo."""
 
+import pytest
 from sqlalchemy import select
 
 from app import casting, characters
 from app import spellbook as sb
-from app.models import BridgeIntent
+from app.models import BridgeIntent, Campaign
 from tests.table_setup import char
+
+
+@pytest.fixture(autouse=True)
+def test_campaign(db, sheet):
+    """Live state is a VTT piece still being reviewed: a test campaign sees it."""
+    db.get(Campaign, char(db, "Cole").campaign_id).is_test = True
+    db.flush()
 
 
 def spell(sheet, **want):

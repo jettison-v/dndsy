@@ -57,6 +57,7 @@ def _view(db: Session, ch: Character, user: dict) -> dict:
         "picks": mine,
         "can_pick": picks.can_edit(db, user, ch),
         "can_use": picks.can_edit(db, user, ch) and ddb_bridge.on_for(db, ch),  # an item's button (app/item_use.py)
+        "can_play": picks.can_edit(db, user, ch) and ddb_bridge.plays(db, ch),  # Cast, resources, rests (the VTT piece live_state)
         "show_picks": picks.can_see(user, ch),
         "reminders": views.reminders(sheet, mine["remind"], mine["order"].get("forget"), mine["notes"]) if sheet else [],
         "druid": druid,

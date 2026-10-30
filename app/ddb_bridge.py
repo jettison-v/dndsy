@@ -105,6 +105,14 @@ def _allowed():
         raise HTTPException(404)
 
 
+def plays(db: Session, character: Character | None) -> bool:
+    """Whether the bridge's live state works here (the VTT piece "live_state": casting, resources, rests)."""
+    from app import vtt
+    from app.models import Campaign
+
+    return on_for(db, character) and vtt.on(db.get(Campaign, character.campaign_id), "live_state")
+
+
 def on_for(db: Session, character: Character | None) -> bool:
     """Whether the bridge works on this character: it may run here, its campaign has it switched on (the VTT piece
     "ddb_bridge"; a test campaign always does), and it's a character of its own. Never a test copy: a copy shares a

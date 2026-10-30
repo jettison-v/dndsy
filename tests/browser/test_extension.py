@@ -97,6 +97,22 @@ def test_a_sheet_closed_right_after_it_saved_stays_closed(chrome, server):
     assert "Open your sheet to connect" in page.locator(PILL).inner_text()
 
 
+def test_cast_spends_through_the_window_and_undo_takes_it_back(chrome, server):
+    """Live state (app/casting.py): the real extension, the window, the corner card."""
+    page = chrome.pages[0]
+    page.goto(f"{server['base']}/characters/{server['cole']}/battle")
+    page.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=8000)
+    sheet = chrome.new_page()
+    sheet.goto(SHEET)
+    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected to D&D Beyond')", timeout=45000)
+    page.click('.res-row .res-go >> nth=0')
+    page.locator(".roll-win [data-use-go]").first.click(timeout=5000)
+    card = page.locator("#cards > .card", has_text="left")
+    card.wait_for(timeout=5000)
+    card.locator(".card-act").click()
+    page.locator("#cards > .card", has_text="left").nth(1).wait_for(timeout=5000)
+
+
 def test_without_the_extension_the_pill_says_to_add_it_and_the_window_has_the_link(people, server):
     """Brett, 2026-10-30: the DM didn't have it by accident, and nothing said so."""
     dm = people("dm")
@@ -107,4 +123,3 @@ def test_without_the_extension_the_pill_says_to_add_it_and_the_window_has_the_li
     link = page.locator(".live-noext-box a")
     link.wait_for()
     assert "chromewebstore.google.com" in link.get_attribute("href")
-
