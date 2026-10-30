@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app import house_rules, web
 from app import roll_recipes as rr
+from app import character_views as views
 from app.auth import can_set_house_rules
 from app.db import get_db
 from app.models import HouseRule
@@ -19,7 +20,14 @@ DENIED = "House rules are for the DM and admins."
 def _rows(db: Session, campaign_id: int) -> list[dict]:
     rows = db.scalars(select(HouseRule).where(HouseRule.campaign_id == campaign_id)
                       .order_by(HouseRule.target_key, HouseRule.field))
-    return [{"r": r, "text": house_rules.describe(r.field, r.value, rr.spell(r.target_key))} for r in rows]
+    return [{"r": r, "name": r.target_key.split(":", 1)[-1] if r.target_kind == "sheet" else r.target_key,
+             "text": _sheet_text(r) if r.target_kind == "sheet" else house_rules.describe(r.field, r.value, rr.spell(r.target_key))} for r in rows]
+
+
+def _sheet_text(r: HouseRule) -> str:
+    """A correction made in an item's side panel, in a few words."""
+    said = dict(views.OVERRIDE_CHOICES.get(r.field, [])).get(r.value, r.value)
+    return f"{views.FIELD_LABELS.get(r.field, r.field)}: {said}"
 
 
 @router.get("")

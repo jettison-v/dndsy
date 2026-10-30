@@ -1,5 +1,5 @@
 {
-  "_about": "Magic items askdnd knows by name (app/conditions.py). Our own short summaries of the 2024 rules, never book text. actions: Battle options the item gives; starts / ends: a condition or effect the action gives or ends (a pill on Battle); note: what the pill says about how long it lasts. on_use: what drinking or using a consumable starts. Chosen from a scan of every 2024 magic item (docs/reviews/2026-10-22-magic-item-effects.md).",
+  "_about": "Magic items askdnd knows by name (app/conditions.py). Our own short summaries of the 2024 rules, never book text. actions: Battle options the item gives; starts / ends: a condition or effect the action gives or ends (a pill on Battle); note: what the pill says about how long it lasts. on_use: what drinking or using a consumable starts. options: the kinds an item comes in, from _options, for its player to mark. Chosen from a scan of every 2024 magic item (docs/reviews/2026-10-22-magic-item-effects.md).",
   "Ring of Invisibility": {"actions": [
     {"cost": "Action", "name": "Turn Invisible", "meta": "Magic action · Ring of Invisibility", "starts": "Invisible",
      "note": "Lasts until you take the ring off or take a Bonus Action to become visible. Attacking or casting a spell doesn't end it.",
@@ -25,6 +25,13 @@
   "Potion of Invisibility": {"on_use": {"starts": "Invisible", "note": "1 hour. Ends early if you make an attack roll, deal damage or cast a spell."}},
   "Potion of Greater Invisibility": {"on_use": {"starts": "Invisible", "note": "1 hour. Attacking or casting doesn't end it."}},
   "Dust of Disappearance": {"on_use": {"starts": "Invisible", "note": "2d4 minutes for you and everyone within 10 feet. It ends for a creature right after it makes an attack roll, deals damage or casts a spell."}},
+  "_options": {"dragon family": {"label": "Dragon family", "choices": [
+    {"name": "Chromatic", "cost": "No action", "what": "When you use a spell slot on a spell that deals acid, cold, fire, lightning or poison damage, roll a d6 and add it to one damage roll."},
+    {"name": "Gem", "cost": "No action", "what": "When you use a spell slot to cast a spell, you can teleport up to 15 feet to a space you can see."},
+    {"name": "Metallic", "cost": "Reaction", "what": "When a creature you can see within 30 feet makes a saving throw, give it Advantage on that save."}]}},
+  "Dragon-Touched Focus (Stirring)": {"options": "dragon family"},
+  "Dragon-Touched Focus (Wakened)": {"options": "dragon family"},
+  "Dragon-Touched Focus (Ascendant)": {"options": "dragon family"},
   "Potion of Growth": {"on_use": {"starts": "Enlarged", "note": "10 minutes, no Concentration needed (the enlarge effect of Enlarge/Reduce)."}},
   "Potion of Water Breathing": {"on_use": {"starts": "Water Breathing", "note": "24 hours."}}
 }

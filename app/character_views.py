@@ -115,7 +115,11 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
         o.setdefault("oref", o["key"])
         moved = (sheet.get("_overrides") or {}).get(f"{o['oref']}|cost")
         if moved:
-            o["cost"] = moved
+            was = (o.get("use") or {}).get("said")
+            o["cost"], o["cost_from"] = moved, "campaign" if f"{o['oref']}|cost" in (sheet.get("_campaign_corrections") or ()) else "askdnd"
+            o["tags"] = [t for t in o["tags"] if t != was]
+            if o.get("use"):
+                o["use"] = {**o["use"], "said": COST_NAMES.get(moved, moved)}
         out.append(o)
 
     for a in sheet.get("attacks") or []:
@@ -174,13 +178,16 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
             continue  # (used up: off Battle, and D&D Beyond's sheet still lists it)
         uses = ch if ch and (ch["max"] > 1 or ch["reset"] != "Used up") else None
         first = re.split(r"(?<=[.!?])\s", it["summary"] or "", maxsplit=1)[0]
-        cost, said = conditions.item_cost(it)
+        choice = (sheet.get("_item_choices") or {}).get(it["key"].split(":", 1)[1], "")
+        cost, said = conditions.item_cost(it, choice)
+        kinds = conditions.item_options(it)
+        kind = next((c for c in (kinds or {}).get("choices") or [] if c["name"] == choice), None)
         add(key=it["key"], oref=f"item:{it['base_name']}", kind="item", cost=cost, name=it["name"], uses=uses,
-            tags=([said] if said and said.lower() != cost.lower() else []) + ([f"×{left}"] if left > 1 and not uses else []),
-            meta=first if len(first) <= 120 else first[:119].rsplit(" ", 1)[0] + "…",
+            tags=([said] if said and said.lower() != cost.lower() and cost != "No action" else []) + ([f"×{left}"] if left > 1 and not uses else []),
+            meta=(kind or {}).get("what") or (first if len(first) <= 120 else first[:119].rsplit(" ", 1)[0] + "…"),
             text=it.get("text") or it["summary"], summary=it["summary"], common="healing" in it["name"].lower(),
-            recipe=rr.item(it["base_name"]) or rr.item(it["name"]),
-            use={"id": it["key"].split(":", 1)[1], "left": left, "said": said, "verb": {"Potion": "Drink", "Scroll": "Read"}.get(it["type"], "Use"),
+            recipe=rr.item(it["base_name"]) or rr.item(it["name"]), cost_from=conditions.cost_source(it, choice),
+            use={"mark": (kinds or {}).get("label", "") if not kind else "", "id": it["key"].split(":", 1)[1], "left": left, "said": said, "verb": {"Potion": "Drink", "Scroll": "Read"}.get(it["type"], "Use"),
                  "gives": it["type"] == "Potion", "back": ch["reset_phrase"] if ch else ""})
     unarmed = attacks.get("Unarmed Strike")
     for o in out:
@@ -273,6 +280,11 @@ def _battle_override(sheet: dict, oref: str) -> str | None:
     return (sheet.get("_overrides") or {}).get(f"{oref}|battle")
 
 
+COST_NAMES = {"Bonus action": "Bonus Action", "No action": "No action needed"}
+COST_FROM = {"campaign": "From this campaign's house rule", "askdnd": "From an askdnd correction", "rule": "From the rules",
+             "choice": "From the kind marked on this item", "text": "From the item's own description", "": "The item doesn't say"}
+
+
 def battle_columns(sheet: dict, starred: set[str], order: dict[str, list[str]] | None = None, pinned_only: bool = False) -> dict:
     """Action / Bonus action / Reaction columns: pinned first, then the common options (or the
     player's own drag-and-drop order); the rest is behind "See all". With `pinned_only` (anyone who
@@ -281,7 +293,7 @@ def battle_columns(sheet: dict, starred: set[str], order: dict[str, list[str]] |
     section of their own at the end of a column, by the same rules, in their own order ("<cost> items");
     the rest are in the side panel (Brett, 2026-10-30, docs/mockups/potions-and-charges.html)."""
     cols, order = {}, order or {}
-    for cost in ("Action", "Bonus action", "Reaction"):
+    for cost in ("Action", "Bonus action", "Reaction", "No action"):
         everything = []
         for o in options(sheet, starred):
             v = _battle_override(sheet, o["oref"])
@@ -302,7 +314,7 @@ def battle_columns(sheet: dict, starred: set[str], order: dict[str, list[str]] |
                       "count": len(everything) - item_count}
     rules = class_rules.turn(sheet)
     for cost, col in cols.items():
-        col["notes"] = rules["notes"][cost]
+        col["notes"] = rules["notes"].get(cost, [])
     if rules["attacks"] > 1:
         cols["Action"]["sub"] = f"One per turn · the Attack action makes {rules['attacks']} attacks"
         cols["Action"]["notes"].insert(0, f"From {rules['attacks_from']}")
@@ -550,7 +562,7 @@ ITEM_GROUPS = [("battle", "Usable in battle"), ("equipped", "Equipped"), ("Weapo
                ("Magic items", "Magic items"), ("Potions and scrolls", "Potions and scrolls"), ("Gear", "Gear")]
 OVERRIDE_CHOICES = {
     "hide": [("hide", "Hidden everywhere in askdnd")],
-    "cost": [("Action", "Action"), ("Bonus action", "Bonus action"), ("Reaction", "Reaction"), ("Other", "Other (not on your turn)")],
+    "cost": [("Action", "Action"), ("Bonus action", "Bonus action"), ("Reaction", "Reaction"), ("No action", "No action needed"), ("Other", "Other (not on your turn)")],
     "battle": [("common", "Shown on Battle"), ("normal", "Only in See all"), ("hide", "Not on Battle")],
     "feature_group": [("use", "Things you can use"), ("passive", "Always on (in your numbers)")],
     "situ_group": [("situational", "Situational"), ("in_numbers", "Already in your numbers")],
@@ -657,4 +669,5 @@ def apply_overrides(sheet: dict, overrides: dict[tuple[str, str], str]) -> dict:
                       "attune_label": {"attuned": "Attuned", "required": "Needs attunement"}.get(it.get("attunement") or "", "")})
     sheet["inventory"] = items
     sheet["_overrides"] = {f"{r}|{fld}": v for (r, fld), v in overrides.items()}
+    sheet["_campaign_corrections"] = {f"{r}|{fld}" for r, fld in getattr(overrides, "campaign", ())}
     return sheet

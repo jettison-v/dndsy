@@ -319,6 +319,17 @@ class Character(Timestamped, Base):
         if (m := self.membership) is not None:
             m.wild_shape_keep = value
 
+    @property
+    def item_choices(self) -> dict:
+        """{inventory id: which kind of an item this copy is} (a Dragon-Touched Focus's family: conditions.item_options)."""
+        m = self.membership
+        return (m.item_choices if m else None) or {}
+
+    @item_choices.setter
+    def item_choices(self, value: dict) -> None:
+        if (m := self.membership) is not None:
+            m.item_choices = value or None
+
 
 class CampaignCharacter(Base):
     """A character in a campaign: its story page there, when it joined and left. Leaving keeps the row (and the
@@ -336,6 +347,8 @@ class CampaignCharacter(Base):
     left_on: Mapped[date | None] = mapped_column(Date)
     # What the DM lets it keep in Wild Shape (item and feature keys from the sheet's form_options), set by its player
     wild_shape_keep: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    # Which kind of an item this copy is, marked by its player; moves to askdnd's own inventory when that exists
+    item_choices: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     character: Mapped[Character] = relationship(back_populates="memberships")
     entity: Mapped[Entity] = relationship()
 

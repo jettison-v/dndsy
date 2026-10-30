@@ -26,14 +26,14 @@ def test_side_panel_for_everything_and_admin_regrouping(player, admin, db):
         assert r.status_code == 200 and "<html" not in r.text and 'class="mech"' in r.text, ref
     wild = player.get(f"/characters/{cole.id}/detail", params={"ref": "feature:Druid:Wild Shape"}).text
     assert "for 3 hours" in wild  # D&D Beyond's formula {{(classlevel/2)@rounddown}} filled in
-    assert "regroup for every character" not in wild
+    assert "Correct this" not in wild
     assert player.post(f"/characters/{cole.id}/override", data={"ref": "x", "oref": "x", "field": "battle", "value": "hide"}).status_code == 403
     admin.post(f"/characters/{cole.id}/override", data={"ref": "feature:Wood Elf:Fleet of Foot", "oref": "feature:Fleet of Foot",
                                                         "field": "feature_group", "value": "use"})
     features = player.get(f"/characters/{cole.id}").text.split('id="t-features"')[1].split('id="t-situ"')[0]
     fleet = next(r for r in features.split(' data-ls-row ')[1:] if "<b>Fleet of Foot</b>" in r)
     assert 'data-group-label="Wood Elf"' in fleet  # regrouped: now with the features you use
-    assert "regroup for every character" in admin.get(f"/characters/{cole.id}/detail", params={"ref": "feature:Druid:Wild Shape"}).text
+    assert "Correct this" in admin.get(f"/characters/{cole.id}/detail", params={"ref": "feature:Druid:Wild Shape"}).text
     admin.post(f"/characters/{cole.id}/override", data={"ref": "attack:unarmed", "oref": "attack:Unarmed Strike", "field": "battle", "value": "hide"})
     assert "Unarmed Strike" not in player.get(f"/characters/{cole.id}/battle").text.split("Bonus action")[0]
     assert db.scalar(select(ToolCorrection).where(ToolCorrection.ref == "attack:Unarmed Strike")).set_by == "admin@example.com"
@@ -72,7 +72,7 @@ def test_saving_a_regrouping_returns_only_that_setting(admin, db):
     assert r.status_code == 200 and r.text.strip().startswith('<div class="ov-field">') and "peek-head" not in r.text
     assert "✓ Saved" in r.text and 'class="ov-opt on" aria-pressed="true"' in r.text and "Saved for every character" in r.headers["HX-Trigger"]
     panel = admin.get(f"/characters/{cole.id}/detail", params={"ref": "feature:Druid:Wild Shape"}).text
-    assert panel.count('class="ov-field"') == 2  # Show in askdnd + Features group, each saved on its own
+    assert panel.count('class="ov-field"') == 4  # Show in askdnd + Features group, each saved on its own, for each scope
 
 
 def test_tool_corrections_are_a_fix_list(admin, db):

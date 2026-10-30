@@ -6,6 +6,10 @@ The effective value of anything askdnd knows is worked out in three layers, most
 2. tool corrections (tool_corrections): an admin fixing how askdnd reads D&D Beyond, for everyone;
 3. house rules (house_rules): the DM's ruling, for their campaign only.
 
+For something on a sheet (Brett, 2026-10-30, docs/mockups/correction-flow.html) that reads top down, the first answer
+winning: this campaign's correction (a house rule of kind "sheet"), askdnd's correction, a rule that covers it, the
+item's own words, neither. Both corrections are made in an item's side panel (Correct this).
+
 A house rule is a row that points at what it changes (a spell's recipe, by name) and never edits it, so removing
 the row brings the tool's value back. What a house rule can change is listed in FIELDS.
 
@@ -109,13 +113,22 @@ def spell(name: str, campaign_id: int | None = None) -> dict | None:
     return recipe
 
 
-def sheet_overrides(db, campaign_id: int | None = None) -> dict[tuple[str, str], str]:
+class Corrections(dict):
+    """{(ref, field): value}, and which of them are this campaign's own (`campaign`), so a page can say where an answer
+    came from."""
+
+    campaign: set = frozenset()
+
+
+def sheet_overrides(db, campaign_id: int | None = None) -> Corrections:
     """{(ref, field): value} for regrouping sheet items and rules terms: the tool corrections, then the campaign's
     house rules on the same thing (kind "sheet"), which win."""
     from app.models import ToolCorrection
 
-    out = {(o.ref, o.field): o.value for o in db.scalars(select(ToolCorrection))}
+    out = Corrections(((o.ref, o.field), o.value) for o in db.scalars(select(ToolCorrection)))
+    out.campaign = set()
     for (kind, key), fields in rules(campaign_id).items():
         if kind == "sheet":
             out.update({(key, f): r["value"] for f, r in fields.items()})
+            out.campaign |= {(key, f) for f in fields}
     return out

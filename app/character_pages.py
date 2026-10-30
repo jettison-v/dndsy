@@ -28,9 +28,9 @@ from app import class_rules, live, player_notes
 from app import spellbook as sb
 from app import wild_shape as ws
 from app import rules_terms as terms
-from app.auth import current_user, is_admin, is_reviewer
+from app.auth import can_set_house_rules, current_user, is_admin, is_reviewer
 from app.db import get_db
-from app.models import Campaign, Character, TableRoll, ToolCorrection
+from app.models import Campaign, Character, HouseRule, TableRoll, ToolCorrection
 from app.templating import templates
 
 router = APIRouter()
@@ -45,6 +45,8 @@ def _overrides(db: Session) -> dict[tuple[str, str], str]:
 def _view(db: Session, ch: Character, user: dict) -> dict:
     snap = ch.snapshot
     sheet = views.apply_overrides(ddb_bridge.as_shown(db, ch, chars.character_summary(ch)), _overrides(db))  # with what's on its way
+    if sheet:
+        sheet["_item_choices"] = ch.item_choices
     mine = picks.picks(db, ch, user)
     druid = ws.druid(sheet)
     return {
@@ -178,6 +180,7 @@ def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None
             ctx["form"] = ws.shaped(ctx["sheet"], beast, keep=ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep))
             own = ctx["columns"]  # (items stay: what a form's limbs can handle is the DM's to say)
             ctx["columns"] = {k: {**v, "items": own[k]["items"], "item_count": own[k]["item_count"]} for k, v in ctx["form"]["columns"].items()}
+            ctx["columns"]["No action"] = own["No action"]
     ctx["spellbar"] = _spellbar(db, ch, ctx)
     now = ctx["conditions"]
     ctx["cond_adv"] = cond.roll_effects([x for x in now if x["counts"]])  # listed in the roll window (app.js specFrom)
@@ -294,7 +297,7 @@ def see_all(request: Request, character_id: int, cost: str, add: int = 0, items:
     user, ch, stop = _load(request, db, character_id)
     if stop:
         return stop
-    cost = {"action": "Action", "bonus": "Bonus action", "reaction": "Reaction"}.get(cost)
+    cost = {"action": "Action", "bonus": "Bonus action", "reaction": "Reaction", "none": "No action"}.get(cost)
     ctx = _view(db, ch, user)
     if not cost or not ctx["sheet"]:
         return HTMLResponse("", status_code=404)
@@ -317,35 +320,81 @@ def detail_panel(request: Request, character_id: int, ref: str, db: Session = De
         return HTMLResponse("", status_code=404)
     oref = d["opt"]["oref"] if d["opt"] else views.override_ref({**d["x"], "key": ref}, d["section"])
     item_actions = cond.item_actions(d["x"]) if d["section"] == "inventory" else []  # its Battle actions, to pin
+    can_correct = can_set_house_rules(user, ch.campaign_id)
     return templates.TemplateResponse(request, "_panel_detail.html", {**ctx, **d, "ref": ref, "oref": oref, "item_actions": item_actions,
+                                      "can_correct": can_correct, "corrections": _corrections(db, ch, oref) if can_correct else {},
+                                      "item_kinds": cond.item_options(d["x"]) if d["section"] == "inventory" else None,
+                                      "item_kind": ch.item_choices.get(ref.split(":", 1)[1], "") if d["section"] == "inventory" else "",
+                                      "cost_from": views.COST_FROM,
                                       "underline": terms.underlined(_overrides(db)),
                                       "choices": views.OVERRIDE_CHOICES, "field_labels": views.FIELD_LABELS,
                                       "fields": views.fields_for(d["section"], d["opt"])})
 
 
+def _may_correct(user: dict | None, ch: Character | None, scope: str) -> bool:
+    return bool(user and ch) and (can_set_house_rules(user, ch.campaign_id) if scope == "campaign" else scope == "everyone" and is_admin(user))
+
+
+def _correction(db: Session, ch: Character, oref: str, field: str, scope: str) -> HouseRule | ToolCorrection | None:
+    if scope == "campaign":
+        return db.scalar(select(HouseRule).where(HouseRule.campaign_id == ch.campaign_id, HouseRule.target_kind == "sheet",
+                                                 HouseRule.target_key == oref[:200], HouseRule.field == field))
+    return db.scalar(select(ToolCorrection).where(ToolCorrection.ref == oref[:300], ToolCorrection.field == field))
+
+
+def _corrections(db: Session, ch: Character, oref: str) -> dict:
+    """What Correct this shows now: each scope's values by field, and why."""
+    ours = list(db.scalars(select(HouseRule).where(HouseRule.campaign_id == ch.campaign_id, HouseRule.target_kind == "sheet", HouseRule.target_key == oref[:200])))
+    all_ = list(db.scalars(select(ToolCorrection).where(ToolCorrection.ref == oref[:300])))
+    return {"campaign": {r.field: r.value for r in ours}, "everyone": {r.field: r.value for r in all_},
+            "campaign_why": next((r.reason for r in ours if r.reason), ""), "everyone_why": next((r.reason for r in all_ if r.reason), "")}
+
+
+@router.post("/characters/{character_id:int}/override/why")
+def set_correction_why(request: Request, character_id: int, oref: str = Form(...), scope: str = Form(...), reason: str = Form(""), db: Session = Depends(get_db)):
+    """Why, in a few words, on what's corrected for this thing in that scope."""
+    user, ch = current_user(request), db.get(Character, character_id)
+    if not _may_correct(user, ch, scope):
+        return _forbidden(request, "Only the DM or an admin can correct this.")
+    q = (select(HouseRule).where(HouseRule.campaign_id == ch.campaign_id, HouseRule.target_kind == "sheet", HouseRule.target_key == oref[:200])
+         if scope == "campaign" else select(ToolCorrection).where(ToolCorrection.ref == oref[:300]))
+    for row in db.scalars(q):
+        row.reason = " ".join(reason.split())[:300]
+    db.commit()
+    house_rules.invalidate()
+    return HTMLResponse("", status_code=204)
+
+
 @router.post("/characters/{character_id:int}/override")
-def set_override(request: Request, character_id: int, ref: str = Form(...), oref: str = Form(...),
-                 field: str = Form(...), value: str = Form(...), db: Session = Depends(get_db)):
-    """Admin: regroup something (for every character). Returns just that setting's
-    row, so the side panel doesn't jump or lose the admin's other choices."""
-    user = current_user(request)
-    if not is_admin(user):
-        return _forbidden(request, "Only an admin can regroup things.")
+def set_override(request: Request, character_id: int, ref: str = Form(...), oref: str = Form(...), field: str = Form(...),
+                 value: str = Form(...), scope: str = Form("everyone"), reason: str = Form(""), db: Session = Depends(get_db)):
+    """Correct this (an item's side panel; docs/mockups/correction-flow.html): for this campaign (its DM or an admin, a
+    house rule of kind "sheet") or for everyone (an admin, a tool correction). Returns just that setting's row, so the
+    side panel doesn't jump or lose the other choices."""
+    user, ch = current_user(request), db.get(Character, character_id)
+    if not _may_correct(user, ch, scope):
+        return _forbidden(request, "Only the DM or an admin can correct this for the campaign." if scope == "campaign" else "Only an admin can correct this for everyone.")
     if field not in views.OVERRIDE_CHOICES or value not in [v for v, _ in views.OVERRIDE_CHOICES[field]] + ["default"]:
         return HTMLResponse("", status_code=400)
-    row = db.scalar(select(ToolCorrection).where(ToolCorrection.ref == oref[:300], ToolCorrection.field == field))
+    reason = " ".join(reason.split())[:300]
+    row = _correction(db, ch, oref, field, scope)
     if value == "default":
         if row:
             db.delete(row)
     elif row:
-        row.value, row.set_by = value, user["email"]
+        row.value = value
+        if reason:
+            row.reason = reason
+    elif scope == "campaign":
+        db.add(HouseRule(campaign_id=ch.campaign_id, target_kind="sheet", target_key=oref[:200], field=field, value=value, reason=reason, set_by=web.person_name(user)))
     else:
-        db.add(ToolCorrection(ref=oref[:300], field=field, value=value, set_by=user["email"]))
+        db.add(ToolCorrection(ref=oref[:300], field=field, value=value, reason=reason, set_by=user["email"]))
     db.commit()
+    house_rules.invalidate()
     resp = templates.TemplateResponse(request, "_override_field.html", {
-        "c": {"id": character_id}, "ref": ref, "oref": oref, "field": field, "current": None if value == "default" else value,
+        "c": {"id": character_id}, "ref": ref, "oref": oref, "field": field, "current": None if value == "default" else value, "scope": scope,
         "choices": views.OVERRIDE_CHOICES, "field_labels": views.FIELD_LABELS, "saved": True})
-    resp.headers["HX-Trigger"] = json.dumps({"toast": "Saved for every character"})
+    resp.headers["HX-Trigger"] = json.dumps({"toast": "Saved for this campaign" if scope == "campaign" else "Saved for every character"})
     return resp
 
 
@@ -670,7 +719,7 @@ def save_order(request: Request, character_id: int, form=web.FormBody, db: Sessi
     if not picks.can_edit(db, user, ch):
         return _forbidden(request, "Only this character's player can do that.")
     column = form.get("column", "")
-    if column not in ("Action", "Bonus action", "Reaction", "forget", "Action items", "Bonus action items", "Reaction items"):
+    if column not in ("Action", "Bonus action", "Reaction", "forget", "Action items", "Bonus action items", "Reaction items", "No action items"):
         return HTMLResponse("", status_code=400)
     picks.set_order(db, ch, column, [str(k) for k in form.getlist("keys")])
     db.commit()

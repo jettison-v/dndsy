@@ -113,6 +113,7 @@ def announce(db: Session, campaign_id: int | None, kind: str, **data) -> None:
 # save, and the pages showing it swap in their new copy (app.js showInPlace). Players' own pins, notes and reminders
 # aren't here: they're theirs (the DM never sees them), and the page they were made on shows them at once.
 TABLE_SEES = {"Character": ("name", "owner_id", "wild_shape", "concentration", "conditions"), "CharacterSnapshot": ("summary",),
+              "CampaignCharacter": ("item_choices",),
               "BridgeIntent": ("state", "error"), "BridgeLog": ("text",)}
 # And of the campaign itself: Game Mode, on or off for the whole table (app/game_mode.py), and the fight heard from
 # D&D Beyond's VTT (app/fight.py), announced as "game"

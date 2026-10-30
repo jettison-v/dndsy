@@ -672,6 +672,11 @@ dl.mech dt { color: var(--muted); } dl.mech dd { margin: 0; }
 .admin-move { margin-top: 20px; padding: 12px 14px; border: 1px dashed var(--line-strong); border-radius: 10px; background: var(--surface-2); }
 .admin-head { font-size: var(--fs-sm); margin-bottom: 8px; }
 .admin-head b { color: var(--amber); }
+.correct-pick { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-bottom: var(--sp-2); font-size: var(--fs-sm); }
+.correct-pick label { display: inline-flex; align-items: center; gap: var(--sp-1); }
+.correct [data-scope="everyone"] { display: none; }
+.correct:has(input[value="everyone"]:checked) [data-scope="everyone"] { display: block; }
+.correct:has(input[value="everyone"]:checked) [data-scope="campaign"] { display: none; }
 .ov-field { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 4px 10px; align-items: start; padding: 7px 0; border-top: 1px solid var(--line); }
 .ov-field:first-of-type { border-top: none; }
 .ov-label { color: var(--muted); font-size: var(--fs-sm); padding-top: 4px; }
@@ -1143,6 +1148,7 @@ a.sheet-ref { text-decoration-style: dotted; }
 .roll-win { position: fixed; z-index: 20; width: min(360px, calc(100vw - 16px)); max-height: calc(100vh - 16px); overflow-y: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; box-shadow: 0 14px 40px var(--shadow); font-size: var(--fs-sm); animation: roll-pop .14s ease-out; }
 .roll-win.nat20 { border-color: var(--green); } .roll-win.nat1, .roll-win.failed { border-color: var(--red); }
 /* An item on Battle (Brett, 2026-10-30): its section in a column, its button, its window */
+.seeall.items-all { margin-top: 0; }
 .items-head { margin: 10px 0 0; font-size: var(--fs-xs); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .item-go { color: var(--text); }
 .item-go:disabled { color: var(--faint); cursor: default; border-color: var(--line); }

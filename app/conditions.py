@@ -70,6 +70,11 @@ def _curated() -> dict:
     return {k: v for k, v in json.loads(DATA.read_text()).items() if not k.startswith("_")}
 
 
+@cache
+def _option_sets() -> dict:
+    return json.loads(DATA.read_text()).get("_options") or {}
+
+
 def curated(it: dict) -> dict:
     """{"actions": [...], "on_use": {...}} for an item askdnd knows by name, else {}."""
     return _curated().get(it.get("base_name") or it.get("name") or "") or _curated().get(it.get("name") or "") or {}
@@ -193,21 +198,47 @@ def item_actions(it: dict) -> list[dict]:
 
 # What using an item costs (Brett, 2026-10-30: the column it sits in on Battle)
 ITEM_COST = re.compile(r"\b(?:as|take|takes|use|uses|using|with)\s+(?:an?|its)\s+(Magic action|Utilize action|Bonus Action|Reaction|action)\b", re.I)
-COST_SAID = {"action": ("Action", "Action"), "magic action": ("Action", "Magic action"), "utilize action": ("Action", "Utilize action"),
+COST_SAID = {"no action": ("No action", "No action needed"), "action": ("Action", "Action"), "magic action": ("Action", "Magic action"), "utilize action": ("Action", "Utilize action"),
              "bonus action": ("Bonus action", "Bonus Action"), "reaction": ("Reaction", "Reaction")}
 
 
-def item_cost(it: dict) -> tuple[str, str]:
+def item_options(it: dict) -> dict | None:
+    """The kinds an item comes in, where the rules list them ({"label", "choices": [{"name", "cost", "what"}]}): which
+    one a copy is, its player marks (app/item_use.py), so no note has to say."""
+    name = curated(it).get("options")
+    return _option_sets().get(name) if name else None
+
+
+def _chosen(it: dict, choice: str) -> dict | None:
+    return next((c for c in (item_options(it) or {}).get("choices") or [] if c["name"] == choice), None) if choice else None
+
+
+def item_cost(it: dict, choice: str = "") -> tuple[str, str]:
     """(its column on Battle, what to call the cost; "" when the item doesn't say, in the Action column so askdnd isn't
     guessing). Every potion is a Bonus Action to drink or give (2024 DMG, Using a Potion); a scroll takes what its spell
     takes, an action unless its text says otherwise. Anything else, by its own words, for every table: never a value
     kept for one party's copy of an item (Brett, 2026-10-30: he corrects his party's inventory himself)."""
     if it.get("type") == "Potion":
         return COST_SAID["bonus action"]
+    if (kind := _chosen(it, choice)):
+        return COST_SAID[kind["cost"].lower()]
+    if item_options(it):
+        return ("Action", "")  # which kind it is decides: until it's marked, not guessed
     m = ITEM_COST.search(f"{it.get('summary') or ''} {it.get('text') or ''}")
     if m:
         return COST_SAID[m.group(1).lower()]
     return ("Action", "Action") if it.get("type") == "Scroll" else ("Action", "")
+
+
+def cost_source(it: dict, choice: str = "") -> str:
+    """Where item_cost's answer came from: "rule", "choice", "text" or "" (neither)."""
+    if it.get("type") in ("Potion", "Scroll") and (it.get("type") == "Potion" or not ITEM_COST.search(f"{it.get('summary') or ''} {it.get('text') or ''}")):
+        return "rule"
+    if _chosen(it, choice):
+        return "choice"
+    if item_options(it):
+        return ""
+    return "text" if ITEM_COST.search(f"{it.get('summary') or ''} {it.get('text') or ''}") else ""
 
 
 def _counts_charges(it: dict) -> bool:

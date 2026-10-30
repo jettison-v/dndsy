@@ -1,7 +1,7 @@
 {# An item's window, inside the roll window (app.js "using an item"; app/item_use.py). #}
 <button type="button" class="rp-x" aria-label="Close">×</button>
 <div class="rw-title">{{ it.name }}{% if o.use.gives and o.dice and o.heal %} <span class="roll-sub">{{ o.dice }}</span>{% endif %}</div>
-<p class="use-cost">{{ o.use.said or "Its text doesn't say what it costs" }}{% if o.uses %} · {{ o.uses.left }} of {{ o.uses.max }} left{% elif o.use.left > 1 %} · {{ o.use.left }} left{% endif %}</p>
+<p class="use-cost">{{ o.use.said or ("Mark its " ~ (o.use.mark | lower) ~ " in its side panel" if o.use.mark else "Its text doesn't say what it costs") }}{% if o.uses %} · {{ o.uses.left }} of {{ o.uses.max }} left{% elif o.use.left > 1 %} · {{ o.use.left }} left{% endif %}</p>
 {% if o.meta %}<p class="use-what">{{ o.meta }}</p>{% endif %}
 {% if starts %}<p class="use-what">Starts {{ starts }}.</p>{% endif %}
 {% if reachable %}

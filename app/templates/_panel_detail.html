@@ -26,13 +26,16 @@
       {% if x.sources %}<dt>From</dt><dd>{{ x.sources | join(", ") }}</dd>{% endif %}
       {% if x.book %}<dt>Book</dt><dd>{{ x.book }}{% if not x.core %} <span class="tag faint">not in the 2024 core rules</span>{% endif %}</dd>{% endif %}
     {% elif section in ("actions", "attacks") or (o and section != "inventory") %}
-      {% if o %}<dt>Costs</dt><dd>{{ o.cost if o.cost != "Other" else (x.activation or "Special") }}</dd>{% endif %}
+      {% if o %}<dt>Costs</dt><dd>{{ o.cost if o.cost != "Other" else (x.activation or "Special") }}{% if o.cost_from in ("campaign", "askdnd") %}<div class="note">{{ cost_from[o.cost_from] }}</div>{% endif %}</dd>{% endif %}
       {% if o and o.hit %}<dt>To hit / DC</dt><dd>{{ o.hit }}</dd>{% endif %}
       {% if o and o.meta %}<dt>Details</dt><dd>{{ o.meta }}</dd>{% endif %}
       {% if x.uses %}<dt>Uses</dt><dd>{{ pips(x.uses) }} {{ x.uses.left }} of {{ x.uses.max }} · {{ x.uses.reset_phrase }}</dd>{% endif %}
       {% if o and o.spends %}<dt>Spends</dt><dd>{{ spends_detail(o.spends) }}</dd>{% endif %}
     {% elif section == "inventory" %}
       <dt>Type</dt><dd>{{ x.type }}{% if x.magic and x.rarity %} · {{ x.rarity }}{% endif %}</dd>
+      {% if item_kinds %}<dt>{{ item_kinds.label }}</dt><dd>{% if can_pick %}<span class="ov-options" role="group" aria-label="{{ item_kinds.label }}">{% for k in item_kinds.choices %}<button type="button" class="ov-opt{{ ' on' if item_kind == k.name }}" aria-pressed="{{ 'true' if item_kind == k.name else 'false' }}" hx-post="/characters/{{ c.id }}/items/{{ ref.split(':', 1)[1] }}/kind" hx-vals='{{ {"kind": "" if item_kind == k.name else k.name} | tojson }}' hx-swap="none">{{ k.name }}</button>{% endfor %}</span>{% else %}{{ item_kind or "Not marked" }}{% endif %}
+        {% for k in item_kinds.choices if k.name == item_kind %}<div class="note">{{ k.what }}</div>{% else %}<div class="note">Which kind this one is decides what it does and what it costs.</div>{% endfor %}</dd>{% endif %}
+      {% if o %}<dt>Costs</dt><dd>{{ o.use.said if o.use and o.use.said else ("Not stated" if o.use else o.cost) }}<div class="note">{{ cost_from.get(o.cost_from, "") }}</div></dd>{% endif %}
       {% if x.custom %}<dt>Custom</dt><dd><span class="tag custom">Custom</span> Made on D&amp;D Beyond for this campaign, not from a book. The description is whatever was typed there.</dd>{% endif %}
       {% if x.changes %}<dt>Changed</dt><dd><span class="tag edited">Changed</span> {{ x.changes | join(". ") }}.</dd>{% endif %}
       {% if x.attunement %}{% set used = (sheet.attuned or []) | length %}<dt>Attunement</dt><dd>{{ "Attuned" if x.attunement == "attuned" else "Needs attunement" }}{% if x.attunement_note %} ({{ x.attunement_note }}){% endif %}
@@ -60,13 +63,20 @@
   {% set full = x.text if section != "situational" else (x.related.text if x.related else "") %}
   {% if full and full != what %}<h3>{{ "Full description" if section in ("spells", "inventory") else "Full text and background" }}</h3><div class="detail-full">{{ full | terms(underline, seen) }}</div>{% endif %}
 
-  {% if admin %}
-  <section class="admin-move" aria-label="Admin regrouping">
-    <div class="admin-head"><b>Admin</b> · regroup for every character <span class="note">saves as you click</span></div>
-    {% for field in fields %}{% set current = sheet._overrides.get(oref ~ "|" ~ field) %}{% set saved = false %}
-    {% include "_override_field.html" %}
+  {% if can_correct %}{# Correct this (docs/mockups/correction-flow.html): first answer wins, this campaign's correction first #}
+  <section class="admin-move correct" aria-label="Correct this">
+    <div class="admin-head"><b>Correct this</b> <span class="note">saves as you click</span></div>
+    {% if admin %}<div class="correct-pick" role="radiogroup" aria-label="Who it's for"><label><input type="radio" name="correct-for" value="campaign" checked> This campaign</label><label><input type="radio" name="correct-for" value="everyone"> Everyone</label></div>{% endif %}
+    {% for scope in (["campaign", "everyone"] if admin else ["campaign"]) %}
+    <div class="correct-scope" data-scope="{{ scope }}">
+      {% for field in fields %}{% set current = corrections[scope].get(field) %}{% set saved = false %}
+      {% include "_override_field.html" %}
+      {% endfor %}
+      <label class="field"><span>Why, in a few words</span><input type="text" name="reason" maxlength="300" value="{{ corrections[scope ~ '_why'] }}" hx-post="/characters/{{ c.id }}/override/why" hx-trigger="change" hx-swap="none" hx-vals='{{ {"oref": oref, "scope": scope} | tojson }}'></label>
+      {% if scope == "campaign" %}<p class="note admin-foot">Only this campaign, for everything named “{{ oref.split(":", 1)[-1] }}”. Listed on <a href="{{ cbase }}/manage/house-rules" data-no-peek>Manage › House rules</a>.</p>
+      {% else %}<p class="note admin-foot">Every campaign, unless a campaign corrects it too. All changes, with Undo: <a href="/manage/tool-corrections" data-no-peek>Admin › Tool corrections</a>.</p>{% endif %}
+    </div>
     {% endfor %}
-    <p class="note admin-foot">Applies to everything named “{{ oref.split(":", 1)[-1] }}” on every character. The page behind updates when you reload it. All changes, with Undo: <a href="/manage/tool-corrections" data-no-peek>Manage › Tool corrections</a>.</p>
   </section>
   {% endif %}
 </div>

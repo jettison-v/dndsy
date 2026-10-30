@@ -4,7 +4,7 @@
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>House rules</h1></div>
-  <p class="subtitle">Your rulings on how askdnd rolls things{% if campaign %} in {{ campaign.name }}{% endif %}. They apply only to this campaign and never change askdnd's own rules data: remove one and the spell works as the 2024 rules say again. The roll window shows <b>House rule</b> wherever one applies. Only the DM and admins can change these.</p>
+  <p class="subtitle">Your rulings on how askdnd rolls and shows things{% if campaign %} in {{ campaign.name }}{% endif %}. They apply only to this campaign and never change askdnd's own rules data: remove one and the spell works as the 2024 rules say again. The roll window shows <b>House rule</b> wherever one applies. Only the DM and admins can change these.</p>
 
   <section class="section">
     <h2>This table's house rules</h2>
@@ -12,7 +12,7 @@
     <ul class="records">
       {% for x in rules %}{% set r = x.r %}
       <li class="record">
-        <div class="record-main"><b>{{ r.target_key }}</b><span class="note">{{ x.text }}</span>
+        <div class="record-main"><b>{{ x.name }}</b><span class="note">{{ x.text }}</span>
           <span class="note">{% if r.reason %}{{ r.reason }} · {% endif %}{{ r.set_by }}, {{ r.updated_at | ago }}</span></div>
         <form method="post" action="{{ cbase }}/manage/house-rules/{{ r.id }}/delete" class="record-actions"><button class="btn link small danger" type="submit">Remove</button></form>
       </li>
@@ -24,6 +24,8 @@
   <section class="section">
     <h2>Add a house rule</h2>
     {% if once_spells %}
+    <h3>A correction to an item</h3>
+    <p class="hint">Open the item from a character's page and use <b>Correct this</b> at the bottom of its side panel, with <b>This campaign</b> picked. It shows here, and only this campaign changes.</p>
     <h3>One roll for all darts</h3>
     <p class="hint">The rules roll each dart of Magic Missile on its own. Many tables roll once and every dart deals that damage.</p>
     <form method="post" action="{{ cbase }}/manage/house-rules">
