@@ -59,6 +59,8 @@ Brett, 2026-10-30: test with the real D&D Beyond, not only the stand-in in the b
 
 Still to write: a turn order heard from the VTT, Hit Points through the bridge.
 
+First results, 2026-10-30, with extension 0.9.4: `closed-sheet` passed. `game-log` passed in 3 of 5 runs after its test was fixed: the two misses were a closed sheet still saying Connected, fixed in 0.9.5. The rolls themselves reached the other player's sheet every time, and none did with the sheet closed. `close-after-roll` once took over 40 seconds to show Connected after a sheet opened, not explained yet. Rerun all three once 0.9.5 is on the store, after copying the seats again.
+
 ## Before a test
 
 - [ ] The DM and both players are the only people with a role in VTT test that the test needs (Brett's own and any second DM stay out of the way)

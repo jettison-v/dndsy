@@ -31,7 +31,10 @@ chrome.tabs.onRemoved.addListener(async tabId => {
   await chrome.storage.session.set({ tabsOpen });
   // (Chrome may still list the tab that's closing: it doesn't count)
   const others = tabs => tabs.filter(t => t.id !== tabId);
-  if (was.sheet && !others(await sheetTabs(was.sheet)).length) api('POST', '/bridge/closed/' + was.sheet).catch(() => {});
+  if (was.sheet && !others(await sheetTabs(was.sheet)).length) {
+    clearTimeout(quiet.get(was.sheet));
+    api('POST', '/bridge/closed/' + was.sheet).catch(() => {});
+  }
   const vtts = was.game ? others(await chrome.tabs.query({ url: 'https://www.dndbeyond.com/games/' + was.game + '*' })) : [];
   if (was.game && !vtts.length) api('POST', '/bridge/fight/' + was.game, { closed: true }).catch(() => {});  // no VTT here hears that fight now
 });
@@ -61,6 +64,14 @@ async function refreshPanels(ddbId) {
   return st;
 }
 
+// A word to askdnd that was on its way as the last tab closed tells it the sheet is open, after the tab's own word that
+// it closed (a real fight, 2026-10-30: one run in three kept saying Connected): say it again
+async function stillClosed(ddbId) {
+  if ((await sheetTabs(ddbId)).length) return false;
+  await api('POST', '/bridge/closed/' + ddbId).catch(() => {});
+  return true;
+}
+
 const busy = new Set();  // sheets with a batch out right now (one at a time per character)
 async function deliver(ddbId, tabId) {
   if (!ddbId || busy.has(ddbId)) return;
@@ -71,7 +82,7 @@ async function deliver(ddbId, tabId) {
   busy.add(ddbId);
   try {
     const { batch } = await api('POST', '/bridge/outbox/' + ddbId);
-    if (!batch) { busy.delete(ddbId); return; }
+    if (!batch) { busy.delete(ddbId); await stillClosed(ddbId); return; }
     for (const t of tabs) {  // the first copy of the sheet that answers takes it (a tab left from before the extension
       try {                  // was reloaded, or one Chrome froze, doesn't)
         const r = await chrome.tabs.sendMessage(t.id, { type: 'apply', batch });
@@ -95,7 +106,9 @@ function heardSoon(ddbId, tabId) {
   }, QUIET_MS));
 }
 async function heard(ddbId, pull, tabId) {
+  if (!(await sheetTabs(ddbId)).length) return;  // (its last tab closed since this was asked for)
   const st = await api('POST', '/bridge/heard/' + ddbId + (pull ? '?pull=1' : '')).catch(() => null);
+  if (await stillClosed(ddbId)) return;
   // What askdnd just read from D&D Beyond: an open copy of the sheet holding anything else shows D&D Beyond's numbers
   // (not the copy that just saved: it has its own change)
   if (st && st.check) for (const t of await sheetTabs(ddbId)) if (t.id !== tabId) chrome.tabs.sendMessage(t.id, { type: 'check', fields: st.check }).catch(() => {});
