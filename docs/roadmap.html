@@ -129,8 +129,11 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     </div>
     <div class="you">
       <div class="eyebrow">Your call now</div>
-      <p><b>Merge <a href="https://github.com/jettison-v/dndsy/pull/126">the Mac Mini test runs</a>, then upload extension 0.9.5</b> on the <a href="https://chrome.google.com/webstore/devconsole">Chrome Web Store developer console</a>: the zip is in <code>private/</code>. It fixes a closed sheet that could keep saying Connected.</p>
-      <p><b>Keep testing on beta</b>: still to try are conditions that end in a real fight (saves remind as your turn begins) and times shown in your own time zone.</p>
+      <p><b>Review <a href="https://github.com/jettison-v/dndsy/pull/128">live state (PR 128)</a></b>: casting, resources, rests and inventory, all built. Once merged, only test campaigns see them, and Claude can prove them on the real D&amp;D Beyond.</p>
+      <p><b>Look at the <a href="https://claude.ai/artifact/6oTb8pSFzhhUakYsYHEw5x">Simple VTT</a> design</b>: try the board and answer its four questions.</p>
+      <p><b>Merge <a href="https://github.com/jettison-v/dndsy/pull/130">the whole Monster Manual (PR 130)</a> and say when to load it on beta.</b></p>
+      <p><b>Read the <a href="https://claude.ai/artifact/NMPVH1DC8fivDNtMTEPKjG">Usability Review</a></b> and pick what to do.</p>
+      <p><b>Extension 0.9.5 is with Google.</b> Once approved, say so and Claude reruns the live tests.</p>
     </div>
     <div class="steps">
       <div class="step"><span class="n">1</span><div class="body"><h3>Game Mode for the table, and the Live pill</h3>
@@ -236,6 +239,8 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     <div class="sec-head"><div class="eyebrow">Done</div><h2>Most recent first</h2></div>
     <div class="done-list">
       <div class="day"><span class="d">Oct 30</span><ul>
+        <li>A live test plan and real runs on the Mac Mini: open and closed sheets, rolls in the Game Log, Hit Points and conditions all confirmed on the real D&amp;D Beyond</li>
+        <li>A usability review, with two bugs fixed on the way: the pill offering the bridge where a campaign doesn't have it, and stray dividers on phones (on beta)</li>
         <li>Real D&amp;D Beyond test runs on the Mac Mini: three test seats in real Chrome and named runs. Confirmed on the real site that rolls reach the Game Log and that a closed sheet shows at once, and found a timing bug the stand-in missed (extension 0.9.5, waiting for the store)</li>
         <li>A character added while private takes its sheet's name; Manage › Table renames a character, Accounts a person; a cleaner bridge prompt in the Live window (on beta)</li>
         <li>Rolls made while you were away don't replay when you come back: one card says how many (on beta)</li>
@@ -295,6 +300,8 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
       <thead><tr><th>Document</th><th>Status</th><th>Date</th><th>What it is</th></tr></thead>
       <tbody>
         <tr><td><b>askdnd Roadmap</b> (this page)</td><td><span class="chip s-done">Current</span></td><td>Oct 30</td><td class="what">The one page to read. Source <code>docs/roadmap.html</code>; detail behind it in <code>docs/plans/2026-10-22-vtt-roadmap.md</code></td></tr>
+        <tr><td><a href="https://claude.ai/artifact/6oTb8pSFzhhUakYsYHEw5x">Simple VTT</a></td><td><span class="chip s-todo">Current · for your review</span></td><td>Oct 30</td><td class="what">What a simple VTT could cover, a board to try, the order to build it, and four decisions. Nothing built.</td></tr>
+        <tr><td><a href="https://claude.ai/artifact/NMPVH1DC8fivDNtMTEPKjG">Usability Review</a></td><td><span class="chip s-todo">Current · for your review</span></td><td>Oct 30</td><td class="what">A walk through askdnd as a player and DM, with suggestions by priority.</td></tr>
         <tr><td><a href="https://claude.ai/artifact/7e1exa6YDp5ndFeFN5p5PF">One Table List</a></td><td><span class="chip s-done">Current · decided, built</span></td><td>Oct 30</td><td class="what">Manage › Table as one list, with one Add and a Remove that says what it does.</td></tr>
         <tr><td><a href="https://claude.ai/artifact/2sEJ9btUudhWzZG6RbHEjx">Table Without Modes</a></td><td><span class="chip s-done">Current · decided, built</span></td><td>Oct 30</td><td class="what">Game Mode designed again: no switch, a roll goes to the table by default.</td></tr>
         <tr><td><a href="https://claude.ai/artifact/UJfj2TbWeb1fniZYF17wBT">Correction Ladder</a></td><td><span class="chip s-done">Current · decided, built</span></td><td>Oct 30</td><td class="what">Five steps for one thing about an item, the campaign's own correction first.</td></tr>

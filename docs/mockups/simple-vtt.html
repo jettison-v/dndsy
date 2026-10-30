@@ -1,0 +1,218 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simple VTT</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* What "simple VTT" could cover (Brett, 2026-10-30: it gets its own design first). One page: where you'll find it, what
+   simple means, a table to try, the order to build it, then what's for Brett to decide. Mockups use the table's
+   characters and people by role. askdnd is dark only, so this page is too. */
+:root { --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --chrome: #0f1113; --line: #34383e;
+  --line-strong: #4a4f57; --text: #ebe7df; --strong: #fff; --muted: #a29d93; --faint: #6f6b64;
+  --red: #d64545; --red-text: #f08a8a; --amber: #e8b34b; --green: #5bbf7f; --blue: #7ea6e0; --purple: #b794d6;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.6 var(--sans); margin: 0; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 36px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 34px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); } h2 { font: 600 1.4rem/1.25 var(--serif); } h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; } b { color: var(--strong); font-weight: 600; }
+section { display: grid; gap: 14px; min-width: 0; }
+.eyebrow { font: 700 .78rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red-text); }
+.label { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+header.top { display: grid; gap: 12px; max-width: 76ch; }
+.lead { font-size: 1.05rem; } .muted { color: var(--muted); } .small { font-size: .86rem; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.box.ask { border-color: var(--red); }
+.box ol, .box ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 860px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+.btn { font: 600 .84rem/1.2 var(--sans); color: var(--text); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+.btn:hover { border-color: var(--muted); } .btn.main { background: var(--red); border-color: var(--red); color: #fff; }
+.btn[aria-pressed="true"] { background: var(--surface-3); border-color: var(--amber); color: var(--strong); }
+.btn:focus-visible, .tok:focus-visible, .ftr:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.stage { background: var(--chrome); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.bar { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; padding: 10px 14px; border-bottom: 2px solid var(--red); font-size: .85rem; }
+.bar b { font-size: .95rem; } .bar .on { background: var(--surface-2); border-radius: 7px; padding: 3px 9px; color: var(--strong); }
+.bar .sp { flex: 1; }
+.band { display: flex; gap: 6px; align-items: center; padding: 8px 14px; background: var(--surface); border-bottom: 1px solid var(--line); overflow-x: auto; }
+.ftr { flex: none; display: flex; align-items: center; gap: 6px; background: var(--surface-2); border: 1px solid var(--line); color: var(--text); border-radius: 999px; padding: 3px 11px 3px 3px; font: 600 .8rem/1.2 var(--sans); cursor: pointer; }
+.ftr .dot { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: .7rem; color: #15171a; font-weight: 700; }
+.ftr.now { border-color: var(--amber); background: rgba(232, 179, 75, .16); color: var(--strong); }
+.ftr.out { opacity: .45; }
+.round { font: 700 .74rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--amber); flex: none; margin-right: 6px; }
+.play { display: grid; grid-template-columns: minmax(0, 1fr) 280px; min-height: 430px; }
+@media (max-width: 860px) { .play { grid-template-columns: 1fr; } }
+.scroll { overflow-x: auto; }
+.map { position: relative; width: 640px; height: 400px; margin: 14px; border-radius: 8px; background-color: #2c3129; background-image: linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px), radial-gradient(ellipse at 30% 40%, #3b4235, #262b24 75%); background-size: 40px 40px, 40px 40px, 100% 100%; }
+.wall { position: absolute; background: #151815; border-radius: 3px; }
+.tok { position: absolute; width: 36px; height: 36px; margin: 2px; border-radius: 50%; border: 2px solid rgba(255,255,255,.75); display: grid; place-items: center; font: 700 .78rem/1 var(--sans); color: #15171a; cursor: pointer; padding: 0; transition: left .2s, top .2s; }
+.tok.now { box-shadow: 0 0 0 3px var(--amber); }
+.tok.sel { border-color: var(--blue); }
+.tok.foe { border-radius: 8px; }
+.tok small { position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%); background: var(--chrome); color: var(--text); font: 600 .62rem/1.2 var(--sans); padding: 1px 4px; border-radius: 4px; white-space: nowrap; }
+.side { border-left: 1px solid var(--line); background: var(--surface); padding: 14px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+@media (max-width: 860px) { .side { border-left: none; border-top: 1px solid var(--line); } }
+.num { font: 600 1.5rem/1.1 var(--sans); color: var(--strong); }
+.chip { display: inline-block; font-size: .75rem; font-weight: 600; border: 1px solid var(--line-strong); border-radius: 999px; padding: 1px 8px; margin: 0 4px 4px 0; }
+.chip.cond { border-color: var(--purple); color: var(--purple); }
+.row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.meter { height: 7px; background: var(--surface-3); border-radius: 4px; overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--green); }
+.ctl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--line); background: var(--surface); }
+.steps { display: grid; gap: 10px; }
+.step { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 12px; align-items: start; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.step .n { font: 600 1.3rem/1 var(--serif); color: var(--amber); }
+@media (max-width: 560px) { .step { grid-template-columns: 26px minmax(0, 1fr); } .step .sz { grid-column: 2; } }
+.sz { font-size: .76rem; font-weight: 600; color: var(--muted); border: 1px solid var(--line-strong); border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+.pick { color: var(--green); font-weight: 600; }
+</style>
+
+<main class="wrap">
+  <header class="top">
+    <div class="eyebrow">askdnd · design · nothing built yet</div>
+    <h1>Simple VTT</h1>
+    <p class="lead">What "simple" could cover, so a fight can run in askdnd instead of D&amp;D Beyond's VTT. My recommendation is at the end of each section. Press Next turn, click a token, and switch between the DM and a player below.</p>
+  </header>
+
+  <section>
+    <h2>Where you'll find it</h2>
+    <p class="muted" style="max-width:76ch">A new <b>Table</b> item in the menu bar, between Campaign and your character, at <code>/c/&lt;campaign&gt;/table</code>. It's hidden behind a VTT switch until you're happy with it, so the test campaign sees it first. The fight band, Table rolls, corner cards, the hit points window and the roll window all stay as they are: this page brings them together around a board.</p>
+  </section>
+
+  <section>
+    <h2>What simple means</h2>
+    <div class="grid2">
+      <div class="box"><span class="label">In</span>
+        <ul>
+          <li>A fight askdnd runs itself: turn order, whose turn, rounds, Next turn</li>
+          <li>Enemies from the rules data, each with their own Hit Points</li>
+          <li>One map: an image the DM uploads, with a square grid</li>
+          <li>Tokens for characters and enemies, dragged by whoever owns them, seen moving by everyone at once</li>
+          <li>Everything askdnd already does: rolls, conditions, Hit Points, reminders</li>
+        </ul></div>
+      <div class="box"><span class="label">Left out for now</span>
+        <ul>
+          <li>Fog of war, walls and lines of sight</li>
+          <li>Measuring and spell areas</li>
+          <li>Attacks that work out their own results: the DM still rules, and Apply to stays</li>
+          <li>Several scenes, music and handouts</li>
+          <li>Moving on a phone: phones follow along and use their sheet</li>
+        </ul></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Try it</h2>
+    <div class="stage" id="vtt">
+      <div class="bar"><b>askdnd</b><span>VTT test</span><span>Story</span><span>Campaign</span><span class="on">Table</span><span id="whoNav">Cole</span><span>Party ▾</span><span class="sp"></span><span class="muted">Connected to D&amp;D Beyond</span></div>
+      <div class="band" id="band" aria-label="Turn order"></div>
+      <div class="play">
+        <div class="scroll"><div class="map" id="map" role="group" aria-label="The map">
+          <div class="wall" style="left:240px;top:0;width:12px;height:160px"></div>
+          <div class="wall" style="left:240px;top:240px;width:12px;height:160px"></div>
+          <div class="wall" style="left:440px;top:120px;width:200px;height:12px"></div>
+        </div></div>
+        <aside class="side" id="side" aria-live="polite"></aside>
+      </div>
+      <div class="ctl">
+        <span class="label">Seeing it as</span>
+        <button type="button" class="btn" data-view="dm" aria-pressed="true">The DM</button>
+        <button type="button" class="btn" data-view="player" aria-pressed="false">Cole's player</button>
+        <span style="flex:1"></span>
+        <button type="button" class="btn main" id="next">Next turn</button>
+      </div>
+    </div>
+    <p class="small muted">A made-up fight. In the DM's view the hidden Enemy 3 shows faintly with its Hit Points. Cole's player sees neither, only a rough state for the enemies they can see. My recommendation is enemy Hit Points hidden from players by default, which is what you chose when the fight screen was parked on Oct 28.</p>
+  </section>
+
+  <section>
+    <h2>The order I'd build it</h2>
+    <p class="muted" style="max-width:76ch">Each step is useful alone, and the table can stop at any of them. D&amp;D Beyond's VTT keeps working throughout: askdnd goes on listening to it until a fight starts in askdnd instead.</p>
+    <div class="steps">
+      <div class="step"><span class="n">1</span><div><h3>The board without a map</h3><p class="muted small">Turn order, enemies with Hit Points, and everyone's numbers as one row each, in place of the map. This also gives the DM the compact fight view that's missing today.</p></div><span class="sz">M</span></div>
+      <div class="step"><span class="n">2</span><div><h3>Add enemies from the rules data</h3><p class="muted small">Pick from the SRD and the campaign's books. It needs the whole Monster Manual loaded, which is already next on the roadmap. Roll initiative for the group or each one.</p></div><span class="sz">M</span></div>
+      <div class="step"><span class="n">3</span><div><h3>The map and tokens</h3><p class="muted small">One uploaded image, a grid sized to it, tokens that snap to squares, and live movement. This needs the live connection to carry positions directly, which is planned for Phase 3.</p></div><span class="sz">L</span></div>
+      <div class="step"><span class="n">4</span><div><h3>Try a whole session on it</h3><p class="muted small">A session in the test campaign first, then one with the table. What's missing after that decides what comes from Phase 3.</p></div><span class="sz">S</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>For you to decide</h2>
+    <div class="grid2">
+      <div class="box ask"><h3>1. Is a fight without a map worth having first?</h3>
+        <p class="muted">The board in step 1 can ship in about a week and works alongside D&amp;D Beyond's map. Going straight to the map takes longer but gets you off D&amp;D Beyond sooner.</p>
+        <p class="pick">My pick: the board first. It's useful at the very next session.</p></div>
+      <div class="box ask"><h3>2. Who moves what?</h3>
+        <p class="muted">Players move their own token and the DM moves anything. Or only the DM moves tokens, which is simpler but slower at the table.</p>
+        <p class="pick">My pick: players move their own.</p></div>
+      <div class="box ask"><h3>3. What do players see of an enemy?</h3>
+        <p class="muted">Nothing but the token, a rough state (Healthy, Bloodied, Down), or exact Hit Points.</p>
+        <p class="pick">My pick: rough state, with a DM setting. Bloodied is half Hit Points or less.</p></div>
+      <div class="box ask"><h3>4. Where do rolls go once askdnd runs the fight?</h3>
+        <p class="muted">The Game Log line has no place when no one's on D&amp;D Beyond's VTT. Table rolls alone would be enough.</p>
+        <p class="pick">My pick: Table rolls alone in an askdnd fight, as the Table Without Modes design already expects.</p></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const F = [
+    { key: 'cole', name: 'Cole', init: 19, kind: 'pc', hp: 37, max: 51, ac: 16, x: 3, y: 4, c: '#e8b34b', conds: ['Concentration'], line: 'Druid 6 / Monk 2' },
+    { key: 'e1', name: 'Enemy 1', init: 17, kind: 'foe', hp: 22, max: 22, ac: 13, x: 8, y: 3, c: '#e07a7a', conds: [], line: 'A monster from the rules data' },
+    { key: 'bigc', name: 'Big C', init: 15, kind: 'pc', hp: 72, max: 72, ac: 19, x: 4, y: 6, c: '#7ea6e0', conds: [], line: 'Paladin 6 / Sorcerer 2' },
+    { key: 'e2', name: 'Enemy 2', init: 12, kind: 'foe', hp: 9, max: 22, ac: 13, x: 9, y: 6, c: '#e07a7a', conds: ['Poisoned'], line: 'A monster from the rules data' },
+    { key: 'trah', name: 'Trah', init: 11, kind: 'pc', hp: 41, max: 58, ac: 14, x: 2, y: 2, c: '#5bbf7f', conds: [], line: 'Wizard 7 / Fighter 1' },
+    { key: 'e3', name: 'Enemy 3', init: 8, kind: 'foe', hp: 30, max: 30, ac: 15, x: 13, y: 1, c: '#e07a7a', conds: [], hidden: true, line: 'Hidden by the DM' },
+    { key: 'noname', name: 'No Name', init: 6, kind: 'pc', hp: 29, max: 52, ac: 15, x: 5, y: 3, c: '#b794d6', conds: ['Prone'], line: 'Monk 6 / Warlock 2' },
+  ];
+  let turn = 0, round = 2, view = 'dm', sel = 'cole';
+  const $ = id => document.getElementById(id);
+  const seen = () => F.filter(f => view === 'dm' || !f.hidden);
+  const rough = f => (f.hp <= 0 ? 'Down' : f.hp <= f.max / 2 ? 'Bloodied' : 'Healthy');
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+  function draw() {
+    const band = $('band'); band.replaceChildren(el('span', 'round', 'Round ' + round));
+    seen().forEach(f => {
+      const b = el('button', 'ftr' + (F[turn] === f ? ' now' : '') + (f.hidden ? ' out' : '')); b.type = 'button';
+      const d = el('span', 'dot', f.name.slice(0, 1) === 'E' ? f.name.slice(-1) : f.name.slice(0, 1)); d.style.background = f.c;
+      b.append(d, f.name); b.onclick = () => { sel = f.key; draw(); }; band.append(b);
+    });
+    const map = $('map'); map.querySelectorAll('.tok').forEach(t => t.remove());
+    seen().forEach(f => {
+      const t = el('button', 'tok' + (f.kind === 'foe' ? ' foe' : '') + (F[turn] === f ? ' now' : '') + (sel === f.key ? ' sel' : ''));
+      t.type = 'button'; t.style.left = f.x * 40 + 'px'; t.style.top = f.y * 40 + 'px'; t.style.background = f.c; if (f.hidden) t.style.opacity = '.45';
+      t.setAttribute('aria-label', f.name); t.append(f.name.slice(0, 1) === 'E' ? f.name.slice(-1) : f.name.slice(0, 1));
+      const n = el('small', '', f.name); t.append(n); t.onclick = () => { sel = f.key; draw(); }; map.append(t);
+    });
+    const f = seen().find(x => x.key === sel) || seen()[0], s = $('side'); s.replaceChildren();
+    const exact = view === 'dm' || f.kind === 'pc';
+    s.append(el('h3', '', f.name), el('p', 'small muted', f.line));
+    if (exact) {
+      const n = el('div', 'num', f.hp + ' / ' + f.max); const m = el('div', 'meter'); const i = el('i'); i.style.width = 100 * f.hp / f.max + '%'; m.append(i);
+      s.append(n, m, el('p', 'small muted', 'Armor class ' + f.ac));
+    } else s.append(el('div', 'num', rough(f)), el('p', 'small muted', 'The DM has the exact Hit Points'));
+    if (f.conds.length) { const r = el('div'); f.conds.forEach(c => r.append(el('span', 'chip cond', c))); s.append(r); }
+    const r = el('div', 'row');
+    if (view === 'dm' && f.kind === 'foe') r.append(el('button', 'btn', 'Roll attack'), el('button', 'btn', 'Damage'));
+    else if (view === 'dm') r.append(el('button', 'btn', 'Damage'), el('button', 'btn', 'Heal'));
+    else if (f.key === 'cole') r.append(el('button', 'btn', 'Open Battle'), el('button', 'btn', 'Damage'), el('button', 'btn', 'Heal'));
+    if (r.children.length) s.append(r);
+    s.append(el('p', 'small muted', F[turn] === f ? "It's " + f.name + "'s turn." : f.name + ' goes at ' + f.init + '.'));
+  }
+  $('next').onclick = () => {
+    do { turn = (turn + 1) % F.length; if (!turn) round++; } while (view !== 'dm' && F[turn].hidden);
+    sel = F[turn].key; if (view !== 'dm' && F[turn].hidden) sel = 'cole'; draw();
+  };
+  document.querySelectorAll('[data-view]').forEach(b => { b.onclick = () => {
+    view = b.dataset.view; document.querySelectorAll('[data-view]').forEach(x => x.setAttribute('aria-pressed', x === b));
+    if (view !== 'dm' && F.find(x => x.key === sel).hidden) sel = 'cole'; draw(); }; });
+  draw();
+})();
+</script>
