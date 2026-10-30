@@ -32,6 +32,13 @@ KEPT_HEADERS = {"user-agent"}
 _state = {"on": False}
 
 
+def _app_js_version() -> str:
+    """The app.js version pages get now (templating._static's ?v=)."""
+    from app.templating import _static
+
+    return _static("app.js").rpartition("v=")[2]
+
+
 def _scrub(event: dict, hint: dict | None = None) -> dict:
     """The last word on what leaves askdnd (Sentry calls it for every event)."""
     req = event.get("request") or {}
@@ -128,6 +135,11 @@ async def page_error(request: Request):
         with sentry_sdk.new_scope() as scope:
             scope.set_tag("source", "page")
             scope.set_tag("page", page)
+            # Which app.js the page ran: a tab opened before a deploy still runs the old one (2026-10-29: a dice error
+            # fixed that afternoon came back from a tab left open since the morning)
+            ran, now_v = _cut(got.get("v"), 20), _app_js_version()
+            scope.set_tag("page_version", ran or "unknown")
+            scope.set_tag("old_page", "yes" if ran and now_v and ran != now_v else "no")
             scope.set_user({"role": ROLE_LABELS.get(role(user.get("email")) or "", "") or None})
             scope.set_extra("where", f"{_cut(got.get('source'), 200)}:{_cut(got.get('line'), 8)}:{_cut(got.get('column'), 8)}")
             scope.set_extra("stack", _cut(got.get("stack"), 2000))

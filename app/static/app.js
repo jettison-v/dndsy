@@ -7,13 +7,14 @@
   // Sentry. Errors from browser extensions and other sites' scripts are left out; each error is sent once per page,
   // at most five per page.
   const sentErrors = new Set();
+  const PAGE_V = (/[?&]v=(\w+)/.exec((document.currentScript || {}).src || '') || [])[1] || '';  // this app.js's version: a tab opened before a deploy shows as old
   function reportError(message, source, line, column, stack) {
     if (!document.body || !document.body.dataset.dice) return;  // signed in (the server checks too)
     if (!source || new URL(source, location.href).origin !== location.origin) return;
     const key = message + '|' + source + '|' + line;
     if (sentErrors.has(key) || sentErrors.size >= 5) return;
     sentErrors.add(key);
-    const body = JSON.stringify({ message, source, line, column, stack: String(stack || '').slice(0, 2000), page: location.pathname });
+    const body = JSON.stringify({ message, source, line, column, stack: String(stack || '').slice(0, 2000), page: location.pathname, v: PAGE_V });
     try { navigator.sendBeacon('/errors/page', new Blob([body], { type: 'application/json' })); } catch (e) { /* never break the page over it */ }
   }
   addEventListener('error', e => { if (e.error || e.message) reportError(e.message, e.filename, e.lineno, e.colno, e.error && e.error.stack); });

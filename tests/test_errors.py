@@ -86,6 +86,9 @@ def test_a_pages_javascript_error_comes_home(table, sentry):  # noqa: F811
     assert event["message"] == "Page error: x is undefined" and event["tags"]["page"] == "/characters/1/battle"
     assert event["tags"]["source"] == "page" and event["extra"]["where"] == "/static/app.js?v=1:120:7"
     assert event["user"] == {"role": "DM"}  # the role, never the email
+    assert event["tags"]["page_version"] == "unknown" and event["tags"]["old_page"] == "no"
+    table["dm"].post("/errors/page", json={**error, "message": "z", "v": "0ld"})
+    assert sentry.events[-1]["tags"]["old_page"] == "yes"  # a tab opened before a deploy runs the old app.js
     assert table["player"].post("/errors/page", json={**error, "message": "y" * 5000}).status_code == 204
     assert len(sentry.events[-1]["message"]) < 400  # trimmed
     for _ in range(errors.PAGE_LIMIT):
