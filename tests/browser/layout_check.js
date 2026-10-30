@@ -56,6 +56,7 @@
     return !/rgba\(0, 0, 0, 0\)|transparent/.test(cs.backgroundColor) || parseFloat(cs.borderTopWidth) > 0 || parseFloat(cs.borderLeftWidth) > 0; };
   for (const el of document.body.querySelectorAll('*')) {
     if (!(el.matches(BOXES) || looksLikeABox(el)) || !shown(el) || contained(el)) continue;
+    if (el.closest('details:not([open])') && !el.closest('summary')) continue;  // (inside a closed fold: not on the page)
     const cs = getComputedStyle(el);
     if (cs.overflowX !== 'visible' || cs.textOverflow === 'ellipsis') continue;
     if (el.scrollWidth > el.clientWidth + 2 && el.clientWidth > 0) add('spills', el, `${el.scrollWidth - el.clientWidth}px wider than its box: ${el.textContent}`);

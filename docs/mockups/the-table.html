@@ -1,0 +1,261 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One Table List</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Adding and removing people and characters, designed again (Brett, 2026-10-30: "still a bit confused by the
+   interaction"). One page: what's confusing, where you'll find it, the new Table to try, what moves where, then what's
+   for Brett to decide. Mockups use the table's characters and people by role. askdnd is dark only, so this page is too. */
+:root { --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --chrome: #0f1113; --line: #34383e;
+  --line-strong: #4a4f57; --text: #ebe7df; --strong: #fff; --muted: #a29d93; --faint: #6f6b64;
+  --red: #d64545; --red-text: #f08a8a; --amber: #e8b34b; --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .14);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .15); --shadow: rgba(0, 0, 0, .45);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.6 var(--sans); margin: 0; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 36px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 34px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.4rem/1.25 var(--serif); }
+h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+section { display: grid; gap: 14px; min-width: 0; }
+.eyebrow { font: 700 .78rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red-text); }
+.label { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+header.top { display: grid; gap: 12px; max-width: 76ch; }
+.lead { font-size: 1.05rem; }
+.muted { color: var(--muted); } .small { font-size: .86rem; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.box.ask { border-color: var(--red); }
+.box ol, .box ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+.btn { font: 600 .84rem/1.2 var(--sans); color: var(--text); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+.btn:hover { border-color: var(--muted); }
+.btn.main { background: var(--red); border-color: var(--red); color: #fff; }
+.btn.bad { color: var(--red-text); }
+.btn:focus-visible, .row:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.stage { background: var(--chrome); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 14px; }
+.head { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; }
+.head h3 { font: 600 1.3rem/1.2 var(--serif); }
+.list { display: grid; gap: 6px; }
+.group { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding-top: 8px; }
+.row { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; text-align: left; font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; cursor: pointer; }
+.row:hover { border-color: var(--line-strong); }
+.row.open { border-color: var(--blue); }
+.pic { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-3); color: var(--muted); font-weight: 700; }
+.pic.none { background: none; border: 1px dashed var(--line-strong); }
+.who { min-width: 0; display: grid; }
+.who b { overflow-wrap: anywhere; }
+.who span { font-size: .84rem; color: var(--muted); overflow-wrap: anywhere; }
+.tag { font: 700 .68rem/1 var(--cond); letter-spacing: .06em; text-transform: uppercase; border: 1px solid var(--line-strong); border-radius: 999px; padding: 4px 8px; color: var(--muted); white-space: nowrap; }
+.tag.dm { color: var(--amber); border-color: var(--amber); }
+.tag.warn { color: var(--amber); border-color: var(--amber); }
+.panel { border: 1px solid var(--blue); border-radius: 10px; background: var(--surface); padding: 12px 14px; display: grid; gap: 10px; }
+.field { display: grid; gap: 4px; font-size: .84rem; color: var(--muted); }
+select, input[type=text] { font: 500 .9rem/1.2 var(--sans); color: var(--text); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 8px; padding: 8px 10px; width: 100%; }
+.acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.confirm { border-top: 1px solid var(--line); padding-top: 10px; display: grid; gap: 8px; }
+.say { font-size: .9rem; }
+.card { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 9px 12px; background: var(--green-soft); border: 1px solid var(--green); border-radius: 10px; font-size: .88rem; }
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+th { text-align: left; font: 700 .72rem/1.2 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 6px 10px; border-bottom: 1px solid var(--line-strong); }
+td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">Manage › Table · decided and built, Oct 30</div>
+    <h1>One list of who's at the table</h1>
+    <p class="lead">Today a person and their character are in two separate lists, and removing someone is an option hidden in a dropdown. This puts each person and their character on one row, with one Add button, and says exactly what Remove will do before it does it.</p>
+  </header>
+
+  <section class="grid2">
+    <div class="box">
+      <h2>Why it's confusing today</h2>
+      <ul>
+        <li><b>Two lists for one idea.</b> Characters says who plays them. People says what they play, but you can't change it there.</li>
+        <li><b>Removing is hidden.</b> You take someone out by picking No role in a dropdown and pressing Save.</li>
+        <li><b>A character can't be removed at all.</b> It can only be moved to another campaign, on another page.</li>
+        <li><b>Adding takes two forms.</b> Add the person, then add the character, then connect them.</li>
+        <li><b>Three pages.</b> Table, Accounts and Campaigns each hold part of the job.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h2>Where you'll find it</h2>
+      <ol>
+        <li>Open <b>Manage</b>, then <b>Table</b>, in the campaign you're changing.</li>
+        <li>One list: the DM first, then each player with their character.</li>
+        <li><b>+ Add to the table</b> at the top does a person, a character, or both.</li>
+        <li>Click any row for everything about it, including Remove.</li>
+        <li><b>Accounts</b> stays for who can sign in to askdnd at all. Most of the time you won't need it.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <h2>Try it</h2>
+    <p class="muted">Click a row, try Remove, or add someone. Pretend page, and the Reset button puts everything back.</p>
+    <div class="stage">
+      <div class="head"><h3>Table · VTT test</h3><span class="acts"><button class="btn" type="button" id="reset">Reset</button><button class="btn main" type="button" id="add">+ Add to the table</button></span></div>
+      <div id="done" hidden></div>
+      <div id="adder" hidden></div>
+      <div class="list" id="list"></div>
+    </div>
+  </section>
+
+  <section class="box">
+    <h2>What moves where</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Job</th><th>Today</th><th>Proposed</th></tr></thead>
+      <tbody>
+        <tr><td><b>Add a person</b></td><td>People › + Add someone</td><td>+ Add to the table</td></tr>
+        <tr><td><b>Add a character</b></td><td>Characters › + Add a character, then Played by</td><td>The same window: a D&amp;D Beyond link, in one step with its player</td></tr>
+        <tr><td><b>Change a role</b></td><td>A dropdown and Save on each row</td><td>Click the row; it saves as you pick</td></tr>
+        <tr><td><b>Change who plays what</b></td><td>A dropdown on the Characters list</td><td>Click the row; it saves as you pick</td></tr>
+        <tr><td><b>Remove a person</b></td><td>Role › No role › Save</td><td>Click the row › Remove from the table</td></tr>
+        <tr><td><b>Remove a character</b></td><td>Not possible</td><td>Click the row › Remove the character</td></tr>
+        <tr><td><b>Bring someone back</b></td><td>Add them again</td><td>Left the table › Bring back</td></tr>
+        <tr><td><b>Move a character to another campaign</b></td><td>Admin › Campaigns</td><td>Click the row › Move to</td></tr>
+        <tr><td><b>Who can sign in at all</b></td><td>Admin › Accounts</td><td>The same. Adding a new email here still makes an account</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Questions for you</h2>
+    <div class="grid2">
+      <div class="box ask">
+        <div class="label">1 · One list or two?</div>
+        <p><b>A, recommended: one list</b>, as above. A person and their character read as one seat at the table, which is how you think about it.</p>
+        <p class="muted"><b>B: keep two lists</b> and add Remove buttons to each. Smaller change, but the two lists still have to be read together.</p>
+      </div>
+      <div class="box ask">
+        <div class="label">2 · Who can change the table?</div>
+        <p>Today only admins can; the DM can only look.</p>
+        <p><b>A, recommended: the DM runs their own table.</b> They add people who already have an account, change roles and characters, and remove. A brand-new email, which lets someone sign in to askdnd, stays admin only.</p>
+        <p class="muted"><b>B: admins only</b>, as today. Simpler, but your DM has to ask you each time. It matters most when another group joins.</p>
+      </div>
+      <div class="box ask">
+        <div class="label">3 · What does Remove do?</div>
+        <p><b>A, recommended: nothing is ever deleted.</b> They move to a folded Left the table list with Bring back, so a mistake costs nothing. Their story, rolls and notes stay.</p>
+        <p class="muted"><b>B: test copies delete for good</b>, and everything else stays. A cleaner list, but it can't be undone.</p>
+      </div>
+      <div class="box ask">
+        <div class="label">4 · Moving a character to another campaign</div>
+        <p><b>A, recommended: Move to, in the character's row.</b> Everything about the character is in one place, and Admin › Campaigns stops being a place you have to remember.</p>
+        <p class="muted"><b>B: leave it on Admin › Campaigns.</b> It's rare, and that page shows every campaign side by side.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+const START = () => ({
+  seats: [
+    { id: "dm", person: "The DM", role: "DM", character: "" },
+    { id: "p1", person: "Player 1", role: "Player", character: "Cole", cls: "Druid 8" },
+    { id: "p2", person: "Player 2", role: "Player", character: "Trah", cls: "Wizard 7 / Fighter 1" },
+    { id: "p3", person: "Player 3", role: "Player", character: "" },
+  ],
+  free: [{ id: "c1", character: "Big C", cls: "Paladin 8" }],
+  gone: [{ id: "g1", name: "No Name", note: "Character · left Oct 28", kind: "character", cls: "Monk 6 / Warlock 2" }],
+});
+const ROLES = ["DM", "Reviewer", "Player"];
+let t = START(), open = "", asking = "", done = "", undo = null, adding = false, seq = 1;
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const pic = name => name ? `<span class="pic">${esc(name[0])}</span>` : `<span class="pic none">?</span>`;
+
+function seatPanel(s) {
+  const picks = ["", ...t.free.map(c => c.character), s.character].filter((x, i, a) => a.indexOf(x) === i);
+  const charActs = s.character ? `<button class="btn bad" type="button" data-ask="character">Remove ${esc(s.character)}</button>` : "";
+  const q = asking === "person" ? `<div class="confirm"><p class="say"><b>Remove ${esc(s.person)} from VTT test?</b> They stop seeing this campaign.${s.character ? ` ${esc(s.character)} stays at the table, with nobody playing it.` : ""} Their account stays, and their other campaigns aren't touched.</p><div class="acts"><button class="btn main" type="button" data-do="person">Remove ${esc(s.person)}</button><button class="btn" type="button" data-do="cancel">Keep them</button></div></div>`
+    : asking === "character" ? `<div class="confirm"><p class="say"><b>Remove ${esc(s.character)} from VTT test?</b> It leaves the table and the fight. Its story, rolls and notes stay. ${esc(s.person)} stays at the table with no character.</p><div class="acts"><button class="btn main" type="button" data-do="character">Remove ${esc(s.character)}</button><button class="btn" type="button" data-do="cancel">Keep it</button></div></div>` : "";
+  return `<div class="panel">
+    <label class="field">Role here<select data-role>${ROLES.map(r => `<option${r === s.role ? " selected" : ""}>${r}</option>`).join("")}</select></label>
+    <label class="field">Plays<select data-plays>${picks.map(c => `<option value="${esc(c)}"${c === s.character ? " selected" : ""}>${c ? esc(c) : "No character"}</option>`).join("")}</select></label>
+    <div class="acts">${s.character ? `<button class="btn" type="button">Fix D&amp;D Beyond link</button><button class="btn" type="button">Move to…</button>` : ""}<button class="btn" type="button">View as</button>${charActs}<button class="btn bad" type="button" data-ask="person">Remove from the table</button></div>${q}</div>`;
+}
+function freePanel(c) {
+  const q = asking === "free" ? `<div class="confirm"><p class="say"><b>Remove ${esc(c.character)} from VTT test?</b> It leaves the table and the fight. Its story, rolls and notes stay.</p><div class="acts"><button class="btn main" type="button" data-do="free">Remove ${esc(c.character)}</button><button class="btn" type="button" data-do="cancel">Keep it</button></div></div>` : "";
+  const people = t.seats.filter(s => !s.character && s.role !== "DM");
+  return `<div class="panel"><label class="field">Played by<select data-give><option value="">Nobody yet</option>${people.map(s => `<option value="${s.id}">${esc(s.person)}</option>`).join("")}</select></label>
+    <div class="acts"><button class="btn" type="button">Fix D&amp;D Beyond link</button><button class="btn" type="button">Move to…</button><button class="btn bad" type="button" data-ask="free">Remove the character</button></div>${q}</div>`;
+}
+function draw() {
+  const dms = t.seats.filter(s => s.role === "DM"), players = t.seats.filter(s => s.role !== "DM");
+  const seat = s => `<button class="row${open === s.id ? " open" : ""}" type="button" data-open="${s.id}" aria-expanded="${open === s.id}">${pic(s.character)}<span class="who"><b>${esc(s.character || s.person)}</b><span>${s.character ? esc(s.person) + " · " + esc(s.cls || "") : s.role === "DM" ? "Runs the campaign" : "No character yet"}</span></span><span class="tag${s.role === "DM" ? " dm" : ""}">${esc(s.role)}</span></button>${open === s.id ? seatPanel(s) : ""}`;
+  const free = c => `<button class="row${open === c.id ? " open" : ""}" type="button" data-open="${c.id}" aria-expanded="${open === c.id}">${pic(c.character)}<span class="who"><b>${esc(c.character)}</b><span>${esc(c.cls || "")}</span></span><span class="tag warn">Nobody plays it</span></button>${open === c.id ? freePanel(c) : ""}`;
+  const gone = g => `<div class="row" role="group">${pic(g.name)}<span class="who"><b>${esc(g.name)}</b><span>${esc(g.note)}</span></span><button class="btn" type="button" data-back="${g.id}">Bring back</button></div>`;
+  $("list").innerHTML = (dms.length ? `<div class="group">Running the game</div>${dms.map(seat).join("")}` : "") + `<div class="group">Players</div>${players.map(seat).join("") || '<p class="small muted">No players yet.</p>'}`
+    + (t.free.length ? `<div class="group">Characters nobody plays</div>${t.free.map(free).join("")}` : "") + (t.gone.length ? `<div class="group">Left the table</div>${t.gone.map(gone).join("")}` : "");
+  const box = $("done");
+  box.hidden = !done;
+  box.innerHTML = done ? `<div class="card"><span>${esc(done)}</span>${undo ? '<button class="btn" type="button" id="undo">Undo</button>' : ""}</div>` : "";
+  const a = $("adder");
+  a.hidden = !adding;
+  a.innerHTML = adding ? `<div class="panel"><h3>Add to VTT test</h3>
+    <label class="field">Who<select id="a-who"><option value="">No one yet (just a character)</option><option>Player 4 (has an account)</option><option>Someone new: enter their Google email</option></select></label>
+    <label class="field">Role here<select id="a-role">${ROLES.map(r => `<option${r === "Player" ? " selected" : ""}>${r}</option>`).join("")}</select></label>
+    <label class="field">Their character: a D&amp;D Beyond link, or leave it empty<input id="a-link" type="text" placeholder="https://www.dndbeyond.com/characters/12345678"></label>
+    <div class="acts"><button class="btn main" type="button" id="a-go">Add to the table</button><button class="btn" type="button" id="a-no">Cancel</button></div></div>` : "";
+}
+const say = (text, fn) => { done = text; undo = fn; open = ""; asking = ""; draw(); };
+const snapshot = () => JSON.stringify(t);
+function act(fn, text) { const was = snapshot(); fn(); say(text, () => { t = JSON.parse(was); }); }
+document.addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  if (b.id === "reset") { t = START(); open = asking = done = ""; undo = null; adding = false; return draw(); }
+  if (b.id === "add") { adding = !adding; return draw(); }
+  if (b.id === "a-no") { adding = false; return draw(); }
+  if (b.id === "undo") { undo(); done = ""; undo = null; return draw(); }
+  if (b.id === "a-go") {
+    const who = $("a-who").value, role = $("a-role").value, link = $("a-link").value.trim();
+    adding = false;
+    if (!who && !link) { done = "Pick someone or paste a link."; adding = true; return draw(); }
+    const name = who ? (who.startsWith("Player 4") ? "Player 4" : "New person") : "";
+    act(() => {
+      if (name) t.seats.push({ id: "n" + seq++, person: name, role, character: link ? "New character" : "", cls: link ? "From D&D Beyond" : "" });
+      else t.free.push({ id: "n" + seq++, character: "New character", cls: "From D&D Beyond" });
+    }, `Added ${name || "a character"} to VTT test`);
+    return;
+  }
+  if (b.dataset.open) { open = open === b.dataset.open ? "" : b.dataset.open; asking = ""; return draw(); }
+  if (b.dataset.ask) { asking = b.dataset.ask; return draw(); }
+  if (b.dataset.back) {
+    const g = t.gone.find(x => x.id === b.dataset.back);
+    act(() => { t.gone = t.gone.filter(x => x !== g); if (g.kind === "character") t.free.push({ id: "n" + seq++, character: g.name, cls: g.cls }); else t.seats.push({ id: "n" + seq++, person: g.name, role: "Player", character: "" }); }, `${g.name} is back at the table`);
+    return;
+  }
+  const what = b.dataset.do;
+  if (what === "cancel") { asking = ""; return draw(); }
+  const s = t.seats.find(x => x.id === open), c = t.free.find(x => x.id === open);
+  if (what === "person") act(() => { t.seats = t.seats.filter(x => x !== s); if (s.character) t.free.push({ id: "n" + seq++, character: s.character, cls: s.cls }); t.gone.push({ id: "g" + seq++, name: s.person, note: "Person · left today", kind: "person" }); }, `${s.person} left VTT test`);
+  if (what === "character") act(() => { t.gone.push({ id: "g" + seq++, name: s.character, note: "Character · left today", kind: "character", cls: s.cls }); s.character = ""; s.cls = ""; }, "The character left VTT test");
+  if (what === "free") act(() => { t.free = t.free.filter(x => x !== c); t.gone.push({ id: "g" + seq++, name: c.character, note: "Character · left today", kind: "character", cls: c.cls }); }, `${c.character} left VTT test`);
+});
+document.addEventListener("change", e => {
+  const s = t.seats.find(x => x.id === open);
+  if (e.target.matches("[data-role]") && s) { s.role = e.target.value; done = `${s.person} is now ${s.role}. Saved.`; undo = null; open = ""; draw(); }
+  if (e.target.matches("[data-plays]") && s) {
+    const next = e.target.value, c = t.free.find(x => x.character === next);
+    if (s.character) t.free.push({ id: "n" + seq++, character: s.character, cls: s.cls });
+    s.character = next; s.cls = c ? c.cls : "";
+    t.free = t.free.filter(x => x !== c);
+    done = `${s.person} ${next ? "plays " + next : "has no character"}. Saved.`; undo = null; open = ""; draw();
+  }
+  if (e.target.matches("[data-give]")) {
+    const c = t.free.find(x => x.id === open), p = t.seats.find(x => x.id === e.target.value);
+    if (c && p) { p.character = c.character; p.cls = c.cls; t.free = t.free.filter(x => x !== c); done = `${p.person} plays ${p.character}. Saved.`; undo = null; open = ""; draw(); }
+  }
+});
+draw();
+</script>

@@ -534,6 +534,33 @@ details.opt > summary b:hover { text-decoration: underline; text-decoration-colo
 .situ .ic { width: 18px; text-align: center; font-weight: 700; flex: none; }
 .ic.advantage { color: var(--amber); } .ic.disadvantage { color: var(--link); } .ic.immunity { color: var(--green); }
 .ic.resistance, .ic.bonus { color: var(--blue); } .ic.reaction { color: var(--violet); }
+/* Manage › Table: a person and their character on one row (docs/mockups/the-table.html) */
+.seats h2 { margin-top: var(--sp-4); }
+.seat { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); margin-top: var(--sp-2); }
+.seat[open] { border-color: var(--blue-line); }
+.seat-row { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: var(--sp-3); align-items: center; padding: var(--sp-2) var(--sp-3); cursor: pointer; list-style: none; }
+.seat-row::-webkit-details-marker { display: none; }
+.seat-pic { position: relative; width: 38px; height: 38px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--surface-3); color: var(--muted); font-weight: 700; }
+.seat-pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.seat-pic.none { background: none; border: 1px dashed var(--line-strong); }
+.seat-who { display: grid; min-width: 0; }
+.seat-who b, .seat-who .note { overflow-wrap: anywhere; }
+.seat-dm { color: var(--amber); border-color: var(--amber); }
+.seat-panel { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-2); padding: var(--sp-2) var(--sp-3) var(--sp-3); border-top: 1px solid var(--line); }
+.seat-panel .form-narrow { grid-template-columns: minmax(0, 1fr); }
+.seat-panel .field { min-width: 0; }
+.seat-panel select, .seat-panel input[type="text"] { width: 100%; max-width: 100%; min-width: 0; }
+.seat-field { max-width: 320px; }
+.seat-link { display: grid; gap: var(--sp-1); }
+.seat-remove { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: flex-start; }
+.seat-ask > summary { list-style: none; cursor: pointer; }
+.seat-ask > summary::-webkit-details-marker { display: none; }
+.seat-ask[open] { flex-basis: 100%; }
+.seat-ask p { margin: var(--sp-2) 0; font-size: var(--fs-sm); }
+.seat-add { margin-bottom: var(--sp-3); }
+.seat-add > summary { list-style: none; cursor: pointer; }
+.seat-add > summary::-webkit-details-marker { display: none; }
+.seat-add .seat-panel { border: 1px solid var(--line); border-radius: var(--r-md); margin-top: var(--sp-2); }
 details.fold { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 8px; }
 details.fold > summary { cursor: pointer; color: var(--muted); font-size: var(--fs-sm); }
 .vitals { display: flex; gap: 8px; flex-wrap: wrap; }

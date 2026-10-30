@@ -197,6 +197,7 @@ def allows(rule: str, tool: str | None, campaign_role: str | None = None) -> boo
         "edit_entries": runs,               # campaign entries: names, spellings, descriptions, relationships
         "review": runs,                     # recaps, Claude's questions, key moments, character refresh
         "house_rules": campaign_role == DM or tool == ADMIN,  # the DM's rulings on how askdnd rolls and reads things
+        "table": campaign_role == DM or tool == ADMIN,  # who's at the table (a brand-new email stays an admin's)
         "see_table": campaign_role == DM or tool == ADMIN,  # Manage › Table: who plays which character (Brett, 2026-10-23)
         "settings": campaign_role == DM or tool == ADMIN,   # the campaign's name, DM's name, D&D Beyond id (Brett, 2026-10-23)
         "fight_hidden": campaign_role == DM or tool == ADMIN,  # a token the DM hid in D&D Beyond's VTT, in the fight band (app/fight.py)
@@ -217,6 +218,7 @@ CHART = [
     ("Run the table", "Edit campaign entries (names, spellings, descriptions, relationships)", "edit_entries"),
     ("Run the table", "Refresh characters from D&D Beyond", "review"),
     ("Run the table", "House rules: how askdnd rolls things at this table", "house_rules"),
+    ("Run the table", "Table: add, change and remove people and characters here", "table"),
     ("Run the table", "See the Table: who plays which character, D&D Beyond links", "see_table"),
     ("Run the table", "Settings: the campaign's name, the DM's name, which finished VTT pieces the table gets", "settings"),
     ("Run the table", "See tokens the DM hid in D&D Beyond's VTT in the fight's order", "fight_hidden"),
@@ -257,5 +259,5 @@ def summary(tool: str | None, campaign_role: str | None) -> str:
         None: "No role in this campaign yet",
     }[campaign_role]
     if tool == ADMIN:
-        parts += "; as admin, also sets up accounts, characters and spending"
+        parts += "; as admin, also sets up accounts and spending"
     return parts + "."

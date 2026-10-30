@@ -72,6 +72,11 @@ def can_set_house_rules(user: dict | None, campaign_id: int | None = None) -> bo
     return _allows(user, "house_rules", campaign_id)
 
 
+def can_run_table(user: dict | None, campaign_id: int | None = None) -> bool:
+    """Manage › Table's changes: the campaign's DM and admins (a brand-new email stays an admin's)."""
+    return _allows(user, "table", campaign_id)
+
+
 def can_see_table(user: dict | None, campaign_id: int | None = None) -> bool:
     """Manage › Table (who plays which character): the campaign's DM sees it; admins also change it."""
     return _allows(user, "see_table", campaign_id)

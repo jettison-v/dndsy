@@ -137,10 +137,10 @@ def test_manage_campaigns_creates_and_moves_and_table_adds(two, db):
     assert trah.campaign_id == two["strahd"].id
     admin.post(f"/manage/campaigns/characters/{trah.id}/move", data={"campaign_id": ""})
     assert trah.campaign_id is None and "Not in a campaign" in admin.get("/manage/campaigns").text
-    admin.post("/c/strahd/manage/table/characters", data={"name": "Ismark"})  # added on the campaign's Table
+    admin.post("/c/strahd/manage/table/add", data={"char_name": "Ismark"})  # added on the campaign's Table
     ismark = db.scalar(select(Character).where(Character.name == "Ismark"))
     assert ismark.campaign_id == two["strahd"].id and ismark.entity.name == "Ismark"
-    assert pat.post("/c/main/manage/table/characters", data={"name": "Nope"}).status_code == 403
+    assert pat.post("/c/main/manage/table/add", data={"char_name": "Nope"}).status_code == 403
 
 
 def test_a_character_dnd_beyond_puts_elsewhere_is_offered_a_move_never_moved(two, db):

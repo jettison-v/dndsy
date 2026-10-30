@@ -28,7 +28,7 @@ from app import class_rules, player_notes
 from app import spellbook as sb
 from app import wild_shape as ws
 from app import rules_terms as terms
-from app.auth import can_set_house_rules, current_user, is_admin, is_reviewer
+from app.auth import can_run_table, can_set_house_rules, current_user, is_admin, is_reviewer
 from app.db import get_db
 from app.models import Campaign, Character, HouseRule, TableRoll, ToolCorrection
 from app.templating import templates
@@ -765,8 +765,9 @@ def refresh_one(request: Request, character_id: int, db: Session = Depends(get_d
 @router.post("/characters/{character_id:int}/link")
 def link(request: Request, character_id: int, ddb_link: str = Form(""), db: Session = Depends(get_db)):
     """Admin (Manage › Table): save the D&D Beyond link, then fetch the character."""
-    if not is_admin(current_user(request)):
-        return _forbidden(request, "Only an admin can change D&D Beyond links.")
+    ch = db.get(Character, character_id)
+    if not ch or not can_run_table(current_user(request), ch.campaign_id):
+        return _forbidden(request, "Only the DM or an admin can change D&D Beyond links.")
     ch = db.get(Character, character_id)
     if ch is None:
         return RedirectResponse(_table(), status_code=303)
