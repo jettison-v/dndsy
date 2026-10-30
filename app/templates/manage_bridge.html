@@ -10,7 +10,7 @@
   <section class="section">
     <h2>Right now</h2>
     <dl class="br-now">
-      <dt>Awake</dt><dd>{% if a.awake %}Yes, until {{ a.until | clock }}{% if a.game_until %} (Game Mode, until {{ a.game_until | clock }}){% endif %}{% else %}No. {{ a.why }}{% endif %}</dd>
+      <dt>Awake</dt><dd>{% if a.awake %}Yes, until {{ a.until | clock }}{% else %}No. {{ a.why }}{% endif %}</dd>
       <dt>Last used</dt><dd>{{ last | clock if last else "Not yet" }}</dd>
       <dt>Extension</dt><dd>{% if health.extension %}Connected{% if health.sheets %} · sheets open: {{ health.sheets | length }}{% endif %}{% else %}Not connected{% endif %}</dd>
       <dt>Last check</dt><dd>{% if health.round_trip and health.round_trip.done_at %}{{ health.round_trip.state | capitalize }}{{ " (everything)" if health.round_trip.full }}, {{ health.round_trip.done_at | clock }}{% if health.round_trip.error %}. {{ health.round_trip.error }}{% endif %}{% else %}Not run since askdnd started{% endif %}</dd>

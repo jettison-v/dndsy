@@ -30,10 +30,9 @@ SECTIONS = [
                                          "window with its reason. The DM rules."),
     ]),
     ("Rolling", [
-        ("rolling", "Rolling and Table rolls", "Click any number to roll it. With Game Mode on, everyone's rolls are in Table rolls; DM "
-                                               "only and Just me keep a roll private."),
-        ("live", "Game Mode and Live", "One switch for the whole table: anyone starts it when the game starts, and everyone's rolls "
-                                       "are shared. The Live pill says how your own D&D Beyond sheet is kept in step."),
+        ("rolling", "Rolling and Table rolls", "Click any number to roll it. Rolls go to Table rolls for everyone; DM only and Only me "
+                                               "keep a roll private."),
+        ("live", "Live", "The Live pill says whether your D&D Beyond sheet is connected. Nothing to turn on."),
         (None, "Your dice", "Thrown 3D dice in the set you choose (account menu › Your dice); the table sees your rolls in them."),
     ]),
     ("Your character", [
@@ -129,11 +128,11 @@ STOPS = [
     {"group": "rolling", "page": "battle", "needs": "character", "at": '[data-tour="roll"]',
      "what": "Click any number to roll it. One window offers Advantage and extra dice; <b>Enter</b> rolls, <b>Esc</b> "
              "closes, and <b>Shift-click</b> rolls without the window.",
-     "why": "With Game Mode on, your rolls land in <b>Table rolls</b> for everyone, thrown in your own 3D dice. Pick "
-            "<b>DM only</b> or <b>Just me</b> for a private roll."},
+     "why": "Your rolls land in <b>Table rolls</b> for everyone, thrown in your own 3D dice. Pick <b>DM only</b> or "
+            "<b>Only me</b> for a private roll."},
     {"group": "live", "page": None, "at": '[data-tour="live"]',
-     "what": "<b>Live</b> says how your D&D Beyond sheet is kept in step, and holds <b>Game Mode</b>: one switch for the "
-             "whole table. Anyone starts it when the game starts; everyone's rolls are shared and every sheet stays fresh.",
+     "what": "<b>Live</b> says whether your D&D Beyond sheet is connected: open it in Chrome with the askdnd bridge, and "
+             "changes go both ways within seconds. There's nothing to turn on when the game starts.",
      "why": "Build and level up on D&D Beyond as always. <b>Refresh now</b> picks up a change made there at once."},
     {"group": "character", "title": "Sheet: your whole character", "page": "sheet", "needs": "character",
      "at": '[data-tour="sheet"]',

@@ -175,7 +175,7 @@
       <button class="btn" type="button" onclick="askdndToast('No Name rolled for the DM', null, 'info')">For your information</button>
       <button class="btn" type="button" onclick="askdndToast('Cole\'s sheet isn\'t open on D&amp;D Beyond, so this can\'t be made there.', null, 'warn')">Refused</button>
       <button class="btn" type="button" onclick="askdndToast('Couldn\'t save the order.', null, 'error')">Error</button>
-      <button class="btn" type="button" onclick="askdndToast('Game Mode ends at 11:40 PM.', { label: 'Keep going', run: () => askdndToast('Kept going') }, 'info')">With a button</button></div>
+      <button class="btn" type="button" onclick="askdndToast('Drank Potion of Healing', { label: 'Undo', run: () => askdndToast('Put back') }, 'info')">With a button</button></div>
     {{ ds("Card with a button", "toast(message, {label, run}, kind)", "When the message offers one thing to do (Undo, Keep going, Try again). It stays 20 seconds, and the button closes it. Someone's roll (with the dice animation off) is a card too, its die as the icon.") }}
   </section>
 

@@ -102,7 +102,7 @@ class Campaign(Timestamped, Base):
     # Its books (app/books.py): which private rules books its lookups use, set on Manage › Settings › Books
     books: Mapped[list] = mapped_column(JSONB, default=lambda: list(_books.DEFAULT),
                                         server_default=sql(f"'{_books.DEFAULT_JSON}'::jsonb"))
-    # Game Mode, one switch for the whole table (app/game_mode.py): on until this moment, started by this person
+    # (Game Mode's, unused since it was removed on 2026-10-30, docs/mockups/table-without-modes.html; to drop when Brett says)
     game_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     game_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL", use_alter=True, name="campaigns_game_by_id_fkey"))  # (users point at campaigns too)
     # The fight running in its D&D Beyond VTT, as askdnd last heard it (app/fight.py): the order, the round, whose turn

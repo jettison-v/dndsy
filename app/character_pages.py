@@ -24,7 +24,7 @@ from app import character_views as views
 from app import characters as chars
 from app import conditions as cond
 from app import ddb, ddb_bridge, hit_points, house_rules, picks
-from app import class_rules, live, player_notes
+from app import class_rules, player_notes
 from app import spellbook as sb
 from app import wild_shape as ws
 from app import rules_terms as terms
@@ -35,7 +35,6 @@ from app.templating import templates
 
 router = APIRouter()
 
-GAME_MODE_SECONDS = live.GAME_MODE_SECONDS
 
 
 def _overrides(db: Session) -> dict[tuple[str, str], str]:

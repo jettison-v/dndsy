@@ -21,8 +21,8 @@ It works like middleware between askdnd and D&D Beyond, and repairs itself:
 6. **Awake whenever someone is using it, with no switch** (Brett, 2026-10-27: always active when it needs to be,
    without wasting D&D Beyond's resources). Anyone opening or using an askdnd page or a D&D Beyond sheet wakes it for
    the idle timer (30 minutes); a save on a D&D Beyond sheet is always read and recorded, awake or not; an askdnd
-   character page re-reads that character when askdnd's copy is older than live.AUTO_MIN_AGE. Game Mode keeps it awake
-   for the game timer (6 hours) however quiet the table is, with a warning before, and Keep going (app/game_mode.py).
+   character page re-reads that character when askdnd's copy is older than live.AUTO_MIN_AGE. A running fight keeps it
+   awake however quiet the table is.
    Asleep, only the extension's background pull and the hourly check stop. **A change from askdnd only while its sheet
    can be reached** (decided 2026-10-28; `reachable`: its extension heard the sheet in the last live.REACH): otherwise
    it's refused, saying how, and nothing is queued. A change still waiting keeps it awake until its sheet has gone
@@ -70,7 +70,7 @@ from app import conditions as cond
 from app import characters as chars
 from app.auth import current_user, is_admin, is_dm
 from app.db import get_db
-from app.models import BridgeBatch, BridgeIntent, BridgeKey, BridgeLog, Character, TableRoll, ToolSetting
+from app.models import BridgeBatch, BridgeIntent, BridgeKey, BridgeLog, Campaign, Character, TableRoll, ToolSetting
 from app.templating import templates
 
 router = APIRouter()
@@ -95,8 +95,6 @@ TIMERS_KEY = "bridge_timers"  # admins change these on Manage › askdnd › D&D
 # (key, label, what it's for, unit in seconds, unit's name, default, lowest, highest)
 TIMERS = (
     ("idle", "Stays awake after anyone was here", "After someone last opened or used askdnd or a D&D Beyond sheet.", 60, "minutes", 30, 5, 240),
-    ("game", "Game Mode lasts", "For the whole table, however quiet it is, from when someone starts it (or Keep going); the bridge stays awake that long.", 3600, "hours", 6, 1, 12),
-    ("warn", "Warning before Game Mode's time is up", "A message on every page, with Keep going.", 60, "minutes", 10, 1, 60),
     ("wait", "A waiting change gives up after", "Its D&D Beyond sheet not heard by the extension for this long (closed, or the extension stopped); then it's listed to make by hand.", 60, "minutes", 3, 1, 30),
 )
 _health = {"extension_at": 0.0, "sheets": [], "heard_at": 0.0, "read_check": None, "round_trip": None}  # a heartbeat, in memory
@@ -164,20 +162,24 @@ def timers(db: Session) -> dict:
     return out
 
 
+def _fight_on(db: Session) -> bool:
+    """A fight is running somewhere (app/fight.py), heard within its STALE time."""
+    from app import fight
+
+    return db.scalar(select(Campaign.id).where(Campaign.fight.is_not(None), Campaign.fight_at > datetime.now(UTC) - fight.STALE).limit(1)) is not None
+
+
 def awake(db: Session) -> dict:
-    """{"awake": bool, "until", "game_until", "why"}: awake while someone used askdnd or a sheet in the last idle timer,
-    while Game Mode's time runs, or while a change is still waiting (until its sheet has gone quiet for the wait timer)."""
-    row, w = _wake_row(db)
+    """{"awake": bool, "until", "why"}: awake while someone used askdnd or a sheet in the last idle timer, while a fight
+    runs, or while a change is still waiting (until its sheet has gone quiet for the wait timer)."""
+    _, w = _wake_row(db)
     tm = timers(db)
-    now, last, game_until = time.time(), w.get("last", 0), w.get("game_until") or 0
+    now, last = time.time(), w.get("last", 0)
     _give_up(db)
     open_changes = db.scalar(select(BridgeIntent.id).where(BridgeIntent.state.in_(("waiting", "sending"))).limit(1))
-    game = game_until > now
-    if game or now - last <= tm["idle"] or open_changes:
-        return {"awake": True, "until": max(game_until, last + tm["idle"]), "game_until": game_until if game else None,
-                "warn": tm["warn"]}
-    return {"awake": False, "game_until": None, "warn": tm["warn"],
-            "why": f"Asleep: no one has opened askdnd or a D&D Beyond sheet for {_span(tm['idle'])}."}
+    if now - last <= tm["idle"] or open_changes or _fight_on(db):
+        return {"awake": True, "until": last + tm["idle"]}
+    return {"awake": False, "why": f"Asleep: no fight, and no one has opened askdnd or a D&D Beyond sheet for {_span(tm['idle'])}."}
 
 
 def _span(seconds: float) -> str:
@@ -236,18 +238,9 @@ def active(db: Session) -> None:
     row.value = json.dumps(w)
 
 
-def game(db: Session, on: bool) -> None:
-    """Game Mode started for the table (or Keep going: app/game_mode.py): awake for the game timer however quiet. Ended:
-    back to following activity."""
-    row, w = _wake_row(db)
-    w["last"] = time.time()
-    w["game_until"] = w["last"] + timers(db)["game"] if on else None
-    row.value = json.dumps(w)
-
-
 def page_opened(db: Session, character: Character | None) -> None:
     """An askdnd page opened (a character's, when `character`): awake, and that character re-read from D&D Beyond when
-    askdnd's copy is older than Game Mode's refresh, so what the page shows is current."""
+    askdnd's copy is older than the party's refresh, so what the page shows is current."""
     active(db)
     if character is not None and character.ddb_id:
         snap = character.snapshot
@@ -710,7 +703,7 @@ def heard(db: Session, character: Character, saved: bool = True) -> None:
 
 
 def seen(db: Session, character: Character, before: dict | None, after: dict, summary: dict | None) -> None:
-    """Every read of a character from D&D Beyond (the bridge's, Game Mode's refresh, a page opening) passes through
+    """Every read of a character from D&D Beyond (the bridge's, the party's refresh, a page opening) passes through
     here with askdnd's last copy (`before`) and the new one: whatever D&D Beyond changed itself goes in the log as
     "On D&D Beyond", whichever read saw it first. What askdnd is writing (or just wrote) isn't D&D Beyond's change."""
     _drop_ended(db, character, summary)
@@ -1003,7 +996,7 @@ def bridge_health(request: Request, db: Session = Depends(get_db)):
 @router.post("/bridge/active")
 async def bridge_active(request: Request, db: Session = Depends(get_db)):
     """Someone opened or used an askdnd page (app.js) or a D&D Beyond sheet (the extension, with `sheet`: an opened
-    sheet is read when askdnd's copy is older than Game Mode's refresh)."""
+    sheet is read when askdnd's copy is older than the party's refresh)."""
     _signed_in(request, db)
     sheet = str((await request.json()).get("sheet") or "")
 

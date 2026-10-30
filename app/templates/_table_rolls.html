@@ -1,8 +1,8 @@
-{# The Table rolls sidebar (app/table_rolls.py, app.js "Rolls"). Shown only while Game Mode is on
-   (body.gm-on): open or closed to an edge tab, one choice per device for every page; a bottom sheet on
+{# The Table rolls sidebar (app/table_rolls.py, app.js "Rolls"). On every page at the table
+   (body.at-table): open or closed to an edge tab, one choice per device for every page, and a fight opens it once; a bottom sheet on
    phones, whose closed bar shows each person's latest roll. The log loads and then polls for new rolls
    only while it's shown. #}
-<aside id="table-rolls" class="rolls-side" aria-label="Table rolls" data-mine="{{ tn.mine.id if tn and tn.mine else '' }}">
+<aside id="table-rolls" class="rolls-side" aria-label="Table rolls" data-mine="{{ tn.mine.id if tn and tn.mine else '' }}" data-yours="{{ (tn.characters | selectattr('mine') | map(attribute='id') | join(',')) if tn else '' }}">
   <div class="rs-head">
     <span class="rs-grip" aria-hidden="true"></span>
     <span class="rs-title">Table rolls</span>

@@ -63,7 +63,7 @@ def test_battle_page(player, db):
     page = player.get(f"/characters/{cole.id}/battle").text
     assert "Wild Shape" in page and "Reminders" in page and "Party" in page
     assert "hasn't pinned anything here yet" in page  # Battle shows only what the player pinned
-    assert 'id="live-pill"' in page and "See all actions" in page  # Game Mode is in the Live popover
+    assert 'id="live-pill"' in page and "See all actions" in page
     panel = player.get(f"/characters/{cole.id}/all/action").text
     assert "<html" not in panel and "Heat Metal" in panel and "Moonbeam" in panel
     one = player.get(f"/characters/{cole.id}/detail", params={"ref": "spell:Moonbeam"}).text

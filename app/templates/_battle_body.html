@@ -2,7 +2,7 @@
 {% from "_notes_macros.html" import combo_body %}
 {% from "_cond_icons.html" import cond_icon, cond_halo with context %}
 {% set s = sheet %}
-{# Character › Battle (character_pages._battle_ctx). Game Mode and the Wild Shape switch swap this whole block. #}
+{# Character › Battle (character_pages._battle_ctx). A new copy and the Wild Shape switch swap this whole block. #}
 {# One row of a column on Battle. #}
 {% macro move(o) %}
       <div class="move{{ ' yours' if o.source == 'yours' }}" data-key="{{ o.key }}" {% if form and o.source in ('form', 'rule') %}data-modal-url="/characters/{{ c.id }}/form?name={{ form.beast.name | urlencode }}" data-modal-size="large"{% else %}data-panel-url="/characters/{{ c.id }}/detail?ref={{ o.key | urlencode }}"{% endif %} tabindex="0" role="button">
@@ -99,7 +99,7 @@
   {% if s and spellbar %}{% include "_spell_bar.html" %}{% endif %}
   {% if s %}
   {% set econ = [("Action", "One per turn", "action"), ("Bonus action", "One per turn, before or after your Action", "bonus"), ("Reaction", "One per round, also on others' turns", "reaction")] %}
-  {# Phones: the three columns become tabs (app.js keeps the chosen one across Game Mode updates). #}
+  {# Phones: the three columns become tabs (app.js keeps the chosen one across updates). #}
   <div class="econ-tabs" role="tablist" aria-label="Action, bonus action or reaction">
     {% for cost, sub, slug in econ %}<button type="button" role="tab" class="k-{{ slug }}" data-econ="{{ slug }}" aria-selected="{{ 'true' if loop.first else 'false' }}">{{ {"Bonus action": "Bonus"}.get(cost, cost) }} <span class="count">{{ columns[cost].shown | length }}</span></button>{% endfor %}
   </div>

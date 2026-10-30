@@ -147,8 +147,8 @@
 {%- endmacro %}
 
 {# Dice rolls (app.js "Rolls"): anything with data-roll rolls when clicked. data-mod is the bonus ("+7"),
-   data-dmg the damage dice, data-adv="1" when Advantage always applies. With Game Mode on, your own
-   character's rolls go to the server as Table rolls (app/table_rolls.py); otherwise they stay in this browser. #}
+   data-dmg the damage dice, data-adv="1" when Advantage always applies. Your own
+   character's rolls go to the server as Table rolls (app/table_rolls.py); someone else's stay in this browser. #}
 {% macro roll_attrs(kind, label, mod="", dmg="", advs=(), note="", recipe=none) -%}
 {% if recipe %}data-recipe='{{ recipe | tojson }}' {% endif %}data-roll="{{ kind }}" data-label="{{ label }}"{% if mod %} data-mod="{{ mod | replace('−', '-') }}"{% endif %}{% if dmg %} data-dmg="{{ dmg }}"{% endif %}{% if advs and advs | rejectattr("when") | list %} data-adv="1"{% endif %}{% if advs %} data-adv-why="{% for a in advs %}{{ a.text }}{% if not loop.last %}&#10;{% endif %}{% endfor %}"{% endif %}{% if note %} data-note="{{ note }}"{% endif %}
 {%- endmacro %}

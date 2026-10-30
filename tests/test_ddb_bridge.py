@@ -208,7 +208,7 @@ def test_changes_made_on_d_and_d_beyond_itself_are_logged(player, db, sheet):
 
 
 def test_a_save_the_bridge_hears_tells_the_pages_showing_that_character(player, db, sheet, monkeypatch):
-    """Pages showing the character update themselves, Game Mode or not (app.js "live connection"); nothing is sent
+    """Pages showing the character update themselves (app.js "live connection"); nothing is sent
     when the sheet saved without changing anything askdnd shows."""
     from app import realtime
 
@@ -224,11 +224,11 @@ def test_a_save_the_bridge_hears_tells_the_pages_showing_that_character(player, 
 
 
 def test_a_change_on_d_and_d_beyond_is_logged_whichever_read_sees_it_first(player, db, sheet):
-    """Game Mode's refresh (or a page opening) can read D&D Beyond before the bridge does: the change is still logged
+    """The party's refresh (or a page opening) can read D&D Beyond before the bridge does: the change is still logged
     as made on D&D Beyond, once, and what askdnd is writing never is."""
     cole = char(db, "Cole")
     sheet["temporaryHitPoints"] = 5
-    characters.refresh(db, cole)  # Game Mode's refresh, not the bridge
+    characters.refresh(db, cole)  # the party's refresh, not the bridge
     player.post("/bridge/heard/75423618")  # the bridge reads it again: nothing new
     log = player.get(f"/bridge/state/{cole.id}").json()["log"]
     assert [entry["text"] for entry in log if entry["state"] == "seen"] == ["Cole (on D&D Beyond): temporary hit points 0 → 5"]
@@ -236,7 +236,7 @@ def test_a_change_on_d_and_d_beyond_is_logged_whichever_read_sees_it_first(playe
     drink(db, cole)
     batch = ddb_bridge.outbox(db, cole)
     make(sheet, batch)
-    characters.refresh(db, cole)  # Game Mode's refresh sees askdnd's own write first
+    characters.refresh(db, cole)  # the party's refresh sees askdnd's own write first
     ddb_bridge.delivered(db, batch["id"], ok=True)
     log = player.get(f"/bridge/state/{cole.id}").json()["log"]
     assert [entry["state"] for entry in log] == ["live", "seen"]
@@ -449,7 +449,7 @@ def test_opening_or_using_askdnd_or_a_sheet_keeps_it_awake_half_an_hour(player, 
 
 def test_a_character_page_shows_what_d_and_d_beyond_has_now(player, db, sheet, monkeypatch):
     """Planning in askdnd never starts from an old number: opening a character's page (or their D&D Beyond sheet)
-    reads D&D Beyond when askdnd's copy is older than Game Mode's refresh, and not otherwise."""
+    reads D&D Beyond when askdnd's copy is older than the party's refresh, and not otherwise."""
     from datetime import UTC, datetime, timedelta
     reads = counting_reads(monkeypatch, sheet)
     cole = char(db, "Cole")
@@ -467,20 +467,22 @@ def test_a_character_page_shows_what_d_and_d_beyond_has_now(player, db, sheet, m
     assert reads.count("75423618") == 2  # (besides the hourly check of the test character)
 
 
-def test_game_mode_keeps_it_awake_however_quiet_then_it_follows_what_people_do(player, db, sheet, monkeypatch):
+def test_a_fight_keeps_it_awake_however_quiet_then_it_follows_what_people_do(player, db, sheet, monkeypatch):
+    from app import fight
+    from app.models import Campaign
+
     now = [ddb_bridge.time.time()]
     monkeypatch.setattr(ddb_bridge.time, "time", lambda: now[0])
-    set_role(db, "player@example.com", "player")
-    assert player.post("/live/game", data={"on": "1"}).status_code == 200  # Game Mode for the table (app/game_mode.py)
-    assert ddb_bridge.awake(db)["game_until"] == pytest.approx(now[0] + 6 * 3600)
-    now[0] += 5 * 3600  # five quiet hours
+    ddb_bridge.active(db)
+    now[0] += 3600  # an hour with no one around
+    assert not ddb_bridge.awake(db)["awake"]
+    campaign = db.get(Campaign, char(db, "Cole").campaign_id)
+    fight.heard(db, campaign, {"round": 1, "turn": 1, "order": [{"key": "t-e1", "name": "Enemy 1", "kind": "monster", "initiative": 15, "active": True}]})
+    db.commit()
     assert ddb_bridge.awake(db)["awake"]
-    now[0] += 3600 + 60
-    assert not ddb_bridge.awake(db)["awake"]  # its time is up, and no one has been here for half an hour
-    player.post("/live/game", data={"on": "1"})  # Keep going
-    player.post("/live/game", data={"on": ""})  # Game Mode ended: awake while people use it, as without it
-    a = ddb_bridge.awake(db)
-    assert a["awake"] and a["game_until"] is None
+    fight.heard(db, campaign, None)
+    db.commit()
+    assert not ddb_bridge.awake(db)["awake"]
 
 
 def test_a_change_still_waiting_gives_up_once_its_sheet_goes_quiet(player, db, sheet, monkeypatch):
@@ -513,8 +515,8 @@ def test_a_change_needs_its_sheet_open_with_the_extension(player, db, sheet):
 
 def test_admins_set_the_timers(admin, player, db, sheet):
     assert admin.get("/manage/bridge").status_code == 200
-    admin.post("/manage/bridge", data={"idle": "45", "game": "99", "warn": "5", "wait": "x"}, follow_redirects=False)
-    assert ddb_bridge.timers(db) == {"idle": 45 * 60, "game": 12 * 3600, "warn": 5 * 60, "wait": 3 * 60}  # (kept in range)
+    admin.post("/manage/bridge", data={"idle": "45", "wait": "x"}, follow_redirects=False)
+    assert ddb_bridge.timers(db) == {"idle": 45 * 60, "wait": 3 * 60}  # (kept in range)
     admin.post("/manage/bridge", data={"reset": "1"})
     assert ddb_bridge.timers(db)["idle"] == 30 * 60
     player.post("/manage/bridge", data={"idle": "5"})
@@ -786,16 +788,16 @@ def test_the_store_copy_of_the_extension_is_for_askdnds_own_sites(tmp_path, monk
     assert {s.strip(" '") for s in sites.split(",")} == {p.removesuffix("/*") for p in on_askdnd["matches"]}
 
 
-def test_the_live_pill_says_whether_your_sheet_is_in_step_or_has_something_to_make_by_hand(player, db, sheet):
-    """The Live pill is about your own sheet (docs/mockups/game-mode-and-bridge.html): in step while the bridge hears it,
-    something to make by hand when a change couldn't be made, else when it was last read."""
+def test_the_live_pill_says_whether_your_sheet_is_connected_or_has_something_to_make_by_hand(player, db, sheet):
+    """The Live pill answers one question (docs/mockups/table-without-modes.html): connected while the bridge hears your
+    sheet, something to make by hand when a change couldn't be made, else what to do to connect."""
     cole = char(db, "Cole")
     pill = lambda: player.get(f"/characters/{cole.id}").text.split('id="live-pill"')[1].split("</button>")[0]  # noqa: E731
     cole.sheet_heard_at = None  # no extension yet
     db.flush()
-    assert "Updated" in pill() and "in step" not in pill()
+    assert "Open your sheet to connect" in pill() and "Connected to" not in pill()
     player.post("/bridge/heard/75423618?pull=1")  # the extension's pull: the sheet can be reached
-    assert "In step" in pill() and " step" in pill().split(">")[0]
+    assert "Connected to D&amp;D Beyond" in pill() and " step" in pill().split(">")[0]
     drink(db, cole)
     db.scalar(select(BridgeIntent)).state = "not_yet"
     db.flush()
@@ -803,7 +805,7 @@ def test_the_live_pill_says_whether_your_sheet_is_in_step_or_has_something_to_ma
     cole.sheet_heard_at -= timedelta(minutes=5)  # the sheet was closed a while ago
     db.scalar(select(BridgeIntent)).state = "dismissed"
     db.flush()
-    assert "in step" not in pill().lower()
+    assert "Connected to" not in pill()
 
 
 def _gave_up(db, player, cole, monkeypatch, now):

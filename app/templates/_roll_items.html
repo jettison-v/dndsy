@@ -49,5 +49,5 @@
   {% else %}{% set rays = r.main.parts | selectattr("kept", "defined") | list if r.main and r.main.parts else [] %}<b class="roll-total">{% if rays | length > 1 %}{{ rays | map(attribute="total") | join(" · ") }}{% else %}{{ r.total }}{% endif %}</b>{% endif %}
 </li>
 {% else %}
-<li class="roll-empty">No rolls yet. With Game Mode on, your saves, checks, attacks and the dice below roll here for the table.</li>
+<li class="roll-empty">No rolls yet. Your saves, checks, attacks and the dice below roll here for the table.</li>
 {% endfor %}

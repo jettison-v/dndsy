@@ -1,4 +1,4 @@
-"""Characters from D&D Beyond: the last good copy, refreshing and linking (who may), Game Mode's sync.
+"""Characters from D&D Beyond: the last good copy, refreshing and linking (who may), the party's sync.
 D&D Beyond is never called: refreshes use a fake fetch built from fixtures (tests/table_setup.py)."""
 
 import json
@@ -99,7 +99,7 @@ def test_sheet_shows_quiet_note_when_latest_refresh_failed(player, db):
     assert "showing the copy from" in player.get(f"/characters/{cole.id}/battle").text
 
 
-def test_game_mode_reads_the_character_on_screen_first_and_is_throttled(player, db, monkeypatch):
+def test_the_sync_reads_the_character_on_screen_first_and_is_throttled(player, db, monkeypatch):
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
     calls = []

@@ -131,7 +131,7 @@ def test_a_large_section_is_lit_below_the_bars_stuck_over_it(people, server, siz
         spot = document.querySelector('.tour-spot').getBoundingClientRect();
       return { bar: bar.bottom, head: head.top, spot: spot.top }; }""")
     assert got["head"] >= got["bar"] and got["spot"] >= got["bar"] - 8, got
-    # Seconds later Battle is redrawn (Game Mode's fresh sheet) and its numbers grow: the headings are kept clear
+    # Seconds later Battle is redrawn (a fresh sheet) and its numbers grow: the headings are kept clear
     page.wait_for_timeout(2500)
     for _ in range(5):  # a finger resting on a laptop's trackpad: tiny scroll events, not a scroll
         page.mouse.wheel(0, 1)

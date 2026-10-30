@@ -1,5 +1,5 @@
 """One Character page with Play / Sheet / Plan modes, the menu bar's characters (your character, Party ▾), and
-the Live control (Game Mode and refreshing). D&D Beyond is never called (fake fetch)."""
+the Live control (each sheet and refreshing). D&D Beyond is never called (fake fetch)."""
 
 import pytest
 import json
@@ -114,13 +114,13 @@ def test_bottom_bar_on_phones(player, db):
     assert "/sessions" not in more and "/map" not in more and "Sign out" in more
 
 
-def test_live_pill_replaces_game_mode_and_refresh_buttons(player, db):
+def test_live_pill_replaces_the_refresh_buttons(player, db):
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
     characters.refresh(db, cole)
     for path in ("/party", f"/characters/{cole.id}", f"/characters/{cole.id}/battle"):
         page = player.get(path).text
-        assert 'id="live-pill"' in page and "gm-banner" not in page and "data-game-mode" not in page
+        assert 'id="live-pill"' in page
         assert "Refresh all from" not in page and "Refresh from D&amp;D Beyond" not in page and "gm-now" not in page
     characters.refresh(db, cole, fetch=down)
     pill = player.get(f"/characters/{cole.id}").text.split('id="live-pill"')[1].split("</button>")[0]
@@ -132,9 +132,8 @@ def test_live_popover_lists_each_copy_and_who_can_refresh(player, dm, db):
     cole, trah = char(db, "Cole"), char(db, "Trah")
     characters.refresh(db, cole)
     characters.refresh(db, trah)  # private on D&D Beyond: fails
-    set_role(db, "player@example.com", "player")  # at the table: may start Game Mode (app/game_mode.py)
     panel = player.get("/live", params={"c": cole.id}).text
-    assert "Start for the table" in panel and "Refresh Cole now" in panel and "Refresh everyone" not in panel
+    assert "Refresh Cole now" in panel and "Refresh everyone" not in panel and "Game Mode" not in panel
     assert "couldn&#39;t refresh" in panel and "not linked" in panel  # Trah failed; Big C has no link
     assert 'hx-swap-oob="true"' in panel  # opening it updates the pill too
     assert "Refresh everyone" in dm.get("/live", params={"c": cole.id}).text
@@ -180,7 +179,7 @@ def test_live_needs_sign_in(db):
     assert anon.post("/live/refresh/1").status_code == 401
 
 
-def test_game_mode_away_from_play_keeps_the_copy_fresh(player, dm, db, monkeypatch):
+def test_an_open_page_keeps_the_party_fresh(player, dm, db, monkeypatch):
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
     owned_by(db, cole, "player@example.com")
@@ -217,3 +216,14 @@ def test_plan_shortlists_filter_like_sheet(player, db):
     assert 'data-list="plan-forms"' in forms and "Polar Bear" in forms and 'class="fm-pic"' in forms  # rows with pictures
     assert re.findall(r'data-ls-view="(\w+)"', forms) == ["fav", "all"]  # evaluate (Shortlist) and select (All you can learn)
     assert 'data-ls-group="cr" data-ls-value="2"' in forms and 'data-ls-group="move" data-ls-value="Swim"' in forms
+
+
+def test_someone_with_two_characters_rolls_to_the_table_on_either(player, db):
+    """Seen 2026-10-30: only the first of your characters counted as yours, so the second's rolls stayed private."""
+    import_bundle(db, BUNDLE)
+    cole, trah = char(db, "Cole"), char(db, "Trah")
+    owned_by(db, cole, "player@example.com")
+    owned_by(db, trah, "player@example.com")
+    side = player.get(f"/characters/{trah.id}/battle").text.split('id="table-rolls"')[1].split(">")[0]
+    assert 'data-yours="' in side and {str(cole.id), str(trah.id)} == set(side.split('data-yours="')[1].split('"')[0].split(","))
+
