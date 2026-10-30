@@ -89,6 +89,7 @@ def rows_from(db: Session) -> list[dict]:
              # (a test copy shares a real sheet, so the bridge never works on it: ddb_bridge.on_for)
              "step": bool(bridge and ddb_id and copy_of is None and heard and heard >= reach),
              "connects": bool(bridge and ddb_id and copy_of is None), "in_game": bool(bridge and ddb_id and copy_of is None and game),
+             "step_until": int((heard + REACH).timestamp()) if heard and bridge and ddb_id and copy_of is None else 0,
              "by_hand": by_hand.get(cid, 0) if bridge and copy_of is None else 0,
              # the menu bar's dots: what it's under now (D&D Beyond's with what's on its way and askdnd's own, as on Battle)
              "conditions": ["Concentration"] * bool(conc) + [x["name"] for x in cond.shown(own, cond.with_changes(on_sheet, on_way.get(cid, ())), bool(bridge and copy_of is None))]}
@@ -128,7 +129,9 @@ def table(user: dict | None, path: str = "", rows: list[dict] | None = None, foc
     linked = [r for r in rows if r["linked"]]
     oldest = min(linked, key=lambda r: r["fetched_at"] or datetime.min.replace(tzinfo=UTC)) if linked else None
     pill = focus if focus and focus["linked"] else oldest
+    connects = [r for r in rows if r.get("connects")]
     return {"characters": rows, "mine": mine, "here": here, "focus": focus, "mode": mode,
+            "connectable": len(connects), "connected": sum(bool(r.get("step")) for r in connects),
             # Characters open in the mode you're in, else the one you used last, else Battle
             "suffix": SUFFIX[mode or (last_mode if last_mode in SUFFIX else None) or "battle"],
             "pill": pill, "party_pill": pill is not None and pill is not focus, "linked": linked,

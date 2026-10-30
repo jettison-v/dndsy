@@ -1,0 +1,93 @@
+"""The real extension in a real browser (Brett, 2026-10-30: "could you or another tool simulate these tests?"): askdnd as
+it runs on beta, extension/askdnd-bridge as Chrome loads it, and a stand-in page at D&D Beyond's own address, so nothing
+ever reaches D&D Beyond. What D&D Beyond itself does isn't covered: its saves, its game log and its VTT stay for the real
+accounts in docs/testing-setup.md."""
+
+import json
+import os
+import re
+import shutil
+
+import pytest
+from sqlalchemy import create_engine, text
+
+SERVER_ENV = {"DDB_BRIDGE": "1"}
+SHEET = "https://www.dndbeyond.com/characters/75423618"
+SOURCE = os.path.join(os.path.dirname(__file__), "..", "..", "extension", "askdnd-bridge")
+PILL = "#live-pill .live-ago"
+
+
+def extension_for(base: str, folder) -> str:
+    """The extension, allowed to talk to this test's askdnd (it only knows askdnd's own addresses)."""
+    out = str(folder / "extension")
+    shutil.copytree(SOURCE, out)
+    path = os.path.join(out, "manifest.json")
+    manifest = json.load(open(path))
+    manifest["host_permissions"].append(base + "/*")
+    for script in manifest["content_scripts"]:
+        if any("localhost" in m for m in script["matches"]):
+            script["matches"].append(base + "/*")
+    json.dump(manifest, open(path, "w"))
+    path = os.path.join(out, "background.js")
+    code = open(path).read()
+    assert "'http://localhost:8000'" in code
+    open(path, "w").write(code.replace("'http://localhost:8000'", f"'http://localhost:8000', '{base}'"))
+    return out
+
+
+@pytest.fixture(autouse=True)
+def bridge_on(server, browser_db):
+    engine = create_engine(browser_db[0])
+    with engine.connect() as conn:
+        conn.execute(text("UPDATE campaigns SET is_test = true WHERE id = :c"), {"c": server["campaign"]})
+        conn.commit()
+    engine.dispose()
+
+
+@pytest.fixture
+def chrome(server, tmp_path):
+    """A browser with the extension in it, signed in as Cole's player, and D&D Beyond's address answered here."""
+    from playwright.sync_api import sync_playwright
+
+    from tests.browser.conftest import PEOPLE
+
+    folder = extension_for(server["base"], tmp_path)
+    with sync_playwright() as p:
+        context = p.chromium.launch_persistent_context(str(tmp_path / "profile"), channel="chromium", headless=True,
+                                                       args=[f"--disable-extensions-except={folder}", f"--load-extension={folder}"])
+        context.route(re.compile(r"https://www\.dndbeyond\.com/.*"), lambda r: r.fulfill(status=200, content_type="text/html", body="<!doctype html><title>Sheet</title><main>Stand-in sheet</main>"))
+        page = context.pages[0] if context.pages else context.new_page()
+        page.goto(f"{server['base']}/dev/login?as={PEOPLE['player']}")
+        yield context
+        context.close()
+
+
+def test_opening_and_closing_a_sheet_shows_on_askdnds_open_pages(chrome, server):
+    """Brett, 2026-10-30: he closed the sheet and askdnd kept saying Connected."""
+    page = chrome.pages[0]
+    page.goto(f"{server['base']}/characters/{server['cole']}/battle")
+    page.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=8000)
+    page.wait_for_function("!document.body.classList.contains('no-bridge')")
+    assert "Open your sheet to connect" in page.locator(PILL).inner_text()
+
+    sheet = chrome.new_page()
+    sheet.goto(SHEET)
+    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected to D&D Beyond')", timeout=45000)
+
+    sheet.close()
+    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Open your sheet to connect')", timeout=8000)
+    page.click('[data-roll=save][data-label="Dex save"]:visible >> nth=0')
+    assert page.locator(".roll-win").count() == 1
+
+
+def test_without_the_extension_the_pill_says_to_add_it_and_the_window_has_the_link(people, server):
+    """Brett, 2026-10-30: the DM didn't have it by accident, and nothing said so."""
+    dm = people("dm")
+    page = dm.open("/c/main/")
+    page.locator("#live-pill .live-noext").wait_for(timeout=4000)
+    assert page.locator("#live-pill .live-ago").is_hidden()
+    page.click("#live-pill")
+    link = page.locator(".live-noext-box a")
+    link.wait_for()
+    assert "chromewebstore.google.com" in link.get_attribute("href")
+
