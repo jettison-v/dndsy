@@ -3,7 +3,7 @@
 // itself from the very start, as manifest.json says: the VTT connects to its game server before a script this one
 // added would run.)
 //
-// A quiet badge in the corner says askdnd is listening, and what it heard (Brett, 2026-10-29: open about it, and a
+// A quiet badge at the top, under the VTT's own bar (clear of the Initiative Order's footer, bottom left), says askdnd is listening, and what it heard (Brett, 2026-10-29: open about it, and a
 // glance shows whether askdnd hears the fight). It only shows: no buttons over D&D Beyond's own controls, and clicks
 // go through it to the map. Nothing shows for a game askdnd doesn't follow.
 (() => {
@@ -20,7 +20,7 @@
   let follows = false, last = null, root = null;
   const esc = v => String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const CSS = `:host { all: initial; }
-    .badge { position: fixed; left: 12px; bottom: 12px; z-index: 2147483000; pointer-events: none; display: flex; align-items: center; gap: 7px;
+    .badge { position: fixed; left: 50%; top: 64px; transform: translateX(-50%); z-index: 2147483000; pointer-events: none; display: flex; align-items: center; gap: 7px;
       max-width: min(360px, calc(100vw - 24px)); padding: 5px 11px 5px 8px; border-radius: 999px; background: rgba(21, 23, 26, .82); border: 1px solid #34383e;
       color: #a29d93; font: 500 12px/1.3 Inter, system-ui, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .logo { color: #f08a8a; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; font-size: 11px; }
