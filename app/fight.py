@@ -38,6 +38,22 @@ def campaigns_for(db: Session, game_id: str) -> list[Campaign]:
     return [db.get(Campaign, i) for i in ids]
 
 
+def games_for(db: Session, user: dict, may) -> list[str]:
+    """The D&D Beyond games askdnd follows for this person (`may(campaign)`: at that table, with the bridge on), so the
+    extension tells askdnd about those only and nothing about any other game they open."""
+    games: set[str] = set()
+    for campaign in db.scalars(select(Campaign)):
+        if not may(campaign):
+            continue
+        if campaign.ddb_campaign_id:
+            games.add(campaign.ddb_campaign_id)
+            continue
+        games |= set(db.scalars(select(Character.ddb_campaign_id).join(CampaignCharacter, CampaignCharacter.character_id == Character.id)
+                                .where(CampaignCharacter.campaign_id == campaign.id, CampaignCharacter.left_on.is_(None),
+                                       Character.copy_of_id.is_(None), Character.ddb_campaign_id.is_not(None))))
+    return sorted(games)
+
+
 def _picture(url) -> str | None:
     """A token's picture as the VTT draws it, kept only when it's D&D Beyond's own (an image askdnd's pages load)."""
     if not isinstance(url, str) or len(url) > 1000:

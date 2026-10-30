@@ -1066,17 +1066,42 @@ def bridge_heard(ddb_id: str, request: Request, pull: int = 0, db: Session = Dep
 async def bridge_fight(game_id: str, request: Request, db: Session = Depends(get_db)):
     """The extension, on an open D&D Beyond VTT page, says what the fight is now (app/fight.py; it only listens).
     Taken from anyone at that campaign's table, where the campaign has the bridge."""
-    from app import fight, vtt
+    from app import fight
 
     user = _signed_in(request, db)
     body = await request.json()
     told = body.get("fight") if isinstance(body, dict) else None
     changed = False
     for campaign in fight.campaigns_for(db, game_id[:40]):
-        if vtt.on(campaign, "ddb_bridge") and (is_admin(user) or access.role(user["email"], campaign.id)):
-            changed = fight.heard(db, campaign, told if isinstance(told, dict) else None) or changed
+        if _follows(user, campaign):  # (the VTT closed with no other open in that browser: no fight heard now)
+            changed = fight.heard(db, campaign, None if body.get("closed") else told if isinstance(told, dict) else None) or changed
     db.commit()
     return _json({"ok": True, "changed": changed})
+
+
+def _follows(user: dict, campaign) -> bool:
+    from app import vtt
+
+    return vtt.on(campaign, "ddb_bridge") and (is_admin(user) or bool(access.role(user["email"], campaign.id)))
+
+
+@router.get("/bridge/games")
+def bridge_games(request: Request, db: Session = Depends(get_db)):
+    """The D&D Beyond games the extension may tell askdnd about: those of this person's campaigns with the bridge."""
+    from app import fight
+
+    user = _signed_in(request, db)
+    return _json({"games": fight.games_for(db, user, lambda c: _follows(user, c))})
+
+
+@router.post("/bridge/closed/{ddb_id}")
+def bridge_closed(ddb_id: str, request: Request, db: Session = Depends(get_db)):
+    """The last open copy of this character's sheet in the extension's browser closed: not in step through it now
+    (the Live pill says so at once, not after live.REACH)."""
+    character, _ = _by_ddb(db, request, ddb_id)
+    character.sheet_heard_at = None
+    db.commit()
+    return _json({"ok": True})
 
 
 @router.post("/bridge/drink/{character_id:int}/{item_id:int}")

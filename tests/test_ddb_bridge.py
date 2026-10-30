@@ -777,6 +777,7 @@ def test_the_store_copy_of_the_extension_is_for_askdnds_own_sites(tmp_path, monk
         store = json.loads(z.read("manifest.json"))
         names = set(z.namelist())
     assert "localhost" not in json.dumps(store) and "README.md" not in names
+    assert len(store["description"]) <= 132  # the Chrome Web Store's limit (it refuses the upload)
     assert {"icons/icon-128.png", "background.js", "ddb.js", "ddb-page.js", "askdnd.js", "vtt.js", "vtt-page.js"} <= names
     src = Path(__file__).parent.parent / "extension/askdnd-bridge"
     manifest = json.loads((src / "manifest.json").read_text())
