@@ -31,6 +31,8 @@ Each seat needs its own Chrome profile, or its own computer, because the bridge 
 5. Players: open your character's sheet. The Live pill should say **Connected to D&D Beyond**.
 6. DM: open the VTT from the [campaign page](https://www.dndbeyond.com/campaigns/8224496).
 
+Any open VTT with the extension gives askdnd the fight, and any player's open sheet carries the DM's rolls, so the DM can see everything without the extension. With it, closing the DM's VTT is what ends the fight.
+
 Reload every askdnd and VTT tab after a deploy.
 
 ## Rules

@@ -895,3 +895,47 @@ def test_the_batch_lock_never_waits_on_a_new_changes_character_link():
 
     ddb_bridge._lock(Db(), 9)
     assert seen and seen[0].endswith("FOR NO KEY UPDATE")
+
+
+def test_a_closed_sheet_tells_open_pages_at_once(player, db, sheet, monkeypatch):
+    """Brett, 2026-10-30: the sheet closed and pages kept saying Connected: askdnd noted it and told nobody."""
+    from app import realtime
+
+    sent = []
+    monkeypatch.setattr(realtime, "publish", lambda campaign_id, kind, **data: sent.append((kind, data)))
+    cole = char(db, "Cole")
+    player.post("/bridge/heard/75423618?pull=1")
+    sent.clear()
+    player.post("/bridge/closed/75423618")
+    assert ("character", {"id": cole.id}) in sent and not ddb_bridge.reachable(cole)
+    pill = player.get(f"/characters/{cole.id}").text.split('id="live-pill"')[1].split("</button>")[0]
+    assert "Open your sheet to connect" in pill
+    sent.clear()
+    player.post("/bridge/heard/75423618?pull=1")  # back: said once
+    assert ("character", {"id": cole.id}) in sent
+    sent.clear()
+    player.post("/bridge/heard/75423618?pull=1")  # still there: not news
+    assert ("character", {"id": cole.id}) not in sent
+
+
+def test_someone_with_no_character_sees_how_many_sheets_are_connected(player, dm, db, sheet):
+    """Brett, 2026-10-30: the DM's pill said Connected to D&D Beyond from someone else's sheet, with no extension."""
+    from tests.roles import set_role
+
+    set_role(db, "dm@example.com", "dm")
+    player.post("/bridge/closed/75423618")
+    pill = lambda: dm.get("/c/main/").text.split('id="live-pill"')[1].split("</button>")[0]  # noqa: E731
+    assert "1 of 2 sheets connected" in pill() and "Connected to D&amp;D Beyond" not in pill() and " step" not in pill().split(">")[0]
+    player.post("/bridge/heard/75423618?pull=1")
+    assert "2 of 2 sheets connected" in pill() and " step" in pill().split(">")[0]
+
+
+def test_the_pill_says_how_long_a_sheet_counts_as_open_and_the_window_links_the_extension(player, db, sheet):
+    cole = char(db, "Cole")
+    sheet["campaign"] = {"id": 8224496, "name": "VTT test"}
+    characters.refresh(db, cole)
+    player.post("/bridge/heard/75423618?pull=1")
+    pill = player.get(f"/characters/{cole.id}").text.split('id="live-pill"')[1].split(">")[0]
+    assert 'data-log="on"' in pill and 'data-log-until="0"' not in pill and "data-wants-bridge" in pill
+    assert "chromewebstore.google.com" in player.get("/live", params={"c": cole.id}).text
+

@@ -74,9 +74,13 @@ def test_the_window_says_whether_a_roll_reaches_the_game_log(people, server):
     assert page.locator(note).is_hidden()  # it isn't going anywhere
     page.locator(f'{WINDOW} [data-to="table"]').click()
     page.keyboard.press("Escape")
-    page.evaluate("document.getElementById('live-pill').dataset.log = 'on'")
+    page.evaluate("Object.assign(document.getElementById('live-pill').dataset, {log: 'on', logUntil: Date.now() / 1000 + 60})")
     page.click(save("Dex"))
     assert "Also goes to D&D Beyond's Game Log" in page.locator(note).inner_text()
+    page.keyboard.press("Escape")
+    page.evaluate("document.getElementById('live-pill').dataset.logUntil = Date.now() / 1000 - 1")  # not heard for a while
+    page.click(save("Dex"))
+    assert "your sheet isn't open" in page.locator(note).inner_text()
     page.keyboard.press("Escape")
     assert player.errors == []
 

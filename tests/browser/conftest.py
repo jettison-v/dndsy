@@ -78,15 +78,16 @@ def browser_db():
 
 
 @pytest.fixture(scope="module")  # per file: torn down before the server tests run
-def server(browser_db, tmp_path_factory):
-    """askdnd itself, as it runs on beta (uvicorn, its startup and the Postgres listener), on a free port."""
+def server(browser_db, tmp_path_factory, request):
+    """askdnd itself, as it runs on beta (uvicorn, its startup and the Postgres listener), on a free port. A test file's
+    SERVER_ENV adds to its settings (the bridge, for test_extension.py)."""
     database_url, ids = browser_db
     port = _free_port()
     env = {**os.environ, "DATABASE_URL": database_url, "APP_ENV": "development", "SESSION_SECRET": "browser-tests",
            "FILE_STORAGE": str(tmp_path_factory.mktemp("files")),
            "DEV_LOGIN_EMAIL": PEOPLE["admin"], "ADMIN_EMAILS": PEOPLE["admin"], "ALLOWED_EMAILS": ",".join(PEOPLE.values()),
            "AUTO_DRAFT": "0", "HTTP_PROXY": "http://127.0.0.1:9", "HTTPS_PROXY": "http://127.0.0.1:9",  # never D&D Beyond
-           "NO_PROXY": "127.0.0.1,localhost"}
+           "NO_PROXY": "127.0.0.1,localhost", **getattr(request.module, "SERVER_ENV", {})}
     proc = subprocess.Popen([sys.executable, "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", str(port)],
                             cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     base = f"http://127.0.0.1:{port}"
@@ -125,7 +126,7 @@ def chromium():
 
 class Person:
     """One person at the table: their own browser context, signed in, with the dice animation off (the numbers are the
-    same; the tests don't wait for dice to land), in the table's time zone (Pacific). Game Mode is on for the table (`browser_db`; `game_mode` switches it).
+    same; the tests don't wait for dice to land), in the table's time zone (Pacific).
     `errors` collects the page's JavaScript errors."""
 
     def __init__(self, chromium, server, who: str):

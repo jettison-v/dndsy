@@ -193,6 +193,15 @@ def reachable(character: Character) -> bool:
     return bool(heard) and time.time() - heard.timestamp() <= live.REACH.total_seconds()
 
 
+def sheet_is_open(db: Session, character: Character) -> None:
+    """The extension heard this sheet: it can be reached now. Open pages hear when that starts, so the pill and the roll
+    window say so at once; hearing it every 30 seconds after that isn't news."""
+    was = reachable(character)
+    character.sheet_heard_at = datetime.fromtimestamp(time.time(), UTC)
+    if not was:
+        realtime.announce(db, character.campaign_id, "character", id=character.id)
+
+
 def reach(character: Character, what: str = "") -> None:
     """Refuse a change whose sheet can't be reached, saying how (app.js shows the message where it was pressed)."""
     if not reachable(character):
@@ -1045,7 +1054,7 @@ def bridge_outbox(ddb_id: str, request: Request, db: Session = Depends(get_db)):
     character, user = _by_ddb(db, request, ddb_id)
     if not picks.can_edit(db, user, character):
         return _json({"batch": None})  # only the character's own player's browser writes their sheet
-    character.sheet_heard_at = datetime.fromtimestamp(time.time(), UTC)  # (asking for work: its sheet is open)
+    sheet_is_open(db, character)  # (asking for work: its sheet is open)
     batch = outbox(db, character)
     db.commit()
     return _json({"batch": batch})
@@ -1067,7 +1076,7 @@ async def bridge_delivered(batch_id: int, request: Request, db: Session = Depend
 def bridge_heard(ddb_id: str, request: Request, pull: int = 0, db: Session = Depends(get_db)):
     """The sheet saved a change (the extension heard it), or the extension's regular pull (`?pull=1`)."""
     character, user = _by_ddb(db, request, ddb_id)
-    character.sheet_heard_at = datetime.fromtimestamp(time.time(), UTC)  # its sheet can be reached (the Live pill's "in step": app/live.py)
+    sheet_is_open(db, character)
     heard(db, character, saved=not pull)
     db.commit()
     return _json({**state(db, character, user), "check": check(character)})
@@ -1119,6 +1128,7 @@ def bridge_closed(ddb_id: str, request: Request, db: Session = Depends(get_db)):
     (the Live pill says so at once, not after live.REACH)."""
     character, _ = _by_ddb(db, request, ddb_id)
     character.sheet_heard_at = None
+    realtime.announce(db, character.campaign_id, "character", id=character.id)  # (open pages' pills and roll windows)
     db.commit()
     return _json({"ok": True})
 
