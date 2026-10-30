@@ -1757,7 +1757,7 @@
       return box.roll(notation(list));
     }
     return { get ready() { return ready; }, clear: () => box && box.clearDice(),
-      throw: (list, dice, before, after, t) => (queue = queue.catch(() => {}).then(async () => { if (before) await before(); await go(list, dice, t); if (after) await after(); })) };
+      throw: (list, dice, before, after, t, until) => (queue = queue.catch(() => {}).then(async () => { if (until && Date.now() > until) return; if (before) await before(); await go(list, dice, t); if (after) await after(); })) };
   }
   // The page-wide layer: dim, dice, who rolled (others' rolls), and the result card
   let throwEl = null, throwBox = null, throwTimer = null;
@@ -1801,7 +1801,9 @@
                 !dmg && e.nat && e.kind !== 'death' ? 'Natural ' + e.nat : '');
     }, t));
   }
-  // Someone else's roll: on the whole page (the VTT piece), else in the corner tray
+  // Someone else's roll: on the whole page (the VTT piece), else in the corner tray. Their dice are live or they're
+  // nothing: a throw still waiting after LIVE_MS is dropped, and the roll stays in Table rolls
+  const LIVE_MS = 6000;
   let trayEl = null, trayBox = null;
   function tray() {
     if (trayEl) return trayBox;
@@ -1832,7 +1834,7 @@
         throwEl.classList.remove('landed');
         throwEl.classList.add('on', 'others');
         throwEl.querySelector('.dt-who').innerHTML = swatch + '<b>' + esc(name) + '</b> · ' + esc(followUp ? 'damage' : what);
-      }, () => { window.askdndThrowing.landed(li.dataset.id); throwCard(name + ' · ' + (followUp ? 'damage' : what), total, nat, nat ? 'Natural ' + nat : ''); }, tune));
+      }, () => { window.askdndThrowing.landed(li.dataset.id); throwCard(name + ' · ' + (followUp ? 'damage' : what), total, nat, nat ? 'Natural ' + nat : ''); }, tune, Date.now() + LIVE_MS));
     }
     const box = tray(), tune = tuning('tray');
     return box.ready.then(() => box.throw(list, dice, async () => {
@@ -1848,7 +1850,7 @@
       trayEl.classList.remove('up');
       await sleep(tune.slide + 0.05);
       box.clear();
-    }, tune));
+    }, tune, Date.now() + LIVE_MS));
   }
   // Your dice changed (the picker saved): use them from now on
   document.body.addEventListener('diceChanged', ev => {
@@ -2373,6 +2375,19 @@
     window.askdndThrowing.throwing(t.id);
     throwOthers(li).catch(() => {}).finally(() => window.askdndThrowing.landed(t.id));
   }
+  // Rolls made while this tab was out of sight don't replay on your return (Brett, 2026-10-30: back from the VTT, five or
+  // six in a row): they're in Table rolls, and one card says so while it's closed.
+  const away = { on: false, rolls: 0 };
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') { away.on = true; return; }
+    if (!away.on) return;
+    if (loaded && log && window.htmx) htmx.trigger(log, 'rolls:load');  // (whatever came in while it was hidden)
+    setTimeout(() => {
+      const n = away.rolls;
+      away.on = false; away.rolls = 0;
+      if (n && current() === 'closed') toast(n + (n === 1 ? ' roll' : ' rolls') + ' while you were away', { label: 'Show', run: () => setState('open', !narrow()) }, 'info');
+    }, 1200);
+  });
   // Only polled rows move `lastId` on: your own roll can land before someone else's earlier one.
   let before = 0;
   if (log) log.addEventListener('htmx:beforeSwap', e => {
@@ -2390,6 +2405,7 @@
       if (+li.dataset.seq > before) fresh.add(li.dataset.person);
       if (+li.dataset.seq > before && !li.dataset.mine) {
         if (thrownEarly.delete(li.dataset.seq)) {}  // (its dice started from the live message)
+        else if (away.on) away.rolls++;  // (they happened without you: no dice, no card)
         else if (animate() && !li.classList.contains('hidden-roll')) { window.askdndThrowing.throwing(li.dataset.id); throwOthers(li).catch(() => notice(li)).finally(() => window.askdndThrowing.landed(li.dataset.id)); }  // thrown dice (Brett, 2026-10-23)
         else notice(li);
         li.classList.remove('fresh'); void li.offsetWidth; li.classList.add('fresh');

@@ -105,3 +105,34 @@ def test_a_fight_opens_table_rolls_once_and_then_it_stays_as_you_leave_it(people
     finally:
         fight_ends(browser_db, server)
     assert player.errors == []
+
+
+def test_rolls_made_while_you_were_away_dont_replay_when_you_come_back(people, server):
+    """Brett, 2026-10-30: back from the VTT to askdnd, five or six rolls played in a row."""
+    player, dm = people("player", "dm")
+    watching = dm.open("/c/main/party")
+    dm.live()
+    watching.wait_for_selector(LOG, state="attached")
+    watching.evaluate("document.querySelector('.rs-toggle').click()")  # Table rolls closed
+    watching.wait_for_function("document.body.classList.contains('rolls-closed')")
+    cards = watching.locator("#cards > .card")
+    watching.evaluate("""() => {
+        Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__seen });
+        window.__seen = 'hidden';
+        document.dispatchEvent(new Event('visibilitychange'));
+    }""")  # the DM goes to the VTT
+    page = battle(player, server)
+    for ability in ("Dex", "Con", "Wis"):
+        page.click(save(ability), modifiers=["Shift"])
+        page.wait_for_function(f"document.querySelector('#roll-log > li')?.textContent.includes('{ability} save')")
+        page.keyboard.press("Escape")
+    watching.wait_for_timeout(1000)
+    assert cards.count() == 0
+    watching.evaluate("window.__seen = 'visible'; document.dispatchEvent(new Event('visibilitychange'))")  # back
+    card = watching.locator("#cards > .card", has_text="while you were away")
+    card.wait_for(timeout=5000)
+    assert "3 rolls" in card.inner_text() and cards.count() == 1
+    card.locator(".card-act").click()
+    watching.wait_for_function("document.body.classList.contains('rolls-open')")
+    assert "Wis save" in newest(watching)
+

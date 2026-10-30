@@ -37,6 +37,7 @@ Reload every askdnd and VTT tab after a deploy.
 
 ## Rules
 
+- Automated testing may act like a person on D&D Beyond with these test accounts, or stand in for it (Brett, 2026-10-30): that's part of developing askdnd, not the product. What ships never imitates D&D Beyond's client.
 - Bridge tests only on **Vi** and **Cathartic**, never a real table character's sheet. The test copies in VTT test share real sheets, so the bridge never works on them.
 - VTT test is a test campaign: it sees every feature, whatever's switched on for The Adventure Begins.
 - Anything that deletes data on beta needs Brett's approval first.
