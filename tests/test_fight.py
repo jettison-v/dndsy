@@ -124,14 +124,18 @@ def test_the_extension_tells_askdnd_only_about_the_games_it_follows(player, db, 
     assert player.get("/bridge/games").json()["games"] == [GAME]
 
 
-def test_the_last_vtt_closing_leaves_no_fight_heard_and_a_closed_sheet_isnt_in_step(player, db, sheet):
+def test_the_dms_vtt_closing_ends_the_fight_a_players_doesnt_and_a_closed_sheet_isnt_in_step(player, dm, db, sheet):
+    """Review, 2026-10-29: every open VTT page reports the fight, so a player closing theirs mid-fight leaves it on."""
     from datetime import UTC, datetime
 
     campaign = _campaign(db)
     set_role(db, "player@example.com", "player")
+    set_role(db, "dm@example.com", "dm")
     player.post(f"/bridge/fight/{GAME}", json={"fight": heard()})
     assert campaign.fight is not None
-    player.post(f"/bridge/fight/{GAME}", json={"closed": True})  # the browser's last VTT tab for that game closed
+    player.post(f"/bridge/fight/{GAME}", json={"closed": True})  # the player's last VTT tab for that game closed
+    assert campaign.fight is not None
+    dm.post(f"/bridge/fight/{GAME}", json={"closed": True})  # the DM's
     assert campaign.fight is None
     from sqlalchemy import text
 
@@ -141,3 +145,23 @@ def test_the_last_vtt_closing_leaves_no_fight_heard_and_a_closed_sheet_isnt_in_s
     cole.sheet_heard_at = datetime.now(UTC)
     assert player.post(f"/bridge/closed/{cole.ddb_id}").status_code == 200
     assert cole.sheet_heard_at is None  # the Live pill says so at once
+
+
+def test_each_turn_counts_once_however_the_vtt_pages_report_it(player, db, sheet, monkeypatch):
+    """Review, 2026-10-29: the DM's and each player's VTT page report every change, sometimes late or out of order, and the
+    DM can press Previous and Next again; a turn's reminders and countdowns happen the first time it's reached only."""
+    campaign = _campaign(db)
+    seen = []
+    monkeypatch.setattr(fight, "follow", lambda db, c, ended, began, now: seen.append((ended, began)))
+    for rt in ((2, 1), (2, 2), (2, 1), (2, 2), (2, 3), (2, 2), (2, 3), (3, 1)):  # late, back, forward again
+        fight.heard(db, campaign, heard(*rt))
+    assert seen == [(None, "t-cole"), ("t-cole", "t-e1"), ("t-e1", "t-gob"), ("t-gob", "t-cole")]
+    fight.heard(db, campaign, None)  # the fight ended: the next one counts afresh
+    fight.heard(db, campaign, heard(1, 1))
+    assert seen[-1] == (None, "t-cole")
+
+
+def test_a_round_number_the_extension_garbles_is_round_1(db, sheet):
+    campaign = _campaign(db)
+    assert fight.heard(db, campaign, {**heard(), "round": "two", "turn": None})
+    assert (campaign.fight["round"], campaign.fight["turn"]) == (1, 1)

@@ -168,3 +168,15 @@ def test_a_dying_characters_turn_starts_with_a_reminder(player, dm, db, sheet):
     assert r["mine"] and "1 ✓ · 2 ✗" in r["text"]
     assert any(x["down"] for x in mine["order"] if x.get("character") == cole.id)  # its token: 0 HP
     assert not next(x for x in fight.for_person(db, campaign, "dm@example.com")["reminders"] if x["kind"] == "death")["mine"]
+
+
+def test_healing_from_0_outside_the_window_ends_unconscious_too(player, db, sheet):
+    """Review, 2026-10-29: a heal made through the bridge's own controls (a potion, the bridge page) also ends
+    Unconscious and clears the marks."""
+    cole = down(db, sheet, 1, 2)
+    sheet["conditions"] = [{"id": 15, "level": None}]
+    characters.refresh(db, cole)
+    assert player.post(f"/bridge/hp/{cole.id}", data={"amount": "4"}).status_code == 200
+    end = made(db, cole)
+    assert end["hp"]["removedHitPoints"] == 47 and end["death"] == {"successCount": 0, "failCount": 0}
+    assert end[death_saves.UNCONSCIOUS] is False

@@ -81,7 +81,15 @@ def _clean(heard: dict | None, characters: dict[str, int]) -> dict | None:
                       "character": characters.get(ddb_id) if ddb_id else None,
                       "initiative": init if isinstance(init, (int, float)) else None,
                       "hidden": bool(x.get("hidden")), "active": bool(x.get("active")), "image": _picture(x.get("image"))})
-    return {"round": int(heard.get("round") or 1), "turn": int(heard.get("turn") or 1), "order": order}
+    return {"round": _int(heard.get("round")), "turn": _int(heard.get("turn")), "order": order}
+
+
+def _int(v) -> int:
+    """A round or turn number as the extension says it (1 when it says something else)."""
+    try:
+        return max(1, int(v))
+    except (TypeError, ValueError):
+        return 1
 
 
 def heard(db: Session, campaign: Campaign, fight: dict | None) -> bool:
@@ -95,9 +103,30 @@ def heard(db: Session, campaign: Campaign, fight: dict | None) -> bool:
         return False
     if now is not None:  # (its reminders carry on through the fight)
         now["reminders"], now["seq"] = list((prev or {}).get("reminders") or []), (prev or {}).get("seq", 0)
-        follow(db, campaign, prev, now)
+        ended, began = turn_begun(prev, now)
+        if began:
+            follow(db, campaign, ended, began, now)
     campaign.fight, campaign.fight_at = now, datetime.now(UTC)
     return True
+
+
+def turn_begun(prev: dict | None, now: dict) -> tuple[str | None, str | None]:
+    """(ended, began): whose turn ended and whose began, the first time this fight reaches that turn; else (None, None).
+    Every open VTT page tells askdnd each change (the DM's and each player's), and their word can arrive late or out of
+    order, and the DM can press Previous and Next again (review, 2026-10-29): so each turn (its round and whose it is)
+    counts once in a fight, remembered in `now` ("done", and "last": whose turn began last)."""
+    kept = prev if prev and prev.get("order") else None  # (a fight that ended: the next one counts afresh)
+    if kept is not None and "done" not in kept:  # (a fight heard before turns were remembered)
+        last = active_key(kept)
+        kept = {**kept, "done": [f"{kept['round']}:{last}"] if last else [], "last": last}
+    done, last = list((kept or {}).get("done") or []), (kept or {}).get("last")
+    began = active_key(now)
+    mark = f"{now['round']}:{began}" if began else None
+    now["done"], now["last"] = done, last
+    if not mark or mark in done:
+        return None, None
+    now["done"], now["last"] = (done + [mark])[-300:], began
+    return (last if last != began else None), began
 
 
 def _order(f: dict | None):
@@ -107,19 +136,6 @@ def _order(f: dict | None):
 def active_key(f: dict | None) -> str | None:
     """Whose turn it is in a fight: their key."""
     return next((x["key"] for x in f["order"] if x.get("active")), None) if f else None
-
-
-def step(prev: dict | None, now: dict | None) -> tuple[str | None, str | None]:
-    """(ended, began): whose turn just ended and whose began, as the DM pressed Next (or the fight began). Nothing for
-    going back, or for an order change that keeps whose turn it is."""
-    a, b = active_key(prev), active_key(now)
-    if not b:
-        return None, None
-    if not prev or not a:
-        return None, b
-    if (now["round"], now["turn"]) <= (prev["round"], prev["turn"]) or a == b:
-        return None, None
-    return a, b
 
 
 def remind(f: dict, character: Character, kind: str, name: str, text: str, **more) -> None:
@@ -136,12 +152,11 @@ def _save_label(character: Character, ability: str) -> str:
     return next((s.get("label", "") for s in saves if s.get("short") == ability), "")
 
 
-def follow(db: Session, campaign: Campaign, prev: dict | None, now: dict) -> None:
+def follow(db: Session, campaign: Campaign, ended: str | None, began: str | None, now: dict) -> None:
     """A turn ended or began (app/conditions.py, how long it lasts): each condition timed by it moves on; one that ran
     out is marked due, and its player and the DM are reminded (nothing ends by itself: Brett, 2026-10-29); a save at
     the end of someone's turn is a reminder as that turn begins, to roll it at its end; a dying character's turn starts
     with a reminder to roll its death save; Concentration counts its rounds on the caster's own turns."""
-    ended, began = step(prev, now)
     if not ended and not began:
         return
     from app import characters as chars  # (they read the fight too)

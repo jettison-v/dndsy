@@ -66,8 +66,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import access, config, ddb, ddb_fields, ddb_sheet, live, picks, realtime, table_rolls, web
+from app import conditions as cond
 from app import characters as chars
-from app.auth import current_user, is_admin
+from app.auth import current_user, is_admin, is_dm
 from app.db import get_db
 from app.models import BridgeBatch, BridgeIntent, BridgeKey, BridgeLog, Character, TableRoll, ToolSetting
 from app.templating import templates
@@ -712,6 +713,7 @@ def seen(db: Session, character: Character, before: dict | None, after: dict, su
     """Every read of a character from D&D Beyond (the bridge's, Game Mode's refresh, a page opening) passes through
     here with askdnd's last copy (`before`) and the new one: whatever D&D Beyond changed itself goes in the log as
     "On D&D Beyond", whichever read saw it first. What askdnd is writing (or just wrote) isn't D&D Beyond's change."""
+    _drop_ended(db, character, summary)
     if not before:
         return
     was, now = ddb_fields.tracked(before), ddb_fields.tracked(after)
@@ -728,6 +730,20 @@ def seen(db: Session, character: Character, before: dict | None, after: dict, su
     lines += [f"{ddb_fields.item_name(before, f[5:])} removed" for f in was if f.startswith("item:") and f not in now and f not in ours]
     if lines:
         _log(db, character.id, f"{character.name} (on D&D Beyond): " + ", ".join(lines), "seen")
+
+
+def _drop_ended(db: Session, character: Character, summary: dict | None) -> None:
+    """askdnd's own entry for a condition D&D Beyond holds (where it came from, how long it lasts) goes once D&D Beyond
+    doesn't have it and no change askdnd is sending (or gave up to make by hand) is about it (review, 2026-10-29: one
+    ended on D&D Beyond kept its reminders coming)."""
+    if not character.conditions or summary is None:
+        return
+    there = {c["name"] for c in summary.get("conditions") or []}
+    there |= {cond.from_field((it.data or {}).get("field", "")) for it in db.scalars(
+        select(BridgeIntent).where(BridgeIntent.character_id == character.id, BridgeIntent.state.in_(OPEN), BridgeIntent.kind == "set"))}
+    keep = [c for c in character.conditions if c.get("name") not in cond.ON_DDB or c.get("name") in there]
+    if len(keep) != len(character.conditions):
+        character.conditions = keep or None
 
 
 def check(character: Character) -> list[dict]:
@@ -1075,8 +1091,15 @@ async def bridge_fight(game_id: str, request: Request, db: Session = Depends(get
     told = body.get("fight") if isinstance(body, dict) else None
     changed = False
     for campaign in fight.campaigns_for(db, game_id[:40]):
-        if _follows(user, campaign):  # (the VTT closed with no other open in that browser: no fight heard now)
-            changed = fight.heard(db, campaign, None if body.get("closed") else told if isinstance(told, dict) else None) or changed
+        if not _follows(user, campaign):
+            continue
+        # The last VTT tab for this game closed in that browser. Only the DM's ends the fight here: a player closing
+        # theirs mid-fight leaves it on (review, 2026-10-29), and a fight nobody hears any more goes after fight.STALE
+        if body.get("closed"):
+            if is_dm(user, campaign.id) or is_admin(user):
+                changed = fight.heard(db, campaign, None) or changed
+            continue
+        changed = fight.heard(db, campaign, told if isinstance(told, dict) else None) or changed
     db.commit()
     return _json({"ok": True, "changed": changed})
 
@@ -1116,8 +1139,10 @@ def bridge_drink(character_id: int, item_id: int, request: Request, db: Session 
     if name not in HEALING:
         raise HTTPException(400, "That isn't a healing potion this character has.")
     rolled = table_rolls.roll_formula(HEALING[name])
+    dying = _at_0(db, character)
     add(db, character, "drink", {"item": item_id, "name": name, "heal": rolled["total"]},
         f"{character.name} drank a {name} (rolled {rolled['total']}: {rolled['formula']})")
+    _back_up(db, character, dying, rolled["total"])
     db.commit()
     return _made(db, character, user)
 
@@ -1130,9 +1155,26 @@ def bridge_hp(character_id: int, request: Request, amount: int = Form(0), db: Se
         raise HTTPException(403)
     reach(character)
     if amount:
+        dying = _at_0(db, character)
         add(db, character, "hp", {"amount": amount}, f"{character.name} {'healed' if amount > 0 else 'took'} {abs(amount)}")
+        _back_up(db, character, dying, amount)
         db.commit()
     return _made(db, character, user)
+
+
+def _at_0(db: Session, character: Character) -> bool:
+    from app import death_saves
+
+    return death_saves.state(as_shown(db, character, chars.character_summary(character))) is not None
+
+
+def _back_up(db: Session, character: Character, was_at_0: bool, healed: int) -> None:
+    """Healing from 0 Hit Points here too, not only in the hit points window (review, 2026-10-29): Unconscious ends and
+    the death save marks clear (app/death_saves.py up)."""
+    from app import death_saves
+
+    if was_at_0 and healed > 0:
+        death_saves.up(db, character, 0, f"{character.name}: back up from 0")
 
 
 def _made(db: Session, character: Character, user: dict) -> JSONResponse:

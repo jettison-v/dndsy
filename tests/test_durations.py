@@ -144,3 +144,40 @@ def test_reminders_go_to_that_characters_player_and_the_dm_only(player, db, shee
     at(db, 1, 2)
     assert reminders(db, "player@example.com") and reminders(db, "dm@example.com")
     assert reminders(db, "other@example.com") == []
+
+
+def test_a_condition_ended_on_d_and_d_beyond_stops_its_reminders(player, db, sheet):
+    """Review, 2026-10-29: askdnd's own entry (how long it lasts) goes with the next read once D&D Beyond doesn't have
+    it, so its save reminders stop; while it's still on its way, it stays."""
+    from app import characters
+    from app.models import BridgeIntent
+
+    setup(db, player)
+    at(db, 1, 2)
+    start(player, db, "Paralyzed", lasts="save", ability="Wis", dc="13", whose="self")
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)  # read before the extension made it: still on its way, so it stays
+    assert condition(db, "Paralyzed")["lasts"]["kind"] == "save"
+    db.query(BridgeIntent).delete()  # (as if it was made, and the player then unticked it on D&D Beyond)
+    characters.refresh(db, cole)
+    assert not any(c["name"] == "Paralyzed" for c in char(db, "Cole").conditions or [])
+    walk(db, (1, 2), (2, 2))
+    assert not [r for r in reminders(db, "player@example.com") if r["kind"] == "save"]
+
+
+def test_ending_a_condition_still_on_its_way_ends_it_there_too(player, db, sheet):
+    """Review, 2026-10-29: Prone started and ended before the extension made it doesn't land on D&D Beyond afterwards."""
+    from app import ddb_bridge
+    from app.models import BridgeIntent
+
+    setup(db, player)
+    start(player, db, "Prone")
+    cole = char(db, "Cole")
+    r = player.post(f"/characters/{cole.id}/conditions/end", data={"name": "Prone"}, headers={"HX-Request": "true"})
+    assert r.status_code == 200
+    from sqlalchemy import select
+
+    rows = db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == cole.id).order_by(BridgeIntent.id)).all()
+    end = ddb_bridge.plan([{"kind": x.kind, "data": x.data} for x in rows], ddb_bridge.numbers(cole))[0]
+    assert end.get("condition:12") in (None, False)  # nothing (or off) to make: Prone never lands
+    assert len(rows) == 2

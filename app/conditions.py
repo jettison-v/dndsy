@@ -111,6 +111,19 @@ ON_DDB = (*ddb_fields.CONDITIONS.values(), "Exhaustion")
 DDB_ID = {name: cid for cid, name in ddb_fields.CONDITIONS.items()}
 
 
+def ddb_field(name: str) -> str:
+    """The bridge's field for one D&D Beyond holds (app/ddb_fields.py): "exhaustion", or "condition:<its id>"."""
+    return "exhaustion" if name == "Exhaustion" else f"condition:{DDB_ID[name]}"
+
+
+def from_field(field: str) -> str:
+    """The condition a bridge field is, or "" (not a condition)."""
+    kind, _, arg = field.partition(":")
+    if kind == "exhaustion":
+        return "Exhaustion"
+    return ddb_fields.CONDITIONS.get(int(arg), "") if kind == "condition" and arg.isdigit() else ""
+
+
 def from_sheet(data: dict | None) -> list[dict]:
     """The conditions ticked on D&D Beyond's sheet (its character data), in its order, Exhaustion with its level."""
     out = []
