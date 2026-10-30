@@ -108,7 +108,7 @@ window) are where things break. The rules:
 
 - **Nothing scrolls sideways.** The page is never wider than the window. A wide table scrolls inside its own box, or
   (better) switches to its compact layout.
-- **One-line controls stay on one line.** Buttons, tabs, chips, tags and the menu bar's controls never break onto two
+- **One-line controls stay on one line.** Buttons, tabs, chips, tags and the menu bar's controls never break onto two The one exception (Brett, 2026-10-30): inside anything smaller than a page (the roll window, a side panel, a modal, a corner card) a long label wraps inside its button, so it never runs out of the box.
   lines (`.btn` is `nowrap`); the row around them wraps instead.
 - **Text stays in its box.** Menus, panels, cards and buttons hold their text; long words (a web address) break
   (`overflow-wrap` on `body`), and names that must stay on one line end in "…".
