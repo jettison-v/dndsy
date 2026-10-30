@@ -55,6 +55,7 @@ def _view(db: Session, ch: Character, user: dict) -> dict:
         "error": snap.error if snap else "",
         "picks": mine,
         "can_pick": picks.can_edit(db, user, ch),
+        "can_use": picks.can_edit(db, user, ch) and ddb_bridge.on_for(db, ch),  # an item's button (app/item_use.py)
         "show_picks": picks.can_see(user, ch),
         "reminders": views.reminders(sheet, mine["remind"], mine["order"].get("forget"), mine["notes"]) if sheet else [],
         "druid": druid,
@@ -175,7 +176,8 @@ def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None
         beast = ws.beast_for(ctx["sheet"], wild, ctx["beasts"]) if wild and ctx["druid"] else None
         if beast:
             ctx["form"] = ws.shaped(ctx["sheet"], beast, keep=ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep))
-            ctx["columns"] = ctx["form"]["columns"]
+            own = ctx["columns"]  # (items stay: what a form's limbs can handle is the DM's to say)
+            ctx["columns"] = {k: {**v, "items": own[k]["items"], "item_count": own[k]["item_count"]} for k, v in ctx["form"]["columns"].items()}
     ctx["spellbar"] = _spellbar(db, ch, ctx)
     now = ctx["conditions"]
     ctx["cond_adv"] = cond.roll_effects([x for x in now if x["counts"]])  # listed in the roll window (app.js specFrom)
@@ -286,9 +288,9 @@ def plan_page(request: Request, character_id: int, db: Session = Depends(get_db)
 
 
 @router.get("/characters/{character_id:int}/all/{cost}")
-def see_all(request: Request, character_id: int, cost: str, add: int = 0, db: Session = Depends(get_db)):
+def see_all(request: Request, character_id: int, cost: str, add: int = 0, items: int = 0, db: Session = Depends(get_db)):
     """Side panel: every option of one kind (actions, bonus actions, reactions). add=1 (the column's
-    + Add on Battle): only the ones not pinned yet."""
+    + Add on Battle): only the ones not pinned yet; items=1 (a column's All items): only its items."""
     user, ch, stop = _load(request, db, character_id)
     if stop:
         return stop
@@ -296,8 +298,9 @@ def see_all(request: Request, character_id: int, cost: str, add: int = 0, db: Se
     ctx = _view(db, ch, user)
     if not cost or not ctx["sheet"]:
         return HTMLResponse("", status_code=404)
-    everything = [o for o in views.options(ctx["sheet"], ctx["picks"]["star"]) if o["cost"] == cost and not (add and o["starred"])]
-    return templates.TemplateResponse(request, "_panel_options.html", {**ctx, "title": cost, "opts": everything, "adding": bool(add),
+    everything = [o for o in views.options(ctx["sheet"], ctx["picks"]["star"]) if o["cost"] == cost and not (add and o["starred"])
+                  and (not items or o["kind"] == "item")]
+    return templates.TemplateResponse(request, "_panel_options.html", {**ctx, "title": cost, "opts": everything, "adding": bool(add), "items_only": bool(items),
                                                                       "groups": views.option_groups(everything)})
 
 
@@ -667,7 +670,7 @@ def save_order(request: Request, character_id: int, form=web.FormBody, db: Sessi
     if not picks.can_edit(db, user, ch):
         return _forbidden(request, "Only this character's player can do that.")
     column = form.get("column", "")
-    if column not in ("Action", "Bonus action", "Reaction", "forget"):
+    if column not in ("Action", "Bonus action", "Reaction", "forget", "Action items", "Bonus action items", "Reaction items"):
         return HTMLResponse("", status_code=400)
     picks.set_order(db, ch, column, [str(k) for k in form.getlist("keys")])
     db.commit()

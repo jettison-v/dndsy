@@ -363,13 +363,13 @@
 
   document.addEventListener('click', e => {
     const t = e.target.closest('[data-panel-url], [data-modal-url]');
-    if (!t || e.target.closest('button[hx-post], form, [data-roll], details')) return;  // (a pop-up in a row: the row stays put)
+    if (!t || e.target.closest('button[hx-post], form, [data-roll], [data-use-url], details')) return;  // (a pop-up in a row: the row stays put)
     e.preventDefault();
     if (t.dataset.modalUrl) openPanel(t.dataset.modalUrl, t, t.getAttribute('href'), t.dataset.modalSize === 'large' ? 'large' : true);
     else openPanel(t.dataset.panelUrl, t, t.getAttribute('href'));
   });
   document.addEventListener('keydown', e => {
-    if (e.target.closest && e.target.closest('[data-roll]')) return;
+    if (e.target.closest && e.target.closest('[data-roll], [data-use-url]')) return;
     const t = e.target.closest && e.target.closest('[data-panel-url][tabindex], [data-modal-url][tabindex]');
     if (t && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); t.click(); }
   });
@@ -512,7 +512,7 @@
   }
   function busyHere() {
     const a = document.activeElement;
-    return !!(document.querySelector('.peek.open, .roll-win, .tour-card, dialog[open]') ||
+    return !!(document.querySelector('.peek.open, .roll-win, .tour-card, dialog[open], details.conc-pop[open], details.cond-pill[open]') ||
               (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))));
   }
   // A field that saves as you type (a note in a side panel): the box holding it isn't swapped while you're in it
@@ -1104,6 +1104,7 @@
 //   small notices while the sidebar is collapsed.
 // - Otherwise: a private roll in this browser only (crypto random).
 (function () {
+  const toast = (...a) => window.askdndToast(...a);  // (the corner cards live in the block above)
   const SIDE = 'askdnd.rollsSide', ANIM = 'askdnd.rollsAnim', TO = 'askdnd.rollsTo';
   const WIDE = 1100;  // narrower than this, the sidebar starts closed and opens over the page
   const D20 = ['save', 'check', 'attack', 'death'];
@@ -2066,6 +2067,43 @@
       .then(j => { if (j && j.text) { e._death = result; deathMarked(j); } })
       .catch(() => {});
   }
+  // Using an item (app/item_use.py; Brett, 2026-10-30): its button opens the roll window with what the server says, and
+  // the window's Drink, Read, Use or Give makes it. A heal is thrown and logged as a roll is.
+  function openUse(btn) {
+    const w = openWin(btn);
+    w.setAttribute('aria-label', btn.textContent.trim());
+    w._use = btn.dataset.useUrl;
+    fetch(w._use, { headers: { 'X-Requested-With': 'fetch' } })
+      .then(r => { if (!r.ok) throw new Error(); return r.text(); })
+      .then(html => { if (win === w) { w.innerHTML = html; place(w, btn); } })
+      .catch(() => { if (win === w) showFailure(w, "Couldn't reach askdnd.", () => openUse(btn)); });
+  }
+  function posted(url, fields) {
+    return fetch(url, { method: 'POST', body: new URLSearchParams(fields), headers: { 'X-Requested-With': 'fetch' } })
+      .then(r => r.json().catch(() => ({})).then(j => { if (!r.ok) throw new Error(j.detail || j.error || "askdnd couldn't do that"); return j; }));
+  }
+  function itemChanged(j) {
+    document.body.dispatchEvent(new CustomEvent('bridgeDeliver', { detail: j.deliver }));
+    document.body.dispatchEvent(new CustomEvent('characterChanged'));
+  }
+  function useItem(btn) {
+    const w = win, said = w.querySelector('.use-said');
+    w.querySelectorAll('button').forEach(b => { b.disabled = true; });
+    posted(w._use, { to: btn.dataset.to || '' }).then(j => {
+      closeWin();
+      if (j.roll) {
+        if (animate()) window.askdndThrowing.throwing(j.roll.id);
+        addToLog(j.html, j.roll.id);
+        if (j.gamelog) window.postMessage({ askdndBridge: 'gamelog', ddbId: j.gamelog.ddbId, messages: j.gamelog.messages }, location.origin);
+      }
+      toast(j.text, j.undo ? { label: 'Undo', run: () => posted(j.undoUrl, j.undo).then(u => { toast(u.text); itemChanged(u); }).catch(err => toast(err.message, null, 'warn')) } : null);
+      itemChanged(j);
+    }).catch(err => {
+      w.querySelectorAll('button').forEach(b => { b.disabled = false; });
+      said.textContent = err.message;
+      said.hidden = false;
+    });
+  }
   // A follow-up from the result or the log: damage and an added die ask first; a reroll just rolls.
   function follow(anchor, action, e, shared, cid) {
     const base = { follow: action, parent: e.id, label: e.label, entry: e, shared, cid, kind: action === 'damage' ? 'damage' : e.kind };
@@ -2112,6 +2150,14 @@
     if (!e.target.isConnected) return;  // the window replaced what was clicked (Roll, a follow-up): not a click outside
     if (win && win.contains(e.target)) {
       if (e.target.closest('.rp-x')) { closeWin(); return; }
+      if (e.target.closest('[data-use-go]')) { useItem(e.target.closest('[data-use-go]')); return; }
+      if (e.target.closest('[data-use-give]')) {
+        const names = win.querySelector('.use-names');
+        names.hidden = !names.hidden;
+        e.target.closest('[data-use-give]').setAttribute('aria-expanded', !names.hidden);
+        place(win);
+        return;
+      }
       const act = e.target.closest('[data-act]');
       if (act && win._entry) { const g = win._go || {}; follow(act, act.dataset.act, win._entry, g.shared, g.cid); return; }
       if (win._skip && win.classList.contains('result')) { win._skip(); }
@@ -2126,6 +2172,8 @@
       follow(f, f.dataset.follow, entry, true, side ? side.dataset.mine : '');
       return;
     }
+    const using = e.target.closest('[data-use-url]');
+    if (using) { e.preventDefault(); if (!using.disabled) openUse(using); return; }
     const el = e.target.closest('[data-roll]');
     if (!el) { if (win && !e.target.closest('[data-manual]')) closeWin(); return; }
     e.preventDefault();

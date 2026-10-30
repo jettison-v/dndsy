@@ -17,6 +17,7 @@ from app.admin import router as admin_router
 from app.ddb_bridge import router as ddb_bridge_router
 from app.death_saves import router as death_saves_router
 from app.hit_points import router as hit_points_router
+from app.item_use import router as item_use_router
 from app.admin_notes import router as admin_notes_router
 from app.manage_table import router as manage_table_router
 from app.manage_accounts import router as manage_accounts_router
@@ -124,6 +125,7 @@ app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), na
 app.include_router(auth_router)
 app.include_router(view_as_router)
 app.include_router(admin_router)
+app.include_router(item_use_router)
 app.include_router(admin_notes_router)
 app.include_router(manage_table_router)
 app.include_router(manage_accounts_router)

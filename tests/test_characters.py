@@ -83,8 +83,10 @@ def test_battle_shows_only_pins_to_players_and_the_usual_options_to_the_dm(playe
     picks.toggle(db, cole, "star", "spell:Heat Metal", "Heat Metal")
     mine = action(player.get(f"/characters/{cole.id}/battle").text)
     assert "Heat Metal" in mine and "Unarmed Strike" not in mine and "See all actions" in mine
-    theirs = action(dm.get(f"/characters/{cole.id}/battle").text)  # the DM can't see pins: the usual options
-    assert "Unarmed Strike" in theirs and "Use an item: Potion of Healing" in theirs and "+6" in theirs
+    page = dm.get(f"/characters/{cole.id}/battle").text  # the DM can't see pins: the usual options
+    theirs = action(page)
+    assert "Unarmed Strike" in theirs and "+6" in theirs
+    assert "Potion of Healing" in page.split('data-econ-col="bonus"')[1].split('data-econ-col="reaction"')[0]  # a Bonus Action to drink
 
 
 def test_spell_planner_and_shortlist(player, db):

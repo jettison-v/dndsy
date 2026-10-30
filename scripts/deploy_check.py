@@ -78,9 +78,10 @@ def wait_ci(sha: str) -> None:
                               "--json", "headSha,databaseId,status,conclusion"))
         match = next((r for r in runs if r["headSha"].startswith(sha)), None)
         if match:
-            if match["status"] != "completed":
+            while match["status"] != "completed":  # (`gh run watch` can stop early: only the run's own status counts)
                 subprocess.run(["gh", "run", "watch", str(match["databaseId"]), "--exit-status"], capture_output=True)
-                match = json.loads(run("gh", "run", "view", str(match["databaseId"]), "--json", "conclusion"))
+                time.sleep(10)
+                match = json.loads(run("gh", "run", "view", str(match["databaseId"]), "--json", "databaseId,status,conclusion"))
             if match["conclusion"] != "success":
                 sys.exit(f"GitHub's tests didn't pass ({match['conclusion']}): Railway won't deploy {sha[:7]}. Fix the tests first.")
             say("Tests passed.")

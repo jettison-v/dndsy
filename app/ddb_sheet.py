@@ -940,10 +940,11 @@ class _Sheet:
                 "base_name": df["name"],
                 "custom": False,
                 "changes": changes,
-                "battle": bool(usable and df.get("filterType") != "Weapon"),
+                "battle": bool(usable),
                 "category": df.get("filterType") or "Other Gear",
                 "type": df.get("subType") or df.get("filterType") or df.get("type") or "",
                 "quantity": i.get("quantity") or 1,
+                "count": i.get("quantity") or 0,  # (D&D Beyond can hold 0: `quantity` shows that as 1)
                 "equipped": bool(i.get("equipped")),
                 "magic": bool(df.get("magic")),
                 "rarity": df.get("rarity") or "",

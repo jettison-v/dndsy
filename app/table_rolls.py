@@ -433,8 +433,8 @@ def death_mark(db: Session, root: TableRoll) -> dict | None:
     return {"text": said, "character": ch.id, "deliver": web.deliver_now(ch)}
 
 
-def _reply(request: Request, db: Session, root: TableRoll, me_id: int, dm: bool, new: TableRoll | None = None,
-           death: dict | None = None):
+def reply_body(request: Request, db: Session, root: TableRoll, me_id: int, dm: bool, new: TableRoll | None = None,
+               death: dict | None = None) -> dict:
     """The roll's entry and its HTML for the log, and what the extension sends to D&D Beyond's Game Log for the roll
     just made (`new`: a follow-up, else the roll itself; app/gamelog.py); `death`: what a death save marked."""
     from app import gamelog  # (it reads this module's kinds)
@@ -444,7 +444,25 @@ def _reply(request: Request, db: Session, root: TableRoll, me_id: int, dm: bool,
     out = {"roll": entry, "html": render(request, [entry]), **({"death": death} if death else {})}
     if (msgs := gamelog.messages(db, made, made.character)):
         out["gamelog"] = {"ddbId": str(made.character.ddb_id), "messages": msgs}
-    return JSONResponse(out)
+    return out
+
+
+def _reply(request: Request, db: Session, root: TableRoll, me_id: int, dm: bool, new: TableRoll | None = None,
+           death: dict | None = None):
+    return JSONResponse(reply_body(request, db, root, me_id, dm, new, death))
+
+
+def add_roll(db: Session, ch: Character, me_id: int, label: str, dice: str) -> TableRoll | None:
+    """A healing roll the whole table sees, made for another route (a potion: app/item_use.py). None: not dice."""
+    result = roll_formula(dice, floor=True)
+    if result is None:
+        return None
+    row = TableRoll(campaign_id=ch.campaign_id, character_id=ch.id, user_id=me_id, label=label[:120], kind="heal", mode="normal",
+                    visibility="table", damage="", spec=None, extras=[], who="", **result)
+    db.add(row)
+    db.flush()
+    realtime.announce(db, ch.campaign_id, "rolls", **_live(db, row))
+    return row
 
 
 @router.post("/rolls")

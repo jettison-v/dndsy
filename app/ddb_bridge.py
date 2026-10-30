@@ -313,7 +313,7 @@ def plan(intents: list[dict], n: dict, every: bool = False) -> tuple[dict, list[
             if d["amount"] >= 0:
                 removed = max(0, removed - d["amount"])
             else:
-                soak = min(temp, -d["amount"])
+                soak = 0 if d.get("undo") else min(temp, -d["amount"])  # (taking back a heal: Hit Points only)
                 temp, removed = temp - soak, min(n["max"], removed + (-d["amount"] - soak))
             vals["hp"] = {"removedHitPoints": removed, "temporaryHitPoints": temp}
             touched.append("hp")

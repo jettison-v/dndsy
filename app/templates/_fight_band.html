@@ -1,16 +1,19 @@
-{# The fight band (Brett, 2026-10-29; docs/mockups/turn-conditions.html): above the name on every character page and
-   at the top of Party, only while a fight runs in D&D Beyond's VTT (app/fight.py; askdnd only listens). The round,
-   whose turn it is ("Your turn" when it's one of yours), "you're next", and the order: each one's picture (a
-   character's portrait, a creature's token art or Monster Manual picture) and name, enemies (the VTT's monsters) in
-   red, whose turn ringed; a character at 0 Hit Points striped, "0 HP" (app/death_saves.py). #}
+{# The fight band (Brett, 2026-10-29; bolder 2026-10-30: a war banner, "we are in a battle"; docs/mockups/turn-conditions.html):
+   above the name on every character page and at the top of Party, only while a fight runs in D&D Beyond's VTT
+   (app/fight.py; askdnd only listens). A pennant with the round, whose turn it is in the band's colour (gold yours, red an
+   enemy's, blue an ally's: `data-turn`) and who's next, and the order: each one's picture (a character's portrait, a
+   creature's token art or Monster Manual picture) and name, enemies ringed red, whose turn large; those who've acted this
+   round dimmed; a character at 0 Hit Points striped, "0 HP" (app/death_saves.py). #}
 {% set f = fight_now() %}
 {% if f %}
-<div class="fight-band" role="status" aria-label="The fight">
-  <span class="fb-round">Round {{ f.round }}</span>
-  {% if f.yours %}<span class="fb-mine">Your turn</span>
-  {% elif f.now %}<span>{{ f.now.name }}’s turn{% if f.next_yours %} · <span class="fb-mine">you’re next</span>{% endif %}</span>
-  {% elif f.next_yours %}<span class="fb-mine">You’re next</span>{% endif %}
-  <span class="roll-to">on D&amp;D Beyond</span>
+{% set active = f.order | selectattr("active") | list %}
+{% set turn = "yours" if f.yours else ("enemy" if active and active[0].kind == "monster" else "ally" if active else "") %}
+<div class="fight-band"{% if turn %} data-turn="{{ turn }}"{% endif %} role="status" aria-label="The fight, round {{ f.round }}">
+  <span class="fb-round"><svg class="fb-swords" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 3.5 15 15M20.5 3.5 9 15M12.6 9.6M6 13.5l4.5 4.5M18 13.5 13.5 18M4.5 19.5 8 16M19.5 19.5 16 16"/></svg><span class="fb-round-tx"><small>Round</small><b>{{ f.round }}</b></span></span>
+  <span class="fb-call">
+    <strong class="fb-head">{% if f.yours %}Your turn{% elif f.now %}{{ f.now.name }}’s turn{% elif f.next_yours %}You’re next{% else %}In battle{% endif %}</strong>
+    <span class="fb-sub">{% if f.now and f.next_yours %}<span class="fb-mine">You’re next</span> · {% elif f.next and not f.next_yours %}Next: {{ f.next }} · {% endif %}<span class="roll-to">on D&amp;D Beyond</span></span>
+  </span>
   <span class="fb-order">{% for x in f.order %}<span class="fb-who{{ ' enemy' if x.kind == 'monster' else ' party' }}{{ ' now' if x.active }}{{ ' hid' if x.hidden }}{{ ' down' if x.down }}" title="{{ x.name }}{{ ' · enemy' if x.kind == 'monster' }}{{ ' · 0 Hit Points' if x.down }}{% if x.initiative is not none %} · initiative {{ x.initiative }}{% endif %}{% if x.hidden %} · hidden from the players{% endif %}">
     <span class="fb-pic" aria-hidden="true">{% if x.picture %}<img src="{{ x.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ x.name[:1] }}</span><span class="fb-name">{{ x.name }}</span>{% if x.down %}<span class="fb-zero">0 HP</span>{% endif %}</span>{% endfor %}</span>
 </div>

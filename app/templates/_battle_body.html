@@ -3,6 +3,18 @@
 {% from "_cond_icons.html" import cond_icon, cond_halo with context %}
 {% set s = sheet %}
 {# Character › Battle (character_pages._battle_ctx). Game Mode and the Wild Shape switch swap this whole block. #}
+{# One row of a column on Battle. #}
+{% macro move(o) %}
+      <div class="move{{ ' yours' if o.source == 'yours' }}" data-key="{{ o.key }}" {% if form and o.source in ('form', 'rule') %}data-modal-url="/characters/{{ c.id }}/form?name={{ form.beast.name | urlencode }}" data-modal-size="large"{% else %}data-panel-url="/characters/{{ c.id }}/detail?ref={{ o.key | urlencode }}"{% endif %} tabindex="0" role="button">
+        {% if can_use and o.use %}<span class="hit"><button type="button" class="roll-chip item-go" data-use-url="/characters/{{ c.id }}/use/{{ o.use.id }}"{% if not o.use.left %} disabled title="{{ o.use.back }}"{% endif %}>{{ o.use.verb }}</button></span>{% endif %}{% if not (can_use and o.use and o.use.gives and o.heal) %}{{ hit(o) }}{% endif %}
+        {% if o.starred and show_picks %}<span class="pick star on static" title="Pinned to Battle">{{ pin_icon() }}</span>{% endif %}{% set st = (s.sync or {}) %}<b{% if o.use %}{{ sync_attrs(st.get("item:" ~ o.use.id) or st.get("charges:" ~ o.use.id)) }}{% endif %}>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag">{{ t }}</span>{% endfor %}{{ spends(o.spends) }}
+        {% if o.meta %}<div class="meta">{{ o.meta }}</div>{% endif %}
+        {% if can_pick and o.starts and o.starts not in active_conditions %}<button class="btn small cond-go" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": o.starts, "source": o.item, "note": o.note or ""} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML" title="Shows {{ o.starts }} under the header for the whole table">{{ o.name }}</button>
+        {% elif can_pick and o.ends and o.ends in active_conditions %}<button class="btn small cond-go" hx-post="/characters/{{ c.id }}/conditions/end" hx-vals='{{ {"name": o.ends} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">{{ o.name }}</button>{% endif %}
+        {% if show_picks and picks.notes.get(o.key) %}<div class="meta move-note" title="Your note">✎ {{ picks.notes[o.key] }}</div>{% endif %}
+      </div>
+{% endmacro %}
+
 <div id="battle-body"{% if "Invisible" in active_conditions %} class="cond-ghost"{% endif %} data-character="{{ c.id }}" data-name="{{ c.name }}" data-fetched="{{ fetched_at.isoformat() if fetched_at else '' }}" data-cond-adv='{{ cond_adv | tojson }}'>
   <div class="battlebar" data-tour="roll">
     {% if s %}{{ resource_row(s, slots=not spellbar, skip=(["Wild Shape"] if known_forms else [])) }}{% endif %}
@@ -107,16 +119,14 @@
       </div>
       <div class="moves"{% if can_pick and not form %} data-sort-column="{{ cost }}" data-sort-url="/characters/{{ c.id }}/order"{% endif %}>
       {% for o in col.shown %}
-      <div class="move{{ ' yours' if o.source == 'yours' }}" data-key="{{ o.key }}" {% if form and o.source in ('form', 'rule') %}data-modal-url="/characters/{{ c.id }}/form?name={{ form.beast.name | urlencode }}" data-modal-size="large"{% else %}data-panel-url="/characters/{{ c.id }}/detail?ref={{ o.key | urlencode }}"{% endif %} tabindex="0" role="button">
-        {{ hit(o) }}
-        {% if o.starred and show_picks %}<span class="pick star on static" title="Pinned to Battle">{{ pin_icon() }}</span>{% endif %}<b>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag">{{ t }}</span>{% endfor %}{{ spends(o.spends) }}
-        {% if o.meta %}<div class="meta">{{ o.meta }}</div>{% endif %}
-        {% if can_pick and o.starts and o.starts not in active_conditions %}<button class="btn small cond-go" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": o.starts, "source": o.item, "note": o.note or ""} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML" title="Shows {{ o.starts }} under the header for the whole table">{{ ("Used it: " ~ o.starts) if o.track else o.name }}</button>
-        {% elif can_pick and o.ends and o.ends in active_conditions %}<button class="btn small cond-go" hx-post="/characters/{{ c.id }}/conditions/end" hx-vals='{{ {"name": o.ends} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">{{ o.name }}</button>{% endif %}
-        {% if show_picks and picks.notes.get(o.key) %}<div class="meta move-note" title="Your note">✎ {{ picks.notes[o.key] }}</div>{% endif %}
-      </div>
+      {{ move(o) }}
       {% else %}<p class="muted pin-empty">{% if form %}Nothing here in this form.{% elif can_pick %}Nothing pinned yet. Use <b>+ Add</b> to pin what you'd use on your turn.{% elif show_picks %}{{ c.name }}'s player hasn't pinned anything here yet.{% else %}Nothing here yet.{% endif %}</p>{% endfor %}
       </div>
+      {% if col.item_count %}{# Items follow pinning; the rest are in the side panel (Brett, 2026-10-30) #}
+      <h3 class="items-head">Items</h3>
+      {% if col["items"] %}<div class="moves"{% if can_pick and not form %} data-sort-column="{{ cost }} items" data-sort-url="/characters/{{ c.id }}/order"{% endif %}>{% for o in col["items"] %}{{ move(o) }}{% endfor %}</div>{% endif %}
+      <div class="seeall"><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/{{ slug }}?items=1">All items ({{ col.item_count }}) →</a></div>
+      {% endif %}
       {% if cost == "Action" and form %}<div class="move static"><b>Dash, Disengage, Dodge, Help, Hide, Influence, Magic, Search, Study, Utilize</b><div class="meta">What anyone can do. Magic covers features like Land's Aid; spells only {{ "as listed above" if form.castable else "if a feature allows it" }}.</div></div>
       {% elif cost == "Action" %}<div class="move static"><b>Attack, Dash, Disengage, Dodge, Help, Hide, Influence, Magic, Ready, Search, Study, Utilize</b><div class="meta">What anyone can do</div></div>{% endif %}
       {% if col.count > col.shown | length %}<div class="seeall"><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/{{ slug }}">See all {{ cost | lower }}s ({{ col.count }}) →</a></div>{% endif %}
