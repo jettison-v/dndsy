@@ -115,7 +115,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
 
 <div class="wrap">
   <header class="top">
-    <div class="eyebrow">askdnd · roadmap · updated Oct 28, 2026</div>
+    <div class="eyebrow">askdnd · roadmap · updated Oct 29, 2026</div>
     <h1>askdnd roadmap</h1>
     <p class="lead">The one page to read for what's happening. What's being built now and where you'll see it, what's waiting on someone else, what comes next, what's parked, and what's done, most recent first. Every plan and mockup is listed at the bottom with whether it's current.</p>
     <nav class="jump" aria-label="On this page"><a href="#now">Now</a><a href="#waiting">Waiting on</a><a href="#next">Next</a><a href="#parked">Parked</a><a href="#later">Later</a><a href="#done">Done</a><a href="#documents">Documents</a></nav>
@@ -129,7 +129,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     </div>
     <div class="you">
       <div class="eyebrow">Your call now</div>
-      <p><b>Approve merging</b> the two beta fixes (PR 101) and the initiative findings and mockup (PR 102); then the build of conditions that end starts with the extension listening on the VTT page. Still to try on beta: the corner cards and badges, Party's badges, Story search, dice starting together, and players' rolls in D&amp;D Beyond's Game Log; the Chrome Web Store copy needs 0.9.3 next.</p>
+      <p><b>Try death saves locally</b> (step 6, built with your three answers): put Vi at 0 on D&amp;D Beyond, roll from the Dying tile, then merge. Still to try on beta: conditions that end in a real fight (saves now remind as your turn begins), and times shown in your own time zone.</p>
     </div>
     <div class="steps">
       <div class="step"><span class="n">1</span><div class="body"><h3>Game Mode for the table, and the Live pill</h3>
@@ -158,13 +158,15 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
         <p class="where"><b>Where you'll see it:</b> on Battle: the conditions row under the numbers, and your potions and charges beside the action columns.</p>
         <p class="small muted">Built Oct 28: Battle's edge in the newest three conditions' own colours (subdued; Blinded or Unconscious darken it), an emblem per condition in the bottom-right corner with its own colour and icon (drawn for askdnd), four signature touches, a dot per condition on your menu bar button, Concentration marked lightly in the Spell Book. Conditions sync both ways with D&amp;D Beyond.</p>
         <p class="small muted">On beta Oct 29: one place for everything that pops up. Corner cards at the bottom right for toasts, refused reasons and others' rolls; the conditions as small badges after the name on every character page; Battle keeps its edge.</p>
-        <p class="small muted">Checked Oct 29: D&amp;D Beyond's VTT keeps the initiative order on its own game server, and every open VTT hears each turn (Next, a changed number); a character sheet doesn't. Decided: askdnd only listens, from the VTT page, never writes it. Designed Oct 29 (Conditions That End): durations on the pills, reminders to the player and the DM, a fight band above the name on every character page and Party. On beta Oct 29: the extension listens on the VTT page (0.9.4) and the fight band shows the round, whose turn and the order on every character page and Party, live, with pictures and enemies in red. Durations and their reminders built Oct 29 (local, for you to try): + Condition's Lasts, the pills' few words, reminders as corner cards for the player and the DM, Concentration counting its rounds.</p>
+        <p class="small muted">Checked Oct 29: D&amp;D Beyond's VTT keeps the initiative order on its own game server, and every open VTT hears each turn (Next, a changed number); a character sheet doesn't. Decided: askdnd only listens, from the VTT page, never writes it. Designed Oct 29 (Conditions That End): durations on the pills, reminders to the player and the DM, a fight band above the name on every character page and Party. On beta Oct 29: the extension listens on the VTT page (0.9.4) and the fight band shows the round, whose turn and the order on every character page and Party, live, with pictures and enemies in red. Durations and their reminders on beta Oct 29: + Condition's Lasts, the pills' few words, reminders as corner cards for the player and the DM, Concentration counting its rounds. Still to come in this step: potions and charges at hand (to design, after step 6).</p>
         <p class="links"><a href="https://claude.ai/artifact/N7AyqQy3nrsQbwLpVRHX5T">Mockup: Conditions on Battle</a> · <a href="https://claude.ai/artifact/XjqFnhYFvcGYL4ZRB9wF39">Mockup: Corner Cards and Badges</a> · <a href="https://claude.ai/artifact/EpMNHYfHg3Un6uso2cEjxF">Mockup: Conditions That End</a></p></div>
-        <div class="tags"><span class="chip eff">M</span><span class="chip s-review">Conditions on beta Oct 29 · polish next</span></div></div>
+        <div class="tags"><span class="chip eff">M</span><span class="chip s-done">Conditions done · on beta Oct 29</span><span class="chip s-todo">Potions and charges to design</span></div></div>
       <div class="step"><span class="n">6</span><div class="body"><h3>Death save reminders and the massive damage note</h3>
-        <p>At 0 hit points: the death save marks and the rule's reminder, and a note for the DM when damage is massive. People roll and decide.</p>
-        <p class="where"><b>Where you'll see it:</b> in the hit points window (step 4) and on Battle's Hit points number at 0.</p></div>
-        <div class="tags"><span class="chip eff">S</span><span class="chip s-todo">To design</span></div></div>
+        <p>At 0 hit points: the HP tile becomes the Dying tile with D&amp;D Beyond's death save marks and the Death save roll; a corner card for the player when their turn starts (heard from the VTT), and one for the DM to know; the hit points window's working at 0 (Unconscious, failures from damage at 0, healing clears the marks); massive damage told to the DM. People roll and the DM rules; askdnd never decides that someone dies.</p>
+        <p class="where"><b>Where you'll see it:</b> Battle and Sheet's HP tile, corner cards at the bottom right, the fight band and Party (a striped token with "0 HP", the marks and how others can help), and the hit points window.</p>
+        <p class="small muted">Decided Oct 29 (all three recommendations): a death save rolled while dying marks itself (a reroll moves it; a 20 brings you back with 1 Hit Point); damage at 0 marks its failures and dropping to 0 starts Unconscious, healing ends it and clears the marks, each crossable in the window. Built Oct 29, to try locally.</p>
+        <p class="links"><a href="https://claude.ai/artifact/3G9zyNa8vkk7WUAzjXrqD9">Mockup: Death Saves</a></p></div>
+        <div class="tags"><span class="chip eff">S</span><span class="chip s-designed">Built Oct 29 · try locally</span></div></div>
     </div>
     <p class="muted small">The detail behind these six: <code>docs/plans/2026-10-24-play-state.md</code> (rewritten Oct 28).</p>
   </section>
@@ -173,10 +175,10 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     <div class="sec-head"><div class="eyebrow">Waiting on</div><h2>Someone else's move</h2></div>
     <div class="cards">
       <div class="box"><div class="head"><h3>Chrome Web Store review</h3><span class="chip s-wait">2–7 days</span></div>
-        <p class="small">The askdnd bridge 0.9.1, unlisted. The table needs 0.9.2 for the DM's rolls (step 4): I send it as an update once 0.9.1 is through, with its privacy answers covering others' rolls in the game. When it's approved:</p>
-        <ol><li>Send me the listing's link (from the <a href="https://chrome.google.com/webstore/devconsole">developer dashboard</a>); I put it in Help.</li>
+        <p class="small">The askdnd bridge 0.9.4, submitted Oct 29, now <b>Unlisted</b>: anyone with the link can add it, no testers list. It brings the DM's rolls, players' rolls in the Game Log and hearing the VTT's fight. When it's approved:</p>
+        <ol><li>Send the table the link: <a href="https://chromewebstore.google.com/detail/askdnd-bridge/obpgemimnhngpcckodjkcihiahoaefpl">askdnd bridge on the Chrome Web Store</a> (also in Help › FAQ). Each player adds it in Chrome on a computer, opens askdnd once, then their D&amp;D Beyond sheet.</li>
           <li>Share the <a href="https://claude.ai/artifact/9H59RDNi99gVa7bNwmjp6G">bridge's risk summary</a> with the table.</li>
-          <li>Switch the bridge on for The Adventure Begins: <a href="https://beta.askdnd.ai/c/main/manage/settings">Manage › Settings</a> › Virtual tabletop.</li></ol></div>
+          <li>Switch the bridge on for The Adventure Begins: <a href="https://beta.askdnd.ai/c/main/manage/settings">Manage › Settings</a> › Virtual tabletop.</ol></div>
       <div class="box"><div class="head"><h3>The table's feedback</h3><span class="chip s-wait">Later</span></div>
         <p class="small">You speak for the table for now (Oct 28: Wild Shape math and forgotten effects). Their own list of frustrations will sharpen steps 5 and 6.</p></div>
     </div>
@@ -231,6 +233,9 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     <div class="sec-head"><div class="eyebrow">Done</div><h2>Most recent first</h2></div>
     <div class="done-list">
       <div class="day"><span class="d">Oct 29</span><ul>
+        <li>Death saves: the Dying tile with the sheet's marks and a Roll that marks itself, damage and healing at 0 in the hit points window, a reminder as a dying character's turn starts, a striped "0 HP" token, Party's marks and how others can help (local, for you to try)</li>
+        <li>A save that ends a condition reminds you as your turn begins, to roll at its end (the rules' timing); corner cards from a new fight no longer hidden after an earlier one (on beta; the second local)</li>
+        <li>Times of day show in your own time zone (the bridge page and askdnd's admin pages showed the server's UTC) (on beta)</li>
         <li>Conditions that end: + Condition's Lasts (turns, rounds, a minute, longer, until a save), timed by the VTT's turns; reminders as corner cards for the player and the DM (End it, Keep, Roll the save); Concentration counts its rounds (local, for you to try)</li>
         <li>Extension 0.9.4 ready for the store: only followed games reported, a quiet badge on the VTT, closed tabs; Help links to the listing (on beta; the store review is yours)</li>
         <li>The fight band: the round, whose turn and the order from D&amp;D Beyond's VTT, above the name on every character page and Party, live; someone added mid-fight joins it; each fighter by picture and name (portrait, token art or Monster Manual picture), enemies in red, whose turn bigger and filled (extension 0.9.4; on beta)</li>
@@ -271,6 +276,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
       <thead><tr><th>Document</th><th>Status</th><th>Date</th><th>What it is</th></tr></thead>
       <tbody>
         <tr><td><b>askdnd Roadmap</b> (this page)</td><td><span class="chip s-done">Current</span></td><td>Oct 29</td><td class="what">The one page to read. Source <code>docs/roadmap.html</code>; detail behind it in <code>docs/plans/2026-10-22-vtt-roadmap.md</code></td></tr>
+        <tr><td><a href="https://claude.ai/artifact/3G9zyNa8vkk7WUAzjXrqD9">Death Saves</a></td><td><span class="chip s-done">Current · decided, built</span></td><td>Oct 29</td><td class="what">Step 6: the Dying tile with D&amp;D Beyond's marks, turn reminders, the hit points window at 0, massive damage for the DM. Source <code>docs/mockups/death-saves.html</code></td></tr>
         <tr><td><a href="https://claude.ai/artifact/EpMNHYfHg3Un6uso2cEjxF">Conditions That End</a></td><td><span class="chip s-done">Current · decided</span></td><td>Oct 29</td><td class="what">Step 5: conditions timed by the turns heard from D&amp;D Beyond's VTT, with reminders when one ends or asks for a save</td></tr>
         <tr><td><a href="https://claude.ai/artifact/XjqFnhYFvcGYL4ZRB9wF39">Corner Cards and Badges</a></td><td><span class="chip s-done">Current · decided, built</span></td><td>Oct 29</td><td class="what">Step 5: one place for what pops up (corner cards), conditions as badges by the name; replaces the corner emblems of Conditions on Battle</td></tr>
         <tr><td><a href="https://claude.ai/artifact/N7AyqQy3nrsQbwLpVRHX5T">Conditions on Battle</a></td><td><span class="chip s-done">Current · decided</span></td><td>Oct 28</td><td class="what">Step 5: the halo and the colours and icons (its corner emblems move to badges: Corner Cards and Badges)</td></tr>
@@ -298,5 +304,5 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     <p class="muted small">Every decision, one line each: <code>docs/DECISIONS.md</code>. What each page's source is and where it lives: <code>docs/artifacts/README.md</code>.</p>
   </section>
 
-  <footer>askdnd · roadmap · kept current in the repo as <code>docs/roadmap.html</code> and published to this same link whenever a step changes · updated Oct 28, 2026</footer>
+  <footer>askdnd · roadmap · kept current in the repo as <code>docs/roadmap.html</code> and published to this same link whenever a step changes · updated Oct 29, 2026</footer>
 </div>

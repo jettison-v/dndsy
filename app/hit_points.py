@@ -17,8 +17,10 @@ on the character's D&D Beyond sheet through the bridge, like every other change 
 - **Concentration:** whenever you take damage, a Constitution save, DC 10 or half the damage taken (up to 30). It's the
   player's to roll (Brett, 2026-10-28: "creates suspense"): the reminder and its roll button show on their Table rolls,
   also when the DM applied the hit.
-- **At 0:** a reminder (Unconscious, death saves) and, when the damage left over is at least the Hit Point maximum,
-  massive damage pointed out for the DM. People roll and decide (inform, don't advise).
+- **At 0** (app/death_saves.py; Brett, 2026-10-29): dropping to 0 starts Unconscious on the sheet; damage at 0 marks a
+  death save failure (two on a critical hit); healing from 0 ends Unconscious and clears the marks. Each is a step that
+  can be crossed out for a ruling. Damage left over at least the Hit Point maximum is massive damage, pointed out for
+  the DM, who rules (inform, don't advise).
 - Healing restores Hit Points, never Temporary ones. Temporary Hit Points don't add up: keep what you have or take the
   new ones (askdnd starts on the higher).
 """
@@ -31,7 +33,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import characters as chars
-from app import ddb_bridge, picks, realtime, rules_data, web
+from app import ddb_bridge, death_saves, picks, realtime, rules_data, web
 from app import wild_shape as ws
 from app.auth import current_user, is_admin, is_dm
 from app.db import get_db
@@ -110,18 +112,25 @@ def _signed(n: int) -> str:
 
 
 def work(hp: dict, mode: str, parts: list[dict], defs: list[dict], off: set[str], form: dict | None = None,
-         concentration: str = "", save: dict | None = None, temp_take: bool | None = None) -> dict:
+         concentration: str = "", save: dict | None = None, temp_take: bool | None = None, death: dict | None = None,
+         crit: bool = False) -> dict:
     """The 2024 rules applied to one hit, heal or gift of Temporary Hit Points, as steps the window lists, and its end
     result. `hp` is {"current", "max", "temp"}; `parts` [{"amount", "type"}] (a hit can be several types); `off` the
-    defense keys crossed out (a ruling)."""
+    keys of steps crossed out (a ruling: a defense, "death", "unconscious"); `death` the marks at 0 (death_saves.state);
+    `crit` a critical hit (two failures at 0)."""
     cur, top, temp = int(hp.get("current") or 0), int(hp.get("max") or 0), int(hp.get("temp") or 0)
     out = {"mode": mode, "hp_before": cur, "max": top, "temp_before": temp, "parts": [], "steps": [], "conc": None,
-           "down": False, "massive": 0, "taken": 0, "hp_after": cur, "temp_after": temp, "amount": 0}
+           "down": False, "massive": 0, "taken": 0, "hp_after": cur, "temp_after": temp, "amount": 0,
+           "unconscious": False, "up": False, "death_fail": 0}
     if mode == "heal":
         n = sum(max(0, int(p.get("amount") or 0)) for p in parts)
         out.update(amount=n, hp_after=min(top, cur + n))
         out["steps"].append({"title": "Healing", "value": f"+{out['hp_after'] - cur}", "why": f"Restores your own Hit Points, up to {top}; "
                              "never Temporary ones." + (f" {n - (out['hp_after'] - cur)} more would go past your maximum." if cur + n > top else "")})
+        if cur == 0 and out["hp_after"] > 0:
+            out["up"] = "unconscious" not in off
+            out["steps"].append({"key": "unconscious", "off": not out["up"], "title": "Back from 0 Hit Points", "value": "Unconscious ends",
+                                 "why": "Healing from 0 ends Unconscious and clears the death save marks."})
         return out
     if mode == "temp":
         n = max(0, sum(int(p.get("amount") or 0) for p in parts))
@@ -172,12 +181,24 @@ def work(hp: dict, mode: str, parts: list[dict], defs: list[dict], off: set[str]
                              "why": f"A Constitution save, DC 10 or half the damage taken (up to 30). Yours to roll ({out['conc']['label']}"
                                     f"{', Advantage' if out['conc']['adv'] else ''}): it shows in your Table rolls."})
     if out["hp_after"] == 0 and own:
-        out["down"] = True
         left = own - cur
         out["massive"] = left if top and left >= top else 0
-        out["steps"].append({"title": "At 0 Hit Points", "value": "Unconscious",
-                             "why": ("Massive damage: the " + str(left) + " left over is at least the Hit Point maximum, which kills "
-                                     "outright. The DM rules." if out["massive"] else "Death saving throws start on your next turn.")})
+        if cur:  # dropped to 0
+            out["down"] = True
+            out["unconscious"] = "unconscious" not in off
+            out["steps"].append({"key": "unconscious", "off": not out["unconscious"], "title": "At 0 Hit Points", "value": "Unconscious",
+                                 "why": "Starts Unconscious on your sheet. Death saving throws start on your next turn."})
+        elif not out["massive"]:  # hit at 0: a failure, a critical hit two; while Stable, the saves start over
+            st = death or {"success": 0, "fail": 0, "stable": False}
+            n, had = (2 if crit else 1), (0 if st.get("stable") else st.get("fail", 0))
+            out["death_fail"] = 0 if "death" in off else n
+            out["steps"].append({"key": "death", "off": not out["death_fail"], "title": "Death saves", "value": f"+{n} failure{'s' if n > 1 else ''}",
+                                 "why": ("Damage at 0 Hit Points is a failure; a critical hit, two. " + ("No longer Stable: the saves start over. " if st.get("stable") else "")
+                                         + f"{had} before, so this makes {min(3, had + n)}." + (" Three failures: the DM rules what happens." if had + n >= 3 else ""))})
+        if out["massive"]:
+            out["steps"].append({"title": "Massive damage", "value": f"{left} ≥ {top}", "mass": True,
+                                 "why": f"The {left} left over is at least the Hit Point maximum, which kills outright by the rules. The DM rules; "
+                                        "askdnd marks nothing for it."})
     return out
 
 
@@ -226,18 +247,19 @@ def _context(db: Session, ch: Character) -> tuple[dict, dict | None]:
     return summary, form
 
 
-def _working(db: Session, ch: Character, mode: str, parts: list[dict], off: set[str], temp_take: bool | None) -> dict:
+def _working(db: Session, ch: Character, mode: str, parts: list[dict], off: set[str], temp_take: bool | None, crit: bool = False) -> dict:
     summary, form = _context(db, ch)
     hp = summary.get("hit_points") or {}
     defs = defenses(summary, form)
     conc = (ch.concentration or {}).get("spell", "")
-    w = work(hp, mode, parts, defs, off, form, conc, con_save(summary, form), temp_take)
+    w = work(hp, mode, parts, defs, off, form, conc, con_save(summary, form), temp_take, death_saves.state(summary), crit)
     # Damage types: the ones this character resists (or is immune or vulnerable to) first, then the rest
     first = [t for t in TYPES if any(d["type"] == t for d in defs)]
     return {**w, "defs": defs, "types": first + [t for t in TYPES if t not in first], "first": first, "form": form}
 
 
 def _read(form) -> tuple[str, list[dict], set[str], bool | None]:
+    """(mode, parts, crossed-out keys, take): what the window's form says."""
     mode = form.get("mode") if form.get("mode") in MODES else "damage"
     amounts, types = form.getlist("amount"), form.getlist("type")
     parts = []
@@ -250,6 +272,11 @@ def _read(form) -> tuple[str, list[dict], set[str], bool | None]:
         parts.append({"amount": n, "type": t if t in DAMAGE_TYPES else ""})
     take = form.get("take")
     return mode, parts or [{"amount": 0, "type": ""}], set(form.getlist("off")), (None if take in (None, "") else take == "1")
+
+
+def _crit(roll: TableRoll | None) -> bool:
+    """A critical hit: the attack the damage came from rolled a natural 20 (a damage roll of its own says crit)."""
+    return bool(roll and (roll.crit or (roll.kind == "attack" and roll.kept == 20)))
 
 
 def _roll(db: Session, roll_id: int, ch: Character) -> TableRoll | None:
@@ -266,11 +293,11 @@ def _guard(db: Session, request: Request, character_id: int) -> tuple[Character,
 
 
 def _page(request: Request, db: Session, ch: Character, template: str, mode: str, parts: list[dict], off: set[str],
-          take: bool | None, roll: TableRoll | None, source: str):
-    w = _working(db, ch, mode, parts, off, take)
+          take: bool | None, roll: TableRoll | None, source: str, crit: bool = False):
+    w = _working(db, ch, mode, parts, off, take, crit)
     done = applied(db, roll).get(ch.id) if roll else None
     return templates.TemplateResponse(request, template, {
-        "c": ch, "w": w, "mode": mode, "parts": parts, "off": off, "roll": roll, "source": source, "done": done,
+        "c": ch, "w": w, "mode": mode, "parts": parts, "off": off, "roll": roll, "source": source, "done": done, "crit": crit,
         "reachable": ddb_bridge.reachable(ch), "hp": (chars.character_summary(ch) or {}).get("hit_points") or {}})
 
 
@@ -282,7 +309,7 @@ def window(request: Request, character_id: int, roll: int = 0, mode: str = "dama
     m, parts, source = from_roll(db, r)
     if not m:
         m, parts = (mode if mode in MODES else "damage"), [{"amount": 0, "type": ""}]
-    return _page(request, db, ch, "_hp_window.html", m, parts, set(), None, r, source)
+    return _page(request, db, ch, "_hp_window.html", m, parts, set(), None, r, source, _crit(r))
 
 
 @router.post("/characters/{character_id:int}/hp/work")
@@ -292,7 +319,7 @@ async def rework(request: Request, character_id: int, db: Session = Depends(get_
     form = await request.form()
     mode, parts, off, take = _read(form)
     r = _roll(db, int(form.get("roll") or 0), ch)
-    return _page(request, db, ch, "_hp_working.html", mode, parts, off, take, r, form.get("source", "")[:120])
+    return _page(request, db, ch, "_hp_working.html", mode, parts, off, take, r, form.get("source", "")[:120], form.get("crit") == "1")
 
 
 @router.post("/characters/{character_id:int}/hp/apply")
@@ -306,13 +333,27 @@ async def apply(request: Request, character_id: int, db: Session = Depends(get_d
     r = _roll(db, int(form.get("roll") or 0), ch)
     if r and applied(db, r).get(ch.id):
         raise HTTPException(409, f"This roll was already applied to {ch.name}.")
-    w = _working(db, ch, mode, parts, off, take)
+    w = _working(db, ch, mode, parts, off, take, form.get("crit") == "1")
     if mode == "damage" and w["taken"]:
         text = f"{ch.name} took {w['taken']}"
         ddb_bridge.add(db, ch, "hp", {"amount": -w["taken"]}, text)
+        if w["death_fail"]:
+            death_saves.hit(db, ch, w["death_fail"], f"{ch.name}: hit at 0 Hit Points, {w['death_fail']} death save failure{'s' if w['death_fail'] > 1 else ''}")
+            text += f" at 0 Hit Points: {'two death save failures' if w['death_fail'] > 1 else 'a death save failure'}"
+        if w["unconscious"]:
+            death_saves.down(db, ch)
+        if w["massive"]:
+            text += ": massive damage, the DM rules"
+            death_saves.tell(db, ch, "massive", f"massive damage ({w['massive']} left over, at least the maximum of {w['max']}): your ruling")
+        elif w["down"]:
+            text += ": down to 0, Unconscious" if w["unconscious"] else ": down to 0"
+            death_saves.tell(db, ch, "down", "down to 0 Hit Points" + (", Unconscious" if w["unconscious"] else ""))
     elif mode == "heal" and w["amount"]:
         text = f"{ch.name} healed {w['hp_after'] - w['hp_before']}"
         ddb_bridge.add(db, ch, "hp", {"amount": w["amount"]}, text)
+        if w["up"]:
+            death_saves.up(db, ch, 0, text)
+            text += ": back up from 0"
     elif mode == "temp" and w["temp_after"] != w["temp_before"]:
         text = f"{ch.name}: {w['temp_after']} Temporary Hit Points"
         ddb_bridge.add(db, ch, "temp", {"value": w["temp_after"]}, text)

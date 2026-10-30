@@ -414,14 +414,34 @@ def _live(db: Session, root: TableRoll) -> dict:
     return {"roll": roll} if len(json.dumps(roll, default=str)) < 5000 else {}  # (Postgres's NOTIFY holds 8000 bytes)
 
 
-def _reply(request: Request, db: Session, root: TableRoll, me_id: int, dm: bool, new: TableRoll | None = None):
+def death_mark(db: Session, root: TableRoll) -> dict | None:
+    """A death save marks itself on the sheet (app/death_saves.py; Brett, 2026-10-29): the result as the roll counts it
+    now, moving its earlier mark after a reroll or an added die. What the page does next ({"text", "character",
+    "deliver"}), or None."""
+    from app import death_saves
+
+    ch = root.character
+    if root.kind != "death" or not ch:
+        return None
+    kids = {k.kind: k for k in _kids(db, [root])}
+    eff = kids.get("reroll") or root
+    result = death_saves.outcome(eff.total + (kids["bonus"].total if "bonus" in kids else 0), eff.kept if eff.kept in (1, 20) else None)
+    said = death_saves.roll(db, ch, result, replaces=(root.spec or {}).get("death", ""))
+    if not said:
+        return None
+    root.spec = {**(root.spec or {}), "death": result}
+    return {"text": said, "character": ch.id, "deliver": web.deliver_now(ch)}
+
+
+def _reply(request: Request, db: Session, root: TableRoll, me_id: int, dm: bool, new: TableRoll | None = None,
+           death: dict | None = None):
     """The roll's entry and its HTML for the log, and what the extension sends to D&D Beyond's Game Log for the roll
-    just made (`new`: a follow-up, else the roll itself; app/gamelog.py)."""
+    just made (`new`: a follow-up, else the roll itself; app/gamelog.py); `death`: what a death save marked."""
     from app import gamelog  # (it reads this module's kinds)
 
     entry = _entries(db, current_user(request), [root], me_id, dm)[0]
     made = new or root
-    out = {"roll": entry, "html": render(request, [entry])}
+    out = {"roll": entry, "html": render(request, [entry]), **({"death": death} if death else {})}
     if (msgs := gamelog.messages(db, made, made.character)):
         out["gamelog"] = {"ddbId": str(made.character.ddb_id), "messages": msgs}
     return JSONResponse(out)
@@ -498,10 +518,11 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
                     mode=mode, visibility=to, damage=damage, spec=spec, extras=rolled, who=who, **result)
     db.add(row)
     db.flush()
+    death = death_mark(db, row)
     realtime.announce(db, campaign.id, "rolls", **_live(db, row))  # every page at the table (app/realtime.py)
     db.commit()
     db.refresh(row)
-    return _reply(request, db, row, me.id, is_dm(user))
+    return _reply(request, db, row, me.id, is_dm(user), death=death)
 
 
 def _follow_up(request, db, campaign_id, me_id, dm, parent_id, action, label, extras, die_size):
@@ -552,10 +573,11 @@ def _follow_up(request, db, campaign_id, me_id, dm, parent_id, action, label, ex
         return _error("That roll is missing something.")
     db.add(row)
     db.flush()
+    death = death_mark(db, root) if action != "damage" else None
     realtime.announce(db, campaign_id, "rolls", **_live(db, root))
     db.commit()
     db.refresh(root)
-    return _reply(request, db, root, me_id, dm, new=row)
+    return _reply(request, db, root, me_id, dm, new=row, death=death)
 
 
 @router.get("/rolls/checks")

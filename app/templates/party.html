@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_char.html" import pips, adv, mark, sync, sync_attrs %}
+{% from "_char.html" import pips, adv, mark, sync, sync_attrs, dying_state, dying_marks %}
 {% from "_cond_icons.html" import cond_icon, cond_badges with context %}
 {% from "_lists.html" import filter_column, search_box, active_row %}
 {% block title %}Party · askdnd{% endblock %}
@@ -31,7 +31,9 @@
         <header class="pt-head"><span class="roll-av hue{{ r.c.id % 6 }}">{% if r.sheet and r.sheet.portrait %}<img src="{{ r.sheet.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ r.c.name[:1] }}</span>
           <div class="pt-id"><div class="char-name"><h2 class="pt-name">{% if pick %}<a href="/characters/{{ r.c.id }}{{ '/battle' if pick == 'battle' }}">{{ r.c.name }}</a>{% else %}{{ r.c.name }}{% endif %}</h2>{{ cond_badges(r.conditions, r.c, true) }}</div>{% if r.sheet %}<p class="note">{{ r.classes }}</p>{% endif %}</div></header>
         {% if r.sheet %}{% set s = r.sheet %}
-        <div class="strip compact pt-tiles"><div {{ mark(r.c, "hp") }}{{ sync(s, "hp") }}><small>Hit points</small><b>{{ s.hit_points.current }}</b><span class="note"> / {{ s.hit_points.max }}</span></div><div {{ mark(r.c, "ac") }}><small>Armor class</small><b>{{ s.armor_class }}</b></div><div {{ mark(r.c, "speed") }}><small>Speed</small><b>{{ s.speed.walk }} ft</b></div></div>
+        {% set dy = dying_state(s) %}
+        <div class="strip compact pt-tiles"><div{% if dy %} class="dying {{ dy }}"{% endif %} {{ mark(r.c, "hp") }}{{ sync(s, "hp") }}><small>{{ {"dying": "Dying", "stable": "Stable", "out": "Three failures"}.get(dy, "Hit points") }}</small><b>{{ s.hit_points.current }}</b><span class="note"> / {{ s.hit_points.max }}</span>{% if dy %}{{ dying_marks(s, r.c, roll=false) }}{% endif %}</div><div {{ mark(r.c, "ac") }}><small>Armor class</small><b>{{ s.armor_class }}</b></div><div {{ mark(r.c, "speed") }}><small>Speed</small><b>{{ s.speed.walk }} ft</b></div></div>
+        {% if dy == "dying" %}<p class="pt-line note ds-help">Others can help: healing; the Help action with a DC 10 Wisdom (Medicine) check; Spare the Dying.</p>{% elif dy == "out" %}<p class="pt-line note ds-help">Three death save failures: the DM rules.</p>{% endif %}
         {% if r.top_saves %}<p class="pt-line"><span class="note">Best saves</span> {% for sv in r.top_saves %}<span class="nowrap">{{ sv.short }} <b>{{ sv.label }}</b>{% if sv.adv %} {{ adv(sv.adv) }}{% endif %}</span>{{ " ·" if not loop.last }} {% endfor %}</p>{% endif %}
         {% if r.resources %}<div class="pt-res">{% for x in r.resources %}<span>{{ x.name }} {{ pips(x.uses) }}</span>{% endfor %}</div>{% endif %}
         {% if r.slots %}<p class="pt-line"><span class="note">Slots</span> {% for x in r.slots %}<span class="nowrap">{{ x.label }} {{ pips(x.uses) }}</span> {% endfor %}</p>{% endif %}

@@ -653,6 +653,19 @@ dl.mech dt { color: var(--muted); } dl.mech dd { margin: 0; }
 .insp small { display: block; } .insp.on b { color: var(--amber); }
 .strip .insp.on { box-shadow: inset 0 0 0 1px var(--amber); }
 .vital.insp.on { box-shadow: inset 0 0 0 1px var(--amber); }
+/* The Dying tile (_char.html hp_tile; app/death_saves.py): Hit points at 0, with the death save marks and the roll */
+.strip > .dying { grid-column: span 2; }
+.strip > div.dying, .vital.dying { box-shadow: inset 0 0 0 1px var(--red-line); background: color-mix(in srgb, var(--red) 8%, var(--surface)); }
+.dying small { color: var(--red-hover); font-weight: 600; }
+.strip > div.dying.stable, .vital.dying.stable { box-shadow: inset 0 0 0 1px var(--green-line); background: color-mix(in srgb, var(--green) 7%, var(--surface)); }
+.dying.stable small { color: var(--green); }
+.ds-marks { display: inline-flex; gap: 12px; align-items: center; margin-left: 10px; vertical-align: middle; }
+.ds-set { display: inline-flex; gap: 4px; align-items: center; }
+.ds-pip { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--line-strong); display: inline-block; }
+.ds-pip.s { background: var(--green); border-color: var(--green); }
+.ds-pip.f { background: var(--red); border-color: var(--red); }
+.ds-k { color: var(--muted); font-size: var(--fs-xs); margin-left: 2px; }
+.ds-rule { display: block; }
 .admin-move form.row { display: grid; grid-template-columns: 130px minmax(0, 1fr) auto; gap: 8px; align-items: center; flex-wrap: nowrap; }
 .admin-move form.row select { width: 100%; }
 /* Admin regrouping in the side panel: option buttons that save on click */
@@ -1317,10 +1330,10 @@ body.gm-on.rolls-closed .rs-edge { position: fixed; z-index: 4; left: 0; top: ca
 /* Corner cards (app.js "corner cards"; Brett, 2026-10-29, docs/mockups/temporary-items.html): everything you read and
    dismiss, bottom right, newest at the bottom; an icon and colour by kind, ✕, at most one button. Beside an open side
    panel, not under it; on phones one at a time above the bottom bar, or above the Table rolls sheet. */
-.cards { position: fixed; z-index: 16; right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); width: min(340px, calc(100vw - 28px)); display: flex; flex-direction: column; align-items: stretch; gap: var(--sp-2); pointer-events: none; }
+.cards { position: fixed; z-index: 16; right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); width: min(400px, calc(100vw - 28px)); display: flex; flex-direction: column; align-items: stretch; gap: var(--sp-2); pointer-events: none; }
 body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 @media (min-width: 1100px) { body:has(.peek.open:not(.modal)) .cards { right: 494px; } }
-.card { pointer-events: auto; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: var(--sp-2) 10px; align-items: center; background: var(--surface-2); color: var(--text); border: 1px solid var(--line-strong); border-left: 3px solid var(--k); border-radius: var(--r-lg); padding: 9px 6px 9px 11px; font-size: var(--fs-sm); line-height: 1.4; box-shadow: 0 10px 26px var(--shadow); animation: card-in .18s ease-out; }
+.card { pointer-events: auto; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--sp-2) 10px; align-items: center; background: var(--surface-2); color: var(--text); border: 1px solid var(--line-strong); border-left: 3px solid var(--k); border-radius: var(--r-lg); padding: 9px 6px 9px 11px; font-size: var(--fs-sm); line-height: 1.4; box-shadow: 0 10px 26px var(--shadow); animation: card-in .18s ease-out; }
 .card.out { opacity: 0; transform: translateY(6px); transition: opacity .25s, transform .25s; }
 @keyframes card-in { from { opacity: 0; transform: translateY(8px); } }
 .card-ic { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--k) 18%, transparent); color: var(--k); font: 700 var(--fs-xs)/1 var(--sans); font-style: normal; }
@@ -1328,7 +1341,8 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .card-tx { min-width: 0; overflow-wrap: anywhere; }
 .card-tx b { color: var(--text-strong); font-weight: 600; }
 .card-tx b.nat20 { color: var(--green); } .card-tx b.nat1 { color: var(--red); }
-.card-acts { display: inline-flex; gap: var(--sp-1); }
+.card-acts { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: var(--sp-2); }  /* its buttons, a row under the text */
+.card-act.main { background: color-mix(in srgb, var(--k) 16%, transparent); }
 .card-act { font: 600 var(--fs-xs)/1 var(--sans); color: var(--k); background: transparent; border: 1px solid color-mix(in srgb, var(--k) 55%, transparent); border-radius: var(--r-md); padding: 6px 9px; cursor: pointer; white-space: nowrap; }
 .card-x { width: 26px; height: 26px; border: 0; background: transparent; color: var(--muted); border-radius: var(--r-sm); cursor: pointer; font-size: var(--fs-sm); }
 .card-x:hover { background: var(--surface-3); color: var(--text-strong); }
@@ -1766,6 +1780,10 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .fb-who.now .fb-pic { width: 30px; height: 30px; }
 .fb-who.enemy.now { border-color: var(--red); }  /* (an enemy's turn: still red, its picture ringed in amber) */
 .fb-who.now .fb-pic { box-shadow: 0 0 0 2px var(--amber); }
+.fb-who.down .fb-pic img { filter: grayscale(1) brightness(.6); }  /* at 0 Hit Points (app/death_saves.py) */
+.fb-who.down .fb-pic::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(135deg, transparent 0 3px, var(--shadow) 3px 6px); }
+.fb-who.down .fb-pic { box-shadow: 0 0 0 1.5px var(--red-hover); }
+.fb-zero { font-size: var(--fs-xs); font-weight: 700; color: var(--red-hover); }
 .fb-who.hid { border-style: dashed; opacity: .7; }
 @media (max-width: 640px) { .fb-order { margin-left: 0; } .fb-who:not(.now) { padding-right: 2px; } .fb-who:not(.now) .fb-name { display: none; } }  /* phones: pictures, and whose turn by name */
 /* The badges after the name, on every character page (Brett, 2026-10-29; docs/mockups/temporary-items.html): small,
@@ -2295,7 +2313,8 @@ body:not(.br-ext) .br-ext-on, body.br-ext .br-ext-off { display: none; }
 .hp-type-from { flex-basis: 100%; margin: 0; }
 .hp-amount, .hp-type { display: grid; gap: var(--sp-1); }
 .hp-amount input { width: 6.5em; font-size: var(--fs-lg); font-weight: 600; }
-.hp-form:has(.hp-modes):not(:has(.hp-modes input[value=damage]:checked)) .hp-type { display: none; }
+.hp-form:has(.hp-modes):not(:has(.hp-modes input[value=damage]:checked)) :is(.hp-type, .hp-crit) { display: none; }
+.hp-crit { display: flex; gap: var(--sp-2); align-items: baseline; font-size: var(--fs-sm); }
 .hp-working { display: grid; gap: var(--sp-3); }
 .hp-steps { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
 .hp-step { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--sp-3); padding: var(--sp-2) var(--sp-3); font-size: var(--fs-sm); align-items: baseline; }
@@ -2305,6 +2324,7 @@ body:not(.br-ext) .br-ext-on, body.br-ext .br-ext-off { display: none; }
 .hp-step b { color: var(--text-strong); font-variant-numeric: tabular-nums; }
 .hp-step .why { grid-column: 1 / -1; color: var(--muted); font-size: var(--fs-xs); }
 .hp-step.off .hp-st-title, .hp-step.off b { text-decoration: line-through; color: var(--muted); }
+.hp-step.mass { background: var(--red-soft); border-radius: var(--r-md); }  /* massive damage: for the DM's ruling */
 .hp-step .seg { grid-column: 1 / -1; justify-self: start; }
 .hp-blocked { display: grid; gap: var(--sp-1); border: 1px solid var(--red); background: var(--red-soft); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); font-size: var(--fs-sm); margin: 0; }
 .hp-go { display: flex; gap: var(--sp-2); flex-wrap: wrap; }

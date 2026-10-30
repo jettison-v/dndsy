@@ -58,20 +58,23 @@
     tx.append(content);
     el.append(ic, tx);
     const close = () => { clearTimeout(el._hide); el.classList.add('out'); setTimeout(() => el.remove(), 250); };
+    // Its buttons in a row of their own under the text (Brett, 2026-10-29: beside it they squeezed the words); `node`
+    // is a ready button that keeps the card open (a roll: the save it asks for, then Saved: end it)
     const acts = actions || (action ? [action] : []);
-    if (acts.length) {
-      const row = acts.length > 1 ? Object.assign(document.createElement('span'), { className: 'card-acts' }) : el;
-      acts.forEach(a => {
-        const b = Object.assign(document.createElement('button'), { type: 'button', className: 'card-act', textContent: a.label });
-        b.addEventListener('click', () => { close(); a.run(); });
-        row.append(b);
-      });
-      if (row !== el) el.append(row);
-    }
     const x = Object.assign(document.createElement('button'), { type: 'button', className: 'card-x', textContent: '✕' });
     x.setAttribute('aria-label', 'Close');
     x.addEventListener('click', close);
     el.append(x);
+    if (acts.length) {
+      const row = Object.assign(document.createElement('span'), { className: 'card-acts' });
+      acts.forEach(a => {
+        if (a.node) return row.append(a.node);
+        const b = Object.assign(document.createElement('button'), { type: 'button', className: 'card-act', textContent: a.label });
+        b.addEventListener('click', () => { close(); a.run(); });
+        row.append(b);
+      });
+      el.append(row);
+    }
     const wait = stay ? 0 : acts.length ? 20000 : ms, start = () => { if (wait) el._hide = setTimeout(close, wait); };
     el.addEventListener('mouseenter', () => clearTimeout(el._hide));
     el.addEventListener('mouseleave', start);
@@ -702,6 +705,7 @@
   // (body data-reminders, drawn again whenever the fight moves on); each shows once in this browser, and only while
   // it's fresh. Nothing ends by itself: the player ends it, keeps it (the DM ruled it lasts), or rolls the save.
   const SEEN = 'askdnd.reminders', FRESH_MS = 3 * 60 * 1000;
+  const DEATH_SAYS = { down: 'warn', massive: 'warn', out: 'warn', stable: 'ok' };
   const seenGet = k => { try { return sessionStorage.getItem(k); } catch (e) { return null; } };
   const seenSet = (k, v) => { try { sessionStorage.setItem(k, v); } catch (e) { /* private window */ } };
   const escText = v => { const d = document.createElement('div'); d.textContent = v == null ? '' : v; return d.innerHTML; };
@@ -720,17 +724,27 @@
       if (Date.now() - Date.parse(r.at) > FRESH_MS) continue;
       const base = '/characters/' + r.character;
       const t = document.createElement('span');
+      const said = DEATH_SAYS[r.kind];  // death saves (app/death_saves.py): what happened, the same for the player and the DM
+      if (said) {
+        t.innerHTML = '<b>' + escText(r.who) + '</b>: ' + escText(r.text) + '.';
+        card(t, { kind: said, stay: said !== 'ok' });
+        continue;
+      }
       if (!r.mine) {  // the DM: to know
-        t.innerHTML = '<b>' + escText(r.who) + '</b>: ' + escText(r.text) + (r.kind === 'save' ? ' (their roll)' : '');
+        t.innerHTML = '<b>' + escText(r.who) + '</b>: ' + escText(r.text) + (r.kind === 'save' || r.kind === 'death' ? ' (their roll)' : '');
         card(t, { kind: 'info' });
         continue;
       }
-      if (r.kind === 'save') {
-        t.innerHTML = '<b>Your turn:</b> ' + escText(r.text) + ' ';
-        const roll = Object.assign(document.createElement('button'), { type: 'button', className: 'row-act', textContent: 'Roll the save' });
-        Object.assign(roll.dataset, { roll: 'save', label: r.ability + ' save (' + r.name + '), DC ' + r.dc, mod: (r.mod || '+0').replace('−', '-') });
-        t.append(roll);
-        card(t, { kind: 'warn', stay: true, actions: [{ label: 'Saved: end it', run: () => act(base + '/conditions/end', { name: r.name }) }] });
+      if (r.kind === 'death') {
+        t.innerHTML = '<b>Your turn:</b> ' + escText(r.text) + '.';
+        const roll = Object.assign(document.createElement('button'), { type: 'button', className: 'card-act main', textContent: 'Roll your death save' });
+        Object.assign(roll.dataset, { roll: 'death', label: 'Death save', rollChar: r.character });
+        card(t, { kind: 'warn', stay: true, actions: [{ node: roll }] });
+      } else if (r.kind === 'save') {
+        t.innerHTML = '<b>Your turn:</b> ' + escText(r.text) + '.';
+        const roll = Object.assign(document.createElement('button'), { type: 'button', className: 'card-act main', textContent: 'Roll the save' });
+        Object.assign(roll.dataset, { roll: 'save', label: r.ability + ' save (' + r.name + '), DC ' + r.dc, mod: (r.mod || '+0').replace('−', '-'), rollChar: r.character });
+        card(t, { kind: 'warn', stay: true, actions: [{ node: roll }, { label: 'Saved: end it', run: () => act(base + '/conditions/end', { name: r.name }) }] });
       } else if (r.kind === 'conc') {
         t.innerHTML = '<b>' + escText(r.text) + '.</b>';
         card(t, { kind: 'warn', stay: true, actions: [{ label: 'End it', run: () => act(base + '/concentration/end', {}) },
@@ -2009,9 +2023,11 @@
     showRolling(w);
     w._go = go;
     if (!go.shared) {
+      const before = go.follow ? go.entry._death : undefined;
       const e = go.follow ? privateFollow(go.entry, go.follow, { extras: go.extras, reason: go.reason, die: go.die, label: go.bonusLabel, ctx: go.ctx })
                           : privateRoll(go);
       if (!e) return showFailure(w, "Those dice don't look right.", () => chooser(w._anchor, go));
+      if (e.kind === 'death' && go.follow !== 'damage') deathPrivate(go.cid, e, before);
       return showResult(w, e, go.follow);
     }
     const pending = !go.follow && logShown() && log ? placeholder(go.label) : null;
@@ -2022,6 +2038,7 @@
         if (animate()) window.askdndThrowing.throwing(j.roll.id);
         addToLog(j.html, j.roll.id);
         showResult(w, j.roll, go.follow);
+        deathMarked(j.death);
         // Into D&D Beyond's Game Log too, as askdnd's (app/gamelog.py): the extension sends it from this player's sheet
         if (j.gamelog) window.postMessage({ askdndBridge: 'gamelog', ddbId: j.gamelog.ddbId, messages: j.gamelog.messages }, location.origin);
       })
@@ -2029,6 +2046,24 @@
         if (pending) pending.remove();
         showFailure(w, (err.said ? err.message : "Couldn't reach askdnd") + ': not rolled.', () => roll(w, go));
       });
+  }
+  // A death save marks itself on the sheet (app/death_saves.py; Brett, 2026-10-29): a roll at the table is marked by
+  // the server, which answers with what it marked; a private one says its result here. A reroll or an added die moves
+  // the mark (`before`: what the roll counted as).
+  function deathMarked(d) {
+    if (!d) return;
+    toast(d.text);
+    document.body.dispatchEvent(new CustomEvent('bridgeDeliver', { detail: d.deliver }));
+    document.body.dispatchEvent(new CustomEvent('characterChanged'));
+  }
+  function deathPrivate(cid, e, before) {
+    const result = e.nat === 20 ? 'nat20' : e.nat === 1 ? 'nat1' : e.total >= 10 ? 'success' : 'failure';
+    if (!cid || result === before) return;
+    fetch('/characters/' + cid + '/death', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                            body: new URLSearchParams({ result, replaces: before || '' }) })
+      .then(r => r.status === 200 ? r.json() : null)
+      .then(j => { if (j && j.text) { e._death = result; deathMarked(j); } })
+      .catch(() => {});
   }
   // A follow-up from the result or the log: damage and an added die ask first; a reroll just rolls.
   function follow(anchor, action, e, shared, cid) {
