@@ -871,3 +871,17 @@ Railway's settings, pictures in S3, Sentry, the deploy itself, or several people
 - **Reuse on a new project:** register the developer account early (review can take days), keep the listing text and
   the privacy page in the repo next to the code, publish unlisted until you're sure, and raise the version for every
   upload: the store refuses one it already has.
+
+## 2026-10-29: Keeping the branch list tidy
+
+- **What:** 102 branches on GitHub and 97 on this computer were deleted: every one whose work was already in `main`
+  (each pull request keeps its own history, so nothing is lost), plus three mockup branches whose work had reached
+  `main` another way. Kept: `main`, `legacy` (the old app, never touched) and four 2025 branches from the old app.
+  GitHub now deletes a branch by itself when its pull request merges (repo Settings › General › Pull Requests ›
+  Automatically delete head branches).
+- **Why:** a branch list that holds only work in progress answers "what isn't merged yet?" at a glance. Today it
+  turned up one mockup whose source had never reached `main`.
+- **Not deleted:** branches still open in another session's working folder (`.claude/worktrees/`); git won't delete
+  a branch that a folder has checked out. They go when those folders are cleaned up.
+- **Reuse on a new project:** turn on automatic branch deletion on day one, and before deleting a branch by hand,
+  check that `main` has its work (`git log main..branch` shows nothing).
