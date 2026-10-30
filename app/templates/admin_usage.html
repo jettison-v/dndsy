@@ -47,7 +47,7 @@
       <tr><th>When</th><th>For</th><th>What</th><th class="num">Tokens in / out</th><th class="num">Cost</th></tr>
       {% for row in rows %}{% set r = row.r %}
       <tr>
-        <td class="note">{{ r.created_at.strftime("%b %-d, %-I:%M %p") }}</td>
+        <td class="note">{{ r.created_at | clock(date=True) }}</td>
         <td>{% if row.href %}<a href="{{ row.href }}">{{ row.label }}</a>{% else %}{{ row.label }}{% endif %}</td>
         <td class="note">{{ {"entity": "description", "conversation": "Add Session check", "notes": "draft from notes", "transcript": "draft from a recording", "account": "draft from a written account"}.get(r.source, r.source) }}{% if r.status == "error" %} · <span class="tag error">failed</span>{% elif r.status == "running" %} · <span class="tag working">running</span>{% endif %}</td>
         <td class="note num">{{ "{:,}".format(r.input_tokens) }} / {{ "{:,}".format(r.output_tokens) }}</td>

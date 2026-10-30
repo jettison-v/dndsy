@@ -839,7 +839,6 @@ def health(db: Session) -> dict:
     rows = db.execute(select(BridgeIntent.state, BridgeIntent.data).where(BridgeIntent.state.in_(OPEN))).all()
     stuck = sum(1 for s, d in rows if s == "not_yet" and not d.get("quiet"))
     waiting = sum(1 for s, d in rows if (s != "not_yet" or d.get("quiet")) and not d.get("check"))  # (waiting for its sheet counts as waiting)
-    when = (lambda iso: datetime.fromisoformat(iso).astimezone().strftime("%-I:%M %p"))
     if not a["awake"]:
         state, text = "asleep", "D&D Beyond bridge · asleep"
     elif not rc["ok"]:
@@ -855,10 +854,10 @@ def health(db: Session) -> dict:
     elif not extension:
         state, text = "wait", "D&D Beyond · extension not connected"
     elif rt and rt["state"] == "passed":
-        state, text = "live", f"D&D Beyond · working (checked {when(rt['done_at'])})"
+        state, text = "live", "D&D Beyond · working"  # (and when it was checked: checked_at, in the reader's own time)
     else:
         state, text = "live", "D&D Beyond · connected, not checked yet"
-    return {"state": state, "text": text, "awake": a, "read_check": {k: rc[k] for k in ("ok", "error", "at")}, "round_trip": rt,
+    return {"state": state, "text": text, "checked_at": rt["done_at"] if text == "D&D Beyond · working" else None, "awake": a, "read_check": {k: rc[k] for k in ("ok", "error", "at")}, "round_trip": rt,
             "extension": extension, "sheets": _health["sheets"] if extension else [], "test_ddb_id": TEST_DDB_ID,
             "heard_at": datetime.fromtimestamp(_health["heard_at"], UTC).isoformat() if _health["heard_at"] else None}
 
@@ -1383,11 +1382,9 @@ def manage_page(request: Request, db: Session = Depends(get_db)):
     h = health(db)
     db.commit()
     tm = timers(db)
-    clock = lambda t: datetime.fromtimestamp(t).strftime("%-I:%M %p")  # noqa: E731
     return templates.TemplateResponse(request, "manage_bridge.html", {
         "health": h, "a": h["awake"], "last": _wake_row(db)[1].get("last"), "timers": TIMERS,
-        "now": {key: round(tm[key] / unit) for key, _, _, unit, *_ in TIMERS}, "clock": clock,
-        "clock_iso": lambda iso: datetime.fromisoformat(iso).astimezone().strftime("%-I:%M %p"),
+        "now": {key: round(tm[key] / unit) for key, _, _, unit, *_ in TIMERS},
         "toast": request.session.pop("toast", None)})
 
 

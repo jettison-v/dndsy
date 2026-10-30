@@ -22,6 +22,24 @@
     reportError('Unhandled: ' + (r.message || String(r)).slice(0, 300), at ? at[1] : '', at ? +at[2] : 0, at ? +at[3] : 0, r.stack);
   });
 
+  // ---------------------------------------------------------------- clocks
+  // A time of day in the reader's own time zone (templating.py `clock`): the server writes it in UTC, as it doesn't
+  // know the reader's, and this rewrites every <time data-clock> in the browser's own, however it reached the page.
+  function clocks(root) {
+    const year = new Date().getFullYear();
+    (root.matches && root.matches('time[data-clock]') ? [root] : [...root.querySelectorAll('time[data-clock]')]).forEach(t => {
+      const d = new Date(t.getAttribute('datetime'));
+      if (isNaN(d)) return;
+      const o = { hour: 'numeric', minute: '2-digit' };
+      if (t.dataset.clock === 'date') Object.assign(o, { month: 'short', day: 'numeric' }, d.getFullYear() !== year ? { year: 'numeric' } : {});
+      t.textContent = d.toLocaleString([], o);
+      t.title = d.toLocaleString([], { dateStyle: 'full', timeStyle: 'short' });
+    });
+  }
+  clocks(document);
+  new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) clocks(n); })))
+    .observe(document.body, { childList: true, subtree: true });
+
   // ---------------------------------------------------------------- corner cards
   // (Brett, 2026-10-29; docs/mockups/temporary-items.html) Everything you read and dismiss, in one place: bottom right,
   // the newest at the bottom, three at most (one on a phone). Its kind gives its icon, colour and how long it stays:
@@ -2964,7 +2982,7 @@
     try { const r = await fetch('/bridge/health', { headers: { Accept: 'application/json' } }); if (r.ok) health = await r.json(); } catch (e) { /* offline */ }
     if (health) {
       pill.className = pill.dataset.base + ' ' + ({ live: 'br-live', wait: 'br-wait', off: 'br-off', asleep: 'br-asleep' }[health.state] || 'br-wait');
-      pill.textContent = health.text;
+      pill.textContent = health.text + (health.checked_at ? ' (checked ' + new Date(health.checked_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + ')' : '');
       pill.title = health.state === 'asleep' ? (health.awake.why || 'Asleep') + ' Wakes as soon as someone opens or uses askdnd or a sheet; click to run the check.'
         : 'D&D Beyond read ' + (health.read_check.ok ? 'OK' : 'failed: ' + health.read_check.error) + (health.round_trip && health.round_trip.error ? ' · check: ' + health.round_trip.error : '');
     }

@@ -267,7 +267,7 @@ def test_the_round_trip_check_and_the_status(player, db, sheet, monkeypatch):
     make(sheet, back)
     ddb_bridge.delivered(db, back["id"], ok=True)
     assert sheet["removedHitPoints"] == 14 and potions(sheet) == 2  # as it was
-    assert player.get("/bridge/health").json()["text"].startswith("D&D Beyond · working (checked ")
+    assert player.get("/bridge/health").json()["text"] == "D&D Beyond · working"
 
 
 def test_a_failed_read_shows_as_a_problem(player, db, sheet, monkeypatch):
@@ -682,7 +682,7 @@ def test_the_full_check_takes_one_of_each_out_and_puts_everything_back(admin, db
     make(sheet, back)
     ddb_bridge.delivered(db, back["id"], ok=True)
     assert ddb_fields.tracked(sheet) == before
-    assert admin.get("/bridge/health").json()["text"].startswith("D&D Beyond · working (checked ")
+    assert admin.get("/bridge/health").json()["text"] == "D&D Beyond · working"
 
 
 def test_a_check_stopped_part_way_settles_what_landed_and_puts_it_back(admin, db, sheet, monkeypatch):

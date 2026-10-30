@@ -130,12 +130,12 @@ def chromium():
 
 class Person:
     """One person at the table: their own browser context, signed in, with the dice animation off (the numbers are the
-    same; the tests don't wait for dice to land). Game Mode is on for the table (`browser_db`; `game_mode` switches it).
+    same; the tests don't wait for dice to land), in the table's time zone (Pacific). Game Mode is on for the table (`browser_db`; `game_mode` switches it).
     `errors` collects the page's JavaScript errors."""
 
     def __init__(self, chromium, server, who: str):
         self.server, self.errors = server, []
-        self.context = chromium.new_context(viewport={"width": 1400, "height": 900})
+        self.context = chromium.new_context(viewport={"width": 1400, "height": 900}, timezone_id="America/Los_Angeles")
         self.context.set_default_timeout(10_000)  # a page that's working answers well within this
         self.context.add_init_script("localStorage.setItem('askdnd.rollsAnim', 'off');")
         self.page = self.context.new_page()

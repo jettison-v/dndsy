@@ -173,6 +173,28 @@ def _ago(when) -> str:
 templates.env.filters["ago"] = _ago
 
 
+def _clock(when, date: bool = False):
+    """A time of day as the reader keeps it: askdnd's server keeps UTC and doesn't know the reader's time zone, so it
+    writes the time in UTC and app.js ("clocks") rewrites it in the browser's own. `when` is a datetime, ISO text (as
+    JSON carries it) or seconds since 1970; `date` adds the day ("Oct 29, 6:22 PM")."""
+    from datetime import UTC, datetime
+
+    from markupsafe import Markup
+
+    if not when:
+        return ""
+    if isinstance(when, int | float):
+        when = datetime.fromtimestamp(when, UTC)
+    elif isinstance(when, str):
+        when = datetime.fromisoformat(when)
+    when = when.astimezone(UTC) if when.tzinfo else when.replace(tzinfo=UTC)
+    shown = when.strftime("%b %-d, %Y, %-I:%M %p" if date else "%-I:%M %p") + " UTC"
+    return Markup('<time datetime="{}" data-clock="{}">{}</time>').format(when.isoformat(), "date" if date else "time", shown)
+
+
+templates.env.filters["clock"] = _clock
+
+
 def _left(until) -> str:
     """How long until then: '5 hours 40 minutes', '12 minutes', 'a moment' (no time zone needed)."""
     from datetime import UTC, datetime
