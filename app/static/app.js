@@ -1090,8 +1090,11 @@
   // Whether a roll of yours reaches D&D Beyond's Game Log, for the roll window; "" where it never would (the Live pill's
   // data-log: your sheet is connected, closed, or your character isn't in a D&D Beyond game)
   function logNote() {
-    const state = (document.getElementById('live-pill') || { dataset: {} }).dataset.log;
-    if (state === 'on') return "Also goes to D&D Beyond's Game Log.";
+    const d = (document.getElementById('live-pill') || { dataset: {} }).dataset, state = d.log;
+    if (state && document.body.classList.contains('no-bridge')) return "Not in D&D Beyond's Game Log: the askdnd bridge isn't in this browser.";
+    // (past `data-log-until` the sheet hasn't been heard: a closed tab whose word never came, or a pill not redrawn yet)
+    if (state === 'on' && Date.now() / 1000 < Number(d.logUntil)) return "Also goes to D&D Beyond's Game Log.";
+    if (state === 'on') return "Not in D&D Beyond's Game Log: your sheet isn't open.";
     if (state === 'sheet') return "Not in D&D Beyond's Game Log: " + (phone.matches ? 'that needs Chrome on a computer.' : "your sheet isn't open.");
     return '';
   }
@@ -3041,6 +3044,19 @@
 // read it back. Pages talk to the extension with window messages ({askdndBridge: ...}). The bridge's health shows on
 // Manage › askdnd › D&D Beyond bridge (admins); players see how their own sheet is kept in step in the Live pill.
 (function () {
+
+  // Is the extension in this browser? It answers a ping; on a computer, no answer means the Live pill offers it. (Phones
+  // can't add it, and change things on D&D Beyond.)
+  if (document.body.classList.contains('at-table') && !matchMedia('(max-width: 900px)').matches) {
+    let heard = false;
+    addEventListener('message', e => {
+      if (e.source !== window || !e.data || e.data.askdndBridge !== 'hello') return;
+      heard = true;
+      document.body.classList.remove('no-bridge');
+    });
+    window.postMessage({ askdndBridge: 'ping' }, location.origin);
+    setTimeout(() => { if (!heard) document.body.classList.add('no-bridge'); }, 1500);
+  }
 
   // The pill on every page
   const pill = document.querySelector('[data-bridge-health]');

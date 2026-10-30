@@ -121,7 +121,10 @@ button.help-btn { background: none; cursor: pointer; padding: 0; font-family: in
 .live-pill { display: inline-flex; align-items: center; gap: 8px; background: var(--surface); color: var(--muted); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 5px 12px; font-size: var(--fs-sm); white-space: nowrap; }
 .live-pill:hover { color: var(--text); }
 .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; }
-.live-word { display: none; }
+.live-word, .live-noext, .live-noext-box { display: none; }
+body.no-bridge .live-noext { display: inline; }  /* the extension isn't in this browser (app.js): say so, with the link in the window */
+body.no-bridge .live-noext-box { display: block; margin: 0 0 var(--sp-2); font-size: var(--fs-sm); }
+body.no-bridge .live-pill[data-wants-bridge] .live-ago { display: none; }
 .live-pill.warn .live-dot { background: var(--amber); }
 .live-pill.step .live-dot { background: var(--green); }  /* connected */
 .live-pill.cue { border-color: var(--amber); color: var(--text); }  /* in a fight with your sheet closed */
