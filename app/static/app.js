@@ -2073,7 +2073,7 @@
   function useItem(btn) {
     const w = win, said = w.querySelector('.use-said');
     w.querySelectorAll('button').forEach(b => { b.disabled = true; });
-    const chosen = Object.fromEntries([...w.querySelectorAll('select[name]')].map(s => [s.name, s.value]));
+    const chosen = Object.fromEntries([...w.querySelectorAll('select[name], input[name]')].map(s => [s.name, s.value]));
     posted(w._use, { ...chosen, to: btn.dataset.to || '' }).then(j => {
       closeWin();
       if (j.roll) {

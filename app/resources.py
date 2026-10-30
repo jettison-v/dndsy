@@ -35,6 +35,12 @@ def count(sheet: dict, field: str) -> dict | None:
     if kind == "slot":
         s = next((s for s in ss.get("slots") or [] if str(s["level"]) == arg and s.get("max")), None)
         return {"name": f"{ordinal(s['level'])}-level", "left": s["max"] - s["used"], "max": s["max"], "back": "back after a Long Rest"} if s else None
+    if kind == "charges":
+        it = next((x for x in sheet.get("inventory") or [] if x["key"] == f"item:{arg}" and x.get("charges")), None)
+        return {"name": it["name"], "left": it["charges"]["left"], "max": it["charges"]["max"], "back": it["charges"].get("reset_phrase", "")} if it else None
+    if kind == "item":
+        it = next((x for x in sheet.get("inventory") or [] if x["key"] == field), None)
+        return {"name": it["name"], "left": it["count"], "max": None, "back": ""} if it else None
     if kind == "pact":
         p = ss.get("pact")
         if p and str(p["level"]) == arg:
@@ -60,15 +66,18 @@ def change(request: Request, character_id: int, field: str, to: str = Form("use"
     n = count(_sheet(db, ch), field)
     if not n or to not in ("use", "back"):
         raise HTTPException(404)
-    if (to == "use" and n["left"] <= 0) or (to == "back" and n["left"] >= n["max"]):
+    if (to == "use" and n["left"] <= 0) or (to == "back" and n["max"] is not None and n["left"] >= n["max"]):
         raise HTTPException(409, f"{n['name']}: none left." if to == "use" else f"{n['name']}: none to give back.")
     delta = 1 if to == "use" else -1
     numbers = ddb_bridge.numbers(ch)
-    made = ddb_bridge._change(numbers, {"kind": "use", "field": field, "delta": delta})
+    if field.startswith("item:"):  # (an item's count goes down as it's used, where the others count what's used)
+        made = "item", {"item": int(field.split(":", 1)[1]), "delta": -delta, "name": n["name"]}
+    else:
+        made = ddb_bridge._change(numbers, {"kind": "use", "field": field, "delta": delta})
     if not made:
         raise HTTPException(409, "That isn't a change askdnd can make on D&D Beyond.")
-    ddb_bridge.add(db, ch, *made, f"{ch.name}: {ddb_bridge.describe(*made, numbers)}")
+    ddb_bridge.add(db, ch, *made, f"{ch.name}: {n['name']} {'used' if to == 'use' else 'back'}")
     db.commit()
     left = n["left"] - delta
-    return JSONResponse({"text": f"{n['name']}: {left} of {n['max']} left", "undo": {"to": "back" if to == "use" else "use"},
+    return JSONResponse({"text": f"{n['name']}: {left}" + (f" of {n['max']}" if n["max"] else "") + " left", "undo": {"to": "back" if to == "use" else "use"},
                          "undoUrl": f"/characters/{ch.id}/count?field={field}", "deliver": web.deliver_now(ch)})

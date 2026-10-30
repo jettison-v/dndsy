@@ -18,6 +18,7 @@ from app.ddb_bridge import router as ddb_bridge_router
 from app.death_saves import router as death_saves_router
 from app.hit_points import router as hit_points_router
 from app.casting import router as casting_router
+from app.inventory import router as inventory_router
 from app.item_use import router as item_use_router
 from app.resources import router as resources_router
 from app.rests import router as rests_router
@@ -131,6 +132,7 @@ app.include_router(item_use_router)
 app.include_router(casting_router)  # (through the bridge: on_for)
 app.include_router(resources_router)  # (through the bridge: on_for)
 app.include_router(rests_router)  # (through the bridge: on_for)
+app.include_router(inventory_router)  # (through the bridge: on_for)
 app.include_router(admin_notes_router)
 app.include_router(manage_table_router)
 app.include_router(manage_accounts_router)
