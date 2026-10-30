@@ -31,21 +31,6 @@ def _page_context(request: Request) -> dict:
         return {"dm": "DM", "reviewer": "Reviewer"}.get(access.role(user.get("email"), campaign_id) or "", "") if user else ""
 
     here = access.current_campaign() if user else None
-    game: dict = {}
-
-    def game_mode() -> dict:
-        """Game Mode for the campaign you're in (app/game_mode.py), read once per page: every page draws it."""
-        from app import game_mode as gm
-
-        if "v" not in game:
-            game["v"] = dict(gm.OFF)
-            if user and here:
-                try:
-                    game["v"] = gm.loader(here["id"])
-                except Exception:
-                    pass  # database unavailable: the page works without it
-        return game["v"]
-
     fight: dict = {}
 
     def fight_now() -> dict | None:
@@ -73,7 +58,7 @@ def _page_context(request: Request) -> dict:
             "managed_ids": [c["id"] for c in access.campaigns_for(user.get("email")) if access.role(user.get("email"), c["id"]) in (access.DM, access.REVIEWER)] if user else [],  # (the Manage menu's other campaigns)
             "switch_path": switch_path(request.url.path),
             "vtt_on": lambda key: vtt.on(here, key),  # the VTT switch (app/vtt.py)
-            "game_mode": game_mode, "fight_now": fight_now,
+            "fight_now": fight_now,
             "my_dice": _my_dice, "dice_tuning": _dice_tuning,
             "my_id": (lambda: access.user_id(user.get("email"))) if user else (lambda: None)}  # your dice and everyone's tuning (app/dice.py), for thrown rolls
 

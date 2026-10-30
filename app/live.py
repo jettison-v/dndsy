@@ -3,16 +3,15 @@
 - Your character (portrait and name) is one click to it, in the mode you used last (Battle / Sheet /
   Plan). Party ▾ lists the campaign's characters, your own first, with class, level and HP, and opens
   the one you pick in the mode you're in (menu bar Option B, Brett 2026-10-22).
-- The Live pill says how your own sheet is kept in step (decided 2026-10-28,
-  docs/mockups/game-mode-and-bridge.html): in step through the D&D Beyond bridge (its extension
-  heard the sheet in the last REACH), something to make by hand, or when the copy was last read;
-  the character on screen, else your own, else the party's slowest sheet (the DM's). "Game on"
-  leads it while Game Mode is on for the table (app/game_mode.py). Its window holds Game Mode
-  (Start / End for the table), how each sheet is kept in step, "Refresh <character> now" (anyone
-  signed in, throttled) and "Refresh everyone" (reviewers only).
-- While Game Mode is on, every open page calls /live/sync every couple of minutes: the whole party
-  is kept fresh, the character on screen first (Brett, 2026-10-23), and the server fetches at most
-  every AUTO_MIN_AGE per character, however many people watch.
+- The Live pill answers one question (Brett, 2026-10-30, docs/mockups/table-without-modes.html):
+  is your sheet connected? Connected to D&D Beyond (the bridge's extension heard it in the last
+  REACH), what to do to connect, something to make by hand, or when the copy was last read; the
+  character on screen, else your own, else the party's slowest sheet (the DM's). Its window holds
+  how each sheet is connected, "Refresh <character> now" (anyone signed in, throttled) and "Refresh
+  everyone" (reviewers only).
+- Every open page at the table calls /live/sync every couple of minutes: the whole party is kept
+  fresh, the character on screen first (Brett, 2026-10-23), and the server fetches at most every
+  AUTO_MIN_AGE per character, however many people watch.
 
 The menu bar is on every page, so `loader` reads the rows with its own short session (like
 app/access.py); tests point it at their session.
@@ -38,7 +37,7 @@ from app.templating import templates
 
 router = APIRouter()
 
-GAME_MODE_SECONDS = 150  # the page asks every 2.5 minutes…
+SYNC_SECONDS = 150  # the page asks every 2.5 minutes…
 AUTO_MIN_AGE = timedelta(seconds=110)  # …and the server fetches at most this often per character
 MANUAL_MIN_AGE = timedelta(seconds=20)  # "Refresh now"
 REACH = timedelta(seconds=90)  # a sheet heard by the bridge this recently can be reached (its extension pulls every 30 seconds)
@@ -52,7 +51,8 @@ SUFFIX = {"battle": "/battle", "sheet": "", "plan": "/plan"}
 def rows_from(db: Session) -> list[dict]:
     """Each campaign character: id, name, who plays it, its last D&D Beyond copy, and from that copy its
     portrait, classes and hit points (read straight from the stored summary, not the whole sheet); and with the D&D
-    Beyond bridge on, whether its sheet can be reached now (`step`) and how many changes wait to be made by hand."""
+    Beyond bridge on, whether its sheet can be reached now (`step`), whether it could be (`connects`), whether it's in a
+    D&D Beyond game (`in_game`: its rolls can reach the Game Log) and how many changes wait to be made by hand."""
     campaign = web.campaign(db)
     if not campaign:
         return []
@@ -75,7 +75,8 @@ def rows_from(db: Session) -> list[dict]:
     q = (select(Character.id, Character.name, User.email, Character.ddb_id, Character.copy_of_id, Character.sheet_heard_at,
                 CharacterSnapshot.fetched_at, CharacterSnapshot.status, CharacterSnapshot.error,
                 summary["portrait"].astext, summary["classes"], summary["hit_points"]["current"].astext,
-                summary["hit_points"]["max"].astext, Character.conditions, summary["conditions"], Character.concentration)
+                summary["hit_points"]["max"].astext, Character.conditions, summary["conditions"], Character.concentration,
+                CharacterSnapshot.raw["campaign"]["id"].astext)
          .join(CampaignCharacter, CampaignCharacter.character_id == Character.id)
          .outerjoin(User, Character.owner_id == User.id)
          .outerjoin(CharacterSnapshot, CharacterSnapshot.character_id == Character.id)
@@ -87,10 +88,11 @@ def rows_from(db: Session) -> list[dict]:
              "hp": f"{hp}/{hp_max} HP" if hp and hp_max else "",
              # (a test copy shares a real sheet, so the bridge never works on it: ddb_bridge.on_for)
              "step": bool(bridge and ddb_id and copy_of is None and heard and heard >= reach),
+             "connects": bool(bridge and ddb_id and copy_of is None), "in_game": bool(bridge and ddb_id and copy_of is None and game),
              "by_hand": by_hand.get(cid, 0) if bridge and copy_of is None else 0,
              # the menu bar's dots: what it's under now (D&D Beyond's with what's on its way and askdnd's own, as on Battle)
              "conditions": ["Concentration"] * bool(conc) + [x["name"] for x in cond.shown(own, cond.with_changes(on_sheet, on_way.get(cid, ())), bool(bridge and copy_of is None))]}
-            for cid, name, email, ddb_id, copy_of, heard, fetched, status, error, portrait, classes, hp, hp_max, own, on_sheet, conc
+            for cid, name, email, ddb_id, copy_of, heard, fetched, status, error, portrait, classes, hp, hp_max, own, on_sheet, conc, game
             in db.execute(q)]
 
 
@@ -130,7 +132,7 @@ def table(user: dict | None, path: str = "", rows: list[dict] | None = None, foc
             # Characters open in the mode you're in, else the one you used last, else Battle
             "suffix": SUFFIX[mode or (last_mode if last_mode in SUFFIX else None) or "battle"],
             "pill": pill, "party_pill": pill is not None and pill is not focus, "linked": linked,
-            "every": GAME_MODE_SECONDS}
+            "every": SYNC_SECONDS}
 
 
 def maybe_refresh(db: Session, ch: Character, min_age: timedelta) -> bool:
@@ -147,7 +149,7 @@ def maybe_refresh(db: Session, ch: Character, min_age: timedelta) -> bool:
 
 
 def refresh_party(db: Session, user: dict, focus_id: int | None) -> None:
-    """Game Mode: the character on screen (else your own) first, then everyone else linked in the campaign, each at
+    """The character on screen (else your own) first, then everyone else linked in the campaign, each at
     most every AUTO_MIN_AGE."""
     tn = table(user, "", rows_from(db), focus_id)
     first = [tn["focus"]["id"]] if tn["focus"] and tn["focus"]["linked"] else []
@@ -158,21 +160,16 @@ def refresh_party(db: Session, user: dict, focus_id: int | None) -> None:
 
 
 def pill(db: Session, user: dict, focus_id: int | None) -> str:
-    """The pill's HTML on its own (Game Mode's tick swaps it in)."""
+    """The pill's HTML on its own (the page's tick swaps it in)."""
     return templates.get_template("_live_pill.html").render(tn=table(user, "", rows_from(db), focus_id))
 
 
 def panel(request: Request, db: Session, user: dict, focus_id: int | None, toast: str = "", ids: list[int] = ()):
-    """The Live window: Game Mode for the table, how each sheet is kept in step, refreshing."""
-    from app import game_mode
-
+    """The Live window: how each sheet is connected, refreshing."""
     tn = table(user, "", rows_from(db), focus_id)
     campaign = web.campaign(db)
-    from app import ddb_bridge
-
     resp = templates.TemplateResponse(request, "_live_panel.html", {
-        "tn": tn, "reviewer": is_reviewer(user), "game": game_mode.state(db, campaign), "can_switch": game_mode.can_switch(user, campaign),
-        "bridge": config.DDB_BRIDGE and vtt.on(campaign, "ddb_bridge"), "game_hours": f"{ddb_bridge.timers(db)['game'] / 3600:g}"})
+        "tn": tn, "reviewer": is_reviewer(user), "bridge": config.DDB_BRIDGE and vtt.on(campaign, "ddb_bridge")})
     if toast:
         resp.headers["HX-Trigger"] = json.dumps({"toast": toast, "liveRefreshed": {"ids": list(ids)}})
     return resp
@@ -189,7 +186,7 @@ def live_panel(request: Request, c: int = 0, db: Session = Depends(get_db)):
 
 @router.post("/live/sync")
 def live_sync(request: Request, c: int = 0, db: Session = Depends(get_db)):
-    """Game Mode's tick, on every page: keep the party fresh (the character on screen, else your own, first) and
+    """Every page's tick: keep the party fresh (the character on screen, else your own, first) and
     return the updated pill. What changed reaches the pages showing it through the live connection (app/realtime.py)."""
     user = current_user(request)
     if not user:

@@ -443,59 +443,27 @@
     b.classList.remove('busy'); b.disabled = false; if (b.dataset.label) b.textContent = b.dataset.label;
   }));
 
-  // Game Mode, one switch for the whole table (app/game_mode.py): the page is drawn with it (body.gm-on and its end,
-  // data-game-until), and when someone starts or ends it every page at the table shows its new copy the one way
-  // (showInPlace, which carries the body's Game Mode over and calls gmSetup). While it's on and the tab is visible,
-  // every couple of minutes the page asks the server to keep the party fresh (throttled per character, however many
-  // pages ask). Shortly before the end every page warns, with Keep going; at the end it turns itself off.
-  let gmTimer = null, gmEnd = null, gmWarn = null;
-  const gmUntil = () => Date.parse(document.body.dataset.gameUntil || '') || 0;
-  function gmIsOn() { return gmUntil() > Date.now(); }
-  const gmClock = t => new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  function gmSwitch(on) {  // Start (or Keep going) or end it for the table, from a page's own button
-    return fetch('/live/game', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'HX-Request': 'true' }, body: 'on=' + (on ? '1' : '') });
-  }
-  try { localStorage.removeItem('askdnd.gameMode'); Object.keys(localStorage).filter(k => k.startsWith('askdnd.gameMode')).forEach(k => localStorage.removeItem(k)); } catch (e) {}  // (it was kept per browser until 2026-10-28)
-  // Game Mode's tick: askdnd reads the party from D&D Beyond (the character on screen, or your own, first) and the Live
-  // pill comes back. Whatever changed reaches the pages showing it through the live connection, like every change
-  // (showInPlace below); while that's down, this page asks for its new copy itself.
-  function gmTick() {
+  // At the table (body.at-table; docs/mockups/table-without-modes.html): every few minutes, while the tab is visible, the
+  // page asks the server to keep the party fresh (throttled per character, however many pages ask). askdnd reads the
+  // party from D&D Beyond (the character on screen, or your own, first) and the Live pill comes back. Whatever changed
+  // reaches the pages showing it through the live connection, like every change (showInPlace below); while that's down,
+  // this page asks for its new copy itself.
+  function freshen() {
     const pill = document.getElementById('live-pill');
     if (!window.htmx || !pill) return;
     htmx.ajax('POST', '/live/sync' + (pill.dataset.focus ? '?c=' + pill.dataset.focus : ''), { target: '#live-pill', swap: 'outerHTML' })
       .then(() => { if (!live.up) showInPlace(); });
   }
-  function gmSetup() {
-    const on = gmIsOn(), pill = document.getElementById('live-pill'), until = gmUntil();
-    document.body.classList.toggle('gm-on', on);
-    clearInterval(gmTimer); clearTimeout(gmEnd); clearTimeout(gmWarn); gmTimer = null;
-    if (on && pill) gmTimer = setInterval(() => { if (document.visibilityState === 'visible') gmTick(); }, (Number(pill.dataset.every) || 150) * 1000);
-    if (on) {
-      const warn = (Number(document.body.dataset.gameWarn) || 600) * 1000;
-      gmWarn = setTimeout(() => toast('Game Mode ends at ' + gmClock(until) + '.', { label: 'Keep going', run: () => gmSwitch(true) }, 'info'), Math.max(0, until - warn - Date.now()));
-      gmEnd = setTimeout(() => {  // time's up: off here too (a Keep going meanwhile arrives as the page's new copy)
-        if (gmUntil() !== until) return;
-        delete document.body.dataset.gameUntil;
-        gmSetup();
-        toast("Game Mode's time is up: rolls are private again.", null, 'info');
-      }, until - Date.now() + 500);
-    }
-    document.dispatchEvent(new CustomEvent('askdnd:gamemode', { detail: { on } }));  // Table rolls follow it
+  if (document.body.classList.contains('at-table')) {
+    const pill = document.getElementById('live-pill');
+    if (pill) setInterval(() => { if (document.visibilityState === 'visible') freshen(); }, (Number(pill.dataset.every) || 150) * 1000);
   }
   // A button the server refused (403, 409: a sheet that can't be reached…) says why, the same way everywhere: the
   // message askdnd answered with (FastAPI's {"detail": …})
   document.body.addEventListener('htmx:responseError', e => {
     try { const d = JSON.parse(e.detail.xhr.responseText).detail; if (typeof d === 'string' && d) toast(d, null, 'warn'); } catch (err) { /* not a message */ }
   });
-  // The Live window's End for the table asks first, in the window itself
-  document.addEventListener('click', e => {
-    const ask = e.target.closest('[data-gm-ask]'), keep = e.target.closest('[data-gm-keep]');
-    if (!ask && !keep) return;
-    const pop = (ask || keep).closest('.live-pop');
-    pop.querySelector('[data-gm-confirm]').hidden = !ask;
-    pop.querySelector('[data-gm-ask-row]').hidden = !!ask;
-  });
-  // A page shows a new copy in one way, whatever brought it (the bridge hearing a sheet save, Game Mode, Refresh now,
+  // A page shows a new copy in one way, whatever brought it (the bridge hearing a sheet save, a turn in the fight, Refresh now,
   // a reconnect, your own change): the page and each open side panel fetch themselves again and are swapped in
   // together before the next paint, with the Live pill, keeping the tabs, each list's search and the scroll, so
   // nothing flashes. Someone else's change waits while you're in the middle of something (typing, a side panel, a
@@ -575,15 +543,11 @@
     // Your character's conditions on its menu bar button, outside main
     const dots = doc.querySelectorAll('[data-cond-dots]');
     document.querySelectorAll('[data-cond-dots]').forEach((d, i) => { if (dots[i]) { d.innerHTML = dots[i].innerHTML; if (dots[i].title) d.title = dots[i].title; else d.removeAttribute('title'); } });
-    // Game Mode, as the page is drawn now: started, ended or kept going by someone at the table
-    const b = document.body, was = gmIsOn(), wasUntil = b.dataset.gameUntil || '';
-    ['gameUntil', 'gameBy', 'gameWarn', 'reminders'].forEach(k => { if (doc.body.dataset[k] !== undefined) b.dataset[k] = doc.body.dataset[k]; else delete b.dataset[k]; });
+    // The fight and its reminders, as the page is drawn now
+    const b = document.body;
+    ['fight', 'reminders'].forEach(k => { if (doc.body.dataset[k] !== undefined) b.dataset[k] = doc.body.dataset[k]; else delete b.dataset[k]; });
     showReminders();  // (a condition's reminder, as the fight moved on)
-    if ((b.dataset.gameUntil || '') !== wasUntil) {
-      gmSetup();
-      const by = b.dataset.gameBy;
-      if (gmIsOn() !== was) toast(gmIsOn() ? (by ? by + ' started' : 'Started') + ' Game Mode: rolls are shared with the table until ' + gmClock(gmUntil()) + '.' : 'Game Mode ended: rolls are private again.', null, 'info');
-    }
+    document.dispatchEvent(new CustomEvent('askdnd:fight'));
     restore();
     if (window.askdndNotesInit) window.askdndNotesInit(here);
     sortSetup(); econSetup(); condArrive();
@@ -648,12 +612,12 @@
   })(1);
   // Someone's character changed (a read of D&D Beyond found something new: the bridge hearing their sheet save, Game
   // Mode, a page opening), or the connection came back ("resync": anything may have changed): a page showing them
-  // shows the new copy, Game Mode or not; in Game Mode the Live pill on any other page catches up. A burst ("Refresh
+  // shows the new copy; the Live pill on any other page catches up. A burst ("Refresh
   // everyone") is taken once.
   let liveTick = null, liveIds = new Set();
   document.addEventListener('askdnd:live', e => {
     const t = e.detail.type;
-    if (t === 'game') { showInPlace(true); return; }  // Game Mode started, ended or kept going: every page, at once
+    if (t === 'game') { showInPlace(); return; }  // the fight moved on: every page, once it isn't in the way of a pop-up
     if (t !== 'character' && t !== 'resync') return;
     liveIds.add(t === 'resync' ? '*' : String(e.detail.id));
     clearTimeout(liveTick);
@@ -661,7 +625,7 @@
       const ids = [...liveIds];
       liveIds = new Set();
       if (showsAny(ids)) showInPlace();
-      else if (gmIsOn()) gmTick();
+      else freshen();
     }, 400);
   });
   // You changed something of a character's (a pin, bookmark, reminder or note: character_pages, player_notes):
@@ -923,13 +887,11 @@
   });
   document.body.addEventListener('htmx:afterSettle', e => {
     const ids = [e.target.id, e.detail.target && e.detail.target.id];
-    if (ids.includes('live-menu')) gmSetup();  // the popover's switch
     if (ids.includes('battle-body')) { sortSetup(); econSetup(); condArrive(); }
   });
-  gmSetup();
 
   // Phones (Battle): Action / Bonus / Reaction as tabs over the three columns. The choice is
-  // kept while Game Mode swaps in a new body.
+  // kept while the page swaps in a new body.
   let econShown = 'action';
   function econSetup() {
     const econ = document.querySelector('.econ[data-econ-show]');
@@ -1099,7 +1061,7 @@
 // to show. The window offers Normal / Adv / Dis, who sees it and situational bonuses, then turns
 // into the result in place (with a short d20 tumble), with the follow-ups: damage after an attack,
 // a reroll, an added die. Shift-click rolls straight away.
-// - Game Mode on and it's your own character (or plain dice): the server rolls (app/table_rolls.py)
+// - Your own character (or plain dice): the server rolls (app/table_rolls.py)
 //   and the table sees it in the Table rolls sidebar; others' rolls arrive by polling, and as
 //   small notices while the sidebar is collapsed.
 // - Otherwise: a private roll in this browser only (crypto random).
@@ -1116,15 +1078,23 @@
   };
   const people = side && side.querySelector('.rs-people'), edge = document.querySelector('.rs-edge');
   let tipEl = null;
-  let to = store.get(TO, true) || 'table';  // who sees your rolls; kept for this tab only, so it starts at Table
+  let to = store.get(TO) || 'table';  // who sees your rolls: the table, until you pick otherwise on this device
   let lastId = 0, loaded = false, win = null;
 
   const num = s => parseInt(String(s || '0').replace('−', '-'), 10) || 0;
   const signed = n => (n >= 0 ? '+' : '−') + Math.abs(n);
   function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
-  const gmOn = () => document.body.classList.contains('gm-on');
+  const atTable = () => document.body.classList.contains('at-table');
   // The animation switch: on or off as chosen on this device; until then, off only if the device asks for less motion
   const animate = () => { const v = store.get(ANIM); return v ? v === 'on' : !calm.matches; };
+  // Whether a roll of yours reaches D&D Beyond's Game Log, for the roll window; "" where it never would (the Live pill's
+  // data-log: your sheet is connected, closed, or your character isn't in a D&D Beyond game)
+  function logNote() {
+    const state = (document.getElementById('live-pill') || { dataset: {} }).dataset.log;
+    if (state === 'on') return "Also goes to D&D Beyond's Game Log.";
+    if (state === 'sheet') return "Not in D&D Beyond's Game Log: " + (phone.matches ? 'that needs Chrome on a computer.' : "your sheet isn't open.");
+    return '';
+  }
   const TO_WORDS = { table: 'to the table', dm: 'DM only', self: 'just you', private: 'only in this browser' };
 
   // ---------------------------------------------------------------- dice (private rolls; the server rolls table rolls the same way)
@@ -1494,8 +1464,8 @@
     } else if (spec.follow !== 'reroll') {
       h += '<details class="rw-add"><summary>Add dice or a bonus</summary>' + pickerHTML({ minus: true }) + '</details>';
     }
-    if (spec.shared && !spec.follow) h += '<div class="rw-row"><span class="rw-label">Who sees</span>' + seg('To', [['table', 'Table'], ['dm', 'DM only'], ['self', 'Just me']], to) + '</div>';
-    else if (!spec.shared) h += '<p class="rw-note">' + (gmOn() ? 'You don\'t play this character, so only you see this roll.' : 'Only you see this roll (Game Mode is off).') + '</p>';
+    if (spec.shared && !spec.follow) h += '<div class="rw-row"><span class="rw-label">Who sees</span>' + seg('To', [['table', 'Table'], ['dm', 'DM only'], ['self', 'Only me']], to) + '</div><p class="rw-note" data-log-note' + (to === 'self' || !logNote() ? ' hidden' : '') + '>' + logNote() + '</p>';
+    else if (!spec.shared) h += '<p class="rw-note">You don\'t play this character, so only you see this roll.</p>';
     h += '<div class="rw-go"><button type="button" class="btn primary" data-go>Roll</button><span class="note">Enter rolls · Esc closes</span></div>';
     w.innerHTML = h;
     const pick = w.querySelector('.dice-pick') ? wirePicker(w.querySelector('.dice-pick'), () => place(w, anchor)) : null;
@@ -1524,7 +1494,14 @@
       if (!b) return;
       if (b.classList.contains('rp-x')) return closeWin();
       if (b.dataset.mode) { mode = b.dataset.mode; w.querySelectorAll('[data-mode]').forEach(x => x.setAttribute('aria-pressed', x === b)); }
-      if (b.dataset.to) { to = b.dataset.to; store.set(TO, to, true); w.querySelectorAll('[data-to]').forEach(x => x.setAttribute('aria-pressed', x === b)); }
+      if (b.dataset.to) {
+        to = b.dataset.to;
+        store.set(TO, to);  // (remembered on this device: a player practising stays on Only me)
+        w.querySelectorAll('[data-to]').forEach(x => x.setAttribute('aria-pressed', x === b));
+        const note = w.querySelector('[data-log-note]');
+        if (note) note.hidden = to === 'self' || !logNote();
+        place(w);
+      }
       if (b.dataset.die) w.querySelectorAll('[data-die]').forEach(x => x.setAttribute('aria-pressed', x === b));
       if (b.dataset.extra) b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true');
       if (b.dataset.ev) { evi = +b.dataset.ev; w.querySelectorAll('[data-ev]').forEach(x => x.setAttribute('aria-pressed', x === b)); summarize(); }
@@ -2124,7 +2101,7 @@
   }
   function specFrom(el) {
     const cid = characterOf(el), kind = el.dataset.roll;
-    const shared = gmOn() && !!side && (kind === 'dice' || (!!cid && side.dataset.mine === cid));
+    const shared = atTable() && !!side && (kind === 'dice' || (!!cid && side.dataset.mine === cid));
     let recipe = null;
     try { recipe = el.dataset.recipe ? JSON.parse(el.dataset.recipe) : null; } catch (err) { recipe = null; }
     // A condition the character has now (Invisible…) offers Advantage with its reason, never forces it:
@@ -2207,23 +2184,23 @@
     const go = manual.querySelector('[data-manual-roll]');
     let pick = null;
     pick = wirePicker(manual.querySelector('.dice-pick'), () => { go.disabled = !pick || !pick.dice(); });
-    go.addEventListener('click', () => { if (pick.dice()) chooser(go, { kind: 'dice', label: '', dmg: pick.formula(), cid: side.dataset.mine, shared: gmOn() }); });
+    go.addEventListener('click', () => { if (pick.dice()) chooser(go, { kind: 'dice', label: '', dmg: pick.formula(), cid: side.dataset.mine, shared: atTable() }); });
   }
 
   // ---------------------------------------------------------------- the sidebar's state
   // (base.html's first script applies the same rules before the page is drawn, so pages don't shift sideways as
   // they load; keep the two in step: tests/browser/test_layout.py checks nothing moves after the first paint.)
-  // Desktop: "open" or "closed" (just the edge tab), one choice per device for every page: open until you close
-  // it, and nothing changes it on its own (Brett, 2026-10-26). Below WIDE it starts closed and opens over the
+  // Desktop: "open" or "closed" (just the edge tab), one choice per device for every page: closed until you open it,
+  // and only the start of a fight changes it on its own, once (Brett, 2026-10-30). Below WIDE it starts closed and opens over the
   // page until a click elsewhere. Phones: a bottom sheet ("closed" is its bar with each person's latest roll,
   // "open" the newest rolls, "full" the whole log and the dice; closed until you open it, as it covers a third of a phone).
   const narrow = () => !phone.matches && innerWidth < WIDE;
-  const pref = () => { const v = store.get(SIDE); return v === 'open' || v === 'closed' ? v : phone.matches ? 'closed' : 'open'; };  // phones: the bar until opened
+  const pref = () => (store.get(SIDE) === 'open' ? 'open' : 'closed');  // closed until opened; a fight opens it once (fightOpens)
   ['askdnd.rollsSide.play', 'askdnd.rollsSide.other', 'askdnd.rollsSeen'].forEach(k => { try { localStorage.removeItem(k); } catch (e) { /* private window */ } });  // the old rules' keys
   function setState(state, remember) {
     if (!side) return;
     const b = document.body.classList;
-    b.toggle('rolls-on', gmOn());
+    b.toggle('rolls-on', atTable());
     b.toggle('rolls-open', state === 'open' || state === 'full');
     b.toggle('rolls-closed', state === 'closed');
     b.toggle('rolls-full', state === 'full');
@@ -2233,10 +2210,9 @@
   }
   function current() { const b = document.body.classList; return b.contains('rolls-full') ? 'full' : b.contains('rolls-open') ? 'open' : 'closed'; }
   function layout() { setState(narrow() ? 'closed' : pref()); }
-  // The log's first fetch: htmx's "load" trigger on a page that opens with Game Mode on, this
-  // when it's turned on later.
-  function loadLog() { if (gmOn() && !loaded && log && window.htmx) htmx.trigger(log, 'rolls:load'); }
-  const logShown = () => gmOn() && side && (phone.matches ? current() === 'full' : current() === 'open');
+  // The log's first fetch: htmx's "load" trigger on a page at the table.
+  function loadLog() { if (atTable() && !loaded && log && window.htmx) htmx.trigger(log, 'rolls:load'); }
+  const logShown = () => atTable() && side && (phone.matches ? current() === 'full' : current() === 'open');
   // Others' rolls are in view on a phone's sheet too, unless it's down to its bar.
 
   if (side) {
@@ -2269,7 +2245,16 @@
     let wasWide = innerWidth >= WIDE;
     addEventListener('resize', () => { const wide = innerWidth >= WIDE; if (wide !== wasWide) { wasWide = wide; snap(); } });
     phone.addEventListener('change', snap);
-    document.addEventListener('askdnd:gamemode', () => { layout(); loadLog(); });
+    // A fight that starts opens Table rolls once, on a screen with room for it; after that it stays how you leave it
+    const fightOpens = () => {
+      const id = document.body.dataset.fight;
+      if (!id || phone.matches || narrow() || store.get('askdnd.rollsFight') === id) return;
+      store.set('askdnd.rollsFight', id);
+      setState('open', true);
+      loadLog();
+    };
+    document.addEventListener('askdnd:fight', fightOpens);
+    fightOpens();
     layout();
   }
 
@@ -2355,13 +2340,13 @@
   // Polling every 3 s; every 30 s while the live connection is up, which brings rolls the moment they're made
   let polls = 0;
   window.askdndRolls = {
-    wanted: () => gmOn() && !loaded,
-    poll: () => gmOn() && loaded && document.visibilityState === 'visible' && (!(window.askdndLive || {}).up || ++polls % 10 === 0),
+    wanted: () => atTable() && !loaded,
+    poll: () => atTable() && loaded && document.visibilityState === 'visible' && (!(window.askdndLive || {}).up || ++polls % 10 === 0),
     since: () => (loaded ? lastId : -1),  // -1: the whole recent log
   };
   document.addEventListener('askdnd:live', e => {
-    if (e.detail.type === 'rolls' && gmOn()) earlyThrow(e.detail.roll);
-    if ((e.detail.type === 'rolls' || e.detail.type === 'resync') && gmOn() && loaded && log && window.htmx) htmx.trigger(log, 'rolls:load');
+    if (e.detail.type === 'rolls' && atTable()) earlyThrow(e.detail.roll);
+    if ((e.detail.type === 'rolls' || e.detail.type === 'resync') && atTable() && loaded && log && window.htmx) htmx.trigger(log, 'rolls:load');
   });
   // A roll the whole table sees comes in the live message itself (app/table_rolls.py _live; Brett, 2026-10-29: every
   // screen starts the dice at once, as D&D Beyond's do): someone else's dice start now, from it, and the row the page
@@ -3003,7 +2988,7 @@
   // every frame, re-place if the target moved. One rect read per frame, only while the tour is open.
   // Every stop is framed in the part of the screen the bars stuck across the top leave free: centered there when it fits,
   // else its top just under them (a few tries: a bar can stick, or change height, only once the page has scrolled).
-  // While the stop shows, it's framed again whenever its top slips under them (fonts arriving, a picture, Game Mode
+  // While the stop shows, it's framed again whenever its top slips under them (fonts arriving, a picture, a new copy
   // redrawing Battle), until the person scrolls the page themselves (Brett, 2026-10-26: Battle's column headings kept
   // ending up behind its numbers; centering on the whole screen ignored them).
   // Something inside a stuck bar (Live, in the menu bar) or in the side panel isn't scrolled into place by the page.
@@ -3028,7 +3013,7 @@
     following = true;
     const tick = () => {
       if (!tour || !card) { following = false; was = ''; return; }
-      if (lit && !lit.isConnected) {  // redrawn under the stop (Game Mode's fresh sheet): light the new one
+      if (lit && !lit.isConnected) {  // redrawn under the stop (a fresh sheet): light the new one
         const s = tour.stops[tour.i], now = s && visible(s.at);
         if (now) { lit = now; if (s.all) lits = [...document.querySelectorAll(s.at)]; }
       }
@@ -3075,8 +3060,8 @@
   }
   if (document.body.dataset.bridgeOn !== undefined) {
     // Awake whenever someone is using askdnd (app/ddb_bridge.py): opening a page, and using it (at most once a
-    // minute), keeps it awake 30 more minutes; the extension starts its pulls at once. (Game Mode keeps it awake for
-    // the game: app/game_mode.py.)
+    // minute), keeps it awake 30 more minutes; the extension starts its pulls at once. (A running fight keeps it awake
+    // too: ddb_bridge.awake.)
     let usedAt = 0;
     const used = () => {
       usedAt = Date.now();
@@ -3086,7 +3071,6 @@
     };
     ['click', 'keydown', 'change'].forEach(k => document.addEventListener(k, () => { if (Date.now() - usedAt > 60000) used(); }, { passive: true }));
     used();
-    document.addEventListener('askdnd:gamemode', e => { if (e.detail.on) window.postMessage({ askdndBridge: 'wake' }, location.origin); });
   }
   if (pill) {
     checkHealth();

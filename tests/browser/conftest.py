@@ -68,11 +68,6 @@ def browser_db():
         owned_by(db, trah, PEOPLE["other"])
         set_role(db, PEOPLE["dm"])
         characters.refresh(db, cole, fake_fetch)
-        from datetime import UTC, datetime, timedelta
-
-        from app.models import Campaign
-
-        db.get(Campaign, cole.campaign_id).game_until = datetime.now(UTC) + timedelta(days=1)  # Game Mode on for the table
         db.commit()
         ids = {"cole": cole.id, "campaign": cole.campaign_id}
     engine.dispose()
@@ -137,7 +132,7 @@ class Person:
         self.server, self.errors = server, []
         self.context = chromium.new_context(viewport={"width": 1400, "height": 900}, timezone_id="America/Los_Angeles")
         self.context.set_default_timeout(10_000)  # a page that's working answers well within this
-        self.context.add_init_script("localStorage.setItem('askdnd.rollsAnim', 'off');")
+        self.context.add_init_script("localStorage.setItem('askdnd.rollsAnim', 'off'); if (!sessionStorage.getItem('fresh')) { sessionStorage.setItem('fresh', '1'); localStorage.setItem('askdnd.rollsSide', 'open'); }")
         self.page = self.context.new_page()
         self.page.on("pageerror", lambda e: self.errors.append(str(e)))
         # The console's "Failed to load resource" doesn't say which: record the failing address instead
@@ -169,20 +164,3 @@ def people(chromium, server):
         p.context.close()
 
 
-@pytest.fixture
-def game_mode(browser_db, server):
-    """game_mode(False) ends Game Mode for the table, straight in the database (as if someone ended it), and
-    game_mode(True) starts it again; it's back on after the test, as the other tests expect."""
-    from datetime import UTC, datetime, timedelta
-
-    engine = create_engine(browser_db[0])
-
-    def switch(on: bool):
-        with engine.connect() as conn:
-            conn.execute(text("UPDATE campaigns SET game_until = :u WHERE id = :c"),
-                         {"u": datetime.now(UTC) + timedelta(days=1) if on else None, "c": server["campaign"]})
-            conn.commit()
-
-    yield switch
-    switch(True)
-    engine.dispose()

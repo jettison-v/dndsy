@@ -87,7 +87,7 @@ SHIFTS = """new PerformanceObserver(l => { window.__shifts = (window.__shifts ||
 
 
 def test_pages_dont_shift_as_they_load(people, server):
-    """With Game Mode on, the Table rolls sidebar takes its place before the page is drawn (base.html's first script),
+    """The Table rolls sidebar takes its place before the page is drawn (base.html's first script),
     so nothing moves sideways while the page loads and the log arrives (Brett, 2026-10-26: every page jumped)."""
     player = people("player")
     player.context.add_init_script(SHIFTS)

@@ -116,26 +116,22 @@ a.char-btn > span:not(.char-av, .cond-dots) { overflow: hidden; text-overflow: e
 button.help-btn { background: none; cursor: pointer; padding: 0; font-family: inherit; }
 .menu form button { width: 100%; text-align: left; background: none; border: none; color: var(--text); padding: 8px 10px; border-radius: var(--r-sm); }
 .menu form button:hover { background: var(--surface); }
-/* Live (app/live.py): when the D&D Beyond copy was last updated; green while Game Mode is on */
+/* Live (app/live.py): whether your sheet is connected */
 .live { position: relative; }
 .live-pill { display: inline-flex; align-items: center; gap: 8px; background: var(--surface); color: var(--muted); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 5px 12px; font-size: var(--fs-sm); white-space: nowrap; }
 .live-pill:hover { color: var(--text); }
 .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; }
-.live-word, .live-on { display: none; }
-body.gm-on .live-pill { background: var(--green-soft); border-color: var(--green); color: var(--text); }
-body.gm-on .live-dot { background: var(--green); animation: gm-pulse 2s infinite; }
-body.gm-on .live-word, body.gm-on .live-on { display: inline; }
-body.gm-on .live-off { display: none; }
+.live-word { display: none; }
 .live-pill.warn .live-dot { background: var(--amber); }
-.live-pill.step .live-dot { background: var(--green); }  /* in step through the bridge, Game Mode or not */
+.live-pill.step .live-dot { background: var(--green); }  /* connected */
+.live-pill.cue { border-color: var(--amber); color: var(--text); }  /* in a fight with your sheet closed */
+.live-pill.cue .live-dot { background: var(--amber); }
 .live-pill.htmx-request { opacity: .7; }
 @media (max-width: 1240px) { .live-ago { display: none; } .live-word { display: inline; } }  /* "● Live" or "● Game on"; the dot's colour says in step or to make by hand, the window the rest */
-@keyframes gm-pulse { 0% { box-shadow: 0 0 0 0 var(--green-line); } 70% { box-shadow: 0 0 0 8px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
 .menu.live-menu { width: 360px; max-width: calc(100vw - 24px); padding: 0; }
 .live-menu:empty { display: none; }
 .live-pop { padding: 14px 16px; display: grid; gap: 12px; font-size: var(--fs-sm); }
 .live-gm { display: grid; gap: var(--sp-2); }
-.live-gm-top { display: flex; gap: var(--sp-3); align-items: center; justify-content: space-between; }
 .live-gm small { display: block; color: var(--muted); font-size: var(--fs-xs); line-height: 1.45; }
 .live-confirm { display: grid; gap: var(--sp-2); padding: var(--sp-3); border: 1px solid var(--amber); background: var(--amber-soft); border-radius: var(--r-md); }
 .live-ok { color: var(--green); text-align: right; }
@@ -1206,15 +1202,15 @@ a.sheet-ref { text-decoration-style: dotted; }
 .rp-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .roll-x { color: var(--faint); }
 
-/* Table rolls (app.js, _table_rolls.html): a left sidebar while Game Mode is on. Open, it pushes
+/* Table rolls (app.js, _table_rolls.html): a left sidebar at the table. Open, it pushes
    the page over (wide windows) or lies over it (narrower); closed, only the edge tab shows.
    Phones: a bottom sheet above the bottom bar. Under the side panel and windows (z-index 4). */
 .rolls-side { display: none; }
-body.gm-on .rolls-side { display: flex; flex-direction: column; position: fixed; z-index: 4; left: 0; top: var(--stick-top, 62px); bottom: 0; width: 340px; background: var(--chrome); border-right: 1px solid var(--line); transition: transform .25s ease, visibility 0s; }
-body.gm-on.rolls-open { --rolls-w: 340px; }
-@media (max-width: 1099px) and (min-width: 901px) { body.gm-on.rolls-open { --rolls-w: 0px; } body.gm-on.rolls-open .rolls-side { box-shadow: 12px 0 30px var(--shadow); } }
-body.gm-on { padding-left: var(--rolls-w, 0); }
-body.gm-on .topbar { margin-left: calc(-1 * var(--rolls-w, 0px)); }
+body.at-table .rolls-side { display: flex; flex-direction: column; position: fixed; z-index: 4; left: 0; top: var(--stick-top, 62px); bottom: 0; width: 340px; background: var(--chrome); border-right: 1px solid var(--line); transition: transform .25s ease, visibility 0s; }
+body.at-table.rolls-open { --rolls-w: 340px; }
+@media (max-width: 1099px) and (min-width: 901px) { body.at-table.rolls-open { --rolls-w: 0px; } body.at-table.rolls-open .rolls-side { box-shadow: 12px 0 30px var(--shadow); } }
+body.at-table { padding-left: var(--rolls-w, 0); }
+body.at-table .topbar { margin-left: calc(-1 * var(--rolls-w, 0px)); }
 .rs-head { display: flex; align-items: center; gap: 8px; padding: 12px 12px 10px 16px; color: var(--amber); }
 .rs-grip { display: none; }
 .rs-title { flex: 1; font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; }
@@ -1276,11 +1272,11 @@ body.gm-on .topbar { margin-left: calc(-1 * var(--rolls-w, 0px)); }
 .rs-anim .note { font-size: var(--fs-xs); }
 /* Closed: the sidebar slides away and the edge tab brings it back; on phones the sheet's bar stays, with one
    avatar per person and their latest roll (app.js buildPeople), pulsing on a new one */
-body.gm-on.rolls-closed { --rolls-w: 0px; }
+body.at-table.rolls-closed { --rolls-w: 0px; }
 body.rolls-snap .rolls-side { transition: none !important; }
-body.gm-on.rolls-closed .rolls-side { transform: translateX(-100%); visibility: hidden; transition: transform .25s ease, visibility 0s .25s; }
+body.at-table.rolls-closed .rolls-side { transform: translateX(-100%); visibility: hidden; transition: transform .25s ease, visibility 0s .25s; }
 .rs-edge { display: none; }
-body.gm-on.rolls-closed .rs-edge { position: fixed; z-index: 4; left: 0; top: calc(var(--stick-top, 62px) + 12px); width: 28px; height: 44px; display: grid; place-items: center; background: var(--chrome); color: var(--amber); border: 1px solid var(--line); border-left: 0; border-radius: 0 10px 10px 0; }
+body.at-table.rolls-closed .rs-edge { position: fixed; z-index: 4; left: 0; top: calc(var(--stick-top, 62px) + 12px); width: 28px; height: 44px; display: grid; place-items: center; background: var(--chrome); color: var(--amber); border: 1px solid var(--line); border-left: 0; border-radius: 0 10px 10px 0; }
 .rs-edge:hover { color: var(--text); }
 .rs-people { display: none; }
 .rs-person { display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: 0; padding: 0; color: var(--text); font: inherit; cursor: pointer; }
@@ -1366,8 +1362,8 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 @media (max-width: 900px) {
   .cards { left: calc(10px + env(safe-area-inset-left, 0px)); right: calc(10px + env(safe-area-inset-right, 0px)); width: auto; bottom: calc(var(--bottom-nav-h, 64px) + 10px + env(safe-area-inset-bottom, 0px)); }
   body:has(.peek.open:not(.modal)) .cards { right: calc(10px + env(safe-area-inset-right, 0px)); }
-  body.gm-on.rolls-open .cards { bottom: calc(280px + env(safe-area-inset-bottom, 0px)); }
-  body.gm-on.rolls-closed .cards { bottom: calc(160px + env(safe-area-inset-bottom, 0px)); } }
+  body.at-table.rolls-open .cards { bottom: calc(280px + env(safe-area-inset-bottom, 0px)); }
+  body.at-table.rolls-closed .cards { bottom: calc(160px + env(safe-area-inset-bottom, 0px)); } }
 /* Thrown dice (app.js "thrown dice"): your roll across the page, which dims; others' in the corner tray */
 /* Timing and the backdrop come from Dice tuning (app/dice.py; app.js sets --dt-in, --dt-out, --dt-dim, --dt-blur) */
 .dice-throw { position: fixed; inset: 0; z-index: 19; pointer-events: none; visibility: hidden; opacity: 0; transition: opacity var(--dt-out, .3s), visibility 0s var(--dt-out, .3s); }
@@ -1498,13 +1494,13 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 /* Phones: the log is a bottom sheet over the bottom bar: the newest rolls, its bar alone
    (collapsed), or every roll with the dice (tap or swipe up). Notices show under the menu bar. */
 @media (max-width: 900px) {
-  body.gm-on { padding-left: 0; --rolls-w: 0px; }
-  body.gm-on .topbar { margin-left: 0; }
-  body.gm-on .rolls-side, body.gm-on.rolls-closed .rolls-side { transform: none; visibility: visible; top: auto; bottom: calc(60px + env(safe-area-inset-bottom)); width: auto; right: 0; max-height: 210px; border-right: 0; border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; box-shadow: 0 -10px 30px var(--shadow); }
-  body.gm-on.rolls-full .rolls-side { max-height: 80vh; }
-  body.gm-on.rolls-open { padding-bottom: calc(270px + env(safe-area-inset-bottom)); }
-  body.gm-on.rolls-closed { padding-bottom: calc(150px + env(safe-area-inset-bottom)); }
-  body.gm-on.rolls-closed .rs-edge { display: none; }
+  body.at-table { padding-left: 0; --rolls-w: 0px; }
+  body.at-table .topbar { margin-left: 0; }
+  body.at-table .rolls-side, body.at-table.rolls-closed .rolls-side { transform: none; visibility: visible; top: auto; bottom: calc(60px + env(safe-area-inset-bottom)); width: auto; right: 0; max-height: 210px; border-right: 0; border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; box-shadow: 0 -10px 30px var(--shadow); }
+  body.at-table.rolls-full .rolls-side { max-height: 80vh; }
+  body.at-table.rolls-open { padding-bottom: calc(270px + env(safe-area-inset-bottom)); }
+  body.at-table.rolls-closed { padding-bottom: calc(150px + env(safe-area-inset-bottom)); }
+  body.at-table.rolls-closed .rs-edge { display: none; }
   body.rolls-closed .rs-people { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; padding: 0 14px 10px; gap: 14px; overflow-x: auto; flex: none; scrollbar-width: none; }
   .rs-person .roll-av { width: 32px; height: 32px; }
   .rs-head { position: relative; padding: 14px 14px 6px; cursor: pointer; }
@@ -1512,11 +1508,11 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
   .rs-toggle span[aria-hidden] { display: inline-block; transform: rotate(-90deg); }
   body.rolls-closed .rs-toggle span[aria-hidden] { transform: rotate(90deg); }
   body.rolls-closed :is(.rs-log, .rs-controls) { display: none; }
-  body.gm-on.rolls-open:not(.rolls-full) .rs-controls { display: none; }
+  body.at-table.rolls-open:not(.rolls-full) .rs-controls { display: none; }
   .rs-controls { max-height: none; }
   .roll-item { grid-template-columns: 32px minmax(0, 1fr) auto; padding: 8px 10px; }
-  body.gm-on.rolls-open:not(.rolls-full) .roll-item { background: none; border: 0; padding: 3px 0; align-items: center; }
-  body.gm-on.rolls-open:not(.rolls-full) :is(.roll-dice, .roll-flag, .roll-dmg-line, .roll-acts, .roll-who time) { display: none; }
+  body.at-table.rolls-open:not(.rolls-full) .roll-item { background: none; border: 0; padding: 3px 0; align-items: center; }
+  body.at-table.rolls-open:not(.rolls-full) :is(.roll-dice, .roll-flag, .roll-dmg-line, .roll-acts, .roll-who time) { display: none; }
   .roll-av { width: 32px; height: 32px; font-size: var(--fs-xs); }
   .roll-total { font-size: var(--fs-lg); }
   .roll-win { width: calc(100vw - 16px); max-height: 85vh; box-shadow: 0 -10px 40px var(--shadow); }

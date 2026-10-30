@@ -223,7 +223,7 @@ def test_add_on_the_spell_bar_opens_the_book_and_pinning_there_updates_the_bar(p
     assert player.errors == []
 
 
-def test_a_character_changed_on_d_and_d_beyond_updates_the_pages_showing_it(people, server, browser_db, game_mode):
+def test_a_character_changed_on_d_and_d_beyond_updates_the_pages_showing_it(people, server, browser_db):
     """With Game Mode off too, and never by reloading (it flashed): Battle swaps its body in, Sheet swaps its page in on
     the tab, the place and the search you had, and not while a side panel is open (app.js "live connection"; the
     bridge hearing a sheet save sends the same message)."""
@@ -237,7 +237,6 @@ def test_a_character_changed_on_d_and_d_beyond_updates_the_pages_showing_it(peop
             conn.execute(text("SELECT pg_notify('askdnd_table', :p)"), {"p": '{"c": %d, "m": %s}' % (server["campaign"], json.dumps(msg))})
             conn.commit()
 
-    game_mode(False)
     player = people("player")
     page = battle(player, server)
     player.live()
@@ -293,25 +292,6 @@ def test_a_condition_reaches_everyone_watching_that_character_without_a_reload(p
     player.page.evaluate("id => fetch('/characters/' + id + '/conditions/end', {method: 'POST', headers: {'HX-Request': 'true'}, body: new URLSearchParams({name: 'Poisoned'})})", server["cole"])
     page.locator(".cond-pill:not(.cond-add)", has_text="Poisoned").wait_for(state="detached", timeout=5000)  # and ends the same way
     assert dm.errors == [] and player.errors == []
-
-
-def test_game_mode_started_by_one_person_is_on_for_everyone_at_once(people, server, game_mode):
-    """Game Mode is one switch for the whole table (app/game_mode.py): the DM starts it from the Live window, and the
-    player's open page turns it on without a reload: the Live pill says Game on and Table rolls opens."""
-    game_mode(False)
-    player, dm = people("player", "dm")
-    page = battle(player, server)
-    player.live()
-    page.evaluate("window.stayed = true")
-    assert not page.evaluate("document.body.classList.contains('gm-on')")
-    dpage = dm.open("/c/main/")
-    dpage.click("#live-pill")
-    dpage.click("text=Start for the table")
-    dpage.wait_for_function("document.body.classList.contains('gm-on')")
-    page.wait_for_function("document.body.classList.contains('gm-on')", timeout=5000)
-    assert page.evaluate("window.stayed")  # in place, not reloaded
-    assert page.locator("#live-pill .live-word").is_visible() and page.locator("#table-rolls").is_visible()
-    assert player.errors == [] and dm.errors == []
 
 
 def test_a_number_that_changed_marks_itself_with_the_change(people, server, browser_db):

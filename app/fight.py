@@ -14,6 +14,7 @@ every character page and on Party shows it (`_fight_band.html`).
   mid-fight leaves its last word behind).
 """
 
+import secrets
 import time
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
@@ -101,8 +102,9 @@ def heard(db: Session, campaign: Campaign, fight: dict | None) -> bool:
     fresh = campaign.fight_at is None or datetime.now(UTC) - campaign.fight_at > timedelta(minutes=10)
     if _order(now) == _order(prev) and not fresh:
         return False
-    if now is not None:  # (its reminders carry on through the fight)
+    if now is not None:  # (its reminders carry on through the fight; a new fight gets its own id)
         now["reminders"], now["seq"] = list((prev or {}).get("reminders") or []), (prev or {}).get("seq", 0)
+        now["id"] = (prev or {}).get("id") or secrets.token_hex(4)
         ended, began = turn_begun(prev, now)
         if began:
             follow(db, campaign, ended, began, now)
@@ -224,7 +226,7 @@ def shown(campaign: Campaign | None, dm: bool, mine: set[int] = frozenset()) -> 
     seen_now = now if now and (dm or not now["hidden"]) else None
     # A reminder (follow) is for that character's player and the DM (Brett, 2026-10-29)
     reminders = [{**r, "mine": r["character"] in mine} for r in f.get("reminders") or [] if dm or r["character"] in mine]
-    return {"round": f["round"], "turn": f["turn"], "order": order, "now": seen_now, "next": nxt,
+    return {"id": f.get("id", ""), "round": f["round"], "turn": f["turn"], "order": order, "now": seen_now, "next": nxt,
             "yours": bool(seen_now and seen_now.get("character") in mine),
             "next_yours": bool(nxt and nxt.get("character") in mine and nxt is not now), "reminders": reminders}
 
