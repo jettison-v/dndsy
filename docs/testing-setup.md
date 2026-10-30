@@ -1,27 +1,24 @@
 # Testing with real accounts
 
-askdnd's real-environment test table (Brett, 2026-10-30): four seats, each its own person on D&D Beyond and in askdnd, in **VTT test** on [beta](https://beta.askdnd.ai/c/vtt-test/). Automated tests never touch any of this: they run on your computer with made-up people and a fake D&D Beyond.
+askdnd's real-environment test table (Brett, 2026-10-30): three seats, each its own person on D&D Beyond and in askdnd, in **VTT test** on [beta](https://beta.askdnd.ai/c/vtt-test/). The everyday automated tests never touch any of this: they run on your computer with made-up people and a fake D&D Beyond.
 
 Email addresses stay out of this file because the repo is treated as public. Each seat's Google login is the one named below.
 
 ## The seats
 
-| | Player 1 | Player 2 | Player 3 | DM |
-|---|---|---|---|---|
-| **Google and D&D Beyond login** | Brett's primary account | The Cupta Family account | The Trent Davis Lawson account | The Jettison Corp account |
-| **D&D Beyond username** | Jettison | CatharticPlayer | Not recorded yet | WeslockePlayer |
-| **D&D Beyond role** | Player | Player | Player | Owner of the campaign |
-| **Character** | Vi ([sheet](https://www.dndbeyond.com/characters/172836541)) | Cathartic ([sheet](https://www.dndbeyond.com/characters/172986165)) | Artificer 10 | None |
-| **askdnd user** | Brett | Cupta Family | Trent Davis Lawson | Jettison Corp |
-| **Role in VTT test** | Player | Player | Player | DM |
-| **Role across askdnd** | Admin | Member | Member | Member |
-| **Automated runs** | **Never** | Yes | Yes | Yes |
-
-**Player 1 is Brett's primary D&D Beyond account** (Brett, 2026-10-30): automation could get an account flagged, so it's for testing by hand only.
+| | DM | Player 2 | Player 3 |
+|---|---|---|---|
+| **Chrome profile on the Mac Mini** | Jettison | Cupta Family | Trent |
+| **Google and D&D Beyond login** | The Jettison Corp account | The Cupta Family account | The Trent Davis Lawson account |
+| **D&D Beyond username** | WeslockePlayer | CatharticPlayer | ViPlayer |
+| **D&D Beyond role** | Owner of the campaign | Player | Player |
+| **Character** | None at the table: Weslocke (172986973) is on the account but stays unlinked, as DMs at this table don't play one | Cathartic, called CatharticPlayer on D&D Beyond ([sheet](https://www.dndbeyond.com/characters/172986165)) | Vi ([sheet](https://www.dndbeyond.com/characters/172992073)) |
+| **Role in VTT test** | DM | Player | Player |
+| **Role across askdnd** | Member | Member | Member |
 
 The D&D Beyond campaign is [VTT test](https://www.dndbeyond.com/campaigns/8224496).
 
-**Player 1 is also an admin.** Admins can do things a player can't, so use Player 2 to check what a player really sees and can do.
+**Brett's personal D&D Beyond account is not a seat** (Brett, 2026-10-30): automation could get an account flagged. That account's characters, the first Vi (172836541) and Spurt, are in no testing at all, and Brett's own Chrome profile on the Mini is never copied or driven.
 
 ## Setting up a seat
 
@@ -41,23 +38,31 @@ Reload every askdnd and VTT tab after a deploy.
 ## Rules
 
 - Automated testing may act like a person on D&D Beyond with these test accounts, or stand in for it (Brett, 2026-10-30): that's part of developing askdnd, not the product. What ships never imitates D&D Beyond's client.
-- Bridge tests only on the seats' sheets above, never a real table character's. Automated runs never use Player 1. The test copies in VTT test share real sheets, so the bridge never works on them.
+- Bridge tests only on the seats' sheets above, never a real table character's. The test copies in VTT test share real sheets, so the bridge never works on them.
 - VTT test is a test campaign: it sees every feature, whatever's switched on for The Adventure Begins.
 - Anything that deletes data on beta needs Brett's approval first.
 
-## Claude runs a real fight (planned)
+## Claude runs a real fight
 
-Brett, 2026-10-30: test with the real D&D Beyond, not only the stand-in in the browser tests.
+Brett, 2026-10-30: test with the real D&D Beyond, not only the stand-in in the browser tests. It runs on the Mac Mini, which is always on and signed in, so nobody has to watch and the MacBook can stay closed.
 
-1. **One sign-in.** A separate Chrome data folder per automated seat on the Mac Mini, outside the repo. Sign-ins can't be copied between computers, and Chrome blocks automation on its normal profiles. Brett signs in to D&D Beyond and askdnd in each over Screen Sharing, once. Claude never enters a password.
-2. **The real thing.** A script opens the seats at once in real Chrome windows, each with the bridge from its store listing: the DM in the VTT, the players on their sheets and on beta.
-3. **Named runs.** Each run is a list of steps and what should follow, such as "close Cathartic's sheet, roll a save, the pill says so at once". Claude runs them, reads the pages and reports what differed.
-4. **Stays apart.** Run by hand, never on GitHub, since it needs the signed-in profiles and D&D Beyond itself. Only Players 2 and 3 and the DM, in VTT test.
+- **The seats.** `scripts/real_table_seats.sh` copies the three profiles above into `~/askdnd-tests/seats` on the Mini and opens them in real Chrome windows. Chrome refuses to let a script drive its normal profile folder, and sign-ins can't move between computers, so the copies stay on the Mini. Copy again after signing in afresh or updating the bridge. Claude never enters a password.
+- **The runs.** `scripts/real_table.py` holds named runs: each does what a person would, watches the pages, and says what it expected and what happened. Run one on the Mini with `.venv/bin/python real_table.py <run>`.
+- **Stays apart.** Never on GitHub, since it needs the signed-in seats and D&D Beyond itself. It tests what's on beta, not unmerged changes.
+- **Don't overlap.** While a run is going, stay off Cathartic and Vi: it opens and closes their sheets.
 
-First runs: a closed sheet, rolls reaching the Game Log, a turn order heard from the VTT, Hit Points through the bridge.
+| Run | What it shows |
+|---|---|
+| `closed-sheet` | An open sheet connects the pill, and closing it changes the pill at once |
+| `game-log` | A roll reaches the Game Log while the sheet is open; with it closed the table still sees the roll, and the roll window says why it isn't in the log |
+| `close-after-roll` | Repeats closing a sheet right after a roll, at different moments |
+
+Still to write: a turn order heard from the VTT, Hit Points through the bridge.
+
+First results, 2026-10-30, with extension 0.9.4: `closed-sheet` passed. `game-log` passed in 3 of 5 runs after its test was fixed: the two misses were a closed sheet still saying Connected, fixed in 0.9.5. The rolls themselves reached the other player's sheet every time, and none did with the sheet closed. `close-after-roll` once took over 40 seconds to show Connected after a sheet opened, not explained yet. Rerun all three once 0.9.5 is on the store, after copying the seats again.
 
 ## Before a test
 
-- [ ] The DM and both players have a seat each, and nobody else has a role in VTT test
+- [ ] The DM and both players are the only people with a role in VTT test that the test needs (Brett's own and any second DM stay out of the way)
 - [ ] Both players' pills say Connected to D&D Beyond
 - [ ] Every tab was reloaded since the last deploy

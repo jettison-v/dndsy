@@ -885,3 +885,11 @@ Railway's settings, pictures in S3, Sentry, the deploy itself, or several people
   a branch that a folder has checked out. They go when those folders are cleaned up.
 - **Reuse on a new project:** turn on automatic branch deletion on day one, and before deleting a branch by hand,
   check that `main` has its work (`git log main..branch` shows nothing).
+
+## 2026-10-30: A test table that runs itself (Mac Mini)
+
+- **What:** three real Chrome windows on the always-on Mac Mini, each signed in as a test person on real D&D Beyond and beta with the askdnd bridge. A script (`scripts/real_table.py`) acts like those people and reports what happened.
+- **Why:** several people, several browsers and a real third-party site are slow to test by hand. The first run confirmed one fix on the real site and found a timing problem that made-up test data had missed.
+- **Copies, not the originals:** Chrome blocks scripts from its normal profile folder, so each seat is a copy in its own folder on the Mini. A cleaned-up copy left out a folder the extension needs, so copy everything but page caches.
+- **Reuse on a new project:** test accounts that could be flagged are never your real ones; an always-on machine suits slow real-world checks; keep them apart from the everyday tests, which must stay fast and need no accounts.
+

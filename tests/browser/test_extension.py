@@ -80,6 +80,23 @@ def test_opening_and_closing_a_sheet_shows_on_askdnds_open_pages(chrome, server)
     assert page.locator(".roll-win").count() == 1
 
 
+def test_a_sheet_closed_right_after_it_saved_stays_closed(chrome, server):
+    """A real fight on the Mac Mini, 2026-10-30: the extension's read a moment after a save came after the tab had closed,
+    told askdnd the sheet was open, and the pill and the roll window said Connected to a closed sheet."""
+    page = chrome.pages[0]
+    page.goto(f"{server['base']}/characters/{server['cole']}/battle")
+    page.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=8000)
+    sheet = chrome.new_page()
+    sheet.goto(SHEET)
+    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected to D&D Beyond')", timeout=45000)
+    sheet.evaluate("window.postMessage({ askdndBridge: 'from-page', type: 'saved', characterId: '75423618', path: '/x' }, location.origin)")
+    sheet.wait_for_timeout(300)
+    sheet.close()
+    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Open your sheet to connect')", timeout=8000)
+    page.wait_for_timeout(8000)  # (past the two reads after a save)
+    assert "Open your sheet to connect" in page.locator(PILL).inner_text()
+
+
 def test_without_the_extension_the_pill_says_to_add_it_and_the_window_has_the_link(people, server):
     """Brett, 2026-10-30: the DM didn't have it by accident, and nothing said so."""
     dm = people("dm")
