@@ -122,7 +122,7 @@ button.help-btn { background: none; cursor: pointer; padding: 0; font-family: in
 .live-pill:hover { color: var(--text); }
 .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; }
 .live-word, .live-noext, .live-noext-box { display: none; }
-body.no-bridge .live-noext { display: inline; }  /* the extension isn't in this browser (app.js): say so, with the link in the window */
+body.no-bridge .live-pill[data-wants-bridge] .live-noext { display: inline; }  /* the extension isn't in this browser (app.js), and this campaign has the bridge: say so, with the link in the window */
 body.no-bridge .live-noext-box { display: grid; gap: var(--sp-2); }
 body.no-bridge .live-pill[data-wants-bridge] .live-ago { display: none; }
 .live-pill.warn .live-dot { background: var(--amber); }
@@ -778,6 +778,7 @@ details.faq[open] > summary::before { transform: rotate(90deg); }
 .res-row .res { padding: 0 14px; border-left: 1px solid var(--line); }
 .res-row .res:first-child, .res-row .res-label + .res { border-left: none; padding-left: 0; }
 .res-row.slots { margin-top: 6px; }
+@media (max-width: 640px) { .res-row { flex-direction: column; align-items: flex-start; } .res-row .res { padding: 0; border-left: none; } }  /* each on its own line: a divider there only marks the wrap */
 .res-label { color: var(--faint); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .05em; margin-right: 12px; }
 /* What an option uses up, next to it */
 .spend { display: inline-flex; align-items: center; gap: 5px; font-size: var(--fs-xs); color: var(--muted); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 0 8px; margin-left: 4px; white-space: nowrap; vertical-align: middle; line-height: 1.6; }
