@@ -43,6 +43,14 @@ def _story(data: dict) -> dict:
     }
 
 
+def death_saves(data: dict) -> dict:
+    """The Death Saving Throw marks on the sheet: {"success", "fail", "stable"} (three successes, or D&D Beyond's own
+    Stable; app/death_saves.py)."""
+    ds = data.get("deathSaves") or {}
+    s, f = min(3, ds.get("successCount") or 0), min(3, ds.get("failCount") or 0)
+    return {"success": s, "fail": f, "stable": s >= 3 or bool(ds.get("isStabilized"))}
+
+
 def _portrait(data: dict) -> str:
     """The character's picture on D&D Beyond (their image server), or ""."""
     url = (data.get("decorations") or {}).get("avatarUrl") or ""
@@ -1271,6 +1279,7 @@ def parse_character(data: dict) -> dict:
             "speed": sh.speeds(),
             "passive_perception": 10 + perception["bonus"],
             "inspiration": bool(data.get("inspiration")),
+            "death_saves": death_saves(data),
             "conditions": ddb_conditions(data),  # ticked on the sheet (app/conditions.py shows them with askdnd's own)
             "saves": sh.saves(),
             "save_notes": general_save_notes,

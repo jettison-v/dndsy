@@ -1,5 +1,5 @@
 {# The hit points window's working (app/hit_points.py work), redrawn after each change in its form: the 2024 rules as
-   steps (a defense can be crossed out for a ruling), the end result, and the button that makes it. #}
+   steps (a defense, Unconscious or a death save failure can be crossed out for a ruling), the end result, and the button that makes it. #}
 <div id="hp-working" class="hp-working">
   <ol class="hp-steps">
     {% for p in w.parts %}{% for st in p.steps %}
@@ -7,8 +7,10 @@
       <span class="hp-st-title">{{ st.title }}</span></label><b>{{ st.value }}</b><span class="why">{{ st.why }}{% if st.off %} Crossed out: the table rules otherwise.{% endif %}</span></li>
     {% endfor %}{% endfor %}
     {% if w.mode == "damage" and w.parts | selectattr("type", "equalto", "") | list and w.taken %}<li class="hp-step note-only"><span class="hp-st-title">Damage type not known</span><b></b><span class="why">Choose it above to see whether {{ c.name }} resists it.</span></li>{% endif %}
-    {% for st in w.steps %}
-    <li class="hp-step"><span class="hp-st-title">{{ st.title }}</span><b>{{ st.value }}</b><span class="why">{{ st.why }}</span></li>
+    {% for st in w.steps %}{# a step with a key can be crossed out for a ruling (at 0: Unconscious, a death save failure) #}
+    {% if st.key %}<li class="hp-step{{ ' off' if st.off }}"><label><input type="checkbox" name="off" value="{{ st.key }}"{{ " checked" if st.off }}> <span class="sr">Cross out</span>
+      <span class="hp-st-title">{{ st.title }}</span></label><b>{{ st.value }}</b><span class="why">{{ st.why }}{% if st.off %} Crossed out: the table rules otherwise.{% endif %}</span></li>
+    {% else %}<li class="hp-step{{ ' mass' if st.mass }}"><span class="hp-st-title">{{ st.title }}</span><b>{{ st.value }}</b><span class="why">{{ st.why }}</span></li>{% endif %}
     {% endfor %}
     {% if w.mode == "temp" %}
     <li class="hp-step"><span class="hp-st-title">Choose</span><b></b><span class="seg hp-take">

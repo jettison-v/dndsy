@@ -15,6 +15,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app import config
 from app.admin import router as admin_router
 from app.ddb_bridge import router as ddb_bridge_router
+from app.death_saves import router as death_saves_router
 from app.hit_points import router as hit_points_router
 from app.admin_notes import router as admin_notes_router
 from app.manage_table import router as manage_table_router
@@ -136,6 +137,7 @@ app.include_router(realtime_router)
 app.include_router(errors_router)
 app.include_router(ddb_bridge_router)  # only where DDB_BRIDGE=1, per campaign (app/ddb_bridge.py)
 app.include_router(hit_points_router)  # (through the bridge: on_for)
+app.include_router(death_saves_router)  # (through the bridge: on_for)
 
 LOGIN_ERRORS = {
     "not_allowed": "That Google account isn't on the list for this table.",

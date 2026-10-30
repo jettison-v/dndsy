@@ -34,6 +34,7 @@
         {% if p.type_from and p.type %}<p class="note hp-type-from">D&amp;D Beyond's roll doesn't say the type: {{ p.type }} is the {{ roll.who }}'s {{ roll.label }} in {{ p.type_from }}. Change it if the DM's differs.</p>{% endif %}
       </div>
       {% endfor %}
+      {% if hp.current == 0 and (mode == "damage" or not roll) %}<label class="hp-crit"><input type="checkbox" name="crit" value="1"{{ " checked" if crit }}> A critical hit <span class="note">(at 0 Hit Points: two death save failures)</span></label>{% endif %}
       {% include "_hp_working.html" %}
     </div>
   </form>

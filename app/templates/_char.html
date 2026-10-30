@@ -118,9 +118,26 @@
 {% elif note %}<p class="pick-note-text">✎ {{ note }}</p>{% endif %}
 {%- endmacro %}
 
+{# At 0 Hit Points the HP tile is the Dying tile (app/death_saves.py, docs/mockups/death-saves.html): the death save
+   marks from the sheet (three successes, three failures) and the Death save roll, which marks itself. Stable or at
+   three failures, no roll: the DM rules. Back to the HP tile as soon as there are Hit Points again. #}
+{% macro dying_state(s) %}{{ "" if s.hit_points.current else ("stable" if (s.death_saves or {}).stable else "out" if (s.death_saves or {}).fail == 3 else "dying") }}{% endmacro %}
+{% macro dying_marks(s, c, roll=true) -%}
+{%- set ds = s.death_saves or {"success": 0, "fail": 0, "stable": false} -%}
+<span class="ds-marks" {{ mark(c, "death") }}{{ sync(s, "death") }}>
+  <span class="ds-set" aria-label="{{ ds.success }} of 3 successes">{% for i in range(3) %}<i class="ds-pip{{ ' s' if i < ds.success }}"></i>{% endfor %}<span class="ds-k">✓</span></span>
+  <span class="ds-set" aria-label="{{ ds.fail }} of 3 failures">{% for i in range(3) %}<i class="ds-pip{{ ' f' if i < ds.fail }}"></i>{% endfor %}<span class="ds-k">✗</span></span>
+</span>
+{%- if roll and dying_state(s) == "dying" %}<button type="button" class="roll-chip tile-roll" data-roll="death" data-label="Death save" title="Roll your death save: 10 or more a success, a 1 two failures, a 20 back with 1 Hit Point. It marks itself.">Roll</button>{% endif -%}
+{%- endmacro %}
+{% macro hp_tile(s, c, cls="", word="Hit points") -%}
+{%- set dy = dying_state(s) -%}
+<div class="{{ cls }}{{ ' dying ' ~ dy if dy }}" {{ tile(c, "hp") }}{{ sync(s, "hp") }}><small>{{ {"dying": "Dying", "stable": "Stable", "out": "Three failures"}.get(dy, word) }}</small><b>{{ s.hit_points.current }}</b>{% if s.hit_points.current != s.hit_points.max %}<span class="note"> / {{ s.hit_points.max }}</span>{% endif %}{% if s.hit_points.temp %}<span class="note"> +{{ s.hit_points.temp }} temp</span>{% endif %}{% if dy %}{{ dying_marks(s, c) }}{% if dy == "out" %}<span class="note ds-rule">The DM rules</span>{% endif %}{% endif %}</div>
+{%- endmacro %}
+
 {% macro vitals(s, c) -%}
 <div class="vitals">
-  <div class="vital" {{ tile(c, "hp") }}><small>HP</small><b>{{ s.hit_points.current }}</b>{% if s.hit_points.current != s.hit_points.max %}<span class="note"> / {{ s.hit_points.max }}</span>{% endif %}{% if s.hit_points.temp %}<span class="note"> +{{ s.hit_points.temp }} temp</span>{% endif %}</div>
+  {{ hp_tile(s, c, "vital", "HP") }}
   <div class="vital" {{ tile(c, "ac") }}><small>AC</small><b>{{ s.armor_class }}</b></div>
   <div class="vital" {{ tile(c, "speed") }}><small>Speed</small><b>{{ s.speed.walk }}</b><span class="note"> ft</span></div>
   <div class="vital" {{ tile(c, "initiative") }}><small>Initiative</small><b>{{ s.initiative }}</b>{{ adv(s.initiative_adv) }}</div>
@@ -183,7 +200,7 @@
 {# Battle's header: the Character page's number strip, with the labels and tiles it uses, tighter. #}
 {% macro battle_strip(s, c) -%}
 <div class="strip compact">
-  <div {{ tile(c, "hp") }}{{ sync(s, "hp") }}><small>Hit points</small><b>{{ s.hit_points.current }}</b>{% if s.hit_points.current != s.hit_points.max %}<span class="note"> / {{ s.hit_points.max }}</span>{% endif %}{% if s.hit_points.temp %}<span class="note"> +{{ s.hit_points.temp }} temp</span>{% endif %}</div>
+  {{ hp_tile(s, c) }}
   <div {{ tile(c, "ac") }}><small>Armor class</small><b>{{ s.armor_class }}</b></div>
   <div {{ tile(c, "speed") }}><small>Speed</small><b>{{ s.speed.walk }} ft</b>{% set extra = s.speed.items() | rejectattr(0, "in", ["walk", "parts", "notes"]) | list %}{% if extra %}<span class="note"> {% for k, v in extra %}{{ k }} {{ v }}{{ ", " if not loop.last }}{% endfor %}</span>{% endif %}</div>
   <div {{ tile(c, "initiative") }}><small>Initiative</small><b>{{ s.initiative }}</b>{{ adv(s.initiative_adv) }}<button type="button" class="roll-chip tile-roll" {{ roll_attrs("check", "Initiative", s.initiative, "", s.initiative_adv) }} title="Roll Initiative">Roll</button></div>

@@ -14,6 +14,7 @@ every character page and on Party shows it (`_fight_band.html`).
   mid-fight leaves its last word behind).
 """
 
+import time
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from urllib.parse import urlparse
@@ -121,8 +122,9 @@ def step(prev: dict | None, now: dict | None) -> tuple[str | None, str | None]:
     return a, b
 
 
-def _remind(f: dict, character: Character, kind: str, name: str, text: str, **more) -> None:
-    f["seq"] = f.get("seq", 0) + 1
+def remind(f: dict, character: Character, kind: str, name: str, text: str, **more) -> None:
+    # Ids only grow, also from one fight to the next (each browser shows a reminder once: those above the last it saw)
+    f["seq"] = max(f.get("seq", 0) + 1, int(time.time() * 1000))
     f["reminders"] = (f.get("reminders") or [])[-19:] + [{"id": f["seq"], "at": datetime.now(UTC).isoformat(), "character": character.id,
                                                            "who": character.name, "kind": kind, "name": name, "text": text, **more}]
 
@@ -137,10 +139,14 @@ def _save_label(character: Character, ability: str) -> str:
 def follow(db: Session, campaign: Campaign, prev: dict | None, now: dict) -> None:
     """A turn ended or began (app/conditions.py, how long it lasts): each condition timed by it moves on; one that ran
     out is marked due, and its player and the DM are reminded (nothing ends by itself: Brett, 2026-10-29); a save at
-    the end of someone's turn is a reminder as that turn begins, to roll it at its end; Concentration counts its rounds on the caster's own turns."""
+    the end of someone's turn is a reminder as that turn begins, to roll it at its end; a dying character's turn starts
+    with a reminder to roll its death save; Concentration counts its rounds on the caster's own turns."""
     ended, began = step(prev, now)
     if not ended and not began:
         return
+    from app import characters as chars  # (they read the fight too)
+    from app import ddb_bridge, death_saves
+
     keys = {x["character"]: x["key"] for x in now["order"] if x.get("character")}
     members = db.scalars(select(Character).join(CampaignCharacter, CampaignCharacter.character_id == Character.id)
                          .where(CampaignCharacter.campaign_id == campaign.id, CampaignCharacter.left_on.is_(None)))
@@ -167,18 +173,22 @@ def follow(db: Session, campaign: Campaign, prev: dict | None, now: dict) -> Non
                             c["left"] = c.get("left", la["n"]) - 1
                             c["due"] = c["left"] <= 0
                     elif kind == "save" and began and began == of:  # rolled at its end, said as it begins (Brett, 2026-10-29)
-                        _remind(now, ch, "save", c["name"], f"{la['ability']} save, DC {la['dc']}, at the end of this turn, to end {c['name']}",
+                        remind(now, ch, "save", c["name"], f"{la['ability']} save, DC {la['dc']}, at the end of this turn, to end {c['name']}",
                                 ability=la["ability"], dc=la["dc"], mod=_save_label(ch, la["ability"]))
                     if c.get("due"):
-                        _remind(now, ch, "ends", c["name"], f"{c['name']} ends now" + (f": its {la['n']} rounds are up" if kind == "rounds" else ""))
+                        remind(now, ch, "ends", c["name"], f"{c['name']} ends now" + (f": its {la['n']} rounds are up" if kind == "rounds" else ""))
                 out.append(c)
             ch.conditions = out
+        if mine and began == mine:  # dying: a death save starts the turn (app/death_saves.py)
+            st = death_saves.state(ddb_bridge.as_shown(db, ch, chars.character_summary(ch)))
+            if death_saves.rolling(st):
+                remind(now, ch, "death", "Death save", f"roll your death save ({st['success']} ✓ · {st['fail']} ✗)")
         conc = dict(ch.concentration or {})
         if conc.get("rounds") and mine and began == mine and not conc.get("due"):
             conc["round"] = int(conc.get("round") or 1) + 1
             if conc["round"] > conc["rounds"]:
                 conc["round"], conc["due"] = conc["rounds"], True
-                _remind(now, ch, "conc", "Concentration", f"{conc.get('spell') or 'Concentration'}: its time is up")
+                remind(now, ch, "conc", "Concentration", f"{conc.get('spell') or 'Concentration'}: its time is up")
             ch.concentration = conc
 
 
@@ -216,9 +226,11 @@ def for_person(db: Session, campaign: Campaign | None, email: str | None) -> dic
         from app import rules_data
 
         ids = {x["character"] for x in f["order"] if x.get("character")}
-        portraits = {c.id: (chars.character_summary(c) or {}).get("portrait") for c in db.scalars(select(Character).where(Character.id.in_(ids)))} if ids else {}
+        sheets = {c.id: chars.character_summary(c) or {} for c in db.scalars(select(Character).where(Character.id.in_(ids)))} if ids else {}
         art = {str(p["ddb_id"]): p["image"] for p in rules_data.pictures().values() if p.get("ddb_id") and p.get("image")}
-        f["order"] = [{**x, "picture": portraits.get(x.get("character")) or x.get("image") or art.get(x.get("monster") or "")}
+        f["order"] = [{**x, "picture": sheets.get(x.get("character"), {}).get("portrait") or x.get("image") or art.get(x.get("monster") or ""),
+                       # a character at 0 Hit Points (app/death_saves.py): its token striped, "0 HP"
+                       "down": ((sheets.get(x.get("character")) or {}).get("hit_points") or {}).get("current") == 0}
                       for x in f["order"]]
     return f
 
