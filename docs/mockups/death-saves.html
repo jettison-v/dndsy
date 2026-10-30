@@ -1,0 +1,303 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Death Saves</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Step 6, death save reminders and the massive damage note (Brett, 2026-10-29: design first). At 0 Hit Points askdnd
+   keeps the marks and reminds, timed by the turns heard from D&D Beyond's VTT; people roll and the DM rules. One page:
+   where you'll find it, a fight to step through as each person, the hit points window's working at 0, then what's for
+   Brett to decide. askdnd is dark only, so this page is too. Rules summarized in askdnd's own words (2024 PHB). */
+:root { --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --chrome: #0f1113; --line: #34383e; --line-soft: #2c3036;
+  --line-strong: #4a4f57; --text: #ebe7df; --strong: #fff; --muted: #a29d93; --faint: #6f6b64; --shadow: rgba(0, 0, 0, .45);
+  --red: #d64545; --red-text: #f08a8a; --red-soft: rgba(214, 69, 69, .14); --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .14); --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .15);
+  --cond-unconscious: #8a8f99;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.6 var(--sans); margin: 0; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 36px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 34px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.4rem/1.25 var(--serif); }
+h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+section { display: grid; gap: 14px; min-width: 0; }
+.eyebrow { font: 700 .78rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red-text); }
+.label { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+header.top { display: grid; gap: 12px; max-width: 76ch; }
+.lead { font-size: 1.05rem; }
+.muted { color: var(--muted); } .small { font-size: .86rem; } .faint { color: var(--faint); }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.box.ask { border-color: var(--red); }
+.box ol, .box ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 900px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+.where ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+
+.btn { font: 600 .86rem/1 var(--sans); color: var(--text); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 8px; padding: 9px 13px; cursor: pointer; white-space: nowrap; }
+.btn:hover { border-color: var(--muted); }
+.btn.red { background: var(--red); border-color: var(--red); color: #fff; }
+.btn.small { padding: 6px 10px; font-size: .8rem; }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.seg button { font: 500 .86rem/1 var(--sans); color: var(--text); background: var(--surface-2); border: 0; padding: 9px 13px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed=true] { background: var(--blue-soft); color: var(--blue); }
+.ddb { display: grid; gap: 10px; padding: 12px 14px; border: 1px dashed var(--line-strong); border-radius: 12px; }
+.ddb .tag { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+.ddb .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* The demo page: a character page's top, as askdnd draws it */
+.stage { position: relative; background: var(--chrome); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 14px; align-content: start; min-height: 420px; padding-bottom: 150px; overflow: hidden; }
+.stage .tagline { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+.band { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; font-size: .8rem; color: var(--muted); }
+.band .rd { font: 700 .72rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+.tok { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px 2px 2px; border-radius: 999px; opacity: .6; }
+.tok i { width: 20px; height: 20px; border-radius: 50%; background: var(--surface-3); border: 2px solid var(--line-strong); display: inline-block; flex: none; }
+.tok.enemy i { border-color: var(--red); }
+.tok.now { opacity: 1; background: var(--amber-soft); color: var(--strong); font-weight: 600; }
+.tok.now i { width: 24px; height: 24px; border-color: var(--amber); }
+.tok.down i { background: repeating-linear-gradient(135deg, var(--surface-3) 0 3px, var(--chrome) 3px 6px); border-color: var(--red-text); }
+.tok .zero { font: 700 .66rem/1 var(--cond); color: var(--red-text); letter-spacing: .04em; }
+.head { display: flex; gap: 12px; align-items: center; }
+.av { width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(135deg, #5a4b3a, #2c2620); border: 2px solid var(--line-strong); flex: none; }
+.down .av { filter: grayscale(1) brightness(.6); }
+.name-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.badge { font: 600 .74rem/1 var(--sans); padding: 4px 8px; border-radius: 999px; border: 1px solid; }
+.badge.unc { color: var(--cond-unconscious); border-color: var(--cond-unconscious); background: rgba(138, 143, 153, .12); }
+.badge.dying { color: var(--red-text); border-color: var(--red); background: var(--red-soft); }
+.badge.stable { color: var(--green); border-color: var(--green); background: var(--green-soft); }
+.vitals { display: flex; flex-wrap: wrap; gap: 10px; }
+.vital { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; display: grid; gap: 2px; min-width: 84px; }
+.vital small { font: 700 .68rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.vital b { font: 700 1.35rem/1.1 var(--sans); }
+.vital .note { color: var(--muted); font-size: .8rem; }
+/* At 0: the HP tile becomes the Dying tile, the marks in it */
+.vital.dying { border-color: var(--red); background: color-mix(in srgb, var(--red) 7%, var(--surface)); min-width: 230px; }
+.vital.dying.turn { border-color: var(--amber); box-shadow: 0 0 0 1px var(--amber) inset; }
+.vital.stable { border-color: var(--green); }
+.marks { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; font-size: .8rem; color: var(--muted); }
+.marks span { display: inline-flex; gap: 4px; align-items: center; }
+.pip { width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid var(--line-strong); display: inline-block; }
+.pip.s { background: var(--green); border-color: var(--green); }
+.pip.f { background: var(--red); border-color: var(--red); }
+.pip.pop { animation: pop .5s ease-out; }
+@keyframes pop { 0% { transform: scale(1.8); } 100% { transform: scale(1); } }
+.dying-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.roll-chip { font: 600 .8rem/1 var(--sans); color: var(--die-ink, #2a1a05); background: linear-gradient(#f7d98f, #d9a441); border: 0; border-radius: 6px; padding: 6px 9px; cursor: pointer; }
+.turn-note { font-size: .78rem; color: var(--amber); }
+/* Party card (others' view) */
+.pcard { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; }
+.pcard.down { border-color: var(--red); }
+.pcard .hp { font-size: .84rem; color: var(--muted); }
+.help { font-size: .8rem; color: var(--muted); border-top: 1px solid var(--line-soft); padding-top: 6px; }
+/* Corner cards, bottom right of the page */
+.cards { position: absolute; right: 12px; bottom: 12px; display: grid; gap: 8px; width: min(330px, calc(100% - 24px)); }
+.card { background: var(--surface-2); border: 1px solid var(--line-strong); border-left: 3px solid var(--blue); border-radius: 10px; padding: 10px 12px; box-shadow: 0 8px 24px var(--shadow); display: grid; gap: 8px; font-size: .86rem; animation: in .25s ease-out; }
+.card.warn { border-left-color: var(--amber); }
+.card.bad { border-left-color: var(--red); }
+.card.ok { border-left-color: var(--green); }
+.card .acts { display: flex; gap: 8px; flex-wrap: wrap; }
+@keyframes in { from { transform: translateY(8px); opacity: 0; } }
+.log { font-size: .84rem; color: var(--muted); display: grid; gap: 4px; max-height: 210px; overflow: auto; }
+.log div b { color: var(--text); }
+/* The hit points window's working */
+.win { background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; }
+.step { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 8px 0; border-top: 1px solid var(--line-soft); font-size: .88rem; }
+.step:first-of-type { border-top: 0; }
+.step .v { font-weight: 600; color: var(--strong); text-align: right; }
+.step .why { grid-column: 1 / -1; color: var(--muted); font-size: .8rem; }
+.step.hot .v { color: var(--red-text); }
+.step.mass { background: var(--red-soft); border-radius: 8px; padding: 8px 10px; border-top: 0; }
+.cross { display: inline-flex; gap: 6px; align-items: center; font-size: .8rem; color: var(--muted); }
+.never li { color: var(--muted); }
+.never b { color: var(--text); }
+.opt { display: grid; gap: 4px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
+.opt.rec { border-color: var(--blue); background: var(--blue-soft); }
+.opt .k { font: 700 .72rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--blue); }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="eyebrow">askdnd · step 6 · mockup</span>
+    <h1>Death Saves</h1>
+    <p class="lead">At 0 Hit Points, askdnd keeps the death save marks where your hit points were, reminds you when your turn comes round (it hears the turns from D&amp;D Beyond's VTT), and points out massive damage to the DM. You roll; the DM rules. askdnd never decides that someone dies.</p>
+    <p class="muted small">Made-up numbers. Trah has 31 Hit Points at most. The marks are D&amp;D Beyond's own: askdnd shows and makes them on Trah's sheet through the bridge, as it already does for hit points.</p>
+  </header>
+
+  <section class="where box">
+    <span class="eyebrow">Where you'll find it</span>
+    <ol>
+      <li><b>Battle and Sheet, the HP tile.</b> At 0 it becomes the <b>Dying</b> tile: 0 / 31, three success marks, three failure marks and the Death save roll. It goes back to HP as soon as Trah has Hit Points again.</li>
+      <li><b>Corner cards, bottom right.</b> When Trah's turn starts: a card for Trah's player with <b>Roll</b>. The DM gets one to know. No one else does.</li>
+      <li><b>The fight band and Party.</b> Everyone sees Trah's token striped with "0 HP", and on Party, Trah's marks and how others can help. Hit points are already for the whole table.</li>
+      <li><b>The hit points window.</b> Damage that drops Trah to 0, damage at 0, healing at 0, and massive damage each show in its working, step by step.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Try a fight</h2>
+    <p class="muted">Press the D&amp;D Beyond buttons as the DM would, and switch whose screen you're looking at.</p>
+    <div class="ddb">
+      <span class="tag">In D&amp;D Beyond's VTT and on the table</span>
+      <div class="row">
+        <button class="btn" data-do="hit">Enemy 1 hits Trah for 12</button>
+        <button class="btn" data-do="next">Next (the DM)</button>
+        <button class="btn" data-do="hit0">Enemy 1 hits Trah at 0</button>
+        <button class="btn" data-do="crit0">… a critical hit</button>
+        <button class="btn" data-do="heal">Cole heals Trah for 5</button>
+        <button class="btn" data-do="massive">Ogre hits for 45 (massive)</button>
+        <button class="btn" data-do="reset">Start again</button>
+      </div>
+      <div class="row"><span class="tag">Trah's death save comes up</span>
+        <button class="btn small" data-roll="14">14</button><button class="btn small" data-roll="6">6</button>
+        <button class="btn small" data-roll="1">natural 1</button><button class="btn small" data-roll="20">natural 20</button>
+        <span class="faint small">(or press Roll on the tile for a random one)</span></div>
+    </div>
+    <div class="row" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="label">Seen by</span>
+      <div class="seg" id="viewer"><button aria-pressed="true" data-v="trah">Trah's player</button><button aria-pressed="false" data-v="dm">The DM</button><button aria-pressed="false" data-v="other">Cole's player</button></div></div>
+    <div class="grid2">
+      <div class="stage" id="stage">
+        <span class="tagline" id="stage-tag">Trah · Battle</span>
+        <div class="band" id="band"></div>
+        <div id="page"></div>
+        <div class="cards" id="cards"></div>
+      </div>
+      <div class="box"><h3>What happened</h3><div class="log" id="log"></div>
+        <p class="faint small">Every mark is made on Trah's D&amp;D Beyond sheet and counted once askdnd reads it back. A mark made there by hand shows here within seconds.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The hit points window at 0</h2>
+    <p class="muted">Its working already says "Unconscious" at 0 and names massive damage. New: what it does to the marks, each step crossable for a ruling like the defenses are.</p>
+    <div class="grid3">
+      <div class="win"><span class="label">Dropped to 0</span>
+        <div class="step"><span>Damage</span><span class="v">12 slashing</span></div>
+        <div class="step"><span>Hit Points</span><span class="v">7 → 0</span><span class="why">5 left over, under the maximum of 31.</span></div>
+        <div class="step hot"><span>At 0 Hit Points</span><span class="v">Unconscious</span><span class="why">Starts Unconscious on Trah's sheet. Death saving throws start on Trah's next turn.</span></div>
+        <label class="cross"><input type="checkbox" checked> Start Unconscious</label>
+      </div>
+      <div class="win"><span class="label">Hit while at 0</span>
+        <div class="step"><span>Damage</span><span class="v">8 piercing · critical hit</span></div>
+        <div class="step hot"><span>Death saves</span><span class="v">+2 failures</span><span class="why">Damage at 0 Hit Points is a failure; a critical hit, two. Trah had 1, so this makes 3.</span></div>
+        <label class="cross"><input type="checkbox" checked> Mark the failures</label>
+        <p class="small muted">Three failures: the DM rules what happens. askdnd shows "3 failures" and tells the DM.</p>
+      </div>
+      <div class="win"><span class="label">Massive damage</span>
+        <div class="step"><span>Damage</span><span class="v">45 bludgeoning</span></div>
+        <div class="step"><span>Hit Points</span><span class="v">7 → 0</span><span class="why">38 left over.</span></div>
+        <div class="step mass hot"><span>Massive damage</span><span class="v">38 ≥ 31</span><span class="why">Damage left over at least the Hit Point maximum kills outright by the rules. The DM rules; askdnd marks nothing for it.</span></div>
+        <p class="small muted">The DM also gets a corner card. Trah's player sees it in the window as applied.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="box never">
+    <h3>What askdnd never does</h3>
+    <ul>
+      <li><b>Decide a character is dead.</b> Three failures or massive damage show and are told to the DM; the DM rules.</li>
+      <li><b>Roll for anyone.</b> The card offers Roll; the player rolls when they're ready.</li>
+      <li><b>Wait for the VTT.</b> Without turns heard, the Dying tile keeps its Roll button and there's simply no card.</li>
+      <li><b>Track a monster's.</b> Monsters usually just fall at 0; the DM's own call.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Your call</h2>
+    <div class="grid3">
+      <div class="box ask"><h3>1 · A death save rolled from the Dying tile</h3>
+        <div class="opt rec"><span class="k">A · recommended</span>It marks itself: 10 or more a success, under 10 a failure, a 1 two failures, a 20 back to 1 Hit Point. The player pressed Roll for it, and the rule says what it counts as.</div>
+        <div class="opt"><span class="k">B</span>The roll comes with <b>Mark success</b> (or failure) in Table rolls; nothing changes until someone presses it.</div>
+        <p class="small faint">Either way, a death save rolled on D&amp;D Beyond's sheet marks there, and askdnd hears it.</p></div>
+      <div class="box ask"><h3>2 · Damage at 0 Hit Points</h3>
+        <div class="opt rec"><span class="k">A · recommended</span>Applying it marks the failure (two on a critical hit), ticked in the window and crossable for a ruling, as the defenses are.</div>
+        <div class="opt"><span class="k">B</span>The window only reminds: "That's a failure." The player marks it.</div></div>
+      <div class="box ask"><h3>3 · Unconscious at 0</h3>
+        <div class="opt rec"><span class="k">A · recommended</span>Dropping to 0 starts Unconscious on the sheet (crossable), and healing from 0 ends it and clears the marks, as the rules do.</div>
+        <div class="opt"><span class="k">B</span>A reminder only; conditions stay the player's to start and end.</div></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const MAX = 31;
+  let st, viewer = 'trah';
+  const ORDER = [['Cole', ''], ['Enemy 1', 'enemy'], ['Trah', ''], ['Big C', ''], ['Ogre', 'enemy']];
+  const $ = s => document.querySelector(s);
+  function reset() { st = { hp: 7, s: 0, f: 0, stable: false, unc: false, turn: 1, round: 1, log: [], cards: [], popped: null }; }
+  const down = () => st.hp === 0;
+  const say = t => st.log.unshift(t);
+  function card(to, text, kind, roll) { st.cards.push({ to, text, kind, roll }); if (st.cards.length > 6) st.cards.shift(); }
+  function mark(kind, n) {
+    if (kind === 's') st.s = Math.min(3, st.s + n); else st.f = Math.min(3, st.f + n);
+    st.popped = kind;
+    if (st.s === 3) { st.stable = true; say('<b>Three successes:</b> Trah is stable. No more death saves; 1 Hit Point after 1d4 hours unless healed.'); card('all', 'Trah is stable: no more death saves.', 'ok'); }
+    if (st.f === 3) { say('<b>Three failures.</b> askdnd marks nothing more: the DM rules.'); card('trah', 'Three death save failures. The DM rules what happens.', 'bad'); card('dm', 'Trah has three death save failures · your ruling.', 'bad'); }
+  }
+  function up(hp, why) { st.hp = hp; st.s = st.f = 0; st.stable = st.unc = false; say(why + ' Unconscious ends; the marks clear.'); }
+  const act = {
+    hit() { if (down()) return act.hit0(); st.hp = 0; st.unc = true; say('<b>Enemy 1 hits Trah for 12:</b> 7 → 0. Unconscious starts; death saves begin on Trah\'s next turn.'); card('dm', 'Trah is down: 0 Hit Points, Unconscious.', 'warn'); },
+    next() { st.turn = (st.turn + 1) % ORDER.length; if (st.turn === 0) st.round++;
+      const who = ORDER[st.turn][0]; say('<b>Next:</b> ' + who + '\'s turn (round ' + st.round + ').');
+      if (who === 'Trah' && down() && !st.stable && st.f < 3) { card('trah', 'Your turn: roll your death save.', 'warn', true); card('dm', 'Trah\'s turn: Trah rolls a death save (' + st.s + ' ✓ · ' + st.f + ' ✗).', 'info'); } },
+    hit0() { if (!down()) return say('Trah isn\'t at 0 yet.'); if (st.stable) { st.stable = false; st.s = 0; say('<b>Hit while stable:</b> dying again, saves start over.'); }
+      say('<b>Enemy 1 hits Trah at 0:</b> one failure.'); mark('f', 1); },
+    crit0() { if (!down()) return say('Trah isn\'t at 0 yet.'); st.stable = false; say('<b>A critical hit at 0:</b> two failures.'); mark('f', 2); },
+    heal() { if (!down()) { st.hp = Math.min(MAX, st.hp + 5); return say('<b>Cole heals Trah for 5:</b> ' + st.hp + ' Hit Points.'); } up(5, '<b>Cole heals Trah for 5:</b> 0 → 5.'); card('trah', 'Trah is back up: 5 Hit Points.', 'ok'); },
+    massive() { const left = 45 - st.hp; st.hp = 0; st.unc = true; say('<b>The Ogre hits for 45:</b> ' + left + ' left over, at least the maximum of 31. Massive damage: the DM rules.');
+      card('dm', 'Massive damage on Trah: ' + left + ' left over, maximum 31. By the rules that kills outright · your ruling.', 'bad'); },
+    reset() { reset(); }
+  };
+  function roll(n) {
+    if (!down() || st.stable || st.f >= 3) return say('No death save to roll now.');
+    st.cards = st.cards.filter(c => !c.roll);
+    if (n === 20) { up(1, '<b>Death save: natural 20.</b> Trah is back with 1 Hit Point.'); card('all', 'Trah rolled a 20 and is back with 1 Hit Point.', 'ok'); return; }
+    if (n === 1) { say('<b>Death save: natural 1</b>, two failures.'); return mark('f', 2); }
+    say('<b>Death save: ' + n + '</b>, ' + (n >= 10 ? 'a success.' : 'a failure.')); mark(n >= 10 ? 's' : 'f', 1);
+  }
+  const pips = (n, cls) => [0, 1, 2].map(i => '<i class="pip' + (i < n ? ' ' + cls + (st.popped === cls && i === n - 1 ? ' pop' : '') : '') + '"></i>').join('');
+  function draw() {
+    const mine = viewer === 'trah', now = ORDER[st.turn][0];
+    $('#band').innerHTML = '<span class="rd">Round ' + st.round + '</span>' + ORDER.map(([n, k], i) => '<span class="tok ' + k + (i === st.turn ? ' now' : '') + (n === 'Trah' && down() ? ' down' : '') + '"><i></i>' + n + (n === 'Trah' && down() ? ' <span class="zero">0 HP</span>' : '') + '</span>').join('');
+    const turn = now === 'Trah' && down() && !st.stable && st.f < 3;
+    const badges = (st.unc ? '<span class="badge unc">Unconscious</span>' : '') + (down() ? (st.stable ? '<span class="badge stable">Stable</span>' : st.f >= 3 ? '<span class="badge dying">3 failures · the DM rules</span>' : '<span class="badge dying">Dying</span>') : '');
+    const tile = !down() ? '<div class="vital"><small>HP</small><b>' + st.hp + '</b><span class="note"> / ' + MAX + '</span></div>'
+      : '<div class="vital dying' + (turn ? ' turn' : '') + (st.stable ? ' stable' : '') + '"><small>' + (st.stable ? 'Stable' : 'Dying') + ' · HP</small><div class="dying-row"><b>0</b><span class="note">/ ' + MAX + '</span>'
+        + (mine && !st.stable && st.f < 3 ? '<button class="roll-chip" data-roll="random">Death save</button>' : '') + '</div>'
+        + '<div class="marks"><span>Successes ' + pips(st.s, 's') + '</span><span>Failures ' + pips(st.f, 'f') + '</span></div>'
+        + (turn && mine ? '<span class="turn-note">Your turn: roll at its start</span>' : st.stable ? '<span class="note">No more saves · 1 HP in 1d4 hours unless healed</span>' : '') + '</div>';
+    if (viewer === 'other') {
+      $('#stage-tag').textContent = 'Party · as Cole\'s player sees it';
+      $('#page').innerHTML = '<div class="pcard' + (down() ? ' down' : '') + '"><div class="name-row"><h3>Trah</h3>' + badges + '</div>'
+        + '<span class="hp">' + (down() ? '0 / ' + MAX + ' Hit Points' : st.hp + ' / ' + MAX + ' Hit Points') + '</span>'
+        + (down() ? '<div class="marks"><span>Successes ' + pips(st.s, 's') + '</span><span>Failures ' + pips(st.f, 'f') + '</span></div>'
+          + (st.stable || st.f >= 3 ? '' : '<div class="help">Others can help: any healing brings Trah back; a DC 10 Wisdom (Medicine) check as an action, or Spare the Dying, makes Trah stable.</div>') : '') + '</div>'
+        + '<div class="pcard"><div class="name-row"><h3>Cole</h3></div><span class="hp">22 / 34 Hit Points</span></div>';
+    } else {
+      $('#stage-tag').textContent = viewer === 'dm' ? 'Trah · Battle · as the DM sees it' : 'Trah · Battle';
+      $('#page').innerHTML = '<div class="head' + (down() ? ' down' : '') + '"><span class="av"></span><div style="display:grid;gap:3px"><div class="name-row"><h3>Trah</h3>' + badges + '</div><span class="muted small">Level 5 Rogue</span></div></div>'
+        + '<div class="vitals">' + tile + '<div class="vital"><small>AC</small><b>15</b></div><div class="vital"><small>Speed</small><b>30</b><span class="note"> ft</span></div></div>';
+    }
+    const shown = st.cards.filter(c => c.to === 'all' || c.to === viewer).slice(-3);
+    $('#cards').innerHTML = shown.map(c => '<div class="card ' + (c.kind || '') + '"><span>' + c.text + '</span>' + (c.roll ? '<div class="acts"><button class="btn small red" data-roll="random">Roll</button></div>' : '') + '</div>').join('');
+    $('#log').innerHTML = st.log.map(t => '<div>' + t + '</div>').join('') || '<div class="faint">Trah has 7 Hit Points. Start with Enemy 1\'s hit.</div>';
+    st.popped = null;
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.do) act[b.dataset.do]();
+    else if (b.dataset.roll) roll(b.dataset.roll === 'random' ? 1 + Math.floor(Math.random() * 20) : +b.dataset.roll);
+    else if (b.dataset.v) { viewer = b.dataset.v; document.querySelectorAll('#viewer button').forEach(x => x.setAttribute('aria-pressed', x === b)); }
+    else return;
+    draw();
+  });
+  reset(); draw();
+})();
+</script>
