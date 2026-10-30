@@ -55,4 +55,4 @@ These need a person, or D&D Beyond's VTT, which is a game canvas a script can't 
 
 | Date | Extension | Part 1 | Notes |
 |---|---|---|---|
-| 2026-10-30 | 0.9.4 | closed-sheet, hit-points passed. game-log 3 of 5 | The misses were a closed sheet saying Connected, fixed in 0.9.5, waiting on the store |
+| 2026-10-30 | 0.9.4 | closed-sheet, hit-points, condition passed. game-log 3 of 5 | The misses were a closed sheet saying Connected, fixed in 0.9.5, waiting on the store |
