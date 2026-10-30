@@ -217,11 +217,10 @@ def edit_note(request: Request, character_id: int, note_id: int, db: Session = D
 
 
 @router.post("/characters/{character_id:int}/notes")
-async def save_note(request: Request, character_id: int, db: Session = Depends(get_db)):
+def save_note(request: Request, character_id: int, form=web.FormBody, db: Session = Depends(get_db)):
     user, ch, stop = _load(request, db, character_id, edit=True)
     if stop:
         return stop
-    form = await request.form()
     note_id = form.get("note_id")
     n = db.get(PlayerNote, int(note_id)) if note_id and str(note_id).isdigit() else None
     if note_id and (n is None or n.character_id != ch.id):

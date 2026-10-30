@@ -124,6 +124,21 @@ def from_field(field: str) -> str:
     return ddb_fields.CONDITIONS.get(int(arg), "") if kind == "condition" and arg.isdigit() else ""
 
 
+def with_changes(sheet: list[dict] | None, changes) -> list[dict] | None:
+    """D&D Beyond's conditions with the bridge's changes on their way already made (each {"field", "value"}, oldest
+    first), for what reads the stored summary and not ddb_bridge.as_shown (the menu bar)."""
+    if sheet is None:
+        return None
+    out = list(sheet)
+    for ch in changes:
+        name = from_field(str(ch.get("field")))
+        if name and not ch.get("value"):
+            out = [c for c in out if c["name"] != name]
+        elif name and not any(c["name"] == name for c in out):
+            out.append({"name": name})
+    return out
+
+
 def from_sheet(data: dict | None) -> list[dict]:
     """The conditions ticked on D&D Beyond's sheet (its character data), in its order, Exhaustion with its level."""
     out = []

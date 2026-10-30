@@ -8,7 +8,7 @@ they last opened); with no one asking (background work, the upload API), the fir
 import json
 from collections.abc import Callable
 
-from fastapi import Request
+from fastapi import Depends, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -96,3 +96,20 @@ def deliver_now(character) -> dict:
     """The "bridgeDeliver" event for a change for D&D Beyond just made here: whatever page it was made on tells the
     extension to make it now (app.js → askdnd.js), instead of at its next check every 30 seconds."""
     return {"ddbId": str(character.ddb_id or "")}
+
+
+async def _body_json(request: Request):
+    try:
+        return await request.json()
+    except ValueError:
+        return None  # (not JSON: the route's own check turns it away)
+
+
+async def _body_form(request: Request):
+    return await request.form()
+
+
+# A route that reads its body and uses the database takes it through one of these and is a plain `def`: reading a body
+# has to wait, and a plain route runs on a worker thread, so its database work never holds up everyone's live connection.
+JsonBody = Depends(_body_json)
+FormBody = Depends(_body_form)

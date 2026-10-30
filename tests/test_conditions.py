@@ -3,7 +3,7 @@
 import pytest
 import json
 
-from app import characters
+from app import characters, live
 from app import conditions as cd
 from app.importer import import_bundle
 from tests.table_setup import BUNDLE, char, owned_by
@@ -113,6 +113,10 @@ def test_a_condition_shows_on_battle_party_and_your_menu_bar_button(player, dm, 
     assert 'id="battle-body" class="cond-ghost"' in dm.get(f"/characters/{cole.id}/battle").text  # the portrait fades
 
 
+def dots(db, character):
+    return next(r for r in live.rows_from(db) if r["id"] == character.id)["conditions"]
+
+
 def test_with_the_bridge_a_condition_is_made_on_d_and_d_beyond_and_shows_at_once_marked_until_its_there(player, db, sheet):
     """A standing rule (Brett, 2026-10-28: changes only while the sheet can be reached; conditions synced both ways;
     2026-10-29: the page shows a change at once, marked until D&D Beyond has it): starting or ending one D&D Beyond
@@ -128,6 +132,7 @@ def test_with_the_bridge_a_condition_is_made_on_d_and_d_beyond_and_shows_at_once
     it = db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == cole.id)).all()[-1]
     assert (it.kind, it.data) == ("set", {"field": "condition:11", "value": True})
     assert 'data-sync="on"' in r.text.split('class="cond-bar"')[1]  # shown already, on its way
+    assert "Poisoned" in dots(db, cole)  # the menu bar's too (review, 2026-10-29)
     badge = player.get(f"/characters/{cole.id}/battle").text.split('class="cond-badges"')[1]
     assert 'data-name="Poisoned" data-mark="' in badge and 'data-sync="on"' in badge
     sheet["conditions"] = [{"id": 11, "level": None}, {"id": 4, "level": 3}]  # made (and Exhaustion 3 ticked there)
@@ -138,8 +143,10 @@ def test_with_the_bridge_a_condition_is_made_on_d_and_d_beyond_and_shows_at_once
     it = db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == cole.id).order_by(BridgeIntent.id)).all()[-1]
     assert it.data == {"field": "exhaustion", "value": 0}
     assert 'data-sync="ending"' in r.text and "Ending…" not in r.text and "var(--cond-exhaustion)" not in r.text  # no words; off the edge already
+    assert "Exhaustion" not in dots(db, cole)
     it.state = "not_yet"  # it gave up: to make on the sheet
     db.commit()
+    assert "Exhaustion" in dots(db, cole)
     page = player.get(f"/characters/{cole.id}/battle").text
     assert 'data-sync="failed" title="D&amp;D Beyond didn&#39;t take this: make it there"' in page  # said only on hover
     cole.sheet_heard_at = None  # the sheet can't be reached: nothing is taken

@@ -62,6 +62,21 @@ def test_old_parser_summaries_are_reparsed(db):
     assert characters.character_summary(cole)["name"] == "Cole Lockhard"
 
 
+def test_a_new_parser_is_stored_once_and_an_unreadable_copy_keeps_its_summary(db):
+    """Review, 2026-10-29: a page shouldn't parse a whole sheet on every load until the next refresh."""
+    import_bundle(db, BUNDLE)
+    cole, trah = char(db, "Cole"), char(db, "Trah")
+    characters.refresh(db, cole)
+    characters.refresh(db, trah)
+    cole.snapshot.summary = {"parser_version": 0, "name": "stale"}
+    trah.snapshot.summary, trah.snapshot.raw = {"parser_version": 0, "name": "kept"}, {"not": "a sheet"}
+    db.commit()
+    characters.reparse_old(db)
+    db.expire_all()
+    assert cole.snapshot.summary["parser_version"] == ddb.PARSER_VERSION and cole.snapshot.summary["name"] == "Cole Lockhard"
+    assert trah.snapshot.summary["name"] == "kept"
+
+
 def test_set_link_accepts_urls_and_clears_old_copy(db):
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
