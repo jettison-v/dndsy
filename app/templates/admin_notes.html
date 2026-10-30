@@ -23,7 +23,7 @@
       <tr>
         <td><b>{{ s.title or s.google_doc_id }}</b>
           <div class="note">Campaign notes · visible to the table</div></td>
-        <td class="note">{% if st.latest %}Synced {{ s.last_synced_at.strftime("%b %-d, %-I:%M %p") }} UTC<br>{{ "{:,}".format(st.words) }} words · {{ st.images }} images{% else %}Not synced yet{% endif %}</td>
+        <td class="note">{% if st.latest %}Synced {{ s.last_synced_at | clock(date=True) }}<br>{{ "{:,}".format(st.words) }} words · {{ st.images }} images{% else %}Not synced yet{% endif %}</td>
         <td class="end">{% if st.latest %}<a class="btn" href="{{ cbase }}/manage/sessions/doc/snapshots/{{ st.latest.id }}">View</a>{% endif %}
           <form class="inline" method="post" action="{{ cbase }}/manage/sessions/doc/sources/{{ s.id }}/delete" onsubmit="return confirm('Remove this doc? Its synced copies are deleted too.')"><button class="btn link danger">Remove</button></form></td>
       </tr>

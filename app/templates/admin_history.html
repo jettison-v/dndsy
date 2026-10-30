@@ -17,7 +17,7 @@
   <div class="hist-row">
     <div class="hist-head">
       <b>{{ r.label }}</b> <span class="tag">{{ x.field }}</span> <span class="tag {{ 'draft' if r.source in ('import', 'undo-import') else '' }}">{{ x.source }}</span>
-      <span class="note">{{ r.created_at.strftime("%-I:%M %p") }} UTC{% if r.actor %} · {{ r.actor }}{% endif %}</span>
+      <span class="note">{{ r.created_at | clock }}{% if r.actor %} · {{ r.actor }}{% endif %}</span>
       {% if x.restorable %}<form method="post" action="{{ page_url }}/{{ r.id }}/restore" class="inline hist-restore"
         onsubmit="return confirm('Put back the earlier version?')"><button class="btn small">{{ "Bring back" if r.field == "deleted" else "Restore" }}</button></form>{% endif %}
     </div>
