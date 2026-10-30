@@ -313,22 +313,20 @@ def window(request: Request, character_id: int, roll: int = 0, mode: str = "dama
 
 
 @router.post("/characters/{character_id:int}/hp/work")
-async def rework(request: Request, character_id: int, db: Session = Depends(get_db)):
+def rework(request: Request, character_id: int, form=web.FormBody, db: Session = Depends(get_db)):
     """The working again, after a number, a type, a tab or a crossed-out step changed (the window's own form)."""
     ch, _ = _guard(db, request, character_id)
-    form = await request.form()
     mode, parts, off, take = _read(form)
     r = _roll(db, int(form.get("roll") or 0), ch)
     return _page(request, db, ch, "_hp_working.html", mode, parts, off, take, r, form.get("source", "")[:120], form.get("crit") == "1")
 
 
 @router.post("/characters/{character_id:int}/hp/apply")
-async def apply(request: Request, character_id: int, db: Session = Depends(get_db)):
+def apply(request: Request, character_id: int, form=web.FormBody, db: Session = Depends(get_db)):
     """Make it: the end result goes to D&D Beyond through the bridge (only while the sheet can be reached), and a roll
     it came from says so in Table rolls, once for this character."""
     ch, user = _guard(db, request, character_id)
     ddb_bridge.reach(ch)
-    form = await request.form()
     mode, parts, off, take = _read(form)
     r = _roll(db, int(form.get("roll") or 0), ch)
     if r and applied(db, r).get(ch.id):

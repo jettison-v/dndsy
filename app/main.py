@@ -40,7 +40,7 @@ from app.history_pages import router as history_router
 from app.house_rules_pages import router as house_rules_router
 from app.campaigns_admin import router as campaigns_router
 from app.dice import router as dice_router
-from app import errors, realtime
+from app import characters, errors, realtime
 from app.errors import router as errors_router
 from app.realtime import router as realtime_router
 from app.entity_pages import router as entity_router
@@ -63,9 +63,22 @@ async def lifespan(app: FastAPI):
         pass
     # The live table connection: this copy hears every copy's changes through Postgres (app/realtime.py)
     listener = asyncio.create_task(realtime.listen()) if db_engine is not None and db_engine.dialect.name == "postgresql" else None
+    reparsing = asyncio.create_task(asyncio.to_thread(reparse_old_summaries))  # (beside the first pages, not before them)
     yield
+    await reparsing
     if listener:
         listener.cancel()
+
+
+def reparse_old_summaries() -> None:
+    """After a deploy with a new D&D Beyond parser, every sheet's summary in the new shape (app/characters.py)."""
+    if db_engine is None:
+        return
+    try:
+        with SessionLocal() as db:
+            characters.reparse_old(db)
+    except Exception:
+        pass  # pages re-parse for themselves until it works
 
 
 def mark_interrupted_runs() -> None:

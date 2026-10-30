@@ -58,6 +58,7 @@ def rows_from(db: Session) -> list[dict]:
         return []
     bridge = config.DDB_BRIDGE and vtt.on(campaign, "ddb_bridge")
     by_hand: dict[int, int] = {}
+    on_way: dict[int, list[dict]] = {}
     if bridge:
         from sqlalchemy import func
 
@@ -65,6 +66,10 @@ def rows_from(db: Session) -> list[dict]:
         by_hand = dict(db.execute(select(BridgeIntent.character_id, func.count())
                                   .where(BridgeIntent.state == "not_yet", func.coalesce(waits_for_sheet, False).is_(False))
                                   .group_by(BridgeIntent.character_id)).all())
+        for cid, data in db.execute(select(BridgeIntent.character_id, BridgeIntent.data)
+                                    .where(BridgeIntent.kind == "set", BridgeIntent.state.in_(("waiting", "sending")))
+                                    .order_by(BridgeIntent.id)):
+            on_way.setdefault(cid, []).append(data)
     reach = datetime.now(UTC) - REACH
     summary = CharacterSnapshot.summary
     q = (select(Character.id, Character.name, User.email, Character.ddb_id, Character.copy_of_id, Character.sheet_heard_at,
@@ -83,8 +88,8 @@ def rows_from(db: Session) -> list[dict]:
              # (a test copy shares a real sheet, so the bridge never works on it: ddb_bridge.on_for)
              "step": bool(bridge and ddb_id and copy_of is None and heard and heard >= reach),
              "by_hand": by_hand.get(cid, 0) if bridge and copy_of is None else 0,
-             # the menu bar's dots: what it's under now (D&D Beyond's with askdnd's own, as on Battle)
-             "conditions": ["Concentration"] * bool(conc) + [x["name"] for x in cond.shown(own, on_sheet, bool(bridge and copy_of is None))]}
+             # the menu bar's dots: what it's under now (D&D Beyond's with what's on its way and askdnd's own, as on Battle)
+             "conditions": ["Concentration"] * bool(conc) + [x["name"] for x in cond.shown(own, cond.with_changes(on_sheet, on_way.get(cid, ())), bool(bridge and copy_of is None))]}
             for cid, name, email, ddb_id, copy_of, heard, fetched, status, error, portrait, classes, hp, hp_max, own, on_sheet, conc
             in db.execute(q)]
 

@@ -165,3 +165,11 @@ def test_a_round_number_the_extension_garbles_is_round_1(db, sheet):
     campaign = _campaign(db)
     assert fight.heard(db, campaign, {**heard(), "round": "two", "turn": None})
     assert (campaign.fight["round"], campaign.fight["turn"]) == (1, 1)
+
+
+def test_a_report_that_isnt_json_doesnt_end_the_fight(player, db, sheet):
+    campaign = _campaign(db)
+    set_role(db, "player@example.com", "player")
+    player.post(f"/bridge/fight/{GAME}", json={"fight": heard()})
+    r = player.post(f"/bridge/fight/{GAME}", content="not json", headers={"Content-Type": "application/json"})
+    assert r.status_code == 200 and r.json() == {"ok": False, "changed": False} and campaign.fight

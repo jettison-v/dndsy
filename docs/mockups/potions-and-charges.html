@@ -1,0 +1,310 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Potions and Charges</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* The rest of step 5, forgotten effects (2026-10-30: design first): what you're carrying, in sight on Battle, and one
+   press to use it, made on D&D Beyond through the bridge. One page: where you'll find it, a Battle to try as three
+   characters, what was checked, then what's for Brett to decide. askdnd is dark only, so this page is too. Rules
+   summarized in askdnd's own words (2024 DMG and PHB). */
+:root { --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --chrome: #0f1113; --line: #34383e; --line-soft: #2c3036;
+  --line-strong: #4a4f57; --text: #ebe7df; --strong: #fff; --muted: #a29d93; --faint: #6f6b64; --shadow: rgba(0, 0, 0, .45);
+  --red: #d64545; --red-text: #f08a8a; --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .14); --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .15);
+  --spell-bg: #1b1e2a; --spell-line: #3a4260;
+  --k-action: #ef6b6b; --k-bonus: var(--amber); --k-reaction: #6fa8ff; --k-other: #b48ae8;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.6 var(--sans); margin: 0; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 36px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 34px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.4rem/1.25 var(--serif); }
+h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+section { display: grid; gap: 14px; min-width: 0; }
+.eyebrow { font: 700 .78rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red-text); }
+.label { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+header.top { display: grid; gap: 12px; max-width: 76ch; }
+.lead { font-size: 1.05rem; }
+.muted { color: var(--muted); } .small { font-size: .86rem; } .faint { color: var(--faint); }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.box.ask { border-color: var(--red); }
+.box ol, .box ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
+
+.btn { font: 600 .86rem/1 var(--sans); color: var(--text); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 8px; padding: 9px 13px; cursor: pointer; }
+.btn:hover { border-color: var(--muted); }
+.btn.main { background: var(--red); border-color: var(--red); color: #fff; }
+.btn.small { padding: 6px 10px; font-size: .8rem; }
+.btn:focus-visible, .seg button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; }
+.ctl { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.ctl > span { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.seg button { font: 500 .84rem/1 var(--sans); color: var(--text); background: var(--surface-2); border: 0; padding: 8px 12px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed=true] { background: var(--blue-soft); color: var(--blue); }
+
+/* The demo: Battle's rows, top to bottom, as askdnd draws them */
+.stage { position: relative; background: var(--chrome); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 12px; min-height: 560px; align-content: start; overflow: hidden; }
+.head { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; }
+.av { width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(135deg, #5a4b3a, #2c2620); border: 2px solid var(--line-strong); flex: none; }
+.who { font: 600 1.25rem/1.2 var(--serif); color: var(--strong); }
+.tile { display: grid; gap: 2px; padding: 7px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; min-width: 96px; }
+.tile small { font: 700 .66rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.tile b { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.tile.up { border-color: var(--green); box-shadow: 0 0 0 3px var(--green-soft); }
+.status { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: .82rem; color: var(--muted); }
+.pill { display: inline-flex; gap: 6px; padding: 3px 10px; border-radius: 999px; background: var(--blue-soft); color: var(--blue); font-weight: 600; font-size: .8rem; }
+.pill i { font-style: normal; font-weight: 400; color: var(--muted); }
+.spellbar { padding: 8px 12px; background: var(--spell-bg); border: 1px solid var(--spell-line); border-radius: 10px; font-size: .82rem; color: var(--muted); }
+
+/* An item in its column: a Battle row, its button where an attack's to-hit goes */
+.items-head { font: 700 .68rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding-top: 6px; }
+.it { --k: var(--k-other); display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; font-size: .84rem; padding: 6px 8px; background: var(--surface-2); border: 1px solid transparent; border-radius: 7px; }
+.it.turn { animation: lit 1.6s ease-out; }
+@keyframes lit { 0%, 35% { border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber-soft); } 100% { border-color: transparent; box-shadow: none; } }
+@media (prefers-reduced-motion: reduce) { .it.turn { animation: none; border-color: var(--amber); } }
+.it .go { font: 600 .76rem/1 var(--sans); color: var(--strong); background: var(--surface-3); border: 1px solid var(--k); border-radius: 6px; padding: 5px 8px; cursor: pointer; flex: none; }
+.it .go:hover { background: var(--line-strong); }
+.it .go:disabled { border-color: var(--line); color: var(--faint); cursor: default; background: none; }
+.it .go:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.it .nm { min-width: 0; color: var(--text); }
+.it .gl { color: var(--k); font-size: .68rem; }
+.it .n { color: var(--muted); font-variant-numeric: tabular-nums; display: inline-flex; gap: 4px; align-items: center; }
+.it.empty { opacity: .55; }
+.it.sync .n { color: var(--amber); }
+.k-action { --k: var(--k-action); } .k-bonus { --k: var(--k-bonus); } .k-reaction { --k: var(--k-reaction); } .k-other { --k: var(--k-other); }
+.pips { display: inline-flex; gap: 3px; flex: none; }
+.pips i { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); }
+.pips i.used { background: none; box-shadow: inset 0 0 0 1px var(--line-strong); }
+/* The window: as the roll window, next to what you pressed, at the bottom on phones (here, the middle of the screen) */
+.scrim { position: fixed; inset: 0; background: rgba(0, 0, 0, .35); z-index: 5; }
+.ah-box { position: fixed; z-index: 6; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(360px, calc(100vw - 32px)); border: 1px solid var(--line-strong); border-top: 3px solid var(--k); border-radius: 12px; background: var(--surface); padding: 14px 16px; display: grid; gap: 8px; box-shadow: 0 12px 32px var(--shadow); }
+@media (max-width: 760px) { .ah-box { top: auto; bottom: max(12px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); } }
+.ah-box h3 { font-size: 1rem; }
+.ah-box .cost { font: 700 .74rem/1.2 var(--cond); letter-spacing: .06em; text-transform: uppercase; color: var(--k); }
+.ah-box .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.refused { color: var(--amber); font-size: .86rem; }
+
+.cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.col { background: var(--surface); border: 1px solid var(--line-soft); border-radius: 10px; padding: 10px 12px; display: grid; gap: 7px; align-content: start; }
+.col h4 { margin: 0; font: 700 .82rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--k); }
+.move { font-size: .84rem; padding: 6px 8px; background: var(--surface-2); border-radius: 7px; color: var(--muted); }
+.move b { font-weight: 500; }
+.rolls { display: grid; gap: 6px; }
+.roll { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 7px 10px; background: var(--surface); border: 1px solid var(--line-soft); border-radius: 8px; font-size: .84rem; }
+.roll .tot { font: 700 1.05rem/1 var(--sans); color: var(--green); font-variant-numeric: tabular-nums; }
+.roll .ttl { font: 700 .68rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.cards { position: absolute; right: 12px; bottom: 12px; display: grid; gap: 8px; width: min(320px, calc(100% - 24px)); }
+.card { display: flex; gap: 10px; align-items: center; padding: 9px 12px; background: var(--surface-3); border: 1px solid var(--line-strong); border-radius: 10px; box-shadow: 0 6px 18px var(--shadow); font-size: .84rem; }
+.card span { flex: 1; min-width: 0; }
+@media (max-width: 760px) { .cols { grid-template-columns: 1fr; } .stage { padding-bottom: 96px; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">Step 5 · the last piece of forgotten effects</div>
+    <h1>Potions and charges at hand</h1>
+    <p class="lead">Today Battle shows an item only if you pinned it, and nothing there spends it. This puts everything you can use in the column of what it costs, so there's one place to look. Its button opens a small window, like a roll, and that makes the change on your D&amp;D Beyond sheet.</p>
+  </header>
+
+  <section class="box">
+    <h2>Where you'll find it</h2>
+    <ol>
+      <li>Open your character and go to <b>Battle</b>, the first tab.</li>
+      <li>In the <b>Action</b> and <b>Bonus action</b> columns, under whatever you pinned, an <b>Items</b> group. It fills itself from your sheet: no pinning.</li>
+      <li>Each item has its button where an attack has its to-hit: <b>Drink</b>, <b>Read</b> or <b>Use</b>. It opens a small window next to it, as a roll does, at the bottom on phones.</li>
+      <li>Click anywhere else on the row and the side panel opens with everything about it, like every other row on Battle.</li>
+      <li>Only on Battle, and only your own character can press. The DM and the table see the same rows, as they already see your items on Party.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Try it</h2>
+    <p class="muted">Press an item's button, then the window's. A pretend Battle page: nothing here touches a real sheet.</p>
+    <div class="controls">
+      <div class="ctl"><span>Character</span><div class="seg" id="who"></div></div>
+      <div class="ctl"><span>Drinking</span><div class="seg" id="drink"></div></div>
+      <div class="ctl"><span>Sheet</span><div class="seg" id="reach"></div></div>
+      <button class="btn small" id="turn" type="button">Your turn begins</button>
+    </div>
+    <div class="stage" id="stage"></div>
+    <p class="small muted">The mark before each name is its cost, in Battle's own colours: ◆ Action, ▲ Bonus Action, ● the item's text doesn't say, so askdnd doesn't guess.</p>
+  </section>
+
+  <section class="grid2">
+    <div class="box">
+      <h2>What I checked</h2>
+      <ul>
+        <li><b>A bug on Battle today:</b> every item is listed under Action. In the 2024 rules drinking a potion, or giving one to someone within 5 feet, is a <b>Bonus Action</b> (DMG, Using a Potion). This build fixes it, along with the old name "Use an item". The Action column stays right for scrolls and most other items, and each one's cost comes from its own text.</li>
+        <li><b>Weapons with charges are missing:</b> Big C's Hammer of Thunderbolts has 5 charges and shows nowhere on Battle, because weapons are skipped. The Items group includes them.</li>
+        <li><b>D&amp;D Beyond counts a potion two ways:</b> a quantity (×2) and a one-use pip. One of No Name's potions reads "0 of 1" while still on the sheet. Before building I'll use one of Vi's six potions on D&amp;D Beyond and copy exactly what it does, so askdnd counts the same way.</li>
+        <li><b>Already built, used here:</b> changes through the bridge, the ↻ mark while one is on its way, Table rolls with Apply to, corner cards, and the rule that a change only works while your sheet can be reached.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h2>Decided, so you don't have to</h2>
+      <ul>
+        <li><b>The button says what you do:</b> Drink, Read, or Use. Every use has Undo on its corner card.</li>
+        <li><b>Order in a column:</b> what you pinned first, then Items: healing, other potions, scrolls, then charged items.</li>
+        <li><b>Items that don't say their cost:</b> they sit in the Action column marked ●, so askdnd isn't guessing. I'll add the real cost in askdnd's own words for the items your table holds, like Soul Coin, so ● stays rare.</li>
+        <li><b>On phones:</b> the columns are already tabs, so items are in the tab of their cost.</li>
+        <li><b>Giving a potion:</b> Give rolls and spends the giver's potion, and the roll offers <b>Apply to Cole</b> to Cole's player and the DM, like any other healing roll. It works for an ally at 0.</li>
+        <li><b>An effect:</b> using a Potion of Water Breathing starts its pill with its time, replacing today's separate "Used it" button.</li>
+        <li><b>Used up:</b> a one-use item leaves its column. A charged item stays dimmed with when it comes back.</li>
+        <li><b>Needs attunement:</b> an item you aren't attuned to stays out.</li>
+        <li><b>In Wild Shape:</b> Items stay, because the rules leave it to the DM what a form's limbs can handle.</li>
+        <li><b>Pinned items:</b> yours stay where you put them, at the right cost, and don't show twice.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Two questions for you</h2>
+    <div class="grid2">
+      <div class="box">
+        <div class="label">Settled Oct 30 · Where it goes</div>
+        <p><b>In the columns, with a window like a roll</b> (your comment): one place to go to do things, not a new row to look at. What it costs: Trah's Action column gets long, so items sit under what's pinned and your pins never move.</p>
+      </div>
+      <div class="box ask">
+        <div class="label">1 · Does the window's Drink heal you?</div>
+        <p><b>A, recommended: yes.</b> Drink rolls in Table rolls for all to see, spends the potion and heals you. There's no ruling to make on healing yourself, and Undo is on the card.</p>
+        <p class="muted"><b>B: Apply to on the roll.</b> Drink rolls and spends it, then you press Apply to, the same as a healing spell. One way for everything, one more press in a fight.</p>
+        <p class="small">Use <b>Drinking</b> above to feel both.</p>
+      </div>
+      <div class="box ask">
+        <div class="label">2 · Should anything remind you on your turn?</div>
+        <p><b>A, recommended: your Items light up once</b> as your turn begins in a heard fight. Quiet, and you'd see it each turn. Press <b>Your turn begins</b> above.</p>
+        <p class="muted"><b>B: also a corner card</b> when you're under half your Hit Points and carrying healing. Harder to miss, and one more card each turn of a hard fight.</p>
+        <p class="muted"><b>C: nothing.</b> The columns alone, until a playtest asks for more.</p>
+      </div>
+      <div class="box">
+        <div class="label">Not in this piece</div>
+        <p class="muted">Class resources (Rage, Focus Points) use the same press later, in 1.3. Charges coming back at dawn are part of rests, 1.4. Ammunition, coins, attunement, handing items over and loot stay in 1.5, inventory in play.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+const H = "Bonus", M = "Magic action", U = "Utilize action", A = "Action";
+const KIND = { [H]: "bonus", [M]: "action", [U]: "action", [A]: "action", "": "other" };
+const GLYPH = { bonus: "▲", action: "◆", other: "●" };
+const COST = { [H]: "Bonus Action", [M]: "Magic action", [U]: "Utilize action", [A]: "Action", "": "See its text" };
+const potion = (name, qty, dice) => ({ name, qty, dice, cost: H, verb: "Drink", give: true, what: `Regain ${dice} Hit Points. Drink it, or give it to someone within 5 feet.` });
+const scroll = (name, cost, what) => ({ name, qty: 1, cost, verb: "Read", what });
+const charged = (name, left, max, cost, back, what) => ({ name, left, max, cost, back, verb: "Use", what });
+const START = () => ({
+  Trah: { hp: 19, max: 41, pills: [], items: [
+    potion("Potion of Healing", 1, "2d4+2"), potion("Potion of Healing (Superior)", 1, "8d4+8"),
+    scroll("Scroll of Daylight", A, "Casts Daylight. The scroll is used up."),
+    scroll("Scroll of Protection (Fiends)", M, "A 5-foot Emanation around you that Fiends can't willingly enter."),
+    { name: "Dust of Sneezing and Choking", qty: 1, cost: U, verb: "Use", what: "Throw it into the air: a save for everyone within 30 feet, you included." },
+    charged("Keoghtom's Ointment", 5, 5, U, "gone once used", "One dose: swallow it or put it on someone within 5 feet."),
+    charged("Hat of Wizardry", 1, 1, M, "back after a Long Rest", "Try to cast a cantrip you don't know."),
+    charged("Lifewell Tattoo", 1, 1, "", "back at dawn", "See its text for what it does."),
+    charged("Dragon-Touched Focus", 1, 1, "", "back at dawn", "See its text for what it does."),
+    charged("Soul Coin", 3, 3, "", "gone once used", "See its text for what it does."),
+  ] },
+  "Big C": { hp: 38, max: 66, pills: [], items: [
+    potion("Potion of Healing", 1, "2d4+2"),
+    { name: "Potion of Water Breathing", qty: 1, cost: H, verb: "Drink", what: "You can breathe underwater for 24 hours.", starts: ["Water Breathing", "24 hours"] },
+    charged("Necklace of Prayer Beads", 6, 6, "", "back at dawn", "See its text for what each bead does."),
+    charged("Hammer of Thunderbolts", 5, 5, "", "back at dawn", "See its text for what its charges do."),
+  ] },
+  Cole: { hp: 7, max: 51, pills: [], items: [potion("Potion of Healing", 2, "2d4+2"), charged("Soul Coin", 3, 3, "", "gone once used", "See its text for what it does.")] },
+});
+const OTHERS = ["Trah", "Big C", "Cole", "No Name"];
+let party = START(), who = "Cole", drink = "once", reach = "open", open = -1, giving = false, rolls = [], cards = [], lit = false, turnTimer, seq = 0;
+const stage = document.getElementById("stage");
+const me = () => party[who];
+const usable = it => (it.qty ?? it.left) > 0;
+const roll = dice => { const [, n, d, plus] = dice.match(/(\d+)d(\d+)\+(\d+)/); let t = +plus; for (let i = 0; i < +n; i++) t += 1 + Math.floor(Math.random() * +d); return t; };
+
+function seg(id, options, value, set) {
+  const el = document.getElementById(id);
+  el.innerHTML = options.map(([v, l]) => `<button type="button" data-v="${v}" aria-pressed="${v === value}">${l}</button>`).join("");
+  el.onclick = e => { const b = e.target.closest("button"); if (!b) return; set(b.dataset.v); [...el.children].forEach(c => c.setAttribute("aria-pressed", c === b)); open = -1; giving = false; draw(); };
+}
+function pips(it) { return `<span class="pips" aria-label="${it.left} of ${it.max} left">${Array.from({ length: it.max }, (_, i) => `<i class="${i >= it.left ? "used" : ""}"></i>`).join("")}</span>`; }
+function row(it, i) {
+  const k = KIND[it.cost], count = it.max ? (it.max <= 8 ? pips(it) : `${it.left}/${it.max}`) : it.qty > 1 ? `×${it.qty}` : "";
+  return `<div class="it k-${k}${usable(it) ? "" : " empty"}${it.sync ? " sync" : ""}${lit ? " turn" : ""}"><button type="button" class="go" data-i="${i}"${usable(it) ? "" : " disabled"}>${it.verb}</button><span class="nm">${k === "other" ? `<span class="gl">${GLYPH[k]}</span> ` : ""}${it.name}</span><span class="n">${it.sync ? "↻ " : ""}${count}${usable(it) ? "" : ` ${it.back}`}</span></div>`;
+}
+function visible() { return me().items.map((it, i) => [it, i]).filter(([it]) => usable(it) || it.back && it.back !== "gone once used"); }
+function detail() {
+  if (open < 0) return "";
+  const it = me().items[open], k = KIND[it.cost], left = it.max ? `${it.left} of ${it.max} left · ${it.back}` : it.qty > 1 ? `${it.qty} left` : "";
+  const body = reach === "shut"
+    ? `<p class="refused">Open ${who}'s D&amp;D Beyond sheet in Chrome with the askdnd bridge, or make this change there.</p>`
+    : giving
+      ? `<div class="row"><span class="small muted">Give it to:</span>${OTHERS.filter(n => n !== who).map(n => `<button class="btn small" type="button" data-give="${n}">${n}</button>`).join("")}<button class="btn small" type="button" data-act="nogive">Back</button></div>`
+      : usable(it)
+        ? `<div class="row"><button class="btn small main" type="button" data-act="use">${it.verb}</button>${it.give ? `<button class="btn small" type="button" data-act="give">Give</button>` : ""}<button class="btn small" type="button" data-act="close">Cancel</button></div>`
+        : `<p class="small muted">None left, ${it.back}.</p>`;
+  return `<div class="scrim" data-act="close"></div><div class="ah-box k-${k}" role="dialog" aria-label="${it.name}"><div class="cost">${COST[it.cost]}${left ? ` · <span class="faint">${left}</span>` : ""}</div><h3>${it.name}</h3><p class="small">${it.what}</p>${body}${reach === "shut" ? `<div class="row"><button class="btn small" type="button" data-act="close">Close</button></div>` : ""}</div>`;
+}
+function draw() {
+  const c = me(), list = visible();
+  const inCol = key => { const rows = list.filter(([it]) => (KIND[it.cost] === key) || (key === "action" && KIND[it.cost] === "other")).map(([it, i]) => row(it, i)).join(""); return rows && `<div class="items-head">Items</div>${rows}`; };
+  const cols = `<div class="cols">
+    <div class="col k-action"><h4>◆ Action</h4><div class="move"><b>Fire Bolt</b></div><div class="move"><b>Attack, Dash, Dodge…</b></div>${inCol("action")}</div>
+    <div class="col k-bonus"><h4>▲ Bonus action</h4><div class="move"><b>Misty Step</b></div>${inCol("bonus")}</div>
+    <div class="col k-reaction"><h4>↺ Reaction</h4><div class="move"><b>Shield</b></div></div></div>`;
+  stage.innerHTML = `
+    <div class="head"><span class="av"></span><span class="who">${who}</span>
+      <div class="tile${c.up ? " up" : ""}"><small>Hit Points</small><b>${c.hp} / ${c.max}</b></div>
+      <div class="tile"><small>AC</small><b>15</b></div></div>
+    <div class="status"><span>Status</span>${c.pills.map(p => `<span class="pill">${p[0]} <i>${p[1]}</i></span>`).join("") || `<span class="faint">+ Condition</span>`}</div>
+    <div class="spellbar">Spell Book · 1st ●●○ · 2nd ●○ · Pinned spells</div>
+    ${cols}
+    ${detail()}
+    <div class="rolls" ${rolls.length ? "" : "hidden"}><div class="roll"><span class="ttl">Table rolls</span></div>${rolls.map(r => `<div class="roll"><span class="tot">${r.total}</span><span>${r.text}</span>${r.apply ? `<button class="btn small" type="button" data-apply="${r.id}">Apply to ${r.apply}</button>` : r.done ? `<span class="small muted">${r.done}</span>` : ""}</div>`).join("")}</div>
+    <div class="cards">${cards.map(k => `<div class="card"><span>${k.text}</span><button class="btn small" type="button" data-undo="${k.id}">Undo</button></div>`).join("")}</div>`;
+}
+function spend(it, by) { if (it.max) it.left += by; else it.qty += by; if (by < 0) { it.sync = true; setTimeout(() => { it.sync = false; draw(); }, 900); } }
+function heal(name, n) { const c = party[name]; if (!c) return 0; const got = Math.min(n, c.max - c.hp); c.hp += got; c.up = true; setTimeout(() => { c.up = false; draw(); }, 1100); return got; }
+function use(i, to) {
+  const it = me().items[i], id = ++seq, from = who, undo = [() => spend(it, 1)];
+  spend(it, -1);
+  if (it.dice) {
+    const total = roll(it.dice), r = { id, total, text: `${it.name}, ${from}${to ? ` for ${to}` : ""} (${it.dice})` };
+    if (to) r.apply = to;
+    else if (drink === "two") r.apply = from;
+    else { const got = heal(from, total); r.done = "applied"; undo.push(() => { party[from].hp -= got; }); }
+    r.from = from; rolls = [r, ...rolls].slice(0, 3);
+    undo.push(() => { rolls = rolls.filter(x => x.id !== id); });
+  } else if (it.starts) {
+    me().pills.push(it.starts); undo.push(() => { party[from].pills = party[from].pills.filter(p => p !== it.starts); });
+  }
+  cards = [{ id, text: `${it.verb === "Use" ? "Used" : it.verb === "Read" ? "Read" : to ? "Gave" : "Drank"} ${to ? `${to} ` : ""}${it.name}`, undo }, ...cards].slice(0, 2);
+  setTimeout(() => { cards = cards.filter(k => k.id !== id); draw(); }, 8000);
+  open = -1; giving = false; draw();
+}
+stage.addEventListener("click", e => {
+  const t = e.target.closest("[data-i],[data-act],[data-give],[data-undo],[data-apply]");
+  if (!t) return;
+  if (t.dataset.i !== undefined) { open = +t.dataset.i; giving = false; draw(); }
+  else if (t.dataset.act === "use") use(open);
+  else if (t.dataset.act === "give") { giving = true; draw(); }
+  else if (t.dataset.act === "nogive") { giving = false; draw(); }
+  else if (t.dataset.act === "close") { open = -1; draw(); }
+  else if (t.dataset.give) use(open, t.dataset.give);
+  else if (t.dataset.undo) { const k = cards.find(x => x.id === +t.dataset.undo); k.undo.forEach(f => f()); cards = cards.filter(x => x !== k); draw(); }
+  else if (t.dataset.apply) { const r = rolls.find(x => x.id === +t.dataset.apply), got = heal(r.apply, r.total); r.done = party[r.apply] ? `applied to ${r.apply}, +${got}` : `applied to ${r.apply}`; r.apply = ""; draw(); }
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape" && open >= 0) { open = -1; giving = false; draw(); } });
+seg("who", [["Cole", "Cole"], ["Trah", "Trah (ten items)"], ["Big C", "Big C"]], who, v => { who = v; });
+seg("drink", [["once", "A: Drink heals you"], ["two", "B: Apply to on the roll"]], drink, v => { drink = v; });
+seg("reach", [["open", "Open"], ["shut", "Can't be reached"]], reach, v => { reach = v; });
+document.getElementById("turn").onclick = () => { lit = false; draw(); requestAnimationFrame(() => { lit = true; draw(); stage.querySelector(".cols").scrollIntoView({ block: "nearest", behavior: "smooth" }); clearTimeout(turnTimer); turnTimer = setTimeout(() => { lit = false; draw(); }, 1700); }); };
+draw();
+</script>

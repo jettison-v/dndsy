@@ -1081,14 +1081,15 @@ def bridge_heard(ddb_id: str, request: Request, pull: int = 0, db: Session = Dep
 
 
 @router.post("/bridge/fight/{game_id}")
-async def bridge_fight(game_id: str, request: Request, db: Session = Depends(get_db)):
+def bridge_fight(game_id: str, request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
     """The extension, on an open D&D Beyond VTT page, says what the fight is now (app/fight.py; it only listens).
     Taken from anyone at that campaign's table, where the campaign has the bridge."""
     from app import fight
 
     user = _signed_in(request, db)
-    body = await request.json()
-    told = body.get("fight") if isinstance(body, dict) else None
+    if not isinstance(body, dict):
+        return _json({"ok": False, "changed": False})  # (not a report: a fight only ends when it's said to)
+    told = body.get("fight")
     changed = False
     for campaign in fight.campaigns_for(db, game_id[:40]):
         if not _follows(user, campaign):
@@ -1297,13 +1298,12 @@ def heard_in_game(db: Session, hearer: Character, message: dict) -> TableRoll | 
 
 
 @router.post("/bridge/roll/{ddb_id}")
-async def bridge_roll(ddb_id: str, request: Request, db: Session = Depends(get_db)):
+def bridge_roll(ddb_id: str, request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
     """The extension heard a roll on this character's D&D Beyond sheet. Only the character's own player's browser
     records it (like the outbox)."""
     character, user = _by_ddb(db, request, ddb_id)
     if not picks.can_edit(db, user, character):
         return _json({"ok": False})
-    body = await request.json()
     me = picks.user_row(db, user)
     row = heard_roll(db, character, me.id if me else None, body) if isinstance(body, dict) else None
     db.commit()
@@ -1311,13 +1311,12 @@ async def bridge_roll(ddb_id: str, request: Request, db: Session = Depends(get_d
 
 
 @router.post("/bridge/others-roll/{ddb_id}")
-async def bridge_others_roll(ddb_id: str, request: Request, db: Session = Depends(get_db)):
+def bridge_others_roll(ddb_id: str, request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
     """The extension heard someone else's roll in the game on this character's sheet (heard_in_game). Only the
     character's own player's browser passes them on."""
     character, user = _by_ddb(db, request, ddb_id)
     if not picks.can_edit(db, user, character):
         return _json({"ok": False})
-    body = await request.json()
     row = heard_in_game(db, character, body) if isinstance(body, dict) else None
     db.commit()
     return _json({"ok": row is not None})
@@ -1366,14 +1365,13 @@ def _change(n: dict, body: dict) -> tuple[str, dict] | None:
 
 
 @router.post("/bridge/change/{character_id:int}")
-async def bridge_change(character_id: int, request: Request, db: Session = Depends(get_db)):
+def bridge_change(character_id: int, request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
     """Any change a player makes in play, as an intent (`kind`: set, use, death, short_rest, remove_item, add_item), for
     the bridge to make on D&D Beyond. What the page shows comes from D&D Beyond once it has it."""
     character, user = _mine(db, request, character_id)
     if not picks.can_edit(db, user, character):
         raise HTTPException(403, "Only the character's player changes their sheet.")
     reach(character)
-    body = await request.json()
     n = numbers(character)
     made = _change(n, body) if n and isinstance(body, dict) else None
     if not made:

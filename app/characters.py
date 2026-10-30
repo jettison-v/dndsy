@@ -8,7 +8,7 @@ been fetched. It never contains player notes.
 from collections.abc import Callable
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app import config, ddb
@@ -193,3 +193,17 @@ def character_summary(character: Character) -> dict | None:
         except ddb.DdbError:
             pass
     return snap.summary
+
+
+def reparse_old(db: Session) -> None:
+    """Store a new parser's summaries (once, at startup: app/main.py), so a page doesn't parse each whole sheet on every
+    load until its next refresh. Quietly: nothing changed on anyone's sheet. A refresh meanwhile already holds a new
+    summary, so it's left alone."""
+    old = CharacterSnapshot.summary["parser_version"].as_integer().is_distinct_from(ddb.PARSER_VERSION)
+    for sid in db.scalars(select(CharacterSnapshot.id).where(CharacterSnapshot.summary.is_not(None), CharacterSnapshot.raw.is_not(None), old)).all():
+        try:
+            summary = ddb.parse_character(db.scalar(select(CharacterSnapshot.raw).where(CharacterSnapshot.id == sid)))
+        except ddb.DdbError:
+            continue  # (character_summary keeps using the stored one)
+        db.execute(update(CharacterSnapshot).where(CharacterSnapshot.id == sid, old).values(summary=summary))
+        db.commit()

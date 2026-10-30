@@ -458,7 +458,7 @@ def form_panel(request: Request, character_id: int, name: str, db: Session = Dep
 
 
 @router.post("/characters/{character_id:int}/wild-shape/keep")
-async def set_wild_shape_keep(request: Request, character_id: int, db: Session = Depends(get_db)):
+def set_wild_shape_keep(request: Request, character_id: int, form=web.FormBody, db: Session = Depends(get_db)):
     """The character's player records what the DM lets them keep in Wild Shape (items, class
     features). Saved on the character, so it applies to every form until changed. Returns
     the form's modal again with the new numbers."""
@@ -467,7 +467,6 @@ async def set_wild_shape_keep(request: Request, character_id: int, db: Session =
         return stop
     if not picks.can_edit(db, user, ch):
         return _forbidden(request, "Only this character's player can do that.")
-    form = await request.form()
     sheet = chars.character_summary(ch) or {}
     allowed = {o["key"] for o in ws.options_for(sheet, [])}
     ch.wild_shape_keep = sorted(k for k in form.getlist("keep") if k in allowed)
@@ -660,14 +659,13 @@ def end_concentration(request: Request, character_id: int, db: Session = Depends
 
 
 @router.post("/characters/{character_id:int}/order")
-async def save_order(request: Request, character_id: int, db: Session = Depends(get_db)):
+def save_order(request: Request, character_id: int, form=web.FormBody, db: Session = Depends(get_db)):
     """Drag and drop on Battle: the player's own order for one column."""
     user, ch, stop = _load(request, db, character_id)
     if stop:
         return stop
     if not picks.can_edit(db, user, ch):
         return _forbidden(request, "Only this character's player can do that.")
-    form = await request.form()
     column = form.get("column", "")
     if column not in ("Action", "Bonus action", "Reaction", "forget"):
         return HTMLResponse("", status_code=400)
