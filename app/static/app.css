@@ -191,6 +191,9 @@ h3 { font-size: var(--fs-md); font-weight: 600; margin: 1.4em 0 .5em; }
 
 /* Buttons and forms */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2); border: 1px solid var(--line); background: var(--surface-2); color: var(--text); border-radius: var(--r-md); padding: 0 var(--sp-4); font-size: var(--fs-sm); font-weight: 500; min-height: var(--control-h); text-decoration: none; line-height: 1.25; white-space: nowrap; }  /* a button's label stays on one line; the row around it wraps instead */
+/* In anything smaller than a page (the roll window, a side panel, a modal, a corner card) a long label wraps inside the
+   button instead of running out of the box (Brett, 2026-10-30: "Roll damage (1d8 force + +4 spellcasting…)"). */
+.roll-win .btn, .peek .btn, dialog .btn, .card .btn { max-width: 100%; min-width: 0; white-space: normal; text-align: center; padding-block: var(--sp-1); overflow-wrap: anywhere; }
 .btn.block { width: 100%; }  /* the one action of a small card (Sign in, Publish) */
 .btn:hover { border-color: var(--line-strong); }
 .btn.primary { background: var(--red); border-color: var(--red); color: var(--text-strong); font-weight: 600; }

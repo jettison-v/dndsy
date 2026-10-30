@@ -56,3 +56,32 @@ def test_prones_icon_lies_down_on_its_pill_and_badge_and_nothing_else_does(peopl
     change(player, "Prone", "/end")
     change(player, "Poisoned", "/end")
     assert player.errors == []
+
+
+def test_a_long_button_stays_inside_its_window(people, server):
+    """Brett, 2026-10-30: a button with a long label ran out of the roll window; fixed for every window at once."""
+    player = people("player")
+    page = battle(player, server)
+    page.click('[data-roll=save][data-label="Dex save"]:visible >> nth=0', modifiers=["Shift"])
+    page.locator(".roll-win").wait_for()
+    label = "Roll damage (1d8 force + 4 spellcasting ability modifier + 2d6 radiant from an extra long feature name)"
+    spilled = page.evaluate("""label => ['.roll-win', '#cards'].map(where => {
+        const box = document.querySelector(where), b = document.createElement('button');
+        if (where === '#cards') { box.innerHTML = '<div class="card"></div>'; }
+        const host = where === '#cards' ? box.firstChild : box;
+        b.className = 'btn primary'; b.textContent = label; host.append(b);
+        const out = b.getBoundingClientRect().right - host.getBoundingClientRect().right;
+        b.remove();
+        return out;
+    })""", label)
+    assert all(x <= 0 for x in spilled), spilled
+    page.keyboard.press("Escape")
+    page.locator('[data-tour="battle"] .head-add').first.click()  # the side panel
+    page.locator(".peek.open").wait_for()
+    out = page.evaluate("""label => {
+        const box = document.querySelector('.peek.open .peek-body'), b = document.createElement('button');
+        b.className = 'btn primary'; b.textContent = label; box.append(b);
+        return b.getBoundingClientRect().right - box.getBoundingClientRect().right;
+    }""", label)
+    assert out <= 0, out
+
