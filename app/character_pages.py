@@ -30,7 +30,7 @@ from app import wild_shape as ws
 from app import rules_terms as terms
 from app.auth import current_user, is_admin, is_reviewer
 from app.db import get_db
-from app.models import Character, ToolCorrection, TableRoll
+from app.models import Campaign, Character, TableRoll, ToolCorrection
 from app.templating import templates
 
 router = APIRouter()
@@ -62,9 +62,19 @@ def _view(db: Session, ch: Character, user: dict) -> dict:
         "reviewer": is_reviewer(user),
         "admin": is_admin(user),
         "item_notes": chars.item_notes(db, ch),
-        # what it's under, as badges after the name on every mode (Brett, 2026-10-29); everyone sees them
-        "conditions": [{**x, "rules": cond.rules_text(x["name"])} for x in listed(db, ch, sheet)],
+        # what it's under, as badges after the name on every mode (Brett, 2026-10-29); everyone sees them; how long each
+        # lasts, by the turns heard from D&D Beyond's VTT (app/fight.py timing)
+        "conditions": _timings(db, ch, [{**x, "rules": cond.rules_text(x["name"])} for x in listed(db, ch, sheet)]),
     }
+
+
+def _timings(db: Session, ch: Character, conditions: list[dict]) -> list[dict]:
+    if not any(x.get("lasts") for x in conditions):
+        return conditions
+    from app import fight
+
+    campaign = db.get(Campaign, ch.campaign_id) if ch.campaign_id else None
+    return [{**x, "time": fight.timing(campaign, ch.id, x)} if x.get("lasts") else x for x in conditions]
 
 
 def _form_label(db: Session, ch: Character, ref: str) -> str:
@@ -130,7 +140,7 @@ def listed(db: Session, ch: Character, sheet: dict | None) -> list[dict]:
     if ch.concentration:  # first, treated like a condition (Brett, 2026-10-29); askdnd's own, as D&D Beyond doesn't keep it
         cn = ch.concentration
         now = [{"name": "Concentration", "spell": cn.get("spell", ""), "round": cn.get("round"), "rounds": cn.get("rounds"),
-                "source": cn.get("spell", "")}] + now
+                "source": cn.get("spell", ""), "due": bool(cn.get("due"))}] + now
     names = {x["name"] for x in now}
     now += [{"name": m[5:], "on_ddb": False} for m, st in sync.items() if st == "failed" and m.startswith("cond:") and m[5:] not in names]
     for x in now:
@@ -550,7 +560,8 @@ def start_concentration(request: Request, character_id: int, key: str = Form(...
 
 @router.post("/characters/{character_id:int}/conditions")
 def start_condition(request: Request, character_id: int, name: str = Form(...), source: str = Form(""), note: str = Form(""),
-                    level: int = Form(0), db: Session = Depends(get_db)):
+                    level: int = Form(0), lasts: str = Form(""), n: int = Form(0), time: str = Form(""), ability: str = Form(""),
+                    dc: int = Form(0), whose: str = Form(""), db: Session = Depends(get_db)):
     """A condition or effect (from a magic item's action, or picked: Poisoned, Exhaustion 2…), from the character's own
     player only. One D&D Beyond holds goes to the sheet where the bridge works (only while it can be reached), and
     shows once D&D Beyond has it; askdnd keeps where it came from."""
@@ -561,6 +572,7 @@ def start_condition(request: Request, character_id: int, name: str = Form(...), 
         own = cond.add(ch.conditions, name, source, note, level)
     except ValueError:
         return HTMLResponse("", status_code=400)
+    own[-1] = _timed(db, ch, own[-1], lasts, n, time, ability, dc, whose)
     label = f"{name}" + (f" {level}" if name == "Exhaustion" else "") + (f" ({source})" if source else "")
     synced = ddb_bridge.on_for(db, ch) and name in cond.ON_DDB
     if synced:
@@ -570,6 +582,37 @@ def start_condition(request: Request, character_id: int, name: str = Form(...), 
     ch.conditions = own
     db.commit()
     return _concentration_reply(request, db, ch, user, label + (": on its way to D&D Beyond" if synced else ""), deliver=synced)
+
+
+def _timed(db: Session, ch: Character, entry: dict, lasts: str, n: int, time: str, ability: str, dc: int, whose: str) -> dict:
+    """+ Condition's Lasts on the new entry (app/conditions.py), begun on whose turn it is now in the heard fight."""
+    from app import fight
+
+    campaign = db.get(Campaign, ch.campaign_id) if ch.campaign_id else None
+    f = fight.shown(campaign, dm=True)
+    names = {x["key"]: x["name"] for x in (f or {}).get("order", [])}
+    la = cond.lasts_from(lasts, n, time, ability, dc, whose if whose in names else "self", names.get(whose, ""))
+    if not la:
+        return entry
+    entry = {**entry, "lasts": la}
+    began = fight.active_key(campaign.fight) if f else None
+    if la["kind"] == "rounds" and began:
+        entry["began"], entry["left"] = began, la["n"]
+    return entry
+
+
+@router.post("/characters/{character_id:int}/conditions/keep")
+def keep_condition(request: Request, character_id: int, name: str = Form(...), db: Session = Depends(get_db)):
+    """Keep: its time ran out, and the DM says it lasts. From then on it lasts until it's ended."""
+    user, ch, stop = _concentration_guard(request, db, character_id)
+    if stop:
+        return stop
+    ch.conditions = [({k: v for k, v in c.items() if k not in ("lasts", "due", "armed", "began", "left")} if c.get("name") == name else c)
+                     for c in ch.conditions or []]
+    if name == "Concentration" and ch.concentration:
+        ch.concentration = {k: v for k, v in ch.concentration.items() if k != "due"} | {"rounds": None}
+    db.commit()
+    return _concentration_reply(request, db, ch, user, f"{name}: kept")
 
 
 @router.post("/characters/{character_id:int}/conditions/end")

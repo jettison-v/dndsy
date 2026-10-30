@@ -197,3 +197,83 @@ def add(conditions: list[dict] | None, name: str, source: str = "", note: str = 
 
 def end(conditions: list[dict] | None, name: str) -> list[dict]:
     return [c for c in conditions or [] if c.get("name") != name]
+
+
+# ------------------------------------------------------------------ how long it lasts
+# (Brett, 2026-10-29, docs/mockups/turn-conditions.html: timed by the turns heard from D&D Beyond's VTT, app/fight.py;
+# when one runs out or asks for a save, its player and the DM are reminded; nothing ends by itself.) Kept on askdnd's
+# own entry ("lasts"; "began": whose turn it began on, a fighter's key; "left": rounds still to run; "armed": its "next
+# turn" has begun; "due": it ran out).
+
+LASTS = ("removed", "endnext", "startnext", "rounds", "time", "save")
+ABILITIES = ("Str", "Dex", "Con", "Int", "Wis", "Cha")
+TIMES = ("10 minutes", "1 hour", "8 hours", "24 hours")
+
+
+def lasts_from(kind: str, n: int = 0, time: str = "", ability: str = "", dc: int = 0, whose: str = "",
+               whose_name: str = "") -> dict | None:
+    """What + Condition's Lasts says, kept as askdnd times it, or None (until it's ended). `whose` is "self" or a
+    fighter's key in the heard fight, `whose_name` how that one is named."""
+    of = {"self": True} if whose in ("", "self") else {"key": str(whose)[:80], "name": str(whose_name)[:80]}
+    if kind in ("endnext", "startnext"):
+        return {"kind": kind, "of": of}
+    if kind == "rounds" and 1 <= int(n or 0) <= 100:
+        return {"kind": "rounds", "n": int(n)}
+    if kind == "minute":
+        return {"kind": "rounds", "n": 10}
+    if kind == "time" and time in TIMES:
+        return {"kind": "time", "text": time}
+    if kind == "save" and ability in ABILITIES and 1 <= int(dc or 0) <= 30:
+        return {"kind": "save", "ability": ability, "dc": int(dc), "of": of}
+    return None
+
+
+def _whose(of: dict | None, mine: bool) -> str:
+    if not of or of.get("self"):
+        return "your" if mine else "their"
+    return f"{of.get('name') or 'their'}’s"
+
+
+def lasts_short(entry: dict, mine: bool = True, now: bool = False) -> str:
+    """The pill's few words ("to your next turn", "Wis 13 save", "9 rounds"); "" when it lasts until it's ended.
+    `now`: it ends on the turn running now."""
+    la = entry.get("lasts") or {}
+    if entry.get("due"):
+        return "due to end"
+    if la.get("kind") in ("endnext", "startnext"):
+        return "ends this turn" if now else f"to {_whose(la.get('of'), mine)} next turn"
+    if la.get("kind") == "save":
+        return f"{la['ability']} {la['dc']} save"
+    if la.get("kind") == "rounds":
+        left = rounds_left(entry)
+        return f"{la['n']} rounds" if left is None else ("last round" if left <= 1 else f"{left} rounds")
+    if la.get("kind") == "time":
+        return la["text"]
+    return ""
+
+
+def lasts_long(entry: dict, mine: bool = True) -> str:
+    """The whole of it, for the pill's pop-up."""
+    la = entry.get("lasts") or {}
+    k = la.get("kind")
+    if entry.get("due"):
+        return "Its time is up. End it, or keep it if the DM says it lasts."
+    if k == "endnext":
+        return f"Until the end of {_whose(la.get('of'), mine)} next turn."
+    if k == "startnext":
+        return f"Until the start of {_whose(la.get('of'), mine)} next turn."
+    if k == "save":
+        return f"Until a {la['ability']} save, DC {la['dc']}, at the end of each of {_whose(la.get('of'), mine)} turns."
+    if k == "rounds":
+        left = rounds_left(entry)
+        return f"{la['n']} rounds" + (f": {left} left, counting this one." if left is not None else ", counted from the next turn askdnd hears.")
+    if k == "time":
+        return f"{la['text']}: not counted in rounds."
+    return "Until it's ended."
+
+
+def rounds_left(entry: dict) -> int | None:
+    """Rounds still to run, counting this one (app/fight.py counts it down each time the turn it began on comes round
+    again); None until a heard fight has begun counting it."""
+    left = entry.get("left")
+    return left if isinstance(left, int) else None

@@ -6,8 +6,9 @@
 {% set cn = conc %}
   <span class="conc-pill" data-cond="concentration" title="Concentrating on {{ cn.spell }} ({{ (cn.level | ordinal ~ ' level') if cn.level else 'cantrip' }}){% if cn.rounds %}, round {{ cn.round }} of {{ cn.rounds }}{% endif %}">
     {{ cond_icon("Concentration") }}<span class="sr">Concentrating on</span><b>{{ cn.spell }}</b>
-    <span class="conc-k">{{ cn.level | ordinal if cn.level else "cantrip" }}{% if cn.rounds %} · round {{ cn.round }}/{{ cn.rounds }}{% endif %}</span>
-    {% if can_pick and cn.rounds and cn.round < cn.rounds %}<button type="button" class="conc-next" hx-post="/characters/{{ c.id }}/concentration/round" hx-target="#battle-body" hx-swap="outerHTML" title="Next round" aria-label="Next round">+1</button>{% endif %}
+    <span class="conc-k">{{ cn.level | ordinal if cn.level else "cantrip" }}{% if cn.due %} · <span class="cond-time soon">time's up</span>{% elif cn.rounds %} · round {{ cn.round }}/{{ cn.rounds }}{% endif %}</span>
+    {% if can_pick and cn.due %}<button type="button" class="conc-next" hx-post="/characters/{{ c.id }}/conditions/keep" hx-vals='{"name": "Concentration"}' hx-target="#battle-body" hx-swap="outerHTML" title="The DM says it lasts" aria-label="Keep it">Keep</button>
+    {% elif can_pick and cn.rounds and cn.round < cn.rounds %}<button type="button" class="conc-next" hx-post="/characters/{{ c.id }}/concentration/round" hx-target="#battle-body" hx-swap="outerHTML" title="Next round" aria-label="Next round">+1</button>{% endif %}
     {% if con_save %}
     <details class="conc-pop">
       <summary class="conc-save">Save {{ con_save.label }}{% if con_save.adv %} Adv{% endif %}</summary>
