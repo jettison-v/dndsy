@@ -2,7 +2,7 @@
    reviewers only. Also refreshes the pill. #}
 {% set f = tn.focus %}{% set q = '?c=%s' % f.id if f else '' %}
 <div class="live-pop" role="dialog" aria-label="D&amp;D Beyond">
-  {% if tn.connectable and bridge_extension_url %}<p class="live-noext-box">The askdnd bridge isn't in this browser. <a href="{{ bridge_extension_url }}" target="_blank" rel="noopener">Add it from the Chrome Web Store ↗</a>, then open askdnd once and your D&amp;D Beyond sheet.</p>{% endif %}
+  {% if tn.connectable and bridge_extension_url %}<div class="live-noext-box"><b>The askdnd bridge isn't in this browser</b><a class="btn small" href="{{ bridge_extension_url }}" target="_blank" rel="noopener">Add it from the Chrome Web Store ↗</a><span class="note">Then reload this page{% if tn.mine %} and open your D&amp;D Beyond sheet{% endif %}.</span></div>{% endif %}
   <div class="live-list">
     <div class="live-head">How each sheet is connected</div>
     {% for r in tn.characters %}

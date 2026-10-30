@@ -12,7 +12,7 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app import config, ddb
-from app.models import CampaignCharacter, Character, CharacterItemNote, CharacterSnapshot, Entity, EntityKind
+from app.models import NEW_CHARACTER, CampaignCharacter, Character, CharacterItemNote, CharacterSnapshot, Entity, EntityKind
 
 Fetch = Callable[[str], dict]
 
@@ -144,6 +144,10 @@ def refresh(db: Session, character: Character, fetch: Fetch = ddb.fetch_characte
         character.ddb_campaign_id = ddb.campaign_id(raw)
         snap.status, snap.error = "ok", ""
         _store_item_notes(db, character, notes)
+        if character.name == NEW_CHARACTER and summary.get("name"):  # only then: a table can name a character its own way
+            character.name = summary["name"][:200]
+            if character.membership is not None:
+                character.membership.entity.name = character.name
     db.flush()
     return snap
 

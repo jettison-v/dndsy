@@ -11,7 +11,10 @@
     <li class="record{{ ' faded' if not p.invited }}">
       <span class="record-main"><b>{{ p.name or p.email }}</b>
         <span class="note">{% if p.name %}{{ p.email }} · {% endif %}{% if p.owner %}owner (set on Railway) · {% endif %}{% if p.removed %}removed · {% elif not p.invited %}not invited yet · {% elif p.from_railway and not p.owner %}from the Railway lists · {% endif %}{% if p.last_seen %}last signed in {{ p.last_seen | ago }}{% else %}hasn't signed in yet{% endif %}</span>
-        <form id="acct-{{ p.email }}" method="post" action="/manage/accounts/update"><input type="hidden" name="email" value="{{ p.email }}"></form></span>
+        <form id="acct-{{ p.email }}" method="post" action="/manage/accounts/update"><input type="hidden" name="email" value="{{ p.email }}"></form>
+        {% if p.user %}<details class="fold"><summary>Change name</summary><form method="post" action="/manage/accounts/name" class="seat-name"><input type="hidden" name="email" value="{{ p.email }}">
+          <label class="field"><span>Name</span><input type="text" name="name" value="{{ p.name }}" maxlength="200" required></label>
+          <button class="btn small" type="submit">Save name</button></form></details>{% endif %}</span>
       <span>{% for c, r in p.campaigns %}<a href="/c/{{ c.slug }}/manage/table">{{ c.name }}</a> ({{ role_labels[r] | lower if r != "dm" else "DM" }}){{ ", " if not loop.last }}{% else %}<span class="note">No campaign yet</span>{% endfor %}</span>
       <span>{% if fixed and p.invited %}<span class="tag published">Admin</span>
         {% else %}<label class="check"><input type="checkbox" name="admin" value="1" form="acct-{{ p.email }}" {{ "checked" if p.level == "admin" }}> Admin</label>{% endif %}</span>
