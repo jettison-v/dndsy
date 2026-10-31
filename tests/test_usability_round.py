@@ -1,5 +1,7 @@
 """Pieces of the usability round (Brett, 2026-10-31, docs/mockups/usability/)."""
 
+from sqlalchemy import select
+
 from app.templating import res_groups, table_url
 
 
@@ -24,13 +26,18 @@ def test_help_starts_on_what_askdnd_adds(player):
 
 
 
-def test_the_bridges_window_lists_your_own_sheet_and_the_table(monkeypatch, db, cole, player):
+def test_the_bridges_window_lists_your_own_sheet_and_the_table(monkeypatch, db, player):
     """Its links come from who the key belongs to, so nobody else's sheet is listed."""
     from app import config
+    from app.models import Character, User
 
     monkeypatch.setattr(config, "DDB_BRIDGE", True)
-    cole.ddb_campaign_id = "77"
+    me = db.scalar(select(User).where(User.email == "player@example.com")) or User(email="player@example.com", name="P")
+    db.add(me)
+    db.flush()
+    db.add(Character(name="Cole", ddb_id="55", ddb_campaign_id="77", owner_id=me.id))
+    db.add(Character(name="Trah", ddb_id="56"))
     db.commit()
     got = player.get("/bridge/links").json()
-    assert [c["name"] for c in got["characters"]] == [cole.name]
+    assert [c["name"] for c in got["characters"]] == ["Cole"]
     assert got["table"] == "https://www.dndbeyond.com/games/77"

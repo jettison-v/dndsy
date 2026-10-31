@@ -370,3 +370,6 @@ One line per decision: date — decision — why. Newest at the bottom.
 - 2026-10-30: Casting, class resources and rests are built through the bridge behind the VTT piece `live_state`, so once merged only a test campaign sees them until Brett reviews the interface. Why: they can only be proven on real D&D Beyond from beta, and the table shouldn't see an unreviewed interface.
 - 2026-10-30: Casting is its own step from rolling: casting isn't always a roll, and a roll isn't always a cast. Review whether Cast should also open the roll.
 - 2026-10-30: The Live window's bridge prompt is a setup card with three numbered steps and one main button: it's a table's first impression of the extension (Brett). A link styled as a button stays a button inside any menu (`.menu a.btn`).
+- 2026-10-31: Everything in the Usability Mockups ships except suggestion 5, Battle's band, which is its own scope (Battle Band canvas). Brett asked for it broken out, with the Spell DC label and Hide saves, after trying and rewinding a one-strip design.
+- 2026-10-31: One Table button in the menu bar, opening D&D Beyond's VTT today and askdnd's own later, so the way in never changes.
+- 2026-10-31: A free use of a spell is shown but not spent on D&D Beyond: the write isn't proven, so the corner card asks the player to mark it. D&D Beyond's sheet stays right either way.

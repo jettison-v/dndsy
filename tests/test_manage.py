@@ -49,7 +49,7 @@ def test_admin_sees_both_groups_in_the_menu(monkeypatch, db):
     assert 'aria-current="page">Needs you' in side
     usage = admin.get("/manage/usage").text
     band = usage.split('class="manage-band')[1].split("</div>")[0]
-    assert band.startswith(' tool"') and "⚙ askdnd admin" in band and "The Lost Mine's Manage →" in band
+    assert band.startswith(' tool"') and "askdnd admin" in band and "The Lost Mine's Manage" in band
     side = usage.split('class="manage-side"')[1].split("</nav>")[0]
     assert 'aria-current="page">Usage' in side and "Inbox" not in side and ">askdnd history<" in side
     assert side.index(">Overview<") < side.index(">Accounts<") < side.index(">Usage<") < side.index(">Design system<")

@@ -76,3 +76,5 @@ The listing (first upload: **+ New item**, then fill in each tab with these):
   and a fight's order: names, initiative, whose turn), sent to askdnd only; not sold, not used for anything else, not
   used for credit. Privacy policy: https://beta.askdnd.ai/help?tab=about#bridge-privacy
 - **Distribution.** Visibility: **Unlisted**. Regions: all.
+
+The icon in Chrome opens `popup.html`: your sheet, your character in askdnd and the table, from `/bridge/links`.
