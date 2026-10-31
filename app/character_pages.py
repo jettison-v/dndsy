@@ -5,7 +5,7 @@
   the player's notes, shortlists and reminders; never the DM). The header is the same in each.
 - /battle and /character open on the signed-in person's own character (set on
   Manage › People); /party shows everyone.
-- Keeping the copy fresh (Game Mode, Refresh now) lives in the menu bar's Live control
+- Keeping the copy fresh (Refresh now) lives in the menu bar's Live control
   (app/live.py). A page shows a new copy by fetching itself again and swapping in its main (app.js
   "showInPlace"), whatever brought it.
 - Stars and reminders (app/picks.py): only the character's player sets them;
@@ -57,6 +57,7 @@ def _view(db: Session, ch: Character, user: dict) -> dict:
         "picks": mine,
         "can_pick": picks.can_edit(db, user, ch),
         "can_use": picks.can_edit(db, user, ch) and ddb_bridge.on_for(db, ch),  # an item's button (app/item_use.py)
+        "can_play": picks.can_edit(db, user, ch) and ddb_bridge.plays(db, ch),  # Cast, resources, rests (the VTT piece live_state)
         "show_picks": picks.can_see(user, ch),
         "reminders": views.reminders(sheet, mine["remind"], mine["order"].get("forget"), mine["notes"]) if sheet else [],
         "druid": druid,
@@ -164,7 +165,7 @@ def _load(request: Request, db: Session, character_id: int):
 
 
 def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None) -> dict:
-    """Battle mode's body (also swapped in by Game Mode and the Wild Shape switch). `shape` shows it in that form
+    """Battle mode's body (also swapped in by the Wild Shape switch). `shape` shows it in that form
     instead of the character's own (the tour's preview: nothing is saved)."""
     ctx = _view(db, ch, user)
     ctx["form"] = None
@@ -596,14 +597,14 @@ def _concentration_guard(request: Request, db: Session, character_id: int):
 @router.post("/characters/{character_id:int}/concentration")
 def start_concentration(request: Request, character_id: int, key: str = Form(...), level: int = Form(0), db: Session = Depends(get_db)):
     """Start tracking Concentration on a spell (the character's player). A new one replaces the
-    old, as at the table. Slots are spent on D&D Beyond; askdnd only keeps track."""
+    old, as at the table. No slot is spent here: Cast does that (app/casting.py), this is for one cast elsewhere."""
     user, ch, stop = _concentration_guard(request, db, character_id)
     if stop:
         return stop
     sp = next((e for e in sb.entries(chars.character_summary(ch) or {}) if e["key"] == key and e["conc"]), None)
     if sp is None:
         return HTMLResponse("", status_code=400)
-    ch.concentration = {"spell": sp["name"], "key": sp["key"], "level": max(level, sp["level"]), "round": 1, "rounds": sp["rounds"]}
+    ch.concentration = sb.concentrating(sp, level)
     db.commit()
     return _concentration_reply(request, db, ch, user, f"Concentrating on {sp['name']}")
 

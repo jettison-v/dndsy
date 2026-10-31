@@ -388,7 +388,7 @@ class _Sheet:
             "current": max(0, maximum - (d.get("removedHitPoints") or 0)),
             "temp": d.get("temporaryHitPoints") or 0,
             "hit_dice": [
-                {"class": _d(c, "definition", "name"), "die": f"d{_d(c, 'definition', 'hitDice', default=8)}",
+                {"id": c.get("id"), "class": _d(c, "definition", "name"), "die": f"d{_d(c, 'definition', 'hitDice', default=8)}",
                  "total": c.get("level") or 0, "used": c.get("hitDiceUsed") or 0}
                 for c in self.classes
             ],
@@ -553,6 +553,7 @@ class _Sheet:
                 values = self.template_values(class_level, scale)
                 out.append({
                     "key": f"action:{name}",
+                    "id": a.get("id"),
                     "name": name,
                     "source": source,
                     "activation": ACTIVATION.get(kind, ""),

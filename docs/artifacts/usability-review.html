@@ -1,0 +1,102 @@
+<title>Usability Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+:root { --bg: #f6f4ef; --card: #fffdf9; --fg: #1f2226; --muted: #5d5a52; --line: #dcd7cb; --red: #b83232; --amber: #a26a10; --green: #2f7d4f; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #15171a; --card: #1f2226; --fg: #ebe7df; --muted: #a29d93; --line: #34383e; --red: #e06a6a; --amber: #e8b34b; --green: #5bbf7f; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #15171a; --card: #1f2226; --fg: #ebe7df; --muted: #a29d93; --line: #34383e; --red: #e06a6a; --amber: #e8b34b; --green: #5bbf7f; color-scheme: dark; }
+body { background: var(--bg); color: var(--fg); font: 16px/1.55 Inter, system-ui, sans-serif; }
+main { max-width: 760px; margin: 0 auto; padding-block: 40px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 32px; }
+h1 { font-size: 2rem; line-height: 1.15; margin: 0 0 8px; text-wrap: balance; }
+h2 { font-size: 1.2rem; margin: 0 0 12px; }
+h3 { font-size: 1rem; margin: 0; }
+p { margin: 0; }
+.lead, .why { color: var(--muted); }
+.eyebrow { font-size: .75rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); margin-bottom: 8px; }
+.list { display: grid; gap: 12px; }
+.item { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 6px; }
+.top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; align-items: baseline; }
+.tag { font-size: .75rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.do { border-left: 3px solid var(--red); padding-left: 10px; }
+ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.good li::marker { color: var(--green); }
+</style>
+<main>
+  <header>
+    <div class="eyebrow">askdnd · October 30, 2026</div>
+    <h1>Usability Review</h1>
+    <p class="lead">A walk through askdnd as a player and as the DM, on a computer and a phone. Two bugs were fixed on the way (below). The rest are suggestions: nothing here is built.</p>
+  </header>
+
+  <section>
+    <h2>What I'd do first</h2>
+    <div class="list">
+      <div class="item"><div class="top"><h3>1. Hit Points first on phones</h3><span class="tag">Battle, phone · small</span></div>
+        <p class="why">A character with many resources fills the first phone screen with them: an Artificer with seven pushes Hit Points to the fold, and that's the number a player needs most.</p>
+        <p class="do">Move Resources below the tiles on phones, or fold them to one line ("Resources 7"), open on a tap.</p></div>
+      <div class="item"><div class="top"><h3>2. Cast and Roll as one step</h3><span class="tag">Spell Book, Battle · small, your call</span></div>
+        <p class="why">The new Cast and the older Roll sit side by side, so casting Cure Wounds takes two trips: Cast, then Roll, picking the level twice.</p>
+        <p class="do">Make Cast open the roll at the level you chose, for spells with something to roll. Keep Roll for a roll without spending a slot.</p></div>
+      <div class="item"><div class="top"><h3>3. Table rolls on phones takes a lot of room</h3><span class="tag">Every page, phone · small</span></div>
+        <p class="why">Closed, the Table rolls sheet still fills about a fifth of the screen above the bottom bar, and it covers the Adv marks on the save tiles.</p>
+        <p class="do">Shrink it to one thin line: the newest roll, tap to open. Hide it while scrolling down.</p></div>
+      <div class="item"><div class="top"><h3>4. Say where a rest lives</h3><span class="tag">Hit points' panel · small</span></div>
+        <p class="why">Short Rest and Long Rest are inside Hit points' panel, where a player won't look for them. At the table a rest is an event, not a Hit Points detail.</p>
+        <p class="do">Give rests a place on Battle beside + Condition. Later, let the DM call one for the party, so each player gets the window at once.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Worth doing soon</h2>
+    <div class="list">
+      <div class="item"><div class="top"><h3>5. Fewer rows above the action columns</h3><span class="tag">Battle, computer · medium</span></div>
+        <p class="why">Name, Resources, tiles, saves, conditions and the spell bar come before the first Action. On a laptop only a few actions fit on the first screen, in a page meant for use mid-fight.</p>
+        <p class="do">Join the tiles and saves into one tighter band, or let a player fold them during a fight.</p></div>
+      <div class="item"><div class="top"><h3>6. Empty columns repeat themselves</h3><span class="tag">Battle · small</span></div>
+        <p class="why">Each empty column says the same sentence about pinning. A new player reads it two or three times, and it's the first thing they see.</p>
+        <p class="do">Say it once above the columns, and show the first few common options to pin.</p></div>
+      <div class="item"><div class="top"><h3>7. A first page before any recap</h3><span class="tag">Story, new campaigns · small</span></div>
+        <p class="why">"Nothing published yet" is true, but a new table has nothing to do there. It's the first page anyone in a new campaign lands on.</p>
+        <p class="do">Point at what works today: the Party, your character, the tour.</p></div>
+      <div class="item"><div class="top"><h3>8. Two headings on every Manage page</h3><span class="tag">Manage · small</span></div>
+        <p class="why">The red band, the side list and the page's own title all say where you are, and the band takes space above the work.</p>
+        <p class="do">Keep the band's colour as a thin line, and put the way to the other half of Manage beside the title.</p></div>
+      <div class="item"><div class="top"><h3>9. The DM's view during a fight</h3><span class="tag">Party · medium</span></div>
+        <p class="why">Party is a page of cards built for reading, not for tracking six numbers across a round. The DM has no compact view of everyone's Hit Points, conditions and Concentration.</p>
+        <p class="do">Add a compact row view on Party while a fight runs. It's also the first piece of the simple VTT.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Small polish</h2>
+    <ul>
+      <li>On Battle, "Spell DC / atta…" and "Heroic Inspirat…" are cut off on phones. Shorter labels fix it: "Spell DC", "Inspiration".</li>
+      <li>Long resource names, like an Artificer's three Eldritch Cannon uses, would read better grouped under one name.</li>
+      <li>Help opens on whichever tab you last used. For a first visit, What askdnd adds is the better start.</li>
+      <li>A Cast window for a free cast could show the free uses: today that's the No slot choice.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>What's working well</h2>
+    <ul class="good">
+      <li>Needs you is clear: two lines, each with the one button that moves it forward.</li>
+      <li>The one Table list reads easily, and the access chart stays out of the way.</li>
+      <li>The Spell Book's filters and Cast at answer real questions quickly.</li>
+      <li>Nothing scrolled sideways at phone width on the pages I checked.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Fixed while walking through</h2>
+    <ul>
+      <li>On a campaign without the bridge, the pill offered it next to its own text. It now offers it only where a campaign has the bridge.</li>
+      <li>On phones, a wrapped Resources row kept a divider at the start of each line.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>What this didn't cover</h2>
+    <p class="why">I used the local copy of beta with the sheet closed, so bridge-connected states and the fight band were seen only through the real test runs, not looked at for comfort. No real players were watched, and real play will show more than this did.</p>
+  </section>
+</main>

@@ -204,8 +204,8 @@
   <div {{ tile(c, "ac") }}><small>Armor class</small><b>{{ s.armor_class }}</b></div>
   <div {{ tile(c, "speed") }}><small>Speed</small><b>{{ s.speed.walk }} ft</b>{% set extra = s.speed.items() | rejectattr(0, "in", ["walk", "parts", "notes"]) | list %}{% if extra %}<span class="note"> {% for k, v in extra %}{{ k }} {{ v }}{{ ", " if not loop.last }}{% endfor %}</span>{% endif %}</div>
   <div {{ tile(c, "initiative") }}><small>Initiative</small><b>{{ s.initiative }}</b>{{ adv(s.initiative_adv) }}<button type="button" class="roll-chip tile-roll" {{ roll_attrs("check", "Initiative", s.initiative, "", s.initiative_adv) }} title="Roll Initiative">Roll</button></div>
-  {% for sc in s.spellcasting[:1] %}<div {{ tile(c, "spell") }}><small>Spell DC / attack</small><b>{{ sc.save_dc }}</b><span class="note"> / {{ sc.attack }}</span></div>{% endfor %}
-  <div class="insp{{ ' on' if s.inspiration }}" {{ tile(c, "inspiration") }} title="Heroic Inspiration"><small>Heroic Inspiration</small><b>{{ "✦ Yes" if s.inspiration else "—" }}</b></div>
+  {% for sc in s.spellcasting[:1] %}<div {{ tile(c, "spell") }}><small><span class="tile-full">Spell DC / attack</span><span class="tile-short">Spell DC</span></small><b>{{ sc.save_dc }}</b><span class="note"> / {{ sc.attack }}</span></div>{% endfor %}
+  <div class="insp{{ ' on' if s.inspiration }}" {{ tile(c, "inspiration") }} title="Heroic Inspiration"><small><span class="tile-full">Heroic Inspiration</span><span class="tile-short">Inspiration</span></small><b>{{ "✦ Yes" if s.inspiration else "—" }}</b></div>
 </div>
 {%- endmacro %}
 
@@ -220,12 +220,18 @@
 
 {# Limited resources, the ones with the most uses first (by total, not by what's left), then spell
    slots. Battle passes slots=False and skips Wild Shape: its spell bar and Wild Shape row show those. #}
-{% macro resource_row(s, slots=True, skip=()) -%}
-{% set res = s.actions | selectattr("uses") | selectattr("source", "in", ["class", "feat", "race"]) | rejectattr("name", "in", skip) | sort(attribute="uses.max", reverse=True) | list %}
-{% if res %}<div class="res-row"><span class="res-label">Resources</span>{% for a in res %}<span class="res">{{ a.name }} {{ pips(a.uses) }}</span>{% endfor %}</div>{% endif %}
+{# One count in the Resources row; with `c`, it opens its window (app/resources.py) #}
+{% macro res(s, c, field, label, u) -%}
+{%- if c %}<button type="button" class="res res-go" data-use-url="/characters/{{ c.id }}/count?field={{ field | urlencode }}"{{ sync(s, field) }}>{{ label }} {{ pips(u) }}</button>
+{%- else %}<span class="res">{{ label }} {{ pips(u) }}</span>{% endif -%}
+{%- endmacro %}
+
+{% macro resource_row(s, slots=True, skip=(), c=none) -%}
+{% set res_rows = s.actions | selectattr("uses") | selectattr("source", "in", ["class", "feat", "race"]) | rejectattr("name", "in", skip) | sort(attribute="uses.max", reverse=True) | list %}
+{% if res_rows %}<div class="res-row"><span class="res-label">Resources</span>{% for a in res_rows %}{{ res(s, c if a.id else none, "uses:" ~ a.id, a.name, a.uses) }}{% endfor %}</div>{% endif %}
 {% if slots and (s.spell_slots.slots or s.spell_slots.pact) %}<div class="res-row slots"><span class="res-label">Spell slots</span>
-  {% for sl in s.spell_slots.slots %}<span class="res">{{ sl.level }}{{ {1: "st", 2: "nd", 3: "rd"}.get(sl.level, "th") }} {{ pips({"max": sl.max, "left": sl.max - sl.used}) }}</span>{% endfor %}
-  {% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}<span class="res">Pact ({{ {1: "1st", 2: "2nd", 3: "3rd"}.get(p.level, p.level ~ "th") }}) {{ pips({"max": p.max, "left": p.max - p.used}) }}</span>{% endif %}
+  {% for sl in s.spell_slots.slots %}{{ res(s, c, "slot:" ~ sl.level, sl.level ~ {1: "st", 2: "nd", 3: "rd"}.get(sl.level, "th"), {"max": sl.max, "left": sl.max - sl.used}) }}{% endfor %}
+  {% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}{{ res(s, c, "pact:" ~ p.level, "Pact (" ~ {1: "1st", 2: "2nd", 3: "3rd"}.get(p.level, p.level ~ "th") ~ ")", {"max": p.max, "left": p.max - p.used}) }}{% endif %}
 </div>{% endif %}
 {%- endmacro %}
 
