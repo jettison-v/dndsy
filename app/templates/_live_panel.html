@@ -2,7 +2,18 @@
    reviewers only. Also refreshes the pill. #}
 {% set f = tn.focus %}{% set q = '?c=%s' % f.id if f else '' %}
 <div class="live-pop" role="dialog" aria-label="D&amp;D Beyond">
-  {% if tn.connectable and bridge_extension_url %}<div class="live-noext-box"><b>The askdnd bridge isn't in this browser</b><a class="btn small" href="{{ bridge_extension_url }}" target="_blank" rel="noopener">Add it from the Chrome Web Store ↗</a><span class="note">Then reload this page{% if tn.mine %} and open your D&amp;D Beyond sheet{% endif %}.</span></div>{% endif %}
+  {% if tn.connectable and bridge_extension_url %}{% set sheet = tn.mine if tn.mine and tn.mine.connects else None %}
+  <section class="live-noext-box" aria-label="Add the askdnd bridge">
+    <div class="bridge-head"><img src="/static/icons/bridge.png" alt="" width="44" height="44">
+      <div><h3>Connect {{ "your sheet" if sheet else "D&amp;D Beyond" | safe }}</h3><p>A small Chrome extension keeps D&amp;D Beyond and askdnd in step, both ways.</p></div></div>
+    <ol class="bridge-steps">
+      <li><span>Add the bridge</span><a class="btn primary small" href="{{ bridge_extension_url }}" target="_blank" rel="noopener">Add to Chrome ↗</a></li>
+      <li><span>Reload this page</span><a class="btn small" href="">Reload</a></li>
+      {% if sheet %}<li><span>Open your sheet</span><a class="btn small" href="https://www.dndbeyond.com/characters/{{ sheet.ddb_id }}" target="_blank" rel="noopener">Open ↗</a></li>{% endif %}
+    </ol>
+    <p class="bridge-small">Free. It only works on D&amp;D Beyond and askdnd.</p>
+    <p class="bridge-other">The askdnd bridge needs Chrome. Open askdnd in Chrome on a computer to connect {{ "your sheet" if sheet else "D&amp;D Beyond" | safe }}.</p>
+  </section>{% endif %}
   <div class="live-list">
     <div class="live-head">How each sheet is connected</div>
     {% for r in tn.characters %}
@@ -12,7 +23,8 @@
       {% elif r.step %}<span class="live-ok">connected</span>
       {% elif not r.fetched_at %}<span class="quiet-warn">{{ "couldn't refresh" if r.failed else "not fetched yet" }}</span>
       {% elif r.failed %}<span class="quiet-warn" title="{{ r.error }}">couldn't refresh · showing {{ r.fetched_at | ago }}</span>
-      {% else %}<span class="note">{{ "not connected · " if r.connects }}updated {{ r.fetched_at | ago }}</span>{% endif %}</div>
+      {% elif r.connects %}<span class="note">not connected</span><small class="live-when">updated {{ r.fetched_at | ago }}</small>
+      {% else %}<small class="live-when">updated {{ r.fetched_at | ago }}</small>{% endif %}</div>
     {% else %}<p class="muted">No characters yet.</p>{% endfor %}
   </div>
   {% if (f and f.linked) or (reviewer and tn.linked) %}

@@ -82,7 +82,7 @@ def rows_from(db: Session) -> list[dict]:
          .outerjoin(CharacterSnapshot, CharacterSnapshot.character_id == Character.id)
          .where(CampaignCharacter.campaign_id == campaign.id, CampaignCharacter.left_on.is_(None))
          .order_by(Character.name))
-    return [{"id": cid, "name": name, "owner": (email or "").lower(), "linked": bool(ddb_id), "fetched_at": fetched,
+    return [{"id": cid, "name": name, "owner": (email or "").lower(), "linked": bool(ddb_id), "ddb_id": ddb_id, "fetched_at": fetched,
              "failed": status == "error", "error": error or "", "portrait": portrait or "",
              "classes": " / ".join(f"{k.get('name')} {k.get('level')}" for k in classes or [] if isinstance(k, dict)),
              "hp": f"{hp}/{hp_max} HP" if hp and hp_max else "",

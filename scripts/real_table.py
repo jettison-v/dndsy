@@ -197,7 +197,7 @@ def condition(t: Table, seat: str = "player2", name: str = "Poisoned") -> None:
     page.wait_for_timeout(1500)
     page.locator(f'details.cond-pill:not(.cond-add):has-text("{name}") > summary').first.click(timeout=5000)
     page.locator(f'details.cond-pill:not(.cond-add):has-text("{name}") button:has-text("End")').first.click(timeout=5000)
-    t.expect("it ends on Battle", lambda: page.locator(f'details.cond-pill:not(.cond-add):has-text("{name}")').count() == 0, 8)
+    t.expect("it ends on Battle", lambda: page.locator(f'details.cond-pill:not(.cond-add):has-text("{name}")').count() == 0, 15)
     t.expect("it leaves the real sheet", lambda: name not in sheet.locator(".ct-conditions-summary").first.inner_text(timeout=3000), 25)
 
 

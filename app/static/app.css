@@ -107,6 +107,8 @@ a.char-btn > span:not(.char-av, .cond-dots) { overflow: hidden; text-overflow: e
 .menu .menu-me { pointer-events: none; }  /* the account menu's name and email: a label, not a link */
 .menu a small { display: block; color: var(--muted); font-size: var(--fs-xs); }
 .menu a:hover, .menu a.active { background: var(--surface); }
+.menu a.btn { display: inline-flex; padding: 0 var(--sp-3); }  /* a button that's a link stays a button */
+.menu a.btn:not(.primary):hover { background: var(--surface-2); }
 .account { position: relative; }
 .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--line-strong); display: grid; place-items: center; font-weight: 600; font-size: var(--fs-sm); color: var(--text); border: none; padding: 0; }
 .avatar img { width: 32px; height: 32px; border-radius: 50%; }
@@ -122,9 +124,24 @@ button.help-btn { background: none; cursor: pointer; padding: 0; font-family: in
 .live-pill:hover { color: var(--text); }
 .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; }
 .live-word, .live-noext, .live-noext-box { display: none; }
-body.no-bridge .live-pill[data-wants-bridge] .live-noext { display: inline; }  /* the extension isn't in this browser (app.js), and this campaign has the bridge: say so, with the link in the window */
-body.no-bridge .live-noext-box { display: grid; gap: var(--sp-2); }
-body.no-bridge .live-pill[data-wants-bridge] .live-ago { display: none; }
+body.no-bridge:not(.bridge-elsewhere) .live-pill[data-wants-bridge] .live-noext { display: inline; }  /* the extension isn't in this browser (app.js), and this campaign has the bridge: say so, with the steps in the window */
+body.no-bridge:not(.bridge-elsewhere) .live-pill[data-wants-bridge] .live-word { display: none; }
+body.no-bridge .live-noext-box { display: grid; gap: var(--sp-3); }
+.bridge-head { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: var(--sp-3); align-items: center; }
+.bridge-head img { border-radius: var(--r-md); display: block; }
+.bridge-head h3 { margin: 0; font-size: var(--fs-md); font-weight: 700; color: var(--text-strong); }
+.bridge-head p, .bridge-small, .bridge-other { margin: 0; color: var(--muted); font-size: var(--fs-xs); line-height: 1.45; }
+.bridge-steps { list-style: none; counter-reset: step; margin: 0; padding: 0; display: grid; gap: var(--sp-2); }
+.bridge-steps li { counter-increment: step; display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: var(--sp-2); align-items: center; min-height: 32px; }
+.bridge-steps li::before { content: counter(step); width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: var(--fs-xs); font-weight: 700; color: var(--muted); border: 1px solid var(--line-strong); }
+.bridge-steps li:first-child::before { background: var(--red); border-color: var(--red); color: var(--text-strong); }
+.bridge-steps li:first-child span { color: var(--text-strong); font-weight: 600; }
+.bridge-steps .btn { white-space: nowrap; width: 136px; }
+.bridge-other { display: none; }
+body.bridge-elsewhere .bridge-other { display: block; font-size: var(--fs-sm); }
+body.bridge-elsewhere .bridge-steps, body.bridge-elsewhere .bridge-small { display: none; }
+body.no-bridge:not(.bridge-elsewhere) .live-noext-box ~ .live-actions .btn.primary { background: var(--surface-2); border-color: var(--line); color: var(--text); font-weight: 500; }  /* one main action: adding the bridge */
+body.no-bridge:not(.bridge-elsewhere) .live-pill[data-wants-bridge] .live-ago { display: none; }
 .live-pill.warn .live-dot { background: var(--amber); }
 .live-pill.step .live-dot { background: var(--green); }  /* connected */
 .live-pill.cue { border-color: var(--amber); color: var(--text); }  /* in a fight with your sheet closed */
@@ -140,9 +157,11 @@ body.no-bridge .live-pill[data-wants-bridge] .live-ago { display: none; }
 .live-ok { color: var(--green); text-align: right; }
 .live-list { border-top: 1px solid var(--line); padding-top: 10px; display: grid; gap: 4px; }
 .live-head { font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); margin-bottom: 2px; }
-.live-row { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.live-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 12px; align-items: baseline; }
+.live-row > span:first-child { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .live-row.here > span:first-child { font-weight: 600; }
 .live-row .quiet-warn { text-align: right; }
+.live-when { grid-column: 1 / -1; color: var(--faint); font-size: var(--fs-xs); }
 .live-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .live-actions .btn { flex: 1 1 auto; white-space: nowrap; }  /* the spinner never wraps the label */
 /* Phones: a bottom bar with the main pages; More holds the rest (base.html) */

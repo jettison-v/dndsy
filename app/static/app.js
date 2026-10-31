@@ -3074,7 +3074,11 @@
       document.body.classList.remove('no-bridge');
     });
     window.postMessage({ askdndBridge: 'ping' }, location.origin);
-    setTimeout(() => { if (!heard) document.body.classList.add('no-bridge'); }, 1500);
+    setTimeout(() => {
+      if (heard) return;
+      document.body.classList.add('no-bridge');
+      if (!/Chrome\//.test(navigator.userAgent)) document.body.classList.add('bridge-elsewhere');  // (Safari, Firefox: it can't be added here)
+    }, 1500);
   }
 
   // The pill on every page
