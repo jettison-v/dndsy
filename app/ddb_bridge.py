@@ -988,6 +988,17 @@ def bridge_connect(request: Request, db: Session = Depends(get_db)):
     return _json({"key": key})
 
 
+@router.get("/bridge/links")
+def bridge_links(request: Request, db: Session = Depends(get_db)):
+    """What the bridge's icon in Chrome opens: your characters' sheets and pages, and the table."""
+    user = _signed_in(request, db)
+    me = picks.user_row(db, user)
+    mine = list(db.scalars(select(Character).where(Character.owner_id == me.id, Character.ddb_id.is_not(None), Character.copy_of_id.is_(None)))) if me else []
+    game = next((c.ddb_campaign_id for c in mine if c.ddb_campaign_id), None)
+    return _json({"characters": [{"name": c.name, "sheet": f"https://www.dndbeyond.com/characters/{c.ddb_id}", "page": f"/characters/{c.id}/battle"} for c in mine],
+                  "table": f"https://www.dndbeyond.com/games/{game}" if game else ""})
+
+
 @router.post("/bridge/hello")
 async def bridge_hello(request: Request, db: Session = Depends(get_db)):
     """The extension's report every 30 seconds: it's on, and which D&D Beyond sheets are open."""

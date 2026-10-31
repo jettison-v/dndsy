@@ -1,0 +1,13 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-10-31T21:05:00Z"},
+  "title": "Battle Band",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1360, "h": 640, "title": "Battle's band: chips, Spell DC, Hide saves", "is_interactive": true}
+  },
+  "order": ["Main.dc.html"],
+  "notes": {},
+  "designSystems": []
+}

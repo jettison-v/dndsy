@@ -58,6 +58,7 @@ def _page_context(request: Request) -> dict:
             "managed_ids": [c["id"] for c in access.campaigns_for(user.get("email")) if access.role(user.get("email"), c["id"]) in (access.DM, access.REVIEWER)] if user else [],  # (the Manage menu's other campaigns)
             "switch_path": switch_path(request.url.path),
             "vtt_on": lambda key: vtt.on(here, key),  # the VTT switch (app/vtt.py)
+            "table_url": table_url(here),
             "fight_now": fight_now,
             "my_dice": _my_dice, "dice_tuning": _dice_tuning,
             "my_id": (lambda: access.user_id(user.get("email"))) if user else (lambda: None)}  # your dice and everyone's tuning (app/dice.py), for thrown rolls
@@ -88,6 +89,25 @@ def _dice_tuning() -> dict:
     return tuning()
 
 
+def table_url(campaign: dict | None) -> str:
+    """Where this campaign plays: D&D Beyond's VTT for now, askdnd's own when it has one. The Table button stays put."""
+    game = (campaign or {}).get("ddb_campaign_id")
+    return f"https://www.dndbeyond.com/games/{game}" if game else ""
+
+
+def res_groups(rows: list[dict]) -> list[dict]:
+    """Resources in their order, those sharing a name before ": " under that name (any class's): {"name", "rows"}."""
+    names = [r["name"].split(": ", 1)[0] if ": " in r["name"] else "" for r in rows]
+    out: list[dict] = []
+    for r, name in zip(rows, names):
+        shared = name and names.count(name) > 1
+        if shared and out and out[-1]["name"] == name:
+            out[-1]["rows"].append(r)
+        else:
+            out.append({"name": name if shared else "", "rows": [r]})
+    return out
+
+
 def _markdown(text: str) -> str:
     from app.render import markdown_to_html
 
@@ -95,6 +115,7 @@ def _markdown(text: str) -> str:
 
 
 templates.env.filters["md"] = _markdown
+templates.env.filters["res_groups"] = res_groups
 
 
 def _entry_url(entity_id) -> str:

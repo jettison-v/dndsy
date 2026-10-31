@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Table rolls on phones</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 900px; height: 1010px">
+  <div class="head">
+    <div class="num">Suggestion 3</div>
+    <h1>Table rolls takes less room on phones</h1>
+    <p class="where"><b>Where you'll find it:</b> above the bottom bar on every page, on a phone</p>
+  </div>
+  <div class="pair">
+    <div class="side">
+      <div class="tag">Today: a fifth of the screen, closed</div>
+      <div class="phone">
+        <div class="bar"><b>The Adventure Begins</b><span class="sp"></span><span class="pill">Live</span></div>
+        <div class="body">
+          <div class="name">Cole</div>
+          <div class="sub">Druid 6 / Monk 2</div>
+          <div class="tabs"><b>Battle</b><span>Sheet</span><span>Plan</span></div>
+          <div class="tiles">
+            <div class="tile"><small>Hit points</small><b>51</b></div><div class="tile"><small>Armor class</small><b>16</b></div><div class="tile"><small>Speed</small><b>45 ft</b></div>
+            <div class="tile"><small>Initiative</small><b>+4</b></div><div class="tile"><small>Spell DC</small><b>15</b></div><div class="tile"><small>Inspiration</small><b>No</b></div>
+          </div>
+          <div class="saves">
+            <div class="save">Str <b>+2</b></div><div class="save">Dex <b>+4</b></div><div class="save">Con <b>+3</b></div>
+            <div class="save">Int <b>+6</b></div><div class="save">Wis <b>+7</b></div><div class="save">Cha <b>+0</b></div>
+          </div>
+          <div class="spellbar"><span class="btn mini">Spell Book</span><span>1st</span><span class="dots"><i></i><i></i><i></i><i></i></span></div>
+          <div class="cols" style="grid-template-columns: 1fr">
+            <div class="col"><h4 class="a">Action</h4><div>Longsword <span class="note">+6</span></div></div>
+          </div>
+        </div>
+        <div class="rolls" style="padding-block: 12px 26px"><div class="t">Table rolls</div><div><span class="roll"><i>C</i><b>18</b></span><span class="roll"><i>D</i><b>14</b></span><span class="roll"><i>T</i><b>18</b></span></div></div>
+        <div class="nav"><span>Story</span><span>Campaign</span><span>Cole</span><span>Party</span><span>More</span></div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="tag new">Proposed: one thin line</div>
+      <div class="phone">
+        <div class="bar"><b>The Adventure Begins</b><span class="sp"></span><span class="pill">Live</span></div>
+        <div class="body">
+          <div class="name">Cole</div>
+          <div class="sub">Druid 6 / Monk 2</div>
+          <div class="tabs"><b>Battle</b><span>Sheet</span><span>Plan</span></div>
+          <div class="tiles">
+            <div class="tile"><small>Hit points</small><b>51</b></div><div class="tile"><small>Armor class</small><b>16</b></div><div class="tile"><small>Speed</small><b>45 ft</b></div>
+            <div class="tile"><small>Initiative</small><b>+4</b></div><div class="tile"><small>Spell DC</small><b>15</b></div><div class="tile"><small>Inspiration</small><b>No</b></div>
+          </div>
+          <div class="saves">
+            <div class="save">Str <b>+2</b></div><div class="save">Dex <b>+4</b></div><div class="save">Con <b>+3</b></div>
+            <div class="save">Int <b>+6</b></div><div class="save">Wis <b>+7</b></div><div class="save">Cha <b>+0</b></div>
+          </div>
+          <div class="spellbar"><span class="btn mini">Spell Book</span><span>1st</span><span class="dots"><i></i><i></i><i></i><i></i></span></div>
+          <div class="cols" style="grid-template-columns: 1fr">
+            <div class="col"><h4 class="a">Action</h4><div>Longsword <span class="note">+6</span></div><div>Produce Flame <span class="note">+7</span></div></div>
+            <div class="col"><h4 class="b">Bonus Action</h4><div>Wild Shape</div></div>
+            <div class="col"><h4 class="r">Reaction</h4><div>Opportunity Attack</div></div>
+          </div>
+        </div>
+        <div class="rolls" style="padding-block: 8px; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; border-radius: 0"><span class="t">Rolls</span><span><b style="color: var(--strong)">Trah 18</b> <span class="note">Dexterity save</span></span><span class="sub">Open</span></div>
+        <div class="nav"><span>Story</span><span>Campaign</span><span>Cole</span><span>Party</span><span>More</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":900,"height":1010}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

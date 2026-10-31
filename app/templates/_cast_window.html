@@ -1,11 +1,14 @@
-{# A spell's window, inside the roll window (app.js "using an item"; app/casting.py). #}
+{# A spell's window, inside the roll window (app.js "using an item"; app/casting.py). With something to roll, Cast rolls at
+   the level picked here, in one step (Brett, 2026-10-31); Roll alone stays for a roll without spending anything. #}
+{% from "_char.html" import spell_roll %}
+{% set rolls = e.recipe and (e.attack or (e.recipe.events | rejectattr("on", "equalto", "hit") | list)) %}
 <button type="button" class="rp-x" aria-label="Close">×</button>
 <div class="rw-title">{{ e.name }}</div>
 <p class="use-cost">{{ e.time }}{% if e.range %} · {{ e.range }}{% endif %}{% if e.duration %} · {{ e.duration }}{% endif %}</p>
 {% if ends %}<p class="use-what">Ends Concentration on {{ ends.spell }}.</p>{% endif %}
-{% if ways and reachable %}<div class="rw-row"><span class="rw-label">Cast at</span><select class="rw-slot" name="way" aria-label="How to cast {{ e.name }}">{% for w in ways %}<option value="{{ w.way }}">{{ w.label }}</option>{% endfor %}</select></div>{% endif %}
+{% if ways and reachable %}<div class="rw-row"><span class="rw-label">Cast at</span><select class="rw-slot" name="way" aria-label="How to cast {{ e.name }}">{% for w in ways %}<option value="{{ w.way }}" data-level="{{ w.level }}">{{ w.label }}</option>{% endfor %}</select></div>{% endif %}
 {% if reachable %}
-<div class="rw-row"><button type="button" class="btn primary small" data-use-go>Cast</button></div>
+<div class="rw-row cast-go" data-character="{{ c.id }}">{% if rolls %}{{ spell_roll(c, e, "Roll without spending a slot", "btn link small cast-roll", 0) }}<button type="button" class="btn primary small" data-use-go data-then-roll>Cast and roll</button>{% else %}<button type="button" class="btn primary small" data-use-go>Cast</button>{% endif %}</div>
 <p class="use-said" role="alert" hidden></p>
 {% else %}
 <p class="use-said">{{ c.name }}'s D&amp;D Beyond sheet can't be reached: open it in Chrome with the askdnd bridge to cast here, or spend the slot on D&amp;D Beyond (askdnd shows it within seconds).</p>

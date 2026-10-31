@@ -15,10 +15,10 @@ router = APIRouter()
 
 
 @router.get("/help")
-def help_page(request: Request, tab: str = "faq", db: Session = Depends(get_db)):
+def help_page(request: Request, tab: str = "adds", db: Session = Depends(get_db)):
     """What askdnd adds, FAQ and About in one page (Brett, 2026-10-23; the first tab 2026-10-26). /help#<id> opens that
-    FAQ answer, so the FAQ stays the default."""
-    return templates.TemplateResponse(request, "help.html", {"tab": tab if tab in ("adds", "about") else "faq",
+    FAQ answer, and a first visit starts on What askdnd adds; after that, your last tab (app.js)."""
+    return templates.TemplateResponse(request, "help.html", {"tab": tab if tab in ("faq", "about") else "adds",
                                                              "sections": tour.SECTIONS,
                                                              "sync_minutes": SYNC_SECONDS / 60})
 

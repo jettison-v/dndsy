@@ -66,4 +66,5 @@ def test_help_shows_what_askdnd_adds_with_show_me(table):  # noqa: F811
     assert keys <= {s["group"] for s in tour.STOPS}
     for k in keys:
         assert f'data-tour-start="{k}"' in html
-    assert table["player"].get("/help").text.count('id="t-adds" class="adds" hidden') == 1  # the FAQ stays the default
+    assert table["player"].get("/help?tab=faq").text.count('id="t-adds" class="adds" hidden') == 1
+    assert table["player"].get("/help").text.count('id="t-adds" class="adds" hidden') == 0  # a first visit starts here

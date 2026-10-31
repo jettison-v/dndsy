@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Battle's band</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 640px">
+  <div class="head">
+    <div class="num">Battle's band</div>
+    <h1>Fewer rows above the action columns</h1>
+    <p class="where"><b>Where you'll find it:</b> Battle on a computer, shown at a laptop's full width. Press Hide saves to try it.</p>
+  </div>
+  <div class="screen">
+    <div class="body">
+      <div class="row"><div><div class="row" style="justify-content: flex-start"><div class="name">No Name</div><span class="btn mini" aria-label="Open No Name on D&amp;D Beyond">↗</span></div><div class="sub">Monk 6 / Warlock 2</div></div><div class="tabs" style="width: 200px"><b>Battle</b><span>Sheet</span><span>Plan</span></div></div>
+      <div class="card" style="padding: 8px 12px">
+        <div class="row">
+          <span class="row" style="gap: 6px; justify-content: flex-start"><button type="button" class="stat big">75 HP</button><button type="button" class="stat">AC <b>17</b></button><button type="button" class="stat">Speed <b>45 ft</b></button><button type="button" class="stat">Init <b>+4</b></button><button type="button" class="stat">Spell DC <b>12</b></button><button type="button" class="stat gold">Inspiration</button></span>
+          <button type="button" class="btn mini" onClick="{{ toggle }}">{{ label }}</button>
+        </div>
+        <sc-if value="{{ showSaves }}" hint-placeholder-val="{{ true }}">
+          <div class="row" style="gap: 6px; justify-content: flex-start"><button type="button" class="stat">Str <b>+4</b></button><button type="button" class="stat">Dex <b>+7</b></button><button type="button" class="stat">Con <b>+2</b></button><button type="button" class="stat">Int <b>+0</b></button><button type="button" class="stat">Wis <b>+3</b></button><button type="button" class="stat">Cha <b>+1</b></button></div>
+        </sc-if>
+      </div>
+      <div class="row" style="justify-content: flex-start"><span class="cond add">+ Condition</span><button type="button" class="stat">Focus <span class="dots"><i></i><i></i><i></i><i></i><i></i><i></i></span></button><button type="button" class="stat">Luck <span class="dots"><i></i><i></i><i></i></span></button><button type="button" class="stat">Pact 1st <span class="dots"><i></i><i></i></span></button><span class="btn mini">Spell Book</span></div>
+      <div class="cols">
+        <div class="col"><h4 class="a">Action</h4><div>Unarmed Strike <span class="note">+7</span></div><div>Eldritch Blast <span class="note">+4</span></div></div>
+        <div class="col"><h4 class="b">Bonus Action</h4><div>Flurry of Blows</div><div>Step of the Wind</div></div>
+        <div class="col"><h4 class="r">Reaction</h4><div>Deflect Attacks</div><div>Opportunity Attack</div></div>
+      </div>
+      <div class="fold">A laptop's first screen ends about here</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":640}}'>
+class Component extends DCLogic {
+  state = { hidden: false };
+  renderVals() {
+    const hidden = this.state.hidden;
+    return { showSaves: !hidden, label: hidden ? 'Show saves' : 'Hide saves', toggle: () => this.setState({ hidden: !hidden }) };
+  }
+}
+</script>
+</body>
+</html>

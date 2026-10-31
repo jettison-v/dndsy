@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Free casts in the Cast window</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 620px">
+  <div class="head">
+    <div class="num">Polish</div>
+    <h1>The Cast window shows free uses</h1>
+    <p class="where"><b>Where you'll find it:</b> the Cast window, for a spell a feat or class feature lets you cast without a slot</p>
+  </div>
+  <div class="pair">
+    <div class="side">
+      <div class="tag">Today: a bare No slot</div>
+      <div class="win" style="width: 460px">
+        <h3>Misty Step</h3>
+        <p class="note">Bonus Action · 30 feet · Instantaneous</p>
+        <div class="sel"><span>Cast at</span><span>2nd-level (3 left)</span></div>
+        <div class="sel"><span></span><span>3rd-level (2 left)</span></div>
+        <div class="sel"><span></span><span>No slot</span></div>
+        <div class="row"><span></span><span class="btn main">Cast</span></div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="tag new">Proposed: names the free use, and counts it</div>
+      <div class="win" style="width: 460px">
+        <h3>Misty Step</h3>
+        <p class="note">Bonus Action · 30 feet · Instantaneous</p>
+        <div class="sel" style="border-color: var(--green)"><span>Cast at</span><span>Free: Fey Touched (1 left)</span></div>
+        <div class="sel"><span></span><span>2nd-level (3 left)</span></div>
+        <div class="sel"><span></span><span>3rd-level (2 left)</span></div>
+        <div class="row"><span class="note">Comes back on a Long Rest</span><span class="btn main">Cast</span></div>
+      </div>
+      <p class="note">Shown only where the sheet lists the free use. Otherwise No slot stays. The player always picks, so a free use is listed first and never spent without Cast.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":620}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

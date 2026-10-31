@@ -92,3 +92,13 @@ def test_only_the_characters_own_player_casts(dm, db, sheet):
     cole = char(db, "Cole")
     e = spell(characters.character_summary(cole), level=1)
     assert dm.post(url(cole, e), data={"way": "slot:1"}).status_code == 404
+
+
+def test_a_free_use_comes_first_and_takes_the_place_of_no_slot():
+    """Brett, 2026-10-31: the Cast window names a feat's free use and counts it."""
+    sheet = {"spell_slots": {"slots": [{"level": 2, "max": 3, "used": 0}]}}
+    e = {"level": 2, "avgs": {}, "ritual": False, "from": "Fey Touched", "uses": {"left": 1, "max": 1}}
+    got = casting.ways(sheet, e)
+    assert got[0]["label"] == "Free: Fey Touched (1 left)"
+    assert not any(w["way"] == casting.NO_SLOT for w in got)
+    assert any(w["way"] == casting.NO_SLOT for w in casting.ways(sheet, e | {"uses": {"left": 0, "max": 1}}))

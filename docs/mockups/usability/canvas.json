@@ -1,0 +1,151 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-10-31T19:41:56Z"
+  },
+  "title": "Usability Mockups",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 900,
+      "h": 1010,
+      "title": "1. Hit Points first on phones"
+    },
+    "Cast-and-Roll.dc.html": {
+      "x": 980,
+      "y": 0,
+      "w": 1360,
+      "h": 1010,
+      "title": "2. Cast and Roll as one step"
+    },
+    "Table-Rolls.dc.html": {
+      "x": 2420,
+      "y": 0,
+      "w": 900,
+      "h": 1010,
+      "title": "3. Table rolls on phones"
+    },
+    "Rests.dc.html": {
+      "x": 3400,
+      "y": 0,
+      "w": 1360,
+      "h": 1010,
+      "title": "4. Say where a rest lives"
+    },
+    "Battle-Rows.dc.html": {
+      "x": 0,
+      "y": 1400,
+      "w": 1360,
+      "h": 900,
+      "title": "5. Fewer rows above the columns"
+    },
+    "Empty-Columns.dc.html": {
+      "x": 1440,
+      "y": 1400,
+      "w": 1360,
+      "h": 900,
+      "title": "6. Empty columns"
+    },
+    "First-Page.dc.html": {
+      "x": 2880,
+      "y": 1400,
+      "w": 1360,
+      "h": 900,
+      "title": "7. A first page before any recap"
+    },
+    "Manage-Headings.dc.html": {
+      "x": 4320,
+      "y": 1400,
+      "w": 1360,
+      "h": 900,
+      "title": "8. Two headings on Manage"
+    },
+    "DM-View.dc.html": {
+      "x": 5760,
+      "y": 1400,
+      "w": 1360,
+      "h": 900,
+      "title": "9. The DM's view during a fight"
+    },
+    "Grouped-Resources.dc.html": {
+      "x": 0,
+      "y": 2690,
+      "w": 1360,
+      "h": 620,
+      "title": "Polish: grouped resources"
+    },
+    "Help-First-Tab.dc.html": {
+      "x": 1440,
+      "y": 2690,
+      "w": 1360,
+      "h": 620,
+      "title": "Polish: Help's first tab"
+    },
+    "Free-Casts.dc.html": {
+      "x": 2880,
+      "y": 2690,
+      "w": 1360,
+      "h": 620,
+      "title": "Polish: free casts"
+    },
+    "Open-Sheet-and-Table.dc.html": {
+      "x": 0,
+      "y": 3700,
+      "w": 1360,
+      "h": 960,
+      "title": "New: open your sheet and the table"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Cast-and-Roll.dc.html",
+    "Table-Rolls.dc.html",
+    "Rests.dc.html",
+    "Battle-Rows.dc.html",
+    "Empty-Columns.dc.html",
+    "First-Page.dc.html",
+    "Manage-Headings.dc.html",
+    "DM-View.dc.html",
+    "Grouped-Resources.dc.html",
+    "Help-First-Tab.dc.html",
+    "Free-Casts.dc.html",
+    "Open-Sheet-and-Table.dc.html"
+  ],
+  "notes": {
+    "first": {
+      "x": 0,
+      "y": -240,
+      "text": "What I'd do first",
+      "kind": "title1",
+      "maxW": 4760
+    },
+    "soon": {
+      "x": 0,
+      "y": 1160,
+      "text": "Worth doing soon",
+      "kind": "title1",
+      "maxW": 7120
+    },
+    "polish": {
+      "x": 0,
+      "y": 2450,
+      "text": "Small polish",
+      "kind": "title1",
+      "maxW": 4240
+    },
+    "open": {
+      "x": 0,
+      "y": 3460,
+      "text": "Added: getting there",
+      "kind": "title1",
+      "maxW": 1360
+    }
+  },
+  "designSystems": []
+}

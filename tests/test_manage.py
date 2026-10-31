@@ -23,7 +23,7 @@ def _clear():
 def test_admin_sees_both_groups_in_the_menu(monkeypatch, db):
     """Brett, 2026-10-27 (docs/mockups/manage-menu.html, round 2 option A): two doors, Manage for this campaign and
     Admin for askdnd as a whole; each lists what's opened most, and every page lists the rest of its half down the
-    left, under a band saying which half it is."""
+    left, under a line in its half's colour."""
     import_bundle(db, {"campaign": {"slug": "main", "name": "The Lost Mine"}})
     import_bundle(db, {"campaign": {"slug": "second", "name": "Second Wind"}})
     admin = client_for(monkeypatch, db, "brett@example.com")
@@ -43,13 +43,13 @@ def test_admin_sees_both_groups_in_the_menu(monkeypatch, db):
     assert ">Design system</a>" in tool.split('class="menu-more"')[1] and "Needs you" not in tool
 
     band = page.split('class="manage-band')[1].split("</div>")[0]
-    assert band.startswith(' camp"') and "<b>The Lost Mine</b>" in band and 'href="/manage/askdnd">⚙ askdnd admin →' in band
+    assert band.startswith(' camp"') and "The Lost Mine" in band and 'href="/manage/askdnd">⚙ Admin' in band
     side = page.split('class="manage-side"')[1].split("</nav>")[0]
     assert [s.split('class="manage-sec">')[1].split("<")[0] for s in side.split("<span")[1:] if 'manage-sec"' in s] == ["Every week", "The table", "Setup"]
     assert 'aria-current="page">Needs you' in side
     usage = admin.get("/manage/usage").text
     band = usage.split('class="manage-band')[1].split("</div>")[0]
-    assert band.startswith(' tool"') and "⚙ askdnd admin" in band and "The Lost Mine's Manage →" in band
+    assert band.startswith(' tool"') and "askdnd admin" in band and "The Lost Mine's Manage" in band
     side = usage.split('class="manage-side"')[1].split("</nav>")[0]
     assert 'aria-current="page">Usage' in side and "Inbox" not in side and ">askdnd history<" in side
     assert side.index(">Overview<") < side.index(">Accounts<") < side.index(">Usage<") < side.index(">Design system<")

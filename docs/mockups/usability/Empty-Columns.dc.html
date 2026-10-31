@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Empty columns repeat themselves</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 900px">
+  <div class="head">
+    <div class="num">Suggestion 6</div>
+    <h1>Say it once, then show what to pin</h1>
+    <p class="where"><b>Where you'll find it:</b> Battle, for a player who hasn't pinned anything yet</p>
+  </div>
+  <div class="pair">
+    <div class="side">
+      <div class="tag">Today: the same sentence three times</div>
+      <div class="screen">
+        <div class="body">
+          <div class="cols">
+            <div class="col"><h4 class="a">Action</h4><p class="note">One per turn. The Attack action makes 2 attacks.</p><p>Trah's player hasn't pinned anything here yet.</p><span class="linkish">See all actions (14)</span></div>
+            <div class="col"><h4 class="b">Bonus Action</h4><p class="note">One per turn, before or after your Action.</p><p>Trah's player hasn't pinned anything here yet.</p><span class="linkish">See all bonus actions (9)</span></div>
+            <div class="col"><h4 class="r">Reaction</h4><p class="note">One per round, also on others' turns.</p><p>Trah's player hasn't pinned anything here yet.</p><span class="linkish">See all reactions (4)</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="tag new">Proposed: one line, and useful first rows</div>
+      <div class="screen">
+        <div class="body">
+          <div class="row" style="border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px"><span>Pin what you use most, and it stays at the top of each column.</span></div>
+          <div class="cols">
+            <div class="col"><h4 class="a">Action</h4><p class="note">One per turn. The Attack action makes 2 attacks.</p><div class="row"><span>Longsword <span class="note">+7</span></span><span class="btn mini">Pin</span></div><div class="row"><span>Fire Bolt <span class="note">+8</span></span><span class="btn mini">Pin</span></div><span class="linkish">See all actions (14)</span></div>
+            <div class="col"><h4 class="b">Bonus Action</h4><p class="note">One per turn, before or after your Action.</p><div class="row"><span>Second Wind</span><span class="btn mini">Pin</span></div><div class="row"><span>Misty Step</span><span class="btn mini">Pin</span></div><span class="linkish">See all bonus actions (9)</span></div>
+            <div class="col"><h4 class="r">Reaction</h4><p class="note">One per round, also on others' turns.</p><div class="row"><span>Shield</span><span class="btn mini">Pin</span></div><div class="row"><span>Opportunity Attack</span><span class="btn mini">Pin</span></div><span class="linkish">See all reactions (4)</span></div>
+          </div>
+          <p class="note">The first rows are simply the column's first entries in the sheet's own order, so askdnd lists what the character has and suggests nothing.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

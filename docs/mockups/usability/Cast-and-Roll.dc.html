@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cast and Roll as one step</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 1010px">
+  <div class="head">
+    <div class="num">Suggestion 2</div>
+    <h1>Cast and Roll as one step</h1>
+    <p class="where"><b>Where you'll find it:</b> the Spell Book and Battle's spell bar, for a spell with something to roll</p>
+  </div>
+  <div class="pair">
+    <div class="side">
+      <div class="tag">Today: two trips, picking the level twice</div>
+      <div class="screen">
+        <div class="sbrow"><span><b>Cure Wounds</b> <span class="note">1st · Action · Touch</span></span><span class="row" style="gap: 6px"><span class="btn mini">Roll</span><span class="btn mini">Cast</span></span></div>
+        <div class="sbrow"><span><b>Shield of Faith</b> <span class="note">1st · Bonus Action</span></span><span class="row" style="gap: 6px"><span class="btn mini">Cast</span></span></div>
+        <div class="body">
+          <div class="win">
+            <h3>Cure Wounds</h3>
+            <p class="note">First trip: Cast</p>
+            <div class="sel"><span>Cast at</span><span>2nd-level (3 left)</span></div>
+            <div class="row"><span></span><span class="btn main">Cast</span></div>
+          </div>
+          <div class="win">
+            <h3>Cure Wounds</h3>
+            <p class="note">Second trip: Roll</p>
+            <div class="sel"><span>Roll at</span><span>1st-level · 2d8 + 3</span></div>
+            <div class="row"><span class="note">The level starts at 1st again</span><span class="btn main">Roll</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="tag new">Proposed: one window</div>
+      <div class="screen">
+        <div class="sbrow"><span><b>Cure Wounds</b> <span class="note">1st · Action · Touch</span></span><span class="btn mini">Cast</span></div>
+        <div class="sbrow"><span><b>Shield of Faith</b> <span class="note">1st · Bonus Action</span></span><span class="btn mini">Cast</span></div>
+        <div class="body">
+          <div class="win">
+            <h3>Cure Wounds</h3>
+            <p class="note">Action · Touch · Instantaneous</p>
+            <div class="sel"><span>Cast at</span><span>2nd-level (3 left) · 4d8 + 3</span></div>
+            <div class="row"><span class="linkish">Roll without spending a slot</span><span class="btn main">Cast and roll</span></div>
+          </div>
+          <p class="note">A spell with nothing to roll keeps a plain Cast button, and Undo on the corner card gives the slot back as it does now.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":1010}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
