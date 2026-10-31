@@ -286,6 +286,7 @@ class Character(Timestamped, Base):
     wild_shape: Mapped[str | None] = mapped_column(String(200), nullable=True)  # the form they're in on Battle (app/wild_shape.py), set by their player
     # What they're concentrating on (app/spellbook.py), set by their player: {"spell", "key", "level", "round", "rounds"}
     concentration: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    level_up: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # what's new since it last leveled, until read (app/level_up.py)
     conditions: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{"name": "Invisible", "source": "Ring of Invisibility"}] (app/conditions.py)
     # When its player's askdnd extension last heard its D&D Beyond sheet (app/ddb_bridge.py): the sheet can be reached
     sheet_heard_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

@@ -1,0 +1,13 @@
+{# A resource's window, inside the roll window (app.js "using an item"; app/resources.py). #}
+<button type="button" class="rp-x" aria-label="Close">×</button>
+<div class="rw-title">{{ n.name }}</div>
+<p class="use-cost">{{ n.left }}{% if n.max %} of {{ n.max }}{% endif %} left{% if n.back %} · {{ n.back }}{% endif %}</p>
+{% if reachable %}
+<div class="rw-row">
+  <button type="button" class="btn primary small" data-use-go data-to="use"{% if not n.left %} disabled{% endif %}>Use one</button>
+  <button type="button" class="btn small" data-use-go data-to="back"{% if n.max and n.left >= n.max %} disabled{% endif %}>{{ "Give one back" if n.max else "Add one" }}</button>
+</div>
+<p class="use-said" role="alert" hidden></p>
+{% else %}
+<p class="use-said">{{ c.name }}'s D&amp;D Beyond sheet can't be reached: open it in Chrome with the askdnd bridge to count this here, or change it on D&amp;D Beyond (askdnd shows it within seconds).</p>
+{% endif %}

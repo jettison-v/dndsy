@@ -1,0 +1,16 @@
+{# A rest's window, inside the roll window (app.js "using an item"; app/rests.py). #}
+<button type="button" class="rp-x" aria-label="Close">×</button>
+<div class="rw-title">{{ title }}</div>
+{% if not p.can %}
+<p class="use-said">To start a rest you must have at least 1 Hit Point.</p>
+{% else %}
+{% if kind == "short" %}{% for d in p.dice if d.left %}<div class="rw-row"><span class="rw-label">Spend</span><select class="rw-slot" name="dice_{{ d.id }}" aria-label="{{ d.class }} Hit Point Dice to spend">{% for n in range(d.left + 1) %}<option value="{{ n }}">{{ n }}</option>{% endfor %}</select><span class="note">{{ d.die }} {{ d.class }}, {{ d.left }} left</span></div>{% endfor %}{% endif %}
+{% if lines %}<ul class="use-what rest-list">{% for l in lines %}<li>{{ l }}</li>{% endfor %}</ul>{% else %}<p class="use-what">Nothing else comes back.</p>{% endif %}
+{% if p.dawn %}<p class="note">Back at dawn, not on a rest: {{ p.dawn | join(", ") }}.</p>{% endif %}
+{% if reachable %}
+<div class="rw-row"><button type="button" class="btn primary small" data-use-go>Rest</button></div>
+<p class="use-said" role="alert" hidden></p>
+{% else %}
+<p class="use-said">{{ c.name }}'s D&amp;D Beyond sheet can't be reached: open it in Chrome with the askdnd bridge to rest here, or rest on D&amp;D Beyond (askdnd shows it within seconds).</p>
+{% endif %}
+{% endif %}

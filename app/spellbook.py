@@ -163,6 +163,11 @@ def _entry(sp: dict, char_level: int, mod: int, top: int, castable_in_form: set[
     return e
 
 
+def concentrating(e: dict, level: int) -> dict:
+    """What a character's Concentration on this spell holds, cast at this level."""
+    return {"spell": e["name"], "key": e["key"], "level": max(level, e["level"]), "round": 1, "rounds": e["rounds"]}
+
+
 def entries(sheet: dict, castable_in_form: set[str] | None = None) -> list[dict]:
     """Every spell the character can cast now, for the Spell Book."""
     char_level, mod = sheet.get("level") or 1, _spell_mod(sheet)
