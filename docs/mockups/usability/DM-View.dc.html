@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The DM's view during a fight</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 900px">
+  <div class="head">
+    <div class="num">Suggestion 9</div>
+    <h1>The DM's view during a fight</h1>
+    <p class="where"><b>Where you'll find it:</b> Party, with a Rows switch that turns on while a fight runs. It's also the first piece of the simple VTT.</p>
+  </div>
+  <div class="pair">
+    <div class="side">
+      <div class="tag">Today: cards built for reading</div>
+      <div class="screen">
+        <div class="body">
+          <div class="title">Party</div>
+          <div class="grid2">
+            <div class="card"><h3>Big C</h3><div class="tiles"><div class="tile"><small>Hit points</small><b>31 / 72</b></div><div class="tile"><small>AC</small><b>19</b></div><div class="tile"><small>Speed</small><b>30 ft</b></div></div><div class="res">Sorcery Points <span class="dots"><i></i><i class="off"></i></span></div><div class="res">Channel Divinity <span class="dots"><i></i><i></i></span></div></div>
+            <div class="card"><h3>Cole</h3><div class="tiles"><div class="tile"><small>Hit points</small><b>51 / 51</b></div><div class="tile"><small>AC</small><b>16</b></div><div class="tile"><small>Speed</small><b>45 ft</b></div></div><div class="res">Wild Shape <span class="dots"><i></i><i></i></span></div><div class="res">Focus Points <span class="dots"><i></i><i></i></span></div></div>
+            <div class="card"><h3>Trah</h3><div class="tiles"><div class="tile"><small>Hit points</small><b>44 / 62</b></div><div class="tile"><small>AC</small><b>15</b></div><div class="tile"><small>Speed</small><b>30 ft</b></div></div><div class="res">Second Wind <span class="dots"><i></i></span></div></div>
+            <div class="card"><h3>No Name</h3><div class="tiles"><div class="tile"><small>Hit points</small><b>75 / 75</b></div><div class="tile"><small>AC</small><b>17</b></div><div class="tile"><small>Speed</small><b>45 ft</b></div></div><div class="res">Focus Points <span class="dots"><i></i><i></i></span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="tag new">Proposed: one row each, in turn order</div>
+      <div class="screen">
+        <div class="body">
+          <div class="row"><div class="title">Party</div><div class="tabs" style="width: 180px; grid-template-columns: repeat(2, 1fr)"><span>Cards</span><b>Rows</b></div></div>
+          <p class="note">Round 3. The order comes from D&amp;D Beyond's VTT, which is already what askdnd hears.</p>
+          <table class="track">
+            <thead><tr><th>Turn</th><th>Character</th><th>HP</th><th>AC</th><th>Conditions</th><th>Concentration</th></tr></thead>
+            <tbody>
+              <tr class="now"><td>Now</td><td><b>Big C</b></td><td class="hp low">31 / 72</td><td>19</td><td><span class="cond">Poisoned</span></td><td class="note">None</td></tr>
+              <tr><td>Next</td><td><b>Enemy 1</b></td><td class="note">Not heard</td><td class="note">Not heard</td><td></td><td></td></tr>
+              <tr><td>3</td><td><b>Cole</b></td><td class="hp">51 / 51</td><td>16</td><td class="note">None</td><td>Entangle, round 2</td></tr>
+              <tr><td>4</td><td><b>Trah</b></td><td class="hp">44 / 62</td><td>15</td><td class="note">None</td><td class="note">None</td></tr>
+              <tr><td>5</td><td><b>No Name</b></td><td class="hp">75 / 75</td><td>17</td><td class="note">None</td><td class="note">None</td></tr>
+            </tbody>
+          </table>
+          <p class="note">A row opens Apply to, as a roll does. Enemy numbers are the DM's own, so the row shows only what askdnd hears. Nothing here makes a ruling.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

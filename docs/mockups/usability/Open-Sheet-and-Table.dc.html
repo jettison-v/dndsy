@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Open your sheet and the table</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 960px">
+  <div class="head">
+    <div class="num">New</div>
+    <h1>Open your sheet and the table from one place</h1>
+    <p class="where"><b>Where you'll find it:</b> a Table button in the menu bar, a small icon by each sheet, and the bridge's own icon in Chrome</p>
+  </div>
+  <div class="side">
+    <div class="tag new">Proposed: one Table button that never moves</div>
+    <div class="screen">
+      <div class="bar"><b>The Adventure Begins</b><span>Story</span><span>Campaign</span><span class="btn mini">Table ↗</span><span class="pill">Cole</span><span class="pill">Party</span><span class="sp"></span><span class="pill">Connected to D&amp;D Beyond</span><span class="pill">Manage</span></div>
+      <div class="body"><p class="note">Today Table opens D&amp;D Beyond's VTT in a new tab. When a campaign switches on askdnd's own VTT, the same button opens that instead, so nobody relearns where it is. On a phone it sits under More.</p></div>
+    </div>
+  </div>
+  <div class="pair">
+    <div class="side">
+      <div class="tag new">Proposed: a small icon by each sheet in the Live window</div>
+      <div class="win" style="width: 420px">
+        <div class="lbl">How each sheet is connected</div>
+        <div class="row"><span><b style="color: var(--strong)">Cole</b> <span class="note">(you)</span></span><span class="row" style="gap: 10px"><span style="color: var(--green)">connected</span><span class="btn mini" aria-label="Open Cole on D&amp;D Beyond">↗</span></span></div>
+        <div class="row"><span>Big C</span><span class="row" style="gap: 10px"><span class="note">not connected</span><span class="btn mini" aria-label="Open Big C on D&amp;D Beyond">↗</span></span></div>
+        <div class="row"><span>Trah</span><span class="row" style="gap: 10px"><span style="color: var(--green)">connected</span><span class="btn mini" aria-label="Open Trah on D&amp;D Beyond">↗</span></span></div>
+        <p class="note">Hovering says "Open on D&amp;D Beyond". The long link under a character's name becomes the same small icon beside the name, which also frees a line on phones.</p>
+      </div>
+    </div>
+    <div class="side">
+      <div class="tag new">Proposed: the bridge's icon in Chrome does something</div>
+      <div class="win" style="width: 340px; justify-self: end">
+        <div class="row" style="justify-content: flex-start"><b style="color: var(--strong)">askdnd bridge</b><span style="color: var(--green); font-size: 12px">Connected</span></div>
+        <a class="btn" href="#" style="justify-content: space-between">Cole on D&amp;D Beyond <span>↗</span></a>
+        <a class="btn" href="#" style="justify-content: space-between">Cole in askdnd <span>↗</span></a>
+        <a class="btn" href="#" style="justify-content: space-between">The table <span>↗</span></a>
+      </div>
+      <p class="note">Clicking the icon does nothing today. This is a small window with three links, and it needs another Chrome Web Store review.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

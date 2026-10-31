@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Two headings on every Manage page</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 900px">
+  <div class="head">
+    <div class="num">Suggestion 8</div>
+    <h1>One heading on every Manage page</h1>
+    <p class="where"><b>Where you'll find it:</b> the top of every Manage and Admin page</p>
+  </div>
+  <div class="pair">
+    <div class="side">
+      <div class="tag">Today: three things say where you are</div>
+      <div class="screen">
+        <div class="bar"><b>The Adventure Begins</b><span class="sp"></span><span class="pill">Manage</span></div>
+        <div class="band"><span>Manage: The Adventure Begins</span><span>Admin</span></div>
+        <div class="split">
+          <div class="side-list"><b>Needs you</b><span>Inbox</span><span>Sessions</span><span>Table</span><span>House rules</span><span>Settings</span><span>History</span><span>DM guide</span></div>
+          <div class="body" style="padding: 18px">
+            <div class="title">Needs you</div>
+            <p class="note">Two things are waiting.</p>
+            <div class="row card" style="grid-template-columns: none; display: flex"><span>A recap is ready to review</span><span class="btn mini">Review</span></div>
+            <div class="row card" style="grid-template-columns: none; display: flex"><span>Three suggestions in the Inbox</span><span class="btn mini">Open Inbox</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="tag new">Proposed: colour as a thin line, the way across beside the title</div>
+      <div class="screen">
+        <div class="bar"><b>The Adventure Begins</b><span class="sp"></span><span class="pill">Manage</span></div>
+        <div class="thin"></div>
+        <div class="split">
+          <div class="side-list"><b>Needs you</b><span>Inbox</span><span>Sessions</span><span>Table</span><span>House rules</span><span>Settings</span><span>History</span><span>DM guide</span></div>
+          <div class="body" style="padding: 18px">
+            <div class="row"><div class="title">Needs you</div><span class="btn mini">Admin</span></div>
+            <p class="note">Two things are waiting.</p>
+            <div class="row card" style="grid-template-columns: none; display: flex"><span>A recap is ready to review</span><span class="btn mini">Review</span></div>
+            <div class="row card" style="grid-template-columns: none; display: flex"><span>Three suggestions in the Inbox</span><span class="btn mini">Open Inbox</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="note">Red stays this campaign and blue stays Admin. Only the words above the work go, about 40px back on every page.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
