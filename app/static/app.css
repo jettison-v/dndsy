@@ -162,8 +162,8 @@ body.no-bridge:not(.bridge-elsewhere) .live-pill[data-wants-bridge] .live-ago { 
 .menu a.sheet-open { display: inline-grid; padding: 0; }
 .menu a.sheet-open:hover, .sheet-open:hover { color: var(--text-strong); border-color: var(--muted); background: var(--surface); }
 .nav a.nav-table { white-space: nowrap; }
-.start-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--sp-3); margin-top: var(--sp-4); }
-.start-card { display: grid; gap: var(--sp-2); align-content: start; justify-items: start; padding: var(--sp-4); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); color: var(--muted); text-decoration: none; }
+.start-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: var(--sp-3); margin-top: var(--sp-4); }
+.start-card { min-width: 0; display: grid; gap: var(--sp-2); align-content: start; justify-items: start; padding: var(--sp-4); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); color: var(--muted); text-decoration: none; }
 .start-card:hover { border-color: var(--line-strong); }
 .start-card b { color: var(--text-strong); font-size: var(--fs-md); }
 .start-card .btn { margin-top: auto; }

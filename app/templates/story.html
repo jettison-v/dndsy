@@ -41,7 +41,7 @@
   <p class="subtitle">Recaps appear here after your first session. Until then, this is what's ready.</p>
   {% set tn = tablenav() %}{% set sessions = manage_pages | selectattr("label", "equalto", "Sessions") | first %}
   <div class="start-cards">
-    {% if tn.mine %}<a class="start-card" href="/characters/{{ tn.mine.id }}/battle"><b>Your character</b><span>Battle, your Sheet and your Plan, from D&amp;D Beyond.</span><span class="btn small">Open {{ tn.mine.name }}</span></a>{% endif %}
+    {% if tn.mine %}<a class="start-card" href="/characters/{{ tn.mine.id }}/battle"><b>Your character</b><span>Battle, your Sheet and your Plan, from D&amp;D Beyond.</span><span class="btn small">Open your character</span></a>{% endif %}
     <a class="start-card" href="/party"><b>The party</b><span>Everyone at the table, at a glance.</span><span class="btn small">Open Party</span></a>
     {% if table_url %}<a class="start-card" href="{{ table_url }}" target="_blank" rel="noopener"><b>The table</b><span>Where you play: the map and the fight.</span><span class="btn small">Open the table ↗</span></a>{% endif %}
     <a class="start-card" href="#" data-tour-start><b>The tour</b><span>A walk through your own pages.</span><span class="btn small">Take the tour</span></a>
