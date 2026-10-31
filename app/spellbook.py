@@ -202,7 +202,7 @@ def sheet_entries(sheet: dict) -> list[dict]:
             seen.add(sp["key"])
             out.append(_entry(sp, char_level, mod, 0) | {
                 "state": "granted", "from": ", ".join(sp.get("sources") or []), "source": "Species, feats and items",
-                "core": sp.get("core"), "book": sp.get("book") or ""})
+                "core": sp.get("core"), "book": sp.get("book") or "", "uses": sp.get("uses")})
     for e in out:
         e["ready"] = e["state"] in READY
         e["state_label"] = STATE_LABELS.get(e["state"], "")

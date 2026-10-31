@@ -24,7 +24,22 @@
   </div>
 
   <div id="t-glance">
-    {% if rows %}<div class="pt-cards">
+    {# One row each, in turn order, while a fight runs; a choice per device, Rows at first for the DM. #}
+    {% set f = fight_now() %}
+    {% if f and rows %}
+    <div class="pt-view" role="group" aria-label="Show the party as" data-pt-view-default="{{ 'rows' if is_dm else 'cards' }}"><button type="button" data-pt-view="cards" aria-pressed="false">Cards</button><button type="button" data-pt-view="rows" aria-pressed="false">Rows</button></div>
+    <div class="table-scroll pt-track-wrap"><table class="pt-track">
+      <thead><tr><th>Turn</th><th>Name</th><th>Hit Points</th><th>AC</th><th>Conditions</th><th>Concentration</th></tr></thead>
+      <tbody>{% for x in f.order %}{% set r = rows | selectattr("c.id", "equalto", x.character) | first if x.character else none %}{% set hp = r.sheet.hit_points if r and r.sheet else none %}
+        <tr class="{{ 'now' if x.active }}"><td>{{ "Now" if x.active else loop.index }}</td>
+          <td><b>{{ x.name }}</b></td>
+          <td>{% if hp %}<button type="button" class="pt-hp{{ ' low' if hp.max and hp.current * 2 <= hp.max }}" data-panel-url="/characters/{{ r.c.id }}/vital/hp" title="Open Hit points">{{ hp.current }} / {{ hp.max }}</button>{% else %}<span class="note">—</span>{% endif %}</td>
+          <td>{% if r and r.sheet %}{{ r.sheet.armor_class }}{% else %}<span class="note">—</span>{% endif %}</td>
+          <td>{% if r %}{% for k in r.conditions if k.name != "Concentration" %}{{ k.name }}{{ ", " if not loop.last }}{% else %}<span class="note">None</span>{% endfor %}{% endif %}</td>
+          <td>{% if r and r.c.concentration %}{{ r.c.concentration.spell }}{% elif r %}<span class="note">None</span>{% endif %}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    {% endif %}
+    {% if rows %}<div class="pt-cards{{ ' pt-with-track' if f }}">
       {% for r in rows %}
       {% set edge = cond_edge(r.conditions | selectattr("counts") | list) %}
       <article class="section pt-card"{% if edge %} style="--h: var(--cond-{{ edge[0] }})" data-conds{% endif %}{% if not pick %} data-modal-url="/characters/{{ r.c.id }}/brief" tabindex="0" role="button" aria-label="{{ r.c.name }}: a short version"{% endif %}>
@@ -35,7 +50,7 @@
         <div class="strip compact pt-tiles"><div{% if dy %} class="dying {{ dy }}"{% endif %} {{ mark(r.c, "hp") }}{{ sync(s, "hp") }}><small>{{ {"dying": "Dying", "stable": "Stable", "out": "Three failures"}.get(dy, "Hit points") }}</small><b>{{ s.hit_points.current }}</b><span class="note"> / {{ s.hit_points.max }}</span>{% if dy %}{{ dying_marks(s, r.c, roll=false) }}{% endif %}</div><div {{ mark(r.c, "ac") }}><small>Armor class</small><b>{{ s.armor_class }}</b></div><div {{ mark(r.c, "speed") }}><small>Speed</small><b>{{ s.speed.walk }} ft</b></div></div>
         {% if dy == "dying" %}<p class="pt-line note ds-help">Others can help: healing; the Help action with a DC 10 Wisdom (Medicine) check; Spare the Dying.</p>{% elif dy == "out" %}<p class="pt-line note ds-help">Three death save failures: the DM rules.</p>{% endif %}
         {% if r.top_saves %}<p class="pt-line"><span class="note">Best saves</span> {% for sv in r.top_saves %}<span class="nowrap">{{ sv.short }} <b>{{ sv.label }}</b>{% if sv.adv %} {{ adv(sv.adv) }}{% endif %}</span>{{ " ·" if not loop.last }} {% endfor %}</p>{% endif %}
-        {% if r.resources %}<div class="pt-res">{% for x in r.resources %}<span>{{ x.name }} {{ pips(x.uses) }}</span>{% endfor %}</div>{% endif %}
+        {% if r.resources %}<div class="pt-res">{% for g in r.resources | res_groups %}{% if g.name %}<span>{{ g.name }}: {% for x in g.rows %}{{ x.name.split(": ", 1)[1] }} {{ pips(x.uses) }}{{ " " if not loop.last }}{% endfor %}</span>{% else %}{% for x in g.rows %}<span>{{ x.name }} {{ pips(x.uses) }}</span>{% endfor %}{% endif %}{% endfor %}</div>{% endif %}
         {% if r.slots %}<p class="pt-line"><span class="note">Slots</span> {% for x in r.slots %}<span class="nowrap">{{ x.label }} {{ pips(x.uses) }}</span> {% endfor %}</p>{% endif %}
         {% else %}<p class="muted">{{ "Not fetched from D&D Beyond yet" if r.c.ddb_id else "Not linked to D&D Beyond yet" }}</p>{% endif %}
       </article>

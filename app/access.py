@@ -51,7 +51,7 @@ def _load_from_db() -> dict[str, dict]:
 def rows_from(db) -> dict[str, dict]:
     """{email: {"access": tool role, "roles": {campaign id: role}, "current": the campaign they last opened, "dice": their
     dice (app/dice.py)}}, plus
-    CAMPAIGNS: [{"id", "slug", "name", "is_test", "vtt_pieces"}] (every campaign, oldest first), and TUNING: the dice
+    CAMPAIGNS: [{"id", "slug", "name", "is_test", "vtt_pieces", "ddb_campaign_id"}] (every campaign, oldest first), and TUNING: the dice
     tuning (app/dice.py)."""
     from app.models import Campaign, CampaignMember, User
 
@@ -65,7 +65,7 @@ def rows_from(db) -> dict[str, dict]:
     from app.dice import tuning_from
 
     out[TUNING] = tuning_from(db)
-    out[CAMPAIGNS] = [{"id": c.id, "slug": c.slug, "name": c.name, "is_test": c.is_test, "vtt_pieces": list(c.vtt_pieces or [])} for c in db.scalars(select(Campaign).order_by(Campaign.id))]
+    out[CAMPAIGNS] = [{"id": c.id, "slug": c.slug, "name": c.name, "is_test": c.is_test, "vtt_pieces": list(c.vtt_pieces or []), "ddb_campaign_id": c.ddb_campaign_id} for c in db.scalars(select(Campaign).order_by(Campaign.id))]
     return out
 
 

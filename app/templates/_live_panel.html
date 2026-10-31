@@ -17,7 +17,7 @@
   <div class="live-list">
     <div class="live-head">How each sheet is connected</div>
     {% for r in tn.characters %}
-    <div class="live-row{{ ' here' if f and r.id == f.id }}"><span>{{ r.name }}{% if r.mine %} <span class="note">(you)</span>{% endif %}</span>
+    <div class="live-row{{ ' here' if f and r.id == f.id }}"><span>{{ r.name }}{% if r.mine %} <span class="note">(you)</span>{% endif %}</span>{% if r.ddb_id %}<a class="sheet-open" href="https://www.dndbeyond.com/characters/{{ r.ddb_id }}" target="_blank" rel="noopener" title="Open {{ r.name }} on D&amp;D Beyond" aria-label="Open {{ r.name }} on D&amp;D Beyond">↗</a>{% else %}<span aria-hidden="true"></span>{% endif %}
       {% if not r.linked %}<span class="note">not linked</span>
       {% elif r.by_hand %}<span class="quiet-warn">{{ r.by_hand }} to make by hand</span>
       {% elif r.step %}<span class="live-ok">connected</span>

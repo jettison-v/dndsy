@@ -113,6 +113,27 @@ def test_cast_spends_through_the_window_and_undo_takes_it_back(chrome, server):
     page.locator("#cards > .card", has_text="left").nth(1).wait_for(timeout=5000)
 
 
+def test_cast_and_roll_is_one_step_and_the_roll_stays_the_players(chrome, server):
+    """Brett, 2026-10-31 (docs/mockups/usability/): the slot is spent and the roll opens, at the table by default."""
+    page = chrome.pages[0]
+    page.goto(f"{server['base']}/characters/{server['cole']}/battle")
+    page.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=8000)
+    sheet = chrome.new_page()
+    sheet.goto(SHEET)
+    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected to D&D Beyond')", timeout=45000)
+    page.click(".spellbook-btn")
+    page.wait_for_selector(".sb-actions .item-go")
+    count = page.evaluate("document.querySelectorAll('.sb-actions .item-go').length")
+    for i in range(count):
+        page.evaluate("i => document.querySelectorAll('.sb-actions .item-go')[i].click()", i)
+        page.wait_for_selector(".roll-win .rw-title")
+        if page.locator(".roll-win [data-then-roll]").count():
+            break
+    page.locator(".roll-win [data-then-roll]").click()
+    page.locator('.roll-win [data-to="table"]').wait_for(timeout=5000)  # (only the character's own player gets the choice)
+    page.locator("#cards > .card", has_text="Cast").wait_for(timeout=5000)
+
+
 def test_without_the_extension_the_pill_says_to_add_it_and_the_window_has_the_link(people, server):
     """Brett, 2026-10-30: the DM didn't have it by accident, and nothing said so."""
     dm = people("dm")

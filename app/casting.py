@@ -6,10 +6,13 @@ where the bridge works and only for the character's own player, as with items:
 - **A slot** spends that level's spell slot or Pact Magic slot on D&D Beyond (a spell can always use a higher slot).
 - **As a Ritual** and **No slot** spend nothing: a Ritual for a spell that has the tag, No slot for anything else that
   pays for it (a feature, an item). askdnd doesn't decide which applies.
+- **A free use** a feat or species gives is listed first where the sheet counts it, in place of No slot. askdnd can't change
+  that count on D&D Beyond yet, so the corner card asks the player to mark it there.
 - **Concentration** starts by itself and ends the one before, as at the table; the window says so first.
 - **Undo** on the corner card gives the slot back and puts the earlier Concentration back.
 
-Rolling stays its own step: casting isn't always a roll, and a roll isn't always a cast.
+Casting isn't always a roll, and a roll isn't always a cast: a spell with something to roll offers Cast and roll, at the
+level picked (Brett, 2026-10-31), and Roll without spending a slot.
 """
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
@@ -34,12 +37,13 @@ def _guard(db: Session, request: Request, character_id: int):
     return ch, user
 
 
-RITUAL, NO_SLOT = "ritual", "none"
+RITUAL, NO_SLOT, FREE = "ritual", "none", "free"
 
 
 def ways(sheet: dict, e: dict) -> list[dict]:
     """How this spell can be cast now, the lowest slot first: {"way", "label", "level"}, with what a higher slot rolls."""
-    out = []
+    uses = e.get("uses")
+    out = [{"way": FREE, "level": e["level"], "name": "", "label": f"Free: {e['from']} ({uses['left']} left)"}] if uses and uses.get("left") and e.get("from") else []
     for s in sb.slot_levels(sheet):
         if e["level"] and s["level"] >= e["level"] and s["left"] > 0:
             a = e["avgs"].get(s["level"])
@@ -48,7 +52,7 @@ def ways(sheet: dict, e: dict) -> list[dict]:
                         "label": f"{ordinal(s['level'])}-level{' Pact' if s.get('pact') else ''} ({s['left']} left)" + (f" · {a['dice']}" if a else "")})
     if e["ritual"]:
         out.append({"way": RITUAL, "level": e["level"], "name": "a Ritual", "label": "As a Ritual (no slot, 10 minutes longer)"})
-    if e["level"]:
+    if e["level"] and not (out and out[0]["way"] == FREE):
         out.append({"way": NO_SLOT, "level": e["level"], "name": "", "label": "No slot"})
     return out
 
@@ -81,7 +85,9 @@ def cast(request: Request, character_id: int, key: str, way: str = Form(""), db:
         raise HTTPException(409, f"{e['name']}: that slot isn't left.")
     undo = {"key": key}
     said = f"Cast {e['name']}" + (f" as {chosen['name']}" if chosen and chosen["way"] == RITUAL else f" at {chosen['name']}" if chosen and chosen["name"] else "")
-    if chosen and chosen["way"] not in (RITUAL, NO_SLOT):
+    if chosen and chosen["way"] == FREE:
+        said += f": mark the use on D&D Beyond ({e['from']})"
+    if chosen and chosen["way"] not in (RITUAL, NO_SLOT, FREE):
         ddb_bridge.reach(ch)
         _spend(ch, db, chosen["way"], 1, f"{ch.name}: {e['name']}, {chosen['name']} slot")
         undo["spent"] = chosen["way"]

@@ -37,7 +37,16 @@
   </section>
   {% endif %}
   {% if not latest %}
-  <p class="subtitle">Nothing published yet. Recaps appear here once they're reviewed.</p>
+  {# A new table's first page (Brett, 2026-10-31, docs/mockups/usability/): what already works, until the first recap #}
+  <p class="subtitle">Recaps appear here after your first session. Until then, this is what's ready.</p>
+  {% set tn = tablenav() %}{% set sessions = manage_pages | selectattr("label", "equalto", "Sessions") | first %}
+  <div class="start-cards">
+    {% if tn.mine %}<a class="start-card" href="/characters/{{ tn.mine.id }}/battle"><b>Your character</b><span>Battle, your Sheet and your Plan, from D&amp;D Beyond.</span><span class="btn small">Open {{ tn.mine.name }}</span></a>{% endif %}
+    <a class="start-card" href="/party"><b>The party</b><span>Everyone at the table, at a glance.</span><span class="btn small">Open Party</span></a>
+    {% if table_url %}<a class="start-card" href="{{ table_url }}" target="_blank" rel="noopener"><b>The table</b><span>Where you play: the map and the fight.</span><span class="btn small">Open the table ↗</span></a>{% endif %}
+    <a class="start-card" href="#" data-tour-start><b>The tour</b><span>A walk through your own pages.</span><span class="btn small">Take the tour</span></a>
+    {% if sessions %}<a class="start-card" href="{{ sessions.href }}"><b>For the DM</b><span>The first recap starts with your first session's transcript.</span><span class="btn small">Open Sessions</span></a>{% endif %}
+  </div>
   {% else %}
   <p class="subtitle">{{ latest.label }}{% if latest.s.title %}: {{ latest.s.title }}{% endif %}</p>
   <div class="session-body">

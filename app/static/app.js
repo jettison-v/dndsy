@@ -415,6 +415,32 @@
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closePeek(); });
 
+  // Party in a fight: Cards or Rows (party.html), one choice per device
+  function ptView() {
+    const box = document.querySelector('[data-pt-view-default]');
+    if (!box) { document.body.classList.remove('pt-rows'); return; }
+    let v = null; try { v = localStorage.getItem('askdnd-party-view'); } catch (err) { /* private window */ }
+    v = v || box.dataset.ptViewDefault;
+    document.body.classList.toggle('pt-rows', v === 'rows');
+    box.querySelectorAll('[data-pt-view]').forEach(b => b.setAttribute('aria-pressed', b.dataset.ptView === v ? 'true' : 'false'));
+  }
+  ptView();
+  document.body.addEventListener('htmx:afterSettle', ptView);
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-pt-view]'); if (!b) return;
+    try { localStorage.setItem('askdnd-party-view', b.dataset.ptView); } catch (err) { /* private window */ }
+    ptView();
+  });
+
+  // Resources on a phone: one line that opens, one choice per device for every character
+  try { document.body.classList.toggle('res-open', localStorage.getItem('askdnd-res-open') === '1'); } catch (err) { /* private window */ }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-res-more]'); if (!b) return;
+    const open = document.body.classList.toggle('res-open');
+    document.querySelectorAll('[data-res-more]').forEach(x => x.setAttribute('aria-expanded', open ? 'true' : 'false'));
+    try { localStorage.setItem('askdnd-res-open', open ? '1' : '0'); } catch (err) { /* private window */ }
+  });
+
   // Busy buttons: a normal (non-HTMX) form shows that it's working once submitted —
   // its submit button is disabled, gets a spinner and, if it has data-busy, a new
   // label ("Refreshing…"). This also stops double submits. HTMX requests get the
@@ -2075,7 +2101,13 @@
     w.querySelectorAll('button').forEach(b => { b.disabled = true; });
     const chosen = Object.fromEntries([...w.querySelectorAll('select[name], input[name]')].map(s => [s.name, s.value]));
     posted(w._use, { ...chosen, to: btn.dataset.to || '' }).then(j => {
-      closeWin();
+      // Cast and roll: the roll opens where the Cast window was, at the level just cast
+      const roller = 'thenRoll' in btn.dataset && w.querySelector('.cast-roll');
+      if (roller) {
+        const level = w.querySelector('select[name=way]')?.selectedOptions[0]?.dataset.level;
+        if (level) roller.dataset.slot = level;
+        chooser(roller, specFrom(roller));
+      } else closeWin();
       if (j.roll) {
         if (animate()) window.askdndThrowing.throwing(j.roll.id);
         addToLog(j.html, j.roll.id);
@@ -2304,7 +2336,8 @@
   }
   function buildPeople(pulse) {
     if (!people || !log) return;
-    const seen = new Set();
+    const seen = new Set(), latest = side.querySelector('.rs-latest'), newest = log.querySelector('.roll-item[data-person]');
+    if (latest) latest.textContent = newest ? whatOf(newest).replace(/ \(.*\)$/, '') : '';
     people.innerHTML = '';
     log.querySelectorAll('.roll-item[data-person]').forEach(li => {
       if (seen.has(li.dataset.person) || seen.size >= 8) return;
@@ -2722,7 +2755,18 @@
     const list = document.querySelector('[data-tab-param]'); if (!list || !list.contains(document.querySelector('[data-tab="' + e.target.id + '"]'))) return;
     const u = new URL(location.href); u.searchParams.set('tab', e.target.id.replace(/^t-/, ''));
     history.replaceState(null, '', u.pathname + u.search + u.hash);
+    if (document.querySelector('.help')) try { localStorage.setItem('askdnd-help-tab', e.target.id); } catch (err) { /* private window */ }
   });
+  // Help: a link to an answer (/help#id) opens the FAQ there; otherwise the tab you used last
+  if (document.querySelector('.help [data-tab-param]')) {
+    const answer = location.hash.length > 1 && document.getElementById(location.hash.slice(1));
+    const inTab = answer && answer.closest('[id^="t-"]');
+    let last = null; try { last = localStorage.getItem('askdnd-help-tab'); } catch (err) { /* private window */ }
+    const open = inTab ? inTab.id : new URLSearchParams(location.search).has('tab') ? null : last;
+    const tab = open && document.querySelector('[role=tab][data-tab="' + open + '"]');
+    if (tab && tab.getAttribute('aria-selected') !== 'true') tab.click();
+    if (inTab) answer.scrollIntoView();
+  }
   // The quest log (Quests tab): Open or Done down the left, one quest's journal on the right
   function questView(state) {
     document.querySelectorAll('[data-ql-view]').forEach(b => b.setAttribute('aria-pressed', b.dataset.qlView === state ? 'true' : 'false'));
