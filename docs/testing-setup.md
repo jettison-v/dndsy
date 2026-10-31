@@ -46,7 +46,7 @@ Reload every askdnd and VTT tab after a deploy.
 
 Brett, 2026-10-30: test with the real D&D Beyond, not only the stand-in in the browser tests. It runs on the Mac Mini, which is always on and signed in, so nobody has to watch and the MacBook can stay closed.
 
-- **The seats.** `scripts/real_table_seats.sh` copies the three profiles above into `~/askdnd-tests/seats` on the Mini and opens them in real Chrome windows. Chrome refuses to let a script drive its normal profile folder, and sign-ins can't move between computers, so the copies stay on the Mini. Copy again after signing in afresh or updating the bridge. Claude never enters a password.
+- **The seats.** `scripts/real_table_seats.sh` copies the three profiles above into `~/askdnd-tests/seats` on the Mini and opens them in real Chrome windows. Chrome refuses to let a script drive its normal profile folder, and sign-ins can't move between computers, so the copies stay on the Mini. Copy again after signing in afresh. The seats update the bridge from the store themselves: reopen them to run the new version. Claude never enters a password.
 - **The runs.** `scripts/real_table.py` holds named runs: each does what a person would, watches the pages, and says what it expected and what happened. Run one on the Mini with `.venv/bin/python real_table.py <run>`.
 - **The plan.** [live-test-plan.md](live-test-plan.md) is what to run and when, with the checks that still need a person.
 - **Stays apart.** Never on GitHub, since it needs the signed-in seats and D&D Beyond itself. It tests what's on beta, not unmerged changes.

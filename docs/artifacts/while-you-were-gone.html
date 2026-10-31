@@ -1,0 +1,175 @@
+<title>While You Were Gone</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* One column you can read top to bottom: what needs you first, then what to know, then the record. */
+:root { --bg: #f6f4ef; --card: #fffdf9; --fg: #1f2226; --muted: #5d5a52; --line: #dcd7cb; --red: #b83232; --amber: #a26a10; --green: #2f7d4f; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #15171a; --card: #1f2226; --fg: #ebe7df; --muted: #a29d93; --line: #34383e; --red: #e06a6a; --amber: #e8b34b; --green: #5bbf7f; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #15171a; --card: #1f2226; --fg: #ebe7df; --muted: #a29d93; --line: #34383e; --red: #e06a6a; --amber: #e8b34b; --green: #5bbf7f; color-scheme: dark; }
+body { background: var(--bg); color: var(--fg); font: 16px/1.55 Inter, system-ui, sans-serif; }
+main { max-width: 760px; margin: 0 auto; padding-block: 40px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 36px; }
+h1 { font-size: 2rem; line-height: 1.15; margin: 0 0 8px; text-wrap: balance; }
+h2 { font-size: 1.2rem; margin: 0 0 4px; }
+h3 { font-size: 1rem; margin: 0; }
+p { margin: 0; }
+a { color: inherit; text-underline-offset: 2px; }
+.lead, .why, .sub { color: var(--muted); }
+.sub { margin-bottom: 12px; }
+.eyebrow { font-size: .75rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); margin-bottom: 8px; }
+.state { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+.state div { border-top: 3px solid var(--line); padding-top: 8px; min-width: 0; }
+.state .good { border-color: var(--green); }
+.state .wait { border-color: var(--red); }
+.state .know { border-color: var(--amber); }
+.state b { display: block; }
+.state span { color: var(--muted); font-size: .9rem; }
+.list { display: grid; gap: 12px; }
+.item { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; }
+.item input { width: 18px; height: 18px; margin: 3px 0 0; accent-color: var(--green); }
+.item .body { display: grid; gap: 6px; min-width: 0; }
+.item label { cursor: pointer; }
+.item:has(input:checked) { opacity: .55; }
+.top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; align-items: baseline; }
+.tag { font-size: .75rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.do { border-left: 3px solid var(--red); padding-left: 10px; }
+ul, ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+.know li::marker { color: var(--amber); }
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+th { font-size: .75rem; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+td.when, td.res { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pass { color: var(--green); font-weight: 600; }
+.part { color: var(--amber); font-weight: 600; }
+.notyet { color: var(--muted); font-weight: 600; }
+@media (max-width: 560px) { .state { grid-template-columns: 1fr; } h1 { font-size: 1.7rem; } }
+</style>
+<main>
+  <header>
+    <div class="eyebrow">askdnd · October 30, 2026 · 3:50 to 7:45 pm</div>
+    <h1>While You Were Gone</h1>
+    <p class="lead">What changed, what needs you, and what to keep an eye on. Tick things off as you go: the ticks stay in your browser.</p>
+    <div class="state">
+      <div class="good"><b>6 changes on beta</b><span>4 bug fixes while you were away, then live state and the Monster Manual loader when you approved them</span></div>
+      <div class="wait"><b>5 things need you</b><span>2 design reads, 1 interface review, 1 Chrome check, 1 decision on loading beta</span></div>
+      <div class="know"><b>Your table is unaffected</b><span>Live state shows only in test campaigns</span></div>
+    </div>
+  </header>
+
+  <section>
+    <h2>Needs you</h2>
+    <p class="sub">In the order that unblocks the most.</p>
+    <div class="list">
+      <div class="item"><input type="checkbox" id="c-ui" aria-labelledby="t-ui"><div class="body">
+        <div class="top"><label for="c-ui"><h3 id="t-ui">Review live state's interface</h3></label><span class="tag">Beta · 15 min</span></div>
+        <p class="why">Cast, resources, rests, coins and the level-up note are on beta in test campaigns only. You said you'd review the interface afterwards, so nothing reaches your table until you've seen it.</p>
+        <p class="do">Follow "Try live state" below, then say what to change, or switch it on for your campaign.</p>
+      </div></div>
+      <div class="item"><input type="checkbox" id="c-store" aria-labelledby="t-store"><div class="body">
+        <div class="top"><label for="c-store"><h3 id="t-store">Check your Chrome has extension 0.9.5</h3></label><span class="tag">1 min, each Chrome profile</span></div>
+        <p class="why">Google is serving 0.9.5, and I confirmed that with its update server. Chrome checks by itself every few hours, so the table's players need to do nothing. An open Chrome may hold the new version until it restarts. At 7:05 pm the Mini's three regular profiles still had 0.9.4, while the test seats had already updated.</p>
+        <p class="do">To update now: open <code>chrome://extensions</code>, turn on Developer mode at the top right, and press Update. The askdnd Bridge card should say 0.9.5.</p>
+      </div></div>
+      <div class="item"><input type="checkbox" id="c-130" aria-labelledby="t-130"><div class="body">
+        <div class="top"><label for="c-130"><h3 id="t-130">Say when to load the whole Monster Manual</h3></label><span class="tag">Decision · <a href="https://github.com/jettison-v/dndsy/pull/130">PR 130</a></span></div>
+        <p class="why">The loader is merged and converts all 510 stat blocks, up from 91 Beasts. They're on the local copy only, so beta still has just the Beasts. No book text is in the repo.</p>
+        <p class="do">Tell me whether to load beta now or wait until you need more than Beasts.</p>
+      </div></div>
+      <div class="item"><input type="checkbox" id="c-vtt" aria-labelledby="t-vtt"><div class="body">
+        <div class="top"><label for="c-vtt"><h3 id="t-vtt">Try the Simple VTT board and answer its four questions</h3></label><span class="tag">Design · <a href="https://claude.ai/artifact/6oTb8pSFzhhUakYsYHEw5x">Simple VTT</a></span></div>
+        <p class="why">It's the next big piece, and I can't start it without your answers. My recommendation is on the page: start with the board and no map.</p>
+      </div></div>
+      <div class="item"><input type="checkbox" id="c-use" aria-labelledby="t-use"><div class="body">
+        <div class="top"><label for="c-use"><h3 id="t-use">Pick from the usability suggestions</h3></label><span class="tag">Design · <a href="https://claude.ai/artifact/NMPVH1DC8fivDNtMTEPKjG">Usability Review</a></span></div>
+        <p class="why">Nine suggestions in priority order, none built. The first two are the ones to read: Hit Points first on phones, and making Cast and Roll one step.</p>
+      </div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Be aware of</h2>
+    <p class="sub">Nothing here needs action today.</p>
+    <ul class="know">
+      <li><b>I stopped early.</b> You asked me to keep going for four hours. I stopped at 4:41 pm, after 51 minutes, and the session sat idle until you came back. Merges were blocked and the Mini had stopped accepting logins, but there was still work I could have done, such as more test runs on your computer. The time was lost, though nothing broke.</li>
+      <li><b>Only bug fixes shipped while you were away.</b> The safety check stopped me merging live state and the docs without your approval, which matches your rule. So beta had no new features until you approved PR 128 tonight.</li>
+      <li><b>The Mini's login is unreliable.</b> It refused me around 4:30 pm, worked again at 7:05 pm, then refused me again near the end of tonight's testing, after many logins in a row. That pattern may mean it limits repeated logins, but I don't know. I didn't touch its keys. Test seats may still be open on the Mini: closing those Chrome windows is harmless.</li>
+      <li><b>A closed sheet can still say Connected</b> on any Chrome that hasn't updated yet. On 0.9.5 the pill changed every time: 14 of 15 within 10 seconds, and once after 14 seconds.</li>
+      <li><b>One sheet took over 40 seconds to connect</b> this afternoon, on 0.9.4. It didn't happen again in tonight's 15 tries on 0.9.5. I can't explain it, so it may come back.</li>
+      <li><b>One Long Rest wasn't fully confirmed.</b> In 1 of 3 full rounds, a Hit Point Die took more than 30 seconds to appear on D&amp;D Beyond, and in the Long Rest after it, a resource didn't come back within 25 seconds. The die did arrive, and the next Long Rest cleared the resource. Then the same test passed twice in a row, 9 of 9 each. I couldn't reproduce it, so treat this as unexplained while live state stays in test campaigns.</li>
+      <li><b>Ending a condition can take a while to leave Battle.</b> It stayed past the run's 8-second limit in 2 of 3 rounds, though it always left the real sheet. Battle marks it as on its way out until D&amp;D Beyond confirms. I don't yet have a measured time for this.</li>
+      <li><b>Vi's gold may be off.</b> A run stopped before its Undo, which left extra gold on the test sheet. I tried to set it back to 43 when the Mini stopped accepting logins, so check Vi's sheet if it matters.</li>
+      <li><b>Live state touched your real campaign's data in two small ways.</b> Beta gained an empty level-up field on every character, and each sheet's summary now carries two more ids. A level gained on any campaign is quietly noted, but only test campaigns show that note. Nothing was deleted.</li>
+      <li><b>The roadmap's steps cover more than was built.</b> Changing prepared spells, handing an item to another character, loot from the DM, and the DM calling a rest for the party aren't built yet. Wild Shape doesn't spend its own use by itself. The roadmap now says so.</li>
+      <li><b>Two browser tests failed once</b> while a deploy was running, then passed on a clean run. I think that's load and not a bug, but I didn't prove it.</li>
+      <li><b>Parked, waiting on your approval some day:</b> dropping the two unused Game Mode columns from the database.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>What changed on beta</h2>
+    <p class="sub">Each one passed every automated test first. After the last deploy at 7:10 pm, Sentry showed no open errors.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>When</th><th>Change</th><th>Who sees it</th></tr></thead>
+      <tbody>
+        <tr><td class="when">3:58 pm</td><td><a href="https://github.com/jettison-v/dndsy/pull/127">PR 127</a>: fixed a database deadlock in fights, added the live test plan and two new real-site runs</td><td>Everyone, behind the scenes</td></tr>
+        <tr><td class="when">4:13 pm</td><td><a href="https://github.com/jettison-v/dndsy/pull/129">PR 129</a>: the pill stops offering the bridge where a campaign doesn't have it; no stray dividers in Resources on phones</td><td>Everyone</td></tr>
+        <tr><td class="when">4:30 pm</td><td><a href="https://github.com/jettison-v/dndsy/pull/132">PR 132</a>: Help no longer describes the Game Mode button that's gone</td><td>Everyone</td></tr>
+        <tr><td class="when">4:35 pm</td><td><a href="https://github.com/jettison-v/dndsy/pull/133">PR 133</a>: Spell DC and Heroic Inspiration aren't cut off on phones</td><td>Everyone</td></tr>
+        <tr><td class="when">7:04 pm</td><td><a href="https://github.com/jettison-v/dndsy/pull/128">PR 128</a>: live state (Cast, resources, rests, equip, attune, coins, level-up note). I resolved a small style conflict first and all 749 tests passed.</td><td>Test campaigns only</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Tested on the real D&amp;D Beyond</h2>
+    <p class="sub">Run on the Mac Mini with Cathartic and the new Vi, three full rounds on extension 0.9.5. The live state runs are new tonight, and they compare D&amp;D Beyond's own record before and after each action.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>What</th><th>Result</th><th>Note</th></tr></thead>
+      <tbody id="runs">
+        <tr><td>Open or close a sheet and the pill follows</td><td class="res"><span class="pass">3 of 3</span></td><td></td></tr>
+        <tr><td>Rolls reach another player's Game Log</td><td class="res"><span class="pass">3 of 3</span></td><td>Was 3 of 5 on 0.9.4</td></tr>
+        <tr><td>Closing a sheet right after a roll</td><td class="res"><span class="part">14 of 15</span></td><td>The other one took 14 seconds, past the 10 allowed. It never stuck</td></tr>
+        <tr><td>Damage and healing reach the sheet</td><td class="res"><span class="pass">3 of 3</span></td><td></td></tr>
+        <tr><td>Conditions reach and leave the sheet</td><td class="res"><span class="pass">3 of 3</span></td><td>Battle was slow to clear in 2 of 3 (see above)</td></tr>
+        <tr><td>Cast spends a real slot, Undo gives it back</td><td class="res"><span class="pass">4 of 4</span></td><td></td></tr>
+        <tr><td>Resources count down and come back</td><td class="res"><span class="pass">Passed</span></td><td>One early miss was my comparison tripping on D&amp;D Beyond's item text, now fixed</td></tr>
+        <tr><td>Coins, then Undo</td><td class="res"><span class="part">3 of 4</span></td><td>Gold always landed. Once the Undo card had gone before the run clicked it</td></tr>
+        <tr><td>Short Rest and Long Rest</td><td class="res"><span class="part">3 of 4 full runs</span></td><td>Hit Points, Hit Point Dice, slots and a resource all came back. The one miss is described above</td></tr>
+      </tbody>
+    </table></div>
+    <p class="sub" style="margin-top:10px">Not covered tonight: the fight, turns and dying, which need the VTT and a person (part 2 of the plan), equip and attune, and the level-up note. Say "run the live tests" for a new round. The plan is <code>docs/live-test-plan.md</code>.</p>
+  </section>
+
+  <section>
+    <h2>Try live state</h2>
+    <p class="sub">The buttons only show for a character's own player, so use a test seat and not your own login.</p>
+    <ol>
+      <li>In the Chrome profile signed in as CatharticPlayer or ViPlayer, open that character's sheet on D&amp;D Beyond.</li>
+      <li>In the same profile, open <a href="https://beta.askdnd.ai/c/vtt-test/">VTT test on beta</a> and go to the character's Battle page.</li>
+      <li><b>Cast:</b> pick a spell in the Spell Book, press Cast and choose a level. The slot goes down on both pages. Undo on the corner card gives it back.</li>
+      <li><b>Resources:</b> click a resource on Battle, use one, then give it back.</li>
+      <li><b>Rests:</b> open Hit Points' panel and press Short Rest. It lists what comes back before anything changes.</li>
+      <li><b>Coins:</b> on the character page's Inventory tab, press Change coins and add 1 gold, then Undo. The Undo card lasts about 20 seconds.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Check the smaller fixes</h2>
+    <ol>
+      <li>On a phone, open your character's Battle page. Spell DC and Inspiration show in full, and Resources sit one per line with no stray lines.</li>
+      <li>Open <a href="https://beta.askdnd.ai/help">Help</a> › FAQ and search for "Game Mode". Nothing should come up.</li>
+      <li>On a campaign without the bridge, the Live pill shouldn't offer it.</li>
+    </ol>
+    <p class="sub" style="margin-top:10px">I tested the phone layout with automated page checks, not on a real phone.</p>
+  </section>
+</main>
+<script>
+document.querySelectorAll('.item input').forEach(function (box) {
+  var key = 'away-' + box.id;
+  try { box.checked = localStorage.getItem(key) === '1'; } catch (e) {}
+  box.addEventListener('change', function () {
+    try { localStorage.setItem(key, box.checked ? '1' : '0'); } catch (e) {}
+  });
+});
+</script>

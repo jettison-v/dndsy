@@ -15,7 +15,7 @@ Say "run the live tests" and Claude does part 1, then gives you what's left in p
 
 - [ ] Nobody is playing, and nobody needs Cathartic or Vi: the runs open, close and change those sheets, and put them back
 - [ ] Beta has the change to test: the runs test beta, never unmerged work
-- [ ] After an extension update: the seats have the new version (`real_table_seats.sh copy` on the Mini, after the store's update reaches the Mini's Chrome)
+- [ ] After an extension update: reopen the seats (`real_table_seats.sh close`, then `open`). They update themselves from the store like any Chrome, so don't `copy` for this: a copy from a profile that hasn't updated yet puts the old version back
 - [ ] Open the seats: `real_table_seats.sh open`
 
 ## Part 1: automatic, about 5 minutes
@@ -29,6 +29,10 @@ On the Mini, in `~/askdnd-tests`, `.venv/bin/python real_table.py` runs everythi
 | `close-after-roll` | Closing a sheet right after a roll, five times at different moments | Every time from extension 0.9.5 |
 | `hit-points` | Damage and healing in askdnd land on the real sheet, are confirmed, and put the number back | Every time |
 | `condition` | A condition started in askdnd lands on the real sheet, and ending it there takes it off | Every time |
+| `cast` | Cast spends a real slot on D&D Beyond, and Undo gives it back | Every time |
+| `resource` | A resource counts down on D&D Beyond and comes back | Every time |
+| `coins` | Coins gained in askdnd land on D&D Beyond, and Undo takes them off | Every time |
+| `rests` | A Short Rest spends a real Hit Point Die and heals; a Long Rest brings back Hit Points, Hit Point Dice, slots and a resource | Every time |
 
 Run it three times after a bridge change: the timing bugs so far only showed in some runs.
 
@@ -56,3 +60,4 @@ These need a person, or D&D Beyond's VTT, which is a game canvas a script can't 
 | Date | Extension | Part 1 | Notes |
 |---|---|---|---|
 | 2026-10-30 | 0.9.4 | closed-sheet, hit-points, condition passed. game-log 3 of 5 | The misses were a closed sheet saying Connected, fixed in 0.9.5, waiting on the store |
+| 2026-10-30, evening | 0.9.5 | closed-sheet, game-log, hit-points 3 of 3. close-after-roll 14 of 15, one at 14 seconds. cast, resource, coins, rests new; rests 3 of 4 | In one rests run a Hit Point Die took over 30 seconds and a resource wasn't back in 25, not reproduced in two reruns. A condition stayed on Battle past 8 seconds in 2 of 3, though it left the sheet. Part 2 not run |
