@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Help's first tab</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 620px">
+  <div class="head">
+    <div class="num">Polish</div>
+    <h1>Help starts with what askdnd adds</h1>
+    <p class="where"><b>Where you'll find it:</b> the ? in the menu bar, the first time someone opens Help</p>
+  </div>
+  <div class="pair">
+    <div class="side">
+      <div class="tag">Today: whichever tab was used last</div>
+      <div class="screen"><div class="body">
+        <div class="title">Help</div>
+        <div class="tabs"><span>What askdnd adds</span><b>FAQ</b><span>About</span></div>
+        <div class="card"><h3>What does the bridge do?</h3><p class="note">It keeps your D&amp;D Beyond sheet and askdnd in step.</p></div>
+        <div class="card"><h3>Who can see my notes?</h3><p class="note">Players can read character notes. The DM can't.</p></div>
+      </div></div>
+    </div>
+    <div class="side">
+      <div class="tag new">Proposed: a first visit opens here</div>
+      <div class="screen"><div class="body">
+        <div class="title">Help</div>
+        <div class="tabs"><b>What askdnd adds</b><span>FAQ</span><span>About</span></div>
+        <div class="card"><h3>Your character at the table</h3><p class="note">Battle lists what you can do, by action, bonus action and reaction.</p></div>
+        <div class="card"><h3>The story so far</h3><p class="note">A recap and everything your table has met, after each session.</p></div>
+      </div></div>
+      <p class="note">After the first visit, Help remembers your last tab as it does now.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":620}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

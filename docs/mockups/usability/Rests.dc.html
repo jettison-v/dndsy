@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Say where a rest lives</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 1010px">
+  <div class="head">
+    <div class="num">Suggestion 4</div>
+    <h1>Give a rest its own place</h1>
+    <p class="where"><b>Where you'll find it:</b> Battle's Status row, next to + Condition. Later, Party for the DM.</p>
+  </div>
+  <div class="pair">
+    <div class="side">
+      <div class="tag">Today: inside Hit points' side panel</div>
+      <div class="screen">
+        <div class="body">
+          <div class="row"><div><div class="name">Big C</div><div class="sub">Paladin 6 / Sorcerer 2</div></div><span class="pill">Battle</span></div>
+          <div class="tiles"><div class="tile"><small>Hit points</small><b>58 / 72</b></div><div class="tile"><small>Armor class</small><b>19</b></div><div class="tile"><small>Speed</small><b>30 ft</b></div></div>
+          <div class="row" style="justify-content: flex-start"><span class="lbl">Status</span><span class="cond add">+ Condition</span></div>
+          <div class="card" style="justify-self: end; width: 340px">
+            <h3>Hit points</h3>
+            <p class="note">58 of 72. Hit Point Dice: 8 left.</p>
+            <div class="row" style="justify-content: flex-start"><span class="btn mini">Damage</span><span class="btn mini">Heal</span></div>
+            <div class="row" style="justify-content: flex-start"><span class="btn mini">Short Rest</span><span class="btn mini">Long Rest</span></div>
+            <p class="note">You have to open Hit points to find these.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="tag new">Proposed: beside + Condition</div>
+      <div class="screen">
+        <div class="body">
+          <div class="row"><div><div class="name">Big C</div><div class="sub">Paladin 6 / Sorcerer 2</div></div><span class="pill">Battle</span></div>
+          <div class="tiles"><div class="tile"><small>Hit points</small><b>58 / 72</b></div><div class="tile"><small>Armor class</small><b>19</b></div><div class="tile"><small>Speed</small><b>30 ft</b></div></div>
+          <div class="row" style="justify-content: flex-start"><span class="lbl">Status</span><span class="cond add">+ Condition</span><span class="cond add" style="border-style: solid; color: var(--text)">Rest</span></div>
+          <div class="win" style="width: 340px">
+            <h3>Short Rest</h3>
+            <div class="sel"><span>Spend</span><span>1 Hit Point Die (d10)</span></div>
+            <p class="note">Comes back: Channel Divinity, 1 use</p>
+            <div class="row"><span class="linkish">Long Rest instead</span><span class="btn main">Rest</span></div>
+          </div>
+          <div class="lbl">Later, on Party, for the DM</div>
+          <div class="row" style="border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px"><span>Call a rest for the party</span><span class="row" style="gap: 6px"><span class="btn mini">Short Rest</span><span class="btn mini">Long Rest</span></span></div>
+          <p class="note">Each player gets their own Rest window to confirm. Nothing changes until they do.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":1010}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

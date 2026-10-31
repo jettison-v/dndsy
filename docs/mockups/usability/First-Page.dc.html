@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A first page before any recap</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 900px">
+  <div class="head">
+    <div class="num">Suggestion 7</div>
+    <h1>A first page before any recap</h1>
+    <p class="where"><b>Where you'll find it:</b> Story, the first page anyone in a new campaign lands on</p>
+  </div>
+  <div class="pair">
+    <div class="side">
+      <div class="tag">Today: true, but nothing to do</div>
+      <div class="screen" style="min-height: 460px">
+        <div class="bar"><b>A New Campaign</b><span>Story</span><span>Campaign</span><span class="sp"></span><span class="pill">Live</span></div>
+        <div class="body" style="padding: 24px">
+          <div class="title">Story</div>
+          <div class="tabs" style="width: 300px; grid-template-columns: repeat(2, 1fr)"><b>Previously on…</b><span>All sessions</span></div>
+          <p class="note" style="padding-block: 40px; text-align: center">Nothing published yet.</p>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="tag new">Proposed: what already works today</div>
+      <div class="screen" style="min-height: 460px">
+        <div class="bar"><b>A New Campaign</b><span>Story</span><span>Campaign</span><span class="sp"></span><span class="pill">Live</span></div>
+        <div class="body" style="padding: 24px">
+          <div class="title">Welcome to A New Campaign</div>
+          <p class="note">Recaps appear here after your first session. Until then, this is what's ready.</p>
+          <div class="grid2">
+            <div class="card"><h3>Your character</h3><p class="note">Battle, your Sheet and your Plan, from D&amp;D Beyond.</p><span class="btn mini">Open Trah</span></div>
+            <div class="card"><h3>The party</h3><p class="note">Everyone at the table, at a glance.</p><span class="btn mini">Open Party</span></div>
+            <div class="card"><h3>The table</h3><p class="note">Where you play: the map and the fight.</p><span class="btn mini">Open the table ↗</span></div>
+            <div class="card"><h3>The tour</h3><p class="note">Two minutes on your own pages.</p><span class="btn mini">Take the tour</span></div>
+          </div>
+          <div class="lbl" style="padding-top: 8px">For the DM</div>
+          <div class="row" style="border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px"><span>The first recap starts with your first session's transcript.</span><span class="btn mini">Open Sessions</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

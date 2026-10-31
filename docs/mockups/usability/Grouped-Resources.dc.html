@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Grouped resources</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 620px">
+  <div class="head">
+    <div class="num">Polish</div>
+    <h1>Long resource names, grouped under one</h1>
+    <p class="where"><b>Where you'll find it:</b> the Resources row on Battle and Party</p>
+  </div>
+  <div class="pair">
+    <div class="side">
+      <div class="tag">Today: the same words three times</div>
+      <div class="screen"><div class="body">
+        <div class="lbl">Resources</div>
+        <div class="res">Create Eldritch Cannon <span class="dots"><i></i></span></div>
+        <div class="res">Eldritch Cannon: Flamethrower <span class="count">50/50</span></div>
+        <div class="res">Eldritch Cannon: Force Ballista <span class="count">50/50</span></div>
+        <div class="res">Eldritch Cannon: Protector <span class="count">50/50</span></div>
+      </div></div>
+    </div>
+    <div class="side">
+      <div class="tag new">Proposed: a shared name, then the parts</div>
+      <div class="screen"><div class="body">
+        <div class="lbl">Resources</div>
+        <div class="res">Create Eldritch Cannon <span class="dots"><i></i></span></div>
+        <div class="res">Eldritch Cannon: <span>Flamethrower</span> <span class="count">50/50</span> <span>Force Ballista</span> <span class="count">50/50</span> <span>Protector</span> <span class="count">50/50</span></div>
+      </div></div>
+      <p class="note">Any names sharing "Something: " group the same way, so nothing here is special to one class. Each part still opens Use one.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":620}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<title>VTT Feature Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>
+/* Read top to bottom: the answer, the facts behind it, then the plan. askdnd is dark only, so this page is too. */
+:root { --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e; --line-strong: #4a4f57; --text: #ebe7df; --strong: #fff; --muted: #a29d93;
+  --red: #d64545; --link: #f08a8a; --amber: #e8b34b; --green: #5bbf7f; --blue: #7ea6e0; --soft-green: rgba(91, 191, 127, .14); --soft-amber: rgba(232, 179, 75, .14);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 16px/1.6 var(--sans); }
+main { max-width: 980px; margin: 0 auto; padding-block: 40px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 44px; }
+section { display: grid; gap: 14px; min-width: 0; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; }
+h1 { font: 600 2.4rem/1.12 var(--serif); }
+h2 { font: 600 1.55rem/1.2 var(--serif); }
+h3 { font: 600 1rem/1.35 var(--sans); }
+p { margin: 0; max-width: 72ch; }
+a { color: var(--link); text-underline-offset: 2px; }
+b { color: var(--strong); font-weight: 600; }
+.eyebrow { font: 700 .78rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--link); margin-bottom: 10px; }
+.lead { font-size: 1.1rem; }
+.muted { color: var(--muted); }
+.small { font-size: .875rem; }
+.points { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+.points div { border-top: 2px solid var(--line-strong); padding-top: 10px; display: grid; gap: 4px; align-content: start; min-width: 0; }
+ul, ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; max-width: 72ch; }
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 900px; font-size: .86rem; line-height: 1.35; }
+th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+thead th { font: 700 .72rem/1.2 var(--cond); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); vertical-align: bottom; }
+tbody th { color: var(--text); font-weight: 600; }
+tbody th, thead th:first-child { position: sticky; left: 0; background: var(--surface); min-width: 170px; }
+tr:last-child td, tr:last-child th { border-bottom: 0; }
+td.y { color: var(--green); } td.a { color: var(--amber); } td.n { color: var(--muted); }
+td.us { background: var(--soft-green); }
+td.mvp { background: var(--soft-amber); }
+.group td, .group th { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); background: var(--bg); position: static; }
+.steps { display: grid; gap: 0; }
+.step { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); align-items: start; }
+.step .n { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--red); color: var(--strong); font: 700 .85rem/1 var(--sans); }
+.step .size { font: 700 .72rem/1 var(--cond); letter-spacing: .08em; color: var(--muted); border: 1px solid var(--line-strong); border-radius: 999px; padding: 4px 8px; white-space: nowrap; }
+.line { border: 1px dashed var(--amber); border-radius: 8px; padding: 10px 14px; color: var(--amber); font-weight: 600; }
+.later { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.later div { display: grid; gap: 4px; align-content: start; min-width: 0; }
+.ask { display: grid; gap: 16px; }
+.ask > div { display: grid; gap: 3px; }
+.pick { color: var(--green); }
+@media (max-width: 720px) { .points, .later { grid-template-columns: 1fr; } h1 { font-size: 2rem; } .step { grid-template-columns: 30px minmax(0, 1fr); } .step .size { grid-column: 2; justify-self: start; } }
+</style>
+<main>
+  <header>
+    <div class="eyebrow">askdnd · VTT analysis · October 31, 2026</div>
+    <h1>VTT Feature Map</h1>
+    <p class="lead">What D&amp;D Beyond's VTT does today, what people love in the others, and the smallest askdnd VTT that could replace it, with the full product behind it.</p>
+  </header>
+
+  <section>
+    <h2>The short answer</h2>
+    <div class="points">
+      <div><h3>D&amp;D Beyond isn't as basic as it was</h3><p class="muted small">In 2026 it added shared 3D dice, scenes, journals, condition icons on tokens, and on October 30 Hit Point edits in its combat tracker.</p></div>
+      <div><h3>The gap is the map's depth</h3><p class="muted small">Walls, line of sight, lighting and music are the clear holes. They're also what people outside D&amp;D Beyond ask for most.</p></div>
+      <div><h3>askdnd's edge isn't a map at all</h3><p class="muted small">Two-way sheets, worked-out Hit Points, Wild Shape, reminders and campaign memory. I found no other VTT with all of these for one table.</p></div>
+    </div>
+    <p><b>My recommendation:</b> the MVP is one sentence: <b>a whole session runs in askdnd, and nobody opens D&amp;D Beyond's VTT.</b> That means matching its map basics, not beating them. The features people love come after, in the order your table feels them.</p>
+    <p class="muted"><b>One thing changes from the Simple VTT design:</b> I'd left out the ruler, spell areas and fog. D&amp;D Beyond has all three today, so a table would lose them by moving. They belong in the MVP.</p>
+  </section>
+
+  <section>
+    <h2>Feature by feature</h2>
+    <p class="muted small">Green means built in. Amber means an add-on, or a limit. An asterisk means it's from what I already know and I didn't confirm it on a page today. Scroll sideways on a phone.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Feature</th><th>D&amp;D Beyond</th><th>Owlbear Rodeo</th><th>Roll20</th><th>Foundry</th><th>askdnd today</th><th>askdnd MVP</th><th>askdnd final</th></tr></thead>
+      <tbody>
+        <tr class="group"><th colspan="8">The map</th></tr>
+        <tr><th>Your own map image</th><td class="a">Master tier</td><td class="y">Yes*</td><td class="y">Yes, 100 MB free</td><td class="y">Yes*</td><td class="n">No</td><td class="mvp">Yes</td><td class="us">Yes</td></tr>
+        <tr><th>Tokens and grid</th><td class="y">Yes, custom art Oct 2026</td><td class="y">Yes*</td><td class="y">Yes*</td><td class="y">Yes*</td><td class="n">No</td><td class="mvp">Yes</td><td class="us">Yes</td></tr>
+        <tr><th>Ruler</th><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes*</td><td class="y">Yes*</td><td class="n">No</td><td class="mvp">Yes</td><td class="us">Yes</td></tr>
+        <tr><th>Spell areas</th><td class="y">Yes</td><td class="a">Add-on</td><td class="y">Yes*</td><td class="y">Yes*</td><td class="n">No</td><td class="mvp">Yes</td><td class="us">Yes</td></tr>
+        <tr><th>Fog you paint by hand</th><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes*</td><td class="y">Yes</td><td class="n">No</td><td class="mvp">Yes</td><td class="us">Yes</td></tr>
+        <tr><th>Pings and drawing</th><td class="y">Yes</td><td class="y">Yes*</td><td class="y">Yes*</td><td class="y">Yes*</td><td class="n">No</td><td class="mvp">Pings</td><td class="us">Both</td></tr>
+        <tr><th>Walls, doors, line of sight, lighting</th><td class="n">No</td><td class="a">Add-on</td><td class="a">Plus or Pro</td><td class="y">Yes, the deepest</td><td class="n">No</td><td class="n">Not yet</td><td class="us">Yes</td></tr>
+        <tr><th>Several scenes</th><td class="y">Yes, Aug 2026</td><td class="y">Yes*</td><td class="y">Yes*</td><td class="y">Yes</td><td class="n">No</td><td class="mvp">Switch maps</td><td class="us">Prepared scenes</td></tr>
+        <tr class="group"><th colspan="8">The fight</th></tr>
+        <tr><th>Turn order</th><td class="y">Yes</td><td class="a">Add-on</td><td class="y">Yes*</td><td class="y">Yes*</td><td class="a">Hears D&amp;D Beyond's</td><td class="mvp">Its own</td><td class="us">Its own</td></tr>
+        <tr><th>Enemy Hit Points</th><td class="y">Yes</td><td class="a">Add-on</td><td class="y">Yes*</td><td class="y">Yes*</td><td class="n">No</td><td class="mvp">Yes</td><td class="us">Yes</td></tr>
+        <tr><th>Conditions on tokens</th><td class="y">Yes, Sept 2026</td><td class="a">Add-on</td><td class="y">Yes*</td><td class="y">Yes*</td><td class="a">On character pages</td><td class="mvp">Yes</td><td class="us">Yes</td></tr>
+        <tr><th>Shared 3D dice</th><td class="y">Yes, Feb 2026</td><td class="a">Add-on</td><td class="n">Not confirmed</td><td class="a">Add-on</td><td class="us">Yes</td><td class="us">Yes</td><td class="us">Yes</td></tr>
+        <tr><th>Attacks that work themselves out</th><td class="n">Not found</td><td class="n">No</td><td class="n">Not confirmed</td><td class="a">Add-on, Midi QoL</td><td class="a">Apply to, you confirm</td><td class="a">Same</td><td class="us">DM confirms</td></tr>
+        <tr><th>Turn reminders for what's ending</th><td class="n">Not found</td><td class="n">Not found</td><td class="n">Not found</td><td class="a">Add-ons*</td><td class="us">Yes</td><td class="us">Yes</td><td class="us">Yes</td></tr>
+        <tr class="group"><th colspan="8">Your character</th></tr>
+        <tr><th>D&amp;D Beyond sheet connected</th><td class="y">It's the sheet</td><td class="a">Add-ons</td><td class="a">Add-on, Beyond20</td><td class="a">Import, some paid</td><td class="us">Yes, both ways</td><td class="us">Yes</td><td class="us">Yes</td></tr>
+        <tr><th>2024 damage worked out, with defenses</th><td class="n">Not found</td><td class="n">No</td><td class="n">Not confirmed</td><td class="a">Add-on, Midi QoL</td><td class="us">Yes</td><td class="us">Yes</td><td class="us">Yes</td></tr>
+        <tr><th>Wild Shape with the real forms</th><td class="n">Not found</td><td class="n">No</td><td class="n">Not confirmed</td><td class="n">Not confirmed</td><td class="us">Yes</td><td class="us">Yes</td><td class="us">Yes</td></tr>
+        <tr class="group"><th colspan="8">Around the table</th></tr>
+        <tr><th>Show something to the table</th><td class="y">Reveals</td><td class="n">Not confirmed</td><td class="y">Yes*</td><td class="y">Yes*</td><td class="n">No</td><td class="n">Not yet</td><td class="us">Yes</td></tr>
+        <tr><th>Music and ambience</th><td class="n">No</td><td class="a">Add-on</td><td class="y">Yes*</td><td class="y">Yes*</td><td class="n">No</td><td class="n">Not yet</td><td class="us">Yes</td></tr>
+        <tr><th>Recaps and memory from your sessions</th><td class="a">Manual journals</td><td class="n">No</td><td class="n">Manual*</td><td class="a">Manual journals*</td><td class="us">Yes</td><td class="us">Yes</td><td class="us">Yes</td></tr>
+        <tr><th>Rules answers with page citations</th><td class="n">Not found</td><td class="n">No</td><td class="n">Not found</td><td class="n">Not found</td><td class="n">Planned</td><td class="n">Not yet</td><td class="us">Yes</td></tr>
+        <tr><th>The fight on a phone</th><td class="n">Not confirmed</td><td class="y">Yes</td><td class="n">Not confirmed</td><td class="n">Not confirmed</td><td class="a">Sheets, not a map</td><td class="a">Follow along</td><td class="us">Yes</td></tr>
+        <tr><th>Cost</th><td>Free to play, Master for own maps</td><td>Free tier, paid for more*</td><td>Free, Plus, Pro</td><td>One-time purchase</td><td>Your own hosting</td><td>Same</td><td>Same</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>What the community loves</h2>
+    <p class="muted">There's no reliable ranking. I found no survey, and neither Foundry nor Owlbear publishes install counts on the pages I could read. This comes from forum threads, module pages and reviews, so read it as themes.</p>
+    <ul>
+      <li><b>Line of sight is the most-named wish.</b> Forum posts in December 2025 and February 2026 call it the reason they won't move to D&amp;D Beyond's VTT. Foundry goes deepest: wall types, secret doors, windows, and light that spreads.</li>
+      <li><b>Combat that runs itself.</b> Midi QoL rolls attacks, checks hits, applies damage and tracks Concentration in Foundry. People also turn much of it off and keep what they trust.</li>
+      <li><b>Starting fast.</b> Owlbear Rodeo's appeal is drop a map, add tokens, play. AboveVTT is liked for one-click maps and tokens on top of D&amp;D Beyond.</li>
+      <li><b>Keeping the D&amp;D Beyond sheet.</b> Beyond20, DDB Importer, dddice and AboveVTT all exist for this. It's a real need people patch together, and askdnd's bridge already does it both ways.</li>
+      <li><b>Dice that feel like dice.</b> Dice So Nice is the example everyone gives. askdnd has this.</li>
+      <li><b>A DM layer.</b> One Foundry user won't leave without a hidden map beneath the players' map, for secret doors. It's one voice, but it's cheap once there are map layers.</li>
+      <li><b>Paying once, or nothing.</b> Foundry's one-time price and Owlbear's free tier come up often. Foundry's median user runs 19 modules, which shows both how much people want and how much setup they accept.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Watch this: D&amp;D Beyond is building in the same spot</h2>
+    <p>Its roadmap lists <b>Non-VTT DM Tools</b> as in active development, for running a game with or without a map. That overlaps the first step below, the board without a map. It doesn't change the plan, because that step sits on your bridge and reminders, but it's a reason not to spend long there. It also ships features quickly: condition icons arrived a month ago, so rows in the table above may change.</p>
+  </section>
+
+  <section>
+    <h2>The MVP, step by step</h2>
+    <p class="muted">Each step helps on its own, and D&amp;D Beyond's VTT keeps working throughout. S, M and L are the sizes from your VTT roadmap.</p>
+    <div class="steps">
+      <div class="step"><span class="n">0</span><div><h3>One Table button</h3><p class="muted small">A Table button in the menu bar opens D&amp;D Beyond's VTT today and askdnd's own later, so the way in never changes. You could have this before the next session.</p></div><span class="size">S</span></div>
+      <div class="step"><span class="n">1</span><div><h3>The board without a map</h3><p class="muted small">Turn order, Next turn, enemies with Hit Points, and one row per character. It's also the DM's view from the usability mockups.</p></div><span class="size">M</span></div>
+      <div class="step"><span class="n">2</span><div><h3>Enemies from the rules data</h3><p class="muted small">Pick from the SRD and your books, roll initiative for one or a group. This needs the Monster Manual loaded on beta.</p></div><span class="size">M</span></div>
+      <div class="step"><span class="n">3</span><div><h3>A map and tokens</h3><p class="muted small">One uploaded image, a grid sized to it, tokens that snap and move live for everyone, condition marks on tokens. Roadmap 3.1 and 3.2.</p></div><span class="size">L + L</span></div>
+      <div class="step"><span class="n">4</span><div><h3>Match D&amp;D Beyond's map tools</h3><p class="muted small">Ruler, spell areas, fog painted by hand, pings. Roadmap 3.3, 3.4, 3.5 and 3.9.</p></div><span class="size">M + M + M + S</span></div>
+      <div class="step"><span class="n">5</span><div><h3>A whole session on it</h3><p class="muted small">The test campaign first, then your table. What feels missing decides what comes next.</p></div><span class="size">S</span></div>
+    </div>
+    <div class="line">MVP done: a full session in askdnd, with D&amp;D Beyond's VTT closed. Characters stay on D&amp;D Beyond's sheets, through the bridge.</div>
+  </section>
+
+  <section>
+    <h2>The final product, after the MVP</h2>
+    <p class="muted">These are the same items as your VTT roadmap, grouped by what the table feels. The order after the MVP is a suggestion until a real session tells us more.</p>
+    <div class="later">
+      <div><h3>Fights that help more</h3><p class="muted small">Clickable stat blocks, attacks and saves the DM confirms, reactions at the right moment, and fights flowing into the recap. Roadmap 2.3, 2.4, 2.5, 2.7.</p></div>
+      <div><h3>A living map</h3><p class="muted small">Prepared scenes, walls, doors, line of sight, and imported maps that bring their walls along, which saves drawing them. A DM layer fits here. Roadmap 3.6, 3.7, 3.8.</p></div>
+      <div><h3>The DM's table</h3><p class="muted small">Show to the table, music, an asset library and session prep. Roadmap 4.1, 4.2, 4.4, 4.6.</p></div>
+      <div><h3>Answers and phones</h3><p class="muted small">Rules answers during play with page citations, and the map on a phone. Roadmap 5.1, 5.3.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What I wouldn't build</h2>
+    <ul>
+      <li><b>A module system or scripting.</b> Foundry and Roll20 need these to serve everyone. askdnd serves one table, so it can simply build what you ask for.</li>
+      <li><b>Other game systems.</b> Your rules are 2024 D&amp;D only.</li>
+      <li><b>A character builder.</b> D&amp;D Beyond's sheet stays the sheet.</li>
+      <li><b>3D maps or a marketplace.</b> Nothing here points to your table needing them.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>For you to decide</h2>
+    <div class="ask">
+      <div><h3>1. Is this MVP right?</h3><p class="muted">It's bigger than the Simple VTT design because it adds the ruler, spell areas and fog.</p><p class="pick small">My pick: yes. Otherwise the table loses tools when it moves.</p></div>
+      <div><h3>2. Where do your maps come from?</h3><p class="muted">D&amp;D Beyond's book maps live there. Moving means uploading images the DM has the right to use. This is the biggest unknown, because I don't know which maps your table uses.</p><p class="pick small">My pick: check the last few sessions' maps before step 3.</p></div>
+      <div><h3>3. How far should automation go?</h3><p class="muted">People love it, but your rule is remind, don't automate, and the DM makes every ruling.</p><p class="pick small">My pick: keep Apply to in the MVP, and try DM-confirmed attacks only after real sessions.</p></div>
+      <div><h3>4. Does one Table button work for you?</h3><p class="muted">I looked at three places to launch the VTT: the menu bar, the fight band and the Live window. The menu bar is the only one always there.</p><p class="pick small">My pick: the menu bar, with a Table card on the first page for new campaigns.</p></div>
+      <div><h3>5. The Simple VTT questions still stand.</h3><p class="muted">Who moves tokens, what players see of enemies, and where rolls go are answered there.</p><p class="pick small"><a href="https://claude.ai/artifact/6oTb8pSFzhhUakYsYHEw5x">Open Simple VTT</a></p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>How far to trust this</h2>
+    <p class="muted small">D&amp;D Beyond's rows come from its own changelog, roadmap and posts, read today. Foundry's lighting, walls, price and the three modules come from its own pages, and Owlbear's add-ons from its extension list. Roll20's page contradicts itself on whether lighting is free, so I went with its statement that upgrading unlocks it. I couldn't open Owlbear's home page or Roll20's pricing page, so prices and many asterisked rows are unconfirmed. "Not found" means I didn't find it, not that it doesn't exist.</p>
+    <p class="muted small">Sources: <a href="https://www.dndbeyond.com/changelog">D&amp;D Beyond changelog</a> · <a href="https://www.dndbeyond.com/en/roadmap">its roadmap</a> · <a href="https://www.dndbeyond.com/posts/2132-d-d-beyonds-2026-development-roadmap">2026 plans</a> · <a href="https://www.dndbeyond.com/posts/2120-the-road-ahead-join-our-journey-to-improve-the">The Road Ahead</a> · <a href="https://www.dndbeyond.com/forums/dungeons-dragons-discussion/dungeon-masters-only/214988-dynamic-maps-in-dndbeyond-maps">forum thread on dynamic maps</a> · <a href="https://foundryvtt.com/">Foundry</a> · <a href="https://foundryvtt.com/article/walls/">walls</a> · <a href="https://foundryvtt.com/article/lighting/">lighting</a> · <a href="https://foundryvtt.com/packages/midi-qol">Midi QoL</a> · <a href="https://foundryvtt.com/packages/dice-so-nice">Dice So Nice</a> · <a href="https://foundryvtt.com/packages/ddb-importer">DDB Importer</a> · <a href="https://www.enworld.org/posts/9914797/">Foundry's year in review on EN World</a> · <a href="https://extensions.owlbear.rodeo/">Owlbear extensions</a> · <a href="https://blog.owlbear.rodeo/owlbear-rodeo-2-3-release-week-day-3/">Owlbear Dynamic Fog</a> · <a href="https://pages.roll20.net/dynamic-lighting">Roll20 dynamic lighting</a> · <a href="https://addons.mozilla.org/addon/abovevtt/">AboveVTT</a> · <a href="https://chrome.google.com/webstore/detail/beyond-20/gnblbpbepfbfmoobegdogkglpbhcjofh">Beyond20</a> · <a href="https://arcaneeye.com/dm-tools-5e/best-dnd-vtts/">Arcane Eye's VTT guide</a></p>
+  </section>
+</main>
