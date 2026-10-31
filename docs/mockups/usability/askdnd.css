@@ -94,3 +94,4 @@ table.track tr.now td:first-child { color: var(--amber); }
 .stat:hover { border-color: var(--muted); }
 .stat.big { font-size: 16px; font-weight: 700; color: var(--strong); }
 .stat.gold { color: var(--amber); border-color: var(--amber); }
+.stat.roll::before { content: ""; width: 10px; height: 11px; flex: none; background: var(--blue); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
