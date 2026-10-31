@@ -9,7 +9,7 @@ Checked once: each campaign keeps its list of books (Campaign.books), mirroring 
 DM or an admin switches each on or off on Manage › Settings › Books; every lookup reads that list from the campaign
 row. Nothing is checked when a game loads and nothing is asked of D&D Beyond.
 
-The first test (Brett's answer 8): the 2024 Monster Manual's Beasts as Wild Shape forms, labelled "MM 2024".
+The first book: the whole 2024 Monster Manual, labelled "MM 2024". Wild Shape reads its Beasts.
 """
 
 import json
