@@ -51,8 +51,8 @@ td.when, td.res { white-space: nowrap; font-variant-numeric: tabular-nums; }
     <h1>While You Were Gone</h1>
     <p class="lead">What changed, what needs you, and what to keep an eye on. Tick things off as you go: the ticks stay in your browser.</p>
     <div class="state">
-      <div class="good"><b>5 changes on beta</b><span>4 bug fixes while you were away, then live state when you approved it</span></div>
-      <div class="wait"><b>6 things need you</b><span>2 merges, 2 design reads, 1 interface review, 1 quick Chrome check</span></div>
+      <div class="good"><b>6 changes on beta</b><span>4 bug fixes while you were away, then live state and the Monster Manual loader when you approved them</span></div>
+      <div class="wait"><b>5 things need you</b><span>2 design reads, 1 interface review, 1 Chrome check, 1 decision on loading beta</span></div>
       <div class="know"><b>Your table is unaffected</b><span>Live state shows only in test campaigns</span></div>
     </div>
   </header>
@@ -72,9 +72,9 @@ td.when, td.res { white-space: nowrap; font-variant-numeric: tabular-nums; }
         <p class="do">To update now: open <code>chrome://extensions</code>, turn on Developer mode at the top right, and press Update. The askdnd Bridge card should say 0.9.5.</p>
       </div></div>
       <div class="item"><input type="checkbox" id="c-130" aria-labelledby="t-130"><div class="body">
-        <div class="top"><label for="c-130"><h3 id="t-130">Merge the whole Monster Manual, and say when to load it</h3></label><span class="tag">Decision · <a href="https://github.com/jettison-v/dndsy/pull/130">PR 130</a></span></div>
-        <p class="why">The loader now converts all 510 stat blocks, up from 91 Beasts. They're on the local copy only. No book text is in the repo.</p>
-        <p class="do">Merge it, then tell me whether to load beta now or wait until you need more than Beasts.</p>
+        <div class="top"><label for="c-130"><h3 id="t-130">Say when to load the whole Monster Manual</h3></label><span class="tag">Decision · <a href="https://github.com/jettison-v/dndsy/pull/130">PR 130</a></span></div>
+        <p class="why">The loader is merged and converts all 510 stat blocks, up from 91 Beasts. They're on the local copy only, so beta still has just the Beasts. No book text is in the repo.</p>
+        <p class="do">Tell me whether to load beta now or wait until you need more than Beasts.</p>
       </div></div>
       <div class="item"><input type="checkbox" id="c-vtt" aria-labelledby="t-vtt"><div class="body">
         <div class="top"><label for="c-vtt"><h3 id="t-vtt">Try the Simple VTT board and answer its four questions</h3></label><span class="tag">Design · <a href="https://claude.ai/artifact/6oTb8pSFzhhUakYsYHEw5x">Simple VTT</a></span></div>
@@ -83,10 +83,6 @@ td.when, td.res { white-space: nowrap; font-variant-numeric: tabular-nums; }
       <div class="item"><input type="checkbox" id="c-use" aria-labelledby="t-use"><div class="body">
         <div class="top"><label for="c-use"><h3 id="t-use">Pick from the usability suggestions</h3></label><span class="tag">Design · <a href="https://claude.ai/artifact/NMPVH1DC8fivDNtMTEPKjG">Usability Review</a></span></div>
         <p class="why">Nine suggestions in priority order, none built. The first two are the ones to read: Hit Points first on phones, and making Cast and Roll one step.</p>
-      </div></div>
-      <div class="item"><input type="checkbox" id="c-131" aria-labelledby="t-131"><div class="body">
-        <div class="top"><label for="c-131"><h3 id="t-131">Merge the docs</h3></label><span class="tag">Quick · <a href="https://github.com/jettison-v/dndsy/pull/131">PR 131</a></span></div>
-        <p class="why">This page's source, Simple VTT's source, the roadmap and the new real-site test runs. It changes nothing in the app.</p>
       </div></div>
     </div>
   </section>
