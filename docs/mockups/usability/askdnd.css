@@ -88,3 +88,9 @@ table.track tr.now td { background: var(--surface-2); }
 table.track tr.now td:first-child { color: var(--amber); }
 .hp { color: var(--strong); font-weight: 700; }
 .low { color: var(--amber); }
+/* A chip you can click: raised, with an edge, in the band on Battle */
+.stat { display: inline-flex; align-items: center; gap: 5px; font: 500 13px/1.2 var(--sans); color: var(--muted); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 7px; padding: 4px 9px; white-space: nowrap; cursor: pointer; }
+.stat b { color: var(--strong); font-weight: 700; }
+.stat:hover { border-color: var(--muted); }
+.stat.big { font-size: 16px; font-weight: 700; color: var(--strong); }
+.stat.gold { color: var(--amber); border-color: var(--amber); }
