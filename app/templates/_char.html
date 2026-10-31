@@ -204,8 +204,8 @@
   <div {{ tile(c, "ac") }}><small>Armor class</small><b>{{ s.armor_class }}</b></div>
   <div {{ tile(c, "speed") }}><small>Speed</small><b>{{ s.speed.walk }} ft</b>{% set extra = s.speed.items() | rejectattr(0, "in", ["walk", "parts", "notes"]) | list %}{% if extra %}<span class="note"> {% for k, v in extra %}{{ k }} {{ v }}{{ ", " if not loop.last }}{% endfor %}</span>{% endif %}</div>
   <div {{ tile(c, "initiative") }}><small>Initiative</small><b>{{ s.initiative }}</b>{{ adv(s.initiative_adv) }}<button type="button" class="roll-chip tile-roll" {{ roll_attrs("check", "Initiative", s.initiative, "", s.initiative_adv) }} title="Roll Initiative">Roll</button></div>
-  {% for sc in s.spellcasting[:1] %}<div {{ tile(c, "spell") }}><small>Spell DC / attack</small><b>{{ sc.save_dc }}</b><span class="note"> / {{ sc.attack }}</span></div>{% endfor %}
-  <div class="insp{{ ' on' if s.inspiration }}" {{ tile(c, "inspiration") }} title="Heroic Inspiration"><small>Heroic Inspiration</small><b>{{ "✦ Yes" if s.inspiration else "—" }}</b></div>
+  {% for sc in s.spellcasting[:1] %}<div {{ tile(c, "spell") }}><small><span class="tile-full">Spell DC / attack</span><span class="tile-short">Spell DC</span></small><b>{{ sc.save_dc }}</b><span class="note"> / {{ sc.attack }}</span></div>{% endfor %}
+  <div class="insp{{ ' on' if s.inspiration }}" {{ tile(c, "inspiration") }} title="Heroic Inspiration"><small><span class="tile-full">Heroic Inspiration</span><span class="tile-short">Inspiration</span></small><b>{{ "✦ Yes" if s.inspiration else "—" }}</b></div>
 </div>
 {%- endmacro %}
 
