@@ -2073,7 +2073,8 @@
   function useItem(btn) {
     const w = win, said = w.querySelector('.use-said');
     w.querySelectorAll('button').forEach(b => { b.disabled = true; });
-    posted(w._use, { to: btn.dataset.to || '' }).then(j => {
+    const chosen = Object.fromEntries([...w.querySelectorAll('select[name], input[name]')].map(s => [s.name, s.value]));
+    posted(w._use, { ...chosen, to: btn.dataset.to || '' }).then(j => {
       closeWin();
       if (j.roll) {
         if (animate()) window.askdndThrowing.throwing(j.roll.id);

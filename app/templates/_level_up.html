@@ -1,0 +1,9 @@
+{# What's new after a level on D&D Beyond (app/level_up.py), on Battle for the character's own player. #}
+{% if c.level_up and can_play %}{% set u = c.level_up %}
+<section class="level-up" aria-label="What's new">
+  <div class="lu-head"><b>Level {{ u.to }}: what's new</b><button type="button" class="btn small" hx-post="/characters/{{ c.id }}/level-up/read" hx-swap="none">Got it</button></div>
+  <p class="note">{% if u.hp %}{{ "%+d" | format(u.hp) }} Hit Points{% endif %}{% if u.pb %}{{ " · " if u.hp }}Proficiency Bonus {{ "%+d" | format(u.pb) }}{% endif %}{% for s in u.slots %}{{ " · " if u.hp or u.pb or not loop.first }}{{ s.more }} more {{ s.level | ordinal }}-level{% endfor %}</p>
+  {% if u.features %}<div class="row tight"><span class="note">New features</span>{% for f in u.features %}<button type="button" class="btn small" data-panel-url="/characters/{{ c.id }}/detail?ref={{ f.key | urlencode }}">{{ f.name }}</button>{% endfor %}</div>{% endif %}
+  {% if u.spells %}<div class="row tight"><span class="note">New spells</span>{% for f in u.spells %}<button type="button" class="btn small" data-panel-url="/characters/{{ c.id }}/detail?ref={{ f.key | urlencode }}">{{ f.name }}</button>{% endfor %}</div>{% endif %}
+</section>
+{% endif %}

@@ -112,7 +112,7 @@ def announce(db: Session, campaign_id: int | None, kind: str, **data) -> None:
 # Concentration, Wild Shape, a rename, a change waiting for D&D Beyond or its log), tells every page in its campaign on
 # save, and the pages showing it swap in their new copy (app.js showInPlace). Players' own pins, notes and reminders
 # aren't here: they're theirs (the DM never sees them), and the page they were made on shows them at once.
-TABLE_SEES = {"Character": ("name", "owner_id", "wild_shape", "concentration", "conditions"), "CharacterSnapshot": ("summary",),
+TABLE_SEES = {"Character": ("name", "owner_id", "wild_shape", "concentration", "conditions", "level_up"), "CharacterSnapshot": ("summary",),
               "CampaignCharacter": ("item_choices",),
               "BridgeIntent": ("state", "error"), "BridgeLog": ("text",)}
 # And of the campaign itself: the fight heard from D&D Beyond's VTT (app/fight.py), announced as "game"

@@ -778,6 +778,10 @@ details.faq[open] > summary::before { transform: rotate(90deg); }
 .res-row .res { padding: 0 14px; border-left: 1px solid var(--line); }
 .res-row .res:first-child, .res-row .res-label + .res { border-left: none; padding-left: 0; }
 .res-row.slots { margin-top: 6px; }
+.level-up { background: var(--surface); border: 1px solid var(--amber); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); display: grid; gap: var(--sp-1); margin-bottom: var(--sp-2); }
+.lu-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-1); }
+.res-go { background: none; border: 0; color: inherit; font: inherit; cursor: pointer; }
+.res-go:hover { color: var(--amber); }
 .tile-short { display: none; }
 @media (max-width: 640px) { .tile-full { display: none; } .tile-short { display: inline; } }  /* Battle's tiles are narrow on a phone: the whole label would be cut off */
 @media (max-width: 640px) { .res-row { flex-direction: column; align-items: flex-start; } .res-row .res { padding: 0; border-left: none; } }  /* each on its own line: a divider there only marks the wrap */

@@ -141,7 +141,7 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
         says_level = any(x["of"] == "Spell slots" for x in spends)  # "1st-level slot" already gives the level
         tags = ([] if says_level else [level]) + (["Conc."] if sp["concentration"] else [])
         add(key=sp["key"], kind="spell", cost=cost, name=sp["name"], hit=sp["attack"] or sp["save"], tags=tags, level=sp["level"] or 0,
-            adv=advantage.for_attack(advs, spell=True) if sp["attack"] else [],
+            adv=advantage.for_attack(advs, spell=True) if sp["attack"] else [], cast=bool(sp["level"] or sp["concentration"]),
             spends=spends,
             meta=" · ".join(x for x in (sp["range"], effect, sp["trigger"] if cost == "Reaction" else "") if x),
             text=sp.get("text") or sp["summary"], summary=sp["summary"], recipe=house_rules.spell(sp["name"]) or sp.get("roll"),
