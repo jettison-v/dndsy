@@ -4,7 +4,7 @@
   Plan). Party ▾ lists the campaign's characters, your own first, with class, level and HP, and opens
   the one you pick in the mode you're in (menu bar Option B, Brett 2026-10-22).
 - The Live pill answers one question (Brett, 2026-10-30, docs/mockups/table-without-modes.html):
-  is your sheet connected? Connected to D&D Beyond (the bridge's extension heard it in the last
+  is your sheet connected? Connected (the bridge's extension heard it in the last
   REACH), what to do to connect, something to make by hand, or when the copy was last read; the
   character on screen, else your own, else the party's slowest sheet (the DM's). Its window holds
   how each sheet is connected, "Refresh <character> now" (anyone signed in, throttled) and "Refresh

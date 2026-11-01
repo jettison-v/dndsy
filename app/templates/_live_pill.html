@@ -1,5 +1,5 @@
 {# The menu bar's Live control (app/live.py), one question (docs/mockups/table-without-modes.html): is your sheet
-   connected? Connected to D&D Beyond, what to do to connect, something to make by hand, or when the copy was last read.
+   connected? Connected, what to do to connect, something to make by hand, or when the copy was last read.
    Someone with no character of their own, like the DM, has no sheet to connect: they see how many of the party's are
    (Brett, 2026-10-30: the DM's pill said Connected from someone else's sheet). Without the extension in this browser
    (body.no-bridge, app.js) it says to add it, and the Live window has the link. `data-log` tells the roll window whether
@@ -14,7 +14,7 @@
   <span class="live-dot" aria-hidden="true"></span><span class="live-ago">
   {%- if p.by_hand -%}{{ p.by_hand }} to make by hand
   {%- elif party -%}{{ tn.connected }} of {{ tn.connectable }} sheets connected
-  {%- elif p.step and p.mine -%}Connected to D&amp;D Beyond
+  {%- elif p.step and p.mine -%}Connected
   {%- elif p.step -%}{{ p.name }} is connected
   {%- elif ours -%}Open your sheet to connect
   {%- elif tn.party_pill -%}Slowest sheet {{ (p.fetched_at | ago) or "never" }}

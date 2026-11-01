@@ -803,9 +803,9 @@ def test_the_live_pill_says_whether_your_sheet_is_connected_or_has_something_to_
     pill = lambda: player.get(f"/characters/{cole.id}").text.split('id="live-pill"')[1].split("</button>")[0]  # noqa: E731
     cole.sheet_heard_at = None  # no extension yet
     db.flush()
-    assert "Open your sheet to connect" in pill() and "Connected to" not in pill()
+    assert "Open your sheet to connect" in pill() and ">Connected<" not in pill()
     player.post("/bridge/heard/75423618?pull=1")  # the extension's pull: the sheet can be reached
-    assert "Connected to D&amp;D Beyond" in pill() and " step" in pill().split(">")[0]
+    assert 'live-ago">Connected<' in pill() and " step" in pill().split(">")[0]
     drink(db, cole)
     db.scalar(select(BridgeIntent)).state = "not_yet"
     db.flush()
@@ -933,7 +933,7 @@ def test_someone_with_no_character_sees_how_many_sheets_are_connected(player, dm
     set_role(db, "dm@example.com", "dm")
     player.post("/bridge/closed/75423618")
     pill = lambda: dm.get("/c/main/").text.split('id="live-pill"')[1].split("</button>")[0]  # noqa: E731
-    assert "1 of 2 sheets connected" in pill() and "Connected to D&amp;D Beyond" not in pill() and " step" not in pill().split(">")[0]
+    assert "1 of 2 sheets connected" in pill() and 'live-ago">Connected<' not in pill() and " step" not in pill().split(">")[0]
     player.post("/bridge/heard/75423618?pull=1")
     assert "2 of 2 sheets connected" in pill() and " step" in pill().split(">")[0]
 
