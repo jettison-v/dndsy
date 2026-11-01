@@ -73,6 +73,20 @@ def test_a_players_pages_hold_together_at_every_width(people, server, long_names
     assert player.errors == []
 
 
+def test_a_long_group_of_resources_fits_a_phone(people, server):
+    """Oct 31: Eldritch Cannon's rows on one line made Party 647px wide on a 375px phone."""
+    player = people("player")
+    player.page.set_viewport_size({"width": 375, "height": 812})
+    player.open("/party")
+    player.page.evaluate("""() => {
+      const card = document.querySelector('.pt-card');
+      const res = card.querySelector('.pt-res') || card.appendChild(Object.assign(document.createElement('div'), {className: 'pt-res'}));
+      res.insertAdjacentHTML('beforeend', '<span class="pt-group">Eldritch Cannon: ' + '<span>Flamethrower</span>'.repeat(6) + '</span>');
+    }""")
+    found = problems(player.page, "Party's resources at 375px")
+    assert not found, "\n".join(found)
+
+
 def test_manage_pages_hold_together_at_every_width(people, server, long_names):
     admin = people("admin")
     found = check(admin, server, PAGES["admin"])

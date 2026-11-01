@@ -373,3 +373,4 @@ One line per decision: date — decision — why. Newest at the bottom.
 - 2026-10-31: Everything in the Usability Mockups ships except suggestion 5, Battle's band, which is its own scope (Battle Band canvas). Brett asked for it broken out, with the Spell DC label and Hide saves, after trying and rewinding a one-strip design.
 - 2026-10-31: One Table button in the menu bar, opening D&D Beyond's VTT today and askdnd's own later, so the way in never changes.
 - 2026-10-31: A free use of a spell is shown but not spent on D&D Beyond: the write isn't proven, so the corner card asks the player to mark it. D&D Beyond's sheet stays right either way.
+- 2026-10-31: The Live pill says Connected, not Connected to D&D Beyond: the bar has the page's width, and the longer word truncated the campaign's name and squeezed the logo at every window size. Its tooltip and window keep the rest.
