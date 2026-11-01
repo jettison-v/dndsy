@@ -15,8 +15,6 @@
     {% endfor %}</table></div>{% else %}<p class="muted">No runs recorded yet. The next one is tonight.</p>{% endif %}
   </section>
   {% endif %}
-  <h3 class="divider">Import campaign data</h3>
-  <p class="hint">Upload a campaign bundle (.json). You'll see exactly what it would change before anything is saved. Importing the same file again updates matching records; it never duplicates them.</p>
   {% if error %}<div class="flash bad">{% if filename %}<b>{{ filename }}</b>: {% endif %}{{ error }}</div>{% endif %}
   {% if counts %}<div class="flash"><b>Imported {{ filename }}.</b>{% if kept %} Existing descriptions were kept.{% endif %}<ul>{% for k, v in counts.items() %}<li>{{ k }}: {{ v }}</li>{% endfor %}</ul></div>{% endif %}
 
@@ -67,6 +65,8 @@
   </section>
   {% else %}
   <section class="section">
+    <h2>Import campaign data</h2>
+    <p class="hint">Upload a campaign bundle (.json). You'll see exactly what it would change before anything is saved. Importing the same file again updates matching records; it never duplicates them.</p>
     <form method="post" action="/manage/backups/import" enctype="multipart/form-data" class="stack">
       <input type="file" name="file" accept=".json,application/json" required>
       <div><button class="btn primary" data-busy="Reading…">Preview import</button></div>

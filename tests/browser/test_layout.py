@@ -87,6 +87,18 @@ def test_a_long_group_of_resources_fits_a_phone(people, server):
     assert not found, "\n".join(found)
 
 
+def test_tap_targets_on_a_phone(people, server):
+    """A standing rule: DESIGN.md › Principles 8, Works on a phone. A control is at least 36px tall there (Oct 31: Battle's Cast and +7 were 21px)."""
+    player = people("player")
+    player.page.set_viewport_size({"width": 375, "height": 812})
+    small = []
+    for path in (f"/characters/{server['cole']}/battle", f"/characters/{server['cole']}", "/party", "/help"):
+        player.open(path)
+        small += player.page.evaluate("""(path) => [...document.querySelectorAll('.btn, .roll-chip, .roll-hit, .res-go, .rs-toggle, .live-pill, .help-btn, .chip, .ls-chip, .ws-chip, .spell-chip')]
+          .map(e => [path, e.className, e.offsetHeight]).filter(([, , h]) => h && h < 36)""", path)
+    assert not small, small
+
+
 def test_manage_pages_hold_together_at_every_width(people, server, long_names):
     admin = people("admin")
     found = check(admin, server, PAGES["admin"])

@@ -24,13 +24,13 @@ class Piece:
 # can have it.
 PIECES: list[Piece] = [
     Piece("ddb_bridge", "D&D Beyond bridge", "4",
-          "The askdnd extension keeps each player's D&D Beyond sheet and askdnd in step, both ways (app/ddb_bridge.py). "
+          "The askdnd extension keeps each player's D&D Beyond sheet and askdnd in step, both ways. "
           "Tell the table first: D&D Beyond's terms don't allow tools like this.", ready=True),
     Piece("live_state", "Casting, resources and rests", "1.2",
-          "Casting spends a slot, class resources count down and rests bring things back, all through the bridge "
-          "(app/casting.py, app/resources.py, app/rests.py). Interface not reviewed yet."),
+          "Casting spends a slot, class resources count down and rests bring things back, all through the bridge. "
+          "Still being reviewed."),
     Piece("table_dice", "Everyone's rolls thrown across the screen", "3.11",
-          "Others' rolls are thrown across the page like your own, instead of the small tray (app/dice.py)"),
+          "Others' rolls are thrown across the page like your own, instead of the small tray"),
 ]
 
 

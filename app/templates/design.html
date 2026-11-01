@@ -54,6 +54,13 @@
     {{ ds("Four styles, two sizes", ".btn · .primary · .link · .danger · .small", "Primary is the one main action on a screen; Danger always asks first. Regular is --control-h tall (32px, 44px on phones), small --control-h-sm.") }}
     <div class="ds-row"><button class="btn primary" type="button">Publish</button><button class="btn" type="button">Edit</button><button class="btn link" type="button">Cancel</button><button class="btn link danger" type="button">Delete</button></div>
     <div class="ds-row"><button class="btn primary small" type="button">Save</button><button class="btn small" type="button">+ Add a step</button><button class="btn link small" type="button">Clear all</button><button class="btn link danger small" type="button">Remove</button></div>
+    {{ ds("Fields", "input · select · textarea · --control-h", "Every text, number and date field and every select is as tall as a regular button, so a field and its button line up. A file picker's button is a regular button.") }}
+    <div class="ds-row"><input type="text" class="ds-field" placeholder="A text field" aria-label="A text field"><input type="number" value="30" aria-label="A number"><button class="btn" type="button">Save</button></div>
+    <div class="ds-row"><input type="file" aria-label="A file"></div>
+    {{ ds("Spell Book", ".spellbook-btn", "The one filled blue button, the door to everything castable. Only in the spell bar.") }}
+    <div class="ds-row"><button class="btn spellbook-btn" type="button">Spell Book</button></div>
+    {{ ds("Open on D&D Beyond", ".sheet-open", "The ↗ square beside a name. Last in each row of a list, so the icons line up.") }}
+    <div class="ds-row"><b>Cole</b> <a class="sheet-open" href="#buttons" aria-label="Open Cole on D&amp;D Beyond">↗</a></div>
   </section>
 
   <section class="section" id="switches">
