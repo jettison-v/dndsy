@@ -130,9 +130,9 @@
 </span>
 {%- if roll and dying_state(s) == "dying" %}<button type="button" class="roll-chip tile-roll" data-roll="death" data-label="Death save" title="Roll your death save: 10 or more a success, a 1 two failures, a 20 back with 1 Hit Point. It marks itself.">Roll</button>{% endif -%}
 {%- endmacro %}
-{% macro hp_tile(s, c, cls="", word="Hit points") -%}
+{% macro hp_tile(s, c, cls="", word="Hit points", change=false) -%}
 {%- set dy = dying_state(s) -%}
-<div class="{{ cls }}{{ ' dying ' ~ dy if dy }}" {{ tile(c, "hp") }}{{ sync(s, "hp") }}><small>{{ {"dying": "Dying", "stable": "Stable", "out": "Three failures"}.get(dy, word) }}</small><b>{{ s.hit_points.current }}</b>{% if s.hit_points.current != s.hit_points.max %}<span class="note"> / {{ s.hit_points.max }}</span>{% endif %}{% if s.hit_points.temp %}<span class="note"> +{{ s.hit_points.temp }} temp</span>{% endif %}{% if dy %}{{ dying_marks(s, c) }}{% if dy == "out" %}<span class="note ds-rule">The DM rules</span>{% endif %}{% endif %}</div>
+<div class="{{ cls }}{{ ' dying ' ~ dy if dy }}" {{ tile(c, "hp") }}{{ sync(s, "hp") }}><small>{{ {"dying": "Dying", "stable": "Stable", "out": "Three failures"}.get(dy, word) }}</small>{% if change %}<span class="hp-btns"><button type="button" class="hp-btn" data-use-url="/characters/{{ c.id }}/hp?mode=damage&amp;quick=1" aria-label="Damage" title="Damage">−</button><button type="button" class="hp-btn" data-use-url="/characters/{{ c.id }}/hp?mode=heal&amp;quick=1" aria-label="Heal" title="Heal">+</button></span>{% endif %}<b>{{ s.hit_points.current }}</b>{% if s.hit_points.current != s.hit_points.max %}<span class="note"> / {{ s.hit_points.max }}</span>{% endif %}{% if s.hit_points.temp %}<span class="note"> +{{ s.hit_points.temp }} temp</span>{% endif %}{% if dy %}{{ dying_marks(s, c) }}{% if dy == "out" %}<span class="note ds-rule">The DM rules</span>{% endif %}{% endif %}</div>
 {%- endmacro %}
 
 {% macro vitals(s, c) -%}
@@ -198,24 +198,29 @@
 {%- endmacro %}
 
 {# Battle's header: the Character page's number strip, with the labels and tiles it uses, tighter. #}
-{% macro battle_strip(s, c) -%}
+{% macro battle_strip(s, c, change_hp=false) -%}
 <div class="strip compact">
-  {{ hp_tile(s, c) }}
+  {{ hp_tile(s, c, change=change_hp) }}
   <div {{ tile(c, "ac") }}><small>Armor class</small><b>{{ s.armor_class }}</b></div>
   <div {{ tile(c, "speed") }}><small>Speed</small><b>{{ s.speed.walk }} ft</b>{% set extra = s.speed.items() | rejectattr(0, "in", ["walk", "parts", "notes"]) | list %}{% if extra %}<span class="note"> {% for k, v in extra %}{{ k }} {{ v }}{{ ", " if not loop.last }}{% endfor %}</span>{% endif %}</div>
   <div {{ tile(c, "initiative") }}><small>Initiative</small><b>{{ s.initiative }}</b>{{ adv(s.initiative_adv) }}<button type="button" class="roll-chip tile-roll" {{ roll_attrs("check", "Initiative", s.initiative, "", s.initiative_adv) }} title="Roll Initiative">Roll</button></div>
   {% for sc in s.spellcasting[:1] %}<div {{ tile(c, "spell") }}><small><span class="tile-full">Spell DC / attack</span><span class="tile-short">Spell DC</span></small><b>{{ sc.save_dc }}</b><span class="note"> / {{ sc.attack }}</span></div>{% endfor %}
-  <div class="insp{{ ' on' if s.inspiration }}" {{ tile(c, "inspiration") }} title="Heroic Inspiration"><small><span class="tile-full">Heroic Inspiration</span><span class="tile-short">Inspiration</span></small><b>{{ "✦ Yes" if s.inspiration else "—" }}</b></div>
 </div>
 {%- endmacro %}
 
-{# The six saves as one row of tiles, styled like the Character page's ability cards: green ● when
+{# Heroic Inspiration on Battle (Brett, 2026-11-01, docs/mockups/battle-band/): with what you can spend, a star filled and gold
+   when you have it, hollow and grey when you don't. #}
+{% macro insp_mark(s, c, cls="") -%}
+<span class="res res-insp{{ ' on' if s.inspiration }} {{ cls }}" {{ tile(c, "inspiration") }} title="Heroic Inspiration: {{ 'you have it' if s.inspiration else 'not right now' }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="{{ 'currentColor' if s.inspiration else 'none' }}" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.8 5.8 6.2.9-4.5 4.4 1.1 6.3L12 17.5l-5.6 3 1.1-6.3L3 9.7l6.2-.9z"/></svg>Insp.</span>
+{%- endmacro %}
+
+{# The six saves as tiles, styled like the Character page's ability cards: green ● when
    proficient, Adv when something gives Advantage. Advantage on every save is said once after the row. #}
 {% macro save_tiles(saves, adv_all=()) -%}
 <div class="save-tiles" role="list" aria-label="Saving throws">{% for sv in saves %}
-  <div class="st{{ ' prof' if sv.proficient }}" role="listitem" tabindex="0" {{ roll_attrs("save", sv.short ~ " save", sv.label, "", sv.adv) }} title="Roll a {{ sv.short }} save{{ ': ' ~ sv.from if sv.from }}"><small>{{ sv.short }}<span class="st-word"> save</span></small><b>{{ sv.label }}</b>{{ adv(sv.adv) }}</div>{% endfor %}
-  {% if adv_all %}<p class="note save-all">{{ adv(adv_all) }} on every save {% for a in adv_all %}{{ a.when }} ({{ a.source }}){{ "; " if not loop.last }}{% endfor %}</p>{% endif %}
+  <div class="st{{ ' prof' if sv.proficient }}" role="listitem" tabindex="0" {{ roll_attrs("save", sv.short ~ " save", sv.label, "", sv.adv) }} title="Roll a {{ sv.short }} save{{ ': ' ~ sv.from if sv.from }}"><small>{{ sv.short }}</small><b>{{ sv.label }}</b>{{ adv(sv.adv) }}</div>{% endfor %}
 </div>
+{% if adv_all %}<p class="note save-all">{{ adv(adv_all) }} on every save {% for a in adv_all %}{{ a.when }} ({{ a.source }}){{ "; " if not loop.last }}{% endfor %}</p>{% endif %}
 {%- endmacro %}
 
 {# Limited resources, the ones with the most uses first (by total, not by what's left), then spell
@@ -229,7 +234,7 @@
 {% macro resource_row(s, slots=True, skip=(), c=none) -%}
 {% set res_rows = s.actions | selectattr("uses") | selectattr("source", "in", ["class", "feat", "race"]) | rejectattr("name", "in", skip) | sort(attribute="uses.max", reverse=True) | list %}
 {% if res_rows %}<button type="button" class="res-more" data-res-more aria-expanded="false"><span>Resources</span><span class="count">{{ res_rows | length }}</span></button>
-<div class="res-row"><span class="res-label">Resources</span>{% for g in res_rows | res_groups %}{% if g.name %}<span class="res-group"><span class="res-gname">{{ g.name }}:</span>{% for a in g.rows %}{{ res(s, c if a.id else none, "uses:" ~ a.id, a.name.split(": ", 1)[1], a.uses) }}{% endfor %}</span>{% else %}{% for a in g.rows %}{{ res(s, c if a.id else none, "uses:" ~ a.id, a.name, a.uses) }}{% endfor %}{% endif %}{% endfor %}</div>{% endif %}
+<div class="res-row"><span class="res-label">Resources</span>{% for g in res_rows | res_groups %}{% if g.name %}<span class="res-group"><span class="res-gname">{{ g.name }}:</span>{% for a in g.rows %}{{ res(s, c if a.id else none, "uses:" ~ a.id, a.name.split(": ", 1)[1], a.uses) }}{% endfor %}</span>{% else %}{% for a in g.rows %}{{ res(s, c if a.id else none, "uses:" ~ a.id, a.name, a.uses) }}{% endfor %}{% endif %}{% endfor %}{% if caller %}{{ caller() }}{% endif %}</div>{% elif caller %}<div class="res-row"><span class="res-label">Resources</span>{{ caller() }}</div>{% endif %}
 {% if slots and (s.spell_slots.slots or s.spell_slots.pact) %}<div class="res-row slots"><span class="res-label">Spell slots</span>
   {% for sl in s.spell_slots.slots %}{{ res(s, c, "slot:" ~ sl.level, sl.level ~ {1: "st", 2: "nd", 3: "rd"}.get(sl.level, "th"), {"max": sl.max, "left": sl.max - sl.used}) }}{% endfor %}
   {% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}{{ res(s, c, "pact:" ~ p.level, "Pact (" ~ {1: "1st", 2: "2nd", 3: "3rd"}.get(p.level, p.level ~ "th") ~ ")", {"max": p.max, "left": p.max - p.used}) }}{% endif %}

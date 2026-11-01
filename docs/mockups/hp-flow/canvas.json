@@ -1,0 +1,16 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-11-01T23:40:00Z"},
+  "title": "Hit Points Flow",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1360, "h": 430, "title": "Today: five steps across two windows"},
+    "Option-A.dc.html": {"x": 1440, "y": 0, "w": 1360, "h": 730, "title": "Option A: a window at the tile", "is_interactive": true},
+    "Option-B.dc.html": {"x": 0, "y": 850, "w": 1360, "h": 730, "title": "Option B: minus and plus on the tile", "is_interactive": true},
+    "Option-C.dc.html": {"x": 1440, "y": 850, "w": 1360, "h": 560, "title": "Option C: right in the tile", "is_interactive": true}
+  },
+  "order": ["Main.dc.html", "Option-A.dc.html", "Option-B.dc.html", "Option-C.dc.html"],
+  "notes": {},
+  "designSystems": []
+}

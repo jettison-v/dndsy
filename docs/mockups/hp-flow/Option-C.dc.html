@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Option C: right in the tile</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+<link rel="stylesheet" href="./hp.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 560px">
+  <div class="head">
+    <div class="num">Option C · no window at all</div>
+    <h1>Right in the tile</h1>
+    <p class="where"><b>Where you'll find it:</b> the Hit points tile on Battle, wider, with the box always there. Type a number and press Damage, Heal or Temp. There's no damage type, so resistances would wait for a roll's Apply to. Try it.</p>
+  </div>
+  <div class="screen" style="position: relative; height: 330px">
+    <div class="body">
+      <div class="row"><div><div class="row" style="justify-content: flex-start; gap: 8px"><div class="name">No Name</div><span class="cbadge conc" title="Concentrating on Hex" aria-hidden="true">◎</span></div><div class="sub">Monk 6 / Warlock 2</div></div><div class="tabs" style="width: 200px; flex: none"><b>Battle</b><span>Sheet</span><span>Plan</span></div></div>
+      <div class="numrow">
+        <div class="nums" style="grid-template-columns: minmax(0, 2.4fr) repeat(4, minmax(0, 1fr))">
+          <div class="inhp"><small>Hit points</small><span class="now"><b>{{ hp }}</b> / 75{{ tempText }}</span>
+            <form onSubmit="{{ damage }}"><input type="number" min="0" max="999" placeholder="0" aria-label="Amount" value="{{ amount }}" onChange="{{ setAmount }}"><button type="submit">Damage</button><button type="button" onClick="{{ heal }}">Heal</button><button type="button" onClick="{{ giveTemp }}">Temp</button></form>
+          </div>
+          <button type="button" class="numtile"><small>Armor class</small><span><b>17</b></span></button>
+          <button type="button" class="numtile"><small>Speed</small><span><b>45</b> ft</span></button>
+          <button type="button" class="numtile"><small>Initiative</small><span><b>+4</b></span></button>
+          <button type="button" class="numtile"><small>Spell DC</small><span><b>12</b> / +4</span></button>
+        </div>
+      </div>
+    </div>
+    <sc-if value="{{ card }}" hint-placeholder-val="{{ false }}"><div class="corner"><span>{{ card }}</span><div class="row" style="justify-content: flex-start"><button type="button" class="btn mini" onClick="{{ undo }}">Undo</button></div></div></sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":560}}'>
+class Component extends DCLogic {
+  state = { hp: 58, temp: 0, amount: '', card: '', before: null };
+  renderVals() {
+    const { hp, temp, amount, card, before } = this.state;
+    const n = Math.max(0, parseInt(amount, 10) || 0);
+    const done = (next, text) => this.setState({ before: { hp, temp }, amount: '', card: text, ...next });
+    return {
+      hp, amount, card, tempText: temp ? ' +' + temp : '',
+      setAmount: e => this.setState({ amount: e.target.value }),
+      damage: e => { e.preventDefault(); if (!n) return; const after = Math.max(0, hp - Math.max(0, n - temp)); done({ hp: after, temp: Math.max(0, temp - n) }, 'Took ' + n + '. ' + hp + ' → ' + after + '. Concentration on Hex: a DC ' + Math.min(30, Math.max(10, Math.floor(n / 2))) + ' Constitution save.'); },
+      heal: () => { if (!n) return; const after = Math.min(75, hp + n); done({ hp: after }, 'Healed ' + n + '. ' + hp + ' → ' + after + '.'); },
+      giveTemp: () => { if (!n) return; done({ temp: Math.max(temp, n) }, n + ' Temporary Hit Points.'); },
+      undo: () => this.setState({ ...before, card: '' }),
+    };
+  }
+}
+</script>
+</body>
+</html>

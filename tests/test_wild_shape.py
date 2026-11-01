@@ -337,17 +337,17 @@ def test_battle_shows_saves_for_the_normal_form_and_in_wild_shape(db, cole, play
     page = dm.get(f"/characters/{cole.id}/battle").text
     block = page[page.index('class="save-tiles"'):page.index('class="econ"')]
     assert block.count('role="listitem"') == 6 and block.count('class="st prof"') == 2  # Int and Wis
-    assert 'Con<span class="st-word"> save</span></small><b>+2</b>' in block and "to maintain Concentration · War Caster" in block
+    assert 'Con</small><b>+2</b>' in block and "to maintain Concentration · War Caster" in block
     assert "on every save against being charmed (Fey Ancestry)" in block
     player.post(f"/characters/{cole.id}/wild-shape", data={"form": "Polar Bear"}, headers=HX)
     page = dm.get(f"/characters/{cole.id}/battle").text
     block = page[page.index('class="ws-form"'):page.index('class="econ"')]
-    assert 'Con<span class="st-word"> save</span></small><b>+8</b>' in block  # by default everything is kept: Luckstone +1 too
+    assert 'Con</small><b>+8</b>' in block  # by default everything is kept: Luckstone +1 too
     cole.wild_shape_keep = []  # the player unticks everything
     db.flush()
     page = dm.get(f"/characters/{cole.id}/battle").text
     block = page[page.index('class="ws-form"'):page.index('class="econ"')]
-    assert block.count('role="listitem"') == 6 and 'Con<span class="st-word"> save</span></small><b>+7</b>' in block  # bear's Con +3, Increased Toughness +4
+    assert block.count('role="listitem"') == 6 and 'Con</small><b>+7</b>' in block  # bear's Con +3, Increased Toughness +4
     assert "War Caster" in block and "Fey Ancestry" not in block
 
 

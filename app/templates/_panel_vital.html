@@ -33,6 +33,8 @@
     <h3>How walking speed adds up</h3>
     {{ sum(sp.parts or [("Walking", sp.walk)], sp.walk, " ft") }}{% for n in sp.notes or [] %}<p class="note">{{ n }}</p>{% endfor %}
     {% set extra = sp.items() | rejectattr(0, "in", ["walk", "parts", "notes"]) | list %}
+    <h3>With Dash</h3>
+    <dl class="mech"><dt>Dash</dt><dd>{{ sp.walk * 2 }} ft this turn</dd>{% if bonus_dash %}<dt>Dash and {{ bonus_dash }}</dt><dd>{{ sp.walk * 3 }} ft this turn</dd>{% endif %}</dl>
     {% if extra %}<h3>Other speeds</h3><dl class="mech">{% for k, v in extra %}<dt>{{ k | capitalize }}</dt><dd>{{ v }} ft</dd>{% endfor %}</dl>{% endif %}
     <h3>What it means</h3>
     {{ explain("How far you can move on your turn, and you can split it up around your action. The Dash action gives you extra movement equal to your Speed. Difficult Terrain costs 1 extra foot per foot, and being Grappled or Restrained makes it 0.") }}

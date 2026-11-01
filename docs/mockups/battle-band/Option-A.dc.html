@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Option A: numbers in the name row</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 730px">
+  <div class="head">
+    <div class="num">Option A · 3 rows above the columns</div>
+    <h1>Numbers in the name row</h1>
+    <p class="where"><b>Where you'll find it:</b> Battle on a computer. The numbers move up beside your name, and saves share a line with your resources. Press a number or the star to try them.</p>
+  </div>
+  <div class="screen edge" style="position: relative; height: 540px">
+    <div class="body">
+      <div class="row">
+        <div style="flex: none"><div class="row" style="justify-content: flex-start; gap: 8px"><div class="name">No Name</div><span class="cbadge conc" title="Concentrating on Hex" aria-hidden="true">◎</span><span class="cbadge pois" title="Poisoned" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c4 5 7 9 7 13a7 7 0 0 1-14 0c0-4 3-8 7-13z"></path></svg></span><span class="btn mini" aria-label="Open No Name on D&amp;D Beyond">↗</span></div><div class="sub">Monk 6 / Warlock 2</div></div>
+        <span class="row" style="gap: 6px; justify-content: flex-start; flex: 1">
+          <button type="button" class="stat big">75 HP</button>
+          <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+            <span class="stat-wrap"><button type="button" class="stat" onClick="{{ s.pick }}">{{ s.label }} <b>{{ s.value }}</b></button>
+              <sc-if value="{{ s.open }}" hint-placeholder-val="{{ false }}">
+                <div class="win pop" role="dialog" aria-label="{{ s.title }}">
+                  <div class="row"><h3>{{ s.title }}</h3><button type="button" class="btn mini" aria-label="Close" onClick="{{ s.pick }}">✕</button></div>
+                  <sc-for list="{{ s.rows }}" as="r" hint-placeholder-count="3"><div class="row {{ r.kind }}"><span>{{ r.label }}</span><span>{{ r.value }}</span></div></sc-for>
+                  <div class="sub">{{ s.note }}</div>
+                </div>
+              </sc-if></span>
+          </sc-for>
+          <sc-if value="{{ insp }}" hint-placeholder-val="{{ true }}">
+            <button type="button" class="stat star gold" aria-label="Heroic Inspiration: you have it" title="Heroic Inspiration: you have it" onClick="{{ toggleInsp }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.8 5.8 6.2.9-4.5 4.4 1.1 6.3L12 17.5l-5.6 3 1.1-6.3L3 9.7l6.2-.9z"></path></svg>Insp.</button>
+          </sc-if>
+          <sc-if value="{{ noInsp }}" hint-placeholder-val="{{ false }}">
+            <button type="button" class="stat star" aria-label="Heroic Inspiration: you don't have it" title="Heroic Inspiration: you don't have it" onClick="{{ toggleInsp }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.8 5.8 6.2.9-4.5 4.4 1.1 6.3L12 17.5l-5.6 3 1.1-6.3L3 9.7l6.2-.9z"></path></svg>Insp.</button>
+          </sc-if>
+        </span>
+        <div class="tabs" style="width: 200px; flex: none"><b>Battle</b><span>Sheet</span><span>Plan</span></div>
+      </div>
+      <div class="row" style="gap: 6px; justify-content: flex-start">
+        <button type="button" class="stat">Str <b>+4</b></button><button type="button" class="stat">Dex <b>+7</b></button><button type="button" class="stat">Con <b>+2</b></button><button type="button" class="stat">Int <b>+0</b></button><button type="button" class="stat">Wis <b>+3</b></button><button type="button" class="stat">Cha <b>+1</b></button>
+        <span class="sep" aria-hidden="true"></span>
+        <button type="button" class="stat">Focus <span class="dots"><i></i><i></i><i></i><i></i><i></i><i></i></span></button><button type="button" class="stat">Luck <span class="dots"><i></i><i></i><i></i></span></button>
+        <span class="row" style="gap: 6px; margin-left: auto"><button type="button" class="cond on conc" aria-label="Concentrating on Hex">◎ Hex</button><button type="button" class="cond on pois">Poisoned <small>2 rounds</small></button><button type="button" class="stat">Rest</button><button type="button" class="stat">+ Condition</button></span>
+      </div>
+      <div class="spellbar"><button type="button" class="btn mini">Spell Book</button><span>Pact 1st</span><span class="dots"><i></i><i></i></span><span class="row" style="gap: 6px; margin-left: auto"><span class="note">Pinned</span><button type="button" class="stat">Eldritch Blast</button><button type="button" class="stat">Hex</button></span></div>
+      <div class="cols">
+        <div class="col"><h4 class="a">Action</h4><div>Unarmed Strike <span class="note">+7</span></div><div>Eldritch Blast <span class="note">+4</span></div><div>Quarterstaff <span class="note">+7</span></div><div>Dash, Disengage, Dodge, Help, Hide</div><div>Ready, Search, Study, Utilize</div><div>See all actions</div></div>
+        <div class="col"><h4 class="b">Bonus Action</h4><div>Flurry of Blows</div><div>Step of the Wind</div><div>Patient Defense</div><div>Unarmed Strike <span class="note">+7</span></div><div>Hex</div><div>See all bonus actions</div></div>
+        <div class="col"><h4 class="r">Reaction</h4><div>Deflect Attacks</div><div>Opportunity Attack</div><div>Slow Fall</div><div>See all reactions</div></div>
+      </div>
+    </div>
+    <div class="fold abs"><span>A laptop's first screen ends about here</span></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":730}}'>
+class Component extends DCLogic {
+  state = { open: '', insp: true };
+  renderVals() {
+    const { open, insp } = this.state;
+    const stats = [
+      { id: 'ac', label: 'AC', value: '17', title: 'Armor Class', note: 'Unarmored Defense (Monk): while you wear no armor and hold no Shield.', rows: [{ label: 'Base', value: '10' }, { label: 'Dexterity', value: '+4' }, { label: 'Wisdom', value: '+3' }, { label: 'Armor Class', value: '17', kind: 'sum' }] },
+      { id: 'speed', label: 'Speed', value: '45 ft', title: 'Speed', note: 'Dash adds your Speed again for this turn.', rows: [{ label: 'Base', value: '30 ft' }, { label: 'Unarmored Movement (Monk 6)', value: '+15 ft' }, { label: 'Speed', value: '45 ft', kind: 'sum' }, { label: 'With Dash', value: '90 ft', kind: 'sum' }, { label: 'Dash and Step of the Wind', value: '135 ft' }] },
+      { id: 'init', label: 'Init', value: '+4', title: 'Initiative', note: 'Rolled when a fight starts.', rows: [{ label: 'Dexterity', value: '+4' }, { label: 'Initiative', value: '+4', kind: 'sum' }] },
+      { id: 'dc', label: 'Spell DC', value: '12', title: 'Spell DC and attack', note: 'Spell attack: Proficiency Bonus + Charisma.', rows: [{ label: 'Base', value: '8' }, { label: 'Proficiency Bonus', value: '+3' }, { label: 'Charisma (Warlock)', value: '+1' }, { label: 'Spell save DC', value: '12', kind: 'sum' }, { label: 'Spell attack', value: '+4' }] },
+    ].map(s => ({ ...s, open: open === s.id, pick: () => this.setState({ open: open === s.id ? '' : s.id }) }));
+    return { stats, insp, noInsp: !insp, toggleInsp: () => this.setState({ insp: !insp }) };
+  }
+}
+</script>
+</body>
+</html>

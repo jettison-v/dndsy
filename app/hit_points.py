@@ -302,14 +302,15 @@ def _page(request: Request, db: Session, ch: Character, template: str, mode: str
 
 
 @router.get("/characters/{character_id:int}/hp")
-def window(request: Request, character_id: int, roll: int = 0, mode: str = "damage", db: Session = Depends(get_db)):
-    """The hit points window, filled in from a Table rolls entry (Apply to …) or empty (Hit points itself)."""
+def window(request: Request, character_id: int, roll: int = 0, mode: str = "damage", quick: int = 0, db: Session = Depends(get_db)):
+    """The hit points window, filled in from a Table rolls entry (Apply to …) or empty (Hit points itself); `quick`: the
+    small one from − and + on Battle's tile."""
     ch, _ = _guard(db, request, character_id)
     r = _roll(db, roll, ch)
     m, parts, source = from_roll(db, r)
     if not m:
         m, parts = (mode if mode in MODES else "damage"), [{"amount": 0, "type": ""}]
-    return _page(request, db, ch, "_hp_window.html", m, parts, set(), None, r, source, _crit(r))
+    return _page(request, db, ch, "_hp_quick.html" if quick else "_hp_window.html", m, parts, set(), None, r, source, _crit(r))
 
 
 def make(db: Session, ch: Character, user: dict, r: TableRoll | None, mode: str, w: dict) -> str:

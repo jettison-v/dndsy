@@ -94,7 +94,7 @@ def test_tap_targets_on_a_phone(people, server):
     small = []
     for path in (f"/characters/{server['cole']}/battle", f"/characters/{server['cole']}", "/party", "/help"):
         player.open(path)
-        small += player.page.evaluate("""(path) => [...document.querySelectorAll('.btn, .roll-chip, .roll-hit, .res-go, .rs-toggle, .live-pill, .help-btn, .chip, .ls-chip, .ws-chip, .spell-chip')]
+        small += player.page.evaluate("""(path) => [...document.querySelectorAll('.btn, .roll-chip, .roll-hit, .res-go, .rs-toggle, .hp-btn, .live-pill, .help-btn, .chip, .ls-chip, .ws-chip, .spell-chip')]
           .map(e => [path, e.className, e.offsetHeight]).filter(([, , h]) => h && h < 36)""", path)
     assert not small, small
 

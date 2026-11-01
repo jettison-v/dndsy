@@ -1,0 +1,5 @@
+{# The hit points window from − and + on Battle's Hit points tile, inside the roll window (app.js "using an item";
+   Brett, 2026-11-01, docs/mockups/hp-flow/ Option B): ready to type in, Enter takes it. #}
+<button type="button" class="rp-x" aria-label="Close">×</button>
+<div class="rw-title">{{ c.name }} <span class="roll-sub">{{ hp.current }} of {{ hp.max }}{% if hp.temp %} · {{ hp.temp }} temp{% endif %}{% if w.form %} · {{ w.form.beast.name }}{% endif %}</span></div>
+<div class="hp-win">{% include "_hp_form.html" %}</div>

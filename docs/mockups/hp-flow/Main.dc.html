@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Today's Hit Points flow</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+<link rel="stylesheet" href="./hp.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 430px">
+  <div class="head">
+    <div class="num">Today · 5 steps across 2 windows</div>
+    <h1>Changing Hit Points without a roll</h1>
+    <p class="where"><b>Where you'll find it:</b> the Hit points tile at the top of Battle. This is for damage with no roll to apply, like a trap. Apply to, on a roll in Table rolls, already goes straight to step 3.</p>
+  </div>
+  <div class="steps">
+    <div class="stepbox"><span class="n">Step 1</span><b>Click the Hit points tile</b><span class="note">A side panel opens that mostly explains the number.</span></div>
+    <div class="stepbox"><span class="n">Step 2</span><b>Find Damage, Heal or Temporary HP</b><span class="note">Three buttons at the top of that panel. Nothing on the tile says they're there.</span></div>
+    <div class="stepbox"><span class="n">Step 3</span><b>A second window opens</b><span class="note">It asks Damage, Heal or Temporary HP again.</span></div>
+    <div class="stepbox"><span class="n">Step 4</span><b>Type the number, pick a type</b><span class="note">The working appears here.</span></div>
+    <div class="stepbox"><span class="n">Step 5</span><b>Take it</b><span class="note">The corner card says what changed.</span></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":430}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

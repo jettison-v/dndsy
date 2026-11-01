@@ -185,6 +185,11 @@ body.no-bridge:not(.bridge-elsewhere) .live-pill[data-wants-bridge] .live-ago { 
 .cast-go > .btn:only-child { margin-left: auto; }
 .cond-rest { display: inline-flex; align-items: center; min-height: var(--chip-h); padding: 0 var(--sp-3); background: var(--surface-2); border: 1px dashed var(--line); border-radius: var(--r-pill); color: var(--muted); font: inherit; font-size: var(--fs-sm); cursor: pointer; }
 .cond-rest:hover { color: var(--text); border-color: var(--muted); }
+.res-row > .cond-rest { margin-left: auto; }  /* Rest ends Resources, at the far right */
+.res-row .res-insp { display: inline-flex; align-items: center; gap: var(--sp-1); color: var(--faint); cursor: pointer; }
+.res-insp:hover { color: var(--text); }
+.res-insp.on { color: var(--amber); font-weight: 600; }
+.status-phone { display: none; }
 /* Party's rows, while a fight runs (Brett, 2026-10-31, docs/mockups/usability/) */
 .pt-view { display: inline-flex; gap: 2px; padding: 2px; margin-bottom: var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); }
 .pt-view button { min-height: var(--control-h-sm); padding: 0 var(--sp-3); background: none; border: 0; border-radius: var(--r-sm); color: var(--muted); font: inherit; font-size: var(--fs-sm); cursor: pointer; }
@@ -843,6 +848,7 @@ details.faq[open] > summary::before { transform: rotate(90deg); }
 .res-go:hover { color: var(--amber); }
 .tile-short { display: none; }
 @media (max-width: 640px) { .tile-full { display: none; } .tile-short { display: inline; } }  /* Battle's tiles are narrow on a phone: the whole label would be cut off */
+@container battle-head (max-width: 1000px) { .tile-full { display: none; } .tile-short { display: inline; } }
 @media (max-width: 640px) { .res-row { flex-direction: column; align-items: flex-start; } .res-row .res { padding: 0; border-left: none; } }  /* each on its own line: a divider there only marks the wrap */
 .res-label { color: var(--faint); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .05em; margin-right: 12px; }
 /* What an option uses up, next to it */
@@ -1185,7 +1191,22 @@ a.sheet-ref { text-decoration-style: dotted; }
 
 /* Battle header (Brett, 2026-10-19): the Character page's number strip and ability-card look, kept
    tight because the bar is sticky. Saves are one row of six tiles the same width as the strip. */
-.battle-head { margin-top: 8px; }
+/* Battle's numbers and saves in one row (Brett, 2026-11-01, docs/mockups/battle-band/ Option E): the numbers share the room
+   left, the saves stay stacked to the right of a line. When the row runs short, by its own width (Table rolls open, a
+   half-screen window), the saves drop under the numbers. Phones have their own order below. */
+.battle-head { margin-top: 8px; container: battle-head / inline-size; display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: var(--sp-2) var(--sp-3); }
+.battle-head > .strip.compact { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: var(--sp-2); margin: 0; }
+.battle-head > .strip.compact > div { display: flow-root; align-content: center; }
+.battle-head > .save-tiles { grid-template-columns: repeat(3, 1fr); gap: var(--sp-1) 6px; padding-left: var(--sp-3); border-left: 1px solid var(--line); }
+.battle-head .st { padding: 3px 8px; gap: 6px; align-items: center; }
+.battle-head .st b { font-size: var(--fs-md); }
+.battle-head .st .adv-badge { position: static; order: 1; background: none; }
+.battle-head .st b { order: 2; }
+.battle-head > .save-all { grid-column: 1 / -1; margin: 0; }
+@container battle-head (max-width: 760px) {
+  .battle-head > .save-tiles { grid-column: 1 / -1; grid-template-columns: repeat(6, minmax(0, 1fr)); padding-left: 0; border-left: none; }
+  .battle-head > .strip.compact { grid-column: 1 / -1; }
+}
 .strip.compact { grid-template-columns: repeat(6, minmax(0, 1fr)); margin-bottom: 10px; }
 .strip.compact small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 640px) { .strip.compact { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
@@ -1198,7 +1219,7 @@ a.sheet-ref { text-decoration-style: dotted; }
 .st.prof small::before { content: "● "; color: var(--green); font-size: var(--fs-xs); }
 .st b { font-size: var(--fs-lg); font-variant-numeric: tabular-nums; margin-left: auto; }
 .st .adv-badge { position: absolute; top: -12px; right: 8px; font-size: var(--fs-xs); padding: 0 4px; line-height: 1.35; background: var(--bg); }
-.save-tiles .save-all { grid-column: 1 / -1; margin: 0; }
+.save-all { margin: 6px 0 0; }
 .ws-form .save-tiles { margin-top: 8px; }
 @media (max-width: 640px) { .save-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 640px) {
@@ -1208,7 +1229,6 @@ a.sheet-ref { text-decoration-style: dotted; }
   .strip.compact b { font-size: var(--fs-lg); }
   .save-tiles { gap: 6px; }
   .st { padding: 5px 8px; gap: 4px; }
-  .st-word { display: none; }
 }
 
 /* Rolls (app.js): private dice rolls. Roll buttons look like the numbers they roll. */
@@ -2450,6 +2470,11 @@ body:not(.br-ext) .br-ext-on, body.br-ext .br-ext-off { display: none; }
 .hp-blocked { display: grid; gap: var(--sp-1); border: 1px solid var(--red); background: var(--red-soft); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); font-size: var(--fs-sm); margin: 0; }
 .hp-go { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
 .hp-open { margin-bottom: var(--sp-3); }
+.hp-btns { float: right; display: flex; gap: var(--sp-1); margin: 4px 0 0 var(--sp-2); }  /* − and + on Battle's tile (Brett, 2026-11-01, docs/mockups/hp-flow/ Option B): the rest of the tile still explains it */
+.hp-btn { display: grid; place-items: center; width: var(--chip-h); height: var(--chip-h); padding: 0; border: 1px solid var(--line-strong); border-radius: var(--r-sm); background: var(--surface-2); color: var(--text-strong); font: 700 var(--fs-md)/1 var(--sans); cursor: pointer; }
+.hp-btn:hover, .hp-btn:focus-visible { color: var(--amber); border-color: var(--amber); }
+.roll-win .hp-win .peek-close, .roll-win .hp-working > .note { display: none; }
+.roll-win .hp-win { margin-top: var(--sp-2); }
 /* In Table rolls: who a hit was applied to, the Concentration save it asks for, Apply to … */
 .roll-applied { display: block; margin-top: 6px; color: var(--green); font-size: var(--fs-xs); }
 .roll-conc { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; padding: 6px 8px; border: 1px solid var(--amber); background: var(--amber-soft); border-radius: var(--r-md); font-size: var(--fs-xs); color: var(--text); }
@@ -2462,18 +2487,23 @@ body:not(.br-ext) .br-ext-on, body.br-ext .br-ext-off { display: none; }
 @media (max-width: 640px) {
   .battlebar { display: flex; flex-direction: column; }
   .battlebar > * { order: 1; }
+  .battle-head { display: block; }
+  .battle-head > .strip.compact { grid-auto-flow: row; grid-template-columns: repeat(6, minmax(0, 1fr)); margin-bottom: 6px; }
+  .battle-head > .save-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 0; border: none; }
+  .battle-head .st .adv-badge { position: absolute; order: 0; background: var(--bg); }
+  .status-phone { display: contents; }
+  .status-phone .res-insp { display: inline-flex; align-items: center; gap: var(--sp-1); min-height: var(--chip-h); padding: 0 var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--surface-2); color: var(--muted); font-size: var(--fs-sm); }
+  .status-phone .res-insp.on { color: var(--amber); border-color: var(--amber); }
   .battlebar > .res-more { order: 2; display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: var(--control-h-sm); margin-top: var(--sp-2); padding: 0 var(--sp-3); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--text); font: inherit; cursor: pointer; }
   .battlebar > .res-row { order: 3; display: none; margin: var(--sp-2) 0 0; }
   body.res-open .battlebar > .res-row { display: flex; }
   .battlebar > .res-more + .res-row { margin: var(--sp-2) 0 0; }
   .battlebar > .res-row .res-label { display: none; }
   .res-group { padding: 0; border-left: none; }
-  .battle-head .strip.compact { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-  .battle-head .strip.compact > div { grid-column: span 2; }
+  .battle-head .strip.compact > div { grid-column: span 3; }
   .battle-head .strip.compact > div:first-child { grid-column: 1 / -1; }
   .battle-head .strip.compact > div:first-child b { font-size: var(--fs-xl); }
-  .battle-head .strip.compact > div:nth-child(n+5) { grid-column: span 3; }
-  .battle-head .strip.compact > div:nth-child(5):last-child { grid-column: 1 / -1; }
+  .battle-head .strip.compact > div:nth-child(4):last-child { grid-column: 1 / -1; }
 }
 
 /* Tap targets on a phone (DESIGN.md › Principles 8): what can grow, grows; what sits among words keeps its size and takes

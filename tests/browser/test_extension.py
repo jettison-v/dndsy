@@ -113,6 +113,26 @@ def test_cast_spends_through_the_window_and_undo_takes_it_back(chrome, server):
     page.locator("#cards > .card", has_text="left").nth(1).wait_for(timeout=5000)
 
 
+def test_minus_on_hit_points_is_click_type_enter(chrome, server):
+    """Brett, 2026-11-01 (docs/mockups/hp-flow/ Option B): − opens the window ready to type in, and Enter takes it."""
+    page = chrome.pages[0]
+    page.goto(f"{server['base']}/characters/{server['cole']}/battle")
+    page.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=8000)
+    sheet = chrome.new_page()
+    sheet.goto(SHEET)
+    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected')", timeout=45000)
+    page.bring_to_front()
+    page.click(".hp-btn[aria-label=Damage]")
+    field = page.locator(".roll-win input[name=amount]")
+    field.wait_for(timeout=5000)
+    assert page.evaluate("document.activeElement.name") == "amount"  # ready to type
+    page.keyboard.type("5")
+    page.locator(".roll-win .hp-go button[type=submit]:not([disabled])").wait_for(timeout=5000)
+    page.keyboard.press("Enter")
+    page.locator("#cards > .card", has_text="took 5").wait_for(timeout=5000)  # the corner card: the window's close mustn't lose it
+    page.wait_for_function("!document.querySelector('.roll-win input[name=amount]')", timeout=5000)
+
+
 def test_cast_and_roll_is_one_step_and_the_roll_stays_the_players(chrome, server):
     """Brett, 2026-10-31 (docs/mockups/usability/): the slot is spent and the roll opens, at the table by default."""
     page = chrome.pages[0]
