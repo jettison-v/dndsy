@@ -57,6 +57,7 @@ def _view(db: Session, ch: Character, user: dict) -> dict:
         "picks": mine,
         "can_pick": picks.can_edit(db, user, ch),
         "can_use": picks.can_edit(db, user, ch) and ddb_bridge.on_for(db, ch),  # an item's button (app/item_use.py)
+        "can_change_hp": ddb_bridge.on_for(db, ch) and hit_points.can_apply(db, user, ch),  # − and + on Battle's Hit points tile
         "can_play": picks.can_edit(db, user, ch) and ddb_bridge.plays(db, ch),  # Cast, resources, rests (the VTT piece live_state)
         "show_picks": picks.can_see(user, ch),
         "reminders": views.reminders(sheet, mine["remind"], mine["order"].get("forget"), mine["notes"]) if sheet else [],
@@ -407,6 +408,7 @@ def brief(request: Request, character_id: int, db: Session = Depends(get_db)):
     return templates.TemplateResponse(request, "_brief.html", _view(db, ch, user))
 
 
+DASH_AS_BONUS = ("Step of the Wind", "Cunning Action")  # features that Dash as a Bonus Action
 VITALS = {"hp": "Hit Points", "ac": "Armor Class", "speed": "Speed", "initiative": "Initiative", "spell": "Spell save DC and attack",
           "inspiration": "Heroic Inspiration", "proficiency": "Proficiency Bonus", "perception": "Passive Perception"}
 
@@ -424,9 +426,10 @@ def vital_panel(request: Request, character_id: int, kind: str, db: Session = De
         return HTMLResponse("", status_code=404)
     gives = [f for f in s.get("features") or [] if "Heroic Inspiration" in (f.get("text") or "")] if kind == "inspiration" else []
     perception = next((k for k in s.get("skills") or [] if k["name"] == "Perception"), None)
+    bonus_dash = next((n for n in DASH_AS_BONUS if any(a.get("name") == n for a in s.get("actions") or [])), None)
     return templates.TemplateResponse(request, "_panel_vital.html", {
         **ctx, "kind": "skill" if skill else kind, "title": f"{skill['name']} ({skill['ability']})" if skill else VITALS[kind],
-        "skill": skill, "gives": gives, "perception": perception,
+        "skill": skill, "gives": gives, "perception": perception, "bonus_dash": bonus_dash,
         "hp_change": kind == "hp" and ddb_bridge.on_for(db, ch) and hit_points.can_apply(db, user, ch),
         "underline": terms.underlined(_overrides(db))})
 

@@ -94,3 +94,62 @@ table.track tr.now td:first-child { color: var(--amber); }
 .stat:hover { border-color: var(--muted); }
 .stat.big { font-size: 16px; font-weight: 700; color: var(--strong); }
 .stat.gold { color: var(--amber); border-color: var(--amber); }
+/* Heroic Inspiration: a star, filled and gold when you have it, hollow and grey when you don't */
+.stat.star svg { display: block; flex: none; }
+/* How a number adds up: a small window under its chip */
+.stat-wrap { position: relative; display: inline-flex; }
+.win.pop { position: absolute; top: 100%; left: 0; margin-top: 6px; z-index: 5; width: 330px; gap: 8px; color: var(--text); font-size: 13px; white-space: normal; }
+.win.pop .sum { border-top: 1px solid var(--line-strong); padding-top: 8px; }
+.win.pop b, .win.pop .sum span { color: var(--strong); font-weight: 700; }
+.win.pop .sub { font-size: 12px; }
+/* What a character is under: Concentration first, then each condition in its own colour, a badge after the name, and the page's edge */
+.cond.on { min-height: 28px; font: 500 13px/1.2 var(--sans); padding: 2px 10px; color: var(--text); cursor: pointer; }
+.cond.conc { border-color: #7ea6e0; background: rgba(126, 166, 224, .14); }
+.cond.pois { border-color: #86c95b; background: rgba(134, 201, 91, .14); }
+.cond small { color: var(--muted); font-size: 12px; }
+.cbadge { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1px solid; font-size: 13px; line-height: 1; flex: none; }
+.cbadge.conc { color: #7ea6e0; background: rgba(126, 166, 224, .14); }
+.cbadge.pois { color: #86c95b; background: rgba(134, 201, 91, .14); }
+.screen.edge { border: 2px solid; border-image: linear-gradient(90deg, #7ea6e0, #86c95b) 1; border-radius: 0; }
+.rail .cond.on { width: 100%; justify-content: space-between; }
+/* Option D: the key numbers large by the name, the rest one row of tiles */
+.keytile { display: grid; grid-template-columns: auto auto; justify-content: start; align-items: baseline; column-gap: 3px; min-width: 104px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 8px; padding: 5px 12px; color: var(--muted); font: 500 14px/1.2 var(--sans); text-align: left; cursor: pointer; }
+.keytile small { grid-column: 1 / -1; font-size: 12px; }
+.keytile b { color: var(--strong); font-size: 24px; line-height: 1.15; }
+.keytile.hp { min-width: 132px; }
+.keytile:hover, .mini-tile:hover { border-color: var(--muted); }
+.tile-row { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 6px; }
+.tile-row .stat-wrap { display: flex; }
+.mini-tile { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; color: var(--muted); font: 500 13px/1.2 var(--sans); white-space: nowrap; cursor: pointer; }
+.mini-tile small { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; }
+.mini-tile b { color: var(--strong); font-size: 16px; }
+.mini-tile.star { justify-content: center; }
+.mini-tile.gold { color: var(--amber); border-color: var(--amber); }
+.prof { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: block; }
+/* Option E: one row, the numbers taking the room and the saves stacked to the right of a divider */
+.numrow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: stretch; }
+.nums { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; min-width: 0; }
+.nums .stat-wrap { display: flex; min-width: 0; }
+.numtile { display: grid; align-content: center; gap: 1px; width: 100%; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; color: var(--muted); font: 500 14px/1.2 var(--sans); text-align: left; white-space: nowrap; cursor: pointer; }
+.numtile small { font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+.numtile b { color: var(--strong); font-size: 22px; line-height: 1.2; }
+.numtile:hover { border-color: var(--muted); }
+.numsep { width: 1px; background: var(--line-strong); }
+.saves6 { display: grid; grid-template-columns: repeat(3, 78px); gap: 6px; }
+.saves6 .mini-tile { padding: 5px 8px; }
+.win.pop.end { left: auto; right: 0; }
+/* The three options */
+.sep { width: 1px; height: 20px; background: var(--line-strong); flex: none; margin: 0 4px; }
+.fold.abs { position: absolute; left: 16px; right: 16px; top: 470px; }
+.fold.abs span { background: var(--bg); padding-right: 8px; }
+.rail { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.rail .stat { width: 100%; justify-content: space-between; }
+.rail .stat-wrap { display: flex; }
+.rail .win.pop { top: 0; left: auto; right: 100%; margin: 0 6px 0 0; }
+.rail .lbl { margin-top: 4px; }
+.rail-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.rail-three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.rail-three .stat { padding-inline: 6px; }
+.hpbox { background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 8px; padding: 8px 10px; display: flex; align-items: baseline; justify-content: space-between; color: var(--muted); font: 500 13px/1.2 var(--sans); cursor: pointer; }
+.hpbox b { color: var(--strong); font-size: 24px; }
+.col .head-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }

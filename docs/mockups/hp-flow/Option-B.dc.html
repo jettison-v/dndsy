@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Option B: minus and plus on the tile</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+<link rel="stylesheet" href="./hp.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 730px">
+  <div class="head">
+    <div class="num">Option B · press − or +, type, Enter</div>
+    <h1>Minus and plus on the tile</h1>
+    <p class="where"><b>Where you'll find it:</b> the Hit points tile on Battle. − opens the window on Damage and + on Heal, and the rest of the tile still explains the number, like every other tile. Press − or + to try it.</p>
+  </div>
+  <div class="screen" style="position: relative; height: 500px">
+    <div class="body">
+      <div class="row"><div><div class="row" style="justify-content: flex-start; gap: 8px"><div class="name">No Name</div><span class="cbadge conc" title="Concentrating on Hex" aria-hidden="true">◎</span></div><div class="sub">Monk 6 / Warlock 2</div></div><div class="tabs" style="width: 200px; flex: none"><b>Battle</b><span>Sheet</span><span>Plan</span></div></div>
+      <div class="numrow">
+        <div class="nums">
+          <span class="stat-wrap"><button type="button" class="numtile tall"><small>Hit points</small><span><b>{{ hp }}</b> / 75{{ tempText }}</span></button>
+            <span class="tile-btns"><button type="button" aria-label="Damage" title="Damage" onClick="{{ openDamage }}">−</button><button type="button" aria-label="Heal" title="Heal" onClick="{{ openHeal }}">+</button></span>
+            <sc-if value="{{ open }}" hint-placeholder-val="{{ false }}">
+              <div class="win pop" role="dialog" aria-label="Hit points">
+                <div class="row"><h3>Hit points</h3><button type="button" class="btn mini" aria-label="Close" onClick="{{ close }}">✕</button></div>
+                <form class="hpform" onSubmit="{{ take }}">
+                  <div class="hpseg" role="group" aria-label="What happens"><sc-for list="{{ modes }}" as="m" hint-placeholder-count="3"><button type="button" class="{{ m.cls }}" onClick="{{ m.pick }}">{{ m.label }}</button></sc-for></div>
+                  <input class="hpinput" type="number" min="0" max="999" placeholder="0" aria-label="Amount" autoFocus="{{ yes }}" value="{{ amount }}" onChange="{{ setAmount }}">
+                  <sc-if value="{{ isDamage }}" hint-placeholder-val="{{ true }}"><select class="hpselect" aria-label="Damage type"><option>Type not known</option><option>Bludgeoning</option><option>Fire</option><option>Force</option><option>Necrotic</option><option>Piercing</option><option>Poison</option><option>Slashing</option></select></sc-if>
+                  <div class="hpsum"><span>Hit points</span><b>{{ hp }} → {{ after }}</b></div>
+                  <sc-if value="{{ concDc }}" hint-placeholder-val="{{ false }}"><div class="hpnote">Concentration on Hex: a DC {{ concDc }} Constitution save.</div></sc-if>
+                  <button type="submit" class="btn main">{{ takeLabel }}</button>
+                </form>
+              </div>
+            </sc-if></span>
+          <button type="button" class="numtile"><small>Armor class</small><span><b>17</b></span></button>
+          <button type="button" class="numtile"><small>Speed</small><span><b>45</b> ft</span></button>
+          <button type="button" class="numtile"><small>Initiative</small><span><b>+4</b></span></button>
+          <button type="button" class="numtile"><small>Spell DC</small><span><b>12</b> / +4</span></button>
+        </div>
+      </div>
+    </div>
+    <sc-if value="{{ card }}" hint-placeholder-val="{{ false }}"><div class="corner"><span>{{ card }}</span><div class="row" style="justify-content: flex-start"><button type="button" class="btn mini" onClick="{{ undo }}">Undo</button></div></div></sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":730}}'>
+class Component extends DCLogic {
+  state = { hp: 58, temp: 0, mode: 'damage', amount: '', open: false, card: '', before: null };
+  renderVals() {
+    const { hp, temp, mode, amount, open, card, before } = this.state;
+    const n = Math.max(0, parseInt(amount, 10) || 0);
+    const hit = Math.max(0, n - temp);
+    const after = mode === 'damage' ? Math.max(0, hp - hit) : mode === 'heal' ? Math.min(75, hp + n) : hp;
+    const concDc = mode === 'damage' && n ? Math.min(30, Math.max(10, Math.floor(n / 2))) : 0;
+    const takeLabel = !n ? 'Enter a number' : mode === 'damage' ? 'Take ' + n : mode === 'heal' ? 'Heal ' + n : 'Set ' + n + ' temporary';
+    return {
+      hp, after, amount, open, card, concDc, takeLabel, yes: true, isDamage: mode === 'damage', tempText: temp ? ' +' + temp : '',
+      openDamage: () => this.setState({ open: true, mode: 'damage', amount: '' }), openHeal: () => this.setState({ open: true, mode: 'heal', amount: '' }), close: () => this.setState({ open: false }),
+      setAmount: e => this.setState({ amount: e.target.value }),
+      modes: [['damage', 'Damage'], ['heal', 'Heal'], ['temp', 'Temporary HP']].map(([id, label]) => ({ label, cls: mode === id ? 'on' : '', pick: () => this.setState({ mode: id }) })),
+      take: e => { e.preventDefault(); if (!n) return;
+        this.setState({ before: { hp, temp }, hp: after, temp: mode === 'damage' ? Math.max(0, temp - n) : mode === 'temp' ? Math.max(temp, n) : temp, open: false, amount: '',
+          card: mode === 'damage' ? 'Took ' + n + '. ' + hp + ' → ' + after + '. Concentration on Hex: a DC ' + concDc + ' Constitution save.' : mode === 'heal' ? 'Healed ' + n + '. ' + hp + ' → ' + after + '.' : n + ' Temporary Hit Points.' }); },
+      undo: () => this.setState({ ...before, card: '' }),
+    };
+  }
+}
+</script>
+</body>
+</html>

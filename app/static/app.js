@@ -2081,13 +2081,16 @@
   // the window's Drink, Read, Use or Give makes it. A heal is thrown and logged as a roll is.
   function openUse(btn) {
     const w = openWin(btn);
-    w.setAttribute('aria-label', btn.textContent.trim());
+    w.setAttribute('aria-label', btn.getAttribute('aria-label') || btn.textContent.trim());
     w._use = btn.dataset.useUrl;
     fetch(w._use, { headers: { 'X-Requested-With': 'fetch' } })
       .then(r => { if (!r.ok) throw new Error(); return r.text(); })
-      .then(html => { if (win === w) { w.innerHTML = html; place(w, btn); } })
+      .then(html => { if (win === w) { w.innerHTML = html; if (window.htmx) htmx.process(w); place(w, btn); w.querySelector('[autofocus]')?.focus(); } })
       .catch(() => { if (win === w) showFailure(w, "Couldn't reach askdnd.", () => openUse(btn)); });
   }
+  // The hit points window in it: its working redraws as you type, and taking it closes it
+  document.body.addEventListener('htmx:afterSwap', e => { if (win && win.contains(e.target)) place(win); });
+  document.body.addEventListener('closePanel', () => setTimeout(() => { if (win && win.querySelector('.hp-form')) closeWin(); }));  // (after the answer's other events: they start from the form)
   function posted(url, fields) {
     return fetch(url, { method: 'POST', body: new URLSearchParams(fields), headers: { 'X-Requested-With': 'fetch' } })
       .then(r => r.json().catch(() => ({})).then(j => { if (!r.ok) throw new Error(j.detail || j.error || "askdnd couldn't do that"); return j; }));

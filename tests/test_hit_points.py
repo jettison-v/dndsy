@@ -190,3 +190,15 @@ def test_d_and_d_beyonds_attack_and_its_damage_show_as_one(player, dm, db, sheet
     send(rid="a-3", kind="to hit", action="Javelin", total=15)
     send(rid="d-3", kind="damage", action="Greatclub", total=9)  # another attack's name
     assert db.scalar(select(TableRoll.parent_id).where(TableRoll.ddb_roll_id == "d-3")) is None
+
+
+def test_minus_and_plus_on_battles_tile_open_the_small_window(player, dm, db, sheet):
+    """Brett, 2026-11-01 (docs/mockups/hp-flow/ Option B): − and + go straight to the window, ready to type in; the DM has them too."""
+    cole = char(db, "Cole")
+    page = player.get(f"/characters/{cole.id}/battle").text
+    assert f"/characters/{cole.id}/hp?mode=damage&amp;quick=1" in page and f"/characters/{cole.id}/hp?mode=heal&amp;quick=1" in page
+    set_role(db, "dm@example.com")
+    assert f"/characters/{cole.id}/hp?mode=damage&amp;quick=1" in dm.get(f"/characters/{cole.id}/battle").text
+    small = player.get(f"/characters/{cole.id}/hp?mode=heal&quick=1").text
+    assert 'class="rp-x"' in small and "peek-head" not in small and "autofocus" in small and 'value="heal" checked' in small
+

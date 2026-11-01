@@ -1,4 +1,4 @@
-{% from "_char.html" import pips, pick_btn, pin_icon, battle_strip, save_tiles, resource_row, portrait, spends, adv, hit, roll_attrs, sync_attrs %}
+{% from "_char.html" import pips, pick_btn, pin_icon, battle_strip, save_tiles, resource_row, insp_mark, portrait, spends, adv, hit, roll_attrs, sync_attrs %}
 {% from "_notes_macros.html" import combo_body %}
 {% from "_cond_icons.html" import cond_icon, cond_halo with context %}
 {% set s = sheet %}
@@ -18,7 +18,7 @@
 <div id="battle-body"{% if "Invisible" in active_conditions %} class="cond-ghost"{% endif %} data-character="{{ c.id }}" data-name="{{ c.name }}" data-fetched="{{ fetched_at.isoformat() if fetched_at else '' }}" data-cond-adv='{{ cond_adv | tojson }}'>
   {% include "_level_up.html" %}
   <div class="battlebar" data-tour="roll">
-    {% if s %}{{ resource_row(s, slots=not spellbar, skip=(["Wild Shape"] if known_forms else []), c=c if can_play else none) }}{% endif %}
+    {% if s %}{% call resource_row(s, slots=not spellbar, skip=(["Wild Shape"] if known_forms else []), c=c if can_play else none) %}{{ insp_mark(s, c) }}{% if can_play and not form %}<button type="button" class="cond-rest" data-use-url="/characters/{{ c.id }}/rest?kind=short">Rest</button>{% endif %}{% endcall %}{% endif %}
     {% if form %}{% set fb = form.beast %}
     <div class="ws-form" data-modal-url="/characters/{{ c.id }}/form?name={{ fb.name | urlencode }}" data-modal-size="large" tabindex="0" role="button">
       {% if fb.image %}<img class="ws-pic" src="{{ fb.image }}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}
@@ -32,7 +32,7 @@
         {{ save_tiles(form.saves, form.save_adv_all) }}
         <span class="note">Your stats carried over. {% if form.castable %}Spells: only {{ form.castable | join(", ") }}.{% else %}No spellcasting in this form.{% endif %} Click for the full form, skills and rules.</span></div>
     </div>
-    {% elif s %}<div class="battle-head">{{ battle_strip(s, c) }}{{ save_tiles(s.saves, s.save_adv_all) }}</div>{% endif %}
+    {% elif s %}<div class="battle-head">{{ battle_strip(s, c, can_change_hp) }}{{ save_tiles(s.saves, s.save_adv_all) }}</div>{% endif %}
   </div>
   {% if s and known_forms %}
   <div class="ws-bar ws-row" aria-label="Wild Shape">
@@ -45,7 +45,7 @@
   </div>
   {% endif %}
 
-  {% if conditions or (can_pick and s and not form) %}{# Status: Concentration first, then conditions and item effects; everyone at the table sees them #}
+  {% if conditions or s %}{# Status: Concentration first, then conditions and item effects; everyone at the table sees them #}
   <div class="cond-bar" aria-label="Status">
     {% if conc %}{% include "_conc_pill.html" %}<span class="cond-sep" aria-hidden="true"></span>{% endif %}
     {% for x in conditions if x.name != "Concentration" %}
@@ -63,7 +63,7 @@
       </div>
     </details>
     {% endfor %}
-    {% if can_play and s and not form %}<button type="button" class="cond-rest" data-use-url="/characters/{{ c.id }}/rest?kind=short">Rest</button>{% endif %}
+    {% if s %}<span class="status-phone">{{ insp_mark(s, c) }}{% if can_play and not form %}<button type="button" class="cond-rest" data-use-url="/characters/{{ c.id }}/rest?kind=short">Rest</button>{% endif %}</span>{% endif %}{# Resources is closed on a phone #}
     {% if can_pick and s and not form %}
     <details class="cond-pill cond-add">
       <summary>+ Condition</summary>

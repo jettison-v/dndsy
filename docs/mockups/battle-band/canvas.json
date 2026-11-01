@@ -5,9 +5,14 @@
   "launch": {"view": "canvas"},
   "pages": [],
   "boards": {
-    "Main.dc.html": {"x": 0, "y": 0, "w": 1360, "h": 640, "title": "Battle's band: chips, Spell DC, Hide saves", "is_interactive": true}
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1360, "h": 700, "title": "Where we were: chips, Spell DC, Hide saves", "is_interactive": true},
+    "Option-A.dc.html": {"x": 1440, "y": 0, "w": 1360, "h": 730, "title": "Option A: numbers in the name row", "is_interactive": true},
+    "Option-B.dc.html": {"x": 0, "y": 850, "w": 1360, "h": 730, "title": "Option B: a side rail", "is_interactive": true},
+    "Option-C.dc.html": {"x": 1440, "y": 850, "w": 1360, "h": 730, "title": "Option C: resources where they're spent", "is_interactive": true},
+    "Option-D.dc.html": {"x": 0, "y": 1700, "w": 1360, "h": 730, "title": "Option D: the key numbers by the name", "is_interactive": true},
+    "Option-E.dc.html": {"x": 1440, "y": 1700, "w": 1360, "h": 730, "title": "Option E: one row of numbers", "is_interactive": true}
   },
-  "order": ["Main.dc.html"],
+  "order": ["Main.dc.html", "Option-A.dc.html", "Option-B.dc.html", "Option-C.dc.html", "Option-D.dc.html", "Option-E.dc.html"],
   "notes": {},
   "designSystems": []
 }

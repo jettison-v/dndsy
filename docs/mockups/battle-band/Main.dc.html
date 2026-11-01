@@ -12,25 +12,69 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
 <style>body{margin:0}</style>
 </helmet>
-<div class="board" style="width: 1360px; height: 640px">
+<div class="board" style="width: 1360px; height: 700px">
   <div class="head">
     <div class="num">Battle's band</div>
     <h1>Fewer rows above the action columns</h1>
-    <p class="where"><b>Where you'll find it:</b> Battle on a computer, shown at a laptop's full width. Press Hide saves to try it.</p>
+    <p class="where"><b>Where you'll find it:</b> Battle on a computer, shown at a laptop's full width. Press AC, Speed, Spell DC, the star or Hide saves to try them.</p>
   </div>
-  <div class="screen">
+  <div class="screen edge">
     <div class="body">
-      <div class="row"><div><div class="row" style="justify-content: flex-start"><div class="name">No Name</div><span class="btn mini" aria-label="Open No Name on D&amp;D Beyond">↗</span></div><div class="sub">Monk 6 / Warlock 2</div></div><div class="tabs" style="width: 200px"><b>Battle</b><span>Sheet</span><span>Plan</span></div></div>
+      <div class="row"><div><div class="row" style="justify-content: flex-start"><div class="name">No Name</div><span class="cbadge conc" title="Concentrating on Hex" aria-hidden="true">◎</span><span class="cbadge pois" title="Poisoned" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c4 5 7 9 7 13a7 7 0 0 1-14 0c0-4 3-8 7-13z"></path></svg></span><span class="btn mini" aria-label="Open No Name on D&amp;D Beyond">↗</span></div><div class="sub">Monk 6 / Warlock 2</div></div><div class="tabs" style="width: 200px"><b>Battle</b><span>Sheet</span><span>Plan</span></div></div>
       <div class="card" style="padding: 8px 12px">
         <div class="row">
-          <span class="row" style="gap: 6px; justify-content: flex-start"><button type="button" class="stat big">75 HP</button><button type="button" class="stat">AC <b>17</b></button><button type="button" class="stat">Speed <b>45 ft</b></button><button type="button" class="stat">Init <b>+4</b></button><button type="button" class="stat">Spell DC <b>12</b></button><button type="button" class="stat gold">Inspiration</button></span>
+          <span class="row" style="gap: 6px; justify-content: flex-start">
+            <button type="button" class="stat big">75 HP</button>
+            <span class="stat-wrap"><button type="button" class="stat" onClick="{{ openAc }}">AC <b>17</b></button>
+              <sc-if value="{{ acOpen }}" hint-placeholder-val="{{ false }}">
+                <div class="win pop" role="dialog" aria-label="Armor Class">
+                  <div class="row"><h3>Armor Class</h3><button type="button" class="btn mini" aria-label="Close" onClick="{{ close }}">✕</button></div>
+                  <div class="row"><span>Base</span><span>10</span></div>
+                  <div class="row"><span>Dexterity</span><span>+4</span></div>
+                  <div class="row"><span>Wisdom</span><span>+3</span></div>
+                  <div class="row sum"><b>Armor Class</b><b>17</b></div>
+                  <div class="sub">Unarmored Defense (Monk): while you wear no armor and hold no Shield.</div>
+                </div>
+              </sc-if></span>
+            <span class="stat-wrap"><button type="button" class="stat" onClick="{{ openSpeed }}">Speed <b>45 ft</b></button>
+              <sc-if value="{{ speedOpen }}" hint-placeholder-val="{{ false }}">
+                <div class="win pop" role="dialog" aria-label="Speed">
+                  <div class="row"><h3>Speed</h3><button type="button" class="btn mini" aria-label="Close" onClick="{{ close }}">✕</button></div>
+                  <div class="row"><span>Base</span><span>30 ft</span></div>
+                  <div class="row"><span>Unarmored Movement (Monk 6)</span><span>+15 ft</span></div>
+                  <div class="row sum"><b>Speed</b><b>45 ft</b></div>
+                  <div class="row sum"><span>With Dash</span><b>90 ft</b></div>
+                  <div class="row"><span>Dash and Step of the Wind</span><b>135 ft</b></div>
+                  <div class="sub">Dash adds your Speed again for this turn.</div>
+                </div>
+              </sc-if></span>
+            <button type="button" class="stat">Init <b>+4</b></button>
+            <span class="stat-wrap"><button type="button" class="stat" onClick="{{ openDc }}">Spell DC <b>12</b></button>
+              <sc-if value="{{ dcOpen }}" hint-placeholder-val="{{ false }}">
+                <div class="win pop" role="dialog" aria-label="Spell DC and attack">
+                  <div class="row"><h3>Spell DC and attack</h3><button type="button" class="btn mini" aria-label="Close" onClick="{{ close }}">✕</button></div>
+                  <div class="row"><span>Base</span><span>8</span></div>
+                  <div class="row"><span>Proficiency Bonus</span><span>+3</span></div>
+                  <div class="row"><span>Charisma (Warlock)</span><span>+1</span></div>
+                  <div class="row sum"><b>Spell save DC</b><b>12</b></div>
+                  <div class="row sum"><span>Spell attack: Proficiency Bonus + Charisma</span><b>+4</b></div>
+                </div>
+              </sc-if></span>
+            <sc-if value="{{ insp }}" hint-placeholder-val="{{ true }}">
+              <button type="button" class="stat star gold" aria-label="Heroic Inspiration: you have it" title="Heroic Inspiration: you have it" onClick="{{ toggleInsp }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.8 5.8 6.2.9-4.5 4.4 1.1 6.3L12 17.5l-5.6 3 1.1-6.3L3 9.7l6.2-.9z"></path></svg>Insp.</button>
+            </sc-if>
+            <sc-if value="{{ noInsp }}" hint-placeholder-val="{{ false }}">
+              <button type="button" class="stat star" aria-label="Heroic Inspiration: you don't have it" title="Heroic Inspiration: you don't have it" onClick="{{ toggleInsp }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.8 5.8 6.2.9-4.5 4.4 1.1 6.3L12 17.5l-5.6 3 1.1-6.3L3 9.7l6.2-.9z"></path></svg>Insp.</button>
+            </sc-if>
+          </span>
           <button type="button" class="btn mini" onClick="{{ toggle }}">{{ label }}</button>
         </div>
         <sc-if value="{{ showSaves }}" hint-placeholder-val="{{ true }}">
           <div class="row" style="gap: 6px; justify-content: flex-start"><button type="button" class="stat">Str <b>+4</b></button><button type="button" class="stat">Dex <b>+7</b></button><button type="button" class="stat">Con <b>+2</b></button><button type="button" class="stat">Int <b>+0</b></button><button type="button" class="stat">Wis <b>+3</b></button><button type="button" class="stat">Cha <b>+1</b></button></div>
         </sc-if>
       </div>
-      <div class="row" style="justify-content: flex-start"><span class="cond add">+ Condition</span><button type="button" class="stat">Focus <span class="dots"><i></i><i></i><i></i><i></i><i></i><i></i></span></button><button type="button" class="stat">Luck <span class="dots"><i></i><i></i><i></i></span></button><button type="button" class="stat">Pact 1st <span class="dots"><i></i><i></i></span></button><span class="btn mini">Spell Book</span></div>
+      <div class="row" style="justify-content: flex-start"><button type="button" class="cond on conc" aria-label="Concentrating on Hex">◎ Hex</button><button type="button" class="cond on pois">Poisoned <small>2 rounds</small></button><span class="cond add">+ Condition</span><button type="button" class="stat">Focus <span class="dots"><i></i><i></i><i></i><i></i><i></i><i></i></span></button><button type="button" class="stat">Luck <span class="dots"><i></i><i></i><i></i></span></button></div>
+      <div class="spellbar"><button type="button" class="btn mini">Spell Book</button><span>Pact 1st</span><span class="dots"><i></i><i></i></span><span class="row" style="gap: 6px; margin-left: auto"><span class="note">Pinned</span><button type="button" class="stat">Eldritch Blast</button><button type="button" class="stat">Hex</button></span></div>
       <div class="cols">
         <div class="col"><h4 class="a">Action</h4><div>Unarmed Strike <span class="note">+7</span></div><div>Eldritch Blast <span class="note">+4</span></div></div>
         <div class="col"><h4 class="b">Bonus Action</h4><div>Flurry of Blows</div><div>Step of the Wind</div></div>
@@ -41,12 +85,18 @@
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":640}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":700}}'>
 class Component extends DCLogic {
-  state = { hidden: false };
+  state = { hidden: false, open: '', insp: true };
   renderVals() {
-    const hidden = this.state.hidden;
-    return { showSaves: !hidden, label: hidden ? 'Show saves' : 'Hide saves', toggle: () => this.setState({ hidden: !hidden }) };
+    const { hidden, open, insp } = this.state;
+    const opener = name => () => this.setState({ open: open === name ? '' : name });
+    return {
+      showSaves: !hidden, label: hidden ? 'Show saves' : 'Hide saves', toggle: () => this.setState({ hidden: !hidden }),
+      insp, noInsp: !insp, toggleInsp: () => this.setState({ insp: !insp }),
+      acOpen: open === 'ac', speedOpen: open === 'speed', dcOpen: open === 'dc',
+      openAc: opener('ac'), openSpeed: opener('speed'), openDc: opener('dc'), close: () => this.setState({ open: '' }),
+    };
   }
 }
 </script>

@@ -41,3 +41,32 @@ def test_the_bridges_window_lists_your_own_sheet_and_the_table(monkeypatch, db, 
     got = player.get("/bridge/links").json()
     assert [c["name"] for c in got["characters"]] == ["Cole"]
     assert got["table"] == "https://www.dndbeyond.com/games/77"
+
+
+def _cole(db):
+    from app import characters
+    from app.importer import import_bundle
+    from tests.table_setup import BUNDLE, char
+
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    return cole
+
+
+def test_battle_has_one_row_of_numbers_with_inspiration_and_rest_in_resources(db, player, no_network):
+    """Brett, 2026-11-01 (docs/mockups/battle-band/ Option E): the tiles lose Inspiration and the word "save"; Inspiration joins Resources."""
+    cole = _cole(db)
+    page = player.get(f"/characters/{cole.id}/battle").text
+    bar = page[page.index('class="battlebar"'):page.index('class="battle-head"')]
+    head = page[page.index('class="battle-head"'):page.index('class="econ"')]
+    assert "res-insp" in bar and 'data-panel-url="/characters/%d/vital/inspiration"' % cole.id in bar
+    assert 'class="insp' not in head and " save</span>" not in head
+
+
+def test_speed_says_how_far_dash_goes(db, player, no_network):
+    """Brett, 2026-11-01: Speed shows the movement with Dash, and with a feature that Dashes as a Bonus Action."""
+    cole = _cole(db)
+    panel = player.get(f"/characters/{cole.id}/vital/speed").text
+    assert "With Dash" in panel and "ft this turn" in panel
+
