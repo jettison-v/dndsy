@@ -26,7 +26,18 @@ def offenders() -> dict[str, list[str]]:
     colors = re.findall(r"#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\([^)]*\)", css)
     # Screen widths in media queries; a list's own width in a container query is its columns' need, not a screen size
     widths = [w for w in re.findall(r"@media[^{]*\((?:max|min)-width:\s*(\d+)px\)", css) if int(w) not in SCREEN_WIDTHS]
-    return {"text sizes": sizes, "colors": colors, "screen widths": widths}
+    corners = [v.strip() for v in re.findall(r"border-radius:\s*([^;}]+)", css) if re.search(r"\d+px", re.sub(r"\b0(px)?\b", "", v))]
+    lifts = [v.strip() for v in re.findall(r"box-shadow:\s*([^;}]+)", css) if re.fullmatch(r"\s*0 \d{2}px \d{2}px var\(--shadow\)\s*", v)]
+    return {"text sizes": sizes, "colors": colors, "screen widths": widths, "corners": corners, "shadows": lifts}
+
+
+def test_every_kind_of_field_is_styled():
+    """Oct 31: a number box and a file picker were the browser's own, grey and square, on Manage's pages."""
+    types = set()
+    for p in (Path(__file__).parent.parent / "app" / "templates").rglob("*.html"):
+        types.update(re.findall(r'<input[^>]*\stype="(\w+)"', p.read_text()))
+    for t in types - {"hidden", "checkbox", "radio", "range", "submit"}:
+        assert f"input[type={t}]" in CSS, f'<input type="{t}"> has no style in app.css'
 
 
 def test_stylesheet_uses_the_tokens():
