@@ -414,3 +414,22 @@ def test_unarmored_movement_adds_to_every_speed():
     speed = ddb.parse_character(data)["speed"]
     assert speed["walk"] == 45 and speed["climb"] == 30 + 10  # a fixed climb speed gets the +10 too
     assert speed["swim"] == 45  # "equal to your Speed" already includes it, so not added twice
+
+
+def test_a_classs_spell_list_is_read_once_for_a_while(monkeypatch):
+    """Sentry ASKDND-V2-7 (2026-11-02): a character's read asked D&D Beyond for each class's lists every time, and
+    requests waiting on them ran beta out of database connections. The lists are the same for everyone: kept a while."""
+    calls = []
+
+    def answer(url, timeout):
+        calls.append(url)
+        return {"data": [{"definition": {"name": "Aid"}}]}
+
+    monkeypatch.setattr(ddb, "_get_json", answer)
+    monkeypatch.setattr(ddb, "_lists", {})
+    url = ddb.CLASS_SPELLS_URLS[0].format(class_id=7, level=3)
+    assert ddb._spell_list(url, 5) == ddb._spell_list(url, 5) == [{"definition": {"name": "Aid"}}]
+    assert len(calls) == 1
+    monkeypatch.setattr(ddb.time, "time", lambda: 9e12)  # hours later: read again
+    ddb._spell_list(url, 5)
+    assert len(calls) == 2
