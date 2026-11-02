@@ -311,19 +311,25 @@ def resource(t: Table, seat: str = "player3") -> None:
 
 
 def coins(t: Table, seat: str = "player3") -> None:
-    """Coins gained in askdnd land on D&D Beyond; Undo takes them off."""
+    """Coins gained in askdnd land on D&D Beyond; spending them takes them off."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
     t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
     before = record(sheet)
     page.goto(page.url.replace("/battle", ""), wait_until="domcontentloaded")
-    page.locator('[data-tab="t-items"]').first.click(timeout=8000)
-    go(page, page.locator('[data-use-url$="/coins"]').first)
-    page.locator('.roll-win input[name="amount"]').first.fill("1")
-    page.locator('[data-use-go][data-to="gain"]').first.click()
-    changed(t, sheet, before, "the coin is on D&D Beyond")
-    undo(page)
-    undone(t, sheet, before, "Undo takes the coin off")
+    for to, what in (("gain", "the coin is on D&D Beyond"), ("spend", "spending it takes it off")):  # (the window both ways:
+        tab = page.locator('[data-tab="t-items"]:visible').first                                       # Undo's card is gone
+        if tab.get_attribute("aria-selected") != "true":                                                # after a few seconds)
+            tab.click(timeout=8000)
+        go(page, page.locator('[data-use-url$="/coins"]:visible').first)
+        page.locator('.roll-win input[name="amount"]').first.fill("1")
+        page.locator(f'[data-use-go][data-to="{to}"]').first.click()
+        if to == "gain":
+            changed(t, sheet, before, what)
+        else:
+            undone(t, sheet, before, what)
+        page.wait_for_timeout(1500)
+        page.keyboard.press("Escape")
 
 
 def spent(data: dict) -> int:
@@ -598,9 +604,10 @@ KEPT = ("dateModified", "providedFrom", "readonlyUrl", "definition", "inventory"
 def as_found(t: Table, before: dict) -> None:
     """Each test sheet is back as part 1 found it: what a run changes, it puts back (a miss here is a run that didn't)."""
     for seat, was in before.items():
-        left = [c for c in changes({k: v for k, v in was.items() if k not in KEPT}, {k: v for k, v in record(t.sheet(seat)).items() if k not in KEPT})]
-        t.results.append((not left, f"{seat}'s sheet is back as found"))
-        print("PASS" if not left else "FAIL", f"{seat}'s sheet is back as found", "" if not left else show(left), flush=True)
+        sheet = t.sheet(seat)
+        left = lambda: changes({k: v for k, v in was.items() if k not in KEPT}, {k: v for k, v in record(sheet).items() if k not in KEPT})
+        if not t.expect(f"{seat}'s sheet is back as found", lambda: not left(), 20):  # (D&D Beyond can serve an older copy for a moment)
+            print("  still changed:", show(left()), flush=True)
 
 
 def report(missed: list[str], ran: list[str], log: str) -> None:
