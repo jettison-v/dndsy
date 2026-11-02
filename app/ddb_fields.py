@@ -4,7 +4,8 @@ the request the sheet itself sends to change it (each seen on Brett's test chara
 A field is a key: "hp", "death", "inspiration", "exhaustion", "condition:<id>", "hitdice:<class id>", "slot:<level>",
 "pact:<level>", "uses:<action id>", "item:<inventory id>" (its count; None once removed),
 "equipped:<id>", "attuned:<id>", "charges:<id>", "container:<id>", "coin:<cp|sp|ep|gp|pp>", "add:<definition id>" (how
-many of that item the character has, in all). `steps(field)` says where D&D Beyond keeps it in a character's JSON, as
+many of that item the character has, in all), "prep:<class row id>:<spell's id on the class list>" (whether it's prepared;
+D&D Beyond drops an unprepared spell from the sheet, which reads as not prepared). `steps(field)` says where D&D Beyond keeps it in a character's JSON, as
 steps the extension follows too (extension/askdnd-bridge/ddb-page.js `pick`), so askdnd's read-back, the extension's
 check before writing and its check of the open sheet always read a value the same way:
 
@@ -35,6 +36,7 @@ WRITES = {("PUT", HP_PATH), ("PUT", f"{CS}/life/death-saves"), ("PUT", f"{CS}/ch
           ("PUT", f"{CS}/action/limited-use"), ("PUT", ITEM_PATH), ("PUT", f"{CS}/inventory/item/equipped"),
           ("PUT", f"{CS}/inventory/item/attuned"), ("PUT", f"{CS}/inventory/item/charge"),
           ("PUT", f"{CS}/inventory/item/move"), ("POST", f"{CS}/inventory/item"), ("DELETE", f"{CS}/inventory/item"),
+          ("PUT", f"{CS}/spell/prepared"),
           *{("PUT", f"{CS}/inventory/currency/{name}") for name in COINS.values()}}
 
 
@@ -88,6 +90,7 @@ def steps(field: str) -> list:
         "container": [*item, "containerEntityId"],
         "coin": ["currencies", arg, {"or": 0}],
         "add": ["inventory", {"sum": [["definition", "id"], arg, "quantity"]}],
+        "prep": ["classSpells", {"characterClassId": arg.partition(":")[0]}, "spells", {"id": arg.partition(":")[2]}, "prepared", {"or": False}],
     }[kind]
 
 
@@ -99,6 +102,18 @@ def put(data: dict, field: str, v) -> None:
     """Write `v` where `field` lives in D&D Beyond's character data (a copy: what askdnd shows while a change is on its
     way, ddb_bridge.as_shown), the other way round from `value`. A field it can't find is left as it is."""
     kind, arg = _split(field)
+    if kind == "prep":  # D&D Beyond adds a spell to the sheet when it's prepared: a copy shows it there while on its way
+        cls, _, entry = arg.partition(":")
+        group = next((g for g in data.get("classSpells") or [] if str(g.get("characterClassId")) == cls), None)
+        row = next((s for s in (group or {}).get("spells") or [] if str(s.get("id")) == entry), None)
+        if row is not None:
+            row["prepared"] = bool(v)
+        elif v and group is not None:
+            pool = [s for ss in ((data.get("askdnd") or {}).get("availableSpells") or {}).values() for s in ss or []]
+            known = next((s for s in pool if str(s.get("id")) == entry), None)
+            if known:
+                group.setdefault("spells", []).append({**known, "prepared": True})
+        return
     if kind in ("condition", "exhaustion"):  # a condition is there or not; Exhaustion is one with a level
         cid = EXHAUSTION if kind == "exhaustion" else int(arg)
         rest = [c for c in data.get("conditions") or [] if not (isinstance(c, dict) and c.get("id") == cid)]
@@ -173,6 +188,11 @@ def name(data: dict | None, field: str) -> str:
     if kind == "add":
         row = next((i for i in data.get("inventory") or [] if str((i.get("definition") or {}).get("id")) == arg), {})
         return (row.get("definition") or {}).get("name") or "an item"
+    if kind == "prep":
+        entry = arg.partition(":")[2]
+        lists = [s for g in data.get("classSpells") or [] for s in g.get("spells") or []]
+        lists += [s for ss in ((data.get("askdnd") or {}).get("availableSpells") or {}).values() for s in ss or []]
+        return next(((s.get("definition") or {}).get("name") for s in lists if str(s.get("id")) == entry), None) or "a spell"
     if kind == "hitdice":
         return f"{((pick(data, ['classes', {'id': arg}]) or {}).get('definition') or {}).get('name') or 'Class'} Hit Dice"
     if kind == "uses":
@@ -200,7 +220,7 @@ def text(data: dict | None, field: str, v, max_hit_points: int = 0) -> str:
     if kind == "container":
         return "carried" if str(v) == str((data or {}).get("id")) else f"in {item_name(data, v)}"
     if isinstance(v, bool):
-        return {"equipped": ("equipped", "not equipped"), "attuned": ("attuned", "not attuned")}.get(kind, ("on", "off"))[0 if v else 1]
+        return {"equipped": ("equipped", "not equipped"), "attuned": ("attuned", "not attuned"), "prep": ("prepared", "not prepared")}.get(kind, ("on", "off"))[0 if v else 1]
     if kind == "exhaustion":
         return f"level {v}" if v else "none"
     return f"{v} used" if kind in ("hitdice", "slot", "pact", "uses", "charges") else str(v)
@@ -266,6 +286,10 @@ def write(ddb_id: int, field: str, v, data: dict | None = None, extra: dict | No
                    containerEntityTypeId=CHARACTER_CONTAINER if own else box.get("entityTypeId"))
     if kind == "coin":
         return req("PUT", f"inventory/currency/{COINS[arg]}", amount=v)
+    if kind == "prep":
+        cls, _, entry = arg.partition(":")
+        return req("PUT", "spell/prepared", spellId=extra.get("spellId"), characterClassId=int(cls), entityTypeId=extra.get("entityTypeId"),
+                   id=int(entry), prepared=bool(v))
     if kind == "add":
         where = extra.get("container") or ddb_id
         box = pick(data, ["inventory", {"id": where}]) or {}

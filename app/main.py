@@ -19,6 +19,8 @@ from app.death_saves import router as death_saves_router
 from app.hit_points import router as hit_points_router
 from app.casting import router as casting_router
 from app.inventory import router as inventory_router
+from app.preparing import router as preparing_router
+from app.giving import router as giving_router
 from app.item_use import router as item_use_router
 from app.level_up import router as level_up_router
 from app.resources import router as resources_router
@@ -135,6 +137,8 @@ app.include_router(resources_router)  # (through the bridge: on_for)
 app.include_router(rests_router)  # (through the bridge: on_for)
 app.include_router(level_up_router)
 app.include_router(inventory_router)  # (through the bridge: on_for)
+app.include_router(preparing_router)  # (through the bridge: on_for)
+app.include_router(giving_router)  # (through the bridge: on_for)
 app.include_router(admin_notes_router)
 app.include_router(manage_table_router)
 app.include_router(manage_accounts_router)
