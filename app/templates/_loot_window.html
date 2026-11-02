@@ -12,7 +12,7 @@
 {% endif %}
 <div class="rw-row"><input class="rw-text" type="number" name="amount" min="1" max="100000" inputmode="numeric" placeholder="Coins" aria-label="How many coins"><select class="rw-slot" name="coin" aria-label="Which coin">{% for k in coins %}<option value="{{ k }}"{{ " selected" if k == "gp" }}>{{ k }}</option>{% endfor %}</select></div>
 <p class="note">Items come from D&amp;D Beyond's 2024 books. A custom item is made on D&amp;D Beyond.</p>
-<div class="rw-row">
+<div class="rw-row use-foot">
   <button type="button" class="btn primary small" data-use-go>Give</button>
   <button type="button" class="btn link small" data-use-close>Cancel</button>
 </div>

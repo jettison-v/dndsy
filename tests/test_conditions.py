@@ -171,7 +171,7 @@ def test_a_hit_on_its_way_shows_on_battle_and_party_at_once(player, dm, db, shee
     cole = char(db, "Cole")
     r = player.post(f"/bridge/hp/{cole.id}", data={"amount": "-10"})
     assert json.loads(r.headers["HX-Trigger"])["bridgeDeliver"] == {"ddbId": "75423618"}
-    tile = dm.get(f"/characters/{cole.id}/battle").text.split(f'data-mark="{cole.id}:hp"')[1][:200]
+    tile = dm.get(f"/characters/{cole.id}/battle").text.split(f'data-mark="{cole.id}:hp"')[1][:400]
     assert 'data-sync="on"' in tile and "<b>27</b>" in tile  # 37 − 10, before D&D Beyond has it
     assert 'data-sync="on"' in dm.get("/c/main/party").text.split(f'data-mark="{cole.id}:hp"')[1][:80]
     from sqlalchemy import select
@@ -182,7 +182,7 @@ def test_a_hit_on_its_way_shows_on_battle_and_party_at_once(player, dm, db, shee
     characters.refresh(db, cole)
     db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == cole.id)).one().state = "live"
     db.commit()
-    tile = dm.get(f"/characters/{cole.id}/battle").text.split(f'data-mark="{cole.id}:hp"')[1][:200]
+    tile = dm.get(f"/characters/{cole.id}/battle").text.split(f'data-mark="{cole.id}:hp"')[1][:400]
     assert "data-sync" not in tile and "<b>27</b>" in tile
 
 

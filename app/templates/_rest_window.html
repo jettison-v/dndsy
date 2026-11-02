@@ -12,7 +12,7 @@
 {% if p.dawn %}<p class="note">Back at dawn, not on a rest: {{ p.dawn | join(", ") }}.</p>{% endif %}
 {% if prepare %}<p class="note">After it, you can change your prepared spells: <button type="button" class="btn link small" data-modal-url="/characters/{{ c.id }}/spells/prepare?cls={{ prepare[0] | urlencode }}" data-modal-size="large">Prepare spells</button>.</p>{% endif %}
 {% if reachable %}
-<div class="rw-row cast-go"><button type="button" class="btn primary small" data-use-go>Take a {{ "Short" if kind == "short" else "Long" }} Rest</button></div>
+<div class="rw-row use-foot"><button type="button" class="btn primary small" data-use-go>Take a {{ "Short" if kind == "short" else "Long" }} Rest</button><button type="button" class="btn link small" data-use-close>Cancel</button></div>
 <p class="use-said" role="alert" hidden></p>
 {% else %}
 <p class="use-said">{{ c.name }}'s D&amp;D Beyond sheet can't be reached: open it in Chrome with the askdnd bridge to rest here, or rest on D&amp;D Beyond (askdnd shows it within seconds).</p>

@@ -847,8 +847,9 @@
   openFaq(); window.addEventListener('hashchange', openFaq);
   // Lists' "Full notes": each row's note in full instead of one line, remembered per list. Plan's tabs re-render
   // their lists after a save, so it's applied again after every swap.
-  const notesKey = box => 'askdnd:notes-full:' + (box.closest('[data-list]') || {}).dataset?.list;
-  const applyNotes = box => box.closest('[data-list]').classList.toggle('ls-notes-full', box.checked);
+  const notesOf = box => box.closest('[data-list], [data-notes-list]');
+  const notesKey = box => 'askdnd:notes-full:' + (notesOf(box).dataset.list || notesOf(box).dataset.notesList);
+  const applyNotes = box => notesOf(box).classList.toggle('ls-notes-full', box.checked);
   const initNotes = root => root.querySelectorAll('[data-ls-notes]').forEach(box => {
     try { box.checked = localStorage.getItem(notesKey(box)) === '1'; } catch (_) { /* storage blocked */ }
     applyNotes(box);
@@ -2513,9 +2514,10 @@
 // Prepared · Shortlist · All) pick which rows are in play (each row lists its views in data-views). Chips are OR within a group
 // and AND across groups, each with a live count (greyed out at zero); a search looks through every row
 // and pauses the filters. Filters, sort and lens are remembered per list in this browser and forgotten
-// after a day without use. The Spell Book adds its "Averages at" lens on top (below).
+// after a day without use; the view is kept for good, All the first time (Brett, 2026-11-02). The Spell Book adds
+// its "Averages at" lens on top (below).
 (function () {
-  const DAY = 864e5, KEY = r => 'askdnd:list:' + r.dataset.list;
+  const DAY = 864e5, KEY = r => 'askdnd:list:' + r.dataset.list, VIEW = r => 'askdnd:view:' + r.dataset.list;
   const vals = (f, g) => { const v = f[g]; return Array.isArray(v) ? v : (v ? [v] : []); };
   const fOf = row => row._f || (row._f = (() => { try { return JSON.parse(row.dataset.f || '{}'); } catch (e) { return {}; } })());
   function load(root) {
@@ -2526,8 +2528,10 @@
     try { force = JSON.parse(root.dataset.lsForce || '{}'); } catch (e) { force = {}; }
     Object.entries(force).forEach(([g, vs]) => { s.sel[g] = [...new Set([...(s.sel[g] || []), ...vs])]; });
     const views = [...root.querySelectorAll('[data-ls-view]')].map(b => b.dataset.lsView);
+    let kept = '';
+    try { kept = localStorage.getItem(VIEW(root)) || ''; } catch (e) { kept = ''; }
     root._ls = { sel: s.sel || {}, sort: s.sort || '', lens: s.lens || '', more: !!s.more, q: '',
-                 view: views.includes(s.view) ? s.view : (views[0] || '') };
+                 view: views.includes(kept) ? kept : views.includes('all') ? 'all' : (views[0] || '') };
     const sort = root.querySelector('[data-ls-sort]'); if (sort && root._ls.sort) sort.value = root._ls.sort;
     const lens = root.querySelector('[data-ls-lens]');
     if (lens && root._ls.lens && [...lens.options].some(o => o.value === root._ls.lens)) lens.value = root._ls.lens;
@@ -2535,7 +2539,10 @@
   }
   function save(root) {
     const st = root._ls;
-    try { localStorage.setItem(KEY(root), JSON.stringify({ at: Date.now(), sel: st.sel, sort: st.sort, lens: st.lens, more: st.more, view: st.view })); } catch (e) { /* private window */ }
+    try {
+      localStorage.setItem(KEY(root), JSON.stringify({ at: Date.now(), sel: st.sel, sort: st.sort, lens: st.lens, more: st.more }));
+      if (st.view) localStorage.setItem(VIEW(root), st.view);
+    } catch (e) { /* private window */ }
   }
   function apply(root) {
     const st = root._ls, sel = st.sel, q = st.q.trim().toLowerCase();
@@ -2753,12 +2760,30 @@
     t.click();
     t.closest('[role=tablist]').scrollIntoView({ block: 'start' });
   });
-  // Phones: a tab row that scrolls sideways starts with the chosen tab in view (Map is last on the Campaign page)
-  document.querySelectorAll('[role=tablist]').forEach(list => {
-    const t = list.querySelector('[aria-selected=true]'); if (!t || list.scrollWidth <= list.clientWidth) return;
-    const over = t.getBoundingClientRect().right - list.getBoundingClientRect().right;
-    if (over > 0) list.scrollLeft += over + 16;
+  // Phones: a tab row that scrolls sideways keeps the chosen tab in view, and fades the edge it's cut at, so you can see
+  // there's more (Brett, 2026-11-02, docs/artifacts/ui-ux-pass.html, question 7)
+  const edges = list => {
+    list.classList.toggle('cut-l', list.scrollLeft > 2);
+    list.classList.toggle('cut-r', list.scrollLeft + list.clientWidth < list.scrollWidth - 2);
+  };
+  const inView = list => {
+    const t = list.querySelector('[aria-selected=true]');
+    if (t && list.scrollWidth > list.clientWidth) {
+      const l = t.offsetLeft - list.offsetLeft, r = l + t.offsetWidth;
+      if (l < list.scrollLeft + 24) list.scrollLeft = l - 24;
+      else if (r > list.scrollLeft + list.clientWidth - 24) list.scrollLeft = r - list.clientWidth + 24;
+    }
+    edges(list);
+  };
+  const bars = root => root.querySelectorAll('.tabbar').forEach(list => {
+    inView(list);
+    if (!list._edges) { list._edges = true; list.addEventListener('scroll', () => edges(list), { passive: true }); }
   });
+  bars(document);
+  window.addEventListener('resize', () => bars(document));
+  document.addEventListener('click', e => { const t = e.target.closest('.tabbar [role=tab]'); if (t) setTimeout(() => inView(t.closest('.tabbar')), 0); });
+  document.body.addEventListener('htmx:afterSwap', e => bars(e.detail.target));
+  document.addEventListener('panel:loaded', e => bars(e.target));
   if (location.hash.length > 1) {
     const d = document.getElementById(location.hash.slice(1));
     if (d && d.tagName === 'DETAILS') d.open = true;

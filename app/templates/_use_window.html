@@ -5,9 +5,10 @@
 {% if o.meta %}<p class="use-what">{{ o.meta }}</p>{% endif %}
 {% if starts %}<p class="use-what">Starts {{ starts }}.</p>{% endif %}
 {% if reachable %}
-<div class="rw-row">
+<div class="rw-row use-foot">
   <button type="button" class="btn primary small" data-use-go>{{ o.use.verb }}</button>
   {% if others %}<button type="button" class="btn small" data-use-give aria-expanded="false">Give</button>{% endif %}
+  <button type="button" class="btn link small" data-use-close>Cancel</button>
 </div>
 {% if others %}<div class="rw-row use-names" hidden><span class="note">Give it to</span>{% for n in others %}<button type="button" class="btn small" data-use-go data-to="{{ n }}">{{ n }}</button>{% endfor %}</div>{% endif %}
 <p class="use-said" role="alert" hidden></p>

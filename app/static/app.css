@@ -201,8 +201,9 @@ a.live-row:hover .live-go { color: var(--text); }
 .res-group .res { border-left: none; padding: 0 8px 0 0; }
 .res-more { display: none; }
 .rs-latest { display: none; }
-.cast-go { justify-content: space-between; }
-.cast-go > .btn:only-child { margin-left: auto; }
+/* A small window's buttons (DESIGN.md › Where a window's actions go; the UI pass, 2026-11-02): the main action first, then
+   others, then Cancel as a quiet link */
+.use-foot { justify-content: flex-start; }
 .cond-rest { display: inline-flex; align-items: center; min-height: var(--chip-h); padding: 0 var(--sp-3); background: var(--surface-2); border: 1px dashed var(--line); border-radius: var(--r-pill); color: var(--muted); font: inherit; font-size: var(--fs-sm); cursor: pointer; }
 .cond-rest:hover { color: var(--text); border-color: var(--muted); }
 .res-row > .cond-rest { margin-left: auto; }  /* Rest ends Resources, at the far right */
@@ -604,6 +605,10 @@ details.feat > summary:hover { color: var(--text-strong); }
 .ab .sv { font-size: var(--fs-sm); color: var(--muted); } .ab .sv.prof { color: var(--text); }
 .ab .sv.prof::before { content: "● "; color: var(--green); font-size: var(--fs-xs); }
 .tabbar { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin: 0 0 12px; overflow-x: auto; scrollbar-width: none; }
+/* A tab row that scrolls sideways fades the edge it's cut at (app.js: .cut-l, .cut-r; the UI pass, 2026-11-02) */
+.tabbar.cut-r { mask-image: linear-gradient(to right, var(--bg) calc(100% - 36px), transparent); }
+.tabbar.cut-l { mask-image: linear-gradient(to left, var(--bg) calc(100% - 36px), transparent); }
+.tabbar.cut-l.cut-r { mask-image: linear-gradient(to right, transparent, var(--bg) 36px, var(--bg) calc(100% - 36px), transparent); }
 .tabbar button { background: none; border: none; padding: 9px 13px; color: var(--muted); font-weight: 500; white-space: nowrap; min-height: 40px; }
 .tabbar button[aria-selected=true] { color: var(--text-strong); box-shadow: inset 0 -2px 0 var(--red); }
 .tabbar .count { font-size: var(--fs-xs); }
@@ -1058,6 +1063,10 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
   .fm-head { flex-wrap: wrap; }
   .fm-pic { width: 64px; height: 64px; }
   .fm-actions { width: 100%; justify-content: space-between; order: 3; }
+  /* ✕ stays at the head's top right when its other buttons take a row of their own (the UI pass, 2026-11-02) */
+  .peek-head:has(> .fm-actions .peek-close) { position: relative; padding-right: 52px; }
+  .fm-actions .peek-close { position: absolute; top: 16px; right: 14px; }
+  .fm-actions:not(:has(> :not(.peek-close))) { width: 0; order: 0; }  /* (✕ alone: no empty row) */
 }
 .fm-col h4.econ-head { font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--k); }
 .fm-col h4.econ-head::before { content: var(--k-glyph); margin-right: 8px; letter-spacing: 0; }
@@ -1221,12 +1230,9 @@ a.sheet-ref { text-decoration-style: dotted; }
    half-screen window), the saves drop under the numbers. Phones have their own order below. */
 .battle-head { margin-top: 8px; container: battle-head / inline-size; display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: var(--sp-2) var(--sp-3); }
 .battle-head > .strip.compact { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: var(--sp-2); margin: 0; }
-.battle-head > .strip.compact > div { display: flow-root; align-content: center; }
 .battle-head > .save-tiles { grid-template-columns: repeat(3, 1fr); gap: var(--sp-1) 6px; padding-left: var(--sp-3); border-left: 1px solid var(--line); }
 .battle-head .st { padding: 3px 8px; gap: 6px; align-items: center; }
 .battle-head .st b { font-size: var(--fs-md); }
-.battle-head .st .adv-badge { position: static; order: 1; background: none; }
-.battle-head .st b { order: 2; }
 .battle-head > .save-all { grid-column: 1 / -1; margin: 0; }
 @container battle-head (max-width: 760px) {
   .battle-head > .save-tiles { grid-column: 1 / -1; grid-template-columns: repeat(6, minmax(0, 1fr)); padding-left: 0; border-left: none; }
@@ -1243,7 +1249,8 @@ a.sheet-ref { text-decoration-style: dotted; }
 .st.prof small { color: var(--text); }
 .st.prof small::before { content: "● "; color: var(--green); font-size: var(--fs-xs); }
 .st b { font-size: var(--fs-lg); font-variant-numeric: tabular-nums; margin-left: auto; }
-.st .adv-badge { position: absolute; top: -12px; right: 8px; font-size: var(--fs-xs); padding: 0 4px; line-height: 1.35; background: var(--bg); }
+.st .adv-badge { font-size: var(--fs-xs); padding: 0 4px; line-height: 1.35; order: 1; }  /* inside its tile, before the number (the UI pass, 2026-11-02) */
+.st b { order: 2; }
 .save-all { margin: 6px 0 0; }
 .ws-form .save-tiles { margin-top: 8px; }
 @media (max-width: 640px) { .save-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
@@ -1270,7 +1277,8 @@ a.sheet-ref { text-decoration-style: dotted; }
 .roll-chip { font: inherit; font-size: var(--fs-xs); font-weight: 600; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 0 8px; margin-left: 4px; cursor: pointer; vertical-align: middle; }
 .roll-chip:hover, .roll-chip:focus-visible { color: var(--amber); border-color: var(--amber); }
 .tile-roll { float: right; margin-top: 4px; }
-.roll-hit.tile-hit { display: block; font-size: var(--fs-lg); line-height: 1.3; }  /* Initiative's number is its roll, like an attack's to-hit */
+.roll-hit.tile-hit { display: inline-block; max-width: 100%; font-size: var(--fs-lg); line-height: 1.3; }  /* Initiative's number is its roll, like an attack's to-hit */
+@media (max-width: 640px) { .roll-hit.tile-hit { padding: 0 var(--sp-1); min-width: 0; font-size: var(--fs-md); } }
 .st[data-roll], .save-row[data-roll] { cursor: pointer; }
 .st[data-roll]:hover { box-shadow: inset 0 0 0 1px var(--amber); }
 .save-row[data-roll]:hover b { color: var(--amber); }
@@ -1981,17 +1989,30 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .cond-dots i[data-cond="blinded"] { background: var(--cond-dark); box-shadow: 0 0 0 1px var(--cond-dark-edge); }
 @media (prefers-reduced-motion: reduce) { .cond-halo.starting i, .cond-badge.new { animation: none; } }
 /* A change on its way to D&D Beyond (ddb_bridge.as_shown, the sync macros in _char.html): shown as made at once, with
-   a quiet mark until D&D Beyond has it, then the green change mark. In the background (Brett, 2026-10-29: askdnd is
-   the tool, D&D Beyond the repository): a thin, grey, half-clear dashed line and a still ↻, no words; amber the same
-   way when it was given up, to make on the sheet; a condition ending faded until it's gone. */
-[data-sync] { position: relative; --sync: color-mix(in srgb, var(--muted) 50%, transparent); }
-[data-sync="failed"] { --sync: color-mix(in srgb, var(--amber) 55%, transparent); }
-[data-sync] { outline: 1px dashed var(--sync); outline-offset: 2px; }
-[data-sync]::after { content: "↻"; position: absolute; top: 3px; right: 5px; font: 400 var(--fs-xs)/1 var(--sans); color: var(--sync); pointer-events: none; }
-[data-sync="failed"]::after { content: "!"; font-weight: 700; }
-.cond-pill[data-sync]::after, .cond-badge[data-sync]::after { top: -9px; right: -3px; }  /* (a tile clips outside its box; a pill and a badge don't) */
+   one quiet mark until D&D Beyond has it, then the green change mark. One mark everywhere (Brett, 2026-11-02,
+   docs/artifacts/ui-ux-pass.html, question 1): a grey ↻ right after the value, in the flow so it never covers anything
+   (a tile's in its label row, .nt-mark), and only once the change has waited 2 seconds, since most arrive sooner; ! in
+   amber at once when it was given up, to make on the sheet; a condition ending faded until it's gone. */
+[data-sync] { --sync: color-mix(in srgb, var(--muted) 70%, transparent); }
+[data-sync="failed"] { --sync: var(--amber); }
+[data-sync]:not(.nt):not(.cond-pill)::after, .cond-pill[data-sync] > summary::after, .nt[data-sync] > .nt-lab > .nt-mark::after {
+  content: "↻"; margin-left: 3px; font: 400 var(--fs-xs)/1 var(--sans); color: var(--sync); pointer-events: none; animation: sync-late .2s 2s both; }
+[data-sync="failed"]:not(.nt):not(.cond-pill)::after, .cond-pill[data-sync="failed"] > summary::after, .nt[data-sync="failed"] > .nt-lab > .nt-mark::after { content: "!"; font-weight: 700; animation: none; }
+@keyframes sync-late { from { opacity: 0; } to { opacity: 1; } }
 .cond-pill[data-sync="ending"] > summary, .cond-badge[data-sync="ending"] { opacity: .5; }
-.cond-pill[data-sync] { border-radius: var(--r-pill); }
+
+/* A number tile (_char.html ntile; Brett, 2026-11-02, question 4): the label row (the ↻ and any buttons at its right),
+   the value on one line, a foot for badges and small notes. Nothing inside wraps or covers anything, whatever is on
+   its way. */
+.nt { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0; }
+.nt > .nt-lab { display: flex; align-items: center; gap: var(--sp-1); min-height: 18px; }
+.nt > .nt-lab > small { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nt > .nt-lab > .nt-mark:empty { display: none; }
+.nt[data-sync] > .nt-lab > .nt-mark { display: inline; }
+.nt > .nt-val { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+.nt > .nt-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 2px var(--sp-1); font-size: var(--fs-xs); color: var(--muted); }
+.nt > .nt-foot .note { font-size: var(--fs-xs); }
+
 .cond-add > summary { background: var(--surface-2); border-style: dashed; border-color: var(--line); color: var(--muted); }
 .cond-box .ls-chips { margin-top: 4px; }
 
@@ -2496,7 +2517,7 @@ body:not(.br-ext) .br-ext-on, body.br-ext .br-ext-off { display: none; }
 .hp-blocked { display: grid; gap: var(--sp-1); border: 1px solid var(--red); background: var(--red-soft); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); font-size: var(--fs-sm); margin: 0; }
 .hp-go { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
 .hp-open { margin-bottom: var(--sp-3); }
-.hp-btns { float: right; display: flex; gap: var(--sp-1); margin: 4px 0 0 var(--sp-2); }  /* − and + on Battle's tile (Brett, 2026-11-01, docs/mockups/hp-flow/ Option B): the rest of the tile still explains it */
+.hp-btns { display: flex; gap: var(--sp-1); flex: none; }  /* − and + in Battle's Hit Points tile's label row (Brett, 2026-11-01, docs/mockups/hp-flow/ Option B; ntile 2026-11-02) */
 .hp-btn { display: grid; place-items: center; width: var(--chip-h); height: var(--chip-h); padding: 0; border: 1px solid var(--line-strong); border-radius: var(--r-sm); background: var(--surface-2); color: var(--text-strong); font: 700 var(--fs-md)/1 var(--sans); cursor: pointer; }
 .hp-btn:hover, .hp-btn:focus-visible { color: var(--amber); border-color: var(--amber); }
 .roll-win .hp-win .peek-close, .roll-win .hp-working > .note { display: none; }
@@ -2516,7 +2537,6 @@ body:not(.br-ext) .br-ext-on, body.br-ext .br-ext-off { display: none; }
   .battle-head { display: block; }
   .battle-head > .strip.compact { display: flex; flex-wrap: wrap; margin-bottom: 6px; }
   .battle-head > .save-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 0; border: none; }
-  .battle-head .st .adv-badge { position: absolute; order: 0; background: var(--bg); }
   .status-phone { display: contents; }
   .status-phone .res-insp { margin-left: 0; }
   .battlebar > .res-more { order: 2; display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: var(--control-h-sm); margin-top: var(--sp-2); padding: 0 var(--sp-3); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--text); font: inherit; cursor: pointer; }
@@ -2527,14 +2547,14 @@ body:not(.br-ext) .br-ext-on, body.br-ext .br-ext-off { display: none; }
   .res-group { padding: 0; border-left: none; }
   /* One row (Brett, 2026-11-02: a whole row for Hit Points wasted room): Hit Points first and a little wider, its − and +
      beside its label, short labels; the Dying tile keeps a row of its own for its marks */
-  .battle-head .strip.compact > div { flex: 1 1 0; min-width: 0; padding: 6px 8px; }
+  .battle-head .strip.compact > div { flex: 1 1 0; min-width: 0; padding: 6px; }
   .battle-head .strip.compact > div b { font-size: var(--fs-md); }
-  .battle-head .strip.compact > div:first-child { flex-grow: 2; }
+  .battle-head .strip.compact > div:first-child { flex-grow: 2.2; }
+  .battle-head .strip.compact > div:first-child > .nt-lab > small { min-width: 1.6em; }  /* "HP" whole beside ↻, − and + */
   .battle-head .strip.compact > div:first-child b { font-size: var(--fs-lg); }
   .battle-head .strip.compact > div.dying { flex-basis: 100%; }
-  .battle-head .strip.compact > div:first-child { position: relative; }
-  .battle-head .strip.compact .hp-btns { position: absolute; top: 4px; right: 4px; float: none; margin: 0; gap: 2px; }
-  .battle-head .strip.compact .hp-btn { width: 26px; height: 24px; font-size: var(--fs-sm); }
+  .nt .hp-btns { gap: 2px; }
+  .nt .hp-btn { width: 24px; height: 24px; font-size: var(--fs-sm); }  /* (any tile on a phone: its buttons fit beside the label) */
   .battle-head .strip.compact small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ph-hide { display: none; }
 }

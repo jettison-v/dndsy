@@ -2,7 +2,7 @@
    (_lists.html, DESIGN.md › Lists and filters): Prepared spells only, filters on the left, compact rows.
    A row opens its side panel from the window edge; "Averages at" redraws the numbers for upcasting. #}
 {% from "_char.html" import spell_roll, pick_btn %}
-{% from "_lists.html" import filter_column, search_box, active_row %}
+{% from "_lists.html" import filter_column, search_box, active_row, notes_toggle %}
 {% from "_cond_icons.html" import cond_icon %}
 {% set ON_SAVE = {"half": ("Half on a save", "half"), "none": ("Nothing on a save", "none"), "lands": ("Damage needs no save", "lands")} %}
 <div class="peek-head sb-head{{ ' sb-concentrating' if conc }}">
@@ -31,6 +31,7 @@
           <select data-ls-sort aria-label="Sort">
             <option value="level">Level</option><option value="name">Name</option><option value="avg">Amount</option>
           </select></label>
+        {% if show_picks %}{{ notes_toggle() }}{% endif %}
       </div>
       {# One grid for the header and every row (CSS subgrid): each column is as wide as its widest cell #}
       <div class="ls-rows sb-cols" data-ls-rows>

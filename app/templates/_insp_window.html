@@ -4,7 +4,7 @@
 <div class="rw-title">Heroic Inspiration</div>
 <p class="use-cost">{{ c.name }} {{ "has it" if have else "doesn't have it" }}</p>
 {% if reachable %}
-<div class="rw-row">
+<div class="rw-row use-foot">
   <button type="button" class="btn primary small" data-use-go data-to="{{ 'spend' if have else 'gain' }}">{{ "Spend it" if have else "Give it" }}</button>
   <button type="button" class="btn link small" data-use-close>{{ "Keep it" if have else "Cancel" }}</button>
 </div>

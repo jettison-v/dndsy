@@ -17,6 +17,14 @@
 {% macro sync(s, kind) %}{{ sync_attrs(((s or {}).sync or {}).get(kind)) }}{% endmacro %}
 {% macro tile(c, kind) %}data-panel-url="/characters/{{ c.id }}/vital/{{ kind }}" tabindex="0" role="button" {{ mark(c, kind) }}{% endmacro %}
 
+{# A number tile (Brett, 2026-11-02, docs/artifacts/ui-ux-pass.html, question 4): three rows, so nothing inside it wraps,
+   jumps or covers anything while a change is on its way. The label row (its ↻ mark and any buttons at its right), the
+   value on one line, and a foot for badges (Adv) and small notes (+5 temp). `attrs` opens its panel (tile()) or marks it
+   (mark()); `kind` names its mark on its way to D&D Beyond (sync()). Pass label, value and foot as markup. #}
+{% macro ntile(s, attrs, label, value, kind="", foot="", acts="", cls="", title="") -%}
+<div class="nt{{ ' ' ~ cls if cls }}" {{ attrs }}{{ sync(s, kind) if kind }}{% if title %} title="{{ title }}"{% endif %}><span class="nt-lab"><small>{{ label }}</small><span class="nt-mark"></span>{{ acts }}</span><span class="nt-val">{{ value }}</span>{% if foot %}<span class="nt-foot">{{ foot }}</span>{% endif %}</div>
+{%- endmacro %}
+
 {# Advantage, marked the same way everywhere (app/advantage.py): a small "Adv" badge, with when it
    applies and where it comes from on hover. Outlined when every source needs a condition. #}
 {% macro adv(list) -%}
@@ -38,8 +46,9 @@
 </div>
 {%- endmacro %}
 
-{% macro inspiration(s, c) -%}
-<div class="vital insp{{ ' on' if s.inspiration }}" {{ tile(c, "inspiration") }} title="Heroic Inspiration{{ ': you have it' if s.inspiration else ': not right now' }}"><small>Heroic Inspiration</small><b>{{ "✦ Yes" if s.inspiration else "—" }}</b></div>
+{% macro inspiration(s, c, cls="vital") -%}
+{{ ntile(s, tile(c, "inspiration"), "Heroic Inspiration", ("<b>" ~ ("✦ Yes" if s.inspiration else "—") ~ "</b>") | safe, "inspiration", cls=cls ~ " insp" ~ (" on" if s.inspiration else ""),
+         title="Heroic Inspiration" ~ (": you have it" if s.inspiration else ": not right now")) }}
 {%- endmacro %}
 
 {% macro pips(u) -%}
@@ -130,18 +139,24 @@
 </span>
 {%- if roll and dying_state(s) == "dying" %}<button type="button" class="roll-chip tile-roll" data-roll="death" data-label="Death save" title="Roll your death save: 10 or more a success, a 1 two failures, a 20 back with 1 Hit Point. It marks itself.">Roll</button>{% endif -%}
 {%- endmacro %}
-{% macro hp_tile(s, c, cls="", word="Hit points", change=false) -%}
+{# Hit Points as a tile (ntile), the Dying tile at 0: `change` adds − and + to its label row (Battle); `attrs` is its
+   panel by default, or only its mark where a card opens something else (Party); `max` says "/ 66" even when full; `short` says HP where the row is short of room #}
+{% macro hp_tile(s, c, cls="", word="Hit points", change=false, attrs=none, roll=true, max=false, short=true) -%}
 {%- set dy = dying_state(s) -%}
-<div class="{{ cls }}{{ ' dying ' ~ dy if dy }}" {{ tile(c, "hp") }}{{ sync(s, "hp") }}><small>{% if dy %}{{ {"dying": "Dying", "stable": "Stable", "out": "Three failures"}[dy] }}{% elif word == "Hit points" %}<span class="ph-full">Hit points</span><span class="ph-short">HP</span>{% else %}{{ word }}{% endif %}</small>{% if change %}<span class="hp-btns"><button type="button" class="hp-btn" data-use-url="/characters/{{ c.id }}/hp?mode=damage&amp;quick=1" aria-label="Damage" title="Damage">−</button><button type="button" class="hp-btn" data-use-url="/characters/{{ c.id }}/hp?mode=heal&amp;quick=1" aria-label="Heal" title="Heal">+</button></span>{% endif %}<b>{{ s.hit_points.current }}</b>{% if s.hit_points.current != s.hit_points.max %}<span class="note"> / {{ s.hit_points.max }}</span>{% endif %}{% if s.hit_points.temp %}<span class="note"> +{{ s.hit_points.temp }} temp</span>{% endif %}{% if dy %}{{ dying_marks(s, c) }}{% if dy == "out" %}<span class="note ds-rule">The DM rules</span>{% endif %}{% endif %}</div>
+{%- set label -%}{% if dy %}{{ {"dying": "Dying", "stable": "Stable", "out": "Three failures"}[dy] }}{% elif word == "Hit points" and short %}<span class="ph-full">Hit points</span><span class="ph-short">HP</span>{% else %}{{ word }}{% endif %}{%- endset -%}
+{%- set acts -%}{% if change %}<span class="hp-btns"><button type="button" class="hp-btn" data-use-url="/characters/{{ c.id }}/hp?mode=damage&amp;quick=1" aria-label="Damage" title="Damage">−</button><button type="button" class="hp-btn" data-use-url="/characters/{{ c.id }}/hp?mode=heal&amp;quick=1" aria-label="Heal" title="Heal">+</button></span>{% endif %}{%- endset -%}
+{%- set value -%}<b>{{ s.hit_points.current }}</b>{% if max or s.hit_points.current != s.hit_points.max %}<span class="note"> / {{ s.hit_points.max }}</span>{% endif %}{%- endset -%}
+{%- set foot -%}{% if s.hit_points.temp %}<span class="note">+{{ s.hit_points.temp }} temp</span>{% endif %}{% if dy %}{{ dying_marks(s, c, roll) }}{% if dy == "out" %}<span class="note ds-rule">The DM rules</span>{% endif %}{% endif %}{%- endset -%}
+{{ ntile(s, attrs if attrs is not none else tile(c, "hp"), label, value, "hp", foot, acts, cls ~ (" dying " ~ dy if dy else "")) }}
 {%- endmacro %}
 
 {% macro vitals(s, c) -%}
 <div class="vitals">
   {{ hp_tile(s, c, "vital", "HP") }}
-  <div class="vital" {{ tile(c, "ac") }}><small>AC</small><b>{{ s.armor_class }}</b></div>
-  <div class="vital" {{ tile(c, "speed") }}><small>Speed</small><b>{{ s.speed.walk }}</b><span class="note"> ft</span></div>
-  <div class="vital" {{ tile(c, "initiative") }}><small>Initiative</small><b>{{ s.initiative }}</b>{{ adv(s.initiative_adv) }}</div>
-  {% for sc in s.spellcasting[:1] %}<div class="vital" {{ tile(c, "spell") }}><small>Spell DC / attack</small><b>{{ sc.save_dc }}</b><span class="note"> / {{ sc.attack }}</span></div>{% endfor %}
+  {{ ntile(s, tile(c, "ac"), "AC", ("<b>%s</b>" | format(s.armor_class)) | safe, cls="vital") }}
+  {{ ntile(s, tile(c, "speed"), "Speed", ("<b>%s</b><span class=\"note\"> ft</span>" | format(s.speed.walk)) | safe, cls="vital") }}
+  {{ ntile(s, tile(c, "initiative"), "Initiative", ("<b>%s</b>" | format(s.initiative)) | safe, foot=adv(s.initiative_adv), cls="vital") }}
+  {% for sc in s.spellcasting[:1] %}{{ ntile(s, tile(c, "spell"), "Spell DC / attack", ("<b>%s</b><span class=\"note\"> / %s</span>" | format(sc.save_dc, sc.attack)) | safe, cls="vital") }}{% endfor %}
   {{ inspiration(s, c) }}
 </div>
 {%- endmacro %}
@@ -201,10 +216,12 @@
 {% macro battle_strip(s, c, change_hp=false) -%}
 <div class="strip compact">
   {{ hp_tile(s, c, change=change_hp) }}
-  <div {{ tile(c, "ac") }}><small><span class="ph-full">Armor class</span><span class="ph-short">AC</span></small><b>{{ s.armor_class }}</b></div>
-  <div {{ tile(c, "speed") }}><small>Speed</small><b>{{ s.speed.walk }} ft</b>{% set extra = s.speed.items() | rejectattr(0, "in", ["walk", "parts", "notes"]) | list %}{% if extra %}<span class="note ph-hide"> {% for k, v in extra %}{{ k }} {{ v }}{{ ", " if not loop.last }}{% endfor %}</span>{% endif %}</div>
-  <div {{ tile(c, "initiative") }}><small><span class="ph-full">Initiative</span><span class="ph-short">Init.</span></small><button type="button" class="roll-hit tile-hit" {{ roll_attrs("check", "Initiative", s.initiative, "", s.initiative_adv) }} title="Roll Initiative">{{ s.initiative }}</button>{{ adv(s.initiative_adv) }}</div>
-  {% for sc in s.spellcasting[:1] %}<div {{ tile(c, "spell") }}><small><span class="tile-full">Spell DC / attack</span><span class="tile-short"><span class="ph-full">Spell DC</span><span class="ph-short">Spell</span></span></small><b>{{ sc.save_dc }}</b><span class="note ph-hide"> / {{ sc.attack }}</span></div>{% endfor %}
+  {{ ntile(s, tile(c, "ac"), '<span class="ph-full">Armor class</span><span class="ph-short">AC</span>' | safe, ("<b>%s</b>" | format(s.armor_class)) | safe) }}
+  {%- set extra = s.speed.items() | rejectattr(0, "in", ["walk", "parts", "notes"]) | list %}
+  {{ ntile(s, tile(c, "speed"), "Speed", ("<b>%s ft</b>" | format(s.speed.walk)) | safe, foot=(('<span class="note ph-hide">' ~ (extra | map("join", " ") | join(", ") | e) ~ '</span>') | safe if extra else "")) }}
+  {%- set init %}<button type="button" class="roll-hit tile-hit" {{ roll_attrs("check", "Initiative", s.initiative, "", s.initiative_adv) }} title="Roll Initiative">{{ s.initiative }}</button>{% endset %}
+  {{ ntile(s, tile(c, "initiative"), '<span class="ph-full">Initiative</span><span class="ph-short">Init.</span>' | safe, init, foot=adv(s.initiative_adv)) }}
+  {% for sc in s.spellcasting[:1] %}{{ ntile(s, tile(c, "spell"), '<span class="tile-full">Spell DC / attack</span><span class="tile-short"><span class="ph-full">Spell DC</span><span class="ph-short">Spell</span></span>' | safe, ("<b>%s</b><span class=\"note ph-hide\"> / %s</span>" | format(sc.save_dc, sc.attack)) | safe) }}{% endfor %}
 </div>
 {%- endmacro %}
 

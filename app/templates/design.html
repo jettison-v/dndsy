@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_char.html" import pips, pin_icon, bookmark_icon, bell, ri, spends %}
+{% from "_char.html" import pips, pin_icon, bookmark_icon, bell, ri, spends, ntile, adv %}
 {% from "_lists.html" import search_box, chip_group, view_switch %}
 {% from "_manage.html" import inline_edit %}
 {% from "_cond_icons.html" import cond_icon %}
@@ -67,6 +67,8 @@
     <h2>Switches</h2>
     {{ ds("Two-way switch", ".seg > button[aria-pressed]", "Two or three choices side by side that change something on the page (By level · By name); the one that's on is red.") }}
     <div class="ds-row"><span class="seg" role="group" aria-label="Sort"><button type="button" aria-pressed="true">By level</button><button type="button" aria-pressed="false">By name</button></span></div>
+    {{ ds("Tabs", ".tabbar[role=tablist] > [role=tab] · .cut-l, .cut-r", "A page's parts (Sheet's Spells, Inventory…). On a phone a row that doesn't fit scrolls sideways with the open tab always in view, and fades the edge it's cut at, so you can see there's more (the UI pass, 2026-11-02).") }}
+    <div class="ds-narrow"><div class="tabbar cut-r" role="tablist" aria-label="Sample tabs"><button type="button" role="tab" aria-selected="false">Combos <span class="count">4</span></button><button type="button" role="tab" aria-selected="true">Leveling <span class="count">1</span></button><button type="button" role="tab" aria-selected="false">Quests <span class="count">1</span></button><button type="button" role="tab" aria-selected="false">Notes <span class="count">2</span></button><button type="button" role="tab" aria-selected="false">Reminders <span class="count">3</span></button></div></div>
   </section>
 
   <section class="section" id="pills">
@@ -108,8 +110,9 @@
     {{ ds("Stat", ".stats > .stat", "A big number with what it means (Manage › Usage). .attention adds a red edge.") }}
     <div class="stats"><div class="stat"><span>This month</span><b>$4.20</b><small>$15.80 left of $20.00</small></div><div class="stat attention"><span>Backups</span><b>2 days</b><small>Last backup failed</small></div><div class="stat"><span>All time</span><b>$31.06</b><small>48 drafts</small></div></div>
     {{ ds("Battle bar", ".battlebar", "The top of Battle, scrolling with the page: the resources row (Focus Points, Inspiration, Rest), then the number tiles beside the stacked saves, with a line under it.") }}
-    {{ ds("Number tiles", ".strip.compact", "Battle's header: label above, number below; each opens how it adds up.") }}
-    <div class="battlebar"><div class="strip compact"><div><small>Hit points</small><b>51</b></div><div><small>Armor class</small><b>16</b></div><div><small>Speed</small><b>45 ft</b></div><div><small>Initiative</small><b>+3</b></div><div><small>Spell DC / attack</small><b>15</b><span class="note"> / +7</span></div><div><small>Heroic Inspiration</small><b>—</b></div></div></div>
+    {{ ds("Number tiles", ".strip.compact > .nt · _char.html ntile()", "Every number tile, on Battle, Sheet and Party (the UI pass, 2026-11-02): three rows, so nothing wraps, jumps or covers anything while a change is on its way. The label row, with the ↻ mark and any buttons at its right (− and + on Battle's Hit points); the value on one line; a foot for badges (Adv) and small notes (+5 temp). Each opens how it adds up.") }}
+    {% set hpb %}<span class="hp-btns"><button type="button" class="hp-btn" aria-label="Damage">−</button><button type="button" class="hp-btn" aria-label="Heal">+</button></span>{% endset %}
+    <div class="battlebar"><div class="strip compact">{{ ntile(none, 'data-sync="on" title="On its way to D&amp;D Beyond"' | safe, '<span class="ph-full">Hit points</span><span class="ph-short">HP</span>' | safe, '<b>32</b><span class="note"> / 51</span>' | safe, foot='<span class="note">+5 temp</span>' | safe, acts=hpb) }}{{ ntile(none, "", "Armor class", "<b>16</b>" | safe) }}{{ ntile(none, "", "Speed", "<b>45 ft</b>" | safe) }}{{ ntile(none, "", "Initiative", "<b>+3</b>" | safe, foot=adv([{"text": "Advantage: Alert", "when": ""}])) }}{{ ntile(none, "", "Spell DC / attack", '<b>15</b><span class="note"> / +7</span>' | safe) }}{{ ntile(none, "", "Heroic Inspiration", "<b>—</b>" | safe) }}</div></div>
     {{ ds("Character card", ".pt-card (party.html)", "One character on Party › At a glance: portrait, name and classes, three number tiles, best saves, resources and slots; a click opens a short version.") }}
     <div class="ds-narrow"><article class="section pt-card">
       <header class="pt-head"><span class="roll-av hue0">C</span><div class="pt-id"><h2 class="pt-name">Cole</h2><p class="note">Druid 6 / Monk 2</p></div></header>
@@ -129,7 +132,7 @@
     <p class="hint">The shared list pattern (DESIGN.md › Lists and filters): search, views, filter chips, sort, rows that open the side panel.</p>
     {{ ds("Search box", "_lists.html search_box()", "Searches everything and pauses the filters. --control-h tall.") }}
     <div class="ds-sample ds-narrow">{{ search_box("Search all your spells") }}</div>
-    {{ ds("Toolbar", ".ls-toolbar · view_switch() · .ls-select · .ls-check", "Views on the left, then the summary, sort and options.") }}
+    {{ ds("Toolbar", ".ls-toolbar · view_switch() · .ls-select · .ls-check", "Views on the left, then the summary, sort and options. A list starts on the view you left it on, on that device, and on All the first time; the views keep their order (the UI pass, 2026-11-02). Full notes is on every list a player can write notes on (the Spell Book and Prepare spells too), before the first note; never for the DM.") }}
     <div class="ls-toolbar">{{ view_switch([("ready", "Prepared"), ("fav", "Shortlist"), ("all", "All")], "Which spells") }}<span class="note">12 spells</span>
       <label class="ls-select"><span>Sort</span><select aria-label="Sort"><option>Level</option><option>Name</option></select></label><label class="ls-check"><input type="checkbox"> Full notes</label></div>
     {{ ds("Filter group", "_lists.html chip_group()", "OR within a group, AND across groups; each chip shows how many match.") }}
@@ -176,6 +179,8 @@
     <p class="note">A side panel opened from inside a modal slides out from the modal's own right edge, inside it.</p>
     {{ ds("Window foot", ".peek-foot.row · form.peek-form", "Where a window's buttons go: its foot, along the bottom edge below the scrolling body, never partway down. The main action first, then Cancel as a quiet link; Delete at the far end (.push). A window that is a form wraps body and foot in .peek-form.") }}
     <div class="ds-sample"><div class="peek-foot row"><button class="btn primary" type="button">Save</button><button class="btn link" type="button">Cancel</button></div></div>
+    {{ ds("Small window's buttons", ".rw-row.use-foot", "The same order in every small window (Cast, Use one, Rest, Coins, Give, Prepare…): the main action first, any other, then Cancel as a quiet link (the UI pass, 2026-11-02).") }}
+    <div class="ds-sample"><div class="rw-row use-foot"><button class="btn primary small" type="button">Use one</button><button class="btn small" type="button">Give one back</button><button class="btn link small" type="button">Cancel</button></div></div>
     {{ ds("Corner card", "#cards > .card.k-* · toast(message, action, kind) · web.notice(text, kind)", "Everything you read and dismiss (docs/mockups/temporary-items.html): bottom right, newest at the bottom, three at most (one on a phone, above the bottom bar or Table rolls); beside an open side panel. Its kind sets the icon, color and time: done 4 seconds, for your information and someone's roll 6, refused 10, an error until closed. Hovering keeps it.") }}
     <div class="ds-row">
       <button class="btn" type="button" onclick="askdndToast('Saved')">Done</button>
@@ -274,8 +279,9 @@
   <section class="section" id="ddb">
     <h2>D&amp;D Beyond states</h2>
     <p class="hint">For anything askdnd changes on D&amp;D Beyond (the bridge; docs/artifacts/ddb-bridge.html). A change shows as made the moment it's made, with a quiet mark until D&amp;D Beyond has it: askdnd is the tool, D&amp;D Beyond the repository.</p>
-    {{ ds("On its way", "[data-sync=on | ending | failed] · sync(s, kind), sync_attrs(st) · ddb_bridge.as_shown", "In the background: a thin, grey, half-clear dashed line and a still ↻, no words (the hover title says it). Ending: the condition faded until it's gone. Failed (given up, to make by hand): the same in amber with !. When D&D Beyond has it, the mark just goes.") }}
-    <div class="strip compact ds-row"><div data-sync="on" title="On its way to D&amp;D Beyond"><small>Hit points</small><b>32</b><span class="note"> / 51</span></div><div data-sync="failed" title="D&amp;D Beyond didn't take this: make it there"><small>Hit points</small><b>37</b><span class="note"> / 51</span></div></div>
+    {{ ds("On its way", "[data-sync=on | ending | failed] · sync(s, kind), sync_attrs(st) · ddb_bridge.as_shown", "One mark everywhere (the UI pass, 2026-11-02): a grey ↻ right after the value, in the flow so it never covers anything (a tile's sits in its label row), and only once the change has waited 2 seconds, since most arrive sooner; the hover title says it. Ending: the condition faded until it's gone. Failed (given up, to make by hand): ! in amber at once. When D&D Beyond has it, the mark just goes.") }}
+    <div class="strip compact ds-row">{{ ntile(none, 'data-sync="on" title="On its way to D&amp;D Beyond"' | safe, "Hit points", '<b>32</b><span class="note"> / 51</span>' | safe) }}{{ ntile(none, 'data-sync="failed" title="D&amp;D Beyond didn&#39;t take this: make it there"' | safe, "Hit points", '<b>37</b><span class="note"> / 51</span>' | safe) }}</div>
+    <div class="res-row ds-row"><span class="res" data-sync="on" title="On its way to D&amp;D Beyond">Channel Divinity {{ pips({"max": 2, "left": 1}) }}</span></div>
     <div class="cond-bar ds-row"><details class="cond-pill" data-cond="poisoned" data-sync="on" title="On its way to D&amp;D Beyond"><summary>{{ cond_icon("Poisoned") }}<b>Poisoned</b></summary></details><details class="cond-pill" data-cond="prone" data-sync="ending" title="Ending: on its way to D&amp;D Beyond"><summary>{{ cond_icon("Prone") }}<b>Prone</b></summary></details></div>
     {{ ds("State", ".br-st.br-live | .br-wait | .br-off | .br-seen | .br-asleep", "Live: D&D Beyond has it. Waiting: on its way. Not on D&D Beyond yet: askdnd couldn't make it, and lists the end state to make by hand. Changed on D&D Beyond: someone changed it there. Asleep: no one is using askdnd or a sheet.") }}
     <div class="ds-row"><span class="br-st br-live">Live with D&amp;D Beyond</span><span class="br-st br-wait">Waiting for D&amp;D Beyond</span><span class="br-st br-off">Not on D&amp;D Beyond yet</span><span class="br-st br-seen">Changed on D&amp;D Beyond</span><span class="br-st br-asleep">D&amp;D Beyond bridge · asleep</span></div>

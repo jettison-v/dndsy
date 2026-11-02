@@ -3,9 +3,10 @@
 <div class="rw-title">{{ n.name }}</div>
 <p class="use-cost">{{ n.left }}{% if n.max %} of {{ n.max }}{% endif %} left{% if n.back %} · {{ n.back }}{% endif %}</p>
 {% if reachable %}
-<div class="rw-row">
+<div class="rw-row use-foot">
   <button type="button" class="btn primary small" data-use-go data-to="use"{% if not n.left %} disabled{% endif %}>Use one</button>
   <button type="button" class="btn small" data-use-go data-to="back"{% if n.max and n.left >= n.max %} disabled{% endif %}>{{ "Give one back" if n.max else "Add one" }}</button>
+  <button type="button" class="btn link small" data-use-close>Cancel</button>
 </div>
 <p class="use-said" role="alert" hidden></p>
 {% else %}
