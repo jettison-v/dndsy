@@ -883,7 +883,15 @@ class _Sheet:
                 old = entries.get(sp["name"])
                 rank = {"always": 4, "prepared": 3, "known": 3, "spellbook": 2, "available": 1}
                 if old is None or rank[state] > rank[old["state"]]:
-                    entries[sp["name"]] = {**sp, "state": state}
+                    entries[sp["name"]] = {**sp, "state": state, "prep": prep(raw, state, sp)}
+
+            def prep(raw, state, sp):
+                """What preparing or unpreparing it on D&D Beyond names (app/ddb_fields.py "prep"): a leveled spell of a
+                class that prepares from a list, already prepared, in a wizard's spellbook, or on the class's list (not
+                for a wizard, who copies a spell into the spellbook first)."""
+                ok = df.get("spellPrepareType") == 1 and sp["level"] and (state in ("prepared", "spellbook") or (state == "available" and not book))
+                ids = (c.get("id"), raw.get("id"), _d(raw, "definition", "id"), raw.get("entityTypeId"))
+                return {"cls": ids[0], "entry": ids[1], "def": ids[2], "etype": ids[3]} if ok and all(ids) else None
 
             for s in sheet_lists.get(c.get("id"), []):
                 level = _d(s, "definition", "level") or 0

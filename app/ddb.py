@@ -22,7 +22,7 @@ CHARACTER_URL = "https://character-service.dndbeyond.com/character/v5/character/
 SHEET_URL = "https://www.dndbeyond.com/characters/{id}"
 USER_AGENT = "askdnd/2 (private table companion; +https://beta.askdnd.ai)"
 TIMEOUT_SECONDS = 15
-PARSER_VERSION = 22  # bump when the summary shape changes; stored summaries are re-parsed
+PARSER_VERSION = 23  # bump when the summary shape changes; stored summaries are re-parsed
 
 
 class DdbError(Exception):
@@ -102,7 +102,8 @@ def _slim_spell(s: dict) -> dict:
     slim["description"] = (df.get("description") or "")[:1500]
     slim["sources"] = [{"sourceId": i} for i in _source_ids(df)]
     slim["modifiers"] = [{k: m.get(k) for k in ("type", "subType", "friendlySubtypeName", "die")} for m in df.get("modifiers") or []]
-    return {"definition": slim, "prepared": False, "alwaysPrepared": bool(s.get("alwaysPrepared"))}
+    # (its id on the class's list and its type: what preparing it on D&D Beyond names, app/ddb_fields.py "prep")
+    return {"definition": slim, "prepared": False, "alwaysPrepared": bool(s.get("alwaysPrepared")), "id": s.get("id"), "entityTypeId": s.get("entityTypeId")}
 
 
 def _spell_list(url: str, timeout: float) -> list:
