@@ -68,7 +68,9 @@ def test_a_long_rest_lists_it_all_then_makes_it_on_d_and_d_beyond(player, db, sh
     cole = char(db, "Cole")
     worn(db, sheet, cole)
     page = player.get(f"/characters/{cole.id}/rest?kind=long").text
-    assert "All Hit Points: 14 back" in page and "Focus Points: 1 back" in page and "Rest" in page
+    assert "All Hit Points: 14 back" in page and "Focus Points: 1 back" in page and "Take a Long Rest" in page
+    # Short and Long side by side, always (Brett, 2026-11-02: Long Rest was hard to find)
+    assert 'aria-label="Which rest"' in page and f'rest?kind=short">Short Rest' in page and 'aria-pressed="true">Long Rest' in page
     assert db.scalar(select(BridgeIntent)) is None  # (nothing moves until Rest)
     r = player.post(f"/characters/{cole.id}/rest?kind=long")
     assert r.status_code == 200 and r.json()["deliver"]

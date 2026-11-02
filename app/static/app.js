@@ -2110,6 +2110,13 @@
       .then(html => { if (win === w) { w.innerHTML = html; if (window.htmx) htmx.process(w); place(w, btn); w.querySelector('[autofocus]')?.focus(); } })
       .catch(() => { if (win === w) showFailure(w, "Couldn't reach askdnd.", () => openUse(btn)); });
   }
+  function swapUse(w, url) {
+    w._use = url;
+    fetch(url, { headers: { 'X-Requested-With': 'fetch' } })
+      .then(r => { if (!r.ok) throw new Error(); return r.text(); })
+      .then(html => { if (win === w) { w.innerHTML = html; if (window.htmx) htmx.process(w); place(w); } })
+      .catch(() => { if (win === w) showFailure(w, "Couldn't reach askdnd.", () => swapUse(w, url)); });
+  }
   // The hit points window in it: its working redraws as you type, and taking it closes it
   document.body.addEventListener('htmx:afterSwap', e => { if (win && win.contains(e.target)) place(win); });
   document.body.addEventListener('closePanel', () => setTimeout(() => { if (win && win.querySelector('.hp-form')) closeWin(); }));  // (after the answer's other events: they start from the form)
@@ -2195,6 +2202,8 @@
       if (e.target.closest('[data-use-go]')) { useItem(e.target.closest('[data-use-go]')); return; }
       if (e.target.closest('[data-use-close]')) { closeWin(); return; }
       if (e.target.closest('[data-panel-url]')) { setTimeout(closeWin); return; }  // (the side panel opens from its own click)
+      const other = e.target.closest('[data-use-url]');  // another of the same window (a Short Rest or a Long one): in place
+      if (other && win._use) { swapUse(win, other.dataset.useUrl); return; }
       if (e.target.closest('[data-use-give]')) {
         const names = win.querySelector('.use-names');
         names.hidden = !names.hidden;
