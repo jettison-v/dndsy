@@ -48,15 +48,17 @@ def test_full_notes_is_on_every_list_a_player_can_write_notes_on(player, dm, db)
 
 
 def test_coins_are_a_purse_with_the_total_in_gold(player, db):
-    """Question 6: each coin in its metal, the total in gold; pressing it opens Change coins where the bridge works."""
+    """Question 6: each coin in its metal, the total in gold; pressing it opens Change coins where the bridge works.
+    Brett, 2026-11-02: small, at the right end of Items' toolbar."""
     cole = char(db, "Cole")
     cur = characters.character_summary(cole)["currency"]
-    purse = player.get(f"/characters/{cole.id}").text.split('class="purse"', 1)[1].split("</button>", 1)[0]
+    page = player.get(f"/characters/{cole.id}").text
+    purse = page.split('class="purse"', 1)[1].split("</button>", 1)[0]
     for k, v in cur.items():
         assert f'class="coin-{k}"' in purse and f"<b>{v:,}</b><small>{k}</small>" in purse
-    assert f'class="purse" data-use-url="/characters/{cole.id}/coins"' in player.get(f"/characters/{cole.id}").text
-    if len(cur) > 1:
-        assert "gp in all" in purse
+    assert f'class="purse" data-use-url="/characters/{cole.id}/coins"' in page
+    if len(cur) > 1:  # (on Sheet › Items the total is the purse's hover text, so the toolbar stays one line)
+        assert "gp in all: Change coins" in purse
 
 
 def test_an_item_on_its_way_is_marked_in_its_row(player, db):
