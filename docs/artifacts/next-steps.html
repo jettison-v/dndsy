@@ -40,7 +40,7 @@ footer { color: var(--muted); font-size: 13px; }
 
 <div class="wrap">
   <header>
-    <div class="eyebrow">askdnd · your next steps · Nov 2, evening</div>
+    <div class="eyebrow">askdnd · your next steps · Nov 2, late</div>
     <h1>What's waiting on you, in order</h1>
     <p class="lede">Each step says exactly where to click or what to type. Tick a step when it's done; the ticks stay in this browser. I'll update this page as things change, and the Roadmap stays the big picture.</p>
   </header>
@@ -48,8 +48,23 @@ footer { color: var(--muted); font-size: 13px; }
   <section>
     <h2>Now</h2>
 
+    <div class="step now" data-step="move">
+      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>1. Move askdnd.ai to v2</h3><span class="chip now">Approved Nov 2</span></div>
+      <p>askdnd.ai becomes the address of the app beta runs today: same app, same data. beta.askdnd.ai keeps working for now, www.askdnd.ai sends you to askdnd.ai, and the old app stays at <a href="https://legacy.askdnd.ai">legacy.askdnd.ai</a>. Three parts, in this order:</p>
+      <p><b>A. You, in Google Cloud (2 minutes, nothing changes yet).</b> This lets Google sign you in at the new address.</p>
+      <ol>
+        <li>Open <a href="https://console.cloud.google.com/auth/clients">Google Cloud › Google Auth Platform › Clients</a>. If it asks for a project, pick the one askdnd's sign-in is in (it may still be called "My First Project").</li>
+        <li>Click askdnd's <b>Web application</b> client (the one whose redirect URIs include <code>https://beta.askdnd.ai/auth/callback</code>).</li>
+        <li>Under <b>Authorized redirect URIs</b>, press <b>+ Add URI</b> twice and add exactly:<br><code>https://askdnd.ai/auth/callback</code><br><code>https://askdnd.ai/admin/notes/callback</code></li>
+        <li>Leave the others. Press <b>Save</b>, then tell me <b>"Google done"</b>.</li>
+      </ol>
+      <p><b>B. Me, in Railway (a minute).</b> I take askdnd.ai and www.askdnd.ai off the old app's service and give them to v2. Railway then gives me the two records for Cloudflare; I put them here, under C. From this moment until C is done, askdnd.ai shows Railway's "not found" page, so do C right after.</p>
+      <p><b>C. You, in Cloudflare (3 minutes).</b> I'll fill in the exact values once B is done: open askdnd.ai's DNS records, change the target of the <code>askdnd.ai</code> and <code>www</code> CNAME records to the values Railway gives, keep them <b>Proxied</b> (orange cloud) like beta, and add the TXT record Railway asks for, if it asks for one. Then tell me <b>"Cloudflare done"</b>. I check that Railway verifies it and issues the certificate, and that sign-in works at <a href="https://askdnd.ai">askdnd.ai</a>.</p>
+      <p class="why">After the move each person signs in once more at askdnd.ai (a sign-in belongs to one address). The bridge works at askdnd.ai already: open askdnd there once, then the D&amp;D Beyond sheet.</p>
+    </div>
+
     <div class="step now" data-step="mm">
-      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>1. Load the whole Monster Manual on beta</h3><span class="chip now">Ready now</span></div>
+      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>2. Load the whole Monster Manual on beta</h3><span class="chip now">Ready now</span></div>
       <p>The upload is on beta. The terminal command couldn't work (beta's database has no public address), so it's a file instead:</p>
       <ol>
         <li>Open <a href="https://beta.askdnd.ai/manage/backups#books">beta's Backups and imports › Books</a>.</li>
@@ -63,7 +78,7 @@ footer { color: var(--muted); font-size: 13px; }
     <h2>Next, in this order</h2>
 
     <div class="step" data-step="extension">
-      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>2. Upload extension 0.9.8 to Google</h3><span class="chip now">Ready now</span></div>
+      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>3. Upload extension 0.9.8 to Google</h3><span class="chip now">Ready now</span></div>
       <p>The file is built. One upload carries DM Backup and preparing spells, and replaces 0.9.6, which is still in review:</p>
       <ol>
         <li>Open the <a href="https://chrome.google.com/webstore/devconsole">Chrome Web Store developer dashboard</a> and click <b>askdnd bridge</b>.</li>
@@ -75,7 +90,7 @@ footer { color: var(--muted); font-size: 13px; }
     </div>
 
     <div class="step" data-step="review-live">
-      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>3. Review live state on beta</h3><span class="chip wait">After step 2</span></div>
+      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>4. Review live state on beta</h3><span class="chip wait">After step 3</span></div>
       <p>Wait for 0.9.8, so what you see is what the table will get. Then in <a href="https://beta.askdnd.ai/c/vtt-test/">VTT test</a>, with one of your own characters (Vi or Spurt) and its D&amp;D Beyond sheet open in Chrome:</p>
       <ul>
         <li><b>Cast</b> a spell from Battle: a slot goes on D&amp;D Beyond; Undo gives it back.</li>
@@ -89,22 +104,18 @@ footer { color: var(--muted); font-size: 13px; }
     </div>
 
     <div class="step" data-step="share">
-      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>4. Share the bridge with the table</h3><span class="chip wait">When you're ready</span></div>
+      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>5. Share the bridge with the table</h3><span class="chip wait">When you're ready</span></div>
       <ol>
         <li>Send the table this link: <code>https://chromewebstore.google.com/detail/askdnd-bridge/obpgemimnhngpcckodjkcihiahoaefpl</code> (it's also in Help › FAQ). Each player adds it in Chrome on a computer.</li>
         <li>Send them the <a href="https://claude.ai/artifact/9H59RDNi99gVa7bNwmjp6G">bridge's risk summary</a>. Before you send it I'll update it for DM Backup and preparing spells, and share it from its Share menu so they can open it.</li>
-        <li>On beta, open <a href="https://beta.askdnd.ai/c/main/manage/settings">The Adventure Begins › Manage › Settings</a>, scroll to <b>Virtual tabletop</b>, switch on <b>D&amp;D Beyond bridge</b>, and save. Leave the others off until step 3 says they're ready.</li>
+        <li>On beta, open <a href="https://beta.askdnd.ai/c/main/manage/settings">The Adventure Begins › Manage › Settings</a>, scroll to <b>Virtual tabletop</b>, switch on <b>D&amp;D Beyond bridge</b>, and save. Leave the others off until step 4 says they're ready.</li>
         <li>Each player: open askdnd once in that Chrome, signed in, then open their D&amp;D Beyond sheet. The Live pill turns green: <b>Connected</b>.</li>
       </ol>
     </div>
   </section>
 
   <section>
-    <h2>Whenever you like</h2>
-    <div class="step" data-step="small">
-      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>5. Move askdnd.ai to v2</h3><span class="chip now">Approved Nov 2</span></div>
-      <p>You said go (Nov 2). The two unused columns are being dropped too. The move needs a few clicks from you in Google and Cloudflare; I'll list them exactly once you've confirmed how it's shaped.</p>
-    </div>
+    <h2>When you say</h2>
     <div class="step" data-step="vtt">
       <div class="step-head"><input type="checkbox" aria-label="Done"><h3>6. Start the VTT</h3><span class="chip wait">When you say</span></div>
       <p>The layout is decided (<a href="https://claude.ai/artifact/VkPT5mfWdLTaPrzJwmeV7W">VTT Layout</a>). Step 1 is the fight without a map, built in the final frame. Say "start the VTT".</p>
@@ -114,7 +125,7 @@ footer { color: var(--muted); font-size: 13px; }
   <section>
     <h2>Running without you</h2>
     <div class="step running">
-      <div><b>Testing gaps</b><span>wrapping up in its own session: wider live tests on the Mac Mini, a nightly check, steadier automated tests, phone layouts in Safari's engine. When it stops, I review its work line by line here and finish what's left myself. No new side sessions.</span></div>
+      <div><b>The nightly live test</b><span>on the Mac Mini at 4:00, against beta's test seats; a miss emails you through Sentry. Installed and tried Nov 2 (a deliberate miss reached Sentry). Its fixes are in <a href="https://github.com/jettison-v/dndsy/pull/148">PR 148</a>, reviewed line by line and passing: say "merge 148" when you like.</span></div>
       <div><b>On beta now</b><span>Give, Give loot (test campaigns), the new Live window, the phone layouts, Prepare spells as a large window (it makes changes once 0.9.8 is approved), and the database connection fix.</span></div>
       <div><b>UI polish, later</b><span>The colours of Prepare spells' changes, wrapping on narrower screens there and elsewhere, and where coins sit (more visual): one pass after the structural work. Send me any wrapping you notice; it's listed on the Roadmap.</span></div>
     </div>
