@@ -82,6 +82,10 @@ TEST_ITEM = "Candle"  # the round trip takes one and puts it back
 MAX_ATTEMPTS = 3
 RETRY_SECONDS = (0, 5, 20)  # how long a batch that didn't land waits before it's sent again
 SENDING_SECONDS = 30  # a batch the extension took but never answered for is offered again
+# How many reads, a second apart, a batch's read-back makes before it decides D&D Beyond didn't keep it. A Short Rest's
+# Hit Point Dice (D&D Beyond's rest endpoint) can take longer to show than the rest (Oct 30, the live test: past the
+# 4 tries, so the batch went again and the die took over 30 seconds).
+READ_BACK_TRIES = {False: 4, True: 10}
 # A batch may build on askdnd's copy of the sheet this recent instead of reading it first (Brett, 2026-10-29: a second
 # faster): the extension checks every number it writes against D&D Beyond right before writing and writes nothing if
 # one changed (askdnd works it out again), so an older copy only costs a retry. What that check doesn't cover is read
@@ -651,7 +655,7 @@ def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: 
         _again(db, b, error or "The change couldn't be made.")
         return
     now = {}
-    for attempt in range(4):  # D&D Beyond can take a moment to serve what it just saved
+    for attempt in range(READ_BACK_TRIES[any(f.startswith("hitdice:") for f in b.target)]):  # D&D Beyond can take a moment to serve what it just saved
         if attempt:
             time.sleep(1)
         chars.refresh(db, character)

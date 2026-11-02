@@ -270,7 +270,9 @@ def _read(form) -> tuple[str, list[dict], set[str], bool | None]:
             n = 0
         t = (types[i] if i < len(types) else "").lower()
         parts.append({"amount": n, "type": t if t in DAMAGE_TYPES else ""})
-    take = form.get("take")
+    # Keep or take is a choice for the amount it was made on (`take_for`): a new amount starts again on the higher (Nov 2:
+    # the window opened on "Keep 0" with no amount yet, and typing one left it there, so Set stayed at 0)
+    take = form.get("take") if form.get("take_for") == str(sum(p["amount"] for p in parts)) else None
     return mode, parts or [{"amount": 0, "type": ""}], set(form.getlist("off")), (None if take in (None, "") else take == "1")
 
 

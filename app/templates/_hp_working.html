@@ -13,7 +13,7 @@
     {% else %}<li class="hp-step{{ ' mass' if st.mass }}"><span class="hp-st-title">{{ st.title }}</span><b>{{ st.value }}</b><span class="why">{{ st.why }}</span></li>{% endif %}
     {% endfor %}
     {% if w.mode == "temp" %}
-    <li class="hp-step"><span class="hp-st-title">Choose</span><b></b><span class="seg hp-take">
+    <li class="hp-step"><span class="hp-st-title">Choose</span><b></b><input type="hidden" name="take_for" value="{{ w.amount }}"><span class="seg hp-take">
       <label><input type="radio" name="take" value="0"{{ " checked" if not w.take }}><span>Keep {{ w.temp_before }}</span></label>
       <label><input type="radio" name="take" value="1"{{ " checked" if w.take }}><span>Take {{ w.amount }}</span></label></span></li>
     {% endif %}
