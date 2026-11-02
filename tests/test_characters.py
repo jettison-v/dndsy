@@ -20,7 +20,7 @@ def test_party_page(player, db):
     characters.refresh(db, char(db, "Cole"))
     page = player.get("/party").text
     assert 'data-tab="t-glance">At a glance' in page and 'data-tab="t-spells">Spells' in page and 'data-tab="t-items">Items' in page
-    assert "Druid 6 / Monk 2" in page and '<span>Wild Shape <span class="pips" aria-label="3 of 3 left">' in page  # Cole's card
+    assert "Druid 6 / Monk 2" in page and '<span title="Wild Shape">Wild Shape <span class="pips" aria-label="3 of 3 left">' in page  # Cole's card (its whole name on hover)
     assert "Pass. Perc." not in page and '<span class="note">Slots</span> <span class="nowrap">1st' in page
     assert 'data-list="party-spell"' in page and 'data-ls-group="does" data-ls-value="Healing and recovery"' in page  # the shared list
     assert 'data-ls-group="who" data-ls-value="Cole"' in page and "data-ls-search" in page
