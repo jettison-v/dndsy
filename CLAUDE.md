@@ -23,8 +23,8 @@ A companion app for one D&D 2024 table (4 players + DM, playing on Zoom with D&D
 
 ## Repo and environments
 - `main` = v2. Tag `v1-legacy` and branch `legacy` = the old app. A read-only copy is at `../dndsy-legacy`. Use it as reference (PDF→page-image pipeline, structure analysis, link extraction), but don't copy its architecture.
-- **Never modify the `legacy` branch, the legacy Railway service, legacy Qdrant collections, or S3 paths outside `v2/`.** Legacy serves askdnd.ai and legacy.askdnd.ai.
-- v2 deploys to a **new Railway service** (in the existing `askdnd` Railway project) at `beta.askdnd.ai`. DNS is in Cloudflare (proxied records). askdnd.ai moves to v2 only when Brett says so.
+- **Never modify the `legacy` branch, the legacy Railway service, legacy Qdrant collections, or S3 paths outside `v2/`.** Legacy serves legacy.askdnd.ai only (askdnd.ai moved to v2 on 2026-11-02).
+- v2 deploys to a **new Railway service** (`askdnd-v2`, in the existing `askdnd` Railway project), which answers at **askdnd.ai** (since 2026-11-02; www.askdnd.ai redirects there, app/main.py `one_address`) and at `beta.askdnd.ai` (kept for now: the extension, the Mini's live test and old bookmarks use it). Same app, same database. DNS is in Cloudflare (proxied records); Railway writes the records itself when a domain is added there.
 - Pushing to `main` deploys to beta. That's fine, but keep `main` working.
 
 ## Where things are (as of 2026-10-23)

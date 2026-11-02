@@ -49,18 +49,13 @@ footer { color: var(--muted); font-size: 13px; }
     <h2>Now</h2>
 
     <div class="step now" data-step="move">
-      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>1. Move askdnd.ai to v2</h3><span class="chip now">Approved Nov 2</span></div>
-      <p>askdnd.ai becomes the address of the app beta runs today: same app, same data. beta.askdnd.ai keeps working for now, www.askdnd.ai sends you to askdnd.ai, and the old app stays at <a href="https://legacy.askdnd.ai">legacy.askdnd.ai</a>. Three parts, in this order:</p>
-      <p><b>A. You, in Google Cloud (2 minutes, nothing changes yet).</b> This lets Google sign you in at the new address.</p>
+      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>1. Sign in at askdnd.ai, then tidy Google's secrets</h3><span class="chip now">2 minutes</span></div>
+      <p>The move is done: askdnd.ai and www.askdnd.ai are on v2, with valid certificates, and the old app answers at <a href="https://legacy.askdnd.ai">legacy.askdnd.ai</a>. Google is set to send you back to askdnd.ai.</p>
       <ol>
-        <li>Open <a href="https://console.cloud.google.com/auth/clients">Google Cloud › Google Auth Platform › Clients</a>. If it asks for a project, pick the one askdnd's sign-in is in (it may still be called "My First Project").</li>
-        <li>Click askdnd's <b>Web application</b> client (the one whose redirect URIs include <code>https://beta.askdnd.ai/auth/callback</code>).</li>
-        <li>Under <b>Authorized redirect URIs</b>, press <b>+ Add URI</b> twice and add exactly:<br><code>https://askdnd.ai/auth/callback</code><br><code>https://askdnd.ai/admin/notes/callback</code></li>
-        <li>Leave the others. Press <b>Save</b>, then tell me <b>"Google done"</b>.</li>
+        <li>Open <a href="https://askdnd.ai">askdnd.ai</a> and sign in with Google. You land on your campaign's Story, as on beta.</li>
+        <li>Google's warning about two secrets: open <a href="https://console.cloud.google.com/auth/clients">Clients</a> › <b>askdnd v2</b>, scroll to <b>Client secrets</b>. Press <b>Disable</b> on the <b>older</b> one (not Delete: Disable can be undone).</li>
+        <li>Sign out of askdnd.ai and sign in again. If it works, the older secret was unused: press <b>Delete</b> on it. If sign-in fails, press <b>Enable</b> on it again and tell me.</li>
       </ol>
-      <p><b>B. Me, in Railway (a minute).</b> I take askdnd.ai and www.askdnd.ai off the old app's service and give them to v2. Railway then gives me the two records for Cloudflare; I put them here, under C. From this moment until C is done, askdnd.ai shows Railway's "not found" page, so do C right after.</p>
-      <p><b>C. You, in Cloudflare (3 minutes).</b> I'll fill in the exact values once B is done: open askdnd.ai's DNS records, change the target of the <code>askdnd.ai</code> and <code>www</code> CNAME records to the values Railway gives, keep them <b>Proxied</b> (orange cloud) like beta, and add the TXT record Railway asks for, if it asks for one. Then tell me <b>"Cloudflare done"</b>. I check that Railway verifies it and issues the certificate, and that sign-in works at <a href="https://askdnd.ai">askdnd.ai</a>.</p>
-      <p class="why">After the move each person signs in once more at askdnd.ai (a sign-in belongs to one address). The bridge works at askdnd.ai already: open askdnd there once, then the D&amp;D Beyond sheet.</p>
     </div>
 
     <div class="step now" data-step="mm">
@@ -127,7 +122,7 @@ footer { color: var(--muted); font-size: 13px; }
     <div class="step running">
       <div><b>The nightly live test</b><span>on the Mac Mini at 4:00, against beta's test seats; a miss emails you through Sentry. Installed and tried Nov 2 (a deliberate miss reached Sentry). Its fixes are in <a href="https://github.com/jettison-v/dndsy/pull/148">PR 148</a>, reviewed line by line and passing: say "merge 148" when you like.</span></div>
       <div><b>On beta now</b><span>Give, Give loot (test campaigns), the new Live window, the phone layouts, Prepare spells as a large window (it makes changes once 0.9.8 is approved), and the database connection fix.</span></div>
-      <div><b>UI polish, later</b><span>The colours of Prepare spells' changes, wrapping on narrower screens there and elsewhere, and where coins sit (more visual): one pass after the structural work. Send me any wrapping you notice; it's listed on the Roadmap.</span></div>
+      <div><b>The UI and UX pass</b><span>Starting now, in this session only: a full scan of every page, window and panel, then one page of findings and choices for you, then building it in rounds. It's on the Roadmap.</span></div>
     </div>
   </section>
 

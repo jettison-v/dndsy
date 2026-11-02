@@ -200,7 +200,7 @@ td { min-width: 0; }
 
         <!-- the way in -->
         <g class="bx brett"><rect x="320" y="300" width="180" height="44" rx="6"/>
-          <text class="bt" x="332" y="318">Cloudflare</text><text class="bs" x="332" y="334">DNS: beta.askdnd.ai</text></g>
+          <text class="bt" x="332" y="318">Cloudflare</text><text class="bs" x="332" y="334">DNS: askdnd.ai, beta</text></g>
         <g class="bx out"><rect x="320" y="400" width="180" height="44" rx="6"/>
           <text class="bt" x="332" y="418">The table</text><text class="bs" x="332" y="434">players' and DM's browsers</text></g>
 
@@ -365,7 +365,7 @@ td { min-width: 0; }
         <div class="tw"><table>
           <thead><tr><th>Service</th><th>What you control there</th><th>When you'd go there</th></tr></thead>
           <tbody>
-            <tr><td>Cloudflare</td><td>DNS for askdnd.ai (beta.askdnd.ai points at Railway).</td><td>Moving askdnd.ai to v2 at launch.</td></tr>
+            <tr><td>Cloudflare</td><td>DNS for askdnd.ai: askdnd.ai, www and beta point at v2 on Railway, legacy at the old app. Railway writes the records when a domain is added there.</td><td>Done Nov 2: askdnd.ai moved to v2.</td></tr>
             <tr><td>AWS</td><td>Two narrow keys: <code>askdnd-v2-files</code> (website: read and write <code>v2/files/</code>) and <code>askdnd-v2-backups</code> (backup: <code>v2/backups/</code>, tidying <code>v2/files/</code>).</td><td>Rotating a key, or a new kind of storage.</td></tr>
             <tr><td>Google Cloud</td><td>The sign-in client and its secret; the test-user list (Testing mode until launch).</td><td>Adding a player: here <em>and</em> on Manage › Accounts.</td></tr>
             <tr><td>Anthropic Console</td><td>The API key and the prepaid balance (auto-reload off).</td><td>Topping up. askdnd's own limit is on Manage › Usage.</td></tr>
@@ -411,7 +411,7 @@ td { min-width: 0; }
         <tr><td>Railway</td><td><span class="pill no">Skip</span></td><td>The <code>railway</code> CLI already covers logs, deploys and variables.</td></tr>
         <tr><td>GitHub</td><td><span class="pill no">Skip</span></td><td>The <code>gh</code> CLI already covers pull requests, checks and merges.</td></tr>
         <tr><td>AWS</td><td><span class="pill no">Skip</span></td><td>It would need a broad key. Key changes are rare, and keeping them in your hands is part of what keeps each key narrow.</td></tr>
-        <tr><td>Cloudflare</td><td><span class="pill no">Skip</span></td><td>One change left (askdnd.ai at launch), and it's a few clicks.</td></tr>
+        <tr><td>Cloudflare</td><td><span class="pill no">Skip</span></td><td>Nothing left: Railway keeps the records itself.</td></tr>
       </tbody>
     </table></div>
   </section>
