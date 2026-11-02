@@ -2657,7 +2657,7 @@
   function init() {
     document.querySelectorAll('[data-list]:not([data-ls-ready])').forEach(root => {
       root.dataset.lsReady = '1';
-      const fold = root.querySelector('[data-ls-fold]'); if (fold && !matchMedia('(max-width: 700px)').matches) fold.open = true;
+      const fold = root.querySelector('[data-ls-fold]'); if (fold) fold.open = !matchMedia('(max-width: 900px)').matches;  // (the width app.css folds them at)
       load(root);
       apply(root);
     });

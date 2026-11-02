@@ -10,13 +10,12 @@
     {% for st in w.steps %}{# a step with a key can be crossed out for a ruling (at 0: Unconscious, a death save failure) #}
     {% if st.key %}<li class="hp-step{{ ' off' if st.off }}"><label><input type="checkbox" name="off" value="{{ st.key }}"{{ " checked" if st.off }}> <span class="sr">Cross out</span>
       <span class="hp-st-title">{{ st.title }}</span></label><b>{{ st.value }}</b><span class="why">{{ st.why }}{% if st.off %} Crossed out: the table rules otherwise.{% endif %}</span></li>
+    {% elif st.choose %}{# Temporary Hit Points: the choice in its own row, said once (Brett, 2026-11-02) #}
+    <li class="hp-step"><span class="hp-st-title">{{ st.title }}</span><input type="hidden" name="take_for" value="{{ w.amount }}"><span class="seg hp-take">
+      <label><input type="radio" name="take" value="0"{{ " checked" if not w.take }}><span>Keep {{ w.temp_before }}</span></label>
+      <label><input type="radio" name="take" value="1"{{ " checked" if w.take }}><span>Take {{ w.amount }}</span></label></span><span class="why">askdnd starts on the higher; you choose.</span></li>
     {% else %}<li class="hp-step{{ ' mass' if st.mass }}"><span class="hp-st-title">{{ st.title }}</span><b>{{ st.value }}</b><span class="why">{{ st.why }}</span></li>{% endif %}
     {% endfor %}
-    {% if w.mode == "temp" %}
-    <li class="hp-step"><span class="hp-st-title">Choose</span><b></b><input type="hidden" name="take_for" value="{{ w.amount }}"><span class="seg hp-take">
-      <label><input type="radio" name="take" value="0"{{ " checked" if not w.take }}><span>Keep {{ w.temp_before }}</span></label>
-      <label><input type="radio" name="take" value="1"{{ " checked" if w.take }}><span>Take {{ w.amount }}</span></label></span></li>
-    {% endif %}
   </ol>
   {% if done %}
   <p class="hp-blocked">Already applied to {{ c.name }}: {{ done.label }}.</p>

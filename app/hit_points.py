@@ -137,7 +137,7 @@ def work(hp: dict, mode: str, parts: list[dict], defs: list[dict], off: set[str]
         take = (n > temp) if temp_take is None else temp_take
         out.update(amount=n, temp_after=n if take else temp, take=take)
         out["steps"].append({"title": "Temporary Hit Points don't add up", "value": f"{'take' if take else 'keep'} {n if take else temp}",
-                             "why": f"Keep the {temp} you have or take the new {n}; askdnd starts on the higher. You choose."})
+                             "why": f"Keep the {temp} you have or take the new {n}; askdnd starts on the higher. You choose.", "choose": True})
         return out
     taken = 0
     for p in parts:
