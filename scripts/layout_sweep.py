@@ -1,6 +1,6 @@
 """A layout sweep (docs/DESIGN.md › Narrow screens): open every page askdnd links to, as the people given, at several
 widths, with each of its tabs, the menu bar's menus and Battle's side panel, and list what scrolls sideways, spills,
-wraps or overlaps (tests/browser/layout_check.js). A screenshot of each page at each width goes to
+wraps, overlaps or doesn't line up (tests/browser/layout_check.js). A screenshot of each page at each width goes to
 private/layout-sweep/ (gitignored) for the look-over the checks can't do.
 
 Against a local server with the dev login (DEV_LOGIN_EMAIL set in .env), on a copy of real data:
@@ -50,7 +50,7 @@ def pages_from(page, base: str, start: str, limit: int) -> list[str]:
 
 
 def scan(page, found, who, width, where):
-    for p in page.evaluate(CHECK):
+    for p in page.evaluate(CHECK, {"rows": True}):
         found[(p["kind"], p["where"])].append((who, width, where, p["detail"]))
 
 

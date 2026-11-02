@@ -5,8 +5,11 @@
 // - "wraps": a one-line control (a button, tab, tag, chip) broke onto two lines
 // - "overlaps": two items in the menu bar sit on top of each other, or something placed on top (a badge, a corner
 //   button) covers text beside it
+// - "misaligned", only when asked ({rows: true}): rows of one list whose small last item (an icon, a ↗) doesn't line up
+//   with the rest. scripts/layout_sweep.py asks; the tests don't yet, since it finds rows on the Character page that
+//   wrap differently on a phone (Nov 2), a design question before it can be a rule.
 // Used by tests/browser/test_layout.py on every pull request and by scripts/layout_sweep.py for a sweep of real data.
-() => {
+ask => {
   const problems = [], seen = new Set();
   const shown = el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden'; };
   const where = el => {
@@ -59,6 +62,7 @@
     if (el.closest('details:not([open])') && !el.closest('summary')) continue;  // (inside a closed fold: not on the page)
     const cs = getComputedStyle(el);
     if (cs.overflowX !== 'visible' || cs.textOverflow === 'ellipsis') continue;
+    if (el.matches('input, textarea, select')) continue;  // (a field scrolls its own words: Safari counts them in scrollWidth, Chromium doesn't)
     if (el.scrollWidth > el.clientWidth + 2 && el.clientWidth > 0) add('spills', el, `${el.scrollWidth - el.clientWidth}px wider than its box: ${el.textContent}`);
   }
 
@@ -102,6 +106,34 @@
       if (!n.textContent.trim() || el.contains(n) || n.parentElement.closest('[hidden]') || !shown(n.parentElement)) continue;
       const range = document.createRange(); range.selectNodeContents(n);
       if ([...range.getClientRects()].some(t => rx(t, r))) { add('overlaps', el, `${el.textContent} covers "${n.textContent.trim()}"`); break; }
+    }
+  }
+  // Rows of one list that are meant to line up and don't: three or more rows built the same way (same tag and class, the
+  // same items in the same order), each a flex or grid row of the same width, whose last item is small (an icon, a ↗, a
+  // button) and ends at the same place in most rows but not in a few (Nov 2: the Live window's ↗ sat at a different place
+  // on some rows). A list that's ragged on purpose has no such majority.
+  if (ask && ask.rows) for (const list of document.body.querySelectorAll('*')) {
+    const kids = [...list.children].filter(shown);
+    if (kids.length < 3 || contained(list)) continue;
+    const kind = el => el.tagName + '.' + [...el.classList].filter(c => !/^(on|open|active|here|mine|fresh|ok|warn|bad|off)$/.test(c)).sort().join('.');
+    const groups = {};
+    for (const k of kids) {
+      const d = getComputedStyle(k).display;
+      if (!/flex|grid/.test(d)) continue;
+      const key = kind(k) + '>' + [...k.children].filter(shown).map(kind).join(',');  // (rows built the same way: same items in the same order)
+      (groups[key] = groups[key] || []).push(k);
+    }
+    for (const rows of Object.values(groups)) {
+      if (rows.length < 3) continue;
+      const ends = rows.map(r => { const items = [...r.children].filter(shown); const rr = r.getBoundingClientRect();
+        const last = items[items.length - 1], lr = last && last.getBoundingClientRect();
+        return items.length >= 2 && lr.width <= 48 ? { row: r, width: Math.round(rr.width), right: Math.round(rr.right), end: Math.round(lr.right) } : null; }).filter(Boolean);
+      if (ends.length < 3 || new Set(ends.map(e => e.width + ':' + e.right)).size > 1) continue;  // (rows of different widths)
+      const counts = {};
+      ends.forEach(e => { counts[e.end] = (counts[e.end] || 0) + 1; });
+      const [mode, most] = Object.entries(counts).map(([k, n]) => [+k, ends.filter(e => Math.abs(e.end - +k) <= 2).length]).sort((a, b) => b[1] - a[1])[0];
+      if (most * 2 <= ends.length || most === ends.length) continue;
+      ends.filter(e => Math.abs(e.end - mode) > 2).forEach(e => add('misaligned', e.row, `its last item ends at ${e.end}px, ${most} of ${ends.length} rows at ${mode}px: ${e.row.textContent}`));
     }
   }
   return problems;

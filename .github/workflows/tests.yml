@@ -4,8 +4,9 @@
 # Two jobs side by side, so the wait is the slower one, not the sum (docs/SETUP_LOG.md, 2026-10-24):
 # - Server tests: everything outside tests/browser, in parallel (pytest-xdist, one worker per CPU, each with its own
 #   database) after the lint.
-# - Browser tests: tests/browser, real Chromium pages against a real askdnd server, inside Playwright's own image
-#   (Chromium and its system libraries already installed; its tag matches uv.lock's Playwright, tests/test_deploy.py).
+# - Browser tests: tests/browser, real Chromium pages against a real askdnd server (and WebKit, Safari's engine, for the
+#   layout at phone and tablet widths), inside Playwright's own image (both browsers and their system libraries
+#   already installed; its tag matches uv.lock's Playwright, tests/test_deploy.py).
 #   Installing those libraries on GitHub's machine usually took seconds but sometimes 8-12 minutes (2026-10-26),
 #   holding up every deploy.
 # Together they run every test. On GitHub a skip fails the run (tests/conftest.py): missing tooling must fail here.

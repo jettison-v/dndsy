@@ -45,21 +45,18 @@ def bridge_on(server, browser_db):
 
 
 @pytest.fixture
-def chrome(server, tmp_path):
+def chrome(playwright, server, tmp_path):
     """A browser with the extension in it, signed in as Cole's player, and D&D Beyond's address answered here."""
-    from playwright.sync_api import sync_playwright
-
     from tests.browser.conftest import PEOPLE
 
     folder = extension_for(server["base"], tmp_path)
-    with sync_playwright() as p:
-        context = p.chromium.launch_persistent_context(str(tmp_path / "profile"), channel="chromium", headless=True,
-                                                       args=[f"--disable-extensions-except={folder}", f"--load-extension={folder}"])
-        context.route(re.compile(r"https://www\.dndbeyond\.com/.*"), lambda r: r.fulfill(status=200, content_type="text/html", body="<!doctype html><title>Sheet</title><main>Stand-in sheet</main>"))
-        page = context.pages[0] if context.pages else context.new_page()
-        page.goto(f"{server['base']}/dev/login?as={PEOPLE['player']}")
-        yield context
-        context.close()
+    context = playwright.chromium.launch_persistent_context(str(tmp_path / "profile"), channel="chromium", headless=True,
+                                                            args=[f"--disable-extensions-except={folder}", f"--load-extension={folder}"])
+    context.route(re.compile(r"https://www\.dndbeyond\.com/.*"), lambda r: r.fulfill(status=200, content_type="text/html", body="<!doctype html><title>Sheet</title><main>Stand-in sheet</main>"))
+    page = context.pages[0] if context.pages else context.new_page()
+    page.goto(f"{server['base']}/dev/login?as={PEOPLE['player']}")
+    yield context
+    context.close()
 
 
 def test_opening_and_closing_a_sheet_shows_on_askdnds_open_pages(chrome, server):

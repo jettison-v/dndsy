@@ -3,7 +3,9 @@ table with nothing to turn on, Only me is remembered, a fight opens Table rolls 
 roll reaches D&D Beyond's Game Log."""
 
 import json
+import time
 
+from playwright.sync_api import expect
 from sqlalchemy import create_engine, text
 
 from tests.browser.test_table import LOG, battle, newest, save
@@ -63,24 +65,29 @@ def test_only_me_is_your_choice_and_stays_until_you_change_it(people, server):
 def test_the_window_says_whether_a_roll_reaches_the_game_log(people, server):
     player = people("player")
     page = battle(player, server)
-    note = f"{WINDOW} [data-log-note]"
-    page.click(save("Dex"))
-    assert page.locator(note).is_hidden()  # no bridge here: nothing to say
-    page.keyboard.press("Escape")
-    page.evaluate("document.getElementById('live-pill').dataset.log = 'sheet'")
-    page.click(save("Dex"))
-    assert "your sheet isn't open" in page.locator(note).inner_text()
+    player.live()
+    note = page.locator(f"{WINDOW} [data-log-note]")
+
+    def roll_with(**log):
+        """What the bridge would have said on the Live pill, just before the roll window opens (set each time: the page
+        may draw the pill afresh meanwhile, and a busy machine makes that likelier)."""
+        page.keyboard.press("Escape")
+        page.locator(WINDOW).wait_for(state="detached")
+        page.evaluate("log => { const d = document.getElementById('live-pill').dataset; delete d.log; delete d.logUntil; Object.assign(d, log); }", log)
+        page.click(save("Dex"))
+        page.locator(WINDOW).wait_for()
+
+    roll_with()
+    expect(note).to_be_hidden()  # no bridge here: nothing to say
+    roll_with(log="sheet")
+    expect(note).to_contain_text("your sheet isn't open")
     page.locator(ONLY_ME).click()
-    assert page.locator(note).is_hidden()  # it isn't going anywhere
+    expect(note).to_be_hidden()  # it isn't going anywhere
     page.locator(f'{WINDOW} [data-to="table"]').click()
-    page.keyboard.press("Escape")
-    page.evaluate("Object.assign(document.getElementById('live-pill').dataset, {log: 'on', logUntil: Date.now() / 1000 + 60})")
-    page.click(save("Dex"))
-    assert "Also goes to D&D Beyond's Game Log" in page.locator(note).inner_text()
-    page.keyboard.press("Escape")
-    page.evaluate("document.getElementById('live-pill').dataset.logUntil = Date.now() / 1000 - 1")  # not heard for a while
-    page.click(save("Dex"))
-    assert "your sheet isn't open" in page.locator(note).inner_text()
+    roll_with(log="on", logUntil=str(time.time() + 60))
+    expect(note).to_contain_text("Also goes to D&D Beyond's Game Log")
+    roll_with(log="on", logUntil=str(time.time() - 1))  # not heard for a while
+    expect(note).to_contain_text("your sheet isn't open")
     page.keyboard.press("Escape")
     assert player.errors == []
 
