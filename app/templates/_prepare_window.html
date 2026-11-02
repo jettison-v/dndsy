@@ -1,0 +1,15 @@
+{# Prepare or Unprepare a spell, inside the roll window (app.js "using an item"; app/preparing.py). The count is said,
+   never enforced: going over is the DM's ruling. #}
+<button type="button" class="rp-x" aria-label="Close">×</button>
+<div class="rw-title">{{ sp.name }}</div>
+<p class="use-cost">{{ book.class }} · {{ count }}{% if not on and sp.state == "spellbook" %} · in your spellbook{% endif %}</p>
+{% if over %}<p class="note">Preparing it makes {{ (book.prepared_count or 0) + 1 }}, more than the {{ book.prepared_max }} a {{ book.class }} prepares at this level. D&amp;D Beyond allows it; whether it stands is the DM's call.</p>{% endif %}
+{% if reachable %}
+<div class="rw-row">
+  <button type="button" class="btn primary small" data-use-go data-to="{{ 'unprepare' if on else 'prepare' }}">{{ "Unprepare" if on else "Prepare" }}</button>
+  <button type="button" class="btn link small" data-use-close>Cancel</button>
+</div>
+<p class="use-said" role="alert" hidden></p>
+{% else %}
+<p class="use-said">{{ c.name }}'s D&amp;D Beyond sheet can't be reached: open it in Chrome with the askdnd bridge to change this here, or change it on D&amp;D Beyond (askdnd shows it within seconds).</p>
+{% endif %}

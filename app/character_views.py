@@ -359,6 +359,7 @@ def detail(sheet: dict, ref: str, starred: set[str] = frozenset()) -> dict | Non
             if same:
                 x.setdefault("state", same["state"])
                 x.setdefault("class", book["class"])
+                x.setdefault("prep", same.get("prep"))  # Prepare or Unprepare (app/preparing.py)
     roll = opt
     if roll is None and x["section"] in ("spells", "inventory", "attacks", "actions", "features", "creatures"):
         weapon = next((a for a in sheet.get("attacks") or [] if a["name"] == x.get("name")), None)

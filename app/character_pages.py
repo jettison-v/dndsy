@@ -28,7 +28,7 @@ from app import class_rules, player_notes
 from app import spellbook as sb
 from app import wild_shape as ws
 from app import rules_terms as terms
-from app.auth import can_run_table, can_set_house_rules, current_user, is_admin, is_reviewer
+from app.auth import can_run_table, can_set_house_rules, current_user, is_admin, is_dm, is_reviewer
 from app.db import get_db
 from app.models import Campaign, Character, HouseRule, TableRoll, ToolCorrection
 from app.templating import templates
@@ -59,6 +59,7 @@ def _view(db: Session, ch: Character, user: dict) -> dict:
         "can_use": picks.can_edit(db, user, ch) and ddb_bridge.on_for(db, ch),  # an item's button (app/item_use.py)
         "can_change_hp": ddb_bridge.on_for(db, ch) and hit_points.can_apply(db, user, ch),  # − and + on Battle's Hit points tile, and its Inspiration star
         "can_play": picks.can_edit(db, user, ch) and ddb_bridge.plays(db, ch),  # Cast, resources, rests (the VTT piece live_state)
+        "can_loot": ddb_bridge.plays(db, ch) and (is_admin(user) or is_dm(user, ch.campaign_id)),  # Give loot (app/giving.py)
         "show_picks": picks.can_see(user, ch),
         "reminders": views.reminders(sheet, mine["remind"], mine["order"].get("forget"), mine["notes"]) if sheet else [],
         "druid": druid,

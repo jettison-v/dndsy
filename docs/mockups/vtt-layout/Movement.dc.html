@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Movement on the grid</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./vtt.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1600px; height: 980px">
+  <div class="head">
+    <div class="num">Movement · inform, never stop</div>
+    <h1>How far you've moved, and what's left, by the table's rule</h1>
+    <p class="where"><b>Where you'll find it:</b> on the map as you drag your token (each square shows the feet so far), and in your turn's bar (movement left). Try it: click squares next to Cole to move, take an action part way, Dash, cross the rubble, and switch the diagonal rule. askdnd counts and shows; it never stops a move. Going past your Speed turns red for the DM to rule.</p>
+  </div>
+  <div class="lab">
+    <div class="grid" style="width: 720px; height: 504px">
+      <sc-for list="{{ rough }}" as="c" hint-placeholder-count="12"><div class="cell rough" style="left: {{ c.x }}px; top: {{ c.y }}px"></div></sc-for>
+      <sc-for list="{{ steps }}" as="c" hint-placeholder-count="4"><div class="{{ c.cls }}" style="left: {{ c.x }}px; top: {{ c.y }}px">{{ c.ft }}</div></sc-for>
+      <sc-for list="{{ hits }}" as="h" hint-placeholder-count="20"><button type="button" class="hit" style="left: {{ h.x }}px; top: {{ h.y }}px" aria-label="{{ h.label }}" onClick="{{ h.pick }}"></button></sc-for>
+      <sc-if value="{{ moved }}" hint-placeholder-val="{{ false }}"><div class="mtok" style="left: {{ startX }}px; top: {{ startY }}px; width: 36px; height: 36px; opacity: .3; pointer-events: none">C</div></sc-if>
+      <div class="mtok me" style="left: {{ atX }}px; top: {{ atY }}px; width: 36px; height: 36px; pointer-events: none">C</div>
+      <sc-for list="{{ marks }}" as="m" hint-placeholder-count="1"><div class="tag" style="left: {{ m.x }}px; top: {{ m.y }}px; padding: 2px 6px; pointer-events: none">⚔ action</div></sc-for>
+    </div>
+    <div class="ctl">
+      <div class="readout">
+        <span class="lbl">Cole · Speed 45 ft{{ dashNote }}</span>
+        <span class="{{ bigCls }}">{{ bigText }}</span>
+        <span class="note">{{ usedText }}</span>
+        <sc-if value="{{ hasLegs }}" hint-placeholder-val="{{ true }}"><ul><sc-for list="{{ legs }}" as="l" hint-placeholder-count="2"><li>{{ l.text }}</li></sc-for></ul></sc-if>
+        <sc-if value="{{ hint }}" hint-placeholder-val="{{ false }}"><span class="note" style="color: var(--amber)">{{ hint }}</span></sc-if>
+      </div>
+      <div style="display: grid; gap: 6px"><span class="lbl">Diagonals (the DM's choice, in Manage › House rules)</span><div class="seg"><sc-for list="{{ rules }}" as="r" hint-placeholder-count="2"><button type="button" class="{{ r.cls }}" onClick="{{ r.pick }}">{{ r.label }}</button></sc-for></div></div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap">
+        <button type="button" class="btn" onClick="{{ act }}">Take an action here</button>
+        <button type="button" class="{{ dashCls }}" onClick="{{ dash }}">Dash</button>
+        <button type="button" class="btn" onClick="{{ undo }}">Undo a square</button>
+        <button type="button" class="btn" onClick="{{ reset }}">Start again</button>
+      </div>
+      <div class="rule">{{ ruleText }}</div>
+      <div class="rule">Rubble (hatched) is Difficult Terrain: each square costs twice as much. The DM paints it on the map.</div>
+      <div class="rule">Splitting a move: you can move, take your action, then move the rest. Your turn's bar keeps the total for the turn, so the rest is still there after the action.</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":980}}'>
+class Component extends DCLogic {
+  state = { path: [], breaks: [], rule: 'phb', dash: false, hint: '' };
+  renderVals() {
+    const S = 36, W = 20, H = 14, start = [3, 10], speed = 45;
+    const { path, breaks, rule, dash, hint } = this.state;
+    const isRough = (x, y) => x >= 8 && x <= 10 && y >= 5 && y <= 8;
+    const rough = [];
+    for (let x = 8; x <= 10; x++) for (let y = 5; y <= 8; y++) rough.push({ x: x * S, y: y * S });
+    let prev = start, diagonals = 0, total = 0;
+    const can = speed + (dash ? speed : 0);
+    const steps = path.map(([x, y]) => {
+      const diag = x !== prev[0] && y !== prev[1];
+      let cost = 5;
+      if (diag && rule === 'dmg') { diagonals += 1; cost = diagonals % 2 === 0 ? 10 : 5; }
+      if (isRough(x, y)) cost *= 2;
+      total += cost; prev = [x, y];
+      return { x: x * S, y: y * S, ft: String(total), cls: total > can ? 'cell over' : 'cell path' };
+    });
+    const at = path.length ? path[path.length - 1] : start;
+    const left = can - total;
+    const cut = [0, ...breaks, path.length];
+    const legs = [];
+    let sofar = 0;
+    for (let i = 0; i < cut.length - 1; i++) {
+      const end = cut[i + 1] ? Number(steps[cut[i + 1] - 1].ft) : 0;
+      if (end - sofar > 0) legs.push({ text: 'Moved ' + (end - sofar) + ' ft' });
+      sofar = end;
+      if (i < cut.length - 2) legs.push({ text: 'Took an action' });
+    }
+    const marks = breaks.map(k => { const [x, y] = k ? path[k - 1] : start; return { x: x * S - 8, y: y * S - 22 }; });
+    const hits = [];
+    for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) hits.push({ x: x * S, y: y * S, label: 'Square ' + (x + 1) + ', ' + (y + 1),
+      pick: () => {
+        const last = path.length ? path[path.length - 1] : start;
+        if (x === last[0] && y === last[1]) { this.setState({ path: path.slice(0, -1), breaks: breaks.filter(b => b < path.length), hint: '' }); return; }
+        if (Math.max(Math.abs(x - last[0]), Math.abs(y - last[1])) !== 1) { this.setState({ hint: 'Pick a square next to Cole (or Cole, to step back).' }); return; }
+        this.setState({ path: [...path, [x, y]], hint: '' });
+      } });
+    const rules = [['phb', 'Every square 5 ft (Player’s Handbook)'], ['dmg', 'Diagonals 5, then 10 (DMG option)']]
+      .map(([id, label]) => ({ label, cls: rule === id ? 'on' : '', pick: () => this.setState({ rule: id }) }));
+    return {
+      rough, steps, hits, marks, legs, hasLegs: legs.length > 0, hint,
+      startX: start[0] * S, startY: start[1] * S, atX: at[0] * S, atY: at[1] * S, moved: path.length > 0,
+      bigText: left >= 0 ? left + ' ft left' : (-left) + ' ft past your Speed',
+      bigCls: left >= 0 ? 'big' : 'big over',
+      usedText: total + ' ft used of ' + can + (left < 0 ? ' · shown in red for the DM to rule; askdnd doesn’t stop it' : ''),
+      dashNote: dash ? ' · Dash: +45 ft this turn (it takes your action)' : '',
+      dashCls: dash ? 'btn on' : 'btn',
+      rules,
+      ruleText: rule === 'phb'
+        ? 'Player’s Handbook: every square costs 5 feet, diagonal or not. Fast, and what D&D Beyond’s VTT counts.'
+        : 'Dungeon Master’s Guide option: the first diagonal is 5 feet, the second 10, and so on across the whole move, even with straight squares in between.',
+      act: () => { if (breaks.includes(path.length)) return; this.setState({ breaks: [...breaks, path.length] }); },
+      dash: () => this.setState({ dash: !dash }),
+      undo: () => this.setState({ path: path.slice(0, -1), breaks: breaks.filter(b => b < path.length), hint: '' }),
+      reset: () => this.setState({ path: [], breaks: [], dash: false, hint: '' }),
+    };
+  }
+}
+</script>
+</body>
+</html>

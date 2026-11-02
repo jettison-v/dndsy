@@ -132,7 +132,7 @@
 {%- endmacro %}
 {% macro hp_tile(s, c, cls="", word="Hit points", change=false) -%}
 {%- set dy = dying_state(s) -%}
-<div class="{{ cls }}{{ ' dying ' ~ dy if dy }}" {{ tile(c, "hp") }}{{ sync(s, "hp") }}><small>{{ {"dying": "Dying", "stable": "Stable", "out": "Three failures"}.get(dy, word) }}</small>{% if change %}<span class="hp-btns"><button type="button" class="hp-btn" data-use-url="/characters/{{ c.id }}/hp?mode=damage&amp;quick=1" aria-label="Damage" title="Damage">−</button><button type="button" class="hp-btn" data-use-url="/characters/{{ c.id }}/hp?mode=heal&amp;quick=1" aria-label="Heal" title="Heal">+</button></span>{% endif %}<b>{{ s.hit_points.current }}</b>{% if s.hit_points.current != s.hit_points.max %}<span class="note"> / {{ s.hit_points.max }}</span>{% endif %}{% if s.hit_points.temp %}<span class="note"> +{{ s.hit_points.temp }} temp</span>{% endif %}{% if dy %}{{ dying_marks(s, c) }}{% if dy == "out" %}<span class="note ds-rule">The DM rules</span>{% endif %}{% endif %}</div>
+<div class="{{ cls }}{{ ' dying ' ~ dy if dy }}" {{ tile(c, "hp") }}{{ sync(s, "hp") }}><small>{% if dy %}{{ {"dying": "Dying", "stable": "Stable", "out": "Three failures"}[dy] }}{% elif word == "Hit points" %}<span class="ph-full">Hit points</span><span class="ph-short">HP</span>{% else %}{{ word }}{% endif %}</small>{% if change %}<span class="hp-btns"><button type="button" class="hp-btn" data-use-url="/characters/{{ c.id }}/hp?mode=damage&amp;quick=1" aria-label="Damage" title="Damage">−</button><button type="button" class="hp-btn" data-use-url="/characters/{{ c.id }}/hp?mode=heal&amp;quick=1" aria-label="Heal" title="Heal">+</button></span>{% endif %}<b>{{ s.hit_points.current }}</b>{% if s.hit_points.current != s.hit_points.max %}<span class="note"> / {{ s.hit_points.max }}</span>{% endif %}{% if s.hit_points.temp %}<span class="note"> +{{ s.hit_points.temp }} temp</span>{% endif %}{% if dy %}{{ dying_marks(s, c) }}{% if dy == "out" %}<span class="note ds-rule">The DM rules</span>{% endif %}{% endif %}</div>
 {%- endmacro %}
 
 {% macro vitals(s, c) -%}
@@ -202,9 +202,9 @@
 <div class="strip compact">
   {{ hp_tile(s, c, change=change_hp) }}
   <div {{ tile(c, "ac") }}><small><span class="ph-full">Armor class</span><span class="ph-short">AC</span></small><b>{{ s.armor_class }}</b></div>
-  <div {{ tile(c, "speed") }}><small>Speed</small><b>{{ s.speed.walk }} ft</b>{% set extra = s.speed.items() | rejectattr(0, "in", ["walk", "parts", "notes"]) | list %}{% if extra %}<span class="note"> {% for k, v in extra %}{{ k }} {{ v }}{{ ", " if not loop.last }}{% endfor %}</span>{% endif %}</div>
-  <div {{ tile(c, "initiative") }}><small>Initiative</small><button type="button" class="roll-hit tile-hit" {{ roll_attrs("check", "Initiative", s.initiative, "", s.initiative_adv) }} title="Roll Initiative">{{ s.initiative }}</button>{{ adv(s.initiative_adv) }}</div>
-  {% for sc in s.spellcasting[:1] %}<div {{ tile(c, "spell") }}><small><span class="tile-full">Spell DC / attack</span><span class="tile-short">Spell DC</span></small><b>{{ sc.save_dc }}</b><span class="note"> / {{ sc.attack }}</span></div>{% endfor %}
+  <div {{ tile(c, "speed") }}><small>Speed</small><b>{{ s.speed.walk }} ft</b>{% set extra = s.speed.items() | rejectattr(0, "in", ["walk", "parts", "notes"]) | list %}{% if extra %}<span class="note ph-hide"> {% for k, v in extra %}{{ k }} {{ v }}{{ ", " if not loop.last }}{% endfor %}</span>{% endif %}</div>
+  <div {{ tile(c, "initiative") }}><small><span class="ph-full">Initiative</span><span class="ph-short">Init.</span></small><button type="button" class="roll-hit tile-hit" {{ roll_attrs("check", "Initiative", s.initiative, "", s.initiative_adv) }} title="Roll Initiative">{{ s.initiative }}</button>{{ adv(s.initiative_adv) }}</div>
+  {% for sc in s.spellcasting[:1] %}<div {{ tile(c, "spell") }}><small><span class="tile-full">Spell DC / attack</span><span class="tile-short"><span class="ph-full">Spell DC</span><span class="ph-short">Spell</span></span></small><b>{{ sc.save_dc }}</b><span class="note ph-hide"> / {{ sc.attack }}</span></div>{% endfor %}
 </div>
 {%- endmacro %}
 

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The VTT frame, as a player</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./vtt.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1600px; height: 1240px">
+  <div class="head">
+    <div class="num">My pick · the frame around the map</div>
+    <h1>Everything askdnd already has, around a map</h1>
+    <p class="where"><b>Where you'll find it:</b> Table ↗ in the menu bar opens askdnd's own table at /c/&lt;campaign&gt;/table, instead of D&amp;D Beyond's. Every piece around the map is one you already use, in the place it already lives: the fight band along the top, Table rolls on the left, the side panel on the right, corner cards at the bottom right. The only new pieces are the map and the bar for your turn under it. Cole's player, Round 2, mid-move.</p>
+  </div>
+  <div class="app">
+    <div class="mb"><b>The Adventure Begins</b><span>Story</span><span>Campaign</span><span class="on">Table</span><span class="sp"></span><span>Cole</span><span>Party ▾</span><span class="pill"><i></i>Connected</span><span>?</span></div>
+    <div class="turn">
+      <div class="pennant">Round<b>2</b></div>
+      <div class="whose">Cole's turn</div>
+      <div class="order"><span class="tok now">C</span><span class="tok foe">E1</span><span class="tok">T<i class="bd"></i></span><span class="tok foe">E2</span><span class="tok">BC</span><span class="tok">NN</span></div>
+      <span class="note">Reminders sit on the token they're for</span>
+    </div>
+    <div class="rail">
+      <div class="rail-h"><span>Table rolls</span><span style="color: var(--muted)">‹</span></div>
+      <div class="rolls">
+        <div class="roll"><b>Enemy 1 · Greatclub</b><span>to hit Trah</span><span class="n">17</span></div>
+        <div class="roll"><b>Enemy 1 · damage</b><span>bludgeoning</span><span class="n">13</span><button type="button" class="btn mini apply">Apply to Trah</button></div>
+        <div class="roll"><b>Trah · Constitution save</b><span>Concentration, DC 10</span><span class="n">14</span></div>
+        <div class="roll"><b>Cole · Starry Wisp</b><span>to hit</span><span class="n">26</span></div>
+      </div>
+      <div style="padding: 10px 12px; border-top: 1px solid var(--line)"><button type="button" class="btn" style="width: 100%">Roll…</button></div>
+    </div>
+    <div class="map">
+      <div class="room" style="left: 108px; top: 216px; width: 432px; height: 360px"></div>
+      <div class="room" style="left: 540px; top: 108px; width: 288px; height: 324px"></div>
+      <sc-for list="{{ area }}" as="c" hint-placeholder-count="20"><div class="cell area" style="left: {{ c.x }}px; top: {{ c.y }}px"></div></sc-for>
+      <sc-for list="{{ path }}" as="c" hint-placeholder-count="4"><div class="cell path" style="left: {{ c.x }}px; top: {{ c.y }}px">{{ c.ft }}</div></sc-for>
+      <div class="tools" aria-label="Map tools">
+        <button type="button" class="on" aria-label="Select and move"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 3l14 8-6 2-2 6z"/></svg></button>
+        <button type="button" aria-label="Measure"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg></button>
+        <button type="button" aria-label="Spell area"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/></svg></button>
+        <button type="button" aria-label="Ping"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6 7-11a7 7 0 10-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2"/></svg></button>
+      </div>
+      <div class="mtok" style="left: 180px; top: 324px; width: 36px; height: 36px">NN<span class="hpbar"><i style="width: 80%"></i></span></div>
+      <div class="mtok" style="left: 216px; top: 396px; width: 36px; height: 36px">T<span class="hpbar"><i style="width: 55%"></i></span></div>
+      <div class="mtok" style="left: 252px; top: 468px; width: 36px; height: 36px">BC<span class="hpbar"><i style="width: 100%"></i></span></div>
+      <div class="mtok me" style="left: 468px; top: 252px; width: 36px; height: 36px">C<span class="hpbar"><i style="width: 68%"></i></span></div>
+      <div class="mtok foe" style="left: 576px; top: 180px; width: 72px; height: 72px; font-size: 14px">E1</div>
+      <div class="mtok foe" style="left: 756px; top: 468px; width: 36px; height: 36px">E2</div>
+      <div class="tag" style="left: 584px; top: 72px"><b>20 ft</b> · 25 left of 45</div>
+      <div class="tag" style="left: 560px; top: 340px">Enemy 1 is Large: its 10-ft Emanation starts at the edge of its 2-by-2 space</div>
+      <div class="minimap"><i></i></div>
+    </div>
+    <div class="pane">
+      <div class="pane-h"><span class="pic">C</span><span><b>Cole</b><small>you · Druid 6 / Monk 2</small></span><span class="sp"></span><span class="note">click anything to see it here</span></div>
+      <div class="nums"><div><small>HP <span style="float: right">− +</span></small><b>51</b> <span class="of">/ 75</span></div><div><small>AC</small><b>16</b></div><div><small>Speed</small><b>45</b></div></div>
+      <div class="badges"><span class="badge conc">◎ Concentrating · Moonbeam</span></div>
+      <div class="saves"><span>Str<b>+0</b></span><span>Dex<b>+3</b></span><span>Con<b>+2</b></span><span>Int<b>+4</b></span><span>Wis<b>+8</b></span><span>Cha<b>+3</b></span></div>
+      <div class="lbl">Resources</div>
+      <div class="note">Wild Shape ●●● · Focus ●● · 1st ●●○ · 2nd ●○ · 3rd ●○</div>
+      <div class="lbl">What you clicked last</div>
+      <div class="sb"><div class="act"><b>Enemy 1</b> · Large Giant · Bloodied<br>Greatclub: melee, reach 10 ft. The DM rolls it.</div></div>
+    </div>
+    <div class="abar">
+      <div class="move"><div class="row"><span>Movement</span><span><b>25</b> of 45 ft left</span></div><div class="meter"><i style="width: 44%"></i><i class="left" style="width: 56%"></i></div><div class="row"><span>20 used</span><span>Dash</span></div></div>
+      <div class="econ"><span class="pip a"><i></i>Action</span><span class="pip b"><i></i>Bonus</span><span class="pip r"><i></i>Reaction</span></div>
+      <div class="slots">
+        <div class="grp"><span class="lbl a">Action</span><div class="items"><span class="it">Unarmed Strike<small>+5 · 1d6+3</small></span><span class="it">Starry Wisp<small>+7 · 2d8</small></span></div></div>
+        <div class="grp"><span class="lbl b">Bonus</span><div class="items"><span class="it">Wild Shape<small>3 left</small></span><span class="it">Flurry of Blows<small>1 Focus</small></span></div></div>
+        <div class="grp"><span class="lbl r">Reaction</span><div class="items"><span class="it">Opportunity Attack<small>reach 5 ft</small></span></div></div>
+      </div>
+      <button type="button" class="btn endturn">End turn</button>
+    </div>
+    <div class="ghost" style="left: 400px; top: 556px; width: 340px; height: 200px">Windows open here: a roll, Cast, Hit points</div>
+    <div class="card" style="left: 840px; top: 690px"><b style="color: var(--strong)">Trah: Bless ends</b><span class="note">at the end of Trah's turn. Nothing ends by itself.</span></div>
+    <span class="co" style="left: 230px; top: 13px">1</span>
+    <span class="co" style="left: 120px; top: 71px">2</span>
+    <span class="co" style="left: 214px; top: 128px">3</span>
+    <span class="co" style="left: 300px; top: 130px">4</span>
+    <span class="co" style="left: 1142px; top: 128px">5</span>
+    <span class="co" style="left: 262px; top: 788px">6</span>
+    <span class="co" style="left: 410px; top: 566px">7</span>
+    <span class="co" style="left: 1086px; top: 680px">8</span>
+  </div>
+  <div class="legend">
+    <div><span class="co">1</span><span><b>Menu bar.</b> askdnd's own, unchanged. Table is the page you're on.</span></div>
+    <div><span class="co">2</span><span><b>Turn bar.</b> The fight band you have today, across the top: round, whose turn, the order. Reminders show on the token they're for. The DM's has Next turn.</span></div>
+    <div><span class="co">3</span><span><b>Table rolls.</b> Where it is on every page, closing to a thin strip. Apply to stays on the roll.</span></div>
+    <div><span class="co">4</span><span><b>The map.</b> Tokens, the grid, what's being measured. A small tool strip in its corner: move, measure, a spell's area, ping.</span></div>
+    <div><span class="co">5</span><span><b>Side panel.</b> Your character until you click something; then that thing: a creature, a spell, an item, a rule. The same panel as on every page.</span></div>
+    <div><span class="co">6</span><span><b>Your turn's bar.</b> Movement left, what you've used of your Action, Bonus Action and Reaction, and Battle's pins in their three columns. Only when it's your turn; otherwise your Reactions.</span></div>
+    <div><span class="co">7</span><span><b>Windows.</b> The roll, Cast and Hit Points windows open here, over the bottom of the map: never over the turn bar or the panels.</span></div>
+    <div><span class="co">8</span><span><b>Corner cards.</b> Bottom right, as on every page, above your turn's bar.</span></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1240}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const S = 36;
+    // a 10-ft Emanation around Enemy 1's 2-by-2 space, squares at least half covered (the DMG's rule for areas on a grid)
+    const box = { x0: 16, y0: 5, x1: 18, y1: 7 }, r = 2;
+    const inside = (px, py) => { const dx = Math.max(box.x0 - px, 0, px - box.x1), dy = Math.max(box.y0 - py, 0, py - box.y1); return dx * dx + dy * dy <= r * r; };
+    const area = [];
+    for (let x = 12; x < 23; x++) for (let y = 1; y < 12; y++) {
+      if (x >= box.x0 && x < box.x1 && y >= box.y0 && y < box.y1) continue;
+      let n = 0;
+      for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) if (inside(x + (i + .5) / 4, y + (j + .5) / 4)) n++;
+      if (n >= 8) area.push({ x: x * S, y: y * S });
+    }
+    const path = [[14, 6, '5'], [14, 5, '10'], [14, 4, '15'], [15, 3, '20']].map(([x, y, ft]) => ({ x: x * S, y: y * S, ft }));
+    return { area, path };
+  }
+}
+</script>
+</body>
+</html>

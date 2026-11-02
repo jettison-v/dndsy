@@ -23,7 +23,7 @@
     'PUT /character/v5/spell/slots', 'PUT /character/v5/spell/pact-magic',
     'PUT /character/v5/action/limited-use', 'PUT /character/v5/inventory/item/quantity', 'PUT /character/v5/inventory/item/equipped',
     'PUT /character/v5/inventory/item/attuned', 'PUT /character/v5/inventory/item/charge', 'PUT /character/v5/inventory/item/move',
-    'POST /character/v5/inventory/item', 'DELETE /character/v5/inventory/item',
+    'POST /character/v5/inventory/item', 'DELETE /character/v5/inventory/item', 'PUT /character/v5/spell/prepared',
     'PUT /character/v5/inventory/currency/copper', 'PUT /character/v5/inventory/currency/silver',
     'PUT /character/v5/inventory/currency/electrum', 'PUT /character/v5/inventory/currency/gold',
     'PUT /character/v5/inventory/currency/platinum']);

@@ -77,7 +77,8 @@
     {% if s.attuned %}<p class="note m-0 mb-3">Attuned: {{ s.attuned | join(", ") }} ({{ s.attuned | length }} of 3)</p>{% endif %}
     {{ item_list(c, s.inventory, picks, can_pick, show_picks, item_notes, "sheet-items", [("all", "All"), ("ready", "Equipped"), ("fav", "Shortlist")]) }}
     {% if s.currency %}<p class="note">Coins: {% for k, v in s.currency.items() %}{{ "{:,}".format(v) }} {{ k }}{{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
-    {% if can_play %}<button type="button" class="btn small" data-use-url="/characters/{{ c.id }}/coins">Change coins</button>{% endif %}
+    {% if can_play or can_loot %}<div class="row tight">{% if can_play %}<button type="button" class="btn small" data-use-url="/characters/{{ c.id }}/coins">Change coins</button>{% endif %}
+      {% if can_loot %}<button type="button" class="btn small" data-use-url="/characters/{{ c.id }}/loot">Give loot</button>{% endif %}</div>{% endif %}
   </div>
 
   <div id="t-features" hidden>
