@@ -378,6 +378,11 @@ def plan(intents: list[dict], n: dict, every: bool = False) -> tuple[dict, list[
                 continue
             vals[f] = None
             touched.append(f)
+        elif kind == "prepare":  # a spell prepared or not: what preparing it names comes with it (D&D Beyond's ids)
+            f = f"prep:{d['cls']}:{d['entry']}"
+            vals[f] = bool(d["value"])
+            extra[f] = {"spellId": d["def"], "entityTypeId": d["etype"]}
+            touched.append(f)
         elif kind == "add_item":
             f = f"add:{d['definition']}"
             vals[f] = (get(f) or 0) + d["quantity"]
@@ -479,6 +484,8 @@ def describe(kind: str, d: dict, n: dict) -> str:
         return f"{d['name']} removed"
     if kind == "add_item":
         return f"{d['name']} ×{d['quantity']} added"
+    if kind == "prepare":
+        return f"{d['name']} {'prepared' if d['value'] else 'unprepared'}"
     return kind
 
 
