@@ -82,10 +82,6 @@ TEST_ITEM = "Candle"  # the round trip takes one and puts it back
 MAX_ATTEMPTS = 3
 RETRY_SECONDS = (0, 5, 20)  # how long a batch that didn't land waits before it's sent again
 SENDING_SECONDS = 30  # a batch the extension took but never answered for is offered again
-# How many reads, a second apart, a batch's read-back makes before it decides D&D Beyond didn't keep it. A Short Rest's
-# Hit Point Dice (D&D Beyond's rest endpoint) can take longer to show than the rest (Oct 30, the live test: past the
-# 4 tries, so the batch went again and the die took over 30 seconds).
-READ_BACK_TRIES = {False: 4, True: 10}
 # A batch may build on askdnd's copy of the sheet this recent instead of reading it first (Brett, 2026-10-29: a second
 # faster): the extension checks every number it writes against D&D Beyond right before writing and writes nothing if
 # one changed (askdnd works it out again), so an older copy only costs a retry. What that check doesn't cover is read
@@ -662,7 +658,7 @@ def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: 
         _again(db, b, error or "The change couldn't be made.")
         return
     now = {}
-    for attempt in range(READ_BACK_TRIES[any(f.startswith("hitdice:") for f in b.target)]):  # D&D Beyond can take a moment to serve what it just saved
+    for attempt in range(4):  # D&D Beyond can take a moment to serve what it just saved
         if attempt:
             time.sleep(1)
         chars.refresh(db, character)
@@ -676,19 +672,22 @@ def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: 
     elif any(now.get(f) != b.before.get(f) for f in missing):
         _stop(db, b, f"D&D Beyond's {_say(missing, b)} isn't what askdnd wrote or what it had before.", missing)
     else:
-        _again(db, b, "D&D Beyond answered OK but didn't keep it.")
+        # The first time, at once, while the extension is here to take it: D&D Beyond is often just slow to show it, and the
+        # extension then finds it there and writes nothing (Oct 30: a Short Rest's Hit Point Die waited 5 seconds, then the
+        # extension's next check, over 30 in all)
+        _again(db, b, "D&D Beyond answered OK but didn't keep it.", at_once=b.attempts == 1)
 
 
 def _say(fs: list[str], b: BridgeBatch) -> str:
     return " and ".join(dict.fromkeys(b.names.get(f, "numbers") for f in fs))
 
 
-def _again(db: Session, b: BridgeBatch, why: str) -> None:
+def _again(db: Session, b: BridgeBatch, why: str, at_once: bool = False) -> None:
     if b.attempts >= MAX_ATTEMPTS:
         _stop(db, b, f"{why} Tried {MAX_ATTEMPTS} times.")
         return
     b.state, b.error = "ready", why[:400]
-    b.next_at = time.time() + RETRY_SECONDS[min(b.attempts, len(RETRY_SECONDS) - 1)]
+    b.next_at = 0 if at_once else time.time() + RETRY_SECONDS[min(b.attempts, len(RETRY_SECONDS) - 1)]
     b.attempts += 1
 
 
