@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spell areas on the grid</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./vtt.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1600px; height: 980px">
+  <div class="head">
+    <div class="num">Spell areas · inform, the DM rules</div>
+    <h1>Which squares a spell's area covers, and who's in them</h1>
+    <p class="where"><b>Where you'll find it:</b> the area tool in the map's strip, and Cast for a spell with an area, which starts the same tool with its shape and size. Try it: pick a shape and size, click a corner of the grid for its point of origin, turn a Cone or Line, and make Cole Large (a Polar Bear) to see an Emanation grow with the space it starts from. Move Cole and the Emanation moves too.</p>
+  </div>
+  <div class="lab">
+    <div class="grid" style="width: 720px; height: 504px">
+      <sc-for list="{{ cells }}" as="c" hint-placeholder-count="12"><div class="cell area" style="left: {{ c.x }}px; top: {{ c.y }}px"></div></sc-for>
+      <svg width="720" height="504" style="position: absolute; left: 0; top: 0; pointer-events: none; z-index: 2" aria-hidden="true"><path d="{{ outline }}" fill="none" stroke="#7ea6e0" stroke-width="2" stroke-dasharray="6 4"></path></svg>
+      <sc-for list="{{ toks }}" as="t" hint-placeholder-count="5"><div class="{{ t.cls }}" style="left: {{ t.x }}px; top: {{ t.y }}px; width: {{ t.w }}px; height: {{ t.w }}px; pointer-events: none">{{ t.label }}</div></sc-for>
+      <sc-if value="{{ picking }}" hint-placeholder-val="{{ true }}"><sc-for list="{{ dots }}" as="d" hint-placeholder-count="20"><button type="button" class="{{ d.cls }}" style="left: {{ d.x }}px; top: {{ d.y }}px" aria-label="{{ d.label }}" onClick="{{ d.pick }}"></button></sc-for></sc-if>
+    </div>
+    <div class="ctl">
+      <div style="display: grid; gap: 6px"><span class="lbl">Shape</span><div class="seg"><sc-for list="{{ shapes }}" as="s" hint-placeholder-count="5"><button type="button" class="{{ s.cls }}" onClick="{{ s.pick }}">{{ s.label }}</button></sc-for></div></div>
+      <div style="display: grid; gap: 6px"><span class="lbl">Size</span><div class="seg"><sc-for list="{{ sizes }}" as="s" hint-placeholder-count="5"><button type="button" class="{{ s.cls }}" onClick="{{ s.pick }}">{{ s.label }}</button></sc-for></div></div>
+      <sc-if value="{{ aims }}" hint-placeholder-val="{{ false }}"><div style="display: grid; gap: 6px"><span class="lbl">Direction</span><div class="seg"><sc-for list="{{ dirs }}" as="s" hint-placeholder-count="8"><button type="button" class="{{ s.cls }}" onClick="{{ s.pick }}" aria-label="{{ s.name }}">{{ s.label }}</button></sc-for></div></div></sc-if>
+      <sc-if value="{{ eman }}" hint-placeholder-val="{{ true }}"><div style="display: grid; gap: 6px"><span class="lbl">Cole</span><div class="seg"><sc-for list="{{ bodies }}" as="s" hint-placeholder-count="2"><button type="button" class="{{ s.cls }}" onClick="{{ s.pick }}">{{ s.label }}</button></sc-for><button type="button" class="{{ selfCls }}" onClick="{{ toggleSelf }}">Include Cole</button></div><div class="seg"><button type="button" onClick="{{ left }}" aria-label="Move Cole left">← Move</button><button type="button" onClick="{{ right }}" aria-label="Move Cole right">Move →</button><button type="button" onClick="{{ up }}" aria-label="Move Cole up">↑</button><button type="button" onClick="{{ down }}" aria-label="Move Cole down">↓</button></div></div></sc-if>
+      <div class="readout">
+        <span class="lbl">{{ title }}</span>
+        <span class="big">{{ count }}</span>
+        <span>{{ who }}</span>
+        <span class="note">{{ why }}</span>
+      </div>
+      <div class="rule">A square counts when the area covers at least half of it (Dungeon Master’s Guide, areas on a grid). The point of origin is a corner where squares meet.</div>
+      <div class="rule">An Emanation extends from the creature’s whole space and moves with it. Its creature isn’t in it unless its creator decides otherwise. A Large creature’s space is 2 by 2 squares, so the same 10 feet covers more.</div>
+      <div class="rule">askdnd lists who’s in it and each one’s save. Who’s actually in, around cover and close calls, is the DM’s ruling.</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":980}}'>
+class Component extends DCLogic {
+  state = { shape: 'emanation', size: 10, ox: 10, oy: 7, dir: 0, large: false, self: false, cx: 5, cy: 6 };
+  renderVals() {
+    const S = 36, W = 20, H = 14;
+    const { shape, size, ox, oy, dir, large, self, cx, cy } = this.state;
+    const R = size / 5, cs = large ? 2 : 1;
+    const DIRS = [[1, 0, '→', 'East'], [1, 1, '↘', 'South-east'], [0, 1, '↓', 'South'], [-1, 1, '↙', 'South-west'], [-1, 0, '←', 'West'], [-1, -1, '↖', 'North-west'], [0, -1, '↑', 'North'], [1, -1, '↗', 'North-east']];
+    const [dx, dy] = DIRS[dir];
+    const n = Math.hypot(dx, dy), ux = dx / n, uy = dy / n, vx = -uy, vy = ux;
+    const box = { x0: cx, y0: cy, x1: cx + cs, y1: cy + cs };
+    // the cube's square: one face holds the origin (a corner for a diagonal direction, its middle for a straight one)
+    let cube;
+    if (dx && dy) cube = { x0: dx > 0 ? ox : ox - R, y0: dy > 0 ? oy : oy - R, x1: dx > 0 ? ox + R : ox, y1: dy > 0 ? oy + R : oy };
+    else if (dx) cube = { x0: dx > 0 ? ox : ox - R, x1: dx > 0 ? ox + R : ox, y0: oy - R / 2, y1: oy + R / 2 };
+    else cube = { y0: dy > 0 ? oy : oy - R, y1: dy > 0 ? oy + R : oy, x0: ox - R / 2, x1: ox + R / 2 };
+    const inside = (px, py) => {
+      if (shape === 'emanation') { const ex = Math.max(box.x0 - px, 0, px - box.x1), ey = Math.max(box.y0 - py, 0, py - box.y1); return ex * ex + ey * ey <= R * R; }
+      if (shape === 'sphere') return (px - ox) ** 2 + (py - oy) ** 2 <= R * R;
+      if (shape === 'cube') return px >= cube.x0 && px <= cube.x1 && py >= cube.y0 && py <= cube.y1;
+      const t = (px - ox) * ux + (py - oy) * uy, w = Math.abs((px - ox) * vx + (py - oy) * vy);
+      if (shape === 'cone') return t >= 0 && t <= R && w <= t / 2;
+      return t >= 0 && t <= R && w <= 0.5;
+    };
+    const hit = new Set(), cells = [];
+    for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) {
+      let k = 0;
+      for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) if (inside(x + (i + .5) / 4, y + (j + .5) / 4)) k++;
+      const own = shape === 'emanation' && !self && x >= box.x0 && x < box.x1 && y >= box.y0 && y < box.y1;
+      if (k >= 8 && !own) { hit.add(x + ',' + y); cells.push({ x: x * S, y: y * S }); }
+    }
+    const P = (x, y) => (x * S).toFixed(1) + ' ' + (y * S).toFixed(1);
+    let outline;
+    if (shape === 'sphere') outline = 'M ' + P(ox - R, oy) + ' A ' + R * S + ' ' + R * S + ' 0 1 0 ' + P(ox + R, oy) + ' A ' + R * S + ' ' + R * S + ' 0 1 0 ' + P(ox - R, oy) + ' Z';
+    else if (shape === 'emanation') {
+      const a = R * S, b = box;
+      outline = 'M ' + P(b.x0, b.y0 - R) + ' L ' + P(b.x1, b.y0 - R) + ' A ' + a + ' ' + a + ' 0 0 1 ' + P(b.x1 + R, b.y0) + ' L ' + P(b.x1 + R, b.y1) + ' A ' + a + ' ' + a + ' 0 0 1 ' + P(b.x1, b.y1 + R) +
+        ' L ' + P(b.x0, b.y1 + R) + ' A ' + a + ' ' + a + ' 0 0 1 ' + P(b.x0 - R, b.y1) + ' L ' + P(b.x0 - R, b.y0) + ' A ' + a + ' ' + a + ' 0 0 1 ' + P(b.x0, b.y0 - R) + ' Z';
+    } else if (shape === 'cube') outline = 'M ' + P(cube.x0, cube.y0) + ' L ' + P(cube.x1, cube.y0) + ' L ' + P(cube.x1, cube.y1) + ' L ' + P(cube.x0, cube.y1) + ' Z';
+    else if (shape === 'cone') outline = 'M ' + P(ox, oy) + ' L ' + P(ox + R * ux + R / 2 * vx, oy + R * uy + R / 2 * vy) + ' L ' + P(ox + R * ux - R / 2 * vx, oy + R * uy - R / 2 * vy) + ' Z';
+    else outline = 'M ' + P(ox + .5 * vx, oy + .5 * vy) + ' L ' + P(ox + R * ux + .5 * vx, oy + R * uy + .5 * vy) + ' L ' + P(ox + R * ux - .5 * vx, oy + R * uy - .5 * vy) + ' L ' + P(ox - .5 * vx, oy - .5 * vy) + ' Z';
+    const people = [
+      { label: 'C', name: 'Cole', x: cx, y: cy, s: cs, me: true },
+      { label: 'T', name: 'Trah', x: 8, y: 6, s: 1 },
+      { label: 'BC', name: 'Big C', x: 4, y: 10, s: 1 },
+      { label: 'E1', name: 'Enemy 1', x: 12, y: 4, s: 2, foe: true },
+      { label: 'E2', name: 'Enemy 2', x: 11, y: 9, s: 1, foe: true },
+    ];
+    const isIn = p => { for (let x = p.x; x < p.x + p.s; x++) for (let y = p.y; y < p.y + p.s; y++) if (hit.has(x + ',' + y)) return true; return false; };
+    const inNames = people.filter(isIn).map(p => p.name);
+    const toks = people.map(p => ({ label: p.label, x: p.x * S, y: p.y * S, w: p.s * S, cls: 'mtok' + (p.foe ? ' foe' : '') + (p.me ? ' me' : '') }));
+    const dots = [];
+    for (let x = 1; x < W; x++) for (let y = 1; y < H; y++) dots.push({ x: x * S, y: y * S, label: 'Point of origin ' + x + ', ' + y, cls: x === ox && y === oy ? 'dotx on' : 'dotx', pick: () => this.setState({ ox: x, oy: y }) });
+    const NAMES = { emanation: 'Emanation from Cole', sphere: 'Sphere', cube: 'Cube', cone: 'Cone', line: 'Line, 5 feet wide' };
+    const seg = (key, now, pairs) => pairs.map(([id, label]) => ({ label, cls: now === id ? 'on' : '', pick: () => this.setState({ [key]: id }) }));
+    const move = (ddx, ddy) => () => this.setState({ cx: Math.max(0, Math.min(W - cs, cx + ddx)), cy: Math.max(0, Math.min(H - cs, cy + ddy)) });
+    return {
+      cells, outline, toks, dots, picking: shape !== 'emanation', aims: shape === 'cube' || shape === 'cone' || shape === 'line', eman: shape === 'emanation',
+      shapes: seg('shape', shape, [['emanation', 'Emanation'], ['sphere', 'Sphere or Cylinder'], ['cube', 'Cube'], ['cone', 'Cone'], ['line', 'Line']]),
+      sizes: seg('size', size, [[5, '5 ft'], [10, '10 ft'], [15, '15 ft'], [20, '20 ft'], [30, '30 ft']]),
+      dirs: DIRS.map(([, , label, name], i) => ({ label, name, cls: dir === i ? 'on' : '', pick: () => this.setState({ dir: i }) })),
+      bodies: seg('large', large, [[false, 'Medium (Wood Elf)'], [true, 'Large (Polar Bear)']]),
+      selfCls: self ? 'on' : '', toggleSelf: () => this.setState({ self: !self }),
+      left: move(-1, 0), right: move(1, 0), up: move(0, -1), down: move(0, 1),
+      title: size + '-ft ' + NAMES[shape],
+      count: cells.length + ' squares',
+      who: inNames.length ? 'In the area: ' + inNames.join(', ') : 'No one in the area',
+      why: shape === 'emanation' ? (large ? 'Cole’s space is 2 by 2 squares, and the Emanation is measured from its edges, so it covers more.' : 'Cole’s space is one square.') + (self ? ' Cole is in it, as its creator decided.' : ' Cole isn’t in it.') : 'Click a corner of the grid to move the point of origin.',
+    };
+  }
+}
+</script>
+</body>
+</html>

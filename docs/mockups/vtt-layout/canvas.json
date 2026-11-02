@@ -1,0 +1,19 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-11-02T18:10:00Z"},
+  "title": "VTT Layout",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1600, "h": 1240, "title": "The frame, as a player (my pick)"},
+    "DM.dc.html": {"x": 1680, "y": 0, "w": 1600, "h": 1240, "title": "The same frame, as the DM"},
+    "First-step.dc.html": {"x": 0, "y": 1360, "w": 1600, "h": 1160, "title": "Start simple: the board without a map, in the same frame"},
+    "Phone.dc.html": {"x": 1680, "y": 1360, "w": 1600, "h": 1160, "title": "On a phone: follow along"},
+    "Movement.dc.html": {"x": 0, "y": 2640, "w": 1600, "h": 980, "title": "Movement: try it", "is_interactive": true},
+    "Areas.dc.html": {"x": 1680, "y": 2640, "w": 1600, "h": 980, "title": "Spell areas: try it", "is_interactive": true},
+    "Alternatives.dc.html": {"x": 0, "y": 3740, "w": 1600, "h": 760, "title": "Two other layouts I set aside"}
+  },
+  "order": ["Main.dc.html", "DM.dc.html", "First-step.dc.html", "Phone.dc.html", "Movement.dc.html", "Areas.dc.html", "Alternatives.dc.html"],
+  "notes": {},
+  "designSystems": []
+}

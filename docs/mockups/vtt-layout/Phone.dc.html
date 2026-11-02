@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The VTT on a phone</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./vtt.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap">
+<style>
+body{margin:0}
+.phones { display: flex; gap: 40px; align-items: flex-start; }
+.ph { width: 390px; display: grid; gap: 10px; }
+.scr { position: relative; width: 390px; height: 844px; border: 1px solid var(--line-strong); border-radius: 30px; overflow: hidden; background: var(--bg); display: grid; grid-template-rows: 52px 54px minmax(0, 1fr) 44px 60px; }
+.p-top { display: flex; align-items: center; gap: 10px; padding: 0 14px; background: var(--chrome); border-bottom: 2px solid var(--red); font-size: 13px; color: var(--muted); }
+.p-top b { color: var(--strong); flex: 1; }
+.p-turn { display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--surface); overflow: hidden; }
+.p-turn .tok { width: 30px; height: 30px; font-size: 10px; }
+.p-turn .tok.now { width: 38px; height: 38px; }
+.p-rolls { display: flex; align-items: center; gap: 8px; padding: 0 14px; border-top: 1px solid var(--line); background: var(--surface); font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; }
+.p-rolls b { color: var(--gold); font: 700 11px/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; }
+.p-nav { display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; text-align: center; font-size: 11px; color: var(--muted); background: var(--chrome); border-top: 1px solid var(--line); }
+.p-nav .on { color: var(--strong); }
+.sheet { position: absolute; left: 0; right: 0; bottom: 104px; background: var(--surface); border-top: 1px solid var(--line-strong); border-radius: 18px 18px 0 0; box-shadow: 0 -10px 30px rgba(0, 0, 0, .45); padding: 8px 14px 14px; display: grid; gap: 10px; }
+.sheet .grab { justify-self: center; width: 40px; height: 4px; border-radius: 2px; background: var(--line-strong); }
+.list { display: grid; gap: 6px; }
+.list .it { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; }
+.caption { color: var(--muted); font-size: 13px; }
+.caption b { color: var(--text); }
+</style>
+</helmet>
+<div class="board" style="width: 1600px; height: 1160px">
+  <div class="head">
+    <div class="num">On a phone · follow along, and take your turn</div>
+    <h1>The map fills the phone; the rest are sheets from the bottom</h1>
+    <p class="where"><b>Where you'll find it:</b> the same Table page on a phone. The turn bar stays on top, Table rolls stays the thin line it is today, and your turn's bar and the side panel become sheets that slide up. The menu bar's bottom row stays as on every page.</p>
+  </div>
+  <div class="phones">
+    <div class="ph">
+      <div class="scr">
+        <div class="p-top"><b>The Adventure Begins</b><span class="pill"><i></i>Live</span><span>?</span></div>
+        <div class="p-turn"><span class="pennant" style="padding: 3px 6px">R<b style="font-size: 14px">2</b></span><span class="tok now">C</span><span class="tok foe">E1</span><span class="tok">T</span><span class="tok foe">E2</span><span class="tok">BC</span><span class="tok">NN</span></div>
+        <div class="map">
+          <div class="room" style="left: 36px; top: 72px; width: 288px; height: 324px"></div>
+          <div class="mtok me" style="left: 144px; top: 216px; width: 36px; height: 36px">C</div>
+          <div class="mtok" style="left: 72px; top: 288px; width: 36px; height: 36px">T</div>
+          <div class="mtok foe" style="left: 216px; top: 108px; width: 72px; height: 72px">E1</div>
+          <div class="sheet" style="bottom: 0; padding-bottom: 10px; grid-template-columns: 1fr auto; align-items: center">
+            <span><b style="color: var(--gold)">Your turn</b> <span class="note">· 25 of 45 ft left</span></span>
+            <span class="econ" style="display: flex; gap: 10px"><span class="pip a"><i></i>A</span><span class="pip b"><i></i>B</span><span class="pip r"><i></i>R</span></span>
+          </div>
+        </div>
+        <div class="p-rolls"><b>Table rolls</b><span>Enemy 1: damage 13 to Trah</span></div>
+        <div class="p-nav"><span>Story</span><span>Campaign</span><span class="on">Cole</span><span>Party</span><span>More</span></div>
+      </div>
+      <p class="caption"><b>Following.</b> Pinch and drag the map; your turn's bar waits as one line at the bottom of it.</p>
+    </div>
+    <div class="ph">
+      <div class="scr">
+        <div class="p-top"><b>The Adventure Begins</b><span class="pill"><i></i>Live</span><span>?</span></div>
+        <div class="p-turn"><span class="pennant" style="padding: 3px 6px">R<b style="font-size: 14px">2</b></span><span class="tok now">C</span><span class="tok foe">E1</span><span class="tok">T</span><span class="tok foe">E2</span><span class="tok">BC</span><span class="tok">NN</span></div>
+        <div class="map">
+          <div class="mtok me" style="left: 144px; top: 108px; width: 36px; height: 36px">C</div>
+        </div>
+        <div class="p-rolls"><b>Table rolls</b><span>Enemy 1: damage 13 to Trah</span></div>
+        <div class="p-nav"><span>Story</span><span>Campaign</span><span class="on">Cole</span><span>Party</span><span>More</span></div>
+        <div class="sheet">
+          <span class="grab"></span>
+          <div class="move" style="width: auto"><div class="row"><span>Movement</span><span><b>25</b> of 45 ft left</span></div><div class="meter"><i style="width: 44%"></i><i class="left" style="width: 56%"></i></div></div>
+          <div style="display: flex; gap: 14px"><span class="pip a"><i></i>Action</span><span class="pip b"><i></i>Bonus</span><span class="pip r"><i></i>Reaction</span></div>
+          <div class="lbl" style="color: var(--k-action)">Action</div>
+          <div class="list"><span class="it">Unarmed Strike<small>+5 · 1d6+3</small></span><span class="it">Starry Wisp<small>+7 · 2d8</small></span></div>
+          <div class="lbl" style="color: var(--k-bonus)">Bonus</div>
+          <div class="list"><span class="it">Wild Shape<small>3 left</small></span><span class="it">Flurry of Blows<small>1 Focus</small></span></div>
+          <button type="button" class="btn">End turn</button>
+        </div>
+      </div>
+      <p class="caption"><b>Your turn's bar, pulled up.</b> The same pieces as on a computer, one under another, as Battle already stacks them.</p>
+    </div>
+    <div class="ph">
+      <div class="scr">
+        <div class="p-top"><b>The Adventure Begins</b><span class="pill"><i></i>Live</span><span>?</span></div>
+        <div class="p-turn"><span class="pennant" style="padding: 3px 6px">R<b style="font-size: 14px">2</b></span><span class="tok now">C</span><span class="tok foe">E1</span><span class="tok">T</span><span class="tok foe">E2</span><span class="tok">BC</span><span class="tok">NN</span></div>
+        <div class="map">
+          <div class="mtok foe me" style="left: 180px; top: 108px; width: 72px; height: 72px">E1</div>
+        </div>
+        <div class="p-rolls"><b>Table rolls</b><span>Enemy 1: damage 13 to Trah</span></div>
+        <div class="p-nav"><span>Story</span><span>Campaign</span><span class="on">Cole</span><span>Party</span><span>More</span></div>
+        <div class="sheet">
+          <span class="grab"></span>
+          <div class="pane-h"><span class="pic foe">E1</span><span><b>Enemy 1</b><small>Large · Bloodied</small></span></div>
+          <div class="note">What you can see of it: Large, Bloodied, 10 ft from Cole. Its numbers are the DM's.</div>
+          <div class="sb"><div class="act"><b>Greatclub</b> · melee, the DM rolls it</div></div>
+        </div>
+      </div>
+      <p class="caption"><b>The side panel, as a sheet.</b> Tap a token for what the side panel shows on a computer.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1160}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The first step: the board without a map</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./vtt.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap">
+<style>
+body{margin:0}
+.bd-list { position: absolute; inset: 0; padding: 18px 22px; display: grid; gap: 8px; align-content: start; background: var(--bg); }
+.bd-row { display: grid; grid-template-columns: 30px 44px minmax(0, 1.4fr) 1fr 70px 1.4fr; gap: 12px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; font-size: 13px; }
+.bd-row.now { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+.bd-row .init { font: 700 16px/1 var(--sans); color: var(--muted); text-align: center; }
+.bd-row b { color: var(--strong); font-size: 14px; }
+.bd-row .hp { display: flex; align-items: center; gap: 8px; }
+.bd-row .bar { flex: 1; height: 6px; border-radius: 3px; background: var(--surface-3); overflow: hidden; }
+.bd-row .bar i { display: block; height: 100%; background: var(--green); }
+.bd-head { display: grid; grid-template-columns: 30px 44px minmax(0, 1.4fr) 1fr 70px 1.4fr; gap: 12px; padding: 0 13px; }
+</style>
+</helmet>
+<div class="board" style="width: 1600px; height: 1160px">
+  <div class="head">
+    <div class="num">Start simple · the same frame</div>
+    <h1>Step 1 fills the middle with the fight, not a map</h1>
+    <p class="where"><b>Where you'll find it:</b> the same page as the final one. Only the middle differs: a row per fighter in turn order, while the table keeps using D&amp;D Beyond's map. When maps come, the middle becomes the map and this list moves into the turn bar and the side panel. Nothing around it changes, so nothing has to be rebuilt.</p>
+  </div>
+  <div class="app">
+    <div class="mb"><b>The Adventure Begins</b><span>Story</span><span>Campaign</span><span class="on">Table</span><span class="sp"></span><span>Cole</span><span>Party ▾</span><span class="pill"><i></i>Connected</span><span>?</span></div>
+    <div class="turn">
+      <div class="pennant">Round<b>2</b></div>
+      <div class="whose">Cole's turn</div>
+      <div class="order"><span class="tok now">C</span><span class="tok foe">E1</span><span class="tok">T<i class="bd"></i></span><span class="tok foe">E2</span><span class="tok">BC</span><span class="tok">NN</span></div>
+    </div>
+    <div class="rail">
+      <div class="rail-h"><span>Table rolls</span><span style="color: var(--muted)">‹</span></div>
+      <div class="rolls">
+        <div class="roll"><b>Enemy 1 · damage</b><span>bludgeoning</span><span class="n">13</span><button type="button" class="btn mini apply">Apply to Trah</button></div>
+        <div class="roll"><b>Cole · Starry Wisp</b><span>to hit</span><span class="n">26</span></div>
+      </div>
+      <div style="padding: 10px 12px; border-top: 1px solid var(--line)"><button type="button" class="btn" style="width: 100%">Roll…</button></div>
+    </div>
+    <div class="map">
+      <div class="bd-list">
+        <div class="bd-head lbl"><span>Init.</span><span></span><span>Fighter</span><span>Hit Points</span><span>AC</span><span>Conditions and reminders</span></div>
+        <div class="bd-row now"><span class="init">19</span><span class="tok now" style="width: 38px; height: 38px; font-size: 12px">C</span><span><b>Cole</b><br><span class="note">your turn · 25 ft of movement left</span></span><span class="hp">51 / 75<span class="bar"><i style="width: 68%"></i></span></span><span>16</span><span><span class="badge conc">◎ Moonbeam</span></span></div>
+        <div class="bd-row"><span class="init">16</span><span class="tok foe">E1</span><span><b>Enemy 1</b><br><span class="note">Large</span></span><span style="color: var(--link)">Bloodied</span><span>11</span><span class="note">—</span></div>
+        <div class="bd-row"><span class="init">14</span><span class="tok">T</span><span><b>Trah</b></span><span class="hp">22 / 40<span class="bar"><i style="width: 55%"></i></span></span><span>18</span><span><span class="badge">Blessed</span> <span class="note">ends at the end of Trah's turn</span></span></div>
+        <div class="bd-row"><span class="init">12</span><span class="tok foe">E2</span><span><b>Enemy 2</b></span><span>Healthy</span><span>13</span><span class="note">—</span></div>
+        <div class="bd-row"><span class="init">9</span><span class="tok">BC</span><span><b>Big C</b></span><span class="hp">44 / 44<span class="bar"><i style="width: 100%"></i></span></span><span>17</span><span class="note">—</span></div>
+        <div class="bd-row"><span class="init">5</span><span class="tok">NN</span><span><b>No Name</b></span><span class="hp">30 / 38<span class="bar"><i style="width: 80%"></i></span></span><span>15</span><span><span class="badge">Hex on Enemy 1</span></span></div>
+        <div class="note" style="margin-top: 6px">The map stays on D&amp;D Beyond for now: Table ↗ there. Players see enemies as Healthy, Bloodied or Down; the DM sees their numbers.</div>
+      </div>
+    </div>
+    <div class="pane">
+      <div class="pane-h"><span class="pic">C</span><span><b>Cole</b><small>you · Druid 6 / Monk 2</small></span></div>
+      <div class="nums"><div><small>HP <span style="float: right">− +</span></small><b>51</b> <span class="of">/ 75</span></div><div><small>AC</small><b>16</b></div><div><small>Speed</small><b>45</b></div></div>
+      <div class="saves"><span>Str<b>+0</b></span><span>Dex<b>+3</b></span><span>Con<b>+2</b></span><span>Int<b>+4</b></span><span>Wis<b>+8</b></span><span>Cha<b>+3</b></span></div>
+      <div class="lbl">What you clicked last</div>
+      <div class="note">Click a row for its stat block or character here.</div>
+    </div>
+    <div class="abar">
+      <div class="move"><div class="row"><span>Movement</span><span><b>25</b> of 45 ft left</span></div><div class="meter"><i style="width: 44%"></i><i class="left" style="width: 56%"></i></div><div class="row"><span>− 5 ft  + 5 ft</span><span>Dash</span></div></div>
+      <div class="econ"><span class="pip a"><i></i>Action</span><span class="pip b"><i></i>Bonus</span><span class="pip r"><i></i>Reaction</span></div>
+      <div class="slots">
+        <div class="grp"><span class="lbl a">Action</span><div class="items"><span class="it">Unarmed Strike<small>+5 · 1d6+3</small></span><span class="it">Starry Wisp<small>+7 · 2d8</small></span></div></div>
+        <div class="grp"><span class="lbl b">Bonus</span><div class="items"><span class="it">Wild Shape<small>3 left</small></span><span class="it">Flurry of Blows<small>1 Focus</small></span></div></div>
+      </div>
+      <button type="button" class="btn endturn">End turn</button>
+    </div>
+    <span class="co" style="left: 300px; top: 130px">1</span>
+    <span class="co" style="left: 262px; top: 788px">2</span>
+    <span class="co" style="left: 120px; top: 71px">3</span>
+  </div>
+  <div class="legend">
+    <div><span class="co">1</span><span><b>The middle is the fight.</b> A row per fighter: initiative, Hit Points (enemies as Healthy, Bloodied or Down for players), AC, conditions with when they end. It's the DM's compact fight view too.</span></div>
+    <div><span class="co">2</span><span><b>Your turn's bar already works.</b> Without a map, movement is counted with − and + 5 ft, so a split move around an action is kept.</span></div>
+    <div><span class="co">3</span><span><b>The turn bar is askdnd's own</b> once a fight starts here. Until then it keeps listening to D&amp;D Beyond's VTT, as it does today.</span></div>
+    <div><span class="lbl" style="grid-column: 1 / -1; align-self: center">Later, the middle becomes the map</span></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1160}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
