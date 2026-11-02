@@ -13,7 +13,7 @@
       <dt>Awake</dt><dd>{% if a.awake %}Yes, until {{ a.until | clock }}{% else %}No. {{ a.why }}{% endif %}</dd>
       <dt>Last used</dt><dd>{{ last | clock if last else "Not yet" }}</dd>
       <dt>Extension</dt><dd>{% if health.extension %}Connected{% if health.sheets %} · sheets open: {{ health.sheets | length }}{% endif %}{% else %}Not connected{% endif %}</dd>
-      <dt>Last check</dt><dd>{% if health.round_trip and health.round_trip.done_at %}{{ health.round_trip.state | capitalize }}{{ " (everything)" if health.round_trip.full }}, {{ health.round_trip.done_at | clock }}{% if health.round_trip.error %}. {{ health.round_trip.error }}{% endif %}{% else %}Not run since askdnd started{% endif %}</dd>
+      <dt>Last check</dt><dd>{% if health.round_trip and health.round_trip.done_at %}{{ health.round_trip.state | capitalize }}{{ " (everything)" if health.round_trip.full }}, {{ health.round_trip.done_at | clock }}{% if health.round_trip.error %}. {{ health.round_trip.error }}{% endif %}{% else %}None yet: press the badge beside the title to check{% endif %}</dd>
     </dl>
   </section>
 

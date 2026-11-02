@@ -12,7 +12,7 @@
   {% if count > 1 %}<input class="rw-text" type="number" name="quantity" min="1" max="{{ count }}" value="1" inputmode="numeric" aria-label="How many">{% endif %}
 </div>
 {% if left_behind %}<p class="note">D&amp;D Beyond can't move an item between characters, so they get a fresh one: {{ left_behind | join(" and ") }} stay{{ "s" if left_behind | length == 1 }} behind.</p>{% endif %}
-<div class="rw-row">
+<div class="rw-row use-foot">
   <button type="button" class="btn primary small" data-use-go>Give</button>
   <button type="button" class="btn link small" data-use-close>Cancel</button>
 </div>

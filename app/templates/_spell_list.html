@@ -14,7 +14,7 @@
           <span class="note" data-ls-summary></span>
           <label class="ls-select"><span>Sort</span>
             <select data-ls-sort aria-label="Sort"><option value="level">Level</option><option value="name">Name</option><option value="avg">Amount</option></select></label>
-          {% if show_picks and picks.notes and (spells | map(attribute="key") | select("in", picks.notes) | first) %}{{ notes_toggle() }}{% endif %}
+          {% if show_picks %}{{ notes_toggle() }}{% endif %}
         </div>
         {{ active_row() }}
         <div class="ls-rows sh-cols" data-ls-rows>

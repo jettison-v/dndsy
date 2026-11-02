@@ -14,8 +14,10 @@
 </div>
 <div class="peek-body detail">
   {% if kind == "hp" %}{% set hp = s.hit_points %}
+    {% if hp_change or can_play %}<div class="hp-acts">{% endif %}
     {% if hp_change %}<div class="row tight hp-open">{% for m, label in (("damage", "Damage"), ("heal", "Heal"), ("temp", "Temporary HP")) %}<button type="button" class="btn small{{ ' primary' if loop.first }}" data-modal-url="/characters/{{ c.id }}/hp?mode={{ m }}">{{ label }}</button>{% endfor %}</div>{% endif %}
     {% if can_play %}<div class="row tight hp-rest">{% for k, label in (("short", "Short Rest"), ("long", "Long Rest")) %}<button type="button" class="btn small" data-use-url="/characters/{{ c.id }}/rest?kind={{ k }}">{{ label }}</button>{% endfor %}</div>{% endif %}
+    {% if hp_change or can_play %}</div>{% endif %}
     <dl class="mech">
       <dt>Now</dt><dd><b>{{ hp.current }}</b> of {{ hp.max }}{% if hp.damage %} ({{ hp.damage }} damage taken){% endif %}</dd>
       {% if hp.temp %}<dt>Temporary</dt><dd>+{{ hp.temp }} Temporary Hit Points, lost first</dd>{% endif %}

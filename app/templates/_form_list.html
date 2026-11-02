@@ -25,7 +25,7 @@
         <span class="note" data-ls-summary></span>
         <label class="ls-select"><span>Sort</span>
           <select data-ls-sort aria-label="Sort"><option value="default">Known</option><option value="damage">Damage</option><option value="hit">To hit</option><option value="speed">Speed</option><option value="cr">CR</option><option value="name">Name</option></select></label>
-        {% if show_picks and picks.notes and (forms | map(attribute="key") | select("in", picks.notes) | first) %}{{ notes_toggle() }}{% endif %}
+        {% if show_picks %}{{ notes_toggle() }}{% endif %}
       </div>
       {{ active_row() }}
       <div class="ls-rows fm-cols" data-ls-rows>

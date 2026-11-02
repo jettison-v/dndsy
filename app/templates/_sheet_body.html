@@ -3,19 +3,20 @@
 {% from "_form_list.html" import form_list %}
 {% from "_item_list.html" import item_list %}
 {% from "_feature_list.html" import feature_list %}
-{% from "_char.html" import pips, pick_btn, ri, opt_row, bell, pin_icon, bookmark_icon, tile, adv, roll_attrs %}
+{% from "_char.html" import pips, pick_btn, ri, opt_row, bell, pin_icon, bookmark_icon, tile, adv, roll_attrs, ntile, hp_tile, inspiration, purse, rest_btn %}
 {% set s = sheet %}
 {% if s %}
 {# Row 1: the numbers you look up most #}
 <div class="strip">
-  <div {{ tile(c, "hp") }}><small>Hit points</small><b>{{ s.hit_points.current }}</b>{% if s.hit_points.current != s.hit_points.max %}<span class="note"> / {{ s.hit_points.max }}</span>{% endif %}{% if s.hit_points.temp %}<span class="note"> +{{ s.hit_points.temp }} temp</span>{% endif %}</div>
-  <div {{ tile(c, "ac") }}><small>Armor class</small><b>{{ s.armor_class }}</b></div>
-  <div {{ tile(c, "speed") }}><small>Speed</small><b>{{ s.speed.walk }} ft</b>{% set extra = s.speed.items() | rejectattr(0, "in", ["walk", "parts", "notes"]) | list %}{% if extra %}<span class="note"> {% for k, v in extra %}{{ k }} {{ v }}{{ ", " if not loop.last }}{% endfor %}</span>{% endif %}</div>
-  <div {{ tile(c, "initiative") }}><small>Initiative</small><b>{{ s.initiative }}</b>{{ adv(s.initiative_adv) }}</div>
-  <div {{ tile(c, "proficiency") }}><small>Proficiency</small><b>+{{ s.proficiency_bonus }}</b></div>
-  <div {{ tile(c, "perception") }}><small>Passive Perception</small><b>{{ s.passive_perception }}</b></div>
-  {% for sc in s.spellcasting[:1] %}<div {{ tile(c, "spell") }}><small>Spell DC / attack</small><b>{{ sc.save_dc }}</b><span class="note"> / {{ sc.attack }}</span></div>{% endfor %}
-  <div class="insp{{ ' on' if s.inspiration }}" {{ tile(c, "inspiration") }} title="Heroic Inspiration"><small>Heroic Inspiration</small><b>{{ "✦ Yes" if s.inspiration else "—" }}</b></div>
+  {{ hp_tile(s, c, roll=false, short=false) }}
+  {{ ntile(s, tile(c, "ac"), "Armor class", ("<b>%s</b>" | format(s.armor_class)) | safe) }}
+  {%- set extra = s.speed.items() | rejectattr(0, "in", ["walk", "parts", "notes"]) | list %}
+  {{ ntile(s, tile(c, "speed"), "Speed", ("<b>%s ft</b>" | format(s.speed.walk)) | safe, foot=(('<span class="note">' ~ (extra | map("join", " ") | join(", ") | e) ~ '</span>') | safe if extra else "")) }}
+  {{ ntile(s, tile(c, "initiative"), "Initiative", ("<b>%s</b>" | format(s.initiative)) | safe, foot=adv(s.initiative_adv)) }}
+  {{ ntile(s, tile(c, "proficiency"), "Proficiency", ("<b>+%s</b>" | format(s.proficiency_bonus)) | safe) }}
+  {{ ntile(s, tile(c, "perception"), "Passive Perception", ("<b>%s</b>" | format(s.passive_perception)) | safe) }}
+  {% for sc in s.spellcasting[:1] %}{{ ntile(s, tile(c, "spell"), "Spell DC / attack", ("<b>%s</b><span class=\"note\"> / %s</span>" | format(sc.save_dc, sc.attack)) | safe) }}{% endfor %}
+  {{ inspiration(s, c, "") }}
 </div>
 
 {# Row 2: abilities with their saves, and advantages shown on the save they change #}
@@ -26,7 +27,7 @@
       <div class="sv{{ ' prof' if sv.proficient }}">Save {{ sv.label }} {{ adv(sv.adv) }}</div></div>
     {% endfor %}
   </div>
-  <p class="note m-0 mt-2">{% if s.save_adv_all %}{{ adv(s.save_adv_all) }} on every save {% for a in s.save_adv_all %}{{ a.when }} ({{ a.source }}){{ "; " if not loop.last }}{% endfor %} · {% endif %}Hit dice {% for h in s.hit_points.hit_dice %}{{ h.total - h.used }}/{{ h.total }} {{ h.die }}{{ ", " if not loop.last }}{% endfor %}</p>
+  <div class="sheet-hd">{% if can_play %}{{ rest_btn(c) }}{% endif %}<p class="note m-0">{% if s.save_adv_all %}{{ adv(s.save_adv_all) }} on every save {% for a in s.save_adv_all %}{{ a.when }} ({{ a.source }}){{ "; " if not loop.last }}{% endfor %} · {% endif %}Hit dice {% for h in s.hit_points.hit_dice %}{{ h.total - h.used }}/{{ h.total }} {{ h.die }}{{ ", " if not loop.last }}{% endfor %}</p></div>
 </section>
 
 {# Row 3: everything else, in tabs #}
@@ -57,12 +58,12 @@
     <div class="planner-classes">
       {% for b in s.spellbook %}
       <div class="planner-class">
-        <b>{{ b.class }}</b> <span class="muted">{{ b.ability }} · save DC {{ b.save_dc }} · attack {{ b.attack }}</span>
+        <div class="planner-head"><span><b>{{ b.class }}</b> <span class="muted">{{ b.ability }} · save DC {{ b.save_dc }} · attack {{ b.attack }}</span></span>
+          {%- if can_play and b.spells | selectattr("prep") | first %}<button type="button" class="btn small" data-modal-url="/characters/{{ c.id }}/spells/prepare?cls={{ b.class | urlencode }}" data-modal-size="large">Prepare spells</button>{% endif %}</div>
         <div class="row tight mt-1">
           {% if b.prepared_max %}<span class="tag {{ 'done' if b.prepared_count == b.prepared_max else 'draft' }}">{{ "Spellbook: prepared" if b.spellbook else "Prepared" }} {{ b.prepared_count }} of {{ b.prepared_max }}</span>{% endif %}
           {% if b.cantrips_max %}<span class="tag {{ 'done' if b.cantrips_count == b.cantrips_max else 'draft' }}">Cantrips {{ b.cantrips_count }} of {{ b.cantrips_max }}</span>{% endif %}
           {% set always = b.spells | selectattr("state", "equalto", "always") | list %}{% if always %}<span class="tag">+{{ always | length }} always prepared</span>{% endif %}
-          {% if can_play and b.spells | selectattr("prep") | first %}<button type="button" class="btn small" data-modal-url="/characters/{{ c.id }}/spells/prepare?cls={{ b.class | urlencode }}" data-modal-size="large">Prepare spells</button>{% endif %}
         </div>
       </div>
       {% endfor %}
@@ -75,11 +76,9 @@
   {% endif %}
 
   <div id="t-items" hidden>
+    {%- set end %}{{ purse(s, c, can_play, total=false) }}{% if can_loot %}<button type="button" class="btn small" data-use-url="/characters/{{ c.id }}/loot">Give loot</button>{% endif %}{% endset %}
     {% if s.attuned %}<p class="note m-0 mb-3">Attuned: {{ s.attuned | join(", ") }} ({{ s.attuned | length }} of 3)</p>{% endif %}
-    {{ item_list(c, s.inventory, picks, can_pick, show_picks, item_notes, "sheet-items", [("all", "All"), ("ready", "Equipped"), ("fav", "Shortlist")]) }}
-    {% if s.currency %}<p class="note">Coins: {% for k, v in s.currency.items() %}{{ "{:,}".format(v) }} {{ k }}{{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
-    {% if can_play or can_loot %}<div class="row tight">{% if can_play %}<button type="button" class="btn small" data-use-url="/characters/{{ c.id }}/coins">Change coins</button>{% endif %}
-      {% if can_loot %}<button type="button" class="btn small" data-use-url="/characters/{{ c.id }}/loot">Give loot</button>{% endif %}</div>{% endif %}
+    {{ item_list(c, s.inventory, picks, can_pick, show_picks, item_notes, "sheet-items", [("all", "All"), ("ready", "Equipped"), ("fav", "Shortlist")], s.sync or {}, end) }}
   </div>
 
   <div id="t-features" hidden>

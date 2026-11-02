@@ -5,7 +5,7 @@
 <p class="use-cost">{{ book.class }} · {{ count }}{% if not on and sp.state == "spellbook" %} · in your spellbook{% endif %}</p>
 {% if over %}<p class="note">Preparing it makes {{ (book.prepared_count or 0) + 1 }}, more than the {{ book.prepared_max }} a {{ book.class }} prepares at this level. D&amp;D Beyond allows it; whether it stands is the DM's call.</p>{% endif %}
 {% if reachable %}
-<div class="rw-row">
+<div class="rw-row use-foot">
   <button type="button" class="btn primary small" data-use-go data-to="{{ 'unprepare' if on else 'prepare' }}">{{ "Unprepare" if on else "Prepare" }}</button>
   <button type="button" class="btn link small" data-use-close>Cancel</button>
 </div>

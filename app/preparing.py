@@ -108,7 +108,8 @@ def prepare_screen(request: Request, character_id: int, cls: str = "", db: Sessi
     if not books:
         raise HTTPException(404)
     book = next((b for b in books if b["class"] == cls), books[0])
-    mine = picks.picks(db, ch, user) if picks.can_see(user, ch) else {"fav": [], "notes": {}}
+    noting = picks.can_see(user, ch)
+    mine = picks.picks(db, ch, user) if noting else {"fav": [], "notes": {}}
     fav, notes = set(mine["fav"]), mine.get("notes") or {}
     on_way = {k for k, v in (sheet.get("sync") or {}).items() if k.startswith("prep:") and v == "on"}
     rows = []
@@ -125,7 +126,8 @@ def prepare_screen(request: Request, character_id: int, cls: str = "", db: Sessi
     return templates.TemplateResponse(request, "_prepare_spells.html", {
         "c": ch, "book": book, "books": books, "rows": rows, "levels": [(lv, ORDINAL.get(lv, f"{lv}th")) for lv in levels],
         "effects": [label for _, label in sb.EFFECTS if any(r["effect"] == label for r in rows)],
-        "rule": RULES.get(book["class"], ""), "short": SHORT.get(book["class"], ""), "reachable": ddb_bridge.reachable(ch)})
+        "rule": RULES.get(book["class"], ""), "short": SHORT.get(book["class"], ""), "reachable": ddb_bridge.reachable(ch),
+        "noting": noting})
 
 
 @router.post("/characters/{character_id:int}/spells/prepare")

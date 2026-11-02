@@ -17,18 +17,21 @@
   </div>
   <div class="fm-actions"><button class="btn link peek-close" type="button" aria-label="Close">✕</button></div>
 </div>
-<div class="peek-body prep" data-prep data-url="/characters/{{ c.id }}/spells/prepare?cls={{ book.class | urlencode }}" data-class="{{ book.class }}" data-max="{{ most or '' }}">
+<div class="peek-body prep" data-prep data-notes-list="prepare" data-url="/characters/{{ c.id }}/spells/prepare?cls={{ book.class | urlencode }}" data-class="{{ book.class }}" data-max="{{ most or '' }}">
   {% if books | length > 1 %}<div class="row tight" role="tablist" aria-label="Class">{% for b in books %}<button type="button" class="chip{{ ' on' if b.class == book.class }}" data-modal-url="/characters/{{ c.id }}/spells/prepare?cls={{ b.class | urlencode }}" data-modal-size="large"{% if b.class == book.class %} aria-current="true"{% endif %}>{{ b.class }}</button>{% endfor %}</div>{% endif %}
 
   {% if most %}<p class="prep-warn" data-prep-over hidden></p>{% endif %}
 
   <div class="prep-body">
+    <details class="prep-fold" open><summary>Filters</summary>
     <aside class="prep-filters" aria-label="Filters">
       <span class="ls-label">Show</span>
       <div class="chips">{% for k, label in (("all", "All"), ("on", "Prepared"), ("off", "Not prepared"), ("fav", "★ Shortlist")) %}<button type="button" class="chip{{ ' on' if k == 'all' }}" data-prep-show="{{ k }}">{{ label }}</button>{% endfor %}</div>
       {% if levels | length > 1 %}<span class="ls-label">Level</span><div class="chips">{% for lv, label in levels %}<button type="button" class="chip" data-prep-level="{{ lv }}">{{ label }}</button>{% endfor %}</div>{% endif %}
       {% if effects | length > 1 %}<span class="ls-label">Effect</span><div class="chips">{% for e in effects %}<button type="button" class="chip" data-prep-effect="{{ e }}">{{ e }}</button>{% endfor %}</div>{% endif %}
+      {% if noting %}<label class="ls-check"><input type="checkbox" data-ls-notes> Full notes</label>{% endif %}
     </aside>
+    </details>
     <div class="prep-list">
       {% for lv, label in levels %}
       <div class="prep-level" data-prep-heading="{{ lv }}">{{ label }} level</div>
@@ -37,8 +40,8 @@
         data-on="{{ '1' if r.on else '' }}" data-base="{{ '1' if r.on else '' }}"{% if r.always %} data-always="1"{% endif %} data-name="{{ r.name }}">
         {% if r.always %}<span class="prep-tick always" title="Always prepared" aria-label="{{ r.name }}: always prepared">◆</span>
         {% else %}<button type="button" class="prep-tick" data-prep-tick aria-pressed="{{ 'true' if r.on else 'false' }}" aria-label="{{ r.name }}: prepared">✓</button>{% endif %}
-        <span class="prep-name"><button type="button" class="link-plain" data-panel-url="/characters/{{ c.id }}/detail?ref={{ r.key | urlencode }}"><b>{{ r.name }}</b></button>
-          {%- if r.always %} <span class="tag sh-always">Always</span>{% endif %}{% if r.conc %} <span class="tag">Conc.</span>{% endif %}{% if r.going %} <span class="tag" title="On its way to D&amp;D Beyond">↻</span>{% endif %}
+        <span class="prep-name"><button type="button" class="link-plain" data-panel-url="/characters/{{ c.id }}/detail?ref={{ r.key | urlencode }}"{% if r.going %} data-sync="on" title="On its way to D&amp;D Beyond"{% endif %}><b>{{ r.name }}</b></button>
+          {%- if r.always %} <span class="tag sh-always">Always</span>{% endif %}{% if r.conc %} <span class="tag">Conc.</span>{% endif %}
           {% if r.what %}<small>{{ r.what }}</small>{% endif %}
           {% if r.note %}<span class="ls-note prep-note" title="{{ r.note }}">✎ {{ r.note }}</span>{% endif %}</span>
         <span class="prep-col">{{ r.time }}</span>

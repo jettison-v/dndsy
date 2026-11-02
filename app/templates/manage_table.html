@@ -64,7 +64,7 @@
 
   {% if can_change %}
   <details class="seat-add">
-    <summary class="btn primary">+ Add to the table</summary>
+    <summary class="btn">+ Add to the table</summary>
     <div class="seat-panel">
       <form method="post" action="{{ cbase }}/manage/table/add" class="form-narrow">
         <label class="field">Who<select name="email"><option value="">No one yet (just a character)</option>{% for u in accounts %}<option value="{{ u.email }}">{{ u.name if u.name and u.name != u.email else u.email }}</option>{% endfor %}</select></label>

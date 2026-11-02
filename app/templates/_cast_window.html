@@ -8,7 +8,7 @@
 {% if ends %}<p class="use-what">Ends Concentration on {{ ends.spell }}.</p>{% endif %}
 {% if ways and reachable %}<div class="rw-row"><span class="rw-label">Cast at</span><select class="rw-slot" name="way" aria-label="How to cast {{ e.name }}">{% for w in ways %}<option value="{{ w.way }}" data-level="{{ w.level }}">{{ w.label }}</option>{% endfor %}</select></div>{% endif %}
 {% if reachable %}
-<div class="rw-row cast-go" data-character="{{ c.id }}">{% if rolls %}{{ spell_roll(c, e, "Roll without spending a slot", "btn link small cast-roll", 0) }}<button type="button" class="btn primary small" data-use-go data-then-roll>Cast and roll</button>{% else %}<button type="button" class="btn primary small" data-use-go>Cast</button>{% endif %}</div>
+<div class="rw-row use-foot" data-character="{{ c.id }}">{% if rolls %}<button type="button" class="btn primary small" data-use-go data-then-roll>Cast and roll</button>{{ spell_roll(c, e, "Roll without spending a slot", "btn link small cast-roll", 0) }}{% else %}<button type="button" class="btn primary small" data-use-go>Cast</button>{% endif %}<button type="button" class="btn link small" data-use-close>Cancel</button></div>
 <p class="use-said" role="alert" hidden></p>
 {% else %}
 <p class="use-said">{{ c.name }}'s D&amp;D Beyond sheet can't be reached: open it in Chrome with the askdnd bridge to cast here, or spend the slot on D&amp;D Beyond (askdnd shows it within seconds).</p>

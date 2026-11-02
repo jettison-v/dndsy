@@ -48,28 +48,20 @@ footer { color: var(--muted); font-size: 13px; }
   <section>
     <h2>Now</h2>
 
-    <div class="step now" data-step="move">
-      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>1. Sign in at askdnd.ai, then tidy Google's secrets</h3><span class="chip now">2 minutes</span></div>
-      <p>The move is done: askdnd.ai and www.askdnd.ai are on v2, with valid certificates, and the old app answers at <a href="https://legacy.askdnd.ai">legacy.askdnd.ai</a>. Google is set to send you back to askdnd.ai.</p>
+    <div class="step now" data-step="ui-review">
+      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>1. Review the whole UI and UX pass on your computer</h3><span class="chip now">30 minutes</span></div>
+      <p>Everything you approved is built, on one branch, for one look before beta. The local server is running on your computer with the local copy of beta.</p>
       <ol>
-        <li>Open <a href="https://askdnd.ai">askdnd.ai</a> and sign in with Google. You land on your campaign's Story, as on beta.</li>
-        <li>Google's warning about two secrets: open <a href="https://console.cloud.google.com/auth/clients">Clients</a> › <b>askdnd v2</b>, scroll to <b>Client secrets</b>. Press <b>Disable</b> on the <b>older</b> one (not Delete: Disable can be undone).</li>
-        <li>Sign out of askdnd.ai and sign in again. If it works, the older secret was unused: press <b>Delete</b> on it. If sign-in fails, press <b>Enable</b> on it again and tell me.</li>
-      </ol>
-    </div>
-
-    <div class="step now" data-step="ui-pass">
-      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>2. Answer the UI and UX pass's seven choices</h3><span class="chip now">15 minutes</span></div>
-      <p>The scan is done: 18 findings. Eleven follow rules the design system already has, so I'll just fix them. Seven are yours, each with my recommendation first and a picture of today and the change.</p>
-      <ol>
-        <li>Open <a href="https://claude.ai/artifact/2abF1Z1bAFQPGauYFvRZwR">UI and UX Pass</a> and read <b>Fixed without asking</b>; say if one shouldn't be.</li>
-        <li>Pick an answer for each of the seven (or <b>Use my recommendation for the rest</b>). They save as you go.</li>
-        <li>Tell me <b>done</b>. I build it in rounds, each for you to try on your computer first.</li>
+        <li><a href="http://localhost:8000/dev/login?next=/characters/9/battle">Cathartic's Battle</a> (VTT test): the number tiles, − and + in Hit points; at phone width too.</li>
+        <li><a href="http://localhost:8000/dev/login?next=/characters/9">Cathartic's Sheet</a>: Inventory starts with the coin purse; lists start on All, then where you left them; Full notes beside Sort; Spells › Prepare spells for the change colours.</li>
+        <li><a href="http://localhost:8000/dev/login?next=/c/vtt-test/party">VTT test's Party</a>: the purse on each card; Items at phone width.</li>
+        <li><a href="http://localhost:8000/dev/login?next=/manage/design">Manage › Design system</a>: every part in its states, the ↻ and ! included (a real change can't be made locally).</li>
+        <li>Tell me what feels off, or <b>ship it</b>. Whether another pass is needed is your call after this look.</li>
       </ol>
     </div>
 
     <div class="step now" data-step="mm">
-      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>3. Load the whole Monster Manual on beta</h3><span class="chip now">Ready now</span></div>
+      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>2. Load the whole Monster Manual on beta</h3><span class="chip now">Ready now</span></div>
       <p>The upload is on beta. The terminal command couldn't work (beta's database has no public address), so it's a file instead:</p>
       <ol>
         <li>Open <a href="https://beta.askdnd.ai/manage/backups#books">beta's Backups and imports › Books</a>.</li>
@@ -82,21 +74,9 @@ footer { color: var(--muted); font-size: 13px; }
   <section>
     <h2>Next, in this order</h2>
 
-    <div class="step" data-step="extension">
-      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>4. Upload extension 0.9.8 to Google</h3><span class="chip now">Ready now</span></div>
-      <p>The file is built. One upload carries DM Backup and preparing spells, and replaces 0.9.6, which is still in review:</p>
-      <ol>
-        <li>Open the <a href="https://chrome.google.com/webstore/devconsole">Chrome Web Store developer dashboard</a> and click <b>askdnd bridge</b>.</li>
-        <li>If 0.9.6 still shows <b>Pending review</b>, click <b>Cancel review</b>.</li>
-        <li><b>Package</b> › <b>Upload new package</b>, and pick <code>~/Code/dndsy/private/extension/askdnd-bridge-0.9.8.zip</code>.</li>
-        <li><b>Submit for review</b>. Leave the listing as it is.</li>
-        <li>Tell me when Google approves it (an email from the Chrome Web Store); I'll run the live tests on the real D&amp;D Beyond the same day.</li>
-      </ol>
-    </div>
-
     <div class="step" data-step="review-live">
-      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>5. Review live state on beta</h3><span class="chip wait">After step 4</span></div>
-      <p>Wait for 0.9.8, so what you see is what the table will get. Then in <a href="https://beta.askdnd.ai/c/vtt-test/">VTT test</a>, with one of your own characters (Vi or Spurt) and its D&amp;D Beyond sheet open in Chrome:</p>
+      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>3. Review live state on beta</h3><span class="chip wait">Ready now</span></div>
+      <p>0.9.8 is published (Nov 2): update it in Chrome first (chrome://extensions › Developer mode › Update). Then in <a href="https://beta.askdnd.ai/c/vtt-test/">VTT test</a>, with one of your own characters (Vi or Spurt) and its D&amp;D Beyond sheet open in Chrome:</p>
       <ul>
         <li><b>Cast</b> a spell from Battle: a slot goes on D&amp;D Beyond; Undo gives it back.</li>
         <li><b>Resources</b>: press a resource, Use one, Give one back.</li>
@@ -109,11 +89,11 @@ footer { color: var(--muted); font-size: 13px; }
     </div>
 
     <div class="step" data-step="share">
-      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>6. Share the bridge with the table</h3><span class="chip wait">When you're ready</span></div>
+      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>4. Share the bridge with the table</h3><span class="chip wait">When you're ready</span></div>
       <ol>
         <li>Send the table this link: <code>https://chromewebstore.google.com/detail/askdnd-bridge/obpgemimnhngpcckodjkcihiahoaefpl</code> (it's also in Help › FAQ). Each player adds it in Chrome on a computer.</li>
         <li>Send them the <a href="https://claude.ai/artifact/9H59RDNi99gVa7bNwmjp6G">bridge's risk summary</a>. Before you send it I'll update it for DM Backup and preparing spells, and share it from its Share menu so they can open it.</li>
-        <li>On beta, open <a href="https://beta.askdnd.ai/c/main/manage/settings">The Adventure Begins › Manage › Settings</a>, scroll to <b>Virtual tabletop</b>, switch on <b>D&amp;D Beyond bridge</b>, and save. Leave the others off until step 5 says they're ready.</li>
+        <li>On beta, open <a href="https://beta.askdnd.ai/c/main/manage/settings">The Adventure Begins › Manage › Settings</a>, scroll to <b>Virtual tabletop</b>, switch on <b>D&amp;D Beyond bridge</b>, and save. Leave the others off until step 3 says they're ready.</li>
         <li>Each player: open askdnd once in that Chrome, signed in, then open their D&amp;D Beyond sheet. The Live pill turns green: <b>Connected</b>.</li>
       </ol>
     </div>
@@ -122,7 +102,7 @@ footer { color: var(--muted); font-size: 13px; }
   <section>
     <h2>When you say</h2>
     <div class="step" data-step="vtt">
-      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>7. Start the VTT</h3><span class="chip wait">When you say</span></div>
+      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>5. Start the VTT</h3><span class="chip wait">When you say</span></div>
       <p>After the UI and UX pass, which completes Phase 1. The layout is decided (<a href="https://claude.ai/artifact/VkPT5mfWdLTaPrzJwmeV7W">VTT Layout</a>). Step 1 is the fight without a map, built in the final frame.</p>
     </div>
   </section>
@@ -130,6 +110,7 @@ footer { color: var(--muted); font-size: 13px; }
   <section>
     <h2>Running without you</h2>
     <div class="step running">
+      <div><b>Done today</b><span>askdnd.ai is v2 and signs in; extension 0.9.8 is published, and the Mac Mini’s seats run it; prepare, give, loot and DM Backup all pass live, after PR 155 fixed a spell that vanished once dropped.</span></div>
       <div><b>The nightly live test</b><span>on the Mac Mini at 4:00, against beta's test seats; a miss emails you through Sentry. Installed and tried Nov 2 (a deliberate miss reached Sentry). Its fixes are in <a href="https://github.com/jettison-v/dndsy/pull/148">PR 148</a>, reviewed line by line and passing: say "merge 148" when you like.</span></div>
       <div><b>On beta now</b><span>Give, Give loot (test campaigns), the new Live window, the phone layouts, Prepare spells as a large window (it makes changes once 0.9.8 is approved), and the database connection fix.</span></div>
       

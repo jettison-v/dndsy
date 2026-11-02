@@ -2,8 +2,11 @@
    search, sorts and the side panel, like Sheet › Spells. `items` is sheet.inventory (apply_overrides gives each
    its group: battle, equipped, Weapons, Armor, Magic items, Potions and scrolls, Gear). #}
 {% from "_lists.html" import filter_column, search_box, active_row, view_switch, notes_toggle %}
-{% from "_char.html" import pick_btn, pips %}
-{% macro item_list(c, items, picks, can_pick, show_picks, item_notes, key="sheet-items", views=()) -%}
+{% from "_char.html" import pick_btn, pips, sync_attrs %}
+{# `sync` is the sheet's changes on their way to D&D Beyond (ddb_bridge.as_shown): each row marks its count, equipping,
+   attuning and charges with the one ↻ (Brett, 2026-11-02, the UI pass) #}
+{# `end`: what sits at the toolbar's right end (Sheet › Items: the coin purse, Give loot) #}
+{% macro item_list(c, items, picks, can_pick, show_picks, item_notes, key="sheet-items", views=(), sync={}, end="") -%}
 {%- set GROUPS = [("battle", "Usable in battle"), ("equipped", "Equipped"), ("Weapons", "Weapons"), ("Armor", "Armor"),
                   ("Magic items", "Magic items"), ("Potions and scrolls", "Potions and scrolls"), ("Gear", "Gear")] -%}
 {%- set RARITY = ["Common", "Uncommon", "Rare", "Very Rare", "Legendary", "Artifact"] -%}
@@ -25,7 +28,8 @@
         <span class="note" data-ls-summary></span>
         <label class="ls-select"><span>Sort</span>
           <select data-ls-sort aria-label="Sort"><option value="default">Group</option><option value="name">Name</option><option value="rarity">Rarity</option></select></label>
-        {% if show_picks and picks.notes and (items | map(attribute="key") | select("in", picks.notes) | first) %}{{ notes_toggle() }}{% endif %}
+        {% if show_picks %}{{ notes_toggle() }}{% endif %}
+        {% if end %}<span class="ls-end">{{ end }}</span>{% endif %}
       </div>
       {{ active_row() }}
       <div class="ls-rows it-cols" data-ls-rows>
@@ -38,14 +42,16 @@
           data-f='{{ {"kind": it.kind_label, "magic": "Magic" if it.magic else "Not magic", "use": it.use_labels, "attune": it.attune_label, "rarity": it.rarity} | tojson }}'
           data-sort-default="{{ gi * 1000 + loop.index }}" data-sort-rarity="{{ (RARITY.index(it.rarity) + 1) if it.rarity in RARITY else 0 }}"
           data-panel-url="/characters/{{ c.id }}/detail?ref={{ it.key | urlencode }}" tabindex="0" role="button" aria-label="{{ it.name }}: details">
-          <span class="sh-status {{ 'on' if on else 'off' }}" title="{{ 'Attuned' if it.attunement == 'attuned' else ('Equipped' if it.equipped else 'Carried, not equipped') }}" role="img" aria-label="{{ 'Equipped' if on else 'Not equipped' }}">{{ "✓" if on else "○" }}</span>
-          <span class="ls-name"><span class="ls-line"><b>{{ it.name }}</b>{% if it.quantity > 1 %} <span class="muted">×{{ it.quantity }}</span>{% endif %}
+          {%- set iid = it.key.split(":")[1] %}
+          {%- set gear = sync.get("attuned:" ~ iid) or sync.get("equipped:" ~ iid) %}
+          <span class="sh-status {{ 'on' if on else 'off' }}"{% if gear %} data-sync="{{ gear }}"{% endif %} title="{{ 'Attuned' if it.attunement == 'attuned' else ('Equipped' if it.equipped else 'Carried, not equipped') }}" role="img" aria-label="{{ 'Equipped' if on else 'Not equipped' }}">{{ "✓" if on else "○" }}</span>
+          <span class="ls-name"><span class="ls-line"><b{{ sync_attrs(sync.get(it.key)) }}>{{ it.name }}</b>{% if it.quantity > 1 %} <span class="muted">×{{ it.quantity }}</span>{% endif %}
             {%- if it.attunement == "attuned" %} <span class="tag done">Attuned</span>{% elif it.attunement == "required" %} <span class="tag faint">Needs attunement</span>{% endif %}
             {%- if it.custom %} <span class="tag custom">Custom</span>{% endif %}{% if it.changes %} <span class="tag edited">Changed</span>{% endif %}{% if item_notes.get(it.key) %} <span class="tag">Note</span>{% endif %}</span>
             {% if it.summary %}<span class="ls-what">{{ it.summary }}</span>{% endif %}
             {% if note %}<span class="ls-note" title="{{ note }}">✎ {{ note }}</span>{% endif %}</span>
           <span>{{ it.kind_label }}{% if it.magic and it.rarity %}<span class="note it-rarity">{{ it.rarity }}</span>{% endif %}</span>
-          <span>{% if it.charges and it.charges.reset != "Used up" %}{{ pips(it.charges) }}{% elif it.charges %}<span class="note">{{ it.charges.left }} left</span>{% else %}<span class="note">—</span>{% endif %}</span>
+          <span{{ sync_attrs(sync.get("charges:" ~ iid)) }}>{% if it.charges and it.charges.reset != "Used up" %}{{ pips(it.charges) }}{% elif it.charges %}<span class="note">{{ it.charges.left }} left</span>{% else %}<span class="note">—</span>{% endif %}</span>
           <span class="sb-range">{{ [it.damage, ("AC " ~ it.armor_class) if it.armor_class else "", ("in " ~ it.in) if it.in else ""] | select | join(" · ") or "—" }}</span>
           <span class="ls-marks"><span>{{ pick_btn(c, "fav", it.key, it.key in picks.fav, can_pick) }}</span><span>{% if it.battle %}{{ pick_btn(c, "star", it.key, it.key in picks.star, can_pick) }}{% endif %}</span><span>{{ pick_btn(c, "remind", it.key, it.key in picks.remind, can_pick) }}</span></span>
         </div>

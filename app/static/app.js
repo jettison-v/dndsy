@@ -435,6 +435,12 @@
   // Battle's Resources: whole names while they fit on one line, every short name once they don't (Brett, 2026-11-01).
   // Measured with the short names off, each time the row's width changes or a new copy arrives. Phones stack them.
   function fitRes() {
+    // Party's cards too (Brett, 2026-11-02): each card's resources by their whole names while they fit on one line
+    document.querySelectorAll('.pt-res').forEach(r => {
+      r.classList.remove('short');
+      const one = r.firstElementChild?.offsetHeight || 24;
+      if (r.offsetHeight > one * 1.5) r.classList.add('short');
+    });
     const row = document.querySelector('.battlebar > .res-row:not(.slots)');
     if (!row) return;
     row.classList.remove('short');
@@ -447,10 +453,11 @@
     if (e.contentRect.width !== resWidth) { resWidth = e.contentRect.width; requestAnimationFrame(fitRes); }
   });
   function watchRes() {
-    const bar = document.querySelector('.battlebar');
+    const bar = document.querySelector('.battlebar, .pt-cards');
     if (bar && resWatch) { resWatch.disconnect(); resWatch.observe(bar); }
     fitRes();
   }
+  document.addEventListener('askdnd:swapped', watchRes);  // (a new copy of the page, from a live change)
   watchRes();
   document.fonts?.ready.then(fitRes);
   document.body.addEventListener('htmx:afterSettle', watchRes);
@@ -597,6 +604,7 @@
     showReminders();  // (a condition's reminder, as the fight moved on)
     document.dispatchEvent(new CustomEvent('askdnd:fight'));
     restore();
+    document.dispatchEvent(new CustomEvent('askdnd:swapped'));
     if (window.askdndNotesInit) window.askdndNotesInit(here);
     sortSetup(); econSetup(); condArrive();
     showMarks(here, before);
@@ -847,8 +855,9 @@
   openFaq(); window.addEventListener('hashchange', openFaq);
   // Lists' "Full notes": each row's note in full instead of one line, remembered per list. Plan's tabs re-render
   // their lists after a save, so it's applied again after every swap.
-  const notesKey = box => 'askdnd:notes-full:' + (box.closest('[data-list]') || {}).dataset?.list;
-  const applyNotes = box => box.closest('[data-list]').classList.toggle('ls-notes-full', box.checked);
+  const notesOf = box => box.closest('[data-list], [data-notes-list]');
+  const notesKey = box => 'askdnd:notes-full:' + (notesOf(box).dataset.list || notesOf(box).dataset.notesList);
+  const applyNotes = box => notesOf(box).classList.toggle('ls-notes-full', box.checked);
   const initNotes = root => root.querySelectorAll('[data-ls-notes]').forEach(box => {
     try { box.checked = localStorage.getItem(notesKey(box)) === '1'; } catch (_) { /* storage blocked */ }
     applyNotes(box);
@@ -2513,9 +2522,10 @@
 // Prepared · Shortlist · All) pick which rows are in play (each row lists its views in data-views). Chips are OR within a group
 // and AND across groups, each with a live count (greyed out at zero); a search looks through every row
 // and pauses the filters. Filters, sort and lens are remembered per list in this browser and forgotten
-// after a day without use. The Spell Book adds its "Averages at" lens on top (below).
+// after a day without use; the view is kept for good, All the first time (Brett, 2026-11-02). The Spell Book adds
+// its "Averages at" lens on top (below).
 (function () {
-  const DAY = 864e5, KEY = r => 'askdnd:list:' + r.dataset.list;
+  const DAY = 864e5, KEY = r => 'askdnd:list:' + r.dataset.list, VIEW = r => 'askdnd:view:' + r.dataset.list;
   const vals = (f, g) => { const v = f[g]; return Array.isArray(v) ? v : (v ? [v] : []); };
   const fOf = row => row._f || (row._f = (() => { try { return JSON.parse(row.dataset.f || '{}'); } catch (e) { return {}; } })());
   function load(root) {
@@ -2526,8 +2536,10 @@
     try { force = JSON.parse(root.dataset.lsForce || '{}'); } catch (e) { force = {}; }
     Object.entries(force).forEach(([g, vs]) => { s.sel[g] = [...new Set([...(s.sel[g] || []), ...vs])]; });
     const views = [...root.querySelectorAll('[data-ls-view]')].map(b => b.dataset.lsView);
+    let kept = '';
+    try { kept = localStorage.getItem(VIEW(root)) || ''; } catch (e) { kept = ''; }
     root._ls = { sel: s.sel || {}, sort: s.sort || '', lens: s.lens || '', more: !!s.more, q: '',
-                 view: views.includes(s.view) ? s.view : (views[0] || '') };
+                 view: views.includes(kept) ? kept : views.includes('all') ? 'all' : (views[0] || '') };
     const sort = root.querySelector('[data-ls-sort]'); if (sort && root._ls.sort) sort.value = root._ls.sort;
     const lens = root.querySelector('[data-ls-lens]');
     if (lens && root._ls.lens && [...lens.options].some(o => o.value === root._ls.lens)) lens.value = root._ls.lens;
@@ -2535,7 +2547,10 @@
   }
   function save(root) {
     const st = root._ls;
-    try { localStorage.setItem(KEY(root), JSON.stringify({ at: Date.now(), sel: st.sel, sort: st.sort, lens: st.lens, more: st.more, view: st.view })); } catch (e) { /* private window */ }
+    try {
+      localStorage.setItem(KEY(root), JSON.stringify({ at: Date.now(), sel: st.sel, sort: st.sort, lens: st.lens, more: st.more }));
+      if (st.view) localStorage.setItem(VIEW(root), st.view);
+    } catch (e) { /* private window */ }
   }
   function apply(root) {
     const st = root._ls, sel = st.sel, q = st.q.trim().toLowerCase();
@@ -2650,7 +2665,7 @@
   function init() {
     document.querySelectorAll('[data-list]:not([data-ls-ready])').forEach(root => {
       root.dataset.lsReady = '1';
-      const fold = root.querySelector('[data-ls-fold]'); if (fold && !matchMedia('(max-width: 700px)').matches) fold.open = true;
+      const fold = root.querySelector('[data-ls-fold]'); if (fold) fold.open = !matchMedia('(max-width: 900px)').matches;  // (the width app.css folds them at)
       load(root);
       apply(root);
     });
@@ -2753,12 +2768,30 @@
     t.click();
     t.closest('[role=tablist]').scrollIntoView({ block: 'start' });
   });
-  // Phones: a tab row that scrolls sideways starts with the chosen tab in view (Map is last on the Campaign page)
-  document.querySelectorAll('[role=tablist]').forEach(list => {
-    const t = list.querySelector('[aria-selected=true]'); if (!t || list.scrollWidth <= list.clientWidth) return;
-    const over = t.getBoundingClientRect().right - list.getBoundingClientRect().right;
-    if (over > 0) list.scrollLeft += over + 16;
+  // Phones: a tab row that scrolls sideways keeps the chosen tab in view, and fades the edge it's cut at, so you can see
+  // there's more (Brett, 2026-11-02, docs/artifacts/ui-ux-pass.html, question 7)
+  const edges = list => {
+    list.classList.toggle('cut-l', list.scrollLeft > 2);
+    list.classList.toggle('cut-r', list.scrollLeft + list.clientWidth < list.scrollWidth - 2);
+  };
+  const inView = list => {
+    const t = list.querySelector('[aria-selected=true]');
+    if (t && list.scrollWidth > list.clientWidth) {
+      const l = t.offsetLeft - list.offsetLeft, r = l + t.offsetWidth;
+      if (l < list.scrollLeft + 24) list.scrollLeft = l - 24;
+      else if (r > list.scrollLeft + list.clientWidth - 24) list.scrollLeft = r - list.clientWidth + 24;
+    }
+    edges(list);
+  };
+  const bars = root => root.querySelectorAll('.tabbar').forEach(list => {
+    inView(list);
+    if (!list._edges) { list._edges = true; list.addEventListener('scroll', () => edges(list), { passive: true }); }
   });
+  bars(document);
+  window.addEventListener('resize', () => bars(document));
+  document.addEventListener('click', e => { const t = e.target.closest('.tabbar [role=tab]'); if (t) setTimeout(() => inView(t.closest('.tabbar')), 0); });
+  document.body.addEventListener('htmx:afterSwap', e => bars(e.detail.target));
+  document.addEventListener('panel:loaded', e => bars(e.target));
   if (location.hash.length > 1) {
     const d = document.getElementById(location.hash.slice(1));
     if (d && d.tagName === 'DETAILS') d.open = true;
@@ -3278,6 +3311,8 @@
   function start(root) {
     if (root._prep) return;
     root._prep = true;
+    const fold = root.querySelector('.prep-fold');  // (the filters fold into one line on narrower screens, as the Spell Book's)
+    if (fold && matchMedia('(max-width: 900px)').matches) fold.open = false;
     const rows = [...root.querySelectorAll('[data-prep-row]')];
     const most = +root.dataset.max || 0;
     const filter = { show: 'all', level: '', effect: '' };
@@ -3306,17 +3341,18 @@
         warn.textContent = `${count} prepared: more than the ${most} a ${root.dataset.class} prepares at this level. D&D Beyond allows it; whether it stands is the DM's call.`;
       }
       const ch = changed();
-      // Each change like a row of the list: its box as it will be (✓ prepared, ✕ dropped), the spell, its level
+      // Each change: + to prepare, − to drop, the spell and its level (Brett, 2026-11-02, the UI pass: no amber)
       $('[data-prep-changes]').replaceChildren(...ch.map(r => {
         const p = document.createElement('div');
         p.className = 'prep-change ' + (on(r) ? 'add' : 'drop');
-        const box = document.createElement('span');
-        box.className = 'prep-tick'; box.setAttribute('aria-hidden', 'true'); box.textContent = on(r) ? '✓' : '✕';
+        const k = document.createElement('span');
+        k.className = 'prep-k'; k.textContent = on(r) ? '+' : '−';
+        k.setAttribute('aria-label', on(r) ? 'prepare' : 'drop');
         const name = document.createElement('b');
         name.textContent = r.dataset.name;
         const what = document.createElement('small');
-        what.textContent = (on(r) ? 'prepare' : 'drop') + ' · ' + ORD(+r.dataset.level);
-        p.append(box, name, what);
+        what.textContent = ORD(+r.dataset.level);
+        p.append(k, name, what);
         return p;
       }));
       $('[data-prep-none]').hidden = ch.length > 0;
@@ -3327,7 +3363,10 @@
       const make = $('[data-prep-make]');
       if (make) { make.disabled = !ch.length; make.textContent = ch.length ? `Make ${ch.length} change${ch.length === 1 ? '' : 's'} on D&D Beyond` : 'Make these changes'; }
       rows.forEach(r => {
-        r.classList.toggle('changed', !r.dataset.always && r.dataset.on !== r.dataset.base);
+        const moved = !r.dataset.always && r.dataset.on !== r.dataset.base;
+        r.classList.toggle('changed', moved);
+        r.classList.toggle('add', moved && on(r));
+        r.classList.toggle('drop', moved && !on(r));
         const t = r.querySelector('[data-prep-tick]');
         if (t) t.setAttribute('aria-pressed', on(r) ? 'true' : 'false');
         r.hidden = !((filter.show === 'all' || (filter.show === 'on' ? on(r) : filter.show === 'off' ? !on(r) : r.dataset.fav === '1'))

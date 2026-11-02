@@ -4,9 +4,10 @@
 <p class="use-cost">{% for k, v in has.items() %}{{ "{:,}".format(v) }} {{ k }}{{ " · " if not loop.last }}{% else %}None yet{% endfor %}</p>
 {% if reachable %}
 <div class="rw-row"><input class="rw-text" type="number" name="amount" min="1" max="100000" inputmode="numeric" placeholder="0" aria-label="How many coins"><select class="rw-slot" name="coin" aria-label="Which coin">{% for k in coins %}<option value="{{ k }}"{{ " selected" if k == "gp" }}>{{ k }}</option>{% endfor %}</select></div>
-<div class="rw-row">
+<div class="rw-row use-foot">
   <button type="button" class="btn primary small" data-use-go data-to="spend">Spend</button>
   <button type="button" class="btn small" data-use-go data-to="gain">Gain</button>
+  <button type="button" class="btn link small" data-use-close>Cancel</button>
 </div>
 <p class="use-said" role="alert" hidden></p>
 {% else %}
