@@ -435,7 +435,8 @@
   // Battle's Resources: whole names while they fit on one line, every short name once they don't (Brett, 2026-11-01).
   // Measured with the short names off, each time the row's width changes or a new copy arrives. Phones stack them.
   function fitRes() {
-    // Party's cards too (Brett, 2026-11-02): each card's resources by their whole names while they fit on one line
+    // Party's cards too (Brett, 2026-11-02): each card's resources by their whole names while they fit on one line.
+    // They arrive short (party.html), so a card never grows and then shrinks as the page loads.
     document.querySelectorAll('.pt-res').forEach(r => {
       r.classList.remove('short');
       const one = r.firstElementChild?.offsetHeight || 24;
