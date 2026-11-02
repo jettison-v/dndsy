@@ -2012,6 +2012,10 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .nt > .nt-val { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
 .nt > .nt-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 2px var(--sp-1); font-size: var(--fs-xs); color: var(--muted); }
 .nt > .nt-foot .note { font-size: var(--fs-xs); }
+/* The change mark in a tile ("−11", app.js showMarks): for its moment it takes the place of "/ 66", so the value row
+   keeps its one line and nothing in the tile moves (Brett, 2026-11-02: the HP tile with a change in it) */
+.nt:has(.mark-delta) > .nt-val > .note { display: none; }
+.nt > .nt-val > .mark-delta { margin-left: var(--sp-1); }
 
 .cond-add > summary { background: var(--surface-2); border-style: dashed; border-color: var(--line); color: var(--muted); }
 .cond-box .ls-chips { margin-top: 4px; }
