@@ -195,8 +195,8 @@ a.live-row:hover .live-go { color: var(--text); }
 .start-card b { color: var(--text-strong); font-size: var(--fs-md); }
 .start-card .btn { margin-top: auto; }
 .pin-hint { margin: 0 0 var(--sp-3); padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--muted); font-size: var(--fs-sm); }
-.rn-short, .res-row.short .rn-full { display: none; }
-.res-row.short .rn-short { display: inline; }
+.rn-short, .res-row.short .rn-full, .pt-res.short .rn-full { display: none; }
+.res-row.short .rn-short, .pt-res.short .rn-short { display: inline; }
 .res-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0; padding: 0 10px; border-left: 1px solid var(--line); }
 .res-gname { color: var(--muted); margin-right: 6px; }
 .res-group .res { border-left: none; padding: 0 8px 0 0; }

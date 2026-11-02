@@ -435,6 +435,12 @@
   // Battle's Resources: whole names while they fit on one line, every short name once they don't (Brett, 2026-11-01).
   // Measured with the short names off, each time the row's width changes or a new copy arrives. Phones stack them.
   function fitRes() {
+    // Party's cards too (Brett, 2026-11-02): each card's resources by their whole names while they fit on one line
+    document.querySelectorAll('.pt-res').forEach(r => {
+      r.classList.remove('short');
+      const one = r.firstElementChild?.offsetHeight || 24;
+      if (r.offsetHeight > one * 1.5) r.classList.add('short');
+    });
     const row = document.querySelector('.battlebar > .res-row:not(.slots)');
     if (!row) return;
     row.classList.remove('short');
@@ -447,10 +453,11 @@
     if (e.contentRect.width !== resWidth) { resWidth = e.contentRect.width; requestAnimationFrame(fitRes); }
   });
   function watchRes() {
-    const bar = document.querySelector('.battlebar');
+    const bar = document.querySelector('.battlebar, .pt-cards');
     if (bar && resWatch) { resWatch.disconnect(); resWatch.observe(bar); }
     fitRes();
   }
+  document.addEventListener('askdnd:swapped', watchRes);  // (a new copy of the page, from a live change)
   watchRes();
   document.fonts?.ready.then(fitRes);
   document.body.addEventListener('htmx:afterSettle', watchRes);
@@ -597,6 +604,7 @@
     showReminders();  // (a condition's reminder, as the fight moved on)
     document.dispatchEvent(new CustomEvent('askdnd:fight'));
     restore();
+    document.dispatchEvent(new CustomEvent('askdnd:swapped'));
     if (window.askdndNotesInit) window.askdndNotesInit(here);
     sortSetup(); econSetup(); condArrive();
     showMarks(here, before);
