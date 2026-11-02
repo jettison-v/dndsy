@@ -2512,12 +2512,20 @@ body:not(.br-ext) .br-ext-on, body.br-ext .br-ext-off { display: none; }
   .battlebar > .res-more + .res-row { margin: var(--sp-2) 0 0; }
   .battlebar > .res-row .res-label { display: none; }
   .res-group { padding: 0; border-left: none; }
-  /* Two lines (Brett, 2026-11-02: three took a lot of room): Hit Points whole, then the other numbers side by side */
+  /* One row (Brett, 2026-11-02: a whole row for Hit Points wasted room): Hit Points first and a little wider, its − and +
+     beside its label, short labels; the Dying tile keeps a row of its own for its marks */
   .battle-head .strip.compact > div { flex: 1 1 0; min-width: 0; padding: 6px 8px; }
-  .battle-head .strip.compact > div:first-child { flex-basis: 100%; padding: 8px 14px; }
-  .battle-head .strip.compact > div:first-child b { font-size: var(--fs-xl); }
+  .battle-head .strip.compact > div b { font-size: var(--fs-md); }
+  .battle-head .strip.compact > div:first-child { flex-grow: 2; }
+  .battle-head .strip.compact > div:first-child b { font-size: var(--fs-lg); }
+  .battle-head .strip.compact > div.dying { flex-basis: 100%; }
+  .battle-head .strip.compact > div:first-child { position: relative; }
+  .battle-head .strip.compact .hp-btns { position: absolute; top: 4px; right: 4px; float: none; margin: 0; gap: 2px; }
+  .battle-head .strip.compact .hp-btn { width: 26px; height: 24px; font-size: var(--fs-sm); }
   .battle-head .strip.compact small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ph-hide { display: none; }
 }
+@container battle-head (max-width: 330px) { .strip.compact > div:first-child { flex-basis: 100%; } }  /* the narrowest phones: five don't fit, Hit Points takes its own row */
 
 /* Tap targets on a phone (DESIGN.md › Principles 8): what can grow, grows; what sits among words keeps its size and takes
    a larger area around it */
