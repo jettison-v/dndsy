@@ -5,8 +5,10 @@ adding one), so nothing new is written there.
 
 D&D Beyond can't move an item between characters: the giver's copy goes and the receiver gets a fresh one of the same
 item. What belonged to that copy (charges used, attunement, a note, a new name) stays behind, and the window says so. A
-custom item, a homebrew one or a container with things in it is handed over on D&D Beyond. Both sheets have to be open
-(or reachable), so an item is never taken from one without going to the other.
+custom item, a homebrew one or a container with things in it is handed over on D&D Beyond. Both sheets have to be
+reachable when it's given. The giver's change goes out at once and the receiver's at their extension's next check, as
+two changes: if the receiver's sheet closes first, theirs is made when it opens again, and one D&D Beyond refuses is
+listed for them to make by hand, so a given item always arrives or is flagged, never lost quietly.
 """
 
 import time
@@ -28,7 +30,8 @@ router = APIRouter()
 COINS = ("cp", "sp", "ep", "gp", "pp")
 ITEMS_URL = "https://character-service.dndbeyond.com/character/v5/game-data/items?sharingSetting=2"
 CATALOG_SECONDS = 24 * 3600
-_catalog: dict = {"at": 0.0, "items": []}
+CATALOG_RETRY = 300  # seconds before a failed read is tried again: D&D Beyond down mustn't hold every Give loot for its timeout
+_catalog: dict = {"at": 0.0, "tried": 0.0, "items": []}
 
 
 def _guard(db: Session, request: Request, character_id: int) -> tuple[Character, dict]:
@@ -50,6 +53,8 @@ def _row(ch: Character, item_id: int) -> dict:
 def _why_not(ch: Character, row: dict) -> str:
     """Why this one can't be handed over from askdnd, or nothing."""
     d = row.get("definition") or {}
+    if not d.get("entityTypeId"):
+        return "D&D Beyond doesn't say what kind of item it is: hand it over on D&D Beyond."
     if d.get("isHomebrew"):
         return "It's a homebrew item: hand it over on D&D Beyond."
     inside = [i for i in (ch.snapshot.raw or {}).get("inventory") or [] if str(i.get("containerEntityId")) == str(row.get("id"))]
@@ -119,9 +124,11 @@ def give(request: Request, character_id: int, item_id: int, receiver: str = Form
 
 def catalog() -> list[dict]:
     """D&D Beyond's items from the 2024 core books (askdnd's rules are 2024 only), by name, read once a day."""
-    if time.time() - _catalog["at"] > CATALOG_SECONDS or not _catalog["items"]:
+    now = time.time()
+    if (now - _catalog["at"] > CATALOG_SECONDS or not _catalog["items"]) and now - _catalog["tried"] > CATALOG_RETRY:
+        _catalog["tried"] = now
         try:
-            payload = ddb._get_json(ITEMS_URL, 30)
+            payload = ddb._get_json(ITEMS_URL, 15)
         except (OSError, ValueError):
             payload = None
         rows = payload.get("data") if isinstance(payload, dict) else None

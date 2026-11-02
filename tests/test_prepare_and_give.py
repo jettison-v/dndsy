@@ -191,7 +191,13 @@ def test_the_prepare_screen_turns_away_what_it_cant_make(player, db, sheet):
     cole = char(db, "Cole")
     url = f"/characters/{cole.id}/spells/prepare"
     assert player.post(url, json={"changes": []}).status_code == 409
-    assert player.post(url, json={"changes": [{"key": "spell:Mending", "on": True}]}).status_code == 404  # a cantrip
+    # A cantrip with one it can make: the one is made and the other said (review, Nov 2: one spell no longer fails the lot)
+    r = player.post(url, json={"changes": [{"key": "spell:Mending", "on": True}, {"key": "spell:Healing Word", "on": False}]})
+    assert r.json()["text"] == "1 change on its way to D&D Beyond; 1 spell can't be prepared from askdnd, left as it is"
+    assert [i.data["name"] for i in intents(db)] == ["Healing Word"]
+    for i in intents(db):
+        db.delete(i)
+    db.flush()
     assert player.post(url, json={"changes": [{"key": "spell:Healing Word", "on": "yes"}]}).status_code == 409
     r = player.post(url, json={"changes": [{"key": "spell:Healing Word", "on": True}]})  # already prepared
     assert r.json()["text"].startswith("Nothing to change") and not intents(db)
@@ -227,3 +233,18 @@ def test_a_class_d_and_d_beyond_gives_no_number_for_gets_the_rules_number(player
     characters.refresh(db, cole)
     page = player.get(f"/characters/{cole.id}/spells/prepare").text
     assert " of 10</span>" in page and page.count('<i class="on"></i>') == 10 and 'aria-label="10 of 10 prepared"' in page
+
+
+def test_a_failed_item_list_isnt_read_again_at_once(monkeypatch):
+    """Review, Nov 2: with D&D Beyond's item list down, every Give loot waited for its timeout; now a failed read waits
+    CATALOG_RETRY before the next try."""
+    calls = []
+
+    def down(url, timeout):
+        calls.append(url)
+        raise OSError("D&D Beyond is down")
+
+    monkeypatch.setattr(giving, "_catalog", {"at": 0.0, "tried": 0.0, "items": []})
+    monkeypatch.setattr(giving.ddb, "_get_json", down)
+    assert giving.catalog() == [] and giving.catalog() == []
+    assert len(calls) == 1

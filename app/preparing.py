@@ -139,11 +139,15 @@ def prepare_many(request: Request, character_id: int, body=web.JsonBody, db: Ses
     if not isinstance(wanted, list) or not wanted or len(wanted) > 60:
         raise HTTPException(409, "Nothing to change.")
     sheet = _sheet(db, ch)
-    made = []
+    made, gone = [], 0
     for w in wanted:
         if not isinstance(w, dict) or not isinstance(w.get("key"), str) or not isinstance(w.get("on"), bool):
             raise HTTPException(409, "That isn't a change askdnd can make on D&D Beyond.")
-        sp, _book = _find(sheet, w["key"])
+        try:
+            sp, _book = _find(sheet, w["key"])
+        except HTTPException:
+            gone += 1  # (a cantrip, or no longer on the class's list: changed on D&D Beyond meanwhile)
+            continue
         if (sp["state"] == "prepared") == w["on"]:
             continue  # (already so: someone made it on D&D Beyond meanwhile)
         data = {**sp["prep"], "value": w["on"], "name": sp["name"]}
@@ -151,5 +155,7 @@ def prepare_many(request: Request, character_id: int, body=web.JsonBody, db: Ses
         made.append(sp["name"] if w["on"] else f"not {sp['name']}")
     db.commit()
     n = len(made)
-    return {"text": f"{n} change{'s' if n != 1 else ''} on its way to D&D Beyond" if n else "Nothing to change: D&D Beyond has it already",
-            "deliver": web.deliver_now(ch)}
+    text = f"{n} change{'s' if n != 1 else ''} on its way to D&D Beyond" if n else "Nothing to change: D&D Beyond has it already"
+    if gone:
+        text += f"; {gone} spell{'s' if gone != 1 else ''} can't be prepared from askdnd, left as {'they are' if gone != 1 else 'it is'}"
+    return {"text": text, "deliver": web.deliver_now(ch)}

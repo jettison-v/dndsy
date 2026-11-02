@@ -634,7 +634,7 @@
         showing = false;
         if (!now && busyHere()) return later();
         const main = document.querySelector('main');
-        if (main && !typingIn(main)) { swapMain(page); watchRes(); }
+        if (main && !typingIn(main)) swapMain(page);  // (askdnd:swapped measures Resources again)
         open.forEach((l, i) => { if (isOpen(l) && l.panel.dataset.url && !typingIn(l.panel)) swapPanel(l, panels[i]); });
         if (again) { again = false; showInPlace(now); }
       })
