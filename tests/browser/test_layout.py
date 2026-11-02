@@ -118,6 +118,7 @@ def test_resources_shorten_only_when_they_would_wrap(people, server):
     row = ".battlebar > .res-row:not(.slots)"
     short = f"document.querySelector('{row}').classList.contains('short')"
     page.wait_for_selector(row)
+    page.wait_for_load_state("networkidle")  # (a fresh copy of the page arriving after this would undo the rows added below)
     page.evaluate(f"document.querySelectorAll('{row} > .res:not(.res-insp), {row} > .res-group').forEach(e => e.remove())")
     page.set_viewport_size({"width": 1270, "height": 800})
     page.wait_for_function(f"!({short})", timeout=3000)
