@@ -131,7 +131,7 @@ How each part gives way:
 | Side panel | Beside the page on wide screens; a sheet from the bottom at 900px and below. |
 | Lists with columns (Sheet's Spells, Wild Shape, Inventory, Features; the Spell Book) | Switch to compact rows when the list's own box is narrower than its columns need, whatever the screen (container queries: Spells and the Spell Book 920px, Wild Shape 740, Features 700, Inventory 680). Filters sit beside the list, above it on phones. |
 | Sections with tab bars | The sticky tab bar reaches the section's edges: 30px wide, 18px from tablet down. |
-| Battle's numbers and saves | One row; when the row itself is under 1000px, Spell DC / attack shortens to Spell DC; under 760px the saves drop under the numbers, six across; on phones Hit points takes a row, then two by two, then the saves three across. |
+| Battle's numbers and saves | One row; when the row itself is under 1000px, Spell DC / attack shortens to Spell DC; under 760px the saves drop under the numbers, six across; on phones Hit points takes a row, then the other numbers side by side in one row (Armor class says AC; Brett 2026-11-02), then the saves three across. |
 | Battle's columns | Three side by side; on phones one at a time with Action / Bonus / Reaction tabs. |
 | The tour's card | Beside what it lights (beside the side panel when lighting inside it); at the bottom on phones. |
 

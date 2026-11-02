@@ -201,7 +201,7 @@
 {% macro battle_strip(s, c, change_hp=false) -%}
 <div class="strip compact">
   {{ hp_tile(s, c, change=change_hp) }}
-  <div {{ tile(c, "ac") }}><small>Armor class</small><b>{{ s.armor_class }}</b></div>
+  <div {{ tile(c, "ac") }}><small><span class="ph-full">Armor class</span><span class="ph-short">AC</span></small><b>{{ s.armor_class }}</b></div>
   <div {{ tile(c, "speed") }}><small>Speed</small><b>{{ s.speed.walk }} ft</b>{% set extra = s.speed.items() | rejectattr(0, "in", ["walk", "parts", "notes"]) | list %}{% if extra %}<span class="note"> {% for k, v in extra %}{{ k }} {{ v }}{{ ", " if not loop.last }}{% endfor %}</span>{% endif %}</div>
   <div {{ tile(c, "initiative") }}><small>Initiative</small><button type="button" class="roll-hit tile-hit" {{ roll_attrs("check", "Initiative", s.initiative, "", s.initiative_adv) }} title="Roll Initiative">{{ s.initiative }}</button>{{ adv(s.initiative_adv) }}</div>
   {% for sc in s.spellcasting[:1] %}<div {{ tile(c, "spell") }}><small><span class="tile-full">Spell DC / attack</span><span class="tile-short">Spell DC</span></small><b>{{ sc.save_dc }}</b><span class="note"> / {{ sc.attack }}</span></div>{% endfor %}
