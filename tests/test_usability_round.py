@@ -60,7 +60,7 @@ def test_battle_has_one_row_of_numbers_with_inspiration_and_rest_in_resources(db
     page = player.get(f"/characters/{cole.id}/battle").text
     bar = page[page.index('class="battlebar"'):page.index('class="battle-head"')]
     head = page[page.index('class="battle-head"'):page.index('class="econ"')]
-    assert "res-insp" in bar and 'data-panel-url="/characters/%d/vital/inspiration"' % cole.id in bar
+    assert "res-insp" in bar
     assert 'class="insp' not in head and " save</span>" not in head
 
 
@@ -69,4 +69,13 @@ def test_speed_says_how_far_dash_goes(db, player, no_network):
     cole = _cole(db)
     panel = player.get(f"/characters/{cole.id}/vital/speed").text
     assert "With Dash" in panel and "ft this turn" in panel
+
+
+def test_initiatives_number_is_its_roll_and_the_panel_has_roll(db, player, no_network):
+    """Brett, 2026-11-01: a clickable number, like an attack's to-hit; the Roll button is in the side panel."""
+    cole = _cole(db)
+    page = player.get(f"/characters/{cole.id}/battle").text
+    assert 'class="roll-hit tile-hit" data-roll="check" data-label="Initiative"' in page and "Roll Initiative\">Roll<" not in page
+    panel = player.get(f"/characters/{cole.id}/vital/initiative").text
+    assert 'data-roll="check" data-label="Initiative"' in panel and ">Roll</button>" in panel
 

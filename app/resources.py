@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from app import ddb_bridge, web
+from app import ddb_bridge, hit_points, web
 from app.character_views import ordinal
 from app.db import get_db
 from app.item_use import _guard as _player, _sheet
@@ -81,3 +81,32 @@ def change(request: Request, character_id: int, field: str, to: str = Form("use"
     left = n["left"] - delta
     return JSONResponse({"text": f"{n['name']}: {left}" + (f" of {n['max']}" if n["max"] else "") + " left", "undo": {"to": "back" if to == "use" else "use"},
                          "undoUrl": f"/characters/{ch.id}/count?field={field}", "deliver": web.deliver_now(ch)})
+
+
+@router.get("/characters/{character_id:int}/inspiration")
+def inspiration_window(request: Request, character_id: int, db: Session = Depends(get_db)):
+    """Heroic Inspiration's star: spend it or give it, confirmed in the roll window. The player, or the DM, who awards it."""
+    ch, _ = hit_points._guard(db, request, character_id)
+    return templates.TemplateResponse(request, "_insp_window.html", {
+        "c": ch, "have": bool(_sheet(db, ch).get("inspiration")), "reachable": ddb_bridge.reachable(ch)})
+
+
+@router.post("/characters/{character_id:int}/inspiration")
+def inspiration_change(request: Request, character_id: int, to: str = Form(...), db: Session = Depends(get_db)):
+    """Spend it or give it (Undo is the other of the two)."""
+    ch, _ = hit_points._guard(db, request, character_id)
+    ddb_bridge.reach(ch)
+    if to not in ("spend", "gain"):
+        raise HTTPException(404)
+    have = to == "gain"
+    if bool(_sheet(db, ch).get("inspiration")) == have:
+        raise HTTPException(409, f"{ch.name} {'already has' if have else 'no longer has'} Heroic Inspiration.")
+    made = ddb_bridge._change(ddb_bridge.numbers(ch), {"kind": "set", "field": "inspiration", "value": have})
+    if not made:
+        raise HTTPException(409, "That isn't a change askdnd can make on D&D Beyond.")
+    text = f"{ch.name}: Heroic Inspiration {'given' if have else 'spent'}"
+    ddb_bridge.add(db, ch, *made, text)
+    db.commit()
+    return JSONResponse({"text": text, "undo": {"to": "spend" if have else "gain"}, "undoUrl": f"/characters/{ch.id}/inspiration",
+                         "deliver": web.deliver_now(ch)})
+
