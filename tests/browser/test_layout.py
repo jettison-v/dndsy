@@ -87,6 +87,27 @@ def test_a_long_group_of_resources_fits_a_phone(people, server):
     assert not found, "\n".join(found)
 
 
+def test_resources_shorten_only_when_they_would_wrap(people, server):
+    """Brett, 2026-11-01: whole names while they fit on one line; once they don't, the short ones, and back again."""
+    player = people("player")
+    page = player.page
+    page.set_viewport_size({"width": 1280, "height": 800})
+    player.open(f"/characters/{server['cole']}/battle")
+    row = ".battlebar > .res-row:not(.slots)"
+    short = f"document.querySelector('{row}').classList.contains('short')"
+    page.wait_for_selector(row)
+    page.evaluate(f"document.querySelectorAll('{row} > .res:not(.res-insp), {row} > .res-group').forEach(e => e.remove())")
+    page.set_viewport_size({"width": 1270, "height": 800})
+    page.wait_for_function(f"!({short})", timeout=3000)
+    page.evaluate(f"""() => {{ const first = document.querySelector('{row} .res-insp');
+      for (let i = 0; i < 12; i++) first.insertAdjacentHTML('beforebegin', '<span class="res extra"><span class="rn-full">A resource with a long name</span><span class="rn-short">R</span></span>'); }}""")
+    page.set_viewport_size({"width": 1280, "height": 800})
+    page.wait_for_function(short, timeout=3000)
+    page.evaluate("document.querySelectorAll('.res.extra').forEach(e => e.remove())")
+    page.set_viewport_size({"width": 1270, "height": 800})
+    page.wait_for_function(f"!({short})", timeout=3000)
+
+
 def test_tap_targets_on_a_phone(people, server):
     """A standing rule: DESIGN.md › Principles 8, Works on a phone. A control is at least 36px tall there (Oct 31: Battle's Cast and +7 were 21px)."""
     player = people("player")

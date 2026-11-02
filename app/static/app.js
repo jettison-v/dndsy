@@ -432,6 +432,28 @@
     ptView();
   });
 
+  // Battle's Resources: whole names while they fit on one line, every short name once they don't (Brett, 2026-11-01).
+  // Measured with the short names off, each time the row's width changes or a new copy arrives. Phones stack them.
+  function fitRes() {
+    const row = document.querySelector('.battlebar > .res-row:not(.slots)');
+    if (!row) return;
+    row.classList.remove('short');
+    if (matchMedia('(max-width: 640px)').matches) return;
+    const line = row.querySelector('.res-insp')?.offsetHeight || 28;
+    if (row.offsetHeight > line * 1.5) row.classList.add('short');
+  }
+  let resWidth = 0;
+  const resWatch = window.ResizeObserver && new ResizeObserver(([e]) => {
+    if (e.contentRect.width !== resWidth) { resWidth = e.contentRect.width; requestAnimationFrame(fitRes); }
+  });
+  function watchRes() {
+    const bar = document.querySelector('.battlebar');
+    if (bar && resWatch) { resWatch.disconnect(); resWatch.observe(bar); }
+    fitRes();
+  }
+  watchRes();
+  document.fonts?.ready.then(fitRes);
+  document.body.addEventListener('htmx:afterSettle', watchRes);
   // Resources on a phone: one line that opens, one choice per device for every character
   try { document.body.classList.toggle('res-open', localStorage.getItem('askdnd-res-open') === '1'); } catch (err) { /* private window */ }
   document.addEventListener('click', e => {
@@ -603,7 +625,7 @@
         showing = false;
         if (!now && busyHere()) return later();
         const main = document.querySelector('main');
-        if (main && !typingIn(main)) swapMain(page);
+        if (main && !typingIn(main)) { swapMain(page); watchRes(); }
         open.forEach((l, i) => { if (isOpen(l) && l.panel.dataset.url && !typingIn(l.panel)) swapPanel(l, panels[i]); });
         if (again) { again = false; showInPlace(now); }
       })

@@ -79,3 +79,14 @@ def test_initiatives_number_is_its_roll_and_the_panel_has_roll(db, player, no_ne
     panel = player.get(f"/characters/{cole.id}/vital/initiative").text
     assert 'data-roll="check" data-label="Initiative"' in panel and ">Roll</button>" in panel
 
+
+def test_battles_resources_carry_both_names(db, player, no_network):
+    """Brett, 2026-11-01: whole names while they fit, short once they don't (the browser test), the whole one on hover."""
+    from app.templating import res_short
+
+    assert res_short("Focus Points") == "Focus" and res_short("Something New") == "Something New"
+    cole = _cole(db)
+    page = player.get(f"/characters/{cole.id}/battle").text
+    row = page[page.index('class="res-row"'):page.index('class="battle-head"')]
+    assert 'title="Focus Points"' in row and '<span class="rn-full">Focus Points</span><span class="rn-short">Focus</span>' in row
+
