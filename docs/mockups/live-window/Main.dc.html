@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Live window today</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./live.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 760px">
+  <div class="head">
+    <div class="num">Today · why it won't line up</div>
+    <h1>The Live window, as it is</h1>
+    <p class="where"><b>Where you'll find it:</b> press the Live pill at the top right of any page. It lists how each sheet at the table is connected to D&amp;D Beyond, with refresh buttons. The rows below use the table, with Trah and No Name as they'll look once the DM Backup is built.</p>
+  </div>
+  <div class="scenes">
+    <div class="scene">
+      <div class="tag">On a computer</div>
+      <div class="mbar"><span class="lpill on"><i></i>Connected</span></div>
+      <div class="drop">
+        <div class="win">
+          <div class="t-list mark">
+            <div class="whead" style="margin-bottom: 2px">How each sheet is connected</div>
+            <div class="t-row"><span style="font-weight: 600">Cole <span class="you">(you)</span></span><span class="box mark">↗</span><span class="ok" style="text-align: right">connected</span></div>
+            <div class="t-row"><span>Trah</span><span class="box">↗</span><span class="via" style="text-align: right">through the DM</span></div>
+            <div class="t-row"><span>Big C</span><span class="box">↗</span><span class="off">not connected</span><small class="t-when">updated 14 hours ago</small></div>
+            <div class="t-row"><span>No Name</span><span class="box">↗</span><span class="via" style="text-align: right">2 to make by hand</span></div>
+          </div>
+          <div class="acts">
+            <button type="button" class="btn main">Refresh Cole now</button>
+            <button type="button" class="btn">Refresh everyone</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="side-notes">
+      <h3>What's off</h3>
+      <ul>
+        <li><b>A line with nothing above it.</b> The list starts with a divider meant to sit under the "add the bridge" steps, which most people never see.</li>
+        <li><b>The ↗ is a box taller than the words.</b> The rows line up on the words' baseline, so each box hangs below its row, and it's wider than the space set aside for it.</li>
+        <li><b>Rows change height.</b> "updated 14 hours ago" adds a second line to some rows only, so the gaps between names aren't even.</li>
+        <li><b>The words sit in a column that changes width.</b> "2 to make by hand" pushes every other word left.</li>
+      </ul>
+      <h3>Why this window is harder than the others</h3>
+      <p>The other windows are a stack: a heading, some words, a form, buttons, each full width. This one is a list where every row mixes a name, a status of any length, sometimes a time, and a button, all on one grid. Each new state (the DM Backup adds two) makes the row harder to fit. Any of the three options fixes that by giving every row the same shape.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
