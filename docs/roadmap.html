@@ -134,8 +134,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
       <p><b>Read the <a href="https://claude.ai/artifact/DYL6vpaq3Q1hS37SfuiYbB">VTT Feature Map</a></b>: what D&amp;D Beyond has, what people love elsewhere, the MVP and five decisions. It updates the <a href="https://claude.ai/artifact/6oTb8pSFzhhUakYsYHEw5x">Simple VTT</a> design, whose questions still stand.</p>
       <p><b>Check the usability round on beta</b>, built from the <a href="https://claude.ai/artifact/Bt4d1DHjadCiRvXBA1PquB">Usability Mockups</a>. <a href="https://claude.ai/artifact/1SHdzwsmtnwfBYVRL5bwM1">Battle Band</a> (Option E) and <a href="https://claude.ai/artifact/QzNtDwYURngJFvb4gFC4Cn">Hit Points Flow</a> (Option B) are on beta. Live changes to Hit Points still need a look from you.</p>
       <p><b>Say yes to the Live pill's colours on <a href="https://claude.ai/artifact/AddqtVULn7Cfx9xNCgoghk">DM Backup</a></b>: you chose Option A (the DM's D&amp;D Beyond page makes a change when a player's sheet is closed). Green connected, yellow through the DM, red can't reach, grey when no one's playing. Then it gets built.</p>
-      <p><b>Your exact steps are on <a href="https://claude.ai/artifact/4aq1xYj2DSiiAPUhiFMRhW">Next Steps</a></b>: the Long Rest fix to try, the Monster Manual command, the Prepare Spells screen, then DM Backup, the extension upload, reviewing live state and sharing the bridge.</p>
-      <p><b>Say when to load the whole Monster Manual on beta.</b> The loader is merged; beta still has the Beasts only.</p>
+      <p><b>Your exact steps are on <a href="https://claude.ai/artifact/4aq1xYj2DSiiAPUhiFMRhW">Next Steps</a></b>: upload the Monster Manual file, upload extension 0.9.8, then review live state, share the bridge, and move askdnd.ai to v2 (approved Nov 2).</p>
           </div>
     <div class="steps">
       <div class="step"><span class="n">1</span><div class="body"><h3>Game Mode for the table, and the Live pill</h3>
@@ -214,6 +213,15 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     <div class="sec-head"><div class="eyebrow">Parked</div><h2>Until playtests ask for it</h2></div>
     <div class="box"><div class="head"><h3>The fight screen's own turn order</h3><span class="chip s-parked">Parked Oct 28</span></div>
       <p class="small">Turn order, whose turn, the round, enemies with their HP, the fight's log with the DM's undo. (Apply from a roll moved into step 4, Oct 28.) D&amp;D Beyond's VTT already does turns well. Your answers are kept for when it's built: enemy HP hidden from players by default, in a DM battle settings menu that keeps defaults; players roll their own initiative (suspense); the DM's change to a player whose sheet can't be reached is listed for them to make by hand.</p></div>
+  </section>
+
+  <section id="polish">
+    <div class="sec-head"><div class="eyebrow">After the structural work</div><h2>A UI polish pass</h2></div>
+    <div class="box"><div class="head"><h3>Wrapping and colours, all in one go</h3><span class="chip s-parked">Queued Nov 2</span></div>
+      <p class="small">Brett, Nov 2: ship Prepare spells now and polish the look once the structural changes are in, since wrapping needs work in several places. Collected so far:</p>
+      <ul class="small"><li><b>Prepare spells' changes</b>: the amber rows with green and red ticks clash; one calm way to mark "will prepare" and "will drop", the same in the list and in Your changes.</li>
+        <li><b>Prepare spells on narrower screens</b>: the title, the count and ✕ wrap onto loose rows, and the filter chips wrap unevenly.</li>
+        <li><b>Wrapping elsewhere</b> that you've noticed: send me a screenshot or the page as you find them, and I'll add each here. <code>scripts/layout_sweep.py</code> screenshots every main page at four widths to start from.</li></ul></div>
   </section>
 
   <section id="later">
