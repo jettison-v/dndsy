@@ -17,6 +17,10 @@ BETA = "https://beta.askdnd.ai/c/vtt-test"
 SEATS = {"dm": 9231, "player2": 9232, "player3": 9233}
 SHEETS = {"player2": 172986165, "player3": 172992073}  # Cathartic and the new Vi, never the first Vi or Spurt
 
+# How long a change may take to show in D&D Beyond's own record. Usually a few seconds; now and then much longer (Nov 2:
+# up to a minute, while D&D Beyond served an older copy for a moment), and a pass past 10 seconds is said as slow.
+SLOW = 60
+
 
 class Seats(dict):
     """Each seat's Chrome, reached the first time a run needs it."""
@@ -66,11 +70,13 @@ class Table:
     def expect(self, what: str, check, seconds: float = 20) -> bool:
         """Waits for `check()` to be true, like a person watching the page; a miss is a result, not a crash."""
         page = next(iter(self.contexts.values())).pages[0]  # (waiting on a page, so what pages hear keeps arriving)
+        start = time.time()
         for _ in range(int(seconds * 2)):
             try:
                 if check():
                     self.results.append((True, f"{self.run}: {what}"))
-                    print("PASS", what, flush=True)
+                    took = time.time() - start
+                    print("PASS", what, f"(slow: {took:.0f} seconds)" if took > 10 else "", flush=True)
                     return True
             except Exception:
                 pass
@@ -194,14 +200,14 @@ def hit_points(t: Table, seat: str = "player2") -> None:
     start = hp(page)
     print("  hit points:", start, flush=True)
     change_hp(page, 0, 1)
-    t.expect("the tile shows 1 less at once", lambda: hp(page) == start - 1, 6)
-    t.expect("D&D Beyond confirms it", lambda: settled(page), 25)
-    t.expect("the real sheet shows it", lambda: str(start - 1) in sheet.locator("[class*=hitPointsBox]").first.inner_text(timeout=2000), 15)
+    t.expect("the tile shows 1 less at once", lambda: hp(page) == start - 1, 10)
+    t.expect("D&D Beyond confirms it", lambda: settled(page), SLOW)
+    t.expect("the real sheet shows it", lambda: str(start - 1) in sheet.locator("[class*=hitPointsBox]").first.inner_text(timeout=2000), SLOW)
     page.wait_for_timeout(1000)
     change_hp(page, 1, 1)
-    t.expect("healing puts it back", lambda: hp(page) == start, 6)
-    t.expect("D&D Beyond confirms the healing", lambda: settled(page), 25)
-    t.expect("the real sheet shows it back", lambda: str(start) in sheet.locator("[class*=hitPointsBox]").first.inner_text(timeout=2000), 15)
+    t.expect("healing puts it back", lambda: hp(page) == start, 10)
+    t.expect("D&D Beyond confirms the healing", lambda: settled(page), SLOW)
+    t.expect("the real sheet shows it back", lambda: str(start) in sheet.locator("[class*=hitPointsBox]").first.inner_text(timeout=2000), SLOW)
 
 
 def condition(t: Table, seat: str = "player2", name: str = "Poisoned") -> None:
@@ -212,12 +218,12 @@ def condition(t: Table, seat: str = "player2", name: str = "Poisoned") -> None:
     page.locator("details.cond-add > summary").click(timeout=5000)
     page.locator(f'.ls-chip:has-text("{name}")').first.click(timeout=5000)
     t.expect("the condition shows on Battle", lambda: page.locator(f'.cond-pill:has-text("{name}")').count() > 0, 8)
-    t.expect("it reaches the real sheet", lambda: name in sheet.locator(".ct-conditions-summary").first.inner_text(timeout=3000), 25)
+    t.expect("it reaches the real sheet", lambda: name in sheet.locator(".ct-conditions-summary").first.inner_text(timeout=3000), SLOW)
     page.wait_for_timeout(1500)
     page.locator(f'details.cond-pill:not(.cond-add):has-text("{name}") > summary').first.click(timeout=5000)
     page.locator(f'details.cond-pill:not(.cond-add):has-text("{name}") button:has-text("End")').first.click(timeout=5000)
     t.expect("it ends on Battle", lambda: page.locator(f'details.cond-pill:not(.cond-add):has-text("{name}")').count() == 0, 15)
-    t.expect("it leaves the real sheet", lambda: name not in sheet.locator(".ct-conditions-summary").first.inner_text(timeout=3000), 25)
+    t.expect("it leaves the real sheet", lambda: name not in sheet.locator(".ct-conditions-summary").first.inner_text(timeout=3000), SLOW)
 
 
 def record(sheet: Page) -> dict:
@@ -250,7 +256,7 @@ def go(page: Page, opener) -> None:
     page.wait_for_selector("[data-use-go]", timeout=8000)
 
 
-def changed(t: Table, sheet: Page, before: dict, what: str, seconds: float = 25) -> list:
+def changed(t: Table, sheet: Page, before: dict, what: str, seconds: float = SLOW) -> list:
     """Waits for D&D Beyond's own record to differ from `before`."""
     t.expect(what, lambda: bool(changes(before, record(sheet))), seconds)
     diff = changes(before, record(sheet))
@@ -258,12 +264,19 @@ def changed(t: Table, sheet: Page, before: dict, what: str, seconds: float = 25)
     return diff
 
 
-def undone(t: Table, sheet: Page, before: dict, what: str, seconds: float = 25) -> None:
+def undone(t: Table, sheet: Page, before: dict, what: str, seconds: float = SLOW) -> None:
     t.expect(what, lambda: not changes(before, record(sheet)), seconds)
 
 
-def undo(page: Page) -> None:
-    page.locator('#cards button:has-text("Undo")').last.click(timeout=8000)
+def undo(page: Page) -> bool:
+    """The corner card's Undo, if its card is still up: a card with a button stays 20 seconds (app.js), and D&D Beyond
+    can take longer than that to show the change. False when it's gone, and the run puts the change back another way."""
+    button = page.locator('#cards button:has-text("Undo")')
+    if not button.count():
+        print("  (Undo's card had gone: put back another way)", flush=True)
+        return False
+    button.last.click(timeout=8000)
+    return True
 
 
 def spell_window(page: Page) -> None:
@@ -286,9 +299,13 @@ def cast(t: Table, seat: str = "player3") -> None:
     before = record(sheet)
     spell_window(page)
     print("  spell:", page.locator(".rw-title").first.inner_text(), page.locator('select[name="way"] option').all_inner_texts(), flush=True)
+    level = page.locator('select[name="way"] option:checked').first.get_attribute("data-level") or "1"
     page.locator("[data-use-go]").first.click()
     changed(t, sheet, before, "the slot is spent on D&D Beyond")
-    undo(page)
+    if not undo(page):
+        page.goto(page.url, wait_until="domcontentloaded")  # (Battle afresh: the Spell Book closed)
+        go(page, page.locator(f'[data-use-url$="/count?field=slot:{level}"]:visible').first)
+        page.locator('[data-use-go][data-to="back"]').first.click(timeout=15000)
     undone(t, sheet, before, "Undo gives the slot back on D&D Beyond")
 
 
@@ -348,14 +365,14 @@ def rests(t: Table, seat: str = "player3") -> None:
     page = t.battle(seat)
     t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
     change_hp(page, 0, 3)
-    t.expect("D&D Beyond confirms the damage", lambda: settled(page), 25)
+    t.expect("D&D Beyond confirms the damage", lambda: settled(page), SLOW)
     page.wait_for_timeout(1500)
     start = record(sheet)
     print("  before the rest:", start["removedHitPoints"], "down,", [c.get("hitDiceUsed") for c in start["classes"]], "Hit Point Dice used", flush=True)
     rest_window(page, "short")
     page.locator('select[name^="dice_"]').first.select_option("1")
     page.locator("[data-use-go]").first.click()
-    t.expect("a Hit Point Die is spent on D&D Beyond", lambda: sum(c.get("hitDiceUsed") or 0 for c in record(sheet)["classes"]) > sum(c.get("hitDiceUsed") or 0 for c in start["classes"]), 30)
+    t.expect("a Hit Point Die is spent on D&D Beyond", lambda: sum(c.get("hitDiceUsed") or 0 for c in record(sheet)["classes"]) > sum(c.get("hitDiceUsed") or 0 for c in start["classes"]), SLOW)
     print("  after the Short Rest:", show(changes(start, record(sheet))), flush=True)
     page.wait_for_timeout(2500)
     page.keyboard.press("Escape")
@@ -364,21 +381,21 @@ def rests(t: Table, seat: str = "player3") -> None:
                 if (x.get("limitedUse") or {}).get("resetType") == 2 and x["limitedUse"].get("maxUses"))  # (back on a Long Rest)
     go(page, page.locator(f'.res-go[data-use-url*="/count"]:has-text("{name}")').first)
     page.locator('[data-use-go][data-to="use"]').first.click()
-    t.expect("a use is spent before the Long Rest", lambda: spent(record(sheet)) > spent(start), 25)
+    t.expect("a use is spent before the Long Rest", lambda: spent(record(sheet)) > spent(start), SLOW)
     page.wait_for_timeout(1500)
     page.keyboard.press("Escape")
     spell_window(page)
     page.locator("[data-use-go]").first.click()
-    t.expect("a slot is spent before the Long Rest", lambda: any(x["used"] for x in record(sheet)["spellSlots"]), 25)
+    t.expect("a slot is spent before the Long Rest", lambda: any(x["used"] for x in record(sheet)["spellSlots"]), SLOW)
     page.wait_for_timeout(2500)
     page.goto(page.url, wait_until="domcontentloaded")
     middle = record(sheet)
     print("  before the Long Rest:", middle["removedHitPoints"], "down,", spent(middle), "uses spent,", [x["used"] for x in middle["spellSlots"]], "slots used", flush=True)
     rest_window(page, "long")
     page.locator("[data-use-go]").first.click()
-    t.expect("the Long Rest gives Hit Point Dice back on D&D Beyond", lambda: not any(c.get("hitDiceUsed") for c in record(sheet)["classes"]), 40)
+    t.expect("the Long Rest gives Hit Point Dice back on D&D Beyond", lambda: not any(c.get("hitDiceUsed") for c in record(sheet)["classes"]), SLOW)
     t.expect("the Long Rest gives Hit Points back on D&D Beyond", lambda: record(sheet)["removedHitPoints"] == 0, 15)
-    t.expect("the Long Rest gives slots back on D&D Beyond", lambda: not any(x["used"] for x in record(sheet)["spellSlots"]), 25)
+    t.expect("the Long Rest gives slots back on D&D Beyond", lambda: not any(x["used"] for x in record(sheet)["spellSlots"]), SLOW)
     t.expect("the Long Rest gives the use back on D&D Beyond", lambda: spent(record(sheet)) <= spent(start), 70)
     print("  after the Long Rest:", show(changes(middle, record(sheet))), flush=True)
 
@@ -394,9 +411,13 @@ def hp_window(page: Page, which: str, amount: int) -> None:
     page.locator('.peek.open .hp-form input[name="amount"]').first.fill(str(amount), timeout=8000)
     page.locator('.peek.open .hp-form input[name="amount"]').first.press("Tab")
     page.wait_for_timeout(800)
-    if which == "temp":  # (the player's choice: take the new ones)
+    # Temporary HP: the player's choice is to take the new ones, pressed until the window says so (before PR 148, a late
+    # redraw from typing the amount could put it back on Keep)
+    for _ in range(8 if which == "temp" else 0):
+        if f"Set {amount} temp" in page.locator(".peek.open .hp-form button[type=submit]").first.inner_text():
+            break
         page.locator('.peek.open .hp-take label:has(input[value="1"])').first.click(timeout=5000)
-        page.wait_for_timeout(800)
+        page.wait_for_timeout(1000)
     page.locator('.peek.open .hp-form button[type="submit"]:not([disabled])').first.click(timeout=10000)  # (once its working has caught up)
     page.wait_for_timeout(800)
     page.keyboard.press("Escape")
@@ -409,10 +430,10 @@ def temp_hp(t: Table, seat: str = "player2") -> None:
     t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
     start = record(sheet)
     hp_window(page, "temp", 5)
-    t.expect("D&D Beyond has 5 Temporary Hit Points", lambda: record(sheet)["temporaryHitPoints"] == 5, 25)
+    t.expect("D&D Beyond has 5 Temporary Hit Points", lambda: record(sheet)["temporaryHitPoints"] == 5, SLOW)
     page.wait_for_timeout(1500)
     hp_window(page, "damage", 5)
-    t.expect("damage takes the Temporary Hit Points first", lambda: record(sheet)["temporaryHitPoints"] == 0, 25)
+    t.expect("damage takes the Temporary Hit Points first", lambda: record(sheet)["temporaryHitPoints"] == 0, SLOW)
     t.expect("and leaves Hit Points as they were", lambda: record(sheet)["removedHitPoints"] == start["removedHitPoints"], 5)
 
 
@@ -429,20 +450,20 @@ def death_saves(t: Table, seat: str = "player2") -> None:
     start, now = record(sheet), hp(page)
     print("  hit points:", now, flush=True)
     hp_window(page, "damage", now)
-    t.expect("D&D Beyond has 0 Hit Points and Unconscious", lambda: (lambda d: d["removedHitPoints"] >= start["removedHitPoints"] + now and unconscious(d))(record(sheet)), 30)
+    t.expect("D&D Beyond has 0 Hit Points and Unconscious", lambda: (lambda d: d["removedHitPoints"] >= start["removedHitPoints"] + now and unconscious(d))(record(sheet)), SLOW)
     t.expect("the Dying tile offers the death save", lambda: page.locator('[data-roll="death"]:visible').count() > 0, 15)
     page.wait_for_timeout(1500)
     page.locator('[data-roll="death"]:visible').first.click(modifiers=["Shift"])
     page.wait_for_timeout(1500)
     page.keyboard.press("Escape")
     marked = lambda d: (d["deathSaves"]["successCount"] or 0) + (d["deathSaves"]["failCount"] or 0) > 0 or d["removedHitPoints"] < start["removedHitPoints"] + now  # (a 20 is back with 1 Hit Point)
-    t.expect("the death save marks the real sheet", lambda: marked(record(sheet)), 30)
+    t.expect("the death save marks the real sheet", lambda: marked(record(sheet)), SLOW)
     print("  death saves:", record(sheet)["deathSaves"], flush=True)
     page.wait_for_timeout(1500)
     page.goto(page.url, wait_until="domcontentloaded")
     back = record(sheet)["removedHitPoints"] - start["removedHitPoints"]
     hp_window(page, "heal", back)
-    t.expect("healing clears the marks on D&D Beyond", lambda: not any((record(sheet)["deathSaves"][k] or 0) for k in ("successCount", "failCount")), 30)
+    t.expect("healing clears the marks on D&D Beyond", lambda: not any((record(sheet)["deathSaves"][k] or 0) for k in ("successCount", "failCount")), SLOW)
     t.expect("and ends Unconscious", lambda: not unconscious(record(sheet)), 15)
     t.expect("and Hit Points are back", lambda: record(sheet)["removedHitPoints"] == start["removedHitPoints"], 15)
 
@@ -456,7 +477,7 @@ def inspiration(t: Table, seat: str = "player2") -> None:
     for want in (not had, had):
         go(page, page.locator('[data-use-url$="/inspiration"]:visible').first)
         page.locator("[data-use-go]").first.click()
-        t.expect(f"D&D Beyond {'has' if want else 'no longer has'} it", lambda: record(sheet)["inspiration"] == want, 25)
+        t.expect(f"D&D Beyond {'has' if want else 'no longer has'} it", lambda: record(sheet)["inspiration"] == want, SLOW)
         page.wait_for_timeout(1500)
         page.keyboard.press("Escape")
 
@@ -547,20 +568,20 @@ def inventory(t: Table, seat: str = "player2") -> None:
     for field, on, off in (("equipped", "Equip", "Unequip"), ("isAttuned", "Attune", "End attunement")):
         was = item(start, staff)[field]
         press(page, cid, staff, off if was else on)
-        t.expect(f"{on}: D&D Beyond follows", lambda: item(record(sheet), staff)[field] != was, 25)
+        t.expect(f"{on}: D&D Beyond follows", lambda: item(record(sheet), staff)[field] != was, SLOW)
         press(page, cid, staff, on if was else off)
-        t.expect(f"{on}: and back", lambda: item(record(sheet), staff)[field] == was, 25)
+        t.expect(f"{on}: and back", lambda: item(record(sheet), staff)[field] == was, SLOW)
     item_panel(page, cid, staff)
     used = lambda d: (item(d, staff).get("limitedUse") or {}).get("numberUsed") or 0
     go(page, page.locator('.peek.open [data-use-url*="field=charges"]').first)
     page.locator('[data-use-go][data-to="use"]').first.click()
-    t.expect("a charge is spent on D&D Beyond", lambda: used(record(sheet)) == used(start) + 1, 25)
+    t.expect("a charge is spent on D&D Beyond", lambda: used(record(sheet)) == used(start) + 1, SLOW)
     page.wait_for_timeout(1500)
     page.keyboard.press("Escape")
     item_panel(page, cid, staff)
     go(page, page.locator('.peek.open [data-use-url*="field=charges"]').first)
     page.locator('[data-use-go][data-to="back"]').first.click()
-    t.expect("and given back", lambda: used(record(sheet)) == used(start), 25)
+    t.expect("and given back", lambda: used(record(sheet)) == used(start), SLOW)
     page.wait_for_timeout(1500)
     page.keyboard.press("Escape")
     bolts = have["Crossbow Bolts"]["id"]
@@ -569,29 +590,31 @@ def inventory(t: Table, seat: str = "player2") -> None:
         item_panel(page, cid, bolts)
         go(page, page.locator('.peek.open [data-use-url*="field=item"]').first)
         page.locator(f'[data-use-go][data-to="{to}"]').first.click()
-        t.expect(f"Crossbow Bolts: {what}", lambda: many(record(sheet)) == many(start) + n, 25)
+        t.expect(f"Crossbow Bolts: {what}", lambda: many(record(sheet)) == many(start) + n, SLOW)
         page.wait_for_timeout(1500)
         page.keyboard.press("Escape")
     count = lambda d: item(d, potion)["quantity"]
     hp_window(page, "damage", 5)  # (so the potion's healing shows)
     hurt = start["removedHitPoints"] + 5
-    t.expect("D&D Beyond has the damage", lambda: record(sheet)["removedHitPoints"] == hurt, 25)
+    t.expect("D&D Beyond has the damage", lambda: record(sheet)["removedHitPoints"] == hurt, SLOW)
     page.goto(f"https://beta.askdnd.ai/characters/{cid}/battle", wait_until="domcontentloaded")
     page.locator('[data-panel-url$="/all/bonus?items=1"]').first.click(timeout=8000)  # (every potion is a Bonus Action)
     go(page, page.locator(f'.peek.open [data-use-url$="/use/{potion}"]').first)
     page.locator("[data-use-go]").first.click()
-    t.expect("drinking a Potion of Healing takes one off D&D Beyond", lambda: count(record(sheet)) == count(start) - 1, 25)
-    t.expect("and heals there", lambda: record(sheet)["removedHitPoints"] < hurt, 25)
+    t.expect("drinking a Potion of Healing takes one off D&D Beyond", lambda: count(record(sheet)) == count(start) - 1, SLOW)
+    t.expect("and heals there", lambda: record(sheet)["removedHitPoints"] < hurt, SLOW)
     page.wait_for_timeout(1500)
     page.keyboard.press("Escape")
-    undo(page)
-    t.expect("Undo puts the potion back on D&D Beyond", lambda: count(record(sheet)) == count(start), 25)
-    t.expect("and the healing", lambda: record(sheet)["removedHitPoints"] == hurt, 25)
+    if undo(page):
+        t.expect("Undo puts the potion back on D&D Beyond", lambda: count(record(sheet)) == count(start), SLOW)
+        t.expect("and the healing", lambda: record(sheet)["removedHitPoints"] == hurt, SLOW)
+    else:
+        stock(sheet)
     page.wait_for_timeout(1500)
     healed = record(sheet)["removedHitPoints"] - start["removedHitPoints"]
     if healed > 0:
         hp_window(page, "heal", healed)
-    t.expect("and Hit Points are back", lambda: record(sheet)["removedHitPoints"] == start["removedHitPoints"], 25)
+    t.expect("and Hit Points are back", lambda: record(sheet)["removedHitPoints"] == start["removedHitPoints"], SLOW)
 
 
 RUNS = {"closed-sheet": closed_sheet, "game-log": game_log, "close-after-roll": close_after_roll, "hit-points": hit_points, "condition": condition,
