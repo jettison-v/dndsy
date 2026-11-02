@@ -4,20 +4,34 @@
    (Brett, 2026-10-30: the DM's pill said Connected from someone else's sheet). Without the extension in this browser
    (body.no-bridge, app.js) it says to add it, and the Live window has the link. `data-log` tells the roll window whether
    a roll of yours reaches D&D Beyond's Game Log: "on" until `data-log-until`, "sheet" (your sheet isn't open) or nothing
-   (your character isn't in a D&D Beyond game). Opens the Live window. #}
+   (your character isn't in a D&D Beyond game). Opens the Live window.
+   Its colour answers "will a change reach D&D Beyond?" (DM Backup, Brett 2026-11-02, docs/mockups/dm-backup/): green
+   through your own sheet (step), yellow through the DM's browser while your sheet is closed (via: it still asks you to
+   open it, as only your sheet sends rolls to the Game Log), red when it can't while the table is playing or something
+   waits to be made by hand (bad), grey when no one at the table is connected. #}
 {% set p = tn.pill %}
 {% if p %}{% set fid = tn.focus.id if tn.focus else "" %}{% set m = p if p.mine else tn.mine %}{% set ours = p.connects and p.mine %}{% set party = tn.connectable and not tn.mine %}
-{% set good = (tn.connected == tn.connectable) if party else (p.step and not p.by_hand) %}
-<button type="button" id="live-pill" class="live-pill{{ ' warn' if p.failed or p.by_hand }}{{ ' step' if good }}{{ ' cue' if ours and not p.step and not p.by_hand and fight_now() }}" data-menu="live-menu" aria-haspopup="dialog" aria-controls="live-menu"
+{% set playing = tn.playing or fight_now() %}
+{% if p.by_hand %}{% set tone = "bad" %}
+{% elif party %}{% set tone = "step" if tn.connected == tn.connectable else "bad" if playing and tn.connected + tn.via < tn.connectable else "via" if tn.via else "" %}
+{% elif p.step %}{% set tone = "step" %}
+{% elif p.via %}{% set tone = "via" %}
+{% elif p.failed %}{% set tone = "warn" %}
+{% elif ours and playing %}{% set tone = "bad" %}
+{% else %}{% set tone = "" %}{% endif %}
+<button type="button" id="live-pill" class="live-pill{{ ' ' + tone if tone }}" data-menu="live-menu" aria-haspopup="dialog" aria-controls="live-menu"
   hx-get="/live{{ '?c=%s' % fid if fid }}" hx-target="#live-menu" hx-trigger="click" data-focus="{{ fid }}" data-every="{{ tn.every }}"{% if tn.connectable %} data-wants-bridge="1"{% endif %}{% if m and m.in_game %} data-log="{{ 'on' if m.step else 'sheet' }}" data-log-until="{{ m.step_until }}"{% else %} data-log="" data-log-until="0"{% endif %}{% if oob %} hx-swap-oob="true"{% endif %}
-  title="{% if p.by_hand %}{{ p.name }}: askdnd couldn't make {{ p.by_hand }} change{{ 's' if p.by_hand != 1 }} on D&amp;D Beyond; make {{ 'them' if p.by_hand != 1 else 'it' }} there{% elif p.failed %}Couldn't refresh {{ p.name }} from D&amp;D Beyond; showing the copy from {{ p.fetched_at | ago }}{% elif party %}How many of the party's D&amp;D Beyond sheets are connected{% elif p.step %}{{ p.name }}'s D&amp;D Beyond sheet and askdnd change together (the bridge){% elif ours %}Open {{ p.name }}'s D&amp;D Beyond sheet in Chrome with the askdnd bridge{% elif tn.party_pill %}The party's slowest copy from D&amp;D Beyond ({{ p.name }}){% else %}{{ p.name }}, from D&amp;D Beyond{% endif %}">
+  title="{% if p.by_hand %}{{ p.name }}: askdnd couldn't make {{ p.by_hand }} change{{ 's' if p.by_hand != 1 }} on D&amp;D Beyond; make {{ 'them' if p.by_hand != 1 else 'it' }} there{% elif p.failed %}Couldn't refresh {{ p.name }} from D&amp;D Beyond; showing the copy from {{ p.fetched_at | ago }}{% elif party %}How many of the party's D&amp;D Beyond sheets are connected{% elif p.step %}{{ p.name }}'s D&amp;D Beyond sheet and askdnd change together (the bridge){% elif p.via %}{{ p.name }}'s sheet is closed, so the DM's D&amp;D Beyond makes the changes. Open it so rolls reach D&amp;D Beyond's Game Log too{% elif ours %}Open {{ p.name }}'s D&amp;D Beyond sheet in Chrome with the askdnd bridge{% elif tn.party_pill %}The party's slowest copy from D&amp;D Beyond ({{ p.name }}){% else %}{{ p.name }}, from D&amp;D Beyond{% endif %}">
   <span class="live-dot" aria-hidden="true"></span><span class="live-ago">
   {%- if p.by_hand -%}{{ p.by_hand }} to make by hand
+  {%- elif party and tn.via -%}{{ tn.connected + tn.via }} of {{ tn.connectable }} connected · {{ tn.via }} through {{ "you" if tn.dm else "the DM" }}
   {%- elif party -%}{{ tn.connected }} of {{ tn.connectable }} sheets connected
   {%- elif p.step and p.mine -%}Connected
   {%- elif p.step -%}{{ p.name }} is connected
+  {%- elif p.via and p.mine -%}Through the DM · open your sheet
+  {%- elif p.via -%}{{ p.name }}: through the DM
   {%- elif ours -%}Open your sheet to connect
   {%- elif tn.party_pill -%}Slowest sheet {{ (p.fetched_at | ago) or "never" }}
   {%- else -%}Updated {{ (p.fetched_at | ago) or "never" }}{%- endif -%}
-  </span><span class="live-noext">Add the askdnd bridge</span><span class="live-word">{{ "Connected" if good else "Live" }}</span></button>
+  </span><span class="live-noext">Add the askdnd bridge</span><span class="live-word">{{ "Connected" if tone == "step" else "Through the DM" if tone == "via" and not party else "Live" }}</span></button>
 {% endif %}

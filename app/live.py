@@ -30,7 +30,7 @@ from sqlalchemy.orm import Session
 from app import characters as chars
 from app import conditions as cond
 from app import access, config, vtt, web
-from app.auth import current_user, is_reviewer
+from app.auth import current_user, is_dm, is_reviewer
 from app.db import get_db
 from app.models import BridgeIntent, CampaignCharacter, Character, CharacterSnapshot, User
 from app.templating import templates
@@ -52,11 +52,15 @@ def rows_from(db: Session) -> list[dict]:
     """Each campaign character: id, name, who plays it, its last D&D Beyond copy, and from that copy its
     portrait, classes and hit points (read straight from the stored summary, not the whole sheet); and with the D&D
     Beyond bridge on, whether its sheet can be reached now (`step`), whether it could be (`connects`), whether it's in a
-    D&D Beyond game (`in_game`: its rolls can reach the Game Log) and how many changes wait to be made by hand."""
+    D&D Beyond game (`in_game`: its rolls can reach the Game Log), whether the DM's browser makes its changes now
+    instead (`via`: its own sheet is closed, app/ddb_bridge.py `carried`) and how many changes wait to be made by hand."""
+    from app import ddb_bridge
+
     campaign = web.campaign(db)
     if not campaign:
         return []
     bridge = config.DDB_BRIDGE and vtt.on(campaign, "ddb_bridge")
+    dm_here = ddb_bridge.dm_here(campaign)
     by_hand: dict[int, int] = {}
     on_way: dict[int, list[dict]] = {}
     if bridge:
@@ -76,7 +80,7 @@ def rows_from(db: Session) -> list[dict]:
                 CharacterSnapshot.fetched_at, CharacterSnapshot.status, CharacterSnapshot.error,
                 summary["portrait"].astext, summary["classes"], summary["hit_points"]["current"].astext,
                 summary["hit_points"]["max"].astext, Character.conditions, summary["conditions"], Character.concentration,
-                CharacterSnapshot.raw["campaign"]["id"].astext)
+                CharacterSnapshot.raw["campaign"]["id"].astext, Character.ddb_campaign_id)
          .join(CampaignCharacter, CampaignCharacter.character_id == Character.id)
          .outerjoin(User, Character.owner_id == User.id)
          .outerjoin(CharacterSnapshot, CharacterSnapshot.character_id == Character.id)
@@ -89,12 +93,14 @@ def rows_from(db: Session) -> list[dict]:
              # (a test copy shares a real sheet, so the bridge never works on it: ddb_bridge.on_for)
              "step": bool(bridge and ddb_id and copy_of is None and heard and heard >= reach),
              "connects": bool(bridge and ddb_id and copy_of is None), "in_game": bool(bridge and ddb_id and copy_of is None and game),
+             "via": bool(bridge and ddb_id and copy_of is None and not (heard and heard >= reach) and dm_here
+                         and ddb_bridge.in_its_game(campaign, ddb_game)),
              "step_until": int((heard + REACH).timestamp()) if heard and bridge and ddb_id and copy_of is None else 0,
              "by_hand": by_hand.get(cid, 0) if bridge and copy_of is None else 0,
              # the menu bar's dots: what it's under now (D&D Beyond's with what's on its way and askdnd's own, as on Battle)
              "conditions": ["Concentration"] * bool(conc) + [x["name"] for x in cond.shown(own, cond.with_changes(on_sheet, on_way.get(cid, ())), bool(bridge and copy_of is None))]}
-            for cid, name, email, ddb_id, copy_of, heard, fetched, status, error, portrait, classes, hp, hp_max, own, on_sheet, conc, game
-            in db.execute(q)]
+            for cid, name, email, ddb_id, copy_of, heard, fetched, status, error, portrait, classes, hp, hp_max, own, on_sheet, conc, game,
+            ddb_game in db.execute(q)]
 
 
 def _load_from_db() -> list[dict]:
@@ -130,8 +136,17 @@ def table(user: dict | None, path: str = "", rows: list[dict] | None = None, foc
     oldest = min(linked, key=lambda r: r["fetched_at"] or datetime.min.replace(tzinfo=UTC)) if linked else None
     pill = focus if focus and focus["linked"] else oldest
     connects = [r for r in rows if r.get("connects")]
+    via = sum(bool(r.get("via")) for r in connects)
+    try:
+        here_campaign = access.current_campaign(user.get("email"))
+    except Exception:
+        here_campaign = None  # database unavailable, as for the rows
     return {"characters": rows, "mine": mine, "here": here, "focus": focus, "mode": mode,
-            "connectable": len(connects), "connected": sum(bool(r.get("step")) for r in connects),
+            "connectable": len(connects), "connected": sum(bool(r.get("step")) for r in connects), "via": via,
+            # The table is playing (the pill goes red, not grey, for a sheet that can't be reached): someone's sheet is
+            # connected or the DM's browser is here. A fight running counts too (the pill asks fight_now() itself)
+            "playing": any(r.get("step") or r.get("via") for r in connects),
+            "dm": bool(here_campaign and is_dm(user, here_campaign["id"])),
             # Characters open in the mode you're in, else the one you used last, else Battle
             "suffix": SUFFIX[mode or (last_mode if last_mode in SUFFIX else None) or "battle"],
             "pill": pill, "party_pill": pill is not None and pill is not focus, "linked": linked,
@@ -174,10 +189,15 @@ def pill(db: Session, user: dict, focus_id: int | None) -> str:
 
 def panel(request: Request, db: Session, user: dict, focus_id: int | None, toast: str = "", ids: list[int] = ()):
     """The Live window: how each sheet is connected, refreshing."""
+    from app import ddb_bridge
+
     tn = table(user, "", rows_from(db), focus_id)
     campaign = web.campaign(db)
+    backup = ddb_bridge.backup_on(campaign)
     resp = templates.TemplateResponse(request, "_live_panel.html", {
-        "tn": tn, "reviewer": is_reviewer(user), "bridge": config.DDB_BRIDGE and vtt.on(campaign, "ddb_bridge")})
+        "tn": tn, "reviewer": is_reviewer(user), "bridge": config.DDB_BRIDGE and vtt.on(campaign, "ddb_bridge"),
+        "backup": backup, "dm_here": ddb_bridge.dm_here(campaign), "ddb_game": campaign.ddb_campaign_id if campaign else None,
+        "made_through": ddb_bridge.made_through(db, campaign) if backup else []})
     if toast:
         resp.headers["HX-Trigger"] = json.dumps({"toast": toast, "liveRefreshed": {"ids": list(ids)}})
     return resp

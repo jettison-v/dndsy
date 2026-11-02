@@ -152,10 +152,16 @@ body.bridge-elsewhere .bridge-other { display: block; font-size: var(--fs-sm); }
 body.bridge-elsewhere .bridge-steps, body.bridge-elsewhere .bridge-small { display: none; }
 body.no-bridge:not(.bridge-elsewhere) .live-noext-box ~ .live-actions .btn.primary { background: var(--surface-2); border-color: var(--line); color: var(--text); font-weight: 500; }  /* one main action: adding the bridge */
 body.no-bridge:not(.bridge-elsewhere) .live-pill[data-wants-bridge] .live-ago { display: none; }
+/* Its colour (DM Backup, Brett 2026-11-02): green your own sheet, yellow through the DM, red can't while the table plays
+   or something to make by hand, grey no one's connected; warn: couldn't refresh */
 .live-pill.warn .live-dot { background: var(--amber); }
-.live-pill.step .live-dot { background: var(--green); }  /* connected */
-.live-pill.cue { border-color: var(--amber); color: var(--text); }  /* in a fight with your sheet closed */
-.live-pill.cue .live-dot { background: var(--amber); }
+.live-pill.step .live-dot { background: var(--green); }
+.live-pill.via { border-color: var(--amber); color: var(--text); }
+.live-pill.via .live-dot { background: var(--amber); }
+.live-pill.bad { border-color: var(--red-line); color: var(--text); }
+.live-pill.bad .live-dot { background: var(--red); }
+body.no-bridge:not(.bridge-elsewhere) .live-pill.via[data-wants-bridge] .live-noext { display: none; }  /* (a phone: the DM carries it, no nag) */
+body.no-bridge:not(.bridge-elsewhere) .live-pill.via[data-wants-bridge] .live-word { display: inline; }
 .live-pill.htmx-request { opacity: .7; }
 @media (max-width: 1240px) { .live-ago { display: none; } .live-word { display: inline; } }  /* "● Live" or "● Game on"; the dot's colour says in step or to make by hand, the window the rest */
 .menu.live-menu { width: 360px; max-width: calc(100vw - 24px); padding: 0; }
@@ -174,6 +180,7 @@ body.no-bridge .live-noext-box + .live-list { border-top: 1px solid var(--line);
 .live-mark { width: 8px; height: 8px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 1.5px var(--faint); }
 .live-state.ok { color: var(--green); } .live-state.ok .live-mark { background: var(--green); box-shadow: none; }
 .live-state.warn { color: var(--amber); } .live-state.warn .live-mark { background: var(--amber); box-shadow: none; }
+.live-state.via { color: var(--amber); } .live-state.via .live-mark { background: var(--amber); box-shadow: none; }  /* through the DM (DM Backup) */
 .live-state.bad { color: var(--link); } .live-state.bad .live-mark { background: var(--red); box-shadow: none; }
 .live-go { width: 28px; height: 28px; display: grid; place-items: center; border-radius: var(--r-sm); color: var(--faint); }
 a.live-row:hover .live-go { color: var(--text); }
@@ -221,6 +228,12 @@ body.pt-rows .pt-with-track { display: none; }
 .pt-track .pt-hp:hover { border-color: var(--muted); }
 .pt-track .pt-hp.low { color: var(--amber); }
 .live-row.here .live-name { font-weight: 600; }
+.live-say { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: var(--r-md); padding: 8px 10px; }
+.live-say.via { border-color: var(--amber); }
+.live-say.bad { border-color: var(--red-line); }
+.live-made { font-size: var(--fs-xs); color: var(--muted); }
+.live-made b { color: var(--text); font-weight: 600; }
+.live-made small { color: var(--faint); }
 .live-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .live-actions .btn { flex: 1 1 0; white-space: nowrap; }  /* the spinner never wraps the label */
 /* Phones: a bottom bar with the main pages; More holds the rest (base.html) */

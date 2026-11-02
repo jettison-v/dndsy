@@ -88,6 +88,13 @@
   }
   const hello = () => send({ type: 'ddb-tab', ddbId: sheetId() });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hello); else hello();
+  // The DM as a backup (carry.js): a sheet is a D&D Beyond page too, so a DM with only the party's sheets open still
+  // makes the changes of a closed one, every few seconds (askdnd says how often; once a minute in anyone else's browser)
+  const tick = () => send({ type: 'carry-tick' }, answer => {
+    if (chrome.runtime.lastError) return setTimeout(tick, 60000);
+    setTimeout(tick, Math.max(5, (answer && answer.every) || 60) * 1000);
+  });
+  setTimeout(tick, 5000);
   // Someone using the sheet keeps the bridge awake (at most once a minute; its saves are heard on their own)
   let usedAt = Date.now();
   ['pointerdown', 'keydown'].forEach(k => document.addEventListener(k, () => {
