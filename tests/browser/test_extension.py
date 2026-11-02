@@ -192,14 +192,22 @@ def test_without_the_extension_the_pill_says_to_add_it_and_the_window_has_the_li
 
 
 def test_prepare_spells_holds_together_at_every_width(people, server):
-    """Prepare spells (app/preparing.py) is a live-state page, so it's checked here, where the bridge is on (and the
-    campaign is a test one); the same check as every main page (tests/browser/test_layout.py)."""
-    from tests.browser.test_layout import check, problems
+    """Prepare spells (app/preparing.py) is a live-state modal, so it's checked here, where the bridge is on (and the
+    campaign is a test one), with the same check as every main page (tests/browser/test_layout.py)."""
+    from tests.browser.test_layout import WIDTHS, problems
 
     player = people("player")
-    found = check(player, server, ("/characters/{cole}/spells/prepare",))
-    player.page.locator("[data-prep-tick]").first.click()  # a change: the side's list and the foot's label grow
-    found += problems(player.page, "prepare spells, one change ticked")
+    page, found = player.page, []
+    for width in WIDTHS:
+        page.set_viewport_size({"width": width, "height": 900 if width > 640 else 812})
+        player.open(f"/characters/{server['cole']}")
+        page.click("[data-tab=t-spells]")
+        page.click("button[data-modal-url*='/spells/prepare']")
+        page.locator(".peek.open [data-prep]").wait_for()
+        found += problems(page, f"prepare spells at {width}px")
+    page.locator("[data-prep-tick]").first.click()  # a change: the side's list and the foot's label grow
+    found += problems(page, "prepare spells, one change ticked")
+    assert page.locator("[data-prep-note]").inner_text() in ("Drop 1", "Prepare 1")  # (the sheet isn't open here: no Make)
     assert not found, "\n".join(found)
 
 

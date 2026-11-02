@@ -26,6 +26,7 @@ from app import conditions as cond
 from app import ddb, ddb_bridge, hit_points, house_rules, picks
 from app import class_rules, player_notes
 from app import spellbook as sb
+from app.preparing import books_to_prepare
 from app import wild_shape as ws
 from app import rules_terms as terms
 from app.auth import can_run_table, can_set_house_rules, current_user, is_admin, is_dm, is_reviewer
@@ -578,7 +579,8 @@ def spellbook_modal(request: Request, character_id: int, db: Session = Depends(g
     moon = bool(ctx["druid"] and ctx["druid"].get("moon_spells"))
     return templates.TemplateResponse(request, "_spellbook.html", {
         **ctx, "spells": spells, "slots": sb.slot_levels(sheet), "groups": sb.filter_groups(spells, wild_shape=moon),
-        "in_form": bool(ch.wild_shape and moon), "sc": (sheet.get("spellcasting") or [{}])[0], "conc": ch.concentration})
+        "in_form": bool(ch.wild_shape and moon), "sc": (sheet.get("spellcasting") or [{}])[0], "conc": ch.concentration,
+        "can_prepare": ctx["can_play"] and bool(books_to_prepare(sheet))})  # Prepare spells (app/preparing.py)
 
 
 def _concentration_reply(request: Request, db: Session, ch: Character, user: dict, toast: str, deliver: bool = False):

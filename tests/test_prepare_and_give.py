@@ -175,7 +175,10 @@ def test_the_prepare_screen_counts_and_makes_every_change_at_once(player, db, sh
     aid.update(id=21170801, entityTypeId=435869154)
     characters.refresh(db, cole)
     page = player.get(f"/characters/{cole.id}/spells/prepare").text
-    assert "10 of 10" in page and "Druid:</b> After a Long Rest" in page and 'data-name="Aid"' in page and 'data-name="Healing Word"' in page
+    assert "<b data-prep-have>10</b>" in page and " of 10</span>" in page and "0 left<" in page
+    assert "Druid 6 · <span title=\"After a Long Rest" in page and "change any after a Long Rest" in page  # (the whole rule on hover)
+    assert 'data-name="Aid"' in page and 'data-name="Healing Word"' in page
+    assert 'id="peek-title">Prepare spells' in page  # a large modal, like the Spell Book
     r = player.post(f"/characters/{cole.id}/spells/prepare", json={"changes": [{"key": "spell:Healing Word", "on": False}, {"key": "spell:Aid", "on": True}]})
     assert r.status_code == 200 and r.json()["text"] == "2 changes on its way to D&D Beyond"
     assert [(i.kind, i.data["name"], i.data["value"]) for i in intents(db)] == [("prepare", "Healing Word", False), ("prepare", "Aid", True)]
@@ -194,8 +197,33 @@ def test_the_prepare_screen_turns_away_what_it_cant_make(player, db, sheet):
     assert r.json()["text"].startswith("Nothing to change") and not intents(db)
 
 
+def test_your_notes_show_on_the_prepare_screen(player, db, sheet):
+    """Brett, 2026-11-02: notes matter when choosing what to prepare."""
+    from app import picks
+
+    cole = char(db, "Cole")
+    picks.set_note(db, cole, "spell:Healing Word", "Bonus Action: keep for Trah")
+    db.commit()
+    assert "✎ Bonus Action: keep for Trah" in player.get(f"/characters/{cole.id}/spells/prepare").text
+
+
 def test_a_long_rest_offers_prepare_spells(player, db, sheet):
     cole = char(db, "Cole")
     assert "/spells/prepare?cls=Druid" in player.get(f"/characters/{cole.id}/rest?kind=long").text
     assert "/spells/prepare" not in player.get(f"/characters/{cole.id}/rest?kind=short").text
     assert "/spells/prepare?cls=Druid" in player.get(f"/characters/{cole.id}").text  # Sheet › Spells
+    assert 'data-modal-url="/characters/%d/spells/prepare"' % cole.id in player.get(f"/characters/{cole.id}/spellbook").text  # the Spell Book
+
+
+def test_a_class_d_and_d_beyond_gives_no_number_for_gets_the_rules_number(player, db, sheet):
+    """Brett, 2026-11-02 ("Do I have 2 slots left?"): D&D Beyond leaves a 2024 Cleric's number out; the 2024 rules'
+    table (SRD 5.2.1) fills it, and the count shows a box for each spell the class prepares."""
+    from app.ddb_sheet import prepared_by_rules
+
+    assert (prepared_by_rules("Cleric", 9), prepared_by_rules("Druid", 6), prepared_by_rules("Artificer", 10)) == (14, 10, None)
+    cole = char(db, "Cole")
+    druid = next(c for c in sheet["classes"] if c["definition"]["name"] == "Druid")
+    druid["definition"]["spellRules"]["levelPreparedSpellMaxes"] = None  # as D&D Beyond sends a Cleric
+    characters.refresh(db, cole)
+    page = player.get(f"/characters/{cole.id}/spells/prepare").text
+    assert " of 10</span>" in page and page.count('<i class="on"></i>') == 10 and 'aria-label="10 of 10 prepared"' in page

@@ -14,6 +14,7 @@ can't work out is left out rather than guessed.
 import json
 import re
 import socket
+import time
 import urllib.error
 import urllib.request
 from html.parser import HTMLParser
@@ -22,7 +23,7 @@ CHARACTER_URL = "https://character-service.dndbeyond.com/character/v5/character/
 SHEET_URL = "https://www.dndbeyond.com/characters/{id}"
 USER_AGENT = "askdnd/2 (private table companion; +https://beta.askdnd.ai)"
 TIMEOUT_SECONDS = 15
-PARSER_VERSION = 23  # bump when the summary shape changes; stored summaries are re-parsed
+PARSER_VERSION = 25  # bump when the summary shape changes; stored summaries are re-parsed
 
 
 class DdbError(Exception):
@@ -106,13 +107,26 @@ def _slim_spell(s: dict) -> dict:
     return {"definition": slim, "prepared": False, "alwaysPrepared": bool(s.get("alwaysPrepared")), "id": s.get("id"), "entityTypeId": s.get("entityTypeId")}
 
 
+LIST_SECONDS = 6 * 3600  # a class's spell lists change only with D&D Beyond's books, not with the character
+_lists: dict[str, tuple[float, list]] = {}
+
+
 def _spell_list(url: str, timeout: float) -> list:
+    """A class's spell list at a level (D&D Beyond's game data, the same for every character): kept for LIST_SECONDS,
+    so a character's read is one call to D&D Beyond, not one per class list (Sentry ASKDND-V2-7, 2026-11-02: requests
+    waiting on several reads at once ran beta out of database connections). A failed read isn't kept."""
+    hit = _lists.get(url)
+    if hit and time.time() - hit[0] < LIST_SECONDS:
+        return hit[1]
     try:
         payload = _get_json(url, timeout)
     except (OSError, ValueError):
         return []
     spells = payload.get("data") if isinstance(payload, dict) else None
-    return spells if isinstance(spells, list) else []
+    if not isinstance(spells, list):
+        return []
+    _lists[url] = (time.time(), spells)
+    return spells
 
 
 def fetch_character(ddb_id: str, timeout: float = TIMEOUT_SECONDS) -> dict:

@@ -48,21 +48,19 @@ footer { color: var(--muted); font-size: 13px; }
   <section>
     <h2>Now</h2>
 
-    <div class="step now" data-step="try-round">
-      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>1. Try this round on your computer</h3><span class="chip now">10 minutes</span></div>
-      <p>One round, all together: the Long Rest fix, the Prepare spells screen you liked, the Monster Manual upload, and DM Backup (reviewed twice; the bug I found is fixed and tested). On your local copy, Cathartic and Vi show as connected for the next three hours.</p>
+    <div class="step now" data-step="prep-modal">
+      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>1. Try the new Prepare spells window, and the connection fix</h3><span class="chip now">5 minutes</span></div>
+      <p>Last round is on beta. This one: Prepare spells as a large window like the Spell Book, with the count as one box per spell you may prepare ("13 of 14 prepared · 1 left"), your notes under each spell and a short top. It also fixes the Sentry errors: beta ran out of database connections.</p>
       <ol>
-        <li><b>Long Rest:</b> open <a href="http://localhost:8000/dev/login?next=/characters/12/battle">Vi's Battle</a>, press <b>Rest</b> at the right end of the Resources row, then <b>Long Rest</b> at the top of the window. The list changes to what a Long Rest brings back, with a link to Prepare spells.</li>
-        <li><b>Prepare spells:</b> open <a href="http://localhost:8000/dev/login?next=/characters/9/spells/prepare">Cathartic's Prepare spells</a> (also on Sheet › Spells). Tick and untick, watch the count and your changes, try the filters, and press Make: each change shows ↻. Locally nothing reaches D&amp;D Beyond, so it stays like that.</li>
-        <li><b>The Monster Manual upload:</b> open <a href="http://localhost:8000/dev/login?next=/manage/backups%23books">Backups and imports</a> and scroll to <b>Books</b>. Your local copy already has all 510; on beta this is where the file goes (step 2).</li>
-        <li><b>DM Backup</b> needs the new extension and a real D&amp;D Beyond to try, so it isn't something to try locally. I'll run it on the Mac Mini's test seats once Google approves 0.9.8. On beta it's only in test campaigns until you've seen it.</li>
+        <li>Open <a href="http://localhost:8000/dev/login?next=/characters/9">Cathartic's Sheet</a> on your computer, go to <b>Spells</b>, and press <b>Prepare spells</b> (also in the Spell Book and the Long Rest window).</li>
+        <li>Tick and untick: the boxes and "left" follow, and your changes list on the right.</li>
       </ol>
-      <p>Then tell me <b>ship it</b>: it all goes to beta, and I build the extension file for step 3.</p>
+      <p>Then tell me <b>ship it</b>.</p>
     </div>
 
     <div class="step now" data-step="mm">
-      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>2. Load the whole Monster Manual on beta</h3><span class="chip wait">After step 1</span></div>
-      <p>The terminal command couldn't work: beta's database has no public address (good for security), so it stopped without writing anything. Instead, once this round is on beta:</p>
+      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>2. Load the whole Monster Manual on beta</h3><span class="chip now">Ready now</span></div>
+      <p>The upload is on beta. The terminal command couldn't work (beta's database has no public address), so it's a file instead:</p>
       <ol>
         <li>Open <a href="https://beta.askdnd.ai/manage/backups#books">beta's Backups and imports › Books</a>.</li>
         <li>Press <b>Choose file</b> and pick <code>~/Code/dndsy/private/books/mm-2024-upload.json.gz</code> (it's already made).</li>
@@ -75,8 +73,8 @@ footer { color: var(--muted); font-size: 13px; }
     <h2>Next, in this order</h2>
 
     <div class="step" data-step="extension">
-      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>3. Upload extension 0.9.8 to Google</h3><span class="chip wait">After step 1</span></div>
-      <p>One upload carries both DM Backup and preparing spells. It replaces 0.9.6, which is still in review. I'll tell you the moment the file is ready; then:</p>
+      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>3. Upload extension 0.9.8 to Google</h3><span class="chip now">Ready now</span></div>
+      <p>The file is built. One upload carries DM Backup and preparing spells, and replaces 0.9.6, which is still in review:</p>
       <ol>
         <li>Open the <a href="https://chrome.google.com/webstore/devconsole">Chrome Web Store developer dashboard</a> and click <b>askdnd bridge</b>.</li>
         <li>If 0.9.6 still shows <b>Pending review</b>, click <b>Cancel review</b>.</li>
