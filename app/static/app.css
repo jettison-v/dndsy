@@ -1262,7 +1262,7 @@ a.sheet-ref { text-decoration-style: dotted; }
   .strip.compact small { font-size: var(--fs-xs); }
   .strip.compact b { font-size: var(--fs-lg); }
   .save-tiles { gap: 6px; }
-  .st { padding: 5px 8px; gap: 4px; }
+  .st { padding: 5px 6px; gap: 3px; }
 }
 
 /* Rolls (app.js): private dice rolls. Roll buttons look like the numbers they roll. */
@@ -2503,7 +2503,7 @@ body:not(.br-ext) .br-ext-on, body.br-ext .br-ext-off { display: none; }
 
 /* ---- Hit points window (app/hit_points.py, docs/mockups/hp-window.html): from Table rolls' Apply to … or Hit points */
 .seg label { display: inline-flex; }
-.seg label input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; clip-path: inset(50%); pointer-events: none; }
 .seg label span { display: inline-flex; align-items: center; padding: 0 var(--sp-3); min-height: calc(var(--control-h) - 2px); font-size: var(--fs-sm); font-weight: 500; color: var(--muted); cursor: pointer; }
 .seg label + label span { border-left: 1px solid var(--line); }
 .seg label input:checked + span { background: var(--red); color: var(--text-strong); }
@@ -2551,6 +2551,7 @@ body:not(.br-ext) .br-ext-on, body.br-ext .br-ext-off { display: none; }
   .battle-head { display: block; }
   .battle-head > .strip.compact { display: flex; flex-wrap: wrap; margin-bottom: 6px; }
   .battle-head > .save-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 0; border: none; }
+  .battle-head .st { padding: 3px 6px; gap: 4px; }  /* (a proficient save with Adv fits its third of a phone) */
   .status-phone { display: contents; }
   .status-phone .res-insp { margin-left: 0; }
   .battlebar > .res-more { order: 2; display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: var(--control-h-sm); margin-top: var(--sp-2); padding: 0 var(--sp-3); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--text); font: inherit; cursor: pointer; }
