@@ -172,6 +172,22 @@ def _adv_when(restriction: str) -> str:
 # ---------------------------------------------------------------- parsing
 
 
+
+_PREPARED: dict | None = None
+
+
+def prepared_by_rules(class_name: str, level: int) -> int | None:
+    """How many spells a class prepares at a level, by the 2024 rules (app/data/prepared_spells.json, from the SRD):
+    D&D Beyond's class data leaves it out for some classes (a 2024 Cleric). None for a class it doesn't list."""
+    global _PREPARED
+    if _PREPARED is None:
+        import json
+        from pathlib import Path
+
+        _PREPARED = json.loads((Path(__file__).parent / "data" / "prepared_spells.json").read_text())
+    row = _PREPARED.get(class_name)
+    return row[level - 1] if isinstance(row, list) and 1 <= level <= len(row) else None
+
 class _Sheet:
     """One parse of one character. Methods build the sections of the summary."""
 
@@ -912,10 +928,11 @@ class _Sheet:
             spells = sorted(entries.values(), key=lambda x: (x["level"], x["name"]))
             out.append({
                 "class": name,
+                "level": lvl,
                 **casters[name],
                 "spellbook": book,
                 "prepared_count": sum(1 for x in spells if x["state"] == "prepared"),
-                "prepared_max": at_level("levelPreparedSpellMaxes") or at_level("levelSpellKnownMaxes"),
+                "prepared_max": at_level("levelPreparedSpellMaxes") or at_level("levelSpellKnownMaxes") or prepared_by_rules(name, lvl),
                 "cantrips_count": sum(1 for x in spells if x["state"] == "known" and not x["level"]),
                 "cantrips_max": at_level("levelCantripsKnownMaxes"),
                 "spells": spells,

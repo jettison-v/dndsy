@@ -12,7 +12,9 @@ class Base(DeclarativeBase):
     pass
 
 
-engine = create_engine(config.DATABASE_URL, pool_pre_ping=True) if config.DATABASE_URL else None
+# 30 connections at most (Sentry ASKDND-V2-7, 2026-11-02: the default 15 ran out while requests waited on D&D Beyond;
+# beta's Postgres allows 100, and the backup job and the live listener take one each)
+engine = create_engine(config.DATABASE_URL, pool_pre_ping=True, pool_size=10, max_overflow=20) if config.DATABASE_URL else None
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 
