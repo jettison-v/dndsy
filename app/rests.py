@@ -105,10 +105,14 @@ def _formula(spend: list[tuple[dict, int]], con: int) -> str:
 @router.get("/characters/{character_id:int}/rest")
 def window(request: Request, character_id: int, kind: str, db: Session = Depends(get_db)):
     """What Short Rest or Long Rest opens, in the roll window."""
+    from app.preparing import books_to_prepare
+
     ch, _ = _guard(db, request, character_id)
-    p = plan(_sheet(db, ch), _kind(kind))
+    sheet = _sheet(db, ch)
+    p = plan(sheet, _kind(kind))
+    prepare = [b["class"] for b in books_to_prepare(sheet)] if kind == "long" else []  # (a Long Rest is when most classes change them)
     return templates.TemplateResponse(request, "_rest_window.html", {"c": ch, "kind": kind, "title": TITLE[kind], "p": p, "lines": lines(p, kind),
-                                                                     "reachable": ddb_bridge.reachable(ch)})
+                                                                     "reachable": ddb_bridge.reachable(ch), "prepare": prepare})
 
 
 @router.post("/characters/{character_id:int}/rest")

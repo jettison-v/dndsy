@@ -186,3 +186,16 @@ def test_without_the_extension_the_pill_says_to_add_it_and_the_window_has_the_li
     assert "chromewebstore.google.com" in link.get_attribute("href")
     assert page.locator(".bridge-steps li").count() >= 2 and page.locator(".bridge-other").is_hidden()
     assert link.evaluate("a => getComputedStyle(a).alignItems") == "center"  # (a link in a menu stays a button: Brett, 2026-10-30)
+
+
+def test_prepare_spells_holds_together_at_every_width(people, server):
+    """Prepare spells (app/preparing.py) is a live-state page, so it's checked here, where the bridge is on (and the
+    campaign is a test one); the same check as every main page (tests/browser/test_layout.py)."""
+    from tests.browser.test_layout import check, problems
+
+    player = people("player")
+    found = check(player, server, ("/characters/{cole}/spells/prepare",))
+    player.page.locator("[data-prep-tick]").first.click()  # a change: the side's list and the foot's label grow
+    found += problems(player.page, "prepare spells, one change ticked")
+    assert not found, "\n".join(found)
+

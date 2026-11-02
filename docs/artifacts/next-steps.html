@@ -61,15 +61,8 @@ footer { color: var(--muted); font-size: 13px; }
     </div>
 
     <div class="step now" data-step="mm">
-      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>2. Load the whole Monster Manual on beta</h3><span class="chip now">2 minutes</span></div>
-      <p>You said yes; the safety check wouldn't let me write to beta's database myself, so it's one command for you. It replaces the 91 Beasts with all 510 stat blocks. Wild Shape's list doesn't change.</p>
-      <ol>
-        <li>Open the Terminal panel in the Claude app (or the Terminal app) in your <code>~/Code/dndsy</code> folder.</li>
-        <li>Paste this and press Return:
-          <pre>railway run --service Postgres -- sh -c 'DATABASE_URL="$DATABASE_PUBLIC_URL" uv run python scripts/book_load.py'</pre></li>
-        <li>It shows "510 monsters … converted and valid", then asks <b>Write them to …? Type yes:</b>. Type <code>yes</code> and press Return.</li>
-        <li>Tell me it's done; I'll check that the new monsters show on beta.</li>
-      </ol>
+      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>2. Load the whole Monster Manual on beta</h3><span class="chip wait">Waiting on me</span></div>
+      <p>The terminal command I gave you couldn't work: beta's database has no public address (which is good for security), so it tried your own computer's database instead and stopped. Nothing was written anywhere. I'm adding an upload to <b>Manage › askdnd › Backups and imports</b>; then this step becomes "pick one file and press Upload". I'll tell you when it's ready.</p>
     </div>
 
     <div class="step now" data-step="prep-design">

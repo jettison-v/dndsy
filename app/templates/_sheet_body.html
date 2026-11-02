@@ -62,6 +62,7 @@
           {% if b.prepared_max %}<span class="tag {{ 'done' if b.prepared_count == b.prepared_max else 'draft' }}">{{ "Spellbook: prepared" if b.spellbook else "Prepared" }} {{ b.prepared_count }} of {{ b.prepared_max }}</span>{% endif %}
           {% if b.cantrips_max %}<span class="tag {{ 'done' if b.cantrips_count == b.cantrips_max else 'draft' }}">Cantrips {{ b.cantrips_count }} of {{ b.cantrips_max }}</span>{% endif %}
           {% set always = b.spells | selectattr("state", "equalto", "always") | list %}{% if always %}<span class="tag">+{{ always | length }} always prepared</span>{% endif %}
+          {% if can_play and b.spells | selectattr("prep") | first %}<a class="btn small" href="/characters/{{ c.id }}/spells/prepare?cls={{ b.class | urlencode }}">Prepare spells</a>{% endif %}
         </div>
       </div>
       {% endfor %}
