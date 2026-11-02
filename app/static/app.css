@@ -727,9 +727,10 @@ details.opt .meta, .move .meta, .situ .meta { margin-top: 2px; }
 /* Spell planner */
 .planner-classes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin-bottom: 14px; }
 .planner-class { background: var(--surface-2); border-radius: var(--r-md); padding: 10px 14px; }
-.seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
-.seg button { background: none; border: none; color: var(--muted); padding: 0 var(--sp-3); min-height: calc(var(--control-h) - 2px); font-size: var(--fs-sm); font-weight: 500; }
-.seg button + button { border-left: 1px solid var(--line); }
+/* A switch is a track; the choice that's on sits in it as a rounded piece with a small gap all round, so its corners and
+   the track's always agree (Brett, 2026-11-02: no dividers to meet a rounded corner) */
+.seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: var(--r-md); }
+.seg button { background: none; border: none; border-radius: var(--r-sm); color: var(--muted); padding: 0 var(--sp-3); min-height: calc(var(--control-h) - 6px); font-size: var(--fs-sm); font-weight: 500; }
 /* A switch's choice that's on looks like a chip that's on (Brett, 2026-11-02: red switches read as buttons; red stays for
    the one main action and the page's own Battle · Sheet · Plan) */
 .seg button[aria-pressed=true] { background: var(--selected-bg); color: var(--text-strong); box-shadow: inset 0 0 0 1px var(--blue); border-radius: var(--r-sm); }
@@ -1296,7 +1297,8 @@ a.sheet-ref { text-decoration-style: dotted; }
 .st[data-roll]:hover { box-shadow: inset 0 0 0 1px var(--amber); }
 .save-row[data-roll]:hover b { color: var(--amber); }
 .rc[data-roll], .skill .roll-hit { cursor: pointer; }
-.roll-modes { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r-pill); overflow: hidden; }
+.roll-modes { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: var(--r-pill); }  /* (a track, as .seg) */
+.roll-modes button { border-radius: var(--r-pill); }
 .roll-modes button { font: inherit; font-size: var(--fs-xs); background: none; border: 0; color: var(--muted); padding: 2px 8px; cursor: pointer; }
 .roll-modes button[aria-pressed="true"] { background: var(--surface-2); color: var(--text); }
 .skill-head .roll-hit { font-size: inherit; }
@@ -2524,8 +2526,7 @@ body:not(.br-ext) .br-ext-on, body.br-ext .br-ext-off { display: none; }
 /* ---- Hit points window (app/hit_points.py, docs/mockups/hp-window.html): from Table rolls' Apply to … or Hit points */
 .seg label { display: inline-flex; }
 .seg label input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; clip-path: inset(50%); pointer-events: none; }
-.seg label span { display: inline-flex; align-items: center; padding: 0 var(--sp-3); min-height: calc(var(--control-h) - 2px); font-size: var(--fs-sm); font-weight: 500; color: var(--muted); cursor: pointer; }
-.seg label + label span { border-left: 1px solid var(--line); }
+.seg label span { display: inline-flex; align-items: center; padding: 0 var(--sp-3); min-height: calc(var(--control-h) - 6px); border-radius: var(--r-sm); font-size: var(--fs-sm); font-weight: 500; color: var(--muted); cursor: pointer; }
 .seg label input:checked + span { background: var(--selected-bg); color: var(--text-strong); box-shadow: inset 0 0 0 1px var(--blue); border-radius: var(--r-sm); }
 .seg label input:focus-visible + span { outline: 2px solid var(--blue); outline-offset: -2px; }
 .hp-win .hp-form, .hp-fields { display: grid; gap: var(--sp-3); }
