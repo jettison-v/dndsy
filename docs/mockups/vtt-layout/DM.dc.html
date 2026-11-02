@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The VTT frame, as the DM</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./vtt.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1600px; height: 1240px">
+  <div class="head">
+    <div class="num">The same frame · the DM</div>
+    <h1>The DM sees more in the same places</h1>
+    <p class="where"><b>Where you'll find it:</b> the same page, for the DM. Nothing moves; each place holds more. The turn bar has Next turn and the creatures players can't see. The tool strip adds fog and creatures. The side panel shows the stat block of what's clicked. When it's a creature's turn, the bottom bar is that creature's. Enemy 1's turn, Round 2.</p>
+  </div>
+  <div class="app">
+    <div class="mb"><b>The Adventure Begins</b><span>Story</span><span>Campaign</span><span class="on">Table</span><span class="sp"></span><span>Party ▾</span><span class="pill"><i></i>4 of 4 connected</span><span>Manage ▾</span><span>?</span></div>
+    <div class="turn">
+      <div class="pennant">Round<b>2</b></div>
+      <div class="whose" style="color: var(--link)">Enemy 1's turn</div>
+      <div class="order"><span class="tok">C</span><span class="tok foe now">E1</span><span class="tok">T<i class="bd"></i></span><span class="tok foe">E2</span><span class="tok foe hidden">E3</span><span class="tok">BC</span><span class="tok">NN</span></div>
+      <button type="button" class="btn">+ Add</button>
+      <button type="button" class="btn main">Next turn</button>
+    </div>
+    <div class="rail">
+      <div class="rail-h"><span>Table rolls</span><span style="color: var(--muted)">‹</span></div>
+      <div class="rolls">
+        <div class="roll"><b>Enemy 1 · Greatclub</b><span>to hit Trah · only the DM</span><span class="n">17</span></div>
+        <div class="roll"><b>Enemy 1 · damage</b><span>bludgeoning</span><span class="n">13</span><button type="button" class="btn mini apply">Apply to Trah</button></div>
+        <div class="roll"><b>Cole · Starry Wisp</b><span>to hit</span><span class="n">26</span></div>
+      </div>
+      <div style="padding: 10px 12px; border-top: 1px solid var(--line)"><button type="button" class="btn" style="width: 100%">Roll…</button></div>
+    </div>
+    <div class="map">
+      <div class="room" style="left: 108px; top: 216px; width: 432px; height: 360px"></div>
+      <div class="room" style="left: 540px; top: 108px; width: 288px; height: 324px"></div>
+      <div style="position: absolute; left: 540px; top: 432px; width: 340px; height: 228px; background: rgba(0, 0, 0, .55); border-top: 1px dashed var(--line-strong)"></div>
+      <div class="tag" style="left: 640px; top: 520px">Fog: the players see black here</div>
+      <div class="tools" aria-label="Map tools">
+        <button type="button" class="on" aria-label="Select and move"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 3l14 8-6 2-2 6z"/></svg></button>
+        <button type="button" aria-label="Measure"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg></button>
+        <button type="button" aria-label="Spell area"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/></svg></button>
+        <button type="button" aria-label="Ping"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6 7-11a7 7 0 10-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2"/></svg></button>
+        <hr>
+        <button type="button" aria-label="Fog"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 10h18M5 14h14M7 18h10M6 6h12"/></svg></button>
+        <button type="button" aria-label="Add a creature"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></svg></button>
+      </div>
+      <div class="mtok" style="left: 180px; top: 324px; width: 36px; height: 36px">NN</div>
+      <div class="mtok" style="left: 216px; top: 396px; width: 36px; height: 36px">T</div>
+      <div class="mtok" style="left: 252px; top: 468px; width: 36px; height: 36px">BC</div>
+      <div class="mtok" style="left: 540px; top: 108px; width: 36px; height: 36px">C</div>
+      <div class="mtok foe me" style="left: 576px; top: 180px; width: 72px; height: 72px; font-size: 14px">E1<span class="hpbar"><i style="width: 45%; background: var(--red)"></i></span></div>
+      <div class="mtok foe" style="left: 756px; top: 468px; width: 36px; height: 36px">E2</div>
+      <div class="mtok foe" style="left: 792px; top: 576px; width: 36px; height: 36px; opacity: .5; border-style: dashed">E3</div>
+      <div class="minimap"><i></i></div>
+    </div>
+    <div class="pane">
+      <div class="pane-h"><span class="pic foe">E1</span><span><b>Enemy 1</b><small>Large Giant · from the Monster Manual</small></span></div>
+      <div class="nums"><div><small>HP <span style="float: right">− +</span></small><b>27</b> <span class="of">/ 59 · Bloodied</span></div><div><small>AC</small><b>11</b></div><div><small>Speed</small><b>40</b></div></div>
+      <div class="badges"><span class="badge">Players see: Bloodied</span></div>
+      <div class="saves"><span>Str<b>+4</b></span><span>Dex<b>−1</b></span><span>Con<b>+3</b></span><span>Int<b>−3</b></span><span>Wis<b>−2</b></span><span>Cha<b>−2</b></span></div>
+      <div class="sb">
+        <h4>Actions</h4>
+        <div class="act"><b>Greatclub</b> · melee · Roll to hit · Roll damage</div>
+        <div class="act"><b>Javelin</b> · ranged 30/120 ft · Roll to hit · Roll damage</div>
+      </div>
+      <div class="note">The stat block comes from the campaign's books, as Wild Shape's do now.</div>
+    </div>
+    <div class="abar">
+      <div class="move"><div class="row"><span>Enemy 1 moves</span><span><b>40</b> of 40 ft left</span></div><div class="meter"><i class="left" style="width: 100%"></i></div><div class="row"><span>0 used</span><span>Dash</span></div></div>
+      <div class="econ"><span class="pip a used"><i></i>Action</span><span class="pip b"><i></i>Bonus</span><span class="pip r"><i></i>Reaction</span></div>
+      <div class="slots">
+        <div class="grp"><span class="lbl a">Action</span><div class="items"><span class="it">Greatclub<small>used: hit Trah</small></span><span class="it">Javelin<small>30/120 ft</small></span></div></div>
+      </div>
+      <button type="button" class="btn endturn">End Enemy 1's turn</button>
+    </div>
+    <span class="co" style="left: 1240px; top: 71px">1</span>
+    <span class="co" style="left: 556px; top: 71px">2</span>
+    <span class="co" style="left: 300px; top: 330px">3</span>
+    <span class="co" style="left: 1142px; top: 128px">4</span>
+    <span class="co" style="left: 262px; top: 788px">5</span>
+  </div>
+  <div class="legend">
+    <div><span class="co">1</span><span><b>Next turn and + Add.</b> In the turn bar, only for the DM: askdnd's own turn order, once it runs the fight.</span></div>
+    <div><span class="co">2</span><span><b>Hidden creatures.</b> Faded and dashed for the DM, absent for players, in the order and on the map.</span></div>
+    <div><span class="co">3</span><span><b>The DM's tools.</b> Under the line in the same strip: fog, adding a creature. Walls and scenes go here later.</span></div>
+    <div><span class="co">4</span><span><b>A stat block in the side panel.</b> Its Hit Points with − and +, what players see of them, its actions with Roll.</span></div>
+    <div><span class="co">5</span><span><b>The creature's own bar.</b> On a creature's turn, the bottom bar is its movement and actions, from the same pieces as a player's.</span></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1240}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

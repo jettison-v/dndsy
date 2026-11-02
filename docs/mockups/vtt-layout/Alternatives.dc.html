@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Two other VTT layouts</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./vtt.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap">
+<style>
+body{margin:0}
+.alts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; }
+.alt { display: grid; gap: 12px; align-content: start; }
+.alt h2 { margin: 0; font: 600 22px/1.2 var(--serif); color: var(--strong); }
+.sk { position: relative; height: 380px; border: 1px solid var(--line-strong); border-radius: 10px; overflow: hidden; background-color: var(--map); background-image: linear-gradient(var(--map-line) 1px, transparent 1px), linear-gradient(90deg, var(--map-line) 1px, transparent 1px); background-size: 24px 24px; }
+.blk { position: absolute; border-radius: 8px; background: rgba(31, 34, 38, .94); border: 1px solid var(--line-strong); display: grid; place-items: center; color: var(--muted); font-size: 12px; text-align: center; padding: 4px; }
+.blk.solid { border-radius: 0; background: var(--surface); }
+.alt p { color: var(--muted); }
+.alt p b { color: var(--text); }
+</style>
+</helmet>
+<div class="board" style="width: 1600px; height: 760px">
+  <div class="head">
+    <div class="num">Considered and set aside</div>
+    <h1>Two other ways to lay it out</h1>
+    <p class="where"><b>Where you'll find it:</b> nowhere: these are the layouts I weighed against the frame. Both are common in other VTTs.</p>
+  </div>
+  <div class="alts">
+    <div class="alt">
+      <h2>Panels floating over a full-screen map</h2>
+      <div class="sk">
+        <div class="blk solid" style="left: 0; right: 0; top: 0; height: 26px">Menu bar</div>
+        <div class="blk" style="left: 150px; right: 150px; top: 36px; height: 40px">Turn bar</div>
+        <div class="blk" style="left: 12px; top: 120px; width: 120px; height: 180px">Table rolls</div>
+        <div class="blk" style="right: 12px; top: 90px; width: 150px; height: 210px">Side panel</div>
+        <div class="blk" style="left: 130px; right: 130px; bottom: 12px; height: 54px">Your turn's bar</div>
+      </div>
+      <p><b>Good:</b> the most map, and it looks like Baldur's Gate 3, which players may know.</p>
+      <p><b>The cost:</b> panels cover tokens, so people keep moving the map or the panels; a token under a panel is easy to miss mid-fight. askdnd's side panel and Table rolls would work differently here than on every other page.</p>
+    </div>
+    <div class="alt">
+      <h2>The map, and one column of tabs</h2>
+      <div class="sk">
+        <div class="blk solid" style="left: 0; right: 0; top: 0; height: 26px">Menu bar</div>
+        <div class="blk solid" style="right: 0; top: 26px; bottom: 0; width: 190px; place-items: start center; padding-top: 14px">Fight · Rolls · You · Clicked<br><br>one tab at a time</div>
+      </div>
+      <p><b>Good:</b> the simplest to build, close to Owlbear Rodeo and Roll20.</p>
+      <p><b>The cost:</b> during a fight you need the order, the rolls and your own numbers at once, and tabs hide all but one. Your turn's actions end up in a tab instead of under the map where the move happens.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
