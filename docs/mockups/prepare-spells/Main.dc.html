@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Prepare spells</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./prep.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1440px; height: 1000px">
+  <div class="head">
+    <div class="num">Prepare spells · its own screen, with the limits</div>
+    <h1>Pick today's spells, see the count, then make them all at once</h1>
+    <p class="where"><b>Where you'll find it:</b> a <b>Prepare spells</b> button at the top of Sheet › Spells, and on the corner card after a Long Rest ("You can change your prepared spells now"). It opens this screen over the page. Ticking a spell changes nothing yet: the count and the list of changes update as you go, and <b>Make these changes</b> sends them to D&amp;D Beyond in one go. The spell's side panel keeps its single Prepare for one quick swap. Try it: tick and untick, go over 10, filter.</p>
+  </div>
+  <div class="screen">
+    <div class="top">
+      <div class="top-row">
+        <h2>Prepare spells · Cole · Druid 6</h2>
+        <span class="{{ countCls }}">{{ count }} of 10</span>
+        <span class="meter" aria-hidden="true"><i class="{{ meterCls }}" style="width: {{ meterPct }}%"></i></span>
+        <span class="note">Circle of the Moon spells are always prepared and don't count</span>
+      </div>
+      <p class="rule"><b>Druid:</b> after a Long Rest you can change any of your prepared spells, choosing from Druid spells of a level you have slots for (1st to 3rd). askdnd doesn't check when; that's the DM's call.</p>
+    </div>
+    <div class="body">
+      <div class="filters">
+        <div style="display: grid; gap: 6px"><span class="lbl">Show</span><div class="chips"><sc-for list="{{ shows }}" as="s" hint-placeholder-count="4"><button type="button" class="{{ s.cls }}" onClick="{{ s.pick }}">{{ s.label }}</button></sc-for></div></div>
+        <div style="display: grid; gap: 6px"><span class="lbl">Level</span><div class="chips"><sc-for list="{{ levels }}" as="s" hint-placeholder-count="4"><button type="button" class="{{ s.cls }}" onClick="{{ s.pick }}">{{ s.label }}</button></sc-for></div></div>
+        <div style="display: grid; gap: 6px"><span class="lbl">Effect</span><div class="chips"><sc-for list="{{ effects }}" as="s" hint-placeholder-count="5"><button type="button" class="{{ s.cls }}" onClick="{{ s.pick }}">{{ s.label }}</button></sc-for></div></div>
+        <p class="note">The same filters as the Spell Book. ★ is your Shortlist from Plan.</p>
+      </div>
+      <div class="list">
+        <sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+          <div class="lvl">{{ g.label }}</div>
+          <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="4">
+            <div class="{{ r.rowCls }}">
+              <button type="button" class="{{ r.tickCls }}" onClick="{{ r.toggle }}" aria-label="{{ r.aria }}" aria-pressed="{{ r.pressed }}">{{ r.mark }}</button>
+              <span class="sname"><b>{{ r.name }}</b><sc-if value="{{ r.always }}" hint-placeholder-val="{{ false }}"><span class="tag always">Always</span></sc-if><sc-if value="{{ r.conc }}" hint-placeholder-val="{{ false }}"><span class="tag">Conc.</span></sc-if><small>{{ r.what }}</small></span>
+              <span class="col">{{ r.time }}</span>
+              <span class="col">{{ r.effect }}</span>
+              <span class="fav">{{ r.star }}</span>
+            </div>
+          </sc-for>
+        </sc-for>
+      </div>
+      <div class="side">
+        <span class="lbl">Your changes</span>
+        <sc-if value="{{ hasChanges }}" hint-placeholder-val="{{ true }}">
+          <div class="changes"><sc-for list="{{ changes }}" as="c" hint-placeholder-count="2"><span class="{{ c.cls }}">{{ c.text }}</span></sc-for></div>
+        </sc-if>
+        <sc-if value="{{ noChanges }}" hint-placeholder-val="{{ false }}"><p class="note">None yet. Tick a spell to prepare it, untick one to drop it.</p></sc-if>
+        <sc-if value="{{ over }}" hint-placeholder-val="{{ false }}"><div class="warn">{{ count }} prepared: more than the 10 a Druid 6 prepares. D&amp;D Beyond allows it; whether it stands is the DM's call.</div></sc-if>
+        <sc-if value="{{ sent }}" hint-placeholder-val="{{ false }}"><div class="warn" style="border-color: var(--green); background: rgba(91,191,127,.08)">{{ sent }}</div></sc-if>
+        <span class="lbl" style="margin-top: 8px">Good to know</span>
+        <p class="note">Changes go to your D&amp;D Beyond sheet through the bridge, like a cast or a rest. Each one shows ↻ until D&amp;D Beyond has it.</p>
+        <p class="note">A spell you drop stays on your Shortlist, so you can find it again next time.</p>
+      </div>
+    </div>
+    <div class="foot">
+      <button type="button" class="btn" onClick="{{ reset }}">Start over</button>
+      <span class="sp"></span>
+      <span class="note">{{ footNote }}</span>
+      <button type="button" class="btn main" disabled="{{ cantMake }}" onClick="{{ make }}">{{ makeLabel }}</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const S = (name, level, time, effect, what, opts) => ({ name, level, time, effect, what, ...opts });
+    this.spells = [
+      S('Cure Wounds', 1, 'Action', 'Heal', '2d8 + mod, touch', { always: true }),
+      S('Healing Word', 1, 'Bonus', 'Heal', '2d4 + mod, 60 ft', { prep: true }),
+      S('Faerie Fire', 1, 'Action', 'Control', 'outlines creatures, 20-ft cube', { prep: true, conc: true }),
+      S('Absorb Elements', 1, 'Reaction', 'Support', 'resistance to the triggering damage', { prep: true }),
+      S('Thunderwave', 1, 'Action', 'Damage', '2d8 thunder, 15-ft cube', { prep: true }),
+      S('Entangle', 1, 'Action', 'Control', 'restrains, 20-ft square', { conc: true }),
+      S('Goodberry', 1, 'Action', 'Heal', '10 berries, 1 HP each', {}),
+      S('Speak with Animals', 1, 'Action', 'Utility', 'ritual, 10 minutes', {}),
+      S('Moonbeam', 2, 'Action', 'Damage', '2d10 radiant, 5-ft cylinder', { always: true, conc: true }),
+      S('Locate Object', 2, 'Action', 'Utility', 'within 1,000 ft', { prep: true, conc: true }),
+      S('Heat Metal', 2, 'Bonus', 'Damage', '2d8 fire, then each turn', { prep: true, conc: true }),
+      S('Augury', 2, 'Action', 'Utility', 'ritual, weal or woe', { prep: true }),
+      S('Pass without Trace', 2, 'Action', 'Support', '+10 Stealth, 30-ft emanation', { prep: true, conc: true }),
+      S('Barkskin', 2, 'Bonus', 'Support', 'AC 17, 1 hour', { star: true }),
+      S('Flame Blade', 2, 'Bonus', 'Damage', '3d6 fire, melee', { conc: true }),
+      S('Lesser Restoration', 2, 'Bonus', 'Heal', 'ends a condition', {}),
+      S('Conjure Animals', 3, 'Action', 'Damage', 'pack of spirits', { always: true, conc: true }),
+      S('Water Breathing', 3, 'Action', 'Utility', 'ritual, 24 hours', { prep: true }),
+      S('Dispel Magic', 3, 'Action', 'Control', 'ends a spell', { prep: true }),
+      S('Call Lightning', 3, 'Action', 'Damage', '3d10 lightning, 5-ft cylinder', { conc: true, star: true }),
+      S('Plant Growth', 3, 'Action', 'Control', 'overgrowth, 100-ft circle', {}),
+      S('Protection from Energy', 3, 'Action', 'Support', 'resistance to one type', { conc: true }),
+    ];
+    this.state = { picked: Object.fromEntries(this.spells.map(s => [s.name, !!s.prep])), base: Object.fromEntries(this.spells.map(s => [s.name, !!s.prep])),
+                   show: 'all', level: 0, effect: '', sent: '' };
+  }
+  renderVals() {
+    const { picked, base, show, level, effect, sent } = this.state;
+    const count = this.spells.filter(s => !s.always && picked[s.name]).length;
+    const changed = this.spells.filter(s => !s.always && picked[s.name] !== base[s.name]);
+    const keep = s => (!level || s.level === level) && (!effect || s.effect === effect)
+      && (show === 'all' || (show === 'prep' ? (picked[s.name] || s.always) : show === 'not' ? !(picked[s.name] || s.always) : s.star));
+    const ORD = { 1: '1st level', 2: '2nd level', 3: '3rd level' };
+    const groups = [1, 2, 3].map(l => ({ label: ORD[l], rows: this.spells.filter(s => s.level === l && keep(s)).map(s => {
+      const on = !!picked[s.name] || !!s.always;
+      return { name: s.name, what: s.what, time: s.time, effect: s.effect, always: !!s.always, conc: !!s.conc, star: s.star ? '★' : '',
+        mark: s.always ? '◆' : on ? '✓' : '', pressed: on ? 'true' : 'false',
+        tickCls: s.always ? 'tick always' : on ? 'tick on' : 'tick', rowCls: picked[s.name] !== base[s.name] && !s.always ? 'row changed' : 'row',
+        aria: s.always ? s.name + ': always prepared' : (on ? 'Unprepare ' : 'Prepare ') + s.name,
+        toggle: () => { if (!s.always) this.setState({ picked: { ...picked, [s.name]: !picked[s.name] }, sent: '' }); } };
+    }) })).filter(g => g.rows.length);
+    const chips = (key, now, pairs) => pairs.map(([id, label]) => ({ label, cls: now === id ? 'chip on' : 'chip', pick: () => this.setState({ [key]: now === id && key !== 'show' ? (key === 'level' ? 0 : '') : id }) }));
+    const adds = changed.filter(s => picked[s.name]).length, drops = changed.length - adds;
+    return {
+      count, countCls: count > 10 ? 'count over' : 'count', meterPct: Math.min(100, count * 10), meterCls: count > 10 ? 'over' : '',
+      over: count > 10, sent,
+      groups, shows: chips('show', show, [['all', 'All Druid spells'], ['prep', 'Prepared'], ['not', 'Not prepared'], ['fav', '★ Shortlist']]),
+      levels: chips('level', level, [[1, '1st'], [2, '2nd'], [3, '3rd']]),
+      effects: chips('effect', effect, [['Damage', 'Damage'], ['Heal', 'Heal'], ['Control', 'Control'], ['Support', 'Support'], ['Utility', 'Utility']]),
+      changes: changed.map(s => ({ text: (picked[s.name] ? '+ ' : '− ') + s.name + ' (' + ORD[s.level].replace(' level', '') + ')', cls: picked[s.name] ? 'add' : 'drop' })),
+      hasChanges: changed.length > 0, noChanges: changed.length === 0 && !sent,
+      cantMake: changed.length === 0,
+      makeLabel: changed.length ? 'Make ' + changed.length + ' change' + (changed.length === 1 ? '' : 's') + ' on D&D Beyond' : 'Make these changes',
+      footNote: changed.length ? (adds ? 'Prepare ' + adds : '') + (adds && drops ? ', ' : '') + (drops ? 'drop ' + drops : '') : 'Nothing changes until you press Make',
+      make: () => this.setState({ base: { ...picked }, sent: changed.length + ' change' + (changed.length === 1 ? '' : 's') + ' on their way to D&D Beyond ↻. Undo is on the corner card.' }),
+      reset: () => this.setState({ picked: { ...base }, sent: '' }),
+    };
+  }
+}
+</script>
+</body>
+</html>
