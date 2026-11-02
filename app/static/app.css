@@ -850,7 +850,8 @@ details.faq[open] > summary::before { transform: rotate(90deg); }
 .res-go { background: none; border: 0; color: inherit; font: inherit; cursor: pointer; }
 .res-go:hover { color: var(--amber); }
 .tile-short { display: none; }
-@media (max-width: 640px) { .tile-full { display: none; } .tile-short { display: inline; } }  /* Battle's tiles are narrow on a phone: the whole label would be cut off */
+.ph-short { display: none; }
+@media (max-width: 640px) { .tile-full, .ph-full { display: none; } .tile-short, .ph-short { display: inline; } }  /* Battle's tiles are narrow on a phone: the whole label would be cut off */
 @container battle-head (max-width: 1000px) { .tile-full { display: none; } .tile-short { display: inline; } }
 @media (max-width: 640px) { .res-row { flex-direction: column; align-items: flex-start; } .res-row .res { padding: 0; border-left: none; } }  /* each on its own line: a divider there only marks the wrap */
 .res-label { color: var(--faint); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .05em; margin-right: 12px; }
@@ -2492,7 +2493,7 @@ body:not(.br-ext) .br-ext-on, body.br-ext .br-ext-off { display: none; }
   .battlebar { display: flex; flex-direction: column; }
   .battlebar > * { order: 1; }
   .battle-head { display: block; }
-  .battle-head > .strip.compact { grid-auto-flow: row; grid-template-columns: repeat(6, minmax(0, 1fr)); margin-bottom: 6px; }
+  .battle-head > .strip.compact { display: flex; flex-wrap: wrap; margin-bottom: 6px; }
   .battle-head > .save-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 0; border: none; }
   .battle-head .st .adv-badge { position: absolute; order: 0; background: var(--bg); }
   .status-phone { display: contents; }
@@ -2503,10 +2504,11 @@ body:not(.br-ext) .br-ext-on, body.br-ext .br-ext-off { display: none; }
   .battlebar > .res-more + .res-row { margin: var(--sp-2) 0 0; }
   .battlebar > .res-row .res-label { display: none; }
   .res-group { padding: 0; border-left: none; }
-  .battle-head .strip.compact > div { grid-column: span 3; }
-  .battle-head .strip.compact > div:first-child { grid-column: 1 / -1; }
+  /* Two lines (Brett, 2026-11-02: three took a lot of room): Hit Points whole, then the other numbers side by side */
+  .battle-head .strip.compact > div { flex: 1 1 0; min-width: 0; padding: 6px 8px; }
+  .battle-head .strip.compact > div:first-child { flex-basis: 100%; padding: 8px 14px; }
   .battle-head .strip.compact > div:first-child b { font-size: var(--fs-xl); }
-  .battle-head .strip.compact > div:nth-child(4):last-child { grid-column: 1 / -1; }
+  .battle-head .strip.compact small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
 
 /* Tap targets on a phone (DESIGN.md › Principles 8): what can grow, grows; what sits among words keeps its size and takes
