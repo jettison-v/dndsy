@@ -163,18 +163,20 @@ class Person:
     def __init__(self, browser, server, who: str, **device):
         self.server, self.errors = server, []
         self.context = browser.new_context(**{"viewport": {"width": 1400, "height": 900}, **device}, timezone_id="America/Los_Angeles")
-        self.context.set_default_timeout(10_000)  # a page that's working answers well within this
+        webkit = browser.browser_type.name == "webkit"
+        self.context.set_default_timeout(20_000 if webkit else 10_000)  # a page that's working answers well within this (WebKit is slower)
         self.context.add_init_script("localStorage.setItem('askdnd.rollsAnim', 'off'); if (!sessionStorage.getItem('fresh')) { sessionStorage.setItem('fresh', '1'); localStorage.setItem('askdnd.rollsSide', 'open'); }")
         self.page = self.context.new_page()
         self.page.on("pageerror", lambda e: self.errors.append(str(e)))
         # The console's "Failed to load resource" doesn't say which: record the failing address instead
         # (Safari's engine says a request cut short by leaving the page failed to send, which htmx reports; a real failure
         # still shows as its response below)
-        cut_short = ("htmx:sendError", "htmx:afterRequest") if browser.browser_type.name == "webkit" else ()
+        cut_short = ("htmx:sendError", "htmx:afterRequest") if webkit else ()
         self.page.on("console", lambda m: m.type == "error" and not m.text.startswith("Failed to load resource") and m.text not in cut_short
                      and self.errors.append(m.text))
         self.page.on("response", lambda r: r.status >= 400 and self.errors.append(f"{r.status} {r.url.replace(server['base'], '')}"))
-        self.page.goto(f"{server['base']}/dev/login?as={PEOPLE[who]}")
+        # (a fresh browser's first page, WebKit's especially, can take longer: Nov 2, 10 seconds ran out on a busy machine)
+        self.page.goto(f"{server['base']}/dev/login?as={PEOPLE[who]}", timeout=30_000)
 
     def open(self, path: str):
         self.page.goto(self.server["base"] + path)
