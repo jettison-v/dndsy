@@ -83,6 +83,11 @@ RULES = {
     "Sorcerer": "When you gain a Sorcerer level you can replace one spell on your list.",
     "Warlock": "When you gain a Warlock level you can replace one spell on your list.",
 }
+# The same, in the few words the window's header has room for (the whole sentence on hover)
+SHORT = {"Cleric": "change any after a Long Rest", "Druid": "change any after a Long Rest",
+         "Wizard": "change any from your spellbook after a Long Rest", "Paladin": "replace one after a Long Rest",
+         "Ranger": "replace one after a Long Rest", "Bard": "replace one when you gain a level",
+         "Sorcerer": "replace one when you gain a level", "Warlock": "replace one when you gain a level"}
 ORDINAL = {1: "1st", 2: "2nd", 3: "3rd"}
 
 
@@ -120,7 +125,7 @@ def prepare_screen(request: Request, character_id: int, cls: str = "", db: Sessi
     return templates.TemplateResponse(request, "_prepare_spells.html", {
         "c": ch, "book": book, "books": books, "rows": rows, "levels": [(lv, ORDINAL.get(lv, f"{lv}th")) for lv in levels],
         "effects": [label for _, label in sb.EFFECTS if any(r["effect"] == label for r in rows)],
-        "rule": RULES.get(book["class"], ""), "reachable": ddb_bridge.reachable(ch)})
+        "rule": RULES.get(book["class"], ""), "short": SHORT.get(book["class"], ""), "reachable": ddb_bridge.reachable(ch)})
 
 
 @router.post("/characters/{character_id:int}/spells/prepare")

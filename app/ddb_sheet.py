@@ -928,6 +928,7 @@ class _Sheet:
             spells = sorted(entries.values(), key=lambda x: (x["level"], x["name"]))
             out.append({
                 "class": name,
+                "level": lvl,
                 **casters[name],
                 "spellbook": book,
                 "prepared_count": sum(1 for x in spells if x["state"] == "prepared"),

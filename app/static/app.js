@@ -3283,7 +3283,9 @@
     const filter = { show: 'all', level: '', effect: '' };
     const on = r => r.dataset.on === '1';
     const changed = () => rows.filter(r => !r.dataset.always && r.dataset.on !== r.dataset.base);
-    const $ = s => root.querySelector(s);
+    const scope = root.closest('.peek') || root;  // (the count is in the window's head, frozen above the list)
+    const $ = s => scope.querySelector(s);
+    const ORD = n => n + ({ 1: 'st', 2: 'nd', 3: 'rd' }[n] || 'th');
     function draw() {
       const count = rows.filter(r => on(r) && !r.dataset.always).length, over = !!most && count > most;
       $('[data-prep-have]').textContent = count;
@@ -3304,10 +3306,17 @@
         warn.textContent = `${count} prepared: more than the ${most} a ${root.dataset.class} prepares at this level. D&D Beyond allows it; whether it stands is the DM's call.`;
       }
       const ch = changed();
+      // Each change like a row of the list: its box as it will be (✓ prepared, ✕ dropped), the spell, its level
       $('[data-prep-changes]').replaceChildren(...ch.map(r => {
         const p = document.createElement('div');
-        p.className = on(r) ? 'add' : 'drop';
-        p.textContent = (on(r) ? '+ ' : '− ') + r.dataset.name;
+        p.className = 'prep-change ' + (on(r) ? 'add' : 'drop');
+        const box = document.createElement('span');
+        box.className = 'prep-tick'; box.setAttribute('aria-hidden', 'true'); box.textContent = on(r) ? '✓' : '✕';
+        const name = document.createElement('b');
+        name.textContent = r.dataset.name;
+        const what = document.createElement('small');
+        what.textContent = (on(r) ? 'prepare' : 'drop') + ' · ' + ORD(+r.dataset.level);
+        p.append(box, name, what);
         return p;
       }));
       $('[data-prep-none]').hidden = ch.length > 0;

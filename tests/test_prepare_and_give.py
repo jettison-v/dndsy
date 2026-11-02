@@ -176,7 +176,8 @@ def test_the_prepare_screen_counts_and_makes_every_change_at_once(player, db, sh
     characters.refresh(db, cole)
     page = player.get(f"/characters/{cole.id}/spells/prepare").text
     assert "<b data-prep-have>10</b>" in page and " of 10</span>" in page and "0 left<" in page
-    assert "Druid:</b> After a Long Rest" in page and 'data-name="Aid"' in page and 'data-name="Healing Word"' in page
+    assert "Druid 6 · <span title=\"After a Long Rest" in page and "change any after a Long Rest" in page  # (the whole rule on hover)
+    assert 'data-name="Aid"' in page and 'data-name="Healing Word"' in page
     assert 'id="peek-title">Prepare spells' in page  # a large modal, like the Spell Book
     r = player.post(f"/characters/{cole.id}/spells/prepare", json={"changes": [{"key": "spell:Healing Word", "on": False}, {"key": "spell:Aid", "on": True}]})
     assert r.status_code == 200 and r.json()["text"] == "2 changes on its way to D&D Beyond"
