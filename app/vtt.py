@@ -29,6 +29,9 @@ PIECES: list[Piece] = [
     Piece("live_state", "Casting, resources and rests", "1.2",
           "Casting spends a slot, class resources count down and rests bring things back, all through the bridge. "
           "Still being reviewed."),
+    Piece("dm_backup", "The DM as a backup", "4",
+          "When a player's sheet is closed, the DM's browser with any D&D Beyond page open makes their changes, with the DM's "
+          "rights on D&D Beyond. Still being reviewed."),
     Piece("table_dice", "Everyone's rolls thrown across the screen", "3.11",
           "Others' rolls are thrown across the page like your own, instead of the small tray"),
 ]

@@ -73,6 +73,18 @@
     </form>
   </section>
   {% endif %}
+  <section class="section" id="books">
+    <h2>Books</h2>
+    <p class="hint">Private rules books the DM owns, only ever in this database (never in git). Their entries come from a file made on the computer that has the book's offline copy: <code>uv run --env-file .env python scripts/book_load.py --export</code> writes <code>private/books/mm-2024-upload.json.gz</code>. Uploading it again replaces the book's entries.</p>
+    <div class="table-scroll"><table class="list">{% for b in books %}
+      <tr><td><b>{{ b.title }}</b> <span class="note">{{ b.short }}</span></td>
+        <td class="end">{% for k, n in b.kinds.items() %}{{ n }} {{ k }}{{ "s" if n != 1 }}{{ ", " if not loop.last }}{% else %}<span class="note">nothing here yet</span>{% endfor %}</td></tr>
+    {% endfor %}</table></div>
+    <form method="post" action="/manage/backups/books" enctype="multipart/form-data" class="stack">
+      <input type="file" name="file" accept=".gz,.json,application/gzip,application/json" required aria-label="Book file">
+      <div><button class="btn primary" data-busy="Loading…">Upload book</button></div>
+    </form>
+  </section>
   {% if imports %}
   <section class="section">
     <h2>Recent imports</h2>

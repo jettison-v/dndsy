@@ -108,6 +108,9 @@ class Campaign(Timestamped, Base):
     # The fight running in its D&D Beyond VTT, as askdnd last heard it (app/fight.py): the order, the round, whose turn
     fight: Mapped[dict | None] = mapped_column(JSONB(none_as_null=True))  # (no fight: NULL, not JSON null)
     fight_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # When a DM's browser with any D&D Beyond page open was last heard (app/ddb_bridge.py `carried`): while it's recent,
+    # that browser makes the changes of a character whose own sheet is closed (DM Backup, Brett 2026-11-02)
+    backup_heard_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     members: Mapped[list["CampaignMember"]] = relationship(back_populates="campaign")
 
 

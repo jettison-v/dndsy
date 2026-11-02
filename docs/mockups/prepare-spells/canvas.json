@@ -1,0 +1,14 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-11-02T20:30:00Z"},
+  "title": "Prepare Spells",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 1000, "title": "Prepare spells: try it (Cole, Druid 6)", "is_interactive": true},
+    "Phone.dc.html": {"x": 1520, "y": 0, "w": 1000, "h": 1000, "title": "On a phone, and the other classes"}
+  },
+  "order": ["Main.dc.html", "Phone.dc.html"],
+  "notes": {},
+  "designSystems": []
+}

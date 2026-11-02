@@ -1,0 +1,150 @@
+<title>askdnd Next Steps</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root { --bg: #f6f3ee; --surface: #ffffff; --line: #e2dcd2; --text: #24211c; --muted: #6b645a; --strong: #111; --accent: #b3392f; --accent-soft: #f6e3e1;
+  --done: #2f7d4f; --done-soft: #e3f1e8; --wait: #9a6b12; --wait-soft: #f7ecd6; --code: #f1ece4;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --mono: ui-monospace, "SF Mono", Menlo, monospace; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #15171a; --surface: #1f2226; --line: #34383e; --text: #ebe7df; --muted: #a29d93; --strong: #fff; --accent: #f08a8a; --accent-soft: #3a2224;
+  --done: #5bbf7f; --done-soft: #1d3326; --wait: #e8b34b; --wait-soft: #3a3020; --code: #272b30; color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #15171a; --surface: #1f2226; --line: #34383e; --text: #ebe7df; --muted: #a29d93; --strong: #fff; --accent: #f08a8a; --accent-soft: #3a2224;
+  --done: #5bbf7f; --done-soft: #1d3326; --wait: #e8b34b; --wait-soft: #3a3020; --code: #272b30; color-scheme: dark }
+body { background: var(--bg); color: var(--text); font: 15px/1.6 var(--sans); }
+.wrap { max-width: 860px; margin: 0 auto; padding-block: 32px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+.eyebrow { font: 700 12px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+h1 { margin: 6px 0 4px; font: 600 34px/1.15 var(--serif); color: var(--strong); text-wrap: balance; }
+.lede { color: var(--muted); margin: 0; max-width: 65ch; }
+h2 { margin: 0 0 10px; font: 600 22px/1.25 var(--serif); color: var(--strong); text-wrap: balance; }
+section { display: grid; gap: 12px; }
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; }
+.step.now { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.step-head { display: flex; align-items: flex-start; gap: 12px; }
+.step-head input { margin-top: 5px; width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
+.step-head h3 { margin: 0; font: 600 17px/1.35 var(--sans); color: var(--strong); flex: 1; min-width: 0; }
+.chip { font: 700 11px/1 var(--sans); letter-spacing: .06em; text-transform: uppercase; border-radius: 999px; padding: 5px 9px; white-space: nowrap; flex: none; }
+.chip.now { background: var(--accent-soft); color: var(--accent); }
+.chip.wait { background: var(--wait-soft); color: var(--wait); }
+.chip.done { background: var(--done-soft); color: var(--done); }
+.step p { margin: 0; max-width: 70ch; }
+.step ol, .step ul { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+.why { color: var(--muted); font-size: 14px; }
+code, pre { font-family: var(--mono); font-size: 13px; background: var(--code); border-radius: 6px; }
+code { padding: 1px 5px; }
+pre { margin: 0; padding: 10px 12px; overflow-x: auto; white-space: pre; }
+a { color: var(--accent); }
+.done-step h3 { text-decoration: line-through; color: var(--muted); }
+.running { display: grid; gap: 8px; }
+.running div { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.running b { color: var(--strong); }
+footer { color: var(--muted); font-size: 13px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">askdnd · your next steps · Nov 2, afternoon</div>
+    <h1>What's waiting on you, in order</h1>
+    <p class="lede">Each step says exactly where to click or what to type. Tick a step when it's done; the ticks stay in this browser. I'll update this page as things change, and the Roadmap stays the big picture.</p>
+  </header>
+
+  <section>
+    <h2>Now</h2>
+
+    <div class="step now" data-step="try-round">
+      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>1. Try this round on your computer</h3><span class="chip now">10 minutes</span></div>
+      <p>One round, all together: the Long Rest fix, the Prepare spells screen you liked, the Monster Manual upload, and DM Backup (reviewed twice; the bug I found is fixed and tested). On your local copy, Cathartic and Vi show as connected for the next three hours.</p>
+      <ol>
+        <li><b>Long Rest:</b> open <a href="http://localhost:8000/dev/login?next=/characters/12/battle">Vi's Battle</a>, press <b>Rest</b> at the right end of the Resources row, then <b>Long Rest</b> at the top of the window. The list changes to what a Long Rest brings back, with a link to Prepare spells.</li>
+        <li><b>Prepare spells:</b> open <a href="http://localhost:8000/dev/login?next=/characters/9/spells/prepare">Cathartic's Prepare spells</a> (also on Sheet › Spells). Tick and untick, watch the count and your changes, try the filters, and press Make: each change shows ↻. Locally nothing reaches D&amp;D Beyond, so it stays like that.</li>
+        <li><b>The Monster Manual upload:</b> open <a href="http://localhost:8000/dev/login?next=/manage/backups%23books">Backups and imports</a> and scroll to <b>Books</b>. Your local copy already has all 510; on beta this is where the file goes (step 2).</li>
+        <li><b>DM Backup</b> needs the new extension and a real D&amp;D Beyond to try, so it isn't something to try locally. I'll run it on the Mac Mini's test seats once Google approves 0.9.8. On beta it's only in test campaigns until you've seen it.</li>
+      </ol>
+      <p>Then tell me <b>ship it</b>: it all goes to beta, and I build the extension file for step 3.</p>
+    </div>
+
+    <div class="step now" data-step="mm">
+      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>2. Load the whole Monster Manual on beta</h3><span class="chip wait">After step 1</span></div>
+      <p>The terminal command couldn't work: beta's database has no public address (good for security), so it stopped without writing anything. Instead, once this round is on beta:</p>
+      <ol>
+        <li>Open <a href="https://beta.askdnd.ai/manage/backups#books">beta's Backups and imports › Books</a>.</li>
+        <li>Press <b>Choose file</b> and pick <code>~/Code/dndsy/private/books/mm-2024-upload.json.gz</code> (it's already made).</li>
+        <li>Press <b>Upload book</b>. The Monster Manual's row says <b>510 monsters</b>.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <h2>Next, in this order</h2>
+
+    <div class="step" data-step="extension">
+      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>3. Upload extension 0.9.8 to Google</h3><span class="chip wait">After step 1</span></div>
+      <p>One upload carries both DM Backup and preparing spells. It replaces 0.9.6, which is still in review. I'll tell you the moment the file is ready; then:</p>
+      <ol>
+        <li>Open the <a href="https://chrome.google.com/webstore/devconsole">Chrome Web Store developer dashboard</a> and click <b>askdnd bridge</b>.</li>
+        <li>If 0.9.6 still shows <b>Pending review</b>, click <b>Cancel review</b>.</li>
+        <li><b>Package</b> › <b>Upload new package</b>, and pick <code>~/Code/dndsy/private/extension/askdnd-bridge-0.9.8.zip</code>.</li>
+        <li><b>Submit for review</b>. Leave the listing as it is.</li>
+        <li>Tell me when Google approves it (an email from the Chrome Web Store); I'll run the live tests on the real D&amp;D Beyond the same day.</li>
+      </ol>
+    </div>
+
+    <div class="step" data-step="review-live">
+      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>4. Review live state on beta</h3><span class="chip wait">After step 3</span></div>
+      <p>Wait for 0.9.8, so what you see is what the table will get. Then in <a href="https://beta.askdnd.ai/c/vtt-test/">VTT test</a>, with one of your own characters (Vi or Spurt) and its D&amp;D Beyond sheet open in Chrome:</p>
+      <ul>
+        <li><b>Cast</b> a spell from Battle: a slot goes on D&amp;D Beyond; Undo gives it back.</li>
+        <li><b>Resources</b>: press a resource, Use one, Give one back.</li>
+        <li><b>Rest</b>: Short Rest and Long Rest, as in step 1.</li>
+        <li><b>Items</b>: an item's side panel, Equip, Attune, Count, <b>Give</b> (to someone at the table). Sheet › Items, <b>Change coins</b>.</li>
+        <li><b>Give loot</b> (you're an admin): Sheet › Items on a character, pick an item and some gold.</li>
+        <li><b>Prepare</b>: Sheet › Spells › Prepare spells, or a spell's side panel for one quick swap.</li>
+      </ul>
+      <p>Each change shows ↻ until D&amp;D Beyond has it, then lands on your sheet within seconds. Tell me what felt wrong, or <b>switch it on for the table</b>.</p>
+    </div>
+
+    <div class="step" data-step="share">
+      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>5. Share the bridge with the table</h3><span class="chip wait">When you're ready</span></div>
+      <ol>
+        <li>Send the table this link: <code>https://chromewebstore.google.com/detail/askdnd-bridge/obpgemimnhngpcckodjkcihiahoaefpl</code> (it's also in Help › FAQ). Each player adds it in Chrome on a computer.</li>
+        <li>Send them the <a href="https://claude.ai/artifact/9H59RDNi99gVa7bNwmjp6G">bridge's risk summary</a>. Before you send it I'll update it for DM Backup and preparing spells, and share it from its Share menu so they can open it.</li>
+        <li>On beta, open <a href="https://beta.askdnd.ai/c/main/manage/settings">The Adventure Begins › Manage › Settings</a>, scroll to <b>Virtual tabletop</b>, switch on <b>D&amp;D Beyond bridge</b>, and save. Leave the others off until step 4 says they're ready.</li>
+        <li>Each player: open askdnd once in that Chrome, signed in, then open their D&amp;D Beyond sheet. The Live pill turns green: <b>Connected</b>.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <h2>Whenever you like</h2>
+    <div class="step" data-step="small">
+      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>6. Two small okays</h3><span class="chip wait">Any time</span></div>
+      <ul>
+        <li><b>Drop two unused columns</b> left from Game Mode (<code>campaigns.game_until</code>, <code>game_by_id</code>): say "drop them".</li>
+        <li><b>Move askdnd.ai to v2</b> (today it still shows the old app): say "move askdnd.ai" when you want it.</li>
+      </ul>
+    </div>
+    <div class="step" data-step="vtt">
+      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>7. Start the VTT</h3><span class="chip wait">When you say</span></div>
+      <p>The layout is decided (<a href="https://claude.ai/artifact/VkPT5mfWdLTaPrzJwmeV7W">VTT Layout</a>). Step 1 is the fight without a map, built in the final frame. Say "start the VTT".</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Running without you</h2>
+    <div class="step running">
+      <div><b>Testing gaps</b><span>wrapping up in its own session: wider live tests on the Mac Mini, a nightly check, steadier automated tests, phone layouts in Safari's engine. When it stops, I review its work line by line here and finish what's left myself. No new side sessions.</span></div>
+      <div><b>On beta now</b><span>Give, Give loot (test campaigns), the new Live window, the phone layouts. Prepare waits for 0.9.8.</span></div>
+    </div>
+  </section>
+
+  <footer>Kept in the repo as <code>docs/artifacts/next-steps.html</code>. The Roadmap is the big picture: <a href="https://claude.ai/artifact/EtCBFsKNwLK5LNhQjcbzS3">askdnd Roadmap</a>.</footer>
+</div>
+
+<script>
+document.querySelectorAll('.step[data-step]').forEach(step => {
+  const box = step.querySelector('input[type=checkbox]');
+  if (!box) return;
+  const key = 'askdnd-next-' + step.dataset.step;
+  try { box.checked = localStorage.getItem(key) === '1'; } catch (e) { /* no storage here */ }
+  const show = () => step.classList.toggle('done-step', box.checked);
+  show();
+  box.addEventListener('change', () => { show(); try { localStorage.setItem(key, box.checked ? '1' : '0'); } catch (e) { /* no storage */ } });
+});
+</script>

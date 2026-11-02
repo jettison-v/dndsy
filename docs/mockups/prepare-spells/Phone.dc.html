@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Prepare spells on a phone, and by class</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./prep.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1000px; height: 1000px">
+  <div class="head">
+    <div class="num">On a phone · and what changes by class</div>
+    <h1>The same screen, stacked</h1>
+    <p class="where"><b>Where you'll find it:</b> the same button on a phone opens the screen full height. The count stays at the top, the changes and Make stay at the bottom, and the filters fold into one line you open.</p>
+  </div>
+  <div style="display: flex; gap: 40px; align-items: flex-start">
+    <div class="phone">
+      <div class="top" style="padding: 12px 14px">
+        <div class="top-row" style="gap: 10px"><span style="font-weight: 600; color: var(--strong)">Prepare spells · Druid 6</span><span class="count" style="font-size: 18px">10 of 10</span></div>
+        <span class="meter" aria-hidden="true"><i style="width: 100%"></i></span>
+        <button type="button" class="btn mini" style="justify-self: start">Filters · All Druid spells</button>
+      </div>
+      <div class="list" style="padding: 4px 10px">
+        <div class="lvl">1st level</div>
+        <div class="row" style="grid-template-columns: 34px minmax(0, 1fr) 20px"><button type="button" class="tick always" aria-label="Cure Wounds: always prepared">◆</button><span class="sname"><b>Cure Wounds</b><span class="tag always">Always</span><small>2d8 + mod, touch</small></span><span></span></div>
+        <div class="row" style="grid-template-columns: 34px minmax(0, 1fr) 20px"><button type="button" class="tick on" aria-label="Unprepare Healing Word">✓</button><span class="sname"><b>Healing Word</b><small>Bonus · 2d4 + mod</small></span><span></span></div>
+        <div class="row changed" style="grid-template-columns: 34px minmax(0, 1fr) 20px"><button type="button" class="tick" aria-label="Prepare Thunderwave">&#8203;</button><span class="sname"><b>Thunderwave</b><small>Action · 2d8 thunder</small></span><span></span></div>
+        <div class="row changed" style="grid-template-columns: 34px minmax(0, 1fr) 20px"><button type="button" class="tick on" aria-label="Unprepare Entangle">✓</button><span class="sname"><b>Entangle</b><span class="tag">Conc.</span><small>Action · restrains</small></span><span></span></div>
+        <div class="lvl">2nd level</div>
+        <div class="row" style="grid-template-columns: 34px minmax(0, 1fr) 20px"><button type="button" class="tick" aria-label="Prepare Barkskin">&#8203;</button><span class="sname"><b>Barkskin</b><small>Bonus · AC 17</small></span><span class="fav">★</span></div>
+      </div>
+      <div class="foot" style="flex-wrap: wrap; padding: 10px 12px">
+        <span class="note" style="flex: 1">Prepare 1, drop 1</span>
+        <button type="button" class="btn main">Make 2 changes</button>
+      </div>
+    </div>
+    <div style="display: grid; gap: 14px; flex: 1">
+      <span class="lbl">What the screen says, by class (2024 rules)</span>
+      <div class="classes">
+        <div class="cls"><b>Cleric, Druid</b><span>After a Long Rest, change any of your prepared spells, from your class's spells of a level you have slots for. The screen lists the whole class list.</span></div>
+        <div class="cls"><b>Wizard</b><span>After a Long Rest, change any, from the spells in your spellbook. The screen lists your spellbook; copying a new spell into it is done on D&amp;D Beyond.</span></div>
+        <div class="cls"><b>Paladin, Ranger</b><span>After a Long Rest, replace one spell. The screen says "the rules allow one change" and counts your changes, without stopping a second.</span></div>
+        <div class="cls"><b>Bard, Sorcerer, Warlock</b><span>Replace one spell when you gain a level. The button shows in the Level-up companion's card, not after a rest.</span></div>
+      </div>
+      <p class="note">Everywhere: the count against your class's number, the always-prepared spells listed but not counted, and going over allowed and said, for the DM to rule.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1000,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Prepare spells · {{ c.name }} · askdnd{% endblock %}
+{% block content %}
+{# Prepare spells (app/preparing.py; Brett, 2026-11-02, docs/mockups/prepare-spells/): tick and untick with the count in
+   view, then one Make for all the changes (app.js "Prepare spells"). The count against the class's number is said, never
+   enforced; the always-prepared spells are listed and not counted. #}
+{% set most = book.prepared_max %}
+<main class="page prep" data-prep data-url="/characters/{{ c.id }}/spells/prepare" data-class="{{ book.class }}" data-max="{{ most or '' }}">
+  <div class="title-row"><h1>Prepare spells</h1>
+    <a class="btn small title-action" href="/characters/{{ c.id }}#t-spells">Back to {{ c.name }}</a></div>
+  {% if books | length > 1 %}<div class="row tight mb-3" role="tablist" aria-label="Class">{% for b in books %}<a class="chip{{ ' on' if b.class == book.class }}" href="?cls={{ b.class | urlencode }}"{% if b.class == book.class %} aria-current="page"{% endif %}>{{ b.class }}</a>{% endfor %}</div>{% endif %}
+
+  <section class="prep-top">
+    <div class="prep-count-row">
+      <b class="prep-who">{{ c.name }} · {{ book.class }}</b>
+      <span class="prep-count" data-prep-count>{{ book.prepared_count }}{% if most %} of {{ most }}{% endif %}</span>
+      {% if most %}<span class="prep-meter" aria-hidden="true"><i data-prep-meter style="width: {{ [100, (book.prepared_count * 100 / most) | round] | min }}%"></i></span>{% endif %}
+      {% set always = rows | selectattr("always") | list %}{% if always %}<span class="note">{{ always | length }} always prepared, not counted</span>{% endif %}
+    </div>
+    {% if rule %}<p class="note prep-rule"><b>{{ book.class }}:</b> {{ rule }} askdnd doesn't check when; that's the DM's call.</p>{% endif %}
+  </section>
+
+  <div class="prep-body">
+    <aside class="prep-filters" aria-label="Filters">
+      <div class="prep-group"><span class="ls-label">Show</span><div class="chips">
+        {% for k, label in (("all", "All " ~ book.class ~ " spells"), ("on", "Prepared"), ("off", "Not prepared"), ("fav", "★ Shortlist")) %}<button type="button" class="chip{{ ' on' if k == 'all' }}" data-prep-show="{{ k }}">{{ label }}</button>{% endfor %}</div></div>
+      {% if levels | length > 1 %}<div class="prep-group"><span class="ls-label">Level</span><div class="chips">{% for lv, label in levels %}<button type="button" class="chip" data-prep-level="{{ lv }}">{{ label }}</button>{% endfor %}</div></div>{% endif %}
+      {% if effects | length > 1 %}<div class="prep-group"><span class="ls-label">Effect</span><div class="chips">{% for e in effects %}<button type="button" class="chip" data-prep-effect="{{ e }}">{{ e }}</button>{% endfor %}</div></div>{% endif %}
+    </aside>
+
+    <div class="prep-list">
+      {% for lv, label in levels %}
+      <div class="prep-level" data-prep-heading="{{ lv }}">{{ label }} level</div>
+      {% for r in rows if r.level == lv %}
+      <div class="prep-row{{ ' going' if r.going }}" data-prep-row data-key="{{ r.key }}" data-level="{{ r.level }}" data-effect="{{ r.effect }}" data-fav="{{ '1' if r.fav else '' }}"
+        data-on="{{ '1' if r.on else '' }}" data-base="{{ '1' if r.on else '' }}"{% if r.always %} data-always="1"{% endif %} data-name="{{ r.name }}">
+        {% if r.always %}<span class="prep-tick always" title="Always prepared" aria-label="{{ r.name }}: always prepared">◆</span>
+        {% else %}<button type="button" class="prep-tick" data-prep-tick aria-pressed="{{ 'true' if r.on else 'false' }}" aria-label="{{ r.name }}: prepared">✓</button>{% endif %}
+        <span class="prep-name"><button type="button" class="link-plain" data-panel-url="/characters/{{ c.id }}/detail?ref={{ r.key | urlencode }}"><b>{{ r.name }}</b></button>
+          {%- if r.always %} <span class="tag sh-always">Always</span>{% endif %}{% if r.conc %} <span class="tag">Conc.</span>{% endif %}{% if r.going %} <span class="tag" title="On its way to D&amp;D Beyond">↻</span>{% endif %}
+          {% if r.what %}<small>{{ r.what }}</small>{% endif %}</span>
+        <span class="prep-col">{{ r.time }}</span>
+        <span class="prep-col">{{ r.effect }}</span>
+        <span class="prep-fav" aria-label="{{ 'On your Shortlist' if r.fav else '' }}">{{ "★" if r.fav }}</span>
+      </div>
+      {% endfor %}
+      {% endfor %}
+      <p class="note" data-prep-empty hidden>No spells match.</p>
+    </div>
+
+    <aside class="prep-side" aria-label="Your changes">
+      <span class="ls-label">Your changes</span>
+      <div class="prep-changes" data-prep-changes></div>
+      <p class="note" data-prep-none>None yet. Tick a spell to prepare it, untick one to drop it.</p>
+      {% if most %}<p class="prep-warn" data-prep-over hidden></p>{% endif %}
+      <p class="note">Changes go to your D&amp;D Beyond sheet through the bridge, like a cast or a rest. Each shows ↻ until D&amp;D Beyond has it.</p>
+    </aside>
+  </div>
+
+  <div class="prep-foot">
+    <button type="button" class="btn small" data-prep-reset>Start over</button>
+    <span class="note prep-foot-note" data-prep-note>Nothing changes until you press Make</span>
+    {% if reachable %}<button type="button" class="btn primary" data-prep-make disabled>Make these changes</button>
+    {% else %}<span class="use-said">{{ c.name }}'s D&amp;D Beyond sheet can't be reached: open it in Chrome with the askdnd bridge to make these changes, or make them on D&amp;D Beyond.</span>{% endif %}
+  </div>
+  <p class="use-said" role="alert" data-prep-said hidden></p>
+</main>
+{% endblock %}

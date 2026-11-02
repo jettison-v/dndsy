@@ -235,3 +235,32 @@ class _no_close:
 
     def __exit__(self, *exc):
         return False
+
+
+def test_beta_gets_a_book_through_its_own_upload(admin, player, db):
+    """Beta's database has no public address, so a book reaches it as a file uploaded on Manage › Backups and imports
+    (scripts/book_load.py --export writes it): written as the loader writes, replacing the book's old entries."""
+    import gzip
+    import json
+
+    from sqlalchemy import select
+
+    old = books.save(db, "mm-2024", "monster", made_up_beast(name="Old Hound")).id
+    db.commit()
+    rows = [[made_up_beast(), 12, ""], [made_up_beast(name="Dusk Hound", hp=20), 13, ""]]
+    packed = gzip.compress(json.dumps({"book": "mm-2024", "kind": "monster", "rows": rows}).encode())
+    assert player.post("/manage/backups/books", files={"file": ("mm.json.gz", packed)}, follow_redirects=False).status_code in (302, 303, 403)
+    assert db.scalar(select(BookEntry).where(BookEntry.key == "dusk-hound")) is None  # (not an admin: nothing written)
+
+    r = admin.post("/manage/backups/books", files={"file": ("mm.json.gz", packed)}, follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/manage/backups#books"
+    db.expire_all()
+    assert sorted(db.scalars(select(BookEntry.key).where(BookEntry.book == "mm-2024"))) == ["dusk-hound", "glimmer-hound"]
+    assert db.get(BookEntry, old) is None  # (no longer in the file)
+    page = admin.get("/manage/backups").text
+    assert "Monster Manual" in page and "2 monsters" in page and "Upload book" in page
+
+    bad = gzip.compress(json.dumps({"book": "mm-2024", "kind": "monster", "rows": [[{"name": "Nothing"}, 1, ""]]}).encode())
+    admin.post("/manage/backups/books", files={"file": ("bad.json.gz", bad)})
+    db.expire_all()
+    assert len(db.scalars(select(BookEntry.key).where(BookEntry.book == "mm-2024")).all()) == 2  # nothing written when one doesn't fit

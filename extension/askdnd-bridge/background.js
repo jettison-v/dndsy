@@ -2,10 +2,13 @@
 // It finds the open D&D Beyond sheets from the tabs (Chrome may stop this worker at any time, so it keeps nothing it
 // can't find again), collects each sheet's outbox from askdnd and has the sheet make it, reports what D&D Beyond
 // saved, and tells askdnd every minute that it's on. Stores only its key to askdnd, and which askdnd gave it.
+// The DM as a backup (app/ddb_bridge.py `carried`): in a DM's browser, any open D&D Beyond page makes the changes of a
+// character whose own sheet is closed, for the sheets askdnd names (`carry`).
 // The askdnd sites it works with (manifest.json's own list; the store's copy leaves out localhost: scripts/build_extension.py)
 const SITES = ['https://beta.askdnd.ai', 'https://askdnd.ai', 'http://localhost:8000'];
 const ddbIdOf = url => ((url || '').match(/^https:\/\/www\.dndbeyond\.com\/characters\/(\d+)/) || [])[1];
 const gameOf = url => ((url || '').match(/^https:\/\/www\.dndbeyond\.com\/games\/(\d+)/) || [])[1];
+const DDB_PAGES = 'https://www.dndbeyond.com/*';
 
 // The D&D Beyond games askdnd follows for this person (its campaigns with the bridge): only those are told about,
 // so nothing about any other game they open leaves this browser. Asked again every 5 minutes.
@@ -37,6 +40,7 @@ chrome.tabs.onRemoved.addListener(async tabId => {
   }
   const vtts = was.game ? others(await chrome.tabs.query({ url: 'https://www.dndbeyond.com/games/' + was.game + '*' })) : [];
   if (was.game && !vtts.length) api('POST', '/bridge/fight/' + was.game, { closed: true }).catch(() => {});  // no VTT here hears that fight now
+  if (!others(await chrome.tabs.query({ url: DDB_PAGES })).length) carry(tabId);  // no D&D Beyond page here now: the DM isn't
 });
 
 async function api(method, path, body) {
@@ -72,24 +76,58 @@ async function stillClosed(ddbId) {
   return true;
 }
 
+// The DM as a backup: askdnd hears that a D&D Beyond page is open in this browser (`pages`; none, once the last one
+// closes, and `except` is a tab closing now) and names the closed sheets with a change for it to make. In anyone but a
+// campaign's DM's browser it names none. Answers how soon to ask again. However many pages tick, it asks one at a time
+// and at most every CARRY_GAP (`now`: askdnd just queued a change, or the last page closed, so it asks once this one's
+// answered). Only an answer counts toward the gap: nothing to ask yet (no page, no key) doesn't hold the next one back.
+const CARRY_GAP = 4000;
+let carryOut = null, carryAt = 0, carryEvery = 0;
+async function carry(except, now) {
+  if (except === undefined && !now) {
+    if (carryOut) return carryOut;
+    if (Date.now() - carryAt < CARRY_GAP) return carryEvery;
+  } else if (carryOut) await carryOut.catch(() => {});
+  carryOut = carryOnce(except).then(every => {
+    if (every === null) return 0;
+    carryAt = Date.now(); carryEvery = every;
+    return every;
+  }).finally(() => { carryOut = null; });
+  return carryOut;
+}
+async function carryOnce(except) {  // how soon to ask again, or null when askdnd wasn't asked
+  const pages = (await chrome.tabs.query({ url: DDB_PAGES })).filter(t => t.id !== except).length;
+  if (!pages && except === undefined) return null;  // ("none" is said once, as the last page closes)
+  let r;
+  try { r = await api('POST', '/bridge/carry', { pages }); } catch (err) { return null; }
+  await chrome.storage.session.set({ carrying: r.sheets || [] });
+  for (const id of r.sheets || []) deliver(String(id));
+  return r.every || 0;
+}
+const carrying = async ddbId => ((await chrome.storage.session.get('carrying')).carrying || []).includes(String(ddbId));
+
 const busy = new Set();  // sheets with a batch out right now (one at a time per character)
+const awake = t => !t.discarded && !t.frozen;  // never a tab Chrome has put to sleep (it can't run the change)
 async function deliver(ddbId, tabId) {
   if (!ddbId || busy.has(ddbId)) return;
-  // The tab you clicked in first, then visible ones; never a tab Chrome has put to sleep (it can't run the change)
-  const tabs = (await sheetTabs(ddbId)).filter(t => !t.discarded && !t.frozen)
-    .sort((a, b) => (b.id === tabId) - (a.id === tabId) || (b.active - a.active) || (b.lastAccessed || 0) - (a.lastAccessed || 0));
+  // The tab you clicked in first, then visible ones
+  const order = (a, b) => (b.id === tabId) - (a.id === tabId) || (b.active - a.active) || (b.lastAccessed || 0) - (a.lastAccessed || 0);
+  let tabs = (await sheetTabs(ddbId)).filter(awake).sort(order);
+  const sheet = tabs.length > 0;
+  // Its sheet isn't open here: in the DM's browser, any D&D Beyond page makes it, for a sheet askdnd named
+  if (!sheet && await carrying(ddbId)) tabs = (await chrome.tabs.query({ url: DDB_PAGES })).filter(awake).sort(order);
   if (!tabs.length) return;  // waits in askdnd until the sheet is open somewhere
   busy.add(ddbId);
   try {
     const { batch } = await api('POST', '/bridge/outbox/' + ddbId);
-    if (!batch) { busy.delete(ddbId); await stillClosed(ddbId); return; }
+    if (!batch) { busy.delete(ddbId); if (sheet) await stillClosed(ddbId); return; }
     for (const t of tabs) {  // the first copy of the sheet that answers takes it (a tab left from before the extension
       try {                  // was reloaded, or one Chrome froze, doesn't)
         const r = await chrome.tabs.sendMessage(t.id, { type: 'apply', batch });
         if (r && r.took) { setTimeout(() => busy.delete(ddbId), 30000); return; }  // its answer comes back as 'ddb-applied'
       } catch (err) { /* no one there: try the next */ }
     }
-    await api('POST', '/bridge/delivered/' + batch.id, { ok: false, error: "No open D&D Beyond sheet answered. Reload the character's sheet." });
+    await api('POST', '/bridge/delivered/' + batch.id, { ok: false, error: sheet ? "No open D&D Beyond sheet answered. Reload the character's sheet." : "No open D&D Beyond page answered. Reload it." });
     busy.delete(ddbId);
   } catch (err) { busy.delete(ddbId); }
 }
@@ -123,8 +161,19 @@ async function hello() {
   const sheets = [...new Set((await sheetTabs()).map(t => ddbIdOf(t.url)).filter(Boolean))];
   let h;
   try { h = await api('POST', '/bridge/hello', { sheets }); } catch (err) { return; /* not connected yet */ }
+  carry();
   if (!h.awake || !h.awake.awake) return;  // asleep (no one is using askdnd or a sheet): no background pulls
   for (const id of sheets) heard(id, true);
+}
+// A batch made, on a sheet or by the DM's browser on any D&D Beyond page (`ddbId`: the character it was for)
+async function applied(ddbId, m, tabId) {
+  // Every other open copy of this sheet shows the old numbers, and D&D Beyond's page would save them back over the
+  // new ones on its next change: each shows D&D Beyond's numbers now, in place (the tab that wrote does it itself)
+  if (m.wrote) for (const t of await sheetTabs(ddbId)) if (t.id !== tabId) chrome.tabs.sendMessage(t.id, { type: 'show' }).catch(() => {});
+  await api('POST', '/bridge/delivered/' + m.batch, { ok: m.ok, error: m.error, conflicts: m.conflicts }).catch(() => {});
+  busy.delete(ddbId);
+  await refreshPanels(ddbId); toAskdndTabs({ type: 'bridge-update' });
+  return deliver(ddbId);  // the next batch, if any
 }
 chrome.alarms.create('askdnd-bridge', { periodInMinutes: 0.5 });
 chrome.alarms.onAlarm.addListener(a => { if (a.name === 'askdnd-bridge') hello(); });
@@ -141,13 +190,18 @@ chrome.runtime.onMessage.addListener((m, sender, reply) => {
     }, () => reply({ followed: false }));
     return true;  // (answers later)
   }
+  if (m.type === 'carry-tick') {  // any D&D Beyond page (carry.js, or a sheet's ddb.js): how soon it asks again
+    if (sender.tab && !ddbIdOf(sender.tab.url)) opened(sender.tab.id, { page: true });  // (a sheet is kept as a sheet)
+    carry().then(every => reply({ every }), () => reply({ every: 0 }));
+    return true;
+  }
   (async () => {
     if (m.type === 'key') {  // from an askdnd page (Chrome says which site sent it, not the page)
       const askdnd = sender.origin || (sender.tab && new URL(sender.tab.url).origin);
       if (!SITES.includes(askdnd)) return;
       await chrome.storage.session.set({ key: m.key, askdnd }); hello(); for (const t of await sheetTabs()) refreshPanels(ddbIdOf(t.url)); return;
     }
-    if (m.type === 'deliver') return deliver(String(m.ddbId));  // askdnd's own tab queued something
+    if (m.type === 'deliver') return (await sheetTabs(String(m.ddbId))).length ? deliver(String(m.ddbId)) : carry(undefined, true);  // askdnd's own tab queued something (no sheet here: the DM's browser may make it)
     if (m.type === 'gamelog') {  // a roll made in askdnd, for the game log: from one open copy of the sheet only
       const askdnd = sender.origin || (sender.tab && new URL(sender.tab.url).origin);
       if (!SITES.includes(askdnd)) return;
@@ -157,6 +211,7 @@ chrome.runtime.onMessage.addListener((m, sender, reply) => {
       return;
     }
     if (m.type === 'wake') return hello();
+    if (m.type === 'carry-applied' && m.ddb) return applied(String(m.ddb), m, sender.tab && sender.tab.id);
     // D&D Beyond's VTT open in this browser: the fight as it changes (vtt-page.js; askdnd only listens), for a game
     // askdnd follows only
     if (m.type === 'vtt-fight') {
@@ -173,14 +228,6 @@ chrome.runtime.onMessage.addListener((m, sender, reply) => {
     if (m.type === 'ddb-saved') return heardSoon(here, sender.tab.id);
     if (m.type === 'ddb-roll') return api('POST', '/bridge/roll/' + here, m.roll).catch(() => {});  // into Table rolls, "on D&D Beyond"
     if (m.type === 'ddb-heard') return api('POST', '/bridge/others-roll/' + here, m.message).catch(() => {});  // someone else's roll in the game
-    if (m.type === 'ddb-applied') {
-      // Every other open copy of this sheet shows the old numbers, and D&D Beyond's page would save them back over the
-      // new ones on its next change: each shows D&D Beyond's numbers now, in place (the tab that wrote does it itself)
-      if (m.wrote) for (const t of await sheetTabs(here)) if (t.id !== sender.tab.id) chrome.tabs.sendMessage(t.id, { type: 'show' }).catch(() => {});
-      await api('POST', '/bridge/delivered/' + m.batch, { ok: m.ok, error: m.error, conflicts: m.conflicts }).catch(() => {});
-      busy.delete(here);
-      await refreshPanels(here); toAskdndTabs({ type: 'bridge-update' });
-      return deliver(here);  // the next batch, if any
-    }
+    if (m.type === 'ddb-applied') return applied(String(m.ddb || here), m, sender.tab.id);  // (the DM's browser can make another character's on a sheet)
   })();
 });

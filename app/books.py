@@ -163,3 +163,20 @@ def save(db, book_key: str, kind: str, entry: dict, page: int | None = None, ima
     db.flush()
     _read.clear()  # (a change in this same transaction has the same time as the read before it)
     return row
+
+
+def replace(db, book_key: str, kind: str, rows: list) -> tuple[int, int]:
+    """Write a book's entries of one kind, replacing what it had: `rows` are (entry, page, image). Any entry no longer in
+    `rows` is removed. Returns (written, removed). Used by scripts/book_load.py and the upload on Manage › Backups and
+    imports (app/admin.py), so beta, whose database has no public address, gets a book the same way."""
+    from sqlalchemy import delete, select
+
+    from app.models import BookEntry
+
+    keys = []
+    for entry, page, image in rows:
+        keys.append(save(db, book_key, kind, entry, page=page, image=image or "").key)
+    gone = db.scalars(select(BookEntry.key).where(BookEntry.book == book_key, BookEntry.kind == kind, BookEntry.key.not_in(keys))).all()
+    db.execute(delete(BookEntry).where(BookEntry.book == book_key, BookEntry.kind == kind, BookEntry.key.not_in(keys)))
+    _read.clear()
+    return len(keys), len(gone)
