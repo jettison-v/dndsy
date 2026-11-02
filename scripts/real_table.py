@@ -319,7 +319,7 @@ def coins(t: Table, seat: str = "player3") -> None:
     page.goto(page.url.replace("/battle", ""), wait_until="domcontentloaded")
     page.locator('[data-tab="t-items"]').first.click(timeout=8000)
     go(page, page.locator('[data-use-url$="/coins"]').first)
-    page.locator('input[name="amount"]').first.fill("1")
+    page.locator('.roll-win input[name="amount"]').first.fill("1")
     page.locator('[data-use-go][data-to="gain"]').first.click()
     changed(t, sheet, before, "the coin is on D&D Beyond")
     undo(page)
