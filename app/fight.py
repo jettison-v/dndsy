@@ -93,8 +93,17 @@ def _int(v) -> int:
         return 1
 
 
+def lock(db: Session, campaign: Campaign) -> None:
+    """Hold this campaign's fight until the commit, and read it as it is now: every open VTT page reports each turn, and
+    two reports saved at once both saw the turn begin (doubled reminders) and the later wrote over the earlier's
+    (architecture review, 2026-11-02). Every change to `Campaign.fight` starts here."""
+    db.execute(select(Campaign.id).where(Campaign.id == campaign.id).with_for_update())
+    db.refresh(campaign, ["fight", "fight_at"])
+
+
 def heard(db: Session, campaign: Campaign, fight: dict | None) -> bool:
     """The VTT's fight now (None: no fight). True when it changed."""
+    lock(db, campaign)
     characters = {c.ddb_id: c.id for c in db.scalars(
         select(Character).join(CampaignCharacter, CampaignCharacter.character_id == Character.id)
         .where(CampaignCharacter.campaign_id == campaign.id, CampaignCharacter.left_on.is_(None), Character.ddb_id.is_not(None)))}

@@ -129,6 +129,7 @@ def tell(db: Session, ch: Character, kind: str, text: str) -> None:
     campaign = db.get(Campaign, ch.campaign_id) if ch.campaign_id else None
     if not fight.shown(campaign, dm=True):
         return
+    fight.lock(db, campaign)
     f = copy.deepcopy(campaign.fight)
     fight.remind(f, ch, kind, "Death saves", text)
     campaign.fight = f
