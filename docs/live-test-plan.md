@@ -18,7 +18,7 @@ Say "run the live tests" and Claude does part 1, then gives you what's left in p
 - [ ] After an extension update: reopen the seats (`real_table_seats.sh close`, then `open`). They update themselves from the store like any Chrome, so don't `copy` for this: a copy from a profile that hasn't updated yet puts the old version back
 - [ ] Open the seats: `real_table_seats.sh open`
 
-## Part 1: automatic, about 5 minutes
+## Part 1: automatic, about 12 minutes
 
 On the Mini, in `~/askdnd-tests`, `.venv/bin/python real_table.py` runs everything below.
 
@@ -79,3 +79,4 @@ These need a person, or D&D Beyond's VTT, which is a game canvas a script can't 
 | 2026-10-30 | 0.9.4 | closed-sheet, hit-points, condition passed. game-log 3 of 5 | The misses were a closed sheet saying Connected, fixed in 0.9.5, waiting on the store |
 | 2026-10-30, evening | 0.9.5 | closed-sheet, game-log, hit-points 3 of 3. close-after-roll 14 of 15, one at 14 seconds. cast, resource, coins, rests new; rests 3 of 4 | In one rests run a Hit Point Die took over 30 seconds and a resource wasn't back in 25, not reproduced in two reruns. A condition stayed on Battle up to about 8 seconds while D&D Beyond confirmed it, so the run now allows 15. Part 2 not run |
 | 2026-11-01 | 0.9.5 | Not run | A one-off, not part 1: the DM's seat changed Cathartic's test sheet from D&D Beyond's own page, and the player's seat read each back: hit points, Heroic Inspiration, a spell slot, a limited-use resource, a condition, the character's name. All saved and all were put back. |
+| 2026-11-02 | 0.9.5 | Four rounds of the widened part 1 (14 runs): 81 of 87, 83 of 89, 81 of 87, 83 of 89. Not three clean rounds: waits on beta | New runs temp-hp, death-saves, inspiration, exhaustion and inventory all passed on the real sheets at least once; inventory 17 of 17 alone. They found two bugs, fixed in PR 148: Temporary HP's Set stuck at 0, and a change D&D Beyond was slow to show waiting 30+ seconds for its retry (Oct 30's rests). The misses left: beta ran out of database connections under the three seats (Sentry ASKDND-V2-7 to C), so some changes took up to a minute or timed out; PR 148 raises the pool, and the cause underneath is a follow-up. Also seen: D&D Beyond serving an older copy for a moment, and reordering a race's options. The nightly canary's alert reached Sentry (ASKDND-V2-D, deliberate, resolved). After PR 148 is on beta: run part 1 three times again. |
