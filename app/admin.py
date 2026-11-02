@@ -1,4 +1,6 @@
-"""Manage › Backups and imports (admins): the nightly backups, then importing campaign data."""
+"""Manage › Backups and imports (admins): the nightly backups, then importing campaign data, then the private rules
+books' entries (a file from scripts/book_load.py --export: beta's database has no public address, so a book reaches it
+this way)."""
 
 import json
 
@@ -41,7 +43,48 @@ def import_form(request: Request, db: Session = Depends(get_db)):
     runs = list(db.scalars(select(JobRun).where(JobRun.name == "backup").order_by(JobRun.id.desc()).limit(10)))
     return templates.TemplateResponse(request, "admin_import.html", {"user": user, "toast": request.session.pop("toast", None),
                                                                      "imports": recent_imports(db), "backups": runs,
-                                                                     "backup": backup_status(db)})
+                                                                     "backup": backup_status(db), "books": _books(db)})
+
+
+def _books(db: Session) -> list[dict]:
+    from app import books
+
+    have = books.counts(db)
+    return [{"title": b.title, "short": b.short, "kinds": have.get(b.key, {})} for b in books.BOOKS]
+
+
+MAX_BOOK_BYTES = 20_000_000  # (the whole Monster Manual is about 130 KB packed, 1.5 MB unpacked)
+
+
+@router.post("/books")
+def book_upload(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    """A book's entries, from scripts/book_load.py --export: written as the loader writes them (books.replace), each
+    checked against askdnd's shapes first; nothing is written if any doesn't fit."""
+    import gzip
+
+    from app import books
+
+    user, denied = _guard(request)
+    if denied:
+        return denied
+    raw = file.file.read(MAX_BOOK_BYTES + 1)
+    try:
+        if raw[:2] == b"\x1f\x8b":
+            raw = gzip.decompress(raw)
+        if len(raw) > MAX_BOOK_BYTES:
+            raise ValueError("that file is too large")
+        data = json.loads(raw)
+        if not isinstance(data, dict) or not isinstance(data.get("rows"), list) or not data["rows"]:
+            raise ValueError("it isn't a book file from scripts/book_load.py --export")
+        rows = [(r[0], r[1], r[2]) for r in data["rows"]]
+        written, gone = books.replace(db, str(data.get("book")), str(data.get("kind")), rows)
+        db.commit()
+        b = books.book(str(data.get("book")))
+        request.session["toast"] = web.notice(f"{b.title}: {written} entries written" + (f", {gone} no longer in the file removed" if gone else "") + ".")
+    except (OSError, ValueError, TypeError, KeyError, IndexError) as e:
+        db.rollback()
+        request.session["toast"] = web.notice(f"Nothing was written: {e}", "error")
+    return RedirectResponse("/manage/backups#books", status_code=303)
 
 
 @router.post("/import")

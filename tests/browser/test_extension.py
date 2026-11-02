@@ -44,17 +44,23 @@ def bridge_on(server, browser_db):
     engine.dispose()
 
 
-@pytest.fixture
-def chrome(playwright, server, tmp_path):
-    """A browser with the extension in it, signed in as Cole's player, and D&D Beyond's address answered here."""
+def with_extension(chromium_type, server, tmp_path, who):
+    """A browser with the extension in it, signed in as `who`, and D&D Beyond's address answered here."""
     from tests.browser.conftest import PEOPLE
 
     folder = extension_for(server["base"], tmp_path)
-    context = playwright.chromium.launch_persistent_context(str(tmp_path / "profile"), channel="chromium", headless=True,
-                                                            args=[f"--disable-extensions-except={folder}", f"--load-extension={folder}"])
+    context = chromium_type.launch_persistent_context(str(tmp_path / "profile"), channel="chromium", headless=True,
+                                                      args=[f"--disable-extensions-except={folder}", f"--load-extension={folder}"])
     context.route(re.compile(r"https://www\.dndbeyond\.com/.*"), lambda r: r.fulfill(status=200, content_type="text/html", body="<!doctype html><title>Sheet</title><main>Stand-in sheet</main>"))
     page = context.pages[0] if context.pages else context.new_page()
-    page.goto(f"{server['base']}/dev/login?as={PEOPLE['player']}")
+    page.goto(f"{server['base']}/dev/login?as={PEOPLE[who]}")
+    return context
+
+
+@pytest.fixture
+def chrome(playwright, server, tmp_path):
+    """Cole's player's browser, with the extension."""
+    context = with_extension(playwright.chromium, server, tmp_path, "player")
     yield context
     context.close()
 
@@ -183,3 +189,65 @@ def test_without_the_extension_the_pill_says_to_add_it_and_the_window_has_the_li
     assert "chromewebstore.google.com" in link.get_attribute("href")
     assert page.locator(".bridge-steps li").count() >= 2 and page.locator(".bridge-other").is_hidden()
     assert link.evaluate("a => getComputedStyle(a).alignItems") == "center"  # (a link in a menu stays a button: Brett, 2026-10-30)
+
+
+def test_prepare_spells_holds_together_at_every_width(people, server):
+    """Prepare spells (app/preparing.py) is a live-state page, so it's checked here, where the bridge is on (and the
+    campaign is a test one); the same check as every main page (tests/browser/test_layout.py)."""
+    from tests.browser.test_layout import check, problems
+
+    player = people("player")
+    found = check(player, server, ("/characters/{cole}/spells/prepare",))
+    player.page.locator("[data-prep-tick]").first.click()  # a change: the side's list and the foot's label grow
+    found += problems(player.page, "prepare spells, one change ticked")
+    assert not found, "\n".join(found)
+
+
+@pytest.mark.parametrize("where", ["https://www.dndbeyond.com/games/1", SHEET], ids=["vtt", "dms-copy-of-the-sheet"])
+def test_the_dms_browser_makes_a_closed_sheets_change_from_any_dnd_beyond_page(where, people, chromium, server, tmp_path, browser_db):
+    """DM Backup Option A (Brett, 2026-11-02): Cole's sheet is closed and the DM's browser has D&D Beyond's VTT open (a
+    stand-in), so Cole's player's pill turns yellow, and the change they make is made by the DM's browser, for Cole.
+    The same with the DM's own copy of Cole's sheet open: it isn't his player's sheet, so it never turns his pill green
+    and the DM's browser makes the change there (review, 2026-11-02)."""
+    from tests.table_setup import COLE
+
+    engine = create_engine(browser_db[0])
+    with engine.connect() as conn:
+        conn.execute(text("UPDATE characters SET ddb_campaign_id = '1', sheet_heard_at = NULL WHERE id = :c"), {"c": server["cole"]})
+        conn.execute(text("UPDATE campaigns SET ddb_campaign_id = '1' WHERE id IN (SELECT campaign_id FROM campaign_characters WHERE character_id = :c)"), {"c": server["cole"]})
+        # (what the tests before left waiting: nothing reaches a stand-in D&D Beyond, so it stays to make by hand)
+        conn.execute(text("UPDATE bridge_intents SET state = 'live' WHERE character_id = :c"), {"c": server["cole"]})
+        conn.execute(text("UPDATE bridge_batches SET state = 'done' WHERE character_id = :c"), {"c": server["cole"]})
+        conn.commit()
+    engine.dispose()
+    writes = []
+
+    def character_service(route):
+        if route.request.method == "GET":
+            return route.fulfill(status=200, content_type="application/json", body=json.dumps({"data": COLE}))
+        writes.append(json.loads(route.request.post_data or "{}"))
+        route.fulfill(status=200, content_type="application/json", body="{}")
+
+    player = people("player")  # Cole's player, on a computer without the extension
+    page = player.open(f"/characters/{server['cole']}/battle")
+    player.live()
+    dm = with_extension(chromium.browser_type, server, tmp_path, "dm")
+    try:
+        dm.route(re.compile(r"https://auth-service\.dndbeyond\.com/.*"), lambda r: r.fulfill(status=200, content_type="application/json", body='{"token": "t", "ttl": 300}'))
+        dm.route(re.compile(r"https://character-service\.dndbeyond\.com/.*"), character_service)
+        dm.pages[0].wait_for_timeout(1500)  # (the DM's askdnd page hands the extension its key)
+        vtt = dm.new_page()
+        vtt.goto(where)
+        page.wait_for_function("document.getElementById('live-pill').classList.contains('via')", timeout=20000)
+        page.click(".hp-btn[aria-label=Damage]")
+        page.locator(".roll-win input[name=amount]").wait_for(timeout=5000)
+        page.keyboard.type("3")
+        page.locator(".roll-win .hp-go button[type=submit]:not([disabled])").wait_for(timeout=5000)
+        page.keyboard.press("Enter")
+        for _ in range(40):  # the DM's browser asks every few seconds
+            if writes:
+                break
+            vtt.wait_for_timeout(500)
+    finally:
+        dm.close()
+    assert writes and writes[0]["characterId"] == 75423618 and writes[0]["removedHitPoints"] == COLE["removedHitPoints"] + 3

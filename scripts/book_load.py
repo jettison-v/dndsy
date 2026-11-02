@@ -8,6 +8,10 @@ the repo, test fixtures or docs: the repo is treated as public.
     uv run --env-file .env python scripts/book_load.py --compare   # check the conversion against the SRD's copies
     uv run --env-file .env python scripts/book_load.py --dry-run   # convert and validate, write nothing
     uv run --env-file .env python scripts/book_load.py             # write to DATABASE_URL (asks before a remote one)
+    uv run --env-file .env python scripts/book_load.py --export    # write the upload file for beta (private/books/)
+
+Beta's database has no public address, so beta gets the book through its own upload: --export writes
+private/books/mm-2024-upload.json.gz, and Manage › askdnd › Backups and imports › Books takes that file (app/admin.py).
 
 Running it again replaces the book's monsters with what the file has now. Loading beta's copy is Brett's call.
 """
@@ -28,6 +32,7 @@ from app.ddb_sheet import ABILITY_KEY, MOVES, SENSE_NAMES  # noqa: E402
 
 BOOK = "mm-2024"
 FILE = ROOT / "private" / "books" / "mm-2024" / "monsters-data.json"
+EXPORT = ROOT / "private" / "books" / "mm-2024-upload.json.gz"  # (private/ is never committed)
 DDB_SOURCE = 147  # D&D Beyond's id for the 2024 Monster Manual
 
 # D&D Beyond's ids (checked against the SRD's copies of the same monsters with --compare)
@@ -269,6 +274,7 @@ def main() -> None:
     ap.add_argument("--compare", action="store_true", help="compare with the SRD's copies; write nothing")
     ap.add_argument("--dry-run", action="store_true", help="convert and validate; write nothing")
     ap.add_argument("--yes", action="store_true", help="don't ask before writing to a database that isn't on this Mac")
+    ap.add_argument("--export", nargs="?", const=EXPORT, type=Path, help="write the upload file for beta instead (default: %(const)s)")
     args = ap.parse_args()
     if not args.file.exists():
         sys.exit(f"No {args.file}: the offline copy lives in private/books/ of the main checkout (scripts/book_receiver.py).")
@@ -279,12 +285,15 @@ def main() -> None:
     print(f"{len(rows)} monsters from the Monster Manual (2024) converted and valid.")
     if args.dry_run:
         return
+    if args.export:
+        import gzip
 
-    from sqlalchemy import delete, select
+        args.export.write_bytes(gzip.compress(json.dumps({"book": BOOK, "kind": "monster", "rows": rows}).encode()))
+        print(f"Wrote {args.export} ({args.export.stat().st_size // 1024} KB): upload it on Manage › Backups and imports › Books.")
+        return
 
     from app import books, config
     from app.db import SessionLocal
-    from app.models import BookEntry
 
     url = config.DATABASE_URL or ""
     where = url.split("@")[-1]
@@ -292,14 +301,9 @@ def main() -> None:
         if input(f"Write them to {where}? Type yes: ").strip().lower() != "yes":
             sys.exit("Nothing written.")
     with SessionLocal() as db:
-        keys = []
-        for entry, page, image in rows:
-            books.save(db, BOOK, "monster", entry, page=page, image=image)
-            keys.append(entry["key"])
-        gone = db.scalars(select(BookEntry.key).where(BookEntry.book == BOOK, BookEntry.kind == "monster", BookEntry.key.not_in(keys))).all()
-        db.execute(delete(BookEntry).where(BookEntry.book == BOOK, BookEntry.kind == "monster", BookEntry.key.not_in(keys)))
+        written, gone = books.replace(db, BOOK, "monster", rows)
         db.commit()
-    print(f"Wrote {len(rows)} monsters to {where}" + (f"; removed {len(gone)} no longer in the file" if gone else "") + ".")
+    print(f"Wrote {written} monsters to {where}" + (f"; removed {gone} no longer in the file" if gone else "") + ".")
 
 
 if __name__ == "__main__":

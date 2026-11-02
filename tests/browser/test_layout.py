@@ -173,3 +173,4 @@ def test_pages_dont_shift_as_they_load(people, server):
                 found.append(f"{path} at {width}px moved {total:.3f}: {shifts[:3]}")
     assert not found, "\n".join(found)
     assert player.errors == []
+

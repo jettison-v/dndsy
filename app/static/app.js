@@ -2110,6 +2110,13 @@
       .then(html => { if (win === w) { w.innerHTML = html; if (window.htmx) htmx.process(w); place(w, btn); w.querySelector('[autofocus]')?.focus(); } })
       .catch(() => { if (win === w) showFailure(w, "Couldn't reach askdnd.", () => openUse(btn)); });
   }
+  function swapUse(w, url) {
+    w._use = url;
+    fetch(url, { headers: { 'X-Requested-With': 'fetch' } })
+      .then(r => { if (!r.ok) throw new Error(); return r.text(); })
+      .then(html => { if (win === w) { w.innerHTML = html; if (window.htmx) htmx.process(w); place(w); } })
+      .catch(() => { if (win === w) showFailure(w, "Couldn't reach askdnd.", () => swapUse(w, url)); });
+  }
   // The hit points window in it: its working redraws as you type, and taking it closes it
   document.body.addEventListener('htmx:afterSwap', e => { if (win && win.contains(e.target)) place(win); });
   document.body.addEventListener('closePanel', () => setTimeout(() => { if (win && win.querySelector('.hp-form')) closeWin(); }));  // (after the answer's other events: they start from the form)
@@ -2195,6 +2202,8 @@
       if (e.target.closest('[data-use-go]')) { useItem(e.target.closest('[data-use-go]')); return; }
       if (e.target.closest('[data-use-close]')) { closeWin(); return; }
       if (e.target.closest('[data-panel-url]')) { setTimeout(closeWin); return; }  // (the side panel opens from its own click)
+      const other = e.target.closest('[data-use-url]');  // another of the same window (a Short Rest or a Long one): in place
+      if (other && win._use) { swapUse(win, other.dataset.useUrl); return; }
       if (e.target.closest('[data-use-give]')) {
         const names = win.querySelector('.use-names');
         names.hidden = !names.hidden;
@@ -3259,4 +3268,88 @@
   }
   if (document.querySelector('.manage-side')) fill();
   document.addEventListener('click', e => { if (e.target.closest('[data-menu="manage-menu"]')) fill(); });
+})();
+
+// ---------------------------------------------------------------- Prepare spells
+// (app/preparing.py, prepare_spells.html; Brett, 2026-11-02, docs/mockups/prepare-spells/) Ticking a spell changes
+// nothing yet: the count, the meter and the list of changes follow as you go, and Make sends them all at once. The count
+// against the class's number is said, never enforced (going over is the DM's call).
+(function () {
+  const root = document.querySelector('[data-prep]');
+  if (!root) return;
+  const rows = [...root.querySelectorAll('[data-prep-row]')];
+  const most = +root.dataset.max || 0;
+  const filter = { show: 'all', level: '', effect: '' };
+  const on = r => r.dataset.on === '1';
+  const changed = () => rows.filter(r => !r.dataset.always && r.dataset.on !== r.dataset.base);
+  function draw() {
+    const count = rows.filter(r => on(r) && !r.dataset.always).length;
+    const c = root.querySelector('[data-prep-count]');
+    if (c) { c.textContent = most ? `${count} of ${most}` : `${count}`; c.classList.toggle('over', !!most && count > most); }
+    const m = root.querySelector('[data-prep-meter]');
+    if (m) { m.style.width = Math.min(100, Math.round(count * 100 / (most || 1))) + '%'; m.classList.toggle('over', !!most && count > most); }
+    const over = root.querySelector('[data-prep-over]');
+    if (over) {
+      over.hidden = !(most && count > most);
+      over.textContent = `${count} prepared: more than the ${most} a ${root.dataset.class} prepares at this level. D&D Beyond allows it; whether it stands is the DM's call.`;
+    }
+    const ch = changed();
+    const list = root.querySelector('[data-prep-changes]');
+    list.replaceChildren(...ch.map(r => {
+      const p = document.createElement('div');
+      p.className = on(r) ? 'add' : 'drop';
+      p.textContent = (on(r) ? '+ ' : '− ') + r.dataset.name;
+      return p;
+    }));
+    root.querySelector('[data-prep-none]').hidden = ch.length > 0;
+    const adds = ch.filter(on).length, drops = ch.length - adds;
+    root.querySelector('[data-prep-note]').textContent = ch.length
+      ? [adds && `prepare ${adds}`, drops && `drop ${drops}`].filter(Boolean).join(', ').replace(/^./, s => s.toUpperCase())
+      : 'Nothing changes until you press Make';
+    const make = root.querySelector('[data-prep-make]');
+    if (make) { make.disabled = !ch.length; make.textContent = ch.length ? `Make ${ch.length} change${ch.length === 1 ? '' : 's'} on D&D Beyond` : 'Make these changes'; }
+    rows.forEach(r => {
+      r.classList.toggle('changed', !r.dataset.always && r.dataset.on !== r.dataset.base);
+      const t = r.querySelector('[data-prep-tick]');
+      if (t) t.setAttribute('aria-pressed', on(r) ? 'true' : 'false');
+      const shown = (filter.show === 'all' || (filter.show === 'on' ? on(r) : filter.show === 'off' ? !on(r) : r.dataset.fav === '1'))
+        && (!filter.level || r.dataset.level === filter.level) && (!filter.effect || r.dataset.effect === filter.effect);
+      r.hidden = !shown;
+    });
+    root.querySelectorAll('[data-prep-heading]').forEach(h => { h.hidden = !rows.some(r => !r.hidden && r.dataset.level === h.dataset.prepHeading); });
+    root.querySelector('[data-prep-empty]').hidden = rows.some(r => !r.hidden);
+  }
+  root.addEventListener('click', e => {
+    const tick = e.target.closest('[data-prep-tick]');
+    if (tick) { const r = tick.closest('[data-prep-row]'); r.dataset.on = on(r) ? '' : '1'; draw(); return; }
+    const chip = e.target.closest('[data-prep-show], [data-prep-level], [data-prep-effect]');
+    if (chip) {
+      const key = 'prepShow' in chip.dataset ? 'show' : 'prepLevel' in chip.dataset ? 'level' : 'effect';
+      const val = chip.dataset['prep' + key[0].toUpperCase() + key.slice(1)];
+      filter[key] = key !== 'show' && filter[key] === val ? '' : val;
+      chip.parentElement.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === chip && (key === 'show' || filter[key] === val)));
+      draw();
+      return;
+    }
+    if (e.target.closest('[data-prep-reset]')) { rows.forEach(r => { r.dataset.on = r.dataset.base; }); draw(); return; }
+    const make = e.target.closest('[data-prep-make]');
+    if (make && !make.disabled) {
+      const said = root.querySelector('[data-prep-said]');
+      make.disabled = true;
+      fetch(root.dataset.url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' },
+        body: JSON.stringify({ changes: changed().map(r => ({ key: r.dataset.key, on: on(r) })) }) })
+        .then(r => r.json().catch(() => ({})).then(j => { if (!r.ok) throw new Error(j.detail || "askdnd couldn't do that"); return j; }))
+        .then(j => {
+          document.body.dispatchEvent(new CustomEvent('bridgeDeliver', { detail: j.deliver }));
+          try { sessionStorage.setItem('askdnd-prep-said', j.text); } catch (err) { /* no storage */ }
+          location.reload();  // (each change shows ↻ until D&D Beyond has it)
+        })
+        .catch(err => { said.hidden = false; said.textContent = err.message; make.disabled = false; });
+    }
+  });
+  try {
+    const t = sessionStorage.getItem('askdnd-prep-said');
+    if (t) { sessionStorage.removeItem('askdnd-prep-said'); window.askdndToast(t); }
+  } catch (e) { /* no storage */ }
+  draw();
 })();

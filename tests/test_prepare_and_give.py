@@ -164,3 +164,38 @@ def test_loot_is_the_dms_and_only_from_d_and_d_beyonds_list(player, dm, db, shee
     r = dm.post(f"/characters/{cole.id}/loot", data={"item": "Sword of Made-Up Things"})
     assert r.status_code == 409 and "no item called" in r.json()["detail"] and not intents(db)
     assert "Give loot" in dm.get(f"/characters/{cole.id}").text
+
+
+# ------------------------------------------------------------------ the Prepare spells screen
+
+
+def test_the_prepare_screen_counts_and_makes_every_change_at_once(player, db, sheet):
+    cole = char(db, "Cole")
+    aid = next(s for s in sheet["askdnd"]["availableSpells"]["2190878"] if s["definition"]["name"] == "Aid")
+    aid.update(id=21170801, entityTypeId=435869154)
+    characters.refresh(db, cole)
+    page = player.get(f"/characters/{cole.id}/spells/prepare").text
+    assert "10 of 10" in page and "Druid:</b> After a Long Rest" in page and 'data-name="Aid"' in page and 'data-name="Healing Word"' in page
+    r = player.post(f"/characters/{cole.id}/spells/prepare", json={"changes": [{"key": "spell:Healing Word", "on": False}, {"key": "spell:Aid", "on": True}]})
+    assert r.status_code == 200 and r.json()["text"] == "2 changes on its way to D&D Beyond"
+    assert [(i.kind, i.data["name"], i.data["value"]) for i in intents(db)] == [("prepare", "Healing Word", False), ("prepare", "Aid", True)]
+    assert {op["body"]["prepared"] for op in ops(db, cole)} == {True, False}  # one batch, both changes
+    page = player.get(f"/characters/{cole.id}/spells/prepare").text
+    assert page.count('title="On its way to D&amp;D Beyond"') == 2  # each shows ↻ until D&D Beyond has it
+
+
+def test_the_prepare_screen_turns_away_what_it_cant_make(player, db, sheet):
+    cole = char(db, "Cole")
+    url = f"/characters/{cole.id}/spells/prepare"
+    assert player.post(url, json={"changes": []}).status_code == 409
+    assert player.post(url, json={"changes": [{"key": "spell:Mending", "on": True}]}).status_code == 404  # a cantrip
+    assert player.post(url, json={"changes": [{"key": "spell:Healing Word", "on": "yes"}]}).status_code == 409
+    r = player.post(url, json={"changes": [{"key": "spell:Healing Word", "on": True}]})  # already prepared
+    assert r.json()["text"].startswith("Nothing to change") and not intents(db)
+
+
+def test_a_long_rest_offers_prepare_spells(player, db, sheet):
+    cole = char(db, "Cole")
+    assert "/spells/prepare?cls=Druid" in player.get(f"/characters/{cole.id}/rest?kind=long").text
+    assert "/spells/prepare" not in player.get(f"/characters/{cole.id}/rest?kind=short").text
+    assert "/spells/prepare?cls=Druid" in player.get(f"/characters/{cole.id}").text  # Sheet › Spells
