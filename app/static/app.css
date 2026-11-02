@@ -209,7 +209,8 @@ a.live-row:hover .live-go { color: var(--text); }
 .cond-rest:hover { color: var(--text-strong); border-color: var(--muted); }
 .cond-rest { gap: var(--sp-1); border-style: solid; color: var(--text); }
 .cond-rest svg { color: var(--amber); flex: none; }  /* (a moon: Rest stands out from the chips beside it, Brett 2026-11-02) */
-.sheet-hd { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin-top: var(--sp-2); }  /* Sheet: Hit dice, then Rest */
+.sheet-hd { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin-top: var(--sp-2); }  /* Sheet: Rest, then Hit dice */
+.planner-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-2) var(--sp-3); flex-wrap: wrap; }
 .res-row > .cond-rest { margin-left: auto; }  /* Rest ends Resources, at the far right */
 /* Heroic Inspiration: a chip you can press, lit when you have it, grey and hollow when you don't */
 .res-row .res.res-insp, .res-insp { display: inline-flex; align-items: center; gap: var(--sp-1); min-height: var(--chip-h); margin-left: var(--sp-2); padding: 0 var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--surface-2); color: var(--muted); font: 600 var(--fs-md)/1 var(--sans); cursor: pointer; }
@@ -2446,12 +2447,12 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
 .pt-card[data-modal-url]:hover { background: var(--surface-2); }
 .pt-head { display: flex; align-items: center; gap: var(--sp-3); }
 .pt-head .roll-av { width: 48px; height: 48px; font-size: var(--fs-md); }
-.pt-id { min-width: 0; flex: 1 1 auto; }
+.pt-id { min-width: 0; }
 /* Gold across from the name, right-justified; the total wraps under the coins when the card is narrow (Brett, 2026-11-02) */
-.pt-purse { flex: 0 1 auto; min-width: 0; align-self: flex-start; }
+.pt-purse { flex: 0 1 auto; min-width: 0; align-self: flex-start; margin-left: auto; }  /* (the name and its conditions stay together on the left) */
 .pt-purse .purse { justify-content: flex-end; }
-.pt-purse-foot { display: none; }
-@media (max-width: 640px) { .pt-purse { display: none; } .pt-purse-foot { display: block; } }  /* (on a phone, at the card's foot: beside the name it squeezed it) */
+.pt-card .pt-purse-foot { display: none; }
+@media (max-width: 640px) { .pt-card .pt-purse { display: none; } .pt-card .pt-purse-foot { display: flex; } }  /* (on a phone, at the card's foot: beside the name it squeezed it) */
 
 .pt-name { margin: 0; font-size: var(--fs-lg); }
 .pt-head .note { margin: 0; }
