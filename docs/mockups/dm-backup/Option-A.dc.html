@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Option A: On its own, for every change</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+<link rel="stylesheet" href="./dm.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 860px">
+  <div class="head">
+    <div class="num">Option A · chosen · with your colours</div>
+    <h1>On its own, for every change</h1>
+    <p class="where"><b>Where you'll find it:</b> the Live pill in the menu bar. Green: your sheet is connected. Yellow: it's closed and the DM's D&amp;D Beyond is making your changes, so open it when you can. Red: your changes can't reach D&amp;D Beyond. Grey: no one at the table is connected, so nothing's waiting. Nobody presses anything to carry a change.</p>
+  </div>
+  <div class="demo">
+    <div class="demo-group"><span class="lbl">No Name's sheet</span><div class="seg"><sc-for list="{{ sheetModes }}" as="m" hint-placeholder-count="2"><button type="button" class="{{ m.cls }}" onClick="{{ m.pick }}">{{ m.label }}</button></sc-for></div></div>
+    <div class="demo-group"><span class="lbl">The DM's D&amp;D Beyond page</span><div class="seg"><sc-for list="{{ dmModes }}" as="m" hint-placeholder-count="2"><button type="button" class="{{ m.cls }}" onClick="{{ m.pick }}">{{ m.label }}</button></sc-for></div></div>
+    <div class="demo-group"><span class="lbl">Big C, Cole and Trah's sheets</span><div class="seg"><sc-for list="{{ otherModes }}" as="m" hint-placeholder-count="2"><button type="button" class="{{ m.cls }}" onClick="{{ m.pick }}">{{ m.label }}</button></sc-for></div></div>
+    <span class="note">Try the switches, then press − or Use one. Here − always takes 7.</span>
+    <span class="sp"></span>
+    <button type="button" class="btn" onClick="{{ restart }}">Start again</button>
+  </div>
+  <div class="pair">
+    <div class="side">
+      <div class="tag">No Name's player</div>
+      <div class="screen" style="position: relative; height: 400px">
+        <div class="bar"><b>askdnd</b><span>Story</span><span>Campaign</span><span class="sp"></span><span class="{{ pillCls }}"><i></i>{{ pillText }}</span></div>
+        <div class="body">
+          <div class="row"><div><div class="name">No Name</div><div class="sub">Monk 6 / Warlock 2</div></div><div class="tabs" style="width: 200px; flex: none"><b>Battle</b><span>Sheet</span><span>Plan</span></div></div>
+          <div class="nums" style="grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr))">
+            <span class="stat-wrap"><div class="{{ hpCls }}"><small>Hit points</small><span><b>{{ hp }}</b> / 75</span><span class="tile-btns"><button type="button" aria-label="Damage" title="Damage" onClick="{{ takeHit }}">−</button><button type="button" aria-label="Heal" title="Heal">+</button></span></div></span>
+            <div class="numtile"><small>Armor class</small><span><b>17</b></span></div>
+            <div class="numtile"><small>Speed</small><span><b>45</b> ft</span></div>
+          </div>
+          <div class="{{ resCls }}"><span class="lbl">1st-level</span><span class="dots"><sc-for list="{{ dots }}" as="d" hint-placeholder-count="2"><i class="{{ d.cls }}"></i></sc-for></span><span class="sp"></span><button type="button" class="btn mini" onClick="{{ useSlot }}">Use one</button></div>
+          <div class="livewin"><span class="lbl">The Live window</span><div class="row"><span>{{ winText }}</span><sc-if value="{{ winOpen }}" hint-placeholder-val="{{ true }}"><button type="button" class="btn mini">Open sheet ↗</button></sc-if></div></div>
+        </div>
+        <sc-if value="{{ card }}" hint-placeholder-val="{{ false }}"><div class="{{ cardCls }}"><span>{{ card }}</span><div class="row"><button type="button" class="btn mini" onClick="{{ dismiss }}">Got it</button></div></div></sc-if>
+      </div>
+    </div>
+    <div class="side">
+      <div class="tag">The DM</div>
+      <div class="screen" style="position: relative; height: 400px">
+        <div class="bar"><b>askdnd</b><span>Story</span><span>Campaign</span><span class="sp"></span><span class="{{ dmPillCls }}"><i></i>{{ dmPillText }}</span></div>
+        <div class="body">
+          <div class="lbl">How each sheet is connected</div>
+          <div class="conn">
+            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="4"><div class="r"><span>{{ r.name }}</span><span class="{{ r.cls }}">{{ r.text }}</span></div></sc-for>
+          </div>
+          <sc-if value="{{ showNudge }}" hint-placeholder-val="{{ false }}"><div class="nudge"><span>{{ nudgeText }}</span><button type="button" class="btn mini">Open ↗</button></div></sc-if>
+          <sc-if value="{{ hasLog }}" hint-placeholder-val="{{ false }}"><div class="lbl">Made through you</div><sc-for list="{{ log }}" as="l" hint-placeholder-count="2"><div class="logline"><b>{{ l.text }}</b></div></sc-for></sc-if>
+        </div>
+        <sc-if value="{{ ask }}" hint-placeholder-val="{{ false }}"><div class="corner warn"><span>{{ askLine }}. Make it on D&amp;D Beyond?</span><div class="row"><button type="button" class="btn mini main" onClick="{{ makeIt }}">Make it</button><button type="button" class="btn mini" onClick="{{ notNow }}">Not now</button></div></div></sc-if>
+      </div>
+    </div>
+  </div>
+  <div class="verdict"><p><b>Good:</b> someone forgets their sheet and the game carries on, and yellow keeps asking them to open it without stopping anything. Red only shows while the table is playing.</p><p><b>The cost:</b> changes land on a player's sheet without the DM looking at each one. They're the same changes the player or DM made in askdnd, so nothing new is decided.</p></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":860}}'>
+class Component extends DCLogic {
+  state = { sheet: 'closed', dm: 'open', others: 'open', hp: 58, used: 0, onway: '', card: '', warn: false, ask: null, log: [] };
+  option = 'A';
+  carrier() { return this.state.sheet === 'open' ? 'sheet' : this.state.dm === 'open' ? 'dm' : 'none'; }
+  landed(kind, text, by) {
+    setTimeout(() => this.setState({ onway: '', log: by === 'dm' ? [text, ...this.state.log].slice(0, 3) : this.state.log }), 1100);
+  }
+  change(kind) {
+    const { hp, used } = this.state;
+    const by = this.carrier();
+    if (by === 'none') return this.setState({ card: "No Name's D&D Beyond sheet can't be reached: open it in Chrome with the askdnd bridge, or make the change on D&D Beyond.", warn: true });
+    if (kind === 'slot' && used >= 2) return this.setState({ card: 'No 1st-level slots left.', warn: true });
+    if (this.option === 'C' && kind === 'slot' && by === 'dm') return this.setState({ card: 'Spending a slot needs your own sheet. Open it to spend one, or mark it on D&D Beyond.', warn: true });
+    const after = Math.max(0, hp - 7), left = 2 - used - 1;
+    const text = kind === 'hp' ? 'Took 7. ' + hp + ' → ' + after + '.' : 'Used a 1st-level slot. ' + left + ' left.';
+    const line = kind === 'hp' ? 'No Name: Hit Points ' + hp + ' → ' + after : 'No Name: a 1st-level slot, ' + left + ' left';
+    const next = kind === 'hp' ? { hp: after } : { used: used + 1 };
+    if (this.option === 'B' && by === 'dm') return this.setState({ ...next, onway: kind, card: 'Waiting for the DM to make this.', warn: false, ask: { line, kind, undo: { hp, used } } });
+    this.setState({ ...next, onway: kind, card: text, warn: false });
+    this.landed(kind, line, by);
+  }
+  renderVals() {
+    const { sheet, dm, hp, used, onway, card, warn, ask, log } = this.state;
+    const by = this.carrier(), others = this.state.others;
+    const playing = sheet === 'open' || dm === 'open' || others === 'open';
+    const tone = how => how === 'sheet' ? 'ok' : how === 'dm' ? 'via' : playing ? 'bad' : 'off';
+    const word = how => how === 'sheet' ? 'connected' : how === 'dm' ? 'through you' : 'not connected';
+    const theirs = others === 'open' ? 'sheet' : dm === 'open' ? 'dm' : 'none';
+    const hows = [theirs, theirs, theirs, by];
+    const direct = hows.filter(h => h === 'sheet').length, via = hows.filter(h => h === 'dm').length;
+    const seg = (key, now, pairs) => pairs.map(([id, label]) => ({ label, cls: now === id ? 'on' : '', pick: () => this.setState({ [key]: id }) }));
+    return {
+      hp, card, ask, log: log.map(text => ({ text })),
+      cardCls: warn ? 'corner warn' : 'corner', hasLog: log.length > 0,
+      askLine: ask ? ask.line : '',
+      sheetModes: seg('sheet', sheet, [['open', 'Open'], ['closed', 'Closed']]),
+      dmModes: seg('dm', dm, [['open', 'Open'], ['closed', 'Closed']]),
+      otherModes: seg('others', others, [['open', 'Open'], ['closed', 'Closed']]),
+      pillCls: by === 'sheet' ? 'livepill good' : by === 'dm' ? 'livepill via' : playing ? 'livepill cue' : 'livepill',
+      pillText: by === 'sheet' ? 'Connected' : by === 'dm' ? 'Through the DM · open your sheet' : 'Open your sheet to connect',
+      winText: by === 'sheet' ? 'Your sheet and askdnd change together.'
+        : by === 'dm' ? "Your sheet is closed, so the DM's D&D Beyond is making your changes. Open your sheet so your rolls reach D&D Beyond's Game Log too."
+        : playing ? "Your changes can't reach D&D Beyond: your sheet is closed and the DM has no D&D Beyond page open. Open your sheet in Chrome with the askdnd bridge."
+        : 'No one at the table is connected. Open your sheet when you play.',
+      winOpen: by !== 'sheet',
+      dmPillCls: !playing ? 'livepill' : hows.includes('none') ? 'livepill cue' : via ? 'livepill via' : 'livepill good',
+      dmPillText: (direct + via) + ' of 4 connected' + (via ? ' · ' + via + ' through you' : ''),
+      rows: ['Big C', 'Cole', 'Trah', 'No Name'].map((name, i) => ({ name, cls: tone(hows[i]), text: word(hows[i]) })),
+      showNudge: playing && hows.includes('none'),
+      nudgeText: hows.filter(h => h === 'none').length === 1 ? "No Name's sheet is closed. Open D&D Beyond here to make their changes." : 'Some sheets are closed. Open D&D Beyond here to make their changes.',
+      hpCls: onway === 'hp' ? 'numtile tall onway' : 'numtile tall',
+      resCls: onway === 'slot' ? 'resrow onway' : 'resrow',
+      dots: [0, 1].map(i => ({ cls: i < 2 - used ? '' : 'off' })),
+      takeHit: () => this.change('hp'),
+      useSlot: () => this.change('slot'),
+      makeIt: () => { const a = ask; this.setState({ ask: null, card: a.line.replace('No Name: ', '') + '.' }); this.landed(a.kind, a.line, 'dm'); },
+      notNow: () => this.setState({ ...ask.undo, ask: null, onway: '', card: 'Not made. Open your sheet to make it, or make it on D&D Beyond.', warn: true }),
+      dismiss: () => this.setState({ card: '' }),
+      restart: () => this.setState({ sheet: 'closed', dm: 'open', others: 'open', hp: 58, used: 0, onway: '', card: '', warn: false, ask: null, log: [] }),
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -155,4 +155,4 @@ def test_refresh_buttons_show_that_they_are_working(dm, db):
     cole = char(db, "Cole")
     panel = dm.get("/live", params={"c": cole.id}).text
     refresh = re.findall(r'hx-post="/live/refresh[^"]*"[^>]*>', panel)
-    assert len(refresh) == 2 and all('hx-disabled-elt="this"' in b for b in refresh)  # Refresh Cole now, Refresh everyone: disabled while working
+    assert len(refresh) == 2 and all('hx-disabled-elt="this"' in b for b in refresh)  # Refresh Cole, Refresh everyone: disabled while working

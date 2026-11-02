@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The DM as a backup</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+<link rel="stylesheet" href="./dm.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 800px">
+  <div class="head">
+    <div class="num">The idea · a backup for a closed sheet</div>
+    <h1>The DM carries a change when a sheet is closed</h1>
+    <p class="where"><b>Where you'll find it:</b> nothing new to press. It shows in the Live pill in the menu bar, for the player and for the DM, and the DM switches it on once in Manage › Settings › Virtual tabletop. The test on the real D&amp;D Beyond showed the DM's account can already make these changes.</p>
+  </div>
+  <div class="flow">
+    <div class="lane">
+      <div class="who">Today, sheet open</div>
+      <div class="hop"><b>A change in askdnd</b><span>From anyone allowed to make it</span></div>
+      <div class="hop"><b>askdnd holds it</b><span>Only the player's browser may collect it</span></div>
+      <div class="hop"><b>The player's open sheet</b><span>Makes it, as the player</span></div>
+      <div class="hop"><b>D&amp;D Beyond</b><span>askdnd reads it back</span></div>
+    </div>
+    <div class="lane">
+      <div class="who">Today, sheet closed</div>
+      <div class="hop"><b>A change in askdnd</b><span>From anyone allowed to make it</span></div>
+      <div class="hop stop"><b>Refused</b><span>"Open your sheet to connect"</span></div>
+      <div class="hop ghost"><span>Nothing reaches D&amp;D Beyond. It's made there by hand, or not at all.</span></div>
+      <div></div>
+    </div>
+    <div class="lane new">
+      <div class="who">With the backup</div>
+      <div class="hop"><b>A change in askdnd</b><span>The same people, the same rules</span></div>
+      <div class="hop"><b>askdnd holds it</b><span>No open sheet: the DM's browser may collect it</span></div>
+      <div class="hop carry"><b>Any D&amp;D Beyond page the DM has open</b><span>Makes it, with the DM's rights</span></div>
+      <div class="hop"><b>D&amp;D Beyond</b><span>askdnd reads it back, as always</span></div>
+    </div>
+  </div>
+  <div class="facts">
+    <div class="fact"><h3>What it needs</h3><ul>
+      <li>The DM's Chrome has the bridge and is signed in to D&amp;D Beyond.</li>
+      <li>Any D&amp;D Beyond page open there. The VTT counts.</li>
+      <li>The character is in that D&amp;D Beyond campaign.</li>
+      <li>The DM switched it on for the campaign.</li></ul></div>
+    <div class="fact"><h3>What stays the same</h3><ul>
+      <li>Who may change what in askdnd. The DM carries; it gives no one new rights.</li>
+      <li>A player's own open sheet always goes first.</li>
+      <li>A change counts only once askdnd reads it back.</li>
+      <li>One batch at a time per character, so two browsers can't double a change.</li></ul></div>
+    <div class="fact"><h3>What it can't do</h3><ul>
+      <li>A roll won't reach D&amp;D Beyond's Game Log: that takes the player's own sheet.</li>
+      <li>D&amp;D Beyond won't say who made it. askdnd's log will.</li>
+      <li>If the sheet and the DM's page are both closed, it's refused as today.</li>
+      <li>Test copies stay out, as they do now.</li></ul></div>
+    <div class="fact"><h3>Still to prove</h3><ul>
+      <li>Tested: Hit Points, Inspiration, a slot, a resource, a condition, on D&amp;D Beyond's own page.</li>
+      <li>Not yet: making them from another page with the sheet closed.</li>
+      <li>Not yet: death saves, rests, items, coins. Any that fail stay "open your sheet".</li>
+      <li>It needs a new extension version, through Google's review.</li></ul></div>
+  </div>
+  <p class="note">A bonus: the bridge can't run on a phone, so a player on a phone can't connect at all today. With the backup, their changes reach D&amp;D Beyond too.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -131,7 +131,7 @@ How each part gives way:
 | Side panel | Beside the page on wide screens; a sheet from the bottom at 900px and below. |
 | Lists with columns (Sheet's Spells, Wild Shape, Inventory, Features; the Spell Book) | Switch to compact rows when the list's own box is narrower than its columns need, whatever the screen (container queries: Spells and the Spell Book 920px, Wild Shape 740, Features 700, Inventory 680). Filters sit beside the list, above it on phones. |
 | Sections with tab bars | The sticky tab bar reaches the section's edges: 30px wide, 18px from tablet down. |
-| Battle's numbers and saves | One row; when the row itself is under 1000px, Spell DC / attack shortens to Spell DC; under 760px the saves drop under the numbers, six across; on phones Hit points takes a row, then two by two, then the saves three across. |
+| Battle's numbers and saves | One row; when the row itself is under 1000px, Spell DC / attack shortens to Spell DC; under 760px the saves drop under the numbers, six across; on phones Hit points takes a row, then the other numbers side by side in one row (Armor class says AC; Brett 2026-11-02), then the saves three across. |
 | Battle's columns | Three side by side; on phones one at a time with Action / Bonus / Reaction tabs. |
 | The tour's card | Beside what it lights (beside the side panel when lighting inside it); at the bottom on phones. |
 
@@ -170,7 +170,8 @@ Each one is on Manage › Design system with its class or macro. Use these; don'
 - **Spell bar** (`.spell-bar`, Battle): the one blue block on a page, in Concentration's colour. **Spell Book** (`.spellbook-btn`) is its filled blue button, the only button that isn't one of the four styles, because it's the door to everything castable; then slots and pinned spells.
 - **Start cards** (`.start-cards`, a new campaign's Story; Brett 2026-10-31): what's ready before the first recap, one action per card, as many columns as fit.
 - **A window that does one thing** (the roll window's family: `_cast_window.html`, `_count_window.html`, `_rest_window.html`, `_coins_window.html`, `_use_window.html`): opens beside its button (the bottom of the screen on phones), never a new kind of pop-up; name and ✕, then the choices, then the action. When the sheet can't be reached, one amber line says how, with no action.
-- **Open on D&D Beyond** (`.sheet-open`): the ↗ square beside a name, and last in each row of the Live window so the icons line up.
+- **Open on D&D Beyond** (`.sheet-open`): the ↗ square beside a name.
+- **The Live window's list** (`.live-row`; Brett 2026-11-02, `docs/mockups/live-window/` Option B): every sheet is two lines, its name and then a dot and how it's connected (green connected, amber couldn't refresh, red to make by hand, a hollow grey ring otherwise), so rows never have to line up but for the ↗ at their end; the whole row opens the sheet on D&D Beyond.
 - **Grouped resources** (`res_groups`; `.pt-group` on Party): rows sharing a name before ": " under that name once. They wrap, each row whole.
 - **Party's Rows** (`.pt-track`, a fight; Brett 2026-10-31): one line each in turn order, inside `.table-scroll`.
 - **Changing Hit Points** (`.hp-btns`, `_hp_quick.html`; Brett 2026-11-01, `docs/mockups/hp-flow/` Option B): − and + on Battle's Hit points tile open the small window on Damage or Heal, ready to type in, and Enter takes it. The rest of the tile still explains the number, like every tile. The form is the same one Apply to opens in its modal (`_hp_form.html`).

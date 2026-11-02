@@ -119,7 +119,7 @@ def test_the_live_pill_is_yellow_through_the_dm_red_while_playing_grey_otherwise
     assert 'class="live-pill via"' in page and "Through the DM · open your sheet" in page
     window = player.get(f"/live?c={cole.id}").text
     assert "the DM's D&amp;D Beyond is making your changes" in window and "Open sheet ↗" in window
-    assert "through you" in dm.get("/live").text
+    assert "Through you · their sheet is closed" in dm.get("/live").text
 
     cole.sheet_heard_at = datetime.now(UTC)
     db.flush()

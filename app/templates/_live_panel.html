@@ -37,26 +37,28 @@
   <div class="live-list">
     <div class="live-head">How each sheet is connected</div>
     {% for r in tn.characters %}
-    <div class="live-row{{ ' here' if f and r.id == f.id }}"><span>{{ r.name }}{% if r.mine %} <span class="note">(you)</span>{% endif %}</span>{% if r.ddb_id %}<a class="sheet-open" href="https://www.dndbeyond.com/characters/{{ r.ddb_id }}" target="_blank" rel="noopener" title="Open {{ r.name }} on D&amp;D Beyond" aria-label="Open {{ r.name }} on D&amp;D Beyond">↗</a>{% else %}<span aria-hidden="true"></span>{% endif %}
-      {% if not r.linked %}<span class="note">not linked</span>
-      {% elif r.by_hand %}<span class="quiet-warn">{{ r.by_hand }} to make by hand</span>
-      {% elif r.step %}<span class="live-ok">connected</span>
-      {% elif r.via %}<span class="quiet-warn">through {{ "you" if tn.dm else "the DM" }}</span>
-      {% elif not r.fetched_at %}<span class="quiet-warn">{{ "couldn't refresh" if r.failed else "not fetched yet" }}</span>
-      {% elif r.failed %}<span class="quiet-warn" title="{{ r.error }}">couldn't refresh · showing {{ r.fetched_at | ago }}</span>
-      {% elif r.connects %}<span class="note">not connected</span><small class="live-when">updated {{ r.fetched_at | ago }}</small>
-      {% else %}<small class="live-when">updated {{ r.fetched_at | ago }}</small>{% endif %}</div>
+    {%- if not r.linked %}{% set st, says = "off", "Not linked to D&D Beyond" %}
+    {%- elif r.by_hand %}{% set st, says = "bad", "%s %s to make by hand on D&D Beyond" % (r.by_hand, "change" if r.by_hand == 1 else "changes") %}
+    {%- elif r.step %}{% set st, says = "ok", "Connected" %}
+    {%- elif r.via %}{% set st, says = "via", ("Through you" if tn.dm else "Through the DM") + (" · your sheet is closed" if r.mine else " · their sheet is closed") %}
+    {%- elif not r.fetched_at %}{% set st, says = "warn", "Couldn't refresh" if r.failed else "Not read yet" %}
+    {%- elif r.failed %}{% set st, says = "warn", "Couldn't refresh · showing the copy from %s" % (r.fetched_at | ago) %}
+    {%- elif r.connects %}{% set st, says = "off", "Not connected · updated %s" % (r.fetched_at | ago) %}
+    {%- else %}{% set st, says = "off", "Updated %s" % (r.fetched_at | ago) %}{% endif %}
+    {%- set inner %}<span class="live-who"><span class="live-name">{{ r.name }}{% if r.mine %} <span class="note">(you)</span>{% endif %}</span><span class="live-state {{ st }}"{% if r.failed and r.error %} title="{{ r.error }}"{% endif %}><span class="live-mark" aria-hidden="true"></span><span>{{ says }}</span></span></span>{% endset %}
+    {%- if r.ddb_id %}<a class="live-row{{ ' here' if f and r.id == f.id }}" href="https://www.dndbeyond.com/characters/{{ r.ddb_id }}" target="_blank" rel="noopener" title="Open {{ r.name }} on D&amp;D Beyond">{{ inner }}<span class="live-go" aria-hidden="true">↗</span></a>
+    {%- else %}<div class="live-row{{ ' here' if f and r.id == f.id }}">{{ inner }}</div>{% endif %}
     {% else %}<p class="muted">No characters yet.</p>{% endfor %}
   </div>
   {% if made_through %}
   <div class="live-list">
     <div class="live-head">Made through {{ "you" if tn.dm else "the DM" }}</div>
-    {% for line in made_through %}<div class="live-made"><b>{{ line.name }}</b>: {{ line.text }} <small class="live-when">{{ line.at | ago }}</small></div>{% endfor %}
+    {% for line in made_through %}<div class="live-made"><b>{{ line.name }}</b>: {{ line.text }} <small>{{ line.at | ago }}</small></div>{% endfor %}
   </div>
   {% endif %}
   {% if (f and f.linked) or (reviewer and tn.linked) %}
   <div class="live-actions">
-    {% if f and f.linked %}<button type="button" class="btn primary small" hx-post="/live/refresh/{{ f.id }}" hx-target="#live-menu" hx-disabled-elt="this">Refresh {{ f.name }} now</button>{% endif %}
+    {% if f and f.linked %}<button type="button" class="btn primary small" hx-post="/live/refresh/{{ f.id }}" hx-target="#live-menu" hx-disabled-elt="this">Refresh {{ f.name }}</button>{% endif %}
     {% if reviewer and tn.linked %}<button type="button" class="btn small" hx-post="/live/refresh-all{{ q }}" hx-target="#live-menu" hx-disabled-elt="this">Refresh everyone</button>{% endif %}
   </div>
   {% endif %}

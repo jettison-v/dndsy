@@ -1,0 +1,16 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-11-02T16:20:00Z"},
+  "title": "Live Window",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1360, "h": 760, "title": "Today, and why it won't line up"},
+    "Option-A.dc.html": {"x": 1440, "y": 0, "w": 1360, "h": 760, "title": "Option A: one line per sheet"},
+    "Option-B.dc.html": {"x": 0, "y": 880, "w": 1360, "h": 760, "title": "Option B: the name, then how it's connected"},
+    "Option-C.dc.html": {"x": 1440, "y": 880, "w": 1360, "h": 760, "title": "Option C: grouped by how they're connected"}
+  },
+  "order": ["Main.dc.html", "Option-A.dc.html", "Option-B.dc.html", "Option-C.dc.html"],
+  "notes": {},
+  "designSystems": []
+}

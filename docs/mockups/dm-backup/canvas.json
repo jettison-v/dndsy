@@ -1,0 +1,53 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-11-02T01:00:00Z"
+  },
+  "title": "DM Backup",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1360,
+      "h": 800,
+      "title": "The idea: how a change travels"
+    },
+    "Option-A.dc.html": {
+      "x": 1440,
+      "y": 0,
+      "w": 1360,
+      "h": 860,
+      "title": "Option A: On its own, for every change",
+      "is_interactive": true
+    },
+    "Option-B.dc.html": {
+      "x": 0,
+      "y": 920,
+      "w": 1360,
+      "h": 860,
+      "title": "Option B: The DM approves each change",
+      "is_interactive": true
+    },
+    "Option-C.dc.html": {
+      "x": 1440,
+      "y": 920,
+      "w": 1360,
+      "h": 860,
+      "title": "Option C: Hit Points and conditions only",
+      "is_interactive": true
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Option-A.dc.html",
+    "Option-B.dc.html",
+    "Option-C.dc.html"
+  ],
+  "notes": {},
+  "designSystems": []
+}

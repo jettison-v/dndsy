@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Option B: the name, then how it's connected</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./live.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 760px">
+  <div class="head">
+    <div class="num">Option B · my pick · a list of two-line rows</div>
+    <h1>The name, then how it's connected</h1>
+    <p class="where"><b>Where you'll find it:</b> the same Live window. Every sheet is two lines, always: the name, then a coloured dot and how it's connected, with room for the whole sentence. The whole row opens the sheet on D&amp;D Beyond, with ↗ at its end to say so.</p>
+  </div>
+  <div class="scenes">
+    <div class="scene">
+      <div class="tag">On a computer</div>
+      <div class="mbar"><span class="lpill on"><i></i>Connected</span></div>
+      <div class="drop">
+        <div class="win">
+          <div class="whead">How each sheet is connected</div>
+          <div class="b-list">
+            <a class="b-row" href="#"><span style="display: grid; gap: 2px; min-width: 0"><span class="b-name">Cole <span class="you">(you)</span></span><span class="b-state ok"><span class="dot ok"></span><span>Connected</span></span></span><span class="go" aria-hidden="true">↗</span></a>
+            <a class="b-row" href="#"><span style="display: grid; gap: 2px; min-width: 0"><span class="b-name">Trah</span><span class="b-state via"><span class="dot via"></span><span>Through the DM · their sheet is closed</span></span></span><span class="go" aria-hidden="true">↗</span></a>
+            <a class="b-row" href="#"><span style="display: grid; gap: 2px; min-width: 0"><span class="b-name">Big C</span><span class="b-state off"><span class="dot off"></span><span>Not connected · updated 14 hours ago</span></span></span><span class="go" aria-hidden="true">↗</span></a>
+            <a class="b-row" href="#"><span style="display: grid; gap: 2px; min-width: 0"><span class="b-name">No Name</span><span class="b-state bad"><span class="dot bad"></span><span>2 changes to make by hand on D&amp;D Beyond</span></span></span><span class="go" aria-hidden="true">↗</span></a>
+          </div>
+          <div class="acts two">
+            <button type="button" class="btn main">Refresh Cole</button>
+            <button type="button" class="btn">Refresh everyone</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="scene">
+      <div class="tag">On a phone</div>
+      <div class="phone">
+        <div class="mbar"><span class="lpill on"><i></i>Live</span></div>
+        <div class="drop">
+          <div class="win">
+            <div class="whead">How each sheet is connected</div>
+            <div class="b-list">
+              <a class="b-row" href="#"><span style="display: grid; gap: 2px; min-width: 0"><span class="b-name">Cole <span class="you">(you)</span></span><span class="b-state ok"><span class="dot ok"></span><span>Connected</span></span></span><span class="go" aria-hidden="true">↗</span></a>
+              <a class="b-row" href="#"><span style="display: grid; gap: 2px; min-width: 0"><span class="b-name">Trah</span><span class="b-state via"><span class="dot via"></span><span>Through the DM · their sheet is closed</span></span></span><span class="go" aria-hidden="true">↗</span></a>
+              <a class="b-row" href="#"><span style="display: grid; gap: 2px; min-width: 0"><span class="b-name">Big C</span><span class="b-state off"><span class="dot off"></span><span>Not connected · updated 14 hours ago</span></span></span><span class="go" aria-hidden="true">↗</span></a>
+              <a class="b-row" href="#"><span style="display: grid; gap: 2px; min-width: 0"><span class="b-name">No Name</span><span class="b-state bad"><span class="dot bad"></span><span>2 changes to make by hand on D&amp;D Beyond</span></span></span><span class="go" aria-hidden="true">↗</span></a>
+            </div>
+            <div class="acts two">
+              <button type="button" class="btn main">Refresh Cole</button>
+              <button type="button" class="btn">Refresh everyone</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="side-notes">
+      <h3>Good</h3>
+      <p>Every row is the same shape whatever it says, so nothing has to line up across rows except the ↗. A status can be a whole sentence, which the DM Backup's new states need. Adding a state later never moves the others.</p>
+      <h3>The cost</h3>
+      <p>Taller than Option A: about 50 px a sheet instead of 40, so five sheets is a slightly longer window.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

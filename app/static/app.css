@@ -167,11 +167,23 @@ body.no-bridge:not(.bridge-elsewhere) .live-pill.via[data-wants-bridge] .live-wo
 .menu.live-menu { width: 360px; max-width: calc(100vw - 24px); padding: 0; }
 .live-menu:empty { display: none; }
 .live-pop { padding: 14px 16px; display: grid; gap: 12px; font-size: var(--fs-sm); }
-.live-ok { color: var(--green); text-align: right; }
-.live-list { border-top: 1px solid var(--line); padding-top: 10px; display: grid; gap: 4px; }
+/* The list (Brett, 2026-11-02, docs/mockups/live-window/ Option B): every sheet two lines, its name and then how it's
+   connected, so no row has to line up with another but for its ↗; the whole row opens the sheet on D&D Beyond */
+.live-list { display: grid; gap: 2px; }
+body.no-bridge .live-noext-box + .live-list { border-top: 1px solid var(--line); padding-top: 10px; }  /* under the steps to add the bridge */
 .live-head { font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); margin-bottom: 2px; }
-.live-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 24px; gap: 0 8px; align-items: baseline; }
-.live-row > :nth-child(2) { grid-column: 3; grid-row: 1; }  /* ↗ or its empty cell: last, so the icons line up however long each row's word is */
+.live-row, .menu a.live-row { display: grid; grid-template-columns: minmax(0, 1fr) 28px; gap: 10px; align-items: center; margin: 0 -8px; padding: 6px 8px; border-radius: var(--r-md); color: inherit; text-decoration: none; }
+.live-who { display: grid; gap: 1px; min-width: 0; }
+.live-name { color: var(--text); font-size: var(--fs-md); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.live-state { display: flex; align-items: center; gap: 7px; min-width: 0; font-size: var(--fs-xs); color: var(--muted); }
+.live-state > span:last-child { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.live-mark { width: 8px; height: 8px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 1.5px var(--faint); }
+.live-state.ok { color: var(--green); } .live-state.ok .live-mark { background: var(--green); box-shadow: none; }
+.live-state.warn { color: var(--amber); } .live-state.warn .live-mark { background: var(--amber); box-shadow: none; }
+.live-state.via { color: var(--amber); } .live-state.via .live-mark { background: var(--amber); box-shadow: none; }  /* through the DM (DM Backup) */
+.live-state.bad { color: var(--link); } .live-state.bad .live-mark { background: var(--red); box-shadow: none; }
+.live-go { width: 28px; height: 28px; display: grid; place-items: center; border-radius: var(--r-sm); color: var(--faint); }
+a.live-row:hover .live-go { color: var(--text); }
 .sheet-open { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--line-strong); border-radius: var(--r-sm); color: var(--muted); text-decoration: none; font-size: var(--fs-xs); line-height: 1; }
 .menu a.sheet-open { display: inline-grid; padding: 0; }
 .menu a.sheet-open:hover, .sheet-open:hover { color: var(--text-strong); border-color: var(--muted); background: var(--surface); }
@@ -215,17 +227,15 @@ body.pt-rows .pt-with-track { display: none; }
 .pt-track .pt-hp { background: none; border: 1px solid var(--line-strong); border-radius: var(--r-sm); padding: 2px 8px; color: var(--text-strong); font: inherit; font-weight: 700; white-space: nowrap; cursor: pointer; }
 .pt-track .pt-hp:hover { border-color: var(--muted); }
 .pt-track .pt-hp.low { color: var(--amber); }
-.live-row > span:first-child { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.live-row.here > span:first-child { font-weight: 600; }
-.live-row .quiet-warn { text-align: right; }
-.live-when { grid-column: 1 / -1; grid-row: 2; color: var(--faint); font-size: var(--fs-xs); }
+.live-row.here .live-name { font-weight: 600; }
 .live-say { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: var(--r-md); padding: 8px 10px; }
 .live-say.via { border-color: var(--amber); }
 .live-say.bad { border-color: var(--red-line); }
 .live-made { font-size: var(--fs-xs); color: var(--muted); }
 .live-made b { color: var(--text); font-weight: 600; }
+.live-made small { color: var(--faint); }
 .live-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.live-actions .btn { flex: 1 1 auto; white-space: nowrap; }  /* the spinner never wraps the label */
+.live-actions .btn { flex: 1 1 0; white-space: nowrap; }  /* the spinner never wraps the label */
 /* Phones: a bottom bar with the main pages; More holds the rest (base.html) */
 .bottom-nav { display: none; }
 
@@ -861,7 +871,8 @@ details.faq[open] > summary::before { transform: rotate(90deg); }
 .res-go { background: none; border: 0; color: inherit; font: inherit; cursor: pointer; }
 .res-go:hover { color: var(--amber); }
 .tile-short { display: none; }
-@media (max-width: 640px) { .tile-full { display: none; } .tile-short { display: inline; } }  /* Battle's tiles are narrow on a phone: the whole label would be cut off */
+.ph-short { display: none; }
+@media (max-width: 640px) { .tile-full, .ph-full { display: none; } .tile-short, .ph-short { display: inline; } }  /* Battle's tiles are narrow on a phone: the whole label would be cut off */
 @container battle-head (max-width: 1000px) { .tile-full { display: none; } .tile-short { display: inline; } }
 @media (max-width: 640px) { .res-row { flex-direction: column; align-items: flex-start; } .res-row .res { padding: 0; border-left: none; } }  /* each on its own line: a divider there only marks the wrap */
 .res-label { color: var(--faint); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .05em; margin-right: 12px; }
@@ -2503,7 +2514,7 @@ body:not(.br-ext) .br-ext-on, body.br-ext .br-ext-off { display: none; }
   .battlebar { display: flex; flex-direction: column; }
   .battlebar > * { order: 1; }
   .battle-head { display: block; }
-  .battle-head > .strip.compact { grid-auto-flow: row; grid-template-columns: repeat(6, minmax(0, 1fr)); margin-bottom: 6px; }
+  .battle-head > .strip.compact { display: flex; flex-wrap: wrap; margin-bottom: 6px; }
   .battle-head > .save-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 0; border: none; }
   .battle-head .st .adv-badge { position: absolute; order: 0; background: var(--bg); }
   .status-phone { display: contents; }
@@ -2514,10 +2525,11 @@ body:not(.br-ext) .br-ext-on, body.br-ext .br-ext-off { display: none; }
   .battlebar > .res-more + .res-row { margin: var(--sp-2) 0 0; }
   .battlebar > .res-row .res-label { display: none; }
   .res-group { padding: 0; border-left: none; }
-  .battle-head .strip.compact > div { grid-column: span 3; }
-  .battle-head .strip.compact > div:first-child { grid-column: 1 / -1; }
+  /* Two lines (Brett, 2026-11-02: three took a lot of room): Hit Points whole, then the other numbers side by side */
+  .battle-head .strip.compact > div { flex: 1 1 0; min-width: 0; padding: 6px 8px; }
+  .battle-head .strip.compact > div:first-child { flex-basis: 100%; padding: 8px 14px; }
   .battle-head .strip.compact > div:first-child b { font-size: var(--fs-xl); }
-  .battle-head .strip.compact > div:nth-child(4):last-child { grid-column: 1 / -1; }
+  .battle-head .strip.compact small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
 
 /* Tap targets on a phone (DESIGN.md › Principles 8): what can grow, grows; what sits among words keeps its size and takes
