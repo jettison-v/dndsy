@@ -7,7 +7,9 @@ part 1 starts by checking the test sheets are clean. It only ever touches the te
 primary account is not a seat here, and it never signs in to anything.
 """
 
+import json
 import sys
+import time
 
 from playwright.sync_api import Page, sync_playwright
 
@@ -33,10 +35,12 @@ class Table:
         self.contexts = Seats(p)
         self.results: list[tuple[bool, str]] = []
         self.run = ""
+        self.last: Page | None = None
 
     def page(self, seat: str, url: str) -> Page:
         page = next((x for x in self.contexts[seat].pages if x.url.startswith(url)), None) or self.contexts[seat].new_page()
         page.goto(url, wait_until="domcontentloaded", timeout=45000)
+        self.last = page  # (what a run that stops was looking at)
         return page
 
     def sheet(self, seat: str, frames: list[str] | None = None) -> Page:
@@ -173,7 +177,7 @@ def change_hp(page: Page, mode: int, amount: int) -> None:
     page.locator('.peek.open .hp-form input[name="amount"]').first.fill(str(amount), timeout=8000)
     page.locator('.peek.open .hp-form input[name="amount"]').first.press("Tab")
     page.wait_for_timeout(800)
-    page.locator('.peek.open .hp-form button[type="submit"]').first.click(timeout=5000)
+    page.locator('.peek.open .hp-form button[type="submit"]:not([disabled])').first.click(timeout=10000)  # (once its working has caught up)
     page.wait_for_timeout(800)
     page.keyboard.press("Escape")
 
@@ -229,8 +233,9 @@ def changes(before, after, path: str = "") -> list[tuple[str, object, object]]:
         return [c for k in sorted(set(before) | set(after)) if k not in ("dateModified", "providedFrom", "readonlyUrl", "definition")
                 for c in changes(before.get(k), after.get(k), f"{path}.{k}")]
     if isinstance(before, list) and isinstance(after, list) and len(before) == len(after):
-        if all(isinstance(x, dict) and "id" in x for x in before + after):  # (D&D Beyond's lists come in any order)
-            before, after = sorted(before, key=lambda x: str(x["id"])), sorted(after, key=lambda x: str(x["id"]))
+        if all(isinstance(x, dict) for x in before + after):  # (D&D Beyond's lists come in any order, ids not always unique)
+            order = lambda x: (str(x.get("id")), json.dumps(x, sort_keys=True, default=str))
+            before, after = sorted(before, key=order), sorted(after, key=order)
         return [c for i, (a, b) in enumerate(zip(before, after)) for c in changes(a, b, f"{path}[{i}]")]
     return [] if before == after else [(path, before, after)]
 
@@ -386,7 +391,7 @@ def hp_window(page: Page, which: str, amount: int) -> None:
     if which == "temp":  # (the player's choice: take the new ones)
         page.locator('.peek.open .hp-take label:has(input[value="1"])').first.click(timeout=5000)
         page.wait_for_timeout(800)
-    page.locator('.peek.open .hp-form button[type="submit"]').first.click(timeout=5000)
+    page.locator('.peek.open .hp-form button[type="submit"]:not([disabled])').first.click(timeout=10000)  # (once its working has caught up)
     page.wait_for_timeout(800)
     page.keyboard.press("Escape")
 
@@ -699,6 +704,12 @@ def main() -> int:
                 at = next((x.strip() for x in lines if "waiting for" in x), "")  # (what it was waiting for)
                 t.results.append((False, f"{name}: stopped with {type(e).__name__}: {lines[0][:120]} {at[:160]}"))
                 print("FAIL", t.results[-1][1], flush=True)
+                try:
+                    shot = f"logs/stopped-{time.strftime('%Y-%m-%d-%H%M')}-{name}.png"
+                    t.last.screenshot(path=shot)
+                    print("  what it was looking at:", shot, flush=True)
+                except Exception:
+                    pass
         if before:
             t.run = "after"
             as_found(t, before)
