@@ -433,3 +433,15 @@ def test_a_classs_spell_list_is_read_once_for_a_while(monkeypatch):
     monkeypatch.setattr(ddb.time, "time", lambda: 9e12)  # hours later: read again
     ddb._spell_list(url, 5)
     assert len(calls) == 2
+
+
+def test_of_a_spells_two_copies_the_2024_one_is_offered(monkeypatch):
+    """Nov 2, the live test: D&D Beyond lists Detect Evil and Good twice for a Cleric, the 2014 copy first. Keeping the
+    first and offering only 2024 spells left a dropped Detect Evil and Good with nothing to prepare it again with."""
+    old = {"definition": {"id": 1, "name": "Detect Evil and Good", "level": 1, "sources": [{"sourceId": 1}]}}
+    new = {"definition": {"id": 2, "name": "Detect Evil and Good", "level": 1, "sources": [{"sourceId": 145}]}}
+    monkeypatch.setattr(ddb, "fetch_character_json", lambda ddb_id, timeout: {
+        "classes": [{"level": 9, "definition": {"id": 2, "canCastSpells": True}}]})
+    monkeypatch.setattr(ddb, "_spell_list", lambda url, timeout: [old, new] if "always-known" in url else [])
+    got = ddb.fetch_character("1")["askdnd"]["availableSpells"]["2"]
+    assert [s["definition"]["id"] for s in got] == [2]
