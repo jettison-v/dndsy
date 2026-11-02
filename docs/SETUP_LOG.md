@@ -901,3 +901,17 @@ Railway's settings, pictures in S3, Sentry, the deploy itself, or several people
 - **Why test in Safari's engine:** on an iPhone every browser (Safari, and Chrome too) uses Apple's WebKit underneath, and it draws some things differently from Chrome's engine (fonts, form fields, a few layout details). The layout check now also opens every page as an iPhone and an iPad in WebKit, so a page that breaks only on your phone is caught before it ships.
 - **What the live test found:** the Temporary Hit Points window wouldn't let you set them until you clicked "Take" yourself, and a Short Rest's Hit Point Die could take over 30 seconds to reach D&D Beyond. Both are fixed, with tests. It also found beta running out of database connections with just three test players: like a restaurant with 15 tables where diners keep their table while waiting on the kitchen (here, D&D Beyond), new arrivals wait at the door. The app now keeps up to 40, one per worker; the deeper fix is its own piece of work.
 - **Reuse on a new project:** give each test run its own database (or a lock on it), never let a background process write to a pipe nothing reads, run a nightly check against the real outside services you depend on and send its failures where your other alerts go, and test in the browser engine your users actually have.
+
+## 2026-11-02: askdnd.ai moves to v2
+
+**What we set up**
+- **askdnd.ai and www.askdnd.ai now point at v2**, the same Railway service and database as beta.askdnd.ai. The old app keeps legacy.askdnd.ai. Beta stays for now, since the extension, the Mac Mini's nightly test and old bookmarks use it.
+- **Google sign-in** got two more return addresses (`https://askdnd.ai/auth/callback` and `/admin/notes/callback`). Google only sends people back to addresses listed on the client.
+- **Moving the domain in Railway** (taking it off the old service and adding it to v2) also rewrote the Cloudflare records: Railway and Cloudflare are linked, so no DNS edits by hand.
+- **One address:** www.askdnd.ai answers with a redirect to askdnd.ai, so there's one sign-in and one address Google returns to.
+
+**Reuse this on a new project**
+1. Add the new address to the sign-in provider's return addresses before you move the domain, so sign-in works the moment it does.
+2. Pick one address and redirect the others (www, old names) to it: a sign-in belongs to one address.
+3. Point the new domain at the same service as your test address when the test address is what people already use; split into separate production and staging copies only when you need to try changes away from real users.
+4. Keep the old app reachable at its own subdomain until you're sure nothing needs it.

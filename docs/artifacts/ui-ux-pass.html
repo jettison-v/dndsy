@@ -1,0 +1,349 @@
+<title>askdnd UI and UX Pass</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one reading column. What the scan found, then the rules that follow without asking, then the choices that are
+   Brett's (answers save as he goes), then how it gets built. The mock-ups inside draw askdnd itself, so they keep
+   askdnd's own dark look in both themes. */
+:root{
+  --bg:#f6f3ee;--surface:#fffdf9;--surface-2:#efe9e0;--line:#ddd5c9;
+  --text:#24211d;--muted:#6b655c;--faint:#9a9389;
+  --red:#b83232;--amber:#9a6a10;--green:#2f8a52;--blue:#3a6db3;
+  --tint-green:rgba(47,138,82,.12);--tint-red:rgba(184,50,50,.10);
+  --ui:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+  /* askdnd's own colours, for the mock-ups (the app is dark only) */
+  --a-bg:#15171a;--a-s1:#1f2226;--a-s2:#272b30;--a-line:#34383e;--a-text:#ebe7df;--a-strong:#fff;--a-muted:#a29d93;--a-faint:#6f6b64;
+  --a-red:#d64545;--a-amber:#e8b34b;--a-green:#5bbf7f;--a-blue:#7ea6e0;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15171a;--surface:#1f2226;--surface-2:#272b30;--line:#34383e;
+  --text:#ebe7df;--muted:#a29d93;--faint:#6f6b64;
+  --red:#d64545;--amber:#e8b34b;--green:#5bbf7f;--blue:#7ea6e0;
+  --tint-green:rgba(91,191,127,.15);--tint-red:rgba(214,69,69,.15);
+  --a-bg:#101215;--a-s1:#1b1e22;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15171a;--surface:#1f2226;--surface-2:#272b30;--line:#34383e;
+  --text:#ebe7df;--muted:#a29d93;--faint:#6f6b64;
+  --red:#d64545;--amber:#e8b34b;--green:#5bbf7f;--blue:#7ea6e0;
+  --tint-green:rgba(91,191,127,.15);--tint-red:rgba(214,69,69,.15);
+  --a-bg:#101215;--a-s1:#1b1e22;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--ui);font-size:16px;line-height:1.6}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 80px;display:flex;flex-direction:column;gap:24px}
+header h1{font-size:1.9rem;line-height:1.2;margin:0 0 6px;text-wrap:balance}
+header p{margin:0 0 8px;color:var(--muted);max-width:68ch}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar-in{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.meter{flex:1;min-width:140px;height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--green);width:0;transition:width .3s}
+.count{font-variant-numeric:tabular-nums;font-weight:600;font-size:14px}
+.save{font-size:13px;color:var(--muted)}
+.btn{font:inherit;font-size:14px;border-radius:8px;padding:7px 12px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);cursor:pointer}
+.btn:hover{border-color:var(--faint)}
+.btn:focus-visible,.opt input:focus-visible+span,textarea:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px 24px;display:flex;flex-direction:column;gap:12px}
+.panel h2{margin:0;font-size:1.25rem;line-height:1.3;text-wrap:balance}
+.panel p{margin:0;max-width:70ch}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stats div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stats b{display:block;font-size:1.5rem;font-variant-numeric:tabular-nums;line-height:1.2}
+.stats small{color:var(--muted);font-size:13px}
+.group{display:flex;flex-direction:column;gap:14px}
+.group > h2{margin:8px 0 0;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);display:flex;align-items:center;gap:10px}
+.group > h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+.group > p{margin:-6px 0 0;color:var(--muted);font-size:14px;max-width:70ch}
+.fix{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 20px;display:grid;gap:6px}
+.fix h3{margin:0;font-size:1rem;line-height:1.4}
+.fix p{margin:0;font-size:14.5px;color:var(--muted);max-width:70ch}
+.fix p b{color:var(--text);font-weight:600}
+.sev{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:2px}
+.sev.bug{color:var(--red);background:var(--tint-red)}
+.sev.rule{color:var(--muted);background:var(--surface-2)}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:12px}
+.q.done{border-color:color-mix(in srgb,var(--green) 45%,var(--line))}
+.q-head{display:flex;gap:12px;align-items:baseline}
+.q-num{color:var(--red);font-weight:700;font-variant-numeric:tabular-nums;min-width:1.6em}
+.q h3{margin:0;font-size:1.08rem;line-height:1.4;flex:1;min-width:0}
+.q-state{font-size:12px;padding:2px 9px;border-radius:999px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.q.done .q-state{background:var(--tint-green);color:var(--green)}
+.why{margin:0;color:var(--muted);font-size:14.5px;max-width:70ch}
+.why b{color:var(--text);font-weight:600}
+.opts{display:flex;flex-direction:column;gap:6px}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:9px 12px;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:var(--bg)}
+.opt:hover{border-color:var(--faint)}
+.opt input{margin:4px 0 0;accent-color:var(--red)}
+.opt span{display:flex;flex-direction:column;min-width:0}
+.opt b{font-weight:600}
+.opt small{color:var(--muted);font-size:13.5px;line-height:1.45}
+.rec{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--green);margin-left:6px}
+textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--bg);color:var(--text);min-height:44px;resize:vertical}
+.steps{display:grid;gap:10px;counter-reset:s}
+.steps div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px 14px 52px;position:relative}
+.steps div::before{counter-increment:s;content:counter(s);position:absolute;left:18px;top:14px;font-weight:700;color:var(--red)}
+.steps b{display:block}
+.steps span{color:var(--muted);font-size:14.5px}
+#offline{color:var(--muted);font-size:14px}
+footer{color:var(--muted);font-size:13px}
+
+/* ---- mock-ups: askdnd as it looks ---- */
+.mocks{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.mock{background:var(--a-bg);color:var(--a-text);border-radius:10px;padding:14px;font-size:13px;line-height:1.4;min-width:0;display:grid;gap:10px;align-content:start}
+.mock .cap{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--a-muted);font-weight:600}
+.mock .cap.bad{color:var(--a-red)}.mock .cap.good{color:var(--a-green)}
+.tiles{display:flex;gap:6px}
+.tile{background:var(--a-s1);border-radius:8px;padding:7px 8px;min-width:0;flex:1;position:relative}
+.tile.hp{flex:2}
+.tile small{display:block;color:var(--a-muted);font-size:11px}
+.tile b{font-size:17px;color:var(--a-strong)}
+.tile .of{color:var(--a-muted);font-size:12px}
+.tile.going{outline:1px dashed var(--a-faint);outline-offset:2px}
+.tile .corner{position:absolute;top:3px;right:5px;color:var(--a-faint);font-size:11px}
+.tile .btns{float:right;display:flex;gap:3px}
+.tile .btns i,.t2 .acts i{font-style:normal;display:grid;place-items:center;width:22px;height:20px;border:1px solid var(--a-line);border-radius:5px;background:var(--a-s2);color:var(--a-strong);font-weight:700;font-size:12px}
+.t2{display:grid;grid-template-rows:auto auto auto;gap:2px}
+.t2 .lab{display:flex;align-items:center;gap:6px;min-height:22px}
+.t2 .lab small{flex:1;margin:0}
+.t2 .acts{display:flex;gap:3px}
+.t2 .val{white-space:nowrap}
+.t2 .foot{min-height:14px;font-size:11px;color:var(--a-muted)}
+.go{color:var(--a-faint);font-size:11px;margin-left:3px}
+.adv{font-size:10px;font-weight:700;color:var(--a-amber);border:1px solid var(--a-amber);border-radius:999px;padding:0 5px}
+.row{display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--a-s1);border-radius:7px}
+.row .nm{flex:1;min-width:0;font-weight:600;color:var(--a-strong)}
+.row .sm{color:var(--a-muted);font-size:11px}
+.pip{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--a-green);margin-left:2px}
+.pip.off{background:none;border:1px solid var(--a-faint)}
+.tick{display:grid;place-items:center;width:18px;height:18px;border-radius:5px;border:1px solid var(--a-line);font-size:11px;color:var(--a-muted)}
+.tick.on{background:var(--a-blue);border-color:var(--a-blue);color:#111}
+.row.add{box-shadow:inset 3px 0 0 var(--a-green)}
+.row.drop{box-shadow:inset 3px 0 0 var(--a-faint)}
+.row.drop .nm{color:var(--a-muted);text-decoration:line-through}
+.row.amber{background:color-mix(in srgb,var(--a-amber) 14%,var(--a-s1));outline:1px solid color-mix(in srgb,var(--a-amber) 50%,transparent)}
+.chg{font-size:12px;display:flex;gap:6px;align-items:center}
+.chg .k{font-weight:700;width:12px;text-align:center}
+.chg.add .k{color:var(--a-green)}.chg.drop .k{color:var(--a-muted)}
+.chg.drop span{color:var(--a-muted)}
+.seg{display:inline-flex;border:1px solid var(--a-line);border-radius:7px;overflow:hidden;font-size:12px}
+.seg b{padding:4px 9px;font-weight:500;color:var(--a-muted)}
+.seg b.on{background:color-mix(in srgb,var(--a-blue) 25%,transparent);color:var(--a-strong)}
+.coins{display:flex;gap:6px;flex-wrap:wrap}
+.coin{display:flex;align-items:center;gap:5px;background:var(--a-s1);border-radius:999px;padding:3px 9px 3px 4px;font-size:12px;font-variant-numeric:tabular-nums;color:var(--a-strong)}
+.coin i{width:16px;height:16px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:8px;font-weight:700;color:#111}
+.coin .pp{background:#d9dde3}.coin .gp{background:#e8b34b}.coin .ep{background:#b9c4a3}.coin .sp{background:#a9adb3}.coin .cp{background:#c07a4a}
+.coin small{color:var(--a-muted);font-size:10px;text-transform:uppercase}
+.coinbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.coinbar .tot{color:var(--a-muted);font-size:11px;margin-left:auto}
+.mbtn{font-size:11px;border:1px solid var(--a-line);background:var(--a-s2);color:var(--a-text);border-radius:6px;padding:2px 8px}
+.tabs{display:flex;gap:14px;overflow:hidden;font-size:12px;color:var(--a-muted);border-bottom:1px solid var(--a-line);padding-bottom:5px;white-space:nowrap;position:relative}
+.tabs .on{color:var(--a-strong);box-shadow:0 7px 0 -5px var(--a-red)}
+.tabs.fade::after{content:"";position:absolute;right:0;top:0;bottom:0;width:36px;background:linear-gradient(90deg,transparent,var(--a-bg))}
+.chk{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--a-muted)}
+.chk i{width:12px;height:12px;border:1px solid var(--a-faint);border-radius:3px;display:inline-block}
+.note{color:var(--a-muted);font-size:11px;display:block}
+</style>
+
+<div class="bar"><div class="bar-in">
+  <span class="count" id="count">0 of 7 answered</span>
+  <div class="meter" aria-hidden="true"><i id="meter"></i></div>
+  <span class="save" id="save">Loading saved answers…</span>
+  <button class="btn" id="acceptAll" type="button">Use my recommendation for the rest</button>
+</div></div>
+
+<div class="wrap">
+  <header>
+    <h1>The UI and UX pass</h1>
+    <p>Before the VTT, everything askdnd shows was opened and checked, the way the design system started on Oct 22, this time for how things work as well as how they look. First what the scan found, then what I'll fix without asking (each breaks a rule the design system already has), then seven choices that are yours. Answers save as you go. Tell me in chat when you're done.</p>
+    <p id="offline" hidden>Answers can't be saved in this view. You can read everything, and answer in chat instead.</p>
+  </header>
+
+  <section class="panel">
+    <h2>What was scanned</h2>
+    <p>Every page askdnd links to, as a player, the DM and an admin, on a phone (375 px) and a desktop (1280 px), with each tab clicked, and every kind of side panel, modal and small window opened from each page once. The small windows that change D&amp;D Beyond (Cast, Use one, Rest, Inspiration, Hit points) were opened on Cathartic in VTT test, and the moment while a change is on its way was drawn on purpose. Alongside the screenshots, the scan recorded how each filter, notes switch, D&amp;D Beyond mark and tile is built.</p>
+    <div class="stats">
+      <div><b>734</b><small>page views (each tab, person and width)</small></div>
+      <div><b>112</b><small>kinds of window opened</small></div>
+      <div><b>3 × 2</b><small>people × widths</small></div>
+      <div><b>18</b><small>findings below</small></div>
+    </div>
+    <p class="why">The script is <code>scripts/ui_scan.py</code>; it only opens things and never changes them. It can run again after each round to check what's left. Screenshots stay on your Mac (<code>private/ui-scan/</code>), never in the repo.</p>
+  </section>
+
+  <section class="group">
+    <h2>Fixed without asking</h2>
+    <p>Each of these breaks something the design system already says, or is a plain bug. They're built in the rounds below; say so in the notes at the end if one shouldn't be.</p>
+    <div class="fix"><h3>Party › Items: an item's name one letter per line <span class="sev bug">Bug</span></h3>
+      <p>On a phone, an item many characters carry (Potion of Healing: six portraits, some ×2) squeezes its name column until it breaks after every letter. <b>Fix:</b> the portraits wrap under the name when they don't fit beside it.</p></div>
+    <div class="fix"><h3>The changing mark lands on the HP tile's − and + <span class="sev bug">Bug</span></h3>
+      <p>The ↻ "on its way to D&amp;D Beyond" mark is pinned to every tile's top right corner, which is where − and + sit on Hit Points, so the two overlap while a change travels. With the buttons in the tile, "56 / 66" also breaks onto two lines. On Resources the ↻ sits on the last pip. <b>Fix:</b> question 1 (the mark) and question 4 (the tile) together.</p></div>
+    <div class="fix"><h3>The window's buttons sit in different places <span class="sev rule">Rule</span></h3>
+      <p>The design system puts a window's actions in its foot: the main one first, Cancel as a quiet link, Delete at the far end. Today Rest's "Take a Short Rest" is on the right, Hit points' sits alone under its working, Inspiration has Cancel and the others don't, and a battle combo's Delete is plain text. <b>Fix:</b> every window follows the rule, Cancel wherever a window makes a change.</p></div>
+    <div class="fix"><h3>The selected filter is red on History <span class="sev rule">Rule</span></h3>
+      <p>Chips are blue when on everywhere else (Wild Shape forms, Spells, the Reader). Manage › History and askdnd history use red. <b>Fix:</b> blue.</p></div>
+    <div class="fix"><h3>The Spell Book's ✕ on its own line on a phone <span class="sev rule">Rule</span></h3>
+      <p>Every other panel and modal has what it belongs to, its name and ✕ in one head. On a phone the Spell Book's ✕ drops below the title. <b>Fix:</b> the shared head, at every width.</p></div>
+    <div class="fix"><h3>Long page titles break onto two big lines on a phone <span class="sev rule">Rule</span></h3>
+      <p>"askdnd admin", "Backups and imports", "Tool corrections", "D&amp;D Beyond bridge" and "Design system" take two lines at 30 px. <b>Fix:</b> page titles drop to 26 px on phones and balance their lines.</p></div>
+    <div class="fix"><h3>A page's own action floats in different places <span class="sev rule">Rule</span></h3>
+      <p>"+ New entry" sits at the right under Campaign's title, "+ Add session" is centred, "Refresh all from D&amp;D Beyond" is on the left under Table's title, and "+ Add to the table" is a red button midway down. <b>Fix:</b> a page's own action sits at the right end of its title row, a secondary button; red stays for the one next step on a page (Review it, Draft the next one).</p></div>
+    <div class="fix"><h3>Resource names are red links in the Party card <span class="sev rule">Rule</span></h3>
+      <p>On a character's card from Party, Luck Points and Focus Points are underlined red links; on Battle and Party they're plain names that open the same window. <b>Fix:</b> plain names everywhere, opening the window.</p></div>
+    <div class="fix"><h3>The Adv badge hangs out of its tile on a phone <span class="sev rule">Rule</span></h3>
+      <p>Initiative's and the saves' Adv badges sit on the tile's bottom edge, half outside it. <b>Fix:</b> the tile's foot (question 4) holds badges.</p></div>
+    <div class="fix"><h3>Prepare spells: the top wraps on narrower screens <span class="sev bug">Bug</span></h3>
+      <p>The title, the count and ✕ break onto loose rows, and the filter chips wrap unevenly. <b>Fix:</b> on narrower screens the count goes under the title as one line with its boxes, ✕ stays beside the title, and the filters fold into one Filters line, as the Spell Book does.</p></div>
+    <div class="fix"><h3>"Last check: Not run since askdnd started" and similar in-between words <span class="sev rule">Rule</span></h3>
+      <p>A few admin cards say how something stands in words a person can't act on. <b>Fix:</b> each says what it means and what to do, or nothing.</p></div>
+  </section>
+
+  <section class="group" id="questions">
+    <h2>Your choices</h2>
+    <p>Each has my recommendation first. Pick one or write your own in the note.</p>
+    <div id="qs"></div>
+  </section>
+
+  <section class="group">
+    <h2>How it gets built</h2>
+    <p>One step at a time in this session, each tried on your computer first, then on beta.</p>
+    <div class="steps">
+      <div><b>The parts, in the design system first</b><span>The tile, the D&amp;D Beyond mark, the filter's start, Full notes, the window's foot, the panel's head and tab bars on phones, drawn on Manage › Design system so you see each once, in every state (a change on its way, a change given up, an empty list, a long name).</span></div>
+      <div><b>The character pages and their windows</b><span>Battle, Sheet, Plan, every small window and side panel, and Prepare spells, using those parts.</span></div>
+      <div><b>Everything else</b><span>Story, Campaign, Party, Help, and Manage for the DM and for askdnd; coins.</span></div>
+      <div><b>Guarded so it stays</b><span>Tests for the new rules (a tile with a change on its way, buttons inside it and a long number holds together; every list starts as decided; every list with notes has Full notes), the scan once more, docs/DESIGN.md and the Help pages brought to the end state. Then Phase 1 is complete and the VTT starts.</span></div>
+    </div>
+  </section>
+
+  <footer>Kept in the repo as <code>docs/artifacts/ui-ux-pass.html</code>. The Roadmap has where this stands: <a href="https://claude.ai/artifact/EtCBFsKNwLK5LNhQjcbzS3">askdnd Roadmap</a>.</footer>
+</div>
+
+<script>
+const M = {
+mark: `<div class="mocks">
+  <div class="mock"><span class="cap bad">Today: three looks, some places none</span>
+    <div class="tiles"><div class="tile going"><span class="corner">↻</span><small>Armor class</small><b>18</b></div><div class="tile"><small>Speed</small><b>30 ft</b></div></div>
+    <div class="row"><span class="tick on">✓</span><span class="nm">Bless <span class="mbtn">↻</span></span></div>
+    <div class="row"><span class="nm">Potion of Healing</span><span class="sm">×2</span></div>
+    <span class="note">Tiles: a dashed outline and a corner ↻. Prepare spells: a ↻ tag. Items, coins, charges, attuning: nothing.</span></div>
+  <div class="mock"><span class="cap good">A · One mark, right after the value</span>
+    <div class="tiles"><div class="tile"><small>Armor class</small><b>18</b><span class="go">↻</span></div><div class="tile"><small>Speed</small><b>30 ft</b></div></div>
+    <div class="row"><span class="tick on">✓</span><span class="nm">Bless</span><span class="go">↻</span></div>
+    <div class="row"><span class="nm">Potion of Healing</span><span class="sm">×1</span><span class="go">↻</span></div>
+    <span class="note">The same ↻ after anything on its way, a ! there when it was given up. Hover: "On its way to D&amp;D Beyond".</span></div>
+</div>`,
+tile: `<div class="mocks">
+  <div class="mock"><span class="cap bad">Today, while a change is on its way</span>
+    <div class="tiles"><div class="tile hp going"><span class="corner">↻</span><small>HP <span class="btns"><i>−</i><i>+</i></span></small><b>56</b> <span class="of">/<br>66</span></div><div class="tile"><small>AC</small><b>18</b></div><div class="tile"><small>Init.</small><b>+1</b><br><span class="adv">Adv</span></div></div>
+    <span class="note">The ↻ sits on the buttons, the value wraps, the badge hangs out.</span></div>
+  <div class="mock"><span class="cap good">A · One tile, three rows</span>
+    <div class="tiles"><div class="tile hp t2"><div class="lab"><small>HP</small><span class="go">↻</span><span class="acts"><i>−</i><i>+</i></span></div><div class="val"><b>56</b> <span class="of">/ 66</span></div><div class="foot">+5 temp</div></div><div class="tile t2"><div class="lab"><small>AC</small></div><div class="val"><b>18</b></div><div class="foot"></div></div><div class="tile t2"><div class="lab"><small>Init.</small></div><div class="val"><b>+1</b></div><div class="foot"><span class="adv">Adv</span></div></div></div>
+    <span class="note">Label row (its actions and the mark at the right), the value (never wraps), a foot for badges and notes.</span></div>
+</div>`,
+prep: `<div class="mocks">
+  <div class="mock"><span class="cap bad">Today</span>
+    <div class="row amber"><span class="tick on">✓</span><span class="nm">Bless</span><span class="sm">1st</span></div>
+    <div class="row amber"><span class="tick">✓</span><span class="nm">Sanctuary</span><span class="sm">1st</span></div>
+    <span class="note">Amber rows, a green ✓ and a red ✕ in Your changes.</span></div>
+  <div class="mock"><span class="cap good">A · A bar for what changes, words for which way</span>
+    <div class="row add"><span class="tick on">✓</span><span class="nm">Bless</span><span class="sm">1st</span></div>
+    <div class="row drop"><span class="tick">✓</span><span class="nm">Sanctuary</span><span class="sm">1st</span></div>
+    <div class="chg add"><span class="k">+</span><b>Bless</b><span class="sm">1st</span></div>
+    <div class="chg drop"><span class="k">−</span><span>Sanctuary</span><span class="sm">1st</span></div></div>
+</div>`,
+coins: `<div class="mocks">
+  <div class="mock"><span class="cap bad">Today: under the item list</span>
+    <span class="note">… Waterskin · Whetstone</span>
+    <span class="note" style="color:var(--a-text)">Coins: 2 pp, 145 gp, 30 sp, 12 cp</span>
+    <span><span class="mbtn">Change coins</span></span></div>
+  <div class="mock"><span class="cap good">A · A coin purse at the top of Items</span>
+    <div class="coinbar"><div class="coins"><span class="coin"><i class="pp">pp</i>2</span><span class="coin"><i class="gp">gp</i>145</span><span class="coin"><i class="sp">sp</i>30</span><span class="coin"><i class="cp">cp</i>12</span></div><span class="tot">168.1 gp in all</span></div>
+    <span class="note">Each coin in its own metal; pressing the purse opens Change coins. The same purse on a character's Party card.</span></div>
+</div>`,
+tabs: `<div class="mocks">
+  <div class="mock"><span class="cap bad">Today on a phone</span><div class="tabs"><span>bos 4</span><span>Leveling 1</span><span>Quests 1</span><span class="on">Notes 2</span><span>Remi</span></div><span class="note">Cut words at both edges.</span></div>
+  <div class="mock"><span class="cap good">A · Scroll, with the edge faded</span><div class="tabs fade"><span>Combos 4</span><span>Leveling 1</span><span>Quests 1</span><span class="on">Notes 2</span><span>Reminders</span></div><span class="note">The tab you're on is always in view.</span></div>
+</div>`,
+notes: `<div class="mocks"><div class="mock"><span class="cap good">Beside Sort, where Wild Shape has it</span>
+  <div style="display:flex;gap:10px;align-items:center"><span class="seg"><b class="on">Prepared</b><b>Shortlist</b><b>All</b></span><span class="chk"><i></i>Full notes</span></div>
+  <div class="row"><span class="nm">Healing Word<span class="note">✎ Keep one 1st-level for this when Cole drops</span></span></div></div></div>`,
+filter: `<div class="mocks"><div class="mock"><span class="cap">Today's starting choice, by list</span>
+  <span class="note">Inventory: <b>All</b> · Equipped · Shortlist</span>
+  <span class="note">Features: <b>All</b> · Shortlist</span>
+  <span class="note">Sheet › Spells: <b>Prepared</b> · Shortlist · All</span>
+  <span class="note">Plan › Spells: <b>Shortlist</b> · All</span>
+  <span class="note">Wild Shape: <b>Known</b> · All you can learn</span>
+  <span class="note">Campaign: <b>All</b> · Last session · Quests: <b>Open</b> · Done</span></div></div>`
+};
+const QS = [
+ {id:"mark", t:"How a change on its way to D&D Beyond is marked", why:"<b>Your example.</b> A change shows as made at once and is marked until D&D Beyond has it. Today tiles and conditions get a dashed outline with a corner ↻, Prepare spells a ↻ tag, and items, coins, charges, attuning and prepared ticks get nothing, though all of them travel the same way.", mock:"mark",
+  o:[["A","One mark after the value, everywhere","The ↻ right after anything on its way (a tile's number, a pip, an item's count, a coin, a ✓), and ! there when it was given up. No outline. It never covers anything.",true],
+     ["B","Today's tile look, everywhere","A dashed outline and a corner ↻ on every place, rows and coins included. More visible, and it needs room in every corner."],
+     ["C","Only in the window you made it from","Pages show the new value without a mark; the corner card says when D&D Beyond has it."]]},
+ {id:"tile", t:"A tile that holds buttons", why:"<b>Your example.</b> The Hit Points tile has − and + inside it, which squeeze the number and collide with the mark. More tiles will gain buttons in the VTT (a Roll, a Dash).", mock:"tile",
+  o:[["A","One tile, three rows","Label row with its actions and the mark at the right, the value on one line, a foot for badges (Adv) and small notes (+5 temp). Hit Points stays wider on a phone. Every tile uses it, with or without buttons.",true],
+     ["B","No buttons in tiles on a phone","Desktop as A; on a phone the tile is one button that opens its window (with − and + there)."]]},
+ {id:"filter", t:"Which choice a list starts on", why:"<b>Your example.</b> The order stays as it is. Today each list starts on its first choice, so some start on All and others don't.", mock:"filter",
+  o:[["A","Where you left it, on that device","Each list remembers your last choice on that device, like Battle's tabs; the first time, it starts on All.",true],
+     ["B","Always All","Every list opens on All."],
+     ["C","Its own first choice (today)","Prepared, Shortlist, Known start where they are; only the order is made consistent."]]},
+ {id:"notes", t:"Full notes", why:"<b>Your example.</b> Wild Shape has it because you've written a note on a form there; every list has it, but only after its first note. The Spell Book and Prepare spells don't have it at all.", mock:"notes",
+  o:[["A","On every list you can write notes on, always","Beside Sort on Sheet, Plan, the Spell Book and Prepare spells, before your first note too. Players only (the DM never sees notes).",true],
+     ["B","Once a list has a note","As today, and added to the Spell Book and Prepare spells."]]},
+ {id:"prep", t:"Prepare spells: how your changes look", why:"You found the colours clashing: amber rows, with a green ✓ and a red ✕ in Your changes.", mock:"prep",
+  o:[["A","A bar for what changes, + and − for which way","A green bar at the row's edge for a spell you're preparing; a grey bar and struck-through name for one you're dropping. Your changes lists them with + and −. No amber.",true],
+     ["B","Amber for both","One colour for anything changed, + and − to tell them apart."]]},
+ {id:"coins", t:"Coins", why:"You found them strangely placed: a line of text under the item list, and a separate Change coins button.", mock:"coins",
+  o:[["A","A coin purse at the top of Items","Each coin in its own metal, the total in gold beside them; pressing it opens Change coins. The same purse on the character's Party card.",true],
+     ["B","A Coins tile among Sheet's numbers","Gold as the number, the rest on hover and in its window."]]},
+ {id:"tabs", t:"Tab bars that don't fit a phone", why:"Plan and Campaign cut their tabs' words at both edges.", mock:"tabs",
+  o:[["A","Scroll, with the edge faded","The bar scrolls sideways, the cut edge fades, and the tab you're on is always in view.",true],
+     ["B","Two lines","The tabs wrap onto a second line."],
+     ["C","More ▾","As many as fit, the rest under More."]]}
+];
+const answers = {}; let db = null;
+const $ = id => document.getElementById(id);
+function status(t){ $("save").textContent = t; }
+function render(){
+  $("qs").innerHTML = QS.map((q,i)=>`<div class="q" id="q-${q.id}"><div class="q-head"><span class="q-num">${i+1}</span><h3>${q.t}</h3><span class="q-state" id="s-${q.id}">Open</span></div>
+    <p class="why">${q.why}</p>${q.mock ? M[q.mock] : ""}
+    <div class="opts" role="radiogroup" aria-label="${q.t}">${q.o.map(o=>`<label class="opt"><input type="radio" name="${q.id}" value="${o[0]}"><span><b>${o[0]} · ${o[1]}${o[3]?'<span class="rec">Recommended</span>':''}</b><small>${o[2]}</small></span></label>`).join("")}</div>
+    <textarea id="n-${q.id}" placeholder="A note or your own answer (optional)" aria-label="Note for question ${i+1}"></textarea></div>`).join("");
+  QS.forEach(q=>{
+    document.querySelectorAll(`input[name="${q.id}"]`).forEach(r=>r.addEventListener("change",()=>save(q.id,{choice:r.value})));
+    let t; $("n-"+q.id).addEventListener("input",e=>{clearTimeout(t); t=setTimeout(()=>save(q.id,{note:e.target.value}),600);});
+  });
+  progress();
+}
+function paint(q){
+  const a = answers[q.id] || {};
+  document.querySelectorAll(`input[name="${q.id}"]`).forEach(r=>r.checked = r.value === a.choice);
+  const n = $("n-"+q.id); if (document.activeElement !== n) n.value = a.note || "";
+  progress();
+}
+function progress(){
+  const done = QS.filter(q=>(answers[q.id]||{}).choice || (answers[q.id]||{}).note).length;
+  QS.forEach(q=>{ const ok = (answers[q.id]||{}).choice || (answers[q.id]||{}).note; $("q-"+q.id).classList.toggle("done", !!ok); $("s-"+q.id).textContent = ok ? "Answered" : "Open"; });
+  $("count").textContent = `${done} of ${QS.length} answered`; $("meter").style.width = (100*done/QS.length)+"%";
+}
+async function save(id, part){
+  answers[id] = {...(answers[id]||{}), ...part}; progress();
+  if (!db) return;
+  try { status("Saving…"); await db.collection("answers").doc(id).set({choice: answers[id].choice || "", note: answers[id].note || ""}); status("Saved"); }
+  catch (e) { status("Couldn't save: answer in chat instead"); }
+}
+$("acceptAll").addEventListener("click", async ()=>{
+  for (const q of QS) if (!(answers[q.id]||{}).choice) { const rec = q.o.find(o=>o[3]); if (rec) { answers[q.id] = {...(answers[q.id]||{}), choice: rec[0]}; paint(q); await save(q.id, {choice: rec[0]}); } }
+});
+render();
+(async () => {
+  try { db = window.claude && await window.claude.use("db"); } catch (e) { db = null; }
+  if (!db) { status("Not saved"); $("offline").hidden = false; $("acceptAll").hidden = true; return; }
+  status("Answers save as you go");
+  db.collection("answers").onSnapshot(snap => {
+    snap.docs.forEach(d => { if (!d.metadata.hasPendingWrites) { const v = d.data() || {}; answers[d.id] = {choice: v.choice ?? "", note: v.note || ""}; } });
+    QS.forEach(paint);
+  }, () => status("Couldn't load saved answers"));
+})();
+</script>

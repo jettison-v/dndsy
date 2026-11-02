@@ -134,7 +134,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
       <p><b>Read the <a href="https://claude.ai/artifact/DYL6vpaq3Q1hS37SfuiYbB">VTT Feature Map</a></b>: what D&amp;D Beyond has, what people love elsewhere, the MVP and five decisions. It updates the <a href="https://claude.ai/artifact/6oTb8pSFzhhUakYsYHEw5x">Simple VTT</a> design, whose questions still stand.</p>
       <p><b>Check the usability round on beta</b>, built from the <a href="https://claude.ai/artifact/Bt4d1DHjadCiRvXBA1PquB">Usability Mockups</a>. <a href="https://claude.ai/artifact/1SHdzwsmtnwfBYVRL5bwM1">Battle Band</a> (Option E) and <a href="https://claude.ai/artifact/QzNtDwYURngJFvb4gFC4Cn">Hit Points Flow</a> (Option B) are on beta. Live changes to Hit Points still need a look from you.</p>
       <p><b>Say yes to the Live pill's colours on <a href="https://claude.ai/artifact/AddqtVULn7Cfx9xNCgoghk">DM Backup</a></b>: you chose Option A (the DM's D&amp;D Beyond page makes a change when a player's sheet is closed). Green connected, yellow through the DM, red can't reach, grey when no one's playing. Then it gets built.</p>
-      <p><b>Your exact steps are on <a href="https://claude.ai/artifact/4aq1xYj2DSiiAPUhiFMRhW">Next Steps</a></b>: move askdnd.ai to v2 (approved Nov 2; Google first), upload the Monster Manual file, upload extension 0.9.8, then review live state and share the bridge.</p>
+      <p><b>Your exact steps are on <a href="https://claude.ai/artifact/4aq1xYj2DSiiAPUhiFMRhW">Next Steps</a></b>: sign in at askdnd.ai (moved Nov 2) and tidy Google's secrets, upload the Monster Manual file, upload extension 0.9.8, then review live state and share the bridge.</p>
           </div>
     <div class="steps">
       <div class="step"><span class="n">1</span><div class="body"><h3>Game Mode for the table, and the Live pill</h3>
@@ -216,13 +216,13 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
   </section>
 
   <section id="polish">
-    <div class="sec-head"><div class="eyebrow">Next, before the VTT</div><h2>A UI polish pass</h2></div>
-    <div class="box"><div class="head"><h3>Wrapping and colours, all in one go</h3><span class="chip s-wait">Starts after askdnd.ai moves</span></div>
-      <p class="small">Brett, Nov 2: ship Prepare spells now and polish the look once the structural changes are in, since wrapping needs work in several places. Collected so far:</p>
-      <ul class="small"><li><b>Prepare spells' changes</b>: the amber rows with green and red ticks clash; one calm way to mark "will prepare" and "will drop", the same in the list and in Your changes.</li>
-        <li><b>Prepare spells on narrower screens</b>: the title, the count and ✕ wrap onto loose rows, and the filter chips wrap unevenly.</li>
-        <li><b>Coins</b> (Brett, Nov 2): where they sit on Sheet › Items is strange, and they could be more visual.</li>
-        <li><b>Wrapping elsewhere</b> that you've noticed: send me a screenshot or the page as you find them, and I'll add each here. <code>scripts/layout_sweep.py</code> screenshots every main page at four widths to start from.</li></ul></div>
+    <div class="sec-head"><div class="eyebrow">Now · the end of Phase 1</div><h2>A UI and UX pass over everything</h2>
+      <p class="why">Brett, Nov 2: many small changes have piled up, so before the VTT, a full scan like the one that started the design system (Oct 22), this time for how things work as well as how they look. Phase 1 of today's product is complete when it's done. In this session, one step at a time.</p></div>
+    <div class="steps">
+      <div class="step"><span class="n">1</span><div class="body"><h3>Scan every page, window and panel</h3><p>Each page as a player, the DM and an admin, at phone and desktop widths, with every tab, modal, small window and side panel opened, and a change on its way drawn on purpose: 734 page views, 112 kinds of window (<code>scripts/ui_scan.py</code>).</p></div><div class="tags"><span class="chip eff">M</span><span class="chip s-done">Done Nov 2</span></div></div>
+      <div class="step"><span class="n">2</span><div class="body"><h3>One page of findings and choices: <a href="https://claude.ai/artifact/2abF1Z1bAFQPGauYFvRZwR">UI and UX Pass</a></h3><p>Like the design system's: what the scan found, grouped into patterns, one rule proposed for each, and the choices that are Brett's. Already on it: one way to mark what's sent to D&amp;D Beyond (some have an icon, some don't); Wild Shape's Show full notes on every similar list; what a filter selects first (the order stays); a tile built to hold buttons, so they don't wrap or jump while a change is on its way (Hit Points); Prepare spells' change colours and its wrapping on narrower screens; where coins sit, more visual. 18 findings: 11 fixes that follow the design system, 7 choices.</p></div><div class="tags"><span class="chip eff">S</span><span class="chip s-wait">Yours: 7 choices</span></div></div>
+      <div class="step"><span class="n">3</span><div class="body"><h3>Build it in reviewed rounds</h3><p>Each round tried locally first, then on beta. The design system (Manage › Design system, docs/DESIGN.md) shows the end state, and tests guard the new rules so they don't drift back.</p></div><div class="tags"><span class="chip eff">L</span></div></div>
+    </div>
   </section>
 
   <section id="later">
@@ -248,7 +248,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
       <li><b>How much map automation</b> (3): decide after using simple maps.</li>
       <li><b>Where music comes from</b> (4): tracks the DM uploads or has rights to.</li>
       <li><b>Video and the privacy rule</b> (6): recording stays on your Mac, or the rule changes.</li>
-      <li><b>askdnd.ai moves to v2</b>: approved Nov 2, the same app and data as beta; the old app stays at legacy.askdnd.ai.</li>
+      <li><b>askdnd.ai moves to v2</b>: done Nov 2, the same app and data as beta; the old app stays at legacy.askdnd.ai.</li>
       <li><b>A faster bridge: count D&amp;D Beyond's reply</b> (with the next extension update): clear the ↻ mark on D&amp;D Beyond's own answer to a write and check it again in the background, about 1 to 3 seconds faster. The cost: when D&amp;D Beyond answers OK without keeping a change (it has happened), the mark clears and comes back as ! a few seconds later.</li></ul></div>
   </section>
 
@@ -325,6 +325,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     <div class="tablewrap"><table>
       <thead><tr><th>Document</th><th>Status</th><th>Date</th><th>What it is</th></tr></thead>
       <tbody>
+        <tr><td><a href="https://claude.ai/artifact/2abF1Z1bAFQPGauYFvRZwR">UI and UX Pass</a></td><td><span class="chip s-wait">Waiting on 7 choices</span></td><td>Nov 2</td><td class="what">The full scan before the VTT: what it found, the fixes that follow the design system, and seven choices. <code>docs/artifacts/ui-ux-pass.html</code></td></tr>
         <tr><td><a href="https://claude.ai/artifact/MEKgzxQxRqrCm1emjHu9VY">Prepare Spells</a></td><td><span class="chip s-done">Built · on beta Nov 2</span></td><td>Nov 2</td><td class="what">Preparing spells as its own screen, with the count against your class's number and one Make for all the changes. <code>docs/mockups/prepare-spells/</code></td></tr>
         <tr><td><a href="https://claude.ai/artifact/VkPT5mfWdLTaPrzJwmeV7W">VTT Layout</a></td><td><span class="chip s-done">Current · chosen: the frame</span></td><td>Nov 2</td><td class="what">The VTT's final layout: the frame around the map for a player and the DM, step 1 in the same frame, phones, movement and spell areas to try, two layouts set aside. Builds on the VTT Feature Map and Simple VTT. <code>docs/mockups/vtt-layout/</code></td></tr>
         <tr><td><a href="https://claude.ai/artifact/PeV3Ki4NPzRcq5qmDTbbha">Live Window</a></td><td><span class="chip s-done">Built · on beta Nov 2</span></td><td>Nov 2</td><td class="what">The Live window's list of sheets: why today's rows won't line up, and three other ways to lay it out. <code>docs/mockups/live-window/</code></td></tr>
