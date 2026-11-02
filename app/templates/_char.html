@@ -227,15 +227,21 @@
 {# Limited resources, the ones with the most uses first (by total, not by what's left), then spell
    slots. Battle passes slots=False and skips Wild Shape: its spell bar and Wild Shape row show those. #}
 {# One count in the Resources row; with `c`, it opens its window (app/resources.py) #}
-{% macro res(s, c, field, label, u) -%}
-{%- if c %}<button type="button" class="res res-go" data-use-url="/characters/{{ c.id }}/count?field={{ field | urlencode }}"{{ sync(s, field) }}>{{ label }} {{ pips(u) }}</button>
-{%- else %}<span class="res">{{ label }} {{ pips(u) }}</span>{% endif -%}
+{# Its name, whole while the row fits on one line and short once it doesn't (app.js "Battle's Resources") #}
+{% macro res_name(label) -%}
+{%- set short = label | res_short -%}
+{%- if short != label %}<span class="rn-full">{{ label }}</span><span class="rn-short">{{ short }}</span>{% else %}{{ label }}{% endif -%}
+{%- endmacro %}
+{% macro res(s, c, field, label, u, full="") -%}
+{%- set says = full or label -%}
+{%- if c %}<button type="button" class="res res-go" data-use-url="/characters/{{ c.id }}/count?field={{ field | urlencode }}"{{ sync(s, field) }} title="{{ says }}">{{ res_name(label) }} {{ pips(u) }}</button>
+{%- else %}<span class="res" title="{{ says }}">{{ res_name(label) }} {{ pips(u) }}</span>{% endif -%}
 {%- endmacro %}
 
 {% macro resource_row(s, slots=True, skip=(), c=none) -%}
 {% set res_rows = s.actions | selectattr("uses") | selectattr("source", "in", ["class", "feat", "race"]) | rejectattr("name", "in", skip) | sort(attribute="uses.max", reverse=True) | list %}
 {% if res_rows %}<button type="button" class="res-more" data-res-more aria-expanded="false"><span>Resources</span><span class="count">{{ res_rows | length }}</span></button>
-<div class="res-row"><span class="res-label">Resources</span>{% for g in res_rows | res_groups %}{% if g.name %}<span class="res-group"><span class="res-gname">{{ g.name }}:</span>{% for a in g.rows %}{{ res(s, c if a.id else none, "uses:" ~ a.id, a.name.split(": ", 1)[1], a.uses) }}{% endfor %}</span>{% else %}{% for a in g.rows %}{{ res(s, c if a.id else none, "uses:" ~ a.id, a.name, a.uses) }}{% endfor %}{% endif %}{% endfor %}{% if caller %}{{ caller() }}{% endif %}</div>{% elif caller %}<div class="res-row"><span class="res-label">Resources</span>{{ caller() }}</div>{% endif %}
+<div class="res-row"><span class="res-label">Resources</span>{% for g in res_rows | res_groups %}{% if g.name %}<span class="res-group"><span class="res-gname" title="{{ g.name }}">{{ res_name(g.name) }}:</span>{% for a in g.rows %}{{ res(s, c if a.id else none, "uses:" ~ a.id, a.name.split(": ", 1)[1], a.uses, a.name) }}{% endfor %}</span>{% else %}{% for a in g.rows %}{{ res(s, c if a.id else none, "uses:" ~ a.id, a.name, a.uses) }}{% endfor %}{% endif %}{% endfor %}{% if caller %}{{ caller() }}{% endif %}</div>{% elif caller %}<div class="res-row"><span class="res-label">Resources</span>{{ caller() }}</div>{% endif %}
 {% if slots and (s.spell_slots.slots or s.spell_slots.pact) %}<div class="res-row slots"><span class="res-label">Spell slots</span>
   {% for sl in s.spell_slots.slots %}{{ res(s, c, "slot:" ~ sl.level, sl.level ~ {1: "st", 2: "nd", 3: "rd"}.get(sl.level, "th"), {"max": sl.max, "left": sl.max - sl.used}) }}{% endfor %}
   {% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}{{ res(s, c, "pact:" ~ p.level, "Pact (" ~ {1: "1st", 2: "2nd", 3: "3rd"}.get(p.level, p.level ~ "th") ~ ")", {"max": p.max, "left": p.max - p.used}) }}{% endif %}

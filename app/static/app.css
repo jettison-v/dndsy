@@ -176,9 +176,11 @@ body.no-bridge:not(.bridge-elsewhere) .live-pill[data-wants-bridge] .live-ago { 
 .start-card b { color: var(--text-strong); font-size: var(--fs-md); }
 .start-card .btn { margin-top: auto; }
 .pin-hint { margin: 0 0 var(--sp-3); padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--muted); font-size: var(--fs-sm); }
-.res-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0; padding: 0 14px; border-left: 1px solid var(--line); }
-.res-gname { color: var(--muted); margin-right: 8px; }
-.res-group .res { border-left: none; padding: 0 12px 0 0; }
+.rn-short, .res-row.short .rn-full { display: none; }
+.res-row.short .rn-short { display: inline; }
+.res-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0; padding: 0 10px; border-left: 1px solid var(--line); }
+.res-gname { color: var(--muted); margin-right: 6px; }
+.res-group .res { border-left: none; padding: 0 8px 0 0; }
 .res-more { display: none; }
 .rs-latest { display: none; }
 .cast-go { justify-content: space-between; }
@@ -187,7 +189,7 @@ body.no-bridge:not(.bridge-elsewhere) .live-pill[data-wants-bridge] .live-ago { 
 .cond-rest:hover { color: var(--text); border-color: var(--muted); }
 .res-row > .cond-rest { margin-left: auto; }  /* Rest ends Resources, at the far right */
 /* Heroic Inspiration: a chip you can press, lit when you have it, grey and hollow when you don't */
-.res-row .res.res-insp, .res-insp { display: inline-flex; align-items: center; gap: var(--sp-1); min-height: var(--chip-h); margin-left: var(--sp-3); padding: 0 var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--surface-2); color: var(--muted); font: 600 var(--fs-md)/1 var(--sans); cursor: pointer; }
+.res-row .res.res-insp, .res-insp { display: inline-flex; align-items: center; gap: var(--sp-1); min-height: var(--chip-h); margin-left: var(--sp-2); padding: 0 var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--surface-2); color: var(--muted); font: 600 var(--fs-md)/1 var(--sans); cursor: pointer; }
 .res-insp:hover, .res-insp:focus-visible { color: var(--text); border-color: var(--muted); }
 .res-row .res.res-insp.on, .res-insp.on { color: var(--amber); border-color: var(--amber); background: var(--amber-soft); }
 .status-phone { display: none; }
@@ -840,7 +842,7 @@ details.faq[open] > summary::before { transform: rotate(90deg); }
 .sheet [id^=t-] h3.divider { scroll-margin-top: calc(var(--stick-top, 62px) + var(--tabs-h, 41px) + 8px); position: sticky; top: calc(var(--stick-top, 62px) + var(--tabs-h, 41px)); z-index: 3; background: var(--surface); padding: 8px 0 6px; margin-bottom: 4px; }
 @media (max-width: 900px) { .sheet .tabbar { margin: 0 -18px 12px; padding: 0 18px; } }  /* sections' own padding from tablet down */
 /* Resources: one line for limited uses, one for spell slots, with dividers between items */
-.res-row .res { padding: 0 14px; border-left: 1px solid var(--line); }
+.res-row .res { padding: 0 10px; border-left: 1px solid var(--line); }
 .res-row .res:first-child, .res-row .res-label + .res { border-left: none; padding-left: 0; }
 .res-row.slots { margin-top: 6px; }
 .level-up { background: var(--surface); border: 1px solid var(--amber); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); display: grid; gap: var(--sp-1); margin-bottom: var(--sp-2); }

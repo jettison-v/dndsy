@@ -95,6 +95,28 @@ def table_url(campaign: dict | None) -> str:
     return f"https://www.dndbeyond.com/games/{game}" if game else ""
 
 
+# Short names for Battle's Resources row, once the whole names won't fit on one line (Brett, 2026-11-01: seeing them all
+# matters more than the whole word), with the whole name on hover and in the window a resource opens. Anything not listed
+# keeps its name.
+RES_SHORT = {
+    "Action Surge": "Surge", "Adrenaline Rush": "Adrenaline", "Arcane Recovery": "Arcane Rec.", "Bardic Inspiration": "Bardic Insp.",
+    "Breath Weapon": "Breath", "Channel Divinity": "Channel", "Create Eldritch Cannon": "Make Cannon", "Divine Intervention": "Intervention",
+    "Draconic Cry": "Cry", "Dreadful Strike": "Dreadful", "Eldritch Cannon": "Cannon", "Faithful Steed": "Steed",
+    "Favored by the Gods": "Favored", "Favored Enemy": "Fav. Enemy", "Flamethrower": "Flame", "Flash of Genius": "Flash",
+    "Focus Points": "Focus", "Font of Magic: Sorcery Points": "Sorcery", "Force Ballista": "Ballista", "Harness Divine Power": "Harness",
+    "Healing Hands": "Heal Hands", "Infuse Item": "Infuse", "Innate Sorcery": "Innate", "Lay On Hands: Healing Pool": "Lay on Hands",
+    "Luck Points": "Luck", "Magical Cunning": "Cunning", "Magical Tinkering": "Tinkering", "Nature's Sanctuary": "Sanctuary",
+    "Nature's Veil": "Veil", "Psionic Energy Dice": "Psi Dice", "Relentless Endurance": "Relentless", "Second Wind": "2nd Wind",
+    "Sorcery Incarnate": "Incarnate", "Sorcery Points": "Sorcery", "Stone's Endurance": "Stone's End.", "Stroke of Luck": "Stroke",
+    "Superiority Dice": "Sup. Dice", "Tides of Chaos": "Tides", "Uncanny Metabolism": "Metabolism", "Wild Companion": "Companion",
+    "Wild Resurgence: Regain Spell Slot": "Wild Res.",
+}
+
+
+def res_short(name: str) -> str:
+    return RES_SHORT.get(name, name)
+
+
 def res_groups(rows: list[dict]) -> list[dict]:
     """Resources in their order, those sharing a name before ": " under that name (any class's): {"name", "rows"}."""
     names = [r["name"].split(": ", 1)[0] if ": " in r["name"] else "" for r in rows]
@@ -116,6 +138,7 @@ def _markdown(text: str) -> str:
 
 templates.env.filters["md"] = _markdown
 templates.env.filters["res_groups"] = res_groups
+templates.env.filters["res_short"] = res_short
 
 
 def _entry_url(entity_id) -> str:
