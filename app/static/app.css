@@ -2457,6 +2457,7 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
 @media (max-width: 640px) { .pt-card .pt-purse { display: none; } .pt-card .pt-purse-foot { display: flex; } }  /* (on a phone, at the card's foot: beside the name it squeezed it) */
 
 .pt-name { margin: 0; font-size: var(--fs-lg); }
+.pt-head .char-name > .pt-name { flex: 0 1 auto; }  /* (as wide as the name, so its conditions sit right after it, Brett 2026-11-02) */
 .pt-head .note { margin: 0; }
 .strip.compact.pt-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; }
 .pt-tiles > div { background: var(--surface-2); }
