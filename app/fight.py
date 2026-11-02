@@ -96,8 +96,10 @@ def _int(v) -> int:
 def lock(db: Session, campaign: Campaign) -> None:
     """Hold this campaign's fight until the commit, and read it as it is now: every open VTT page reports each turn, and
     two reports saved at once both saw the turn begin (doubled reminders) and the later wrote over the earlier's
-    (architecture review, 2026-11-02). Every change to `Campaign.fight` starts here."""
-    db.execute(select(Campaign.id).where(Campaign.id == campaign.id).with_for_update())
+    (architecture review, 2026-11-02). Every change to `Campaign.fight` starts here. FOR NO KEY UPDATE, as the bridge's
+    own lock (ddb_bridge._lock, Sentry ASKDND-V2-5): it keeps out the other fight writers but not a new roll or other row
+    that points at the campaign."""
+    db.execute(select(Campaign.id).where(Campaign.id == campaign.id).with_for_update(key_share=True))
     db.refresh(campaign, ["fight", "fight_at"])
 
 
