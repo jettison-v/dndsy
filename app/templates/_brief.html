@@ -9,7 +9,8 @@
 <div class="peek-body">
   {% if s %}
   {{ vitals(s, c) }}
-  {% macro open(x) %}<a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/detail?ref={{ x.key | urlencode }}">{{ x.name }}</a>{% endmacro %}
+  {# A name opens its side panel, plain as on Battle and Party (the UI pass, 2026-11-02: these were red links) #}
+  {% macro open(x) %}<button type="button" class="link-plain" data-panel-url="/characters/{{ c.id }}/detail?ref={{ x.key | urlencode }}">{{ x.name }}</button>{% endmacro %}
   <h3 class="divider">Saving throws</h3>
   {{ saves_block(s.saves, s.save_adv_all, "three") }}
   {% set big = s.actions | selectattr("uses") | list %}

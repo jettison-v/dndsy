@@ -81,7 +81,7 @@ def test_history_filters_and_restore_point_at_history(db, cole, admin):
 
     for url in ("/manage/history", "/c/main/manage/history"):
         page = admin.get(url, follow_redirects=True).text
-        hrefs = re.findall(r'class="btn small[^"]*" href="([^"]+)"', page)
+        hrefs = re.findall(r'class="chip[^"]*" href="([^"]+)"', page)
         assert hrefs and all(h.startswith(("/manage/history", "/c/main/manage/history")) for h in hrefs), hrefs
     assert 'action="/c/main/manage/history/' in admin.get("/c/main/manage/history").text or "Restore" not in admin.get("/c/main/manage/history").text
 

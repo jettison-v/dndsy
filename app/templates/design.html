@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_char.html" import pips, pin_icon, bookmark_icon, bell, ri, spends, ntile, adv %}
+{% from "_char.html" import pips, pin_icon, bookmark_icon, bell, ri, spends, ntile, adv, purse %}
 {% from "_lists.html" import search_box, chip_group, view_switch %}
 {% from "_manage.html" import inline_edit %}
 {% from "_cond_icons.html" import cond_icon %}
@@ -113,6 +113,8 @@
     {{ ds("Number tiles", ".strip.compact > .nt · _char.html ntile()", "Every number tile, on Battle, Sheet and Party (the UI pass, 2026-11-02): three rows, so nothing wraps, jumps or covers anything while a change is on its way. The label row, with the ↻ mark and any buttons at its right (− and + on Battle's Hit points); the value on one line; a foot for badges (Adv) and small notes (+5 temp). Each opens how it adds up.") }}
     {% set hpb %}<span class="hp-btns"><button type="button" class="hp-btn" aria-label="Damage">−</button><button type="button" class="hp-btn" aria-label="Heal">+</button></span>{% endset %}
     <div class="battlebar"><div class="strip compact">{{ ntile(none, 'data-sync="on" title="On its way to D&amp;D Beyond"' | safe, '<span class="ph-full">Hit points</span><span class="ph-short">HP</span>' | safe, '<b>32</b><span class="note"> / 51</span>' | safe, foot='<span class="note">+5 temp</span>' | safe, acts=hpb) }}{{ ntile(none, "", "Armor class", "<b>16</b>" | safe) }}{{ ntile(none, "", "Speed", "<b>45 ft</b>" | safe) }}{{ ntile(none, "", "Initiative", "<b>+3</b>" | safe, foot=adv([{"text": "Advantage: Alert", "when": ""}])) }}{{ ntile(none, "", "Spell DC / attack", '<b>15</b><span class="note"> / +7</span>' | safe) }}{{ ntile(none, "", "Heroic Inspiration", "<b>—</b>" | safe) }}</div></div>
+    {{ ds("Coin purse", "_char.html purse() · .purse > .coin", "Coins as small pills, each in its metal, the total in gold beside them (the UI pass, 2026-11-02). At the top of Sheet › Items, where pressing it opens Change coins; on each Party card it only shows.") }}
+    <div class="ds-row">{{ purse({"currency": {"pp": 2, "gp": 145, "sp": 30, "cp": 12}}) }}</div>
     {{ ds("Character card", ".pt-card (party.html)", "One character on Party › At a glance: portrait, name and classes, three number tiles, best saves, resources and slots; a click opens a short version.") }}
     <div class="ds-narrow"><article class="section pt-card">
       <header class="pt-head"><span class="roll-av hue0">C</span><div class="pt-id"><h2 class="pt-name">Cole</h2><p class="note">Druid 6 / Monk 2</p></div></header>

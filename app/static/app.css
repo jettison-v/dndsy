@@ -51,6 +51,7 @@
   --cond-blinded: #e6e9ee; --cond-charmed: #ec84b8; --cond-deafened: #c3b08a; --cond-exhaustion: #d08a4c; --cond-frightened: #a983e6; --cond-grappled: #e59a52; --cond-incapacitated: #ef6a5e; --cond-invisible: #f4f6f9; --cond-paralyzed: #f0d24a;
   --cond-petrified: #b3aa9b; --cond-poisoned: #86c95b; --cond-prone: #c9a47b; --cond-restrained: #d9774d; --cond-stunned: #f2b93b; --cond-unconscious: #8f97ab; --cond-enlarged: #4fc7b0; --cond-flying: #8fc6f2; --cond-water-breathing: #5aa7e8;
   --cond-concentration: #7ea6e0; --cond-dark: #000; --cond-dark-edge: #6b7079; --cond-dark-glow: rgba(0, 0, 0, .6);
+  --coin-pp: #d9dde3; --coin-gp: #e8b34b; --coin-ep: #b9c4a3; --coin-sp: #a9adb3; --coin-cp: #c07a4a; --coin-ink: #1a1a1a;
 }
 @media (max-width: 640px) { :root { --control-h: 44px; --control-h-sm: 36px; --chip-h: 36px; --bar-h: 44px; } }
 * { box-sizing: border-box; }
@@ -250,7 +251,8 @@ body.pt-rows .pt-with-track { display: none; }
 .title-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 8px 0 4px; }
 .story-search { margin-left: auto; width: min(320px, 100%); }  /* Story's search, beside its title */
 mark.story-hit { background: var(--amber-soft); color: var(--text-strong); border-radius: var(--r-xs); padding: 0 1px; }
-h1 { font-size: var(--fs-2xl); font-weight: 700; margin: 0; letter-spacing: -.01em; line-height: 1.25; }
+h1 { font-size: var(--fs-2xl); font-weight: 700; margin: 0; letter-spacing: -.01em; line-height: 1.25; text-wrap: balance; }
+@media (max-width: 640px) { main h1 { font-size: var(--fs-xl); } }  /* (long titles kept to one line on phones: the UI pass, 2026-11-02) */
 .subtitle { color: var(--muted); margin: 0 0 32px; }
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 32px; align-items: start; }
 
@@ -727,7 +729,7 @@ details.opt .meta, .move .meta, .situ .meta { margin-top: 2px; }
 .seg button[aria-pressed=true] { background: var(--red); color: var(--text-strong); }
 .filters { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
 .filters button { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: var(--r-pill); padding: 3px 11px; font-size: var(--fs-sm); min-height: 30px; }
-.filters button[aria-pressed=true] { border-color: var(--red); color: var(--text-strong); background: var(--red-soft); }
+.filters button[aria-pressed=true] { border-color: var(--blue); color: var(--text-strong); background: var(--selected-bg); }  /* (blue when on, as every chip: the UI pass, 2026-11-02) */
 .filters .sep { width: 1px; height: 18px; background: var(--line); margin: 0 4px; }
 .spell-row.not-ready > summary b { color: var(--muted); font-weight: 500; }
 .pick.fav.on { color: var(--blue); }
@@ -2390,7 +2392,11 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
 .inline-edit-form input { flex: 1 1 auto; min-width: 0; }
 /* A closing note under a page's content, and the title row's own button */
 .page-note { margin-top: var(--sp-5); }
-.title-row .title-action { margin-left: auto; }
+.title-row .title-action { margin-left: auto; flex: none; }
+/* A page's own action stays at the right end of its title row at every width; the title wraps beside it instead
+   (the UI pass, 2026-11-02: on phones it dropped to a line of its own, left, centred or right) */
+.title-row:has(> .title-action) { flex-wrap: nowrap; align-items: flex-start; }
+.title-row:has(> .title-action) > h1 { flex: 1 1 auto; min-width: 0; }
 .all-clear + .records { margin-top: var(--sp-4); }
 
 /* The new-player tour (app.js "the tour", app/tour.py): everything else dims, one thing stays lit, a card says what
@@ -2453,9 +2459,13 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
 .pt-coins { margin: var(--sp-3) 6px 0; }
 @media (max-width: 900px) { .pt-cards { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 640px) {
-  .pt-spells .pt-row, .pt-items .pt-row { grid-template-columns: minmax(0, 1fr) auto; }
+  /* The name and who has it side by side while both fit, the portraits under the name once they don't (the UI pass,
+     2026-11-02: six portraits squeezed a name to one letter per line) */
+  .pt-spells .pt-row, .pt-items .pt-row { display: flex; flex-wrap: wrap; column-gap: var(--sp-3); row-gap: var(--sp-1); }
+  .pt-spells .pt-row > :first-child, .pt-items .pt-row > .pt-nm { flex: 1 1 10em; min-width: 0; }
+  .pt-spells .pt-row > .pt-who, .pt-items .pt-row > .pt-who { margin-left: auto; }
   .pt-spells .pt-row > :nth-child(2), .pt-spells .pt-row > :nth-child(3), .pt-spells .pt-row > :nth-child(4), .pt-items .pt-sum { display: none; }
-  .pt-headrow { display: none; }
+  .pt-list .pt-headrow { display: none; }
   .pt-list { padding: 16px; }
 }
 
@@ -2593,38 +2603,61 @@ body:not(.br-ext) .br-ext-on, body.br-ext .br-ext-off { display: none; }
 .prep-boxes.over i.on { background: var(--red); border-color: var(--red); }
 .prep-extra { color: var(--link); font-weight: 700; font-size: var(--fs-sm); margin-left: var(--sp-1); }
 .prep-warn { margin: 0; padding: var(--sp-2) var(--sp-3); border: 1px solid var(--amber); background: var(--amber-soft); border-radius: var(--r-md); font-size: var(--fs-sm); }
-.prep-filters { display: grid; gap: var(--sp-1); align-content: start; position: sticky; top: 0; }
+.prep-filters { display: grid; gap: var(--sp-1); align-content: start; }
+.prep-fold { position: sticky; top: 0; align-self: start; min-width: 0; }
 .prep-filters .chips { display: flex; flex-wrap: wrap; gap: var(--sp-1); margin-bottom: var(--sp-2); }
 .prep-body { display: grid; grid-template-columns: 150px minmax(0, 1fr) 200px; gap: var(--sp-4); align-items: start; }
 .prep-list { display: grid; gap: 2px; min-width: 0; }
 .prep-level { font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); padding: var(--sp-3) var(--sp-2) var(--sp-1); }
 .prep-row { display: grid; grid-template-columns: 32px minmax(0, 1fr) 80px 70px 20px; gap: var(--sp-2); align-items: center; padding: 6px var(--sp-2); border: 1px solid transparent; border-radius: var(--r-md); }
 .prep-row:hover { background: var(--surface-2); }
-.prep-row.changed { border-color: var(--amber); background: var(--amber-soft); }
+/* A change (Brett, 2026-11-02, the UI pass): a green bar for a spell you're preparing, a grey bar and its name struck
+   through for one you're dropping; + and − in Your changes. No amber. */
+.prep-row.add { box-shadow: inset 3px 0 0 var(--green); }
+.prep-row.drop { box-shadow: inset 3px 0 0 var(--muted); }
+.prep-row.drop .prep-name .link-plain { text-decoration: line-through; color: var(--muted); }
 .prep-tick { width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border-radius: var(--r-sm); border: 1.5px solid var(--line-strong); background: var(--bg); color: transparent; font-weight: 700; cursor: pointer; }
 .prep-tick[aria-pressed="true"] { background: var(--green); border-color: var(--green); color: var(--bg); }
 .prep-tick.always { color: var(--cond-concentration); border-color: var(--cond-concentration); background: var(--surface-2); cursor: default; }
 .prep-name { min-width: 0; }
-.prep-name .link-plain { display: inline-block; max-width: 100%; vertical-align: bottom; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; background: none; border: 0; padding: 0; font: inherit; color: var(--text-strong); cursor: pointer; text-align: left; }
+/* A name that opens its side panel, plain (no link colour): Prepare spells, a character's card from Party */
+.link-plain { background: none; border: 0; padding: 0; font: inherit; color: var(--text-strong); cursor: pointer; text-align: left; }
+.link-plain:hover, .link-plain:focus-visible { text-decoration: underline; text-underline-offset: 3px; }
+.prep-name .link-plain { display: inline-block; max-width: 100%; vertical-align: bottom; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .prep-name small { display: block; color: var(--muted); font-size: var(--fs-xs); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .prep-col { color: var(--muted); font-size: var(--fs-sm); }
 .prep-fav { color: var(--amber); text-align: center; }
 .prep-side { display: grid; gap: var(--sp-2); position: sticky; top: 0; }
 .prep-changes { display: grid; gap: var(--sp-1); }
-.prep-change { display: grid; grid-template-columns: 28px minmax(0, 1fr); column-gap: var(--sp-2); align-items: center; padding: 4px var(--sp-2); border-radius: var(--r-md); border: 1px solid var(--amber); background: var(--amber-soft); }
-.prep-change .prep-tick { grid-row: span 2; cursor: default; }
-.prep-change.add .prep-tick { background: var(--green); border-color: var(--green); color: var(--bg); }
-.prep-change.drop .prep-tick { border-color: var(--red); color: var(--link); }
+.prep-change { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; column-gap: var(--sp-2); align-items: baseline; padding: 2px 0; }
+.prep-change .prep-k { font-weight: 800; text-align: center; }
+.prep-change.add .prep-k { color: var(--green); }
+.prep-change.drop .prep-k, .prep-change.drop b { color: var(--muted); }
 .prep-change b { color: var(--text-strong); font-weight: 600; overflow-wrap: anywhere; }
 .prep-change small { color: var(--muted); font-size: var(--fs-xs); }
+.prep-fold > summary { display: none; }
+
+/* Coins as a purse (_char.html purse(); Brett, 2026-11-02, the UI pass): each coin in its metal, the total in gold */
+.purse-row { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; margin-bottom: var(--sp-3); }
+.purse { display: inline-flex; align-items: center; gap: var(--sp-1) var(--sp-2); flex-wrap: wrap; padding: 0; background: none; border: 0; font: inherit; color: var(--text); }
+button.purse { cursor: pointer; border-radius: var(--r-pill); }
+button.purse:hover .coin, button.purse:focus-visible .coin { background: var(--surface-3); }
+.coin { display: inline-flex; align-items: center; gap: var(--sp-1); padding: 2px var(--sp-2) 2px 3px; border-radius: var(--r-pill); background: var(--surface-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.coin i { width: 18px; height: 18px; border-radius: 50%; display: inline-block; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--coin-ink) 25%, transparent); }
+.coin b { color: var(--text-strong); font-weight: 700; }
+.coin small { color: var(--muted); font-size: var(--fs-xs); text-transform: uppercase; }
+.coin-pp { background: var(--coin-pp); } .coin-gp { background: var(--coin-gp); } .coin-ep { background: var(--coin-ep); } .coin-sp { background: var(--coin-sp); } .coin-cp { background: var(--coin-cp); }
+.purse-sum { white-space: nowrap; }
 .prep-foot { position: sticky; bottom: calc(-1 * var(--sp-4)); display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) 0; background: var(--surface); border-top: 1px solid var(--line); }
 .prep-foot-note { flex: 1; min-width: 0; }
 @media (max-width: 900px) {
   .prep-body { grid-template-columns: minmax(0, 1fr); }
-  .prep-side, .prep-filters { position: static; }
-  .prep-filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1); }
-  .prep-filters .ls-label { display: none; }
-  .prep-filters .chips { margin: 0; }
+  .prep-side, .prep-fold { position: static; }
+  /* The count on its own line under the title, ✕ beside the title; the filters one Filters line that opens */
+  .prep-head > .prep-top { order: 3; width: 100%; }
+  .prep-fold { border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-1) var(--sp-3); }
+  .prep-fold > summary { display: block; cursor: pointer; font-weight: 600; padding: var(--sp-1) 0; }
+  .prep-fold[open] > summary { margin-bottom: var(--sp-1); }
   .prep-row { grid-template-columns: 32px minmax(0, 1fr) 20px; }
   .prep-row .prep-col { display: none; }
 }

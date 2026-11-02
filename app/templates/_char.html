@@ -139,6 +139,20 @@
 </span>
 {%- if roll and dying_state(s) == "dying" %}<button type="button" class="roll-chip tile-roll" data-roll="death" data-label="Death save" title="Roll your death save: 10 or more a success, a 1 two failures, a 20 back with 1 Hit Point. It marks itself.">Roll</button>{% endif -%}
 {%- endmacro %}
+{# Coins as a purse (Brett, 2026-11-02, docs/artifacts/ui-ux-pass.html, question 6): each coin in its metal, the total in
+   gold beside them. On Sheet › Items, where the bridge works, pressing it opens Change coins; on a Party card it only
+   shows. A coin on its way to D&D Beyond has its ↻. #}
+{% macro purse(s, c=none, change=false) -%}
+{%- set cur = s.currency or {} -%}
+{%- set worth = cur.get("pp", 0) * 10 + cur.get("gp", 0) + cur.get("ep", 0) * 0.5 + cur.get("sp", 0) * 0.1 + cur.get("cp", 0) * 0.01 -%}
+{%- set inner -%}
+{%- for k in ("pp", "gp", "ep", "sp", "cp") if cur.get(k) %}<span class="coin"{{ sync(s, "coin:" ~ k) }}><i class="coin-{{ k }}" aria-hidden="true"></i><b>{{ "{:,}".format(cur[k]) }}</b><small>{{ k }}</small></span>{% else %}<span class="note">No coins</span>{% endfor -%}
+{%- if cur | length > 1 %}<span class="purse-sum note">{{ "{:,.2f}".format(worth).rstrip("0").rstrip(".") }} gp in all</span>{% endif -%}
+{%- endset -%}
+{%- if change %}<button type="button" class="purse" data-use-url="/characters/{{ c.id }}/coins" title="Change coins">{{ inner }}</button>
+{%- else %}<div class="purse">{{ inner }}</div>{% endif -%}
+{%- endmacro %}
+
 {# Hit Points as a tile (ntile), the Dying tile at 0: `change` adds − and + to its label row (Battle); `attrs` is its
    panel by default, or only its mark where a card opens something else (Party); `max` says "/ 66" even when full; `short` says HP where the row is short of room #}
 {% macro hp_tile(s, c, cls="", word="Hit points", change=false, attrs=none, roll=true, max=false, short=true) -%}

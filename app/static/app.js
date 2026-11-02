@@ -3303,6 +3303,8 @@
   function start(root) {
     if (root._prep) return;
     root._prep = true;
+    const fold = root.querySelector('.prep-fold');  // (the filters fold into one line on narrower screens, as the Spell Book's)
+    if (fold && matchMedia('(max-width: 900px)').matches) fold.open = false;
     const rows = [...root.querySelectorAll('[data-prep-row]')];
     const most = +root.dataset.max || 0;
     const filter = { show: 'all', level: '', effect: '' };
@@ -3331,17 +3333,18 @@
         warn.textContent = `${count} prepared: more than the ${most} a ${root.dataset.class} prepares at this level. D&D Beyond allows it; whether it stands is the DM's call.`;
       }
       const ch = changed();
-      // Each change like a row of the list: its box as it will be (✓ prepared, ✕ dropped), the spell, its level
+      // Each change: + to prepare, − to drop, the spell and its level (Brett, 2026-11-02, the UI pass: no amber)
       $('[data-prep-changes]').replaceChildren(...ch.map(r => {
         const p = document.createElement('div');
         p.className = 'prep-change ' + (on(r) ? 'add' : 'drop');
-        const box = document.createElement('span');
-        box.className = 'prep-tick'; box.setAttribute('aria-hidden', 'true'); box.textContent = on(r) ? '✓' : '✕';
+        const k = document.createElement('span');
+        k.className = 'prep-k'; k.textContent = on(r) ? '+' : '−';
+        k.setAttribute('aria-label', on(r) ? 'prepare' : 'drop');
         const name = document.createElement('b');
         name.textContent = r.dataset.name;
         const what = document.createElement('small');
-        what.textContent = (on(r) ? 'prepare' : 'drop') + ' · ' + ORD(+r.dataset.level);
-        p.append(box, name, what);
+        what.textContent = ORD(+r.dataset.level);
+        p.append(k, name, what);
         return p;
       }));
       $('[data-prep-none]').hidden = ch.length > 0;
@@ -3352,7 +3355,10 @@
       const make = $('[data-prep-make]');
       if (make) { make.disabled = !ch.length; make.textContent = ch.length ? `Make ${ch.length} change${ch.length === 1 ? '' : 's'} on D&D Beyond` : 'Make these changes'; }
       rows.forEach(r => {
-        r.classList.toggle('changed', !r.dataset.always && r.dataset.on !== r.dataset.base);
+        const moved = !r.dataset.always && r.dataset.on !== r.dataset.base;
+        r.classList.toggle('changed', moved);
+        r.classList.toggle('add', moved && on(r));
+        r.classList.toggle('drop', moved && !on(r));
         const t = r.querySelector('[data-prep-tick]');
         if (t) t.setAttribute('aria-pressed', on(r) ? 'true' : 'false');
         r.hidden = !((filter.show === 'all' || (filter.show === 'on' ? on(r) : filter.show === 'off' ? !on(r) : r.dataset.fav === '1'))

@@ -9,7 +9,7 @@
   {% if focus %}<p class="flash">Showing the history of <b>{{ focus }}</b>. <a href="{{ page_url }}">Show everything</a></p>{% endif %}
   {% if batch %}<p class="flash">Showing one import. <a href="{{ page_url }}">Show everything</a></p>{% endif %}
   <div class="filters" role="group" aria-label="Show">
-    {% for k, lab in filters.items() %}<a class="btn small{{ ' primary' if show == k else '' }}" href="{{ page_url }}{{ '?show=' ~ k if k }}">{{ lab }}</a>{% endfor %}
+    {% for k, lab in filters.items() %}<a class="chip{{ ' on' if show == k else '' }}" href="{{ page_url }}{{ '?show=' ~ k if k }}"{% if show == k %} aria-current="true"{% endif %}>{{ lab }}</a>{% endfor %}
   </div>
   {% for day, rows in days %}
   <h3 class="divider">{{ day }}</h3>
