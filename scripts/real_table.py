@@ -707,13 +707,13 @@ def give(t: Table, seat: str = "player2", other: str = "player3") -> None:
     t.expect("both sheets connect", lambda: "Connected" in pill(page) and "Connected" in pill(them), 40)
     name, potion = "Potion of Healing", have["Potion of Healing"]["id"]
     mine0, theirs0 = how_many(record(sheet), name), how_many(record(theirs), name)
-    their_name = record(theirs)["name"]
-    give_one(page, cid_of(page), potion, their_name)
+    name_of = lambda pg: pg.locator(".char-name h1").first.inner_text().split("\n")[0].strip()  # (askdnd's name, as the list says it)
+    give_one(page, cid_of(page), potion, name_of(them))
     t.expect("one fewer on the giver's sheet", lambda: how_many(record(sheet), name) == mine0 - 1, SLOW)
     t.expect("and one more on the other", lambda: how_many(record(theirs), name) == theirs0 + 1, SLOW)
     page.wait_for_timeout(1500)
     new = max(i["id"] for i in record(theirs)["inventory"] if i["definition"]["name"] == name)
-    give_one(them, cid_of(them), new, record(sheet)["name"])
+    give_one(them, cid_of(them), new, name_of(page))
     t.expect("given back: the giver has as many as before", lambda: how_many(record(sheet), name) == mine0, SLOW)
     t.expect("and the other as many as before", lambda: how_many(record(theirs), name) == theirs0, SLOW)
     rows = [i for i in record(sheet)["inventory"] if i["definition"]["name"] == name]
@@ -886,7 +886,7 @@ def main() -> int:
             except Exception as e:  # one run going wrong is a result, and the rest still run
                 lines = str(e).splitlines()
                 at = next((x.strip() for x in lines if "waiting for" in x), "")  # (what it was waiting for)
-                t.results.append((False, f"{name}: stopped with {type(e).__name__}: {lines[0][:120]} {at[:160]}"))
+                t.results.append((False, f"{name}: stopped with {type(e).__name__}: {lines[0][:120] if lines else ''} {at[:160]}"))
                 print("FAIL", t.results[-1][1], flush=True)
                 try:
                     shot = f"logs/stopped-{time.strftime('%Y-%m-%d-%H%M')}-{name}.png"
