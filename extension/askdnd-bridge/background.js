@@ -78,12 +78,28 @@ async function stillClosed(ddbId) {
 
 // The DM as a backup: askdnd hears that a D&D Beyond page is open in this browser (`pages`; none, once the last one
 // closes, and `except` is a tab closing now) and names the closed sheets with a change for it to make. In anyone but a
-// campaign's DM's browser it names none. Answers how soon to ask again.
-async function carry(except) {
+// campaign's DM's browser it names none. Answers how soon to ask again. However many pages tick, it asks one at a time
+// and at most every CARRY_GAP (`now`: askdnd just queued a change, or the last page closed, so it asks once this one's
+// answered). Only an answer counts toward the gap: nothing to ask yet (no page, no key) doesn't hold the next one back.
+const CARRY_GAP = 4000;
+let carryOut = null, carryAt = 0, carryEvery = 0;
+async function carry(except, now) {
+  if (except === undefined && !now) {
+    if (carryOut) return carryOut;
+    if (Date.now() - carryAt < CARRY_GAP) return carryEvery;
+  } else if (carryOut) await carryOut.catch(() => {});
+  carryOut = carryOnce(except).then(every => {
+    if (every === null) return 0;
+    carryAt = Date.now(); carryEvery = every;
+    return every;
+  }).finally(() => { carryOut = null; });
+  return carryOut;
+}
+async function carryOnce(except) {  // how soon to ask again, or null when askdnd wasn't asked
   const pages = (await chrome.tabs.query({ url: DDB_PAGES })).filter(t => t.id !== except).length;
-  if (!pages && except === undefined) return 0;  // ("none" is said once, as the last page closes)
+  if (!pages && except === undefined) return null;  // ("none" is said once, as the last page closes)
   let r;
-  try { r = await api('POST', '/bridge/carry', { pages }); } catch (err) { return 0; }
+  try { r = await api('POST', '/bridge/carry', { pages }); } catch (err) { return null; }
   await chrome.storage.session.set({ carrying: r.sheets || [] });
   for (const id of r.sheets || []) deliver(String(id));
   return r.every || 0;
@@ -174,8 +190,8 @@ chrome.runtime.onMessage.addListener((m, sender, reply) => {
     }, () => reply({ followed: false }));
     return true;  // (answers later)
   }
-  if (m.type === 'carry-tick') {  // a D&D Beyond page that isn't a sheet (carry.js): how soon it asks again
-    if (sender.tab) opened(sender.tab.id, { page: true });
+  if (m.type === 'carry-tick') {  // any D&D Beyond page (carry.js, or a sheet's ddb.js): how soon it asks again
+    if (sender.tab && !ddbIdOf(sender.tab.url)) opened(sender.tab.id, { page: true });  // (a sheet is kept as a sheet)
     carry().then(every => reply({ every }), () => reply({ every: 0 }));
     return true;
   }
@@ -185,7 +201,7 @@ chrome.runtime.onMessage.addListener((m, sender, reply) => {
       if (!SITES.includes(askdnd)) return;
       await chrome.storage.session.set({ key: m.key, askdnd }); hello(); for (const t of await sheetTabs()) refreshPanels(ddbIdOf(t.url)); return;
     }
-    if (m.type === 'deliver') return (await sheetTabs(String(m.ddbId))).length ? deliver(String(m.ddbId)) : carry();  // askdnd's own tab queued something (no sheet here: the DM's browser may make it)
+    if (m.type === 'deliver') return (await sheetTabs(String(m.ddbId))).length ? deliver(String(m.ddbId)) : carry(undefined, true);  // askdnd's own tab queued something (no sheet here: the DM's browser may make it)
     if (m.type === 'gamelog') {  // a roll made in askdnd, for the game log: from one open copy of the sheet only
       const askdnd = sender.origin || (sender.tab && new URL(sender.tab.url).origin);
       if (!SITES.includes(askdnd)) return;

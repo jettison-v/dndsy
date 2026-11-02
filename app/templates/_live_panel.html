@@ -21,13 +21,15 @@
   <div class="live-say via"><span>Your sheet is closed, so the DM's D&amp;D Beyond is making your changes. Open it so your rolls reach D&amp;D Beyond's Game Log too.</span>
     <a class="btn small" href="https://www.dndbeyond.com/characters/{{ me.ddb_id }}" target="_blank" rel="noopener">Open sheet ↗</a></div>
   {% elif me and not me.step and (tn.playing or fight_now()) %}
-  <div class="live-say bad"><span>Your changes can't reach D&amp;D Beyond: your sheet is closed{% if backup and dm_here %}, and your character isn't in this campaign's D&amp;D Beyond campaign, where the DM could make them{% elif backup %} and the DM has no D&amp;D Beyond page open{% endif %}. Open it in Chrome with the askdnd bridge.</span>
+  <div class="live-say bad"><span>Your changes can't reach D&amp;D Beyond: your sheet is closed{% if backup and dm_here and not ddb_game %}, and this campaign isn't linked to its D&amp;D Beyond campaign, where the DM could make them{% elif backup and dm_here %}, and your character isn't in this campaign's D&amp;D Beyond campaign, where the DM could make them{% elif backup %} and the DM has no D&amp;D Beyond page open{% endif %}. Open it in Chrome with the askdnd bridge.</span>
     <a class="btn small" href="https://www.dndbeyond.com/characters/{{ me.ddb_id }}" target="_blank" rel="noopener">Open sheet ↗</a></div>
   {% endif %}
   {% set unreached = tn.characters | selectattr("connects") | rejectattr("step") | rejectattr("via") | list %}
   {% if tn.dm and backup and unreached and (tn.playing or fight_now()) %}
   {% set names = unreached | map(attribute="name") | join(", ") %}
-  {% if dm_here %}
+  {% if dm_here and not ddb_game %}
+  <div class="live-say bad"><span>This campaign isn't linked to its D&amp;D Beyond campaign, so your D&amp;D Beyond can't make closed sheets' changes. Add its D&amp;D Beyond campaign id in Manage › Settings.</span></div>
+  {% elif dm_here %}
   <div class="live-say bad"><span>{% if unreached | length == 1 %}{{ names }} isn't in this campaign's D&amp;D Beyond campaign, so only its own sheet can make its changes.{% else %}{{ names }} aren't in this campaign's D&amp;D Beyond campaign, so only their own sheets can make their changes.{% endif %}</span></div>
   {% else %}
   <div class="live-say bad"><span>{{ names }}: {{ "the sheet is" if unreached | length == 1 else "their sheets are" }} closed. Open D&amp;D Beyond in this browser to make {{ "its" if unreached | length == 1 else "their" }} changes.</span>

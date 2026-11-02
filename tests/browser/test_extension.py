@@ -194,14 +194,18 @@ def test_without_the_extension_the_pill_says_to_add_it_and_the_window_has_the_li
     assert link.evaluate("a => getComputedStyle(a).alignItems") == "center"  # (a link in a menu stays a button: Brett, 2026-10-30)
 
 
-def test_the_dms_browser_makes_a_closed_sheets_change_from_any_dnd_beyond_page(people, chromium, server, tmp_path, browser_db):
+@pytest.mark.parametrize("where", ["https://www.dndbeyond.com/games/1", SHEET], ids=["vtt", "dms-copy-of-the-sheet"])
+def test_the_dms_browser_makes_a_closed_sheets_change_from_any_dnd_beyond_page(where, people, chromium, server, tmp_path, browser_db):
     """DM Backup Option A (Brett, 2026-11-02): Cole's sheet is closed and the DM's browser has D&D Beyond's VTT open (a
-    stand-in), so Cole's player's pill turns yellow, and the change they make is made by the DM's browser, for Cole."""
+    stand-in), so Cole's player's pill turns yellow, and the change they make is made by the DM's browser, for Cole.
+    The same with the DM's own copy of Cole's sheet open: it isn't his player's sheet, so it never turns his pill green
+    and the DM's browser makes the change there (review, 2026-11-02)."""
     from tests.table_setup import COLE
 
     engine = create_engine(browser_db[0])
     with engine.connect() as conn:
         conn.execute(text("UPDATE characters SET ddb_campaign_id = '1', sheet_heard_at = NULL WHERE id = :c"), {"c": server["cole"]})
+        conn.execute(text("UPDATE campaigns SET ddb_campaign_id = '1' WHERE id IN (SELECT campaign_id FROM campaign_characters WHERE character_id = :c)"), {"c": server["cole"]})
         # (what the tests before left waiting: nothing reaches a stand-in D&D Beyond, so it stays to make by hand)
         conn.execute(text("UPDATE bridge_intents SET state = 'live' WHERE character_id = :c"), {"c": server["cole"]})
         conn.execute(text("UPDATE bridge_batches SET state = 'done' WHERE character_id = :c"), {"c": server["cole"]})
@@ -224,7 +228,7 @@ def test_the_dms_browser_makes_a_closed_sheets_change_from_any_dnd_beyond_page(p
         dm.route(re.compile(r"https://character-service\.dndbeyond\.com/.*"), character_service)
         dm.pages[0].wait_for_timeout(1500)  # (the DM's askdnd page hands the extension its key)
         vtt = dm.new_page()
-        vtt.goto("https://www.dndbeyond.com/games/1")
+        vtt.goto(where)
         page.wait_for_function("document.getElementById('live-pill').classList.contains('via')", timeout=20000)
         page.click(".hp-btn[aria-label=Damage]")
         page.locator(".roll-win input[name=amount]").wait_for(timeout=5000)

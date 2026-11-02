@@ -228,8 +228,9 @@ def _campaign_of(character: Character) -> Campaign | None:
 
 
 def in_its_game(campaign: Campaign, ddb_game: str | None) -> bool:
-    """A character in this D&D Beyond game is in the campaign's own (or the campaign doesn't say which is its own)."""
-    return bool(ddb_game) and campaign.ddb_campaign_id in (None, "", ddb_game)
+    """A character in this D&D Beyond game is in the campaign's own: the DM's rights on D&D Beyond reach only there, so
+    a campaign that doesn't say which is its own carries no one (review, 2026-11-02)."""
+    return bool(ddb_game) and campaign.ddb_campaign_id == ddb_game
 
 
 def carried(character: Character, campaign: Campaign | None = None) -> bool:
@@ -1167,6 +1168,10 @@ def bridge_outbox(ddb_id: str, request: Request, db: Session = Depends(get_db)):
 
 CARRY_EVERY = 5  # seconds between a carrying browser's checks (/bridge/carry)
 CARRY_MARK = timedelta(seconds=20)  # the DM's browser is marked as here at most this often (it counts for live.REACH)
+CARRY_GRACE = timedelta(seconds=10)  # after a browser's last D&D Beyond page closes: another of the DM's browsers
+                                     # still carrying marks it again first (CARRY_EVERY), so pills don't flick to red
+CARRY_READ = 60  # seconds: a closed sheet the DM carries is read from D&D Beyond at most this often from /bridge/carry
+_carry_read: dict[int, float] = {}
 
 
 def _carries_for(db: Session, user: dict) -> list[Campaign]:
@@ -1187,7 +1192,8 @@ def bridge_carry(request: Request, body=web.JsonBody, db: Session = Depends(get_
     """The extension, from a browser with `pages` D&D Beyond pages open (0: the last one closed). For each campaign this
     person is the DM of with the backup on, it's here while it has a page open, and makes the changes of a character
     whose own sheet is closed (`carried`). Answers which of those sheets have a change waiting now, and how soon to ask
-    again (0: it carries for no campaign; it asks again within the minute, in case that changes)."""
+    again (0: it carries for no campaign; it asks again within the minute, in case that changes). When the last page
+    closes, the mark runs out within CARRY_GRACE rather than at once: another of the DM's browsers may still carry."""
     user = _signed_in(request, db)
     pages = body.get("pages") if isinstance(body, dict) else 0
     pages = pages if isinstance(pages, int) and pages > 0 else 0
@@ -1197,7 +1203,8 @@ def bridge_carry(request: Request, body=web.JsonBody, db: Session = Depends(get_
     for campaign in campaigns:
         was = dm_here(campaign)
         if not pages:
-            campaign.backup_heard_at = None
+            if was:
+                campaign.backup_heard_at = min(campaign.backup_heard_at, now - live.REACH + CARRY_GRACE)
         elif not was or now - campaign.backup_heard_at >= CARRY_MARK:
             campaign.backup_heard_at = now
         party = _party(db, campaign)
@@ -1211,7 +1218,9 @@ def bridge_carry(request: Request, body=web.JsonBody, db: Session = Depends(get_
             if own_sheet(ch) or not carried(ch, campaign):
                 continue
             if db.scalar(select(BridgeIntent.id).where(BridgeIntent.character_id == ch.id, BridgeIntent.state == "not_yet",
-                                                       BridgeIntent.data["quiet"].astext == "true").limit(1)):
+                                                       BridgeIntent.data["quiet"].astext == "true").limit(1)) \
+                    and time.time() - _carry_read.get(ch.id, 0) >= CARRY_READ:
+                _carry_read[ch.id] = time.time()
                 heard(db, ch, saved=False)  # (one that gave up while no one could reach the sheet is made now: _catch_up)
             if db.scalar(select(BridgeIntent.id).where(BridgeIntent.character_id == ch.id,
                                                        BridgeIntent.state.in_(("waiting", "sending"))).limit(1)):
@@ -1236,7 +1245,8 @@ async def bridge_delivered(batch_id: int, request: Request, db: Session = Depend
 def bridge_heard(ddb_id: str, request: Request, pull: int = 0, db: Session = Depends(get_db)):
     """The sheet saved a change (the extension heard it), or the extension's regular pull (`?pull=1`)."""
     character, user = _by_ddb(db, request, ddb_id)
-    sheet_is_open(db, character)
+    if picks.can_edit(db, user, character):  # (a copy open in the DM's browser isn't its own sheet: the DM carries it)
+        sheet_is_open(db, character)
     heard(db, character, saved=not pull)
     db.commit()
     return _json({**state(db, character, user), "check": check(character)})
@@ -1286,7 +1296,9 @@ def bridge_games(request: Request, db: Session = Depends(get_db)):
 def bridge_closed(ddb_id: str, request: Request, db: Session = Depends(get_db)):
     """The last open copy of this character's sheet in the extension's browser closed: not in step through it now
     (the Live pill says so at once, not after live.REACH)."""
-    character, _ = _by_ddb(db, request, ddb_id)
+    character, user = _by_ddb(db, request, ddb_id)
+    if not picks.can_edit(db, user, character):  # the DM closing their copy: its own sheet may well be open still
+        return _json({"ok": True})
     character.sheet_heard_at = None
     realtime.announce(db, character.campaign_id, "character", id=character.id)  # (open pages' pills and roll windows)
     db.commit()

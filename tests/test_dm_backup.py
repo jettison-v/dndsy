@@ -2,7 +2,7 @@
 a character's own sheet is closed, its campaign's DM's browser with any D&D Beyond page open makes its changes. D&D
 Beyond is never called: the fake sheet stands in (tests/conftest.py `sheet`)."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import select
@@ -26,6 +26,7 @@ def table(db, sheet):
     set_role(db, "dm@example.com", "dm", "Dee", campaign)
     for ch in db.scalars(select(Character)):
         ch.sheet_heard_at, ch.ddb_campaign_id = None, GAME
+    sheet["campaign"] = {"id": int(GAME), "name": "VTT test"}  # (as a read of Cole's sheet says too)
     db.flush()
     return cole
 
@@ -84,12 +85,72 @@ def test_only_the_dm_carries_only_where_its_on_and_only_in_its_game(player, dm, 
     assert ddb_bridge.how(cole) is None and carry(dm)["every"] == 0
 
 
-def test_the_last_dnd_beyond_page_closing_ends_it(dm, db, table):
+def test_the_last_dnd_beyond_page_closing_ends_it_unless_another_browser_carries(dm, db, table):
+    """Its mark runs out within CARRY_GRACE, not at once: a second browser of the DM's still carrying marks it again
+    first, so the table's pills don't flick to red and back (review, 2026-11-02)."""
     cole = table
+    campaign = db.get(Campaign, cole.campaign_id)
     carry(dm)
     assert ddb_bridge.how(cole) == "dm"
-    carry(dm, pages=0)
+    carry(dm, pages=0)  # one browser's last page closed
+    assert ddb_bridge.how(cole) == "dm"
+    carry(dm)  # the other browser still has one open: marked again, from now
+    assert datetime.now(UTC) - campaign.backup_heard_at < ddb_bridge.CARRY_MARK
+
+    carry(dm, pages=0)  # its last one closed too
+    campaign.backup_heard_at -= ddb_bridge.CARRY_GRACE + timedelta(seconds=1)  # (CARRY_GRACE later)
+    db.flush()
     assert ddb_bridge.how(cole) is None
+
+
+def test_the_dms_open_copy_of_a_players_sheet_isnt_its_own(player, dm, db, table, sheet):
+    """Review, 2026-11-02: a DM often keeps the party's sheets open. Their copy is a D&D Beyond page in the DM's browser,
+    so the DM carries its changes, and it never says the player's own sheet is open or closed."""
+    cole = table
+    carry(dm)
+    assert dm.post("/bridge/heard/75423618?pull=1").status_code == 200  # the DM's copy, pulled every 30 seconds
+    assert ddb_bridge.how(cole) == "dm" and cole.sheet_heard_at is None
+    assert player.post(f"/bridge/hp/{cole.id}", data={"amount": -1}).status_code == 200
+    batch = dm.post("/bridge/outbox/75423618").json()["batch"]
+    assert batch and batch["ddb"] == "75423618"
+    assert 'class="live-pill via"' in player.get(f"/characters/{cole.id}").text  # not green: their own sheet is closed
+
+    cole.sheet_heard_at = datetime.now(UTC)  # the player opens their own sheet
+    db.flush()
+    dm.post("/bridge/closed/75423618")  # the DM closes their copy
+    assert ddb_bridge.own_sheet(cole)
+    player.post("/bridge/closed/75423618")  # the player closes theirs
+    assert not ddb_bridge.own_sheet(cole)
+
+
+def test_a_campaign_not_linked_to_dnd_beyond_carries_no_one(player, dm, db, table):
+    """Only the DM of that D&D Beyond campaign may change its characters there, so a campaign that doesn't say which is
+    its own can't be carried (review, 2026-11-02), and the DM's Live window says how to link it."""
+    cole = table
+    db.get(Campaign, cole.campaign_id).ddb_campaign_id = None
+    db.flush()
+    carry(dm)
+    assert ddb_bridge.how(cole) is None
+    other = next(c for c in db.scalars(select(Character)) if c.id != cole.id and c.ddb_id)
+    other.sheet_heard_at = datetime.now(UTC)  # (the table is playing)
+    db.flush()
+    assert "isn't linked to its D&amp;D Beyond campaign" in dm.get("/live").text
+
+
+def test_the_carry_reads_a_closed_sheet_at_most_once_a_minute(player, dm, db, table, monkeypatch):
+    """A change that gave up quietly is caught up by reading the sheet; every DM page ticking doesn't read it each time."""
+    cole = table
+    carry(dm)
+    player.post(f"/bridge/hp/{cole.id}", data={"amount": -1})
+    intent = db.scalar(select(BridgeIntent))
+    intent.state, intent.data = "not_yet", {**intent.data, "quiet": True}
+    db.flush()
+    reads = []
+    monkeypatch.setattr(ddb_bridge, "heard", lambda db, ch, saved=True: reads.append(ch.id))
+    monkeypatch.setattr(ddb_bridge, "_carry_read", {})
+    carry(dm)
+    carry(dm)
+    assert reads == [cole.id]
 
 
 def test_a_change_the_dm_carries_doesnt_give_up(player, dm, db, table, monkeypatch):
