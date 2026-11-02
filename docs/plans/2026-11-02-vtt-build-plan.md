@@ -29,6 +29,14 @@ to-do list; this file is the detail behind them.
 - **Monsters** come from the campaign's books (the Monster Manual once it's uploaded to beta), then the SRD, through
   `rules_data`, as Wild Shape's forms already do.
 
+## Before slice 1 (from the architecture review, `docs/plans/2026-11-02-architecture-review.md`)
+
+- ARCHITECTURE.md rewritten as today's map (S), before slice 1 adds to it.
+- No request holds the database while D&D Beyond answers (M), before slice 2: the VTT adds the DM and every player
+  changing things during a fight.
+- Slice 2's creatures are askdnd's own play state (no D&D Beyond sheet): a fight and its fighters as rows, changed one
+  at a time under the fight's lock (`fight.lock`), with a log for the DM's Undo; not more JSON on `Campaign.fight`.
+
 ## The slices, in order
 
 | # | Slice | Size | What you can do when it lands |
